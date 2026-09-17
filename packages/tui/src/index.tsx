@@ -6,30 +6,11 @@ function argValue(name: string): string | undefined {
   return index !== -1 ? args[index + 1] : undefined
 }
 
-const port = Number(argValue("--port") ?? process.env.AGENT_TUI_PORT ?? "0")
+const DEFAULT_PORT = 40123
+const port = Number(argValue("--port") ?? process.env.AGENT_TUI_PORT ?? DEFAULT_PORT)
 
 async function main() {
-  let url: string
-  if (port > 0) {
-    url = `http://127.0.0.1:${port}`
-    await run({ url })
-    return
-  }
-
-  const configFile = process.env.HOME + "/.config/agent/serve.json"
-  try {
-    const raw = await Bun.file(configFile).text()
-    const saved = JSON.parse(raw)
-    if (saved.port) {
-      url = `http://127.0.0.1:${saved.port}`
-      await run({ url })
-      return
-    }
-  } catch {}
-
-  console.error("agent-tui: cannot find a running server. Start it with `agent serve` first,")
-  console.error("or pass --port <port> to connect to an existing instance.")
-  process.exit(1)
+  await run({ url: `http://127.0.0.1:${port}` })
 }
 
 main().catch((error) => {
