@@ -4,6 +4,8 @@ mod init;
 mod main_loop;
 mod runtime;
 
+pub mod cmd;
+
 use std::process::ExitCode;
 
 use clap::Parser;
@@ -56,6 +58,11 @@ pub enum Command {
     Model {
         #[command(subcommand)]
         action: ModelAction,
+    },
+    /// Manage providers
+    Provider {
+        #[command(subcommand)]
+        action: ProviderAction,
     },
     /// Show available tools
     Tools,
@@ -114,6 +121,8 @@ pub enum ModelAction {
     List,
     Set { provider: String, model: String },
 }
+
+use cmd::provider::ProviderAction;
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
@@ -380,6 +389,55 @@ fn main() -> ExitCode {
                     }
                     Err(e) => {
                         eprintln!("failed to save config: {e}");
+                        ExitCode::FAILURE
+                    }
+                }
+            }
+        },
+        Some(Command::Provider { action }) => match action {
+            cmd::provider::ProviderAction::List => {
+                let cfg = load_config();
+                cmd::provider::list_providers(&cfg);
+                ExitCode::SUCCESS
+            }
+            cmd::provider::ProviderAction::Add { id } => {
+                let mut cfg = load_config();
+                match cmd::provider::add_provider(&mut cfg, id.clone()) {
+                    Ok(provider_id) => {
+                        match save_config(&cfg) {
+                            Ok(p) => {
+                                println!("added provider '{}' to {}", provider_id, p.display());
+                                ExitCode::SUCCESS
+                            }
+                            Err(e) => {
+                                eprintln!("failed to save config: {e}");
+                                ExitCode::FAILURE
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("failed to add provider: {e}");
+                        ExitCode::FAILURE
+                    }
+                }
+            }
+            cmd::provider::ProviderAction::Use { id } => {
+                let mut cfg = load_config();
+                match cmd::provider::use_provider(&mut cfg, id) {
+                    Ok(()) => {
+                        match save_config(&cfg) {
+                            Ok(p) => {
+                                println!("set active provider to '{}' in {}", id, p.display());
+                                ExitCode::SUCCESS
+                            }
+                            Err(e) => {
+                                eprintln!("failed to save config: {e}");
+                                ExitCode::FAILURE
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("failed: {e}");
                         ExitCode::FAILURE
                     }
                 }

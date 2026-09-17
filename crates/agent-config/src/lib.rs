@@ -136,6 +136,27 @@ impl Default for PermissionsConfig {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderConfig {
+    pub kind: ProviderKind,
+    pub base_url: Option<String>,
+    pub api_key_env: Option<String>,
+    pub temperature: Option<f32>,
+    pub max_tokens: Option<u32>,
+}
+
+impl Default for ProviderConfig {
+    fn default() -> Self {
+        Self {
+            kind: ProviderKind::OpenAi,
+            base_url: None,
+            api_key_env: None,
+            temperature: None,
+            max_tokens: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AgentConfig {
     pub mode: Option<AgentMode>,
@@ -152,6 +173,8 @@ pub struct AgentConfig {
     pub skills_disabled: Vec<String>,
     #[serde(default)]
     pub plugins: HashMap<String, bool>,
+    #[serde(default)]
+    pub providers: HashMap<String, ProviderConfig>,
     #[serde(default)]
     pub extra: HashMap<String, serde_json::Value>,
 }
@@ -234,6 +257,13 @@ impl ConfigLoader {
             plugins: {
                 let mut m = base.plugins;
                 for (k, v) in overlay.plugins {
+                    m.insert(k, v);
+                }
+                m
+            },
+            providers: {
+                let mut m = base.providers;
+                for (k, v) in overlay.providers {
                     m.insert(k, v);
                 }
                 m
