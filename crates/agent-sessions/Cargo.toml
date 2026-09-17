@@ -1,0 +1,22 @@
+[package]
+name = "agent-sessions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Session management: JSONL persistence, resume, list"
+
+[dependencies]
+agent-storage = { path = "../agent-storage" }
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+tokio.workspace = true
+futures.workspace = true
+dirs.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

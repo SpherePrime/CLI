@@ -1,0 +1,26 @@
+# Rust
+target/
+*.rs.bk
+
+# Local agent state
+.agent/
+sessions/
+
+# Local chat/dev context
+CHATS.md
+AGENTS.md
+
+# Secret / local config overrides
+config.local.toml
+.env
+.env.local
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Test artifacts
+tmp/
+tests/fixtures/generated/

@@ -1,0 +1,24 @@
+[package]
+name = "agent-sdk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Agent SDK: extension APIs for tools, providers, hooks, commands, skills, plugins"
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-model = { path = "../agent-model" }
+agent-tools = { path = "../agent-tools" }
+agent-skills = { path = "../agent-skills" }
+agent-events = { path = "../agent-events" }
+agent-plugins = { path = "../agent-plugins" }
+agent-config = { path = "../agent-config" }
+tokio.workspace = true
+futures.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+uuid.workspace = true

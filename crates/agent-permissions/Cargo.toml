@@ -1,0 +1,18 @@
+[package]
+name = "agent-permissions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Permission layer: ask/allow/deny, path limits, secret redaction, audit log"
+
+[dependencies]
+agent-storage = { path = "../agent-storage" }
+agent-config = { path = "../agent-config" }
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+regex.workspace = true
+chrono.workspace = true

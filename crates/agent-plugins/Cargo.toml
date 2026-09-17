@@ -1,0 +1,23 @@
+[package]
+name = "agent-plugins"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Plugin architecture: discovery, lifecycle, hooks, SDK, libloading"
+
+[dependencies]
+agent-events = { path = "../agent-events" }
+agent-model = { path = "../agent-model" }
+agent-tools = { path = "../agent-tools" }
+tokio.workspace = true
+futures.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+libloading.workspace = true
+semver.workspace = true
+dirs.workspace = true

@@ -1,0 +1,19 @@
+[package]
+name = "agent-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Model provider abstraction (OpenAI, Anthropic, Google, OpenAI-compatible, custom, mock)"
+
+[dependencies]
+agent-config = { path = "../agent-config" }
+agent-events = { path = "../agent-events" }
+tokio.workspace = true
+futures.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+reqwest.workspace = true
