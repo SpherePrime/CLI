@@ -2,7 +2,7 @@ import { createSignal } from "solid-js"
 
 export type Route =
   | { type: "home" }
-  | { type: "session"; sessionId?: string }
+  | { type: "session"; sessionId?: string; draft?: string }
 
 const [route, setRoute] = createSignal<Route>({ type: "home" })
 

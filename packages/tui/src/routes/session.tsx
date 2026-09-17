@@ -1,4 +1,5 @@
 import { ScrollBoxRenderable } from "@opentui/core"
+import { useRenderer, useKeyboard } from "@opentui/solid"
 import { createSignal, createEffect, onCleanup, For, Show } from "solid-js"
 import { Prompt, type PromptRef } from "../component/prompt/index"
 import { useRoute } from "../context/route"
@@ -8,9 +9,17 @@ import type { AgentClient, SessionMessage } from "../client"
 
 export type ChatEntry = {
   id: string
-  role: "user" | "assistant" | "error"
+  role: "user" | "assistant" | "error" | "system"
   text: string
 }
+
+const helpText = [
+  "/new — start a new session",
+  "/clear — clear the conversation",
+  "/models — show the current model",
+  "/help — show this help",
+  "/exit — quit the app",
+].join("\n")
 
 let entryId = 0
 function nextEntryId() {
@@ -18,13 +27,21 @@ function nextEntryId() {
 }
 
 export function Session(props: { client: AgentClient }) {
-  const { route } = useRoute()
-  const current = route()
-  const sessionId = current.type === "session" ? current.sessionId : undefined
+  const { route, navigate } = useRoute()
+  const renderer = useRenderer()
   const [entries, setEntries] = createSignal<ChatEntry[]>([])
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
   let scroll: ScrollBoxRenderable
   let promptRef: PromptRef | undefined
+
+  const sessionId = () => {
+    const current = route()
+    return current.type === "session" ? current.sessionId : undefined
+  }
+  const draft = () => {
+    const current = route()
+    return current.type === "session" ? current.draft : undefined
+  }
 
   function scrollToBottom() {
     if (!scroll) return
@@ -36,22 +53,63 @@ export function Session(props: { client: AgentClient }) {
     scrollToBottom()
   })
 
+  useKeyboard((key) => {
+    if (key.name === "escape") {
+      navigate({ type: "home" })
+    }
+  })
+
   onCleanup(() => {
     promptRef = undefined
   })
 
+  function appendSystem(text: string) {
+    setEntries((prev) => [...prev, { id: nextEntryId(), role: "system", text }])
+  }
+
+  async function runSlashCommand(text: string): Promise<boolean> {
+    const command = text.trim().split(/\s+/)[0]
+    switch (command) {
+      case "/exit":
+      case "/quit":
+        renderer.destroy()
+        return true
+      case "/clear":
+        setEntries([])
+        return true
+      case "/new":
+        navigate({ type: "session" })
+        setEntries([])
+        return true
+      case "/help":
+        appendSystem(helpText)
+        return true
+      case "/models":
+        try {
+          const info = await props.client.info()
+          appendSystem(`model: ${info.model.model} · provider: ${info.model.provider}`)
+        } catch (error) {
+          appendSystem(`failed to load model: ${String(error)}`)
+        }
+        return true
+      default:
+        return false
+    }
+  }
+
   async function handleSubmit(prompt: { input: string }) {
     const text = prompt.input.trim()
     if (!text) return
+    if (text.startsWith("/") && (await runSlashCommand(text))) return
 
     setEntries((prev) => [...prev, { id: nextEntryId(), role: "user", text }])
     setStatus("running")
 
-    let assistantId = nextEntryId()
+    const assistantId = nextEntryId()
     setEntries((prev) => [...prev, { id: assistantId, role: "assistant", text: "" }])
 
     try {
-      await props.client.streamMessage(text, sessionId, (event: SessionMessage) => {
+      await props.client.streamMessage(text, sessionId(), (event: SessionMessage) => {
         if (event.type === "message.part.updated" && event.part?.text) {
           setEntries((prev) =>
             prev.map((entry) =>
@@ -86,19 +144,25 @@ export function Session(props: { client: AgentClient }) {
             flexGrow={1}
             minHeight={0}
           >
-            <Show when={entries().length === 0} fallback={<For each={entries()}>{(entry) => <MessageRow entry={entry} />}</For>}>
-              <box height={1} />
+            <Show
+              when={entries().length === 0}
+              fallback={<For each={entries()}>{(entry) => <MessageRow entry={entry} />}</For>}
+            >
+              <box paddingLeft={2} paddingTop={1} flexDirection="column" gap={1}>
+                <text fg={theme.text}>Ask anything, or type /help for commands.</text>
+                <text fg={theme.textMuted}>esc back · ctrl+c exit</text>
+              </box>
             </Show>
           </scrollbox>
         </box>
       </box>
       <Prompt
         client={props.client}
+        initialInput={draft()}
         ref={(ref) => {
           promptRef = ref
         }}
         onSubmit={handleSubmit}
-        disabled={status() === "running" ? false : false}
         placeholder={status() === "idle" ? "Ask anything…" : "Agent is thinking…"}
       />
     </box>
@@ -112,7 +176,7 @@ function MessageRow(props: { entry: ChatEntry }) {
       border={["left"]}
       customBorderChars={{ ...EmptyBorder, vertical: props.entry.role === "user" ? "│" : " " }}
     >
-      <box paddingLeft={2} paddingTop={1} paddingRight={1}>
+      <box paddingLeft={2} paddingTop={1} paddingRight={1} flexDirection="column">
         <Show when={props.entry.role === "user"}>
           <text fg={theme.primary}>You:</text>
         </Show>
@@ -121,6 +185,9 @@ function MessageRow(props: { entry: ChatEntry }) {
         </Show>
         <Show when={props.entry.role === "error"}>
           <text fg={theme.error}>error:</text>
+        </Show>
+        <Show when={props.entry.role === "system"}>
+          <text fg={theme.info}>system:</text>
         </Show>
         <box paddingTop={1}>
           <text fg={props.entry.role === "error" ? theme.error : theme.text}>{props.entry.text}</text>

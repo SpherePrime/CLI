@@ -22,6 +22,7 @@ export type PromptRef = {
 export function Prompt(props: {
   client: AgentClient
   sessionID?: string
+  initialInput?: string
   onSubmit?: (prompt: { input: string }) => void
   ref?: (ref: PromptRef | undefined) => void
   placeholder?: string
@@ -64,6 +65,15 @@ export function Prompt(props: {
       return
     }
     if (!input.focused) input.focus()
+  })
+
+  createEffect(() => {
+    const target = inputTarget()
+    if (!target || target.isDestroyed) return
+    if (!props.initialInput) return
+    if (store.prompt.input.length > 0) return
+    target.setText(props.initialInput)
+    setStore("prompt", "input", props.initialInput)
   })
 
   const ref: PromptRef = {
