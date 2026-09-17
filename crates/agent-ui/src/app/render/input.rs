@@ -18,7 +18,7 @@ pub fn render_input_area(f: &mut Frame, area: Rect, app: &AgentApp, theme: &Them
     }
 
     let input_text = app.input();
-    let lines = input_to_lines(input_text, input_area.width);
+    let lines = input_to_lines(input_text, input_area.width, theme);
     let cursor = cursor_position(app, input_area.width);
 
     let para = Paragraph::new(lines)
@@ -77,13 +77,13 @@ fn split_with_menu(
     (input_area, menu_area)
 }
 
-fn input_to_lines(input: &str, width: u16) -> Vec<Line<'static>> {
+fn input_to_lines(input: &str, width: u16, theme: &Theme) -> Vec<Line<'static>> {
     let inner = width.saturating_sub(PROMPT.chars().count() as u16 + 1).max(1) as usize;
     let mut lines = Vec::new();
     for raw in input.split('\n') {
         if raw.is_empty() {
             lines.push(Line::from(vec![
-                Span::styled(PROMPT.to_string(), Style::default().fg(Color::Blue)),
+                Span::styled(PROMPT.to_string(), Style::default().fg(theme.accent)),
                 Span::styled(" ", Style::default()),
             ]));
             continue;
@@ -94,20 +94,20 @@ fn input_to_lines(input: &str, width: u16) -> Vec<Line<'static>> {
             if idx == 0 {
                 spans.push(Span::styled(
                     PROMPT.to_string(),
-                    Style::default().fg(Color::Blue),
+                    Style::default().fg(theme.accent),
                 ));
                 spans.push(Span::styled(" ", Style::default()));
             }
             spans.push(Span::styled(
                 piece.to_string(),
-                Style::default().fg(Color::White),
+                Style::default().fg(theme.foreground),
             ));
             lines.push(Line::from(spans));
         }
     }
     if lines.is_empty() {
         lines.push(Line::from(vec![
-            Span::styled(PROMPT.to_string(), Style::default().fg(Color::Blue)),
+            Span::styled(PROMPT.to_string(), Style::default().fg(theme.accent)),
             Span::styled(" ", Style::default()),
         ]));
     }
