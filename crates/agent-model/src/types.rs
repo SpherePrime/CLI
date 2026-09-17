@@ -10,13 +10,14 @@
      pub tool_call_id: Option<String>,
  }
  
- #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
- pub enum Role {
-     System,
-     User,
-     Assistant,
-     Tool,
- }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    System,
+    User,
+    Assistant,
+    Tool,
+}
  
  #[derive(Debug, Clone, Serialize, Deserialize)]
  #[serde(untagged)]

@@ -1,4 +1,5 @@
- pub mod anthropic;
- pub mod compat;
- pub mod mock;
- pub mod openai;
+pub mod anthropic;
+pub mod compat;
+pub mod http;
+pub mod mock;
+pub mod openai;

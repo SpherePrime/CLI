@@ -1,30 +1,37 @@
- use std::sync::Arc;
- 
- use agent_config::ModelConfig;
- use anyhow::{anyhow, Result};
- use async_trait::async_trait;
- use futures::stream::BoxStream;
- 
- use crate::error::ModelError;
- use crate::types::{ModelRequest, ModelResponse, StreamChunk};
- 
- pub struct ProviderConfig {
-     pub kind: agent_config::ProviderKind,
-     pub model: String,
-     pub base_url: Option<String>,
-     pub api_key: Option<String>,
- }
- 
- #[async_trait]
- pub trait ModelProvider: Send + Sync + 'static {
-     async fn name(&self) -> &'static str;
-     async fn list_models(&self) -> Result<Vec<String>>;
-     async fn chat(&self, request: &ModelRequest) -> Result<ModelResponse>;
-     async fn chat_stream(
-         &self,
-         request: &ModelRequest,
-     ) -> Result<BoxStream<'static, std::result::Result<StreamChunk, ModelError>>>;
- }
+use agent_config::ModelConfig;
+use anyhow::{anyhow, Result};
+use async_trait::async_trait;
+use futures::stream::BoxStream;
+
+use crate::error::ModelError;
+use crate::types::{ModelRequest, ModelResponse, StreamChunk};
+
+#[derive(Clone, Default)]
+pub struct ProviderConfig {
+    pub kind: agent_config::ProviderKind,
+    pub model: String,
+    pub base_url: Option<String>,
+    pub api_key: Option<String>,
+}
+
+impl ProviderConfig {
+    pub fn resolved_api_key(&self) -> Option<String> {
+        self.api_key
+            .clone()
+            .filter(|k| !k.is_empty())
+    }
+}
+
+#[async_trait]
+pub trait ModelProvider: Send + Sync + 'static {
+    async fn name(&self) -> &'static str;
+    async fn list_models(&self) -> Result<Vec<String>>;
+    async fn chat(&self, request: &ModelRequest) -> Result<ModelResponse>;
+    async fn chat_stream(
+        &self,
+        request: &ModelRequest,
+    ) -> Result<BoxStream<'static, std::result::Result<StreamChunk, ModelError>>>;
+}
  
  pub fn build_from_model_config(mc: &ModelConfig) -> Result<Box<dyn ModelProvider>> {
      let api_key = mc

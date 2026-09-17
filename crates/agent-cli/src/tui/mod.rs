@@ -25,27 +25,29 @@
          crossterm::terminal::Clear(crossterm::terminal::ClearType::All)
      );
  
-     loop {
-         let _ = terminal.draw(|f| {
-             app.render(f, ratatui::layout::Layout::default());
-         });
- 
-         match crossterm::event::read() {
-             Ok(crossterm::event::Event::Key(key)) => {
-                 if key.code == crossterm::event::KeyCode::Char('c')
-                     && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL)
-                 {
-                     println!("\n\x1b[31m  ^C — press Ctrl+D to quit\x1b[0m");
-                     continue;
-                 }
- 
-                 if let Some(ev) = app.handle_event(key.code) {
-                     handle_app_event(ev, &mut app, &mut cfg, &mut model, &runtime, storage.as_ref());
-                 }
-             }
-             _ => {}
-         }
-     }
+    use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
+
+    loop {
+        let _ = terminal.draw(|f| {
+            app.render(f, ratatui::layout::Layout::default());
+        });
+
+        match crossterm::event::read() {
+            Ok(Event::Key(key)) if key.kind == KeyEventKind::Press => {
+                if key.code == KeyCode::Char('c')
+                    && key.modifiers.contains(KeyModifiers::CONTROL)
+                {
+                    println!("\n\x1b[31m  ^C — press Ctrl+D to quit\x1b[0m");
+                    continue;
+                }
+
+                if let Some(ev) = app.handle_event(key.code) {
+                    handle_app_event(ev, &mut app, &mut cfg, &mut model, &runtime, storage.as_ref());
+                }
+            }
+            _ => {}
+        }
+    }
  }
  
  fn handle_app_event(
