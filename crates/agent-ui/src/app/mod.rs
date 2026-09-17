@@ -267,17 +267,21 @@
      }
  }
  
- fn handle_chat_event(app: &mut AgentApp, event: KeyCode) -> Option<AppEvent> {
-     match event {
-         KeyCode::Enter => {
-             if !app.input.trim().is_empty() {
-                 let input = app.input.clone();
-                 app.input.clear();
-                 Some(AppEvent::SendMessage(input))
-             } else {
-                 None
-             }
-         }
+fn handle_chat_event(app: &mut AgentApp, event: KeyCode) -> Option<AppEvent> {
+    match event {
+        KeyCode::Enter => {
+            if !app.input.trim().is_empty() {
+                let input = app.input.clone();
+                app.input.clear();
+                if input.starts_with('/') {
+                    Some(AppEvent::SlashCommand(input.trim_start_matches('/').to_string()))
+                } else {
+                    Some(AppEvent::SendMessage(input))
+                }
+            } else {
+                None
+            }
+        }
          KeyCode::Backspace => {
              app.input.pop();
              None

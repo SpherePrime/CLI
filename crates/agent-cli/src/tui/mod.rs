@@ -33,7 +33,7 @@
         });
 
         match crossterm::event::read() {
-            Ok(Event::Key(key)) if key.kind == KeyEventKind::Press => {
+            Ok(Event::Key(key)) if matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat) => {
                 if key.code == KeyCode::Char('c')
                     && key.modifiers.contains(KeyModifiers::CONTROL)
                 {
