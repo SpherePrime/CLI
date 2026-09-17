@@ -23,6 +23,7 @@
                  crate::tui::run_main_loop(Some(storage.clone()))
              }
          }
+         Some(Command::Serve { host, port }) => crate::server::serve(host.as_str(), *port, storage.clone()),
          Some(Command::Init) => crate::init::run_init(),
          Some(Command::Doctor) => crate::doctor::run_doctor(storage),
          Some(Command::Mcp { action }) => mcp::run(action),

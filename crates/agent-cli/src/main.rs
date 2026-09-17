@@ -2,6 +2,7 @@ mod completion;
 mod doctor;
 mod init;
 mod runtime;
+mod server;
 
 pub mod cli;
 pub mod cmd;

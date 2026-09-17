@@ -14,11 +14,18 @@
  
  #[derive(Debug, clap::Subcommand)]
  pub enum Command {
-     /// Run the agent interactively
-     Run {
-         #[arg(long, default_value = "interactive")]
-         mode: String,
-     },
+/// Run the agent interactively
+    Run {
+        #[arg(long, default_value = "interactive")]
+        mode: String,
+    },
+    /// Serve the HTTP API for the TypeScript TUI
+    Serve {
+        #[arg(long, default_value = "0.0.0.0")]
+        host: String,
+        #[arg(long, default_value_t = 0)]
+        port: u16,
+    },
      /// Initialize a project for the agent
      Init,
      /// Diagnose configuration
