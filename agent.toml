@@ -1,0 +1,15 @@
+# Agent project configuration
+mode = "interactive"
+[model]
+provider = "mock"
+model = "mock-1"
+
+[permissions]
+mode = "ask"
+
+[limits]
+max_tool_calls = 50
+max_parallel_tools = 4
+
+[mcp]
+[servers]
