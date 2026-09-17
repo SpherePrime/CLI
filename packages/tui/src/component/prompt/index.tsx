@@ -3,6 +3,7 @@ import { createStore } from "solid-js/store"
 import type { TextareaRenderable, BoxRenderable } from "@opentui/core"
 import { EmptyBorder, SplitBorder } from "../../ui/border"
 import { theme } from "../../theme"
+import { useDialog } from "../../context/dialog"
 import { Autocomplete, type AutocompleteRef } from "./autocomplete"
 import type { AgentClient } from "../../client"
 
@@ -30,6 +31,7 @@ export function Prompt(props: {
 }) {
   let input: TextareaRenderable
   let anchor: BoxRenderable
+  const { dialog } = useDialog()
   const [inputTarget, setInputTarget] = createSignal<TextareaRenderable | undefined>()
   let auto: AutocompleteRef | undefined
   const [store, setStore] = createStore<{ prompt: PromptInfo }>({ prompt: { input: "" } })
@@ -60,7 +62,8 @@ export function Prompt(props: {
 
   createEffect(() => {
     if (!input || input.isDestroyed) return
-    if (props.disabled) {
+    const blocked = props.disabled || dialog().type !== "none"
+    if (blocked) {
       input.blur()
       return
     }
@@ -138,6 +141,11 @@ export function Prompt(props: {
               focusedTextColor={theme.text}
               minHeight={1}
               maxHeight={Math.max(6, Math.floor(40 / 3))}
+              keyBindings={[
+                { name: "return", action: "submit" },
+                { name: "return", shift: true, action: "newline" },
+                { name: "linefeed", action: "newline" },
+              ]}
               onContentChange={() => {
                 const value = input.plainText
                 setStore("prompt", "input", value)
@@ -164,7 +172,7 @@ export function Prompt(props: {
                 </text>
               </box>
               <box flexDirection="row" gap={1}>
-                <text fg={theme.textMuted}>Ctrl+J submit</text>
+                <text fg={theme.textMuted}>enter send · shift+enter newline · ctrl+p commands</text>
               </box>
             </box>
           </box>

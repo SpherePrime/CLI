@@ -1,12 +1,16 @@
 import { createCliRenderer } from "@opentui/core"
 import type { CliRenderer } from "@opentui/core"
-import { render, useTerminalDimensions, useRenderer } from "@opentui/solid"
-import { createSignal, Switch, Match, onMount, ErrorBoundary } from "solid-js"
+import { render, useTerminalDimensions, useRenderer, useKeyboard } from "@opentui/solid"
+import { createSignal, createMemo, Switch, Match, onMount, ErrorBoundary } from "solid-js"
 import { AgentClient } from "./client"
 import { useRoute } from "./context/route"
+import { useDialog } from "./context/dialog"
+import { setAppRenderer } from "./context/app"
+import { buildCommands } from "./commands"
 import { theme } from "./theme"
 import { Home } from "./routes/home"
 import { Session } from "./routes/session"
+import { DialogHost } from "./component/dialog"
 import { log, logError } from "./log"
 import { win32DisableProcessedInput, win32FlushInputBuffer, win32InstallCtrlCGuard } from "./terminal-win32"
 
@@ -24,6 +28,8 @@ export async function run(input: TuiInput): Promise<void> {
     autoFocus: false,
   })
   log("run: renderer created")
+
+  setAppRenderer(renderer)
 
   win32DisableProcessedInput()
   const removeGuard = win32InstallCtrlCGuard()
@@ -92,12 +98,37 @@ function startResizePoll(renderer: CliRenderer) {
 
 function App(props: { url: string }) {
   const { route } = useRoute()
+  const { openPalette, closeDialog } = useDialog()
   const dimensions = useTerminalDimensions()
   const renderer = useRenderer()
   const [client] = createSignal(new AgentClient(props.url))
+  const commands = createMemo(() => buildCommands(client()))
+  let leader = false
 
   onMount(() => {
     renderer.setTerminalTitle("agent")
+  })
+
+  useKeyboard((key) => {
+    if (key.ctrl && key.name === "p") {
+      key.preventDefault()
+      openPalette()
+      return
+    }
+    if (key.ctrl && key.name === "x") {
+      leader = true
+      key.preventDefault()
+      return
+    }
+    if (leader) {
+      leader = false
+      const command = commands().find((item) => item.leader === key.name)
+      if (command) {
+        key.preventDefault()
+        closeDialog()
+        void command.run()
+      }
+    }
   })
 
   return (
@@ -117,6 +148,7 @@ function App(props: { url: string }) {
           </Match>
         </Switch>
       </box>
+      <DialogHost client={client()} />
     </box>
   )
 }

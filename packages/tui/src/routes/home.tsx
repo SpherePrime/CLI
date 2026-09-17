@@ -2,6 +2,7 @@ import { createResource, createMemo, createSignal, For } from "solid-js"
 import { useKeyboard } from "@opentui/solid"
 import { theme } from "../theme"
 import { useRoute } from "../context/route"
+import { useDialog } from "../context/dialog"
 import type { AgentClient } from "../client"
 
 type HomeItem = {
@@ -12,6 +13,7 @@ type HomeItem = {
 
 export function Home(props: { client: AgentClient }) {
   const { navigate } = useRoute()
+  const { dialog } = useDialog()
   const [info] = createResource(() => props.client.info())
   const [recent] = createResource(() => props.client.sessions())
   const [selected, setSelected] = createSignal(0)
@@ -43,23 +45,29 @@ export function Home(props: { client: AgentClient }) {
   }
 
   useKeyboard((key) => {
+    if (dialog().type !== "none") return
     if (key.name === "up" || key.name === "left") {
+      key.preventDefault()
       move(-1)
       return
     }
     if (key.name === "down" || key.name === "right") {
+      key.preventDefault()
       move(1)
       return
     }
     if (key.name === "return" || key.name === "space") {
+      key.preventDefault()
       items()[selected()]?.run()
       return
     }
     if (key.name === "c") {
+      key.preventDefault()
       navigate({ type: "session" })
       return
     }
     if (key.name === "o") {
+      key.preventDefault()
       navigate({ type: "session", draft: "@" })
     }
   })

@@ -9,6 +9,7 @@ export type ModelConfig = {
   provider: string
   model: string
   base_url?: string
+  api_key_env?: string
   temperature?: number
   max_tokens?: number
 }
@@ -47,6 +48,10 @@ export class AgentClient {
 
   async getSession(id: string): Promise<SessionInfo> {
     return this.get<SessionInfo>(`/session/${id}`)
+  }
+
+  async updateModel(model: ModelConfig): Promise<void> {
+    await this.post<unknown>("/config", { model })
   }
 
   async findFiles(query: string): Promise<{ path: string; type: string }[]> {

@@ -3,38 +3,29 @@ import { useRenderer, useKeyboard } from "@opentui/solid"
 import { createSignal, createEffect, onCleanup, For, Show } from "solid-js"
 import { Prompt, type PromptRef } from "../component/prompt/index"
 import { useRoute } from "../context/route"
+import { useDialog } from "../context/dialog"
+import { useSession, nextEntryId, resetSession, type ChatEntry } from "../context/session"
 import { theme } from "../theme"
 import { EmptyBorder } from "../ui/border"
 import type { AgentClient, SessionMessage } from "../client"
 
-export type ChatEntry = {
-  id: string
-  role: "user" | "assistant" | "error" | "system"
-  text: string
-}
-
 const helpText = [
-  "/new — start a new session",
-  "/clear — clear the conversation",
-  "/models — show the current model",
-  "/help — show this help",
-  "/exit — quit the app",
+  "enter — send message",
+  "ctrl+p — command palette",
+  "esc — back to home",
+  "ctrl+c — exit",
 ].join("\n")
-
-let entryId = 0
-function nextEntryId() {
-  return `entry-${++entryId}`
-}
 
 export function Session(props: { client: AgentClient }) {
   const { route, navigate } = useRoute()
+  const { dialog } = useDialog()
   const renderer = useRenderer()
-  const [entries, setEntries] = createSignal<ChatEntry[]>([])
+  const session = useSession()
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
   let scroll: ScrollBoxRenderable
   let promptRef: PromptRef | undefined
 
-  const sessionId = () => {
+  const routeSessionId = () => {
     const current = route()
     return current.type === "session" ? current.sessionId : undefined
   }
@@ -43,18 +34,25 @@ export function Session(props: { client: AgentClient }) {
     return current.type === "session" ? current.draft : undefined
   }
 
+  createEffect(() => {
+    const id = routeSessionId()
+    session.setSessionId(id)
+  })
+
   function scrollToBottom() {
     if (!scroll) return
     scroll.scrollTop = scroll.scrollHeight
   }
 
   createEffect(() => {
-    entries()
+    session.entries()
     scrollToBottom()
   })
 
   useKeyboard((key) => {
+    if (dialog().type !== "none") return
     if (key.name === "escape") {
+      key.preventDefault()
       navigate({ type: "home" })
     }
   })
@@ -64,7 +62,7 @@ export function Session(props: { client: AgentClient }) {
   })
 
   function appendSystem(text: string) {
-    setEntries((prev) => [...prev, { id: nextEntryId(), role: "system", text }])
+    session.addEntry({ id: nextEntryId(), role: "system", text })
   }
 
   async function runSlashCommand(text: string): Promise<boolean> {
@@ -75,11 +73,11 @@ export function Session(props: { client: AgentClient }) {
         renderer.destroy()
         return true
       case "/clear":
-        setEntries([])
+        resetSession()
         return true
       case "/new":
         navigate({ type: "session" })
-        setEntries([])
+        resetSession()
         return true
       case "/help":
         appendSystem(helpText)
@@ -102,32 +100,24 @@ export function Session(props: { client: AgentClient }) {
     if (!text) return
     if (text.startsWith("/") && (await runSlashCommand(text))) return
 
-    setEntries((prev) => [...prev, { id: nextEntryId(), role: "user", text }])
+    session.addEntry({ id: nextEntryId(), role: "user", text })
     setStatus("running")
 
     const assistantId = nextEntryId()
-    setEntries((prev) => [...prev, { id: assistantId, role: "assistant", text: "" }])
+    session.addEntry({ id: assistantId, role: "assistant", text: "" })
 
     try {
-      await props.client.streamMessage(text, sessionId(), (event: SessionMessage) => {
-        if (event.type === "message.part.updated" && event.part?.text) {
-          setEntries((prev) =>
-            prev.map((entry) =>
-              entry.id === assistantId ? { ...entry, text: entry.text + event.part!.text! } : entry,
-            ),
-          )
+      await props.client.streamMessage(text, session.sessionId(), (event: SessionMessage) => {
+        if (event.type === "session.created" && event.session?.id) {
+          session.setSessionId(event.session.id)
+        } else if (event.type === "message.part.updated" && event.part?.text) {
+          session.appendEntry(assistantId, event.part.text)
         } else if (event.type === "session.error" && event.error) {
-          setEntries((prev) =>
-            prev.map((entry) => (entry.id === assistantId ? { ...entry, role: "error", text: event.error! } : entry)),
-          )
+          session.updateEntry(assistantId, { role: "error", text: event.error })
         }
       })
     } catch (error) {
-      setEntries((prev) =>
-        prev.map((entry) =>
-          entry.id === assistantId ? { ...entry, role: "error", text: String(error) } : entry,
-        ),
-      )
+      session.updateEntry(assistantId, { role: "error", text: String(error) })
     }
 
     setStatus("idle")
@@ -145,11 +135,11 @@ export function Session(props: { client: AgentClient }) {
             minHeight={0}
           >
             <Show
-              when={entries().length === 0}
-              fallback={<For each={entries()}>{(entry) => <MessageRow entry={entry} />}</For>}
+              when={session.entries().length === 0}
+              fallback={<For each={session.entries()}>{(entry) => <MessageRow entry={entry} />}</For>}
             >
               <box paddingLeft={2} paddingTop={1} flexDirection="column" gap={1}>
-                <text fg={theme.text}>Ask anything, or type /help for commands.</text>
+                <text fg={theme.text}>Ask anything, or press ctrl+p for commands.</text>
                 <text fg={theme.textMuted}>esc back · ctrl+c exit</text>
               </box>
             </Show>
