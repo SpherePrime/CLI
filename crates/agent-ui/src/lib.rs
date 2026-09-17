@@ -1,3 +1,5 @@
+pub mod interactive_tui;
+pub mod ui;
 pub mod app;
 pub mod diff;
 pub mod input;
@@ -7,6 +9,7 @@ pub mod status_bar;
 pub mod theme;
 pub mod widgets;
 
+pub use interactive_tui::{run_config_wizard, run_model_wizard, provider_name};
 pub use app::{AgentApp, AppCommand, AppEvent};
 pub use diff::{DiffView, render_diff, render_message};
 pub use input::{Autocomplete, SlashCommand, SlashCommandPalette};
@@ -14,4 +17,5 @@ pub use markdown::render_markdown;
 pub use spinner::Spinner;
 pub use status_bar::StatusBar;
 pub use theme::Theme;
+pub use ui::{BannerScreen, Component, FormField, InputField, SelectList};
 pub use widgets::{render_frame, ToolCallWidget};
