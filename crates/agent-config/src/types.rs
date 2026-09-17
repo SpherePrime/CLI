@@ -174,5 +174,7 @@
      #[serde(default)]
      pub providers: HashMap<String, ProviderConfig>,
      #[serde(default)]
+     pub favorites: Vec<String>,
+     #[serde(default)]
      pub extra: HashMap<String, serde_json::Value>,
  }

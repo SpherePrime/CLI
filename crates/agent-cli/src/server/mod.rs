@@ -1,6 +1,8 @@
 pub mod api;
+pub mod catalog;
 pub mod fs;
 pub mod message;
+pub mod providers;
 pub mod session;
 pub mod state;
 

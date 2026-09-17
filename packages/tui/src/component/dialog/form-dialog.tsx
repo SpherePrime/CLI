@@ -100,10 +100,16 @@ export function FormDialog(props: { state: FormState }) {
           <text fg={theme.textMuted}>esc</text>
         </box>
         <box flexDirection="column" paddingLeft={2} paddingRight={2} paddingTop={1} gap={1}>
+          <Show when={props.state.description}>
+            <text fg={theme.textMuted}>{props.state.description ?? ""}</text>
+          </Show>
           <For each={fields}>
             {(field, index) => (
               <box flexDirection="column">
                 <text fg={focus() === index() ? theme.primary : theme.textMuted}>{field.label}</text>
+                <Show when={field.kind === "text" && field.hint}>
+                  <text fg={theme.textMuted}>{field.kind === "text" ? field.hint ?? "" : ""}</text>
+                </Show>
                 <Show
                   when={field.kind === "text"}
                   fallback={

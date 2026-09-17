@@ -1,10 +1,10 @@
 import { navigateTo } from "../context/route"
 import { resetSession, transcriptText, lastAssistantText } from "../context/session"
-import { openInfo, openSelect, openForm } from "../context/dialog"
+import { openInfo, openSelect, openModelDialog, openProviderDialog } from "../context/dialog"
 import { quitApp } from "../context/app"
 import { copyToClipboard } from "../util/clipboard"
 import { exportTranscript, openEditor } from "../util/files"
-import type { AgentClient, ModelConfig } from "../client"
+import type { AgentClient } from "../client"
 
 export type CommandSection = "Prompt" | "Session" | "Agent" | "Provider" | "System" | "Exit"
 
@@ -23,39 +23,6 @@ export const SECTION_ORDER: CommandSection[] = ["Prompt", "Session", "Agent", "P
 export function buildCommands(client: AgentClient): Command[] {
   const notAvailable = (feature: string) => () => {
     openInfo({ title: feature, body: "This command is not available in this build yet." })
-  }
-
-  const modelForm = (title: string, info: { provider: string; model: string; base_url?: string } | undefined) => {
-    openForm({
-      title,
-      fields: [
-        {
-          kind: "select",
-          key: "provider",
-          label: "Provider",
-          options: [
-            { title: "openai-compatible", value: "openai-compatible" },
-            { title: "openai", value: "openai" },
-            { title: "anthropic", value: "anthropic" },
-          ],
-          initial: info?.provider,
-        },
-        { kind: "text", key: "model", label: "Model", initial: info?.model, placeholder: "deepseek-v4-flash" },
-        { kind: "text", key: "base_url", label: "Base URL", initial: info?.base_url, placeholder: "https://api.example.com/v1" },
-        { kind: "text", key: "api_key", label: "API key", placeholder: "sk-..." },
-      ],
-      onSubmit: async (values) => {
-        const model: ModelConfig = { provider: values.provider ?? "", model: values.model ?? "" }
-        if (values.base_url) model.base_url = values.base_url
-        if (values.api_key) model.api_key_env = values.api_key
-        try {
-          await client.updateModel(model)
-          openInfo({ title: "Model updated", body: `${values.provider} · ${values.model}` })
-        } catch (error) {
-          openInfo({ title: "Failed to update model", body: String(error) })
-        }
-      },
-    })
   }
 
   return [
@@ -211,14 +178,7 @@ export function buildCommands(client: AgentClient): Command[] {
       suggested: true,
       shortcut: "ctrl+x m",
       leader: "m",
-      run: async () => {
-        let current: { provider: string; model: string; base_url?: string } | undefined
-        try {
-          const info = await client.info()
-          current = info.model
-        } catch {}
-        modelForm("Switch model", current)
-      },
+      run: () => openModelDialog(),
     },
     {
       id: "agent.switch",
@@ -244,7 +204,8 @@ export function buildCommands(client: AgentClient): Command[] {
       id: "provider.connect",
       title: "Connect provider",
       section: "Provider",
-      run: () => modelForm("Connect provider", undefined),
+      shortcut: "ctrl+a",
+      run: () => openProviderDialog(),
     },
     {
       id: "system.status",

@@ -1,6 +1,8 @@
 import { createMemo } from "solid-js"
 import { useDialog } from "../../context/dialog"
 import { CommandPalette } from "./command-palette"
+import { ModelDialog } from "./model-dialog"
+import { ProviderDialog } from "./provider-dialog"
 import { SelectDialog } from "./select-dialog"
 import { FormDialog } from "./form-dialog"
 import { InfoDialog } from "./info-dialog"
@@ -14,6 +16,10 @@ export function DialogHost(props: { client: AgentClient }) {
     switch (state.type) {
       case "palette":
         return <CommandPalette client={props.client} />
+      case "model":
+        return <ModelDialog client={props.client} />
+      case "provider":
+        return <ProviderDialog client={props.client} />
       case "select":
         return <SelectDialog state={state} />
       case "form":

@@ -20,6 +20,7 @@ pub struct AppState {
     pub config: RwLock<Option<AgentConfig>>,
     pub model: RwLock<Option<ModelConfig>>,
     pub sessions: RwLock<SessionRegistry>,
+    pub catalog: RwLock<Option<crate::server::catalog::Catalog>>,
     pub storage: Option<agent_storage::Storage>,
 }
 
@@ -34,6 +35,7 @@ impl AppState {
             config: RwLock::new(None),
             model: RwLock::new(None),
             sessions: RwLock::new(SessionRegistry::default()),
+            catalog: RwLock::new(None),
             storage: Some(storage),
         })
     }

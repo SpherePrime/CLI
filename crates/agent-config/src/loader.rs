@@ -94,6 +94,15 @@
                  }
                  m
              },
+             favorites: {
+                 let mut list = base.favorites;
+                 for key in overlay.favorites {
+                     if !list.contains(&key) {
+                         list.push(key);
+                     }
+                 }
+                 list
+             },
              extra: {
                  let mut m = base.extra;
                  for (k, v) in overlay.extra {

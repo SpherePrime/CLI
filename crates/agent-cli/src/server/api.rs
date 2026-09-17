@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 use super::fs;
 use super::message;
+use super::providers;
 use super::session;
 use crate::server::state::AppState;
 
@@ -62,6 +63,26 @@ pub async fn route(
 
     if path.starts_with("/session/") {
         return handle_session_path(method, &path, state).await;
+    }
+
+    if method == Method::GET && path == "/providers" {
+        return providers::list(state).await;
+    }
+
+    if method == Method::POST && path == "/provider" {
+        return providers::connect(request, state).await;
+    }
+
+    if method == Method::GET && path == "/models" {
+        return providers::models(state).await;
+    }
+
+    if method == Method::POST && path == "/model" {
+        return providers::select_model(request, state).await;
+    }
+
+    if method == Method::POST && path == "/favorite" {
+        return providers::favorite(request, state).await;
     }
 
     if method == Method::POST && path == "/message" {

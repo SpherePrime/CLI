@@ -7,14 +7,22 @@ export type SelectDialogOption = {
 }
 
 export type FormField =
-  | { kind: "text"; key: string; label: string; initial?: string; placeholder?: string }
+  | { kind: "text"; key: string; label: string; initial?: string; placeholder?: string; hint?: string }
   | { kind: "select"; key: string; label: string; options: { title: string; value: string }[]; initial?: string }
 
 export type DialogState =
   | { type: "none" }
   | { type: "palette" }
+  | { type: "model" }
+  | { type: "provider" }
   | { type: "select"; title: string; options: SelectDialogOption[]; onSelect: (value: string) => void }
-  | { type: "form"; title: string; fields: FormField[]; onSubmit: (values: Record<string, string>) => void }
+  | {
+      type: "form"
+      title: string
+      description?: string
+      fields: FormField[]
+      onSubmit: (values: Record<string, string>) => void
+    }
   | { type: "info"; title: string; body: string }
 
 const [dialog, setDialog] = createSignal<DialogState>({ type: "none" })
@@ -33,10 +41,19 @@ export function openSelect(input: {
 
 export function openForm(input: {
   title: string
+  description?: string
   fields: FormField[]
   onSubmit: (values: Record<string, string>) => void
 }) {
   setDialog({ type: "form", ...input })
+}
+
+export function openModelDialog() {
+  setDialog({ type: "model" })
+}
+
+export function openProviderDialog() {
+  setDialog({ type: "provider" })
 }
 
 export function openInfo(input: { title: string; body: string }) {
@@ -54,6 +71,8 @@ export function useDialog() {
     openSelect,
     openForm,
     openInfo,
+    openModelDialog,
+    openProviderDialog,
     closeDialog,
   }
 }

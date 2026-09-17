@@ -20,6 +20,36 @@ export type ServerInfo = {
   model: ModelConfig
 }
 
+export type ProviderInfo = {
+  id: string
+  name: string
+  connected: boolean
+  custom: boolean
+  api?: string | null
+}
+
+export type ModelInfo = {
+  id: string
+  name: string
+  free: boolean
+  provider: string
+}
+
+export type ModelGroup = {
+  id: string
+  name: string
+  kind?: string
+  base_url?: string | null
+  connected: boolean
+  models: ModelInfo[]
+}
+
+export type ModelsResponse = {
+  data: ModelGroup[]
+  current: { provider: string; model: string }
+  favorites: string[]
+}
+
 export type SessionMessage = {
   type: string
   session?: { id: string }
@@ -52,6 +82,29 @@ export class AgentClient {
 
   async updateModel(model: ModelConfig): Promise<void> {
     await this.post<unknown>("/config", { model })
+  }
+
+  async listProviders(): Promise<ProviderInfo[]> {
+    const data = await this.get<{ data: ProviderInfo[] }>("/providers")
+    return data.data
+  }
+
+  async listModels(): Promise<ModelsResponse> {
+    return this.get<ModelsResponse>("/models")
+  }
+
+  async connectProvider(input: { id: string; api_key?: string; base_url?: string }): Promise<void> {
+    await this.post<unknown>("/provider", input)
+  }
+
+  async selectModel(provider: string, model: string): Promise<ModelConfig> {
+    const data = await this.post<{ model: ModelConfig }>("/model", { provider, model })
+    return data.model
+  }
+
+  async toggleFavorite(provider: string, model: string): Promise<string[]> {
+    const data = await this.post<{ favorites: string[] }>("/favorite", { provider, model })
+    return data.favorites
   }
 
   async findFiles(query: string): Promise<{ path: string; type: string }[]> {
