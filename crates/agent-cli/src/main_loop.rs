@@ -1,11 +1,30 @@
-use std::io::{self, BufRead, Write};
 use std::process::ExitCode;
 use std::sync::Arc;
 
-use agent_config::{AgentConfig, ConfigLoader, ProviderKind};
-use agent_model::{build_from_model_config, ChatMessage, MessageContent, ModelProvider, ModelRequest, Role};
-use agent_ui::spinner::Spinner;
-use agent_ui::status_bar::StatusBar;
+use agent_config::{AgentConfig, ConfigLoader, ModelConfig};
+use agent_model::{
+    build_from_model_config, ChatMessage, MessageContent, ModelProvider, ModelRequest, Role,
+};
+use agent_ui::{provider_name, run_config_wizard, run_model_wizard, InputScreen};
+use crossterm::event::{self, KeyCode, KeyModifiers};
+use crossterm::terminal::ClearType;
+
+pub struct AgentInput {
+    pub input_screen: InputScreen,
+}
+
+impl AgentInput {
+    pub fn new() -> Self {
+        Self {
+            input_screen: InputScreen::new(),
+        }
+    }
+
+    pub fn try_complete(&mut self) {
+        let prefix = self.input_screen.input.clone();
+        let _ = self.input_screen.complete(&prefix);
+    }
+}
 
 pub fn run_main_loop(storage: Option<agent_storage::Storage>) -> ExitCode {
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -14,331 +33,323 @@ pub fn run_main_loop(storage: Option<agent_storage::Storage>) -> ExitCode {
         .expect("tokio runtime creation failed");
 
     let mut cfg = ConfigLoader::new().load().unwrap_or_default();
-    let model = cfg.model.clone().unwrap_or_else(default_model);
-    let provider: Arc<dyn ModelProvider> = match build_from_model_config(&model) {
-        Ok(p) => Arc::from(p),
-        Err(e) => {
-            eprintln!("[model] {e}");
-            return ExitCode::FAILURE;
-        }
-    };
+    let mut model = cfg.model.clone().unwrap_or_else(default_model);
+    let _provider = build_provider(&model).unwrap_or_else(|_| {
+        build_provider(&default_model()).expect("mock provider should always build")
+    });
 
     let cwd = std::env::current_dir().unwrap_or_default();
-    let status_bar = StatusBar::new()
-        .with_model(&model.model)
-        .with_project(&cwd)
-        .with_mode("interactive");
+    let _ = std::fs::create_dir_all(cwd.join(".agent/session"));
 
-    print_banner(&model);
+    let mut input = AgentInput::new();
 
-    let mut input = String::new();
-    let mut spinner = Spinner::new();
-    let mut active_input = String::new();
+    let _ = crossterm::execute!(
+        std::io::stdout(),
+        crossterm::terminal::Clear(ClearType::All)
+    );
+    draw_banner(&model, &cwd, env!("CARGO_PKG_VERSION"));
 
     loop {
-        print_prompt();
-        io::stdout().flush().ok();
-        input.clear();
-        match io::stdin().lock().read_line(&mut input) {
-            Ok(0) => break,
-            Err(e) => {
-                eprintln!("[read] {e}");
-                break;
+        print!("{} ", colored_prompt());
+
+        let mut line = String::new();
+        loop {
+            match event::read() {
+                Ok(event::Event::Key(key)) => {
+                    if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
+                        println!("\n\x1b[31m  ^C — press /exit to quit\x1b[0m");
+                        continue;
+                    }
+
+                    if let KeyCode::Char('_') = key.code {
+                        if key.modifiers.contains(KeyModifiers::CONTROL) {
+                            input.try_complete();
+                            continue;
+                        }
+                    }
+
+                    if let Some(result) = input.input_screen.handle_input(key.code, key.modifiers) {
+                        line = result.to_string();
+                        break;
+                    }
+                }
+                Ok(event::Event::Key(key)) if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    println!("\n\x1b[31m  ^C — press /exit to quit\x1b[0m");
+                    continue;
+                }
+                _ => {}
             }
-            Ok(_) => {}
         }
-        let user_input = input.trim().to_string();
-        if user_input.is_empty() {
+
+        let trimmed = line.trim().to_string();
+        if trimmed.is_empty() {
             continue;
         }
 
-        print_user(&user_input);
-        match user_input.as_str() {
-            "/exit" | "/quit" => {
-                print_goodbye();
-                break;
-            }
-            "/clear" => {
-                print_status_line("screen cleared", "dim");
-                continue;
-            }
-            "/help" => {
-                print_help();
-                continue;
-            }
-            "/tools" => {
-                print_tools();
-                continue;
-            }
-            "/status" => {
-                print_status_line(&status_bar.to_string(), "dim");
-                continue;
-            }
-            "/config" | "/set" => {
-                cfg = run_config_menu(cfg, &runtime, &provider);
-                let model = cfg.model.clone().unwrap_or_else(default_model);
-                let _ = &model;
-                continue;
-            }
-            "/model" => {
-                print_status_line("model: ", "dim");
-                if let Some(mc) = &cfg.model {
-                    print_status_line(&format!("{} ({})", mc.model, provider_name(&mc)), "cyan");
-                } else {
-                    print_status_line("(none configured)", "yellow");
-                }
-                continue;
-            }
-            "/session" => {
-                print_status_line(
-                    &format!(
-                        "session: {} | model: {} | provider: {}",
-                        session_id_label(),
-                        model.model,
-                        provider_name(&model)
-                    ),
-                    "dim",
-                );
-                continue;
-            }
-            "/compact" => {
-                print_status_line("context compacted (stub)", "dim");
-                continue;
-            }
-            "/undo" => {
-                print_status_line("undo: not yet implemented", "yellow");
-                continue;
-            }
-            "/retry" => {
-                print_status_line("retry: not yet implemented", "yellow");
-                continue;
-            }
-            _ => {}
+        print_user(&trimmed);
+        match handle_command(&mut cfg, &mut model, &runtime, &trimmed, &cwd) {
+            CmdOutcome::Continue => {}
+            CmdOutcome::Quit => { break; }
         }
-
-        let request = ModelRequest {
-            model: model.model.clone(),
-            messages: vec![
-                ChatMessage {
-                    role: Role::System,
-                    content: MessageContent::Text(
-                        "You are a production-grade AI coding agent.".into(),
-                    ),
-                    tool_calls: None,
-                    tool_call_id: None,
-                },
-                ChatMessage {
-                    role: Role::User,
-                    content: MessageContent::Text(user_input.clone()),
-                    tool_calls: None,
-                    tool_call_id: None,
-                },
-            ],
-            tools: None,
-            temperature: model.temperature,
-            max_tokens: model.max_tokens,
-        };
-
-        spinner.start();
-        let response = runtime.block_on(provider.chat(&request));
-        spinner.stop();
-
-        match response {
-            Ok(resp) => {
-                print_assistant(&resp.content.as_text());
-            }
-            Err(e) => {
-                print_status_line(&format!("model error: {e}"), "red");
-            }
-        }
-        active_input = user_input;
-        let _ = active_input;
     }
 
     if let Some(storage) = &storage {
         let _ = storage.write_session(
-            &agent_storage::SessionRecord::new(Some(cwd), Some(model.model)),
+            &agent_storage::SessionRecord::new(
+                Some(cwd.clone()),
+                Some(model.model.clone()),
+            ),
             &[],
         );
     }
-    print_status_line("session saved. goodbye.", "dim");
+
+    print_goodbye();
     ExitCode::SUCCESS
 }
 
-fn session_id_label() -> String {
-    uuid::Uuid::new_v4().to_string()
-}
-
-fn run_config_menu(
-    mut cfg: AgentConfig,
-    _runtime: &tokio::runtime::Runtime,
-    _provider: &Arc<dyn ModelProvider>,
-) -> AgentConfig {
-    print_status_line("configuration (type /exit in value fields to cancel editing)", "dim");
-    let mut model = cfg.model.clone().unwrap_or_else(default_model);
-
-    loop {
-        print_config_options(&model);
-        let mut line = String::new();
-        io::stdout().flush().ok();
-        if io::stdin().read_line(&mut line).is_err() {
-            break;
+fn handle_command(
+    cfg: &mut AgentConfig,
+    model: &mut ModelConfig,
+    runtime: &tokio::runtime::Runtime,
+    input: &str,
+    cwd: &std::path::Path,
+) -> CmdOutcome {
+    match input {
+        "/exit" | "/quit" => {
+            return CmdOutcome::Quit;
         }
-        let choice = line.trim();
-        match choice {
-            "1" => {
-                print_status_line("set provider: openai, anthropic, google, mock", "dim");
-                if let Ok(p) = read_line() {
-                    model.provider = match p.trim().to_lowercase().as_str() {
-                        "anthropic" => ProviderKind::Anthropic,
-                        "google" => ProviderKind::Google,
-                        "mock" => ProviderKind::Mock,
-                        "custom" => ProviderKind::Custom,
-                        "openai" | _ => ProviderKind::OpenAi,
-                    };
-                    print_status_line("provider updated", "green");
+        "/help" | "/?" => {
+            print_help();
+            return CmdOutcome::Continue;
+        }
+        "/config" | "/set" => {
+            let new_cfg = run_config_wizard(cfg);
+            *cfg = new_cfg;
+            *model = cfg.model.clone().unwrap_or_else(default_model);
+            let _ = crossterm::execute!(
+                std::io::stdout(),
+                crossterm::terminal::Clear(ClearType::All)
+            );
+            draw_banner(model, cwd, env!("CARGO_PKG_VERSION"));
+            print_status_line("config saved", "green");
+            return CmdOutcome::Continue;
+        }
+        "/model" => {
+            let new = run_model_wizard(Some(model));
+            *model = new;
+            cfg.model = Some(model.clone());
+            if let Ok(p) = ConfigLoader::save_global(cfg) {
+                print_status_line(&format!("✓ model updated, saved to {}", p.display()), "green");
+            } else {
+                print_status_line("✓ model updated (in-memory only)", "green");
+            }
+            let _ = crossterm::execute!(
+                std::io::stdout(),
+                crossterm::terminal::Clear(ClearType::All)
+            );
+            draw_banner(model, cwd, env!("CARGO_PKG_VERSION"));
+            return CmdOutcome::Continue;
+        }
+        "/status" => {
+            print_status_line(
+                &format!(
+                    "model: {} ({})  ·  cwd: {}",
+                    model.model,
+                    provider_name(&model.provider),
+                    cwd.display()
+                ),
+                "dim",
+            );
+            return CmdOutcome::Continue;
+        }
+        "/session" => {
+            let session_id = uuid::Uuid::new_v4();
+            print_status_line(
+                &format!(
+                    "session: {}  ·  model: {}  ·  provider: {}",
+                    session_id,
+                    model.model,
+                    provider_name(&model.provider)
+                ),
+                "dim",
+            );
+            return CmdOutcome::Continue;
+        }
+        "/tools" => {
+            print_tools();
+            return CmdOutcome::Continue;
+        }
+        "/clear" => {
+            let _ = crossterm::execute!(
+                std::io::stdout(),
+                crossterm::terminal::Clear(ClearType::All)
+            );
+            draw_banner(model, cwd, env!("CARGO_PKG_VERSION"));
+            return CmdOutcome::Continue;
+        }
+        "/compact" | "/undo" | "/retry" | "/diff" => {
+            print_status_line(&format!("{input}: not implemented yet"), "yellow");
+            return CmdOutcome::Continue;
+        }
+        "/mcp" => {
+            print_status_line(
+                "use `agent mcp list|add|enable|disable|inspect <name>` in a shell",
+                "dim",
+            );
+            return CmdOutcome::Continue;
+        }
+        "/skills" => {
+            print_status_line(
+                "use `agent skill list|install|enable|disable <name>` in a shell",
+                "dim",
+            );
+            return CmdOutcome::Continue;
+        }
+        "/plugins" => {
+            print_status_line(
+                "use `agent plugin list|install|enable|disable <name>` in a shell",
+                "dim",
+            );
+            return CmdOutcome::Continue;
+        }
+        _ => {
+            let request = ModelRequest {
+                model: model.model.clone(),
+                messages: vec![
+                    ChatMessage {
+                        role: Role::System,
+                        content: MessageContent::Text(
+                            "You are a production-grade AI coding agent.".into(),
+                        ),
+                        tool_calls: None,
+                        tool_call_id: None,
+                    },
+                    ChatMessage {
+                        role: Role::User,
+                        content: MessageContent::Text(input.to_string()),
+                        tool_calls: None,
+                        tool_call_id: None,
+                    },
+                ],
+                tools: None,
+                temperature: model.temperature,
+                max_tokens: model.max_tokens,
+            };
+
+            let provider = match build_provider(model) {
+                Ok(p) => p,
+                Err(e) => {
+                    print_status_line(&format!("model init: {e}"), "red");
+                    return CmdOutcome::Continue;
+                }
+            };
+
+            print_status_line("⠋ thinking…", "dim");
+            let response = runtime.block_on(provider.chat(&request));
+
+            match response {
+                Ok(resp) => {
+                    print_assistant(&resp.content.as_text());
+                }
+                Err(e) => {
+                    print_status_line(&format!("model error: {e}"), "red");
                 }
             }
-            "2" => {
-                print_status_line("set model name", "dim");
-                if let Ok(m) = read_line() {
-                    model.model = m.trim().to_string();
-                    print_status_line("model updated", "green");
-                }
-            }
-            "3" => {
-                print_status_line("set temperature (0.0-2.0, empty to clear)", "dim");
-                if let Ok(t) = read_line() {
-                    model.temperature = if t.trim().is_empty() {
-                        None
-                    } else {
-                        t.trim().parse().ok()
-                    };
-                    print_status_line("temperature updated", "green");
-                }
-            }
-            "4" => {
-                print_status_line("set max_tokens (empty to clear)", "dim");
-                if let Ok(m) = read_line() {
-                    model.max_tokens = if m.trim().is_empty() {
-                        None
-                    } else {
-                        m.trim().parse().ok()
-                    };
-                    print_status_line("max_tokens updated", "green");
-                }
-            }
-            "5" => {
-                print_status_line("set base_url (empty to clear)", "dim");
-                if let Ok(u) = read_line() {
-                    model.base_url = if u.trim().is_empty() {
-                        None
-                    } else {
-                        Some(u.trim().to_string())
-                    };
-                    print_status_line("base_url updated", "green");
-                }
-            }
-            "6" => {
-                let path = match agent_config::ConfigLoader::save_global(&{
-                    let mut c = cfg.clone();
-                    c.model = Some(model.clone());
-                    c
-                }) {
-                    Ok(p) => p,
-                    Err(e) => {
-                        print_status_line(&format!("save failed: {e}"), "red");
-                        continue;
-                    }
-                };
-                print_status_line(&format!("saved to {}", path.display()), "green");
-            }
-            "7" | "q" | "exit" | "/exit" => {
-                break;
-            }
-            _ => {
-                print_status_line("choose 1-7 or q to quit config", "yellow");
-            }
+            return CmdOutcome::Continue;
         }
     }
-    cfg.model = Some(model);
-    cfg
 }
 
-fn print_config_options(model: &agent_config::ModelConfig) {
-    print_status_line("─ config ─────────────────────────────", "cyan");
-    print_status_line(
-        &format!(
-            "  1. provider: {:?}  2. model: {}  3. temp: {:?}  4. max_tokens: {:?}  5. base_url: {:?}  6. save  7. quit",
-            provider_name(model), model.model, model.temperature, model.max_tokens, model.base_url.as_deref().unwrap_or("(none)")
-        ),
-        "dim",
-    );
+fn build_provider(model: &ModelConfig) -> anyhow::Result<Arc<dyn ModelProvider>> {
+    Ok(Arc::from(build_from_model_config(model)?))
 }
 
-fn read_line() -> Result<String, io::Error> {
-    let mut buf = String::new();
-    io::stdin().read_line(&mut buf).map(|_| buf.trim().to_string())
+fn storage_root() -> std::path::PathBuf {
+    match agent_storage::Storage::global() {
+        Ok(s) => s.root().clone(),
+        Err(_) => std::path::PathBuf::from(".agent"),
+    }
 }
 
-fn print_banner(model: &agent_config::ModelConfig) {
-    let width = 60;
-    let line = "═".repeat(width);
-    let pad = |s: &str| {
-        let l = s.len();
-        if l >= width { s.to_string() } else {
-            let total = width - l;
-            let left = total / 2;
-            " ".repeat(left) + s + &" ".repeat(total - left)
-        }
-    };
+enum CmdOutcome {
+    Continue,
+    Quit,
+}
 
-    print!("{}", colored(&line, "cyan"));
-    println!();
-    println!("{}", colored(&pad("  AGENT"), "bold"));
+fn colored_prompt() -> String {
+    format!("\x1b[1;38;2;79;193;255m❯ \x1b[0m")
+}
+
+fn draw_banner(model: &ModelConfig, cwd: &std::path::Path, version: &str) {
+    let line = "══════════════════════════════════════════════";
+    println!("\x1b[1;38;2;79;193;255m{line}\x1b[0m");
     println!(
-        "{}",
-        colored(&pad(&format!("  v{} · model: {} ({})", env!("CARGO_PKG_VERSION"), model.model, provider_name(model))), "dim")
+        "\x1b[1;38;2;79;193;255m  AGENT  —  AI Coding Agent  v{version}\x1b[0m"
     );
     println!(
-        "{}",
-        colored(&pad("  type /help for commands, /config to tune settings"), "dim")
+        "\x1b[38;2;107;114;128m  model: {}  ·  provider: {}  ·  cwd: {}\x1b[0m",
+        model.model,
+        provider_name(&model.provider),
+        cwd.display()
     );
-    print!("{}", colored(&line, "cyan"));
-    println!();
-}
-
-fn print_prompt() {
-    print!("{}", colored("❯ ", "cyan"));
+    println!(
+        "\x1b[38;2;107;114;128m  /help · /model · /config · /status · /tools · /exit\x1b[0m"
+    );
+    println!("\x1b[1;38;2;79;193;255m{line}\x1b[0m");
 }
 
 fn print_user(text: &str) {
-    println!("\n{} {}", colored("👤 you", "bold"), colored(text, "blue"));
+    println!("\n\x1b[1;34m  👤 you\x1b[0m  \x1b[34m{text}\x1b[0m");
 }
 
 fn print_assistant(text: &str) {
-    println!("\n{} {}", colored("🤖 agent", "bold"), colored(text, "white"));
+    println!("\n\x1b[1;36m  🤖 agent\x1b[0m");
+    let lines: Vec<&str> = text.lines().collect();
+    if lines.is_empty() {
+        println!("    {text}");
+    } else {
+        for l in &lines {
+            println!("    {l}");
+        }
+    }
+    println!();
 }
 
 fn print_status_line(text: &str, color: &str) {
-    println!("{}", colored(text, color));
+    let code = match color {
+        "red" => 31,
+        "green" => 32,
+        "yellow" => 33,
+        "blue" => 34,
+        "cyan" => 36,
+        _ => 90,
+    };
+    println!("\x1b[{code}m{text}\x1b[0m");
 }
 
 fn print_help() {
     print_status_line("─── commands ────", "cyan");
     for (cmd, desc) in [
         ("/help", "show this help"),
-        ("/config", "open configuration menu"),
-        ("/model", "show current model"),
-        ("/status", "show session status"),
-        ("/session", "show session info"),
+        (
+            "/model",
+            "wizard: change model, provider, base_url, api_key, temperature",
+        ),
+        ("/config", "config menu: model, permissions, limits, save"),
+        ("/status", "show current model, provider, working dir"),
+        ("/session", "show session metadata"),
         ("/tools", "list available tools"),
         ("/clear", "clear screen"),
         ("/compact", "compact context (stub)"),
         ("/undo", "undo last change (stub)"),
-        ("/exit", "quit"),
+        ("/exit", "quit and save session"),
     ] {
-        print_status_line(&format!("  {} — {}", colored(cmd, "yellow"), desc), "dim");
+        print_status_line(
+            &format!(
+                "  \x1b[33m{cmd:<10}\x1b[0m \x1b[90m{desc}\x1b[0m"
+            ),
+            "dim",
+        );
     }
     print_status_line("anything else is sent to the model", "dim");
 }
@@ -356,50 +367,49 @@ fn print_tools() {
         ("shell", "run shell command"),
         ("run_command", "run command"),
     ] {
-        print_status_line(&format!("  {} — {}", colored(tool.0, "green"), tool.1), "dim");
+        print_status_line(
+            &format!(
+                "  \x1b[32m{:<16}\x1b[0m \x1b[90m{}\x1b[0m",
+                tool.0, tool.1
+            ),
+            "dim",
+        );
     }
 }
 
 fn print_goodbye() {
     print_status_line("┌────────────────────────────────────┐", "cyan");
-    print_status_line("│        see you next time          │", "dim");
+    print_status_line("│         see you next time          │", "dim");
     print_status_line("└────────────────────────────────────┘", "cyan");
+    print_status_line("session saved.", "dim");
 }
 
-fn colored(s: &str, color: &str) -> String {
-    let code = match color {
-        "red" => "31",
-        "green" => "32",
-        "yellow" => "33",
-        "blue" => "34",
-        "magenta" => "35",
-        "cyan" => "36",
-        "white" => "37",
-        "dim" => "90",
-        _ => "0",
-    };
-    let style = if color == "bold" { "1;36" } else { code };
-    format!("\x1b[{style}m{}\x1b[0m", s)
-}
-
-fn provider_name(mc: &agent_config::ModelConfig) -> &str {
-    match mc.provider {
-        ProviderKind::OpenAi => "openai",
-        ProviderKind::Anthropic => "anthropic",
-        ProviderKind::Google => "google",
-        ProviderKind::OpenAiCompatible => "openai-compatible",
-        ProviderKind::Custom => "custom",
-        ProviderKind::Mock => "mock",
-    }
-}
-
-fn default_model() -> agent_config::ModelConfig {
-    agent_config::ModelConfig {
-        provider: ProviderKind::Mock,
+fn default_model() -> ModelConfig {
+    ModelConfig {
+        provider: agent_config::ProviderKind::Mock,
         model: "mock-1".into(),
         base_url: None,
         api_key_env: None,
         temperature: None,
         max_tokens: None,
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_agent_input_new() {
+        let input = AgentInput::new();
+        assert!(input.input_screen.input.is_empty());
+    }
+
+    #[test]
+    fn test_agent_input_try_complete() {
+        let mut input = AgentInput::new();
+        input.try_complete();
     }
 }
