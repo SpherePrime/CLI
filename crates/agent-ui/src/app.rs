@@ -2,6 +2,26 @@ use agent_tools::ToolOutput;
 use ratatui::prelude::*;
 use ratatui::widgets::Wrap;
 use std::io::Result;
+use crossterm::event::KeyCode;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum AppState {
+    Banner,
+    Input,
+    ModelWizard,
+    ProviderWizard,
+    ConfigMenu,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        AppState::Banner
+    }
+}
+
+const VS_DARK_BG: Color = Color::Rgb(30, 30, 30);
+const VS_DARK_ACCENT: Color = Color::Rgb(86, 156, 214);
+const VS_DARK_TEXT: Color = Color::White;
 
 pub enum AppEvent {
     None,
@@ -12,6 +32,7 @@ pub enum AppEvent {
     ToolFinished(ToolOutput),
     AssistantDelta(String),
     UserInput(String),
+    StateChanged(AppState),
 }
 
 pub enum AppCommand {
@@ -36,6 +57,7 @@ pub struct AgentApp {
     pub last_tool_output: Option<String>,
     pub status: String,
     pub compacted_count: usize,
+    pub current_state: AppState,
 }
 
 pub struct MessageEntry {
@@ -59,7 +81,202 @@ impl AgentApp {
             last_tool_output: None,
             status: String::new(),
             compacted_count: 0,
+            current_state: AppState::Banner,
         }
+    }
+
+    pub fn handle_event(&mut self, event: KeyCode) -> Option<AppEvent> {
+        match &self.current_state {
+            AppState::Banner => {
+                match event {
+                    KeyCode::Enter => {
+                        self.current_state = AppState::Input;
+                        Some(AppEvent::StateChanged(AppState::Input))
+                    }
+                    KeyCode::Char('q') | KeyCode::Esc => Some(AppEvent::Shutdown),
+                    KeyCode::Char('m') => {
+                        self.current_state = AppState::ModelWizard;
+                        Some(AppEvent::StateChanged(AppState::ModelWizard))
+                    }
+                    KeyCode::Char('p') => {
+                        self.current_state = AppState::ProviderWizard;
+                        Some(AppEvent::StateChanged(AppState::ProviderWizard))
+                    }
+                    KeyCode::Char('c') => {
+                        self.current_state = AppState::ConfigMenu;
+                        Some(AppEvent::StateChanged(AppState::ConfigMenu))
+                    }
+                    _ => None,
+                }
+            }
+            AppState::Input => {
+                match event {
+                    KeyCode::Enter => {
+                        if !self.input.trim().is_empty() {
+                            let input = self.input.clone();
+                            self.input.clear();
+                            Some(AppEvent::SendMessage(input))
+                        } else {
+                            None
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        self.input.pop();
+                        None
+                    }
+                    KeyCode::Char(c) => {
+                        self.input.push(c);
+                        None
+                    }
+                    KeyCode::Esc => {
+                        self.current_state = AppState::Banner;
+                        Some(AppEvent::StateChanged(AppState::Banner))
+                    }
+                    KeyCode::Up => {
+                        if self.autocomplete.len() > 0 {
+                            Some(AppEvent::SlashCommand(
+                                self.autocomplete.first().unwrap().clone()
+                            ))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                }
+            }
+            AppState::ModelWizard => {
+                match event {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        self.current_state = AppState::Banner;
+                        Some(AppEvent::StateChanged(AppState::Banner))
+                    }
+                    _ => None,
+                }
+            }
+            AppState::ProviderWizard => {
+                match event {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        self.current_state = AppState::Banner;
+                        Some(AppEvent::StateChanged(AppState::Banner))
+                    }
+                    _ => None,
+                }
+            }
+            AppState::ConfigMenu => {
+                match event {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        self.current_state = AppState::Banner;
+                        Some(AppEvent::StateChanged(AppState::Banner))
+                    }
+                    _ => None,
+                }
+            }
+        }
+    }
+
+    pub fn render(&self, f: &mut Frame, layout: Layout) -> Result<()> {
+        let chunks = Layout::default()
+            .direction(ratatui::layout::Direction::Vertical)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Min(0),
+                Constraint::Length(3),
+            ])
+            .split(f.area());
+
+        // Header
+        let header = ratatui::widgets::Block::default()
+            .borders(ratatui::widgets::Borders::ALL)
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .title(format!("{}  v{}", self.title, self.version))
+            .title_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG))
+            .style(Style::default().bg(VS_DARK_BG))
+            .border_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG));
+        f.render_widget(header, chunks[0]);
+
+        // Content based on state
+        match &self.current_state {
+            AppState::Banner => {
+                let banner_text = format!(
+                    "Agent CLI\nVersion: {}\n\n[Enter] - Start chat\n[m] - Model Wizard\n[p] - Provider Wizard\n[c] - Config Menu\n[q] - Quit",
+                    self.version
+                );
+                let block = ratatui::widgets::Block::default()
+                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG));
+                let paragraph = ratatui::widgets::Paragraph::new(banner_text)
+                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
+                    .block(block);
+                f.render_widget(paragraph, chunks[1]);
+            }
+            AppState::Input => {
+                let spinner = if self.spinner_active {
+                    format!("⠋ {}", self.spinner_text)
+                } else if let Some(t) = &self.last_tool {
+                    format!("✓ {}", t)
+                } else {
+                    "idle".to_string()
+                };
+                let spinner_widget = ratatui::widgets::Paragraph::new(spinner)
+                    .style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG))
+                    .wrap(Wrap { trim: true });
+                f.render_widget(spinner_widget, chunks[1]);
+            }
+            AppState::ModelWizard => {
+                let block = ratatui::widgets::Block::default()
+                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
+                    .title("Model Wizard")
+                    .title_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG));
+                let paragraph = ratatui::widgets::Paragraph::new(
+                    "Select model:\n\n[1] gpt-4\n[2] gpt-3.5-turbo\n[3] claude\n\n[Esc] - Back to Banner"
+                ).block(block);
+                f.render_widget(paragraph, chunks[1]);
+            }
+            AppState::ProviderWizard => {
+                let block = ratatui::widgets::Block::default()
+                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
+                    .title("Provider Wizard")
+                    .title_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG));
+                let paragraph = ratatui::widgets::Paragraph::new(
+                    "Select provider:\n\n[1] OpenAI\n[2] Anthropic\n[3] Google\n\n[Esc] - Back to Banner"
+                ).block(block);
+                f.render_widget(paragraph, chunks[1]);
+            }
+            AppState::ConfigMenu => {
+                let block = ratatui::widgets::Block::default()
+                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
+                    .title("Config Menu")
+                    .title_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG));
+                let paragraph = ratatui::widgets::Paragraph::new(
+                    "Configuration:\n\n[r] - Reload config\n[s] - Save config\n\n[Esc] - Back to Banner"
+                ).block(block);
+                f.render_widget(paragraph, chunks[1]);
+            }
+        }
+
+        // Input line / status
+        let status_text = if self.current_state == AppState::Input {
+            if self.input.is_empty() {
+                format!("> ")
+            } else {
+                format!("> {}", self.input)
+            }
+        } else {
+            String::new()
+        };
+
+        let input_block = ratatui::widgets::Block::default()
+            .borders(ratatui::widgets::Borders::ALL)
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .style(Style::default().bg(VS_DARK_BG))
+            .title("")
+            .title_style(Style::default().bg(VS_DARK_BG));
+
+        let input_widget = ratatui::widgets::Paragraph::new(status_text)
+            .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
+            .block(input_block);
+        f.render_widget(input_widget, chunks[2]);
+
+        Ok(())
     }
 
     pub fn push_assistant(&mut self, text: &str) {
