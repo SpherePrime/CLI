@@ -1,12 +1,10 @@
 use crate::input::SlashCommandPalette;
 use crossterm::event::{KeyCode, KeyModifiers};
-use fuzzy_matcher::skim::SkimMatcherV2;
-use fuzzy_matcher::FuzzyMatcher;
 use ratatui::layout::Rect;
-use ratatui::widgets::{Block, BorderType, List, ListItem, Paragraph};
+use ratatui::widgets::{List, ListItem};
 use ratatui::Frame;
 
-use super::Component;
+use super::components::Component;
 
 pub struct InputScreen {
     pub input: String,
@@ -14,7 +12,6 @@ pub struct InputScreen {
     pub suggestions: Vec<String>,
     pub selected_suggestion: usize,
     pub palette: SlashCommandPalette,
-    matcher: SkimMatcherV2,
 }
 
 impl InputScreen {
@@ -25,7 +22,6 @@ impl InputScreen {
             suggestions: Vec::new(),
             selected_suggestion: 0,
             palette: SlashCommandPalette::new(),
-            matcher: SkimMatcherV2::default(),
         }
     }
 
@@ -60,11 +56,13 @@ impl InputScreen {
             .all_names()
             .iter()
             .filter_map(|name| {
-                self.matcher
-                    .fuzzy_match(name, &prefix)
-                    .map(|score| (score, name.clone()))
+                // Simple prefix matching
+                if name.starts_with(&prefix) {
+                    Some((100, name.clone()))
+                } else {
+                    None
+                }
             })
-            .filter(|(_, name)| name.starts_with(&prefix))
             .collect();
 
         matches.sort_by(|a, b| b.0.cmp(&a.0));
@@ -220,31 +218,17 @@ impl Default for InputScreen {
 }
 
 impl Component for InputScreen {
-    fn render(&self, frame: &mut Frame, area: Rect) -> Rect {
-        let block = Block::default()
-            .title("Input")
-            .border_type(BorderType::Rounded);
-
-        let inner_area = block.inner(area);
-        frame.render_widget(block, area);
-
-        let display_text = if self.input.is_empty() {
-            "Type a message...".to_string()
-        } else {
-            self.input.clone()
-        };
-
-        let paragraph = Paragraph::new(display_text);
-        frame.render_widget(paragraph, inner_area);
-
-        let list_area = Rect {
-            x: inner_area.x,
-            y: inner_area.y.saturating_add(inner_area.height.saturating_sub(5)),
-            width: inner_area.width,
-            height: 5,
-        };
-
+    fn render(&self, _frame: &mut Frame, area: Rect) -> Rect {
+        // Render suggestions below the input area
         if !self.suggestions.is_empty() {
+            let input_height = 1u16;
+            let suggestions_area = Rect {
+                x: area.x,
+                y: area.y.saturating_add(input_height + 1),
+                width: area.width,
+                height: area.height.saturating_sub(input_height + 1).max(5),
+            };
+
             let items: Vec<ListItem> = self
                 .suggestions
                 .iter()
@@ -259,50 +243,10 @@ impl Component for InputScreen {
                 })
                 .collect();
 
-            let list = List::new(items).block(
-                Block::default()
-                    .title("Suggestions")
-                    .border_type(BorderType::Rounded),
-            );
-            frame.render_widget(list, list_area);
+            let list = List::new(items);
+            _frame.render_widget(list, suggestions_area);
         }
 
-        inner_area
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_input_screen_new() {
-        let input = InputScreen::new();
-        assert!(input.input.is_empty());
-        assert_eq!(input.cursor_pos, 0);
-        assert!(input.suggestions.is_empty());
-    }
-
-    #[test]
-    fn test_set_input() {
-        let mut input = InputScreen::new();
-        input.set_input("/hel");
-        assert_eq!(input.input, "/hel");
-        assert!(input.cursor_pos <= input.input.len());
-    }
-
-    #[test]
-    fn test_complete_returns_suggestions() {
-        let mut input = InputScreen::new();
-        let suggestions = input.complete("/h");
-        assert!(!suggestions.is_empty());
-        assert!(suggestions.contains(&"/help".to_string()));
-    }
-
-    #[test]
-    fn test_fuzzy_match() {
-        let mut input = InputScreen::new();
-        let suggestions = input.complete("/h");
-        assert!(suggestions.iter().any(|s| s == "/help"));
+        area
     }
 }

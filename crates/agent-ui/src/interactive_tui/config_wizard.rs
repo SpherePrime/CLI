@@ -1,8 +1,9 @@
-use agent_config::{AgentConfig, PermissionMode};
+use agent_config::{AgentConfig, ModelConfig, PermissionMode};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
 
-use super::super::ui::run_model_wizard;
+use super::super::ui::model_wizard;
+use super::provider_name;
 
 pub fn run_config_wizard(cfg: &AgentConfig) -> AgentConfig {
     let theme = ColorfulTheme::default();
@@ -28,7 +29,7 @@ pub fn run_config_wizard(cfg: &AgentConfig) -> AgentConfig {
 
     match choice {
         0 => {
-            out.model = Some(run_model_wizard(out.model.as_ref()));
+            out.model = Some(model_wizard::run_model_wizard(out.model.as_ref()));
         }
         1 => {
             let modes: Vec<String> = vec!["ask".into(), "allow".into(), "deny".into()];

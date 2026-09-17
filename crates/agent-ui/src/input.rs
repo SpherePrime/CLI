@@ -2,12 +2,14 @@ use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
 pub struct SlashCommand {
     pub name: String,
     pub description: String,
     pub handler: Option<String>,
 }
 
+#[derive(Debug, Clone)]
 pub struct SlashCommandPalette {
     pub commands: Vec<SlashCommand>,
 }

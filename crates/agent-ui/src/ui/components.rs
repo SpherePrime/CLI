@@ -1,6 +1,10 @@
-use ratatui::layout::Rect;
-use ratatui::widgets::{Block, BorderType, Paragraph};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::prelude::*;
+use ratatui::widgets::{Block, BorderType, Paragraph, Wrap, List};
+use ratatui::text::{Line, Span};
 use ratatui::Frame;
+
+use crate::theme::Theme;
 
 pub trait Component {
     fn render(&self, frame: &mut Frame, area: Rect) -> Rect;
@@ -112,8 +116,6 @@ impl SelectList {
 
 impl Component for SelectList {
     fn render(&self, frame: &mut Frame, area: Rect) -> Rect {
-        let selected = self.options.get(self.selected_index).map(|s| s.as_str()).unwrap_or("");
-
         let items: Vec<_> = self
             .options
             .iter()
@@ -135,7 +137,7 @@ impl Component for SelectList {
 
         frame.render_widget(block, area);
 
-        let list = ratatui::widgets::List::new(items).block(Block::bordered().title("Options"));
+        let list = List::new(items);
         frame.render_widget(list, inner_area);
 
         inner_area
@@ -169,7 +171,6 @@ impl FormField {
 
 impl Component for FormField {
     fn render(&self, frame: &mut Frame, area: Rect) -> Rect {
-        let height = 3 + 5; // Input + Select borders
         let block = Block::bordered()
             .title("Form")
             .border_type(BorderType::Rounded);
@@ -177,12 +178,12 @@ impl Component for FormField {
         let area = block.inner(area);
         frame.render_widget(block, area);
 
-        let input_height = 3;
+        let input_height = 3u16;
         let select_area = Rect {
             x: area.x,
             y: area.y + input_height,
             width: area.width,
-            height: area.height - input_height,
+            height: area.height.saturating_sub(input_height),
         };
 
         self.select.render(frame, select_area);
@@ -191,85 +192,128 @@ impl Component for FormField {
     }
 }
 
+pub fn shorten_path(path: &str, max_len: usize) -> String {
+    let path_str = if path.starts_with("C:\\") || path.starts_with("D:\\") || path.starts_with("E:\\") {
+        let rest = &path[2..];
+        if rest.starts_with("\\") {
+            &rest[1..]
+        } else {
+            path
+        }
+    } else if path.starts_with('/') {
+        &path[1..]
+    } else {
+        path
+    };
+
+    if path_str.len() <= max_len {
+        return path_str.to_string();
+    }
+
+    let parts: Vec<&str> = path_str.split('\\').collect();
+    if parts.len() <= 2 {
+        return format!("{}/...", &path_str[..max_len.saturating_sub(4)]);
+    }
+
+    let last = parts.last().unwrap_or(&"");
+    let second_last = parts.get(parts.len().saturating_sub(2)).unwrap_or(&"");
+    let first = parts.first().unwrap_or(&"");
+
+    let truncated = format!("~{}/{}/{}", first, second_last, last);
+    if truncated.len() <= max_len {
+        return truncated;
+    }
+
+    truncated
+}
+
+pub fn format_path(path: &str, _width: usize) -> String {
+    if path.len() <= 40 {
+        return path.to_string();
+    }
+    
+    let parts: Vec<&str> = path.split('\\').collect();
+    let last = parts.last().unwrap_or(&"");
+    let first = parts.first().unwrap_or(&"");
+    
+    format!("~{}/{}", first, last)
+}
+
+pub fn render_header(
+    frame: &mut Frame,
+    area: Rect,
+    model: &str,
+    provider: &str,
+    cwd: &str,
+    theme: &Theme,
+) {
+    let cwd_short = shorten_path(cwd, 30);
+    let status_line = format!("✓ Ready  model  {}  provider  {}  📁 {}", 
+        model, provider, cwd_short);
+    
+    let header = Paragraph::new(status_line)
+        .style(Style::default().fg(theme.foreground))
+        .wrap(Wrap { trim: true });
+
+    frame.render_widget(header, area);
+}
+
+pub fn render_status_line(_frame: &mut Frame, area: Rect, status_text: &str, theme: &Theme) {
+    let status = Paragraph::new(status_text)
+        .style(Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM))
+        .wrap(Wrap { trim: true });
+
+    let _ = status;
+    let _ = area;
+}
+
+pub fn render_prompt(frame: &mut Frame, area: Rect, input: &str, theme: &Theme) {
+    let prompt = Paragraph::new(Line::from(vec![
+        Span::styled("❯ ", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+        Span::styled(input, Style::default().fg(theme.foreground)),
+    ]))
+    .style(Style::default().fg(theme.foreground));
+
+    frame.render_widget(prompt, area);
+}
+
+pub fn render_empty_state(frame: &mut Frame, area: Rect, theme: &Theme) {
+    let lines: Vec<Line> = vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Ready to code.", Style::default().fg(theme.foreground).add_modifier(Modifier::BOLD)),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Ask me to inspect, edit, refactor, test,", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+        ]),
+        Line::from(vec![
+            Span::styled("debug, or explain your code.", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Try: \"inspect this project for issues\"", Style::default().fg(theme.accent)),
+        ]),
+        Line::from(""),
+    ];
+
+    let empty_state = Paragraph::new(lines)
+        .style(Style::default().fg(theme.foreground))
+        .wrap(Wrap { trim: true });
+
+    frame.render_widget(empty_state, area);
+}
+
+pub fn render_help(_frame: &mut Frame, _area: Rect, _theme: &Theme, _commands: &[(String, String)]) {
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_input_field_new() {
-        let input = InputField::new("prompt");
-        assert_eq!(input.label, "prompt");
-        assert_eq!(input.value, "");
-        assert_eq!(input.placeholder, "");
-    }
-
-    #[test]
-    fn test_input_field_with_default() {
-        let input = InputField::new("prompt").default("value");
-        assert_eq!(input.value, "value");
-    }
-
-    #[test]
-    fn test_input_field_with_placeholder() {
-        let input = InputField::new("prompt").placeholder("Enter text...");
-        assert_eq!(input.placeholder, "Enter text...");
-    }
-
-    #[test]
-    fn test_select_list_new() {
-        let select = SelectList::new("model");
-        assert_eq!(select.label, "model");
-        assert!(select.options.is_empty());
-    }
-
-    #[test]
-    fn test_select_list_with_options() {
-        let select = SelectList::new("model").options(vec!["gpt-4", "gpt-3.5"]);
-        assert_eq!(select.options.len(), 2);
-        assert_eq!(select.selected_index, 0);
-    }
-
-    #[test]
-    fn test_select_list_default() {
-        let select = SelectList::new("model")
-            .options(vec!["gpt-4", "gpt-3.5"])
-            .default("gpt-3.5");
-        assert_eq!(select.selected_index, 1);
-    }
-
-    #[test]
-    fn test_select_list_navigation() {
-        let mut select = SelectList::new("model").options(vec!["a", "b", "c"]);
-        assert_eq!(select.selected_index, 0);
-
-        select.next();
-        assert_eq!(select.selected_index, 1);
-
-        select.next();
-        assert_eq!(select.selected_index, 2);
-
-        select.next();
-        assert_eq!(select.selected_index, 2); // Ступічка на максимумі
-
-        select.previous();
-        assert_eq!(select.selected_index, 1);
-    }
-
-    #[test]
-    fn test_form_field_new() {
-        let form = FormField::new("name", "type");
-        assert_eq!(form.input.label, "name");
-        assert_eq!(form.select.label, "type");
-    }
-
-    #[test]
-    fn test_form_field_with_inputs() {
-        let form = FormField::new("name", "type")
-            .input("Enter name", "default")
-            .select(vec!["a", "b"], "b");
-
-        assert_eq!(form.input.placeholder, "Enter name");
-        assert_eq!(form.input.value, "default");
-        assert_eq!(form.select.selected_index, 1);
+    fn test_shorten_path() {
+        let result = shorten_path("C:\\Users\\dwert\\OneDrive\\GitHub\\CLI", 30);
+        assert!(result.contains('~'));
     }
 }

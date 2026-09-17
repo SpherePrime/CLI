@@ -6,6 +6,7 @@ license.workspace = true
 description = "TUI: ratatui + crossterm, markdown, diff, spinner, autocomplete"
 
 [dependencies]
+agent-config = { path = "../agent-config" }
 agent-model = { path = "../agent-model" }
 agent-tools = { path = "../agent-tools" }
 tokio.workspace = true
@@ -20,4 +21,5 @@ ratatui.workspace = true
 crossterm.workspace = true
 textwrap.workspace = true
 similar.workspace = true
+dialoguer.workspace = true
 fuzzy-matcher.workspace = true

@@ -24,3 +24,4 @@ config.local.toml
 # Test artifacts
 tmp/
 tests/fixtures/generated/
+screens/

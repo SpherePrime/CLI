@@ -4,7 +4,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{Block, BorderType, List, ListItem, Paragraph};
 use ratatui::Frame;
 
-use super::Component;
+use super::components::Component;
 
 pub struct ProviderWizardScreen {
     pub config: ModelConfig,

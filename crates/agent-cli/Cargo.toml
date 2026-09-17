@@ -46,6 +46,7 @@ toml.workspace = true
 rustyline.workspace = true
 dialoguer.workspace = true
 crossterm.workspace = true
+ratatui.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

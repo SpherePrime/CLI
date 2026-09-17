@@ -1,14 +1,33 @@
-use agent_config::{ModelConfig, ProviderKind};
-use agent_tools::ToolOutput;
+use agent_config::ModelConfig;
+use agent_config::ProviderKind;
 use ratatui::prelude::*;
-use ratatui::widgets::Wrap;
-use std::io::Result;
+use ratatui::widgets::{Paragraph, Wrap};
+use ratatui::text::Span;
 use crossterm::event::KeyCode;
+
+use crate::theme::Theme;
+use crate::ui::components::{render_header, render_empty_state};
+use crate::ui::banner;
+
+#[derive(Debug, Clone)]
+pub enum AppEvent {
+    None,
+    Shutdown,
+    SendMessage(String),
+    SlashCommand(String),
+    ToolStarted(String),
+    AssistantDelta(String),
+    StateChanged(AppState),
+    Undo,
+    Clear,
+    Retry,
+    ShowDiff,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AppState {
     Banner,
-    Input,
+    Chat,
     ModelWizard,
     ProviderWizard,
     ConfigMenu,
@@ -20,52 +39,69 @@ impl Default for AppState {
     }
 }
 
-const VS_DARK_BG: Color = Color::Rgb(30, 30, 30);
-const VS_DARK_ACCENT: Color = Color::Rgb(86, 156, 214);
-const VS_DARK_TEXT: Color = Color::White;
-
-pub enum AppEvent {
-    None,
-    Shutdown,
-    SendMessage(String),
-    SlashCommand(String),
-    ToolStarted(String),
-    ToolFinished(ToolOutput),
-    AssistantDelta(String),
-    UserInput(String),
-    StateChanged(AppState),
+#[derive(Debug, Clone)]
+pub enum MessageRole {
+    User,
+    Assistant,
+    Tool,
+    System,
 }
 
-pub enum AppCommand {
-    None,
-    Exit,
-    Compact,
-    Retry,
-    Undo,
-    Clear,
-    ShowDiff,
+impl MessageRole {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MessageRole::User => "user",
+            MessageRole::Assistant => "assistant",
+            MessageRole::Tool => "tool",
+            MessageRole::System => "system",
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ToolStatus {
+    Pending,
+    Running,
+    Success,
+    Error,
+}
+
+#[derive(Debug, Clone)]
+pub struct ToolCallEntry {
+    pub name: String,
+    pub args: String,
+    pub status: ToolStatus,
+    pub output: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MessageEntry {
+    pub role: MessageRole,
+    pub content: String,
+    pub tool_call: Option<String>,
+    pub finished: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum StatusType {
+    Ready,
+    Thinking(String),
+    Success,
+    Error(String),
+    Tool(String),
 }
 
 pub struct AgentApp {
     pub title: String,
     pub version: String,
     pub messages: Vec<MessageEntry>,
+    pub tool_calls: Vec<ToolCallEntry>,
     pub input: String,
     pub autocomplete: Vec<String>,
-    pub spinner_active: bool,
-    pub spinner_text: String,
-    pub last_tool: Option<String>,
-    pub last_tool_output: Option<String>,
-    pub status: String,
+    pub status: StatusType,
     pub compacted_count: usize,
     pub current_state: AppState,
-}
-
-pub struct MessageEntry {
-    pub role: String,
-    pub content: String,
-    pub tool_call: Option<String>,
-    pub finished: bool,
+    pub model_config: ModelConfig,
 }
 
 impl AgentApp {
@@ -74,16 +110,41 @@ impl AgentApp {
             title: title.to_string(),
             version: version.to_string(),
             messages: Vec::new(),
+            tool_calls: Vec::new(),
             input: String::new(),
             autocomplete: Vec::new(),
-            spinner_active: false,
-            spinner_text: String::new(),
-            last_tool: None,
-            last_tool_output: None,
-            status: String::new(),
+            status: StatusType::Ready,
             compacted_count: 0,
             current_state: AppState::Banner,
+            model_config: ModelConfig {
+                provider: ProviderKind::Mock,
+                model: "mock-1".into(),
+                base_url: None,
+                api_key_env: None,
+                temperature: None,
+                max_tokens: None,
+            },
         }
+    }
+
+    pub fn set_status(&mut self, status: StatusType) {
+        self.status = status;
+    }
+
+    pub fn set_model_config(&mut self, model: ModelConfig) {
+        self.model_config = model.clone();
+    }
+
+    pub fn set_spinner(&mut self, active: bool, text: &str) {
+        if active {
+            self.status = StatusType::Thinking(text.to_string());
+        } else {
+            self.status = StatusType::Success;
+        }
+    }
+
+    pub fn set_state(&mut self, state: AppState) {
+        self.current_state = state;
     }
 
     pub fn handle_event(&mut self, event: KeyCode) -> Option<AppEvent> {
@@ -91,26 +152,37 @@ impl AgentApp {
             AppState::Banner => {
                 match event {
                     KeyCode::Enter => {
-                        self.current_state = AppState::Input;
-                        Some(AppEvent::StateChanged(AppState::Input))
+                        self.current_state = AppState::Chat;
+                        Some(AppEvent::StateChanged(AppState::Chat))
                     }
                     KeyCode::Char('q') | KeyCode::Esc => Some(AppEvent::Shutdown),
-                    KeyCode::Char('m') => {
+                    KeyCode::Char('m') | KeyCode::Char('M') => {
                         self.current_state = AppState::ModelWizard;
                         Some(AppEvent::StateChanged(AppState::ModelWizard))
                     }
-                    KeyCode::Char('p') => {
+                    KeyCode::Char('p') | KeyCode::Char('P') => {
                         self.current_state = AppState::ProviderWizard;
                         Some(AppEvent::StateChanged(AppState::ProviderWizard))
                     }
-                    KeyCode::Char('c') => {
+                    KeyCode::Char('c') | KeyCode::Char('C') => {
                         self.current_state = AppState::ConfigMenu;
                         Some(AppEvent::StateChanged(AppState::ConfigMenu))
+                    }
+                    KeyCode::Char('/') => {
+                        self.autocomplete = vec![
+                            "/help".to_string(),
+                            "/model".to_string(),
+                            "/config".to_string(),
+                            "/status".to_string(),
+                            "/tools".to_string(),
+                            "/exit".to_string(),
+                        ];
+                        Some(AppEvent::SlashCommand("/help".to_string()))
                     }
                     _ => None,
                 }
             }
-            AppState::Input => {
+            AppState::Chat => {
                 match event {
                     KeyCode::Enter => {
                         if !self.input.trim().is_empty() {
@@ -130,11 +202,16 @@ impl AgentApp {
                         None
                     }
                     KeyCode::Esc => {
-                        self.current_state = AppState::Banner;
-                        Some(AppEvent::StateChanged(AppState::Banner))
+                        if !self.input.is_empty() {
+                            self.input.clear();
+                            None
+                        } else {
+                            self.current_state = AppState::Banner;
+                            Some(AppEvent::StateChanged(AppState::Banner))
+                        }
                     }
                     KeyCode::Up => {
-                        if self.autocomplete.len() > 0 {
+                        if !self.autocomplete.is_empty() {
                             Some(AppEvent::SlashCommand(
                                 self.autocomplete.first().unwrap().clone()
                             ))
@@ -142,32 +219,21 @@ impl AgentApp {
                             None
                         }
                     }
-                    _ => None,
-                }
-            }
-            AppState::ModelWizard => {
-                match event {
-                    KeyCode::Char('q') | KeyCode::Esc => {
-                        self.current_state = AppState::Banner;
-                        Some(AppEvent::StateChanged(AppState::Banner))
+                    KeyCode::Tab => {
+                        if !self.autocomplete.is_empty() {
+                            self.input.push_str(&self.autocomplete[0]);
+                            self.autocomplete.clear();
+                        }
+                        None
                     }
                     _ => None,
                 }
             }
-            AppState::ProviderWizard => {
+            AppState::ModelWizard | AppState::ProviderWizard | AppState::ConfigMenu => {
                 match event {
                     KeyCode::Char('q') | KeyCode::Esc => {
-                        self.current_state = AppState::Banner;
-                        Some(AppEvent::StateChanged(AppState::Banner))
-                    }
-                    _ => None,
-                }
-            }
-            AppState::ConfigMenu => {
-                match event {
-                    KeyCode::Char('q') | KeyCode::Esc => {
-                        self.current_state = AppState::Banner;
-                        Some(AppEvent::StateChanged(AppState::Banner))
+                        self.current_state = AppState::Chat;
+                        Some(AppEvent::StateChanged(AppState::Chat))
                     }
                     _ => None,
                 }
@@ -175,114 +241,151 @@ impl AgentApp {
         }
     }
 
-    pub fn render(&self, f: &mut Frame, layout: Layout) -> Result<()> {
-        let chunks = Layout::default()
-            .direction(ratatui::layout::Direction::Vertical)
-            .constraints([
-                Constraint::Length(3),
-                Constraint::Min(0),
-                Constraint::Length(3),
-            ])
-            .split(f.area());
-
-        // Header
-        let header = ratatui::widgets::Block::default()
-            .borders(ratatui::widgets::Borders::ALL)
-            .border_type(ratatui::widgets::BorderType::Rounded)
-            .title(format!("{}  v{}", self.title, self.version))
-            .title_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG))
-            .style(Style::default().bg(VS_DARK_BG))
-            .border_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG));
-        f.render_widget(header, chunks[0]);
-
-        // Content based on state
-        match &self.current_state {
+    pub fn render(&self, f: &mut Frame, _layout: Layout) {
+        let area = f.area();
+        let theme = Theme::default_theme();
+        let _ = _layout; // Suppress unused warning
+        
+        // Render different states
+        match self.current_state {
             AppState::Banner => {
-                let banner_text = format!(
-                    "Agent CLI\nVersion: {}\n\n[Enter] - Start chat\n[m] - Model Wizard\n[p] - Provider Wizard\n[c] - Config Menu\n[q] - Quit",
-                    self.version
-                );
-                let block = ratatui::widgets::Block::default()
-                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG));
-                let paragraph = ratatui::widgets::Paragraph::new(banner_text)
-                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
-                    .block(block);
-                f.render_widget(paragraph, chunks[1]);
+                // Banner state - show welcome screen
+                let banner = banner::BannerScreen::new()
+                    .with_model(&self.model_config.model)
+                    .with_provider(provider_name(&self.model_config.provider))
+                    .with_version(&self.version);
+                banner.render(f, area);
             }
-            AppState::Input => {
-                let spinner = if self.spinner_active {
-                    format!("⠋ {}", self.spinner_text)
-                } else if let Some(t) = &self.last_tool {
-                    format!("✓ {}", t)
+            AppState::Chat => {
+                // Chat state - main interface
+                // Layout: header, messages, footer
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Length(1),  // Header
+                        Constraint::Min(0),       // Messages
+                        Constraint::Length(1),  // Footer
+                    ])
+                    .split(area);
+
+                // Render header
+                let cwd = std::env::current_dir()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                
+                render_header(f, chunks[0], &self.model_config.model, 
+                    provider_name(&self.model_config.provider), &cwd, &theme);
+                
+                // Render messages area or empty state
+                if self.messages.is_empty() {
+                    render_messages_list(f, chunks[1], &self.messages, &theme);
                 } else {
-                    "idle".to_string()
-                };
-                let spinner_widget = ratatui::widgets::Paragraph::new(spinner)
-                    .style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG))
-                    .wrap(Wrap { trim: true });
-                f.render_widget(spinner_widget, chunks[1]);
+                    // Render message history with improved styling
+                    let mut lines: Vec<Line> = vec![Line::from("")];
+                    
+                    for msg in &self.messages {
+                        let role_str = match msg.role {
+                            MessageRole::User => "USER",
+                            MessageRole::Assistant => "AGENT",
+                            MessageRole::Tool => "TOOL",
+                            MessageRole::System => "RESULT",
+                        };
+                        
+                        let color = match msg.role {
+                            MessageRole::User => theme.message_user,
+                            MessageRole::Assistant => theme.message_assistant,
+                            MessageRole::Tool => theme.message_tool,
+                            MessageRole::System => theme.success,
+                        };
+                        
+                        let icon = match msg.role {
+                            MessageRole::User => "❯",
+                            MessageRole::Assistant => "●",
+                            MessageRole::Tool => "→",
+                            MessageRole::System => "✓",
+                        };
+                        
+                        let preview = if msg.content.len() > 100 {
+                            format!("{}...", &msg.content[..97])
+                        } else {
+                            msg.content.clone()
+                        };
+                        
+                        lines.push(Line::from(vec![
+                            Span::styled(" ", Style::default()),
+                            Span::styled(icon, Style::default().fg(color)),
+                            Span::styled(" ", Style::default()),
+                            Span::styled(role_str, Style::default().fg(color).add_modifier(Modifier::BOLD)),
+                            Span::styled(" ", Style::default()),
+                            Span::styled(preview, Style::default().fg(theme.foreground)),
+                        ]));
+                    }
+                    
+                    let messages_para = Paragraph::new(lines)
+                        .style(Style::default().fg(theme.foreground))
+                        .wrap(Wrap { trim: true });
+                    
+                    f.render_widget(messages_para, chunks[1]);
+                }
+                
+                // Render footer with prompt
+                let status_text = self.build_status_text();
+                
+                let footer = Paragraph::new(Line::from(vec![
+                    Span::styled("❯ ", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+                    Span::styled(&self.input, Style::default().fg(theme.foreground)),
+                    Span::styled(" ", Style::default()),
+                    Span::styled(&status_text, Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+                ]))
+                .style(Style::default().fg(theme.foreground))
+                .wrap(Wrap { trim: true });
+                
+                f.render_widget(footer, chunks[2]);
             }
-            AppState::ModelWizard => {
-                let block = ratatui::widgets::Block::default()
-                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
-                    .title("Model Wizard")
-                    .title_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG));
-                let paragraph = ratatui::widgets::Paragraph::new(
-                    "Select model:\n\n[1] gpt-4\n[2] gpt-3.5-turbo\n[3] claude\n\n[Esc] - Back to Banner"
-                ).block(block);
-                f.render_widget(paragraph, chunks[1]);
-            }
-            AppState::ProviderWizard => {
-                let block = ratatui::widgets::Block::default()
-                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
-                    .title("Provider Wizard")
-                    .title_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG));
-                let paragraph = ratatui::widgets::Paragraph::new(
-                    "Select provider:\n\n[1] OpenAI\n[2] Anthropic\n[3] Google\n\n[Esc] - Back to Banner"
-                ).block(block);
-                f.render_widget(paragraph, chunks[1]);
-            }
-            AppState::ConfigMenu => {
-                let block = ratatui::widgets::Block::default()
-                    .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
-                    .title("Config Menu")
-                    .title_style(Style::default().fg(VS_DARK_ACCENT).bg(VS_DARK_BG));
-                let paragraph = ratatui::widgets::Paragraph::new(
-                    "Configuration:\n\n[r] - Reload config\n[s] - Save config\n\n[Esc] - Back to Banner"
-                ).block(block);
-                f.render_widget(paragraph, chunks[1]);
+            AppState::ModelWizard | AppState::ProviderWizard | AppState::ConfigMenu => {
+                // Wizard states - use full area
+                let status_text = self.build_status_text();
+                
+                let status = Paragraph::new(Line::from(vec![
+                    Span::styled("❯ ", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+                    Span::styled(&self.input, Style::default().fg(theme.foreground)),
+                    Span::styled(" ", Style::default()),
+                    Span::styled(&status_text, Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+                ]))
+                .style(Style::default().fg(theme.foreground))
+                .wrap(Wrap { trim: true });
+                
+                f.render_widget(status, area);
             }
         }
+    }
 
-        // Input line / status
-        let status_text = if self.current_state == AppState::Input {
-            if self.input.is_empty() {
-                format!("> ")
-            } else {
-                format!("> {}", self.input)
+    fn build_status_text(&self) -> String {
+        match &self.status {
+            StatusType::Ready => "Ready".to_string(),
+            StatusType::Thinking(t) => {
+                if t.is_empty() {
+                    "Thinking...".to_string()
+                } else {
+                    t.clone()
+                }
             }
-        } else {
-            String::new()
-        };
-
-        let input_block = ratatui::widgets::Block::default()
-            .borders(ratatui::widgets::Borders::ALL)
-            .border_type(ratatui::widgets::BorderType::Rounded)
-            .style(Style::default().bg(VS_DARK_BG))
-            .title("")
-            .title_style(Style::default().bg(VS_DARK_BG));
-
-        let input_widget = ratatui::widgets::Paragraph::new(status_text)
-            .style(Style::default().fg(VS_DARK_TEXT).bg(VS_DARK_BG))
-            .block(input_block);
-        f.render_widget(input_widget, chunks[2]);
-
-        Ok(())
+            StatusType::Success => "Done".to_string(),
+            StatusType::Error(e) => {
+                if e.is_empty() {
+                    "Error".to_string()
+                } else {
+                    format!("Error: {}", e)
+                }
+            }
+            StatusType::Tool(name) => name.clone(),
+        }
     }
 
     pub fn push_assistant(&mut self, text: &str) {
         self.messages.push(MessageEntry {
-            role: "assistant".into(),
+            role: MessageRole::Assistant,
             content: text.to_string(),
             tool_call: None,
             finished: true,
@@ -291,7 +394,7 @@ impl AgentApp {
 
     pub fn push_user(&mut self, text: &str) {
         self.messages.push(MessageEntry {
-            role: "user".into(),
+            role: MessageRole::User,
             content: text.to_string(),
             tool_call: None,
             finished: true,
@@ -299,106 +402,91 @@ impl AgentApp {
     }
 
     pub fn push_tool_call(&mut self, name: &str, args: &str) {
+        if let Some(tool) = self.tool_calls.last_mut() {
+            tool.output = Some(args.to_string());
+        } else {
+            let tool = ToolCallEntry {
+                name: name.to_string(),
+                args: args.to_string(),
+                status: ToolStatus::Running,
+                output: Some(args.to_string()),
+            };
+            self.tool_calls.push(tool);
+        }
+        
         self.messages.push(MessageEntry {
-            role: "tool".into(),
+            role: MessageRole::Tool,
             content: args.to_string(),
             tool_call: Some(name.to_string()),
             finished: true,
         });
     }
 
-    pub fn set_spinner(&mut self, active: bool, text: &str) {
-        self.spinner_active = active;
-        self.spinner_text = text.to_string();
-    }
-
-    pub fn set_state(&mut self, state: AppState) {
-        self.current_state = state;
-    }
-
     pub fn append_status(&mut self, text: &str) {
-        self.status = text.to_string();
+        self.status = match self.status {
+            StatusType::Thinking(_) => StatusType::Thinking(text.to_string()),
+            _ => StatusType::Success,
+        };
     }
 
-    pub fn append_assistant(&mut self, text: &str) {
-        self.messages.push(MessageEntry {
-            role: "assistant".into(),
-            content: text.to_string(),
-            tool_call: None,
-            finished: true,
-        });
+    pub fn finish_tool(&mut self, output: Option<String>) {
+        if let Some(tool) = self.tool_calls.last_mut() {
+            tool.status = ToolStatus::Success;
+            tool.output = output;
+        }
     }
 
-    pub fn set_model_config(&mut self, model: ModelConfig) {
-        let _ = model;
+    pub fn error(&mut self, msg: &str) {
+        self.status = StatusType::Error(msg.to_string());
     }
 
     pub fn compact(&mut self) {
         self.compacted_count += 1;
-        let keep = 4.min(self.messages.len());
+        let keep = 8.min(self.messages.len());
         let drop = self.messages.len() - keep;
         self.messages.drain(0..drop.max(0));
     }
 
     pub fn undo_last(&mut self) {
         if let Some(last) = self.messages.pop() {
-            if last.role == "tool" {
+            if matches!(last.role, MessageRole::Tool) {
                 self.messages.push(last);
             }
         }
     }
+
+    pub fn clear_messages(&mut self) {
+        self.messages.clear();
+        self.tool_calls.clear();
+    }
 }
 
-pub fn render_frame(
-    f: &mut Frame,
-    app: &mut AgentApp,
-    tool_widget: &ToolCallWidget,
-) -> Result<()> {
-    let area = f.area();
-    let chunks = ratatui::layout::Layout::default()
-        .direction(ratatui::layout::Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Min(0),
-            Constraint::Length(3),
-        ])
-        .split(area);
-
-    let header = ratatui::widgets::Block::default()
-        .borders(ratatui::widgets::Borders::ALL)
-        .border_type(ratatui::widgets::BorderType::Rounded)
-        .title(format!(
-            "{}  v{}",
-            app.title, app.version
-        ))
-        .title_alignment(ratatui::layout::Alignment::Center);
-    f.render_widget(header, chunks[0]);
-
-    let spinner = if app.spinner_active {
-        format!("⠋ {}", app.spinner_text)
-    } else if let Some(t) = &app.last_tool {
-        format!("✓ {}", t)
-    } else {
-        "idle".to_string()
-    };
-
-    let spinner_widget = ratatui::widgets::Paragraph::new(spinner)
+fn render_messages_list(f: &mut Frame, area: Rect, _messages: &[MessageEntry], theme: &Theme) {
+    // Empty state message
+    let empty_lines: Vec<Line> = vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Ready to code.", Style::default().fg(theme.foreground).add_modifier(Modifier::BOLD)),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Ask me to inspect, edit, refactor, test,", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+        ]),
+        Line::from(vec![
+            Span::styled("debug, or explain your code.", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Try: \"inspect this project for issues\"", Style::default().fg(theme.accent)),
+        ]),
+        Line::from(""),
+    ];
+    
+    let empty_para = Paragraph::new(empty_lines)
+        .style(Style::default().fg(theme.foreground))
         .wrap(Wrap { trim: true });
-    f.render_widget(spinner_widget, chunks[1]);
-
-    let status = if app.input.is_empty() {
-        format!(
-            "{}  [messages: {}] {}",
-            app.status,
-            app.messages.len(),
-            tool_widget.label()
-        )
-    } else {
-        app.input.clone()
-    };
-    let status_widget = ratatui::widgets::Paragraph::new(status).wrap(Wrap { trim: true });
-    f.render_widget(status_widget, chunks[2]);
-    Ok(())
+    
+    f.render_widget(empty_para, area);
 }
 
 pub struct ToolCallWidget {
@@ -422,7 +510,7 @@ impl ToolCallWidget {
     pub fn label(&self) -> String {
         match &self.tool_name {
             None => String::from("no tool"),
-            Some(n) => format!("tool: {n}"),
+            Some(n) => format!("tool: {}", n),
         }
     }
 
@@ -434,5 +522,64 @@ impl ToolCallWidget {
 impl Default for ToolCallWidget {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub fn provider_name(p: &ProviderKind) -> &'static str {
+    match p {
+        ProviderKind::OpenAi => "openai",
+        ProviderKind::Anthropic => "anthropic",
+        ProviderKind::Google => "google",
+        ProviderKind::OpenAiCompatible => "openai-compatible",
+        ProviderKind::Custom => "custom",
+        ProviderKind::Mock => "mock",
+    }
+}
+
+impl std::fmt::Display for StatusType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StatusType::Ready => write!(f, "Ready"),
+            StatusType::Thinking(t) => write!(f, "Thinking... {}", t),
+            StatusType::Success => write!(f, "Done"),
+            StatusType::Error(e) => write!(f, "Error: {}", e),
+            StatusType::Tool(t) => write!(f, "Tool: {}", t),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_app_state_default() {
+        let app = AgentApp::new("Test", "1.0");
+        assert!(matches!(app.current_state, AppState::Banner));
+    }
+
+    #[test]
+    fn test_set_model_config() {
+        let mut app = AgentApp::new("Test", "1.0");
+        let config = ModelConfig {
+            provider: ProviderKind::OpenAi,
+            model: "gpt-4".into(),
+            base_url: None,
+            api_key_env: None,
+            temperature: None,
+            max_tokens: None,
+        };
+        app.set_model_config(config);
+        assert_eq!(app.model_config.model, "gpt-4");
+    }
+
+    #[test]
+    fn test_push_messages() {
+        let mut app = AgentApp::new("Test", "1.0");
+        app.push_user("Hello");
+        app.push_assistant("Hi there!");
+        assert_eq!(app.messages.len(), 2);
+        assert!(matches!(app.messages[0].role, MessageRole::User));
+        assert!(matches!(app.messages[1].role, MessageRole::Assistant));
     }
 }

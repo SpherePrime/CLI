@@ -4,4 +4,4 @@ pub use crate::markdown::render_markdown;
 pub use crate::spinner::Spinner;
 pub use crate::status_bar::StatusBar;
 pub use crate::theme::Theme;
-pub use crate::app::{render_frame, AgentApp, MessageEntry, ToolCallWidget};
+pub use crate::app::{AgentApp, MessageEntry, ToolCallWidget, provider_name};

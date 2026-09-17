@@ -1,9 +1,10 @@
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::widgets::{Block, BorderType, List, ListItem};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{List, ListItem};
 use ratatui::Frame;
 
-use super::Component;
+use crate::theme::Theme;
 
 #[derive(Debug, Clone)]
 pub struct BannerScreen {
@@ -19,7 +20,7 @@ impl BannerScreen {
             model: String::new(),
             provider: String::new(),
             version: "dev".to_string(),
-            accent_color: Color::Rgb(118, 158, 242),
+            accent_color: Color::Rgb(79, 193, 255),
         }
     }
 
@@ -50,30 +51,41 @@ impl Default for BannerScreen {
     }
 }
 
-impl Component for BannerScreen {
-    fn render(&self, _frame: &mut Frame, area: Rect) -> Rect {
-        let line = "══════════════════════════════════════════════";
-        let title_line = format!("  AGENT  —  AI Coding Agent  v{}", self.version);
-        let model_provider_line = format!("  model: {}  ·  provider: {}", self.model, self.provider);
-        let commands_line = "  /help · /model · /config · /status · /tools · /exit";
+impl BannerScreen {
+    pub fn render(&self, frame: &mut Frame, area: Rect) -> Rect {
+        let theme = Theme::default_theme();
+        
+        let title_line = Line::from(vec![
+            Span::styled("AI Coding Agent", Style::default().fg(self.accent_color).add_modifier(Modifier::BOLD)),
+        ]);
+        
+        let model_line = Line::from(vec![
+            Span::styled("model  ", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+            Span::styled(&self.model, Style::default().fg(self.accent_color)),
+        ]);
+        
+        let provider_line = Line::from(vec![
+            Span::styled("provider  ", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+            Span::styled(&self.provider, Style::default().fg(theme.accent_light)),
+        ]);
+        
+        let version_line = Line::from(vec![
+            Span::styled("version  ", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+            Span::styled(&self.version, Style::default().fg(theme.accent_light)),
+        ]);
 
         let items: Vec<ListItem> = vec![
-            ListItem::new(line).style(Style::default().fg(Color::Rgb(79, 193, 255)).add_modifier(Modifier::BOLD)),
-            ListItem::new(title_line).style(Style::default().fg(Color::Rgb(79, 193, 255)).add_modifier(Modifier::BOLD)),
-            ListItem::new(model_provider_line).style(Style::default().fg(Color::Rgb(107, 114, 128))),
-            ListItem::new(commands_line).style(Style::default().fg(Color::Rgb(107, 114, 128))),
-            ListItem::new(line).style(Style::default().fg(Color::Rgb(79, 193, 255)).add_modifier(Modifier::BOLD)),
+            ListItem::new(title_line),
+            ListItem::new(model_line),
+            ListItem::new(provider_line),
+            ListItem::new(version_line),
         ];
 
-        let banner_block = Block::bordered()
-            .border_type(BorderType::Plain)
-            .style(Style::default());
-
-        let inner_area = banner_block.inner(area);
-        let list = List::new(items).block(banner_block);
-
-        // Simplified render - returns inner area
-        inner_area
+        let list = List::new(items);
+        
+        frame.render_widget(list, area);
+        
+        area
     }
 }
 

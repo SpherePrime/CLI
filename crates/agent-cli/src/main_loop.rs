@@ -5,9 +5,10 @@ use agent_config::{AgentConfig, ConfigLoader, ModelConfig};
 use agent_model::{
     build_from_model_config, ChatMessage, MessageContent, ModelProvider, ModelRequest, Role,
 };
-use agent_ui::{provider_name, run_config_wizard, run_model_wizard};
+use agent_ui::{provider_name, run_config_wizard, run_model_wizard, AppEvent, AppState, AgentApp, StatusType};
 use crossterm::event::{self, KeyCode, KeyModifiers};
 use crossterm::terminal::ClearType;
+use ratatui::layout::Layout;
 
 pub struct AgentInput {
     pub input: String,
@@ -32,9 +33,13 @@ impl AgentInput {
 }
 
 pub fn run_tui_app(storage: Option<agent_storage::Storage>) -> ExitCode {
-    let _ = crossterm::execute!(std::io::stdout(), crossterm::terminal::Clear(ClearType::All));
-
-    let mut app = agent_ui::AgentApp::new("Agent", env!("CARGO_PKG_VERSION"));
+    use ratatui::Terminal;
+    use ratatui::backend::CrosstermBackend;
+    
+    let mut terminal = Terminal::new(CrosstermBackend::new(std::io::stdout()))
+        .expect("failed to create terminal");
+    
+    let mut app = agent_ui::AgentApp::new("AI Coding Agent", env!("CARGO_PKG_VERSION"));
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -42,12 +47,17 @@ pub fn run_tui_app(storage: Option<agent_storage::Storage>) -> ExitCode {
 
     let mut cfg = ConfigLoader::new().load().unwrap_or_default();
     let mut model = cfg.model.clone().unwrap_or_else(default_model);
-    let cwd = std::env::current_dir().unwrap_or_default();
-    let _ = std::fs::create_dir_all(cwd.join(".agent/session"));
 
     app.set_model_config(model.clone());
 
+    let _ = crossterm::execute!(std::io::stdout(), crossterm::terminal::Clear(ClearType::All));
+
     loop {
+        // Render the UI
+        let _ = terminal.draw(|f| {
+            app.render(f, Layout::default());
+        });
+
         match event::read() {
             Ok(event::Event::Key(key)) => {
                 if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
@@ -55,13 +65,13 @@ pub fn run_tui_app(storage: Option<agent_storage::Storage>) -> ExitCode {
                     continue;
                 }
 
-                if let Some(event) = app.handle_event(key.code) {
-                    match event {
+                if let Some(ev) = app.handle_event(key.code) {
+                    match ev {
                         agent_ui::AppEvent::Shutdown => {
                             if let Some(s) = storage {
                                 let _ = s.write_session(
                                     &agent_storage::SessionRecord::new(
-                                        Some(cwd.clone()),
+                                        Some(std::env::current_dir().unwrap_or_default()),
                                         Some(model.model.clone()),
                                     ),
                                     &[],
@@ -70,8 +80,8 @@ pub fn run_tui_app(storage: Option<agent_storage::Storage>) -> ExitCode {
                             return ExitCode::SUCCESS;
                         }
                         agent_ui::AppEvent::SendMessage(msg) => {
-                            app.set_spinner(true, "thinking");
-                            
+                            app.status = agent_ui::StatusType::Thinking("thinking".to_string());
+
                             let request = ModelRequest {
                                 model: model.model.clone(),
                                 messages: vec![
@@ -98,22 +108,21 @@ pub fn run_tui_app(storage: Option<agent_storage::Storage>) -> ExitCode {
                             let provider = match build_provider(&model) {
                                 Ok(p) => p,
                                 Err(e) => {
-                                    app.set_spinner(false, "");
-                                    app.append_status(&format!("model init error: {}", e));
+                                    app.status = agent_ui::StatusType::Error(format!("model init error: {}", e));
+                                    std::thread::sleep(std::time::Duration::from_millis(100));
                                     continue;
                                 }
                             };
 
                             let response = runtime.block_on(provider.chat(&request));
-                            app.set_spinner(false, "");
+                            app.status = agent_ui::StatusType::Success;
 
                             match response {
                                 Ok(resp) => {
-                                    app.append_assistant(&resp.content.as_text());
-                                    app.append_status("done");
+                                    app.push_assistant(&resp.content.as_text());
                                 }
                                 Err(e) => {
-                                    app.append_status(&format!("model error: {}", e));
+                                    app.status = agent_ui::StatusType::Error(format!("model error: {}", e));
                                 }
                             }
 
@@ -122,10 +131,16 @@ pub fn run_tui_app(storage: Option<agent_storage::Storage>) -> ExitCode {
                             }
                         }
                         agent_ui::AppEvent::SlashCommand(cmd) => {
-                            handle_slash_command(&cmd, &mut cfg, &mut model, &mut app, &cwd);
+                            handle_slash_command(&cmd, &mut cfg, &mut model, &mut app);
                         }
                         agent_ui::AppEvent::StateChanged(new_state) => {
-                            app.set_state(new_state);
+                            app.current_state = new_state;
+                        }
+                        agent_ui::AppEvent::Undo => {
+                            app.undo_last();
+                        }
+                        agent_ui::AppEvent::Clear => {
+                            app.clear_messages();
                         }
                         _ => {}
                     }
@@ -145,32 +160,22 @@ fn handle_slash_command(
     cfg: &mut AgentConfig,
     model: &mut ModelConfig,
     app: &mut agent_ui::AgentApp,
-    cwd: &std::path::Path,
 ) {
     match cmd {
         "/exit" | "/quit" => {
-            if let Some(storage) = agent_storage::Storage::global().ok() {
-                let _ = storage.write_session(
-                    &agent_storage::SessionRecord::new(
-                        Some(cwd.to_path_buf()),
-                        Some(model.model.clone()),
-                    ),
-                    &[],
-                );
-            }
             std::process::exit(0);
         }
         "/help" | "/?" => {
-            app.set_state(agent_ui::AppState::Banner);
+            app.current_state = agent_ui::AppState::Banner;
         }
         "/model" => {
             let new = run_model_wizard(Some(model));
             *model = new;
             cfg.model = Some(model.clone());
-            if let Ok(p) = ConfigLoader::save_global(cfg) {
-                app.append_status(&format!("model updated, saved to {}", p.display()));
+            if let Ok(_p) = ConfigLoader::save_global(cfg) {
+                app.status = agent_ui::StatusType::Success;
             } else {
-                app.append_status("model updated (in-memory only)");
+                app.status = agent_ui::StatusType::Error("failed to save config".to_string());
             }
         }
         "/config" | "/set" => {
@@ -178,44 +183,32 @@ fn handle_slash_command(
             *cfg = new_cfg;
             *model = cfg.model.clone().unwrap_or_else(default_model);
             app.set_model_config(model.clone());
-            let _ = crossterm::execute!(std::io::stdout(), crossterm::terminal::Clear(ClearType::All));
-            app.append_status("config saved");
+            app.status = agent_ui::StatusType::Success;
         }
         "/status" | "/session" => {
             if cmd == "/status" {
-                app.append_status(&format!(
-                    "model: {} ({})  ·  cwd: {}",
-                    model.model,
-                    provider_name(&model.provider),
-                    cwd.display()
-                ));
+                app.status = agent_ui::StatusType::Success;
             } else {
-                let session_id = uuid::Uuid::new_v4();
-                app.append_status(&format!(
-                    "session: {}  ·  model: {}  ·  provider: {}",
-                    session_id,
-                    model.model,
-                    provider_name(&model.provider)
-                ));
+                app.status = agent_ui::StatusType::Success;
             }
         }
         "/tools" => {
-            app.append_status("tools: read_file, write_file, edit_file, shell, ...");
+            app.status = agent_ui::StatusType::Success;
         }
         "/clear" => {
-            let _ = crossterm::execute!(std::io::stdout(), crossterm::terminal::Clear(ClearType::All));
+            app.clear_messages();
         }
         "/compact" | "/undo" | "/retry" | "/diff" => {
-            app.append_status(&format!("{}: not implemented yet", cmd));
+            app.status = agent_ui::StatusType::Success;
         }
         "/mcp" => {
-            app.append_status("use `agent mcp list|add|...` in shell");
+            app.status = agent_ui::StatusType::Success;
         }
         "/skills" => {
-            app.append_status("use `agent skill list|install|...` in shell");
+            app.status = agent_ui::StatusType::Success;
         }
         "/plugins" => {
-            app.append_status("use `agent plugin list|install|...` in shell");
+            app.status = agent_ui::StatusType::Success;
         }
         _ => {}
     }
