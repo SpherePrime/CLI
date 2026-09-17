@@ -1,3 +1,4 @@
+use agent_config::{ModelConfig, ProviderKind};
 use agent_tools::ToolOutput;
 use ratatui::prelude::*;
 use ratatui::widgets::Wrap;
@@ -309,6 +310,27 @@ impl AgentApp {
     pub fn set_spinner(&mut self, active: bool, text: &str) {
         self.spinner_active = active;
         self.spinner_text = text.to_string();
+    }
+
+    pub fn set_state(&mut self, state: AppState) {
+        self.current_state = state;
+    }
+
+    pub fn append_status(&mut self, text: &str) {
+        self.status = text.to_string();
+    }
+
+    pub fn append_assistant(&mut self, text: &str) {
+        self.messages.push(MessageEntry {
+            role: "assistant".into(),
+            content: text.to_string(),
+            tool_call: None,
+            finished: true,
+        });
+    }
+
+    pub fn set_model_config(&mut self, model: ModelConfig) {
+        let _ = model;
     }
 
     pub fn compact(&mut self) {

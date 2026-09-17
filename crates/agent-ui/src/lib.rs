@@ -10,7 +10,7 @@ pub mod theme;
 pub mod widgets;
 
 pub use interactive_tui::{run_config_wizard, run_model_wizard, provider_name};
-pub use app::{AgentApp, AppCommand, AppEvent};
+pub use app::{AgentApp, AppCommand, AppEvent, AppState};
 pub use diff::{DiffView, render_diff, render_message};
 pub use input::{Autocomplete, SlashCommand, SlashCommandPalette};
 pub use markdown::render_markdown;
