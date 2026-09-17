@@ -17,6 +17,6 @@
   "scripts": {
     "start": "bun run src/index.tsx",
     "typecheck": "tsc --noEmit",
-    "build": "bun build --compile --conditions browser --no-compile-autoload-bunfig --no-compile-autoload-dotenv src/index.tsx --outfile dist/agent-tui.exe"
+    "build": "bun run build.ts"
   }
 }
