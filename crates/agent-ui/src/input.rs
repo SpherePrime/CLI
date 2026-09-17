@@ -1,7 +1,3 @@
-use fuzzy_matcher::skim::SkimMatcherV2;
-use fuzzy_matcher::FuzzyMatcher;
-use std::collections::HashMap;
-
 #[derive(Debug, Clone)]
 pub struct SlashCommand {
     pub name: String,
@@ -120,6 +116,15 @@ impl SlashCommandPalette {
 
     pub fn all_names(&self) -> Vec<String> {
         self.commands.iter().map(|c| c.name.clone()).collect()
+    }
+
+    pub fn all_commands(&self) -> &[SlashCommand] {
+        &self.commands
+    }
+
+    pub fn find(&self, name: &str) -> Option<&SlashCommand> {
+        let name = name.trim_start_matches('/');
+        self.commands.iter().find(|c| c.name == format!("/{name}"))
     }
 }
 
