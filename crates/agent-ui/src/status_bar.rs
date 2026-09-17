@@ -1,42 +1,61 @@
-use ratatui::style::Style;
-use ratatui::text::{Line, Span};
-use ratatui::widgets::Paragraph;
-
+#[derive(Debug, Clone)]
 pub struct StatusBar {
-    pub model: String,
-    pub project: String,
-    pub mode: String,
-    pub context_used: usize,
-}
-
-impl StatusBar {
-    pub fn new() -> Self {
-        Self {
-            model: "unknown".into(),
-            project: "-".into(),
-            mode: "interactive".into(),
-            context_used: 0,
-        }
-    }
-
-    pub fn render(&self) -> Paragraph {
-        Paragraph::new(Line::from(vec![
-            Span::styled(" model ", Style::default().fg(ratatui::style::Color::Cyan)),
-            Span::raw(&self.model),
-            Span::styled(" | project ", Style::default().fg(ratatui::style::Color::Yellow)),
-            Span::raw(&self.project),
-            Span::styled(" | mode ", Style::default().fg(ratatui::style::Color::Green)),
-            Span::raw(&self.mode),
-            Span::styled(
-                format!(" | ctx {}/100%", self.context_used),
-                Style::default().fg(ratatui::style::Color::White),
-            ),
-        ]))
-    }
+    model: String,
+    project: String,
+    mode: String,
+    context_used: usize,
 }
 
 impl Default for StatusBar {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl StatusBar {
+    pub fn new() -> Self {
+        Self {
+            model: String::new(),
+            project: String::new(),
+            mode: String::new(),
+            context_used: 0,
+        }
+    }
+
+    pub fn with_model(mut self, model: &str) -> Self {
+        self.model = model.to_string();
+        self
+    }
+
+    pub fn with_project(mut self, project: &std::path::Path) -> Self {
+        self.project = project.display().to_string();
+        self
+    }
+
+    pub fn with_mode(mut self, mode: &str) -> Self {
+        self.mode = mode.to_string();
+        self
+    }
+
+    pub fn model(&self) -> &str {
+        &self.model
+    }
+
+    pub fn project(&self) -> &str {
+        &self.project
+    }
+
+    pub fn mode(&self) -> &str {
+        &self.mode
+    }
+}
+
+impl std::fmt::Display for StatusBar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "model={} project={} mode={}",
+            self.model, self.project, self.mode
+        )
     }
 }
