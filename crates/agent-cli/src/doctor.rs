@@ -1,12 +1,12 @@
 use agent_storage::Storage;
 
 pub fn run_doctor(storage: &Storage) -> std::process::ExitCode {
-    let mut failures = 0;
+    let mut hard_failures = 0;
 
     let home = dirs::home_dir();
     if home.is_none() {
         eprintln!("✗ cannot determine home directory");
-        failures += 1;
+        hard_failures += 1;
     } else {
         println!("✓ home directory: {}", home.unwrap().display());
     }
@@ -15,18 +15,16 @@ pub fn run_doctor(storage: &Storage) -> std::process::ExitCode {
     if cfg_path.exists() {
         println!("✓ global config exists: {}", cfg_path.display());
     } else {
-        println!("! global config not found (run 'agent config' or 'agent init')");
-        failures += 1;
+        println!("! global config not found (run 'agent init' or 'agent config')");
     }
 
     let provider = std::env::var("AGENT_API_KEY").is_ok()
         || std::env::var("OPENAI_API_KEY").is_ok()
         || std::env::var("ANTHROPIC_API_KEY").is_ok();
     if provider {
-        println!("✓ API key configured (AGENT_API_KEY or provider-specific)");
+        println!("✓ API key configured");
     } else {
-        eprintln!("! no API key in environment; agent will run with mock provider");
-        failures += 1;
+        println!("! no API key in environment; agent will run with mock provider");
     }
 
     let mcp_servers = agent_config::ConfigLoader::new()
@@ -55,8 +53,8 @@ pub fn run_doctor(storage: &Storage) -> std::process::ExitCode {
     let audit_dir = storage.audit_dir();
     println!("✓ audit log: {}", audit_dir.display());
 
-    println!("\ndiagnostic result: {} issue(s) detected", failures);
-    if failures > 0 {
+    println!("\ndiagnostic: {hard_failures} hard failure(s) detected");
+    if hard_failures > 0 {
         std::process::ExitCode::FAILURE
     } else {
         std::process::ExitCode::SUCCESS
