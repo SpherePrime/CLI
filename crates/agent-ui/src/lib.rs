@@ -17,5 +17,5 @@ pub use markdown::render_markdown;
 pub use spinner::Spinner;
 pub use status_bar::StatusBar;
 pub use theme::Theme;
-pub use ui::{BannerScreen, Component, FormField, InputField, InputScreen, SelectList};
+pub use ui::{BannerScreen, Component, FormField, InputField, InputScreen, ModelWizardScreen, SelectList, WizardField};
 pub use widgets::{render_frame, ToolCallWidget};
