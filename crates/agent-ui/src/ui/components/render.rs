@@ -32,9 +32,13 @@
      let last = parts.last().unwrap_or(&"");
      let second_last = parts.get(parts.len().saturating_sub(2)).unwrap_or(&"");
      let first = parts.first().unwrap_or(&"");
- 
-     let truncated = format!("~{}/{}/{first}", second_last, last);
-     truncated
+
+    let truncated = format!("~{first}/{second_last}/{last}");
+    if truncated.len() <= max_len {
+        return truncated;
+    }
+
+    truncated
  }
  
  pub fn format_path(path: &str, _width: usize) -> String {
