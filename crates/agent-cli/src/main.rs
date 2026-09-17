@@ -1,6 +1,7 @@
 mod completion;
 mod doctor;
 mod init;
+mod launcher;
 mod runtime;
 mod server;
 

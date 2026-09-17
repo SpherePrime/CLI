@@ -24,6 +24,7 @@
              }
          }
          Some(Command::Serve { host, port }) => crate::server::serve(host.as_str(), *port, storage.clone()),
+         Some(Command::Tui { port }) => crate::launcher::run(*port),
          Some(Command::Init) => crate::init::run_init(),
          Some(Command::Doctor) => crate::doctor::run_doctor(storage),
          Some(Command::Mcp { action }) => mcp::run(action),

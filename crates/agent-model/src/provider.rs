@@ -33,11 +33,12 @@ pub trait ModelProvider: Send + Sync + 'static {
     ) -> Result<BoxStream<'static, std::result::Result<StreamChunk, ModelError>>>;
 }
  
- pub fn build_from_model_config(mc: &ModelConfig) -> Result<Box<dyn ModelProvider>> {
-     let api_key = mc
-         .api_key_env
-         .as_ref()
-         .and_then(|n| std::env::var(n).ok());
+pub fn build_from_model_config(mc: &ModelConfig) -> Result<Box<dyn ModelProvider>> {
+    let api_key = mc
+        .api_key_env
+        .as_ref()
+        .map(|value| std::env::var(value).unwrap_or_else(|_| value.clone()))
+        .filter(|key| !key.is_empty());
      let pc = ProviderConfig {
          kind: mc.provider,
          model: mc.model.clone(),

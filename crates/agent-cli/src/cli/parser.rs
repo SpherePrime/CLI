@@ -26,6 +26,11 @@
         #[arg(long, default_value_t = 0)]
         port: u16,
     },
+    /// Launch the TypeScript TUI with an embedded server
+    Tui {
+        #[arg(long, default_value_t = 40123)]
+        port: u16,
+    },
      /// Initialize a project for the agent
      Init,
      /// Diagnose configuration
