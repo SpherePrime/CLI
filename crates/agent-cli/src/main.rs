@@ -116,12 +116,7 @@ pub enum SessionAction {
     Resume { id: Option<String> },
 }
 
-#[derive(Debug, clap::Subcommand)]
-pub enum ModelAction {
-    List,
-    Set { provider: String, model: String },
-}
-
+use cmd::model::ModelAction;
 use cmd::provider::ProviderAction;
 
 fn main() -> ExitCode {
@@ -349,46 +344,53 @@ fn main() -> ExitCode {
             },
         },
         Some(Command::Model { action }) => match action {
-            ModelAction::List => {
+            cmd::model::ModelAction::List => {
                 let cfg = load_config();
-                match cfg.model {
-                    Some(mc) => {
-                        println!("provider: {:?} model: {}", mc.provider, mc.model);
-                        if let Some(url) = &mc.base_url {
-                            println!("base_url: {url}");
+                cmd::model::list_models(&cfg);
+                ExitCode::SUCCESS
+            }
+            cmd::model::ModelAction::Add { spec: _ } => {
+                let mut cfg = load_config();
+                match cmd::model::add_model(&mut cfg) {
+                    Ok(model_config) => {
+                        match save_config(&cfg) {
+                            Ok(p) => {
+                                println!(
+                                    "model set to '{}' (provider: {:?}) in {}",
+                                    model_config.model, model_config.provider,
+                                    p.display()
+                                );
+                                ExitCode::SUCCESS
+                            }
+                            Err(e) => {
+                                eprintln!("failed to save config: {e}");
+                                ExitCode::FAILURE
+                            }
                         }
-                        ExitCode::SUCCESS
                     }
-                    None => {
-                        println!("no model configured. Use 'agent model set' to configure one.");
-                        ExitCode::SUCCESS
+                    Err(e) => {
+                        eprintln!("failed to add model: {e}");
+                        ExitCode::FAILURE
                     }
                 }
             }
-            ModelAction::Set { provider, model } => {
+            cmd::model::ModelAction::Use { spec } => {
                 let mut cfg = load_config();
-                cfg.model = Some(agent_config::ModelConfig {
-                    provider: match provider.as_str() {
-                        "anthropic" => agent_config::ProviderKind::Anthropic,
-                        "google" => agent_config::ProviderKind::Google,
-                        "mock" => agent_config::ProviderKind::Mock,
-                        "custom" => agent_config::ProviderKind::Custom,
-                        "openai" => agent_config::ProviderKind::OpenAi,
-                        _ => agent_config::ProviderKind::OpenAiCompatible,
-                    },
-                    model: model.clone(),
-                    base_url: None,
-                    api_key_env: Some(format!("{provider}_API_KEY").to_uppercase()),
-                    temperature: None,
-                    max_tokens: None,
-                });
-                match save_config(&cfg) {
-                    Ok(p) => {
-                        println!("set model to '{model}' (provider '{provider}') in {}", p.display());
-                        ExitCode::SUCCESS
+                match cmd::model::use_model(&mut cfg, &spec) {
+                    Ok(()) => {
+                        match save_config(&cfg) {
+                            Ok(p) => {
+                                println!("model set to '{}' in {}", spec, p.display());
+                                ExitCode::SUCCESS
+                            }
+                            Err(e) => {
+                                eprintln!("failed to save config: {e}");
+                                ExitCode::FAILURE
+                            }
+                        }
                     }
                     Err(e) => {
-                        eprintln!("failed to save config: {e}");
+                        eprintln!("failed to use model: {e}");
                         ExitCode::FAILURE
                     }
                 }
