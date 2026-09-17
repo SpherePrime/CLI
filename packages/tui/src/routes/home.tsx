@@ -31,7 +31,7 @@ export function Home(props: { client: AgentClient }) {
             borderColor={theme.borderSubtle}
           >
             <text fg={theme.text}>
-              {action.label} <text fg={theme.textMuted}>{action.key}</text>
+              {action.label} <span style={{ fg: theme.textMuted }}>{action.key}</span>
             </text>
           </box>
         ))}

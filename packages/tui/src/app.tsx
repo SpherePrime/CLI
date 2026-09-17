@@ -1,17 +1,19 @@
-import { createCliRenderer, type CliRendererConfig } from "@opentui/core"
-import { render, useTerminalDimensions } from "@opentui/solid"
+import { createCliRenderer } from "@opentui/core"
+import { render, useTerminalDimensions, useRenderer, useKeyboard } from "@opentui/solid"
 import { createSignal, Switch, Match, onMount } from "solid-js"
 import { AgentClient } from "./client"
-import { useRoute, RouteProvider } from "./context/route"
+import { useRoute } from "./context/route"
 import { theme } from "./theme"
 import { Home } from "./routes/home"
 import { Session } from "./routes/session"
+import { log } from "./log"
 
 export type TuiInput = {
   url: string
 }
 
 export async function run(input: TuiInput): Promise<void> {
+  log("run: creating renderer")
   const renderer = await createCliRenderer({
     externalOutputMode: "passthrough",
     targetFps: 60,
@@ -19,26 +21,37 @@ export async function run(input: TuiInput): Promise<void> {
     useKittyKeyboard: {},
     autoFocus: false,
   })
+  log("run: renderer created")
 
-  await render(
-    () => (
-      <RouteProvider initialRoute={{ type: "home" }}>
-        <App url={input.url} renderer={renderer} />
-      </RouteProvider>
-    ),
-    renderer,
-  )
+  const shutdown = new Promise<void>((resolve) => {
+    renderer.once("destroy", () => {
+      log("run: renderer destroyed")
+      resolve()
+    })
+  })
 
-  process.stdin.resume()
+  await render(() => <App url={input.url} />, renderer)
+  log("run: mounted")
+
+  await shutdown
+  log("run: finished")
 }
 
-function App(props: { url: string; renderer: any }) {
+function App(props: { url: string }) {
   const { route } = useRoute()
   const dimensions = useTerminalDimensions()
+  const renderer = useRenderer()
   const [client] = createSignal(new AgentClient(props.url))
 
+  useKeyboard((key) => {
+    if (key.ctrl && key.name === "c") {
+      log("key: ctrl+c -> destroy")
+      renderer.destroy()
+    }
+  })
+
   onMount(() => {
-    props.renderer.setTerminalTitle("Agent")
+    renderer.setTerminalTitle("Agent")
   })
 
   return (
