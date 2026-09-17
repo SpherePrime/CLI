@@ -3,7 +3,9 @@ pub mod components;
 pub mod input;
 pub mod message_renderer;
 pub mod model_wizard;
+pub mod model_wizard_render;
 pub mod provider_wizard;
+pub mod provider_wizard_render;
 
 pub use banner::BannerScreen;
 pub use components::{Component, FormField, InputField, SelectList, 
