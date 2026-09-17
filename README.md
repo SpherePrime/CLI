@@ -100,7 +100,7 @@ agent provider use azure
 agent model use azure/gpt-4o
 
 # Use mock provider for testing
-agent model set mock mock-1
+agent model use mock/mock-1
 agent                    # runs without external API calls
 ```
 
