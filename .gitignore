@@ -25,3 +25,10 @@ config.local.toml
 tmp/
 tests/fixtures/generated/
 screens/
+
+# TS / TUI
+node_modules/
+dist/
+build/
+packages/tui/.bun/
+*.tsbuildinfo
