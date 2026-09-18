@@ -62,6 +62,14 @@ impl PermissionEngine {
         self
     }
 
+    pub fn set_mode(&mut self, mode: PermissionMode) {
+        self.config.mode = mode;
+    }
+
+    pub fn mode(&self) -> PermissionMode {
+        self.config.mode
+    }
+
     pub fn check(&mut self, scope: PermissionScope, tool_name: &str, target: &str) -> Decision {
         let decision = self.evaluate(scope, tool_name, target);
         if self.config.secret_redaction {
@@ -85,6 +93,13 @@ impl PermissionEngine {
             PermissionMode::Deny => PermissionDecision::Deny,
             PermissionMode::Allow if path_ok && scope_ok => PermissionDecision::Allow,
             PermissionMode::Allow => PermissionDecision::Deny,
+            PermissionMode::AutoEdit if path_ok => match scope {
+                PermissionScope::Read | PermissionScope::Write | PermissionScope::Delete => {
+                    PermissionDecision::Allow
+                }
+                _ => PermissionDecision::Ask,
+            },
+            PermissionMode::AutoEdit => PermissionDecision::Deny,
             PermissionMode::Ask if !path_ok => PermissionDecision::Deny,
             _ => PermissionDecision::Ask,
         };
@@ -201,6 +216,23 @@ mod tests {
         });
         let d = e.check(PermissionScope::Read, "read_file", "src/a.rs");
         assert!(d.decision == PermissionDecision::Allow);
+    }
+
+    #[test]
+    fn engine_auto_edit_mode_allows_file_scopes() {
+        let mut e = PermissionEngine::new(PermissionsConfig {
+            mode: PermissionMode::AutoEdit,
+            ..Default::default()
+        });
+        assert!(e
+            .check(PermissionScope::Write, "write_file", "src/a.rs")
+            .is_allowed());
+        assert!(!e
+            .check(PermissionScope::Execute, "shell", "ls")
+            .is_allowed());
+        assert!(
+            e.check(PermissionScope::Execute, "shell", "ls").decision == PermissionDecision::Ask
+        );
     }
 
     #[test]

@@ -19,6 +19,7 @@ pub enum PermissionMode {
     #[default]
     Ask,
     Allow,
+    AutoEdit,
     Deny,
 }
 

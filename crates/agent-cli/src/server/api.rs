@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 use super::fs;
 use super::message;
+use super::permission;
 use super::providers;
 use super::session;
 use crate::server::state::AppState;
@@ -184,6 +185,8 @@ async fn handle_session_path(
             };
             session::locate(id, state, &body.path)
         }
+        (Method::GET, "permission-mode") => permission::get(id, state).await,
+        (Method::POST, "permission-mode") => permission::set(request, id, state).await,
         (Method::POST, "delete") | (Method::DELETE, "") => session::delete(id, state),
         _ => Ok(Response::builder()
             .status(StatusCode::METHOD_NOT_ALLOWED)

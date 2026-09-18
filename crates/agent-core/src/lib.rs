@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 pub mod engine;
 
-pub use engine::{AgentEngine, EngineApprover, EngineEvent};
+pub use engine::{AgentEngine, EngineApprover, EngineEvent, EventClock, EventMeta};
 
 use agent_config::{AgentConfig, ConfigLoader};
 use agent_events::{AgentEvent, AgentEventPayload, AgentScope, EventBus};

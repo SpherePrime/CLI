@@ -22,6 +22,7 @@ use async_trait::async_trait;
 use chrono::Utc;
 use futures::StreamExt;
 use serde_json::Value;
+use std::sync::Mutex;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
@@ -39,6 +40,7 @@ pub struct AgentEngine {
     pub context: ContextManager,
     pub storage: Option<Storage>,
     pub approver: Arc<EngineApprover>,
+    permissions: Arc<Mutex<PermissionEngine>>,
     clock: EventClock,
     mode: AgentMode,
     session_ready: bool,
@@ -86,6 +88,13 @@ impl AgentEngine {
         }
         context.set_user_instructions(&system);
         let mcp = mcp::build_client(&config.mcp);
+        let mut permissions = config.permissions.clone();
+        permissions.mode = match mode {
+            AgentMode::Auto | AgentMode::Debug | AgentMode::Ci => PermissionMode::Allow,
+            AgentMode::Plan | AgentMode::Readonly => PermissionMode::Deny,
+            AgentMode::Interactive => permissions.mode,
+        };
+        let permission_engine = Arc::new(Mutex::new(PermissionEngine::new(permissions)));
         Self {
             session_id,
             config,
@@ -95,6 +104,7 @@ impl AgentEngine {
             context,
             storage: Storage::global().ok(),
             approver,
+            permissions: permission_engine,
             clock,
             mode,
             session_ready: false,
@@ -129,6 +139,15 @@ impl AgentEngine {
         self.context.session_id = session_id;
         if let Some(storage) = &self.storage {
             if let Ok(record) = storage.read_session(&session_id) {
+                if self.mode == AgentMode::Interactive {
+                    if let Some(mode_name) =
+                        record.metadata.get("perms_mode").and_then(|v| v.as_str())
+                    {
+                        if let Ok(mode) = serde_json::from_str::<PermissionMode>(mode_name) {
+                            self.set_permission_mode(mode);
+                        }
+                    }
+                }
                 if let Some(project_path) = record.project_path.as_deref() {
                     if project_path.exists() {
                         self.working_dir = project_path.to_path_buf();
@@ -177,8 +196,16 @@ impl AgentEngine {
         &self.clock
     }
 
-    pub fn set_permission_mode(&mut self, mode: PermissionMode) {
-        self.config.permissions.mode = mode;
+    pub fn set_permission_mode(&self, mode: PermissionMode) {
+        self.permissions.lock().unwrap().set_mode(mode);
+    }
+
+    pub fn permission_mode(&self) -> PermissionMode {
+        self.permissions.lock().unwrap().mode()
+    }
+
+    pub fn permission_engine(&self) -> Arc<Mutex<PermissionEngine>> {
+        Arc::clone(&self.permissions)
     }
 
     pub fn model_name(&self) -> String {
@@ -664,15 +691,13 @@ impl AgentEngine {
     }
 
     fn tool_context(&self) -> ToolExecutionContext {
-        let mut permissions = self.config.permissions.clone();
-        permissions.mode = match self.mode {
-            AgentMode::Auto | AgentMode::Debug | AgentMode::Ci => PermissionMode::Allow,
-            AgentMode::Plan | AgentMode::Readonly => PermissionMode::Deny,
-            AgentMode::Interactive => permissions.mode,
-        };
-        let engine = PermissionEngine::new(permissions);
-        ToolExecutionContext::new(self.session_id, self.working_dir.clone(), engine)
-            .with_approver(self.approver.clone())
+        ToolExecutionContext::new(
+            self.session_id,
+            self.working_dir.clone(),
+            PermissionEngine::new(self.config.permissions.clone()),
+        )
+        .with_permission_engine(self.permissions.clone())
+        .with_approver(self.approver.clone())
     }
 
     async fn ensure_mcp_tools(&mut self) {
@@ -1313,6 +1338,57 @@ mod tests {
         assert!(
             fast > 0 && fast < slow,
             "individual durations expected, fast={fast} slow={slow}"
+        );
+    }
+
+    #[tokio::test]
+    async fn permission_mode_switch_changes_decisions() {
+        use agent_permissions::PermissionDecision;
+        let tmp = tempfile::tempdir().unwrap();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut config = test_config();
+        config.mode = Some(AgentMode::Interactive);
+        config.permissions.mode = PermissionMode::Ask;
+        let engine = AgentEngine::with_provider(
+            config,
+            tmp.path().to_path_buf(),
+            tx,
+            Box::new(StepProvider::new(vec![])),
+        );
+        let check = |engine: &AgentEngine, scope: PermissionScope, tool: &str| {
+            engine
+                .tool_context()
+                .permission_engine
+                .lock()
+                .unwrap()
+                .check(scope, tool, "a.txt")
+                .decision
+        };
+        assert_eq!(
+            check(&engine, PermissionScope::Write, "write_file"),
+            PermissionDecision::Ask
+        );
+        engine.set_permission_mode(PermissionMode::Allow);
+        assert_eq!(
+            check(&engine, PermissionScope::Write, "write_file"),
+            PermissionDecision::Allow
+        );
+        assert_eq!(
+            check(&engine, PermissionScope::Execute, "shell"),
+            PermissionDecision::Allow
+        );
+        engine.set_permission_mode(PermissionMode::AutoEdit);
+        assert_eq!(
+            check(&engine, PermissionScope::Write, "write_file"),
+            PermissionDecision::Allow
+        );
+        assert_eq!(
+            check(&engine, PermissionScope::Delete, "delete_path"),
+            PermissionDecision::Allow
+        );
+        assert_eq!(
+            check(&engine, PermissionScope::Execute, "shell"),
+            PermissionDecision::Ask
         );
     }
 

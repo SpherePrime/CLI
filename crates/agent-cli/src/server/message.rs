@@ -37,7 +37,14 @@ pub async fn post(
             return Ok(stream_error(&format!("engine init error: {error}")));
         }
     };
-    state.register_engine(session_id, engine.cancel_handle(), engine.approver.clone());
+    state.register_engine(
+        session_id,
+        engine.cancel_handle(),
+        engine.approver.clone(),
+        engine.permission_engine(),
+        engine_tx.clone(),
+        engine.clock().clone(),
+    );
     let run_tx = engine_tx.clone();
     drop(engine_tx);
 

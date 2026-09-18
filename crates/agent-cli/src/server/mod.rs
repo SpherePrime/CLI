@@ -4,6 +4,7 @@ pub mod credentials;
 pub mod extras;
 pub mod fs;
 pub mod message;
+pub mod permission;
 pub mod providers;
 pub mod session;
 pub mod state;

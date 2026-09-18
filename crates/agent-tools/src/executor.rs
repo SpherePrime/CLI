@@ -55,6 +55,14 @@ impl ToolExecutionContext {
         self.approver = Some(approver);
         self
     }
+
+    pub fn with_permission_engine(
+        mut self,
+        engine: Arc<std::sync::Mutex<PermissionEngine>>,
+    ) -> Self {
+        self.permission_engine = engine;
+        self
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

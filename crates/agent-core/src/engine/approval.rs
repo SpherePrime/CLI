@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
-use agent_permissions::PermissionDecision;
+use agent_permissions::{PermissionDecision, PermissionScope};
 use agent_tools::{PermissionApprover, PermissionRequest};
 use async_trait::async_trait;
 use tokio::sync::{mpsc, oneshot};
@@ -11,6 +11,7 @@ use crate::engine::event::{EngineEvent, EventClock};
 
 struct Pending {
     tool: String,
+    scope: PermissionScope,
     sender: oneshot::Sender<PermissionDecision>,
 }
 
@@ -50,6 +51,29 @@ impl EngineApprover {
                 decision: decision_name(decision).to_string(),
             });
             let _ = item.sender.send(decision);
+        }
+    }
+
+    pub fn resolve_pending_file_scopes(&self) {
+        let pending = std::mem::take(&mut *self.pending.lock().unwrap());
+        let (auto, keep): (Vec<_>, Vec<_>) = pending.into_iter().partition(|(_, item)| {
+            matches!(
+                item.scope,
+                PermissionScope::Read | PermissionScope::Write | PermissionScope::Delete
+            )
+        });
+        let mut map = self.pending.lock().unwrap();
+        for (id, item) in keep {
+            map.insert(id, item);
+        }
+        drop(map);
+        for (id, item) in auto {
+            let _ = self.tx.try_send(EngineEvent::PermissionResolved {
+                meta: self.clock.meta(format!("permission_{id}")),
+                id,
+                decision: "allow".to_string(),
+            });
+            let _ = item.sender.send(PermissionDecision::Allow);
         }
     }
 
@@ -94,6 +118,7 @@ impl PermissionApprover for EngineApprover {
             id,
             Pending {
                 tool: request.tool.clone(),
+                scope: request.scope,
                 sender,
             },
         );

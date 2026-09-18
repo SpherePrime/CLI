@@ -1,14 +1,18 @@
 use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
-use agent_config::{AgentConfig, ModelConfig};
-use agent_core::EngineApprover;
-use agent_permissions::PermissionDecision;
+use agent_config::{AgentConfig, ModelConfig, PermissionMode};
+use agent_core::{EngineApprover, EngineEvent, EventClock};
+use agent_permissions::{PermissionDecision, PermissionEngine};
+use tokio::sync::mpsc;
 
 pub struct EngineHandle {
     pub cancel: Arc<AtomicBool>,
     pub approver: Arc<EngineApprover>,
+    pub permissions: Arc<Mutex<PermissionEngine>>,
+    pub sender: mpsc::Sender<EngineEvent>,
+    pub clock: EventClock,
 }
 
 pub struct AppState {
@@ -18,7 +22,7 @@ pub struct AppState {
     pub storage: Option<agent_storage::Storage>,
     pub workspace: std::path::PathBuf,
     pub token: Option<String>,
-    engines: RwLock<HashMap<uuid::Uuid, EngineHandle>>,
+    engines: RwLock<HashMap<uuid::Uuid, Arc<EngineHandle>>>,
 }
 
 impl AppState {
@@ -61,16 +65,26 @@ impl AppState {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn register_engine(
         &self,
         session_id: uuid::Uuid,
         cancel: Arc<AtomicBool>,
         approver: Arc<EngineApprover>,
+        permissions: Arc<Mutex<PermissionEngine>>,
+        sender: mpsc::Sender<EngineEvent>,
+        clock: EventClock,
     ) {
-        self.engines
-            .write()
-            .unwrap()
-            .insert(session_id, EngineHandle { cancel, approver });
+        self.engines.write().unwrap().insert(
+            session_id,
+            Arc::new(EngineHandle {
+                cancel,
+                approver,
+                permissions,
+                sender,
+                clock,
+            }),
+        );
     }
 
     pub fn unregister_engine(&self, session_id: &uuid::Uuid) {
@@ -87,6 +101,24 @@ impl AppState {
             }
             None => false,
         }
+    }
+
+    pub fn set_permission_mode(&self, session_id: &uuid::Uuid, mode: PermissionMode) -> bool {
+        let handle = self.engines.read().unwrap().get(session_id).cloned();
+        let Some(handle) = handle else {
+            return false;
+        };
+        handle.permissions.lock().unwrap().set_mode(mode);
+        match mode {
+            PermissionMode::Allow => handle.approver.allow_all_pending(PermissionDecision::Allow),
+            PermissionMode::AutoEdit => handle.approver.resolve_pending_file_scopes(),
+            _ => {}
+        }
+        let _ = handle.sender.try_send(EngineEvent::PermissionModeChanged {
+            meta: handle.clock.meta("permission_mode"),
+            mode: permission_mode_name(mode).to_string(),
+        });
+        true
     }
 
     pub async fn resolve_permission(
@@ -106,6 +138,15 @@ impl AppState {
             Some(approver) => approver.resolve(permission_id, decision, remember).await,
             None => false,
         }
+    }
+}
+
+pub fn permission_mode_name(mode: PermissionMode) -> &'static str {
+    match mode {
+        PermissionMode::Ask => "ask",
+        PermissionMode::Allow => "full_access",
+        PermissionMode::AutoEdit => "auto_edit",
+        PermissionMode::Deny => "deny",
     }
 }
 
