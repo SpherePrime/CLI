@@ -50,6 +50,20 @@ export type ModelsResponse = {
   favorites: string[]
 }
 
+export type SkillInfo = {
+  name: string
+  scope: string
+  enabled: boolean
+  description: string
+}
+
+export type PluginInfo = {
+  name: string
+  enabled: boolean
+  version: string
+  description: string
+}
+
 export type EngineEvent =
   | { type: "session.created"; session: { id: string } }
   | { type: "message.created"; message: { id: string; role: "user" | "assistant"; content?: string } }
@@ -162,6 +176,24 @@ export class AgentClient {
   async toggleFavorite(provider: string, model: string): Promise<string[]> {
     const data = await this.post<{ favorites: string[] }>("/favorite", { provider, model })
     return data.favorites
+  }
+
+  async listSkills(): Promise<SkillInfo[]> {
+    const data = await this.get<{ data: SkillInfo[] }>("/skills")
+    return data.data
+  }
+
+  async toggleSkill(name: string, enabled: boolean): Promise<void> {
+    await this.post<unknown>("/skill", { name, enabled })
+  }
+
+  async listPlugins(): Promise<PluginInfo[]> {
+    const data = await this.get<{ data: PluginInfo[] }>("/plugins")
+    return data.data
+  }
+
+  async togglePlugin(name: string, enabled: boolean): Promise<void> {
+    await this.post<unknown>("/plugin", { name, enabled })
   }
 
   async findFiles(query: string): Promise<{ path: string; type: string }[]> {

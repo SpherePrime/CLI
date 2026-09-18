@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -93,10 +93,10 @@ impl AgentEngine {
         }
     }
 
-    fn load_skills(config: &AgentConfig, working_dir: &PathBuf) -> SkillRegistry {
+    fn load_skills(config: &AgentConfig, working_dir: &Path) -> SkillRegistry {
         let mut skills =
             SkillRegistry::new().with_project(working_dir.join(".agent").join("skills"));
-        if let Some(storage) = Storage::global().ok() {
+        if let Ok(storage) = Storage::global() {
             skills = skills.with_global(storage.root().join("skills"));
         }
         let _ = skills.discover_sync();

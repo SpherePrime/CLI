@@ -243,6 +243,80 @@ export function buildCommands(client: AgentClient): Command[] {
       run: () => openModelDialog(),
     },
     {
+      id: "agent.skills",
+      title: "Skills",
+      section: "Agent",
+      run: async () => {
+        try {
+          const skills = await client.listSkills()
+          if (skills.length === 0) {
+            openInfo({ title: "Skills", body: "No skills installed." })
+            return
+          }
+          openSelect({
+            title: "Skills",
+            options: skills.map((skill) => ({
+              title: `${skill.enabled ? "[on] " : "[off] "}${skill.name}`,
+              value: skill.name,
+              description: skill.description || `scope: ${skill.scope}`,
+            })),
+            onSelect: async (name) => {
+              try {
+                const skill = skills.find((entry) => entry.name === name)
+                if (!skill) return
+                await client.toggleSkill(name, !skill.enabled)
+                openInfo({
+                  title: "Skills",
+                  body: `${skill.name} ${skill.enabled ? "disabled" : "enabled"}.`,
+                })
+              } catch (error) {
+                openInfo({ title: "Skills", body: String(error) })
+              }
+            },
+          })
+        } catch (error) {
+          openInfo({ title: "Skills", body: String(error) })
+        }
+      },
+    },
+    {
+      id: "agent.plugins",
+      title: "Plugins",
+      section: "Agent",
+      run: async () => {
+        try {
+          const plugins = await client.listPlugins()
+          if (plugins.length === 0) {
+            openInfo({ title: "Plugins", body: "No plugins installed." })
+            return
+          }
+          openSelect({
+            title: "Plugins",
+            options: plugins.map((plugin) => ({
+              title: `${plugin.enabled ? "[on] " : "[off] "}${plugin.name}`,
+              value: plugin.name,
+              description: `${plugin.description || "plugin"} · v${plugin.version || "-"}`,
+            })),
+            onSelect: async (name) => {
+              try {
+                const plugin = plugins.find((entry) => entry.name === name)
+                if (!plugin) return
+                await client.togglePlugin(name, !plugin.enabled)
+                openInfo({
+                  title: "Plugins",
+                  body: `${plugin.name} ${plugin.enabled ? "disabled" : "enabled"}.`,
+                })
+              } catch (error) {
+                openInfo({ title: "Plugins", body: String(error) })
+              }
+            },
+          })
+        } catch (error) {
+          openInfo({ title: "Plugins", body: String(error) })
+        }
+      },
+    },
+    {
       id: "provider.connect",
       title: "Connect provider",
       section: "Provider",

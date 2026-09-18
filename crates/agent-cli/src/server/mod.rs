@@ -1,5 +1,6 @@
 pub mod api;
 pub mod catalog;
+pub mod extras;
 pub mod fs;
 pub mod message;
 pub mod providers;

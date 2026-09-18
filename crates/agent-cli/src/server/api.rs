@@ -50,6 +50,22 @@ pub async fn route(
         return handle_config(request, state).await;
     }
 
+    if method == Method::GET && path == "/skills" {
+        return crate::server::extras::list_skills(state).await;
+    }
+
+    if method == Method::POST && path == "/skill" {
+        return crate::server::extras::toggle_skill(request, state).await;
+    }
+
+    if method == Method::GET && path == "/plugins" {
+        return crate::server::extras::list_plugins(state).await;
+    }
+
+    if method == Method::POST && path == "/plugin" {
+        return crate::server::extras::toggle_plugin(request, state).await;
+    }
+
     if method == Method::GET && path == "/session" {
         return session::list(state);
     }
@@ -253,7 +269,26 @@ fn redact_config(value: &mut serde_json::Value) {
     if let Some(map) = value.as_object_mut() {
         if let Some(model) = map.get_mut("model") {
             if let Some(model_map) = model.as_object_mut() {
-                model_map.remove("api_key_env");
+                redact_optional_env(model_map.get_mut("api_key_env"));
+            }
+        }
+        if let Some(providers) = map.get_mut("providers") {
+            if let Some(providers_map) = providers.as_object_mut() {
+                for entry in providers_map.values_mut() {
+                    if let Some(provider_map) = entry.as_object_mut() {
+                        redact_optional_env(provider_map.get_mut("api_key_env"));
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn redact_optional_env(value: Option<&mut serde_json::Value>) {
+    if let Some(value) = value {
+        if let Some(name) = value.as_str() {
+            if !name.is_empty() && std::env::var(name).is_err() {
+                *value = serde_json::json!("<redacted>");
             }
         }
     }

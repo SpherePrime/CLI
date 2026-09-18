@@ -257,6 +257,11 @@ pub async fn connect(
         .filter(|value| !value.is_empty())
         .or_else(|| provider.and_then(|entry| entry.api.clone()));
     let api_key = body.api_key.clone().filter(|value| !value.is_empty());
+    let api_key_env = api_key.map(|key| {
+        let name = env_name_for_provider(&body.id);
+        std::env::set_var(&name, &key);
+        name
+    });
 
     let mut cfg = state.config.read().unwrap().clone().unwrap_or_default();
     cfg.providers.insert(
@@ -264,7 +269,7 @@ pub async fn connect(
         ProviderConfig {
             kind,
             base_url,
-            api_key_env: api_key,
+            api_key_env,
             temperature: None,
             max_tokens: None,
         },
@@ -275,6 +280,15 @@ pub async fn connect(
     Ok(json_response(
         &serde_json::json!({ "ok": true, "id": body.id }),
     ))
+}
+
+fn env_name_for_provider(id: &str) -> String {
+    let sanitized: String = id
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric() || *character == '_')
+        .map(|character| character.to_ascii_uppercase())
+        .collect();
+    format!("AGENT_PROVIDER_{sanitized}")
 }
 
 #[derive(Deserialize)]
