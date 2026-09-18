@@ -17,6 +17,7 @@ pub fn project_ref_for(path: &Path) -> ProjectRef {
         name,
         path: root.clone(),
         remote_url: agent_context::project::git_remote_origin(&root),
+        git_branch: agent_context::project::git_branch(&root),
     }
 }
 

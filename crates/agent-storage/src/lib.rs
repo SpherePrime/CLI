@@ -34,6 +34,8 @@ pub struct ProjectRef {
     pub name: String,
     pub path: PathBuf,
     pub remote_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub git_branch: Option<String>,
 }
 
 impl SessionRecord {

@@ -42,6 +42,22 @@ pub fn git_remote_origin(root: &std::path::Path) -> Option<String> {
     (!remote.is_empty()).then_some(remote)
 }
 
+pub fn git_branch(root: &std::path::Path) -> Option<String> {
+    let output = std::process::Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .current_dir(root)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if branch.is_empty() || branch == "HEAD" {
+        return None;
+    }
+    Some(branch)
+}
+
 pub fn project_id(path: &std::path::Path) -> String {
     let bytes = path.to_string_lossy().as_bytes().to_vec();
     let mut hash: u64 = 0xcbf29ce484222325;

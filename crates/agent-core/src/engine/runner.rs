@@ -987,6 +987,7 @@ pub fn project_ref(working_dir: &Path) -> ProjectRef {
         name,
         path: root.clone(),
         remote_url: git_remote_origin(&root),
+        git_branch: agent_context::project::git_branch(&root),
     }
 }
 

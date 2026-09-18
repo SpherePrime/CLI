@@ -4,7 +4,7 @@ import { createSignal, createMemo, createEffect, onCleanup, Show, For } from "so
 import { Prompt } from "../component/prompt/index"
 import { useRoute } from "../context/route"
 import { useDialog } from "../context/dialog"
-import { modelLabel, workspaceName } from "../context/model"
+import { modelLabel, workspaceName, gitBranch } from "../context/model"
 import {
   useSession,
   resetSession,
@@ -68,6 +68,10 @@ export function Session(props: { client: AgentClient }) {
 
   const modelLabelMemo = createMemo(() => modelLabel() ?? "no model")
   const workspaceNameMemo = createMemo(() => workspaceName() ?? "…")
+  const gitBranchMemo = createMemo(() => {
+    const branch = gitBranch()
+    return branch ? `[${branch}]` : undefined
+  })
 
   async function loadHistory(id: string) {
     if (session.entries().length > 0) return
@@ -368,6 +372,9 @@ export function Session(props: { client: AgentClient }) {
             {permissionBadge(session.permissionMode(), status() === "running")}
           </text>
         </box>
+          <Show when={gitBranchMemo()}>
+            <text fg={theme.textMuted}>{gitBranchMemo()}</text>
+          </Show>
           <text fg={theme.textMuted}>{workspaceNameMemo()}</text>
         </box>
       </box>

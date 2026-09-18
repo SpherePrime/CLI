@@ -49,6 +49,10 @@ export function workspaceName(): string | undefined {
   return workspaceInfo()?.name
 }
 
+export function gitBranch(): string | undefined {
+  return workspaceInfo()?.git_branch ?? undefined
+}
+
 export function modelError(): string | undefined {
   const current = state()
   return current.status === "error" ? current.error : undefined

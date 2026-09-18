@@ -24,6 +24,7 @@ export type WorkspaceInfo = {
   name: string
   path: string
   remote_url?: string | null
+  git_branch?: string | null
 }
 
 export type ServerInfo = {

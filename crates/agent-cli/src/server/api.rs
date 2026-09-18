@@ -329,6 +329,7 @@ fn workspace_json(state: &AppState) -> serde_json::Value {
         "name": project.name,
         "path": project.path,
         "remote_url": project.remote_url,
+        "git_branch": project.git_branch,
     })
 }
 
