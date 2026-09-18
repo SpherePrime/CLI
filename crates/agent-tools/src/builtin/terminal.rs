@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
-use agent_terminal::{ExecRequest, ShellRunner};
+use agent_terminal::{ExecOutcome, ExecRequest, ShellRunner};
 
 use crate::builtin::paths::{display, resolve_path, truncate};
 use crate::executor::{ToolExecutionContext, ToolExecutor, ToolOutput};
@@ -28,18 +28,27 @@ impl ToolExecutor for ShellTool {
         } else {
             ("sh", "-c")
         };
+        let limit = timeout.unwrap_or(120);
         let request = ExecRequest {
             command: shell.to_string(),
             args: vec![flag.to_string(), command.to_string()],
             cwd: Some(cwd.clone()),
             env: Vec::new(),
-            timeout_secs: timeout.or(Some(120)),
+            timeout_secs: Some(limit),
         };
         let runner = ShellRunner::new();
-        let output = runner
-            .run_with_timeout(&request, timeout.unwrap_or(120))
+        let outcome = runner
+            .run_with_timeout(&request, limit)
             .await
             .with_context(|| format!("running command in {}", display(&cwd)))?;
+        let output = match outcome {
+            ExecOutcome::Completed(output) => output,
+            ExecOutcome::TimedOut => {
+                return Ok(ToolOutput::failure(format!(
+                    "command timed out after {limit}s"
+                )));
+            }
+        };
         let mut body = String::new();
         if !output.stdout.trim().is_empty() {
             body.push_str(output.stdout.trim_end());

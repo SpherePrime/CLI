@@ -3,7 +3,9 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use tokio::process::Command;
+use tokio::io::AsyncReadExt;
+use tokio::process::{Child, Command};
+use tokio::time::{timeout, Duration};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecRequest {
@@ -14,11 +16,17 @@ pub struct ExecRequest {
     pub timeout_secs: Option<u64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExecOutput {
     pub exit_code: i32,
     pub stdout: String,
     pub stderr: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ExecOutcome {
+    Completed(ExecOutput),
+    TimedOut,
 }
 
 pub const PROTECTED_ENV: [&str; 8] = [
@@ -45,11 +53,18 @@ impl ShellRunner {
     }
 
     pub async fn run(&self, req: &ExecRequest) -> Result<ExecOutput> {
-        self.run_with_timeout(req, req.timeout_secs.unwrap_or(60))
-            .await
+        let limit = req.timeout_secs.unwrap_or(60);
+        match self.run_with_timeout(req, limit).await? {
+            ExecOutcome::Completed(output) => Ok(output),
+            ExecOutcome::TimedOut => anyhow::bail!("command timed out after {limit}s"),
+        }
     }
 
-    pub async fn run_with_timeout(&self, req: &ExecRequest, timeout: u64) -> Result<ExecOutput> {
+    pub async fn run_with_timeout(
+        &self,
+        req: &ExecRequest,
+        timeout_secs: u64,
+    ) -> Result<ExecOutcome> {
         let mut cmd = Command::new(req.command.clone());
         cmd.args(&req.args);
         if let Some(cwd) = &req.cwd {
@@ -62,17 +77,58 @@ impl ShellRunner {
             }
             cmd.env(k, v);
         }
-        let child = cmd
-            .output()
-            .await
+        cmd.stdout(std::process::Stdio::piped());
+        cmd.stderr(std::process::Stdio::piped());
+        let mut child = cmd
+            .spawn()
             .with_context(|| format!("spawning {}", req.command))?;
-        let _ = timeout;
-        Ok(ExecOutput {
-            exit_code: child.status.code().unwrap_or(-1),
-            stdout: String::from_utf8_lossy(&child.stdout).into_owned(),
-            stderr: String::from_utf8_lossy(&child.stderr).into_owned(),
-        })
+
+        let run = async {
+            let stdout = child.stdout.take();
+            let stderr = child.stderr.take();
+            let mut out_bytes = Vec::new();
+            let mut err_bytes = Vec::new();
+            if let Some(mut reader) = stdout {
+                let _ = reader.read_to_end(&mut out_bytes).await;
+            }
+            if let Some(mut reader) = stderr {
+                let _ = reader.read_to_end(&mut err_bytes).await;
+            }
+            let status = child.wait().await;
+            (out_bytes, err_bytes, status)
+        };
+
+        match timeout(Duration::from_secs(timeout_secs.max(1)), run).await {
+            Ok((out_bytes, err_bytes, status)) => {
+                let exit_code = status
+                    .map(|status| status.code().unwrap_or(-1))
+                    .unwrap_or(-1);
+                Ok(ExecOutcome::Completed(ExecOutput {
+                    exit_code,
+                    stdout: String::from_utf8_lossy(&out_bytes).into_owned(),
+                    stderr: String::from_utf8_lossy(&err_bytes).into_owned(),
+                }))
+            }
+            Err(_) => {
+                kill_process_tree(&mut child).await;
+                Ok(ExecOutcome::TimedOut)
+            }
+        }
     }
+}
+
+async fn kill_process_tree(child: &mut Child) {
+    child.start_kill().ok();
+    #[cfg(windows)]
+    {
+        if let Some(pid) = child.id() {
+            let _ = Command::new("taskkill")
+                .args(["/PID", &pid.to_string(), "/T", "/F"])
+                .output()
+                .await;
+        }
+    }
+    let _ = child.wait().await;
 }
 
 impl Default for ShellRunner {
@@ -124,5 +180,49 @@ mod tests {
             .await
             .unwrap();
         assert!(!out.stdout.contains("secret"));
+    }
+
+    #[tokio::test]
+    async fn timeout_kills_long_running_command() {
+        let r = ShellRunner::new();
+        let outcome = r
+            .run_with_timeout(
+                &ExecRequest {
+                    command: "cmd".into(),
+                    args: vec!["/c".into(), "ping -n 8 127.0.0.1 > nul".into()],
+                    cwd: None,
+                    env: vec![],
+                    timeout_secs: Some(1),
+                },
+                1,
+            )
+            .await
+            .unwrap();
+        assert_eq!(outcome, ExecOutcome::TimedOut);
+    }
+
+    #[tokio::test]
+    async fn completes_before_timeout() {
+        let r = ShellRunner::new();
+        let outcome = r
+            .run_with_timeout(
+                &ExecRequest {
+                    command: "cmd".into(),
+                    args: vec!["/c".into(), "echo done".into()],
+                    cwd: None,
+                    env: vec![],
+                    timeout_secs: Some(1),
+                },
+                1,
+            )
+            .await
+            .unwrap();
+        match outcome {
+            ExecOutcome::Completed(output) => {
+                assert_eq!(output.exit_code, 0);
+                assert!(output.stdout.contains("done"));
+            }
+            ExecOutcome::TimedOut => panic!("fast command must not time out"),
+        }
     }
 }

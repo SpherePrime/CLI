@@ -703,6 +703,44 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn tool_call_precedes_tool_result() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(tmp.path().join("note.txt"), "hello world").unwrap();
+        let storage = Storage::new(tmp.path().join(".agent"));
+        let (tx, mut rx) = mpsc::channel(64);
+        let mut engine = AgentEngine::with_provider(
+            test_config(),
+            tmp.path().to_path_buf(),
+            tx.clone(),
+            Box::new(ScriptedProvider {
+                calls: AtomicUsize::new(0),
+            }),
+        )
+        .with_storage(storage.clone());
+
+        engine.run("read the note", &tx).await.unwrap();
+
+        let mut events = Vec::new();
+        while let Ok(event) = rx.try_recv() {
+            events.push(event);
+        }
+        let call_index = events
+            .iter()
+            .position(
+                |event| matches!(event, EngineEvent::ToolCall { name, .. } if name == "read_file"),
+            )
+            .expect("expected a tool_call event");
+        let result_index = events
+            .iter()
+            .position(|event| matches!(event, EngineEvent::ToolResult { name, .. } if name == "read_file"))
+            .expect("expected a tool_result event");
+        assert!(
+            call_index < result_index,
+            "tool_call must arrive before tool_result"
+        );
+    }
+
+    #[tokio::test]
     async fn skill_instructions_are_injected() {
         let tmp = tempfile::tempdir().unwrap();
         let skill_dir = tmp.path().join(".agent").join("skills").join("my-skill");
