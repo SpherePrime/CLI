@@ -27,6 +27,7 @@ regex.workspace = true
 walkdir.workspace = true
 glob.workspace = true
 reqwest.workspace = true
+base64 = "0.22"
 
 [dev-dependencies]
 tempfile.workspace = true

@@ -379,6 +379,7 @@ dependencies = [
  "agent-terminal",
  "anyhow",
  "async-trait",
+ "base64",
  "chrono",
  "futures",
  "glob",

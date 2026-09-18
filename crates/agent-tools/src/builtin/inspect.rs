@@ -14,6 +14,7 @@ use crate::executor::{
 
 const MAX_OUTPUT: usize = 262_144;
 const MAX_FILES: usize = 50;
+const MAX_IMAGE_BYTES: usize = 100_000;
 
 fn schema(properties: Value, required: &[&str]) -> Value {
     json!({
@@ -185,12 +186,32 @@ impl ToolExecutor for ViewImageTool {
             )
         })?;
         let size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
-        let value = json!({
+        let include_content = args
+            .get("content")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
+        let mut details = json!({
             "path": display(&path),
             "mime": mime,
             "bytes": size,
+            "encoded": false,
         });
-        Ok(ToolOutput::success(value.to_string())
+        if include_content {
+            if size <= MAX_IMAGE_BYTES as u64 {
+                let bytes =
+                    std::fs::read(&path).with_context(|| format!("reading {}", display(&path)))?;
+                details["encoded"] = json!(true);
+                details["content_base64"] = json!(base64::Engine::encode(
+                    &base64::engine::general_purpose::STANDARD,
+                    &bytes
+                ));
+            } else {
+                details["why_omitted"] = json!(format!(
+                    "image exceeds {MAX_IMAGE_BYTES} byte preview limit"
+                ));
+            }
+        }
+        Ok(ToolOutput::success(details.to_string())
             .summary(format!("view {mime} image ({size} bytes)")))
     }
 }
@@ -214,8 +235,17 @@ pub fn view_image_tool() -> crate::ToolDefinition {
     crate::ToolDefinition {
         name: "view_image".into(),
         description:
-            "Inspect an image file (path, mime type and size) inside the working directory.".into(),
-        input_schema: schema(json!({ "path": { "type": "string" } }), &["path"]),
+            "Inspect an image file (path, mime type and size) inside the working directory, optionally returning its base64 content for vision-capable models.".into(),
+        input_schema: schema(
+            json!({
+                "path": { "type": "string" },
+                "content": {
+                    "type": "boolean",
+                    "description": "Include base64 image content when the file fits the preview limit (default true)"
+                }
+            }),
+            &["path"],
+        ),
         executor: std::sync::Arc::new(ViewImageTool),
         permissions: agent_permissions::PermissionScope::Read,
         timeout_secs: 30,
@@ -303,14 +333,29 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn view_image_reports_mime() {
+    async fn view_image_includes_base64_content() {
         let dir = std::env::temp_dir().join(format!("agent-image-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("pic.png"), b"fake").unwrap();
+        std::fs::write(dir.join("pic.png"), b"PNG-DATA").unwrap();
         let output = ViewImageTool
             .execute(json!({ "path": "pic.png" }), &ctx(&dir))
             .await
             .unwrap();
         assert!(output.content.contains("image/png"));
+        assert!(output.content.contains("encoded"));
+        assert!(output.content.contains("UE5HLURBVEE="));
+    }
+
+    #[tokio::test]
+    async fn view_image_omits_content_when_disabled() {
+        let dir = std::env::temp_dir().join(format!("agent-image-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("pic.png"), b"PNG-DATA").unwrap();
+        let output = ViewImageTool
+            .execute(json!({ "path": "pic.png", "content": false }), &ctx(&dir))
+            .await
+            .unwrap();
+        assert!(output.content.contains("image/png"));
+        assert!(!output.content.contains("content_base64"));
     }
 }
