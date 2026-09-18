@@ -14,6 +14,8 @@ AGENTS.md
 config.local.toml
 .env
 .env.local
+credentials.json
+credentials.key
 
 # Editor / OS
 .vscode/
