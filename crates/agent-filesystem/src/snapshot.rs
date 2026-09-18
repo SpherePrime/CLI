@@ -14,6 +14,12 @@ pub struct Snapshot {
     pub taken_at: u64,
     #[serde(default)]
     pub turn: Option<String>,
+    #[serde(default = "default_true")]
+    pub existed: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn root() -> PathBuf {
@@ -73,6 +79,45 @@ pub fn take_snapshot_turn(
     write_snapshot(&root(), working_dir, path, turn)
 }
 
+pub fn record_new_file(
+    working_dir: &Path,
+    path: &Path,
+    turn: Option<&str>,
+) -> Result<Option<String>> {
+    record_new_file_at(&root(), working_dir, path, turn)
+}
+
+pub fn record_new_file_at(
+    root: &Path,
+    working_dir: &Path,
+    path: &Path,
+    turn: Option<&str>,
+) -> Result<Option<String>> {
+    let absolute = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        working_dir.join(path)
+    };
+    let dir = snapshot_dir_at(root, working_dir);
+    std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
+    let taken_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_nanos() as u64)
+        .unwrap_or(0);
+    let name = format!("{:020}-{}.json", taken_at, safe_file_name(&absolute));
+    let snapshot = Snapshot {
+        path: absolute.to_string_lossy().to_string(),
+        content: String::new(),
+        taken_at,
+        turn: turn.map(str::to_string),
+        existed: false,
+    };
+    let target = dir.join(name);
+    std::fs::write(&target, serde_json::to_string_pretty(&snapshot)?)
+        .with_context(|| format!("writing {}", target.display()))?;
+    Ok(Some(target.to_string_lossy().to_string()))
+}
+
 pub fn take_snapshot_turn_at(
     root: &Path,
     working_dir: &Path,
@@ -109,6 +154,7 @@ fn write_snapshot(
             .with_context(|| format!("reading {}", absolute.display()))?,
         taken_at,
         turn: turn.map(str::to_string),
+        existed: true,
     };
     let target = dir.join(name);
     std::fs::write(&target, serde_json::to_string_pretty(&snapshot)?)
@@ -154,10 +200,15 @@ pub fn restore_latest_at(root: &Path, working_dir: &Path) -> Result<Option<Strin
         return Ok(None);
     };
     let target = PathBuf::from(&snapshot.path);
-    let parent = target.parent().context("snapshot path has no parent")?;
-    std::fs::create_dir_all(parent).with_context(|| format!("creating {}", parent.display()))?;
-    std::fs::write(&target, &snapshot.content)
-        .with_context(|| format!("writing {}", target.display()))?;
+    if snapshot.existed {
+        let parent = target.parent().context("snapshot path has no parent")?;
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("creating {}", parent.display()))?;
+        std::fs::write(&target, &snapshot.content)
+            .with_context(|| format!("writing {}", target.display()))?;
+    } else if target.exists() {
+        std::fs::remove_file(&target).with_context(|| format!("removing {}", target.display()))?;
+    }
     remove_snapshot_at(root, working_dir, &snapshot.path)?;
     Ok(Some(target.to_string_lossy().to_string()))
 }
@@ -182,12 +233,16 @@ pub fn restore_turn_at(root: &Path, working_dir: &Path) -> Result<Vec<String>> {
     let mut restored = Vec::new();
     for (snapshot_file, snapshot) in &group {
         let target = PathBuf::from(&snapshot.path);
-        if let Some(parent) = target.parent() {
-            std::fs::create_dir_all(parent)
-                .with_context(|| format!("creating {}", parent.display()))?;
+        if snapshot.existed {
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent)
+                    .with_context(|| format!("creating {}", parent.display()))?;
+            }
+            std::fs::write(&target, &snapshot.content)
+                .with_context(|| format!("writing {}", target.display()))?;
+        } else if target.exists() {
+            let _ = std::fs::remove_file(&target);
         }
-        std::fs::write(&target, &snapshot.content)
-            .with_context(|| format!("writing {}", target.display()))?;
         if !restored.contains(&snapshot.path) {
             restored.push(snapshot.path.clone());
         }
@@ -287,6 +342,38 @@ mod tests {
         let restored = restore_turn_at(&root, &dir).unwrap();
         assert_eq!(restored.len(), 1);
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "v1");
+    }
+
+    #[test]
+    fn restore_deletes_files_that_were_created_after_snapshot() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("undo");
+        let dir = tmp.path().join("project");
+        std::fs::create_dir_all(&dir).unwrap();
+        let new_file = dir.join("added.txt");
+        std::fs::write(&new_file, "brand new").unwrap();
+
+        record_new_file_at(&root, &dir, &new_file, None).unwrap();
+
+        let restored = restore_latest_at(&root, &dir).unwrap().unwrap();
+        assert_eq!(restored, new_file.to_string_lossy().to_string());
+        assert!(!new_file.exists(), "created file must be removed on undo");
+    }
+
+    #[test]
+    fn restore_turn_removes_created_files() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("undo");
+        let dir = tmp.path().join("project");
+        std::fs::create_dir_all(&dir).unwrap();
+        let created = dir.join("created.txt");
+        std::fs::write(&created, "new").unwrap();
+
+        record_new_file_at(&root, &dir, &created, Some("turn-1")).unwrap();
+
+        let restored = restore_turn_at(&root, &dir).unwrap();
+        assert_eq!(restored.len(), 1);
+        assert!(!created.exists());
     }
 
     #[test]

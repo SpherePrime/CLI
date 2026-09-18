@@ -25,7 +25,11 @@ const MAX_OUTPUT: usize = 262_144;
 const MAX_READ_LINES: usize = 2000;
 
 fn snapshot_before_change(ctx: &ToolExecutionContext, path: &Path) {
-    let _ = snapshot::take_snapshot_turn(&ctx.working_dir, path, ctx.turn_id.as_deref());
+    if path.exists() {
+        let _ = snapshot::take_snapshot_turn(&ctx.working_dir, path, ctx.turn_id.as_deref());
+    } else {
+        let _ = snapshot::record_new_file(&ctx.working_dir, path, ctx.turn_id.as_deref());
+    }
 }
 
 fn schema(properties: Value, required: &[&str]) -> Value {
@@ -333,6 +337,13 @@ impl ToolExecutor for ApplyPatchTool {
                         .await
                         .with_context(|| format!("reading {target}"))?
                 } else {
+                    if !dry_run {
+                        let _ = snapshot::record_new_file(
+                            &ctx.working_dir,
+                            &path,
+                            ctx.turn_id.as_deref(),
+                        );
+                    }
                     String::new()
                 };
                 let updated = apply_unified_patch(&original, &section)
