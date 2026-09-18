@@ -1,25 +1,30 @@
 import { ScrollBoxRenderable } from "@opentui/core"
 import { useRenderer, useKeyboard } from "@opentui/solid"
-import { createSignal, createMemo, createEffect, onCleanup, For, Show } from "solid-js"
-import { Prompt, type PromptRef } from "../component/prompt/index"
+import { createSignal, createMemo, createEffect, Show, For } from "solid-js"
+import { Prompt } from "../component/prompt/index"
+import { Spinner } from "../component/spinner"
 import { useRoute } from "../context/route"
 import { useDialog } from "../context/dialog"
 import { modelLabel, workspaceName } from "../context/model"
 import {
   useSession,
-  nextEntryId,
   resetSession,
   loadStoredMessages,
-  toolEntryId,
-  type ChatEntry,
+  nextEntryId,
 } from "../context/session"
+import {
+  timelineFromEvents,
+  type ChatEntry,
+} from "../context/timeline"
+import { permissionColor, permissionLabel, openPermissionSwitcher } from "../context/permission"
 import { theme } from "../theme"
 import { EmptyBorder } from "../ui/border"
-import type { AgentClient, SessionMessage } from "../client"
+import type { AgentClient, EngineEvent, PermissionMode } from "../client"
 
 const helpText = [
   "enter — send message",
   "ctrl+p — command palette",
+  "f2 — permission mode",
   "esc — back to home / cancel",
   "ctrl+c — exit",
 ].join("\n")
@@ -34,7 +39,6 @@ export function Session(props: { client: AgentClient }) {
   const [loadError, setLoadError] = createSignal<string | undefined>(undefined)
   const [title, setTitle] = createSignal<string | undefined>(undefined)
   let scroll: ScrollBoxRenderable
-  let promptRef: PromptRef | undefined
 
   const routeSessionId = () => {
     const current = route()
@@ -56,7 +60,14 @@ export function Session(props: { client: AgentClient }) {
       const detail = await props.client.getSessionDetail(id)
       if (detail.id !== session.sessionId()) return
       resetSession()
-      loadStoredMessages(detail.messages)
+      if (detail.timeline && detail.timeline.length > 0) {
+        session.seedFromTimeline(timelineFromEvents(detail.timeline))
+      } else {
+        loadStoredMessages(detail.messages)
+      }
+      if (detail.interrupted) {
+        session.addEntry({ id: nextEntryId(), role: "system", text: "session was interrupted" })
+      }
       setTitle(detail.title)
     } catch (error) {
       if (session.sessionId() !== id) return
@@ -70,7 +81,10 @@ export function Session(props: { client: AgentClient }) {
   createEffect(() => {
     const id = routeSessionId()
     session.setSessionId(id)
-    if (id) void loadHistory(id)
+    if (id) {
+      void loadHistory(id)
+      void loadPermissionMode(id)
+    }
   })
 
   function scrollToBottom() {
@@ -89,47 +103,34 @@ export function Session(props: { client: AgentClient }) {
     }, 600)
   }
 
+  async function loadPermissionMode(id: string) {
+    try {
+      const { mode } = await props.client.getPermissionMode(id)
+      session.setPermissionMode(mode)
+    } catch {
+      session.setPermissionMode(undefined)
+    }
+  }
+
   createEffect(() => {
     session.entries()
     scrollToBottom()
   })
 
   async function cancelRunning() {
-    const id = session.sessionId()
     if (status() !== "running") return
-    try {
-      await props.client.cancelMessage(id)
-    } catch {}
+    await props.client.cancelMessage(session.sessionId())
+    setStatus("idle")
   }
-
-  useKeyboard((key) => {
-    if (dialog().type !== "none") return
-    if (key.name === "escape") {
-      key.preventDefault()
-      if (status() === "running") {
-        void cancelRunning()
-      } else {
-        navigate({ type: "home" })
-      }
-    }
-  })
-
-  onCleanup(() => {
-    promptRef = undefined
-  })
 
   function appendSystem(text: string) {
     session.addEntry({ id: nextEntryId(), role: "system", text })
   }
 
-  let pendingText = ""
-
   async function sendPrompt(text: string, readonly?: boolean) {
-    const assistantId = nextEntryId()
-    session.addEntry({ id: assistantId, role: "assistant", text: "" })
     setStatus("running")
     try {
-      await props.client.streamMessage(text, session.sessionId(), (event) => handleEvent(assistantId, event), {
+      await props.client.streamMessage(text, session.sessionId(), handleEvent, {
         readonly: readonly ?? false,
       })
       void refreshTitleOnce()
@@ -140,11 +141,8 @@ export function Session(props: { client: AgentClient }) {
     scrollToBottom()
   }
 
-  async function handleProjectMissing(assistantId: string, projectName: string, projectPath: string | null) {
-    session.updateEntry(assistantId, {
-      role: "system",
-      text: `Project folder not found (${projectName ?? "unknown project"}).`,
-    })
+  async function handleProjectMissing(projectName: string, projectPath: string | null) {
+    appendSystem(`Project folder not found (${projectName ?? "unknown project"}).`)
     setStatus("idle")
     openSelect({
       title: "Project folder not found",
@@ -158,6 +156,8 @@ export function Session(props: { client: AgentClient }) {
       },
     })
   }
+
+  let pendingText = ""
 
   async function resumeProjectMissing(value: string, projectPath: string | null) {
     const id = session.sessionId()
@@ -222,6 +222,10 @@ export function Session(props: { client: AgentClient }) {
       case "/cancel":
         await cancelRunning()
         return true
+      case "/permission":
+      case "/perm":
+        openPermissionSwitcher(props.client)
+        return true
       case "/models":
         appendSystem(modelLabelMemo())
         return true
@@ -230,38 +234,14 @@ export function Session(props: { client: AgentClient }) {
     }
   }
 
-  function handleEvent(assistantId: string, event: SessionMessage) {
+  function handleEvent(event: EngineEvent) {
     switch (event.type) {
       case "session.created":
         session.setSessionId(event.session.id)
+        void loadPermissionMode(event.session.id)
         break
-      case "text_delta":
-        session.appendEntry(assistantId, event.text)
-        break
-      case "reasoning_delta":
-        session.appendReasoning(assistantId, event.text)
-        break
-      case "tool_call": {
-        const entryId = toolEntryId(event.id)
-        const args = JSON.stringify(event.args) ?? ""
-        session.addEntry({
-          id: entryId,
-          role: "tool",
-          text: `run ${event.name}(${args.length > 200 ? `${args.slice(0, 200)}…` : args})`,
-        })
-        break
-      }
-      case "tool_result": {
-        const entryId = toolEntryId(event.id)
-        const body = event.ok ? event.content || "(no output)" : (event.error ?? event.content)
-        session.updateEntry(entryId, {
-          role: "tool",
-          text: `→ ${event.name} in ${event.ms}ms${event.ok ? "" : " (failed)"}\n${body}`,
-        })
-        break
-      }
       case "session.project_missing":
-        void handleProjectMissing(assistantId, event.session.project_name ?? "", event.project_path)
+        void handleProjectMissing(event.session.project_name ?? "", event.project_path)
         break
       case "permission_requested":
         openPermissionDialog({
@@ -273,18 +253,21 @@ export function Session(props: { client: AgentClient }) {
           reason: event.reason,
         })
         break
-      case "error":
-        session.updateEntry(assistantId, { role: "error", text: event.message })
-        appendSystem(event.message)
+      case "permission_mode_changed":
+        session.setPermissionMode(event.mode as PermissionMode)
         break
-      case "permission_resolved":
-      case "usage":
+      case "session_title_changed":
+        setTitle(event.title)
+        break
+      case "error":
+        appendSystem(event.message)
         break
       case "done":
         break
       default:
         break
     }
+    session.applyEvent(event)
   }
 
   async function handleSubmit(prompt: { input: string }) {
@@ -292,19 +275,36 @@ export function Session(props: { client: AgentClient }) {
     if (!text) return
     if (text.startsWith("/") && (await runSlashCommand(text))) return
 
-    session.addEntry({ id: nextEntryId(), role: "user", text })
     pendingText = text
     await sendPrompt(text)
   }
+
+  useKeyboard((key) => {
+    if (dialog().type !== "none") return
+    if (key.name === "escape") {
+      key.preventDefault()
+      if (status() === "running") {
+        void cancelRunning()
+      } else {
+        navigate({ type: "home" })
+      }
+    }
+    if (key.name.toLowerCase() === "f2") {
+      key.preventDefault()
+      openPermissionSwitcher(props.client)
+    }
+  })
 
   return (
     <box width="100%" flexDirection="column" flexGrow={1} minHeight={0}>
       <box flexDirection="row" justifyContent="space-between" paddingLeft={2} paddingRight={2} paddingTop={1}>
         <text fg={theme.textMuted}>{title() ?? modelLabelMemo()}</text>
-        <text fg={theme.textMuted}>{workspaceNameMemo()}</text>
-        <text fg={status() === "running" ? theme.primary : theme.textMuted}>
-          {status() === "running" ? "running…" : "idle"}
-        </text>
+        <box flexDirection="row" gap={2}>
+          <text fg={permissionColor(session.permissionMode())}>
+            {status() === "running" ? "running… · " : ""}mode:{permissionLabel(session.permissionMode())}
+          </text>
+          <text fg={theme.textMuted}>{workspaceNameMemo()}</text>
+        </box>
       </box>
       <box flexDirection="row" flexGrow={1} minHeight={0}>
         <box flexGrow={1} minHeight={0} paddingBottom={1} paddingLeft={2} paddingRight={2} gap={1}>
@@ -337,7 +337,7 @@ export function Session(props: { client: AgentClient }) {
                 >
                   <box paddingLeft={2} paddingTop={1} flexDirection="column" gap={1}>
                     <text fg={theme.text}>Ask anything, or press ctrl+p for commands.</text>
-                    <text fg={theme.textMuted}>esc back · ctrl+c exit</text>
+                    <text fg={theme.textMuted}>esc back · f2 permission mode · ctrl+c exit</text>
                   </box>
                 </Show>
               </Show>
@@ -348,9 +348,6 @@ export function Session(props: { client: AgentClient }) {
       <Prompt
         client={props.client}
         initialInput={draft()}
-        ref={(ref) => {
-          promptRef = ref
-        }}
         onSubmit={handleSubmit}
         placeholder={status() === "idle" ? "Ask anything…" : "Agent is thinking…"}
       />
@@ -373,7 +370,7 @@ function MessageRow(props: { entry: ChatEntry }) {
           <text fg={theme.textMuted}>agent:</text>
         </Show>
         <Show when={props.entry.role === "tool"}>
-          <text fg={theme.info}>tool:</text>
+          <text fg={theme.secondary}>tool: {props.entry.tool?.name ?? "?"}</text>
         </Show>
         <Show when={props.entry.role === "error"}>
           <text fg={theme.error}>error:</text>
@@ -381,16 +378,80 @@ function MessageRow(props: { entry: ChatEntry }) {
         <Show when={props.entry.role === "system"}>
           <text fg={theme.info}>system:</text>
         </Show>
-        <Show when={props.entry.role === "assistant" && props.entry.reasoning}>
-          <text fg={theme.textMuted}>
-            thinking:{"\n"}
-            {props.entry.reasoning!.slice(-800)}
-          </text>
+        <Show when={props.entry.role === "assistant" && props.entry.text === "" && props.entry.running}>
+          <box flexDirection="row" gap={1} paddingTop={1}>
+            <Spinner />
+            <text fg={theme.textMuted}>thinking…</text>
+          </box>
         </Show>
-        <box paddingTop={1}>
-          <text fg={props.entry.role === "error" ? theme.error : theme.text}>{props.entry.text}</text>
-        </box>
+        <Show when={props.entry.role === "assistant" && props.entry.reasoning}>
+          <box paddingTop={1}>
+            <text fg={theme.textMuted}>
+              thinking:
+              {"\n"}
+              {props.entry.reasoning!.slice(-1200)}
+            </text>
+          </box>
+        </Show>
+        <Show when={props.entry.role === "tool"}>
+          <ToolBody entry={props.entry} />
+        </Show>
+        <Show when={props.entry.role !== "tool"}>
+          <box paddingTop={1}>
+            <Show when={props.entry.role === "system" && props.entry.running}>
+              <box flexDirection="row" gap={1}>
+                <Spinner />
+                <text fg={theme.textMuted}>{props.entry.text}</text>
+              </box>
+            </Show>
+            <Show when={props.entry.text}>
+              <text fg={props.entry.role === "error" ? theme.error : theme.text}>{props.entry.text}</text>
+            </Show>
+          </box>
+        </Show>
       </box>
+    </box>
+  )
+}
+
+function ToolBody(props: { entry: ChatEntry }) {
+  const tool = props.entry.tool
+  if (!tool) return <text fg={theme.text}>{props.entry.text}</text>
+  return (
+    <box flexDirection="column" gap={1} paddingTop={1}>
+      <box flexDirection="row" gap={1}>
+        <Show when={tool.state === "running"}>
+          <Spinner />
+        </Show>
+        <Show when={tool.state === "ok"}>
+          <text fg={theme.success}>ok</text>
+        </Show>
+        <Show when={tool.state === "failed"}>
+          <text fg={theme.error}>failed</text>
+        </Show>
+        <text fg={theme.textMuted}>{tool.durationMs === undefined ? "running…" : `${tool.durationMs}ms`}</text>
+        <Show when={tool.exitCode !== undefined && tool.exitCode !== null}>
+          <text fg={tool.exitCode === 0 ? theme.success : theme.error}>exit {tool.exitCode}</text>
+        </Show>
+        <Show when={tool.truncated}>
+          <text fg={theme.textMuted}>(truncated)</text>
+        </Show>
+      </box>
+      <Show when={tool.args}>
+        <text fg={theme.textMuted}>{tool.args}</text>
+      </Show>
+      <Show when={props.entry.text}>
+        <text fg={theme.text}>{props.entry.text}</text>
+      </Show>
+      <Show when={tool.details}>
+        <text fg={theme.textMuted}>{tool.details}</text>
+      </Show>
+      <Show when={tool.fileChanges}>
+        <box flexDirection="column">
+          <text fg={theme.info}>changed:</text>
+          <text fg={theme.textMuted}>{tool.fileChanges}</text>
+        </box>
+      </Show>
     </box>
   )
 }

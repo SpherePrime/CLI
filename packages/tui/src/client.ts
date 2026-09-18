@@ -77,23 +77,67 @@ export type PluginInfo = {
   description: string
 }
 
+export type EventMeta = {
+  protocol: number
+  sequence: number
+  turn_id: string
+  item_id: string
+  ts: number
+}
+
+export type FileChange = {
+  path: string
+  change: string
+  diff?: string | null
+  additions?: number
+  deletions?: number
+}
+
 export type EngineEvent =
   | { type: "session.created"; session: { id: string } }
   | { type: "message.created"; message: { id: string; role: "user" | "assistant"; content?: string } }
-  | { type: "started"; session_id: string; model: string }
-  | { type: "text_delta"; text: string }
-  | { type: "reasoning_delta"; text: string }
-  | { type: "tool_call"; id: string; name: string; args: unknown }
-  | { type: "tool_result"; id: string; name: string; ok: boolean; content: string; error?: string; ms: number }
-  | { type: "permission_requested"; id: string; tool: string; scope: string; target: string; reason: string }
-  | { type: "permission_resolved"; id: string; decision: string }
-  | { type: "usage"; input_tokens: number; output_tokens: number }
-  | { type: "finished"; stop_reason: string; input_tokens: number; output_tokens: number; iterations: number }
-  | { type: "session.project_missing"; session: { id: string; project_name?: string }; project_path: string | null }
-  | { type: "error"; message: string }
   | { type: "done" }
+  | { type: "session.project_missing"; session: { id: string; project_name?: string }; project_path: string | null }
+  | { type: "started"; meta: EventMeta; model: string }
+  | { type: "turn_started"; meta: EventMeta; model: string }
+  | { type: "turn_completed"; meta: EventMeta }
+  | { type: "turn_cancelled"; meta: EventMeta; reason?: string | null }
+  | { type: "assistant_message_started"; meta: EventMeta; id: string }
+  | { type: "text_delta"; meta: EventMeta; text: string }
+  | { type: "assistant_message_completed"; meta: EventMeta }
+  | { type: "reasoning_started"; meta: EventMeta }
+  | { type: "reasoning_delta"; meta: EventMeta; text: string }
+  | { type: "reasoning_completed"; meta: EventMeta }
+  | { type: "tool_call_started"; meta: EventMeta; id: string; name: string; args: unknown }
+  | { type: "tool_call_delta"; meta: EventMeta; index: number; id?: string | null; name?: string | null; args_delta: string }
+  | { type: "tool_call_completed"; meta: EventMeta; id: string; name: string }
+  | {
+      type: "tool_result"
+      meta: EventMeta
+      id: string
+      name: string
+      ok: boolean
+      content: string
+      error?: string | null
+      duration_ms: number
+      summary?: string | null
+      details?: string | null
+      exit_code?: number | null
+      truncated: boolean
+      file_changes: FileChange[]
+    }
+  | { type: "activity_changed"; meta: EventMeta; activity: string; kind?: string | null }
+  | { type: "permission_requested"; meta: EventMeta; id: string; tool: string; scope: string; target: string; reason: string }
+  | { type: "permission_resolved"; meta: EventMeta; id: string; decision: string }
+  | { type: "permission_mode_changed"; meta: EventMeta; mode: string }
+  | { type: "usage"; meta: EventMeta; input_tokens: number; output_tokens: number }
+  | { type: "finished"; meta: EventMeta; stop_reason: string; input_tokens: number; output_tokens: number; iterations: number }
+  | { type: "error"; meta?: EventMeta; message: string }
+  | { type: "session_title_changed"; meta: EventMeta; title: string }
 
 export type SessionMessage = EngineEvent
+
+export type TimelineEvent = EngineEvent
 
 export type StoredMessage = {
   id: string
@@ -105,7 +149,11 @@ export type StoredMessage = {
 
 export type SessionDetail = SessionInfo & {
   messages: StoredMessage[]
+  timeline?: TimelineEvent[]
+  interrupted?: boolean
 }
+
+export type PermissionMode = "ask" | "auto_edit" | "full_access" | "deny"
 
 export class AgentClient {
   constructor(
@@ -158,6 +206,14 @@ export class AgentClient {
 
   async compactSession(id: string): Promise<SessionDetail> {
     return this.post<SessionDetail>(`/session/${id}/compact`, {})
+  }
+
+  async getPermissionMode(sessionId: string): Promise<{ mode: PermissionMode }> {
+    return this.get<{ mode: PermissionMode }>(`/session/${sessionId}/permission-mode`)
+  }
+
+  async setPermissionMode(sessionId: string, mode: PermissionMode): Promise<{ applied: boolean; mode: PermissionMode }> {
+    return this.post<{ applied: boolean; mode: PermissionMode }>(`/session/${sessionId}/permission-mode`, { mode })
   }
 
   async cancelMessage(sessionId: string | undefined): Promise<{ cancelled: boolean }> {

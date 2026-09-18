@@ -1,5 +1,6 @@
 import { navigateTo } from "../context/route"
-import { resetSession, loadStoredMessages, transcriptText, lastAssistantText, useSession } from "../context/session"
+import { resetSession, loadStoredMessages, useSession } from "../context/session"
+import { transcriptText, lastAssistantText } from "../context/timeline"
 import {
   openInfo,
   openSelect,
@@ -9,6 +10,7 @@ import {
   openSessionsDialog,
 } from "../context/dialog"
 import { quitApp } from "../context/app"
+import { openPermissionSwitcher } from "../context/permission"
 import { copyToClipboard } from "../util/clipboard"
 import { exportTranscript, openEditor } from "../util/files"
 import type { AgentClient } from "../client"
@@ -170,12 +172,12 @@ export function buildCommands(client: AgentClient): Command[] {
       shortcut: "ctrl+x y",
       leader: "y",
       run: async () => {
-        const text = lastAssistantText()
-        if (!text) {
+        const entry = lastAssistantText(useSession().entries())
+        if (!entry) {
           openInfo({ title: "Copy last message", body: "No assistant message to copy." })
           return
         }
-        const ok = await copyToClipboard(text)
+        const ok = await copyToClipboard(entry)
         openInfo({ title: "Copy last message", body: ok ? "Copied to clipboard." : "Clipboard unavailable." })
       },
     },
@@ -184,7 +186,7 @@ export function buildCommands(client: AgentClient): Command[] {
       title: "Copy session transcript",
       section: "Session",
       run: async () => {
-        const text = transcriptText()
+        const text = transcriptText(useSession().entries())
         if (!text) {
           openInfo({ title: "Copy transcript", body: "Session is empty." })
           return
@@ -200,7 +202,7 @@ export function buildCommands(client: AgentClient): Command[] {
       shortcut: "ctrl+x x",
       leader: "x",
       run: async () => {
-        const text = transcriptText()
+        const text = transcriptText(useSession().entries())
         if (!text) {
           openInfo({ title: "Export transcript", body: "Session is empty." })
           return
@@ -217,6 +219,14 @@ export function buildCommands(client: AgentClient): Command[] {
         resetSession()
         openInfo({ title: "Clear conversation", body: "Conversation cleared." })
       },
+    },
+    {
+      id: "session.permission",
+      title: "Permission mode",
+      section: "Session",
+      shortcut: "f2",
+      leader: "p",
+      run: () => openPermissionSwitcher(client),
     },
     {
       id: "agent.model",
@@ -361,6 +371,7 @@ export function buildCommands(client: AgentClient): Command[] {
             "ctrl+x l — switch session",
             "ctrl+x m — switch model",
             "ctrl+x c — compact session",
+            "f2 — permission mode",
             "enter — send message",
             "shift+enter — new line",
             "esc — back to home / cancel",
