@@ -29,6 +29,7 @@ pub trait PermissionApprover: Send + Sync + 'static {
     async fn approve(&self, request: PermissionRequest) -> PermissionDecision;
 }
 
+#[derive(Clone)]
 pub struct ToolExecutionContext {
     pub session_id: Uuid,
     pub working_dir: std::path::PathBuf,
@@ -57,11 +58,33 @@ impl ToolExecutionContext {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileChange {
+    pub path: String,
+    pub change: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diff: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub additions: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deletions: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolOutput {
     pub ok: bool,
     pub content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub file_changes: Vec<FileChange>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exit_code: Option<i32>,
+    #[serde(default)]
+    pub truncated: bool,
 }
 
 impl ToolOutput {
@@ -70,6 +93,11 @@ impl ToolOutput {
             ok: true,
             content,
             error: None,
+            summary: None,
+            details: None,
+            file_changes: Vec::new(),
+            exit_code: None,
+            truncated: false,
         }
     }
 
@@ -78,7 +106,42 @@ impl ToolOutput {
             ok: false,
             content: String::new(),
             error: Some(error),
+            summary: None,
+            details: None,
+            file_changes: Vec::new(),
+            exit_code: None,
+            truncated: false,
         }
+    }
+
+    pub fn summary(mut self, summary: impl Into<String>) -> Self {
+        self.summary = Some(summary.into());
+        self
+    }
+
+    pub fn content(mut self, content: impl Into<String>) -> Self {
+        self.content = content.into();
+        self
+    }
+
+    pub fn details(mut self, details: impl Into<String>) -> Self {
+        self.details = Some(details.into());
+        self
+    }
+
+    pub fn file_change(mut self, change: FileChange) -> Self {
+        self.file_changes.push(change);
+        self
+    }
+
+    pub fn exit_code(mut self, code: i32) -> Self {
+        self.exit_code = Some(code);
+        self
+    }
+
+    pub fn truncated(mut self, truncated: bool) -> Self {
+        self.truncated = truncated;
+        self
     }
 }
 

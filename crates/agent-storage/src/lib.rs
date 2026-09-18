@@ -207,6 +207,36 @@ impl Storage {
         Ok(())
     }
 
+    pub fn append_session_event(&self, id: &Uuid, event: &serde_json::Value) -> Result<()> {
+        use std::io::Write;
+        let p = self.session_path(id);
+        let line = serde_json::json!({ "type": "event", "event": event });
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&p)
+            .with_context(|| format!("opening session {}", p.display()))?;
+        writeln!(file, "{}", serde_json::to_string(&line)?)?;
+        Ok(())
+    }
+
+    pub fn read_session_events(&self, id: &Uuid) -> Vec<serde_json::Value> {
+        let p = self.session_path(id);
+        let Ok(content) = std::fs::read_to_string(&p) else {
+            return Vec::new();
+        };
+        content
+            .lines()
+            .filter_map(|line| {
+                let value: serde_json::Value = serde_json::from_str(line).ok()?;
+                if value.get("type").and_then(|t| t.as_str()) != Some("event") {
+                    return None;
+                }
+                value.get("event").cloned()
+            })
+            .collect()
+    }
+
     pub fn replace_session_meta(&self, record: &SessionRecord) -> Result<()> {
         let p = self.session_path(&record.id);
         let existing = std::fs::read_to_string(&p).unwrap_or_default();

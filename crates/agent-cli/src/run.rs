@@ -61,15 +61,21 @@ fn emit(event: &EngineEvent, json: bool) {
         return;
     }
     match event {
-        EngineEvent::Started { model, .. } => {
+        EngineEvent::Started { model, .. } | EngineEvent::TurnStarted { model, .. } => {
             println!("= starting with model {model}");
         }
-        EngineEvent::TextDelta { text } => {
+        EngineEvent::TextDelta { text, .. } => {
             print!("{text}");
             let _ = std::io::stdout().flush();
         }
-        EngineEvent::ToolCall { name, args, .. } => {
+        EngineEvent::ToolCallStarted { name, args, .. } => {
             println!("\n▶ {name} {args}");
+        }
+        EngineEvent::ToolCallDelta {
+            name, args_delta, ..
+        } => {
+            print!("\x1b[2mpreparing {name:?} {args_delta}\x1b[0m");
+            let _ = std::io::stdout().flush();
         }
         EngineEvent::ToolResult {
             name, ok, error, ..
@@ -79,6 +85,9 @@ fn emit(event: &EngineEvent, json: bool) {
             } else {
                 println!("  ✗ {name}: {}", error.as_deref().unwrap_or("tool failed"));
             }
+        }
+        EngineEvent::ActivityChanged { activity, .. } => {
+            println!("\n  ~ {activity}");
         }
         EngineEvent::PermissionRequested { tool, reason, .. } => {
             println!("\n? permission required for {tool}: {reason}");
@@ -91,14 +100,33 @@ fn emit(event: &EngineEvent, json: bool) {
         } => {
             println!("\n= finished ({stop_reason}) tokens={input_tokens}+{output_tokens}");
         }
-        EngineEvent::Error { message } => {
+        EngineEvent::TurnCompleted { .. } => {
+            println!("= turn complete");
+        }
+        EngineEvent::TurnCancelled { reason, .. } => {
+            println!(
+                "\n= cancelled{}",
+                reason
+                    .as_deref()
+                    .map_or_else(String::new, |r| format!(" ({r})"))
+            );
+        }
+        EngineEvent::Error { message, .. } => {
             println!("\nerror: {message}");
         }
-        EngineEvent::ReasoningDelta { text } => {
+        EngineEvent::ReasoningDelta { text, .. } => {
             print!("\x1b[2m{text}\x1b[0m");
             let _ = std::io::stdout().flush();
         }
-        EngineEvent::Usage { .. } | EngineEvent::PermissionResolved { .. } => {}
+        EngineEvent::Usage { .. }
+        | EngineEvent::PermissionResolved { .. }
+        | EngineEvent::PermissionModeChanged { .. }
+        | EngineEvent::AssistantMessageStarted { .. }
+        | EngineEvent::AssistantMessageCompleted { .. }
+        | EngineEvent::ReasoningStarted { .. }
+        | EngineEvent::ReasoningCompleted { .. }
+        | EngineEvent::ToolCallCompleted { .. }
+        | EngineEvent::SessionTitleChanged { .. } => {}
     }
 }
 

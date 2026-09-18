@@ -43,9 +43,16 @@ pub async fn post(
 
     let run_text = body.text.clone();
     let engine_state = state.clone();
+    let fallback_clock = engine.clock().clone();
     tokio::spawn(async move {
         if let Err(error) = engine.run(&run_text, &run_tx).await {
-            let _ = run_tx.send(EngineEvent::error(error.to_string())).await;
+            let meta = fallback_clock.meta("server_fallback");
+            let _ = run_tx
+                .send(EngineEvent::Error {
+                    meta,
+                    message: error.to_string(),
+                })
+                .await;
         }
         engine_state.unregister_engine(&session_id);
     });

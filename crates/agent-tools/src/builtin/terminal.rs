@@ -64,14 +64,19 @@ impl ToolExecutor for ShellTool {
             body = "(no output)".to_string();
         }
         let report = format!("exit_code: {}\n{}", output.exit_code, body);
+        let truncated = report.len() > MAX_OUTPUT;
+        let content = truncate(&report, MAX_OUTPUT);
         if output.exit_code == 0 {
-            Ok(ToolOutput::success(truncate(&report, MAX_OUTPUT)))
+            Ok(ToolOutput::success(content)
+                .exit_code(output.exit_code)
+                .truncated(truncated))
         } else {
-            Ok(ToolOutput {
-                ok: false,
-                content: truncate(&report, MAX_OUTPUT),
-                error: Some(format!("command exited with code {}", output.exit_code)),
-            })
+            Ok(
+                ToolOutput::failure(format!("command exited with code {}", output.exit_code))
+                    .content(content)
+                    .exit_code(output.exit_code)
+                    .truncated(truncated),
+            )
         }
     }
 }

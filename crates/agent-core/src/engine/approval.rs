@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
 
-use crate::engine::event::EngineEvent;
+use crate::engine::event::{EngineEvent, EventClock};
 
 struct Pending {
     tool: String,
@@ -16,19 +16,41 @@ struct Pending {
 
 pub struct EngineApprover {
     tx: mpsc::Sender<EngineEvent>,
+    clock: EventClock,
     pending: Mutex<HashMap<Uuid, Pending>>,
     session_allowed: Mutex<HashSet<String>>,
     auto_allow: bool,
 }
 
 impl EngineApprover {
-    pub fn new(tx: mpsc::Sender<EngineEvent>, auto_allow: bool) -> Arc<Self> {
+    pub fn new(tx: mpsc::Sender<EngineEvent>, clock: EventClock, auto_allow: bool) -> Arc<Self> {
         Arc::new(Self {
             tx,
+            clock,
             pending: Mutex::new(HashMap::new()),
             session_allowed: Mutex::new(HashSet::new()),
             auto_allow,
         })
+    }
+
+    pub fn clock(&self) -> &EventClock {
+        &self.clock
+    }
+
+    pub fn auto_allow(&self) -> bool {
+        self.auto_allow
+    }
+
+    pub fn allow_all_pending(&self, decision: PermissionDecision) {
+        let pending = std::mem::take(&mut *self.pending.lock().unwrap());
+        for (id, item) in pending {
+            let _ = self.tx.try_send(EngineEvent::PermissionResolved {
+                meta: self.clock.meta(format!("permission_{id}")),
+                id,
+                decision: decision_name(decision).to_string(),
+            });
+            let _ = item.sender.send(decision);
+        }
     }
 
     pub async fn resolve(&self, id: Uuid, decision: PermissionDecision, remember: bool) -> bool {
@@ -44,6 +66,7 @@ impl EngineApprover {
         let _ = self
             .tx
             .send(EngineEvent::PermissionResolved {
+                meta: self.clock.meta(format!("permission_{id}")),
                 id,
                 decision: decision_name(decision).to_string(),
             })
@@ -77,6 +100,7 @@ impl PermissionApprover for EngineApprover {
         let sent = self
             .tx
             .send(EngineEvent::PermissionRequested {
+                meta: self.clock.meta(format!("permission_{id}")),
                 id,
                 tool: request.tool.clone(),
                 scope: format!("{:?}", request.scope).to_lowercase(),
