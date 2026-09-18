@@ -11,6 +11,11 @@ pub struct Cli {
     pub debug: bool,
     #[arg(long, short = 'v', action = clap::ArgAction::Count, help = "Increase verbosity")]
     pub verbose: u8,
+    #[arg(
+        long,
+        help = "Launch the TypeScript TUI (the default when no subcommand is given)"
+    )]
+    pub agent: bool,
 
     #[command(subcommand)]
     pub command: Option<Command>,

@@ -17,6 +17,18 @@ pub enum ProviderAction {
         /// Provider ID to use
         id: String,
     },
+    /// Store an API key for a provider (or clear it with an empty value)
+    SetKey {
+        /// Provider ID
+        id: String,
+        /// API key value; required
+        key: Option<String>,
+    },
+    /// Remove a stored API key for a provider
+    RemoveKey {
+        /// Provider ID
+        id: String,
+    },
 }
 
 pub fn list_providers(cfg: &AgentConfig) {

@@ -4,6 +4,7 @@ use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
+use agent_filesystem::snapshot;
 use agent_filesystem::{find_files, list_directory, read_file, write_file, FileEdit};
 
 use crate::builtin::paths::{display, resolve_path, truncate};
@@ -100,6 +101,9 @@ impl ToolExecutor for WriteFileTool {
             .get("content")
             .and_then(|v| v.as_str())
             .context("content is required")?;
+        if path.exists() {
+            let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
+        }
         write_file(&path, content).await?;
         Ok(ToolOutput::success(format!(
             "wrote {} ({} bytes)",
@@ -145,6 +149,7 @@ impl ToolExecutor for EditFileTool {
             .and_then(|v| v.as_str())
             .context("new is required")?;
         let original = read_file(&path).await?;
+        let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
         let edit = FileEdit::search_replace(&path, old, new);
         let updated = edit.apply(None).await?;
         let diff = edit.diff(&original, &updated);
@@ -185,6 +190,7 @@ impl ToolExecutor for PatchFileTool {
             .get("patch")
             .and_then(|v| v.as_str())
             .context("patch is required")?;
+        let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
         let edit = FileEdit::patch(&path, patch);
         edit.apply(None).await?;
         Ok(ToolOutput::success(format!("patched {}", display(&path))))
@@ -231,6 +237,7 @@ impl ToolExecutor for DeletePathTool {
             }
             tokio::fs::remove_dir_all(&path).await?;
         } else {
+            let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
             tokio::fs::remove_file(&path).await?;
         }
         Ok(ToolOutput::success(format!("deleted {}", display(&path))))

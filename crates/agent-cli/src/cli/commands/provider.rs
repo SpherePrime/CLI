@@ -1,5 +1,7 @@
 use std::process::ExitCode;
 
+use dialoguer::Input;
+
 use crate::cmd::provider::ProviderAction;
 
 use crate::cli::{load_config, save_config};
@@ -49,5 +51,41 @@ pub fn run(action: &ProviderAction) -> ExitCode {
                 }
             }
         }
+        ProviderAction::SetKey { id, key } => {
+            let key = match key {
+                Some(key) => key.clone(),
+                None => match Input::new()
+                    .with_prompt(format!("Enter API key for '{id}'"))
+                    .interact()
+                {
+                    Ok(key) => key,
+                    Err(e) => {
+                        eprintln!("failed to read key: {e}");
+                        return ExitCode::FAILURE;
+                    }
+                },
+            };
+            match crate::server::credentials::set_key(id, &key) {
+                Ok(()) => {
+                    std::env::set_var(crate::server::credentials::env_name(id), &key);
+                    println!("stored API key for '{id}'");
+                    ExitCode::SUCCESS
+                }
+                Err(e) => {
+                    eprintln!("failed to store key: {e}");
+                    ExitCode::FAILURE
+                }
+            }
+        }
+        ProviderAction::RemoveKey { id } => match crate::server::credentials::remove_key(id) {
+            Ok(()) => {
+                println!("removed stored API key for '{id}'");
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("failed to remove key: {e}");
+                ExitCode::FAILURE
+            }
+        },
     }
 }

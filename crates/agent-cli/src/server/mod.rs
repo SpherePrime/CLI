@@ -1,5 +1,6 @@
 pub mod api;
 pub mod catalog;
+pub mod credentials;
 pub mod extras;
 pub mod fs;
 pub mod message;
@@ -51,6 +52,7 @@ pub fn serve_with(
         if let Ok(mut guard) = state.config.write() {
             *guard = Some(cfg);
         }
+        credentials::apply_to_env();
 
         let addr = format!("{host}:{port}");
         let listener = match TcpListener::bind(&addr).await {

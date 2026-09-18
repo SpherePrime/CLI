@@ -13,13 +13,14 @@ use crate::cli::actions::{mcp, plugin, session, skill};
 
 pub fn dispatch(cli: &Cli, storage: &agent_storage::Storage) -> ExitCode {
     match &cli.command {
-        None => crate::tui::run_main_loop(Some(storage.clone())),
+        None => crate::launcher::run(40123),
+        Some(Command::Run { .. }) if cli.agent => crate::launcher::run(40123),
         Some(Command::Run { mode, prompt, json }) => {
             let prompt_text = prompt.join(" ");
             if mode != "interactive" || !prompt_text.is_empty() {
                 crate::run::run_once(mode, &prompt_text, storage.clone(), *json)
             } else {
-                crate::tui::run_main_loop(Some(storage.clone()))
+                crate::launcher::run(40123)
             }
         }
         Some(Command::Serve {
@@ -46,13 +47,7 @@ pub fn dispatch(cli: &Cli, storage: &agent_storage::Storage) -> ExitCode {
         Some(Command::Tools) => commands::tools::run(),
         Some(Command::Config) => commands::config::run(),
         Some(Command::Completion { shell }) => commands::completion::run(shell),
-        Some(Command::Undo) => {
-            println!("undo is stub in this build; use /undo in the interactive TUI");
-            ExitCode::SUCCESS
-        }
-        Some(Command::Update) => {
-            println!("update is stub in this build");
-            ExitCode::SUCCESS
-        }
+        Some(Command::Undo) => commands::undo::run(),
+        Some(Command::Update) => commands::update::run(),
     }
 }

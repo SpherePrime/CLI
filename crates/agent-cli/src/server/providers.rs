@@ -9,6 +9,7 @@ use serde::Deserialize;
 
 use super::api::{json_response, read_json, BoxBody};
 use super::catalog::{self, Catalog};
+use super::credentials;
 use super::state::AppState;
 
 pub async fn list(state: Arc<AppState>) -> Result<Response<BoxBody>, std::convert::Infallible> {
@@ -256,14 +257,29 @@ pub async fn connect(
         .clone()
         .filter(|value| !value.is_empty())
         .or_else(|| provider.and_then(|entry| entry.api.clone()));
-    let api_key = body.api_key.clone().filter(|value| !value.is_empty());
-    let api_key_env = api_key.map(|key| {
-        let name = env_name_for_provider(&body.id);
-        std::env::set_var(&name, &key);
-        name
-    });
 
     let mut cfg = state.config.read().unwrap().clone().unwrap_or_default();
+    let existing_env = cfg
+        .providers
+        .get(&body.id)
+        .and_then(|provider| provider.api_key_env.clone());
+
+    let cleared = body.api_key.as_ref().is_some_and(|key| key.is_empty());
+    let api_key = body.api_key.clone().filter(|value| !value.is_empty());
+    let api_key_env = match &api_key {
+        Some(key) => {
+            let name = credentials::env_name(&body.id);
+            std::env::set_var(&name, key);
+            let _ = credentials::set_key(&body.id, key);
+            Some(name)
+        }
+        None if cleared => {
+            let _ = credentials::remove_key(&body.id);
+            None
+        }
+        None => existing_env,
+    };
+
     cfg.providers.insert(
         body.id.clone(),
         ProviderConfig {
@@ -280,15 +296,6 @@ pub async fn connect(
     Ok(json_response(
         &serde_json::json!({ "ok": true, "id": body.id }),
     ))
-}
-
-fn env_name_for_provider(id: &str) -> String {
-    let sanitized: String = id
-        .chars()
-        .filter(|character| character.is_ascii_alphanumeric() || *character == '_')
-        .map(|character| character.to_ascii_uppercase())
-        .collect();
-    format!("AGENT_PROVIDER_{sanitized}")
 }
 
 #[derive(Deserialize)]
