@@ -9,6 +9,7 @@ function argValue(name: string): string | undefined {
 
 const DEFAULT_PORT = 40123
 const port = Number(argValue("--port") ?? process.env.AGENT_TUI_PORT ?? DEFAULT_PORT)
+const token = argValue("--token") ?? process.env.AGENT_TUI_TOKEN
 
 process.on("uncaughtException", (error) => {
   logError(`uncaughtException: ${error?.stack ?? error}`)
@@ -23,8 +24,8 @@ process.on("exit", (code) => {
 })
 
 async function main() {
-  log(`start port=${port}`)
-  await run({ url: `http://127.0.0.1:${port}` })
+  log(`start port=${port}${token ? " auth=on" : ""}`)
+  await run({ url: `http://127.0.0.1:${port}`, token })
 }
 
 main().catch((error) => {

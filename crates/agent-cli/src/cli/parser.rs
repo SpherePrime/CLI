@@ -33,6 +33,10 @@ pub enum Command {
         host: String,
         #[arg(long, default_value_t = 0)]
         port: u16,
+        #[arg(long, help = "Explicit workspace root for new sessions")]
+        workspace: Option<String>,
+        #[arg(long, help = "Bearer token required for every request")]
+        token: Option<String>,
     },
     /// Launch the TypeScript TUI with an embedded server
     Tui {

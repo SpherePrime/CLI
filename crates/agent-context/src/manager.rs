@@ -68,6 +68,43 @@ impl ContextManager {
         self.maybe_compact();
     }
 
+    pub fn push_history(&mut self, messages: Vec<ChatMessage>) {
+        let mut seen_tool_calls: Vec<String> = Vec::new();
+        for message in messages {
+            if let Some(calls) = &message.tool_calls {
+                for call in calls {
+                    seen_tool_calls.push(call.id.clone());
+                }
+            }
+            match message.role {
+                Role::System => {
+                    let text = message.content.as_text();
+                    if text.starts_with("<compaction>") {
+                        self.compacted_summaries.push(text);
+                    }
+                }
+                Role::User | Role::Assistant => {
+                    self.messages.push(message);
+                }
+                Role::Tool => {
+                    let is_valid = message
+                        .tool_call_id
+                        .as_ref()
+                        .map(|id| seen_tool_calls.iter().any(|known| known == id))
+                        .unwrap_or(false);
+                    if is_valid {
+                        self.messages.push(message);
+                    }
+                }
+            }
+        }
+        self.maybe_compact();
+    }
+
+    pub fn has_history(&self) -> bool {
+        !self.messages.is_empty() || !self.compacted_summaries.is_empty()
+    }
+
     fn maybe_compact(&mut self) {
         if self.max_messages == 0 || self.messages.len() <= self.max_messages {
             return;
@@ -96,15 +133,8 @@ impl ContextManager {
             .join("\n");
         let keep_head_msgs: Vec<ChatMessage> = self.messages[..start].to_vec();
         let keep_tail_msgs: Vec<ChatMessage> = self.messages[end..].to_vec();
-        let compacted = ChatMessage {
-            role: Role::System,
-            content: MessageContent::Text(format!("<compaction>\n{summary}\n</compaction>")),
-            tool_calls: None,
-            tool_call_id: None,
-        };
         self.compacted_summaries.push(summary);
         self.messages = keep_head_msgs;
-        self.messages.push(compacted);
         self.messages.extend(keep_tail_msgs);
     }
 
@@ -124,6 +154,17 @@ impl ContextManager {
                 content: MessageContent::Text(format!(
                     "Project context: {}",
                     serde_json::to_string_pretty(&proj.to_json()).unwrap_or_default()
+                )),
+                tool_calls: None,
+                tool_call_id: None,
+            });
+        }
+        if !self.compacted_summaries.is_empty() {
+            out.push(ChatMessage {
+                role: Role::System,
+                content: MessageContent::Text(format!(
+                    "<compaction>\n{}\n</compaction>",
+                    self.compacted_summaries.join("\n")
                 )),
                 tool_calls: None,
                 tool_call_id: None,

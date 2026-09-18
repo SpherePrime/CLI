@@ -27,10 +27,20 @@ fn session_json(id: &Uuid, storage: &agent_storage::Storage) -> serde_json::Valu
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| format!("Session {}", &id.to_string()[..8]));
+            let project_exists = record
+                .project_path
+                .as_ref()
+                .map(|path| path.exists())
+                .unwrap_or(false);
             serde_json::json!({
                 "id": id,
                 "title": title,
                 "directory": record.project_path,
+                "project_id": record.project_id,
+                "project_name": record.project_name,
+                "project_path": record.project_path,
+                "remote_url": record.remote_url,
+                "project_exists": project_exists,
                 "model": record.model,
                 "created": record.created_at,
                 "updated": record.updated_at,
@@ -39,6 +49,7 @@ fn session_json(id: &Uuid, storage: &agent_storage::Storage) -> serde_json::Valu
         Err(_) => serde_json::json!({
             "id": id,
             "title": format!("Session {}", &id.to_string()[..8]),
+            "project_exists": false,
             "created": null,
             "updated": null,
         }),
@@ -66,14 +77,44 @@ pub async fn create(state: Arc<AppState>) -> Result<Response<BoxBody>, std::conv
     };
     let id = Uuid::new_v4();
     let model = state.resolve_model();
-    let mut record = agent_storage::SessionRecord::new(
-        Some(std::env::current_dir().unwrap_or_default()),
-        Some(model.model.clone()),
-    );
+    let project = crate::server::workspace::project_ref_for(&state.workspace);
+    let mut record = agent_storage::SessionRecord::new(None, Some(model.model.clone()));
     record.id = id;
+    record.attach_project(&project);
     record.metadata = serde_json::json!({ "title": serde_json::Value::Null });
     let _ = SessionManager::new(storage.clone(), id).save(&record, &[]);
     Ok(json_response(&session_json(&id, &storage)))
+}
+
+pub fn locate(
+    id: Uuid,
+    state: Arc<AppState>,
+    path: &str,
+) -> Result<Response<BoxBody>, std::convert::Infallible> {
+    let storage = match storage_or_error(&state) {
+        Ok(storage) => storage,
+        Err(response) => return Ok(response),
+    };
+    let raw = std::path::PathBuf::from(path);
+    let Some(root) = crate::server::workspace::canonical_existing_root(&raw) else {
+        return Ok(Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .body(err_body("project path does not exist"))
+            .unwrap());
+    };
+    let project = crate::server::workspace::project_ref_for(&root);
+    match storage.read_session(&id) {
+        Ok(mut record) => {
+            record.attach_project(&project);
+            record.touch();
+            let _ = storage.replace_session_meta(&record);
+            Ok(json_response(&session_json(&id, &storage)))
+        }
+        Err(_) => Ok(Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(err_body("session not found"))
+            .unwrap()),
+    }
 }
 
 pub fn get(id: Uuid, state: Arc<AppState>) -> Result<Response<BoxBody>, std::convert::Infallible> {

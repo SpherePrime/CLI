@@ -17,6 +17,7 @@ import { win32DisableProcessedInput, win32FlushInputBuffer, win32InstallCtrlCGua
 
 export type TuiInput = {
   url: string
+  token?: string
 }
 
 export async function run(input: TuiInput): Promise<void> {
@@ -62,7 +63,7 @@ export async function run(input: TuiInput): Promise<void> {
           )
         }}
       >
-        <App url={input.url} />
+        <App url={input.url} token={input.token} />
       </ErrorBoundary>
     ),
     renderer,
@@ -97,12 +98,12 @@ function startResizePoll(renderer: CliRenderer) {
   return () => clearInterval(timer)
 }
 
-function App(props: { url: string }) {
+function App(props: { url: string; token?: string }) {
   const { route } = useRoute()
   const { openPalette, closeDialog } = useDialog()
   const dimensions = useTerminalDimensions()
   const renderer = useRenderer()
-  const [client] = createSignal(new AgentClient(props.url))
+  const [client] = createSignal(new AgentClient(props.url, props.token))
   const commands = createMemo(() => buildCommands(client()))
   let leader = false
 

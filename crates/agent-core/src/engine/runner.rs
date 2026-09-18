@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use agent_config::{AgentConfig, AgentMode, PermissionMode};
+use agent_context::project::{canonical_project_root, git_remote_origin, project_id};
 use agent_context::ContextManager;
 use agent_model::{
     build_from_model_config, ChatMessage, ModelProvider, ModelRequest, ModelResponse, Role,
@@ -11,7 +12,7 @@ use agent_model::{
 use agent_permissions::{PermissionEngine, PermissionScope};
 use agent_plugins::native::NativePlugin;
 use agent_skills::SkillRegistry;
-use agent_storage::{SessionRecord, Storage};
+use agent_storage::{ProjectRef, SessionRecord, Storage};
 use agent_tools::executor::{ToolDefinition, ToolExecutionContext, ToolExecutor, ToolOutput};
 use agent_tools::{builtin, ToolRegistry};
 use anyhow::{Context, Result};
@@ -121,7 +122,37 @@ impl AgentEngine {
     pub fn with_session(mut self, session_id: Uuid) -> Self {
         self.session_id = session_id;
         self.context.session_id = session_id;
+        if let Some(storage) = &self.storage {
+            if let Ok(record) = storage.read_session(&session_id) {
+                if let Some(project_path) = record.project_path.as_deref() {
+                    if project_path.exists() {
+                        self.working_dir = project_path.to_path_buf();
+                    }
+                }
+                let messages =
+                    agent_sessions::SessionManager::resume(storage, session_id).unwrap_or_default();
+                let history: Vec<ChatMessage> = messages
+                    .iter()
+                    .filter_map(|value| serde_json::from_value(value.clone()).ok())
+                    .collect();
+                self.context.push_history(history);
+            }
+        }
+        self.rebuild_prompt();
         self
+    }
+
+    fn rebuild_prompt(&mut self) {
+        let tool_names: Vec<String> = self.tools.tools.iter().map(|t| t.name.clone()).collect();
+        let mut system = build_system_prompt(&self.working_dir.to_string_lossy(), &tool_names);
+        let skills = Self::load_skills(&self.config, &self.working_dir);
+        let skill_context = skills.context_block();
+        if !skill_context.is_empty() {
+            system = format!("{system}\n\n{skill_context}");
+        }
+        self.context
+            .detect_project(&self.working_dir.to_string_lossy());
+        self.context.set_user_instructions(&system);
     }
 
     pub fn cancel_handle(&self) -> Arc<AtomicBool> {
@@ -458,14 +489,18 @@ impl AgentEngine {
         }
         if let Some(storage) = &self.storage {
             if !storage.session_path(&self.session_id).exists() {
-                let record = SessionRecord {
+                let mut record = SessionRecord {
                     id: self.session_id,
                     created_at: Utc::now(),
                     updated_at: Utc::now(),
-                    project_path: Some(self.working_dir.clone()),
+                    project_path: None,
+                    project_id: None,
+                    project_name: None,
+                    remote_url: None,
                     model: Some(self.model_name()),
                     metadata: json!({ "title": Value::Null, "mode": format!("{:?}", self.mode) }),
                 };
+                record.attach_project(&project_ref(&self.working_dir));
                 storage.write_session(&record, &[])?;
             }
         }
@@ -507,6 +542,20 @@ fn reason_name(reason: StopReason) -> &'static str {
         StopReason::ToolUse => "tool_use",
         StopReason::MaxTokens => "max_tokens",
         StopReason::Error => "error",
+    }
+}
+
+pub fn project_ref(working_dir: &Path) -> ProjectRef {
+    let root = canonical_project_root(working_dir);
+    let name = root
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| root.to_string_lossy().into_owned());
+    ProjectRef {
+        id: project_id(&root),
+        name,
+        path: root.clone(),
+        remote_url: git_remote_origin(&root),
     }
 }
 
@@ -672,6 +721,118 @@ mod tests {
         let messages = engine.context.render_for_model();
         let content = messages[0].content.as_text();
         assert!(content.contains("Always greet the user"));
+    }
+
+    #[tokio::test]
+    async fn resumed_session_sends_history_to_model() {
+        use std::sync::Mutex;
+        let tmp = tempfile::tempdir().unwrap();
+        let storage = Storage::new(tmp.path().join(".agent"));
+        let session_id = Uuid::new_v4();
+        let requests: Arc<Mutex<Vec<ModelRequest>>> = Arc::new(Mutex::new(Vec::new()));
+
+        {
+            let (tx, _rx) = mpsc::channel(8);
+            let recording = Arc::clone(&requests);
+            let provider = RecordingProvider {
+                requests: recording,
+                first_reply: MessageContent::Text(String::new()),
+            };
+            let mut engine = AgentEngine::with_provider(
+                test_config(),
+                tmp.path().to_path_buf(),
+                tx.clone(),
+                Box::new(provider),
+            )
+            .with_storage(storage.clone());
+            engine.session_id = session_id;
+            engine
+                .run("remember the secret token: 42-alpha-77", &tx)
+                .await
+                .unwrap();
+        }
+
+        {
+            let (tx, _rx) = mpsc::channel(8);
+            let recording = Arc::clone(&requests);
+            let provider = RecordingProvider {
+                requests: recording,
+                first_reply: MessageContent::Text(String::new()),
+            };
+            let engine = AgentEngine::with_provider(
+                test_config(),
+                tmp.path().to_path_buf(),
+                tx.clone(),
+                Box::new(provider),
+            )
+            .with_storage(storage.clone());
+            let engine = engine.with_session(session_id);
+            let messages = engine.context.render_for_model();
+            let all: Vec<String> = messages
+                .iter()
+                .map(|m| {
+                    let role = match m.role {
+                        Role::User => "user",
+                        Role::Assistant => "assistant",
+                        Role::Tool => "tool",
+                        Role::System => "system",
+                    };
+                    format!("[{role}] {}", m.content.as_text())
+                })
+                .collect();
+            let joined = all.join("\n");
+            assert!(
+                joined.contains("42-alpha-77"),
+                "resumed context must contain the first user message, got: {joined}"
+            );
+            assert!(
+                joined.contains("secret token"),
+                "resumed context must contain original wording"
+            );
+        }
+    }
+
+    struct RecordingProvider {
+        requests: Arc<std::sync::Mutex<Vec<ModelRequest>>>,
+        first_reply: MessageContent,
+    }
+
+    #[async_trait]
+    impl ModelProvider for RecordingProvider {
+        async fn name(&self) -> &'static str {
+            "recording"
+        }
+
+        async fn list_models(&self) -> Result<Vec<String>> {
+            Ok(vec!["recording".into()])
+        }
+
+        async fn chat(&self, _request: &ModelRequest) -> Result<ModelResponse> {
+            anyhow::bail!("chat is not used in this test")
+        }
+
+        async fn chat_stream(
+            &self,
+            request: &ModelRequest,
+        ) -> Result<
+            futures::stream::BoxStream<
+                'static,
+                std::result::Result<StreamChunk, agent_model::ModelError>,
+            >,
+        > {
+            use futures::stream::StreamExt;
+            self.requests.lock().unwrap().push(request.clone());
+            let response = ModelResponse {
+                content: self.first_reply.clone(),
+                tool_calls: vec![],
+                stop_reason: StopReason::EndTurn,
+                usage: Usage {
+                    input_tokens: 1,
+                    output_tokens: 1,
+                },
+            };
+            Ok(futures::stream::iter(vec![Ok(StreamChunk::Done { response })]).boxed())
+        }
     }
 
     #[tokio::test]

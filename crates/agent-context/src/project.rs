@@ -1,5 +1,90 @@
 use serde::{Deserialize, Serialize};
 
+pub fn git_root(start: &std::path::Path) -> Option<std::path::PathBuf> {
+    let mut dir = start;
+    loop {
+        if dir.join(".git").exists() {
+            return Some(dir.to_path_buf());
+        }
+        dir = dir.parent()?;
+    }
+}
+
+pub fn canonical_project_root(path: &std::path::Path) -> std::path::PathBuf {
+    let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let canonical = strip_windows_prefix(canonical);
+    git_root(&canonical).unwrap_or(canonical)
+}
+
+fn strip_windows_prefix(path: std::path::PathBuf) -> std::path::PathBuf {
+    let raw = path.to_string_lossy();
+    if cfg!(windows) {
+        if let Some(rest) = raw.strip_prefix(r"\\?\UNC\") {
+            return std::path::PathBuf::from(format!(r"\\{rest}"));
+        }
+        if let Some(rest) = raw.strip_prefix(r"\\?\") {
+            return std::path::PathBuf::from(rest.to_string());
+        }
+    }
+    path
+}
+
+pub fn git_remote_origin(root: &std::path::Path) -> Option<String> {
+    let output = std::process::Command::new("git")
+        .args(["config", "--get", "remote.origin.url"])
+        .current_dir(root)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let remote = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    (!remote.is_empty()).then_some(remote)
+}
+
+pub fn project_id(path: &std::path::Path) -> String {
+    let bytes = path.to_string_lossy().as_bytes().to_vec();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for byte in bytes {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{hash:016x}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn git_root_found_at_repo_boundary() {
+        let tmp = tempfile::tempdir().unwrap();
+        let sub = tmp.path().join("src").join("deep");
+        std::fs::create_dir_all(&sub).unwrap();
+        std::fs::create_dir(tmp.path().join(".git")).unwrap();
+        assert_eq!(git_root(&sub).unwrap(), tmp.path());
+    }
+
+    #[test]
+    fn canonical_root_falls_back_to_path_outside_git() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = canonical_project_root(tmp.path());
+        let canonical = std::fs::canonicalize(tmp.path()).unwrap();
+        let expected = canonical.to_string_lossy().into_owned();
+        let expected = expected.trim_start_matches(r"\\?\");
+        assert_eq!(root.to_string_lossy().as_ref(), expected);
+    }
+
+    #[test]
+    fn project_id_is_stable_and_distinct() {
+        let a = std::path::Path::new("C:/projects/one");
+        let b = std::path::Path::new("C:/projects/two");
+        assert_eq!(project_id(a), project_id(a));
+        assert_ne!(project_id(a), project_id(b));
+        assert_eq!(project_id(a).len(), 16);
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum Language {
     #[default]

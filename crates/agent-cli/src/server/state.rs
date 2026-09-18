@@ -16,16 +16,24 @@ pub struct AppState {
     pub model: RwLock<Option<ModelConfig>>,
     pub catalog: RwLock<Option<crate::server::catalog::Catalog>>,
     pub storage: Option<agent_storage::Storage>,
+    pub workspace: std::path::PathBuf,
+    pub token: Option<String>,
     engines: RwLock<HashMap<uuid::Uuid, EngineHandle>>,
 }
 
 impl AppState {
-    pub fn new(storage: agent_storage::Storage) -> anyhow::Result<Self> {
+    pub fn new(
+        storage: agent_storage::Storage,
+        workspace: std::path::PathBuf,
+        token: Option<String>,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
             config: RwLock::new(None),
             model: RwLock::new(None),
             catalog: RwLock::new(None),
             storage: Some(storage),
+            workspace,
+            token,
             engines: RwLock::new(HashMap::new()),
         })
     }

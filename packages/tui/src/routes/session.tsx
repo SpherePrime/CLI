@@ -4,7 +4,7 @@ import { createSignal, createMemo, createEffect, onCleanup, For, Show } from "so
 import { Prompt, type PromptRef } from "../component/prompt/index"
 import { useRoute } from "../context/route"
 import { useDialog } from "../context/dialog"
-import { modelLabel } from "../context/model"
+import { modelLabel, workspaceName } from "../context/model"
 import {
   useSession,
   nextEntryId,
@@ -26,7 +26,7 @@ const helpText = [
 
 export function Session(props: { client: AgentClient }) {
   const { route, navigate } = useRoute()
-  const { dialog, openPermissionDialog, openInfo } = useDialog()
+  const { dialog, openPermissionDialog, openInfo, openSelect, openForm } = useDialog()
   const renderer = useRenderer()
   const session = useSession()
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
@@ -45,6 +45,7 @@ export function Session(props: { client: AgentClient }) {
   }
 
   const modelLabelMemo = createMemo(() => modelLabel() ?? "no model")
+  const workspaceNameMemo = createMemo(() => workspaceName() ?? "…")
 
   async function loadHistory(id: string) {
     if (session.entries().length > 0) return
@@ -108,6 +109,85 @@ export function Session(props: { client: AgentClient }) {
     session.addEntry({ id: nextEntryId(), role: "system", text })
   }
 
+  let pendingText = ""
+
+  async function sendPrompt(text: string, readonly?: boolean) {
+    const assistantId = nextEntryId()
+    session.addEntry({ id: assistantId, role: "assistant", text: "" })
+    setStatus("running")
+    try {
+      await props.client.streamMessage(text, session.sessionId(), (event) => handleEvent(assistantId, event), {
+        readonly: readonly ?? false,
+      })
+    } catch (error) {
+      openInfo({ title: "Request failed", body: String(error) })
+    }
+    setStatus("idle")
+    scrollToBottom()
+  }
+
+  async function handleProjectMissing(assistantId: string, projectName: string, projectPath: string | null) {
+    session.updateEntry(assistantId, {
+      role: "system",
+      text: `Project folder not found (${projectName ?? "unknown project"}).`,
+    })
+    setStatus("idle")
+    openSelect({
+      title: "Project folder not found",
+      options: [
+        { title: "Locate project", value: "locate", description: "Select the current location of the project folder" },
+        { title: "Open read-only", value: "readonly", description: "Continue the session without the saved project" },
+        { title: "Cancel", value: "cancel", description: "Abort the message" },
+      ],
+      onSelect: (value) => {
+        void resumeProjectMissing(value, projectPath)
+      },
+    })
+  }
+
+  async function resumeProjectMissing(value: string, projectPath: string | null) {
+    const id = session.sessionId()
+    if (!id) return
+    if (value === "cancel") return
+    if (value === "locate") {
+      openForm({
+        title: "Locate project",
+        description: "Enter the current path of the project folder",
+        fields: [
+          {
+            kind: "text",
+            key: "path",
+            label: "Project path",
+            initial: projectPath ?? "",
+            placeholder: "C:\\path\\to\\project",
+            hint: "The session will be attached to the git root of this folder",
+          },
+        ],
+        onSubmit: (values) => {
+          const raw = (values.path ?? "").trim()
+          if (!raw) {
+            openInfo({ title: "Locate project", body: "A project path is required." })
+            return
+          }
+          void relocateProject(id, raw)
+        },
+      })
+      return
+    }
+    if (pendingText) await sendPrompt(pendingText, true)
+  }
+
+  async function relocateProject(id: string, raw: string) {
+    try {
+      await props.client.locateSession(id, raw)
+    } catch (error) {
+      openInfo({ title: "Locate project", body: String(error) })
+      return
+    }
+    appendSystem(`Project relocated to ${raw}`)
+    if (pendingText) await sendPrompt(pendingText, false)
+  }
+
   async function runSlashCommand(text: string): Promise<boolean> {
     const command = text.trim().split(/\s+/)[0]
     switch (command) {
@@ -163,6 +243,9 @@ export function Session(props: { client: AgentClient }) {
         })
         break
       }
+      case "session.project_missing":
+        void handleProjectMissing(assistantId, event.session.project_name ?? "", event.project_path)
+        break
       case "permission_requested":
         openPermissionDialog({
           sessionId: session.sessionId(),
@@ -193,25 +276,15 @@ export function Session(props: { client: AgentClient }) {
     if (text.startsWith("/") && (await runSlashCommand(text))) return
 
     session.addEntry({ id: nextEntryId(), role: "user", text })
-    setStatus("running")
-
-    const assistantId = nextEntryId()
-    session.addEntry({ id: assistantId, role: "assistant", text: "" })
-
-    try {
-      await props.client.streamMessage(text, session.sessionId(), (event) => handleEvent(assistantId, event))
-    } catch (error) {
-      openInfo({ title: "Request failed", body: String(error) })
-    }
-
-    setStatus("idle")
-    scrollToBottom()
+    pendingText = text
+    await sendPrompt(text)
   }
 
   return (
     <box width="100%" flexDirection="column" flexGrow={1} minHeight={0}>
       <box flexDirection="row" justifyContent="space-between" paddingLeft={2} paddingRight={2} paddingTop={1}>
         <text fg={theme.textMuted}>{modelLabelMemo()}</text>
+        <text fg={theme.textMuted}>{workspaceNameMemo()}</text>
         <text fg={status() === "running" ? theme.primary : theme.textMuted}>
           {status() === "running" ? "running…" : "idle"}
         </text>

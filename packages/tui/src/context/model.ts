@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js"
-import type { AgentClient, ModelConfig } from "../client"
+import type { AgentClient, ModelConfig, WorkspaceInfo } from "../client"
 
 export type ModelInfo = {
   provider: string
@@ -8,7 +8,7 @@ export type ModelInfo = {
 
 export type ModelState =
   | { status: "loading" }
-  | { status: "ready"; version: string; model: ModelInfo }
+  | { status: "ready"; version: string; model: ModelInfo; workspace: WorkspaceInfo | null }
   | { status: "error"; error: string }
 
 const [state, setState] = createSignal<ModelState>({ status: "loading" })
@@ -40,6 +40,15 @@ export function modelInfo(): ModelInfo | undefined {
   return current.status === "ready" ? current.model : undefined
 }
 
+export function workspaceInfo(): WorkspaceInfo | null {
+  const current = state()
+  return current.status === "ready" ? current.workspace : null
+}
+
+export function workspaceName(): string | undefined {
+  return workspaceInfo()?.name
+}
+
 export function modelError(): string | undefined {
   const current = state()
   return current.status === "error" ? current.error : undefined
@@ -58,6 +67,7 @@ export function loadModel(client: AgentClient): Promise<void> {
         status: "ready",
         version: info.version,
         model: { provider: info.model.provider, model: info.model.model },
+        workspace: info.workspace ?? null,
       })
     },
     (error: unknown) => {
@@ -69,7 +79,8 @@ export function loadModel(client: AgentClient): Promise<void> {
 export function applyModel(model: ModelConfig): void {
   setState((previous) => {
     const version = previous.status === "ready" ? previous.version : ""
-    return { status: "ready", version, model: { provider: model.provider, model: model.model } }
+    const workspace = previous.status === "ready" ? previous.workspace : null
+    return { status: "ready", version, workspace, model: { provider: model.provider, model: model.model } }
   })
 }
 

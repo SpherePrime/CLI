@@ -3,15 +3,25 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitCode, Stdio};
 use std::time::Duration;
 
+use uuid::Uuid;
+
 const READY_TIMEOUT: Duration = Duration::from_secs(10);
 const READY_POLL: Duration = Duration::from_millis(150);
 
-pub fn run(port: u16) -> ExitCode {
+pub fn run(port_hint: u16) -> ExitCode {
+    let workspace = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let port = if port_available(port_hint) {
+        port_hint
+    } else {
+        free_port().unwrap_or(port_hint)
+    };
+    let token = Uuid::new_v4().to_string();
     let address: SocketAddr = format!("127.0.0.1:{port}").parse().expect("valid address");
+    let workspace_arg = workspace.to_string_lossy().into_owned();
 
     let mut server = None;
     if !server_is_up(address) {
-        match start_server(port) {
+        match start_server(port, &workspace_arg, &token) {
             Ok(child) => server = Some(child),
             Err(error) => {
                 eprintln!("cannot start server: {error}");
@@ -26,7 +36,7 @@ pub fn run(port: u16) -> ExitCode {
         return ExitCode::FAILURE;
     }
 
-    let status = launch_tui(port);
+    let status = launch_tui(port, &token);
     stop_server(server);
 
     match status {
@@ -39,10 +49,29 @@ pub fn run(port: u16) -> ExitCode {
     }
 }
 
-fn start_server(port: u16) -> std::io::Result<Child> {
+fn port_available(port: u16) -> bool {
+    std::net::TcpListener::bind(("127.0.0.1", port)).is_ok()
+}
+
+fn free_port() -> Option<u16> {
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).ok()?;
+    listener.local_addr().ok().map(|addr| addr.port())
+}
+
+fn start_server(port: u16, workspace: &str, token: &str) -> std::io::Result<Child> {
     let exe = std::env::current_exe()?;
     Command::new(exe)
-        .args(["serve", "--host", "127.0.0.1", "--port", &port.to_string()])
+        .args([
+            "serve",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            &port.to_string(),
+            "--workspace",
+            workspace,
+            "--token",
+            token,
+        ])
         .stdin(Stdio::null())
         .spawn()
 }
@@ -54,13 +83,12 @@ fn stop_server(server: Option<Child>) {
     }
 }
 
-fn launch_tui(port: u16) -> Result<bool, String> {
+fn launch_tui(port: u16, token: &str) -> Result<bool, String> {
     let port_arg = port.to_string();
 
     if let Some(bin) = find_tui_binary() {
         let status = Command::new(bin)
-            .args(["--port", &port_arg])
-            .current_dir(safe_working_dir())
+            .args(["--port", &port_arg, "--token", token])
             .status()
             .map_err(|error| format!("cannot launch TUI binary: {error}"))?;
         return Ok(status.success());
@@ -68,7 +96,14 @@ fn launch_tui(port: u16) -> Result<bool, String> {
 
     if let Some(dir) = find_tui_dir() {
         let status = Command::new("bun")
-            .args(["run", "src/index.tsx", "--port", &port_arg])
+            .args([
+                "run",
+                "src/index.tsx",
+                "--port",
+                &port_arg,
+                "--token",
+                token,
+            ])
             .current_dir(&dir)
             .status()
             .map_err(|error| format!("cannot launch bun TUI: {error}"))?;
@@ -115,13 +150,6 @@ fn find_tui_dir() -> Option<PathBuf> {
     }
 
     None
-}
-
-fn safe_working_dir() -> PathBuf {
-    std::env::current_exe()
-        .ok()
-        .and_then(|exe| exe.parent().map(Path::to_path_buf))
-        .unwrap_or_else(std::env::temp_dir)
 }
 
 fn server_is_up(address: SocketAddr) -> bool {

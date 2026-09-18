@@ -1,8 +1,13 @@
 export type SessionInfo = {
   id: string
   title?: string
-  created: number
-  updated: number
+  created: string
+  updated: string
+  project_id?: string | null
+  project_name?: string | null
+  project_path?: string | null
+  remote_url?: string | null
+  project_exists?: boolean
 }
 
 export type ModelConfig = {
@@ -14,10 +19,18 @@ export type ModelConfig = {
   max_tokens?: number
 }
 
+export type WorkspaceInfo = {
+  id: string
+  name: string
+  path: string
+  remote_url?: string | null
+}
+
 export type ServerInfo = {
   name: string
   version: string
   model: ModelConfig
+  workspace?: WorkspaceInfo
 }
 
 export type ProviderInfo = {
@@ -75,6 +88,7 @@ export type EngineEvent =
   | { type: "permission_resolved"; id: string; decision: string }
   | { type: "usage"; input_tokens: number; output_tokens: number }
   | { type: "finished"; stop_reason: string; input_tokens: number; output_tokens: number; iterations: number }
+  | { type: "session.project_missing"; session: { id: string; project_name?: string }; project_path: string | null }
   | { type: "error"; message: string }
   | { type: "done" }
 
@@ -93,7 +107,15 @@ export type SessionDetail = SessionInfo & {
 }
 
 export class AgentClient {
-  constructor(private baseUrl: string) {}
+  constructor(
+    private baseUrl: string,
+    private token?: string,
+  ) {}
+
+  private authorized(headers: Record<string, string> = {}): Record<string, string> {
+    if (this.token) headers["Authorization"] = `Bearer ${this.token}`
+    return headers
+  }
 
   async info(): Promise<ServerInfo> {
     return this.get<ServerInfo>("/")
@@ -119,6 +141,10 @@ export class AgentClient {
 
   async renameSession(id: string, title: string): Promise<SessionInfo> {
     return this.post<SessionInfo>(`/session/${id}/rename`, { title })
+  }
+
+  async locateSession(id: string, path: string): Promise<SessionDetail> {
+    return this.post<SessionDetail>(`/session/${id}/locate`, { path })
   }
 
   async deleteSession(id: string): Promise<{ deleted: string }> {
@@ -206,7 +232,7 @@ export class AgentClient {
   async sendMessage(text: string, sessionId?: string): Promise<SessionMessage[]> {
     const response = await fetch(`${this.baseUrl}/message`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.authorized({ "Content-Type": "application/json" }),
       body: JSON.stringify({ text, session_id: sessionId }),
     })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -226,11 +252,12 @@ export class AgentClient {
     text: string,
     sessionId: string | undefined,
     onEvent: (event: SessionMessage) => void,
+    options?: { readonly?: boolean },
   ): Promise<void> {
     const response = await fetch(`${this.baseUrl}/message`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, session_id: sessionId }),
+      headers: this.authorized({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ text, session_id: sessionId, readonly: options?.readonly ?? false }),
     })
     if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`)
 
@@ -255,7 +282,9 @@ export class AgentClient {
   }
 
   private async get<T>(path: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`)
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      headers: this.authorized(),
+    })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     return response.json()
   }
@@ -263,7 +292,7 @@ export class AgentClient {
   private async post<T>(path: string, body: unknown): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.authorized({ "Content-Type": "application/json" }),
       body: JSON.stringify(body),
     })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)

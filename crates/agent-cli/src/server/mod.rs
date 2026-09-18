@@ -7,6 +7,9 @@ pub mod providers;
 pub mod session;
 pub mod state;
 
+pub mod workspace;
+
+use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::Arc;
 
@@ -19,11 +22,23 @@ use tokio::runtime::Runtime;
 
 use state::AppState;
 
-pub fn serve(host: &str, port: u16, storage: agent_storage::Storage) -> ExitCode {
+pub fn serve_with(
+    host: &str,
+    port: u16,
+    storage: agent_storage::Storage,
+    workspace: Option<&str>,
+    token: Option<&str>,
+) -> ExitCode {
+    let workspace = workspace
+        .map(PathBuf::from)
+        .or_else(|| std::env::current_dir().ok())
+        .unwrap_or_else(std::env::temp_dir);
+    let token = token.map(|value| value.to_string());
+
     let runtime = Runtime::new().expect("tokio runtime creation failed");
 
     runtime.block_on(async move {
-        let state: Arc<AppState> = match AppState::new(storage) {
+        let state: Arc<AppState> = match AppState::new(storage, workspace, token) {
             Ok(state) => Arc::new(state),
             Err(error) => {
                 eprintln!("server init error: {error}");
@@ -47,6 +62,9 @@ pub fn serve(host: &str, port: u16, storage: agent_storage::Storage) -> ExitCode
 
         let bound = listener.local_addr().expect("bound address");
         println!("agent server listening on http://{bound}");
+        if state.token.is_some() {
+            println!("agent server auth: bearer token required");
+        }
 
         agent_ui::files::refresh_file_cache();
 

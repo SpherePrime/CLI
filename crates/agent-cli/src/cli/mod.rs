@@ -22,9 +22,18 @@ pub fn dispatch(cli: &Cli, storage: &agent_storage::Storage) -> ExitCode {
                 crate::tui::run_main_loop(Some(storage.clone()))
             }
         }
-        Some(Command::Serve { host, port }) => {
-            crate::server::serve(host.as_str(), *port, storage.clone())
-        }
+        Some(Command::Serve {
+            host,
+            port,
+            workspace,
+            token,
+        }) => crate::server::serve_with(
+            host.as_str(),
+            *port,
+            storage.clone(),
+            workspace.as_deref(),
+            token.as_deref(),
+        ),
         Some(Command::Tui { port }) => crate::launcher::run(*port),
         Some(Command::Init) => crate::init::run_init(),
         Some(Command::Doctor) => crate::doctor::run_doctor(storage),

@@ -18,8 +18,22 @@ pub struct SessionRecord {
     pub created_at: chrono::DateTime<Utc>,
     pub updated_at: chrono::DateTime<Utc>,
     pub project_path: Option<PathBuf>,
+    #[serde(default)]
+    pub project_id: Option<String>,
+    #[serde(default)]
+    pub project_name: Option<String>,
+    #[serde(default)]
+    pub remote_url: Option<String>,
     pub model: Option<String>,
     pub metadata: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectRef {
+    pub id: String,
+    pub name: String,
+    pub path: PathBuf,
+    pub remote_url: Option<String>,
 }
 
 impl SessionRecord {
@@ -30,9 +44,19 @@ impl SessionRecord {
             created_at: now,
             updated_at: now,
             project_path,
+            project_id: None,
+            project_name: None,
+            remote_url: None,
             model,
             metadata: serde_json::json!({}),
         }
+    }
+
+    pub fn attach_project(&mut self, project: &ProjectRef) {
+        self.project_id = Some(project.id.clone());
+        self.project_name = Some(project.name.clone());
+        self.project_path = Some(project.path.clone());
+        self.remote_url = project.remote_url.clone();
     }
 
     pub fn touch(&mut self) {

@@ -26,16 +26,33 @@ pub async fn route(
             .unwrap());
     }
 
+    if let Some(token) = &state.token {
+        let value = request
+            .headers()
+            .get(hyper::header::AUTHORIZATION)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.strip_prefix("Bearer "))
+            .unwrap_or_default();
+        if value != token {
+            return Ok(Response::builder()
+                .status(StatusCode::UNAUTHORIZED)
+                .body(err_body("unauthorized"))
+                .unwrap());
+        }
+    }
+
     let path = request.uri().path().to_string();
     let query = request.uri().query().unwrap_or("").to_string();
     let method = request.method().clone();
 
     if method == Method::GET && path == "/" {
         let model = state.resolve_model();
+        let workspace = workspace_json(&state);
         return Ok(json_response(&serde_json::json!({
             "name": "agent",
             "version": VERSION,
             "model": public_model(&model),
+            "workspace": workspace,
         })));
     }
 
@@ -160,6 +177,13 @@ async fn handle_session_path(
         }
         (Method::POST, "fork") => session::fork(id, state),
         (Method::POST, "compact") => session::compact(id, state),
+        (Method::POST, "locate") => {
+            let body = match read_json::<LocateBody>(request).await {
+                Ok(body) => body,
+                Err(response) => return Ok(response),
+            };
+            session::locate(id, state, &body.path)
+        }
         (Method::POST, "delete") | (Method::DELETE, "") => session::delete(id, state),
         _ => Ok(Response::builder()
             .status(StatusCode::METHOD_NOT_ALLOWED)
@@ -171,6 +195,11 @@ async fn handle_session_path(
 #[derive(Deserialize)]
 struct RenameBody {
     title: String,
+}
+
+#[derive(Deserialize)]
+struct LocateBody {
+    path: String,
 }
 
 #[derive(Deserialize)]
@@ -265,6 +294,16 @@ fn public_model(model: &agent_config::ModelConfig) -> serde_json::Value {
     })
 }
 
+fn workspace_json(state: &AppState) -> serde_json::Value {
+    let project = super::workspace::project_ref_for(&state.workspace);
+    serde_json::json!({
+        "id": project.id,
+        "name": project.name,
+        "path": project.path,
+        "remote_url": project.remote_url,
+    })
+}
+
 fn redact_config(value: &mut serde_json::Value) {
     if let Some(map) = value.as_object_mut() {
         if let Some(model) = map.get_mut("model") {
@@ -298,6 +337,8 @@ fn redact_optional_env(value: Option<&mut serde_json::Value>) {
 pub struct MessageBody {
     pub session_id: Option<uuid::Uuid>,
     pub text: String,
+    #[serde(default)]
+    pub readonly: bool,
 }
 
 #[allow(clippy::result_large_err)]
