@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use serde_json::{json, Value};
@@ -38,7 +40,7 @@ impl ToolExecutor for ShellTool {
         };
         let runner = ShellRunner::new();
         let outcome = runner
-            .run_with_timeout(&request, limit)
+            .run_with_cancel(&request, limit, Arc::clone(&ctx.cancel))
             .await
             .with_context(|| format!("running command in {}", display(&cwd)))?;
         let output = match outcome {
@@ -47,6 +49,9 @@ impl ToolExecutor for ShellTool {
                 return Ok(ToolOutput::failure(format!(
                     "command timed out after {limit}s"
                 )));
+            }
+            ExecOutcome::Cancelled => {
+                return Ok(ToolOutput::failure("command cancelled".into()));
             }
         };
         let mut body = String::new();

@@ -724,6 +724,7 @@ impl AgentEngine {
         )
         .with_permission_engine(self.permissions.clone())
         .with_approver(self.approver.clone())
+        .with_cancel(Arc::clone(&self.cancel))
     }
 
     async fn ensure_mcp_tools(&mut self) {

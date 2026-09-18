@@ -1,3 +1,7 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+
 use agent_events::{AgentEvent, AgentEventPayload, AgentScope, EventBus};
 use agent_permissions::PermissionDecision;
 use anyhow::{anyhow, Result};
@@ -107,26 +111,32 @@ impl ToolRegistry {
         }
 
         let started = std::time::Instant::now();
-        let result = tokio::time::timeout(
-            std::time::Duration::from_secs(tool.timeout_secs),
-            self.invoke(tool, args, ctx),
-        )
-        .await;
-        let elapsed_ms = started.elapsed().as_millis();
-
-        let out = match result {
-            Ok(Ok(output)) => output,
-            Ok(Err(error)) => {
+        let cancel_flag = Arc::clone(&ctx.cancel);
+        let invoke = self.invoke(tool, args, ctx);
+        let deadline = Duration::from_secs(tool.timeout_secs.max(1));
+        let timer = tokio::time::sleep(deadline);
+        let out = tokio::select! {
+            biased;
+            result = invoke => match result {
+                Ok(output) => output,
+                Err(error) => {
+                    self.events.dispatch(
+                        AgentEventPayload::new(AgentEvent::ToolError)
+                            .with_scope(AgentScope::Tool)
+                            .with_detail(serde_json::json!({ "tool": name, "error": error.to_string() })),
+                    );
+                    ToolOutput::failure(error.to_string())
+                }
+            },
+            _ = wait_until_cancelled(&cancel_flag) => {
                 self.events.dispatch(
                     AgentEventPayload::new(AgentEvent::ToolError)
                         .with_scope(AgentScope::Tool)
-                        .with_detail(
-                            serde_json::json!({ "tool": name, "error": error.to_string() }),
-                        ),
+                        .with_detail(serde_json::json!({ "tool": name, "error": "cancelled" })),
                 );
-                ToolOutput::failure(error.to_string())
+                ToolOutput::failure(format!("tool {name} cancelled"))
             }
-            Err(_) => {
+            _ = timer => {
                 self.events.dispatch(
                     AgentEventPayload::new(AgentEvent::ToolError)
                         .with_scope(AgentScope::Tool)
@@ -135,6 +145,7 @@ impl ToolRegistry {
                 ToolOutput::failure(format!("tool {name} timed out"))
             }
         };
+        let elapsed_ms = started.elapsed().as_millis();
 
         self.events.dispatch(
             AgentEventPayload::new(AgentEvent::ToolAfter)
@@ -178,5 +189,18 @@ impl ToolRegistry {
             }
         }
         Ok(results)
+    }
+}
+
+async fn wait_until_cancelled(cancel: &AtomicBool) {
+    if cancel.load(Ordering::SeqCst) {
+        return;
+    }
+    let mut interval = tokio::time::interval(Duration::from_millis(50));
+    loop {
+        interval.tick().await;
+        if cancel.load(Ordering::SeqCst) {
+            return;
+        }
     }
 }

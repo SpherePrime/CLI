@@ -1,11 +1,13 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::io::AsyncReadExt;
 use tokio::process::{Child, Command};
-use tokio::time::{timeout, Duration};
+use tokio::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecRequest {
@@ -27,6 +29,7 @@ pub struct ExecOutput {
 pub enum ExecOutcome {
     Completed(ExecOutput),
     TimedOut,
+    Cancelled,
 }
 
 pub const PROTECTED_ENV: [&str; 8] = [
@@ -57,6 +60,7 @@ impl ShellRunner {
         match self.run_with_timeout(req, limit).await? {
             ExecOutcome::Completed(output) => Ok(output),
             ExecOutcome::TimedOut => anyhow::bail!("command timed out after {limit}s"),
+            ExecOutcome::Cancelled => anyhow::bail!("command cancelled"),
         }
     }
 
@@ -64,6 +68,16 @@ impl ShellRunner {
         &self,
         req: &ExecRequest,
         timeout_secs: u64,
+    ) -> Result<ExecOutcome> {
+        let never = Arc::new(AtomicBool::new(false));
+        self.run_with_cancel(req, timeout_secs, never).await
+    }
+
+    pub async fn run_with_cancel(
+        &self,
+        req: &ExecRequest,
+        timeout_secs: u64,
+        cancel: Arc<AtomicBool>,
     ) -> Result<ExecOutcome> {
         let mut cmd = Command::new(req.command.clone());
         cmd.args(&req.args);
@@ -98,8 +112,17 @@ impl ShellRunner {
             (out_bytes, err_bytes, status)
         };
 
-        match timeout(Duration::from_secs(timeout_secs.max(1)), run).await {
-            Ok((out_bytes, err_bytes, status)) => {
+        let cancel_fut = wait_until_cancelled(cancel.clone());
+        let timer = tokio::time::sleep(Duration::from_secs(timeout_secs.max(1)));
+        let result = tokio::select! {
+            biased;
+            r = run => Some(r),
+            _ = cancel_fut => None,
+            _ = timer => None,
+        };
+
+        match result {
+            Some((out_bytes, err_bytes, status)) => {
                 let exit_code = status
                     .map(|status| status.code().unwrap_or(-1))
                     .unwrap_or(-1);
@@ -109,10 +132,27 @@ impl ShellRunner {
                     stderr: String::from_utf8_lossy(&err_bytes).into_owned(),
                 }))
             }
-            Err(_) => {
+            None if cancel.load(Ordering::SeqCst) => {
+                kill_process_tree(&mut child).await;
+                Ok(ExecOutcome::Cancelled)
+            }
+            None => {
                 kill_process_tree(&mut child).await;
                 Ok(ExecOutcome::TimedOut)
             }
+        }
+    }
+}
+
+async fn wait_until_cancelled(cancel: Arc<AtomicBool>) {
+    if cancel.load(Ordering::SeqCst) {
+        return;
+    }
+    let mut interval = tokio::time::interval(Duration::from_millis(50));
+    loop {
+        interval.tick().await;
+        if cancel.load(Ordering::SeqCst) {
+            return;
         }
     }
 }
@@ -220,6 +260,35 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn cancel_aborts_running_command() {
+        let r = ShellRunner::new();
+        let (command, args): (String, Vec<String>) = if cfg!(target_os = "windows") {
+            (
+                "cmd".into(),
+                vec!["/c".into(), "ping -n 8 127.0.0.1 > nul".into()],
+            )
+        } else {
+            ("sh".into(), vec!["-c".into(), "sleep 10".into()])
+        };
+        let cancel = Arc::new(AtomicBool::new(true));
+        let outcome = r
+            .run_with_cancel(
+                &ExecRequest {
+                    command,
+                    args,
+                    cwd: None,
+                    env: vec![],
+                    timeout_secs: Some(30),
+                },
+                30,
+                cancel,
+            )
+            .await
+            .unwrap();
+        assert_eq!(outcome, ExecOutcome::Cancelled);
+    }
+
+    #[tokio::test]
     async fn completes_before_timeout() {
         let r = ShellRunner::new();
         let (command, args): (String, Vec<String>) = if cfg!(target_os = "windows") {
@@ -246,6 +315,7 @@ mod tests {
                 assert!(output.stdout.contains("done"));
             }
             ExecOutcome::TimedOut => panic!("fast command must not time out"),
+            ExecOutcome::Cancelled => panic!("fast command must not be cancelled"),
         }
     }
 }

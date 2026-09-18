@@ -35,6 +35,7 @@ pub struct ToolExecutionContext {
     pub working_dir: std::path::PathBuf,
     pub permission_engine: Arc<std::sync::Mutex<PermissionEngine>>,
     pub approver: Option<Arc<dyn PermissionApprover>>,
+    pub cancel: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl ToolExecutionContext {
@@ -48,6 +49,7 @@ impl ToolExecutionContext {
             working_dir,
             permission_engine: Arc::new(std::sync::Mutex::new(engine)),
             approver: None,
+            cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
     }
 
@@ -61,6 +63,11 @@ impl ToolExecutionContext {
         engine: Arc<std::sync::Mutex<PermissionEngine>>,
     ) -> Self {
         self.permission_engine = engine;
+        self
+    }
+
+    pub fn with_cancel(mut self, cancel: Arc<std::sync::atomic::AtomicBool>) -> Self {
+        self.cancel = cancel;
         self
     }
 }
