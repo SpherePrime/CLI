@@ -22,22 +22,19 @@ agent                 # interactive TUI mode
 
 ## TUI Interface
 
-The agent runs an interactive terminal UI with the following navigation:
+`agent` launches the OpenTUI interface (TypeScript, `packages/tui`). The Rust/ratatui TUI (`crates/agent-ui`) is deprecated.
 
 | Key | Action |
 |-----|--------|
-| `Tab` / `Shift+Tab` | Switch between form fields |
-| `Enter` | Confirm/send/accept selection |
-| `Esc` | Go back/cancel/exit |
-| `↑` / `↓` | Navigate options/list items |
-| `q` | Quit application |
+| `Enter` | Send message / accept selection |
+| `Shift+Enter` | Newline in the prompt |
+| `Esc` | Back to home / cancel running turn |
+| `f2` | Switch permission mode (Ask / Auto edit / Full access) |
+| `Ctrl+p` | Command palette |
+| `Ctrl+C` | Exit |
+| Click | Expand/collapse a tool row or reasoning block |
 
-**Screens:**
-- **Banner** — Welcome screen with model info and quick commands
-- **Input** — Message/command input with fuzzy autocomplete
-- **Model Wizard** — Configure active model and provider
-- **Provider Wizard** — Add/configure a new provider
-- **Config Menu** — Settings (temperature, max tokens, etc.)
+Features: timeline event stream with tools, reasoning, file changes and diffs, permission mode switcher with session-level Full Access, sticky prompt with footer chips (model, permission mode, token count), and plan steps panel.
 
 ## CLI Commands
 

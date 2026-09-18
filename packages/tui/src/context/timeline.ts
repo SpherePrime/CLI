@@ -48,10 +48,11 @@ export type TimelineState = {
   lastActivity?: string
   toolPreps: Record<number, { id?: string; name?: string; args: string }>
   plan: PlanStep[]
+  totalTokens: number
 }
 
 export function emptyTimeline(): TimelineState {
-  return { lastSequence: 0, entries: [], lastActivity: undefined, toolPreps: {}, plan: [] }
+  return { lastSequence: 0, entries: [], lastActivity: undefined, toolPreps: {}, plan: [], totalTokens: 0 }
 }
 
 function entryIndex(entries: ChatEntry[], id: string): number {
@@ -322,10 +323,15 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
       )
       return { ...state, lastSequence: sequence, entries }
     }
-    case "permission_mode_changed":
     case "usage":
+      return {
+        ...state,
+        lastSequence: sequence,
+        totalTokens: state.totalTokens + (event.input_tokens ?? 0) + (event.output_tokens ?? 0),
+      }
     case "finished":
     case "started":
+    case "permission_mode_changed":
     case "turn_started":
     case "turn_completed":
     case "session_title_changed":

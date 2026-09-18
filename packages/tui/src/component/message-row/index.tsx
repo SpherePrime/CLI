@@ -23,52 +23,57 @@ export function MessageRow(props: MessageRowProps) {
   const entry = props.entry
   if (entry.kind === "activity") return null
 
-  return (
-    <box
-      borderColor={theme.backgroundPanel}
-      border={["left"]}
-      customBorderChars={{ ...EmptyBorder, vertical: entry.role === "user" ? "│" : " " }}
-    >
-      <box paddingLeft={2} paddingTop={1} paddingRight={1} flexDirection="column">
-        <Show when={entry.role === "user"}>
-          <text fg={theme.primary}>You:</text>
-        </Show>
-        <Show when={entry.role === "assistant"}>
-          <text fg={theme.textMuted}>agent:</text>
-        </Show>
-        <Show when={entry.role === "tool"}>
-          <text fg={theme.secondary}>tool:</text>
-        </Show>
-        <Show when={entry.role === "error"}>
-          <text fg={theme.error}>error:</text>
-        </Show>
-        <Show when={entry.role === "system"}>
-          <text fg={theme.info}>system:</text>
-        </Show>
-        <Show when={entry.role === "assistant" && entry.running && !entry.reasoningOpen}>
-          <box flexDirection="row" gap={1} paddingTop={1}>
-            <Spinner />
-            <text fg={theme.textMuted}>{assistantStatusText(entry)}</text>
-          </box>
-        </Show>
-        <Show when={entry.reasoning}>
-          <ReasoningBlock entry={entry} onToggle={() => props.onToggleReasoning(entry.id)} />
-        </Show>
-        <Show when={entry.role === "tool"}>
-          <ToolBody entry={entry} onToggle={() => props.onToggleTool(entry.id)} />
-        </Show>
-        <Show when={entry.role !== "tool"}>
-          <Show when={entry.role === "system" && entry.running}>
-            <box flexDirection="row" gap={1} paddingTop={1}>
-              <Spinner />
-              <text fg={theme.textMuted}>{entry.text}</text>
-            </box>
-          </Show>
-          <Show when={entry.text}>
-            <text fg={entry.role === "error" ? theme.error : theme.text}>{entry.text}</text>
-          </Show>
-        </Show>
+  if (entry.role === "user") {
+    return (
+      <box
+        backgroundColor={theme.backgroundPanel}
+        paddingLeft={1}
+        paddingRight={1}
+        paddingTop={1}
+        paddingBottom={1}
+        border={["left"]}
+        borderColor={theme.primary}
+        customBorderChars={{ ...EmptyBorder, vertical: "│" }}
+      >
+        <text fg={theme.primary}>you</text>
+        <text> </text>
+        <text>{entry.text}</text>
       </box>
+    )
+  }
+
+  return (
+    <box paddingLeft={1} paddingRight={1} paddingTop={1} flexDirection="column">
+      <Show when={entry.role === "assistant" && entry.running && !entry.reasoningOpen}>
+        <box flexDirection="row" gap={1}>
+          <Spinner />
+          <text fg={theme.textMuted}>{assistantStatusText(entry)}</text>
+        </box>
+      </Show>
+      <Show when={entry.reasoning}>
+        <ReasoningBlock entry={entry} onToggle={() => props.onToggleReasoning(entry.id)} />
+      </Show>
+      <Show when={entry.role === "tool"}>
+        <ToolBody entry={entry} onToggle={() => props.onToggleTool(entry.id)} />
+      </Show>
+      <Show when={entry.role === "assistant"}>
+        <text fg={theme.textMuted}>agent</text>
+        <Show when={entry.text}>
+          <text>{entry.text}</text>
+        </Show>
+      </Show>
+      <Show when={entry.role === "error"}>
+        <text fg={theme.error}>{entry.text}</text>
+      </Show>
+      <Show when={entry.role === "system" && !entry.running}>
+        <text fg={theme.info}>{entry.text}</text>
+      </Show>
+      <Show when={entry.role === "system" && entry.running}>
+        <box flexDirection="row" gap={1}>
+          <Spinner />
+          <text fg={theme.textMuted}>{entry.text}</text>
+        </box>
+      </Show>
     </box>
   )
 }

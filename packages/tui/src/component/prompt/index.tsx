@@ -196,6 +196,8 @@ export function Prompt(props: {
                   </text>
                 </box>
                 <text fg={theme.textMuted}>· f2</text>
+                <text fg={theme.textMuted}>·</text>
+                <text fg={theme.textMuted}>{useSession().tokens()} tok</text>
               </box>
               <box flexDirection="row" gap={1}>
                 <text fg={theme.textMuted}>enter send · shift+enter newline · ctrl+p commands</text>

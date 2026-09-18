@@ -1,3 +1,8 @@
+//! Deprecated: legacy ratatui/crossterm TUI crate.
+//!
+//! The supported interface is the TypeScript/OpenTUI agent (`packages/tui`).
+//! Only non-UI helpers (file cache) are still used by agent-cli.
+
 pub mod app;
 pub mod completion;
 pub mod diff;

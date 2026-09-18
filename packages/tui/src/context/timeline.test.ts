@@ -273,6 +273,14 @@ describe("timeline reducer", () => {
     expect(entries[0]!.text).toBe("? Which file?\n→ a")
   })
 
+  test("usage events accumulate token counts", () => {
+    const state = timelineFromEvents([
+      { type: "usage", meta: meta(1, "assistant_0"), input_tokens: 100, output_tokens: 25 },
+      { type: "usage", meta: meta(2, "assistant_2"), input_tokens: 40, output_tokens: 5 },
+    ])
+    expect(state.totalTokens).toBe(170)
+  })
+
   test("reloading the same event log reconstructs an identical timeline", () => {
     const events: EngineEvent[] = [
       {

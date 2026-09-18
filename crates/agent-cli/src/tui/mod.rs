@@ -1,3 +1,8 @@
+//! Deprecated legacy ratatui/crossterm TUI.
+//!
+//! The default and supported interface is the TypeScript/OpenTUI agent (`agent-tui`).
+//! This module is kept only as a fallback and will be removed in a future release.
+
 pub mod commands;
 
 use std::process::ExitCode;
@@ -6,7 +11,9 @@ use agent_ui::{AgentApp, AppEvent};
 
 use crossterm::event::{Event, KeyEventKind, KeyModifiers};
 
+#[deprecated(note = "legacy ratatui TUI; use the TypeScript agent-tui instead")]
 pub fn run_main_loop(storage: Option<agent_storage::Storage>) -> ExitCode {
+    eprintln!("warning: the ratatui TUI is deprecated; use the agent-tui interface instead");
     let mut app = AgentApp::new("AI Coding Agent", env!("CARGO_PKG_VERSION"));
 
     let runtime = tokio::runtime::Builder::new_multi_thread()

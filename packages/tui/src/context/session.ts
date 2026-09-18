@@ -20,6 +20,7 @@ export function useSession() {
   return {
     entries: () => timeline().entries,
     plan: () => timeline().plan,
+    tokens: () => timeline().totalTokens,
     sessionId,
     setSessionId,
     permissionMode,
