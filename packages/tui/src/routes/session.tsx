@@ -1,6 +1,6 @@
 import { ScrollBoxRenderable } from "@opentui/core"
 import { useRenderer, useKeyboard } from "@opentui/solid"
-import { createSignal, createMemo, createEffect, Show, For } from "solid-js"
+import { createSignal, createMemo, createEffect, onCleanup, Show, For } from "solid-js"
 import { Prompt } from "../component/prompt/index"
 import { useRoute } from "../context/route"
 import { useDialog } from "../context/dialog"
@@ -45,7 +45,9 @@ export function Session(props: { client: AgentClient }) {
   const [loading, setLoading] = createSignal(false)
   const [loadError, setLoadError] = createSignal<string | undefined>(undefined)
   const [title, setTitle] = createSignal<string | undefined>(undefined)
+  const [newUpdates, setNewUpdates] = createSignal(0)
   let scroll: ScrollBoxRenderable
+  let lastEntryCount = 0
 
   const routeSessionId = () => {
     const current = route()
@@ -99,16 +101,34 @@ export function Session(props: { client: AgentClient }) {
     scroll.scrollTop = scroll.scrollHeight
   }
 
-  function refreshTitleOnce() {
-    const id = session.sessionId()
-    if (!id) return
-    setTimeout(() => {
-      if (session.sessionId() !== id) return
-      void props.client.getSession(id).then((info) => {
-        if (session.sessionId() === id) setTitle(info.title)
-      })
-    }, 600)
+  function isAtBottom(): boolean {
+    if (!scroll) return true
+    const tolerance = 32
+    return scroll.scrollTop >= scroll.scrollHeight - scroll.height - tolerance
   }
+
+  function jumpToBottom() {
+    scrollToBottom()
+    setNewUpdates(0)
+  }
+
+  createEffect(() => {
+    const entries = session.entries()
+    const count = entries.length
+    if (count > lastEntryCount && !isAtBottom()) {
+      setNewUpdates((previous) => previous + (count - lastEntryCount))
+    } else if (count <= lastEntryCount && isAtBottom()) {
+      setNewUpdates(0)
+    }
+    lastEntryCount = count
+  })
+
+  createEffect(() => {
+    const timer = setInterval(() => {
+      if (isAtBottom()) setNewUpdates(0)
+    }, 400)
+    onCleanup(() => clearInterval(timer))
+  })
 
   async function loadPermissionMode(id: string) {
     try {
@@ -118,11 +138,6 @@ export function Session(props: { client: AgentClient }) {
       session.setPermissionMode(undefined)
     }
   }
-
-  createEffect(() => {
-    session.entries()
-    scrollToBottom()
-  })
 
   async function cancelRunning() {
     if (status() !== "running") return
@@ -140,12 +155,10 @@ export function Session(props: { client: AgentClient }) {
       await props.client.streamMessage(text, session.sessionId(), handleEvent, {
         readonly: readonly ?? false,
       })
-      void refreshTitleOnce()
     } catch (error) {
       openInfo({ title: "Request failed", body: String(error) })
     }
     setStatus("idle")
-    scrollToBottom()
   }
 
   async function handleProjectMissing(projectName: string, projectPath: string | null) {
@@ -340,6 +353,8 @@ export function Session(props: { client: AgentClient }) {
             backgroundColor={theme.backgroundElement}
             flexGrow={1}
             minHeight={0}
+            stickyScroll
+            stickyStart="bottom"
           >
             <Show
               when={session.entries().length === 0}
@@ -380,6 +395,18 @@ export function Session(props: { client: AgentClient }) {
               </Show>
             </Show>
           </scrollbox>
+          <Show when={newUpdates() > 0}>
+            <box flexDirection="row" flexShrink={0} justifyContent="flex-end">
+              <box
+                flexShrink={0}
+                backgroundColor={theme.backgroundPanel}
+                paddingX={1}
+                onMouseDown={() => jumpToBottom()}
+              >
+                <text fg={theme.primary}>{newUpdates()} new updates ↓</text>
+              </box>
+            </box>
+          </Show>
         </box>
       </box>
       <Prompt

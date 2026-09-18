@@ -302,12 +302,21 @@ export class AgentClient {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const body = await response.text()
     const events: SessionMessage[] = []
+    let malformed = 0
     for (const line of body.split("\n")) {
       const trimmed = line.trim()
       if (!trimmed) continue
       try {
         events.push(JSON.parse(trimmed))
-      } catch {}
+      } catch {
+        malformed++
+      }
+    }
+    if (malformed > 0) {
+      events.push({
+        type: "error",
+        message: `stream: ${malformed} malformed JSON line(s) dropped`,
+      })
     }
     return events
   }
@@ -328,6 +337,17 @@ export class AgentClient {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ""
+    let malformed = 0
+
+    const dispatch = (line: string) => {
+      const trimmed = line.trim()
+      if (!trimmed) return
+      try {
+        onEvent(JSON.parse(trimmed) as SessionMessage)
+      } catch {
+        malformed++
+      }
+    }
 
     while (true) {
       const { done, value } = await reader.read()
@@ -335,13 +355,17 @@ export class AgentClient {
       buffer += decoder.decode(value, { stream: true })
       let index: number
       while ((index = buffer.indexOf("\n")) !== -1) {
-        const line = buffer.slice(0, index).trim()
+        dispatch(buffer.slice(0, index))
         buffer = buffer.slice(index + 1)
-        if (!line) continue
-        try {
-          onEvent(JSON.parse(line))
-        } catch {}
       }
+    }
+    dispatch(decoder.decode())
+    if (buffer.trim()) dispatch(buffer)
+    if (malformed > 0) {
+      onEvent({
+        type: "error",
+        message: `stream: ${malformed} malformed JSON line(s) dropped`,
+      })
     }
   }
 

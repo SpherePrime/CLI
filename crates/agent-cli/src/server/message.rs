@@ -1,11 +1,12 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use agent_core::{AgentEngine, EngineEvent};
 use futures::StreamExt;
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::{Bytes, Frame, Incoming};
 use hyper::{Request, Response, StatusCode};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 use uuid::Uuid;
 
@@ -70,6 +71,15 @@ pub async fn post(
     let forward_state = state.clone();
     let title_session_id = session_id;
     let first_user_text = text.clone();
+    let title_text = text.clone();
+    let (title_tx, title_rx) = oneshot::channel::<String>();
+    tokio::spawn(async move {
+        let Some(title) = maybe_generate_title(forward_state, title_session_id, &title_text).await
+        else {
+            return;
+        };
+        let _ = title_tx.send(title);
+    });
     tokio::spawn(async move {
         emit(
             &forward,
@@ -84,12 +94,47 @@ pub async fn post(
             }),
         )
         .await;
-        while let Some(event) = engine_rx.recv().await {
-            let value = serde_json::to_value(&event).unwrap_or(serde_json::Value::Null);
-            emit(&forward, value).await;
+        let mut title_rx = title_rx;
+        let mut title_emitted = false;
+        let mut engine_done = false;
+        while !engine_done {
+            tokio::select! {
+                maybe_event = engine_rx.recv(), if !engine_done => {
+                    match maybe_event {
+                        Some(event) => {
+                            let value = serde_json::to_value(&event).unwrap_or(serde_json::Value::Null);
+                            emit(&forward, value).await;
+                        }
+                        None => engine_done = true,
+                    }
+                }
+                maybe_title = &mut title_rx, if !title_emitted => {
+                    match maybe_title {
+                        Ok(title) => {
+                            emit(
+                                &forward,
+                                serde_json::json!({ "type": "session_title_changed", "title": title }),
+                            )
+                            .await;
+                            title_emitted = true;
+                        }
+                        Err(_) => title_emitted = true,
+                    }
+                }
+            }
+        }
+        if !title_emitted {
+            if let Ok(Ok(title)) =
+                tokio::time::timeout(Duration::from_millis(500), &mut title_rx).await
+            {
+                emit(
+                    &forward,
+                    serde_json::json!({ "type": "session_title_changed", "title": title }),
+                )
+                .await;
+            }
         }
         emit(&forward, serde_json::json!({ "type": "done" })).await;
-        maybe_auto_title(forward_state, title_session_id, &first_user_text);
     });
 
     let stream_body = StreamBody::new(
@@ -159,13 +204,13 @@ fn resolve_project_dir(
     }
 }
 
-fn maybe_auto_title(state: Arc<AppState>, session_id: Uuid, text: &str) {
-    let Some(storage) = state.storage() else {
-        return;
-    };
-    let Ok(record) = storage.read_session(&session_id) else {
-        return;
-    };
+async fn maybe_generate_title(
+    state: Arc<AppState>,
+    session_id: Uuid,
+    text: &str,
+) -> Option<String> {
+    let storage = state.storage()?;
+    let record = storage.read_session(&session_id).ok()?;
     let has_title = record
         .metadata
         .get("title")
@@ -173,24 +218,15 @@ fn maybe_auto_title(state: Arc<AppState>, session_id: Uuid, text: &str) {
         .map(|value| !value.is_empty())
         .unwrap_or(false);
     if has_title {
-        return;
+        return None;
     }
-    let state = state.clone();
-    let text = text.to_string();
-    tokio::spawn(async move {
-        let Some(title) = super::title::generate_title(state.clone(), &text).await else {
-            return;
-        };
-        let Some(storage) = state.storage() else {
-            return;
-        };
-        let Ok(mut record) = storage.read_session(&session_id) else {
-            return;
-        };
-        record.metadata["title"] = serde_json::Value::String(title);
-        record.touch();
-        let _ = storage.replace_session_meta(&record);
-    });
+    let title = super::title::generate_title(state.clone(), text).await?;
+    let storage = state.storage()?;
+    let mut record = storage.read_session(&session_id).ok()?;
+    record.metadata["title"] = serde_json::Value::String(title.clone());
+    record.touch();
+    let _ = storage.replace_session_meta(&record);
+    Some(title)
 }
 
 async fn emit(tx: &mpsc::Sender<Bytes>, value: serde_json::Value) {
@@ -255,8 +291,9 @@ mod tests {
             record.metadata = serde_json::json!({ "title": serde_json::Value::Null });
             let _ = SessionManager::new(storage.clone(), session_id).save(&record, &[]);
 
-            maybe_auto_title(state.clone(), session_id, "Add dark mode toggle");
-            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+            maybe_generate_title(state.clone(), session_id, "Add dark mode toggle")
+                .await
+                .expect("expected a generated title");
 
             let updated = storage.read_session(&session_id).unwrap();
             let title = updated
@@ -291,8 +328,8 @@ mod tests {
             record.metadata = serde_json::json!({ "title": "My title" });
             let _ = SessionManager::new(storage.clone(), session_id).save(&record, &[]);
 
-            maybe_auto_title(state.clone(), session_id, "Another message");
-            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+            let title = maybe_generate_title(state.clone(), session_id, "Another message").await;
+            assert_eq!(title, None);
 
             let updated = storage.read_session(&session_id).unwrap();
             let title = updated

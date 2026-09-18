@@ -901,15 +901,21 @@ fn tool_activity(call: &agent_model::ToolCall) -> String {
         .unwrap_or_default()
         .trim();
     match name.as_str() {
-        "read_file" | "read_many_files" | "list_dir" => {
-            file.map(|f| format!("Reading {f}")).unwrap_or_else(|| "Reading files…".into())
-        }
-        "write_file" | "create_file" | "edit_file" | "patch_file" | "apply_patch" => {
-            file.map(|f| format!("Editing {f}")).unwrap_or_else(|| "Editing files…".into())
-        }
-        "delete_path" | "remove" => file.map(|f| format!("Deleting {f}")).unwrap_or_else(|| "Deleting…".into()),
+        "read_file" | "read_many_files" | "list_dir" => file
+            .map(|f| format!("Reading {f}"))
+            .unwrap_or_else(|| "Reading files…".into()),
+        "write_file" | "create_file" | "edit_file" | "patch_file" | "apply_patch" => file
+            .map(|f| format!("Editing {f}"))
+            .unwrap_or_else(|| "Editing files…".into()),
+        "delete_path" | "remove" => file
+            .map(|f| format!("Deleting {f}"))
+            .unwrap_or_else(|| "Deleting…".into()),
         "shell" | "terminal" | "run" => {
-            let preview = command.split_whitespace().take(4).collect::<Vec<_>>().join(" ");
+            let preview = command
+                .split_whitespace()
+                .take(4)
+                .collect::<Vec<_>>()
+                .join(" ");
             format!("Running {preview}")
         }
         "git" => format!("Running git {command}"),
