@@ -235,6 +235,13 @@ fn kill_child(pid: u32, child: &mut Child) {
         .status();
     let _ = child.kill();
     let _ = child.wait();
+    let _ = Command::new("pkill")
+        .arg("-KILL")
+        .arg("-P")
+        .arg(pid.to_string())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
 }
 
 #[cfg(not(any(windows, unix)))]
