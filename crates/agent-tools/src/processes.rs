@@ -253,7 +253,9 @@ mod tests {
     #[tokio::test]
     async fn process_captures_output_until_exit() {
         let session = Uuid::new_v4();
-        let manager = ProcessManager::global();
+        let manager = ProcessManager {
+            processes: Mutex::new(HashMap::new()),
+        };
         let cwd = std::env::current_dir().unwrap();
 
         let command = if cfg!(windows) {
@@ -278,13 +280,15 @@ mod tests {
     #[tokio::test]
     async fn process_stop_kills_running_process() {
         let session = Uuid::new_v4();
-        let manager = ProcessManager::global();
+        let manager = ProcessManager {
+            processes: Mutex::new(HashMap::new()),
+        };
         let cwd = std::env::current_dir().unwrap();
 
         let command = if cfg!(windows) {
             "ping -n 30 127.0.0.1 >nul"
         } else {
-            "while :; do :; done"
+            "sleep 60"
         };
         let process = manager.start(session, command, &cwd).expect("spawn");
 
