@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
@@ -149,22 +149,123 @@ impl FileEdit {
     }
 }
 
-fn apply_unified_patch(original: &str, patch: &str) -> Result<String> {
-    let lines: Vec<&str> = original.lines().collect();
-    let result: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
-    for hunk in patch.lines() {
-        if let Some(target) = hunk.strip_prefix("@@") {
-            let nums: Vec<&str> = target.split_whitespace().collect();
-            if let Some(n) = nums.first() {
-                if let Ok(idx) = n.parse::<usize>() {
-                    if idx < result.len() {
-                        let _ = idx;
-                    }
-                }
+fn parse_hunk_old_start(header: &str) -> Result<usize> {
+    let rest = header.strip_prefix("@@").unwrap_or(header).trim();
+    let token = rest
+        .split_whitespace()
+        .next()
+        .ok_or_else(|| anyhow!("malformed hunk header: {header}"))?;
+    let range = token
+        .strip_prefix('-')
+        .ok_or_else(|| anyhow!("hunk header must start with '-' range: {header}"))?;
+    let start = range
+        .split(',')
+        .next()
+        .unwrap_or("0")
+        .parse::<usize>()
+        .with_context(|| format!("invalid hunk start in {header}"))?;
+    Ok(start)
+}
+
+fn locate_hunk(lines: &[String], expected: &[String], near: isize) -> Option<usize> {
+    if expected.is_empty() {
+        return Some(near.clamp(0, lines.len() as isize) as usize);
+    }
+    let len = lines.len();
+    if expected.len() > len {
+        return None;
+    }
+    let last = len - expected.len();
+    let base = near.clamp(0, last as isize) as usize;
+    let max_distance = std::cmp::max(base, last - base);
+    for distance in 0..=max_distance {
+        if base + distance <= last
+            && lines[base + distance..base + distance + expected.len()] == *expected
+        {
+            return Some(base + distance);
+        }
+        if distance <= base && lines[base - distance..base - distance + expected.len()] == *expected
+        {
+            return Some(base - distance);
+        }
+    }
+    None
+}
+
+fn apply_hunk(
+    lines: &mut Vec<String>,
+    old_start: usize,
+    body: &[&str],
+    offset: &mut isize,
+) -> Result<()> {
+    let mut old_lines: Vec<String> = Vec::new();
+    let mut new_lines: Vec<String> = Vec::new();
+    for line in body {
+        match line.as_bytes().first() {
+            Some(b'\\') => continue,
+            Some(b'+') => new_lines.push(line[1..].to_string()),
+            Some(b'-') => old_lines.push(line[1..].to_string()),
+            _ => {
+                let context = line.strip_prefix(' ').unwrap_or(line);
+                old_lines.push(context.to_string());
+                new_lines.push(context.to_string());
             }
         }
     }
-    Ok(result.join("\n"))
+    let expected = old_start.saturating_sub(1) as isize + *offset;
+    let Some(position) = locate_hunk(lines, &old_lines, expected) else {
+        bail!("patch context not found near line {old_start}");
+    };
+    lines.splice(
+        position..position + old_lines.len(),
+        new_lines.iter().cloned(),
+    );
+    *offset += new_lines.len() as isize - old_lines.len() as isize;
+    Ok(())
+}
+
+fn apply_unified_patch(original: &str, patch: &str) -> Result<String> {
+    let trailing_newline = original.ends_with('\n');
+    let mut lines: Vec<String> = original.lines().map(str::to_string).collect();
+    let patch_lines: Vec<&str> = patch.lines().collect();
+    if !patch_lines.iter().any(|line| line.starts_with("@@")) {
+        bail!("patch contains no hunks (@@)");
+    }
+    let mut index = 0;
+    let mut offset: isize = 0;
+    while index < patch_lines.len() {
+        if !patch_lines[index].starts_with("@@") {
+            index += 1;
+            continue;
+        }
+        let old_start = parse_hunk_old_start(patch_lines[index])?;
+        index += 1;
+        let mut body: Vec<&str> = Vec::new();
+        while index < patch_lines.len() {
+            let line = patch_lines[index];
+            if line.starts_with("@@") || line.starts_with("--- ") || line.starts_with("+++ ") {
+                break;
+            }
+            if line.is_empty() {
+                body.push(" ");
+                index += 1;
+                continue;
+            }
+            match line.as_bytes()[0] {
+                b' ' | b'+' | b'-' | b'\\' => {
+                    body.push(line);
+                    index += 1;
+                }
+                _ => break,
+            }
+        }
+        apply_hunk(&mut lines, old_start, &body, &mut offset)?;
+    }
+    let mut out = lines.join("\n");
+    if trailing_newline {
+        out.push('\n');
+    }
+    Ok(out)
 }
 
 pub async fn read_file(path: &Path) -> Result<String> {
@@ -230,5 +331,34 @@ mod tests {
         let edit = FileEdit::line_range(&f, 2, 2, "REPLACED");
         let updated = edit.apply(None).await.unwrap();
         assert!(updated.contains("REPLACED"));
+    }
+
+    #[tokio::test]
+    async fn unified_patch_replaces_and_inserts() {
+        let tmp = tempfile::tempdir().unwrap();
+        let f = tmp.path().join("p.txt");
+        write_file(&f, "a\nb\nc\n").await.unwrap();
+        let patch = "@@ -1,3 +1,4 @@\n a\n-b\n+B\n c\n+d";
+        let updated = FileEdit::patch(&f, patch).apply(None).await.unwrap();
+        assert_eq!(updated, "a\nB\nc\nd\n");
+    }
+
+    #[tokio::test]
+    async fn unified_patch_tolerates_shifted_context() {
+        let tmp = tempfile::tempdir().unwrap();
+        let f = tmp.path().join("shift.txt");
+        write_file(&f, "intro\nkeep\nold\nkeep2\n").await.unwrap();
+        let patch = "@@ -1,3 +1,3 @@\n keep\n-old\n+new\n keep2";
+        let updated = FileEdit::patch(&f, patch).apply(None).await.unwrap();
+        assert_eq!(updated, "intro\nkeep\nnew\nkeep2\n");
+    }
+
+    #[tokio::test]
+    async fn unified_patch_rejects_missing_context() {
+        let tmp = tempfile::tempdir().unwrap();
+        let f = tmp.path().join("bad.txt");
+        write_file(&f, "hello\n").await.unwrap();
+        let patch = "@@ -1 +1 @@\n-missing\n+new";
+        assert!(FileEdit::patch(&f, patch).apply(None).await.is_err());
     }
 }

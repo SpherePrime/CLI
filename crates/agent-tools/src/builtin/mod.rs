@@ -17,6 +17,7 @@ pub fn register_builtin(registry: ToolRegistry) -> ToolRegistry {
         .register(fs::write_file_tool())
         .register(fs::edit_file_tool())
         .register(fs::patch_file_tool())
+        .register(fs::apply_patch_tool())
         .register(fs::delete_path_tool())
         .register(fs::list_directory_tool())
         .register(fs::glob_tool())

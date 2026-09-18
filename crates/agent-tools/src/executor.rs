@@ -174,6 +174,11 @@ impl ToolOutput {
         self
     }
 
+    pub fn file_changes(mut self, changes: impl IntoIterator<Item = FileChange>) -> Self {
+        self.file_changes.extend(changes);
+        self
+    }
+
     pub fn exit_code(mut self, code: i32) -> Self {
         self.exit_code = Some(code);
         self
