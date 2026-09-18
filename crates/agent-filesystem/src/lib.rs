@@ -224,7 +224,7 @@ fn apply_hunk(
     Ok(())
 }
 
-fn apply_unified_patch(original: &str, patch: &str) -> Result<String> {
+pub fn apply_unified_patch(original: &str, patch: &str) -> Result<String> {
     let trailing_newline = original.ends_with('\n');
     let mut lines: Vec<String> = original.lines().map(str::to_string).collect();
     let patch_lines: Vec<&str> = patch.lines().collect();

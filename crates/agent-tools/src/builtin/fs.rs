@@ -1,11 +1,13 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
 use agent_filesystem::snapshot;
-use agent_filesystem::{find_files, list_directory, read_file, write_file, FileEdit};
+use agent_filesystem::{
+    apply_unified_patch, find_files, list_directory, read_file, write_file, FileEdit,
+};
 
 use crate::builtin::paths::{display, resolve_path, truncate};
 use crate::executor::{
@@ -304,6 +306,10 @@ impl ToolExecutor for ApplyPatchTool {
             .get("patch")
             .and_then(|v| v.as_str())
             .context("patch is required")?;
+        let dry_run = args
+            .get("dry_run")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
         let sections = split_patch_sections(patch);
         if sections.is_empty() {
             bail!("patch has no file headers (+++)");
@@ -311,42 +317,88 @@ impl ToolExecutor for ApplyPatchTool {
         let mut changes = Vec::new();
         let mut artifacts = Vec::new();
         let mut summary = Vec::new();
-        for (target, section) in sections {
-            if target.is_empty() || target == "/dev/null" {
-                continue;
-            }
-            let path = resolve_path(&ctx.working_dir, &target)?;
-            let existed = path.exists();
-            if existed {
-                snapshot_before_change(ctx, &path);
-            } else if let Some(parent) = path.parent() {
-                tokio::fs::create_dir_all(parent).await?;
-                tokio::fs::write(&path, "").await?;
-            }
-            let edit = FileEdit::patch(&path, &section);
-            edit.apply(None)
-                .await
-                .with_context(|| format!("applying patch to {target}"))?;
-            changes.push(FileChange {
-                path: display(&path),
-                change: if existed { "patch" } else { "created" }.into(),
-                diff: None,
-                additions: None,
-                deletions: None,
-            });
-            artifacts.push(artifact(
-                &path,
-                if existed {
-                    ToolArtifactKind::Modified
+        let mut written: Vec<(PathBuf, String)> = Vec::new();
+        let run = async {
+            for (target, section) in sections {
+                if target.is_empty() || target == "/dev/null" {
+                    continue;
+                }
+                let path = resolve_path(&ctx.working_dir, &target)?;
+                let existed = path.exists();
+                let original = if existed {
+                    if !dry_run {
+                        snapshot_before_change(ctx, &path);
+                    }
+                    tokio::fs::read_to_string(&path)
+                        .await
+                        .with_context(|| format!("reading {target}"))?
                 } else {
-                    ToolArtifactKind::Created
-                },
-            ));
-            summary.push(format!(
-                "{} {}",
-                if existed { "patched" } else { "created" },
-                display(&path)
-            ));
+                    String::new()
+                };
+                let updated = apply_unified_patch(&original, &section)
+                    .with_context(|| format!("applying patch to {target}"))?;
+                if !dry_run {
+                    if let Some(parent) = path.parent() {
+                        if !parent.as_os_str().is_empty() {
+                            tokio::fs::create_dir_all(parent)
+                                .await
+                                .with_context(|| format!("creating parent dirs for {target}"))?;
+                        }
+                    }
+                    tokio::fs::write(&path, &updated)
+                        .await
+                        .with_context(|| format!("writing {target}"))?;
+                    written.push((path.clone(), original.clone()));
+                }
+                changes.push(FileChange {
+                    path: display(&path),
+                    change: {
+                        if dry_run {
+                            "preview"
+                        } else if existed {
+                            "patch"
+                        } else {
+                            "created"
+                        }
+                    }
+                    .into(),
+                    diff: if dry_run {
+                        Some(FileEdit::patch(&path, "").diff(&original, &updated))
+                    } else {
+                        None
+                    },
+                    additions: None,
+                    deletions: None,
+                });
+                if !dry_run {
+                    artifacts.push(artifact(
+                        &path,
+                        if existed {
+                            ToolArtifactKind::Modified
+                        } else {
+                            ToolArtifactKind::Created
+                        },
+                    ));
+                }
+                summary.push(format!(
+                    "{} {}",
+                    if dry_run {
+                        "would patch"
+                    } else if existed {
+                        "patched"
+                    } else {
+                        "created"
+                    },
+                    display(&path)
+                ));
+            }
+            Ok::<(), anyhow::Error>(())
+        };
+        if let Err(error) = run.await {
+            for (revert_path, content) in &written {
+                let _ = tokio::fs::write(revert_path, content).await;
+            }
+            return Err(error);
         }
         if changes.is_empty() {
             bail!("patch produced no changes");
@@ -361,11 +413,12 @@ pub fn apply_patch_tool() -> crate::ToolDefinition {
     crate::ToolDefinition {
         name: "apply_patch".into(),
         description:
-            "Apply a multi-file unified diff patch. Each file section starts with --- a/path and +++ b/path followed by @@ hunks; new files use --- /dev/null."
+            "Apply a multi-file unified diff patch. Each file section starts with --- a/path and +++ b/path followed by @@ hunks; new files use --- /dev/null. Set dry_run=true to preview diffs without writing."
                 .into(),
         input_schema: schema(
             json!({
-                "patch": { "type": "string", "description": "Unified diff covering one or more files" }
+                "patch": { "type": "string", "description": "Unified diff covering one or more files" },
+                "dry_run": { "type": "boolean", "description": "Preview diffs without changing files (default false)" }
             }),
             &["patch"],
         ),
@@ -690,6 +743,59 @@ mod tests {
         assert_eq!(
             std::fs::read_to_string(tmp.join("b.txt")).unwrap(),
             "hello\nworld"
+        );
+    }
+
+    #[tokio::test]
+    async fn apply_patch_dry_run_does_not_modify_files() {
+        let tmp = test_root();
+        std::fs::write(tmp.join("a.txt"), "one\n").unwrap();
+        let patch = "--- a/a.txt\n+++ b/a.txt\n@@ -1 +1 @@\n-one\n+ONE";
+        let output = ApplyPatchTool
+            .execute(json!({ "patch": patch, "dry_run": true }), &ctx(&tmp))
+            .await
+            .unwrap();
+        assert!(output.content.contains("would patch"));
+        assert_eq!(output.file_changes.len(), 1);
+        assert_eq!(output.file_changes[0].change, "preview");
+        assert!(output.file_changes[0]
+            .diff
+            .as_deref()
+            .unwrap_or("")
+            .contains("ONE"));
+        assert_eq!(std::fs::read_to_string(tmp.join("a.txt")).unwrap(), "one\n");
+    }
+
+    #[tokio::test]
+    async fn apply_patch_rolls_back_earlier_files_on_error() {
+        let tmp = test_root();
+        std::fs::write(tmp.join("a.txt"), "one\n").unwrap();
+        std::fs::write(tmp.join("b.txt"), "keep\n").unwrap();
+        let patch = "\
+--- a/a.txt
++++ b/a.txt
+@@ -1 +1 @@
+-one
++ONE-A
+--- a/b.txt
++++ b/b.txt
+@@ -1,2 +1,2 @@
+-keep
+-missing
++ONE-B";
+        let result = ApplyPatchTool
+            .execute(json!({ "patch": patch }), &ctx(&tmp))
+            .await;
+        assert!(result.is_err(), "second hunk must fail to apply");
+        assert_eq!(
+            std::fs::read_to_string(tmp.join("a.txt")).unwrap(),
+            "one\n",
+            "a.txt must be rolled back to its original content"
+        );
+        assert_eq!(
+            std::fs::read_to_string(tmp.join("b.txt")).unwrap(),
+            "keep\n",
+            "b.txt must be untouched"
         );
     }
 }
