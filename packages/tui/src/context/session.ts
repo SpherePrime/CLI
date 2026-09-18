@@ -19,6 +19,7 @@ const [permissionApplied, setPermissionApplied] = createSignal(false)
 export function useSession() {
   return {
     entries: () => timeline().entries,
+    plan: () => timeline().plan,
     sessionId,
     setSessionId,
     permissionMode,

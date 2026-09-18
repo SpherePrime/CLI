@@ -18,6 +18,7 @@ import {
 import { permissionColor, permissionLabel, openPermissionSwitcher } from "../context/permission"
 import { theme } from "../theme"
 import { MessageRow } from "../component/message-row"
+import { PlanPanel } from "../component/plan-panel"
 import type { AgentClient, EngineEvent, PermissionMode } from "../client"
 
 function permissionBadge(mode: PermissionMode | undefined, running: boolean): string {
@@ -409,6 +410,7 @@ export function Session(props: { client: AgentClient }) {
           </Show>
         </box>
       </box>
+      <PlanPanel steps={session.plan()} />
       <Prompt
         client={props.client}
         initialInput={draft()}

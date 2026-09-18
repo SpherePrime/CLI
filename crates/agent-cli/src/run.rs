@@ -118,6 +118,13 @@ fn emit(event: &EngineEvent, json: bool) {
             print!("\x1b[2m{text}\x1b[0m");
             let _ = std::io::stdout().flush();
         }
+        EngineEvent::PlanUpdated { steps, .. } => {
+            println!("\n= plan ({} steps)", steps.len());
+            for (index, step) in steps.iter().enumerate() {
+                let status = step.status.as_deref().unwrap_or("pending");
+                println!("  {}. [{}] {}", index + 1, status, step.title);
+            }
+        }
         EngineEvent::Usage { .. }
         | EngineEvent::PermissionResolved { .. }
         | EngineEvent::PermissionModeChanged { .. }

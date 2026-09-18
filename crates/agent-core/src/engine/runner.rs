@@ -27,7 +27,7 @@ use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::engine::approval::EngineApprover;
-use crate::engine::event::{error_event, EngineEvent, EventClock};
+use crate::engine::event::{error_event, EngineEvent, EventClock, PlanStep};
 use crate::engine::mcp;
 use crate::engine::prompt::build_system_prompt;
 
@@ -598,13 +598,24 @@ impl AgentEngine {
                                 .await;
                         }
                     };
+                    let task_item = tool_item.clone();
                     tasks.push(async move {
                         announced.await;
                         let started = std::time::Instant::now();
-                        let out = tools
-                            .call(&call.name, call.args.clone(), &ctx)
-                            .await
-                            .unwrap_or_else(|error| ToolOutput::failure(error.to_string()));
+                        let out = if call.name == "update_plan" {
+                            let _ = tx
+                                .send(EngineEvent::PlanUpdated {
+                                    meta: clock.meta(task_item),
+                                    steps: plan_steps(&call.args),
+                                })
+                                .await;
+                            ToolOutput::success("plan updated".to_string())
+                        } else {
+                            tools
+                                .call(&call.name, call.args.clone(), &ctx)
+                                .await
+                                .unwrap_or_else(|error| ToolOutput::failure(error.to_string()))
+                        };
                         let duration_ms = started.elapsed().as_millis();
                         (call, out, duration_ms)
                     });
@@ -950,6 +961,32 @@ fn tool_activity(call: &agent_model::ToolCall) -> String {
         "update_plan" => "Updating plan…".into(),
         _ => format!("Preparing {name}"),
     }
+}
+
+fn plan_steps(args: &Value) -> Vec<PlanStep> {
+    args.get("steps")
+        .and_then(Value::as_array)
+        .map(|steps| {
+            steps
+                .iter()
+                .filter_map(|step| match step {
+                    Value::String(title) => Some(PlanStep {
+                        title: title.clone(),
+                        status: None,
+                    }),
+                    Value::Object(map) => {
+                        let title = map.get("title").and_then(Value::as_str)?.to_string();
+                        let status = map
+                            .get("status")
+                            .and_then(Value::as_str)
+                            .map(str::to_string);
+                        Some(PlanStep { title, status })
+                    }
+                    _ => None,
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn event_log_max_sequence(storage: &Storage, session_id: &Uuid) -> u64 {

@@ -1,4 +1,4 @@
-import type { EngineEvent, FileChange } from "../client"
+import type { EngineEvent, FileChange, PlanStep } from "../client"
 import {
   argsPreview,
   deriveToolState,
@@ -47,10 +47,11 @@ export type TimelineState = {
   entries: ChatEntry[]
   lastActivity?: string
   toolPreps: Record<number, { id?: string; name?: string; args: string }>
+  plan: PlanStep[]
 }
 
 export function emptyTimeline(): TimelineState {
-  return { lastSequence: 0, entries: [], lastActivity: undefined, toolPreps: {} }
+  return { lastSequence: 0, entries: [], lastActivity: undefined, toolPreps: {}, plan: [] }
 }
 
 function entryIndex(entries: ChatEntry[], id: string): number {
@@ -151,12 +152,7 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
       if (index === -1) return { ...state, lastSequence: sequence }
       const entries = [...state.entries]
       entries[index] = { ...entries[index]!, running: false }
-      return {
-        lastSequence: sequence,
-        entries: removeEntry(entries, `activity_${event.meta.item_id}`),
-        lastActivity: state.lastActivity,
-        toolPreps: state.toolPreps,
-      }
+      return { ...state, lastSequence: sequence, entries: removeEntry(entries, `activity_${event.meta.item_id}`) }
     }
     case "reasoning_started": {
       const id = event.meta.item_id
@@ -164,12 +160,7 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
         ...entry,
         reasoningOpen: true,
       }))
-      return {
-        lastSequence: sequence,
-        entries: removeEntry(entries, `activity_${id}`),
-        lastActivity: state.lastActivity,
-        toolPreps: state.toolPreps,
-      }
+      return { ...state, lastSequence: sequence, entries: removeEntry(entries, `activity_${id}`) }
     }
     case "reasoning_delta": {
       return { ...state, lastSequence: sequence, entries: appendReasoning(state.entries, event.meta.item_id, event.text) }
@@ -316,6 +307,8 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
         entries: [...entries.filter((entry) => entry.kind !== "activity"), { id: `cancel-${sequence}`, role: "system", text }],
       }
     }
+    case "plan_updated":
+      return { ...state, lastSequence: sequence, plan: event.steps }
     case "permission_mode_changed":
     case "usage":
     case "finished":

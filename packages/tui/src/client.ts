@@ -93,6 +93,11 @@ export type FileChange = {
   deletions?: number
 }
 
+export type PlanStep = {
+  title: string
+  status?: string | null
+}
+
 export type EngineEvent =
   | { type: "session.created"; session: { id: string } }
   | { type: "message.created"; message: { id: string; role: "user" | "assistant"; content?: string } }
@@ -134,6 +139,7 @@ export type EngineEvent =
   | { type: "finished"; meta: EventMeta; stop_reason: string; input_tokens: number; output_tokens: number; iterations: number }
   | { type: "error"; meta?: EventMeta; message: string }
   | { type: "session_title_changed"; meta: EventMeta; title: string }
+  | { type: "plan_updated"; meta: EventMeta; steps: PlanStep[] }
 
 export type SessionMessage = EngineEvent
 

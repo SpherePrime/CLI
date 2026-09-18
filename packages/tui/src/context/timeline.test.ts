@@ -245,4 +245,22 @@ describe("timeline reducer", () => {
     expect(entries).toHaveLength(1)
     expect(entries[0]).toMatchObject({ role: "system", text: "switching to read_file", running: true })
   })
+
+  test("plan_updated stores steps and survives later events", () => {
+    const state = timelineFromEvents([
+      {
+        type: "plan_updated",
+        meta: meta(1, "tool_call_1"),
+        steps: [
+          { title: "Read code", status: "completed" },
+          { title: "Patch code", status: "in_progress" },
+          { title: "Run tests" },
+        ],
+      },
+      textDelta(2, "working"),
+    ])
+    expect(state.plan).toHaveLength(3)
+    expect(state.plan[0]).toEqual({ title: "Read code", status: "completed" })
+    expect(state.plan[2]).toEqual({ title: "Run tests" })
+  })
 })

@@ -5,6 +5,7 @@ pub mod git;
 pub mod inspect;
 pub mod net;
 pub mod paths;
+pub mod plan;
 pub mod terminal;
 
 use crate::registry::ToolRegistry;
@@ -23,6 +24,7 @@ pub fn register_builtin(registry: ToolRegistry) -> ToolRegistry {
         .register(inspect::view_image_tool())
         .register(net::http_fetch_tool())
         .register(checks::run_checks_tool())
+        .register(plan::update_plan_tool())
         .register(terminal::shell_tool())
         .register(git::git_tool())
 }

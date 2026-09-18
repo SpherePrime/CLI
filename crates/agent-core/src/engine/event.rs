@@ -53,6 +53,13 @@ impl EventClock {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanStep {
+    pub title: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum EngineEvent {
     Started {
@@ -193,6 +200,11 @@ pub enum EngineEvent {
         #[serde(flatten)]
         meta: EventMeta,
         title: String,
+    },
+    PlanUpdated {
+        #[serde(flatten)]
+        meta: EventMeta,
+        steps: Vec<PlanStep>,
     },
 }
 
