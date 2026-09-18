@@ -6,6 +6,7 @@ use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 
 const KEY_FILE_NAME: &str = "credentials.key";
+#[cfg(windows)]
 const MAGIC_KEY: &[u8; 4] = b"DPK1";
 const NONCE_LEN: usize = 12;
 
