@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use super::api::{err_body, json_response, BoxBody};
 use super::state::AppState;
+use super::timeline;
 
 #[allow(clippy::result_large_err)]
 fn storage_or_error(state: &Arc<AppState>) -> Result<agent_storage::Storage, Response<BoxBody>> {
@@ -125,6 +126,8 @@ pub fn get(id: Uuid, state: Arc<AppState>) -> Result<Response<BoxBody>, std::con
     let messages = SessionManager::resume(&storage, id).unwrap_or_default();
     let mut session = session_json(&id, &storage);
     session["messages"] = serde_json::Value::Array(messages.iter().map(map_message).collect());
+    session["timeline"] = serde_json::Value::Array(timeline::events(&storage, id));
+    session["interrupted"] = serde_json::Value::Bool(timeline::interrupted(&storage, id));
     Ok(json_response(&session))
 }
 

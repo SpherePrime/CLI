@@ -8,6 +8,7 @@ pub mod permission;
 pub mod providers;
 pub mod session;
 pub mod state;
+pub mod timeline;
 pub mod title;
 
 pub mod workspace;
