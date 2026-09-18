@@ -241,8 +241,8 @@ impl AgentEngine {
 
     pub async fn run(&mut self, user_text: &str, tx: &mpsc::Sender<EngineEvent>) -> Result<()> {
         self.ensure_session()?;
-        self.ensure_mcp_tools().await;
-        self.ensure_plugins().await;
+        self.ensure_mcp_tools(tx).await;
+        self.ensure_plugins(tx).await;
         self.persist_message(&ChatMessage {
             role: Role::User,
             content: agent_model::MessageContent::Text(user_text.to_string()),
@@ -780,7 +780,7 @@ impl AgentEngine {
         .with_turn_id(self.current_turn.clone())
     }
 
-    async fn ensure_mcp_tools(&mut self) {
+    async fn ensure_mcp_tools(&mut self, tx: &mpsc::Sender<EngineEvent>) {
         if self.mcp_loaded {
             return;
         }
@@ -788,10 +788,28 @@ impl AgentEngine {
         let Some(client) = self.mcp.clone() else {
             return;
         };
+        self.emit(
+            tx,
+            EngineEvent::ActivityChanged {
+                meta: self.clock.meta("mcp-loading"),
+                activity: "loading MCP tools".into(),
+                kind: Some("system".into()),
+            },
+        )
+        .await;
         mcp::register_server_tools(&mut self.tools, client).await;
+        self.emit(
+            tx,
+            EngineEvent::ActivityChanged {
+                meta: self.clock.meta("mcp-ready"),
+                activity: "MCP tools ready".into(),
+                kind: Some("system".into()),
+            },
+        )
+        .await;
     }
 
-    async fn ensure_plugins(&mut self) {
+    async fn ensure_plugins(&mut self, tx: &mpsc::Sender<EngineEvent>) {
         if self.plugins_loaded {
             return;
         }
@@ -804,6 +822,7 @@ impl AgentEngine {
             return;
         };
         let enabled_map = self.config.plugins.clone();
+        let mut loaded = 0usize;
         for entry in entries.flatten() {
             let path = entry.path();
             if !path.is_dir() {
@@ -852,6 +871,18 @@ impl AgentEngine {
                 });
             }
             self.plugins.push(plugin);
+            loaded += 1;
+        }
+        if loaded > 0 {
+            self.emit(
+                tx,
+                EngineEvent::ActivityChanged {
+                    meta: self.clock.meta("plugins-ready"),
+                    activity: format!("{loaded} plugin(s) loaded"),
+                    kind: Some("system".into()),
+                },
+            )
+            .await;
         }
     }
 
