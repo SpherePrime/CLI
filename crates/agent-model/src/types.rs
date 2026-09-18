@@ -118,6 +118,7 @@ impl std::fmt::Display for Usage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum StreamChunk {
     TextDelta(String),
+    ReasoningDelta(String),
     ToolCallDelta {
         index: usize,
         id: Option<String>,

@@ -94,6 +94,10 @@ fn emit(event: &EngineEvent, json: bool) {
         EngineEvent::Error { message } => {
             println!("\nerror: {message}");
         }
+        EngineEvent::ReasoningDelta { text } => {
+            print!("\x1b[2m{text}\x1b[0m");
+            let _ = std::io::stdout().flush();
+        }
         EngineEvent::Usage { .. } | EngineEvent::PermissionResolved { .. } => {}
     }
 }

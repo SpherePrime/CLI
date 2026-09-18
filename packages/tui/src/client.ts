@@ -82,6 +82,7 @@ export type EngineEvent =
   | { type: "message.created"; message: { id: string; role: "user" | "assistant"; content?: string } }
   | { type: "started"; session_id: string; model: string }
   | { type: "text_delta"; text: string }
+  | { type: "reasoning_delta"; text: string }
   | { type: "tool_call"; id: string; name: string; args: unknown }
   | { type: "tool_result"; id: string; name: string; ok: boolean; content: string; error?: string; ms: number }
   | { type: "permission_requested"; id: string; tool: string; scope: string; target: string; reason: string }

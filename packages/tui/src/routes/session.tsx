@@ -238,6 +238,9 @@ export function Session(props: { client: AgentClient }) {
       case "text_delta":
         session.appendEntry(assistantId, event.text)
         break
+      case "reasoning_delta":
+        session.appendReasoning(assistantId, event.text)
+        break
       case "tool_call": {
         const entryId = toolEntryId(event.id)
         const args = JSON.stringify(event.args) ?? ""
@@ -377,6 +380,12 @@ function MessageRow(props: { entry: ChatEntry }) {
         </Show>
         <Show when={props.entry.role === "system"}>
           <text fg={theme.info}>system:</text>
+        </Show>
+        <Show when={props.entry.role === "assistant" && props.entry.reasoning}>
+          <text fg={theme.textMuted}>
+            thinking:{"\n"}
+            {props.entry.reasoning!.slice(-800)}
+          </text>
         </Show>
         <box paddingTop={1}>
           <text fg={props.entry.role === "error" ? theme.error : theme.text}>{props.entry.text}</text>

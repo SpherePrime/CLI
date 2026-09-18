@@ -230,6 +230,9 @@ impl AgentEngine {
                     Ok(StreamChunk::TextDelta(text)) => {
                         let _ = tx.send(EngineEvent::TextDelta { text }).await;
                     }
+                    Ok(StreamChunk::ReasoningDelta(text)) => {
+                        let _ = tx.send(EngineEvent::ReasoningDelta { text }).await;
+                    }
                     Ok(StreamChunk::Usage(partial)) => {
                         let _ = tx
                             .send(EngineEvent::Usage {

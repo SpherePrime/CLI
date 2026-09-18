@@ -162,6 +162,11 @@ fn openai_process(
             out.push(StreamChunk::TextDelta(content.to_string()));
         }
     }
+    if let Some(reasoning) = delta["reasoning_content"].as_str() {
+        if !reasoning.is_empty() {
+            out.push(StreamChunk::ReasoningDelta(reasoning.to_string()));
+        }
+    }
     if let Some(calls) = delta["tool_calls"].as_array() {
         for call in calls {
             let index = call["index"].as_u64().unwrap_or(tools.len() as u64) as usize;
@@ -333,6 +338,13 @@ fn anthropic_process(
                             name: None,
                             args_delta: chunk.to_string(),
                         });
+                    }
+                }
+                Some("thinking_delta") => {
+                    if let Some(chunk) = delta["thinking"].as_str() {
+                        if !chunk.is_empty() {
+                            out.push(StreamChunk::ReasoningDelta(chunk.to_string()));
+                        }
                     }
                 }
                 _ => {}
@@ -534,8 +546,12 @@ fn google_process(
     for part in parts {
         if let Some(chunk) = part["text"].as_str() {
             if !chunk.is_empty() {
-                text.push_str(chunk);
-                out.push(StreamChunk::TextDelta(chunk.to_string()));
+                if part["thought"].as_bool().unwrap_or(false) {
+                    out.push(StreamChunk::ReasoningDelta(chunk.to_string()));
+                } else {
+                    text.push_str(chunk);
+                    out.push(StreamChunk::TextDelta(chunk.to_string()));
+                }
             }
         }
         if let Some(call) = part.get("functionCall") {
@@ -672,6 +688,117 @@ mod tests {
         let response = finish_response(&text, &tools, &finish, &usage);
         assert_eq!(response.stop_reason, StopReason::ToolUse);
         assert_eq!(response.content.as_text(), "hello");
+    }
+
+    #[test]
+    fn openai_forwards_reasoning_deltas() {
+        let mut text = String::new();
+        let mut tools = Vec::new();
+        let mut finish = None;
+        let mut usage = Usage::default();
+        let mut chunks = Vec::new();
+        openai_process(
+            &json!({ "choices": [{ "delta": { "reasoning_content": "think" } }] }),
+            &mut text,
+            &mut tools,
+            &mut finish,
+            &mut usage,
+            &mut chunks,
+        );
+        openai_process(
+            &json!({ "choices": [{ "delta": { "reasoning_content": "ing" } }] }),
+            &mut text,
+            &mut tools,
+            &mut finish,
+            &mut usage,
+            &mut chunks,
+        );
+        openai_process(
+            &json!({ "choices": [{ "delta": { "content": "answer" } }] }),
+            &mut text,
+            &mut tools,
+            &mut finish,
+            &mut usage,
+            &mut chunks,
+        );
+        let reasoning: String = chunks
+            .iter()
+            .filter_map(|chunk| match chunk {
+                StreamChunk::ReasoningDelta(part) => Some(part.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(reasoning, "thinking");
+        assert_eq!(text, "answer");
+    }
+
+    #[test]
+    fn anthropic_forwards_thinking_deltas() {
+        let mut text = String::new();
+        let mut tools = Vec::new();
+        let mut current = None;
+        let mut finish = None;
+        let mut usage = Usage::default();
+        let mut chunks = Vec::new();
+        anthropic_process(
+            &json!({
+                "type": "content_block_delta",
+                "delta": { "type": "thinking_delta", "thinking": "step1" }
+            }),
+            &mut text,
+            &mut tools,
+            &mut current,
+            &mut finish,
+            &mut usage,
+            &mut chunks,
+        );
+        anthropic_process(
+            &json!({
+                "type": "content_block_delta",
+                "delta": { "type": "text_delta", "text": "hello" }
+            }),
+            &mut text,
+            &mut tools,
+            &mut current,
+            &mut finish,
+            &mut usage,
+            &mut chunks,
+        );
+        assert!(matches!(
+            chunks.first(),
+            Some(StreamChunk::ReasoningDelta(part)) if part == "step1"
+        ));
+        assert!(matches!(
+            chunks.get(1),
+            Some(StreamChunk::TextDelta(part)) if part == "hello"
+        ));
+        assert_eq!(text, "hello");
+    }
+
+    #[test]
+    fn google_forwards_thought_parts() {
+        let mut text = String::new();
+        let mut tools = Vec::new();
+        let mut finish = None;
+        let mut usage = Usage::default();
+        let mut chunks = Vec::new();
+        google_process(
+            &json!({ "candidates": [{ "content": { "parts": [{ "text": "internal", "thought": true }, { "text": "output" }] } }] }),
+            &mut text,
+            &mut tools,
+            &mut finish,
+            &mut usage,
+            &mut chunks,
+        );
+        assert!(matches!(
+            chunks.first(),
+            Some(StreamChunk::ReasoningDelta(part)) if part == "internal"
+        ));
+        assert!(matches!(
+            chunks.get(1),
+            Some(StreamChunk::TextDelta(part)) if part == "output"
+        ));
+        assert_eq!(text, "output");
     }
 
     #[test]

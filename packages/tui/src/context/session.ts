@@ -5,6 +5,7 @@ export type ChatEntry = {
   id: string
   role: "user" | "assistant" | "tool" | "error" | "system"
   text: string
+  reasoning?: string
 }
 
 let entryId = 0
@@ -40,6 +41,13 @@ export function useSession() {
     },
     appendEntry(id: string, chunk: string) {
       setEntries((prev) => prev.map((entry) => (entry.id === id ? { ...entry, text: entry.text + chunk } : entry)))
+    },
+    appendReasoning(id: string, chunk: string) {
+      setEntries((prev) =>
+        prev.map((entry) =>
+          entry.id === id ? { ...entry, reasoning: (entry.reasoning ?? "") + chunk } : entry,
+        ),
+      )
     },
   }
 }

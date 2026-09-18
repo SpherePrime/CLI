@@ -11,6 +11,9 @@ pub enum EngineEvent {
     TextDelta {
         text: String,
     },
+    ReasoningDelta {
+        text: String,
+    },
     ToolCall {
         id: String,
         name: String,
