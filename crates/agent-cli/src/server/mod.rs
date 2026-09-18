@@ -47,7 +47,7 @@ pub fn serve(host: &str, port: u16, storage: agent_storage::Storage) -> ExitCode
         let bound = listener.local_addr().expect("bound address");
         println!("agent server listening on http://{bound}");
 
-        let _ = agent_ui::files::refresh_file_cache();
+        agent_ui::files::refresh_file_cache();
 
         loop {
             let (stream, _) = match listener.accept().await {

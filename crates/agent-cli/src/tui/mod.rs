@@ -19,10 +19,11 @@ pub fn run_main_loop(storage: Option<agent_storage::Storage>) -> ExitCode {
 
     app.set_model_config(model.clone());
 
-    let _ = agent_ui::files::refresh_file_cache();
+    agent_ui::files::refresh_file_cache();
 
-    let mut terminal = ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(std::io::stdout()))
-        .expect("failed to create terminal");
+    let mut terminal =
+        ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(std::io::stdout()))
+            .expect("failed to create terminal");
 
     let _ = crossterm::terminal::enable_raw_mode();
     let _ = crossterm::execute!(
@@ -40,7 +41,9 @@ pub fn run_main_loop(storage: Option<agent_storage::Storage>) -> ExitCode {
         });
 
         match crossterm::event::read() {
-            Ok(Event::Key(key)) if matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat) => {
+            Ok(Event::Key(key))
+                if matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat) =>
+            {
                 if key.code == crossterm::event::KeyCode::Char('c')
                     && key.modifiers.contains(KeyModifiers::CONTROL)
                 {
@@ -48,7 +51,14 @@ pub fn run_main_loop(storage: Option<agent_storage::Storage>) -> ExitCode {
                 }
 
                 if let Some(ev) = app.handle_event(&key) {
-                    handle_app_event(ev, &mut app, &mut cfg, &mut model, &runtime, storage.as_ref());
+                    handle_app_event(
+                        ev,
+                        &mut app,
+                        &mut cfg,
+                        &mut model,
+                        &runtime,
+                        storage.as_ref(),
+                    );
                 }
             }
             Ok(Event::Mouse(mouse)) => {

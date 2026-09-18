@@ -51,9 +51,13 @@ impl InputEditor {
         if self.cursor >= self.content.len() {
             return;
         }
-        let next = self.content[self.cursor..].chars().next().map(|c| c.len_utf8());
+        let next = self.content[self.cursor..]
+            .chars()
+            .next()
+            .map(|c| c.len_utf8());
         if let Some(len) = next {
-            self.content.replace_range(self.cursor..self.cursor + len, "");
+            self.content
+                .replace_range(self.cursor..self.cursor + len, "");
         }
     }
 
@@ -127,7 +131,7 @@ impl InputEditor {
                 self.collect_current();
                 self.history.len().saturating_sub(1)
             }
-            Some(i) if i == 0 => 0,
+            Some(0) => 0,
             Some(i) => i - 1,
         };
         self.apply_history(idx);
@@ -166,10 +170,8 @@ impl InputEditor {
 
     pub fn submit(&mut self) -> String {
         let value = self.content.trim().to_string();
-        if !value.is_empty() {
-            if self.history.last().map(|s| s.as_str()) != Some(value.as_str()) {
-                self.history.push(value.clone());
-            }
+        if !value.is_empty() && self.history.last().map(|s| s.as_str()) != Some(value.as_str()) {
+            self.history.push(value.clone());
         }
         self.history_index = None;
         self.content.clear();

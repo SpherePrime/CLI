@@ -95,12 +95,7 @@ impl GitRepo {
 
     pub async fn log(&self, n: usize) -> Result<Vec<GitLogEntry>> {
         let out = self
-            .git(&[
-                "log",
-                "--pretty=format:%H|%an|%ad|%s",
-                "-n",
-                &n.to_string(),
-            ])
+            .git(&["log", "--pretty=format:%H|%an|%ad|%s", "-n", &n.to_string()])
             .await?;
         let mut entries = Vec::new();
         for line in out.lines() {
@@ -152,10 +147,7 @@ impl GitRepo {
             .runner
             .run(&ExecRequest {
                 command: "git".into(),
-                args: vec![
-                    "rev-parse".to_string(),
-                    "--is-inside-work-tree".to_string(),
-                ],
+                args: vec!["rev-parse".to_string(), "--is-inside-work-tree".to_string()],
                 cwd: Some(self.root.clone()),
                 env: vec![],
                 timeout_secs: Some(5),

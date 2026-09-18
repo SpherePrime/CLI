@@ -1,13 +1,14 @@
 use std::path::PathBuf;
 
-use agent_config::{PermissionsConfig, PermissionMode};
+use agent_config::{PermissionMode, PermissionsConfig};
 use agent_storage::{AuditOutcome, AuditRecord};
 use anyhow::anyhow;
 use regex::Regex;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum PermissionScope {
+    #[default]
     Read,
     Write,
     Delete,
@@ -15,12 +16,6 @@ pub enum PermissionScope {
     Network,
     Install,
     External,
-}
-
-impl Default for PermissionScope {
-    fn default() -> Self {
-        Self::Read
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -38,7 +33,10 @@ pub struct Decision {
 
 impl Decision {
     fn new(decision: PermissionDecision, reason: impl Into<String>) -> Self {
-        Self { decision, reason: reason.into() }
+        Self {
+            decision,
+            reason: reason.into(),
+        }
     }
 
     pub fn is_allowed(&self) -> bool {
@@ -53,7 +51,10 @@ pub struct PermissionEngine {
 
 impl PermissionEngine {
     pub fn new(config: PermissionsConfig) -> Self {
-        Self { config, audit: None }
+        Self {
+            config,
+            audit: None,
+        }
     }
 
     pub fn with_storage(mut self, storage: agent_storage::Storage) -> Self {
@@ -61,12 +62,7 @@ impl PermissionEngine {
         self
     }
 
-    pub fn check(
-        &mut self,
-        scope: PermissionScope,
-        tool_name: &str,
-        target: &str,
-    ) -> Decision {
+    pub fn check(&mut self, scope: PermissionScope, tool_name: &str, target: &str) -> Decision {
         let decision = self.evaluate(scope, tool_name, target);
         if self.config.secret_redaction {
             self.record_audit(tool_name, target, &decision, scope);
@@ -74,25 +70,14 @@ impl PermissionEngine {
         decision
     }
 
-    fn evaluate(
-        &self,
-        scope: PermissionScope,
-        tool_name: &str,
-        target: &str,
-    ) -> Decision {
+    fn evaluate(&self, scope: PermissionScope, tool_name: &str, target: &str) -> Decision {
         if self.config.denied_tools.iter().any(|d| d == tool_name) {
-            return Decision::new(
-                PermissionDecision::Deny,
-                "tool is denied by config",
-            );
+            return Decision::new(PermissionDecision::Deny, "tool is denied by config");
         }
-        if self.config.allowed_tools.iter().any(|a| a == tool_name) {
-            if self.config.mode == PermissionMode::Allow {
-                return Decision::new(
-                    PermissionDecision::Allow,
-                    "tool is explicitly allowed",
-                );
-            }
+        if self.config.allowed_tools.iter().any(|a| a == tool_name)
+            && self.config.mode == PermissionMode::Allow
+        {
+            return Decision::new(PermissionDecision::Allow, "tool is explicitly allowed");
         }
         let path_ok = self.check_paths(target);
         let scope_ok = self.check_scope(scope, target);
@@ -154,8 +139,14 @@ impl PermissionEngine {
 
 pub fn redact_secrets(text: &str) -> String {
     let patterns: Vec<(&str, Regex)> = [
-        ("OPENAI_API_KEY", Regex::new(r"sk-[a-zA-Z0-9]{20,}").unwrap()),
-        ("ANTHROPIC_API_KEY", Regex::new(r"sk-ant-[a-zA-Z0-9]{20,}").unwrap()),
+        (
+            "OPENAI_API_KEY",
+            Regex::new(r"sk-[a-zA-Z0-9]{20,}").unwrap(),
+        ),
+        (
+            "ANTHROPIC_API_KEY",
+            Regex::new(r"sk-ant-[a-zA-Z0-9]{20,}").unwrap(),
+        ),
         ("PASSWORD", Regex::new(r"password[=:]\s*\S+").unwrap()),
         ("TOKEN", Regex::new(r"token[=:]\s*\S+").unwrap()),
     ]

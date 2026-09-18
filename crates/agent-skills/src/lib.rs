@@ -4,16 +4,11 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum SkillScope {
+    #[default]
     Global,
     Project,
-}
-
-impl Default for SkillScope {
-    fn default() -> Self {
-        Self::Global
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +24,8 @@ pub struct Skill {
     pub hooks: Vec<String>,
     pub resources: Vec<String>,
 }
+
+type ParsedSkill = (Option<String>, Vec<String>, Vec<String>, Vec<String>);
 
 pub struct SkillRegistry {
     pub skills: Vec<Skill>,
@@ -74,29 +71,26 @@ impl SkillRegistry {
             let p = entry.path();
             if p.is_dir() {
                 let skill_md = p.join("SKILL.md");
-                if skill_md.exists() {
-                    if self.find_by_name_and_scope(p, scope).is_none() {
-                        let name = p
-                            .file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("unknown")
-                            .to_string();
-                        let (instructions, tools, hooks, resources) =
-                            Self::parse_skill_md(&skill_md)?;
-                        self.skills.push(Skill {
-                            id: Uuid::new_v4(),
-                            name,
-                            description: instructions.clone().unwrap_or_default(),
-                            scope,
-                            path: p.to_path_buf(),
-                            enabled: true,
-                            instructions,
-                            tools,
-                            hooks,
-                            resources,
-                        });
-                        found += 1;
-                    }
+                if skill_md.exists() && self.find_by_name_and_scope(p, scope).is_none() {
+                    let name = p
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown")
+                        .to_string();
+                    let (instructions, tools, hooks, resources) = Self::parse_skill_md(&skill_md)?;
+                    self.skills.push(Skill {
+                        id: Uuid::new_v4(),
+                        name,
+                        description: instructions.clone().unwrap_or_default(),
+                        scope,
+                        path: p.to_path_buf(),
+                        enabled: true,
+                        instructions,
+                        tools,
+                        hooks,
+                        resources,
+                    });
+                    found += 1;
                 }
             }
         }
@@ -104,21 +98,14 @@ impl SkillRegistry {
     }
 
     fn find_by_name_and_scope(&self, dir: &Path, scope: SkillScope) -> Option<usize> {
-        self.skills.iter().position(|s| {
-            s.path.starts_with(dir) && s.scope == scope
-        })
+        self.skills
+            .iter()
+            .position(|s| s.path.starts_with(dir) && s.scope == scope)
     }
 
-    fn parse_skill_md(
-        path: &Path,
-    ) -> Result<(
-        Option<String>,
-        Vec<String>,
-        Vec<String>,
-        Vec<String>,
-    )> {
-        let content = std::fs::read_to_string(path)
-            .with_context(|| format!("reading {}", path.display()))?;
+    fn parse_skill_md(path: &Path) -> Result<ParsedSkill> {
+        let content =
+            std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
         let mut instructions = Some(content.clone());
         let mut tools = Vec::new();
         let mut hooks = Vec::new();
@@ -139,10 +126,8 @@ impl SkillRegistry {
                     resources = v.split(',').map(|s| s.trim().to_string()).collect();
                 }
             }
-            if !frontmatter.contains(&content) {
-                if let Some(rest) = content.split_once("---\n").map(|(_, b)| b.to_string()) {
-                    instructions = Some(rest);
-                }
+            if let Some((_, rest)) = content.rsplit_once("---\n") {
+                instructions = Some(rest.to_string());
             }
         }
 
@@ -189,7 +174,13 @@ impl SkillRegistry {
 
     pub fn context_block(&self) -> String {
         self.enabled_skills()
-            .map(|s| format!("## Skill: {}\n{}\n", s.name, s.instructions.as_deref().unwrap_or_default()))
+            .map(|s| {
+                format!(
+                    "## Skill: {}\n{}\n",
+                    s.name,
+                    s.instructions.as_deref().unwrap_or_default()
+                )
+            })
             .collect::<Vec<_>>()
             .join("\n")
     }

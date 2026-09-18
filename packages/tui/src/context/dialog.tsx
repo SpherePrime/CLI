@@ -24,6 +24,15 @@ export type DialogState =
       onSubmit: (values: Record<string, string>) => void
     }
   | { type: "info"; title: string; body: string }
+  | {
+      type: "permission"
+      sessionId?: string
+      id: string
+      tool: string
+      scope: string
+      target: string
+      reason: string
+    }
 
 const [dialog, setDialog] = createSignal<DialogState>({ type: "none" })
 
@@ -60,6 +69,17 @@ export function openInfo(input: { title: string; body: string }) {
   setDialog({ type: "info", ...input })
 }
 
+export function openPermissionDialog(input: {
+  sessionId?: string
+  id: string
+  tool: string
+  scope: string
+  target: string
+  reason: string
+}) {
+  setDialog({ type: "permission", ...input })
+}
+
 export function closeDialog() {
   setDialog({ type: "none" })
 }
@@ -73,6 +93,7 @@ export function useDialog() {
     openInfo,
     openModelDialog,
     openProviderDialog,
+    openPermissionDialog,
     closeDialog,
   }
 }

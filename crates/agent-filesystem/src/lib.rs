@@ -70,7 +70,8 @@ impl FileEdit {
             .with_context(|| format!("reading {}", self.path.display()))?;
         if let Some(dir) = snapshot_dir {
             let _ = fs::create_dir_all(dir).await;
-            let safe = self.path
+            let safe = self
+                .path
                 .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("snapshot");
@@ -105,15 +106,21 @@ impl FileEdit {
                         lines.len()
                     ));
                 }
-                let mut out: Vec<String> = lines.iter().take(start as usize).map(|s| s.to_string()).collect();
+                let mut out: Vec<String> = lines
+                    .iter()
+                    .take(start as usize)
+                    .map(|s| s.to_string())
+                    .collect();
                 out.push(self.new.clone());
                 out.extend(lines.iter().skip(end as usize).map(|s| s.to_string()));
                 out.join("\n")
             }
             EditMode::Patch => {
-                let p = self.patch.as_deref().ok_or_else(|| anyhow!("patch edit requires patch text"))?;
-                apply_unified_patch(&original, p)
-                    .with_context(|| "applying unified patch")?
+                let p = self
+                    .patch
+                    .as_deref()
+                    .ok_or_else(|| anyhow!("patch edit requires patch text"))?;
+                apply_unified_patch(&original, p).with_context(|| "applying unified patch")?
             }
             EditMode::Structured => self.new.clone(),
         };
@@ -142,7 +149,7 @@ impl FileEdit {
 
 fn apply_unified_patch(original: &str, patch: &str) -> Result<String> {
     let lines: Vec<&str> = original.lines().collect();
-    let mut result: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
+    let result: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
     for hunk in patch.lines() {
         if let Some(target) = hunk.strip_prefix("@@") {
             let nums: Vec<&str> = target.split_whitespace().collect();

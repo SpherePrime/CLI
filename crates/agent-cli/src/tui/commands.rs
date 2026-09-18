@@ -1,22 +1,22 @@
- use std::sync::Arc;
- 
- use agent_config::{AgentConfig, ConfigLoader, ModelConfig};
- use agent_model::{
-     build_from_model_config, ChatMessage, MessageContent, ModelProvider, ModelRequest, Role,
- };
- use agent_ui::{AgentApp, AppState, StatusType};
- 
- pub fn default_model() -> ModelConfig {
-     ModelConfig {
-         provider: agent_config::ProviderKind::Mock,
-         model: "mock-1".into(),
-         base_url: None,
-         api_key_env: None,
-         temperature: None,
-         max_tokens: None,
-     }
- }
- 
+use std::sync::Arc;
+
+use agent_config::{AgentConfig, ConfigLoader, ModelConfig};
+use agent_model::{
+    build_from_model_config, ChatMessage, MessageContent, ModelProvider, ModelRequest, Role,
+};
+use agent_ui::{AgentApp, AppState, StatusType};
+
+pub fn default_model() -> ModelConfig {
+    ModelConfig {
+        provider: agent_config::ProviderKind::Mock,
+        model: "mock-1".into(),
+        base_url: None,
+        api_key_env: None,
+        temperature: None,
+        max_tokens: None,
+    }
+}
+
 pub fn send_message(
     msg: String,
     app: &mut AgentApp,
@@ -30,9 +30,7 @@ pub fn send_message(
         messages: vec![
             ChatMessage {
                 role: Role::System,
-                content: MessageContent::Text(
-                    "You are a production-grade AI coding agent.".into(),
-                ),
+                content: MessageContent::Text("You are a production-grade AI coding agent.".into()),
                 tool_calls: None,
                 tool_call_id: None,
             },
@@ -47,30 +45,30 @@ pub fn send_message(
         temperature: model.temperature,
         max_tokens: model.max_tokens,
     };
- 
-     let provider = match build_provider(model) {
-         Ok(p) => p,
-         Err(e) => {
-             app.error(&format!("model init error: {e}"));
-             return;
-         }
-     };
- 
-     match runtime.block_on(provider.chat(&request)) {
-         Ok(resp) => {
-             app.push_assistant(&resp.content.as_text());
-             app.set_status(StatusType::Success);
-         }
-         Err(e) => {
-             app.error(&format!("model error: {e}"));
-         }
-     }
- }
- 
- fn build_provider(model: &ModelConfig) -> anyhow::Result<Arc<dyn ModelProvider>> {
-     Ok(Arc::from(build_from_model_config(model)?))
- }
- 
+
+    let provider = match build_provider(model) {
+        Ok(p) => p,
+        Err(e) => {
+            app.error(&format!("model init error: {e}"));
+            return;
+        }
+    };
+
+    match runtime.block_on(provider.chat(&request)) {
+        Ok(resp) => {
+            app.push_assistant(&resp.content.as_text());
+            app.set_status(StatusType::Success);
+        }
+        Err(e) => {
+            app.error(&format!("model error: {e}"));
+        }
+    }
+}
+
+fn build_provider(model: &ModelConfig) -> anyhow::Result<Arc<dyn ModelProvider>> {
+    Ok(Arc::from(build_from_model_config(model)?))
+}
+
 pub fn handle_slash_command(
     cmd: &str,
     cfg: &mut AgentConfig,

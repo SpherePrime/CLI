@@ -114,7 +114,7 @@ pub async fn fetch() -> Option<Catalog> {
             if models.is_empty() {
                 return None;
             }
-            models.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+            models.sort_by_key(|a| a.name.to_lowercase());
             Some(CatalogProvider {
                 id,
                 name: if provider.name.is_empty() {
@@ -130,7 +130,7 @@ pub async fn fetch() -> Option<Catalog> {
         })
         .collect();
 
-    providers.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    providers.sort_by_key(|a| a.name.to_lowercase());
     Some(Catalog { providers })
 }
 

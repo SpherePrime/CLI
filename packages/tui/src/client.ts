@@ -50,13 +50,32 @@ export type ModelsResponse = {
   favorites: string[]
 }
 
-export type SessionMessage = {
-  type: string
-  session?: { id: string }
-  message?: { id: string; role: "user" | "assistant"; content?: string }
-  error?: string
-  delta?: string
-  part?: { type: string; text?: string }
+export type EngineEvent =
+  | { type: "session.created"; session: { id: string } }
+  | { type: "message.created"; message: { id: string; role: "user" | "assistant"; content?: string } }
+  | { type: "started"; session_id: string; model: string }
+  | { type: "text_delta"; text: string }
+  | { type: "tool_call"; id: string; name: string; args: unknown }
+  | { type: "tool_result"; id: string; name: string; ok: boolean; content: string; error?: string; ms: number }
+  | { type: "permission_requested"; id: string; tool: string; scope: string; target: string; reason: string }
+  | { type: "permission_resolved"; id: string; decision: string }
+  | { type: "usage"; input_tokens: number; output_tokens: number }
+  | { type: "finished"; stop_reason: string; input_tokens: number; output_tokens: number; iterations: number }
+  | { type: "error"; message: string }
+  | { type: "done" }
+
+export type SessionMessage = EngineEvent
+
+export type StoredMessage = {
+  id: string
+  role: string
+  content?: string
+  tool_calls?: unknown
+  tool_call_id?: string | null
+}
+
+export type SessionDetail = SessionInfo & {
+  messages: StoredMessage[]
 }
 
 export class AgentClient {
@@ -78,6 +97,44 @@ export class AgentClient {
 
   async getSession(id: string): Promise<SessionInfo> {
     return this.get<SessionInfo>(`/session/${id}`)
+  }
+
+  async getSessionDetail(id: string): Promise<SessionDetail> {
+    return this.get<SessionDetail>(`/session/${id}`)
+  }
+
+  async renameSession(id: string, title: string): Promise<SessionInfo> {
+    return this.post<SessionInfo>(`/session/${id}/rename`, { title })
+  }
+
+  async deleteSession(id: string): Promise<{ deleted: string }> {
+    return this.post<{ deleted: string }>(`/session/${id}/delete`, {})
+  }
+
+  async forkSession(id: string): Promise<SessionInfo> {
+    return this.post<SessionInfo>(`/session/${id}/fork`, {})
+  }
+
+  async compactSession(id: string): Promise<SessionDetail> {
+    return this.post<SessionDetail>(`/session/${id}/compact`, {})
+  }
+
+  async cancelMessage(sessionId: string | undefined): Promise<{ cancelled: boolean }> {
+    return this.post<{ cancelled: boolean }>("/cancel", { session_id: sessionId })
+  }
+
+  async resolvePermission(
+    sessionId: string | undefined,
+    id: string,
+    decision: "allow" | "once" | "deny" | "reject",
+    remember?: boolean,
+  ): Promise<{ resolved: boolean }> {
+    return this.post<{ resolved: boolean }>("/permission", {
+      session_id: sessionId,
+      id,
+      decision,
+      remember: remember ?? false,
+    })
   }
 
   async updateModel(model: ModelConfig): Promise<void> {

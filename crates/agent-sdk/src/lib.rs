@@ -1,9 +1,9 @@
 pub use agent_config::AgentConfig;
 pub use agent_events::{AgentEvent, AgentEventPayload, EventBus, EventSubscriber};
-pub use agent_model::{ModelProvider, MockProvider};
-pub use agent_plugins::{Plugin, PluginManager, PluginManifest, PluginContext};
+pub use agent_model::{MockProvider, ModelProvider};
+pub use agent_plugins::{Plugin, PluginContext, PluginManager, PluginManifest};
 pub use agent_skills::SkillRegistry;
-pub use agent_tools::{ToolDefinition, ToolExecutor, ToolRegistry, ToolOutput};
+pub use agent_tools::{ToolDefinition, ToolExecutor, ToolOutput, ToolRegistry};
 
 pub fn create_plugin_template(name: &str) -> std::path::PathBuf {
     let p = std::path::PathBuf::from(name.replace('-', "_"));

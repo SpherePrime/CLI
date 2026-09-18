@@ -54,23 +54,41 @@ impl Default for BannerScreen {
 impl BannerScreen {
     pub fn render(&self, frame: &mut Frame, area: Rect) -> Rect {
         let theme = Theme::default_theme();
-        
-        let title_line = Line::from(vec![
-            Span::styled("AI Coding Agent", Style::default().fg(self.accent_color).add_modifier(Modifier::BOLD)),
-        ]);
-        
+
+        let title_line = Line::from(vec![Span::styled(
+            "AI Coding Agent",
+            Style::default()
+                .fg(self.accent_color)
+                .add_modifier(Modifier::BOLD),
+        )]);
+
         let model_line = Line::from(vec![
-            Span::styled("model  ", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+            Span::styled(
+                "model  ",
+                Style::default()
+                    .fg(theme.accent_light)
+                    .add_modifier(Modifier::DIM),
+            ),
             Span::styled(&self.model, Style::default().fg(self.accent_color)),
         ]);
-        
+
         let provider_line = Line::from(vec![
-            Span::styled("provider  ", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+            Span::styled(
+                "provider  ",
+                Style::default()
+                    .fg(theme.accent_light)
+                    .add_modifier(Modifier::DIM),
+            ),
             Span::styled(&self.provider, Style::default().fg(theme.accent_light)),
         ]);
-        
+
         let version_line = Line::from(vec![
-            Span::styled("version  ", Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)),
+            Span::styled(
+                "version  ",
+                Style::default()
+                    .fg(theme.accent_light)
+                    .add_modifier(Modifier::DIM),
+            ),
             Span::styled(&self.version, Style::default().fg(theme.accent_light)),
         ]);
 
@@ -82,9 +100,9 @@ impl BannerScreen {
         ];
 
         let list = List::new(items);
-        
+
         frame.render_widget(list, area);
-        
+
         area
     }
 }

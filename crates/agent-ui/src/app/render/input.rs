@@ -40,23 +40,19 @@ pub fn render_wizard_footer(
     theme: &Theme,
 ) {
     let line = Line::from(vec![
-        Span::styled(
-            &app.editor.content,
-            Style::default().fg(theme.foreground),
-        ),
+        Span::styled(&app.editor.content, Style::default().fg(theme.foreground)),
         Span::styled(" ", Style::default()),
         Span::styled(
             status_text,
-            Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM),
+            Style::default()
+                .fg(theme.accent_light)
+                .add_modifier(Modifier::DIM),
         ),
     ]);
     f.render_widget(Paragraph::new(line), area);
 }
 
-fn split_with_menu(
-    area: Rect,
-    completion: &crate::completion::CompletionEngine,
-) -> (Rect, Rect) {
+fn split_with_menu(area: Rect, completion: &crate::completion::CompletionEngine) -> (Rect, Rect) {
     if !completion.visible() {
         return (area, Rect::default());
     }
@@ -78,7 +74,9 @@ fn split_with_menu(
 }
 
 fn input_to_lines(input: &str, width: u16, theme: &Theme) -> Vec<Line<'static>> {
-    let inner = width.saturating_sub(PROMPT.chars().count() as u16 + 1).max(1) as usize;
+    let inner = width
+        .saturating_sub(PROMPT.chars().count() as u16 + 1)
+        .max(1) as usize;
     let mut lines = Vec::new();
     for raw in input.split('\n') {
         if raw.is_empty() {
@@ -115,7 +113,9 @@ fn input_to_lines(input: &str, width: u16, theme: &Theme) -> Vec<Line<'static>> 
 }
 
 fn cursor_position(app: &AgentApp, width: u16) -> (u16, u16) {
-    let inner = width.saturating_sub(PROMPT.chars().count() as u16 + 1).max(1) as usize;
+    let inner = width
+        .saturating_sub(PROMPT.chars().count() as u16 + 1)
+        .max(1) as usize;
     let before = &app.editor.content[..app.editor.cursor.min(app.editor.content.len())];
 
     let mut line = 0u16;
@@ -126,10 +126,8 @@ fn cursor_position(app: &AgentApp, width: u16) -> (u16, u16) {
             col = PROMPT.chars().count() as u16 + 1;
         }
         let wrapped = textwrap::wrap(raw, inner);
-        if wrapped.is_empty() {
-            if line > 0 {
-                continue;
-            }
+        if wrapped.is_empty() && line > 0 {
+            continue;
         }
         let count = wrapped.len();
         if count > 0 {
@@ -149,12 +147,7 @@ fn cursor_position(app: &AgentApp, width: u16) -> (u16, u16) {
     (col, line)
 }
 
-pub fn render_completion_menu(
-    f: &mut Frame,
-    area: Rect,
-    app: &AgentApp,
-    theme: &Theme,
-) {
+pub fn render_completion_menu(f: &mut Frame, area: Rect, app: &AgentApp, theme: &Theme) {
     if app.completion.items.is_empty() {
         return;
     }
@@ -171,7 +164,9 @@ pub fn render_completion_menu(
         .border_style(Style::default().fg(theme.border))
         .title(Span::styled(
             format!(" {kind_label} "),
-            Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM),
+            Style::default()
+                .fg(theme.accent_light)
+                .add_modifier(Modifier::DIM),
         ));
 
     let list_area = block.inner(area);
@@ -208,7 +203,9 @@ pub fn render_completion_menu(
                             .bg(theme.accent_light)
                             .add_modifier(Modifier::DIM)
                     } else {
-                        Style::default().fg(theme.accent_light).add_modifier(Modifier::DIM)
+                        Style::default()
+                            .fg(theme.accent_light)
+                            .add_modifier(Modifier::DIM)
                     },
                 ),
             ]);

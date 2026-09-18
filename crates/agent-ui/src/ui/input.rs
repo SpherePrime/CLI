@@ -65,7 +65,7 @@ impl InputScreen {
             })
             .collect();
 
-        matches.sort_by(|a, b| b.0.cmp(&a.0));
+        matches.sort_by_key(|a| std::cmp::Reverse(a.0));
 
         self.suggestions = matches.into_iter().map(|(_, name)| name).collect();
         self.selected_suggestion = 0;
@@ -86,7 +86,11 @@ impl InputScreen {
                         }
                         'u' | 'U' => {
                             let byte_pos = self.byte_pos_for_char_pos(self.cursor_pos);
-                            self.input = format!("{}{}", &self.input[..byte_pos], &self.input[byte_pos..].chars().skip(1).collect::<String>());
+                            self.input = format!(
+                                "{}{}",
+                                &self.input[..byte_pos],
+                                self.input[byte_pos..].chars().skip(1).collect::<String>()
+                            );
                             self.update_suggestions();
                             return None;
                         }
@@ -104,10 +108,12 @@ impl InputScreen {
                 if self.input.is_empty() || self.cursor_pos == 0 {
                     return None;
                 }
-                
+
                 let char_pos = self.cursor_pos.saturating_sub(1);
                 let byte_pos = self.byte_pos_for_char_pos(char_pos);
-                let next_byte_pos = self.byte_pos_for_char_pos(char_pos + 1).min(self.input.len());
+                let next_byte_pos = self
+                    .byte_pos_for_char_pos(char_pos + 1)
+                    .min(self.input.len());
                 self.input.replace_range(byte_pos..next_byte_pos, "");
                 self.cursor_pos = char_pos;
                 self.update_suggestions();
@@ -117,9 +123,11 @@ impl InputScreen {
                 if self.cursor_pos >= self.input.len() {
                     return None;
                 }
-                
+
                 let byte_pos = self.byte_pos_for_char_pos(self.cursor_pos);
-                let next_byte_pos = self.byte_pos_for_char_pos(self.cursor_pos + 1).min(self.input.len());
+                let next_byte_pos = self
+                    .byte_pos_for_char_pos(self.cursor_pos + 1)
+                    .min(self.input.len());
                 self.input.replace_range(byte_pos..next_byte_pos, "");
                 self.update_suggestions();
                 None
@@ -132,7 +140,7 @@ impl InputScreen {
             }
             KeyCode::Right => {
                 if self.cursor_pos < self.input.len() {
-                    self.cursor_pos = self.cursor_pos + 1;
+                    self.cursor_pos += 1;
                 }
                 None
             }
@@ -145,23 +153,22 @@ impl InputScreen {
                 None
             }
             KeyCode::Up => {
-                if !self.suggestions.is_empty() {
-                    if self.selected_suggestion > 0 {
-                        self.selected_suggestion -= 1;
-                    }
+                if !self.suggestions.is_empty() && self.selected_suggestion > 0 {
+                    self.selected_suggestion -= 1;
                 }
                 None
             }
             KeyCode::Down => {
-                if !self.suggestions.is_empty() {
-                    if self.selected_suggestion < self.suggestions.len() - 1 {
-                        self.selected_suggestion += 1;
-                    }
+                if !self.suggestions.is_empty()
+                    && self.selected_suggestion < self.suggestions.len() - 1
+                {
+                    self.selected_suggestion += 1;
                 }
                 None
             }
             KeyCode::Tab => {
-                if !self.suggestions.is_empty() && self.selected_suggestion < self.suggestions.len() {
+                if !self.suggestions.is_empty() && self.selected_suggestion < self.suggestions.len()
+                {
                     let prefix = self.suggestions[self.selected_suggestion].clone();
                     self.input = prefix;
                     self.cursor_pos = self.input.len();
@@ -170,9 +177,7 @@ impl InputScreen {
                 }
                 None
             }
-            KeyCode::Enter => {
-                Some(Box::leak(self.input.clone().into_boxed_str()))
-            }
+            KeyCode::Enter => Some(Box::leak(self.input.clone().into_boxed_str())),
             KeyCode::Esc => {
                 self.input.clear();
                 self.cursor_pos = 0;
@@ -187,15 +192,17 @@ impl InputScreen {
         if self.input.is_empty() || char_pos == 0 {
             return 0;
         }
-        
-        self.input.char_indices()
+
+        self.input
+            .char_indices()
             .nth(char_pos.saturating_sub(1))
             .map(|(byte_idx, c)| byte_idx + c.len_utf8())
             .unwrap_or(self.input.len())
     }
 
     fn char_pos_for_byte_pos(&self, byte_pos: usize) -> usize {
-        self.input.char_indices()
+        self.input
+            .char_indices()
             .take_while(|(b, _)| *b < byte_pos)
             .count()
     }

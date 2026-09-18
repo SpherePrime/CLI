@@ -97,11 +97,15 @@ impl Theme {
     }
 
     pub fn subheader_style(&self) -> Style {
-        Style::default().fg(self.accent_light).add_modifier(ratatui::style::Modifier::DIM)
+        Style::default()
+            .fg(self.accent_light)
+            .add_modifier(ratatui::style::Modifier::DIM)
     }
 
     pub fn prompt_style(&self) -> Style {
-        Style::default().fg(self.accent).add_modifier(ratatui::style::Modifier::BOLD)
+        Style::default()
+            .fg(self.accent)
+            .add_modifier(ratatui::style::Modifier::BOLD)
     }
 
     pub fn status_ready_style(&self) -> Style {
@@ -121,7 +125,9 @@ impl Theme {
     }
 
     pub fn muted_style(&self) -> Style {
-        Style::default().fg(self.accent_light).add_modifier(ratatui::style::Modifier::DIM)
+        Style::default()
+            .fg(self.accent_light)
+            .add_modifier(ratatui::style::Modifier::DIM)
     }
 
     pub fn border_style(&self) -> Style {

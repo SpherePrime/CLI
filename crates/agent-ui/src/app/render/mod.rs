@@ -16,9 +16,9 @@ pub fn render_app(f: &mut Frame, _layout: Layout, app: &AgentApp) {
     match app.current_state {
         AppState::Banner => render_banner(f, area, app, &theme),
         AppState::Chat => render_chat(f, area, app, &theme),
-        AppState::ModelWizard
-        | AppState::ProviderWizard
-        | AppState::ConfigMenu => render_wizard_status(f, area, app, &theme),
+        AppState::ModelWizard | AppState::ProviderWizard | AppState::ConfigMenu => {
+            render_wizard_status(f, area, app, &theme)
+        }
     }
 }
 

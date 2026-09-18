@@ -13,13 +13,11 @@ pub use types::{
 
 #[cfg(test)]
 mod tests {
-    use agent_config::{ModelConfig, ProviderKind};
-    use crate::providers::mock::MockProvider;
     use crate::provider::build_from_model_config;
-    use crate::types::{
-        ChatMessage, MessageContent, ModelRequest, Role, StopReason,
-    };
     use crate::provider::ModelProvider;
+    use crate::providers::mock::MockProvider;
+    use crate::types::{ChatMessage, MessageContent, ModelRequest, Role, StopReason};
+    use agent_config::{ModelConfig, ProviderKind};
 
     #[tokio::test]
     async fn mock_provider_echo() {

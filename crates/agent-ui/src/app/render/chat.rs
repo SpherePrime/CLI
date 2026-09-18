@@ -82,8 +82,6 @@ fn wrap_content(content: &str, width: u16) -> Vec<String> {
             out.push(piece.to_string());
         }
     }
-    if !content.ends_with('\n') {
-    }
     out
 }
 
@@ -91,7 +89,9 @@ fn render_empty_state(f: &mut Frame, area: Rect, theme: &Theme) {
     let line = Line::from(vec![
         Span::styled(
             "Ready to code.",
-            Style::default().fg(theme.foreground).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme.foreground)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(" ", Style::default()),
         Span::styled(

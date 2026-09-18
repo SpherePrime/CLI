@@ -30,9 +30,8 @@ impl SessionManager {
                     Ok(id) => id,
                     Err(_) => continue,
                 };
-                let ts: chrono::DateTime<chrono::Utc> = match entry.metadata().ok()?.modified().ok()? {
-                    m => m.into(),
-                };
+                let modified = entry.metadata().ok()?.modified().ok()?;
+                let ts: chrono::DateTime<chrono::Utc> = modified.into();
                 entries.push((ts, id));
             }
         }
@@ -42,8 +41,8 @@ impl SessionManager {
 
     pub fn resume(storage: &agent_storage::Storage, id: Uuid) -> Result<Vec<serde_json::Value>> {
         let p = storage.sessions_dir().join(format!("{}.jsonl", id));
-        let content =
-            std::fs::read_to_string(&p).with_context(|| format!("reading session at {}", p.display()))?;
+        let content = std::fs::read_to_string(&p)
+            .with_context(|| format!("reading session at {}", p.display()))?;
         let mut messages = Vec::new();
         for line in content.lines() {
             let trimmed = line.trim();
@@ -83,7 +82,10 @@ impl SessionManager {
 
 impl Clone for SessionManager {
     fn clone(&self) -> Self {
-        Self { id: self.id, storage: self.storage.clone() }
+        Self {
+            id: self.id,
+            storage: self.storage.clone(),
+        }
     }
 }
 

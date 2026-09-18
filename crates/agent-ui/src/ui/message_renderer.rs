@@ -1,7 +1,7 @@
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Paragraph, ListItem};
+use ratatui::widgets::{ListItem, Paragraph};
 use ratatui::Frame;
 use std::borrow::Cow;
 
@@ -69,7 +69,8 @@ impl MsgEntry {
 }
 
 pub fn render_message(f: &mut Frame, area: Rect, msg: &MsgEntry, theme: &Theme) -> Rect {
-    let lines = build_message_lines(msg, 
+    let lines = build_message_lines(
+        msg,
         theme.message_user,
         theme.message_assistant,
         theme.message_tool,
@@ -81,28 +82,38 @@ pub fn render_message(f: &mut Frame, area: Rect, msg: &MsgEntry, theme: &Theme) 
     let para = Paragraph::new(lines)
         .style(Style::default().fg(theme.foreground))
         .wrap(ratatui::widgets::Wrap { trim: true });
-    
+
     f.render_widget(para, area);
     area
 }
 
-pub fn build_message_lines(msg: &MsgEntry, 
-    msg_user: Color, msg_assistant: Color, msg_tool: Color, msg_system: Color,
-    fg: Color, info: Color, accent_light: Color,
+#[allow(clippy::too_many_arguments)]
+pub fn build_message_lines(
+    msg: &MsgEntry,
+    msg_user: Color,
+    msg_assistant: Color,
+    msg_tool: Color,
+    msg_system: Color,
+    fg: Color,
+    info: Color,
+    accent_light: Color,
 ) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
-    
+
     let (icon, label_style) = match msg.role {
         MsgRole::User => (msg.role.icon(msg_user), msg.role.label_style(msg_user)),
-        MsgRole::Assistant => (msg.role.icon(msg_assistant), msg.role.label_style(msg_assistant)),
+        MsgRole::Assistant => (
+            msg.role.icon(msg_assistant),
+            msg.role.label_style(msg_assistant),
+        ),
         MsgRole::Tool => (msg.role.icon(msg_tool), msg.role.label_style(msg_tool)),
         MsgRole::System => (msg.role.icon(msg_system), msg.role.label_style(msg_system)),
     };
-    
+
     let label = msg.role.label();
     let label_str: Cow<'static, str> = Cow::Owned(format!("{}:", label));
     let content_str: Cow<'static, str> = Cow::Owned(msg.content.clone());
-    
+
     lines.push(Line::from(""));
     lines.push(Line::from(vec![
         Span::styled(" ", Style::default()),
@@ -112,7 +123,7 @@ pub fn build_message_lines(msg: &MsgEntry,
         Span::styled(" ", Style::default()),
         Span::styled(content_str, Style::default().fg(fg)),
     ]));
-    
+
     if let Some(tool_name) = &msg.tool_call {
         let tool_name_cow: Cow<'static, str> = Cow::Owned(tool_name.clone());
         lines.push(Line::from(vec![
@@ -120,16 +131,17 @@ pub fn build_message_lines(msg: &MsgEntry,
             Span::styled(tool_name_cow, Style::default().fg(accent_light)),
         ]));
     }
-    
+
     lines.push(Line::from(""));
     lines
 }
 
 pub fn render_messages(f: &mut Frame, area: Rect, messages: &[MsgEntry], theme: &Theme) -> Rect {
     let mut all_lines: Vec<Line<'static>> = vec![Line::from("")];
-    
+
     for msg in messages {
-        all_lines.extend(build_message_lines(msg,
+        all_lines.extend(build_message_lines(
+            msg,
             theme.message_user,
             theme.message_assistant,
             theme.message_tool,
@@ -139,16 +151,23 @@ pub fn render_messages(f: &mut Frame, area: Rect, messages: &[MsgEntry], theme: 
             theme.accent_light,
         ));
     }
-    
+
     let para = Paragraph::new(all_lines)
         .style(Style::default().fg(theme.foreground))
         .wrap(ratatui::widgets::Wrap { trim: true });
-    
+
     f.render_widget(para, area);
     area
 }
 
-pub fn build_message_list_item(msg: &MsgEntry, fg: Color, msg_user: Color, msg_assistant: Color, msg_tool: Color, msg_system: Color) -> ListItem<'static> {
+pub fn build_message_list_item(
+    msg: &MsgEntry,
+    fg: Color,
+    msg_user: Color,
+    msg_assistant: Color,
+    msg_tool: Color,
+    msg_system: Color,
+) -> ListItem<'static> {
     let icon = match msg.role {
         MsgRole::User => msg.role.icon(msg_user),
         MsgRole::Assistant => msg.role.icon(msg_assistant),
@@ -156,21 +175,17 @@ pub fn build_message_list_item(msg: &MsgEntry, fg: Color, msg_user: Color, msg_a
         MsgRole::System => msg.role.icon(msg_system),
     };
     let label = msg.role.label();
-    
+
     let preview = if msg.content.len() > 60 {
         format!("{}...", &msg.content[..57])
     } else {
         msg.content.clone()
     };
-    
-    let content = format!(
-        "<{}> {}",
-        label,
-        preview
-    );
-    
+
+    let content = format!("<{}> {}", label, preview);
+
     let content_cow: Cow<'static, str> = Cow::Owned(content);
-    
+
     ListItem::new(Line::from(vec![
         icon,
         Span::styled(" ", Style::default()),
@@ -182,9 +197,7 @@ pub fn build_status_span(status_type: &StatusType, theme: &Theme) -> Line<'stati
     match status_type {
         StatusType::Ready => {
             let color: Color = theme.status_ready;
-            Line::from(vec![
-                Span::styled("● Ready", Style::default().fg(color)),
-            ])
+            Line::from(vec![Span::styled("● Ready", Style::default().fg(color))])
         }
         StatusType::Thinking(t) => {
             let text = if t.is_empty() {
@@ -194,15 +207,11 @@ pub fn build_status_span(status_type: &StatusType, theme: &Theme) -> Line<'stati
             };
             let text_cow: Cow<'static, str> = Cow::Owned(text);
             let color: Color = theme.status_thinking;
-            Line::from(vec![
-                Span::styled(text_cow, Style::default().fg(color)),
-            ])
+            Line::from(vec![Span::styled(text_cow, Style::default().fg(color))])
         }
         StatusType::Success => {
             let color: Color = theme.status_success;
-            Line::from(vec![
-                Span::styled("✓ Done", Style::default().fg(color)),
-            ])
+            Line::from(vec![Span::styled("✓ Done", Style::default().fg(color))])
         }
         StatusType::Error(e) => {
             let text = if e.is_empty() {
@@ -212,20 +221,15 @@ pub fn build_status_span(status_type: &StatusType, theme: &Theme) -> Line<'stati
             };
             let text_cow: Cow<'static, str> = Cow::Owned(text);
             let color: Color = theme.status_error;
-            Line::from(vec![
-                Span::styled(text_cow, Style::default().fg(color)),
-            ])
+            Line::from(vec![Span::styled(text_cow, Style::default().fg(color))])
         }
         StatusType::Tool(name) => {
             let text = format!("→ {}", name);
             let text_cow: Cow<'static, str> = Cow::Owned(text);
             let color: Color = theme.message_tool;
-            Line::from(vec![
-                Span::styled(text_cow, Style::default().fg(color)),
-            ])
+            Line::from(vec![Span::styled(text_cow, Style::default().fg(color))])
         }
     }
 }
 
-pub fn render_status(_frame: &mut Frame, _area: Rect, _status_type: &StatusType, _theme: &Theme) {
-}
+pub fn render_status(_frame: &mut Frame, _area: Rect, _status_type: &StatusType, _theme: &Theme) {}

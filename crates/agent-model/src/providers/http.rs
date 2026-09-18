@@ -20,7 +20,7 @@ pub fn openai_tool_schema(t: &crate::types::ToolSchema) -> serde_json::Value {
     })
 }
 
-fn to_openai_messages(req: &ModelRequest) -> Vec<serde_json::Value> {
+pub(crate) fn to_openai_messages(req: &ModelRequest) -> Vec<serde_json::Value> {
     let mut out = Vec::new();
     for msg in &req.messages {
         out.push(openai_message(msg));
@@ -56,7 +56,9 @@ fn openai_message(msg: &ChatMessage) -> serde_json::Value {
 }
 
 pub fn parse_openai_response(body: serde_json::Value) -> Result<ModelResponse> {
-    let choice = body["choices"].as_array().and_then(|c| c.first())
+    let choice = body["choices"]
+        .as_array()
+        .and_then(|c| c.first())
         .context("empty choices in provider response")?;
     let msg = &choice["message"];
 
@@ -70,11 +72,7 @@ pub fn parse_openai_response(body: serde_json::Value) -> Result<ModelResponse> {
                     let name = tc["function"]["name"].as_str()?.to_string();
                     let args_str = tc["function"]["arguments"].as_str().unwrap_or("{}");
                     let args = serde_json::from_str(args_str).unwrap_or(serde_json::Value::Null);
-                    Some(ToolCall {
-                        id,
-                        name,
-                        args,
-                    })
+                    Some(ToolCall { id, name, args })
                 })
                 .collect()
         })
@@ -100,7 +98,7 @@ pub fn parse_openai_response(body: serde_json::Value) -> Result<ModelResponse> {
     })
 }
 
-fn build_content(text: &str, tool_calls: &[ToolCall]) -> MessageContent {
+pub(crate) fn build_content(text: &str, tool_calls: &[ToolCall]) -> MessageContent {
     if text.is_empty() && tool_calls.is_empty() {
         return MessageContent::Text(String::new());
     }
@@ -122,13 +120,11 @@ fn build_content(text: &str, tool_calls: &[ToolCall]) -> MessageContent {
     let mut parts: Vec<ContentPart> = vec![ContentPart::Text {
         text: text.to_string(),
     }];
-    parts.extend(
-        tool_calls.iter().map(|tc| ContentPart::ToolCall {
-            id: tc.id.clone(),
-            name: tc.name.clone(),
-            args: tc.args.clone(),
-        }),
-    );
+    parts.extend(tool_calls.iter().map(|tc| ContentPart::ToolCall {
+        id: tc.id.clone(),
+        name: tc.name.clone(),
+        args: tc.args.clone(),
+    }));
     MessageContent::Multi { parts }
 }
 
@@ -180,22 +176,15 @@ pub async fn post_chat_completion(
         body["max_tokens"] = serde_json::json!(max);
     }
     if let Some(tools) = &req.tools {
-        body["tools"] = serde_json::json!(
-            tools.iter().map(openai_tool_schema).collect::<Vec<_>>()
-        );
+        body["tools"] = serde_json::json!(tools.iter().map(openai_tool_schema).collect::<Vec<_>>());
     }
 
-    let headers = vec![(
-        "Authorization".to_string(),
-        format!("Bearer {key}"),
-    )];
+    let headers = vec![("Authorization".to_string(), format!("Bearer {key}"))];
     let json = http_post(&url, headers, &body).await?;
     parse_openai_response(json)
 }
 
-fn to_anthropic_messages(
-    req: &ModelRequest,
-) -> (String, Vec<serde_json::Value>) {
+pub(crate) fn to_anthropic_messages(req: &ModelRequest) -> (String, Vec<serde_json::Value>) {
     let mut system: Vec<String> = Vec::new();
     let mut messages: Vec<serde_json::Value> = Vec::new();
     for msg in &req.messages {

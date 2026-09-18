@@ -1,6 +1,6 @@
 import { navigateTo } from "../context/route"
-import { resetSession, transcriptText, lastAssistantText } from "../context/session"
-import { openInfo, openSelect, openModelDialog, openProviderDialog } from "../context/dialog"
+import { resetSession, loadStoredMessages, transcriptText, lastAssistantText, useSession } from "../context/session"
+import { openInfo, openSelect, openForm, openModelDialog, openProviderDialog } from "../context/dialog"
 import { quitApp } from "../context/app"
 import { copyToClipboard } from "../util/clipboard"
 import { exportTranscript, openEditor } from "../util/files"
@@ -21,23 +21,7 @@ export type Command = {
 export const SECTION_ORDER: CommandSection[] = ["Prompt", "Session", "Agent", "Provider", "System", "Exit"]
 
 export function buildCommands(client: AgentClient): Command[] {
-  const notAvailable = (feature: string) => () => {
-    openInfo({ title: feature, body: "This command is not available in this build yet." })
-  }
-
   return [
-    {
-      id: "prompt.stash",
-      title: "Stash prompt",
-      section: "Prompt",
-      run: notAvailable("Stash prompt"),
-    },
-    {
-      id: "prompt.skills",
-      title: "Skills",
-      section: "Prompt",
-      run: notAvailable("Skills"),
-    },
     {
       id: "session.new",
       title: "New session",
@@ -86,27 +70,105 @@ export function buildCommands(client: AgentClient): Command[] {
       title: "Rename session",
       section: "Session",
       shortcut: "ctrl+r",
-      run: notAvailable("Rename session"),
+      run: () => {
+        const session = useSession()
+        openForm({
+          title: "Rename session",
+          fields: [{ kind: "text", key: "title", label: "Title", placeholder: "Session name" }],
+          onSubmit: async (values) => {
+            const id = session.sessionId()
+            if (!id || !values.title?.trim()) return
+            try {
+              await client.renameSession(id, values.title.trim())
+              openInfo({ title: "Rename session", body: "Session renamed." })
+            } catch (error) {
+              openInfo({ title: "Rename session", body: String(error) })
+            }
+          },
+        })
+      },
     },
     {
       id: "session.fork",
       title: "Fork session",
       section: "Session",
-      run: notAvailable("Fork session"),
+      run: async () => {
+        const session = useSession()
+        const id = session.sessionId()
+        if (!id) {
+          openInfo({ title: "Fork session", body: "No active session." })
+          return
+        }
+        try {
+          const forked = await client.forkSession(id)
+          resetSession()
+          navigateTo({ type: "session", sessionId: forked.id })
+        } catch (error) {
+          openInfo({ title: "Fork session", body: String(error) })
+        }
+      },
     },
     {
       id: "session.compact",
       title: "Compact session",
       section: "Session",
       shortcut: "ctrl+x c",
-      run: notAvailable("Compact session"),
+      run: async () => {
+        const session = useSession()
+        const id = session.sessionId()
+        if (!id) return
+        try {
+          const detail = await client.compactSession(id)
+          resetSession()
+          loadStoredMessages(detail.messages)
+          openInfo({ title: "Compact session", body: "Session compacted." })
+        } catch (error) {
+          openInfo({ title: "Compact session", body: String(error) })
+        }
+      },
     },
     {
-      id: "session.undo",
-      title: "Undo previous message",
+      id: "session.delete",
+      title: "Delete session",
       section: "Session",
-      shortcut: "ctrl+x u",
-      run: notAvailable("Undo previous message"),
+      shortcut: "ctrl+x d",
+      run: () => {
+        const session = useSession()
+        const id = session.sessionId()
+        if (!id) {
+          openInfo({ title: "Delete session", body: "No active session." })
+          return
+        }
+        openSelect({
+          title: "Delete session",
+          options: [
+            { title: "Delete this session", value: "delete" },
+            { title: "Cancel", value: "cancel" },
+          ],
+          onSelect: async (value) => {
+            if (value !== "delete") return
+            try {
+              await client.deleteSession(id)
+              resetSession()
+              navigateTo({ type: "home" })
+            } catch (error) {
+              openInfo({ title: "Delete session", body: String(error) })
+            }
+          },
+        })
+      },
+    },
+    {
+      id: "session.cancel",
+      title: "Stop generation",
+      section: "Session",
+      shortcut: "esc",
+      run: async () => {
+        const session = useSession()
+        try {
+          await client.cancelMessage(session.sessionId())
+        } catch {}
+      },
     },
     {
       id: "session.editor",
@@ -181,26 +243,6 @@ export function buildCommands(client: AgentClient): Command[] {
       run: () => openModelDialog(),
     },
     {
-      id: "agent.switch",
-      title: "Switch agent",
-      section: "Agent",
-      shortcut: "ctrl+x a",
-      run: notAvailable("Switch agent"),
-    },
-    {
-      id: "agent.mcp",
-      title: "Toggle MCPs",
-      section: "Agent",
-      run: notAvailable("Toggle MCPs"),
-    },
-    {
-      id: "agent.variant",
-      title: "Variant cycle",
-      section: "Agent",
-      shortcut: "ctrl+t",
-      run: notAvailable("Variant cycle"),
-    },
-    {
       id: "provider.connect",
       title: "Connect provider",
       section: "Provider",
@@ -248,13 +290,6 @@ export function buildCommands(client: AgentClient): Command[] {
         }),
     },
     {
-      id: "system.theme",
-      title: "Switch theme",
-      section: "System",
-      shortcut: "ctrl+x t",
-      run: notAvailable("Switch theme"),
-    },
-    {
       id: "system.help",
       title: "Help",
       section: "System",
@@ -266,9 +301,10 @@ export function buildCommands(client: AgentClient): Command[] {
             "ctrl+x n — new session",
             "ctrl+x l — switch session",
             "ctrl+x m — switch model",
+            "ctrl+x c — compact session",
             "enter — send message",
             "shift+enter — new line",
-            "esc — back to home",
+            "esc — back to home / cancel",
             "ctrl+c — exit",
           ].join("\n"),
         }),

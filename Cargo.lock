@@ -84,8 +84,13 @@ name = "agent-core"
 version = "0.1.0"
 dependencies = [
  "agent-config",
+ "agent-context",
  "agent-events",
+ "agent-model",
+ "agent-permissions",
+ "agent-sessions",
  "agent-storage",
+ "agent-tools",
  "anyhow",
  "async-trait",
  "chrono",
@@ -332,12 +337,15 @@ dependencies = [
  "async-trait",
  "chrono",
  "futures",
+ "glob",
+ "regex",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
  "uuid",
+ "walkdir",
 ]
 
 [[package]]

@@ -9,6 +9,11 @@ description = "Core runtime: agent loop, model provider trait, tool trait, conte
 agent-events = { path = "../agent-events" }
 agent-storage = { path = "../agent-storage" }
 agent-config = { path = "../agent-config" }
+agent-model = { path = "../agent-model" }
+agent-tools = { path = "../agent-tools" }
+agent-permissions = { path = "../agent-permissions" }
+agent-context = { path = "../agent-context" }
+agent-sessions = { path = "../agent-sessions" }
 tokio.workspace = true
 futures.workspace = true
 anyhow.workspace = true

@@ -1,5 +1,3 @@
-use anyhow::Result;
-
 pub fn run_init() -> std::process::ExitCode {
     let cwd = match std::env::current_dir() {
         Ok(p) => p,

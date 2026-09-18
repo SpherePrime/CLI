@@ -1,5 +1,9 @@
 use std::path::PathBuf;
 
+pub mod engine;
+
+pub use engine::{AgentEngine, EngineApprover, EngineEvent};
+
 use agent_config::{AgentConfig, ConfigLoader};
 use agent_events::{AgentEvent, AgentEventPayload, AgentScope, EventBus};
 use agent_storage::Storage;
@@ -46,8 +50,8 @@ impl Core {
         }
     }
 
-    pub fn with_project(mut self, path: &PathBuf) -> Self {
-        self.state.project = Some(path.clone());
+    pub fn with_project(mut self, path: &std::path::Path) -> Self {
+        self.state.project = Some(path.to_path_buf());
         self
     }
 

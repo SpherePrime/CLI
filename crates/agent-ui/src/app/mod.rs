@@ -1,4 +1,4 @@
-use crate::completion::{CompletionEngine, replace_token};
+use crate::completion::{replace_token, CompletionEngine};
 use crate::editor::InputEditor;
 use crate::input::SlashCommandPalette;
 use agent_config::ModelConfig;
@@ -7,7 +7,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 pub mod render;
 pub mod state;
 
-pub use state::{AppEvent, AppState, MessageRole, StatusType, ToolStatus, provider_name};
+pub use state::{provider_name, AppEvent, AppState, MessageRole, StatusType, ToolStatus};
 
 #[derive(Debug, Clone)]
 pub struct MessageEntry {
@@ -205,7 +205,7 @@ impl AgentApp {
         self.compacted_count += 1;
         let keep = 8.min(self.messages.len());
         let drop = self.messages.len() - keep;
-        self.messages.drain(0..drop.max(0));
+        self.messages.drain(0..drop);
         self.scroll_to_bottom();
     }
 
@@ -314,9 +314,7 @@ fn handle_chat_event(app: &mut AgentApp, key: &KeyEvent) -> Option<AppEvent> {
             None
         }
         KeyCode::Char('l') | KeyCode::Char('d') if ctrl => None,
-        KeyCode::Enter | KeyCode::Char('\n') if !shift && !ctrl => {
-            handle_submit(app)
-        }
+        KeyCode::Enter | KeyCode::Char('\n') if !shift && !ctrl => handle_submit(app),
         KeyCode::Enter | KeyCode::Char('\n') if shift => {
             app.editor.insert_char('\n');
             app.completion.reset();

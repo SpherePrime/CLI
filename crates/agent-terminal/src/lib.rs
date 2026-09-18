@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 
@@ -39,11 +39,14 @@ pub struct ShellRunner {
 impl ShellRunner {
     pub fn new() -> Self {
         let protected: HashSet<String> = PROTECTED_ENV.iter().map(|s| s.to_string()).collect();
-        Self { protected_env: protected }
+        Self {
+            protected_env: protected,
+        }
     }
 
     pub async fn run(&self, req: &ExecRequest) -> Result<ExecOutput> {
-        self.run_with_timeout(req, req.timeout_secs.unwrap_or(60)).await
+        self.run_with_timeout(req, req.timeout_secs.unwrap_or(60))
+            .await
     }
 
     pub async fn run_with_timeout(&self, req: &ExecRequest, timeout: u64) -> Result<ExecOutput> {
@@ -83,7 +86,7 @@ pub async fn which(name: &str) -> Result<PathBuf> {
 }
 
 pub async fn validate_command(name: &str) -> Result<()> {
-    which(&name).await.map(|_| ())
+    which(name).await.map(|_| ())
 }
 
 #[cfg(test)]
@@ -95,8 +98,8 @@ mod tests {
         let r = ShellRunner::new();
         let out = r
             .run(&ExecRequest {
-                command: "echo".into(),
-                args: vec!["hi".into()],
+                command: "cmd".into(),
+                args: vec!["/c".into(), "echo".into(), "hi".into()],
                 cwd: None,
                 env: vec![],
                 timeout_secs: None,
@@ -112,8 +115,8 @@ mod tests {
         let r = ShellRunner::new();
         let out = r
             .run(&ExecRequest {
-                command: "env".into(),
-                args: vec![],
+                command: "cmd".into(),
+                args: vec!["/c".into(), "set".into()],
                 cwd: None,
                 env: vec![("AGENT_API_KEY".into(), "secret".into())],
                 timeout_secs: None,

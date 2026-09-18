@@ -1,15 +1,16 @@
 use std::sync::Arc;
 
-use agent_model::{build_from_model_config, ChatMessage, MessageContent, ModelRequest, Role};
+use agent_core::{AgentEngine, EngineEvent};
 use futures::StreamExt;
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::{Bytes, Frame, Incoming};
 use hyper::{Request, Response, StatusCode};
+use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use uuid::Uuid;
 
+use super::api::{read_json, BoxBody, MessageBody};
 use super::state::AppState;
-use super::api::{BoxBody, MessageBody, read_json};
 
 pub async fn post(
     request: Request<Incoming>,
@@ -21,72 +22,57 @@ pub async fn post(
     };
 
     let session_id = body.session_id.unwrap_or_else(Uuid::new_v4);
-    let model = state.resolve_model();
+    let config = state.config.read().unwrap().clone().unwrap_or_default();
+    let working_dir = std::env::current_dir().unwrap_or_default();
 
-    let provider = match build_from_model_config(&model) {
-        Ok(provider) => provider,
-        Err(error) => return Ok(stream_error(&format!("model init error: {error}"))),
-    };
-
-    let history = load_history(&state, session_id);
-    let provider_request = ModelRequest {
-        model: model.model.clone(),
-        messages: history,
-        tools: None,
-        temperature: model.temperature,
-        max_tokens: model.max_tokens,
-    };
-
-    let (tx, rx) = tokio::sync::mpsc::channel::<Bytes>(128);
-    let stream = ReceiverStream::new(rx);
-
-    tokio::spawn(async move {
-        emit(&tx, serde_json::json!({ "type": "session.created", "session": { "id": session_id } })).await;
-
-        emit(&tx, serde_json::json!({
-            "type": "message.created",
-            "message": {
-                "id": Uuid::new_v4(),
-                "role": "user",
-                "content": body.text
-            }
-        })).await;
-
-        match provider.chat(&provider_request).await {
-            Ok(response) => {
-                let text = response.content.as_text();
-                emit(&tx, serde_json::json!({
-                    "type": "message.part.updated",
-                    "part": { "type": "text", "text": text }
-                })).await;
-                emit(&tx, serde_json::json!({
-                    "type": "message.updated",
-                    "message": {
-                        "id": Uuid::new_v4(),
-                        "role": "assistant",
-                        "content": text
-                    }
-                })).await;
-                emit(&tx, serde_json::json!({
-                    "type": "session.updated",
-                    "session": { "id": session_id }
-                })).await;
-            }
-            Err(error) => {
-                emit(&tx, serde_json::json!({
-                    "type": "session.error",
-                    "error": error.to_string()
-                })).await;
-            }
+    let (engine_tx, mut engine_rx) = mpsc::channel::<EngineEvent>(256);
+    let mut engine = match AgentEngine::new(config, working_dir, engine_tx.clone()) {
+        Ok(engine) => engine.with_session(session_id),
+        Err(error) => {
+            return Ok(stream_error(&format!("engine init error: {error}")));
         }
+    };
+    state.register_engine(session_id, engine.cancel_handle(), engine.approver.clone());
+    let run_tx = engine_tx.clone();
+    drop(engine_tx);
 
-        emit(&tx, serde_json::json!({ "type": "done" })).await;
+    let run_text = body.text.clone();
+    let engine_state = state.clone();
+    tokio::spawn(async move {
+        if let Err(error) = engine.run(&run_text, &run_tx).await {
+            let _ = run_tx.send(EngineEvent::error(error.to_string())).await;
+        }
+        engine_state.unregister_engine(&session_id);
+    });
+    let text = body.text.clone();
+
+    let (tx, rx) = mpsc::channel::<Bytes>(256);
+    let forward = tx.clone();
+    tokio::spawn(async move {
+        emit(
+            &forward,
+            serde_json::json!({ "type": "session.created", "session": { "id": session_id } }),
+        )
+        .await;
+        emit(
+            &forward,
+            serde_json::json!({
+                "type": "message.created",
+                "message": { "id": Uuid::new_v4(), "role": "user", "content": text }
+            }),
+        )
+        .await;
+        while let Some(event) = engine_rx.recv().await {
+            let value = serde_json::to_value(&event).unwrap_or(serde_json::Value::Null);
+            emit(&forward, value).await;
+        }
+        emit(&forward, serde_json::json!({ "type": "done" })).await;
     });
 
-    let stream_body = StreamBody::new(stream.map(|bytes| {
-        Ok::<Frame<Bytes>, std::convert::Infallible>(Frame::data(bytes))
-    }));
-
+    let stream_body = StreamBody::new(
+        ReceiverStream::new(rx)
+            .map(|bytes| Ok::<Frame<Bytes>, std::convert::Infallible>(Frame::data(bytes))),
+    );
     let boxed: BoxBody = BoxBody::new(stream_body);
 
     Ok(Response::builder()
@@ -97,56 +83,25 @@ pub async fn post(
         .unwrap())
 }
 
-async fn emit(tx: &tokio::sync::mpsc::Sender<Bytes>, value: serde_json::Value) {
+async fn emit(tx: &mpsc::Sender<Bytes>, value: serde_json::Value) {
     let mut bytes = serde_json::to_vec(&value).unwrap_or_default();
     bytes.push(b'\n');
     let _ = tx.send(Bytes::from(bytes)).await;
 }
 
-fn load_history(state: &Arc<AppState>, session_id: Uuid) -> Vec<ChatMessage> {
-    let mut messages = vec![ChatMessage {
-        role: Role::System,
-        content: MessageContent::Text("You are a production-grade AI coding agent.".into()),
-        tool_calls: None,
-        tool_call_id: None,
-    }];
-
-    if let Some(storage) = state.storage() {
-        match agent_sessions::SessionManager::resume(storage, session_id) {
-            Ok(entries) => {
-                for entry in entries {
-                    let role = match entry.get("role").and_then(|r| r.as_str()) {
-                        Some("user") => Role::User,
-                        Some("assistant") => Role::Assistant,
-                        _ => continue,
-                    };
-                    let content = entry.get("content").and_then(|c| c.as_str()).unwrap_or_default();
-                    messages.push(ChatMessage {
-                        role,
-                        content: MessageContent::Text(content.to_string()),
-                        tool_calls: None,
-                        tool_call_id: None,
-                    });
-                }
-            }
-            Err(_) => {}
-        }
-    }
-
-    messages
-}
-
 fn stream_error(message: &str) -> Response<BoxBody> {
     let payload = format!(
         "{}\n{}\n",
-        serde_json::json!({ "type": "session.error", "error": message }),
+        serde_json::json!({ "type": "error", "message": message }),
         serde_json::json!({ "type": "done" })
     );
     Response::builder()
         .status(StatusCode::OK)
         .header(hyper::header::CONTENT_TYPE, "application/x-ndjson")
-        .body(http_body_util::Full::new(Bytes::from(payload))
-            .map_err(|never| match never {})
-            .boxed())
+        .body(
+            http_body_util::Full::new(Bytes::from(payload))
+                .map_err(|never| match never {})
+                .boxed(),
+        )
         .unwrap()
 }

@@ -19,7 +19,9 @@ mod tests {
 
     #[test]
     fn bash_completion() {
-        let mut app = clap::Command::new("agent").version("0.1.0").about("CLI AI Coding Agent");
+        let mut app = clap::Command::new("agent")
+            .version("0.1.0")
+            .about("CLI AI Coding Agent");
         let out = generate_completion("bash", &mut app).unwrap();
         assert!(!out.is_empty());
     }

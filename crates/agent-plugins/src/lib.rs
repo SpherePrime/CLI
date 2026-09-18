@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use agent_events::{AgentEvent, AgentEventPayload, AgentScope, EventBus};
 use agent_tools::ToolRegistry;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -107,11 +107,17 @@ impl PluginManager {
     }
 
     pub fn find(&self, name: &str) -> Option<&dyn Plugin> {
-        self.plugins.iter().find(|p| p.manifest().name == name).map(|p| &**p)
+        self.plugins
+            .iter()
+            .find(|p| p.manifest().name == name)
+            .map(|p| &**p)
     }
 
     pub fn manifest(&self, name: &str) -> Option<&PluginManifest> {
-        self.plugins.iter().find(|p| p.manifest().name == name).map(|p| p.manifest())
+        self.plugins
+            .iter()
+            .find(|p| p.manifest().name == name)
+            .map(|p| p.manifest())
     }
 
     pub fn discover_from(dir: &Path) -> Result<Vec<PathBuf>> {
@@ -190,7 +196,11 @@ mod tests {
     #[tokio::test]
     async fn plugin_lifecycle() {
         let mut pm = PluginManager::new();
-        let p = Box::new(SamplePlugin::new("test-plugin", "0.1.0", PathBuf::from("/tmp"))) as Box<dyn Plugin>;
+        let p = Box::new(SamplePlugin::new(
+            "test-plugin",
+            "0.1.0",
+            PathBuf::from("/tmp"),
+        )) as Box<dyn Plugin>;
         pm.register(p);
         let _ = pm.load_all(&ToolRegistry::new()).await;
         assert_eq!(pm.plugins.len(), 1);

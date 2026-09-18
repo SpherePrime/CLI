@@ -99,7 +99,11 @@ impl SlashCommandPalette {
 
     pub fn execute(&self, input: &str) -> Option<String> {
         let name = input.split_whitespace().next()?.to_string();
-        let _desc = self.commands.iter().find(|c| c.name == name).map(|c| c.description.clone());
+        let _desc = self
+            .commands
+            .iter()
+            .find(|c| c.name == name)
+            .map(|c| c.description.clone());
         Some(name)
     }
 
@@ -140,14 +144,14 @@ pub struct Autocomplete {
 
 impl Autocomplete {
     pub fn new() -> Self {
-        Self { history: Vec::new() }
+        Self {
+            history: Vec::new(),
+        }
     }
 
     pub fn push(&mut self, input: &str) {
-        if !input.is_empty() {
-            if self.history.last().map(|s| s.as_str()) != Some(input) {
-                self.history.push(input.to_string());
-            }
+        if !input.is_empty() && self.history.last().map(|s| s.as_str()) != Some(input) {
+            self.history.push(input.to_string());
         }
     }
 
@@ -155,8 +159,8 @@ impl Autocomplete {
         self.history
             .iter()
             .filter(|s| s.starts_with(prefix))
-            .map(|s| s.clone())
             .take(max)
+            .cloned()
             .collect()
     }
 }

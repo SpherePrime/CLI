@@ -1,10 +1,18 @@
 import { ScrollBoxRenderable } from "@opentui/core"
 import { useRenderer, useKeyboard } from "@opentui/solid"
-import { createSignal, createEffect, onCleanup, For, Show } from "solid-js"
+import { createSignal, createResource, createMemo, createEffect, onCleanup, For, Show } from "solid-js"
 import { Prompt, type PromptRef } from "../component/prompt/index"
 import { useRoute } from "../context/route"
 import { useDialog } from "../context/dialog"
-import { useSession, nextEntryId, resetSession, type ChatEntry } from "../context/session"
+import { modelRevision } from "../context/app"
+import {
+  useSession,
+  nextEntryId,
+  resetSession,
+  loadStoredMessages,
+  toolEntryId,
+  type ChatEntry,
+} from "../context/session"
 import { theme } from "../theme"
 import { EmptyBorder } from "../ui/border"
 import type { AgentClient, SessionMessage } from "../client"
@@ -12,16 +20,17 @@ import type { AgentClient, SessionMessage } from "../client"
 const helpText = [
   "enter — send message",
   "ctrl+p — command palette",
-  "esc — back to home",
+  "esc — back to home / cancel",
   "ctrl+c — exit",
 ].join("\n")
 
 export function Session(props: { client: AgentClient }) {
   const { route, navigate } = useRoute()
-  const { dialog } = useDialog()
+  const { dialog, openPermissionDialog, openInfo } = useDialog()
   const renderer = useRenderer()
   const session = useSession()
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
+  const [info] = createResource(() => (modelRevision(), props.client.info()))
   let scroll: ScrollBoxRenderable
   let promptRef: PromptRef | undefined
 
@@ -34,9 +43,27 @@ export function Session(props: { client: AgentClient }) {
     return current.type === "session" ? current.draft : undefined
   }
 
+  const modelLabel = createMemo(() => {
+    const value = info()
+    if (!value) return ""
+    return `${value.model.model} · ${value.model.provider}`
+  })
+
+  async function loadHistory(id: string) {
+    if (session.entries().length > 0) return
+    try {
+      const detail = await props.client.getSessionDetail(id)
+      if (detail.id !== session.sessionId()) return
+      loadStoredMessages(detail.messages)
+    } catch (error) {
+      session.addEntry({ id: nextEntryId(), role: "error", text: String(error) })
+    }
+  }
+
   createEffect(() => {
     const id = routeSessionId()
     session.setSessionId(id)
+    if (id) void loadHistory(id)
   })
 
   function scrollToBottom() {
@@ -49,11 +76,23 @@ export function Session(props: { client: AgentClient }) {
     scrollToBottom()
   })
 
+  async function cancelRunning() {
+    const id = session.sessionId()
+    if (status() !== "running") return
+    try {
+      await props.client.cancelMessage(id)
+    } catch {}
+  }
+
   useKeyboard((key) => {
     if (dialog().type !== "none") return
     if (key.name === "escape") {
       key.preventDefault()
-      navigate({ type: "home" })
+      if (status() === "running") {
+        void cancelRunning()
+      } else {
+        navigate({ type: "home" })
+      }
     }
   })
 
@@ -82,16 +121,65 @@ export function Session(props: { client: AgentClient }) {
       case "/help":
         appendSystem(helpText)
         return true
+      case "/cancel":
+        await cancelRunning()
+        return true
       case "/models":
-        try {
-          const info = await props.client.info()
-          appendSystem(`model: ${info.model.model} · provider: ${info.model.provider}`)
-        } catch (error) {
-          appendSystem(`failed to load model: ${String(error)}`)
-        }
+        appendSystem(modelLabel() || "loading…")
         return true
       default:
         return false
+    }
+  }
+
+  function handleEvent(assistantId: string, event: SessionMessage) {
+    switch (event.type) {
+      case "session.created":
+        session.setSessionId(event.session.id)
+        break
+      case "text_delta":
+        session.appendEntry(assistantId, event.text)
+        break
+      case "tool_call": {
+        const entryId = toolEntryId(event.id)
+        const args = JSON.stringify(event.args) ?? ""
+        session.addEntry({
+          id: entryId,
+          role: "tool",
+          text: `run ${event.name}(${args.length > 200 ? `${args.slice(0, 200)}…` : args})`,
+        })
+        break
+      }
+      case "tool_result": {
+        const entryId = toolEntryId(event.id)
+        const body = event.ok ? event.content || "(no output)" : (event.error ?? event.content)
+        session.updateEntry(entryId, {
+          role: "tool",
+          text: `→ ${event.name} in ${event.ms}ms${event.ok ? "" : " (failed)"}\n${body}`,
+        })
+        break
+      }
+      case "permission_requested":
+        openPermissionDialog({
+          sessionId: session.sessionId(),
+          id: event.id,
+          tool: event.tool,
+          scope: event.scope,
+          target: event.target,
+          reason: event.reason,
+        })
+        break
+      case "error":
+        session.updateEntry(assistantId, { role: "error", text: event.message })
+        appendSystem(event.message)
+        break
+      case "permission_resolved":
+      case "usage":
+        break
+      case "done":
+        break
+      default:
+        break
     }
   }
 
@@ -107,17 +195,9 @@ export function Session(props: { client: AgentClient }) {
     session.addEntry({ id: assistantId, role: "assistant", text: "" })
 
     try {
-      await props.client.streamMessage(text, session.sessionId(), (event: SessionMessage) => {
-        if (event.type === "session.created" && event.session?.id) {
-          session.setSessionId(event.session.id)
-        } else if (event.type === "message.part.updated" && event.part?.text) {
-          session.appendEntry(assistantId, event.part.text)
-        } else if (event.type === "session.error" && event.error) {
-          session.updateEntry(assistantId, { role: "error", text: event.error })
-        }
-      })
+      await props.client.streamMessage(text, session.sessionId(), (event) => handleEvent(assistantId, event))
     } catch (error) {
-      session.updateEntry(assistantId, { role: "error", text: String(error) })
+      openInfo({ title: "Request failed", body: String(error) })
     }
 
     setStatus("idle")
@@ -126,6 +206,12 @@ export function Session(props: { client: AgentClient }) {
 
   return (
     <box width="100%" flexDirection="column" flexGrow={1} minHeight={0}>
+      <box flexDirection="row" justifyContent="space-between" paddingLeft={2} paddingRight={2} paddingTop={1}>
+        <text fg={theme.textMuted}>{modelLabel()}</text>
+        <text fg={status() === "running" ? theme.primary : theme.textMuted}>
+          {status() === "running" ? "running…" : "idle"}
+        </text>
+      </box>
       <box flexDirection="row" flexGrow={1} minHeight={0}>
         <box flexGrow={1} minHeight={0} paddingBottom={1} paddingLeft={2} paddingRight={2} gap={1}>
           <scrollbox
@@ -172,6 +258,9 @@ function MessageRow(props: { entry: ChatEntry }) {
         </Show>
         <Show when={props.entry.role === "assistant"}>
           <text fg={theme.textMuted}>agent:</text>
+        </Show>
+        <Show when={props.entry.role === "tool"}>
+          <text fg={theme.info}>tool:</text>
         </Show>
         <Show when={props.entry.role === "error"}>
           <text fg={theme.error}>error:</text>

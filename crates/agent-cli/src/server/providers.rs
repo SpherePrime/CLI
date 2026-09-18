@@ -272,7 +272,9 @@ pub async fn connect(
     let _ = agent_config::ConfigLoader::save_global(&cfg);
     *state.config.write().unwrap() = Some(cfg);
 
-    Ok(json_response(&serde_json::json!({ "ok": true, "id": body.id })))
+    Ok(json_response(
+        &serde_json::json!({ "ok": true, "id": body.id }),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -324,7 +326,9 @@ fn provider_meta(
     let entry = catalog.provider(id);
     if let Some(provider) = cfg.providers.get(id) {
         return ProviderMeta {
-            name: entry.map(|value| value.name.clone()).unwrap_or_else(|| id.to_string()),
+            name: entry
+                .map(|value| value.name.clone())
+                .unwrap_or_else(|| id.to_string()),
             kind: provider.kind,
             base_url: provider
                 .base_url
@@ -335,7 +339,9 @@ fn provider_meta(
     }
     if id == current_id {
         return ProviderMeta {
-            name: entry.map(|value| value.name.clone()).unwrap_or_else(|| id.to_string()),
+            name: entry
+                .map(|value| value.name.clone())
+                .unwrap_or_else(|| id.to_string()),
             kind: current.provider,
             base_url: current
                 .base_url
@@ -345,7 +351,9 @@ fn provider_meta(
         };
     }
     ProviderMeta {
-        name: entry.map(|value| value.name.clone()).unwrap_or_else(|| id.to_string()),
+        name: entry
+            .map(|value| value.name.clone())
+            .unwrap_or_else(|| id.to_string()),
         kind: entry
             .map(|value| catalog::provider_kind(value.npm.as_deref(), &value.id))
             .unwrap_or(ProviderKind::OpenAiCompatible),
@@ -357,16 +365,12 @@ fn provider_meta(
 fn provider_id_for_model(model: &ModelConfig, catalog: &Catalog) -> String {
     if let Some(base_url) = &model.base_url {
         if let Some(host) = host_of(base_url) {
-            if let Some(provider) = catalog
-                .providers
-                .iter()
-                .find(|provider| provider.api.as_deref().and_then(host_of).as_deref() == Some(host.as_str()))
-            {
+            if let Some(provider) = catalog.providers.iter().find(|provider| {
+                provider.api.as_deref().and_then(host_of).as_deref() == Some(host.as_str())
+            }) {
                 return provider.id.clone();
             }
-            let stripped = host
-                .trim_start_matches("api.")
-                .trim_start_matches("www.");
+            let stripped = host.trim_start_matches("api.").trim_start_matches("www.");
             if let Some(first) = stripped.split('.').next() {
                 if !first.is_empty() {
                     return first.to_string();
@@ -386,7 +390,7 @@ fn provider_id_for_model(model: &ModelConfig, catalog: &Catalog) -> String {
 fn host_of(url: &str) -> Option<String> {
     let rest = url.split("://").nth(1).unwrap_or(url);
     let authority = rest.split('/').next()?;
-    let host = authority.split('@').last()?.split(':').next()?;
+    let host = authority.split('@').next_back()?.split(':').next()?;
     if host.is_empty() {
         None
     } else {

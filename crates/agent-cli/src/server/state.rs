@@ -1,32 +1,22 @@
-use std::sync::RwLock;
+use std::collections::HashMap;
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, RwLock};
 
 use agent_config::{AgentConfig, ModelConfig};
-use tokio::sync::mpsc;
+use agent_core::EngineApprover;
+use agent_permissions::PermissionDecision;
 
-#[derive(Debug, Clone)]
-pub enum SessionMessage {
-    User(String),
-    Assistant(String),
-    Error(String),
-}
-
-#[derive(Debug, Clone)]
-pub struct SessionChannel {
-    pub session_id: uuid::Uuid,
-    pub tx: mpsc::Sender<serde_json::Value>,
+pub struct EngineHandle {
+    pub cancel: Arc<AtomicBool>,
+    pub approver: Arc<EngineApprover>,
 }
 
 pub struct AppState {
     pub config: RwLock<Option<AgentConfig>>,
     pub model: RwLock<Option<ModelConfig>>,
-    pub sessions: RwLock<SessionRegistry>,
     pub catalog: RwLock<Option<crate::server::catalog::Catalog>>,
     pub storage: Option<agent_storage::Storage>,
-}
-
-#[derive(Debug, Default)]
-pub struct SessionRegistry {
-    pub channels: Vec<SessionChannel>,
+    engines: RwLock<HashMap<uuid::Uuid, EngineHandle>>,
 }
 
 impl AppState {
@@ -34,9 +24,9 @@ impl AppState {
         Ok(Self {
             config: RwLock::new(None),
             model: RwLock::new(None),
-            sessions: RwLock::new(SessionRegistry::default()),
             catalog: RwLock::new(None),
             storage: Some(storage),
+            engines: RwLock::new(HashMap::new()),
         })
     }
 
@@ -63,12 +53,51 @@ impl AppState {
         }
     }
 
-    pub fn subscribe(&self, session_id: uuid::Uuid, tx: mpsc::Sender<serde_json::Value>) {
-        let mut registry = self.sessions.write().unwrap();
-        registry
-            .channels
-            .retain(|channel| !channel.tx.is_closed() || channel.session_id != session_id);
-        registry.channels.push(SessionChannel { session_id, tx });
+    pub fn register_engine(
+        &self,
+        session_id: uuid::Uuid,
+        cancel: Arc<AtomicBool>,
+        approver: Arc<EngineApprover>,
+    ) {
+        self.engines
+            .write()
+            .unwrap()
+            .insert(session_id, EngineHandle { cancel, approver });
+    }
+
+    pub fn unregister_engine(&self, session_id: &uuid::Uuid) {
+        self.engines.write().unwrap().remove(session_id);
+    }
+
+    pub fn cancel_session(&self, session_id: &uuid::Uuid) -> bool {
+        match self.engines.read().unwrap().get(session_id) {
+            Some(handle) => {
+                handle
+                    .cancel
+                    .store(true, std::sync::atomic::Ordering::SeqCst);
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub async fn resolve_permission(
+        &self,
+        session_id: &uuid::Uuid,
+        permission_id: uuid::Uuid,
+        decision: PermissionDecision,
+        remember: bool,
+    ) -> bool {
+        let approver = self
+            .engines
+            .read()
+            .unwrap()
+            .get(session_id)
+            .map(|handle| Arc::clone(&handle.approver));
+        match approver {
+            Some(approver) => approver.resolve(permission_id, decision, remember).await,
+            None => false,
+        }
     }
 }
 

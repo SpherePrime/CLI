@@ -1,9 +1,4 @@
-# Project
-name = "agent-cli"
-version = "0.1.0"
-edition = "2021"
-publish = false
-
+# Project workspace manifest
 [workspace]
 resolver = "2"
 members = [

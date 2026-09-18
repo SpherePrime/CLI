@@ -1,0 +1,101 @@
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Mutex};
+
+use agent_permissions::PermissionDecision;
+use agent_tools::{PermissionApprover, PermissionRequest};
+use async_trait::async_trait;
+use tokio::sync::{mpsc, oneshot};
+use uuid::Uuid;
+
+use crate::engine::event::EngineEvent;
+
+struct Pending {
+    tool: String,
+    sender: oneshot::Sender<PermissionDecision>,
+}
+
+pub struct EngineApprover {
+    tx: mpsc::Sender<EngineEvent>,
+    pending: Mutex<HashMap<Uuid, Pending>>,
+    session_allowed: Mutex<HashSet<String>>,
+    auto_allow: bool,
+}
+
+impl EngineApprover {
+    pub fn new(tx: mpsc::Sender<EngineEvent>, auto_allow: bool) -> Arc<Self> {
+        Arc::new(Self {
+            tx,
+            pending: Mutex::new(HashMap::new()),
+            session_allowed: Mutex::new(HashSet::new()),
+            auto_allow,
+        })
+    }
+
+    pub async fn resolve(&self, id: Uuid, decision: PermissionDecision, remember: bool) -> bool {
+        let Some(pending) = self.pending.lock().unwrap().remove(&id) else {
+            return false;
+        };
+        if remember && decision == PermissionDecision::Allow {
+            self.session_allowed
+                .lock()
+                .unwrap()
+                .insert(pending.tool.clone());
+        }
+        let _ = self
+            .tx
+            .send(EngineEvent::PermissionResolved {
+                id,
+                decision: decision_name(decision).to_string(),
+            })
+            .await;
+        pending.sender.send(decision).is_ok()
+    }
+
+    pub fn pending(&self) -> Vec<Uuid> {
+        self.pending.lock().unwrap().keys().copied().collect()
+    }
+}
+
+#[async_trait]
+impl PermissionApprover for EngineApprover {
+    async fn approve(&self, request: PermissionRequest) -> PermissionDecision {
+        if self.auto_allow {
+            return PermissionDecision::Allow;
+        }
+        if self.session_allowed.lock().unwrap().contains(&request.tool) {
+            return PermissionDecision::Allow;
+        }
+        let id = Uuid::new_v4();
+        let (sender, receiver) = oneshot::channel();
+        self.pending.lock().unwrap().insert(
+            id,
+            Pending {
+                tool: request.tool.clone(),
+                sender,
+            },
+        );
+        let sent = self
+            .tx
+            .send(EngineEvent::PermissionRequested {
+                id,
+                tool: request.tool.clone(),
+                scope: format!("{:?}", request.scope).to_lowercase(),
+                target: request.target.clone(),
+                reason: request.reason.clone(),
+            })
+            .await;
+        if sent.is_err() {
+            self.pending.lock().unwrap().remove(&id);
+            return PermissionDecision::Deny;
+        }
+        receiver.await.unwrap_or(PermissionDecision::Deny)
+    }
+}
+
+pub fn decision_name(decision: PermissionDecision) -> &'static str {
+    match decision {
+        PermissionDecision::Allow => "allow",
+        PermissionDecision::Deny => "deny",
+        PermissionDecision::Ask => "ask",
+    }
+}

@@ -46,7 +46,7 @@ impl CompletionEngine {
                     Some((score, c.name.clone(), c.description.clone()))
                 })
                 .collect();
-            scored.sort_by(|a, b| b.0.cmp(&a.0));
+            scored.sort_by_key(|a| std::cmp::Reverse(a.0));
             self.items = scored
                 .into_iter()
                 .map(|(_, name, desc)| CompletionItem {
@@ -56,7 +56,7 @@ impl CompletionEngine {
                 .collect();
         } else if token.contains('@') {
             self.kind = CompleteKind::File;
-            let query = token.split('@').last().unwrap_or("");
+            let query = token.split('@').next_back().unwrap_or("");
             let mut scored: Vec<(i64, String, String)> = crate::files::file_candidates()
                 .iter()
                 .filter_map(|path| {
@@ -64,7 +64,7 @@ impl CompletionEngine {
                     Some((score, path.clone(), String::new()))
                 })
                 .collect();
-            scored.sort_by(|a, b| b.0.cmp(&a.0));
+            scored.sort_by_key(|a| std::cmp::Reverse(a.0));
             self.items = scored
                 .into_iter()
                 .map(|(_, path, _)| CompletionItem {
@@ -124,7 +124,7 @@ impl Default for CompletionEngine {
 pub fn token_before_cursor(input: &str, cursor: usize) -> &str {
     let cursor = cursor.min(input.len());
     let before = &input[..cursor];
-    match before.rfind(|c: char| c == ' ' || c == '\n' || c == '\t') {
+    match before.rfind([' ', '\n', '\t']) {
         Some(idx) => &input[idx + 1..cursor],
         None => before,
     }
@@ -132,7 +132,7 @@ pub fn token_before_cursor(input: &str, cursor: usize) -> &str {
 
 pub fn replace_token(input: &mut String, cursor: usize, replacement: &str) {
     let cursor = cursor.min(input.len());
-    let start = match input[..cursor].rfind(|c: char| c == ' ' || c == '\n' || c == '\t') {
+    let start = match input[..cursor].rfind([' ', '\n', '\t']) {
         Some(idx) => idx + 1,
         None => 0,
     };

@@ -28,14 +28,12 @@ pub fn render_diff(f: &mut Frame, original: &str, modified: &str, area: Rect) {
     }
 }
 
-pub fn render_message(
-    f: &mut Frame,
-    message: &str,
-    area: Rect,
-    color: Color,
-) {
-    let p = Paragraph::new(Line::from(Span::styled(message, Style::default().fg(color))))
-        .wrap(Wrap { trim: true });
+pub fn render_message(f: &mut Frame, message: &str, area: Rect, color: Color) {
+    let p = Paragraph::new(Line::from(Span::styled(
+        message,
+        Style::default().fg(color),
+    )))
+    .wrap(Wrap { trim: true });
     f.render_widget(p, area);
 }
 

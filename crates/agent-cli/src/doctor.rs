@@ -3,12 +3,12 @@ use agent_storage::Storage;
 pub fn run_doctor(storage: &Storage) -> std::process::ExitCode {
     let mut hard_failures = 0;
 
-    let home = dirs::home_dir();
-    if home.is_none() {
-        eprintln!("✗ cannot determine home directory");
-        hard_failures += 1;
-    } else {
-        println!("✓ home directory: {}", home.unwrap().display());
+    match dirs::home_dir() {
+        Some(home) => println!("✓ home directory: {}", home.display()),
+        None => {
+            eprintln!("✗ cannot determine home directory");
+            hard_failures += 1;
+        }
     }
 
     let cfg_path = storage.root().join("config.toml");
@@ -39,7 +39,9 @@ pub fn run_doctor(storage: &Storage) -> std::process::ExitCode {
 
     let plugins_dir = storage.root().join("plugins");
     if plugins_dir.exists() {
-        let n = std::fs::read_dir(&plugins_dir).map(|d| d.count()).unwrap_or(0);
+        let n = std::fs::read_dir(&plugins_dir)
+            .map(|d| d.count())
+            .unwrap_or(0);
         println!("✓ plugins dir: {} ({n} plugins)", plugins_dir.display());
     } else {
         let _ = std::fs::create_dir_all(&plugins_dir);

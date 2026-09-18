@@ -1,15 +1,26 @@
 import { createSignal } from "solid-js"
+import type { StoredMessage } from "../client"
 
 export type ChatEntry = {
   id: string
-  role: "user" | "assistant" | "error" | "system"
+  role: "user" | "assistant" | "tool" | "error" | "system"
   text: string
 }
 
 let entryId = 0
 
+const toolEntryIds = new Map<string, string>()
+
 export function nextEntryId(): string {
   return `entry-${++entryId}`
+}
+
+export function toolEntryId(toolCallId: string): string {
+  const existing = toolEntryIds.get(toolCallId)
+  if (existing) return existing
+  const id = nextEntryId()
+  toolEntryIds.set(toolCallId, id)
+  return id
 }
 
 const [entries, setEntries] = createSignal<ChatEntry[]>([])
@@ -35,6 +46,17 @@ export function useSession() {
 
 export function resetSession() {
   setEntries([])
+  toolEntryIds.clear()
+}
+
+export function loadStoredMessages(messages: StoredMessage[]) {
+  setEntries(
+    messages.map((message) => {
+      const role = message.role === "tool" ? "tool" : message.role === "system" ? "system" : message.role === "assistant" ? "assistant" : "user"
+      const text = message.content || ""
+      return { id: nextEntryId(), role, text }
+    }),
+  )
 }
 
 export function transcriptText(): string {

@@ -97,7 +97,11 @@ pub struct AgentEventPayload {
 
 impl AgentEventPayload {
     pub fn new(event: AgentEvent) -> Self {
-        Self { event, scope: None, detail: None }
+        Self {
+            event,
+            scope: None,
+            detail: None,
+        }
     }
 
     pub fn with_scope(mut self, scope: AgentScope) -> Self {
@@ -165,7 +169,13 @@ impl EventBus {
 
     pub fn subscribe(&self, name: &str, subscriber: Box<dyn EventSubscriber>) {
         let mut subs = self.subscribers.lock().unwrap();
-        subs.insert(name.to_string(), SubscriberSlot { name: name.to_string(), subscriber });
+        subs.insert(
+            name.to_string(),
+            SubscriberSlot {
+                name: name.to_string(),
+                subscriber,
+            },
+        );
     }
 
     pub fn unsubscribe(&self, name: &str) {
@@ -211,7 +221,9 @@ mod tests {
     #[test]
     fn dispatch_reaches_subscriber() {
         let bus = EventBus::new();
-        let flag = FlagSubscriber { called: AtomicBool::new(false) };
+        let flag = FlagSubscriber {
+            called: AtomicBool::new(false),
+        };
         bus.subscribe("test", Box::new(flag));
         bus.dispatch(AgentEventPayload::new(AgentEvent::AgentStarted));
         assert!(bus.subscriber_names().contains(&"test".to_string()));

@@ -1,5 +1,5 @@
 use agent_config::ModelConfig;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use futures::stream::BoxStream;
 
@@ -16,9 +16,7 @@ pub struct ProviderConfig {
 
 impl ProviderConfig {
     pub fn resolved_api_key(&self) -> Option<String> {
-        self.api_key
-            .clone()
-            .filter(|k| !k.is_empty())
+        self.api_key.clone().filter(|k| !k.is_empty())
     }
 }
 
@@ -32,37 +30,37 @@ pub trait ModelProvider: Send + Sync + 'static {
         request: &ModelRequest,
     ) -> Result<BoxStream<'static, std::result::Result<StreamChunk, ModelError>>>;
 }
- 
+
 pub fn build_from_model_config(mc: &ModelConfig) -> Result<Box<dyn ModelProvider>> {
     let api_key = mc
         .api_key_env
         .as_ref()
         .map(|value| std::env::var(value).unwrap_or_else(|_| value.clone()))
         .filter(|key| !key.is_empty());
-     let pc = ProviderConfig {
-         kind: mc.provider,
-         model: mc.model.clone(),
-         base_url: mc.base_url.clone(),
-         api_key,
-     };
-     match mc.provider {
-         agent_config::ProviderKind::OpenAi => Ok(Box::new(
-             crate::providers::openai::OpenAiProvider::new(pc),
-         )),
-         agent_config::ProviderKind::Anthropic => Ok(Box::new(
-             crate::providers::anthropic::AnthropicProvider::new(pc),
-         )),
-         agent_config::ProviderKind::Google => Ok(Box::new(
-             crate::providers::compat::OpenAiCompatibleProvider::new(pc),
-         )),
-         agent_config::ProviderKind::OpenAiCompatible => Ok(Box::new(
-             crate::providers::compat::OpenAiCompatibleProvider::new(pc),
-         )),
-         agent_config::ProviderKind::Custom => Ok(Box::new(
-             crate::providers::compat::OpenAiCompatibleProvider::new(pc),
-         )),
-         agent_config::ProviderKind::Mock => Ok(Box::new(
-             crate::providers::mock::MockProvider::new(),
-         )),
-     }
- }
+    let pc = ProviderConfig {
+        kind: mc.provider,
+        model: mc.model.clone(),
+        base_url: mc.base_url.clone(),
+        api_key,
+    };
+    match mc.provider {
+        agent_config::ProviderKind::OpenAi => {
+            Ok(Box::new(crate::providers::openai::OpenAiProvider::new(pc)))
+        }
+        agent_config::ProviderKind::Anthropic => Ok(Box::new(
+            crate::providers::anthropic::AnthropicProvider::new(pc),
+        )),
+        agent_config::ProviderKind::Google => {
+            Ok(Box::new(crate::providers::google::GoogleProvider::new(pc)))
+        }
+        agent_config::ProviderKind::OpenAiCompatible => Ok(Box::new(
+            crate::providers::compat::OpenAiCompatibleProvider::new(pc),
+        )),
+        agent_config::ProviderKind::Custom => Ok(Box::new(
+            crate::providers::compat::OpenAiCompatibleProvider::new(pc),
+        )),
+        agent_config::ProviderKind::Mock => {
+            Ok(Box::new(crate::providers::mock::MockProvider::new()))
+        }
+    }
+}

@@ -3,7 +3,6 @@ pub struct StatusBar {
     model: String,
     project: String,
     mode: String,
-    context_used: usize,
 }
 
 impl Default for StatusBar {
@@ -18,7 +17,6 @@ impl StatusBar {
             model: String::new(),
             project: String::new(),
             mode: String::new(),
-            context_used: 0,
         }
     }
 

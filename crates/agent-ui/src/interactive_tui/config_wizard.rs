@@ -1,9 +1,8 @@
-use agent_config::{AgentConfig, ModelConfig, PermissionMode};
+use agent_config::{AgentConfig, PermissionMode};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Input, Select};
 
 use super::super::ui::model_wizard;
-use super::provider_name;
 
 pub fn run_config_wizard(cfg: &AgentConfig) -> AgentConfig {
     let theme = ColorfulTheme::default();
@@ -33,20 +32,17 @@ pub fn run_config_wizard(cfg: &AgentConfig) -> AgentConfig {
         }
         1 => {
             let modes: Vec<String> = vec!["ask".into(), "allow".into(), "deny".into()];
-            match Select::with_theme(&theme)
+            if let Ok(i) = Select::with_theme(&theme)
                 .with_prompt(" permission mode")
                 .items(&modes)
                 .default(0)
                 .interact()
             {
-                Ok(i) => {
-                    out.permissions.mode = match i {
-                        0 => PermissionMode::Ask,
-                        1 => PermissionMode::Allow,
-                        _ => PermissionMode::Deny,
-                    };
-                }
-                Err(_) => {}
+                out.permissions.mode = match i {
+                    0 => PermissionMode::Ask,
+                    1 => PermissionMode::Allow,
+                    _ => PermissionMode::Deny,
+                };
             }
         }
         2 => {
@@ -70,15 +66,12 @@ pub fn run_config_wizard(cfg: &AgentConfig) -> AgentConfig {
                 .default(limits.max_context_messages.to_string())
                 .interact_text()
                 .unwrap_or_default();
-            limits.max_context_messages =
-                t.trim().parse().unwrap_or(limits.max_context_messages);
+            limits.max_context_messages = t.trim().parse().unwrap_or(limits.max_context_messages);
         }
-        3 => {
-            match agent_config::ConfigLoader::save_global(&out) {
-                Ok(p) => println!("\x1b[32m✓ saved to {}\x1b[0m", p.display()),
-                Err(e) => eprintln!("\x1b[31msave failed: {e}\x1b[0m"),
-            }
-        }
+        3 => match agent_config::ConfigLoader::save_global(&out) {
+            Ok(p) => println!("\x1b[32m✓ saved to {}\x1b[0m", p.display()),
+            Err(e) => eprintln!("\x1b[31msave failed: {e}\x1b[0m"),
+        },
         _ => {}
     }
 
