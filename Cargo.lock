@@ -89,6 +89,7 @@ dependencies = [
  "agent-model",
  "agent-permissions",
  "agent-sessions",
+ "agent-skills",
  "agent-storage",
  "agent-tools",
  "anyhow",

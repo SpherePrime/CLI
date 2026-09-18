@@ -9,6 +9,7 @@ use agent_model::{
     StopReason, StreamChunk, Usage,
 };
 use agent_permissions::{PermissionEngine, PermissionScope};
+use agent_skills::{SkillRegistry, SkillScope};
 use agent_storage::{SessionRecord, Storage};
 use agent_tools::{builtin, ToolExecutionContext, ToolRegistry};
 use anyhow::{Context, Result};
@@ -64,10 +65,13 @@ impl AgentEngine {
         let tool_names: Vec<String> = tools.tools.iter().map(|t| t.name.clone()).collect();
         let mut context = ContextManager::new(session_id, config.limits.max_context_messages);
         context.detect_project(&working_dir.to_string_lossy());
-        context.set_user_instructions(&build_system_prompt(
-            &working_dir.to_string_lossy(),
-            &tool_names,
-        ));
+        let skills = Self::load_skills(&config, &working_dir);
+        let mut system = build_system_prompt(&working_dir.to_string_lossy(), &tool_names);
+        let skill_context = skills.context_block();
+        if !skill_context.is_empty() {
+            system = format!("{system}\n\n{skill_context}");
+        }
+        context.set_user_instructions(&system);
         Self {
             session_id,
             config,
@@ -81,6 +85,19 @@ impl AgentEngine {
             session_ready: false,
             cancel: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    fn load_skills(config: &AgentConfig, working_dir: &PathBuf) -> SkillRegistry {
+        let mut skills =
+            SkillRegistry::new().with_project(working_dir.join(".agent").join("skills"));
+        if let Some(storage) = Storage::global().ok() {
+            skills = skills.with_global(storage.root().join("skills"));
+        }
+        let _ = skills.discover_sync();
+        for name in &config.skills_disabled {
+            let _ = skills.disable(name);
+        }
+        skills
     }
 
     pub fn with_storage(mut self, storage: Storage) -> Self {
@@ -525,6 +542,30 @@ mod tests {
         assert!(roles.contains(&"assistant".to_string()));
         assert!(roles.contains(&"tool".to_string()));
         assert_eq!(roles.last().map(|s| s.as_str()), Some("assistant"));
+    }
+
+    #[tokio::test]
+    async fn skill_instructions_are_injected() {
+        let tmp = tempfile::tempdir().unwrap();
+        let skill_dir = tmp.path().join(".agent").join("skills").join("my-skill");
+        std::fs::create_dir_all(&skill_dir).unwrap();
+        std::fs::write(
+            skill_dir.join("SKILL.md"),
+            "---\ntools: read_file\n---\n# My Skill\nAlways greet the user when asked.",
+        )
+        .unwrap();
+        let (tx, _rx) = mpsc::channel(8);
+        let engine = AgentEngine::with_provider(
+            test_config(),
+            tmp.path().to_path_buf(),
+            tx,
+            Box::new(ScriptedProvider {
+                calls: AtomicUsize::new(0),
+            }),
+        );
+        let messages = engine.context.render_for_model();
+        let content = messages[0].content.as_text();
+        assert!(content.contains("Always greet the user"));
     }
 
     #[tokio::test]

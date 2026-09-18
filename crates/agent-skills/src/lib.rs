@@ -65,7 +65,24 @@ impl SkillRegistry {
         Ok(found)
     }
 
+    pub fn discover_sync(&mut self) -> Result<usize> {
+        let global = self.global_dir.clone();
+        let project = self.project_dir.clone();
+        let mut found = 0;
+        if let Some(g) = global {
+            found += self.scan_dir_sync(&g, SkillScope::Global)?;
+        }
+        if let Some(p) = project {
+            found += self.scan_dir_sync(&p, SkillScope::Project)?;
+        }
+        Ok(found)
+    }
+
     async fn scan_dir(&mut self, root: &Path, scope: SkillScope) -> Result<usize> {
+        self.scan_dir_sync(root, scope)
+    }
+
+    fn scan_dir_sync(&mut self, root: &Path, scope: SkillScope) -> Result<usize> {
         let mut found = 0;
         for entry in walkdir::WalkDir::new(root).into_iter().flatten() {
             let p = entry.path();
