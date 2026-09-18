@@ -29,8 +29,12 @@ fn workdir_key(working_dir: &Path) -> String {
     format!("{:016x}", hasher.finish())
 }
 
+fn snapshot_dir_at(root: &Path, working_dir: &Path) -> PathBuf {
+    root.join(workdir_key(working_dir))
+}
+
 fn snapshot_dir(working_dir: &Path) -> PathBuf {
-    root().join(workdir_key(working_dir))
+    snapshot_dir_at(&root(), working_dir)
 }
 
 fn safe_file_name(path: &Path) -> String {
@@ -52,6 +56,10 @@ fn safe_file_name(path: &Path) -> String {
 }
 
 pub fn take_snapshot(working_dir: &Path, path: &Path) -> Result<Option<String>> {
+    take_snapshot_at(&root(), working_dir, path)
+}
+
+pub fn take_snapshot_at(root: &Path, working_dir: &Path, path: &Path) -> Result<Option<String>> {
     if !path.exists() || !path.is_file() {
         return Ok(None);
     }
@@ -60,7 +68,7 @@ pub fn take_snapshot(working_dir: &Path, path: &Path) -> Result<Option<String>> 
     } else {
         working_dir.join(path)
     };
-    let dir = snapshot_dir(working_dir);
+    let dir = snapshot_dir_at(root, working_dir);
     std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
     let taken_at = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -101,11 +109,19 @@ fn list(dir: &Path) -> Result<Vec<(PathBuf, Snapshot)>> {
 }
 
 pub fn latest_snapshot(working_dir: &Path) -> Result<Option<(PathBuf, Snapshot)>> {
-    Ok(list(&snapshot_dir(working_dir))?.pop())
+    latest_snapshot_at(&root(), working_dir)
+}
+
+pub fn latest_snapshot_at(root: &Path, working_dir: &Path) -> Result<Option<(PathBuf, Snapshot)>> {
+    Ok(list(&snapshot_dir_at(root, working_dir))?.pop())
 }
 
 pub fn restore_latest(working_dir: &Path) -> Result<Option<String>> {
-    let Some((_, snapshot)) = latest_snapshot(working_dir)? else {
+    restore_latest_at(&root(), working_dir)
+}
+
+pub fn restore_latest_at(root: &Path, working_dir: &Path) -> Result<Option<String>> {
+    let Some((_, snapshot)) = latest_snapshot_at(root, working_dir)? else {
         return Ok(None);
     };
     let target = PathBuf::from(&snapshot.path);
@@ -113,12 +129,12 @@ pub fn restore_latest(working_dir: &Path) -> Result<Option<String>> {
     std::fs::create_dir_all(parent).with_context(|| format!("creating {}", parent.display()))?;
     std::fs::write(&target, &snapshot.content)
         .with_context(|| format!("writing {}", target.display()))?;
-    remove_snapshot(working_dir, &snapshot.path)?;
+    remove_snapshot_at(root, working_dir, &snapshot.path)?;
     Ok(Some(target.to_string_lossy().to_string()))
 }
 
-fn remove_snapshot(working_dir: &Path, path: &str) -> Result<()> {
-    let dir = snapshot_dir(working_dir);
+fn remove_snapshot_at(root: &Path, working_dir: &Path, path: &str) -> Result<()> {
+    let dir = snapshot_dir_at(root, working_dir);
     let mut paths: Vec<PathBuf> = std::fs::read_dir(&dir)?
         .flatten()
         .map(|entry| entry.path())
@@ -153,37 +169,29 @@ mod tests {
     #[test]
     fn snapshot_and_restore_round_trip() {
         let tmp = tempfile::tempdir().unwrap();
-        std::env::set_var("AGENT_SNAPSHOT_ROOT", tmp.path().join("undo"));
+        let root = tmp.path().join("undo");
         let dir = tmp.path().join("project");
         std::fs::create_dir_all(&dir).unwrap();
         let file = dir.join("notes.txt");
         std::fs::write(&file, "v1 content").unwrap();
 
-        take_snapshot(&dir, &file).unwrap();
+        take_snapshot_at(&root, &dir, &file).unwrap();
         std::fs::write(&file, "v2 content").unwrap();
 
-        let restored = restore_latest(&dir).unwrap().unwrap();
+        let restored = restore_latest_at(&root, &dir).unwrap().unwrap();
         assert_eq!(restored, file.to_string_lossy().to_string());
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "v1 content");
-        assert!(latest_snapshot(&dir).unwrap().is_none());
+        assert!(latest_snapshot_at(&root, &dir).unwrap().is_none());
     }
 
     #[test]
-    fn snapshot_skips_missing_files() {
+    fn snapshot_skips_missing_files_and_empty_restores() {
         let tmp = tempfile::tempdir().unwrap();
-        std::env::set_var("AGENT_SNAPSHOT_ROOT", tmp.path().join("undo"));
+        let root = tmp.path().join("undo");
         let dir = tmp.path().join("project");
         std::fs::create_dir_all(&dir).unwrap();
         let missing = dir.join("nope.txt");
-        assert!(take_snapshot(&dir, &missing).unwrap().is_none());
-    }
-
-    #[test]
-    fn restore_without_snapshots_returns_none() {
-        let tmp = tempfile::tempdir().unwrap();
-        std::env::set_var("AGENT_SNAPSHOT_ROOT", tmp.path().join("undo"));
-        let dir = tmp.path().join("project");
-        std::fs::create_dir_all(&dir).unwrap();
-        assert!(restore_latest(&dir).unwrap().is_none());
+        assert!(take_snapshot_at(&root, &dir, &missing).unwrap().is_none());
+        assert!(restore_latest_at(&root, &dir).unwrap().is_none());
     }
 }
