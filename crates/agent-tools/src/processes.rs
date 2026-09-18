@@ -235,6 +235,7 @@ fn kill_child(pid: u32, child: &mut Child) {
         .status();
     let _ = child.kill();
     let _ = child.wait();
+    std::thread::sleep(Duration::from_millis(250));
     let _ = Command::new("pkill")
         .arg("-KILL")
         .arg("-P")
