@@ -33,13 +33,9 @@ pub async fn get(
         Ok(record) => match record
             .metadata
             .get("perms_mode")
-            .and_then(|value| value.as_str())
+            .and_then(|value| serde_json::from_value::<PermissionMode>(value.clone()).ok())
         {
-            Some(name) => serde_json::from_str::<PermissionMode>(name)
-                .ok()
-                .map(permission_mode_name)
-                .map(str::to_string)
-                .unwrap_or_else(default_mode),
+            Some(mode) => permission_mode_name(mode).to_string(),
             None => default_mode(),
         },
         Err(_) => "ask".to_string(),
@@ -104,4 +100,48 @@ fn mode_name(mode: PermissionMode) -> &'static str {
 #[derive(serde::Deserialize)]
 struct ModeBody {
     mode: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use agent_storage::Storage;
+    use http_body_util::BodyExt;
+
+    fn stored_mode(mode: &str) -> String {
+        let tmp = tempfile::tempdir().unwrap();
+        let storage = Storage::new(tmp.path().to_path_buf());
+        let id = Uuid::new_v4();
+        let state = AppState::new(storage.clone(), tmp.path().to_path_buf(), None).unwrap();
+        let mut record = agent_storage::SessionRecord::new(None, None);
+        record.id = id;
+        let _ = storage.write_session(&record, &[]);
+
+        let mode = parse_mode(mode).expect("valid mode");
+        if let Ok(mut record) = storage.read_session(&id) {
+            record.metadata["perms_mode"] = serde_json::Value::String(mode_name(mode).into());
+            record.touch();
+            let _ = storage.replace_session_meta(&record);
+        }
+        let _ = state.set_permission_mode(&id, mode);
+
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let response = runtime.block_on(get(id, Arc::new(state))).unwrap();
+        runtime
+            .block_on(response.into_body().collect())
+            .ok()
+            .and_then(|collected| {
+                serde_json::from_slice::<serde_json::Value>(&collected.to_bytes()).ok()
+            })
+            .and_then(|value| value.get("mode").and_then(|m| m.as_str()).map(String::from))
+            .expect("mode from response")
+    }
+
+    #[test]
+    fn permission_mode_round_trip_persists() {
+        assert_eq!(stored_mode("ask"), "ask");
+        assert_eq!(stored_mode("auto_edit"), "auto_edit");
+        assert_eq!(stored_mode("full_access"), "full_access");
+        assert_eq!(stored_mode("deny"), "deny");
+    }
 }
