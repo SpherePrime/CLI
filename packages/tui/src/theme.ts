@@ -17,6 +17,9 @@ export const theme = {
   border: RGBA.fromHex("#484848"),
   borderActive: RGBA.fromHex("#606060"),
   borderSubtle: RGBA.fromHex("#3c3c3c"),
+  dim: RGBA.fromHex("#4d4d4d"),
+  activeBg: RGBA.fromHex("#2a2a2a"),
+  activeBorder: RGBA.fromHex("#fab283"),
 } as const;
 
 export type Theme = typeof theme;

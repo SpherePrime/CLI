@@ -15,4 +15,12 @@ describe("contentLayout", () => {
     expect(contentLayout(4)).toEqual({ maxContent: 0, sidePad: 2 })
     expect(contentLayout(2)).toEqual({ maxContent: 0, sidePad: 2 })
   })
+
+  test("80-col terminal gets full width with min padding", () => {
+    expect(contentLayout(80)).toEqual({ maxContent: 76, sidePad: 2 })
+  })
+
+  test("120-col terminal is at the content cap boundary", () => {
+    expect(contentLayout(120)).toEqual({ maxContent: 116, sidePad: 2 })
+  })
 })

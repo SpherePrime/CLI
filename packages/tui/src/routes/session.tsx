@@ -45,10 +45,6 @@ export function Session(props: { client: AgentClient }) {
   const renderer = useRenderer()
   const session = useSession()
   const dimensions = useTerminalDimensions()
-  const sidebar = createMemo(() => {
-    const { sidePad } = contentLayout(dimensions().width ?? 80)
-    return { left: sidePad, right: sidePad }
-  })
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
   const [loading, setLoading] = createSignal(false)
   const [loadError, setLoadError] = createSignal<string | undefined>(undefined)
@@ -56,6 +52,11 @@ export function Session(props: { client: AgentClient }) {
   const [newUpdates, setNewUpdates] = createSignal(0)
   let scroll: ScrollBoxRenderable
   let lastEntryCount = 0
+
+  const sidebar = createMemo(() => {
+    const layout = contentLayout(dimensions().width ?? 80)
+    return { left: layout.sidePad, right: layout.sidePad, maxContent: layout.maxContent }
+  })
 
   const routeSessionId = () => {
     const current = route()
@@ -332,6 +333,8 @@ export function Session(props: { client: AgentClient }) {
     )
   }
 
+  const [focusIndex, setFocusIndex] = createSignal(-1)
+
   useKeyboard((key) => {
     if (dialog().type !== "none") return
     if (key.name === "escape") {
@@ -346,12 +349,47 @@ export function Session(props: { client: AgentClient }) {
       key.preventDefault()
       openPermissionSwitcher(props.client)
     }
+    if (key.name === "arrowdown") {
+      key.preventDefault()
+      const entries = session.entries()
+      setFocusIndex((prev) => Math.min(entries.length - 1, prev + 1))
+    }
+    if (key.name === "arrowup") {
+      key.preventDefault()
+      setFocusIndex((prev) => Math.max(-1, prev - 1))
+    }
+    if (key.name === "enter" && focusIndex() >= 0) {
+      const entries = session.entries()
+      const entry = entries[focusIndex()]
+      if (entry?.tool) toggleTool(entry.id)
+      else if (entry?.reasoning) toggleReasoning(entry.id)
+    }
+  })
+
+  const sessionIdShort = createMemo(() => {
+    const id = session.sessionId()
+    if (!id) return undefined
+    return id.length > 8 ? `${id.slice(0, 6)}…` : id
   })
 
   return (
     <box width="100%" flexDirection="column" flexGrow={1} minHeight={0}>
-      <box flexDirection="row" justifyContent="space-between" paddingLeft={sidebar().left} paddingRight={sidebar().right} paddingTop={1}>
-        <text fg={theme.text}>{title() ?? modelLabelMemo()}</text>
+      <box
+        flexDirection="row"
+        justifyContent="space-between"
+        paddingLeft={sidebar().left}
+        paddingRight={sidebar().right}
+        paddingTop={1}
+        paddingBottom={1}
+        border={["bottom"]}
+        borderColor={theme.borderSubtle}
+      >
+        <box flexDirection="row" alignItems="center" gap={2} flexGrow={1} overflow="hidden">
+          <Show when={sessionIdShort()}>
+            <text fg={theme.dim}>{sessionIdShort()}</text>
+          </Show>
+          <text fg={theme.text}>{title() ?? modelLabelMemo()}</text>
+        </box>
         <box flexDirection="row" alignItems="center" gap={2}>
           <Show when={status() === "running"}>
             <box flexDirection="row" gap={1}>
@@ -359,83 +397,69 @@ export function Session(props: { client: AgentClient }) {
               <text fg={theme.textMuted}>working</text>
             </box>
           </Show>
-          <box
-          backgroundColor={session.permissionMode() === "full_access" ? theme.warning : undefined}
-        >
-          <text
-            fg={
-              session.permissionMode() === "full_access"
-                ? theme.background
-                : permissionColor(session.permissionMode())
-            }
-          >
-            {permissionBadge(session.permissionMode(), status() === "running")}
-          </text>
-        </box>
           <Show when={gitBranchMemo()}>
-            <text fg={theme.textMuted}>{gitBranchMemo()}</text>
+            <text fg={theme.dim}>{gitBranchMemo()}</text>
           </Show>
           <text fg={theme.textMuted}>{workspaceNameMemo()}</text>
         </box>
       </box>
+      <box border={["bottom"]} borderColor={theme.borderSubtle}>
+        <text fg={theme.dim}> </text>
+      </box>
       <box flexDirection="row" flexGrow={1} minHeight={0}>
         <box
-          flexDirection="row"
+          flexDirection="column"
           flexGrow={1}
           minHeight={0}
           paddingLeft={sidebar().left}
           paddingRight={sidebar().right}
           paddingTop={1}
           gap={1}
+          width={Math.min(sidebar().maxContent + sidebar().left + sidebar().right, 9999)}
         >
-          <box flexShrink={0} width={0} />
-          <box flexGrow={1} minHeight={0} flexDirection="column" gap={1}>
-            <scrollbox
-              ref={(r: ScrollBoxRenderable) => (scroll = r)}
-              flexGrow={1}
-              minHeight={0}
-              stickyScroll
-              stickyStart="bottom"
+          <scrollbox
+            ref={(r: ScrollBoxRenderable) => (scroll = r)}
+            flexGrow={1}
+            minHeight={0}
+            stickyScroll
+            stickyStart="bottom"
+          >
+            <Show
+              when={session.entries().length === 0}
+              fallback={
+                <For each={session.entries()}>
+                  {(entry, index) => (
+                    <MessageRow
+                      entry={entry}
+                      onToggleReasoning={toggleReasoning}
+                      onToggleTool={toggleTool}
+                      focused={index() === focusIndex()}
+                    />
+                  )}
+                </For>
+              }
             >
-              <Show
-                when={session.entries().length === 0}
-                fallback={
-                  <For each={session.entries()}>
-                    {(entry) => (
-                      <MessageRow
-                        entry={entry}
-                        onToggleReasoning={toggleReasoning}
-                        onToggleTool={toggleTool}
-                      />
-                    )}
-                  </For>
-                }
-              >
-                <Show
-                  when={!loading()}
-                  fallback={
-                    <box paddingLeft={2} paddingTop={1}>
-                      <text fg={theme.textMuted}>Loading session…</text>
-                    </box>
-                  }
-                >
-                  <Show
-                    when={!loadError()}
-                    fallback={
-                      <box paddingLeft={2} paddingTop={1} flexDirection="column" gap={1}>
-                        <text fg={theme.error}>{loadError()}</text>
-                        <text fg={theme.textMuted}>Press ctrl+p for commands or esc to go back.</text>
-                      </box>
-                    }
-                  >
-                    <box paddingLeft={2} paddingTop={1} flexDirection="column" gap={1}>
-                      <text fg={theme.text}>Ask anything, or press ctrl+p for commands.</text>
-                      <text fg={theme.textMuted}>esc back · f2 permission mode · ctrl+c exit</text>
-                    </box>
-                  </Show>
-                </Show>
+              <Show when={loading()}>
+                <box paddingLeft={2} paddingTop={2} flexDirection="column" gap={1}>
+                  <Spinner />
+                  <text fg={theme.textMuted}>Loading session…</text>
+                </box>
               </Show>
-            </scrollbox>
+              <Show when={!loading() && loadError()}>
+                <box paddingLeft={2} paddingTop={2} flexDirection="column" gap={1}>
+                  <text fg={theme.error}>{loadError()}</text>
+                  <text fg={theme.dim}>Press esc to go back</text>
+                </box>
+              </Show>
+              <Show when={!loading() && !loadError()}>
+                <box paddingLeft={2} paddingTop={2} flexDirection="column" gap={1}>
+                  <text fg={theme.primary}>Ready</text>
+                  <text fg={theme.textMuted}>What do you want to build or change?</text>
+                  <text fg={theme.dim}>try: "inspect this project" · "explain the auth flow" · "add a failing test"</text>
+                  <text fg={theme.dim}>ctrl+p commands · f2 permission · esc back · ctrl+c exit</text>
+                </box>
+              </Show>
+            </Show>
             <Show when={newUpdates() > 0}>
               <box flexDirection="row" flexShrink={0} justifyContent="flex-end">
                 <box
@@ -448,8 +472,7 @@ export function Session(props: { client: AgentClient }) {
                 </box>
               </box>
             </Show>
-          </box>
-          <box flexShrink={0} width={0} />
+          </scrollbox>
         </box>
       </box>
       <PlanPanel steps={session.plan()} />
