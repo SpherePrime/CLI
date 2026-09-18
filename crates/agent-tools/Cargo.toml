@@ -26,3 +26,4 @@ chrono.workspace = true
 regex.workspace = true
 walkdir.workspace = true
 glob.workspace = true
+reqwest.workspace = true

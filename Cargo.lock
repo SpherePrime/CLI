@@ -383,6 +383,7 @@ dependencies = [
  "futures",
  "glob",
  "regex",
+ "reqwest",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
