@@ -937,6 +937,17 @@ fn tool_activity(call: &agent_model::ToolCall) -> String {
             format!("Searching {query}")
         }
         "ask_user" => "Asking you…".into(),
+        "view_image" => file
+            .map(|f| format!("Viewing {f}"))
+            .unwrap_or_else(|| "Viewing image…".into()),
+        "http_fetch" | "fetch" => {
+            let url = args.get("url").and_then(Value::as_str).unwrap_or_default();
+            format!("Fetching {url}")
+        }
+        "lsp" => "Analyzing code…".into(),
+        "process" => "Managing processes…".into(),
+        "dependency" => "Checking dependencies…".into(),
+        "update_plan" => "Updating plan…".into(),
         _ => format!("Preparing {name}"),
     }
 }

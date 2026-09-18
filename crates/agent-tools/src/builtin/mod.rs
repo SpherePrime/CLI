@@ -1,5 +1,6 @@
 pub mod fs;
 pub mod git;
+pub mod inspect;
 pub mod paths;
 pub mod terminal;
 
@@ -15,6 +16,8 @@ pub fn register_builtin(registry: ToolRegistry) -> ToolRegistry {
         .register(fs::list_directory_tool())
         .register(fs::glob_tool())
         .register(fs::search_tool())
+        .register(inspect::read_many_files_tool())
+        .register(inspect::view_image_tool())
         .register(terminal::shell_tool())
         .register(git::git_tool())
 }
