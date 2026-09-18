@@ -23,6 +23,9 @@ pub async fn post(
     };
 
     let session_id = body.session_id.unwrap_or_else(Uuid::new_v4);
+    if state.is_session_busy(&session_id) {
+        return Ok(stream_error("a turn is already running for this session"));
+    }
     let config = state.config.read().unwrap().clone().unwrap_or_default();
     let workspace = state.workspace.clone();
 
@@ -69,6 +72,7 @@ pub async fn post(
     let (tx, rx) = mpsc::channel::<Bytes>(256);
     let forward = tx.clone();
     let forward_state = state.clone();
+    let disconnect_state = state.clone();
     let title_session_id = session_id;
     let first_user_text = text.clone();
     let title_text = text.clone();
@@ -97,6 +101,7 @@ pub async fn post(
         let mut title_rx = title_rx;
         let mut title_emitted = false;
         let mut engine_done = false;
+        let mut disconnected = false;
         while !engine_done {
             tokio::select! {
                 maybe_event = engine_rx.recv(), if !engine_done => {
@@ -121,7 +126,15 @@ pub async fn post(
                         Err(_) => title_emitted = true,
                     }
                 }
+                _ = forward.closed(), if !disconnected => {
+                    disconnect_state.cancel_session(&session_id);
+                    disconnected = true;
+                    engine_done = true;
+                }
             }
+        }
+        if disconnected {
+            return;
         }
         if !title_emitted {
             if let Ok(Ok(title)) =
@@ -270,6 +283,34 @@ mod tests {
             }),
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn busy_guard_tracks_registered_engines() {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let tmp = tempfile::tempdir().unwrap();
+            let storage = agent_storage::Storage::new(tmp.path().to_path_buf());
+            let state = Arc::new(AppState::new(storage, tmp.path().to_path_buf(), None).unwrap());
+            let session_id = Uuid::new_v4();
+            assert!(!state.is_session_busy(&session_id));
+
+            let (tx, _rx) = mpsc::channel::<EngineEvent>(8);
+            let engine =
+                AgentEngine::new(mock_config(), tmp.path().to_path_buf(), tx.clone()).unwrap();
+            state.register_engine(
+                session_id,
+                engine.cancel_handle(),
+                engine.approver.clone(),
+                engine.permission_engine(),
+                tx,
+                engine.clock().clone(),
+            );
+            assert!(state.is_session_busy(&session_id));
+
+            state.unregister_engine(&session_id);
+            assert!(!state.is_session_busy(&session_id));
+        });
     }
 
     #[test]

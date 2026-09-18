@@ -91,6 +91,10 @@ impl AppState {
         self.engines.write().unwrap().remove(session_id);
     }
 
+    pub fn is_session_busy(&self, session_id: &uuid::Uuid) -> bool {
+        self.engines.read().unwrap().contains_key(session_id)
+    }
+
     pub fn cancel_session(&self, session_id: &uuid::Uuid) -> bool {
         match self.engines.read().unwrap().get(session_id) {
             Some(handle) => {
