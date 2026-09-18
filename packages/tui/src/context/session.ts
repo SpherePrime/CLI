@@ -51,12 +51,15 @@ export function resetSession() {
   setPermissionApplied(false)
 }
 
-export function loadStoredMessages(messages: StoredMessage[]) {
-  const entries: ChatEntry[] = messages.map((message) => {
+export function entriesFromMessages(messages: StoredMessage[], entryIdFactory: () => string = nextEntryId): ChatEntry[] {
+  return messages.map((message) => {
     const role =
       message.role === "tool" ? "tool" : message.role === "system" ? "system" : message.role === "assistant" ? "assistant" : "user"
     const text = message.content || ""
-    return { id: nextEntryId(), role, text: text as string }
+    return { id: entryIdFactory(), role, text: text as string }
   })
-  setTimeline((previous) => ({ ...previous, entries }))
+}
+
+export function loadStoredMessages(messages: StoredMessage[]) {
+  setTimeline((previous) => ({ ...previous, entries: entriesFromMessages(messages) }))
 }

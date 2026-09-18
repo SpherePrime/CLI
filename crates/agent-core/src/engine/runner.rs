@@ -1791,6 +1791,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn full_access_mode_runs_write_tools_without_permission_requests() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (tx, mut rx) = mpsc::channel(256);
+        let mut config = test_config();
+        config.mode = Some(AgentMode::Interactive);
+        config.permissions.mode = PermissionMode::Allow;
+        let mut engine = AgentEngine::with_provider(
+            config,
+            tmp.path().to_path_buf(),
+            tx.clone(),
+            Box::new(StepProvider::new(vec![
+                vec![done_response(
+                    "",
+                    vec![ToolCall {
+                        id: "call_full".into(),
+                        name: "write_file".into(),
+                        args: serde_json::json!({ "path": "out.txt", "content": "saved" }),
+                    }],
+                )],
+                vec![done_response("done", vec![])],
+            ])),
+        );
+        engine.run("save out.txt", &tx).await.unwrap();
+        drop(tx);
+
+        let mut any_permission_request = false;
+        let mut saw_ok_result = false;
+        while let Ok(event) = rx.try_recv() {
+            if matches!(event, EngineEvent::PermissionRequested { .. }) {
+                any_permission_request = true;
+            }
+            if matches!(
+                event,
+                EngineEvent::ToolResult { id, ok: true, .. } if id == "call_full"
+            ) {
+                saw_ok_result = true;
+            }
+        }
+        assert!(
+            !any_permission_request,
+            "full access mode must not ask for permission"
+        );
+        assert!(saw_ok_result, "write_file must succeed in full access mode");
+        assert_eq!(
+            std::fs::read_to_string(tmp.path().join("out.txt")).unwrap(),
+            "saved"
+        );
+    }
+
+    #[tokio::test]
     async fn turn_events_are_persisted_to_event_log() {
         let tmp = tempfile::tempdir().unwrap();
         let storage = Storage::new(tmp.path().join(".agent"));

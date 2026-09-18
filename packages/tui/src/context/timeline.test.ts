@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
-import type { EngineEvent } from "../client"
+import type { EngineEvent, StoredMessage } from "../client"
 import { reduceEvent, timelineFromEvents, type ChatEntry } from "./timeline"
+import { entriesFromMessages } from "./session"
 
 const meta = (sequence: number, itemId = `item-${sequence}`) => ({
   protocol: 2,
@@ -322,5 +323,28 @@ describe("timeline reducer", () => {
     const finalIdx = first.entries.findIndex((entry) => entry.role === "assistant" && entry.text === "All set now")
     expect(toolIdx).toBeGreaterThanOrEqual(0)
     expect(finalIdx).toBeGreaterThan(toolIdx)
+  })
+
+  test("old sessions without an event log rebuild entries from stored messages", () => {
+    const messages: StoredMessage[] = [
+      { id: "m1", role: "user", content: "hello" },
+      { id: "m2", role: "assistant", content: "hi there" },
+      { id: "m3", role: "tool", content: "ran" },
+      { id: "m4", role: "system", content: "mode: plan" },
+    ]
+    const entries = entriesFromMessages(messages, () => "entry-x")
+    expect(entries.map((entry) => [entry.role, entry.text])).toEqual([
+      ["user", "hello"],
+      ["assistant", "hi there"],
+      ["tool", "ran"],
+      ["system", "mode: plan"],
+    ])
+    expect(entries.every((entry) => entry.id === "entry-x")).toBe(true)
+  })
+
+  test("old sessions collapse empty stored messages into placeholder text", () => {
+    const entries = entriesFromMessages([{ id: "m1", role: "assistant" }], () => "entry-y")
+    expect(entries).toHaveLength(1)
+    expect(entries.at(0)?.text).toBe("")
   })
 })

@@ -20,6 +20,7 @@ import { theme } from "../theme"
 import { Spinner } from "../component/spinner"
 import { MessageRow } from "../component/message-row"
 import { PlanPanel } from "../component/plan-panel"
+import { contentLayout } from "../util/content-layout"
 import type { AgentClient, EngineEvent, PermissionMode } from "../client"
 
 function permissionBadge(mode: PermissionMode | undefined, running: boolean): string {
@@ -45,9 +46,7 @@ export function Session(props: { client: AgentClient }) {
   const session = useSession()
   const dimensions = useTerminalDimensions()
   const sidebar = createMemo(() => {
-    const width = dimensions().width ?? 80
-    const maxContent = Math.min(width - 4, 120)
-    const sidePad = Math.max(2, Math.floor((width - maxContent) / 2))
+    const { sidePad } = contentLayout(dimensions().width ?? 80)
     return { left: sidePad, right: sidePad }
   })
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
