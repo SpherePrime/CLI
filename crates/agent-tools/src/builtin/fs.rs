@@ -8,7 +8,7 @@ use agent_filesystem::snapshot;
 use agent_filesystem::{find_files, list_directory, read_file, write_file, FileEdit};
 
 use crate::builtin::paths::{display, resolve_path, truncate};
-use crate::executor::{ToolExecutionContext, ToolExecutor, ToolOutput};
+use crate::executor::{FileChange, ToolExecutionContext, ToolExecutor, ToolOutput};
 
 const MAX_OUTPUT: usize = 262_144;
 const MAX_READ_LINES: usize = 2000;
@@ -101,15 +101,28 @@ impl ToolExecutor for WriteFileTool {
             .get("content")
             .and_then(|v| v.as_str())
             .context("content is required")?;
-        if path.exists() {
+        let existed = path.exists();
+        if existed {
             let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
         }
         write_file(&path, content).await?;
+        let change = FileChange {
+            path: display(&path),
+            change: if existed {
+                "modified".into()
+            } else {
+                "created".into()
+            },
+            diff: None,
+            additions: Some(content.lines().count()),
+            deletions: None,
+        };
         Ok(ToolOutput::success(format!(
             "wrote {} ({} bytes)",
             display(&path),
             content.len()
-        )))
+        ))
+        .file_change(change))
     }
 }
 
@@ -153,7 +166,14 @@ impl ToolExecutor for EditFileTool {
         let edit = FileEdit::search_replace(&path, old, new);
         let updated = edit.apply(None).await?;
         let diff = edit.diff(&original, &updated);
-        Ok(ToolOutput::success(truncate(&diff, MAX_OUTPUT)))
+        let change = FileChange {
+            path: display(&path),
+            change: "edit".into(),
+            diff: Some(diff.clone()),
+            additions: None,
+            deletions: None,
+        };
+        Ok(ToolOutput::success(truncate(&diff, MAX_OUTPUT)).file_change(change))
     }
 }
 
@@ -193,7 +213,14 @@ impl ToolExecutor for PatchFileTool {
         let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
         let edit = FileEdit::patch(&path, patch);
         edit.apply(None).await?;
-        Ok(ToolOutput::success(format!("patched {}", display(&path))))
+        let change = FileChange {
+            path: display(&path),
+            change: "patch".into(),
+            diff: None,
+            additions: None,
+            deletions: None,
+        };
+        Ok(ToolOutput::success(format!("patched {}", display(&path))).file_change(change))
     }
 }
 
@@ -240,7 +267,14 @@ impl ToolExecutor for DeletePathTool {
             let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
             tokio::fs::remove_file(&path).await?;
         }
-        Ok(ToolOutput::success(format!("deleted {}", display(&path))))
+        let change = FileChange {
+            path: display(&path),
+            change: "delete".into(),
+            diff: None,
+            additions: None,
+            deletions: None,
+        };
+        Ok(ToolOutput::success(format!("deleted {}", display(&path))).file_change(change))
     }
 }
 
@@ -431,5 +465,59 @@ pub fn search_tool() -> crate::ToolDefinition {
         executor: std::sync::Arc::new(SearchTool),
         permissions: agent_permissions::PermissionScope::Read,
         timeout_secs: 60,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use agent_config::PermissionsConfig;
+    use agent_permissions::PermissionEngine;
+
+    fn test_root() -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("agent-fs-test-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn ctx(root: &Path) -> ToolExecutionContext {
+        ToolExecutionContext::new(
+            uuid::Uuid::new_v4(),
+            root.to_path_buf(),
+            PermissionEngine::new(PermissionsConfig::default()),
+        )
+    }
+
+    #[tokio::test]
+    async fn write_file_reports_file_change() {
+        let tmp = test_root();
+        let output = WriteFileTool
+            .execute(
+                json!({ "path": "a.txt", "content": "line1\nline2" }),
+                &ctx(&tmp),
+            )
+            .await
+            .unwrap();
+        assert_eq!(output.file_changes.len(), 1);
+        let change = &output.file_changes[0];
+        assert_eq!(change.change, "created");
+        assert_eq!(change.additions, Some(2));
+    }
+
+    #[tokio::test]
+    async fn edit_file_reports_diff() {
+        let tmp = test_root();
+        std::fs::write(tmp.join("a.txt"), "hello world").unwrap();
+        let output = EditFileTool
+            .execute(
+                json!({ "path": "a.txt", "old": "hello", "new": "goodbye" }),
+                &ctx(&tmp),
+            )
+            .await
+            .unwrap();
+        assert_eq!(output.file_changes.len(), 1);
+        let change = &output.file_changes[0];
+        assert_eq!(change.change, "edit");
+        assert!(change.diff.as_deref().unwrap_or("").contains("goodbye"));
     }
 }
