@@ -151,10 +151,18 @@ impl ProcessManager {
             anyhow::bail!("unknown process id");
         };
         kill_tree(&process);
-        let code = process.try_wait();
+        let deadline = Instant::now()
+            .checked_add(Duration::from_secs(5))
+            .unwrap_or_else(|| Instant::now() + Duration::from_secs(5));
+        while process.try_wait().is_none() {
+            if Instant::now() >= deadline {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(40));
+        }
         let stopped = process.exit_code().is_some();
         self.remove(id);
-        Ok(code.is_some() || stopped)
+        Ok(stopped)
     }
 
     pub fn kill_session(&self, session: &Uuid) -> usize {
