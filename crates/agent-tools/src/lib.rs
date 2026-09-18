@@ -1,5 +1,6 @@
 pub mod builtin;
 pub mod executor;
+pub mod lsp;
 pub mod processes;
 pub mod registry;
 

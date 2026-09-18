@@ -5,6 +5,7 @@ pub mod exec;
 pub mod fs;
 pub mod git;
 pub mod inspect;
+pub mod lsp;
 pub mod net;
 pub mod paths;
 pub mod plan;
@@ -33,5 +34,7 @@ pub fn register_builtin(registry: ToolRegistry) -> ToolRegistry {
         .register(terminal::shell_tool())
         .register(process::process_tool())
         .register(dependency::dependency_tool())
+        .register(lsp::lsp_tool())
+        .register(lsp::lsp_rename_tool())
         .register(git::git_tool())
 }
