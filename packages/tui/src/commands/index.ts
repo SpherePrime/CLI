@@ -1,6 +1,13 @@
 import { navigateTo } from "../context/route"
 import { resetSession, loadStoredMessages, transcriptText, lastAssistantText, useSession } from "../context/session"
-import { openInfo, openSelect, openForm, openModelDialog, openProviderDialog } from "../context/dialog"
+import {
+  openInfo,
+  openSelect,
+  openForm,
+  openModelDialog,
+  openProviderDialog,
+  openSessionsDialog,
+} from "../context/dialog"
 import { quitApp } from "../context/app"
 import { copyToClipboard } from "../util/clipboard"
 import { exportTranscript, openEditor } from "../util/files"
@@ -41,29 +48,7 @@ export function buildCommands(client: AgentClient): Command[] {
       suggested: true,
       shortcut: "ctrl+x l",
       leader: "l",
-      run: async () => {
-        try {
-          const sessions = await client.sessions()
-          if (sessions.length === 0) {
-            openInfo({ title: "Switch session", body: "No sessions yet." })
-            return
-          }
-          openSelect({
-            title: "Switch session",
-            options: sessions.map((session) => ({
-              title: session.title?.trim() || session.id.slice(0, 8),
-              value: session.id,
-              description: new Date(session.updated).toLocaleString(),
-            })),
-            onSelect: (id) => {
-              resetSession()
-              navigateTo({ type: "session", sessionId: id })
-            },
-          })
-        } catch (error) {
-          openInfo({ title: "Switch session", body: String(error) })
-        }
-      },
+      run: () => openSessionsDialog(),
     },
     {
       id: "session.rename",

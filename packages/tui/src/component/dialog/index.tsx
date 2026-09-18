@@ -3,6 +3,7 @@ import { useDialog } from "../../context/dialog"
 import { CommandPalette } from "./command-palette"
 import { ModelDialog } from "./model-dialog"
 import { ProviderDialog } from "./provider-dialog"
+import { SessionsDialog } from "./sessions-dialog"
 import { SelectDialog } from "./select-dialog"
 import { FormDialog } from "./form-dialog"
 import { InfoDialog } from "./info-dialog"
@@ -21,6 +22,8 @@ export function DialogHost(props: { client: AgentClient }) {
         return <ModelDialog client={props.client} />
       case "provider":
         return <ProviderDialog client={props.client} />
+      case "sessions":
+        return <SessionsDialog client={props.client} />
       case "select":
         return <SelectDialog state={state} />
       case "form":

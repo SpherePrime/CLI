@@ -15,6 +15,7 @@ export type DialogState =
   | { type: "palette" }
   | { type: "model" }
   | { type: "provider" }
+  | { type: "sessions" }
   | { type: "select"; title: string; options: SelectDialogOption[]; onSelect: (value: string) => void }
   | {
       type: "form"
@@ -61,6 +62,10 @@ export function openModelDialog() {
   setDialog({ type: "model" })
 }
 
+export function openSessionsDialog() {
+  setDialog({ type: "sessions" })
+}
+
 export function openProviderDialog() {
   setDialog({ type: "provider" })
 }
@@ -93,6 +98,7 @@ export function useDialog() {
     openInfo,
     openModelDialog,
     openProviderDialog,
+    openSessionsDialog,
     openPermissionDialog,
     closeDialog,
   }
