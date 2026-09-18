@@ -120,6 +120,7 @@ pub enum PluginAction {
     Enable { name: String },
     Disable { name: String },
     Inspect { name: String },
+    Generate { name: String },
 }
 
 #[derive(Debug, clap::Subcommand)]

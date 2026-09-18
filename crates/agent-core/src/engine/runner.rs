@@ -9,10 +9,13 @@ use agent_model::{
     StopReason, StreamChunk, Usage,
 };
 use agent_permissions::{PermissionEngine, PermissionScope};
+use agent_plugins::native::NativePlugin;
 use agent_skills::SkillRegistry;
 use agent_storage::{SessionRecord, Storage};
-use agent_tools::{builtin, ToolExecutionContext, ToolRegistry};
+use agent_tools::executor::{ToolDefinition, ToolExecutionContext, ToolExecutor, ToolOutput};
+use agent_tools::{builtin, ToolRegistry};
 use anyhow::{Context, Result};
+use async_trait::async_trait;
 use chrono::Utc;
 use futures::StreamExt;
 use serde_json::{json, Value};
@@ -38,6 +41,8 @@ pub struct AgentEngine {
     cancel: Arc<AtomicBool>,
     mcp: Option<Arc<tokio::sync::Mutex<agent_mcp::McpClient>>>,
     mcp_loaded: bool,
+    plugins: Vec<Arc<NativePlugin>>,
+    plugins_loaded: bool,
 }
 
 impl AgentEngine {
@@ -90,6 +95,8 @@ impl AgentEngine {
             cancel: Arc::new(AtomicBool::new(false)),
             mcp,
             mcp_loaded: false,
+            plugins: Vec::new(),
+            plugins_loaded: false,
         }
     }
 
@@ -140,6 +147,7 @@ impl AgentEngine {
     pub async fn run(&mut self, user_text: &str, tx: &mpsc::Sender<EngineEvent>) -> Result<()> {
         self.ensure_session()?;
         self.ensure_mcp_tools().await;
+        self.ensure_plugins().await;
         self.persist_message(&ChatMessage {
             role: Role::User,
             content: agent_model::MessageContent::Text(user_text.to_string()),
@@ -380,6 +388,70 @@ impl AgentEngine {
         mcp::register_server_tools(&mut self.tools, client).await;
     }
 
+    async fn ensure_plugins(&mut self) {
+        if self.plugins_loaded {
+            return;
+        }
+        self.plugins_loaded = true;
+        let Some(root) = self.storage.as_ref().map(|storage| storage.root()) else {
+            return;
+        };
+        let dir = root.join("plugins");
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            return;
+        };
+        let enabled_map = self.config.plugins.clone();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+                continue;
+            };
+            let Some(library_path) = agent_plugins::native::find_library(&path, name) else {
+                continue;
+            };
+            let plugin = match NativePlugin::load(&library_path) {
+                Ok(plugin) => Arc::new(plugin),
+                Err(error) => {
+                    tracing::warn!("skipping plugin {}: {error}", path.display());
+                    continue;
+                }
+            };
+            if !plugin.enabled(&enabled_map) {
+                continue;
+            }
+            if let Err(error) = plugin.initialize().await {
+                tracing::warn!("plugin '{}' failed to initialize: {error}", plugin.name());
+                continue;
+            }
+            for tool_name in &plugin.tool_names {
+                let full_name = format!("plugin_{}_{}", plugin.name(), tool_name);
+                let executor = Arc::new(NativeToolExecutor {
+                    plugin: Arc::clone(&plugin),
+                    tool: tool_name.clone(),
+                });
+                self.tools.add(ToolDefinition {
+                    name: full_name,
+                    description: format!(
+                        "Native plugin tool '{tool_name}' provided by '{}'",
+                        plugin.name()
+                    ),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": true
+                    }),
+                    executor,
+                    permissions: PermissionScope::Write,
+                    timeout_secs: 60,
+                });
+            }
+            self.plugins.push(plugin);
+        }
+    }
+
     fn ensure_session(&mut self) -> Result<()> {
         if self.session_ready {
             return Ok(());
@@ -435,6 +507,22 @@ fn reason_name(reason: StopReason) -> &'static str {
         StopReason::ToolUse => "tool_use",
         StopReason::MaxTokens => "max_tokens",
         StopReason::Error => "error",
+    }
+}
+
+struct NativeToolExecutor {
+    plugin: Arc<NativePlugin>,
+    tool: String,
+}
+
+#[async_trait]
+impl ToolExecutor for NativeToolExecutor {
+    async fn execute(&self, args: Value, _ctx: &ToolExecutionContext) -> Result<ToolOutput> {
+        let args_json = serde_json::to_string(&args).unwrap_or_else(|_| "{}".to_string());
+        match self.plugin.run_tool(&self.tool, &args_json).await {
+            Ok(content) => Ok(ToolOutput::success(content)),
+            Err(error) => Ok(ToolOutput::failure(error.to_string())),
+        }
     }
 }
 

@@ -89,6 +89,7 @@ dependencies = [
  "agent-mcp",
  "agent-model",
  "agent-permissions",
+ "agent-plugins",
  "agent-sessions",
  "agent-skills",
  "agent-storage",

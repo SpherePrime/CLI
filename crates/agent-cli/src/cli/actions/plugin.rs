@@ -14,6 +14,7 @@ pub fn run(action: &PluginAction) -> ExitCode {
         PluginAction::Enable { name } => run_toggle(name, true),
         PluginAction::Disable { name } => run_toggle(name, false),
         PluginAction::Inspect { name } => run_inspect(name),
+        PluginAction::Generate { name } => run_generate(name),
     }
 }
 
@@ -168,6 +169,127 @@ fn run_inspect(name: &str) -> ExitCode {
         println!("files: {}", files.join(", "));
     }
     ExitCode::SUCCESS
+}
+
+fn run_generate(name: &str) -> ExitCode {
+    let name = normalize_plugin_name(name);
+    if name.is_empty() {
+        eprintln!("plugin name must contain at least one letter or digit");
+        return ExitCode::FAILURE;
+    }
+    let target = plugins_dir().join(&name);
+    if target.exists() {
+        eprintln!("plugin '{name}' already exists at {}", target.display());
+        return ExitCode::FAILURE;
+    }
+    let src = target.join("src");
+    if let Err(error) = std::fs::create_dir_all(&src) {
+        eprintln!("failed to create {}: {error}", target.display());
+        return ExitCode::FAILURE;
+    }
+
+    let manifest = format!(
+        "name = \"{name}\"\nversion = \"0.1.0\"\ndescription = \"Generated native plugin\"\n"
+    );
+    let cargo = format!(
+        r#"[package]
+name = "{name}"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serde_json = "1"
+
+[profile.release]
+opt-level = 2
+"#
+    );
+    let lib_source = format!(
+        r#"use std::ffi::CStr;
+use std::os::raw::{{c_char, c_int, c_void}};
+use std::sync::Mutex;
+
+static RESULT_BUF: Mutex<Vec<u8>> = Mutex::new(Vec::new());
+
+#[no_mangle]
+pub extern "C" fn agent_plugin_abi_version() -> c_int {{
+    1
+}}
+
+#[no_mangle]
+pub extern "C" fn agent_plugin_manifest() -> *const c_char {{
+    b"name = \"{name}\"\nversion = \"0.1.0\"\ndescription = \"Generated native plugin\"\n\0".as_ptr() as *const c_char
+}}
+
+#[no_mangle]
+pub extern "C" fn agent_plugin_tool_names() -> *const c_char {{
+    b"[\"echo\"]\0".as_ptr() as *const c_char
+}}
+
+#[no_mangle]
+pub extern "C" fn agent_plugin_run_tool(
+    name: *const c_char,
+    args_json: *const c_char,
+) -> *const c_char {{
+    let tool = unsafe {{ CStr::from_ptr(name) }}.to_string_lossy();
+    if tool != "echo" {{
+        return b"{{\"error\":\"unknown tool\"}}\0".as_ptr() as *const c_char;
+    }}
+    let args = unsafe {{ CStr::from_ptr(args_json) }}.to_string_lossy();
+    let content = serde_json::json!({{"content": format!("echo: {{args}}")}}).to_string();
+    let mut buf = RESULT_BUF.lock().unwrap();
+    buf.clear();
+    buf.extend_from_slice(content.as_bytes());
+    buf.push(0);
+    buf.as_ptr() as *const c_char
+}}
+
+#[no_mangle]
+pub extern "C" fn agent_plugin_init(_ctx: *mut c_void) -> c_int {{
+    0
+}}
+
+#[no_mangle]
+pub extern "C" fn agent_plugin_shutdown() -> c_int {{
+    0
+}}
+"#,
+        name = name
+    );
+
+    for (filename, content) in [
+        ("manifest.toml".to_string(), manifest),
+        ("Cargo.toml".to_string(), cargo),
+        ("src/lib.rs".to_string(), lib_source),
+    ] {
+        let path = target.join(&filename);
+        if let Err(error) = std::fs::write(&path, content) {
+            eprintln!("failed to write {}: {error}", path.display());
+            return ExitCode::FAILURE;
+        }
+    }
+
+    println!("generated plugin project at {}", target.display());
+    println!(
+        "build it with: cargo build --manifest-path {}\\Cargo.toml --release",
+        target.display()
+    );
+    println!(
+        "then copy the built library into {} and enable it with: agent plugin enable {name}",
+        target.display()
+    );
+    ExitCode::SUCCESS
+}
+
+fn normalize_plugin_name(name: &str) -> String {
+    name.chars()
+        .filter(|character| {
+            character.is_ascii_alphanumeric() || *character == '_' || *character == '-'
+        })
+        .collect()
 }
 
 fn is_git_url(source: &str) -> bool {

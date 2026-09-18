@@ -16,6 +16,7 @@ agent-context = { path = "../agent-context" }
 agent-sessions = { path = "../agent-sessions" }
 agent-skills = { path = "../agent-skills" }
 agent-mcp = { path = "../agent-mcp" }
+agent-plugins = { path = "../agent-plugins" }
 tokio.workspace = true
 futures.workspace = true
 anyhow.workspace = true
