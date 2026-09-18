@@ -5,6 +5,12 @@ import { EmptyBorder, SplitBorder } from "../../ui/border"
 import { theme } from "../../theme"
 import { useDialog } from "../../context/dialog"
 import { modelLabel } from "../../context/model"
+import { useSession } from "../../context/session"
+import {
+  openPermissionSwitcher,
+  permissionChipColor,
+  permissionLabel,
+} from "../../context/permission"
 import { Autocomplete, type AutocompleteRef } from "./autocomplete"
 import type { AgentClient } from "../../client"
 
@@ -169,6 +175,27 @@ export function Prompt(props: {
                 <text fg={theme.textMuted}>agent</text>
                 <text fg={theme.textMuted}>·</text>
                 <text fg={theme.text}>{modelLabel() ?? "no model"}</text>
+                <text fg={theme.textMuted}>·</text>
+                <box
+                  onMouseDown={() => {
+                    if (props.disabled) return
+                    openPermissionSwitcher(props.client)
+                  }}
+                  backgroundColor={
+                    useSession().permissionMode() === "full_access" ? theme.warning : undefined
+                  }
+                >
+                  <text
+                    fg={
+                      useSession().permissionMode() === "full_access"
+                        ? theme.background
+                        : permissionChipColor(useSession().permissionMode())
+                    }
+                  >
+                    mode:{permissionLabel(useSession().permissionMode())}
+                  </text>
+                </box>
+                <text fg={theme.textMuted}>· f2</text>
               </box>
               <box flexDirection="row" gap={1}>
                 <text fg={theme.textMuted}>enter send · shift+enter newline · ctrl+p commands</text>

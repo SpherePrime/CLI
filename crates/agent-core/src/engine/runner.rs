@@ -146,6 +146,23 @@ impl AgentEngine {
                         if let Ok(mode) = serde_json::from_str::<PermissionMode>(mode_name) {
                             self.set_permission_mode(mode);
                         }
+                    } else {
+                        let project_path =
+                            record.project_path.as_deref().or(Some(&self.working_dir));
+                        if let Some(dir) = project_path.filter(|p| p.exists()) {
+                            let mode_file = dir.join(".agent").join("permission-mode.json");
+                            if let Ok(raw) = std::fs::read_to_string(&mode_file) {
+                                if let Ok(value) = serde_json::from_str::<Value>(&raw) {
+                                    if let Some(name) = value.get("mode").and_then(|v| v.as_str()) {
+                                        if let Ok(mode) =
+                                            serde_json::from_str::<PermissionMode>(name)
+                                        {
+                                            self.set_permission_mode(mode);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 if let Some(project_path) = record.project_path.as_deref() {

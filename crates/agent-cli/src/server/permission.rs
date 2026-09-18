@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::sync::Arc;
 
 use agent_config::PermissionMode;
@@ -7,6 +8,8 @@ use uuid::Uuid;
 
 use super::api::{err_body, json_response, read_json, BoxBody};
 use super::state::{permission_mode_name, AppState};
+
+const PROJECT_MODE_FILE: &str = "permission-mode.json";
 
 pub async fn get(
     id: Uuid,
@@ -36,7 +39,9 @@ pub async fn get(
             .and_then(|value| serde_json::from_value::<PermissionMode>(value.clone()).ok())
         {
             Some(mode) => permission_mode_name(mode).to_string(),
-            None => default_mode(),
+            None => project_mode(&record, state.workspace.as_path())
+                .map(|mode| permission_mode_name(mode).to_string())
+                .unwrap_or_else(default_mode),
         },
         Err(_) => "ask".to_string(),
     };
@@ -55,7 +60,9 @@ pub async fn set(
     let Some(mode) = parse_mode(&body.mode) else {
         let response = Response::builder()
             .status(hyper::StatusCode::BAD_REQUEST)
-            .body(err_body("mode must be ask | auto_edit | full_access"))
+            .body(err_body(
+                "mode must be ask | auto_edit | full_access | deny",
+            ))
             .unwrap();
         return Ok(response);
     };
@@ -70,12 +77,57 @@ pub async fn set(
         record.metadata["perms_mode"] = serde_json::Value::String(mode_name(mode).into());
         record.touch();
         let _ = storage.replace_session_meta(&record);
+        if body.remember_project {
+            persist_project_mode(&record, state.workspace.as_path(), mode);
+        }
     }
     let applied = state.set_permission_mode(&id, mode);
     Ok(json_response(&serde_json::json!({
         "mode": permission_mode_name(mode),
         "applied": applied
     })))
+}
+
+pub fn project_mode(
+    record: &agent_storage::SessionRecord,
+    workspace: &Path,
+) -> Option<PermissionMode> {
+    let dir = project_dir(record, workspace)?;
+    let file = dir.join(".agent").join(PROJECT_MODE_FILE);
+    let value = std::fs::read_to_string(file).ok()?;
+    let parsed = serde_json::from_str::<serde_json::Value>(&value).ok()?;
+    let name = parsed.get("mode").and_then(|v| v.as_str())?;
+    parse_mode(name)
+}
+
+pub fn persist_project_mode(
+    record: &agent_storage::SessionRecord,
+    workspace: &Path,
+    mode: PermissionMode,
+) {
+    let Some(dir) = project_dir(record, workspace) else {
+        return;
+    };
+    let agent_dir = dir.join(".agent");
+    if std::fs::create_dir_all(&agent_dir).is_err() {
+        return;
+    }
+    let payload = serde_json::json!({ "mode": permission_mode_name(mode) });
+    let _ = std::fs::write(
+        agent_dir.join(PROJECT_MODE_FILE),
+        serde_json::to_string_pretty(&payload).unwrap_or_default(),
+    );
+}
+
+fn project_dir(
+    record: &agent_storage::SessionRecord,
+    workspace: &Path,
+) -> Option<std::path::PathBuf> {
+    record
+        .project_path
+        .as_deref()
+        .map(Path::to_path_buf)
+        .or_else(|| Some(workspace.to_path_buf()))
 }
 
 fn parse_mode(value: &str) -> Option<PermissionMode> {
@@ -100,6 +152,8 @@ fn mode_name(mode: PermissionMode) -> &'static str {
 #[derive(serde::Deserialize)]
 struct ModeBody {
     mode: String,
+    #[serde(default)]
+    remember_project: bool,
 }
 
 #[cfg(test)]
@@ -143,5 +197,37 @@ mod tests {
         assert_eq!(stored_mode("auto_edit"), "auto_edit");
         assert_eq!(stored_mode("full_access"), "full_access");
         assert_eq!(stored_mode("deny"), "deny");
+    }
+
+    #[test]
+    fn project_mode_persists_and_reads_back() {
+        use agent_storage::SessionRecord;
+        let tmp = tempfile::tempdir().unwrap();
+        let mut record = SessionRecord::new(Some(tmp.path().to_path_buf()), None);
+        record.id = Uuid::new_v4();
+        persist_project_mode(&record, tmp.path(), PermissionMode::Allow);
+        assert_eq!(
+            project_mode(&record, tmp.path()),
+            Some(PermissionMode::Allow)
+        );
+        let file = tmp.path().join(".agent").join("permission-mode.json");
+        assert!(file.exists(), "project permission file must be written");
+        persist_project_mode(&record, tmp.path(), PermissionMode::AutoEdit);
+        assert_eq!(
+            project_mode(&record, tmp.path()),
+            Some(PermissionMode::AutoEdit)
+        );
+        let mut ask_record = SessionRecord::new(Some(tmp.path().to_path_buf()), None);
+        ask_record.id = Uuid::new_v4();
+        persist_project_mode(&ask_record, tmp.path(), PermissionMode::Allow);
+        // The helper returns the persisted project file mode.
+        assert_eq!(
+            project_mode(&ask_record, tmp.path()),
+            Some(PermissionMode::Allow)
+        );
+        // Missing file falls back to None.
+        let empty = tempfile::tempdir().unwrap();
+        let other_record = SessionRecord::new(Some(empty.path().to_path_buf()), None);
+        assert_eq!(project_mode(&other_record, empty.path()), None);
     }
 }

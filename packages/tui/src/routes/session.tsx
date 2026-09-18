@@ -21,6 +21,12 @@ import { theme } from "../theme"
 import { EmptyBorder } from "../ui/border"
 import type { AgentClient, EngineEvent, PermissionMode } from "../client"
 
+function permissionBadge(mode: PermissionMode | undefined, running: boolean): string {
+  const prefix = running ? "running… · " : ""
+  if (mode === "full_access") return `${prefix}!! FULL ACCESS !!`
+  return `${prefix}mode:${permissionLabel(mode)}`
+}
+
 const helpText = [
   "enter — send message",
   "ctrl+p — command palette",
@@ -300,9 +306,19 @@ export function Session(props: { client: AgentClient }) {
       <box flexDirection="row" justifyContent="space-between" paddingLeft={2} paddingRight={2} paddingTop={1}>
         <text fg={theme.textMuted}>{title() ?? modelLabelMemo()}</text>
         <box flexDirection="row" gap={2}>
-          <text fg={permissionColor(session.permissionMode())}>
-            {status() === "running" ? "running… · " : ""}mode:{permissionLabel(session.permissionMode())}
+          <box
+          backgroundColor={session.permissionMode() === "full_access" ? theme.warning : undefined}
+        >
+          <text
+            fg={
+              session.permissionMode() === "full_access"
+                ? theme.background
+                : permissionColor(session.permissionMode())
+            }
+          >
+            {permissionBadge(session.permissionMode(), status() === "running")}
           </text>
+        </box>
           <text fg={theme.textMuted}>{workspaceNameMemo()}</text>
         </box>
       </box>

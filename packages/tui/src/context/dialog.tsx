@@ -34,6 +34,18 @@ export type DialogState =
       onSubmit: (values: Record<string, string>) => void
     }
   | { type: "info"; title: string; body: string }
+  | {
+      type: "confirm"
+      title: string
+      body: string
+      confirmLabel: string
+      confirmColor?: "primary" | "success" | "warning" | "error"
+      secondaryLabel?: string
+      cancelLabel?: string
+      onConfirm: () => void
+      onSecondary?: () => void
+      onCancel?: () => void
+    }
   | ({ type: "permission" } & PermissionRequest)
 
 export const [dialog, setDialog] = createSignal<DialogState>({ type: "none" })
@@ -85,6 +97,20 @@ export function openInfo(input: { title: string; body: string }) {
   setDialog({ type: "info", ...input })
 }
 
+export function openConfirm(input: {
+  title: string
+  body: string
+  confirmLabel: string
+  confirmColor?: "primary" | "success" | "warning" | "error"
+  secondaryLabel?: string
+  cancelLabel?: string
+  onConfirm: () => void
+  onSecondary?: () => void
+  onCancel?: () => void
+}) {
+  setDialog({ type: "confirm", ...input })
+}
+
 export function openPermissionDialog(input: PermissionRequest) {
   setPermissionQueue((pending) => [...pending, input])
   pumpPermissionQueue()
@@ -107,6 +133,7 @@ export function useDialog() {
     openSelect,
     openForm,
     openInfo,
+    openConfirm,
     openModelDialog,
     openProviderDialog,
     openSessionsDialog,

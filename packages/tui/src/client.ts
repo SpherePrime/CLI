@@ -212,8 +212,15 @@ export class AgentClient {
     return this.get<{ mode: PermissionMode }>(`/session/${sessionId}/permission-mode`)
   }
 
-  async setPermissionMode(sessionId: string, mode: PermissionMode): Promise<{ applied: boolean; mode: PermissionMode }> {
-    return this.post<{ applied: boolean; mode: PermissionMode }>(`/session/${sessionId}/permission-mode`, { mode })
+  async setPermissionMode(
+    sessionId: string,
+    mode: PermissionMode,
+    rememberProject?: boolean,
+  ): Promise<{ applied: boolean; mode: PermissionMode }> {
+    return this.post<{ applied: boolean; mode: PermissionMode }>(`/session/${sessionId}/permission-mode`, {
+      mode,
+      remember_project: rememberProject ?? false,
+    })
   }
 
   async cancelMessage(sessionId: string | undefined): Promise<{ cancelled: boolean }> {

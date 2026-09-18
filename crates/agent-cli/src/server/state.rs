@@ -112,6 +112,7 @@ impl AppState {
         match mode {
             PermissionMode::Allow => handle.approver.allow_all_pending(PermissionDecision::Allow),
             PermissionMode::AutoEdit => handle.approver.resolve_pending_file_scopes(),
+            PermissionMode::Deny => handle.approver.allow_all_pending(PermissionDecision::Deny),
             _ => {}
         }
         let _ = handle.sender.try_send(EngineEvent::PermissionModeChanged {

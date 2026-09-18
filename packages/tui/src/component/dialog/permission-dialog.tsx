@@ -12,7 +12,7 @@ const dim = RGBA.fromValues(0, 0, 0, 160)
 const decisions = [
   { key: "a", label: "allow", decision: "allow" as const, remember: false },
   { key: "o", label: "allow once", decision: "once" as const, remember: false },
-  { key: "w", label: "allow always", decision: "allow" as const, remember: true },
+  { key: "w", label: "allow for session", decision: "allow" as const, remember: true },
   { key: "d", label: "deny", decision: "deny" as const, remember: false },
 ]
 
