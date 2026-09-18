@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
+use std::sync::Arc;
 
 use agent_events::{AgentEvent, AgentEventPayload, AgentScope, EventBus};
 use agent_model::ToolSchema;
@@ -7,7 +8,9 @@ use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
+use tokio::sync::mpsc;
 use tokio::sync::Mutex;
+use tokio_util::sync::CancellationToken;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum McpTransport {
@@ -105,8 +108,10 @@ impl McpContent {
 struct HttpState {
     client: reqwest::Client,
     base_url: String,
-    session_id: Mutex<Option<String>>,
+    session_id: tokio::sync::Mutex<Option<String>>,
     next_id: AtomicU64,
+    pending: Arc<tokio::sync::Mutex<HashMap<u64, mpsc::UnboundedSender<serde_json::Value>>>>,
+    stream_handle: tokio::sync::Mutex<Option<Arc<CancellationToken>>>,
 }
 
 pub struct McpServer {
@@ -269,10 +274,87 @@ impl McpServer {
         self.http = Some(HttpState {
             client,
             base_url: url.to_string(),
-            session_id: Mutex::new(session_id),
+            session_id: Mutex::new(session_id.clone()),
             next_id: AtomicU64::new(2),
+            pending: Arc::new(Mutex::new(HashMap::new())),
+            stream_handle: Mutex::new(None),
         });
+        if session_id.is_some() {
+            self.start_http_event_stream().await;
+        }
         Ok(())
+    }
+
+    async fn start_http_event_stream(&mut self) {
+        let Some(state) = self.http.as_ref() else {
+            return;
+        };
+        let Some(session_id) = state.session_id.lock().await.clone() else {
+            return;
+        };
+        let cancel = CancellationToken::new();
+        let handle = Arc::new(cancel.clone());
+        *state.stream_handle.lock().await = Some(handle);
+        let pending = Arc::clone(&state.pending);
+        let client = state.client.clone();
+        let base_url = state.base_url.clone();
+        let session_id_header = session_id.clone();
+
+        tokio::spawn(async move {
+            loop {
+                let response = match client
+                    .get(&base_url)
+                    .header("Accept", "text/event-stream")
+                    .header("Mcp-Session-Id", &session_id_header)
+                    .send()
+                    .await
+                {
+                    Ok(response) => response,
+                    Err(_) => return,
+                };
+                if !response.status().is_success() {
+                    return;
+                }
+                let mut stream = response.bytes_stream();
+                use futures::StreamExt;
+                let mut buffer = String::new();
+                while let Some(chunk) = stream.next().await {
+                    if cancel.is_cancelled() {
+                        return;
+                    }
+                    let chunk = match chunk {
+                        Ok(chunk) => chunk,
+                        Err(_) => return,
+                    };
+                    buffer.push_str(&String::from_utf8_lossy(&chunk));
+                    while let Some(pos) = buffer.find('\n') {
+                        let line = buffer[..pos].trim_end_matches('\r').to_string();
+                        buffer.drain(..pos + 1);
+                        let Some(data) = line.strip_prefix("data:") else {
+                            continue;
+                        };
+                        let data = data.trim();
+                        if data.is_empty() {
+                            continue;
+                        }
+                        let Ok(value) = serde_json::from_str::<serde_json::Value>(data) else {
+                            continue;
+                        };
+                        if let Some(id) = value.get("id").and_then(|id| id.as_u64()) {
+                            let mut pending_guard = pending.lock().await;
+                            if let Some(tx) = pending_guard.remove(&id) {
+                                let _ = tx.send(value);
+                                continue;
+                            }
+                        }
+                    }
+                }
+                if cancel.is_cancelled() {
+                    return;
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            }
+        });
     }
 
     fn initialize_params(&self) -> serde_json::Value {
@@ -331,9 +413,46 @@ impl McpServer {
     async fn rpc_http(&self, method: &str, params: serde_json::Value) -> Result<serde_json::Value> {
         let state = self.http.as_ref().context("MCP server is not connected")?;
         let current = state.session_id.lock().await.clone();
-        let id = state
-            .next_id
-            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let id = state.next_id.fetch_add(1, AtomicOrdering::SeqCst);
+        let has_event_stream = state.stream_handle.lock().await.is_some();
+        if has_event_stream && !method.starts_with("notifications/") {
+            let (tx, mut rx) = mpsc::unbounded_channel::<serde_json::Value>();
+            state.pending.lock().await.insert(id, tx);
+            let timeout_secs: u64 = 120;
+            let result =
+                tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), async {
+                    let body = self
+                        .http_post(
+                            &state.client,
+                            &state.base_url,
+                            current.as_deref(),
+                            method,
+                            &params,
+                            id,
+                        )
+                        .await
+                        .ok()
+                        .map(|(_, value)| value);
+                    if let Some(value) = body {
+                        state.pending.lock().await.remove(&id);
+                        return Ok(value);
+                    }
+                    match rx.recv().await {
+                        Some(value) => {
+                            state.pending.lock().await.remove(&id);
+                            Ok(value)
+                        }
+                        None => Err(anyhow!(
+                            "MCP http event stream closed before response for {method}"
+                        )),
+                    }
+                })
+                .await
+                .map_err(|_| {
+                    anyhow!("MCP http request {method} timed out after {timeout_secs}s")
+                })??;
+            return Ok(result);
+        }
         let (session_id, result) = self
             .http_post(
                 &state.client,
@@ -409,7 +528,11 @@ impl McpServer {
                 let _ = child.wait().await;
             }
         }
-        self.http = None;
+        if let Some(state) = self.http.take() {
+            if let Some(cancel) = state.stream_handle.lock().await.take() {
+                cancel.cancel();
+            }
+        }
     }
 }
 

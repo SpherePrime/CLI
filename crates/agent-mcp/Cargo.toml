@@ -18,3 +18,4 @@ async-trait.workspace = true
 tracing.workspace = true
 reqwest.workspace = true
 uuid.workspace = true
+tokio-util.workspace = true
