@@ -52,6 +52,19 @@ pub struct AgentEngine {
     current_turn: Option<String>,
 }
 
+async fn wait_until_cancelled(cancel: &Arc<AtomicBool>) {
+    if cancel.load(Ordering::SeqCst) {
+        return;
+    }
+    let mut interval = tokio::time::interval(std::time::Duration::from_millis(50));
+    loop {
+        interval.tick().await;
+        if cancel.load(Ordering::SeqCst) {
+            return;
+        }
+    }
+}
+
 impl AgentEngine {
     pub fn new(
         config: AgentConfig,
@@ -379,7 +392,16 @@ impl AgentEngine {
             let mut reasoning_open = false;
             let mut streamed_text = false;
             let mut done: Option<ModelResponse> = None;
-            while let Some(item) = stream.next().await {
+            let mut stream_cancelled = false;
+            loop {
+                let next = tokio::select! {
+                    result = stream.next() => result,
+                    _ = wait_until_cancelled(&self.cancel) => {
+                        stream_cancelled = true;
+                        break;
+                    }
+                };
+                let Some(item) = next else { break };
                 match item {
                     Ok(StreamChunk::TextDelta(text)) => {
                         streamed_text = true;
@@ -450,6 +472,9 @@ impl AgentEngine {
                             .await;
                     }
                 }
+            }
+            if stream_cancelled {
+                break;
             }
             if reasoning_open {
                 self.emit(
