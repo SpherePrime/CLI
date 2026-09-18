@@ -32,11 +32,13 @@ pub fn run(port_hint: u16) -> ExitCode {
 
     if !wait_for_server(address) {
         eprintln!("server did not become ready on {address}");
+        agent_tools::processes::ProcessManager::global().stop_all();
         stop_server(server);
         return ExitCode::FAILURE;
     }
 
     let status = launch_tui(port, &token);
+    agent_tools::processes::ProcessManager::global().stop_all();
     stop_server(server);
 
     match status {

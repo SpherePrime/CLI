@@ -7,6 +7,7 @@ pub mod inspect;
 pub mod net;
 pub mod paths;
 pub mod plan;
+pub mod process;
 pub mod terminal;
 
 use crate::registry::ToolRegistry;
@@ -29,5 +30,6 @@ pub fn register_builtin(registry: ToolRegistry) -> ToolRegistry {
         .register(plan::update_plan_tool())
         .register(ask::ask_user_tool())
         .register(terminal::shell_tool())
+        .register(process::process_tool())
         .register(git::git_tool())
 }

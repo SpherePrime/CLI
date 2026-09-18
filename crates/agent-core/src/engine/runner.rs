@@ -290,6 +290,7 @@ impl AgentEngine {
         self.current_turn = None;
 
         if self.cancel.load(Ordering::SeqCst) {
+            agent_tools::processes::ProcessManager::global().kill_session(&self.session_id);
             self.emit(
                 tx,
                 EngineEvent::TurnCancelled {
