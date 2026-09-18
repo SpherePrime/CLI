@@ -14,11 +14,10 @@ use crate::cli::actions::{mcp, plugin, session, skill};
 pub fn dispatch(cli: &Cli, storage: &agent_storage::Storage) -> ExitCode {
     match &cli.command {
         None => crate::tui::run_main_loop(Some(storage.clone())),
-        Some(Command::Run { mode }) => {
-            let mode = mode.as_str();
-            if mode == "ci" || mode == "readonly" {
-                eprintln!("non-interactive mode '{mode}' is not yet implemented in this build");
-                ExitCode::FAILURE
+        Some(Command::Run { mode, prompt, json }) => {
+            let prompt_text = prompt.join(" ");
+            if mode != "interactive" || !prompt_text.is_empty() {
+                crate::run::run_once(mode, &prompt_text, storage.clone(), *json)
             } else {
                 crate::tui::run_main_loop(Some(storage.clone()))
             }

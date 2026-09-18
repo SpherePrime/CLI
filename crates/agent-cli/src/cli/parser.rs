@@ -18,10 +18,14 @@ pub struct Cli {
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Command {
-    /// Run the agent interactively
+    /// Run the agent interactively, or execute a single prompt non-interactively
     Run {
         #[arg(long, default_value = "interactive")]
         mode: String,
+        #[arg(long, short = 'j', help = "Emit events as NDJSON")]
+        json: bool,
+        /// Prompt words to run non-interactively (joined with spaces)
+        prompt: Vec<String>,
     },
     /// Serve the HTTP API for the TypeScript TUI
     Serve {

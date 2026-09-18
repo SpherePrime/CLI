@@ -2,6 +2,7 @@ mod completion;
 mod doctor;
 mod init;
 mod launcher;
+mod run;
 mod server;
 
 pub mod cli;
