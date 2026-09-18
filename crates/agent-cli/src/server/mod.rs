@@ -6,6 +6,7 @@ pub mod message;
 pub mod providers;
 pub mod session;
 pub mod state;
+pub mod title;
 
 pub mod workspace;
 

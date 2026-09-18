@@ -32,6 +32,7 @@ export function Session(props: { client: AgentClient }) {
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
   const [loading, setLoading] = createSignal(false)
   const [loadError, setLoadError] = createSignal<string | undefined>(undefined)
+  const [title, setTitle] = createSignal<string | undefined>(undefined)
   let scroll: ScrollBoxRenderable
   let promptRef: PromptRef | undefined
 
@@ -56,6 +57,7 @@ export function Session(props: { client: AgentClient }) {
       if (detail.id !== session.sessionId()) return
       resetSession()
       loadStoredMessages(detail.messages)
+      setTitle(detail.title)
     } catch (error) {
       if (session.sessionId() !== id) return
       session.addEntry({ id: nextEntryId(), role: "error", text: String(error) })
@@ -74,6 +76,17 @@ export function Session(props: { client: AgentClient }) {
   function scrollToBottom() {
     if (!scroll) return
     scroll.scrollTop = scroll.scrollHeight
+  }
+
+  function refreshTitleOnce() {
+    const id = session.sessionId()
+    if (!id) return
+    setTimeout(() => {
+      if (session.sessionId() !== id) return
+      void props.client.getSession(id).then((info) => {
+        if (session.sessionId() === id) setTitle(info.title)
+      })
+    }, 600)
   }
 
   createEffect(() => {
@@ -119,6 +132,7 @@ export function Session(props: { client: AgentClient }) {
       await props.client.streamMessage(text, session.sessionId(), (event) => handleEvent(assistantId, event), {
         readonly: readonly ?? false,
       })
+      void refreshTitleOnce()
     } catch (error) {
       openInfo({ title: "Request failed", body: String(error) })
     }
@@ -283,7 +297,7 @@ export function Session(props: { client: AgentClient }) {
   return (
     <box width="100%" flexDirection="column" flexGrow={1} minHeight={0}>
       <box flexDirection="row" justifyContent="space-between" paddingLeft={2} paddingRight={2} paddingTop={1}>
-        <text fg={theme.textMuted}>{modelLabelMemo()}</text>
+        <text fg={theme.textMuted}>{title() ?? modelLabelMemo()}</text>
         <text fg={theme.textMuted}>{workspaceNameMemo()}</text>
         <text fg={status() === "running" ? theme.primary : theme.textMuted}>
           {status() === "running" ? "running…" : "idle"}

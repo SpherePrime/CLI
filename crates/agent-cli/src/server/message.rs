@@ -53,6 +53,9 @@ pub async fn post(
 
     let (tx, rx) = mpsc::channel::<Bytes>(256);
     let forward = tx.clone();
+    let forward_state = state.clone();
+    let title_session_id = session_id;
+    let first_user_text = text.clone();
     tokio::spawn(async move {
         emit(
             &forward,
@@ -63,7 +66,7 @@ pub async fn post(
             &forward,
             serde_json::json!({
                 "type": "message.created",
-                "message": { "id": Uuid::new_v4(), "role": "user", "content": text }
+                "message": { "id": Uuid::new_v4(), "role": "user", "content": first_user_text }
             }),
         )
         .await;
@@ -72,6 +75,7 @@ pub async fn post(
             emit(&forward, value).await;
         }
         emit(&forward, serde_json::json!({ "type": "done" })).await;
+        maybe_auto_title(forward_state, title_session_id, &first_user_text);
     });
 
     let stream_body = StreamBody::new(
@@ -141,6 +145,40 @@ fn resolve_project_dir(
     }
 }
 
+fn maybe_auto_title(state: Arc<AppState>, session_id: Uuid, text: &str) {
+    let Some(storage) = state.storage() else {
+        return;
+    };
+    let Ok(record) = storage.read_session(&session_id) else {
+        return;
+    };
+    let has_title = record
+        .metadata
+        .get("title")
+        .and_then(|value| value.as_str())
+        .map(|value| !value.is_empty())
+        .unwrap_or(false);
+    if has_title {
+        return;
+    }
+    let state = state.clone();
+    let text = text.to_string();
+    tokio::spawn(async move {
+        let Some(title) = super::title::generate_title(state.clone(), &text).await else {
+            return;
+        };
+        let Some(storage) = state.storage() else {
+            return;
+        };
+        let Ok(mut record) = storage.read_session(&session_id) else {
+            return;
+        };
+        record.metadata["title"] = serde_json::Value::String(title);
+        record.touch();
+        let _ = storage.replace_session_meta(&record);
+    });
+}
+
 async fn emit(tx: &mpsc::Sender<Bytes>, value: serde_json::Value) {
     let mut bytes = serde_json::to_vec(&value).unwrap_or_default();
     bytes.push(b'\n');
@@ -162,4 +200,93 @@ fn stream_error(message: &str) -> Response<BoxBody> {
                 .boxed(),
         )
         .unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use agent_config::{AgentConfig, ModelConfig, ProviderKind};
+    use agent_sessions::SessionManager;
+
+    fn mock_config() -> AgentConfig {
+        AgentConfig {
+            model: Some(ModelConfig {
+                provider: ProviderKind::Mock,
+                model: "mock-1".into(),
+                base_url: None,
+                api_key_env: None,
+                temperature: None,
+                max_tokens: Some(32),
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn auto_title_persists_for_untitled_session() {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let tmp = tempfile::tempdir().unwrap();
+            let storage = agent_storage::Storage::new(tmp.path().to_path_buf());
+            let state =
+                Arc::new(AppState::new(storage.clone(), tmp.path().to_path_buf(), None).unwrap());
+            *state.config.write().unwrap() = Some(mock_config());
+
+            let session_id = Uuid::new_v4();
+            let mut record = agent_storage::SessionRecord::new(
+                Some(tmp.path().to_path_buf()),
+                Some("mock-1".into()),
+            );
+            record.id = session_id;
+            record.metadata = serde_json::json!({ "title": serde_json::Value::Null });
+            let _ = SessionManager::new(storage.clone(), session_id).save(&record, &[]);
+
+            maybe_auto_title(state.clone(), session_id, "Add dark mode toggle");
+            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+
+            let updated = storage.read_session(&session_id).unwrap();
+            let title = updated
+                .metadata
+                .get("title")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
+            assert!(
+                title.contains("mock"),
+                "expected generated title, got: {title}"
+            );
+            assert!(updated.updated_at >= record.updated_at);
+        });
+    }
+
+    #[test]
+    fn auto_title_skips_titled_session() {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let tmp = tempfile::tempdir().unwrap();
+            let storage = agent_storage::Storage::new(tmp.path().to_path_buf());
+            let state =
+                Arc::new(AppState::new(storage.clone(), tmp.path().to_path_buf(), None).unwrap());
+            *state.config.write().unwrap() = Some(mock_config());
+
+            let session_id = Uuid::new_v4();
+            let mut record = agent_storage::SessionRecord::new(
+                Some(tmp.path().to_path_buf()),
+                Some("mock-1".into()),
+            );
+            record.id = session_id;
+            record.metadata = serde_json::json!({ "title": "My title" });
+            let _ = SessionManager::new(storage.clone(), session_id).save(&record, &[]);
+
+            maybe_auto_title(state.clone(), session_id, "Another message");
+            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+
+            let updated = storage.read_session(&session_id).unwrap();
+            let title = updated
+                .metadata
+                .get("title")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
+            assert_eq!(title, "My title");
+        });
+    }
 }
