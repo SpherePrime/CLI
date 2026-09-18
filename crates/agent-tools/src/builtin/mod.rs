@@ -1,5 +1,6 @@
 pub mod ask;
 pub mod checks;
+pub mod dependency;
 pub mod exec;
 pub mod fs;
 pub mod git;
@@ -31,5 +32,6 @@ pub fn register_builtin(registry: ToolRegistry) -> ToolRegistry {
         .register(ask::ask_user_tool())
         .register(terminal::shell_tool())
         .register(process::process_tool())
+        .register(dependency::dependency_tool())
         .register(git::git_tool())
 }

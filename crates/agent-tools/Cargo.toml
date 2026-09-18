@@ -27,3 +27,6 @@ regex.workspace = true
 walkdir.workspace = true
 glob.workspace = true
 reqwest.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
