@@ -272,4 +272,47 @@ describe("timeline reducer", () => {
     expect(entries).toHaveLength(1)
     expect(entries[0]!.text).toBe("? Which file?\n→ a")
   })
+
+  test("reloading the same event log reconstructs an identical timeline", () => {
+    const events: EngineEvent[] = [
+      {
+        type: "message.created",
+        message: { id: "m1", role: "user", content: "read and finish" },
+      },
+      {
+        type: "assistant_message_started",
+        meta: meta(1, "assistant_0"),
+        id: "assistant_0",
+      },
+      reasoningDelta(2, "thinking", "assistant_0"),
+      toolStarted(3, "call_1", "read_file"),
+      toolResult(4, "call_1", "read_file"),
+      {
+        type: "assistant_message_completed",
+        meta: meta(5, "assistant_0"),
+      },
+      {
+        type: "assistant_message_started",
+        meta: meta(6, "assistant_2"),
+        id: "assistant_2",
+      },
+      textDelta(7, "All set now", "assistant_2"),
+      {
+        type: "assistant_message_completed",
+        meta: meta(8, "assistant_2"),
+      },
+      { type: "turn_completed", meta: meta(9, "turn-1") },
+    ]
+    const first = timelineFromEvents(events)
+    const second = timelineFromEvents(events)
+    expect(second.entries.map((entry) => entry.id)).toEqual(first.entries.map((entry) => entry.id))
+    expect(second.entries.map((entry) => entry.role)).toEqual(first.entries.map((entry) => entry.role))
+    expect(second.entries.map((entry) => entry.text)).toEqual(first.entries.map((entry) => entry.text))
+    expect(second.plan).toEqual(first.plan)
+
+    const toolIdx = first.entries.findIndex((entry) => entry.role === "tool")
+    const finalIdx = first.entries.findIndex((entry) => entry.role === "assistant" && entry.text === "All set now")
+    expect(toolIdx).toBeGreaterThanOrEqual(0)
+    expect(finalIdx).toBeGreaterThan(toolIdx)
+  })
 })

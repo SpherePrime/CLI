@@ -693,17 +693,42 @@ impl AgentEngine {
                 id: call.id.clone(),
                 name: call.name.clone(),
                 ok,
-                content,
-                error,
+                content: self.redact(&content),
+                error: error.as_deref().map(|value| self.redact(value)),
                 duration_ms,
-                summary,
-                details,
+                summary: summary.as_deref().map(|value| self.redact(value)),
+                details: details.as_deref().map(|value| self.redact(value)),
                 exit_code,
                 truncated,
-                file_changes,
+                file_changes: self.redact_file_changes(file_changes),
             },
         )
         .await;
+    }
+
+    fn redact(&self, text: &str) -> String {
+        if self.config.permissions.secret_redaction {
+            agent_permissions::redact_secrets(text)
+        } else {
+            text.to_string()
+        }
+    }
+
+    fn redact_file_changes(&self, changes: Vec<Value>) -> Vec<Value> {
+        if !self.config.permissions.secret_redaction {
+            return changes;
+        }
+        changes
+            .into_iter()
+            .map(|mut value| {
+                if let Some(diff) = value.get_mut("diff") {
+                    if let Some(text) = diff.as_str() {
+                        *diff = Value::String(self.redact(text));
+                    }
+                }
+                value
+            })
+            .collect()
     }
 
     async fn emit(&self, tx: &mpsc::Sender<EngineEvent>, event: EngineEvent) {
@@ -1467,6 +1492,208 @@ mod tests {
         assert!(
             fast > 0 && fast < slow,
             "individual durations expected, fast={fast} slow={slow}"
+        );
+    }
+
+    #[tokio::test]
+    async fn tool_secrets_redacted_in_event_log() {
+        struct LeakTool;
+        #[async_trait]
+        impl ToolExecutor for LeakTool {
+            async fn execute(
+                &self,
+                _args: Value,
+                _ctx: &ToolExecutionContext,
+            ) -> Result<ToolOutput> {
+                Ok(
+                    ToolOutput::success("api key: sk-abcdef1234567890abcdef".into())
+                        .summary("discloses sk-11112222333344445555")
+                        .details("detail password=secret123")
+                        .file_change(FileChange {
+                            path: "note.txt".into(),
+                            change: "modified".into(),
+                            diff: Some("+set token=abc12345secret".into()),
+                            additions: Some(1),
+                            deletions: Some(0),
+                        }),
+                )
+            }
+        }
+
+        let tmp = tempfile::tempdir().unwrap();
+        let storage = Storage::new(tmp.path().join(".agent"));
+        let (tx, mut rx) = mpsc::channel(256);
+        let mut engine = AgentEngine::with_provider(
+            test_config(),
+            tmp.path().to_path_buf(),
+            tx.clone(),
+            Box::new(StepProvider::new(vec![
+                vec![done_response(
+                    "",
+                    vec![ToolCall {
+                        id: "call_l".into(),
+                        name: "leak".into(),
+                        args: serde_json::json!({}),
+                    }],
+                )],
+                vec![done_response("done", vec![])],
+            ])),
+        )
+        .with_storage(storage.clone());
+        engine.tools.add(ToolDefinition {
+            name: "leak".into(),
+            description: "leak".into(),
+            input_schema: serde_json::json!({ "type": "object" }),
+            executor: Arc::new(LeakTool),
+            permissions: PermissionScope::Read,
+            timeout_secs: 10,
+        });
+
+        engine.run("find the key", &tx).await.unwrap();
+        drop(tx);
+
+        let mut saw_redacted = false;
+        while let Ok(event) = rx.try_recv() {
+            if let EngineEvent::ToolResult {
+                name,
+                content,
+                file_changes,
+                ..
+            } = event
+            {
+                if name == "leak" {
+                    saw_redacted = true;
+                    assert!(!content.contains("sk-abcdef1234567890abcdef"));
+                    assert!(content.contains("[OPENAI_API_KEY_REDACTED]"));
+                    let diff = file_changes
+                        .first()
+                        .and_then(|c| c.get("diff"))
+                        .and_then(|d| d.as_str())
+                        .unwrap_or("");
+                    assert!(!diff.contains("abc12345secret"));
+                }
+            }
+        }
+        assert!(saw_redacted, "expected the leak tool result");
+
+        let events = storage.read_session_events(&engine.session_id);
+        let blob = serde_json::to_string(&events).unwrap();
+        assert!(!blob.contains("sk-abcdef1234567890abcdef"));
+        assert!(!blob.contains("sk-11112222333344445555"));
+        assert!(!blob.contains("password=secret123"));
+    }
+
+    #[tokio::test]
+    async fn event_log_reload_restores_exact_timeline() {
+        let tmp = tempfile::tempdir().unwrap();
+        let storage = Storage::new(tmp.path().join(".agent"));
+        let (tx, mut rx) = mpsc::channel(256);
+        let mut engine = AgentEngine::with_provider(
+            test_config(),
+            tmp.path().to_path_buf(),
+            tx.clone(),
+            Box::new(StepProvider::new(vec![
+                vec![done_response(
+                    "",
+                    vec![
+                        ToolCall {
+                            id: "call_a".into(),
+                            name: "read_file".into(),
+                            args: serde_json::json!({ "path": "a.txt" }),
+                        },
+                        ToolCall {
+                            id: "call_b".into(),
+                            name: "read_file".into(),
+                            args: serde_json::json!({ "path": "b.txt" }),
+                        },
+                    ],
+                )],
+                vec![done_response("final answer here", vec![])],
+            ])),
+        )
+        .with_storage(storage.clone());
+        let session_id = engine.session_id;
+        std::fs::write(tmp.path().join("a.txt"), "alpha").unwrap();
+        std::fs::write(tmp.path().join("b.txt"), "beta").unwrap();
+
+        engine.run("read both files", &tx).await.unwrap();
+        drop(tx);
+
+        let mut captured: Vec<String> = Vec::new();
+        while let Ok(event) = rx.try_recv() {
+            let entry = match &event {
+                EngineEvent::TurnStarted { meta, .. } => format!("turn_started:{}", meta.item_id),
+                EngineEvent::AssistantMessageStarted { meta, .. } => {
+                    format!("assistant_message_started:{}", meta.item_id)
+                }
+                EngineEvent::TextDelta { meta, text } => {
+                    format!("text_delta:{}:{text}", meta.item_id)
+                }
+                EngineEvent::ToolResult { meta, id, .. } => {
+                    format!("tool_result:{}:{}", meta.item_id, id)
+                }
+                EngineEvent::AssistantMessageCompleted { meta } => {
+                    format!("assistant_message_completed:{}", meta.item_id)
+                }
+                EngineEvent::TurnCompleted { meta } => format!("turn_completed:{}", meta.item_id),
+                EngineEvent::Usage { meta, .. } => format!("usage:{}", meta.item_id),
+                _ => continue,
+            };
+            captured.push(entry);
+        }
+        assert!(
+            captured.len() > 1,
+            "expected a captured timeline, got {}",
+            captured.len()
+        );
+
+        let stored: Vec<String> = storage
+            .read_session_events(&session_id)
+            .iter()
+            .filter_map(|event| {
+                let kind = event.get("type").and_then(|t| t.as_str())?;
+                match kind {
+                    "turn_started"
+                    | "assistant_message_started"
+                    | "assistant_message_completed"
+                    | "turn_completed"
+                    | "usage" => {}
+                    "text_delta" | "tool_result" => {}
+                    _ => return None,
+                }
+                let item = event
+                    .get("item_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default();
+                if kind == "text_delta" {
+                    let text = event.get("text").and_then(|t| t.as_str()).unwrap_or("");
+                    return Some(format!("text_delta:{item}:{text}"));
+                }
+                if kind == "tool_result" {
+                    let id = event.get("id").and_then(|v| v.as_str()).unwrap_or("");
+                    return Some(format!("tool_result:{item}:{id}"));
+                }
+                Some(format!("{kind}:{item}"))
+            })
+            .collect();
+        assert_eq!(
+            stored, captured,
+            "persisted event log must reproduce the exact streamed timeline"
+        );
+
+        let tool_last = stored
+            .iter()
+            .rposition(|entry| entry.starts_with("tool_result:"))
+            .expect("expected tool results");
+        let final_text = stored
+            .iter()
+            .position(|entry| {
+                entry.starts_with("text_delta:") && entry.ends_with("final answer here")
+            })
+            .expect("expected final text");
+        assert!(
+            tool_last < final_text,
+            "final answer must be reloaded after the tools"
         );
     }
 

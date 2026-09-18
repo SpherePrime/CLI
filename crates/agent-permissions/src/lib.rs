@@ -140,12 +140,20 @@ impl PermissionEngine {
                 PermissionDecision::Deny => AuditOutcome::Denied,
                 PermissionDecision::Ask => AuditOutcome::Asked,
             };
+            let redacted_target = if self.config.secret_redaction {
+                redact_secrets(target)
+            } else {
+                target.to_string()
+            };
             let _ = storage.write_audit(&AuditRecord {
                 id: Uuid::new_v4(),
                 timestamp: chrono::Utc::now(),
                 subject: "permissions".into(),
                 action: tool_name.into(),
-                detail: serde_json::json!({ "target": target, "scope": format!("{scope:?}") }),
+                detail: serde_json::json!({
+                    "target": redacted_target,
+                    "scope": format!("{scope:?}")
+                }),
                 outcome,
             });
         }
