@@ -56,6 +56,10 @@ impl GitRepo {
         Ok(out.stdout)
     }
 
+    pub async fn command(&self, args: &[&str]) -> Result<String> {
+        self.git(args).await
+    }
+
     pub async fn status(&self) -> Result<GitStatus> {
         let raw = self.git(&["status", "--porcelain"]).await?;
         let mut status = GitStatus {
