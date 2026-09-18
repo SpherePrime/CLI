@@ -2,7 +2,6 @@ import { ScrollBoxRenderable } from "@opentui/core"
 import { useRenderer, useKeyboard } from "@opentui/solid"
 import { createSignal, createMemo, createEffect, Show, For } from "solid-js"
 import { Prompt } from "../component/prompt/index"
-import { Spinner } from "../component/spinner"
 import { useRoute } from "../context/route"
 import { useDialog } from "../context/dialog"
 import { modelLabel, workspaceName } from "../context/model"
@@ -18,7 +17,7 @@ import {
 } from "../context/timeline"
 import { permissionColor, permissionLabel, openPermissionSwitcher } from "../context/permission"
 import { theme } from "../theme"
-import { EmptyBorder } from "../ui/border"
+import { MessageRow } from "../component/message-row"
 import type { AgentClient, EngineEvent, PermissionMode } from "../client"
 
 function permissionBadge(mode: PermissionMode | undefined, running: boolean): string {
@@ -33,6 +32,8 @@ const helpText = [
   "f2 — permission mode",
   "esc — back to home / cancel",
   "ctrl+c — exit",
+  "click on a tool row to expand args/output",
+  "click on ▶ thinking to expand the final reasoning",
 ].join("\n")
 
 export function Session(props: { client: AgentClient }) {
@@ -285,6 +286,16 @@ export function Session(props: { client: AgentClient }) {
     await sendPrompt(text)
   }
 
+  function toggleReasoning(id: string) {
+    session.updateEntry(id, (entry) => ({ ...entry, expandedReasoning: !entry.expandedReasoning }))
+  }
+
+  function toggleTool(id: string) {
+    session.updateEntry(id, (entry) =>
+      entry.tool ? { ...entry, tool: { ...entry.tool, expanded: !entry.tool.expanded } } : entry,
+    )
+  }
+
   useKeyboard((key) => {
     if (dialog().type !== "none") return
     if (key.name === "escape") {
@@ -332,7 +343,17 @@ export function Session(props: { client: AgentClient }) {
           >
             <Show
               when={session.entries().length === 0}
-              fallback={<For each={session.entries()}>{(entry) => <MessageRow entry={entry} />}</For>}
+              fallback={
+                <For each={session.entries()}>
+                  {(entry) => (
+                    <MessageRow
+                      entry={entry}
+                      onToggleReasoning={toggleReasoning}
+                      onToggleTool={toggleTool}
+                    />
+                  )}
+                </For>
+              }
             >
               <Show
                 when={!loading()}
@@ -371,103 +392,3 @@ export function Session(props: { client: AgentClient }) {
   )
 }
 
-function MessageRow(props: { entry: ChatEntry }) {
-  return (
-    <box
-      borderColor={theme.backgroundPanel}
-      border={["left"]}
-      customBorderChars={{ ...EmptyBorder, vertical: props.entry.role === "user" ? "│" : " " }}
-    >
-      <box paddingLeft={2} paddingTop={1} paddingRight={1} flexDirection="column">
-        <Show when={props.entry.role === "user"}>
-          <text fg={theme.primary}>You:</text>
-        </Show>
-        <Show when={props.entry.role === "assistant"}>
-          <text fg={theme.textMuted}>agent:</text>
-        </Show>
-        <Show when={props.entry.role === "tool"}>
-          <text fg={theme.secondary}>tool: {props.entry.tool?.name ?? "?"}</text>
-        </Show>
-        <Show when={props.entry.role === "error"}>
-          <text fg={theme.error}>error:</text>
-        </Show>
-        <Show when={props.entry.role === "system"}>
-          <text fg={theme.info}>system:</text>
-        </Show>
-        <Show when={props.entry.role === "assistant" && props.entry.text === "" && props.entry.running}>
-          <box flexDirection="row" gap={1} paddingTop={1}>
-            <Spinner />
-            <text fg={theme.textMuted}>thinking…</text>
-          </box>
-        </Show>
-        <Show when={props.entry.role === "assistant" && props.entry.reasoning}>
-          <box paddingTop={1}>
-            <text fg={theme.textMuted}>
-              thinking:
-              {"\n"}
-              {props.entry.reasoning!.slice(-1200)}
-            </text>
-          </box>
-        </Show>
-        <Show when={props.entry.role === "tool"}>
-          <ToolBody entry={props.entry} />
-        </Show>
-        <Show when={props.entry.role !== "tool"}>
-          <box paddingTop={1}>
-            <Show when={props.entry.role === "system" && props.entry.running}>
-              <box flexDirection="row" gap={1}>
-                <Spinner />
-                <text fg={theme.textMuted}>{props.entry.text}</text>
-              </box>
-            </Show>
-            <Show when={props.entry.text}>
-              <text fg={props.entry.role === "error" ? theme.error : theme.text}>{props.entry.text}</text>
-            </Show>
-          </box>
-        </Show>
-      </box>
-    </box>
-  )
-}
-
-function ToolBody(props: { entry: ChatEntry }) {
-  const tool = props.entry.tool
-  if (!tool) return <text fg={theme.text}>{props.entry.text}</text>
-  return (
-    <box flexDirection="column" gap={1} paddingTop={1}>
-      <box flexDirection="row" gap={1}>
-        <Show when={tool.state === "running"}>
-          <Spinner />
-        </Show>
-        <Show when={tool.state === "ok"}>
-          <text fg={theme.success}>ok</text>
-        </Show>
-        <Show when={tool.state === "failed"}>
-          <text fg={theme.error}>failed</text>
-        </Show>
-        <text fg={theme.textMuted}>{tool.durationMs === undefined ? "running…" : `${tool.durationMs}ms`}</text>
-        <Show when={tool.exitCode !== undefined && tool.exitCode !== null}>
-          <text fg={tool.exitCode === 0 ? theme.success : theme.error}>exit {tool.exitCode}</text>
-        </Show>
-        <Show when={tool.truncated}>
-          <text fg={theme.textMuted}>(truncated)</text>
-        </Show>
-      </box>
-      <Show when={tool.args}>
-        <text fg={theme.textMuted}>{tool.args}</text>
-      </Show>
-      <Show when={props.entry.text}>
-        <text fg={theme.text}>{props.entry.text}</text>
-      </Show>
-      <Show when={tool.details}>
-        <text fg={theme.textMuted}>{tool.details}</text>
-      </Show>
-      <Show when={tool.fileChanges}>
-        <box flexDirection="column">
-          <text fg={theme.info}>changed:</text>
-          <text fg={theme.textMuted}>{tool.fileChanges}</text>
-        </box>
-      </Show>
-    </box>
-  )
-}

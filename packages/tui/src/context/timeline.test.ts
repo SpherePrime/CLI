@@ -108,7 +108,7 @@ describe("timeline reducer", () => {
     expect(entries[0]!).toMatchObject({ role: "assistant", text: "partial" })
     expect(entries[1]!).toMatchObject({
       role: "tool",
-      tool: { name: "shell", state: "ok", durationMs: 42, fileChanges: "" },
+      tool: { name: "shell", state: "ok", durationMs: 42, fileChanges: [] },
     })
     expect(entries[2]!).toMatchObject({ role: "assistant", text: "done now" })
   })
@@ -143,14 +143,98 @@ describe("timeline reducer", () => {
     expect(entries[0]!.tool).toMatchObject({ state: "failed" })
   })
 
-  test("file changes are summarized per tool result", () => {
+  test("file changes are kept raw per tool result", () => {
+    const change = { path: "src/a.ts", change: "write", additions: 3, deletions: 0 }
     const entries = apply([
       toolStarted(1, "call_1", "edit"),
-      toolResult(2, "call_1", "edit", [
-        { path: "src/a.ts", change: "write", additions: 3, deletions: 0 },
-      ]),
+      toolResult(2, "call_1", "edit", [change]),
     ])
-    expect(entries[0]!.tool!.fileChanges).toBe("write src/a.ts (+3)")
+    expect(entries[0]!.tool!.fileChanges).toEqual([change])
+  })
+
+  test("tool result keeps the human-readable action as the row title", () => {
+    const entries = apply([toolStarted(1, "call_1", "shell"), toolResult(2, "call_1", "shell")])
+    expect(entries[0]!.text).toBe("run ls")
+  })
+
+  test("denied tool result maps to the denied lifecycle state", () => {
+    const events: EngineEvent[] = [
+      toolStarted(1, "call_1", "shell"),
+      {
+        ...toolResult(2, "call_1", "shell"),
+        ok: false,
+        error: "tool shell is not permitted in Ask mode",
+        content: "",
+        summary: "denied by mode",
+      },
+    ]
+    const entries = apply(events)
+    expect(entries[0]!.tool).toMatchObject({ state: "denied" })
+  })
+
+  test("permission request marks the running tool as waiting", () => {
+    const events: EngineEvent[] = [
+      toolStarted(1, "call_1", "shell"),
+      {
+        type: "permission_requested",
+        meta: meta(2),
+        id: "p1",
+        tool: "shell",
+        scope: "Write",
+        target: "src/a.ts",
+        reason: "rewrite tests",
+      },
+    ]
+    const entries = apply(events)
+    expect(entries[0]!.tool).toMatchObject({ state: "waiting_permission" })
+  })
+
+  test("permission resolution puts the tool back into running", () => {
+    const events: EngineEvent[] = [
+      toolStarted(1, "call_1", "shell"),
+      {
+        type: "permission_requested",
+        meta: meta(2),
+        id: "p1",
+        tool: "shell",
+        scope: "Write",
+        target: "src/a.ts",
+        reason: "rewrite tests",
+      },
+      { type: "permission_resolved", meta: meta(3), id: "p1", decision: "allow" },
+    ]
+    const entries = apply(events)
+    expect(entries[0]!.tool).toMatchObject({ state: "running" })
+  })
+
+  test("collapsible reasoning is collapsed again after completion", () => {
+    const events: EngineEvent[] = [
+      {
+        type: "assistant_message_started",
+        meta: meta(1, "assistant_1"),
+        id: "assistant_1",
+      },
+      { type: "reasoning_started", meta: meta(2, "assistant_1") },
+      reasoningDelta(3, "think hard", "assistant_1"),
+      { type: "reasoning_completed", meta: meta(4, "assistant_1") },
+    ]
+    const entries = apply(events)
+    expect(entries[0]).toMatchObject({
+      reasoning: "think hard",
+      reasoningOpen: false,
+      expandedReasoning: false,
+    })
+  })
+
+  test("tool activity line is removed once the tool finishes", () => {
+    const events: EngineEvent[] = [
+      toolStarted(1, "call_1", "shell"),
+      { type: "activity_changed", meta: meta(2, "tool_call_1"), activity: "Running ls", kind: "tool" },
+      toolResult(3, "call_1", "shell"),
+    ]
+    const entries = apply(events)
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.role).toBe("tool")
   })
 
   test("activity changes render as running system entries", () => {

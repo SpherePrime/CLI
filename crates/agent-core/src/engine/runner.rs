@@ -361,6 +361,15 @@ impl AgentEngine {
                 },
             )
             .await;
+            self.emit(
+                tx,
+                EngineEvent::ActivityChanged {
+                    meta: clock.meta(format!("activity_{item_id}")),
+                    activity: "Thinking…".into(),
+                    kind: Some("thinking".into()),
+                },
+            )
+            .await;
             let mut reasoning_open = false;
             let mut streamed_text = false;
             let mut done: Option<ModelResponse> = None;
@@ -573,12 +582,12 @@ impl AgentEngine {
                         let tx = tx.clone();
                         let clock = clock.clone();
                         let item = tool_item.clone();
-                        let name = call.name.clone();
+                        let activity = tool_activity(&call);
                         async move {
                             let _ = tx
                                 .send(EngineEvent::ActivityChanged {
                                     meta: clock.meta(item),
-                                    activity: format!("Preparing {name}"),
+                                    activity,
                                     kind: Some("tool".into()),
                                 })
                                 .await;
@@ -876,6 +885,47 @@ fn tool_file_changes(changes: Vec<FileChange>) -> Vec<Value> {
         .into_iter()
         .map(|change| serde_json::to_value(change).unwrap_or(Value::Null))
         .collect()
+}
+
+fn tool_activity(call: &agent_model::ToolCall) -> String {
+    let name = call.name.to_lowercase();
+    let args = &call.args;
+    let file = ["path", "file", "directory"]
+        .iter()
+        .filter_map(|key| args.get(*key).and_then(Value::as_str))
+        .next()
+        .map(|path| path.rsplit(['/', '\\']).next().unwrap_or(path).to_string());
+    let command = args
+        .get("command")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim();
+    match name.as_str() {
+        "read_file" | "read_many_files" | "list_dir" => {
+            file.map(|f| format!("Reading {f}")).unwrap_or_else(|| "Reading files…".into())
+        }
+        "write_file" | "create_file" | "edit_file" | "patch_file" | "apply_patch" => {
+            file.map(|f| format!("Editing {f}")).unwrap_or_else(|| "Editing files…".into())
+        }
+        "delete_path" | "remove" => file.map(|f| format!("Deleting {f}")).unwrap_or_else(|| "Deleting…".into()),
+        "shell" | "terminal" | "run" => {
+            let preview = command.split_whitespace().take(4).collect::<Vec<_>>().join(" ");
+            format!("Running {preview}")
+        }
+        "git" => format!("Running git {command}"),
+        "test" | "run_tests" | "run_checks" => "Running tests…".into(),
+        "glob" | "grep" | "find" => {
+            let query = args
+                .get("query")
+                .or_else(|| args.get("pattern"))
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .trim();
+            format!("Searching {query}")
+        }
+        "ask_user" => "Asking you…".into(),
+        _ => format!("Preparing {name}"),
+    }
 }
 
 fn event_log_max_sequence(storage: &Storage, session_id: &Uuid) -> u64 {

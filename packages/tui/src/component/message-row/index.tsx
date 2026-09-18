@@ -1,0 +1,74 @@
+import { Show } from "solid-js"
+import { theme } from "../../theme"
+import { EmptyBorder } from "../../ui/border"
+import { Spinner } from "../spinner"
+import type { ChatEntry } from "../../context/session"
+import { ReasoningBlock } from "./reasoning"
+import { ToolBody } from "./tool-body"
+
+export type MessageRowProps = {
+  entry: ChatEntry
+  onToggleReasoning: (id: string) => void
+  onToggleTool: (id: string) => void
+}
+
+function assistantStatusText(entry: ChatEntry): string {
+  if (entry.reasoningOpen) return "thinking…"
+  if (entry.reasoning && !entry.text.trim()) return "writing…"
+  if (entry.text.trim()) return "writing…"
+  return entry.stage ?? "thinking…"
+}
+
+export function MessageRow(props: MessageRowProps) {
+  const entry = props.entry
+  if (entry.kind === "activity") return null
+
+  return (
+    <box
+      borderColor={theme.backgroundPanel}
+      border={["left"]}
+      customBorderChars={{ ...EmptyBorder, vertical: entry.role === "user" ? "│" : " " }}
+    >
+      <box paddingLeft={2} paddingTop={1} paddingRight={1} flexDirection="column">
+        <Show when={entry.role === "user"}>
+          <text fg={theme.primary}>You:</text>
+        </Show>
+        <Show when={entry.role === "assistant"}>
+          <text fg={theme.textMuted}>agent:</text>
+        </Show>
+        <Show when={entry.role === "tool"}>
+          <text fg={theme.secondary}>tool:</text>
+        </Show>
+        <Show when={entry.role === "error"}>
+          <text fg={theme.error}>error:</text>
+        </Show>
+        <Show when={entry.role === "system"}>
+          <text fg={theme.info}>system:</text>
+        </Show>
+        <Show when={entry.role === "assistant" && entry.running && !entry.reasoningOpen}>
+          <box flexDirection="row" gap={1} paddingTop={1}>
+            <Spinner />
+            <text fg={theme.textMuted}>{assistantStatusText(entry)}</text>
+          </box>
+        </Show>
+        <Show when={entry.reasoning}>
+          <ReasoningBlock entry={entry} onToggle={() => props.onToggleReasoning(entry.id)} />
+        </Show>
+        <Show when={entry.role === "tool"}>
+          <ToolBody entry={entry} onToggle={() => props.onToggleTool(entry.id)} />
+        </Show>
+        <Show when={entry.role !== "tool"}>
+          <Show when={entry.role === "system" && entry.running}>
+            <box flexDirection="row" gap={1} paddingTop={1}>
+              <Spinner />
+              <text fg={theme.textMuted}>{entry.text}</text>
+            </box>
+          </Show>
+          <Show when={entry.text}>
+            <text fg={entry.role === "error" ? theme.error : theme.text}>{entry.text}</text>
+          </Show>
+        </Show>
+      </box>
+    </box>
+  )
+}
