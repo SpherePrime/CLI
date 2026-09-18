@@ -154,9 +154,15 @@ impl ProcessManager {
         let deadline = Instant::now()
             .checked_add(Duration::from_secs(5))
             .unwrap_or_else(|| Instant::now() + Duration::from_secs(5));
+        let mut escalated = false;
+        let start = Instant::now();
         while process.try_wait().is_none() {
             if Instant::now() >= deadline {
                 break;
+            }
+            if !escalated && start.elapsed() >= Duration::from_millis(1000) {
+                escalate_kill(&process);
+                escalated = true;
             }
             std::thread::sleep(Duration::from_millis(40));
         }
@@ -221,7 +227,6 @@ fn kill_child(pid: u32, child: &mut Child) {
         .args(["/F", "/T", "/PID", &pid.to_string()])
         .status();
     let _ = child.kill();
-    let _ = child.wait();
 }
 
 #[cfg(unix)]
@@ -234,8 +239,26 @@ fn kill_child(pid: u32, child: &mut Child) {
         .stderr(Stdio::null())
         .status();
     let _ = child.kill();
-    let _ = child.wait();
-    std::thread::sleep(Duration::from_millis(250));
+}
+
+#[cfg(not(any(windows, unix)))]
+fn kill_child(_pid: u32, child: &mut Child) {
+    let _ = child.kill();
+}
+
+#[cfg(windows)]
+fn escalate_kill(process: &ManagedProcess) {
+    let pid = process.pid;
+    let _ = Command::new("taskkill")
+        .args(["/F", "/T", "/PID", &pid.to_string()])
+        .status();
+    let mut guard = process.child.lock().expect("child lock");
+    let _ = guard.kill();
+}
+
+#[cfg(unix)]
+fn escalate_kill(process: &ManagedProcess) {
+    let pid = process.pid;
     let _ = Command::new("pkill")
         .arg("-KILL")
         .arg("-P")
@@ -243,12 +266,14 @@ fn kill_child(pid: u32, child: &mut Child) {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
+    let mut guard = process.child.lock().expect("child lock");
+    let _ = guard.kill();
 }
 
 #[cfg(not(any(windows, unix)))]
-fn kill_child(_pid: u32, child: &mut Child) {
-    let _ = child.kill();
-    let _ = child.wait();
+fn escalate_kill(process: &ManagedProcess) {
+    let mut guard = process.child.lock().expect("child lock");
+    let _ = guard.kill();
 }
 
 pub async fn wait_for_output(process: &ManagedProcess, needle: &str, timeout: Duration) -> bool {
