@@ -284,7 +284,7 @@ mod tests {
         let command = if cfg!(windows) {
             "ping -n 30 127.0.0.1 >nul"
         } else {
-            "sleep 60"
+            "while :; do :; done"
         };
         let process = manager.start(session, command, &cwd).expect("spawn");
 
