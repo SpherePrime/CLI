@@ -9,7 +9,7 @@ use agent_model::{
     StopReason, StreamChunk, Usage,
 };
 use agent_permissions::{PermissionEngine, PermissionScope};
-use agent_skills::{SkillRegistry, SkillScope};
+use agent_skills::SkillRegistry;
 use agent_storage::{SessionRecord, Storage};
 use agent_tools::{builtin, ToolExecutionContext, ToolRegistry};
 use anyhow::{Context, Result};
@@ -21,6 +21,7 @@ use uuid::Uuid;
 
 use crate::engine::approval::EngineApprover;
 use crate::engine::event::EngineEvent;
+use crate::engine::mcp;
 use crate::engine::prompt::build_system_prompt;
 
 pub struct AgentEngine {
@@ -35,6 +36,8 @@ pub struct AgentEngine {
     mode: AgentMode,
     session_ready: bool,
     cancel: Arc<AtomicBool>,
+    mcp: Option<Arc<tokio::sync::Mutex<agent_mcp::McpClient>>>,
+    mcp_loaded: bool,
 }
 
 impl AgentEngine {
@@ -72,6 +75,7 @@ impl AgentEngine {
             system = format!("{system}\n\n{skill_context}");
         }
         context.set_user_instructions(&system);
+        let mcp = mcp::build_client(&config.mcp);
         Self {
             session_id,
             config,
@@ -84,6 +88,8 @@ impl AgentEngine {
             mode,
             session_ready: false,
             cancel: Arc::new(AtomicBool::new(false)),
+            mcp,
+            mcp_loaded: false,
         }
     }
 
@@ -133,6 +139,7 @@ impl AgentEngine {
 
     pub async fn run(&mut self, user_text: &str, tx: &mpsc::Sender<EngineEvent>) -> Result<()> {
         self.ensure_session()?;
+        self.ensure_mcp_tools().await;
         self.persist_message(&ChatMessage {
             role: Role::User,
             content: agent_model::MessageContent::Text(user_text.to_string()),
@@ -360,6 +367,17 @@ impl AgentEngine {
         let engine = PermissionEngine::new(permissions);
         ToolExecutionContext::new(self.session_id, self.working_dir.clone(), engine)
             .with_approver(self.approver.clone())
+    }
+
+    async fn ensure_mcp_tools(&mut self) {
+        if self.mcp_loaded {
+            return;
+        }
+        self.mcp_loaded = true;
+        let Some(client) = self.mcp.clone() else {
+            return;
+        };
+        mcp::register_server_tools(&mut self.tools, client).await;
     }
 
     fn ensure_session(&mut self) -> Result<()> {

@@ -1,5 +1,6 @@
 pub mod approval;
 pub mod event;
+pub mod mcp;
 pub mod prompt;
 pub mod runner;
 

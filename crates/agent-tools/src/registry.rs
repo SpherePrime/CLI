@@ -43,6 +43,11 @@ impl ToolRegistry {
         self
     }
 
+    pub fn add(&mut self, tool: ToolDefinition) {
+        tracing::debug!(name = tool.name.as_str(), "registering tool");
+        self.tools.push(tool);
+    }
+
     pub fn schemas(&self) -> Vec<agent_model::ToolSchema> {
         self.tools.iter().map(|t| t.schema()).collect()
     }
