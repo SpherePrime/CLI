@@ -339,6 +339,11 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
     case "session.project_missing":
     case "done":
       return { ...state, lastSequence: sequence }
+    case "user_message": {
+      const text: string = event.text ?? ""
+      const id = `user-migrated-${sequence}`
+      return { ...state, lastSequence: sequence, entries: [...state.entries, { id, role: "user", text }] }
+    }
     case "error": {
       let entries = state.entries
       const itemId = event.meta?.item_id

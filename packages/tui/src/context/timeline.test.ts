@@ -347,4 +347,27 @@ describe("timeline reducer", () => {
     expect(entries).toHaveLength(1)
     expect(entries.at(0)?.text).toBe("")
   })
+
+  test("migrated user_message event creates a user entry from legacy timeline", () => {
+    const events: EngineEvent[] = [
+      { type: "turn_started", meta: meta(0, "turn-1"), model: "mock" },
+      {
+        type: "user_message",
+        meta: meta(1, "user_message_1"),
+        text: "hello from legacy",
+      },
+      {
+        type: "assistant_message_started",
+        meta: meta(2, "assistant_3"),
+        id: "assistant_3",
+      },
+      textDelta(3, "hi there", "assistant_3"),
+      { type: "assistant_message_completed", meta: meta(4, "assistant_3") },
+      { type: "turn_completed", meta: meta(5, "turn-1") },
+    ]
+    const entries = apply(events)
+    expect(entries[0]).toMatchObject({ role: "user", text: "hello from legacy" })
+    expect(entries[1]).toMatchObject({ role: "assistant", text: "hi there" })
+    expect(entries).toHaveLength(2)
+  })
 })

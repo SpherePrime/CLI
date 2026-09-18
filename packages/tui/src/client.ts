@@ -143,6 +143,7 @@ export type EngineEvent =
   | { type: "error"; meta?: EventMeta; message: string }
   | { type: "session_title_changed"; meta: EventMeta; title: string }
   | { type: "plan_updated"; meta: EventMeta; steps: PlanStep[] }
+  | { type: "user_message"; meta: EventMeta; text: string }
 
 export type SessionMessage = EngineEvent
 
