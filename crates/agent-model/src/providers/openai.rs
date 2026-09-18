@@ -1,6 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::stream::BoxStream;
+use tokio_util::sync::CancellationToken;
 
 use crate::provider::{ModelProvider, ProviderConfig};
 use crate::providers::{http, stream};
@@ -46,8 +47,9 @@ impl ModelProvider for OpenAiProvider {
     async fn chat_stream(
         &self,
         req: &ModelRequest,
+        cancel: CancellationToken,
     ) -> Result<BoxStream<'static, std::result::Result<StreamChunk, crate::error::ModelError>>>
     {
-        stream::openai_stream(&self.with_env_key(), req).await
+        stream::openai_stream(&self.with_env_key(), req, cancel).await
     }
 }

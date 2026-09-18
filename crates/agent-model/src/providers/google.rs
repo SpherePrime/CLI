@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::stream::BoxStream;
 use serde_json::{json, Value};
+use tokio_util::sync::CancellationToken;
 
 use crate::provider::{ModelProvider, ProviderConfig};
 use crate::providers::{http, stream};
@@ -137,8 +138,9 @@ impl ModelProvider for GoogleProvider {
     async fn chat_stream(
         &self,
         req: &ModelRequest,
+        cancel: CancellationToken,
     ) -> Result<BoxStream<'static, std::result::Result<StreamChunk, crate::error::ModelError>>>
     {
-        stream::google_stream(&self.with_env_key(), req).await
+        stream::google_stream(&self.with_env_key(), req, cancel).await
     }
 }

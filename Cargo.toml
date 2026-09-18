@@ -78,6 +78,7 @@ once_cell = "1"
 parking_lot = "0.12"
 signal-hook = "0.3"
 futures-stream = "0.3"
+tokio-util = "0.7"
 aes-gcm = "0.10"
 base64 = "0.22"
 

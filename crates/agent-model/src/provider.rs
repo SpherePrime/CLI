@@ -2,6 +2,7 @@ use agent_config::ModelConfig;
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::stream::BoxStream;
+use tokio_util::sync::CancellationToken;
 
 use crate::error::ModelError;
 use crate::types::{ModelRequest, ModelResponse, StreamChunk};
@@ -28,6 +29,7 @@ pub trait ModelProvider: Send + Sync + 'static {
     async fn chat_stream(
         &self,
         request: &ModelRequest,
+        cancel: CancellationToken,
     ) -> Result<BoxStream<'static, std::result::Result<StreamChunk, ModelError>>>;
 }
 

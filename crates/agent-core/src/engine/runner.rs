@@ -24,6 +24,7 @@ use futures::StreamExt;
 use serde_json::Value;
 use std::sync::Mutex;
 use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::engine::approval::EngineApprover;
@@ -364,7 +365,12 @@ impl AgentEngine {
             }
 
             let request = self.build_request();
-            let mut stream = match self.provider.chat_stream(&request).await {
+            let cancel_token = CancellationToken::new();
+            let mut stream = match self
+                .provider
+                .chat_stream(&request, cancel_token.clone())
+                .await
+            {
                 Ok(stream) => stream,
                 Err(error) => {
                     return Err(error);
@@ -397,6 +403,7 @@ impl AgentEngine {
                 let next = tokio::select! {
                     result = stream.next() => result,
                     _ = wait_until_cancelled(&self.cancel) => {
+                        cancel_token.cancel();
                         stream_cancelled = true;
                         break;
                     }
@@ -474,6 +481,13 @@ impl AgentEngine {
                 }
             }
             if stream_cancelled {
+                self.emit(
+                    tx,
+                    EngineEvent::AssistantMessageCompleted {
+                        meta: clock.meta(&item_id),
+                    },
+                )
+                .await;
                 break;
             }
             if reasoning_open {
@@ -1147,6 +1161,7 @@ mod tests {
         async fn chat_stream(
             &self,
             _request: &ModelRequest,
+            _cancel: CancellationToken,
         ) -> Result<
             futures::stream::BoxStream<
                 'static,
@@ -2015,6 +2030,7 @@ mod tests {
         async fn chat_stream(
             &self,
             request: &ModelRequest,
+            _cancel: CancellationToken,
         ) -> Result<
             futures::stream::BoxStream<
                 'static,

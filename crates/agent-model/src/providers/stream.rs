@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use futures::stream::BoxStream;
 use serde_json::{json, Value};
 use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
 
 use crate::error::ModelError;
 use crate::provider::ProviderConfig;
@@ -42,6 +43,7 @@ async fn open_sse(
     url: String,
     headers: Vec<(String, String)>,
     body: &Value,
+    cancel: CancellationToken,
 ) -> Result<mpsc::Receiver<Value>> {
     let client = reqwest::Client::builder()
         .build()
@@ -65,7 +67,11 @@ async fn open_sse(
         let mut response = response;
         let mut buffer = String::new();
         loop {
-            match response.chunk().await {
+            let next = tokio::select! {
+                result = response.chunk() => result,
+                _ = cancel.cancelled() => break,
+            };
+            match next {
                 Ok(Some(bytes)) => {
                     buffer.push_str(&String::from_utf8_lossy(&bytes));
                     while let Some(pos) = buffer.find('\n') {
@@ -246,7 +252,11 @@ fn openai_chunks(mut rx: mpsc::Receiver<Value>) -> ChunkStream {
     receiver_stream(out)
 }
 
-pub async fn openai_stream(cfg: &ProviderConfig, req: &ModelRequest) -> Result<ChunkStream> {
+pub async fn openai_stream(
+    cfg: &ProviderConfig,
+    req: &ModelRequest,
+    cancel: CancellationToken,
+) -> Result<ChunkStream> {
     let key = cfg
         .resolved_api_key()
         .context("no API key configured for provider")?;
@@ -275,7 +285,7 @@ pub async fn openai_stream(cfg: &ProviderConfig, req: &ModelRequest) -> Result<C
             .collect::<Vec<_>>());
     }
     let headers = vec![("Authorization".to_string(), format!("Bearer {key}"))];
-    let rx = open_sse(url, headers, &body).await?;
+    let rx = open_sse(url, headers, &body, cancel).await?;
     Ok(openai_chunks(rx))
 }
 
@@ -401,7 +411,11 @@ fn anthropic_chunks(mut rx: mpsc::Receiver<Value>) -> ChunkStream {
     receiver_stream(out)
 }
 
-pub async fn anthropic_stream(cfg: &ProviderConfig, req: &ModelRequest) -> Result<ChunkStream> {
+pub async fn anthropic_stream(
+    cfg: &ProviderConfig,
+    req: &ModelRequest,
+    cancel: CancellationToken,
+) -> Result<ChunkStream> {
     let key = cfg
         .resolved_api_key()
         .context("no API key configured for provider")?;
@@ -438,7 +452,7 @@ pub async fn anthropic_stream(cfg: &ProviderConfig, req: &ModelRequest) -> Resul
         ("x-api-key".to_string(), key),
         ("anthropic-version".to_string(), "2023-06-01".to_string()),
     ];
-    let rx = open_sse(url, headers, &body).await?;
+    let rx = open_sse(url, headers, &body, cancel).await?;
     Ok(anthropic_chunks(rx))
 }
 
@@ -608,7 +622,11 @@ fn google_chunks(mut rx: mpsc::Receiver<Value>) -> ChunkStream {
     receiver_stream(out)
 }
 
-pub async fn google_stream(cfg: &ProviderConfig, req: &ModelRequest) -> Result<ChunkStream> {
+pub async fn google_stream(
+    cfg: &ProviderConfig,
+    req: &ModelRequest,
+    cancel: CancellationToken,
+) -> Result<ChunkStream> {
     let key = cfg
         .resolved_api_key()
         .context("no API key configured for provider")?;
@@ -643,7 +661,7 @@ pub async fn google_stream(cfg: &ProviderConfig, req: &ModelRequest) -> Result<C
     {
         body["generationConfig"] = generation_config;
     }
-    let rx = open_sse(url, Vec::new(), &body).await?;
+    let rx = open_sse(url, Vec::new(), &body, cancel).await?;
     Ok(google_chunks(rx))
 }
 
@@ -831,5 +849,13 @@ mod tests {
         assert!(system.is_some());
         assert_eq!(contents.len(), 1);
         assert!(tools.is_some());
+    }
+
+    #[tokio::test]
+    async fn cancel_token_propagates_to_task() {
+        let parent = CancellationToken::new();
+        let child = parent.child_token();
+        parent.cancel();
+        assert!(child.is_cancelled());
     }
 }

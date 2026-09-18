@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use futures::stream::{BoxStream, StreamExt};
+use tokio_util::sync::CancellationToken;
 
 use crate::provider::ModelProvider;
 use crate::types::{
@@ -60,6 +61,7 @@ impl ModelProvider for MockProvider {
     async fn chat_stream(
         &self,
         req: &ModelRequest,
+        _cancel: CancellationToken,
     ) -> anyhow::Result<
         BoxStream<'static, std::result::Result<StreamChunk, crate::error::ModelError>>,
     > {

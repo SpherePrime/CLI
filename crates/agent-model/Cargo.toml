@@ -17,3 +17,4 @@ serde_json.workspace = true
 async-trait.workspace = true
 tracing.workspace = true
 reqwest.workspace = true
+tokio-util.workspace = true
