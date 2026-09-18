@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::ops::RangeInclusive;
+
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use serde_json::{json, Value};
@@ -23,6 +26,42 @@ fn schema(properties: Value, required: &[&str]) -> Value {
 
 pub struct ReadManyFilesTool;
 
+fn parse_ranges(
+    args: &Value,
+    working_dir: &std::path::Path,
+) -> Result<HashMap<String, RangeInclusive<usize>>> {
+    let mut ranges = HashMap::new();
+    let Some(list) = args.get("ranges").and_then(|v| v.as_array()) else {
+        return Ok(ranges);
+    };
+    for item in list {
+        let Some(path) = item.get("path").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        let resolved = resolve_path(working_dir, path)?;
+        let key = display(&resolved);
+        if let (Some(start), Some(end)) = (
+            item.get("start").and_then(|v| v.as_u64()),
+            item.get("end").and_then(|v| v.as_u64()),
+        ) {
+            if start >= 1 && end >= start {
+                ranges.insert(key, start as usize..=end as usize);
+            }
+        }
+    }
+    Ok(ranges)
+}
+
+fn slice_lines(content: &str, range: &RangeInclusive<usize>) -> String {
+    let lines: Vec<&str> = content.split('\n').collect();
+    let start = (*range.start()).saturating_sub(1);
+    let end = (*range.end()).min(lines.len());
+    if start >= end {
+        return String::new();
+    }
+    lines[start..end].join("\n")
+}
+
 #[async_trait]
 impl ToolExecutor for ReadManyFilesTool {
     async fn execute(&self, args: Value, ctx: &ToolExecutionContext) -> Result<ToolOutput> {
@@ -33,6 +72,7 @@ impl ToolExecutor for ReadManyFilesTool {
         if paths.is_empty() {
             return Ok(ToolOutput::success("(no paths given)".into()));
         }
+        let ranges = parse_ranges(&args, &ctx.working_dir)?;
         let mut out = String::new();
         let mut read = 0usize;
         let mut skipped: Vec<String> = Vec::new();
@@ -42,21 +82,35 @@ impl ToolExecutor for ReadManyFilesTool {
                 continue;
             };
             let path = resolve_path(&ctx.working_dir, raw)?;
+            let key = display(&path);
             match read_file(&path).await {
                 Ok(content) => {
-                    out.push_str(&format!("==> {} <==\n", display(&path)));
-                    out.push_str(&content);
-                    if !content.ends_with('\n') {
-                        out.push('\n');
+                    match ranges.get(&key) {
+                        Some(range) => {
+                            out.push_str(&format!(
+                                "==> {key}:lines {}-{} <==\n",
+                                range.start(),
+                                range.end()
+                            ));
+                            out.push_str(&slice_lines(&content, range));
+                            out.push('\n');
+                        }
+                        None => {
+                            out.push_str(&format!("==> {key} <==\n"));
+                            out.push_str(&content);
+                            if !content.ends_with('\n') {
+                                out.push('\n');
+                            }
+                        }
                     }
                     out.push('\n');
                     read += 1;
                     artifacts.push(ToolArtifact {
-                        path: display(&path),
+                        path: key,
                         kind: ToolArtifactKind::Read,
                     });
                 }
-                Err(error) => skipped.push(format!("{}: {error}", display(&path))),
+                Err(error) => skipped.push(format!("{key}: {error}")),
             }
         }
         if paths.len() > MAX_FILES {
@@ -79,14 +133,26 @@ impl ToolExecutor for ReadManyFilesTool {
 pub fn read_many_files_tool() -> crate::ToolDefinition {
     crate::ToolDefinition {
         name: "read_many_files".into(),
-        description:
-            "Read several files at once. Each file is prefixed with a '==> path <==' header.".into(),
+        description: "Read several files at once, optionally restricted to 1-based line ranges. Each file is prefixed with a '==> path <==' header.".into(),
         input_schema: schema(
             json!({
                 "paths": {
                     "type": "array",
                     "items": { "type": "string" },
                     "description": "Relative file paths"
+                },
+                "ranges": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "path": { "type": "string" },
+                            "start": { "type": "integer", "minimum": 1 },
+                            "end": { "type": "integer", "minimum": 1 }
+                        },
+                        "required": ["path", "start", "end"]
+                    },
+                    "description": "Optional 1-based line ranges per path"
                 }
             }),
             &["paths"],
@@ -189,6 +255,51 @@ mod tests {
             .artifacts
             .iter()
             .all(|a| { a.path.ends_with("a.txt") || a.path.ends_with("b.txt") }));
+    }
+
+    #[tokio::test]
+    async fn read_many_files_honors_line_ranges() {
+        let dir = std::env::temp_dir().join(format!("agent-inspect-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("a.txt"), "one\ntwo\nthree\nfour").unwrap();
+
+        let output = ReadManyFilesTool
+            .execute(
+                json!({
+                    "paths": ["a.txt"],
+                    "ranges": [{ "path": "a.txt", "start": 2, "end": 3 }]
+                }),
+                &ctx(&dir),
+            )
+            .await
+            .unwrap();
+        assert!(output.content.contains(":lines 2-3 <=="));
+        assert!(output.content.contains("two"));
+        assert!(output.content.contains("three"));
+        assert!(!output.content.contains("one"));
+        assert!(!output.content.contains("four"));
+    }
+
+    #[tokio::test]
+    async fn read_many_files_omits_ranges_for_other_files() {
+        let dir = std::env::temp_dir().join(format!("agent-inspect-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("a.txt"), "one\ntwo\nthree\nfour").unwrap();
+        std::fs::write(dir.join("b.txt"), "full").unwrap();
+
+        let output = ReadManyFilesTool
+            .execute(
+                json!({
+                    "paths": ["a.txt", "b.txt"],
+                    "ranges": [{ "path": "a.txt", "start": 2, "end": 3 }]
+                }),
+                &ctx(&dir),
+            )
+            .await
+            .unwrap();
+        assert!(output.content.contains(":lines 2-3 <=="));
+        assert!(output.content.contains("==> "));
+        assert!(output.content.contains("full"));
     }
 
     #[tokio::test]
