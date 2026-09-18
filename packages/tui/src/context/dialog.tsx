@@ -10,6 +10,15 @@ export type FormField =
   | { kind: "text"; key: string; label: string; initial?: string; placeholder?: string; hint?: string }
   | { kind: "select"; key: string; label: string; options: { title: string; value: string }[]; initial?: string }
 
+export type PermissionRequest = {
+  sessionId?: string
+  id: string
+  tool: string
+  scope: string
+  target: string
+  reason: string
+}
+
 export type DialogState =
   | { type: "none" }
   | { type: "palette" }
@@ -25,17 +34,19 @@ export type DialogState =
       onSubmit: (values: Record<string, string>) => void
     }
   | { type: "info"; title: string; body: string }
-  | {
-      type: "permission"
-      sessionId?: string
-      id: string
-      tool: string
-      scope: string
-      target: string
-      reason: string
-    }
+  | ({ type: "permission" } & PermissionRequest)
 
-const [dialog, setDialog] = createSignal<DialogState>({ type: "none" })
+export const [dialog, setDialog] = createSignal<DialogState>({ type: "none" })
+const [permissionQueue, setPermissionQueue] = createSignal<PermissionRequest[]>([])
+
+function pumpPermissionQueue() {
+  if (dialog().type !== "none") return
+  const pending = permissionQueue()
+  if (pending.length === 0) return
+  const [next, ...rest] = pending
+  setPermissionQueue(rest)
+  if (next) setDialog({ type: "permission", ...next })
+}
 
 export function openPalette() {
   setDialog({ type: "palette" })
@@ -74,18 +85,18 @@ export function openInfo(input: { title: string; body: string }) {
   setDialog({ type: "info", ...input })
 }
 
-export function openPermissionDialog(input: {
-  sessionId?: string
-  id: string
-  tool: string
-  scope: string
-  target: string
-  reason: string
-}) {
-  setDialog({ type: "permission", ...input })
+export function openPermissionDialog(input: PermissionRequest) {
+  setPermissionQueue((pending) => [...pending, input])
+  pumpPermissionQueue()
 }
 
 export function closeDialog() {
+  setDialog({ type: "none" })
+  pumpPermissionQueue()
+}
+
+export function resetDialog() {
+  setPermissionQueue([])
   setDialog({ type: "none" })
 }
 

@@ -1,4 +1,4 @@
-import { createMemo, For, Show } from "solid-js"
+import { createMemo, createSignal, For, Show } from "solid-js"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { RGBA } from "@opentui/core"
 import { theme } from "../../theme"
@@ -18,6 +18,7 @@ const decisions = [
 
 export function PermissionDialog(props: { client: AgentClient; state: PermissionState }) {
   const dimensions = useTerminalDimensions()
+  const [selected, setSelected] = createSignal(decisions.length - 1)
 
   const width = createMemo(() => Math.min(78, Math.max(50, dimensions().width - 6)))
 
@@ -37,6 +38,22 @@ export function PermissionDialog(props: { client: AgentClient; state: Permission
     if (key.name === "escape") {
       key.preventDefault()
       void decide({ decision: "deny" })
+      return
+    }
+    if (key.name === "right") {
+      key.preventDefault()
+      setSelected((index) => (index + 1) % decisions.length)
+      return
+    }
+    if (key.name === "left") {
+      key.preventDefault()
+      setSelected((index) => (index - 1 + decisions.length) % decisions.length)
+      return
+    }
+    if (key.name === "return" || key.name === "space") {
+      key.preventDefault()
+      const item = decisions[selected()]
+      if (item) void decide({ decision: item.decision, remember: item.remember })
       return
     }
     for (const item of decisions) {
@@ -74,14 +91,27 @@ export function PermissionDialog(props: { client: AgentClient; state: Permission
           </Show>
           <text fg={theme.textMuted}>({props.state.scope})</text>
         </box>
-        <box paddingTop={1} paddingBottom={1} flexDirection="row" justifyContent="space-evenly">
+        <box paddingTop={1} paddingBottom={1} flexDirection="row">
           <For each={decisions}>
-            {(item) => (
-              <text fg={theme.text}>
-                {item.key}·{item.label}
-              </text>
+            {(item, index) => (
+              <box
+                flexGrow={1}
+                paddingLeft={1}
+                paddingRight={1}
+                backgroundColor={selected() === index() ? theme.primary : undefined}
+                onMouseDown={() => {
+                  void decide({ decision: item.decision, remember: item.remember })
+                }}
+              >
+                <text fg={selected() === index() ? theme.background : theme.text}>
+                  {item.key}·{item.label}
+                </text>
+              </box>
             )}
           </For>
+        </box>
+        <box paddingLeft={2} paddingRight={2} paddingBottom={1}>
+          <text fg={theme.textMuted}>←→ move · enter confirm · mouse click</text>
         </box>
       </box>
     </box>
