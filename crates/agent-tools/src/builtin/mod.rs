@@ -1,3 +1,4 @@
+pub mod ask;
 pub mod checks;
 pub mod exec;
 pub mod fs;
@@ -25,6 +26,7 @@ pub fn register_builtin(registry: ToolRegistry) -> ToolRegistry {
         .register(net::http_fetch_tool())
         .register(checks::run_checks_tool())
         .register(plan::update_plan_tool())
+        .register(ask::ask_user_tool())
         .register(terminal::shell_tool())
         .register(git::git_tool())
 }

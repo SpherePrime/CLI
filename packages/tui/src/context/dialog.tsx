@@ -35,6 +35,12 @@ export type DialogState =
     }
   | { type: "info"; title: string; body: string }
   | {
+      type: "question"
+      question: string
+      options: string[]
+      onAnswer: (answer: string | undefined) => void
+    }
+  | {
       type: "confirm"
       title: string
       body: string
@@ -116,6 +122,14 @@ export function openPermissionDialog(input: PermissionRequest) {
   pumpPermissionQueue()
 }
 
+export function openQuestion(input: {
+  question: string
+  options: string[]
+  onAnswer: (answer: string | undefined) => void
+}) {
+  setDialog({ type: "question", ...input })
+}
+
 export function closeDialog() {
   setDialog({ type: "none" })
   pumpPermissionQueue()
@@ -138,6 +152,7 @@ export function useDialog() {
     openProviderDialog,
     openSessionsDialog,
     openPermissionDialog,
+    openQuestion,
     closeDialog,
   }
 }

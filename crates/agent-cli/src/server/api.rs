@@ -128,6 +128,10 @@ pub async fn route(
         return handle_permission(request, state).await;
     }
 
+    if method == Method::POST && path == "/answer" {
+        return handle_answer(request, state).await;
+    }
+
     if method == Method::GET && path == "/tools" {
         let tools = agent_tools::builtin::register_builtin(agent_tools::ToolRegistry::new());
         let schemas: Vec<serde_json::Value> = tools
@@ -219,6 +223,13 @@ struct PermissionBody {
     remember: bool,
 }
 
+#[derive(Deserialize)]
+struct AnswerBody {
+    session_id: uuid::Uuid,
+    id: uuid::Uuid,
+    answer: Option<String>,
+}
+
 async fn handle_cancel(
     request: Request<Incoming>,
     state: Arc<AppState>,
@@ -253,6 +264,20 @@ async fn handle_permission(
     };
     let resolved = state
         .resolve_permission(&body.session_id, body.id, decision, body.remember)
+        .await;
+    Ok(json_response(&serde_json::json!({ "resolved": resolved })))
+}
+
+async fn handle_answer(
+    request: Request<Incoming>,
+    state: Arc<AppState>,
+) -> Result<Response<BoxBody>, std::convert::Infallible> {
+    let body = match read_json::<AnswerBody>(request).await {
+        Ok(body) => body,
+        Err(response) => return Ok(response),
+    };
+    let resolved = state
+        .answer_question(&body.session_id, body.id, body.answer)
         .await;
     Ok(json_response(&serde_json::json!({ "resolved": resolved })))
 }

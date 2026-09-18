@@ -29,12 +29,24 @@ pub trait PermissionApprover: Send + Sync + 'static {
     async fn approve(&self, request: PermissionRequest) -> PermissionDecision;
 }
 
+#[derive(Debug, Clone)]
+pub struct UserQuestion {
+    pub question: String,
+    pub options: Vec<String>,
+}
+
+#[async_trait]
+pub trait UserPrompter: Send + Sync + 'static {
+    async fn ask(&self, question: UserQuestion) -> Option<String>;
+}
+
 #[derive(Clone)]
 pub struct ToolExecutionContext {
     pub session_id: Uuid,
     pub working_dir: std::path::PathBuf,
     pub permission_engine: Arc<std::sync::Mutex<PermissionEngine>>,
     pub approver: Option<Arc<dyn PermissionApprover>>,
+    pub prompter: Option<Arc<dyn UserPrompter>>,
     pub cancel: Arc<std::sync::atomic::AtomicBool>,
     pub turn_id: Option<String>,
 }
@@ -50,6 +62,7 @@ impl ToolExecutionContext {
             working_dir,
             permission_engine: Arc::new(std::sync::Mutex::new(engine)),
             approver: None,
+            prompter: None,
             cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             turn_id: None,
         }
@@ -57,6 +70,11 @@ impl ToolExecutionContext {
 
     pub fn with_approver(mut self, approver: Arc<dyn PermissionApprover>) -> Self {
         self.approver = Some(approver);
+        self
+    }
+
+    pub fn with_prompter(mut self, prompter: Arc<dyn UserPrompter>) -> Self {
+        self.prompter = Some(prompter);
         self
     }
 

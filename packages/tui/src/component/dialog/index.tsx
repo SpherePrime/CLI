@@ -9,6 +9,7 @@ import { FormDialog } from "./form-dialog"
 import { InfoDialog } from "./info-dialog"
 import { ConfirmDialog } from "./confirm-dialog"
 import { PermissionDialog } from "./permission-dialog"
+import { QuestionDialog } from "./question-dialog"
 import type { AgentClient } from "../../client"
 
 export function DialogHost(props: { client: AgentClient }) {
@@ -35,6 +36,8 @@ export function DialogHost(props: { client: AgentClient }) {
         return <ConfirmDialog state={state} />
       case "permission":
         return <PermissionDialog client={props.client} state={state} />
+      case "question":
+        return <QuestionDialog state={state} />
       default:
         return undefined
     }

@@ -39,7 +39,7 @@ const helpText = [
 
 export function Session(props: { client: AgentClient }) {
   const { route, navigate } = useRoute()
-  const { dialog, openPermissionDialog, openInfo, openSelect, openForm } = useDialog()
+  const { dialog, openPermissionDialog, openInfo, openSelect, openForm, openQuestion } = useDialog()
   const renderer = useRenderer()
   const session = useSession()
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
@@ -276,6 +276,17 @@ export function Session(props: { client: AgentClient }) {
         break
       case "permission_mode_changed":
         session.setPermissionMode(event.mode as PermissionMode)
+        break
+      case "question_asked":
+        openQuestion({
+          question: event.question,
+          options: event.options ?? [],
+          onAnswer: (answer) => {
+            void props.client.answerQuestion(session.sessionId(), event.id, answer).catch(() => {})
+          },
+        })
+        break
+      case "question_answered":
         break
       case "session_title_changed":
         setTitle(event.title)

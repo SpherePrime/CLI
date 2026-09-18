@@ -309,6 +309,19 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
     }
     case "plan_updated":
       return { ...state, lastSequence: sequence, plan: event.steps }
+    case "question_asked": {
+      const entry: ChatEntry = { id: `question-${event.id}`, role: "system", text: `? ${event.question}` }
+      return { ...state, lastSequence: sequence, entries: [...state.entries, entry] }
+    }
+    case "question_answered": {
+      const answer = event.answer ?? "(skipped)"
+      const entries = updateMatch(
+        state.entries,
+        (entry) => entry.id === `question-${event.id}`,
+        (entry) => ({ ...entry, text: `${entry.text}\n→ ${answer}` }),
+      )
+      return { ...state, lastSequence: sequence, entries }
+    }
     case "permission_mode_changed":
     case "usage":
     case "finished":

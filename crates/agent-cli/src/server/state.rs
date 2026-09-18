@@ -144,6 +144,24 @@ impl AppState {
             None => false,
         }
     }
+
+    pub async fn answer_question(
+        &self,
+        session_id: &uuid::Uuid,
+        question_id: uuid::Uuid,
+        answer: Option<String>,
+    ) -> bool {
+        let approver = self
+            .engines
+            .read()
+            .unwrap()
+            .get(session_id)
+            .map(|handle| Arc::clone(&handle.approver));
+        match approver {
+            Some(approver) => approver.answer(question_id, answer).await,
+            None => false,
+        }
+    }
 }
 
 pub fn permission_mode_name(mode: PermissionMode) -> &'static str {

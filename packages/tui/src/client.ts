@@ -135,6 +135,8 @@ export type EngineEvent =
   | { type: "permission_requested"; meta: EventMeta; id: string; tool: string; scope: string; target: string; reason: string }
   | { type: "permission_resolved"; meta: EventMeta; id: string; decision: string }
   | { type: "permission_mode_changed"; meta: EventMeta; mode: string }
+  | { type: "question_asked"; meta: EventMeta; id: string; question: string; options: string[] }
+  | { type: "question_answered"; meta: EventMeta; id: string; answer?: string | null }
   | { type: "usage"; meta: EventMeta; input_tokens: number; output_tokens: number }
   | { type: "finished"; meta: EventMeta; stop_reason: string; input_tokens: number; output_tokens: number; iterations: number }
   | { type: "error"; meta?: EventMeta; message: string }
@@ -244,6 +246,18 @@ export class AgentClient {
       id,
       decision,
       remember: remember ?? false,
+    })
+  }
+
+  async answerQuestion(
+    sessionId: string | undefined,
+    id: string,
+    answer: string | undefined,
+  ): Promise<{ resolved: boolean }> {
+    return this.post<{ resolved: boolean }>("/answer", {
+      session_id: sessionId,
+      id,
+      answer,
     })
   }
 

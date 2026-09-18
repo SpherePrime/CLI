@@ -4,7 +4,7 @@ pub mod registry;
 
 pub use executor::{
     PermissionApprover, PermissionRequest, ToolDefinition, ToolExecutionContext, ToolExecutor,
-    ToolOutput,
+    ToolOutput, UserPrompter, UserQuestion,
 };
 pub use registry::ToolRegistry;
 

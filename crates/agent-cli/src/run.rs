@@ -92,6 +92,17 @@ fn emit(event: &EngineEvent, json: bool) {
         EngineEvent::PermissionRequested { tool, reason, .. } => {
             println!("\n? permission required for {tool}: {reason}");
         }
+        EngineEvent::QuestionAsked {
+            question, options, ..
+        } => {
+            println!("\n? {question}");
+            for (index, option) in options.iter().enumerate() {
+                println!("  {}. {option}", index + 1);
+            }
+        }
+        EngineEvent::QuestionAnswered { answer, .. } => {
+            println!("= answered: {}", answer.as_deref().unwrap_or("(cancelled)"));
+        }
         EngineEvent::Finished {
             stop_reason,
             input_tokens,

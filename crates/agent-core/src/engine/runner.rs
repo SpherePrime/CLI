@@ -740,6 +740,7 @@ impl AgentEngine {
         )
         .with_permission_engine(self.permissions.clone())
         .with_approver(self.approver.clone())
+        .with_prompter(self.approver.clone())
         .with_cancel(Arc::clone(&self.cancel))
         .with_turn_id(self.current_turn.clone())
     }

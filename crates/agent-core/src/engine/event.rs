@@ -177,6 +177,21 @@ pub enum EngineEvent {
         meta: EventMeta,
         mode: String,
     },
+    QuestionAsked {
+        #[serde(flatten)]
+        meta: EventMeta,
+        id: Uuid,
+        question: String,
+        #[serde(default)]
+        options: Vec<String>,
+    },
+    QuestionAnswered {
+        #[serde(flatten)]
+        meta: EventMeta,
+        id: Uuid,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        answer: Option<String>,
+    },
     Usage {
         #[serde(flatten)]
         meta: EventMeta,

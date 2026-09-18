@@ -263,4 +263,13 @@ describe("timeline reducer", () => {
     expect(state.plan[0]).toEqual({ title: "Read code", status: "completed" })
     expect(state.plan[2]).toEqual({ title: "Run tests" })
   })
+
+  test("question events render and record the answer", () => {
+    const entries = apply([
+      { type: "question_asked", meta: meta(1, "question_q1"), id: "q1", question: "Which file?", options: ["a", "b"] },
+      { type: "question_answered", meta: meta(2, "question_q1"), id: "q1", answer: "a" },
+    ])
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.text).toBe("? Which file?\n→ a")
+  })
 })
