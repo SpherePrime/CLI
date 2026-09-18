@@ -5,7 +5,9 @@ use serde_json::{json, Value};
 use agent_filesystem::read_file;
 
 use crate::builtin::paths::{display, resolve_path, truncate};
-use crate::executor::{ToolExecutionContext, ToolExecutor, ToolOutput};
+use crate::executor::{
+    ToolArtifact, ToolArtifactKind, ToolExecutionContext, ToolExecutor, ToolOutput,
+};
 
 const MAX_OUTPUT: usize = 262_144;
 const MAX_FILES: usize = 50;
@@ -34,6 +36,7 @@ impl ToolExecutor for ReadManyFilesTool {
         let mut out = String::new();
         let mut read = 0usize;
         let mut skipped: Vec<String> = Vec::new();
+        let mut artifacts = Vec::new();
         for raw in paths.iter().take(MAX_FILES) {
             let Some(raw) = raw.as_str() else {
                 continue;
@@ -48,6 +51,10 @@ impl ToolExecutor for ReadManyFilesTool {
                     }
                     out.push('\n');
                     read += 1;
+                    artifacts.push(ToolArtifact {
+                        path: display(&path),
+                        kind: ToolArtifactKind::Read,
+                    });
                 }
                 Err(error) => skipped.push(format!("{}: {error}", display(&path))),
             }
@@ -63,7 +70,9 @@ impl ToolExecutor for ReadManyFilesTool {
             out.push_str(&skipped.join("\n"));
         }
         let summary = format!("read {read} file(s)");
-        Ok(ToolOutput::success(truncate(&out, MAX_OUTPUT)).summary(summary))
+        Ok(ToolOutput::success(truncate(&out, MAX_OUTPUT))
+            .summary(summary)
+            .artifacts(artifacts))
     }
 }
 
@@ -175,6 +184,11 @@ mod tests {
         assert!(output.content.contains("==> "));
         assert!(output.content.contains("alpha"));
         assert!(output.content.contains("beta"));
+        assert_eq!(output.artifacts.len(), 2);
+        assert!(output
+            .artifacts
+            .iter()
+            .all(|a| { a.path.ends_with("a.txt") || a.path.ends_with("b.txt") }));
     }
 
     #[tokio::test]

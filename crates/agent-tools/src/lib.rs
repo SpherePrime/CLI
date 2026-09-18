@@ -5,8 +5,8 @@ pub mod processes;
 pub mod registry;
 
 pub use executor::{
-    PermissionApprover, PermissionRequest, ToolDefinition, ToolExecutionContext, ToolExecutor,
-    ToolOutput, UserPrompter, UserQuestion,
+    PermissionApprover, PermissionRequest, ToolArtifact, ToolArtifactKind, ToolDefinition,
+    ToolExecutionContext, ToolExecutor, ToolOutput, UserPrompter, UserQuestion,
 };
 pub use registry::ToolRegistry;
 

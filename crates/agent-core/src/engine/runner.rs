@@ -561,6 +561,7 @@ impl AgentEngine {
                             exit_code: None,
                             truncated: false,
                             file_changes: Vec::new(),
+                            artifacts: Vec::new(),
                         },
                     )
                     .await;
@@ -618,6 +619,8 @@ impl AgentEngine {
                                 .unwrap_or_else(|error| ToolOutput::failure(error.to_string()))
                         };
                         let duration_ms = started.elapsed().as_millis();
+                        let mut out = out;
+                        out.duration_ms = Some(duration_ms as u64);
                         (call, out, duration_ms)
                     });
                 }
@@ -659,8 +662,10 @@ impl AgentEngine {
             summary,
             details,
             file_changes,
+            artifacts,
             exit_code,
             truncated,
+            duration_ms: _output_duration_ms,
         } = output;
         let file_changes = tool_file_changes(file_changes);
         let tool_item = format!("tool_{}", call.id);
@@ -702,6 +707,10 @@ impl AgentEngine {
                 exit_code,
                 truncated,
                 file_changes: self.redact_file_changes(file_changes),
+                artifacts: artifacts
+                    .into_iter()
+                    .map(|artifact| serde_json::to_value(artifact).unwrap_or_default())
+                    .collect(),
             },
         )
         .await;
@@ -1047,6 +1056,7 @@ mod tests {
     use super::*;
     use agent_config::{ModelConfig, ProviderKind};
     use agent_model::{MessageContent, ToolCall};
+    use agent_tools::executor::{ToolArtifact, ToolArtifactKind};
     use async_trait::async_trait;
     use std::collections::VecDeque;
     use std::sync::Mutex;
@@ -1425,7 +1435,7 @@ mod tests {
                 _ctx: &ToolExecutionContext,
             ) -> Result<ToolOutput> {
                 sleep(Duration::from_millis(self.ms)).await;
-                Ok(ToolOutput::success(format!("slept {}ms", self.ms)))
+                Ok(ToolOutput::success("slept".into()))
             }
         }
 
@@ -1942,5 +1952,85 @@ mod tests {
             .await
             .unwrap();
         assert!(!output.ok);
+    }
+
+    #[tokio::test]
+    async fn tool_result_carries_artifacts_and_duration() {
+        struct ArtifactTool;
+        #[async_trait]
+        impl ToolExecutor for ArtifactTool {
+            async fn execute(
+                &self,
+                _args: Value,
+                _ctx: &ToolExecutionContext,
+            ) -> Result<ToolOutput> {
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                Ok(
+                    ToolOutput::success("touched".into()).artifact(ToolArtifact {
+                        path: "note.txt".into(),
+                        kind: ToolArtifactKind::Modified,
+                    }),
+                )
+            }
+        }
+
+        let tmp = tempfile::tempdir().unwrap();
+        let (tx, mut rx) = mpsc::channel(256);
+        let mut engine = AgentEngine::with_provider(
+            test_config(),
+            tmp.path().to_path_buf(),
+            tx.clone(),
+            Box::new(StepProvider::new(vec![
+                vec![done_response(
+                    "",
+                    vec![ToolCall {
+                        id: "call_a".into(),
+                        name: "artifact_tool".into(),
+                        args: serde_json::json!({}),
+                    }],
+                )],
+                vec![done_response("done", vec![])],
+            ])),
+        );
+        engine.tools.add(ToolDefinition {
+            name: "artifact_tool".into(),
+            description: "artifact".into(),
+            input_schema: serde_json::json!({ "type": "object" }),
+            executor: Arc::new(ArtifactTool),
+            permissions: PermissionScope::Read,
+            timeout_secs: 10,
+        });
+
+        engine.run("touch", &tx).await.unwrap();
+        drop(tx);
+
+        let mut saw = false;
+        let mut durations: Vec<u128> = Vec::new();
+        let mut artifact_blobs: Vec<Vec<serde_json::Value>> = Vec::new();
+        while let Ok(event) = rx.try_recv() {
+            if let EngineEvent::ToolResult {
+                id,
+                artifacts,
+                duration_ms,
+                ..
+            } = event
+            {
+                if id != "call_a" {
+                    continue;
+                }
+                saw = true;
+                durations.push(duration_ms);
+                artifact_blobs.push(artifacts);
+            }
+        }
+        assert!(saw, "expected a tool_result event for call_a");
+        assert!(
+            durations.iter().any(|duration| *duration > 0),
+            "duration must be measured, got {durations:?}"
+        );
+        let artifacts = &artifact_blobs[0];
+        assert_eq!(artifacts.len(), 1);
+        assert_eq!(artifacts[0]["path"], serde_json::json!("note.txt"));
+        assert_eq!(artifacts[0]["type"], serde_json::json!("modified"));
     }
 }

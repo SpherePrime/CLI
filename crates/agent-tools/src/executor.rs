@@ -110,6 +110,22 @@ pub struct FileChange {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolArtifact {
+    pub path: String,
+    #[serde(rename = "type")]
+    pub kind: ToolArtifactKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ToolArtifactKind {
+    Created,
+    Modified,
+    Deleted,
+    Read,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolOutput {
     pub ok: bool,
     pub content: String,
@@ -121,10 +137,14 @@ pub struct ToolOutput {
     pub details: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub file_changes: Vec<FileChange>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub artifacts: Vec<ToolArtifact>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exit_code: Option<i32>,
     #[serde(default)]
     pub truncated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration_ms: Option<u64>,
 }
 
 impl ToolOutput {
@@ -136,8 +156,10 @@ impl ToolOutput {
             summary: None,
             details: None,
             file_changes: Vec::new(),
+            artifacts: Vec::new(),
             exit_code: None,
             truncated: false,
+            duration_ms: None,
         }
     }
 
@@ -149,8 +171,10 @@ impl ToolOutput {
             summary: None,
             details: None,
             file_changes: Vec::new(),
+            artifacts: Vec::new(),
             exit_code: None,
             truncated: false,
+            duration_ms: None,
         }
     }
 
@@ -179,6 +203,16 @@ impl ToolOutput {
         self
     }
 
+    pub fn artifact(mut self, artifact: ToolArtifact) -> Self {
+        self.artifacts.push(artifact);
+        self
+    }
+
+    pub fn artifacts(mut self, artifacts: impl IntoIterator<Item = ToolArtifact>) -> Self {
+        self.artifacts.extend(artifacts);
+        self
+    }
+
     pub fn exit_code(mut self, code: i32) -> Self {
         self.exit_code = Some(code);
         self
@@ -186,6 +220,11 @@ impl ToolOutput {
 
     pub fn truncated(mut self, truncated: bool) -> Self {
         self.truncated = truncated;
+        self
+    }
+
+    pub fn duration(mut self, duration_ms: u64) -> Self {
+        self.duration_ms = Some(duration_ms);
         self
     }
 }

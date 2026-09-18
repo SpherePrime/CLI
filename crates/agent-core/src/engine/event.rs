@@ -149,6 +149,8 @@ pub enum EngineEvent {
         truncated: bool,
         #[serde(default)]
         file_changes: Vec<serde_json::Value>,
+        #[serde(default)]
+        artifacts: Vec<serde_json::Value>,
     },
     ActivityChanged {
         #[serde(flatten)]

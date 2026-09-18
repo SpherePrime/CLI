@@ -8,7 +8,16 @@ use agent_filesystem::snapshot;
 use agent_filesystem::{find_files, list_directory, read_file, write_file, FileEdit};
 
 use crate::builtin::paths::{display, resolve_path, truncate};
-use crate::executor::{FileChange, ToolExecutionContext, ToolExecutor, ToolOutput};
+use crate::executor::{
+    FileChange, ToolArtifact, ToolArtifactKind, ToolExecutionContext, ToolExecutor, ToolOutput,
+};
+
+fn artifact(path: &Path, kind: ToolArtifactKind) -> ToolArtifact {
+    ToolArtifact {
+        path: display(path),
+        kind,
+    }
+}
 
 const MAX_OUTPUT: usize = 262_144;
 const MAX_READ_LINES: usize = 2000;
@@ -67,7 +76,8 @@ impl ToolExecutor for ReadFileTool {
         if out.is_empty() {
             out = "(empty file)".to_string();
         }
-        Ok(ToolOutput::success(truncate(&out, MAX_OUTPUT)))
+        Ok(ToolOutput::success(truncate(&out, MAX_OUTPUT))
+            .artifact(artifact(&path, ToolArtifactKind::Read)))
     }
 }
 
@@ -126,7 +136,15 @@ impl ToolExecutor for WriteFileTool {
             display(&path),
             content.len()
         ))
-        .file_change(change))
+        .file_change(change)
+        .artifact(artifact(
+            &path,
+            if existed {
+                ToolArtifactKind::Modified
+            } else {
+                ToolArtifactKind::Created
+            },
+        )))
     }
 }
 
@@ -177,7 +195,9 @@ impl ToolExecutor for EditFileTool {
             additions: None,
             deletions: None,
         };
-        Ok(ToolOutput::success(truncate(&diff, MAX_OUTPUT)).file_change(change))
+        Ok(ToolOutput::success(truncate(&diff, MAX_OUTPUT))
+            .file_change(change)
+            .artifact(artifact(&path, ToolArtifactKind::Modified)))
     }
 }
 
@@ -224,7 +244,9 @@ impl ToolExecutor for PatchFileTool {
             additions: None,
             deletions: None,
         };
-        Ok(ToolOutput::success(format!("patched {}", display(&path))).file_change(change))
+        Ok(ToolOutput::success(format!("patched {}", display(&path)))
+            .file_change(change)
+            .artifact(artifact(&path, ToolArtifactKind::Modified)))
     }
 }
 
@@ -287,6 +309,7 @@ impl ToolExecutor for ApplyPatchTool {
             bail!("patch has no file headers (+++)");
         }
         let mut changes = Vec::new();
+        let mut artifacts = Vec::new();
         let mut summary = Vec::new();
         for (target, section) in sections {
             if target.is_empty() || target == "/dev/null" {
@@ -311,6 +334,14 @@ impl ToolExecutor for ApplyPatchTool {
                 additions: None,
                 deletions: None,
             });
+            artifacts.push(artifact(
+                &path,
+                if existed {
+                    ToolArtifactKind::Modified
+                } else {
+                    ToolArtifactKind::Created
+                },
+            ));
             summary.push(format!(
                 "{} {}",
                 if existed { "patched" } else { "created" },
@@ -320,7 +351,9 @@ impl ToolExecutor for ApplyPatchTool {
         if changes.is_empty() {
             bail!("patch produced no changes");
         }
-        Ok(ToolOutput::success(summary.join("\n")).file_changes(changes))
+        Ok(ToolOutput::success(summary.join("\n"))
+            .file_changes(changes)
+            .artifacts(artifacts))
     }
 }
 
@@ -375,7 +408,9 @@ impl ToolExecutor for DeletePathTool {
             additions: None,
             deletions: None,
         };
-        Ok(ToolOutput::success(format!("deleted {}", display(&path))).file_change(change))
+        Ok(ToolOutput::success(format!("deleted {}", display(&path)))
+            .file_change(change)
+            .artifact(artifact(&path, ToolArtifactKind::Deleted)))
     }
 }
 
@@ -603,10 +638,13 @@ mod tests {
         let change = &output.file_changes[0];
         assert_eq!(change.change, "created");
         assert_eq!(change.additions, Some(2));
+        assert_eq!(output.artifacts.len(), 1);
+        assert!(output.artifacts[0].path.ends_with("a.txt"));
+        assert_eq!(output.artifacts[0].kind, ToolArtifactKind::Created);
     }
 
     #[tokio::test]
-    async fn edit_file_reports_diff() {
+    async fn edit_file_reports_diff_and_artifact() {
         let tmp = test_root();
         std::fs::write(tmp.join("a.txt"), "hello world").unwrap();
         let output = EditFileTool
@@ -620,6 +658,19 @@ mod tests {
         let change = &output.file_changes[0];
         assert_eq!(change.change, "edit");
         assert!(change.diff.as_deref().unwrap_or("").contains("goodbye"));
+        assert_eq!(output.artifacts[0].kind, ToolArtifactKind::Modified);
+    }
+
+    #[tokio::test]
+    async fn delete_path_reports_deleted_artifact() {
+        let tmp = test_root();
+        std::fs::write(tmp.join("gone.txt"), "bye").unwrap();
+        let output = DeletePathTool
+            .execute(json!({ "path": "gone.txt" }), &ctx(&tmp))
+            .await
+            .unwrap();
+        assert_eq!(output.artifacts[0].kind, ToolArtifactKind::Deleted);
+        assert!(!tmp.join("gone.txt").exists());
     }
 
     #[tokio::test]
