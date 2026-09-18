@@ -27,6 +27,41 @@ pub fn validate_url(url: &str) -> Result<()> {
     }
 }
 
+fn is_private_ip(ip: std::net::IpAddr) -> bool {
+    match ip {
+        std::net::IpAddr::V4(v4) => {
+            v4.is_loopback() || v4.is_private() || v4.is_link_local() || v4.is_unspecified()
+        }
+        std::net::IpAddr::V6(v6) => {
+            v6.is_loopback()
+                || v6.is_unspecified()
+                || v6.segments()[0] & 0xfe00 == 0xfc00
+                || v6.segments()[0] & 0xffc0 == 0xfe80
+        }
+    }
+}
+
+pub fn reject_private_target(url: &str) -> Result<()> {
+    let parsed = reqwest::Url::parse(url).with_context(|| format!("invalid url: {url}"))?;
+    let host = parsed.host_str().context("url has no host")?;
+    let port = parsed.port_or_known_default().unwrap_or(80);
+    if let Ok(ip) = host.parse::<std::net::IpAddr>() {
+        if is_private_ip(ip) {
+            bail!("refusing to fetch private address: {ip}");
+        }
+        return Ok(());
+    }
+    let addrs: Vec<std::net::SocketAddr> = std::net::ToSocketAddrs::to_socket_addrs(&(host, port))
+        .with_context(|| format!("could not resolve host: {host}"))?
+        .collect();
+    for addr in addrs {
+        if is_private_ip(addr.ip()) {
+            bail!("refusing to fetch private address: {} ({host})", addr.ip());
+        }
+    }
+    Ok(())
+}
+
 pub struct HttpFetchTool;
 
 #[async_trait]
@@ -38,6 +73,7 @@ impl ToolExecutor for HttpFetchTool {
             .context("url is required")?
             .trim();
         validate_url(url)?;
+        reject_private_target(url)?;
         let method = args
             .get("method")
             .and_then(|v| v.as_str())
@@ -129,7 +165,7 @@ mod tests {
     #[test]
     fn accepts_http_and_https() {
         assert!(validate_url("https://example.com").is_ok());
-        assert!(validate_url("http://localhost:8080/health").is_ok());
+        assert!(validate_url("http://example.com/health").is_ok());
     }
 
     #[test]
@@ -137,5 +173,16 @@ mod tests {
         assert!(validate_url("ftp://example.com").is_err());
         assert!(validate_url("file:///etc/passwd").is_err());
         assert!(validate_url("not a url").is_err());
+    }
+
+    #[test]
+    fn rejects_loopback_and_private_targets() {
+        assert!(reject_private_target("http://127.0.0.1:8080/").is_err());
+        assert!(reject_private_target("http://localhost:8080/health").is_err());
+        assert!(reject_private_target("http://[::1]:8080/").is_err());
+        assert!(reject_private_target("http://192.168.1.10/").is_err());
+        assert!(reject_private_target("http://10.0.0.5/").is_err());
+        assert!(reject_private_target("http://169.254.169.254/latest/meta/").is_err());
+        assert!(reject_private_target("https://example.com").is_ok());
     }
 }
