@@ -151,11 +151,9 @@ impl ProcessManager {
             anyhow::bail!("unknown process id");
         };
         kill_tree(&process);
-        let deadline = Instant::now()
-            .checked_add(Duration::from_secs(5))
-            .unwrap_or_else(|| Instant::now() + Duration::from_secs(5));
-        let mut escalated = false;
         let start = Instant::now();
+        let deadline = start + Duration::from_secs(5);
+        let mut escalated = false;
         while process.try_wait().is_none() {
             if Instant::now() >= deadline {
                 break;
@@ -165,6 +163,10 @@ impl ProcessManager {
                 escalated = true;
             }
             std::thread::sleep(Duration::from_millis(40));
+        }
+        let mut guard = process.child.lock().expect("child lock");
+        if let Ok(status) = guard.wait() {
+            *process.exit.lock().expect("exit lock") = status.code();
         }
         let stopped = process.exit_code().is_some();
         self.remove(id);
