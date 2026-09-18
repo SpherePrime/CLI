@@ -218,7 +218,6 @@ fn kill_child(pid: u32, child: &mut Child) {
 
 #[cfg(unix)]
 fn kill_child(pid: u32, child: &mut Child) {
-    use std::os::unix::process::CommandExt;
     let _ = Command::new("pkill")
         .arg("-TERM")
         .arg("-P")
@@ -260,7 +259,7 @@ mod tests {
         let command = if cfg!(windows) {
             "ping -n 3 127.0.0.1 >nul && echo done"
         } else {
-            "echo done; sleep 1"
+            "echo done"
         };
         let process = manager.start(session, command, &cwd).expect("spawn");
 
