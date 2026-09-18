@@ -152,10 +152,15 @@ mod tests {
     #[tokio::test]
     async fn run_echo() {
         let r = ShellRunner::new();
+        let (command, args): (String, Vec<String>) = if cfg!(target_os = "windows") {
+            ("cmd".into(), vec!["/c".into(), "echo hi".into()])
+        } else {
+            ("sh".into(), vec!["-c".into(), "echo hi".into()])
+        };
         let out = r
             .run(&ExecRequest {
-                command: "cmd".into(),
-                args: vec!["/c".into(), "echo".into(), "hi".into()],
+                command,
+                args,
                 cwd: None,
                 env: vec![],
                 timeout_secs: None,
@@ -169,10 +174,15 @@ mod tests {
     #[tokio::test]
     async fn protected_env_skipped() {
         let r = ShellRunner::new();
+        let (command, args): (String, Vec<String>) = if cfg!(target_os = "windows") {
+            ("cmd".into(), vec!["/c".into(), "set".into()])
+        } else {
+            ("sh".into(), vec!["-c".into(), "env".into()])
+        };
         let out = r
             .run(&ExecRequest {
-                command: "cmd".into(),
-                args: vec!["/c".into(), "set".into()],
+                command,
+                args,
                 cwd: None,
                 env: vec![("AGENT_API_KEY".into(), "secret".into())],
                 timeout_secs: None,
@@ -185,11 +195,19 @@ mod tests {
     #[tokio::test]
     async fn timeout_kills_long_running_command() {
         let r = ShellRunner::new();
+        let (command, args): (String, Vec<String>) = if cfg!(target_os = "windows") {
+            (
+                "cmd".into(),
+                vec!["/c".into(), "ping -n 8 127.0.0.1 > nul".into()],
+            )
+        } else {
+            ("sh".into(), vec!["-c".into(), "sleep 10".into()])
+        };
         let outcome = r
             .run_with_timeout(
                 &ExecRequest {
-                    command: "cmd".into(),
-                    args: vec!["/c".into(), "ping -n 8 127.0.0.1 > nul".into()],
+                    command,
+                    args,
                     cwd: None,
                     env: vec![],
                     timeout_secs: Some(1),
@@ -204,11 +222,16 @@ mod tests {
     #[tokio::test]
     async fn completes_before_timeout() {
         let r = ShellRunner::new();
+        let (command, args): (String, Vec<String>) = if cfg!(target_os = "windows") {
+            ("cmd".into(), vec!["/c".into(), "echo done".into()])
+        } else {
+            ("sh".into(), vec!["-c".into(), "echo done".into()])
+        };
         let outcome = r
             .run_with_timeout(
                 &ExecRequest {
-                    command: "cmd".into(),
-                    args: vec!["/c".into(), "echo done".into()],
+                    command,
+                    args,
                     cwd: None,
                     env: vec![],
                     timeout_secs: Some(1),
