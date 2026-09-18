@@ -13,6 +13,10 @@ use crate::executor::{FileChange, ToolExecutionContext, ToolExecutor, ToolOutput
 const MAX_OUTPUT: usize = 262_144;
 const MAX_READ_LINES: usize = 2000;
 
+fn snapshot_before_change(ctx: &ToolExecutionContext, path: &Path) {
+    let _ = snapshot::take_snapshot_turn(&ctx.working_dir, path, ctx.turn_id.as_deref());
+}
+
 fn schema(properties: Value, required: &[&str]) -> Value {
     json!({
         "type": "object",
@@ -103,7 +107,7 @@ impl ToolExecutor for WriteFileTool {
             .context("content is required")?;
         let existed = path.exists();
         if existed {
-            let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
+            snapshot_before_change(ctx, &path);
         }
         write_file(&path, content).await?;
         let change = FileChange {
@@ -162,7 +166,7 @@ impl ToolExecutor for EditFileTool {
             .and_then(|v| v.as_str())
             .context("new is required")?;
         let original = read_file(&path).await?;
-        let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
+        snapshot_before_change(ctx, &path);
         let edit = FileEdit::search_replace(&path, old, new);
         let updated = edit.apply(None).await?;
         let diff = edit.diff(&original, &updated);
@@ -210,7 +214,7 @@ impl ToolExecutor for PatchFileTool {
             .get("patch")
             .and_then(|v| v.as_str())
             .context("patch is required")?;
-        let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
+        snapshot_before_change(ctx, &path);
         let edit = FileEdit::patch(&path, patch);
         edit.apply(None).await?;
         let change = FileChange {
@@ -264,7 +268,7 @@ impl ToolExecutor for DeletePathTool {
             }
             tokio::fs::remove_dir_all(&path).await?;
         } else {
-            let _ = snapshot::take_snapshot(&ctx.working_dir, &path);
+            snapshot_before_change(ctx, &path);
             tokio::fs::remove_file(&path).await?;
         }
         let change = FileChange {

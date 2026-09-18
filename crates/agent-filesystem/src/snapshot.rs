@@ -12,6 +12,8 @@ pub struct Snapshot {
     pub path: String,
     pub content: String,
     pub taken_at: u64,
+    #[serde(default)]
+    pub turn: Option<String>,
 }
 
 fn root() -> PathBuf {
@@ -60,6 +62,32 @@ pub fn take_snapshot(working_dir: &Path, path: &Path) -> Result<Option<String>> 
 }
 
 pub fn take_snapshot_at(root: &Path, working_dir: &Path, path: &Path) -> Result<Option<String>> {
+    write_snapshot(root, working_dir, path, None)
+}
+
+pub fn take_snapshot_turn(
+    working_dir: &Path,
+    path: &Path,
+    turn: Option<&str>,
+) -> Result<Option<String>> {
+    write_snapshot(&root(), working_dir, path, turn)
+}
+
+pub fn take_snapshot_turn_at(
+    root: &Path,
+    working_dir: &Path,
+    path: &Path,
+    turn: Option<&str>,
+) -> Result<Option<String>> {
+    write_snapshot(root, working_dir, path, turn)
+}
+
+fn write_snapshot(
+    root: &Path,
+    working_dir: &Path,
+    path: &Path,
+    turn: Option<&str>,
+) -> Result<Option<String>> {
     if !path.exists() || !path.is_file() {
         return Ok(None);
     }
@@ -80,6 +108,7 @@ pub fn take_snapshot_at(root: &Path, working_dir: &Path, path: &Path) -> Result<
         content: std::fs::read_to_string(&absolute)
             .with_context(|| format!("reading {}", absolute.display()))?,
         taken_at,
+        turn: turn.map(str::to_string),
     };
     let target = dir.join(name);
     std::fs::write(&target, serde_json::to_string_pretty(&snapshot)?)
@@ -133,6 +162,41 @@ pub fn restore_latest_at(root: &Path, working_dir: &Path) -> Result<Option<Strin
     Ok(Some(target.to_string_lossy().to_string()))
 }
 
+pub fn restore_turn(working_dir: &Path) -> Result<Vec<String>> {
+    restore_turn_at(&root(), working_dir)
+}
+
+pub fn restore_turn_at(root: &Path, working_dir: &Path) -> Result<Vec<String>> {
+    let entries = list(&snapshot_dir_at(root, working_dir))?;
+    let Some((_, last)) = entries.last() else {
+        return Ok(Vec::new());
+    };
+    let Some(turn) = last.turn.clone() else {
+        return Ok(restore_latest_at(root, working_dir)?.into_iter().collect());
+    };
+    let mut group: Vec<(PathBuf, Snapshot)> = entries
+        .into_iter()
+        .filter(|(_, snapshot)| snapshot.turn.as_deref() == Some(turn.as_str()))
+        .collect();
+    group.sort_by_key(|(_, snapshot)| std::cmp::Reverse(snapshot.taken_at));
+    let mut restored = Vec::new();
+    for (snapshot_file, snapshot) in &group {
+        let target = PathBuf::from(&snapshot.path);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("creating {}", parent.display()))?;
+        }
+        std::fs::write(&target, &snapshot.content)
+            .with_context(|| format!("writing {}", target.display()))?;
+        if !restored.contains(&snapshot.path) {
+            restored.push(snapshot.path.clone());
+        }
+        let _ = std::fs::remove_file(snapshot_file);
+    }
+    restored.reverse();
+    Ok(restored)
+}
+
 fn remove_snapshot_at(root: &Path, working_dir: &Path, path: &str) -> Result<()> {
     let dir = snapshot_dir_at(root, working_dir);
     let mut paths: Vec<PathBuf> = std::fs::read_dir(&dir)?
@@ -182,6 +246,47 @@ mod tests {
         assert_eq!(restored, file.to_string_lossy().to_string());
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "v1 content");
         assert!(latest_snapshot_at(&root, &dir).unwrap().is_none());
+    }
+
+    #[test]
+    fn restore_turn_reverts_every_file_of_the_latest_turn() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("undo");
+        let dir = tmp.path().join("project");
+        std::fs::create_dir_all(&dir).unwrap();
+        let a = dir.join("a.txt");
+        let b = dir.join("b.txt");
+        std::fs::write(&a, "a0").unwrap();
+        std::fs::write(&b, "b0").unwrap();
+
+        take_snapshot_turn_at(&root, &dir, &a, Some("turn-1")).unwrap();
+        std::fs::write(&a, "a1").unwrap();
+        take_snapshot_turn_at(&root, &dir, &a, Some("turn-1")).unwrap();
+        std::fs::write(&a, "a2").unwrap();
+        take_snapshot_turn_at(&root, &dir, &b, Some("turn-1")).unwrap();
+        std::fs::write(&b, "b1").unwrap();
+
+        let restored = restore_turn_at(&root, &dir).unwrap();
+        assert_eq!(restored.len(), 2);
+        assert_eq!(std::fs::read_to_string(&a).unwrap(), "a0");
+        assert_eq!(std::fs::read_to_string(&b).unwrap(), "b0");
+        assert!(restore_turn_at(&root, &dir).unwrap().is_empty());
+    }
+
+    #[test]
+    fn restore_turn_falls_back_to_unscoped_snapshot() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("undo");
+        let dir = tmp.path().join("project");
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("notes.txt");
+        std::fs::write(&file, "v1").unwrap();
+        take_snapshot_at(&root, &dir, &file).unwrap();
+        std::fs::write(&file, "v2").unwrap();
+
+        let restored = restore_turn_at(&root, &dir).unwrap();
+        assert_eq!(restored.len(), 1);
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), "v1");
     }
 
     #[test]

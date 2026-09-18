@@ -36,6 +36,7 @@ pub struct ToolExecutionContext {
     pub permission_engine: Arc<std::sync::Mutex<PermissionEngine>>,
     pub approver: Option<Arc<dyn PermissionApprover>>,
     pub cancel: Arc<std::sync::atomic::AtomicBool>,
+    pub turn_id: Option<String>,
 }
 
 impl ToolExecutionContext {
@@ -50,6 +51,7 @@ impl ToolExecutionContext {
             permission_engine: Arc::new(std::sync::Mutex::new(engine)),
             approver: None,
             cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            turn_id: None,
         }
     }
 
@@ -68,6 +70,11 @@ impl ToolExecutionContext {
 
     pub fn with_cancel(mut self, cancel: Arc<std::sync::atomic::AtomicBool>) -> Self {
         self.cancel = cancel;
+        self
+    }
+
+    pub fn with_turn_id(mut self, turn_id: Option<String>) -> Self {
+        self.turn_id = turn_id;
         self
     }
 }

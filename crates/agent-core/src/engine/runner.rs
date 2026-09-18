@@ -49,6 +49,7 @@ pub struct AgentEngine {
     mcp_loaded: bool,
     plugins: Vec<Arc<NativePlugin>>,
     plugins_loaded: bool,
+    current_turn: Option<String>,
 }
 
 impl AgentEngine {
@@ -113,6 +114,7 @@ impl AgentEngine {
             mcp_loaded: false,
             plugins: Vec::new(),
             plugins_loaded: false,
+            current_turn: None,
         }
     }
 
@@ -251,6 +253,7 @@ impl AgentEngine {
 
         let clock = self.clock.clone();
         let turn_item = clock.turn_id.to_string();
+        self.current_turn = Some(turn_item.clone());
         self.emit(
             tx,
             EngineEvent::Started {
@@ -283,6 +286,8 @@ impl AgentEngine {
                 started,
             )
             .await;
+
+        self.current_turn = None;
 
         if self.cancel.load(Ordering::SeqCst) {
             self.emit(
@@ -725,6 +730,7 @@ impl AgentEngine {
         .with_permission_engine(self.permissions.clone())
         .with_approver(self.approver.clone())
         .with_cancel(Arc::clone(&self.cancel))
+        .with_turn_id(self.current_turn.clone())
     }
 
     async fn ensure_mcp_tools(&mut self) {
