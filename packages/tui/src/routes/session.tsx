@@ -1,10 +1,10 @@
 import { ScrollBoxRenderable } from "@opentui/core"
 import { useRenderer, useKeyboard } from "@opentui/solid"
-import { createSignal, createResource, createMemo, createEffect, onCleanup, For, Show } from "solid-js"
+import { createSignal, createMemo, createEffect, onCleanup, For, Show } from "solid-js"
 import { Prompt, type PromptRef } from "../component/prompt/index"
 import { useRoute } from "../context/route"
 import { useDialog } from "../context/dialog"
-import { modelRevision } from "../context/app"
+import { modelLabel } from "../context/model"
 import {
   useSession,
   nextEntryId,
@@ -30,7 +30,8 @@ export function Session(props: { client: AgentClient }) {
   const renderer = useRenderer()
   const session = useSession()
   const [status, setStatus] = createSignal<"idle" | "running">("idle")
-  const [info] = createResource(() => (modelRevision(), props.client.info()))
+  const [loading, setLoading] = createSignal(false)
+  const [loadError, setLoadError] = createSignal<string | undefined>(undefined)
   let scroll: ScrollBoxRenderable
   let promptRef: PromptRef | undefined
 
@@ -43,20 +44,23 @@ export function Session(props: { client: AgentClient }) {
     return current.type === "session" ? current.draft : undefined
   }
 
-  const modelLabel = createMemo(() => {
-    const value = info()
-    if (!value) return ""
-    return `${value.model.model} · ${value.model.provider}`
-  })
+  const modelLabelMemo = createMemo(() => modelLabel() ?? "no model")
 
   async function loadHistory(id: string) {
     if (session.entries().length > 0) return
+    setLoading(true)
+    setLoadError(undefined)
     try {
       const detail = await props.client.getSessionDetail(id)
       if (detail.id !== session.sessionId()) return
+      resetSession()
       loadStoredMessages(detail.messages)
     } catch (error) {
+      if (session.sessionId() !== id) return
       session.addEntry({ id: nextEntryId(), role: "error", text: String(error) })
+      setLoadError(String(error))
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -125,7 +129,7 @@ export function Session(props: { client: AgentClient }) {
         await cancelRunning()
         return true
       case "/models":
-        appendSystem(modelLabel() || "loading…")
+        appendSystem(modelLabelMemo())
         return true
       default:
         return false
@@ -207,7 +211,7 @@ export function Session(props: { client: AgentClient }) {
   return (
     <box width="100%" flexDirection="column" flexGrow={1} minHeight={0}>
       <box flexDirection="row" justifyContent="space-between" paddingLeft={2} paddingRight={2} paddingTop={1}>
-        <text fg={theme.textMuted}>{modelLabel()}</text>
+        <text fg={theme.textMuted}>{modelLabelMemo()}</text>
         <text fg={status() === "running" ? theme.primary : theme.textMuted}>
           {status() === "running" ? "running…" : "idle"}
         </text>
@@ -224,10 +228,29 @@ export function Session(props: { client: AgentClient }) {
               when={session.entries().length === 0}
               fallback={<For each={session.entries()}>{(entry) => <MessageRow entry={entry} />}</For>}
             >
-              <box paddingLeft={2} paddingTop={1} flexDirection="column" gap={1}>
-                <text fg={theme.text}>Ask anything, or press ctrl+p for commands.</text>
-                <text fg={theme.textMuted}>esc back · ctrl+c exit</text>
-              </box>
+              <Show
+                when={!loading()}
+                fallback={
+                  <box paddingLeft={2} paddingTop={1}>
+                    <text fg={theme.textMuted}>Loading session…</text>
+                  </box>
+                }
+              >
+                <Show
+                  when={!loadError()}
+                  fallback={
+                    <box paddingLeft={2} paddingTop={1} flexDirection="column" gap={1}>
+                      <text fg={theme.error}>{loadError()}</text>
+                      <text fg={theme.textMuted}>Press ctrl+p for commands or esc to go back.</text>
+                    </box>
+                  }
+                >
+                  <box paddingLeft={2} paddingTop={1} flexDirection="column" gap={1}>
+                    <text fg={theme.text}>Ask anything, or press ctrl+p for commands.</text>
+                    <text fg={theme.textMuted}>esc back · ctrl+c exit</text>
+                  </box>
+                </Show>
+              </Show>
             </Show>
           </scrollbox>
         </box>

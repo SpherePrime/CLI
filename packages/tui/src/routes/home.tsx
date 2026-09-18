@@ -3,7 +3,7 @@ import { useKeyboard } from "@opentui/solid"
 import { theme } from "../theme"
 import { useRoute } from "../context/route"
 import { useDialog } from "../context/dialog"
-import { modelRevision } from "../context/app"
+import { modelError, modelLabel, modelStatus, modelVersion } from "../context/model"
 import type { AgentClient } from "../client"
 
 type HomeItem = {
@@ -15,7 +15,6 @@ type HomeItem = {
 export function Home(props: { client: AgentClient }) {
   const { navigate } = useRoute()
   const { dialog } = useDialog()
-  const [info] = createResource(() => (modelRevision(), props.client.info()))
   const [recent] = createResource(() => props.client.sessions())
   const [selected, setSelected] = createSignal(0)
 
@@ -33,9 +32,10 @@ export function Home(props: { client: AgentClient }) {
   })
 
   const status = createMemo(() => {
-    const value = info()
-    if (value) return `${value.version} · ${value.model.model}`
-    if (info.error) return `offline · ${String(info.error)}`
+    const label = modelLabel()
+    const version = modelVersion()
+    if (label) return `${version ? `${version} · ` : ""}${label}`
+    if (modelStatus() === "error") return `offline · ${modelError() ?? "no model"}`
     return "connecting…"
   })
 

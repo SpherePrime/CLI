@@ -6,6 +6,7 @@ import { AgentClient } from "./client"
 import { useRoute } from "./context/route"
 import { useDialog } from "./context/dialog"
 import { setAppRenderer } from "./context/app"
+import { loadModel } from "./context/model"
 import { buildCommands } from "./commands"
 import { theme } from "./theme"
 import { Home } from "./routes/home"
@@ -107,6 +108,7 @@ function App(props: { url: string }) {
 
   onMount(() => {
     renderer.setTerminalTitle("agent")
+    void loadModel(client())
   })
 
   useKeyboard((key) => {

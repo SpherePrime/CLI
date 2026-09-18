@@ -4,6 +4,7 @@ import type { TextareaRenderable, BoxRenderable } from "@opentui/core"
 import { EmptyBorder, SplitBorder } from "../../ui/border"
 import { theme } from "../../theme"
 import { useDialog } from "../../context/dialog"
+import { modelLabel } from "../../context/model"
 import { Autocomplete, type AutocompleteRef } from "./autocomplete"
 import type { AgentClient } from "../../client"
 
@@ -167,9 +168,7 @@ export function Prompt(props: {
               <box flexDirection="row" gap={1}>
                 <text fg={theme.textMuted}>agent</text>
                 <text fg={theme.textMuted}>·</text>
-                <text fg={theme.text}>
-                  {store.prompt.input.includes("/models ") ? "model" : "deepseek-v4-flash"}
-                </text>
+                <text fg={theme.text}>{modelLabel() ?? "no model"}</text>
               </box>
               <box flexDirection="row" gap={1}>
                 <text fg={theme.textMuted}>enter send · shift+enter newline · ctrl+p commands</text>

@@ -4,7 +4,7 @@ import { RGBA } from "@opentui/core"
 import fuzzysort from "fuzzysort"
 import { theme } from "../../theme"
 import { closeDialog, openProviderDialog } from "../../context/dialog"
-import { bumpModelRevision } from "../../context/app"
+import { applyModel } from "../../context/model"
 import type { AgentClient, ModelGroup, ModelInfo } from "../../client"
 
 type ModelRow = { kind: "model"; model: ModelInfo; group: ModelGroup }
@@ -104,11 +104,13 @@ export function ModelDialog(props: { client: AgentClient }) {
   async function choose() {
     const row = selectedRow()
     if (!row) return
-    closeDialog()
     try {
-      await props.client.selectModel(row.model.provider, row.model.id)
-      bumpModelRevision()
-    } catch {}
+      const result = await props.client.selectModel(row.model.provider, row.model.id)
+      applyModel(result)
+      closeDialog()
+    } catch (cause) {
+      setError(String(cause))
+    }
   }
 
   async function toggleFavorite() {
