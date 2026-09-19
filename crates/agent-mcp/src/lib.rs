@@ -495,6 +495,40 @@ impl McpServer {
         })
     }
 
+    pub async fn read_resource(&self, uri: &str) -> Result<McpCallResult> {
+        let result = self
+            .rpc_call("resources/read", serde_json::json!({ "uri": uri }))
+            .await?;
+        let mut content = Vec::new();
+        if let Some(items) = result.get("contents").and_then(|c| c.as_array()) {
+            content = items.iter().map(McpContent::from_value).collect();
+        }
+        Ok(McpCallResult {
+            content,
+            is_error: result
+                .get("isError")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false),
+        })
+    }
+
+    pub async fn get_prompt(&self, name: &str, args: serde_json::Value) -> Result<McpCallResult> {
+        let result = self
+            .rpc_call(
+                "prompts/get",
+                serde_json::json!({ "name": name, "arguments": args }),
+            )
+            .await?;
+        let mut content = Vec::new();
+        if let Some(items) = result.get("content").and_then(|c| c.as_array()) {
+            content = items.iter().map(McpContent::from_value).collect();
+        }
+        Ok(McpCallResult {
+            content,
+            is_error: false,
+        })
+    }
+
     pub async fn list_resources(&self) -> Result<Vec<McpResource>> {
         let result = self
             .rpc_call("resources/list", serde_json::json!({}))
