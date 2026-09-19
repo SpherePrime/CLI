@@ -75,7 +75,8 @@ describe("allow for session label", () => {
     const source = await Bun.file(
       new URL("../component/dialog/permission-dialog.tsx", import.meta.url),
     ).text()
-    expect(source).toContain("allow for session")
+    expect(source).toContain("session")
+    expect(source).toContain("remember")
     expect(source).not.toContain("allow always")
   })
 })

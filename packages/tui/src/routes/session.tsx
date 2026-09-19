@@ -18,17 +18,12 @@ import {
 import { permissionColor, permissionLabel, openPermissionSwitcher } from "../context/permission"
 import { theme } from "../theme"
 import { Spinner } from "../component/spinner"
+import { StatusBar } from "../component/status-bar"
 import { MessageRow } from "../component/message-row"
 import { PlanPanel } from "../component/plan-panel"
 import { contentLayout } from "../util/content-layout"
 import { nearBottom } from "../util/autoscroll"
 import type { AgentClient, EngineEvent, PermissionMode } from "../client"
-
-function permissionBadge(mode: PermissionMode | undefined, running: boolean): string {
-  const prefix = running ? "running… · " : ""
-  if (mode === "full_access") return `${prefix}!! FULL ACCESS !!`
-  return `${prefix}mode:${permissionLabel(mode)}`
-}
 
 const helpText = [
   "enter — send message",
@@ -397,6 +392,17 @@ export function Session(props: { client: AgentClient }) {
               <text fg={theme.textMuted}>working</text>
             </box>
           </Show>
+          <box
+            onMouseDown={() => openPermissionSwitcher(props.client)}
+            backgroundColor={session.permissionMode() === "full_access" ? theme.warning : theme.backgroundElement}
+            paddingX={1}
+            paddingLeft={1}
+            paddingRight={1}
+          >
+            <text fg={session.permissionMode() === "full_access" ? theme.background : permissionColor(session.permissionMode())}>
+              {permissionLabel(session.permissionMode())}
+            </text>
+          </box>
           <Show when={gitBranchMemo()}>
             <text fg={theme.dim}>{gitBranchMemo()}</text>
           </Show>
@@ -406,6 +412,7 @@ export function Session(props: { client: AgentClient }) {
       <box border={["bottom"]} borderColor={theme.borderSubtle}>
         <text fg={theme.dim}> </text>
       </box>
+      <StatusBar running={status() === "running"} />
       <box flexDirection="row" flexGrow={1} minHeight={0}>
         <box
           flexDirection="column"

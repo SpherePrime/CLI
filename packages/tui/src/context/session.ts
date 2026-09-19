@@ -21,6 +21,7 @@ export function useSession() {
     entries: () => timeline().entries,
     plan: () => timeline().plan,
     tokens: () => timeline().totalTokens,
+    lastActivity: () => timeline().lastActivity,
     sessionId,
     setSessionId,
     permissionMode,
