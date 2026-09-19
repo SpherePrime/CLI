@@ -27,6 +27,8 @@ credentials.key
 tmp/
 tests/fixtures/generated/
 screens/
+agent.exe
+agent-tui.exe
 
 # TS / TUI
 node_modules/
