@@ -392,17 +392,6 @@ export function Session(props: { client: AgentClient }) {
               <text fg={theme.textMuted}>working</text>
             </box>
           </Show>
-          <box
-            onMouseDown={() => openPermissionSwitcher(props.client)}
-            backgroundColor={session.permissionMode() === "full_access" ? theme.warning : theme.backgroundElement}
-            paddingX={1}
-            paddingLeft={1}
-            paddingRight={1}
-          >
-            <text fg={session.permissionMode() === "full_access" ? theme.background : permissionColor(session.permissionMode())}>
-              {permissionLabel(session.permissionMode())}
-            </text>
-          </box>
           <Show when={gitBranchMemo()}>
             <text fg={theme.dim}>{gitBranchMemo()}</text>
           </Show>
@@ -410,7 +399,28 @@ export function Session(props: { client: AgentClient }) {
         </box>
       </box>
       <box border={["bottom"]} borderColor={theme.borderSubtle}>
-        <text fg={theme.dim}> </text>
+        <box
+          flexDirection="row"
+          justifyContent="space-between"
+          paddingLeft={sidebar().left}
+          paddingRight={sidebar().right}
+          gap={2}
+        >
+          <box flexDirection="row" alignItems="center" gap={1}>
+            <text fg={theme.dim}>f2</text>
+            <text fg={theme.textMuted}>permission mode</text>
+          </box>
+          <box
+            onMouseDown={() => openPermissionSwitcher(props.client)}
+            backgroundColor={session.permissionMode() === "full_access" ? theme.warning : theme.backgroundElement}
+            paddingLeft={1}
+            paddingRight={1}
+          >
+            <text fg={session.permissionMode() === "full_access" ? theme.background : permissionColor(session.permissionMode())}>
+              {permissionLabel(session.permissionMode())}
+            </text>
+          </box>
+        </box>
       </box>
       <StatusBar running={status() === "running"} />
       <box flexDirection="row" flexGrow={1} minHeight={0}>
