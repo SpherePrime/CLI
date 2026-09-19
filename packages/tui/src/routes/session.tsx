@@ -21,6 +21,7 @@ import { Spinner } from "../component/spinner"
 import { MessageRow } from "../component/message-row"
 import { PlanPanel } from "../component/plan-panel"
 import { contentLayout } from "../util/content-layout"
+import { nearBottom } from "../util/autoscroll"
 import type { AgentClient, EngineEvent, PermissionMode } from "../client"
 
 function permissionBadge(mode: PermissionMode | undefined, running: boolean): string {
@@ -116,8 +117,7 @@ export function Session(props: { client: AgentClient }) {
 
   function isAtBottom(): boolean {
     if (!scroll) return true
-    const tolerance = 32
-    return scroll.scrollTop >= scroll.scrollHeight - scroll.height - tolerance
+    return nearBottom(scroll.scrollTop, scroll.scrollHeight, scroll.height)
   }
 
   function jumpToBottom() {

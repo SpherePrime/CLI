@@ -343,4 +343,35 @@ mod tests {
         assert!(manager.get(&process.id).is_none());
         assert!(process.exit_code().is_some(), "process should be dead");
     }
+
+    #[tokio::test]
+    async fn stop_kills_descendants_and_reaps() {
+        let session = Uuid::new_v4();
+        let manager = ProcessManager {
+            processes: Mutex::new(HashMap::new()),
+        };
+        let cwd = std::env::current_dir().unwrap();
+
+        let command = if cfg!(windows) {
+            "start \"\" /b cmd /c \"ping -n 30 127.0.0.1 >nul\" & ping -n 2 127.0.0.1 >nul"
+        } else {
+            "sleep 30 & wait"
+        };
+        let process = manager.start(session, command, &cwd).expect("spawn");
+
+        tokio::time::sleep(Duration::from_millis(500)).await;
+        assert!(process.try_wait().is_none(), "process should be running");
+
+        let started = Instant::now();
+        let stopped = manager.stop(&process.id).expect("stop");
+        let elapsed = started.elapsed();
+        assert!(stopped, "stop should reap the process");
+        assert!(
+            elapsed < Duration::from_secs(8),
+            "stop with descendant kill should finish quickly, took {elapsed:?}"
+        );
+        assert!(manager.get(&process.id).is_none());
+
+        manager.kill_session(&session);
+    }
 }
