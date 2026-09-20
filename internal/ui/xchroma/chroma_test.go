@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alecthomas/chroma/v2"
-	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestFormatterPreservesIndentationAfterComments(t *testing.T) {
@@ -33,7 +33,7 @@ func TestFormatterPreservesIndentationAfterComments(t *testing.T) {
 			require.NoError(t, err)
 
 			var buf bytes.Buffer
-			require.NoError(t, Formatter(color.Black, nil).Format(&buf, styles.Get("charm"), it))
+			require.NoError(t, Formatter(color.Black, nil).Format(&buf, styles.Get("monokai"), it))
 
 			got := ansi.Strip(buf.String())
 			// Lip Gloss expands tabs, so compare against the tab-expanded

@@ -3,10 +3,10 @@ package chat
 import (
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/list"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/list"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // renderCountingItem wraps a real chat item and counts Render calls
@@ -82,7 +82,7 @@ func (r *renderCountingItem) Highlight() (int, int, int, int) {
 func TestList_CallbackDrivenHighlightUnfreezeAndReFreeze(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 
 	// Build three finished assistant messages so all three are
 	// candidates for freezing. Real items (per Round 2 spec) — the

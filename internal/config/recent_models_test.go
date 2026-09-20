@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // readConfigJSON reads and unmarshals the JSON config file at path.

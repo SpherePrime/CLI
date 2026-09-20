@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestTruncateForPersist_KeepsSmallOutput(t *testing.T) {

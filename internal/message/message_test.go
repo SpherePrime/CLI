@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // slowUpdateQuerier wraps a [db.Querier] and forces UpdateMessage to

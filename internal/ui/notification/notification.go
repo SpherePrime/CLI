@@ -17,7 +17,7 @@
 //   - If focus events are not supported in local sessions, notifications are disabled (NoopBackend)
 package notification
 
-import tea "charm.land/bubbletea/v2"
+import tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
 
 // Notification represents a desktop notification request.
 type Notification struct {

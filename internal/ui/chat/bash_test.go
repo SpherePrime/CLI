@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestBashToolMessageItem_CommandAlwaysExpanded guards the contract
@@ -18,7 +18,7 @@ import (
 func TestBashToolMessageItem_CommandAlwaysExpanded(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	tc := message.ToolCall{
 		ID:       "bash1",
 		Name:     "bash",
@@ -50,7 +50,7 @@ func TestBashToolMessageItem_CommandAlwaysExpanded(t *testing.T) {
 func TestBashToolMessageItem_LongCommandNotTruncated(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	longCmd := "echo " + strings.Repeat("a", 200)
 	tc := message.ToolCall{
 		ID:       "bash3",
@@ -75,7 +75,7 @@ func TestBashToolMessageItem_LongCommandNotTruncated(t *testing.T) {
 func TestBashToolMessageItem_OutputDefaultsCollapsed(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	tc := message.ToolCall{
 		ID:       "bash2",
 		Name:     "bash",
@@ -108,7 +108,7 @@ func TestBashToolMessageItem_OutputDefaultsCollapsed(t *testing.T) {
 func TestToolOutputPlainContent_SingleHiddenLineShown(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	var lines []string
 	for i := 1; i <= 11; i++ {
 		lines = append(lines, fmt.Sprintf("line%d", i))

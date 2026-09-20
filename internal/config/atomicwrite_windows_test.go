@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-	"golang.org/x/sys/windows"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
 )
 
 // Regression test for the windows-latest CI flake where

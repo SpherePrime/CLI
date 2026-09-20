@@ -14,11 +14,11 @@ import (
 	"sync"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/catwalk/pkg/embedded"
-	"github.com/charmbracelet/prime/internal/agent/hyper"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/x/etag"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/embedded"
+	"github.com/dwertyfa288/CLI/internal/agent/hyper"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/etag"
 )
 
 type syncer[T any] interface {

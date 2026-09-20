@@ -9,12 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zeebo/xxh3"
+	"github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3"
 
-	"charm.land/lipgloss/v2"
-	"github.com/lucasb-eyer/go-colorful"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
 
-	"github.com/charmbracelet/prime/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/csync"
 )
 
 const (

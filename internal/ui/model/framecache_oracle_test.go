@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/ui/chat"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/stretchr/testify/require"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/ui/chat"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // viewChecked renders through the cache, then renders the same state again

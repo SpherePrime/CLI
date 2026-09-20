@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/ui/anim"
-	"github.com/charmbracelet/x/ansi"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/anim"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // Spinner wraps the bubbles spinner for non-interactive mode

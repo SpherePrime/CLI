@@ -11,10 +11,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"charm.land/fantasy"
-	md "github.com/JohannesKaufmann/html-to-markdown"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/charmbracelet/prime/internal/permission"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	md "github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown"
+	"github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery"
+	"github.com/dwertyfa288/CLI/internal/permission"
 )
 
 const (

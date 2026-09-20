@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/ui/logo"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/logo"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
 )
 
 func main() {
@@ -18,12 +18,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Could not get terminal size: %s", err)
 	}
 
-	s := styles.CharmtonePantera()
+	s := styles.ColorTonePantera()
 	opts := logo.Opts{
 		FieldColor:   s.Logo.FieldColor,
 		TitleColorA:  s.Logo.TitleColorA,
 		TitleColorB:  s.Logo.TitleColorB,
-		CharmColor:   s.Logo.CharmColor,
+		LabelColor:   s.Logo.LabelColor,
 		VersionColor: s.Logo.VersionColor,
 		Width:        w,
 		Unstable:     true,

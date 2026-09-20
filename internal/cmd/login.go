@@ -7,12 +7,12 @@ import (
 	"os"
 	"os/signal"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/login"
-	"github.com/charmbracelet/prime/internal/oauth/copilot"
-	"github.com/charmbracelet/prime/internal/workspace"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/login"
+	"github.com/dwertyfa288/CLI/internal/oauth/copilot"
+	"github.com/dwertyfa288/CLI/internal/workspace"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 var loginCmd = &cobra.Command{
@@ -23,7 +23,7 @@ var loginCmd = &cobra.Command{
 The platform should be provided as an argument.
 Available platforms are: hyper, copilot, openai.`,
 	Example: `
-# Authenticate with Charm Hyper
+# Authenticate with Hyper
 prime login
 
 # Authenticate with GitHub Copilot

@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"strings"
 
-	"charm.land/lipgloss/v2"
-	"github.com/alecthomas/chroma/v2"
-	"github.com/alecthomas/chroma/v2/lexers"
-	"github.com/aymanbagabas/go-udiff"
-	"github.com/charmbracelet/prime/internal/ansiext"
-	"github.com/charmbracelet/prime/internal/ui/xchroma"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/zeebo/xxh3"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/lexers"
+	"github.com/dwertyfa288/CLI/vendordeps/aymanbagabas/go-udiff"
+	"github.com/dwertyfa288/CLI/internal/ansiext"
+	"github.com/dwertyfa288/CLI/internal/ui/xchroma"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3"
 )
 
 const (

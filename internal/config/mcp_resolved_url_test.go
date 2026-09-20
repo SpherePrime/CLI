@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/env"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/env"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestMCPConfig_ResolvedURL(t *testing.T) {

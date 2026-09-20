@@ -12,13 +12,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/charmbracelet/x/term"
-	"github.com/pkg/browser"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
 
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/charmbracelet/prime/internal/oauth/copilot"
-	"github.com/charmbracelet/prime/internal/oauth/hyper"
-	"github.com/charmbracelet/prime/internal/oauth/openai"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/oauth/copilot"
+	"github.com/dwertyfa288/CLI/internal/oauth/hyper"
+	"github.com/dwertyfa288/CLI/internal/oauth/openai"
 )
 
 // Platforms accepted by Run.
@@ -37,7 +37,7 @@ var startMessages = map[string]string{
 
 // titles are the provider names shown in the mini TUI header.
 var titles = map[string]string{
-	PlatformHyper:   "Charm Hyper",
+	PlatformHyper:   "Hyper",
 	PlatformCopilot: "GitHub Copilot",
 	PlatformOpenAI:  "ChatGPT",
 }
@@ -122,7 +122,7 @@ func flowFor(platform string) (func() flow, error) {
 	}
 }
 
-// hyperFlow runs the Charm Hyper device code flow.
+// hyperFlow runs the Hyper device code flow.
 type hyperFlow struct {
 	deviceCode string
 	expiresIn  int

@@ -3,7 +3,7 @@ package list
 import (
 	"strings"
 
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // Item represents a single item in the lazy-loaded list.

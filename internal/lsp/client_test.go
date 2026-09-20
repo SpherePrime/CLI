@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/env"
-	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/env"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestClient(t *testing.T) {

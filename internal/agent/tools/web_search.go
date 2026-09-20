@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 )
 
 //go:embed web_search.md.tpl

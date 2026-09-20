@@ -1,14 +1,14 @@
 package dialog
 
 import (
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/list"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/sahilm/fuzzy"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/list"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy"
 )
 
 // ModelGroup represents a group of model items.

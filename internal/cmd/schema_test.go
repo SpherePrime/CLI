@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/invopop/jsonschema"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/vendordeps/invopop/jsonschema"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestSchemaNoBrokenRefs(t *testing.T) {

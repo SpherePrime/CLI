@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/charmbracelet/prime/internal/lsp/util"
-	powernap "github.com/charmbracelet/x/powernap/pkg/lsp"
-	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
+	"github.com/dwertyfa288/CLI/internal/lsp/util"
+	powernap "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
 )
 
 // HandleWorkspaceConfiguration handles workspace configuration requests
@@ -20,7 +20,7 @@ func HandleWorkspaceConfiguration(_ context.Context, _ string, params json.RawMe
 // (see makeClientCapabilities in powernap), which per the LSP spec grants servers
 // permission to send this request — so it must be answered, even as a no-op, or the
 // server (e.g. typescript-language-server) treats the unhandled response as fatal and
-// crashes. See github.com/charmbracelet/x issue tracking powernap capability gaps.
+// crashes. See github.com/dwertyfa288/x issue tracking powernap capability gaps.
 func HandleWorkDoneProgressCreate(_ context.Context, _ string, _ json.RawMessage) (any, error) {
 	return nil, nil
 }

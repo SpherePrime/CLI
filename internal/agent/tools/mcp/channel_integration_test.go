@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
 )
 
 // injectTransport wraps a transport and hands the established connection back to

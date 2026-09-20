@@ -8,17 +8,17 @@ import (
 	"slices"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/diff"
-	"github.com/charmbracelet/prime/internal/fsext"
-	"github.com/charmbracelet/prime/internal/history"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/prime/internal/ui/util"
-	"github.com/charmbracelet/x/ansi"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/diff"
+	"github.com/dwertyfa288/CLI/internal/fsext"
+	"github.com/dwertyfa288/CLI/internal/history"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/ui/util"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // loadSessionMsg is a message indicating that a session and its files have

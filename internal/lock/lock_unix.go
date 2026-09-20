@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/sys/unix"
+	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
 )
 
 // retrySleep is the interval between non-blocking flock retries in the

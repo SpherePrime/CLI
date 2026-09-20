@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/charmbracelet/prime/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/proto"
 )
 
 // handlePostWorkspaceConfigSet sets a configuration field.

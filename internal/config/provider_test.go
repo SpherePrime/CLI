@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func resetProviderState() {
@@ -216,7 +216,7 @@ func TestProviders_Integration_BothFail(t *testing.T) {
 
 	hyperResult, err := testHyperSyncer.Get(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, "Charm Hyper", hyperResult.Name) // Falls back to embedded when no models.
+	require.Equal(t, "Hyper", hyperResult.Name) // Falls back to embedded when no models.
 }
 
 func TestCache_StoreAndGet(t *testing.T) {

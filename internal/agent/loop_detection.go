@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 )
 
 const (

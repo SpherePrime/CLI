@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/charmbracelet/prime/internal/backend"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/google/uuid"
+	"github.com/dwertyfa288/CLI/internal/backend"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
 )
 
 type controllerV1 struct {

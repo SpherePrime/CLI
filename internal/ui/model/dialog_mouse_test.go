@@ -3,10 +3,10 @@ package model
 import (
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/ui/dialog"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/stretchr/testify/require"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/dialog"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 type dialogMouseActionMsg struct{}

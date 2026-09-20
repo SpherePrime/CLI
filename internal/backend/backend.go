@@ -15,15 +15,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/app"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/skills"
-	"github.com/charmbracelet/prime/internal/ui/util"
-	"github.com/charmbracelet/prime/internal/version"
-	"github.com/google/uuid"
+	"github.com/dwertyfa288/CLI/internal/app"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/dwertyfa288/CLI/internal/ui/util"
+	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
 )
 
 // Common errors returned by backend operations.

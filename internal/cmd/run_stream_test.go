@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestRunStream_ToolUseDoesNotTerminate is the regression test for

@@ -5,7 +5,7 @@ package config
 import (
 	"errors"
 
-	"golang.org/x/sys/windows"
+	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
 )
 
 // isTransientRenameError reports whether err is a Windows rename

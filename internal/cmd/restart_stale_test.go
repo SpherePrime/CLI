@@ -8,11 +8,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/client"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/version"
-	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/client"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // controlServerOpts describes the server restartIfStale will find.

@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/fsext"
-	powernapconfig "github.com/charmbracelet/x/powernap/pkg/config"
-	powernap "github.com/charmbracelet/x/powernap/pkg/lsp"
-	"github.com/sourcegraph/jsonrpc2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/fsext"
+	powernapconfig "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/config"
+	powernap "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp"
+	"github.com/dwertyfa288/CLI/vendordeps/sourcegraph/jsonrpc2"
 )
 
 const unavailableRetryDelay = 30 * time.Second

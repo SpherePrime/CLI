@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-//go:embed page.html page.css page.js heartbit.svg heartbit-grumpy.svg charm.svg
+//go:embed page.html page.css page.js heartbit.svg heartbit-grumpy.svg logo.svg
 var assets embed.FS
 
 // closeDelay is how long the page counts down before asking the browser to
@@ -82,7 +82,7 @@ func Write(w io.Writer, r Result) error {
 	if err != nil {
 		return fmt.Errorf("read callback grumpy artwork: %w", err)
 	}
-	logo, err := assets.ReadFile("charm.svg")
+	logo, err := assets.ReadFile("logo.svg")
 	if err != nil {
 		return fmt.Errorf("read callback logo: %w", err)
 	}
@@ -101,7 +101,7 @@ func Write(w io.Writer, r Result) error {
 		CSS              template.CSS
 		JS               template.JS
 		Heartbit         template.HTML
-		Charm            template.HTML
+		Logo             template.HTML
 		Favicon          template.URL
 	}{
 		Subject:          r.Subject,
@@ -110,7 +110,7 @@ func Write(w io.Writer, r Result) error {
 		ErrorDescription: r.ErrorDescription,
 		CSS:              template.CSS(css),
 		JS:               template.JS(js),
-		Charm:            template.HTML(logo),
+		Logo:             template.HTML(logo),
 	}
 
 	// The artwork reflects the outcome: a smiling heart on success, a

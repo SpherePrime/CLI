@@ -3,9 +3,9 @@ package logo
 import (
 	"strings"
 
-	"charm.land/lipgloss/v2"
-	"github.com/MakeNowJust/heredoc"
-	"github.com/charmbracelet/x/exp/slice"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/MakeNowJust/heredoc"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/slice"
 )
 
 // renderWord renders letterforms to fork a word. stretchIndex is the index of

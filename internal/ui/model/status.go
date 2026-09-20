@@ -4,13 +4,13 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/bubbles/v2/help"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/util"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/util"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // DefaultStatusTTL is the default time-to-live for status messages.

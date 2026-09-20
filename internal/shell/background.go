@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/csync"
 )
 
 const (

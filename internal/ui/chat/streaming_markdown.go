@@ -3,8 +3,8 @@ package chat
 import (
 	"strings"
 
-	"charm.land/glamour/v2"
-	"github.com/charmbracelet/prime/internal/ui/common"
+	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
 )
 
 // streamingMarkdown caches a "stable prefix" glamour render so each
@@ -120,7 +120,7 @@ func (s *streamingMarkdown) Render(content string, width int, renderer *glamour.
 	// Incremental boundary search: only scan the delta after the
 	// stable prefix. The cached cumulative state (baseFenceCount,
 	// baseHasListMarker) lets us validate candidates in O(delta)
-	// instead of re-scanning the entire prefix. See CHARM-1785.
+	// instead of re-scanning the entire prefix.
 	boundary := s.findBoundaryAfter(content)
 	if boundary < 0 {
 		// No safe boundary anywhere yet. Full render; do not
@@ -215,7 +215,7 @@ func (s *streamingMarkdown) tryAdvanceFromEmpty(content string, width int, rende
 // that is strictly after the stable prefix. It uses the cached
 // cumulative state (baseFenceCount, baseHasListMarker) to validate
 // candidates without re-scanning the entire prefix, making the search
-// O(delta) instead of O(n) per tick. See CHARM-1785.
+// O(delta) instead of O(n) per tick.
 //
 // Returns -1 when no safe boundary exists after the stable prefix.
 func (s *streamingMarkdown) findBoundaryAfter(content string) int {
@@ -659,7 +659,7 @@ func isSafeBoundaryAt(content string, p int) bool {
 //	   The previous rule rejected on any list marker anywhere in the
 //	   prefix, which killed the streaming cache for every document
 //	   that ever contained a list — the dominant case for LLM
-//	   thinking blocks. See CHARM-1785.
+//	   thinking blocks.
 //
 //	B2 (HTML blocks). CommonMark defines seven HTML-block opener
 //	   patterns (script/pre/style/textarea, comments, processing

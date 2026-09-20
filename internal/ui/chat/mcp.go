@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
 )
 
 // MCPToolMessageItem is a message item that represents a bash tool call.

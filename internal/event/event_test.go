@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/posthog/posthog-go"
+	"github.com/dwertyfa288/CLI/vendordeps/posthog/posthog-go"
 )
 
 func TestSetNonInteractive(t *testing.T) {

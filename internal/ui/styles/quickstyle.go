@@ -3,16 +3,16 @@ package styles
 import (
 	"image/color"
 
-	"charm.land/bubbles/v2/filepicker"
-	"charm.land/bubbles/v2/help"
-	"charm.land/bubbles/v2/textarea"
-	"charm.land/bubbles/v2/textinput"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/glamour/v2/ansi"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/ui/diffview"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/filepicker"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textarea"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/diffview"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 // quickStyleOpts is the palette of colors used by quickStyle to simplify the
@@ -83,7 +83,7 @@ type quickStyleOpts struct {
 	ansiBrightWhite   color.Color
 }
 
-// quickStyle builds the default Styles (that is, the default theme, Charmtone
+// quickStyle builds the default Styles (that is, the default theme, ColorTone
 // Pantera) from a palette of semi-semanticly-named colors.
 //
 // The idea here is that you can do most of the work on a theme with quickStyle,
@@ -237,7 +237,7 @@ func quickStyle(o quickStyleOpts) Styles {
 			Unticked:       "[ ] ",
 		},
 		Link: ansi.StylePrimitive{
-			Color:     hex(charmtone.Zinc),
+			Color:     hex(colortone.Zinc),
 			Underline: new(true),
 		},
 		LinkText: ansi.StylePrimitive{
@@ -245,7 +245,7 @@ func quickStyle(o quickStyleOpts) Styles {
 			Bold:  new(true),
 		},
 		Image: ansi.StylePrimitive{
-			Color:     hex(charmtone.Cheeky),
+			Color:     hex(colortone.Cheeky),
 			Underline: new(true),
 		},
 		ImageText: ansi.StylePrimitive{
@@ -289,22 +289,22 @@ func quickStyle(o quickStyleOpts) Styles {
 					Color: hex(o.fgMostSubtle),
 				},
 				CommentPreproc: ansi.StylePrimitive{
-					Color: hex(charmtone.Bengal),
+					Color: hex(colortone.Bengal),
 				},
 				Keyword: ansi.StylePrimitive{
 					Color: hex(o.info),
 				},
 				KeywordReserved: ansi.StylePrimitive{
-					Color: hex(charmtone.Pony),
+					Color: hex(colortone.Pony),
 				},
 				KeywordNamespace: ansi.StylePrimitive{
-					Color: hex(charmtone.Pony),
+					Color: hex(colortone.Pony),
 				},
 				KeywordType: ansi.StylePrimitive{
-					Color: hex(charmtone.Guppy),
+					Color: hex(colortone.Guppy),
 				},
 				Operator: ansi.StylePrimitive{
-					Color: hex(charmtone.Salmon),
+					Color: hex(colortone.Salmon),
 				},
 				Punctuation: ansi.StylePrimitive{
 					Color: hex(o.warningSubtle),
@@ -313,21 +313,21 @@ func quickStyle(o quickStyleOpts) Styles {
 					Color: hex(o.fgSubtle),
 				},
 				NameBuiltin: ansi.StylePrimitive{
-					Color: hex(charmtone.Cheeky),
+					Color: hex(colortone.Cheeky),
 				},
 				NameTag: ansi.StylePrimitive{
-					Color: hex(charmtone.Mauve),
+					Color: hex(colortone.Mauve),
 				},
 				NameAttribute: ansi.StylePrimitive{
-					Color: hex(charmtone.Hazy),
+					Color: hex(colortone.Hazy),
 				},
 				NameClass: ansi.StylePrimitive{
-					Color:     hex(charmtone.Salt),
+					Color:     hex(colortone.Salt),
 					Underline: new(true),
 					Bold:      new(true),
 				},
 				NameDecorator: ansi.StylePrimitive{
-					Color: hex(charmtone.Citron),
+					Color: hex(colortone.Citron),
 				},
 				NameFunction: ansi.StylePrimitive{
 					Color: hex(o.successMostSubtle),
@@ -336,7 +336,7 @@ func quickStyle(o quickStyleOpts) Styles {
 					Color: hex(o.success),
 				},
 				LiteralString: ansi.StylePrimitive{
-					Color: hex(charmtone.Cumin),
+					Color: hex(colortone.Cumin),
 				},
 				LiteralStringEscape: ansi.StylePrimitive{
 					Color: hex(o.successMoreSubtle),
@@ -647,7 +647,7 @@ func quickStyle(o quickStyleOpts) Styles {
 	// borders
 	s.ToolCallSuccess = lipgloss.NewStyle().Foreground(o.success).SetString(ToolSuccess)
 
-	s.Header.Charm = base.Foreground(o.secondary)
+	s.Header.Label = base.Foreground(o.secondary)
 	s.Header.Diagonals = base.Foreground(o.primary)
 	s.Header.Percentage = muted
 	s.Header.HypercreditIcon = base.Foreground(o.secondary)
@@ -838,9 +838,9 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Logo.FieldColor = o.primary
 	s.Logo.TitleColorA = o.secondary
 	s.Logo.TitleColorB = o.primary
-	s.Logo.CharmColor = o.secondary
+	s.Logo.LabelColor = o.secondary
 	s.Logo.VersionColor = o.primary
-	s.Logo.SmallCharm = lipgloss.NewStyle().Foreground(o.secondary)
+	s.Logo.SmallLabel = lipgloss.NewStyle().Foreground(o.secondary)
 	s.Logo.SmallDiagonals = lipgloss.NewStyle().Foreground(o.primary)
 	s.Logo.GradCanvas = lipgloss.NewStyle()
 	s.Logo.SmallGradFromColor = o.secondary

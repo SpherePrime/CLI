@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/shell"
-	"github.com/charmbracelet/prime/internal/version"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestLoadShellConfig_Provider verifies that the provider builtin produces

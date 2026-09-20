@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // The plan card paints no background of its own: ordinary cells expose the
@@ -21,7 +21,7 @@ import (
 func TestAssistantMessageItem_PlanCardKeepsIntentionalBackgrounds(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := &message.Message{
 		ID:   "plan-card",
 		Role: message.Assistant,
@@ -81,7 +81,7 @@ func TestAssistantMessageItem_PlanCardKeepsIntentionalBackgrounds(t *testing.T) 
 func TestAssistantMessageItem_PlanCardDoesNotReWrapContent(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	paragraph := strings.TrimSpace(strings.Repeat("lorem ipsum dolor sit amet ", 30))
 	msg := &message.Message{
 		ID:   "plan-wrap",
@@ -131,7 +131,7 @@ func TestAssistantMessageItem_PlanCardDoesNotReWrapContent(t *testing.T) {
 func TestAssistantMessageItem_PlanCardFitsAvailableWidth(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := &message.Message{
 		ID:   "responsive-plan-card",
 		Role: message.Assistant,
@@ -156,7 +156,7 @@ func TestAssistantMessageItem_PlanCardFitsAvailableWidth(t *testing.T) {
 func TestAssistantMessageItem_PlanStreamingCardIsOpenUntilMarker(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	mk := func(text string, finished bool) *message.Message {
 		parts := []message.ContentPart{message.TextContent{Text: text}}
 		if finished {
@@ -200,7 +200,7 @@ func TestAssistantMessageItem_PlanStreamingCardIsOpenUntilMarker(t *testing.T) {
 func TestAssistantMessageItem_NonPlanRepliesHaveNoPlanCard(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	tests := []struct {
 		name string
 		text string
@@ -232,7 +232,7 @@ func TestAssistantMessageItem_NonPlanRepliesHaveNoPlanCard(t *testing.T) {
 func TestAssistantMessageItem_SelectionOverridesPlanBackground(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := &message.Message{
 		ID:   "selected-plan",
 		Role: message.Assistant,

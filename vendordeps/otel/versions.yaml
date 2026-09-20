@@ -1,0 +1,73 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+module-sets:
+  stable-v1:
+    version: v1.46.0
+    modules:
+      - github.com/dwertyfa288/CLI/vendordeps/otel
+      - github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus
+      - github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus/test
+      - github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin
+      - github.com/dwertyfa288/CLI/vendordeps/otel/metric
+      - github.com/dwertyfa288/CLI/vendordeps/otel/sdk
+      - github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric
+      - github.com/dwertyfa288/CLI/vendordeps/otel/trace
+  experimental-metrics:
+    version: v0.68.0
+    modules:
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus
+      - github.com/dwertyfa288/CLI/vendordeps/otel/metric/x
+  experimental-logs:
+    version: v0.22.0
+    modules:
+      - github.com/dwertyfa288/CLI/vendordeps/otel/log
+      - github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest
+      - github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log
+      - github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp
+      - github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog
+  experimental-schema:
+    version: v0.0.19
+    modules:
+      - github.com/dwertyfa288/CLI/vendordeps/otel/schema
+excluded-modules:
+  - github.com/dwertyfa288/CLI/vendordeps/otel/internal/tools
+  - github.com/dwertyfa288/CLI/vendordeps/otel/trace/internal/telemetry/test
+modules:
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace:
+    version-refs:
+      - ./internal/version.go
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric:
+    version-refs:
+      - ./internal/version.go
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus:
+    version-refs:
+      - ./internal/version.go
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc:
+    version-refs:
+      - ./internal/version.go
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp:
+    version-refs:
+      - ./internal/version.go
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc:
+    version-refs:
+      - ./internal/version.go
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp:
+    version-refs:
+      - ./internal/version.go
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp:
+    version-refs:
+      - ./internal/version.go
+  github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog:
+    version-refs:
+      - ./internal/version.go

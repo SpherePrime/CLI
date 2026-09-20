@@ -3,10 +3,10 @@ package model
 import (
 	"image"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/workspace"
-	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/workspace"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet/layout"
 )
 
 // selectedLargeModel returns the currently selected large language model as

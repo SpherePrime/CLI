@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 type emptyProviderClient struct{}

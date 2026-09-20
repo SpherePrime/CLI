@@ -3,13 +3,13 @@ package model
 import (
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/question"
-	"github.com/charmbracelet/prime/internal/ui/attachments"
-	"github.com/charmbracelet/prime/internal/ui/dialog"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/stretchr/testify/require"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/question"
+	"github.com/dwertyfa288/CLI/internal/ui/attachments"
+	"github.com/dwertyfa288/CLI/internal/ui/dialog"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 type attachmentClickWorkspace struct {

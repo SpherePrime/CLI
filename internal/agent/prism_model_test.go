@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"testing"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/agent/hyper"
-	"github.com/charmbracelet/prime/internal/message"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/agent/hyper"
+	"github.com/dwertyfa288/CLI/internal/message"
 
-	"charm.land/fantasy/providers/openai"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openai"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestExtractPrismModel(t *testing.T) {

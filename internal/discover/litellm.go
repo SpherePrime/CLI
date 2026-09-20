@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"charm.land/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 // litellmModelInfoResponse mirrors the response from LiteLLM's

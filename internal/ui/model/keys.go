@@ -1,6 +1,6 @@
 package model
 
-import "charm.land/bubbles/v2/key"
+import "github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
 
 type KeyMap struct {
 	Editor struct {

@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/fsext"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/fsext"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 const (
@@ -46,15 +46,15 @@ func newHeader(com *common.Common) *header {
 func (h *header) refresh() {
 	t := h.com.Styles
 	isHyper := h.com.IsHyper()
-	charm := "Prime™"
+	label := "Prime™"
 	if !isHyper {
-		charm = " " + charm
+		label = " " + label
 	}
 	name := "PRIME"
 	if isHyper {
 		name = "HYPERPRIME"
 	}
-	h.compactLogo = t.Header.Charm.Render(charm) + " " +
+	h.compactLogo = t.Header.Label.Render(label) + " " +
 		styles.ApplyBoldForegroundGrad(t.Header.LogoGradCanvas, name, t.Header.LogoGradFromColor, t.Header.LogoGradToColor) + " "
 	// Force drawHeader to re-render the wide logo on the next frame.
 	h.width = 0

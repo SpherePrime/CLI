@@ -6,15 +6,15 @@ import (
 	"image/color"
 	"strings"
 
-	"charm.land/bubbles/v2/filepicker"
-	"charm.land/bubbles/v2/help"
-	"charm.land/bubbles/v2/textarea"
-	"charm.land/bubbles/v2/textinput"
-	"charm.land/glamour/v2/ansi"
-	"charm.land/lipgloss/v2"
-	"github.com/alecthomas/chroma/v2"
-	"github.com/charmbracelet/prime/internal/ui/diffview"
-	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/filepicker"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textarea"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
+	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/diffview"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 const (
@@ -94,7 +94,7 @@ type Styles struct {
 
 	// Header
 	Header struct {
-		Charm             lipgloss.Style // Style for "Prime™" label
+		Label             lipgloss.Style // Style for "Prime™" label
 		Diagonals         lipgloss.Style // Style for diagonal separators (╱)
 		Percentage        lipgloss.Style // Style for context percentage
 		HypercreditIcon   lipgloss.Style // Style for Hypercredit count (◆ N)
@@ -220,9 +220,9 @@ type Styles struct {
 		FieldColor         color.Color
 		TitleColorA        color.Color
 		TitleColorB        color.Color
-		CharmColor         color.Color
+		LabelColor         color.Color
 		VersionColor       color.Color
-		SmallCharm         lipgloss.Style // "Prime™" label in SmallRender
+		SmallLabel         lipgloss.Style // "Prime™" label in SmallRender
 		SmallDiagonals     lipgloss.Style // Diagonal line fill in SmallRender
 		GradCanvas         lipgloss.Style // Blank canvas for gradient painting
 		SmallGradFromColor color.Color    // Small "Prime" wordmark gradient start

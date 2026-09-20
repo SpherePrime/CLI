@@ -4,13 +4,13 @@ import (
 	"encoding/xml"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/attachments"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/list"
-	"github.com/charmbracelet/prime/internal/ui/styles"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/attachments"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/list"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
 )
 
 // skillInvocation represents the XML structure for a loaded skill.

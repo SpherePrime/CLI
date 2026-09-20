@@ -19,22 +19,22 @@ import (
 	"testing"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/prime/internal/agent/hyper"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/discover"
-	"github.com/charmbracelet/prime/internal/env"
-	"github.com/charmbracelet/prime/internal/filepathext"
-	"github.com/charmbracelet/prime/internal/fsext"
-	"github.com/charmbracelet/prime/internal/home"
-	"github.com/charmbracelet/prime/internal/shellconfig"
-	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
-	"github.com/qjebbs/go-jsons"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/internal/agent/hyper"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/discover"
+	"github.com/dwertyfa288/CLI/internal/env"
+	"github.com/dwertyfa288/CLI/internal/filepathext"
+	"github.com/dwertyfa288/CLI/internal/fsext"
+	"github.com/dwertyfa288/CLI/internal/home"
+	"github.com/dwertyfa288/CLI/internal/shellconfig"
+	powernapConfig "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/config"
+	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons"
+	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
 )
 
-const defaultCatwalkURL = "https://catwalk.charm.land"
+const defaultCatwalkURL = "https://catwalk.dwerty.local"
 
 // Load loads the configuration from the default paths and returns a
 // ConfigStore that owns both the pure-data Config and all runtime state.

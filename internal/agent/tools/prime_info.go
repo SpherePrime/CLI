@@ -8,11 +8,11 @@ import (
 	"slices"
 	"strings"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/agent/tools/mcp"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/lsp"
-	"github.com/charmbracelet/prime/internal/skills"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/lsp"
+	"github.com/dwertyfa288/CLI/internal/skills"
 )
 
 const PrimeInfoToolName = "prime_info"

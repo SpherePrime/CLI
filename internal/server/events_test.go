@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/agent/notify"
-	"github.com/charmbracelet/prime/internal/agent/tools/mcp"
-	"github.com/charmbracelet/prime/internal/app"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/charmbracelet/prime/internal/skills"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/agent/notify"
+	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
+	"github.com/dwertyfa288/CLI/internal/app"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestMessageToProtoToolResult ensures that ToolResult metadata,

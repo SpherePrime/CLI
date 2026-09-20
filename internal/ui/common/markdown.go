@@ -4,10 +4,10 @@ import (
 	"image/color"
 	"sync"
 
-	"charm.land/glamour/v2"
-	"github.com/alecthomas/chroma/v2/formatters"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/prime/internal/ui/xchroma"
+	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/formatters"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/ui/xchroma"
 )
 
 const formatterName = "prime"
@@ -70,7 +70,7 @@ func MarkdownRenderer(sty *styles.Styles, width int) *glamour.TermRenderer {
 // so a lone newline is a line the user deliberately typed. Standard Markdown
 // treats it as a soft break and joins the lines when rendering, which makes a
 // submitted message display differently from what was typed (see
-// charmbracelet/prime#3502). Preserving newlines keeps the display faithful.
+// dwertyfa288/prime#3502). Preserving newlines keeps the display faithful.
 //
 // This is deliberately NOT applied to [MarkdownRenderer]: assistant output and
 // dialog copy are genuine Markdown, where soft-wrapping a paragraph across

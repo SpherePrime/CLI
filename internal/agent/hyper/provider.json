@@ -1,7 +1,7 @@
 {
-  "name": "Charm Hyper",
+  "name": "Hyper",
   "id": "hyper",
-  "api_endpoint": "https://hyper.charm.land/api/v1/fantasy",
+  "api_endpoint": "https://hyper.dwerty.local/api/v1/fantasy",
   "type": "hyper",
   "default_large_model_id": "qwen3.8-max",
   "default_small_model_id": "deepseek-v4.1-flash",

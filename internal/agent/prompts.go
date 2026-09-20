@@ -4,8 +4,8 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/charmbracelet/prime/internal/agent/prompt"
-	"github.com/charmbracelet/prime/internal/config"
+	"github.com/dwertyfa288/CLI/internal/agent/prompt"
+	"github.com/dwertyfa288/CLI/internal/config"
 )
 
 //go:embed templates/coder.md.tpl

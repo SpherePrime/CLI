@@ -3,7 +3,7 @@ package fsext
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestParsePastedFiles(t *testing.T) {

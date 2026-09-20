@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/question"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/question"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestQuestionParamsUnmarshalJSON_NativeArray(t *testing.T) {

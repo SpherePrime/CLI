@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/charmbracelet/prime/internal/home"
+	"github.com/dwertyfa288/CLI/internal/home"
 )
 
 // Lookup searches for a target files or directories starting from dir

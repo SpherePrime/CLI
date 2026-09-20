@@ -3,16 +3,16 @@ package chat
 import (
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestPrismSavingsSuffix(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	stylesRef := &sty
 	ptr := func(v float64) *float64 { return &v }
 

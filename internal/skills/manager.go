@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/charmbracelet/prime/internal/home"
-	"github.com/charmbracelet/prime/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/home"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
 )
 
 // Manager owns per-workspace skill discovery state: the latest discovery

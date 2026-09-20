@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"charm.land/bubbles/v2/textarea"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/ui/chat"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textarea"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/ui/chat"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // testMessageItem is a minimal chat item used to populate the chat list

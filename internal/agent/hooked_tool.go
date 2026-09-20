@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/agent/tools"
-	"github.com/charmbracelet/prime/internal/hooks"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/tidwall/sjson"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/agent/tools"
+	"github.com/dwertyfa288/CLI/internal/hooks"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
 )
 
 // hookedTool wraps a fantasy.AgentTool to run PreToolUse hooks before

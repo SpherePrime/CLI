@@ -7,9 +7,9 @@ import (
 	"math/rand/v2"
 	"strings"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // letterform represents a letterform. It can be stretched horizontally by
@@ -23,7 +23,7 @@ type Opts struct {
 	FieldColor   color.Color // diagonal lines
 	TitleColorA  color.Color // left gradient ramp point
 	TitleColorB  color.Color // right gradient ramp point
-	CharmColor   color.Color // Prime™ text color
+	LabelColor   color.Color // Prime™ text color
 	VersionColor color.Color // version text color
 	Width        int         // width of the rendered logo, used for truncation
 	Hyper        bool        // whether it is Prime or Hyperprime
@@ -40,9 +40,9 @@ type Opts struct {
 // The compact argument determines whether it renders compact for the sidebar
 // or wider for the main pane.
 func Render(base lipgloss.Style, version string, compact bool, o Opts) string {
-	charm := "Prime™"
+	label := "Prime™"
 	if !o.Hyper {
-		charm = " " + charm
+		label = " " + label
 	}
 
 	fg := func(c color.Color, s string) string {
@@ -93,13 +93,13 @@ func Render(base lipgloss.Style, version string, compact bool, o Opts) string {
 
 	// Prime and version.
 	metaRowGap := 1
-	maxVersionWidth := primeWidth - lipgloss.Width(charm) - metaRowGap
+	maxVersionWidth := primeWidth - lipgloss.Width(label) - metaRowGap
 	version = ansi.Truncate(version, maxVersionWidth, "…") // truncate version if too long.
 	if o.Hyper && compact {
 		version += " "
 	}
-	gap := max(0, primeWidth-lipgloss.Width(charm)-lipgloss.Width(version))
-	metaRow := fg(o.CharmColor, charm) + strings.Repeat(" ", gap) + fg(o.VersionColor, version)
+	gap := max(0, primeWidth-lipgloss.Width(label)-lipgloss.Width(version))
+	metaRow := fg(o.LabelColor, label) + strings.Repeat(" ", gap) + fg(o.VersionColor, version)
 
 	// Join the meta row and big Prime title.
 	prime = strings.TrimSpace(metaRow + "\n" + prime)
@@ -153,8 +153,8 @@ func SmallRender(t *styles.Styles, width int, o Opts) string {
 	if o.Hyper {
 		name = "HYPERPRIME"
 	}
-	charm := "Prime™"
-	title := t.Logo.SmallCharm.Render(charm)
+	label := "Prime™"
+	title := t.Logo.SmallLabel.Render(label)
 	title = fmt.Sprintf("%s %s", title, styles.ApplyBoldForegroundGrad(t.Logo.GradCanvas, name, t.Logo.SmallGradFromColor, t.Logo.SmallGradToColor))
 	remainingWidth := width - lipgloss.Width(title) - 1 // 1 for the space after the name
 	if remainingWidth > 0 {

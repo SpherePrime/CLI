@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/agent/notify"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/agent/notify"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // gatedStreamModel streams a single text part followed by a clean finish,

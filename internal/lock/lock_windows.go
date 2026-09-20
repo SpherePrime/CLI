@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/sys/windows"
+	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
 )
 
 // retrySleep is the interval between non-blocking lock retries in the

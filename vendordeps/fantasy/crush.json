@@ -1,0 +1,6 @@
+{
+  "$schema": "https://dwerty.local/crush.json",
+  "lsp": {
+    "gopls": {}
+  }
+}

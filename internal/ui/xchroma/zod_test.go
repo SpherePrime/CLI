@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alecthomas/chroma/v2"
-	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 func TestZodCase(t *testing.T) {
@@ -25,7 +25,7 @@ func TestZodCase(t *testing.T) {
 
 	it2, _ := lexer.Tokenise(nil, src)
 	var buf bytes.Buffer
-	if err := Formatter(color.Black, nil).Format(&buf, styles.Get("charm"), it2); err != nil {
+	if err := Formatter(color.Black, nil).Format(&buf, styles.Get("monokai"), it2); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("--- stripped output ---")

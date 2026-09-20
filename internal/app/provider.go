@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/config"
-	xstrings "github.com/charmbracelet/x/exp/strings"
+	"github.com/dwertyfa288/CLI/internal/config"
+	xstrings "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/strings"
 )
 
 // parseModelStr parses a model string into provider filter and model ID.

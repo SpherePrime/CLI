@@ -7,17 +7,17 @@ import (
 	"os"
 	"path/filepath"
 
-	tea "charm.land/bubbletea/v2"
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/prime/internal/commands"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/skills"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/util"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/internal/commands"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/util"
 )
 
 // ActionClose is a message to close the current dialog.

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/lock"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/lock"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestConnect_SharesConnectionForSameDataDir(t *testing.T) {

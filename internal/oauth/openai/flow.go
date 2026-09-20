@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/charmbracelet/prime/internal/oauth/callback"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/oauth/callback"
 )
 
 // The redirect URI must be a loopback address on a port OpenAI's

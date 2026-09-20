@@ -5,14 +5,14 @@ import (
 	"strings"
 	"sync/atomic"
 
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 
-	"github.com/charmbracelet/prime/internal/ui/anim"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/list"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/internal/ui/anim"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/list"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // shellSeq provides unique IDs for ShellItems even when the same
@@ -224,7 +224,7 @@ func (s *ShellItem) RawRender(width int) string {
 		return header
 	}
 
-	// Remap raw ANSI 16-color codes onto legible Charmtone colors so
+	// Remap raw ANSI 16-color codes onto legible ColorTone colors so
 	// dark terminal defaults don't render illegibly on Prime's
 	// background.
 	// Strip trailing whitespace and bare ANSI resets before remapping.

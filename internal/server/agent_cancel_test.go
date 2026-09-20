@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/agent"
-	"github.com/charmbracelet/prime/internal/app"
-	"github.com/charmbracelet/prime/internal/backend"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/agent"
+	"github.com/dwertyfa288/CLI/internal/app"
+	"github.com/dwertyfa288/CLI/internal/backend"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // runCoordinator is a configurable agent.Coordinator stub for the

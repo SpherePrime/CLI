@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/client"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/charmbracelet/prime/internal/server"
-	"github.com/charmbracelet/prime/internal/workspace"
-	"github.com/stretchr/testify/require"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/client"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/server"
+	"github.com/dwertyfa288/CLI/internal/workspace"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // xdgIsolate redirects HOME and XDG_* to fresh temp dirs so config

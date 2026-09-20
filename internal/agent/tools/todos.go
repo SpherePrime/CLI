@@ -5,8 +5,8 @@ import (
 	_ "embed"
 	"fmt"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/session"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/session"
 )
 
 //go:embed todos.md

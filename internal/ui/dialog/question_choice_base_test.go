@@ -4,16 +4,16 @@ import (
 	"image"
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/question"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/stretchr/testify/require"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/question"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func newTestSingleChoice(t *testing.T) *SingleChoice {
 	t.Helper()
-	s := styles.CharmtonePantera()
+	s := styles.ColorTonePantera()
 	req := question.Question{
 		ID:   "q1",
 		Type: question.TypeSingleChoice,
@@ -29,7 +29,7 @@ func newTestSingleChoice(t *testing.T) *SingleChoice {
 
 func newTestMultiChoice(t *testing.T) *MultiChoice {
 	t.Helper()
-	s := styles.CharmtonePantera()
+	s := styles.ColorTonePantera()
 	req := question.Question{
 		ID:   "q1",
 		Type: question.TypeMultiChoice,

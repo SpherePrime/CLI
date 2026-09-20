@@ -8,24 +8,24 @@ import (
 	"testing"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy"
-	"charm.land/fantasy/providers/openaicompat"
-	"charm.land/x/vcr"
-	"github.com/charmbracelet/prime/internal/agent/prompt"
-	"github.com/charmbracelet/prime/internal/agent/tools"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/filetracker"
-	"github.com/charmbracelet/prime/internal/history"
-	"github.com/charmbracelet/prime/internal/lsp"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openaicompat"
+	"github.com/dwertyfa288/CLI/vendordeps/x/vcr"
+	"github.com/dwertyfa288/CLI/internal/agent/prompt"
+	"github.com/dwertyfa288/CLI/internal/agent/tools"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/filetracker"
+	"github.com/dwertyfa288/CLI/internal/history"
+	"github.com/dwertyfa288/CLI/internal/lsp"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 
-	_ "github.com/joho/godotenv/autoload"
+	_ "github.com/dwertyfa288/CLI/vendordeps/joho/godotenv/autoload"
 )
 
 // fakeEnv is an environment for testing.
@@ -50,7 +50,7 @@ type modelPair struct {
 func hyperBuilder(model string) builderFunc {
 	return func(t *testing.T, r *vcr.Recorder) (fantasy.LanguageModel, error) {
 		provider, err := openaicompat.New(
-			openaicompat.WithBaseURL("https://hyper.charm.land/v1"),
+			openaicompat.WithBaseURL("https://hyper.dwerty.local/v1"),
 			openaicompat.WithAPIKey(os.Getenv("PRIME_HYPER_API_KEY")),
 			openaicompat.WithHTTPClient(&http.Client{Transport: r}),
 		)
@@ -141,7 +141,7 @@ func coderAgent(r *vcr.Recorder, env fakeEnv, large, small fantasy.LanguageModel
 		return nil, err
 	}
 
-	// NOTE(@andreynering): Set a fixed config to ensure cassettes match
+	// NOTE(@dwertyfa288): Set a fixed config to ensure cassettes match
 	// independently of user config on `$HOME/.config/prime/prime.json`.
 	cfg.Config().Options.Attribution = &config.Attribution{
 		TrailerStyle:  "co-authored-by",

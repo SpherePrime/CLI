@@ -13,13 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/fsext"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/shell"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/fsext"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/shell"
 )
 
 type BashParams struct {

@@ -15,11 +15,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy/providers/openai"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openai"
 )
 
-//go:generate wget -O provider.json https://hyper.charm.land/v1/provider
+//go:generate wget -O provider.json https://hyper.dwerty.local/v1/provider
 
 //go:embed provider.json
 var embedded []byte
@@ -40,9 +40,9 @@ const (
 	// Name is the default name of this meta provider.
 	Name = "hyper"
 	// DisplayName is the display name of Hyper.
-	DisplayName = "Charm Hyper"
+	DisplayName = "Hyper"
 	// defaultBaseURL is the default proxy URL.
-	defaultBaseURL = "https://hyper.charm.land"
+	defaultBaseURL = "https://hyper.dwerty.local"
 )
 
 // BaseURL returns the base URL, which is either $HYPER_URL or the default.

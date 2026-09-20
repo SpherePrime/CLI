@@ -26,28 +26,28 @@ import (
 	"sync/atomic"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy"
-	"charm.land/fantasy/providers/anthropic"
-	"charm.land/fantasy/providers/bedrock"
-	"charm.land/fantasy/providers/google"
-	"charm.land/fantasy/providers/openai"
-	"charm.land/fantasy/providers/openrouter"
-	"charm.land/fantasy/providers/vercel"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/agent/hyper"
-	"github.com/charmbracelet/prime/internal/agent/notify"
-	"github.com/charmbracelet/prime/internal/agent/tools"
-	"github.com/charmbracelet/prime/internal/agent/tools/mcp"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/stringext"
-	"github.com/charmbracelet/prime/internal/version"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/bedrock"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/google"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openai"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openrouter"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/vercel"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/agent/hyper"
+	"github.com/dwertyfa288/CLI/internal/agent/notify"
+	"github.com/dwertyfa288/CLI/internal/agent/tools"
+	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/stringext"
+	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 const (
@@ -59,7 +59,7 @@ const (
 	smallContextWindowRatio     = 0.2
 )
 
-var userAgent = fmt.Sprintf("Prime/%s (https://charm.land/prime)", version.Version)
+var userAgent = fmt.Sprintf("Prime/%s (https://dwerty.local/prime)", version.Version)
 
 //go:embed templates/title.md
 var titlePrompt []byte
@@ -1159,7 +1159,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		var providerErr *fantasy.ProviderError
 		var requestTimedOutErr *requestTimeoutError
 		const defaultTitle = "Provider Error"
-		linkStyle := lipgloss.NewStyle().Foreground(charmtone.Guac).Underline(true)
+		linkStyle := lipgloss.NewStyle().Foreground(colortone.Guac).Underline(true)
 		if isCancelErr {
 			currentAssistant.AddFinish(message.FinishReasonCanceled, "User canceled request", "")
 		} else if errors.As(err, &requestTimedOutErr) {

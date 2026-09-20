@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/agent/notify"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/agent/notify"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
 )
 
 // Translate converts a pub/sub event (domain or proto) into a herdr

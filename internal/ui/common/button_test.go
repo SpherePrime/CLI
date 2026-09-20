@@ -3,15 +3,15 @@ package common
 import (
 	"testing"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestButtonHitCompositorLayouts(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	buttons := []ButtonOpts{
 		{Text: "Implement", Padding: 1, UnderlineIndex: -1},
 		{Text: "Request changes", Padding: 1, UnderlineIndex: -1},

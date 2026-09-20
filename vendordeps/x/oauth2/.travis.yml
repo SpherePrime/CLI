@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - tip
+
+install:
+  - export GOPATH="$HOME/gopath"
+  - mkdir -p "$GOPATH/src/golang.org/x"
+  - mv "$TRAVIS_BUILD_DIR" "$GOPATH/src/github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+  - go get -v -t -d github.com/dwertyfa288/CLI/vendordeps/x/oauth2/...
+
+script:
+  - go test -v github.com/dwertyfa288/CLI/vendordeps/x/oauth2/...

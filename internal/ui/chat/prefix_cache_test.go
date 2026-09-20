@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/attachments"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/attachments"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // finishedAssistantMessage builds an assistant message with text content and a
@@ -31,7 +31,7 @@ func finishedAssistantMessage(id, text string) *message.Message {
 func TestAssistantMessageItemRender_PrefixCacheFocusBlur(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := finishedAssistantMessage("m1", "Hello world from the cache test.")
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 
@@ -56,7 +56,7 @@ func TestAssistantMessageItemRender_PrefixCacheFocusBlur(t *testing.T) {
 func TestAssistantMessageItemRender_PrefixCacheWidthInvalidates(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := finishedAssistantMessage("m2", "Some content that wraps differently at different widths so the rendered output diverges.")
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 	item.SetFocused(true)
@@ -76,7 +76,7 @@ func TestAssistantMessageItemRender_PrefixCacheWidthInvalidates(t *testing.T) {
 func TestAssistantMessageItemRender_PrefixCacheHighlightOnTop(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := finishedAssistantMessage("m3", "Hello world from the highlight test.")
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 	item.SetFocused(true)
@@ -103,7 +103,7 @@ func TestAssistantMessageItemRender_PrefixCacheHighlightOnTop(t *testing.T) {
 func TestUserMessageItemRender_PrefixCacheFocusBlur(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := &message.Message{
 		ID:   "u1",
 		Role: message.User,
@@ -183,7 +183,7 @@ func TestCachedMessageItem_PrefixCacheSemantics(t *testing.T) {
 func TestAssistantMessageItemRender_PrefixCacheNoCacheLeak(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := finishedAssistantMessage("m4", strings.Repeat("word ", 40))
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 	item.SetFocused(true)

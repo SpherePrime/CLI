@@ -3,7 +3,7 @@ package tools
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestGetSymbolOffset(t *testing.T) {

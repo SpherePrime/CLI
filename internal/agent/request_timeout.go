@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 )
 
 // requestTimeoutError reports that an LLM request exhausted its configured

@@ -3,9 +3,9 @@ package agent
 import (
 	"testing"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestIsOpenCodeMessagesModel(t *testing.T) {

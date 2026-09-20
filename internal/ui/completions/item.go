@@ -3,11 +3,11 @@ package completions
 import (
 	"slices"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/ui/list"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/rivo/uniseg"
-	"github.com/sahilm/fuzzy"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/list"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg"
+	"github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy"
 )
 
 // FileCompletionValue represents a file path completion value.

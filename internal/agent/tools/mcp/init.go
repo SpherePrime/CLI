@@ -16,17 +16,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/home"
-	"github.com/charmbracelet/prime/internal/oauth"
-	mcpoauth "github.com/charmbracelet/prime/internal/oauth/mcp"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/charmbracelet/prime/internal/version"
-	"github.com/modelcontextprotocol/go-sdk/auth"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"golang.org/x/oauth2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/home"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	mcpoauth "github.com/dwertyfa288/CLI/internal/oauth/mcp"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
+	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
 )
 
 // parseLevel converts an MCP logging level string to a slog.Level. The

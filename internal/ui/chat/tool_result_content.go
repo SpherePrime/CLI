@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/diffdetect"
-	"github.com/charmbracelet/prime/internal/stringext"
-	"github.com/charmbracelet/prime/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/diffdetect"
+	"github.com/dwertyfa288/CLI/internal/stringext"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
 )
 
 type toolResultContentWidths struct {

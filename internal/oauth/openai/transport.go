@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/oauth"
 )
 
 // Transport adapts requests made with a ChatGPT OAuth token to what the

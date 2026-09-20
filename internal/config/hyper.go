@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/prime/internal/agent/hyper"
-	xetag "github.com/charmbracelet/x/etag"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/internal/agent/hyper"
+	xetag "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/etag"
 )
 
 type hyperClient interface {

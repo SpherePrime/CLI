@@ -13,11 +13,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
 )
 
 // ListWorkspaces retrieves all workspaces from the server.

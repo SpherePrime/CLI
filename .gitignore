@@ -5,6 +5,10 @@ target/
 # Local agent state
 .agent/
 sessions/
+/.prime/
+/tools/
+run*.log
+dry_run.txt
 
 # Local chat/dev context
 CHATS.md
@@ -29,6 +33,14 @@ tests/fixtures/generated/
 screens/
 agent.exe
 agent-tui.exe
+prime.exe
+prime
+CLI.exe
+*.test
+
+# Stale dependency backups
+/.vendorbak*/
+vendordeps_old*/
 
 # TS / TUI
 node_modules/

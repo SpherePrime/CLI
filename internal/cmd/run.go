@@ -10,22 +10,22 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/log/v2"
-	"github.com/charmbracelet/prime/internal/client"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/event"
-	"github.com/charmbracelet/prime/internal/format"
-	"github.com/charmbracelet/prime/internal/herdr"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/ui/anim"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/prime/internal/workspace"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/charmbracelet/x/term"
-	"github.com/google/uuid"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/log/v2"
+	"github.com/dwertyfa288/CLI/internal/client"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/event"
+	"github.com/dwertyfa288/CLI/internal/format"
+	"github.com/dwertyfa288/CLI/internal/herdr"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/ui/anim"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/workspace"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 var runCmd = &cobra.Command{
@@ -39,7 +39,7 @@ The prompt can be provided as arguments or piped from stdin.`,
 prime run "Guess my 5 favorite Pokémon"
 
 # Pipe input from stdin
-curl https://charm.land | prime run "Summarize this website"
+curl https://dwerty.local | prime run "Summarize this website"
 
 # Read from a file
 prime run "What is this code doing?" <<< prrr.go

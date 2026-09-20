@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"charm.land/lipgloss/v2"
-	"github.com/alecthomas/chroma/v2"
-	"github.com/alecthomas/chroma/v2/lexers"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/lexers"
 )
 
 // lexers.Match glob-matches the filename against every registered lexer's

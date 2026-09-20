@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/history"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/history"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestFileList(t *testing.T) {
@@ -112,7 +112,7 @@ func TestFileList(t *testing.T) {
 }
 
 func minimalFileStyles() *styles.Styles {
-	st := styles.CharmtonePantera()
+	st := styles.ColorTonePantera()
 	st.Files.Path = lipgloss.NewStyle()
 	st.Files.Additions = lipgloss.NewStyle()
 	st.Files.Deletions = lipgloss.NewStyle()

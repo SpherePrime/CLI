@@ -6,16 +6,16 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/bubbles/v2/textinput"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/ui/list"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/dustin/go-humanize"
-	"github.com/rivo/uniseg"
-	"github.com/sahilm/fuzzy"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/ui/list"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dustin/go-humanize"
+	"github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg"
+	"github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy"
 )
 
 // sameFuzzyMatch reports whether two fuzzy.Match values are

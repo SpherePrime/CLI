@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/agent/tools"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/agent/tools"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestPermissionRequestParamsTypeAssertable guards the permission

@@ -4,13 +4,13 @@ import (
 	"slices"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/colorprofile"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/ansi"
-	xstrings "github.com/charmbracelet/x/exp/strings"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	xstrings "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/strings"
 
-	"github.com/charmbracelet/prime/internal/ui/notification"
+	"github.com/dwertyfa288/CLI/internal/ui/notification"
 )
 
 // Capabilities define different terminal capabilities supported.

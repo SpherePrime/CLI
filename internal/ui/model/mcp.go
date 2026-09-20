@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/agent/tools/mcp"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
 )
 
 // mcpInfo renders the MCP status section showing active MCP clients and their

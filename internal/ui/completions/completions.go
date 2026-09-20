@@ -7,14 +7,14 @@ import (
 	"strings"
 	"sync"
 
-	"charm.land/bubbles/v2/key"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/agent/tools/mcp"
-	"github.com/charmbracelet/prime/internal/fsext"
-	"github.com/charmbracelet/prime/internal/ui/list"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/charmbracelet/x/exp/ordered"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
+	"github.com/dwertyfa288/CLI/internal/fsext"
+	"github.com/dwertyfa288/CLI/internal/ui/list"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/ordered"
 )
 
 const (

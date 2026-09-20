@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/charmbracelet/prime/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/proto"
 )
 
 // SetConfigField sets a config key/value pair on the server.

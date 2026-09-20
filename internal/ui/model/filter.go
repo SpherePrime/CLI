@@ -3,8 +3,8 @@ package model
 import (
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/ui/common"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
 )
 
 // inputFilterInterval targets roughly one filtered sample per 60 Hz frame.

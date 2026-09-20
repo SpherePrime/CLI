@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/agent"
-	"github.com/charmbracelet/prime/internal/agent/agenttest"
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/agent"
+	"github.com/dwertyfa288/CLI/internal/agent/agenttest"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // gatedCoordinator wraps a real agent.Coordinator and parks RunAccepted

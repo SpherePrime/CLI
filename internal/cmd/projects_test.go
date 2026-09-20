@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/projects"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/projects"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestProjectsEmpty(t *testing.T) {

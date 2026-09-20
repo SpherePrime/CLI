@@ -323,7 +323,7 @@ user-invocable: true
 
 ```json
 {
-  "$schema": "https://charm.land/prime.json",
+  "$schema": "https://dwerty.local/prime.json",
   "models": {},
   "providers": {},
   "mcp": {},

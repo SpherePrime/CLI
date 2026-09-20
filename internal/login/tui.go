@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/bubbles/v2/help"
-	"charm.land/bubbles/v2/key"
-	"charm.land/bubbles/v2/spinner"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/charmbracelet/x/exp/charmtone"
-	"github.com/pkg/browser"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/spinner"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
 
-	"github.com/charmbracelet/prime/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/oauth"
 )
 
 // authState represents the state of the OAuth TUI flow.
@@ -109,7 +109,7 @@ type authErrMsg struct {
 
 func newAuthModel(platform string, newFlow func() flow) authModel {
 	s := spinner.New(spinner.WithSpinner(spinner.Dot))
-	s.Style = lipgloss.NewStyle().Foreground(charmtone.Julep)
+	s.Style = lipgloss.NewStyle().Foreground(colortone.Julep)
 	m := authModel{
 		platform: platform,
 		newFlow:  newFlow,
@@ -242,7 +242,7 @@ const maxHeaderSlashes = 50
 // slashes renders n diagonal slashes with a horizontal gradient that fades
 // from the header purple to pink, echoing the dialog title treatment.
 func (authModel) slashes(n int) string {
-	ramp := lipgloss.Blend1D(n, charmtone.Charple, charmtone.Dolly)
+	ramp := lipgloss.Blend1D(n, colortone.Charple, colortone.Dolly)
 	var b strings.Builder
 	for _, c := range ramp {
 		b.WriteString(slashStyle.Foreground(c).Render("╱"))
@@ -287,13 +287,13 @@ func (m authModel) content() string {
 	case authStateWaiting:
 		if m.userCode != "" {
 			b.WriteString(wrap.Render("Your code is "))
-			b.WriteString(lipgloss.NewStyle().Foreground(charmtone.Julep).Render(m.userCode))
+			b.WriteString(lipgloss.NewStyle().Foreground(colortone.Julep).Render(m.userCode))
 			b.WriteString(" ")
-			b.WriteString(lipgloss.NewStyle().Foreground(charmtone.Oyster).Render("copied to clipboard"))
+			b.WriteString(lipgloss.NewStyle().Foreground(colortone.Oyster).Render("copied to clipboard"))
 			b.WriteString("\n\n  ")
 		}
 		urlStyle := lipgloss.NewStyle().
-			Foreground(charmtone.Guac).
+			Foreground(colortone.Guac).
 			Underline(true).
 			Hyperlink(m.verificationURL).
 			MaxWidth(m.authWidth())

@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	"golang.org/x/sys/windows"
+	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
 )
 
 func detachProcess(c *exec.Cmd) {

@@ -101,7 +101,7 @@ Commit message here.
 Assisted-by: Prime:{{ .ModelID }}
 {{ else if eq .Attribution.TrailerStyle "co-authored-by" }}
 
-Co-Authored-By: Prime <prime@charm.land>
+Co-Authored-By: Prime <prime@dwerty.local>
 {{ end }}
 EOF
 )"

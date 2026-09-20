@@ -11,17 +11,17 @@ import (
 	"testing"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy"
-	"charm.land/x/vcr"
-	"github.com/charmbracelet/prime/internal/agent/tools"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/x/vcr"
+	"github.com/dwertyfa288/CLI/internal/agent/tools"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 
-	_ "github.com/joho/godotenv/autoload"
+	_ "github.com/dwertyfa288/CLI/vendordeps/joho/godotenv/autoload"
 )
 
 func TestMain(m *testing.M) {

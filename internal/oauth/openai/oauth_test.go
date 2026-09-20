@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // stubTokenServer serves an OAuth token endpoint that always returns the

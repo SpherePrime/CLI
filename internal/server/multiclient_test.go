@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/backend"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/backend"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // installSyntheticWorkspace creates a synthetic [backend.Workspace]

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/shell"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestAggregation(t *testing.T) {

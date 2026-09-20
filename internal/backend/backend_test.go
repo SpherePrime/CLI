@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // newTestBackend returns a Backend whose teardown path skips any

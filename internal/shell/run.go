@@ -10,9 +10,9 @@ import (
 	"slices"
 	"strings"
 
-	"mvdan.cc/sh/v3/expand"
-	"mvdan.cc/sh/v3/interp"
-	"mvdan.cc/sh/v3/syntax"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
 )
 
 // RunOptions configures a single stateless shell execution via [Run].

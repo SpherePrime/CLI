@@ -12,8 +12,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	md "github.com/JohannesKaufmann/html-to-markdown"
-	"golang.org/x/net/html"
+	md "github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown"
+	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
 )
 
 // BrowserUserAgent is a realistic browser User-Agent for better compatibility.

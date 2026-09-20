@@ -13,8 +13,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/backend"
-	"github.com/charmbracelet/prime/internal/config"
+	"github.com/dwertyfa288/CLI/internal/backend"
+	"github.com/dwertyfa288/CLI/internal/config"
 )
 
 // maxUnixSocketPathLen is the maximum length of a Unix domain socket

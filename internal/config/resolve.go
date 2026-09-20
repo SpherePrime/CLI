@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/env"
-	"github.com/charmbracelet/prime/internal/shell"
+	"github.com/dwertyfa288/CLI/internal/env"
+	"github.com/dwertyfa288/CLI/internal/shell"
 )
 
 // resolveTimeout bounds how long a single ResolveValue call may spend

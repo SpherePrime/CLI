@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/agent/hyper"
-	"github.com/charmbracelet/prime/internal/event"
-	"github.com/charmbracelet/prime/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/agent/hyper"
+	"github.com/dwertyfa288/CLI/internal/event"
+	"github.com/dwertyfa288/CLI/internal/oauth"
 )
 
 // DeviceAuthResponse contains the response from the device authorization endpoint.

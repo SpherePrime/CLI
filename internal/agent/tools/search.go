@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/net/html"
+	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
 )
 
 // SearchResult represents a single search result from DuckDuckGo.

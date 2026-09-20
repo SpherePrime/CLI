@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/x/exp/charmtone"
-	"github.com/charmbracelet/x/term"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 var dirsCmd = &cobra.Command{
@@ -58,7 +58,7 @@ func collectDirs(cmd *cobra.Command) []string {
 }
 
 func printDirs(cmd *cobra.Command, dirs []string) {
-	labelStyle := lipgloss.NewStyle().Bold(true).Foreground(charmtone.Charple)
+	labelStyle := lipgloss.NewStyle().Bold(true).Foreground(colortone.Charple)
 
 	labels := make([]string, len(dirs))
 	longest := 0
@@ -76,7 +76,7 @@ func printDirs(cmd *cobra.Command, dirs []string) {
 			" " + d)
 	}
 
-	lipgloss.Println(lipgloss.NewStyle().Foreground(charmtone.Squid).Render("Configs merge from top to bottom"))
+	lipgloss.Println(lipgloss.NewStyle().Foreground(colortone.Squid).Render("Configs merge from top to bottom"))
 }
 
 func dirLabel(i int) string {

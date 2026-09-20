@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // fakeTimeoutErr is a minimal net.Error implementation whose Timeout()

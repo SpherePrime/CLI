@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"mvdan.cc/sh/v3/expand"
-	"mvdan.cc/sh/v3/interp"
-	"mvdan.cc/sh/v3/syntax"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
 )
 
 // maxInnerStderrBytes bounds how much stderr from a failing $(...) is

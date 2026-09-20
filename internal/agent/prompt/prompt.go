@@ -12,11 +12,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/filepathext"
-	"github.com/charmbracelet/prime/internal/home"
-	"github.com/charmbracelet/prime/internal/shell"
-	"github.com/charmbracelet/prime/internal/skills"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/filepathext"
+	"github.com/dwertyfa288/CLI/internal/home"
+	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/dwertyfa288/CLI/internal/skills"
 )
 
 // Prompt represents a template-based prompt generator.

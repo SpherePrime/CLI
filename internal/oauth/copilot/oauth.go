@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/oauth"
 )
 
 const (

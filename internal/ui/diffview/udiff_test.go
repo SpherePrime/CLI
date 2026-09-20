@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/aymanbagabas/go-udiff"
-	"github.com/charmbracelet/x/exp/golden"
+	"github.com/dwertyfa288/CLI/vendordeps/aymanbagabas/go-udiff"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/golden"
 )
 
 func TestUdiff(t *testing.T) {

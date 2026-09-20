@@ -10,12 +10,12 @@ import (
 	"slices"
 	"time"
 
-	"charm.land/log/v2"
-	"github.com/charmbracelet/colorprofile"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/x/term"
-	"github.com/nxadm/tail"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/log/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/nxadm/tail"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 const defaultTailLines = 1000

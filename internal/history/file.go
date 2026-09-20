@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/google/uuid"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
 )
 
 const (

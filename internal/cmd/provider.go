@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/discover"
-	"github.com/charmbracelet/x/exp/charmtone"
-	"github.com/charmbracelet/x/term"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/discover"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 // contextWindowOverride is the context window (in tokens) that the provider
@@ -198,8 +198,8 @@ func promptPassword(cmd *cobra.Command, label string) (string, error) {
 
 func printProviderAddSuccess(id, name, baseURL string, modelCount, contextWindow int, workspace bool) {
 	header := lipgloss.NewStyle().
-		Foreground(charmtone.Butter).
-		Background(charmtone.Guac).
+		Foreground(colortone.Butter).
+		Background(colortone.Guac).
 		Bold(true).
 		Padding(0, 1).
 		Margin(1).

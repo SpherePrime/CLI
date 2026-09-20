@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/hooks"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/hooks"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // fakeTool records the context it was invoked with so tests can assert on
