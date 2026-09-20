@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/list"
-	"github.com/charmbracelet/prime/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/list"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
 )
 
 // BenchmarkResizeSession reproduces the resize re-render path over a real
@@ -52,7 +52,7 @@ func BenchmarkResizeSession(b *testing.B) {
 	}
 	toolResults := BuildToolResultMap(ptrs)
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	var items []list.Item
 	for _, m := range ptrs {
 		for _, it := range ExtractMessageItems(&sty, m, toolResults, "") {

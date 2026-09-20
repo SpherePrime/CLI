@@ -10,9 +10,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
 )
 
 type Tool = mcp.Tool

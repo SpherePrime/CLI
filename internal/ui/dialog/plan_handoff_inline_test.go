@@ -6,16 +6,16 @@ import (
 	"strings"
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func newTestPlanHandoff() *PlanHandoffInline {
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	return NewPlanHandoffInline(&common.Common{Styles: &sty})
 }
 
@@ -238,7 +238,7 @@ func TestPlanHandoffAdaptiveChoiceLayout(t *testing.T) {
 func TestPlanHandoffChoiceQuestionBadgeFollowsFocus(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	p := newTestPlanHandoff()
 
 	p.SetFocused(true)
@@ -284,7 +284,7 @@ func TestPlanHandoffBlurredViewKeepsChoiceLayout(t *testing.T) {
 	require.Contains(t, plain, "Code with YOLO")
 	require.Contains(t, plain, "Revise plan")
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	focusedBg := sty.Button.Focused.GetBackground()
 	inactiveBg := sty.Button.Inactive.GetBackground()
 	require.NotEqual(t, inactiveBg, sty.Button.Blurred.GetBackground(),

@@ -5,11 +5,11 @@ import (
 	_ "embed"
 	"errors"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 
-	"github.com/charmbracelet/prime/internal/agent/prompt"
-	"github.com/charmbracelet/prime/internal/agent/tools"
-	"github.com/charmbracelet/prime/internal/config"
+	"github.com/dwertyfa288/CLI/internal/agent/prompt"
+	"github.com/dwertyfa288/CLI/internal/agent/tools"
+	"github.com/dwertyfa288/CLI/internal/config"
 )
 
 //go:embed templates/agent_tool.md

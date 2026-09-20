@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/skills"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestLoadFromSource_NonExistentDir(t *testing.T) {

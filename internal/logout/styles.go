@@ -1,8 +1,8 @@
 package logout
 
 import (
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 // buttonPadding is the horizontal padding inside a button.
@@ -13,15 +13,15 @@ var (
 			Bold(true)
 
 	buttonFocusedStyle = lipgloss.NewStyle().
-				Foreground(charmtone.Sash).
-				Background(charmtone.Blush)
+				Foreground(colortone.Sash).
+				Background(colortone.Blush)
 	buttonBlurredStyle = lipgloss.NewStyle().
-				Foreground(charmtone.Soda).
-				Background(charmtone.BBQ)
+				Foreground(colortone.Soda).
+				Background(colortone.BBQ)
 
 	choiceSelectedStyle = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(charmtone.Blush)
+				Foreground(colortone.Blush)
 )
 
 // renderButton renders a selectable button with an underlined accelerator

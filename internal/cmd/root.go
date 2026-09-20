@@ -20,33 +20,33 @@ import (
 	"strings"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-	fang "charm.land/fang/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/colorprofile"
-	"github.com/charmbracelet/prime/internal/app"
-	"github.com/charmbracelet/prime/internal/client"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/event"
-	"github.com/charmbracelet/prime/internal/lock"
-	primelog "github.com/charmbracelet/prime/internal/log"
-	"github.com/charmbracelet/prime/internal/projects"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/server"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/skills"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/exitbanner"
-	ui "github.com/charmbracelet/prime/internal/ui/model"
-	"github.com/charmbracelet/prime/internal/version"
-	"github.com/charmbracelet/prime/internal/workspace"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/charmbracelet/x/exp/charmtone"
-	xstrings "github.com/charmbracelet/x/exp/strings"
-	"github.com/charmbracelet/x/term"
-	"github.com/spf13/cobra"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	fang "github.com/dwertyfa288/CLI/vendordeps/fang/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/dwertyfa288/CLI/internal/app"
+	"github.com/dwertyfa288/CLI/internal/client"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/event"
+	"github.com/dwertyfa288/CLI/internal/lock"
+	primelog "github.com/dwertyfa288/CLI/internal/log"
+	"github.com/dwertyfa288/CLI/internal/projects"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/server"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/exitbanner"
+	ui "github.com/dwertyfa288/CLI/internal/ui/model"
+	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/dwertyfa288/CLI/internal/workspace"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	xstrings "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/strings"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 var clientHost string
@@ -144,7 +144,7 @@ prime --continue
 		if _, err := program.Run(); err != nil {
 			event.Error(err)
 			slog.Error("TUI run error", "error", err)
-			return errors.New("Prime crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/charmbracelet/prime/issues/new?template=bug.yml") //nolint:staticcheck
+			return errors.New("Prime crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/dwertyfa288/CLI/issues/new?template=bug.yml") //nolint:staticcheck
 		}
 		var banner config.ExitBanner
 		if cfg := com.Config(); cfg != nil {
@@ -155,7 +155,7 @@ prime --continue
 	},
 }
 
-var heartbit = lipgloss.NewStyle().Foreground(charmtone.Dolly).SetString(`
+var heartbit = lipgloss.NewStyle().Foreground(colortone.Dolly).SetString(`
     ▄▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄▄
   ███████████  ███████████
 ████████████████████████████

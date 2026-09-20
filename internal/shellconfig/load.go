@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/shell"
-	"github.com/charmbracelet/prime/internal/version"
+	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/dwertyfa288/CLI/internal/version"
 )
 
 // loadTimeout bounds a single primerc execution. Config loading runs on the

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"charm.land/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 func init() {

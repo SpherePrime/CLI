@@ -3,15 +3,15 @@ package dialog
 import (
 	"strings"
 
-	"charm.land/bubbles/v2/help"
-	"charm.land/bubbles/v2/key"
-	"charm.land/bubbles/v2/spinner"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/pkg/browser"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/spinner"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
 )
 
 // AWSSSOID is the identifier for the AWS SSO auth dialog.

@@ -7,12 +7,12 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/charmbracelet/prime/internal/shell"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 type mockBashPermissionService struct {

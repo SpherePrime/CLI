@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestRefusalFinishRendersBanner asserts that a content-filter finish
@@ -15,7 +15,7 @@ import (
 // agent persists only the reason, so the banner text comes from the
 // TUI's canonical refusal copy.
 func TestRefusalFinishRendersBanner(t *testing.T) {
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := &message.Message{
 		ID:   "refusal-1",
 		Role: message.Assistant,
@@ -41,7 +41,7 @@ func TestRefusalFinishRendersBanner(t *testing.T) {
 // carry its own message/details (e.g. a future provider that supplies
 // them), the persisted copy takes precedence over the TUI defaults.
 func TestRefusalPersistedCopyWins(t *testing.T) {
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := &message.Message{
 		ID:   "refusal-2",
 		Role: message.Assistant,
@@ -65,7 +65,7 @@ func TestRefusalPersistedCopyWins(t *testing.T) {
 // error finish with no details renders only the title line, without an
 // empty styled details block or trailing blank lines.
 func TestErrorEmptyDetailsNoTrailingBlock(t *testing.T) {
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := &message.Message{
 		ID:   "error-1",
 		Role: message.Assistant,

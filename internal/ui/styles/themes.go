@@ -1,7 +1,7 @@
 package styles
 
 import (
-	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 // ThemeKeyForProvider returns a stable identifier for the theme
@@ -20,104 +20,104 @@ func ThemeKeyForProvider(providerID string) string {
 }
 
 // ThemeForProvider returns the Styles associated with the given provider
-// ID. Unknown or empty provider IDs yield the default Charmtone Pantera
+// ID. Unknown or empty provider IDs yield the default ColorTone Pantera
 // theme.
 func ThemeForProvider(providerID string) Styles {
 	switch ThemeKeyForProvider(providerID) {
 	case "hyper":
 		return HyperprimeObsidiana()
 	default:
-		return CharmtonePantera()
+		return ColorTonePantera()
 	}
 }
 
-// CharmtonePantera returns the Charmtone dark theme. It's the default style
+// ColorTonePantera returns the ColorTone dark theme. It's the default style
 // for the UI.
-func CharmtonePantera() Styles {
+func ColorTonePantera() Styles {
 	s := quickStyle(quickStyleOpts{
-		primary:   charmtone.Charple,
-		secondary: charmtone.Dolly,
-		accent:    charmtone.Bok,
-		keyword:   charmtone.Blush,
+		primary:   colortone.Charple,
+		secondary: colortone.Dolly,
+		accent:    colortone.Bok,
+		keyword:   colortone.Blush,
 
-		fgBase:       charmtone.Sash,
-		fgMoreSubtle: charmtone.Squid,
-		fgSubtle:     charmtone.Smoke,
-		fgMostSubtle: charmtone.Oyster,
+		fgBase:       colortone.Sash,
+		fgMoreSubtle: colortone.Squid,
+		fgSubtle:     colortone.Smoke,
+		fgMostSubtle: colortone.Oyster,
 
-		onPrimary: charmtone.Butter,
+		onPrimary: colortone.Butter,
 
-		bgBase:         charmtone.Pepper,
-		bgLeastVisible: charmtone.BBQ,
-		bgLessVisible:  charmtone.Char,
-		bgMostVisible:  charmtone.Iron,
+		bgBase:         colortone.Pepper,
+		bgLeastVisible: colortone.BBQ,
+		bgLessVisible:  colortone.Char,
+		bgMostVisible:  colortone.Iron,
 
-		separator: charmtone.Char,
+		separator: colortone.Char,
 
-		destructive:       charmtone.Coral,
-		error:             charmtone.Sriracha,
-		warningSubtle:     charmtone.Zest,
-		warning:           charmtone.Mustard,
-		attention:         charmtone.Tang,
-		busy:              charmtone.Citron,
-		info:              charmtone.Malibu,
-		infoMoreSubtle:    charmtone.Sardine,
-		infoMostSubtle:    charmtone.Damson,
-		success:           charmtone.Julep,
-		successMoreSubtle: charmtone.Bok,
-		successMostSubtle: charmtone.Guac,
-		yolo:              charmtone.Zest,
-		plan:              charmtone.Charple,
-		planMoreSubtle:    charmtone.Hazy,
+		destructive:       colortone.Coral,
+		error:             colortone.Sriracha,
+		warningSubtle:     colortone.Zest,
+		warning:           colortone.Mustard,
+		attention:         colortone.Tang,
+		busy:              colortone.Citron,
+		info:              colortone.Malibu,
+		infoMoreSubtle:    colortone.Sardine,
+		infoMostSubtle:    colortone.Damson,
+		success:           colortone.Julep,
+		successMoreSubtle: colortone.Bok,
+		successMostSubtle: colortone.Guac,
+		yolo:              colortone.Zest,
+		plan:              colortone.Charple,
+		planMoreSubtle:    colortone.Hazy,
 		// ANSI 16-color palette for remapping raw terminal output
-		// (e.g. bang-mode shell commands) onto legible Charmtone colors.
-		ansiBlack:   charmtone.BBQ,
-		ansiRed:     charmtone.Coral,
-		ansiGreen:   charmtone.Guac,
-		ansiYellow:  charmtone.Mustard,
-		ansiBlue:    charmtone.Charple,
-		ansiMagenta: charmtone.Dolly,
-		ansiCyan:    charmtone.Malibu,
-		ansiWhite:   charmtone.Smoke,
+		// (e.g. bang-mode shell commands) onto legible ColorTone colors.
+		ansiBlack:   colortone.BBQ,
+		ansiRed:     colortone.Coral,
+		ansiGreen:   colortone.Guac,
+		ansiYellow:  colortone.Mustard,
+		ansiBlue:    colortone.Charple,
+		ansiMagenta: colortone.Dolly,
+		ansiCyan:    colortone.Malibu,
+		ansiWhite:   colortone.Smoke,
 
-		ansiBrightBlack:   charmtone.Iron,
-		ansiBrightRed:     charmtone.Tuna,
-		ansiBrightGreen:   charmtone.Julep,
-		ansiBrightYellow:  charmtone.Zest,
-		ansiBrightBlue:    charmtone.Guppy,
-		ansiBrightMagenta: charmtone.Blush,
-		ansiBrightCyan:    charmtone.Sardine,
-		ansiBrightWhite:   charmtone.Salt,
+		ansiBrightBlack:   colortone.Iron,
+		ansiBrightRed:     colortone.Tuna,
+		ansiBrightGreen:   colortone.Julep,
+		ansiBrightYellow:  colortone.Zest,
+		ansiBrightBlue:    colortone.Guppy,
+		ansiBrightMagenta: colortone.Blush,
+		ansiBrightCyan:    colortone.Sardine,
+		ansiBrightWhite:   colortone.Salt,
 	})
 
 	// Bang ! prompt overrides - use Salt/Hazy/Larple colors.
 	s.Editor.PromptBangIconFocused = s.Editor.PromptBangIconFocused.
-		Foreground(charmtone.Salt).
-		Background(charmtone.Hazy)
+		Foreground(colortone.Salt).
+		Background(colortone.Hazy)
 	s.Editor.PromptBangDotsFocused = s.Editor.PromptBangDotsFocused.
-		Foreground(charmtone.Hazy)
+		Foreground(colortone.Hazy)
 	s.Editor.PromptBangDotsBlurred = s.Editor.PromptBangDotsBlurred.
-		Foreground(charmtone.Larple)
+		Foreground(colortone.Larple)
 
 	// Shell bar/prompt overrides - use Charple/Iron/Hazy colors.
 	s.Messages.ShellBarFocused = s.Messages.ShellBarFocused.
-		BorderForeground(charmtone.Charple)
+		BorderForeground(colortone.Charple)
 	s.Messages.ShellBarBlurred = s.Messages.ShellBarBlurred.
-		BorderForeground(charmtone.Iron)
+		BorderForeground(colortone.Iron)
 	s.Messages.ShellPrompt = s.Messages.ShellPrompt.
-		Foreground(charmtone.Hazy)
+		Foreground(colortone.Hazy)
 	s.Messages.ShellPromptBlurred = s.Messages.ShellPromptBlurred.
-		Foreground(charmtone.Hazy)
+		Foreground(colortone.Hazy)
 
 	// The ◆ hypercredit symbol inside subdued text (e.g. savings
 	// suffixes) uses Mochi so it stays visible against its surroundings.
 	s.Messages.SubduedHypercreditIcon = s.Messages.SubduedHypercreditIcon.
-		Foreground(charmtone.Violet)
+		Foreground(colortone.Violet)
 
 	return s
 }
 
 // HyperprimeObsidiana returns the Hyperprime dark theme.
 func HyperprimeObsidiana() Styles {
-	return CharmtonePantera()
+	return ColorTonePantera()
 }

@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"time"
 
-	"mvdan.cc/sh/v3/interp"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
 )
 
 // defaultKillTimeout matches mvdan's DefaultExecHandler default.

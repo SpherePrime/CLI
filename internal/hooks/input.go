@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/shell"
-	"github.com/tidwall/gjson"
+	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
 )
 
 // SupportedOutputVersion is the highest envelope version this build

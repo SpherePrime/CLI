@@ -7,10 +7,10 @@ import (
 	"strings"
 	"sync"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/skills"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
 )
 
 type skillStatusItem struct {

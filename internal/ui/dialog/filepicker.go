@@ -9,15 +9,15 @@ import (
 	"strings"
 	"sync"
 
-	"charm.land/bubbles/v2/filepicker"
-	"charm.land/bubbles/v2/help"
-	"charm.land/bubbles/v2/key"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/home"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	fimage "github.com/charmbracelet/prime/internal/ui/image"
-	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/filepicker"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/home"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	fimage "github.com/dwertyfa288/CLI/internal/ui/image"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // FilePickerID is the identifier for the FilePicker dialog.

@@ -10,11 +10,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/charlievieth/fastwalk"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/home"
-	gitconfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
+	"github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/home"
+	gitconfig "github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/config"
+	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/plumbing/format/gitignore"
 )
 
 // fastIgnoreDirs is a set of directory names that are always ignored.

@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"charm.land/fantasy"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestConvertToToolResult_InvalidBase64(t *testing.T) {

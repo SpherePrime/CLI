@@ -12,12 +12,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/env"
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/env"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/goleak"
 )
 
 // shellResolverWithPath builds a shell resolver whose env carries PATH

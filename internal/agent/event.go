@@ -3,8 +3,8 @@ package agent
 import (
 	"time"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/event"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/event"
 )
 
 func (a *sessionAgent) eventPromptSent(sessionID string) {

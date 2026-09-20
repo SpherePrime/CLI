@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"strings"
 
-	"charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/tree"
-	"github.com/charmbracelet/prime/internal/agent"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/tree"
+	"github.com/dwertyfa288/CLI/internal/agent"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
 )
 
 // -----------------------------------------------------------------------------

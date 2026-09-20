@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/agent/prompt"
-	"github.com/charmbracelet/prime/internal/agent/tools/mcp"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/agent/prompt"
+	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // newGateTestCoordinator builds a minimal coordinator against a hermetic

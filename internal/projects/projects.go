@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
+	"github.com/dwertyfa288/CLI/internal/config"
 )
 
 const projectsFileName = "projects.json"

@@ -6,7 +6,7 @@ package server
 import (
 	"net"
 
-	"github.com/Microsoft/go-winio"
+	"github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio"
 )
 
 // listen binds a net.Listener on the given network and address.

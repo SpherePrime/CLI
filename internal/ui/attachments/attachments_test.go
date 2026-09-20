@@ -5,14 +5,14 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func newTestRenderer() *Renderer {
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	return NewRenderer(
 		sty.Attachments.Normal,
 		sty.Attachments.Deleting,

@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/lsp"
-	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
+	"github.com/dwertyfa288/CLI/internal/lsp"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
 )
 
 // resolvedSymbol holds the result of resolving a symbol name to an LSP position.

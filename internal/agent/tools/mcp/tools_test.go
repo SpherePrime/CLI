@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestEnsureRawBytes(t *testing.T) {

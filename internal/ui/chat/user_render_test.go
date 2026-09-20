@@ -4,16 +4,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // newTestUserItem builds a UserMessageItem carrying text.
 func newTestUserItem(t *testing.T, text string) *UserMessageItem {
 	t.Helper()
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	msg := &message.Message{
 		ID:    "user-1",
 		Role:  message.User,
@@ -39,7 +39,7 @@ func renderedLines(t *testing.T, text string, width int) []string {
 }
 
 // TestUserMessagePreservesSingleLineBreaks is the regression test for
-// charmbracelet/prime#3502: a user submitting
+// dwertyfa288/prime#3502: a user submitting
 //
 //	a
 //	b

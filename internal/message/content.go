@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy"
-	"charm.land/fantasy/providers/anthropic"
-	"charm.land/fantasy/providers/google"
-	"charm.land/fantasy/providers/openai"
-	"github.com/charmbracelet/prime/internal/stringext"
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/google"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openai"
+	"github.com/dwertyfa288/CLI/internal/stringext"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 type MessageRole string

@@ -5,14 +5,14 @@ import (
 	"math/rand/v2"
 	"strings"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/ui/logo"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/prime/internal/version"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/ui/logo"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 // FallbackWidth is used when stdout is not a terminal, so the banner still
@@ -58,7 +58,7 @@ func logoSection(contentWidth int) string {
 		FieldColor:   t.Logo.FieldColor,
 		TitleColorA:  t.Logo.TitleColorA,
 		TitleColorB:  t.Logo.TitleColorB,
-		CharmColor:   t.Logo.CharmColor,
+		LabelColor:   t.Logo.LabelColor,
 		VersionColor: t.Logo.VersionColor,
 		Hyper:        false,
 	})
@@ -80,7 +80,7 @@ func sessionResumeLines(sess *session.Session, contentWidth int) string {
 	}
 
 	hash := session.HashID(sess.ID)[:7]
-	label := lipgloss.NewStyle().Foreground(charmtone.Charple)
+	label := lipgloss.NewStyle().Foreground(colortone.Charple)
 	sessionLine := label.Render("Session  ") + title
 	continueLine := label.Render("Continue ") + "prime -s " + hash
 	return sessionLine + "\n" + continueLine

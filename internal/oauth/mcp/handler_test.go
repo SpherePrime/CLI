@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/modelcontextprotocol/go-sdk/auth"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/oauth2"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
 )
 
 // fakeASOpts configures the fake authorization server so each test can

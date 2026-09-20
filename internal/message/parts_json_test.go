@@ -3,7 +3,7 @@ package message
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestPartsRoundTrip pins the on-disk part encoding: every part type must

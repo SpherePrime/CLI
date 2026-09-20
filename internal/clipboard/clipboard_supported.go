@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"context"
 
-	"golang.design/x/clipboard"
+	"github.com/dwertyfa288/CLI/vendordeps/x/clipboard"
 )
 
 // ready reports whether the native clipboard is usable. Touching the clipboard

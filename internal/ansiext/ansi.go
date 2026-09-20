@@ -3,7 +3,7 @@ package ansiext
 import (
 	"strings"
 
-	"github.com/charmbracelet/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // Escape replaces control characters with their Unicode Control Picture

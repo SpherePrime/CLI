@@ -3,7 +3,7 @@ package agent
 import (
 	"fmt"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 )
 
 func usageIsZero(usage fantasy.Usage) bool {

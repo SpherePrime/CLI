@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"charm.land/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 // Enricher fills in model metadata (context window, max tokens, pricing,

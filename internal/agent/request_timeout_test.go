@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"charm.land/fantasy"
-	"charm.land/x/vcr"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/x/vcr"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // fakeLanguageModel is a [fantasy.LanguageModel] stub that records the

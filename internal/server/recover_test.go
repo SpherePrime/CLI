@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestRecoverHandler_PanicReturns500 verifies that a panicking handler

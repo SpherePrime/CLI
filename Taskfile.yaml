@@ -43,7 +43,7 @@ tasks:
   build:
     desc: Run build
     vars:
-      LDFLAGS: '{{if .VERSION}}-ldflags="-X github.com/charmbracelet/prime/internal/version.Version={{.VERSION}}"{{end}}'
+      LDFLAGS: '{{if .VERSION}}-ldflags="-X github.com/dwertyfa288/CLI/internal/version.Version={{.VERSION}}"{{end}}'
     cmds:
       - "go build -v {{if .RACE}}-race{{end}} {{.LDFLAGS}} ."
     sources:
@@ -116,7 +116,7 @@ tasks:
   install:
     desc: Install the application
     vars:
-      LDFLAGS: '{{if .VERSION}}-ldflags="-X github.com/charmbracelet/prime/internal/version.Version={{.VERSION}}"{{end}}'
+      LDFLAGS: '{{if .VERSION}}-ldflags="-X github.com/dwertyfa288/CLI/internal/version.Version={{.VERSION}}"{{end}}'
     cmds:
       - task: fetch-tags
       - go install {{.LDFLAGS}} -v .
@@ -161,17 +161,13 @@ tasks:
     desc: Create and push a new tag following semver
     vars:
       NEXT:
-        sh: svu next --always || go run github.com/caarlos0/svu/v3@latest next --always
+        sh: svu next --always || go run github.com/dwertyfa288/svu/v3@latest next --always
     prompt: "This will release {{.NEXT}}. Continue?"
     preconditions:
       - sh: '[ $(git symbolic-ref --short HEAD) = "main" ]'
         msg: Not on main branch
       - sh: "[ $(git status --porcelain=2 | wc -l) = 0 ]"
         msg: "Git is dirty"
-      - sh: 'gh run list --workflow build.yml --commit $(git rev-parse HEAD) --status success --json conclusion -q ".[0].conclusion" | grep -q success'
-        msg: "Test build for this commit failed or not present"
-      - sh: 'gh run list --workflow snapshot.yml --commit $(git rev-parse HEAD) --status success --json conclusion -q ".[0].conclusion" | grep -q success'
-        msg: "Snapshot build for this commit failed or not present"
     cmds:
       - task: fetch-tags
       - git commit --allow-empty -m "{{.NEXT}}"
@@ -183,18 +179,6 @@ tasks:
     cmds:
       - git tag -d nightly || true
       - git fetch --tags
-
-  deps:
-    desc: Update Fantasy and Catwalk
-    env:
-      # The Go proxy takes a bit of time to see the latest release. Setting
-      # these bypass it to ensure we can update to a release from a minute ago.
-      GOPROXY: direct
-      GONOSUMDB: charm.land/*
-    cmds:
-      - go get charm.land/fantasy@latest
-      - go get charm.land/catwalk@latest
-      - go mod tidy
 
   sqlc:
     desc: Generate code using SQLC

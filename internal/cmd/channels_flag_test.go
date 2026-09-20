@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestChannelsFlagAvailableOnRunCmd guards against the --channels flag being

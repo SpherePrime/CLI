@@ -1,7 +1,7 @@
 package list
 
 import (
-	"github.com/sahilm/fuzzy"
+	"github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy"
 )
 
 // FilterableItem is an item that can be filtered via a query.

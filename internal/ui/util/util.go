@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-	"mvdan.cc/sh/v3/shell"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/shell"
 )
 
 type Cursor interface {

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/fsext"
+	"github.com/dwertyfa288/CLI/internal/fsext"
 )
 
 const (

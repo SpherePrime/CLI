@@ -1,8 +1,8 @@
 package backend
 
 import (
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/proto"
 )
 
 // GrantPermission grants, denies, or persistently grants a permission

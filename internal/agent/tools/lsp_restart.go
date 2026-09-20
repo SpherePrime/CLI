@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/lsp"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/lsp"
 )
 
 const LSPRestartToolName = "lsp_restart"

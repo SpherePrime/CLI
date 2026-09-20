@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func testPalette() [16]color.Color {

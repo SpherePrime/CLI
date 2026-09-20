@@ -5,7 +5,7 @@ package home
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // Windows accepts both `\` and `/` as path separators, and users habitually

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"charm.land/fantasy"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // concurrencyProbeModel records the maximum number of Stream iterators in

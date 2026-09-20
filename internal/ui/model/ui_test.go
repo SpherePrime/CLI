@@ -5,23 +5,23 @@ import (
 	"image"
 	"testing"
 
-	"charm.land/bubbles/v2/textarea"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/prime/internal/agent/notify"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/ui/attachments"
-	"github.com/charmbracelet/prime/internal/ui/chat"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/dialog"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/prime/internal/ui/util"
-	"github.com/charmbracelet/prime/internal/workspace"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textarea"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/internal/agent/notify"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/ui/attachments"
+	"github.com/dwertyfa288/CLI/internal/ui/chat"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/dialog"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/ui/util"
+	"github.com/dwertyfa288/CLI/internal/workspace"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestCurrentModelSupportsImages(t *testing.T) {
@@ -205,7 +205,7 @@ func TestToggleInputMode(t *testing.T) {
 
 func newPlanUI(t *testing.T, sessionID string) (*UI, *testWorkspace) {
 	t.Helper()
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	cfg := &config.Config{
 		Providers: csync.NewMap[string, config.ProviderConfig](),
 	}

@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/lipgloss/v2/tree"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/mattn/go-isatty"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/tree"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/vendordeps/mattn/go-isatty"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 var modelsCmd = &cobra.Command{

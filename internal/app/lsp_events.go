@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/lsp"
-	"github.com/charmbracelet/prime/internal/pubsub"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/lsp"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
 )
 
 // LSPEventType represents the type of LSP event

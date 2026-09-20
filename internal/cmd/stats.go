@@ -17,12 +17,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/event"
-	"github.com/charmbracelet/prime/internal/projects"
-	"github.com/pkg/browser"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/event"
+	"github.com/dwertyfa288/CLI/internal/projects"
+	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 //go:embed stats/index.html

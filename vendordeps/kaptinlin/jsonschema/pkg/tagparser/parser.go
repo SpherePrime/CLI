@@ -1,0 +1,505 @@
+// Package tagparser provides shared tag parsing functionality for schemagen.
+// This module analyzes Go struct tags and extracts jsonschema validation rules,
+// supporting the complete JSON Schema 2020-12 specification.
+package tagparser
+
+import (
+	"cmp"
+	"fmt"
+	"reflect"
+	"slices"
+	"strings"
+)
+
+// TagParser handles jsonschema tag parsing with configurable tag name
+type TagParser struct {
+	tagName string // Tag name to parse (default: "jsonschema")
+}
+
+// New creates a new TagParser with default "jsonschema" tag name
+func New() *TagParser {
+	return &TagParser{
+		tagName: "jsonschema",
+	}
+}
+
+// NewWithTagName creates a new TagParser with custom tag name
+func NewWithTagName(tagName string) *TagParser {
+	return &TagParser{
+		tagName: tagName,
+	}
+}
+
+// FieldInfo represents parsed information about a struct field
+type FieldInfo struct {
+	Name           string       // Go field name
+	Type           reflect.Type // Go field type
+	TypeName       string       // AST-based type name string for reference detection
+	JSONName       string       // JSON field name (from json tag or field name)
+	Tag            string       // Raw jsonschema tag value
+	Rules          []TagRule    // Parsed validation rules
+	Required       bool         // Whether field is required (has "required" rule)
+	Optional       bool         // Whether field should be optional
+	EmbeddingDepth int          // Embedding depth (0 = direct field)
+	IsPromoted     bool         // Whether field is promoted from embedding
+}
+
+// TagRule represents a single validation rule parsed from a tag
+type TagRule struct {
+	Name   string   // Rule name (e.g., "required", "minLength", "format")
+	Params []string // Rule parameters (e.g., ["2"] for "minLength=2")
+}
+
+// ParseStructTags parses all jsonschema tags in a struct type and returns field information
+func (p *TagParser) ParseStructTags(structType reflect.Type) ([]FieldInfo, error) {
+	return p.parseFields(structType, make(map[string]int), 0)
+}
+
+// parseFields recursively parses struct fields with embedding support
+func (p *TagParser) parseFields(structType reflect.Type, seenTypes map[string]int, depth int) ([]FieldInfo, error) {
+	// Depth protection against circular references
+	if depth > 10 {
+		return nil, nil
+	}
+
+	for structType.Kind() == reflect.Pointer {
+		structType = structType.Elem()
+	}
+
+	if structType.Kind() != reflect.Struct {
+		return nil, nil
+	}
+
+	var allFields []FieldInfo
+
+	for field := range structType.Fields() {
+		if !field.IsExported() {
+			continue
+		}
+
+		if field.Anonymous {
+			embeddedFields, err := p.parseEmbeddedField(&field, seenTypes, depth)
+			if err != nil {
+				continue // Skip problematic embedded types gracefully
+			}
+			allFields = append(allFields, embeddedFields...)
+			continue
+		}
+
+		fieldInfo := p.parseRegularField(&field, depth)
+		if fieldInfo != nil {
+			allFields = append(allFields, *fieldInfo)
+		}
+	}
+
+	return p.resolveFieldConflicts(allFields), nil
+}
+
+// parseEmbeddedField processes embedded struct fields
+func (p *TagParser) parseEmbeddedField(field *reflect.StructField, seenTypes map[string]int, depth int) ([]FieldInfo, error) {
+	fieldType := field.Type
+
+	for fieldType.Kind() == reflect.Pointer {
+		fieldType = fieldType.Elem()
+	}
+
+	if fieldType.Kind() != reflect.Struct {
+		return nil, nil
+	}
+
+	// Circular reference protection
+	typeName := fieldType.String()
+	if prevDepth, seen := seenTypes[typeName]; seen && prevDepth <= depth {
+		return nil, nil // Skip circular reference
+	}
+
+	seenTypes[typeName] = depth
+	embeddedFields, err := p.parseFields(fieldType, seenTypes, depth+1)
+	delete(seenTypes, typeName) // Clean up for other branches
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Fields already have correct depth set by parseFields recursion
+	// Just ensure they're marked as promoted
+	for i := range embeddedFields {
+		embeddedFields[i].IsPromoted = true
+	}
+
+	return embeddedFields, nil
+}
+
+// parseRegularField processes regular (non-embedded) fields
+func (p *TagParser) parseRegularField(field *reflect.StructField, depth int) *FieldInfo {
+	// Skip fields with jsonschema:"-" tag
+	jsonschemaTag := field.Tag.Get(p.tagName)
+	if jsonschemaTag == "-" {
+		return nil
+	}
+
+	fieldInfo := FieldInfo{
+		Name:           field.Name,
+		Type:           field.Type,
+		TypeName:       typeToString(field.Type),
+		JSONName:       getJSONFieldName(field),
+		Tag:            jsonschemaTag,
+		EmbeddingDepth: depth,
+		IsPromoted:     depth > 0,
+		Optional:       field.Type.Kind() == reflect.Pointer,
+	}
+
+	if jsonschemaTag != "" {
+		rules, err := p.ParseTagString(jsonschemaTag)
+		if err != nil {
+			return nil
+		}
+		fieldInfo.Rules = rules
+
+		for _, rule := range rules {
+			if rule.Name == "required" {
+				fieldInfo.Required = true
+				fieldInfo.Optional = false
+				break
+			}
+		}
+	}
+
+	return &fieldInfo
+}
+
+// resolveFieldConflicts applies Go's field promotion rules for conflict resolution
+func (p *TagParser) resolveFieldConflicts(fields []FieldInfo) []FieldInfo {
+	fieldMap := make(map[string][]FieldInfo)
+
+	// Group fields by JSON name
+	for i := range fields {
+		fieldMap[fields[i].JSONName] = append(fieldMap[fields[i].JSONName], fields[i])
+	}
+
+	resolved := make([]FieldInfo, 0, len(fields))
+	for _, candidates := range fieldMap {
+		if len(candidates) == 1 {
+			resolved = append(resolved, candidates[0])
+			continue
+		}
+
+		// Apply Go's field promotion rules:
+		// 1. Shallowest depth wins
+		// 2. Among same depth, first declared wins
+		winner := slices.MinFunc(candidates, func(a, b FieldInfo) int {
+			return cmp.Compare(a.EmbeddingDepth, b.EmbeddingDepth)
+		})
+		resolved = append(resolved, winner)
+	}
+
+	return resolved
+}
+
+// ParseTagString parses a single tag string into validation rules
+func (p *TagParser) ParseTagString(tag string) ([]TagRule, error) {
+	var rules []TagRule
+
+	if tag == "" {
+		return rules, nil
+	}
+
+	// Split by comma, handling escaped commas and complex parameters
+	parts := parseTagParts(tag)
+
+	for _, part := range parts {
+		rule := parseTagRule(strings.TrimSpace(part))
+		if rule.Name != "" {
+			rules = append(rules, rule)
+		}
+	}
+
+	return rules, nil
+}
+
+// parseTagParts splits tag string by commas, handling escapes and parameter values
+func parseTagParts(tag string) []string {
+	var parts []string
+	var current strings.Builder
+	var bracketDepth int
+	var braceDepth int
+	var inQuotes bool
+	var quoteChar rune
+	var inParameterValue bool
+	escaped := false
+
+	for i, char := range tag {
+		switch char {
+		case '\\':
+			if i+1 < len(tag) {
+				current.WriteRune(char)
+				escaped = true
+			} else {
+				current.WriteRune(char)
+			}
+		case '"', '\'':
+			if !escaped {
+				if !inQuotes {
+					inQuotes = true
+					quoteChar = char
+				} else if char == quoteChar {
+					inQuotes = false
+				}
+			}
+			current.WriteRune(char)
+			escaped = false
+		case '[':
+			if !inQuotes && !escaped {
+				bracketDepth++
+			}
+			current.WriteRune(char)
+			escaped = false
+		case ']':
+			if !inQuotes && !escaped {
+				bracketDepth--
+			}
+			current.WriteRune(char)
+			escaped = false
+		case '{':
+			if !inQuotes && !escaped {
+				braceDepth++
+			}
+			current.WriteRune(char)
+			escaped = false
+		case '}':
+			if !inQuotes && !escaped {
+				braceDepth--
+			}
+			current.WriteRune(char)
+			escaped = false
+		case '=':
+			if !escaped && !inQuotes && bracketDepth == 0 && braceDepth == 0 {
+				// We're entering a parameter value
+				inParameterValue = true
+			}
+			current.WriteRune(char)
+			escaped = false
+		case ',':
+			if !escaped && !inQuotes && bracketDepth == 0 && braceDepth == 0 {
+				shouldSeparate := true
+
+				if inParameterValue {
+					if before, _, ok := strings.Cut(current.String(), "="); ok {
+						ruleName := strings.TrimSpace(before)
+						if needsCommaSeparation(ruleName) {
+							remaining := tag[i+1:]
+							nextCommaIdx := strings.Index(remaining, ",")
+							nextEqualIdx := strings.Index(remaining, "=")
+							shouldSeparate = nextEqualIdx != -1 && (nextCommaIdx == -1 || nextEqualIdx < nextCommaIdx) &&
+								isValidRuleName(strings.TrimSpace(remaining[:nextEqualIdx]))
+						}
+					}
+				}
+
+				if shouldSeparate {
+					parts = append(parts, current.String())
+					current.Reset()
+					inParameterValue = false
+				} else {
+					current.WriteRune(char)
+				}
+			} else {
+				current.WriteRune(char)
+			}
+			escaped = false
+		default:
+			current.WriteRune(char)
+			escaped = false
+		}
+	}
+
+	if current.Len() > 0 {
+		parts = append(parts, current.String())
+	}
+
+	return parts
+}
+
+// parseTagRule parses a single rule part into TagRule
+func parseTagRule(part string) TagRule {
+	if part == "" {
+		return TagRule{}
+	}
+
+	if before, after, ok := strings.Cut(part, "="); ok {
+		name := strings.TrimSpace(before)
+		paramStr := strings.TrimSpace(after)
+
+		var params []string
+		if paramStr != "" {
+			switch {
+			case strings.HasPrefix(paramStr, "'") && strings.HasSuffix(paramStr, "'"):
+				unquoted := paramStr[1 : len(paramStr)-1]
+				params = []string{unescapeString(unquoted)}
+			case needsCommaSeparation(name):
+				for param := range strings.SplitSeq(paramStr, ",") {
+					params = append(params, strings.TrimSpace(param))
+				}
+			case strings.Contains(paramStr, " ") && needsSpaceSeparation(name):
+				// Space-separated parameters for specific rules (enum, examples)
+				params = strings.Fields(paramStr)
+			default:
+				// Single parameter (preserve spaces for values like "User Profile")
+				params = []string{paramStr}
+			}
+		}
+
+		return TagRule{
+			Name:   name,
+			Params: params,
+		}
+	}
+
+	// Rule without parameters
+	return TagRule{
+		Name:   strings.TrimSpace(part),
+		Params: nil,
+	}
+}
+
+// isValidRuleName checks if a string looks like a valid rule name
+func isValidRuleName(name string) bool {
+	// Common JSON Schema validation rule names
+	validRuleNames := map[string]bool{
+		// Basic validators
+		"required": true, "minLength": true, "maxLength": true, "pattern": true, "format": true,
+		"minimum": true, "maximum": true, "exclusiveMinimum": true, "exclusiveMaximum": true, "multipleOf": true,
+		"minItems": true, "maxItems": true, "uniqueItems": true, "items": true,
+		"additionalProperties": true, "minProperties": true, "maxProperties": true,
+		"enum": true, "const": true,
+		// Logical combinations
+		"allOf": true, "anyOf": true, "oneOf": true, "not": true,
+		// Conditional logic
+		"if": true, "then": true, "else": true, "dependentRequired": true, "dependentSchemas": true,
+		// Advanced features
+		"prefixItems": true, "contains": true, "minContains": true, "maxContains": true,
+		"patternProperties": true, "propertyNames": true, "unevaluatedItems": true, "unevaluatedProperties": true,
+		// Metadata
+		"title": true, "description": true, "examples": true, "default": true, "deprecated": true, "readOnly": true, "writeOnly": true,
+		// Content validation
+		"contentEncoding": true, "contentMediaType": true, "contentSchema": true,
+	}
+	return validRuleNames[name]
+}
+
+// needsCommaSeparation determines if a rule should split its parameters by commas
+func needsCommaSeparation(ruleName string) bool {
+	commaSeparatedRules := map[string]bool{
+		"allOf":             true,
+		"anyOf":             true,
+		"oneOf":             true,
+		"prefixItems":       true,
+		"dependentRequired": true,
+		"dependentSchemas":  true,
+		"patternProperties": true,
+	}
+	return commaSeparatedRules[ruleName]
+}
+
+// needsSpaceSeparation determines if a rule should split its parameters by spaces
+func needsSpaceSeparation(ruleName string) bool {
+	spaceSeparatedRules := map[string]bool{
+		"enum":     true,
+		"examples": true,
+	}
+	return spaceSeparatedRules[ruleName]
+}
+
+// unescapeString handles escape sequences in tag parameters
+func unescapeString(s string) string {
+	s = strings.ReplaceAll(s, "\\,", ",")
+	s = strings.ReplaceAll(s, "\\n", "\n")
+	s = strings.ReplaceAll(s, "\\t", "\t")
+	s = strings.ReplaceAll(s, "\\'", "'")
+	s = strings.ReplaceAll(s, "\\\\", "\\")
+	return s
+}
+
+// getJSONFieldName extracts JSON field name from struct field
+func getJSONFieldName(field *reflect.StructField) string {
+	jsonTag := field.Tag.Get("json")
+	if jsonTag == "" {
+		return field.Name
+	}
+
+	// Handle json:"-" (skip field) and json:",omitempty" etc.
+	if jsonTag == "-" {
+		return field.Name // Use Go field name as fallback
+	}
+
+	// Extract name before first comma
+	if before, _, ok := strings.Cut(jsonTag, ","); ok {
+		jsonName := strings.TrimSpace(before)
+		if jsonName != "" {
+			return jsonName
+		}
+	} else {
+		return strings.TrimSpace(jsonTag)
+	}
+
+	return field.Name
+}
+
+// typeToString converts a reflect.Type to its string representation
+func typeToString(t reflect.Type) string {
+	//exhaustive:ignore - we handle all relevant types for string conversion
+	switch t.Kind() {
+	case reflect.Pointer:
+		return "*" + typeToString(t.Elem())
+	case reflect.Slice:
+		return "[]" + typeToString(t.Elem())
+	case reflect.Array:
+		return fmt.Sprintf("[%d]", t.Len()) + typeToString(t.Elem())
+	case reflect.Map:
+		return "map[" + typeToString(t.Key()) + "]" + typeToString(t.Elem())
+	case reflect.Chan:
+		//exhaustive:ignore - we handle all channel directions
+		switch t.ChanDir() {
+		case reflect.RecvDir:
+			return "<-chan " + typeToString(t.Elem())
+		case reflect.SendDir:
+			return "chan<- " + typeToString(t.Elem())
+		default:
+			return "chan " + typeToString(t.Elem())
+		}
+	case reflect.Func:
+		return "func" // Simplified for functions
+	case reflect.Interface:
+		if t.NumMethod() == 0 {
+			return "any"
+		}
+		return t.String() // Use the standard string representation for named interfaces
+	case reflect.Struct:
+		// For structs, check if it's a named type or anonymous
+		if t.Name() != "" {
+			// Named struct type
+			if t.PkgPath() != "" && t.PkgPath() != "main" {
+				// Include package path for non-main packages
+				pkg := t.PkgPath()
+				if lastSlash := strings.LastIndex(pkg, "/"); lastSlash >= 0 {
+					pkg = pkg[lastSlash+1:]
+				}
+				return pkg + "." + t.Name()
+			}
+			return t.Name()
+		}
+		return "struct{}" // Anonymous struct
+	default:
+		// For basic types (string, int, float64, bool, etc.)
+		if t.PkgPath() == "" {
+			// Built-in type
+			return t.Name()
+		}
+		// Named type from a package
+		pkg := t.PkgPath()
+		if lastSlash := strings.LastIndex(pkg, "/"); lastSlash >= 0 {
+			pkg = pkg[lastSlash+1:]
+		}
+		return pkg + "." + t.Name()
+	}
+}

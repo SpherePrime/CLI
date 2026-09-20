@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func assistantWith(parts ...message.ContentPart) *message.Message {
@@ -18,7 +18,7 @@ func assistantWith(parts ...message.ContentPart) *message.Message {
 func TestFinishBannerIsSetOffFromContent(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 
 	for _, tc := range []struct {
 		name string
@@ -77,7 +77,7 @@ func stripStyle(s string) string {
 func TestCanceledBannerYieldsToToolCalls(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	withTools := assistantWith(
 		message.TextContent{Text: "Now the discriminating test:"},
 		message.ToolCall{ID: "c1", Name: "mcp__prickly__find", Finished: true},

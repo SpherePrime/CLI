@@ -1,7 +1,7 @@
 package completions
 
 import (
-	"charm.land/bubbles/v2/key"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
 )
 
 // KeyMap defines the key bindings for the completions component.

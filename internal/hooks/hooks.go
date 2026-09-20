@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/tidwall/sjson"
+	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
 )
 
 // Hook event name constants.

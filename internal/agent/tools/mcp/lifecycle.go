@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/charmbracelet/prime/internal/config"
+	"github.com/dwertyfa288/CLI/internal/config"
 )
 
 // reinitAction describes how to reconcile one MCP server against the

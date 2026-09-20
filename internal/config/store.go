@@ -12,17 +12,17 @@ import (
 	"sync"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	hyperp "github.com/charmbracelet/prime/internal/agent/hyper"
-	"github.com/charmbracelet/prime/internal/env"
-	"github.com/charmbracelet/prime/internal/lock"
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/charmbracelet/prime/internal/oauth/copilot"
-	"github.com/charmbracelet/prime/internal/oauth/hyper"
-	"github.com/charmbracelet/prime/internal/oauth/openai"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
-	"golang.org/x/sync/singleflight"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	hyperp "github.com/dwertyfa288/CLI/internal/agent/hyper"
+	"github.com/dwertyfa288/CLI/internal/env"
+	"github.com/dwertyfa288/CLI/internal/lock"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/internal/oauth/copilot"
+	"github.com/dwertyfa288/CLI/internal/oauth/hyper"
+	"github.com/dwertyfa288/CLI/internal/oauth/openai"
+	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/dwertyfa288/CLI/vendordeps/x/sync/singleflight"
 )
 
 // configLockDeadline bounds how long lockConfig waits for the

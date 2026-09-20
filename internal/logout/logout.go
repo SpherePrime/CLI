@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/charmbracelet/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
 )
 
 // interactive reports whether the prompts should run their TUIs: both stdin

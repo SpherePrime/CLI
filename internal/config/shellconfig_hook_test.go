@@ -3,8 +3,8 @@ package config_test
 import (
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/hooks"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/hooks"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestShellConfigHookAdd(t *testing.T) {

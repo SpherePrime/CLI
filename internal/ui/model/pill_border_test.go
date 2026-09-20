@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/session"
+	"github.com/dwertyfa288/CLI/internal/session"
 )
 
 // roundedBorderRunes are chars that only appear when a pill has a visible
@@ -32,7 +32,7 @@ func queuePillHasBorder(view string) bool {
 	return false
 }
 
-// TestQueuePillAlwaysHasBorder guards CHARM-1678: the queued-prompts pill must
+// TestQueuePillAlwaysHasBorder guards a regression: the queued-prompts pill must
 // render with its rounded border regardless of panel expansion or which pill
 // section is nominally focused.
 func TestQueuePillAlwaysHasBorder(t *testing.T) {

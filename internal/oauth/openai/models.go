@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/prime/internal/oauth"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/internal/oauth"
 )
 
 // ModelInfo mirrors one entry of the Codex backend model catalog.

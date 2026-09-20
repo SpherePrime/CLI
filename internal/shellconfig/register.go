@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/charmbracelet/prime/internal/shell"
+	"github.com/dwertyfa288/CLI/internal/shell"
 )
 
 func init() {

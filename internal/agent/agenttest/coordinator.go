@@ -8,13 +8,13 @@ package agenttest
 import (
 	"context"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy/providers/openaicompat"
-	"github.com/charmbracelet/prime/internal/agent"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/message"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/session"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openaicompat"
+	"github.com/dwertyfa288/CLI/internal/agent"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/session"
 )
 
 // NewCoordinator builds a real agent.Coordinator through the production

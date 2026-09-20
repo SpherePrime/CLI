@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/lock"
-	"github.com/charmbracelet/prime/internal/version"
+	"github.com/dwertyfa288/CLI/internal/lock"
+	"github.com/dwertyfa288/CLI/internal/version"
 )
 
 // ErrDataDirLocked is returned by Connect when the data directory is

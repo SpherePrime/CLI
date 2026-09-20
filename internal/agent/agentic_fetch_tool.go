@@ -9,11 +9,11 @@ import (
 	"os"
 	"time"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 
-	"github.com/charmbracelet/prime/internal/agent/prompt"
-	"github.com/charmbracelet/prime/internal/agent/tools"
-	"github.com/charmbracelet/prime/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/agent/prompt"
+	"github.com/dwertyfa288/CLI/internal/agent/tools"
+	"github.com/dwertyfa288/CLI/internal/permission"
 )
 
 //go:embed templates/agentic_fetch.md

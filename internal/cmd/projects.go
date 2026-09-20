@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"os"
 
-	"charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/table"
-	"github.com/charmbracelet/prime/internal/projects"
-	"github.com/charmbracelet/x/term"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/table"
+	"github.com/dwertyfa288/CLI/internal/projects"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 var projectsCmd = &cobra.Command{

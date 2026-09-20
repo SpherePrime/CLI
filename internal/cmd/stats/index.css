@@ -1,11 +1,11 @@
 :root {
-  /* Dark mode colors - charmtone dark palette */
+  /* Dark mode colors - colortone dark palette */
   --bg: #201f26;
   --bg-secondary: #2d2c35;
   --text: #fffaf1;
   --text-muted: #858392;
 
-  /* Charmtone colors (global - same in both light and dark modes) */
+  /* ColorTone colors (global - same in both light and dark modes) */
   --charple: #6b50ff;
   --cherry: #ff388b;
   --julep: #00ffb2;
@@ -22,7 +22,7 @@
   --hazy: #8b75ff;
 }
 
-/* Light mode colors - charmtone light palette */
+/* Light mode colors - colortone light palette */
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f0f0f0;
@@ -272,14 +272,14 @@ td {
   display: block;
 }
 
-/* Override charm brand colors in footer */
+/* Override brand colors in footer */
 .footer-container .st2 {
   fill: #fffaf1 !important;
 }
 
 @media (prefers-color-scheme: light) {
 
-  /* Override charm brand colors in footer */
+  /* Override brand colors in footer */
   .footer-container .st2 {
     fill: #644ced !important;
   }

@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/denisbrodbeck/machineid"
+	"github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid"
 )
 
 var distinctId string
 
 const (
-	hashKey    = "charm"
+	hashKey    = "prime"
 	fallbackId = "unknown"
 )
 

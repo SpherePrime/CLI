@@ -9,13 +9,13 @@ import (
 	"os"
 	"strings"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 
-	"github.com/charmbracelet/prime/internal/filetracker"
-	"github.com/charmbracelet/prime/internal/history"
-	"github.com/charmbracelet/prime/internal/lsp"
-	lsputil "github.com/charmbracelet/prime/internal/lsp/util"
-	"github.com/charmbracelet/prime/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/filetracker"
+	"github.com/dwertyfa288/CLI/internal/history"
+	"github.com/dwertyfa288/CLI/internal/lsp"
+	lsputil "github.com/dwertyfa288/CLI/internal/lsp/util"
+	"github.com/dwertyfa288/CLI/internal/permission"
 )
 
 type RenameParams struct {

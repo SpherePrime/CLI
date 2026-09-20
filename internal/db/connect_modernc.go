@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/url"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/dwertyfa288/CLI/vendordeps/sqlite"
 )
 
 func openDBReadOnly(dbPath string) (*sql.DB, error) {

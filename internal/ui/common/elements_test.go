@@ -4,15 +4,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestFormatTokensAndCostPrefixesEstimatedUsage(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 
 	rendered := formatTokensAndCost(&sty, 120, 1000, 0, true)
 	actual := ansi.Strip(rendered)
@@ -26,7 +26,7 @@ func TestFormatTokensAndCostPrefixesEstimatedUsage(t *testing.T) {
 func TestFormatTokensAndCostOmitsEstimatedPrefix(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 
 	actual := ansi.Strip(formatTokensAndCost(&sty, 120, 1000, 0, false))
 

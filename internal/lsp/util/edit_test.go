@@ -3,9 +3,9 @@ package util
 import (
 	"testing"
 
-	powernap "github.com/charmbracelet/x/powernap/pkg/lsp"
-	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
-	"github.com/stretchr/testify/require"
+	powernap "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestPositionToByteOffset(t *testing.T) {

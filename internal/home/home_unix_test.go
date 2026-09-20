@@ -5,7 +5,7 @@ package home
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // On Unix a backslash is an ordinary filename character, so it must not be

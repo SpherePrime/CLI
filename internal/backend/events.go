@@ -3,12 +3,12 @@ package backend
 import (
 	"context"
 
-	tea "charm.land/bubbletea/v2"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
 
-	mcptools "github.com/charmbracelet/prime/internal/agent/tools/mcp"
-	"github.com/charmbracelet/prime/internal/app"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/pubsub"
+	mcptools "github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
+	"github.com/dwertyfa288/CLI/internal/app"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
 )
 
 // SubscribeEvents returns a per-caller event channel for a workspace.

@@ -8,12 +8,12 @@ import (
 	"os"
 	"strings"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/filetracker"
-	"github.com/charmbracelet/prime/internal/history"
-	"github.com/charmbracelet/prime/internal/lsp"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/filetracker"
+	"github.com/dwertyfa288/CLI/internal/history"
+	"github.com/dwertyfa288/CLI/internal/lsp"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
 )
 
 type ReplaceSymbolParams struct {

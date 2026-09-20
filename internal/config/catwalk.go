@@ -7,8 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/catwalk/pkg/embedded"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/embedded"
 )
 
 type catwalkClient interface {

@@ -9,12 +9,12 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/version"
-	"github.com/posthog/posthog-go"
+	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/dwertyfa288/CLI/vendordeps/posthog/posthog-go"
 )
 
 const (
-	endpoint = "https://data.charm.land"
+	endpoint = "https://data.dwerty.local"
 	key      = "phc_4zt4VgDWLqbYnJYEwLRxFoaTL2noNrQij0C6E8k3I0V"
 
 	nonInteractiveAttrName       = "NonInteractive"

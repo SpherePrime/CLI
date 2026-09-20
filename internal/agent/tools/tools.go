@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 )
 
 type (

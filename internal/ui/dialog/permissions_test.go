@@ -3,16 +3,16 @@ package dialog
 import (
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func newTestPermissions(t *testing.T) *Permissions {
 	t.Helper()
-	s := styles.CharmtonePantera()
+	s := styles.ColorTonePantera()
 	com := &common.Common{Styles: &s}
 	perm := permission.PermissionRequest{
 		ID:         "perm-test",

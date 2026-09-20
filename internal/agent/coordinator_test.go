@@ -7,15 +7,15 @@ import (
 	"net/http"
 	"testing"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"charm.land/fantasy"
-	"charm.land/fantasy/providers/anthropic"
-	"charm.land/fantasy/providers/bedrock"
-	"charm.land/fantasy/providers/openaicompat"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/discover"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/bedrock"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openaicompat"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/discover"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // mockSessionAgent is a minimal mock for the SessionAgent interface.

@@ -28,9 +28,9 @@ import (
 	"slices"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
 
-	"github.com/charmbracelet/prime/internal/workspace"
+	"github.com/dwertyfa288/CLI/internal/workspace"
 )
 
 // busyCacheTTL bounds how long the memoized busy/permission state may go

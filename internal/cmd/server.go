@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	primelog "github.com/charmbracelet/prime/internal/log"
-	"github.com/charmbracelet/prime/internal/server"
-	"github.com/charmbracelet/x/term"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/internal/config"
+	primelog "github.com/dwertyfa288/CLI/internal/log"
+	"github.com/dwertyfa288/CLI/internal/server"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 var serverHost string

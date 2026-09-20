@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"mvdan.cc/sh/v3/expand"
-	"mvdan.cc/sh/v3/syntax"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
 )
 
 // Expand is a wrapper around [expand.Literal]. It will escape the input

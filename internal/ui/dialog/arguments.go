@@ -4,20 +4,20 @@ import (
 	"cmp"
 	"strings"
 
-	"charm.land/bubbles/v2/help"
-	"charm.land/bubbles/v2/key"
-	"charm.land/bubbles/v2/spinner"
-	"charm.land/bubbles/v2/textinput"
-	"charm.land/bubbles/v2/viewport"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/spinner"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
+	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/viewport"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
+	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
 
-	"github.com/charmbracelet/prime/internal/commands"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/util"
-	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/dwertyfa288/CLI/internal/commands"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/util"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // ArgumentsID is the identifier for the arguments dialog.

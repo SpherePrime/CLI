@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/x/exp/charmtone"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 var updateProvidersSource string
@@ -36,7 +36,7 @@ prime update-providers --source=hyper
 prime update-providers --source=hyper https://hyper.example.com
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// NOTE(@andreynering): We want to skip logging output do stdout here.
+		// NOTE(@dwertyfa288): We want to skip logging output do stdout here.
 		slog.SetDefault(slog.New(slog.DiscardHandler))
 
 		var pathOrURL string
@@ -58,11 +58,11 @@ prime update-providers --source=hyper https://hyper.example.com
 			return err
 		}
 
-		// NOTE(@andreynering): This style is more-or-less copied from Fang's
+		// NOTE(@dwertyfa288): This style is more-or-less copied from Fang's
 		// error message, adapted for success.
 		headerStyle := lipgloss.NewStyle().
-			Foreground(charmtone.Butter).
-			Background(charmtone.Guac).
+			Foreground(colortone.Butter).
+			Background(colortone.Guac).
 			Bold(true).
 			Padding(0, 1).
 			Margin(1).

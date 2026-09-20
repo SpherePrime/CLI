@@ -1,4 +1,4 @@
-// Get all charmtone colors once from computed styles
+// Get all colortone colors once from computed styles
 const rootStyles = getComputedStyle(document.documentElement);
 const colors = {
   charple: rootStyles.getPropertyValue("--charple").trim(),

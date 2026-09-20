@@ -3,8 +3,8 @@ package completions
 import (
 	"testing"
 
-	"charm.land/lipgloss/v2"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestFilterPrefersExactBasenameStem(t *testing.T) {

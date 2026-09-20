@@ -3,8 +3,8 @@ package diffview
 import (
 	"slices"
 
-	"github.com/aymanbagabas/go-udiff"
-	"github.com/charmbracelet/x/exp/slice"
+	"github.com/dwertyfa288/CLI/vendordeps/aymanbagabas/go-udiff"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/slice"
 )
 
 type splitHunk struct {

@@ -2,7 +2,7 @@
 
 package notification
 
-import "github.com/gen2brain/beeep"
+import "github.com/dwertyfa288/CLI/vendordeps/gen2brain/beeep"
 
 // NativeSupported reports whether native OS notifications are available on
 // this platform. It is false on illumos/solaris, where beeep's dbus

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/pressly/goose/v3"
+	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3"
 )
 
 var (

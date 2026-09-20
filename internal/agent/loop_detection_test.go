@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"charm.land/fantasy"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 )
 
 // makeStep creates a StepResult with the given tool calls and results in its Content.

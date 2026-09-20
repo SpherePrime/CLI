@@ -31,6 +31,12 @@ irm https://raw.githubusercontent.com/dwertyfa288/CLI/main/scripts/install.ps1 |
 Prebuilt binaries (`.tar.gz`, `.zip`, `.deb`, `.rpm`, `.apk`):
 [releases](https://github.com/dwertyfa288/CLI/releases).
 
+With Go installed:
+
+```bash
+go install github.com/dwertyfa288/CLI@latest
+```
+
 Build from source (requires Go):
 
 ```bash

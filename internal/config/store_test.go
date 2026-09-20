@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/csync"
-	"github.com/charmbracelet/prime/internal/oauth"
-	"github.com/stretchr/testify/require"
-	"github.com/tidwall/gjson"
+	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
 )
 
 func TestConfigStore_ConfigPath_GlobalAlwaysWorks(t *testing.T) {

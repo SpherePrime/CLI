@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"slices"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/agent/tools/mcp"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/permission"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/permission"
 )
 
 // whitelistDockerTools contains Docker MCP tools that don't require permission.

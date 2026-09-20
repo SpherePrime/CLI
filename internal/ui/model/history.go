@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
 
-	"github.com/charmbracelet/prime/internal/message"
+	"github.com/dwertyfa288/CLI/internal/message"
 )
 
 // promptHistoryLoadedMsg is sent when prompt history is loaded.

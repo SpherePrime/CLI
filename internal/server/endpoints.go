@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/charmbracelet/prime/internal/apigen"
-	"github.com/charmbracelet/prime/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/apigen"
+	"github.com/dwertyfa288/CLI/internal/proto"
 )
 
 // endpoints is the single source of truth for the v1 API: every entry

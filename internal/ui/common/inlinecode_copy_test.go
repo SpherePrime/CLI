@@ -3,10 +3,10 @@ package common
 import (
 	"testing"
 
-	"charm.land/glamour/v2"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestRenderedInlineCodeHasNoVisibleBackticks guards the display side of the
@@ -16,7 +16,7 @@ import (
 func TestRenderedInlineCodeHasNoVisibleBackticks(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 
 	render := func(t *testing.T, r *glamour.TermRenderer, src string) string {
 		t.Helper()

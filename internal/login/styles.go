@@ -1,8 +1,8 @@
 package login
 
 import (
-	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 var (
@@ -14,9 +14,9 @@ var (
 
 	headerStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(charmtone.Charple)
+			Foreground(colortone.Charple)
 	slashStyle = lipgloss.NewStyle().
 			Bold(true)
 	errorStyle = lipgloss.NewStyle().
-			Foreground(charmtone.Coral)
+			Foreground(colortone.Coral)
 )

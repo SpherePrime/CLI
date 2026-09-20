@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/event"
-	"github.com/charmbracelet/x/term"
-	"gopkg.in/natefinch/lumberjack.v2"
+	"github.com/dwertyfa288/CLI/internal/event"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/dwertyfa288/CLI/vendordeps/natefinch/lumberjack.v2"
 )
 
 var (

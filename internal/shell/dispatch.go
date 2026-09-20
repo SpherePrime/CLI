@@ -14,10 +14,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/charmbracelet/prime/internal/filepathext"
-	"mvdan.cc/sh/v3/expand"
-	"mvdan.cc/sh/v3/interp"
-	"mvdan.cc/sh/v3/syntax"
+	"github.com/dwertyfa288/CLI/internal/filepathext"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
+	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
 )
 
 // probeWindow is how many bytes we read from the head of a file to decide

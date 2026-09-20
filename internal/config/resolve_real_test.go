@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/env"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/env"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // These tests exercise the full shell-expansion path (no mocks,

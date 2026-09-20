@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
 )
 
 func TestHumanizedToolName(t *testing.T) {
@@ -56,7 +56,7 @@ func TestLooksLikeMarkdown(t *testing.T) {
 func TestRenderToolResultTextContent(t *testing.T) {
 	t.Parallel()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	styPtr := &sty
 	widths := toolResultContentWidths{Body: 80, Diff: 82}
 

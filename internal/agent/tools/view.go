@@ -16,12 +16,12 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"charm.land/fantasy"
-	"github.com/charmbracelet/prime/internal/filepathext"
-	"github.com/charmbracelet/prime/internal/filetracker"
-	"github.com/charmbracelet/prime/internal/lsp"
-	"github.com/charmbracelet/prime/internal/permission"
-	"github.com/charmbracelet/prime/internal/skills"
+	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/dwertyfa288/CLI/internal/filepathext"
+	"github.com/dwertyfa288/CLI/internal/filetracker"
+	"github.com/dwertyfa288/CLI/internal/lsp"
+	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/dwertyfa288/CLI/internal/skills"
 )
 
 //go:embed view.md.tpl

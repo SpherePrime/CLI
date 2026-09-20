@@ -3,7 +3,7 @@ package diff
 import (
 	"strings"
 
-	"github.com/aymanbagabas/go-udiff"
+	"github.com/dwertyfa288/CLI/vendordeps/aymanbagabas/go-udiff"
 )
 
 // GenerateDiff creates a unified diff from two file contents

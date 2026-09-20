@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/prime/internal/session"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	"github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/charmbracelet/prime/internal/workspace"
-	uv "github.com/charmbracelet/ultraviolet"
-	"github.com/stretchr/testify/require"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/internal/workspace"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 type sessionMouseWorkspace struct {
@@ -32,7 +32,7 @@ func (w *sessionMouseWorkspace) AgentIsReady() bool {
 func newSessionMouseDialog(t *testing.T, sessions []session.Session, selectedSessionID string) *Session {
 	t.Helper()
 
-	sty := styles.CharmtonePantera()
+	sty := styles.ColorTonePantera()
 	dialog, err := NewSessions(&common.Common{
 		Workspace: &sessionMouseWorkspace{sessions: sessions},
 		Styles:    &sty,

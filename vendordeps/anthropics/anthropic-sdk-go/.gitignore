@@ -1,0 +1,4 @@
+.stdy.log
+codegen.log
+Brewfile.lock.json
+.idea/

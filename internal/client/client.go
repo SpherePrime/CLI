@@ -13,10 +13,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/server"
-	"github.com/google/uuid"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/server"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
 )
 
 // DummyHost is used to satisfy the http.Client's requirement for a URL.

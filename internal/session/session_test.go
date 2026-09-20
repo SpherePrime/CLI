@@ -3,8 +3,8 @@ package session
 import (
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestEstimatedUsageStateSurvivesFetchModifySave(t *testing.T) {

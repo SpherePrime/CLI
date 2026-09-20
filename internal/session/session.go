@@ -9,11 +9,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/charmbracelet/prime/internal/db"
-	"github.com/charmbracelet/prime/internal/event"
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/google/uuid"
-	"github.com/zeebo/xxh3"
+	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/dwertyfa288/CLI/internal/event"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3"
 )
 
 type TodoStatus string

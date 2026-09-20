@@ -3,11 +3,11 @@ package model
 import (
 	"testing"
 
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/skills"
-	"github.com/charmbracelet/prime/internal/ui/common"
-	uistyles "github.com/charmbracelet/prime/internal/ui/styles"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
+	uistyles "github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestSkillStatusItemsIncludesBuiltinSkills verifies sidebar skills include
@@ -16,7 +16,7 @@ import (
 func TestSkillStatusItemsIncludesBuiltinSkills(t *testing.T) {
 	t.Parallel()
 
-	st := uistyles.CharmtonePantera()
+	st := uistyles.ColorTonePantera()
 	ui := &UI{
 		com: &common.Common{Styles: &st},
 		skillStates: []*skills.SkillState{
@@ -61,7 +61,7 @@ func TestSkillStatusItemsIncludesBuiltinSkills(t *testing.T) {
 func TestSkillStatusItemsExcludesDisabledSkills(t *testing.T) {
 	t.Parallel()
 
-	st := uistyles.CharmtonePantera()
+	st := uistyles.ColorTonePantera()
 	ui := &UI{
 		com: &common.Common{
 			Styles:    &st,

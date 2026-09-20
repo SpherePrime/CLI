@@ -7,17 +7,17 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/charmbracelet/prime/internal/client"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/logout"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/spf13/cobra"
+	"github.com/dwertyfa288/CLI/internal/client"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/logout"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
 )
 
 // providerDisplayNames maps OAuth-capable provider IDs to display names.
 // Keep this list in sync with the switch in RunE and the login command.
 var providerDisplayNames = map[string]string{
-	"hyper":   "Charm Hyper",
+	"hyper":   "Hyper",
 	"copilot": "GitHub Copilot",
 	"openai":  "ChatGPT",
 }
@@ -31,7 +31,7 @@ The platform should be provided as an argument.
 If no argument is given, a list of logged-in platforms will be shown.
 Available platforms are: hyper, copilot, openai.`,
 	Example: `
-# Sign out from Charm Hyper
+# Sign out from Hyper
 prime logout hyper
 
 # Sign out from GitHub Copilot

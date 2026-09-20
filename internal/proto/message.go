@@ -7,8 +7,8 @@ import (
 	"slices"
 	"time"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/prime/internal/message"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/internal/message"
 )
 
 // CreateMessageParams represents parameters for creating a message.

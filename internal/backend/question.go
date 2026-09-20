@@ -1,8 +1,8 @@
 package backend
 
 import (
-	"github.com/charmbracelet/prime/internal/proto"
-	"github.com/charmbracelet/prime/internal/question"
+	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/dwertyfa288/CLI/internal/question"
 )
 
 // AnswerQuestion submits answers for a question. The returned bool

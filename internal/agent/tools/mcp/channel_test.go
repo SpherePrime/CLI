@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/prime/internal/pubsub"
-	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
 )
 
 func TestParseChannelParams(t *testing.T) {

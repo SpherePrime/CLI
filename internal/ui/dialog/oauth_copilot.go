@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/prime/internal/config"
-	"github.com/charmbracelet/prime/internal/oauth/copilot"
-	"github.com/charmbracelet/prime/internal/ui/common"
+	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/dwertyfa288/CLI/internal/oauth/copilot"
+	"github.com/dwertyfa288/CLI/internal/ui/common"
 )
 
 func NewOAuthCopilot(

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/charmbracelet/prime/internal/ui/diffview"
-	"github.com/charmbracelet/x/ansi"
-	"github.com/charmbracelet/x/exp/golden"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/styles"
+	"github.com/dwertyfa288/CLI/internal/ui/diffview"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/golden"
 )
 
 //go:embed testdata/TestDefault.before

@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"charm.land/catwalk/pkg/catwalk"
-	"github.com/stretchr/testify/require"
+	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
 )
 
 type mockHyperClient struct {
@@ -119,7 +119,7 @@ func TestHyperSync_GetClientError(t *testing.T) {
 
 	provider, err := syncer.Get(t.Context())
 	require.NoError(t, err) // Should fall back to embedded.
-	require.Equal(t, "Charm Hyper", provider.Name)
+	require.Equal(t, "Hyper", provider.Name)
 	require.Equal(t, catwalk.InferenceProvider("hyper"), provider.ID)
 }
 
