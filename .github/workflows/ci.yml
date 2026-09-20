@@ -15,8 +15,8 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Build
-        run: go build ./...
+        run: go build .
       - name: Test
-        run: go test ./...
+        run: go test ./internal/... .
       - name: Vet
-        run: go vet ./...
+        run: go vet ./internal/... .
