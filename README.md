@@ -1,147 +1,109 @@
-# Agent CLI
+# Prime
 
-Production-ready, open-source AI coding agent written in Rust.
+An agentic coding assistant for the terminal. Prime wires your tools,
+your code, and your LLM provider of choice into one workflow.
 
-- Extensible: MCP servers, plugins, skills, custom tools
-- Secure: permission layer (ask / allow / deny), secret redaction, audit log
-- Fast: lazy loading, streaming responses, parallel tool execution
-- Portable: single binary, no runtime dependencies
+## Features
 
-## Quick start
+- **Multi-model:** use any major API provider, or add your own via
+  OpenAI- and Anthropic-compatible endpoints, including local servers
+- **Flexible:** switch models mid-session without losing context
+- **Session-based:** keep multiple work sessions and contexts per project
+- **LSP-enhanced:** pulls context from language servers, like a human would
+- **Extensible:** add capabilities via MCP servers and agent skills
+- **Safe by default:** per-tool permission prompts, with allow/deny lists
+- **Cross-platform:** macOS, Linux, Windows, and the BSDs
 
-```sh
-cargo build --workspace
-cargo run -p agent-cli -- --help
-```
+## Install
 
-```sh
-agent init            # scaffold a project (agent.toml, starter skill)
-agent doctor          # diagnose config, API keys, MCP, plugins
-agent                 # interactive TUI mode
-```
-
-## TUI Interface
-
-`agent` launches the OpenTUI interface (TypeScript, `packages/tui`). The Rust/ratatui TUI (`crates/agent-ui`) is deprecated.
-
-| Key | Action |
-|-----|--------|
-| `Enter` | Send message / accept selection |
-| `Shift+Enter` | Newline in the prompt |
-| `Esc` | Back to home / cancel running turn |
-| `f2` | Switch permission mode (Ask / Auto edit / Full access) |
-| `Ctrl+p` | Command palette |
-| `Ctrl+C` | Exit |
-| Click | Expand/collapse a tool row or reasoning block |
-
-Features: timeline event stream with tools, reasoning, file changes and diffs, permission mode switcher with session-level Full Access, sticky prompt with footer chips (model, permission mode, token count), and plan steps panel.
-
-## CLI Commands
-
-### Provider Management
+Build from source (requires Go):
 
 ```bash
-# List all configured providers
-agent provider list
-
-# Add a new provider (interactive wizard)
-agent provider add          # prompts for ID, URL, API key env
-
-# Or specify all options
-agent provider add --id my-azure --base-url "https://my.azure.openai.cn" --api-key-env AZURE_KEY
-
-# Use a specific provider
-agent provider use my-azure
-
-# Remove a provider
-agent provider remove my-azure
+go build -o prime .
 ```
 
-### Model Management
+## Getting started
+
+Run `prime` in a project directory:
 
 ```bash
-# List all models and show active configuration
-agent model list
-
-# Add a model (interactive wizard)
-agent model add           # prompts for provider and model name
-
-# Use a specific model
-agent model use openai/gpt-4o
-agent model use anthropic/claude-3.5-sonnet
-
-# Show current active model
-agent model show
+prime
 ```
 
-### Other Commands
+Press <kbd>ctrl+l</kbd> to open the model picker, choose a provider, and
+paste an API key. Providers can also be added from the command palette
+(<kbd>ctrl+p</kbd> → Add Provider) or from the CLI:
 
 ```bash
-agent session list        # list saved sessions
-agent session resume <id> # resume a previous conversation
-agent mcp add <url>       # add MCP server
-agent plugin list         # list installed plugins
-agent skill install <url> # install a skill from URL
+prime provider add
 ```
 
-## Examples
+Many providers are picked up automatically from environment variables,
+for example `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `GEMINI_API_KEY`.
+
+Local models work too — Prime auto-discovers what the server exposes:
 
 ```bash
-# Start with a specific model
-agent model use openai/gpt-4
-agent                    # starts TUI with gpt-4
-
-# Set up a new provider (Azure OpenAI)
-agent provider add --id azure --base-url "https://my.openai.cn" --api-key-env AZURE_KEY
-agent provider use azure
-agent model use azure/gpt-4o
-
-# Use mock provider for testing
-agent model use mock/mock-1
-agent                    # runs without external API calls
-```
-
-## FAQ
-
-**How do I add a provider?**
-
-```sh
-agent provider add
-# Enter provider ID: my-openai
-# Enter base URL: https://api.openai.com/v1
-# Enter API key env: OPENAI_API_KEY
-```
-
-**How do I switch models?**
-
-```sh
-agent model list                    # see available models
-agent model use openai/gpt-4o       # switch to gpt-4o
-```
-
-**Where is configuration stored?**
-
-- Global: `~/.agent/config.toml`
-- Project: `./agent.toml`
-
-## Build & test
-
-```sh
-cargo build --workspace
-cargo test --workspace
+provider add ollama --type ollama --base-url "http://localhost:11434/v1"
 ```
 
 ## Configuration
 
-Global: `~/.agent/config.toml`
-Project: `./agent.toml`
+Prime runs great with zero config. When you do want to customize it, the
+config format is `primerc` — plain Bash with Prime-specific builtins:
 
-Precedence: CLI flag > environment variable > project > global > default.
+```bash
+# Register a provider and a model.
+provider add deepseek --type openai-compat \
+  --base-url "https://api.deepseek.com/v1" \
+  --api-key "$DEEPSEEK_API_KEY"
+model add deepseek/deepseek-chat --name "Deepseek V3" --context-window 64000
 
-## Extension points
+# Auto-approve some tools.
+permissions allow view edit
 
-- **MCP**: `agent mcp add` registers a stdio or HTTP server
-- **Skills**: markdown + tools + hooks, discovered from `~/.agent/skills/` or `./agent/skills/`
-- **Plugins**: lifecycle-managed modules that add tools, commands, providers, and event handlers
+# Add an MCP server and an LSP.
+mcp add filesystem --command node --args /path/to/mcp-server.js
+lsp add go --command gopls
 
-See `docs/` for detailed architecture.
+# Misc options.
+option notifications disabled
+```
+
+Config files are searched in this order (first match wins):
+
+| Priority | Unix-like                 | Windows                               |
+| -------- | ------------------------- | ------------------------------------- |
+| 1        | `./.primerc`              | `.\.primerc`                          |
+| 2        | `./primerc`               | `.\primerc`                           |
+| 3        | `~/.config/prime/primerc` | `%USERPROFILE%\.config\prime\primerc` |
+
+A JSON format (`prime.json`) is still supported but deprecated.
+
+> [!WARNING]
+> `primerc` and `prime.json` are trusted code: `primerc` runs in a real
+> shell and command substitution executes at load time. Only keep configs
+> from sources you trust.
+
+## Context files
+
+Prime reads project instructions from context files such as `AGENTS.md`
+and personal, cross-project instructions from `~/.config/prime/PRIME.md`.
+Use a `.primeignore` file (gitignore syntax) to keep files out of context.
+
+## CLI
+
+```bash
+prime                  # start the TUI
+prime run "prompt"     # one-shot agent run
+prime provider add     # add a provider interactively
+prime models           # list known models
+prime sessions         # manage sessions
+prime stats            # token and cost stats
+prime logs             # print recent logs
+```
+
+## Privacy
+
+Prime can record pseudonymous usage metadata (never prompts or responses).
+Opt out with `PRIME_DISABLE_METRICS=1`.
