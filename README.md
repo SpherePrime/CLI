@@ -16,10 +16,31 @@ your code, and your LLM provider of choice into one workflow.
 
 ## Install
 
+Linux / macOS:
+
+```bash
+curl -sSfL https://raw.githubusercontent.com/dwertyfa288/CLI/main/scripts/install.sh | sh
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/dwertyfa288/CLI/main/scripts/install.ps1 | iex
+```
+
+Prebuilt binaries (`.tar.gz`, `.zip`, `.deb`, `.rpm`, `.apk`):
+[releases](https://github.com/dwertyfa288/CLI/releases).
+
 Build from source (requires Go):
 
 ```bash
 go build -o prime .
+```
+
+Releases are cut by pushing a version tag:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
 ```
 
 ## Getting started
