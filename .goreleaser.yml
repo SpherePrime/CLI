@@ -6,24 +6,12 @@ project_name: prime
 
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
-  license: "FSL-1.1-MIT"
-  homepage: "https://github.com/dwertyfa288/CLI"
-  description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
-  full_description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
-  maintainers:
-    - "dwertyfa288"
-
-nightly:
-  publish_release: true
-  keep_single_release: true
-  version_template: "{{ incminor .Version }}-nightly"
 
 snapshot:
   version_template: "0.0.0-{{ .Timestamp }}"
 
 before:
   hooks:
-    - go mod tidy
     - rm -rf completions
     - mkdir completions
     - rm -rf manpages
@@ -34,7 +22,8 @@ before:
     - sh -c 'go run . man | gzip -c >./manpages/prime.1.gz'
 
 builds:
-  - env:
+  - binary: prime
+    env:
       - CGO_ENABLED=0
       - GOEXPERIMENT=greenteagc
     goos:
@@ -78,7 +67,6 @@ archives:
     wrap_in_directory: true
     files:
       - README*
-      - LICENSE*
       - manpages/*
       - completions/*
     format_overrides:
@@ -95,6 +83,10 @@ nfpms:
       - rpm
       - archlinux
     file_name_template: "{{ .ConventionalFileName }}"
+    maintainer: "dwertyfa288"
+    vendor: "dwertyfa288"
+    homepage: "https://github.com/dwertyfa288/CLI"
+    description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
     contents:
       - src: ./completions/prime.bash
         dst: '{{ if eq .Format "termux.deb" }}/data/data/com.termux/files/usr{{ end }}/etc/bash_completion.d/prime'
@@ -105,12 +97,8 @@ nfpms:
       - src: ./manpages/prime.1.gz
         dst: '{{ if eq .Format "termux.deb" }}/data/data/com.termux/files{{ end }}/usr/share/man/man1/prime.1.gz'
 
-source:
-  enabled: true
-
 changelog:
   sort: asc
-  disable: "{{ .IsNightly }}"
   use: github
   filters:
     exclude:
