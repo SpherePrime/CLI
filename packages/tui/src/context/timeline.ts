@@ -1,4 +1,4 @@
-import type { EngineEvent, FileChange, PlanStep } from "../client"
+import type { EngineEvent, EventMeta, FileChange, PlanStep } from "../client"
 import {
   argsPreview,
   deriveToolState,
@@ -120,12 +120,14 @@ function toolArgRecord(args: unknown): Record<string, unknown> {
 }
 
 export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineState {
-  if ("meta" in event && event.meta) {
-    if (event.meta.sequence <= state.lastSequence) return state
+  const meta = ("meta" in event ? (event as { meta?: EventMeta }).meta : undefined) as EventMeta | undefined
+  if (meta) {
+    if (meta.sequence <= state.lastSequence) return state
   }
 
   let next = state
-  const sequence = "meta" in event && event.meta ? event.meta.sequence : state.lastSequence
+  const sequence = meta ? meta.sequence : state.lastSequence
+  const metaId = meta?.item_id ?? ""
 
   switch (event.type) {
     case "message.created": {
@@ -136,7 +138,7 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
     }
     case "assistant_message_started": {
       const entry: ChatEntry = {
-        id: event.meta.item_id,
+        id: metaId || event.meta?.item_id || `assistant-${state.lastSequence}`,
         role: "assistant",
         text: "",
         running: true,
@@ -145,18 +147,18 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
       return { ...state, lastSequence: sequence, entries: upsert(state.entries, entry) }
     }
     case "text_delta": {
-      const entries = appendText(state.entries, event.meta.item_id, event.text, false)
+      const entries = appendText(state.entries, metaId, event.text, false)
       return { ...state, lastSequence: sequence, entries }
     }
     case "assistant_message_completed": {
-      const index = entryIndex(state.entries, event.meta.item_id)
+      const index = entryIndex(state.entries, metaId)
       if (index === -1) return { ...state, lastSequence: sequence }
       const entries = [...state.entries]
       entries[index] = { ...entries[index]!, running: false }
-      return { ...state, lastSequence: sequence, entries: removeEntry(entries, `activity_${event.meta.item_id}`) }
+      return { ...state, lastSequence: sequence, entries: removeEntry(entries, `activity_${metaId}`) }
     }
     case "reasoning_started": {
-      const id = event.meta.item_id
+      const id = metaId
       const entries = updateMatch(state.entries, (entry) => entry.id === id && entry.role === "assistant", (entry) => ({
         ...entry,
         reasoningOpen: true,
@@ -164,10 +166,10 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
       return { ...state, lastSequence: sequence, entries: removeEntry(entries, `activity_${id}`) }
     }
     case "reasoning_delta": {
-      return { ...state, lastSequence: sequence, entries: appendReasoning(state.entries, event.meta.item_id, event.text) }
+      return { ...state, lastSequence: sequence, entries: appendReasoning(state.entries, metaId, event.text) }
     }
     case "reasoning_completed": {
-      const index = entryIndex(state.entries, event.meta.item_id)
+      const index = entryIndex(state.entries, metaId)
       if (index === -1) return { ...state, lastSequence: sequence }
       const entries = [...state.entries]
       entries[index] = { ...entries[index]!, reasoningOpen: false, expandedReasoning: false }
@@ -175,7 +177,7 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
     }
     case "activity_changed": {
       const activityEntry: ChatEntry = {
-        id: event.meta.item_id,
+        id: metaId,
         role: "system",
         kind: "activity",
         text: event.activity,
@@ -346,7 +348,7 @@ export function reduceEvent(state: TimelineState, event: EngineEvent): TimelineS
     }
     case "error": {
       let entries = state.entries
-      const itemId = event.meta?.item_id
+      const itemId = meta?.item_id
       if (itemId) {
         entries = updateMatch(entries, (entry) => entry.id === itemId, (entry) => {
           if (entry.role === "tool" && entry.tool) {

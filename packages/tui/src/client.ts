@@ -165,6 +165,37 @@ export type SessionDetail = SessionInfo & {
 
 export type PermissionMode = "ask" | "auto_edit" | "full_access" | "deny"
 
+export function normalizeEvent(raw: SessionMessage): SessionMessage {
+  if (raw === null || raw === undefined) return raw
+  const anyRaw = raw as Record<string, unknown>
+  if (anyRaw.meta === undefined) {
+    const { protocol, sequence, turn_id, item_id, ts } = anyRaw
+    if (protocol !== undefined || sequence !== undefined || turn_id !== undefined) {
+      return { ...anyRaw, meta: { protocol, sequence, turn_id, item_id, ts } } as unknown as SessionMessage
+    }
+  }
+  return raw
+}
+
+function parseLine(trimmed: string): SessionMessage | null {
+  let value: unknown
+  try {
+    value = JSON.parse(trimmed)
+  } catch {
+    if (trimmed.startsWith("data:")) {
+      try {
+        value = JSON.parse(trimmed.slice(5).trim())
+      } catch {
+        return null
+      }
+    } else {
+      return null
+    }
+  }
+  if (value === null || typeof value !== "object") return null
+  return normalizeEvent(value as SessionMessage)
+}
+
 export class AgentClient {
   constructor(
     private baseUrl: string,
@@ -195,7 +226,11 @@ export class AgentClient {
   }
 
   async getSessionDetail(id: string): Promise<SessionDetail> {
-    return this.get<SessionDetail>(`/session/${id}`)
+    const data = await this.get<SessionDetail>(`/session/${id}`)
+    if (data.timeline) {
+      data.timeline = data.timeline.map(normalizeEvent)
+    }
+    return data
   }
 
   async renameSession(id: string, title: string): Promise<SessionInfo> {
@@ -328,11 +363,9 @@ export class AgentClient {
     for (const line of body.split("\n")) {
       const trimmed = line.trim()
       if (!trimmed) continue
-      try {
-        events.push(JSON.parse(trimmed))
-      } catch {
-        malformed++
-      }
+      const event = parseLine(trimmed)
+      if (event !== null) events.push(event)
+      else malformed++
     }
     if (malformed > 0) {
       events.push({
@@ -364,11 +397,9 @@ export class AgentClient {
     const dispatch = (line: string) => {
       const trimmed = line.trim()
       if (!trimmed) return
-      try {
-        onEvent(JSON.parse(trimmed) as SessionMessage)
-      } catch {
-        malformed++
-      }
+      const event = parseLine(trimmed)
+      if (event !== null) onEvent(event)
+      else malformed++
     }
 
     while (true) {

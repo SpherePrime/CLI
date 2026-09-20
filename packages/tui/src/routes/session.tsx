@@ -3,7 +3,7 @@ import { useRenderer, useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { createSignal, createMemo, createEffect, onCleanup, Show, For } from "solid-js"
 import { Prompt } from "../component/prompt/index"
 import { useRoute } from "../context/route"
-import { useDialog } from "../context/dialog"
+import { useDialog, openSessionsDialog } from "../context/dialog"
 import { modelLabel, workspaceName, gitBranch } from "../context/model"
 import {
   useSession,
@@ -16,6 +16,7 @@ import {
   type ChatEntry,
 } from "../context/timeline"
 import { permissionColor, permissionLabel, openPermissionSwitcher } from "../context/permission"
+import { normalizeEvent } from "../client"
 import { theme } from "../theme"
 import { Spinner } from "../component/spinner"
 import { StatusBar } from "../component/status-bar"
@@ -29,6 +30,7 @@ const helpText = [
   "enter — send message",
   "ctrl+p — command palette",
   "f2 — permission mode",
+  "f3 — switch session",
   "esc — back to home / cancel",
   "ctrl+c — exit",
   "click on a tool row to expand args/output",
@@ -79,7 +81,7 @@ export function Session(props: { client: AgentClient }) {
       if (detail.id !== session.sessionId()) return
       resetSession()
       if (detail.timeline && detail.timeline.length > 0) {
-        session.seedFromTimeline(timelineFromEvents(detail.timeline))
+        session.seedFromTimeline(timelineFromEvents(detail.timeline.map(normalizeEvent)))
       } else {
         loadStoredMessages(detail.messages)
       }
@@ -344,6 +346,10 @@ export function Session(props: { client: AgentClient }) {
       key.preventDefault()
       openPermissionSwitcher(props.client)
     }
+    if (key.name.toLowerCase() === "f3") {
+      key.preventDefault()
+      openSessionsDialog()
+    }
     if (key.name === "arrowdown") {
       key.preventDefault()
       const entries = session.entries()
@@ -473,7 +479,7 @@ export function Session(props: { client: AgentClient }) {
                   <text fg={theme.primary}>Ready</text>
                   <text fg={theme.textMuted}>What do you want to build or change?</text>
                   <text fg={theme.dim}>try: "inspect this project" · "explain the auth flow" · "add a failing test"</text>
-                  <text fg={theme.dim}>ctrl+p commands · f2 permission · esc back · ctrl+c exit</text>
+                  <text fg={theme.dim}>ctrl+p commands · f2 permission · f3 session · esc back · ctrl+c exit</text>
                 </box>
               </Show>
             </Show>
