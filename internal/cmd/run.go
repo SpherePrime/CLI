@@ -39,7 +39,7 @@ The prompt can be provided as arguments or piped from stdin.`,
 prime run "Guess my 5 favorite Pokémon"
 
 # Pipe input from stdin
-curl https://dwerty.local | prime run "Summarize this website"
+curl https://github.com/dwertyfa288/CLI | prime run "Summarize this website"
 
 # Read from a file
 prime run "What is this code doing?" <<< prrr.go

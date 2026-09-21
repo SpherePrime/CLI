@@ -323,7 +323,7 @@ user-invocable: true
 
 ```json
 {
-  "$schema": "https://dwerty.local/prime.json",
+  "$schema": "https://raw.githubusercontent.com/dwertyfa288/CLI/main/schema.json",
   "models": {},
   "providers": {},
   "mcp": {},
