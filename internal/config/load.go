@@ -365,6 +365,10 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 					continue
 				}
 			}
+		case catwalk.InferenceProviderOpenCodeGo, catwalk.InferenceProviderOpenCodeZen:
+			// OpenCode providers work without an API key, similar to
+			// how OpenCode native operates — no registration or token
+			// is required to use the service.
 		default:
 			// An OAuth login is a credential too: providers signed in
 			// through OAuth (e.g. OpenAI with a ChatGPT account) are
