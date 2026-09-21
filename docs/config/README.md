@@ -596,7 +596,7 @@ to Bash-based config.
 
 ```jsonc
 {
-  "$schema": "https://dwerty.local/prime.json",
+  "$schema": "https://raw.githubusercontent.com/dwertyfa288/CLI/main/schema.json",
   "providers": {
     "anthropic": { "api_key": "$ANTHROPIC_API_KEY" },
   },

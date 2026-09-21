@@ -59,7 +59,7 @@ const (
 	smallContextWindowRatio     = 0.2
 )
 
-var userAgent = fmt.Sprintf("Prime/%s (https://dwerty.local/prime)", version.Version)
+var userAgent = fmt.Sprintf("Prime/%s (https://github.com/dwertyfa288/CLI)", version.Version)
 
 //go:embed templates/title.md
 var titlePrompt []byte
