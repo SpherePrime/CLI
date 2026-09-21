@@ -10,6 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -50,6 +51,12 @@ type UpdateAvailableMsg struct {
 	CurrentVersion string
 	LatestVersion  string
 	IsDevelopment  bool
+}
+
+// UpdateInstalledMsg is sent when an auto-update has been installed.
+type UpdateInstalledMsg struct {
+	CurrentVersion string
+	Installed      string
 }
 
 type App struct {
@@ -879,6 +886,28 @@ func (app *App) checkForUpdates(ctx context.Context) {
 	if err != nil || !info.Available() {
 		return
 	}
+
+	autoUpdate := app.config.Config().Options.AutoUpdate
+	if autoUpdate {
+		exe, err := os.Executable()
+		if err == nil {
+			if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+				exe = resolved
+			}
+		} else {
+			return
+		}
+		installCtx, cancelInstall := context.WithTimeout(ctx, 10*time.Minute)
+		defer cancelInstall()
+		if _, err := update.Install(installCtx, version.Version, exe, update.Default, io.Discard); err == nil {
+			app.events.Publish(pubsub.UpdatedEvent, UpdateInstalledMsg{
+				CurrentVersion: info.Current,
+				Installed:      info.Latest,
+			})
+		}
+		return
+	}
+
 	app.events.Publish(pubsub.UpdatedEvent, UpdateAvailableMsg{
 		CurrentVersion: info.Current,
 		LatestVersion:  info.Latest,

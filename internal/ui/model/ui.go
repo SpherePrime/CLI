@@ -1472,6 +1472,15 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			TTL:  ttl,
 		})
 		cmds = append(cmds, clearInfoMsgCmd(ttl))
+	case app.UpdateInstalledMsg:
+		result := fmt.Sprintf("Prime auto-updated to v%s. Restart Prime to run the new version.", msg.Installed)
+		ttl := 30 * time.Second
+		m.status.SetInfoMsg(util.InfoMsg{
+			Type: util.InfoTypeUpdate,
+			Msg:  result,
+			TTL:  ttl,
+		})
+		cmds = append(cmds, clearInfoMsgCmd(ttl))
 	case workspace.ConnectionEvent:
 		cmds = append(cmds, m.handleConnectionEvent(msg)...)
 	case util.ClearStatusMsg:

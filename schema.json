@@ -577,6 +577,11 @@
           "type": "array",
           "description": "List of skill names to disable and hide from the agent"
         },
+        "auto_update": {
+          "type": "boolean",
+          "description": "Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.",
+          "default": false
+        },
         "request_timeout": {
           "type": "integer",
           "description": "Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity, so slow but active streams are never killed. 0 disables it, negative values are invalid.",
