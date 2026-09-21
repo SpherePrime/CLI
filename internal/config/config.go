@@ -77,7 +77,18 @@ type SelectedModel struct {
 	Think bool `json:"think,omitempty" jsonschema:"description=Enable thinking mode for Anthropic models that support reasoning"`
 
 	// Overrides the default model configuration.
-	MaxTokens        int64    `json:"max_tokens,omitempty" jsonschema:"description=Maximum number of tokens for model responses,maximum=200000,example=4096"`
+	MaxTokens int64 `json:"max_tokens,omitempty" jsonschema:"description=Maximum number of tokens for model responses,maximum=200000,example=4096"`
+
+	// Overrides the provider's context window for this model. When set
+	// and greater than zero, it replaces catwalk.Model.ContextWindow
+	// for agent context-limit and cost calculations.
+	ContextWindow int64 `json:"context_window,omitempty" jsonschema:"description=Override the model's maximum context window in tokens,example=200000"`
+
+	// Overrides the per-million-token prices for this model. Zero or
+	// negative values fall back to the catalog price.
+	PriceIn  float64 `json:"price_in,omitempty" jsonschema:"description=Price per 1M input tokens in USD,example=1.5"`
+	PriceOut float64 `json:"price_out,omitempty" jsonschema:"description=Price per 1M output tokens in USD,example=6.0"`
+
 	Temperature      *float64 `json:"temperature,omitempty" jsonschema:"description=Sampling temperature,minimum=0,maximum=1,example=0.7"`
 	TopP             *float64 `json:"top_p,omitempty" jsonschema:"description=Top-p (nucleus) sampling parameter,minimum=0,maximum=1,example=0.9"`
 	TopK             *int64   `json:"top_k,omitempty" jsonschema:"description=Top-k sampling parameter"`
