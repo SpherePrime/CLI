@@ -147,6 +147,8 @@ var providerRegistry = []ProviderFunc{
 	miniMaxChinaProvider,
 	moonshotProvider,
 	syntheticProvider,
+	openCodeGoProvider,
+	openCodeZenProvider,
 
 	// The remaining will be in alphabetical order.
 	aiHubMixProvider,
@@ -170,8 +172,6 @@ var providerRegistry = []ProviderFunc{
 	ioNetProvider,
 	nebiusProvider,
 	neuralwattProvider,
-	openCodeGoProvider,
-	openCodeZenProvider,
 	openRouterProvider,
 	qiniuCloudProvider,
 	scalewayProvider,
