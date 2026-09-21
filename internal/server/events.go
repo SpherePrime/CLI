@@ -158,6 +158,8 @@ func wrapEvent(ev any) *pubsub.Payload {
 				IsDevelopment:  e.IsDevelopment,
 			},
 		})
+	case app.UpdateInstalledMsg:
+		return nil
 	case pubsub.Event[skills.Event]:
 		return envelope(pubsub.PayloadTypeSkillsEvent, pubsub.Event[proto.SkillsEvent]{
 			Type:    e.Type,
