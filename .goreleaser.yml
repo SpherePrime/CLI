@@ -27,13 +27,14 @@ builds:
       - CGO_ENABLED=0
       - GOEXPERIMENT=greenteagc
     goos:
-      - linux
-      - darwin
       - windows
-      - freebsd
-      - openbsd
-      - netbsd
-      - android
+      # Temporarily Windows-only builds; uncomment others to restore multi-platform.
+      # - linux
+      # - darwin
+      # - freebsd
+      # - openbsd
+      # - netbsd
+      # - android
     goarch:
       - amd64
       - arm64

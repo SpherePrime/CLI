@@ -51,6 +51,8 @@
 
 ## Текущий чат
 - Запрос: в провайдеры по дефолту добавь модели из opencode.
+- Запрос: сделать сборку на гите только для Windows временно (чтобы можно было вернуть сборку под все системы в любое время).
+- Сделано: в `.goreleaser.yml` закомментированы все `goos` кроме `windows` (linux, darwin, freebsd, openbsd, netbsd, android). Чтобы вернуть мультиплатформенную сборку — раскомментировать строки. CI (ci.yml) не трогался — он линукс для тестов/билда, а релизный билд идёт через GoReleaser.
 - Сделано: перенёс opencode-go и opencode-zen из алфавитного списка в основной список провайдеров в providers.go (vendordeps/catwalk/internal/providers/providers.go).
 - Запрос: сделать opencode работающим без api ключа, как в opencode native.
 - Сделано: добавил case для InferenceProviderOpenCodeGo и InferenceProviderOpenCodeZen в configureProviders (internal/config/load.go), пропускающий проверку API ключа.
