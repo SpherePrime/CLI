@@ -6,15 +6,15 @@ import (
 	"image/color"
 	"strings"
 
+	"github.com/dwertyfa288/CLI/internal/ui/diffview"
+	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/filepicker"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textarea"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
 	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/diffview"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 const (
@@ -274,6 +274,7 @@ type Styles struct {
 		TokenPercentage      lipgloss.Style // "42%" percent of context window
 		EstimatedUsagePrefix lipgloss.Style // "~" prefix for estimated usage
 		Cost                 lipgloss.Style // "$0.42" cost readout
+		MaxContext           lipgloss.Style // "Max context: 200K" readout
 		HypercreditIcon      lipgloss.Style // Hypercredit icon (◆)
 		HypercreditText      lipgloss.Style // Remaining Hypercredits text
 	}

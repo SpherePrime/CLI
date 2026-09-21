@@ -3,16 +3,16 @@ package styles
 import (
 	"image/color"
 
+	"github.com/dwertyfa288/CLI/internal/ui/diffview"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/filepicker"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textarea"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/diffview"
 	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 )
 
 // quickStyleOpts is the palette of colors used by quickStyle to simplify the
@@ -900,6 +900,7 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.ModelInfo.TokenPercentage = lipgloss.NewStyle().Foreground(o.fgMoreSubtle)
 	s.ModelInfo.EstimatedUsagePrefix = s.ModelInfo.TokenPercentage
 	s.ModelInfo.Cost = lipgloss.NewStyle().Foreground(o.fgMoreSubtle)
+	s.ModelInfo.MaxContext = lipgloss.NewStyle().Foreground(o.fgMostSubtle)
 	s.ModelInfo.HypercreditIcon = lipgloss.NewStyle().Foreground(o.secondary)
 	s.ModelInfo.HypercreditText = lipgloss.NewStyle().Foreground(o.fgMoreSubtle)
 

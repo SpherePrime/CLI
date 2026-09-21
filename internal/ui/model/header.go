@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 	"github.com/dwertyfa288/CLI/internal/config"
 	"github.com/dwertyfa288/CLI/internal/fsext"
 	"github.com/dwertyfa288/CLI/internal/session"
@@ -12,6 +11,7 @@ import (
 	"github.com/dwertyfa288/CLI/internal/ui/styles"
 	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 )
 
 const (
@@ -145,14 +145,21 @@ func renderHeaderDetails(
 
 	agentCfg := com.Config().Agents[config.AgentCoder]
 	model := com.Config().GetModelByType(agentCfg.Model)
+	if model != nil {
+		sel, ok := com.Config().Models[agentCfg.Model]
+		if ok && sel.ContextWindow > 0 {
+			model.ContextWindow = sel.ContextWindow
+		}
+	}
 	if model != nil && model.ContextWindow > 0 {
 		percentage := (float64(session.CompletionTokens+session.PromptTokens) / float64(model.ContextWindow)) * 100
 		percentageText := fmt.Sprintf("%d%%", int(percentage))
 		if session.EstimatedUsage {
 			percentageText = "~" + percentageText
 		}
-		formattedPercentage := t.Header.Percentage.Render(percentageText)
-		parts = append(parts, formattedPercentage)
+		maxContextText := common.FormatContextTokens(model.ContextWindow)
+		contextDetail := fmt.Sprintf("%s (%s)", percentageText, maxContextText)
+		parts = append(parts, t.Header.Percentage.Render(contextDetail))
 	}
 
 	if com.IsHyper() && hyperCredits != nil {
