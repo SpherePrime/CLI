@@ -77,6 +77,7 @@ func init() {
 		sessionCmd,
 		providerCmd,
 		uninstallCmd,
+		updateCmd,
 	)
 }
 

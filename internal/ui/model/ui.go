@@ -198,6 +198,9 @@ type UI struct {
 	// continueLastSession is set to continue the most recent session on startup.
 	continueLastSession bool
 
+	// updatePrompted guards the update dialog so it opens once per run.
+	updatePrompted bool
+
 	lastUserMessageTime int64
 
 	// The width and height of the terminal in cells.
@@ -1453,6 +1456,22 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			TTL:  ttl,
 		})
 		cmds = append(cmds, clearInfoMsgCmd(ttl))
+		if !msg.IsDevelopment && !m.updatePrompted && !m.dialog.ContainsDialog(dialog.UpdateID) {
+			m.updatePrompted = true
+			m.dialog.OpenDialog(dialog.NewUpdate(m.com, msg.CurrentVersion, msg.LatestVersion))
+		}
+	case updateDoneMsg:
+		result := fmt.Sprintf("Prime v%s installed. Restart Prime to run the new version.", msg.latest)
+		if msg.err != nil {
+			result = fmt.Sprintf("Prime update failed: %v", msg.err)
+		}
+		ttl := 30 * time.Second
+		m.status.SetInfoMsg(util.InfoMsg{
+			Type: util.InfoTypeUpdate,
+			Msg:  result,
+			TTL:  ttl,
+		})
+		cmds = append(cmds, clearInfoMsgCmd(ttl))
 	case workspace.ConnectionEvent:
 		cmds = append(cmds, m.handleConnectionEvent(msg)...)
 	case util.ClearStatusMsg:
@@ -2039,6 +2058,11 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	case dialog.ActionCmd:
 		if msg.Cmd != nil {
 			cmds = append(cmds, msg.Cmd)
+		}
+	case dialog.ActionApplyUpdate:
+		m.dialog.CloseDialog(dialog.UpdateID)
+		if cmd := m.performUpdate(msg.Latest); cmd != nil {
+			cmds = append(cmds, cmd)
 		}
 
 	// Session dialog messages.

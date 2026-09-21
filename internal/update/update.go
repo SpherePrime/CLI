@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	githubApiUrl = "https://api.github.com/repos/dwertyfa288/prime/releases/latest"
+	githubApiUrl = "https://api.github.com/repos/dwertyfa288/CLI/releases/latest"
 	userAgent    = "prime/1.0"
 )
 
@@ -74,8 +74,15 @@ func Check(ctx context.Context, current string, client Client) (Info, error) {
 
 // Release represents a GitHub release.
 type Release struct {
-	TagName string `json:"tag_name"`
-	HTMLURL string `json:"html_url"`
+	TagName string  `json:"tag_name"`
+	HTMLURL string  `json:"html_url"`
+	Assets  []Asset `json:"assets"`
+}
+
+// Asset is one file attached to a [Release].
+type Asset struct {
+	Name               string `json:"name"`
+	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
 // Client is a client that can get the latest release.
