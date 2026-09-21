@@ -2236,6 +2236,12 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	case dialog.ActionSaveProvider:
 		m.dialog.CloseDialog(dialog.ProvidersID)
 		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Provider added to global config")))
+	case dialog.ActionModelConfigSaved:
+		m.dialog.CloseDialog(dialog.ModelsConfigID)
+		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
+			m.com.Workspace.UpdateAgentModel(context.TODO())
+			return util.NewInfoMsg("Model settings saved")
+		}))
 	case dialog.ActionInitializeProject:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
@@ -4933,6 +4939,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openModelsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.ModelsConfigID:
+		if cmd := m.openModelsConfigDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.CommandsID:
 		if cmd := m.openCommandsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -4992,6 +5002,32 @@ func (m *UI) openModelsDialog() tea.Cmd {
 	}
 
 	m.dialog.OpenDialog(modelsDialog)
+
+	return nil
+}
+
+// openModelsConfigDialog opens the model settings dialog.
+func (m *UI) openModelsConfigDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.ModelsConfigID) {
+		m.dialog.BringToFront(dialog.ModelsConfigID)
+		return nil
+	}
+
+	agentCfg, ok := m.com.Config().Agents[config.AgentCoder]
+	if !ok {
+		return util.ReportError(errors.New("agent configuration not found"))
+	}
+	modelType := dialog.ModelTypeLarge
+	if agentCfg.Model == config.SelectedModelTypeSmall {
+		modelType = dialog.ModelTypeSmall
+	}
+
+	modelsConfigDialog, err := dialog.NewModelsConfig(m.com, modelType)
+	if err != nil {
+		return util.ReportError(err)
+	}
+
+	m.dialog.OpenDialog(modelsConfigDialog)
 
 	return nil
 }

@@ -1010,18 +1010,34 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool) (Mo
 
 	large := Model{
 		Model:      largeModel,
-		CatwalkCfg: *largeCatwalkModel,
+		CatwalkCfg: applyModelOverrides(*largeCatwalkModel, largeModelCfg),
 		ModelCfg:   largeModelCfg,
 		FlatRate:   largeProviderCfg.FlatRate,
 	}
 	small := Model{
 		Model:      smallModel,
-		CatwalkCfg: *smallCatwalkModel,
+		CatwalkCfg: applyModelOverrides(*smallCatwalkModel, smallModelCfg),
 		ModelCfg:   smallModelCfg,
 		FlatRate:   smallProviderCfg.FlatRate,
 	}
 
 	return large, small, nil
+}
+
+// applyModelOverrides copies per-selected-model overrides from the config
+// onto the catalog model, so agent context-limit and cost calculations use
+// the user-tuned values when they are set.
+func applyModelOverrides(m catwalk.Model, cfg config.SelectedModel) catwalk.Model {
+	if cfg.ContextWindow > 0 {
+		m.ContextWindow = cfg.ContextWindow
+	}
+	if cfg.PriceIn > 0 {
+		m.CostPer1MIn = cfg.PriceIn
+	}
+	if cfg.PriceOut > 0 {
+		m.CostPer1MOut = cfg.PriceOut
+	}
+	return m
 }
 
 func (c *coordinator) buildAnthropicProvider(baseURL, apiKey string, headers map[string]string, providerID string) (fantasy.Provider, error) {

@@ -829,6 +829,15 @@ func resolveSelectedModels(cfg *Config, knownProviders []catwalk.Provider) (reso
 			} else {
 				large.MaxTokens = model.DefaultMaxTokens
 			}
+			if largeModelSelected.ContextWindow > 0 {
+				large.ContextWindow = largeModelSelected.ContextWindow
+			}
+			if largeModelSelected.PriceIn > 0 {
+				large.PriceIn = largeModelSelected.PriceIn
+			}
+			if largeModelSelected.PriceOut > 0 {
+				large.PriceOut = largeModelSelected.PriceOut
+			}
 			if largeModelSelected.ReasoningEffort != "" {
 				large.ReasoningEffort = largeModelSelected.ReasoningEffort
 			} else {
@@ -873,6 +882,15 @@ func resolveSelectedModels(cfg *Config, knownProviders []catwalk.Provider) (reso
 				small.MaxTokens = smallModelSelected.MaxTokens
 			} else {
 				small.MaxTokens = model.DefaultMaxTokens
+			}
+			if smallModelSelected.ContextWindow > 0 {
+				small.ContextWindow = smallModelSelected.ContextWindow
+			}
+			if smallModelSelected.PriceIn > 0 {
+				small.PriceIn = smallModelSelected.PriceIn
+			}
+			if smallModelSelected.PriceOut > 0 {
+				small.PriceOut = smallModelSelected.PriceOut
 			}
 			if smallModelSelected.ReasoningEffort != "" {
 				small.ReasoningEffort = smallModelSelected.ReasoningEffort
