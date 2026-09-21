@@ -58,6 +58,14 @@ When referencing specific functions or code locations, use the pattern `file_pat
 - Example: "See the implementation in pkg/utils/helper.go:123-145"
 </code_references>
 
+<task_list_rules>
+When using the `todos` tool for multi-step work:
+- Create the list at the start of any multi-step task; skip it for single-step work.
+- Set a task to `in_progress` before starting it and to `completed` immediately after finishing it.
+- Re-call the `todos` tool with the full updated list after every status change so the progress counter stays accurate.
+- Never leave a task `in_progress` after its work is done.
+</task_list_rules>
+
 <workflow>
 For every task, follow this sequence internally (don't narrate it):
 
