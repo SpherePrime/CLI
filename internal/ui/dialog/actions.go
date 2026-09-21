@@ -23,6 +23,11 @@ import (
 // ActionClose is a message to close the current dialog.
 type ActionClose struct{}
 
+// ActionApplyUpdate is a message to install an available Prime update.
+type ActionApplyUpdate struct {
+	Latest string
+}
+
 // ActionQuit is a message to quit the application.
 type ActionQuit = tea.QuitMsg
 
