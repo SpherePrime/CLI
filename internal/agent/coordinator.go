@@ -1142,6 +1142,12 @@ func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers 
 			openaicompat.WithUseResponsesAPI(),
 			openaicompat.WithResponsesAPIFunc(isOpenCodeResponsesModel),
 		)
+		// Mirror opencode native's keyless free-tier request shape so
+		// the public endpoint authorizes anonymous calls.
+		if apiKey == "" {
+			apiKey = "public"
+		}
+		opts = append(opts, openaicompat.WithUserAgent("opencode/prime"))
 
 	case hyper.Name:
 		// Hyper may route requests through a Prism model; capture the
@@ -1284,10 +1290,18 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 
 	switch providerCfg.ID {
 	case string(catwalk.InferenceProviderOpenCodeGo), string(catwalk.InferenceProviderOpenCodeZen):
+		// Mirror opencode native's keyless free-tier request shape:
+		// the public sentinel key plus the opencode client User-Agent
+		// authorize anonymous calls on OpenCode's endpoint.
+		if apiKey == "" {
+			apiKey = "public"
+		}
 		if isOpenCodeMessagesModel(providerCfg.ID, model.Model) {
 			baseURL = strings.TrimSuffix(baseURL, "/v1")
+			headers["User-Agent"] = "opencode/prime"
 			return c.buildAnthropicProvider(baseURL, apiKey, headers, providerCfg.ID)
 		}
+		headers["User-Agent"] = "opencode/prime"
 	}
 
 	switch providerCfg.Type {
