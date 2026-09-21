@@ -28,7 +28,17 @@ try {
     $Line = Get-Content $Sums | Where-Object { $_ -like "* $($Asset.name)" } | Select-Object -First 1
     if ($Line) {
       $Expected = ($Line -split "\s+")[0]
-      $Actual = (Get-FileHash -Algorithm SHA256 -Path $Zip).Hash.ToLower()
+      if (Get-Command Get-FileHash -ErrorAction SilentlyContinue) {
+        $Actual = (Get-FileHash -Algorithm SHA256 -Path $Zip).Hash.ToLower()
+      } else {
+        $fs = [System.IO.File]::OpenRead($Zip)
+        try {
+          $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($fs)
+        } finally {
+          $fs.Dispose()
+        }
+        $Actual = (-join ($hash | ForEach-Object { $_.ToString("x2") }))
+      }
       if ($Expected -ne $Actual) {
         Write-Error "prime: checksum verification failed"
       }
