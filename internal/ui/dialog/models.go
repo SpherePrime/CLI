@@ -416,8 +416,15 @@ func (m *Models) setProviderItems() error {
 			continue
 		}
 
+		// Hide known providers that are not configured in the user's
+		// config, so the dialog does not get cluttered with empty
+		// provider sections.
+		if !providerConfigured {
+			continue
+		}
+
 		displayProvider := provider
-		if providerConfigured {
+		{
 			displayProvider.Name = cmp.Or(providerConfig.Name, displayProvider.Name)
 			modelIndex := make(map[string]int, len(displayProvider.Models))
 			for i, model := range displayProvider.Models {
@@ -461,7 +468,7 @@ func (m *Models) setProviderItems() error {
 			continue
 		}
 
-		group := NewModelGroup(t, name, providerConfigured)
+		group := NewModelGroup(t, name, true)
 		for _, model := range displayProvider.Models {
 			item := NewModelItem(t, provider, model, m.modelType, false)
 			group.AppendItems(item)
@@ -505,32 +512,6 @@ func (m *Models) setProviderItems() error {
 
 		if len(recentGroup.Items) > 0 {
 			groups = append([]ModelGroup{recentGroup}, groups...)
-		}
-	}
-
-	// Collect keyless free models from OpenCode (zen/go) providers into
-	// a separate "Free" section, placed second after "Recently used".
-	// Mirrors opencode native: with no API key, only zero-cost OpenCode
-	// models remain usable through the public endpoint.
-	freeGroup := NewModelGroup(t, "Free", false)
-	for _, provider := range m.providers {
-		if provider.ID != catwalk.InferenceProviderOpenCodeGo &&
-			provider.ID != catwalk.InferenceProviderOpenCodeZen {
-			continue
-		}
-		for _, model := range provider.Models {
-			if model.CostPer1MIn != 0 || model.CostPer1MOut != 0 {
-				continue
-			}
-			freeItem := NewModelItem(t, provider, model, m.modelType, true)
-			freeGroup.AppendItems(freeItem)
-		}
-	}
-	if len(freeGroup.Items) > 0 {
-		if len(groups) > 0 && groups[0].Title == "Recently used" {
-			groups = append([]ModelGroup{groups[0], freeGroup}, groups[1:]...)
-		} else {
-			groups = append([]ModelGroup{freeGroup}, groups...)
 		}
 	}
 
