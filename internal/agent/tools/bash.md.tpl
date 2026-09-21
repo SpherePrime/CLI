@@ -89,20 +89,9 @@ When user asks to create git commit:
    - Follow <commit_messages>
    - Review draft against the litmus test before committing
 
-5. Create commit{{ if or (eq .Attribution.TrailerStyle "assisted-by") (eq .Attribution.TrailerStyle "co-authored-by")}} with attribution{{ end }} using HEREDOC:
+5. Create commit using HEREDOC:
    git commit -m "$(cat <<'EOF'
 Commit message here.
-
-{{ if .Attribution.GeneratedWith }}
-💘 Generated with Prime
-{{ end}}
-{{if eq .Attribution.TrailerStyle "assisted-by" }}
-
-Assisted-by: Prime:{{ .ModelID }}
-{{ else if eq .Attribution.TrailerStyle "co-authored-by" }}
-
-Co-Authored-By: Prime
-{{ end }}
 EOF
 )"
 
@@ -153,10 +142,6 @@ When user asks you to create or update a PR:
    gh pr create --title "title" --body "$(cat <<'EOF'
 
 <summary>
-
-{{ if .Attribution.GeneratedWith -}}
-💘 Generated with Prime
-{{- end }}
 
 EOF
 )"
