@@ -508,6 +508,32 @@ func (m *Models) setProviderItems() error {
 		}
 	}
 
+	// Collect keyless free models from OpenCode (zen/go) providers into
+	// a separate "Free" section, placed second after "Recently used".
+	// Mirrors opencode native: with no API key, only zero-cost OpenCode
+	// models remain usable through the public endpoint.
+	freeGroup := NewModelGroup(t, "Free", false)
+	for _, provider := range m.providers {
+		if provider.ID != catwalk.InferenceProviderOpenCodeGo &&
+			provider.ID != catwalk.InferenceProviderOpenCodeZen {
+			continue
+		}
+		for _, model := range provider.Models {
+			if model.CostPer1MIn != 0 || model.CostPer1MOut != 0 {
+				continue
+			}
+			freeItem := NewModelItem(t, provider, model, m.modelType, true)
+			freeGroup.AppendItems(freeItem)
+		}
+	}
+	if len(freeGroup.Items) > 0 {
+		if len(groups) > 0 && groups[0].Title == "Recently used" {
+			groups = append([]ModelGroup{groups[0], freeGroup}, groups[1:]...)
+		} else {
+			groups = append([]ModelGroup{freeGroup}, groups...)
+		}
+	}
+
 	// Set model groups in the list.
 	m.list.SetGroups(groups...)
 	m.list.SetSelectedItem(selectedItemID)
