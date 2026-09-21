@@ -48,12 +48,12 @@ type ModelsConfig struct {
 	selected  config.SelectedModel
 	catalog   catwalk.Model
 
-	state   modelConfigState
-	editing modelConfigField
-	fields  [3]string
-	input   textinput.Model
-	spinner spinner.Model
-	help    help.Model
+	state    modelConfigState
+	editing  modelConfigField
+	fields   [3]string
+	input    textinput.Model
+	spinner  spinner.Model
+	help     help.Model
 	errorMsg string
 
 	keyMap struct {
@@ -92,7 +92,9 @@ func NewModelsConfig(com *common.Common, modelType ModelType) (*ModelsConfig, er
 
 	m.input = textinput.New()
 	m.input.SetVirtualCursor(false)
+	m.input.CharLimit = 24
 	m.input.SetStyles(com.Styles.TextInput)
+	m.input.Focus()
 
 	m.spinner = spinner.New(
 		spinner.WithSpinner(spinner.Dot),
@@ -121,7 +123,7 @@ func NewModelsConfig(com *common.Common, modelType ModelType) (*ModelsConfig, er
 	m.editing = fieldContextWindow
 	m.state = modelConfigStateEditing
 	m.applyFieldInput()
-	m.input.Focus()
+	m.setFieldValue()
 
 	return m, nil
 }
@@ -151,20 +153,29 @@ func (m *ModelsConfig) loadFields() {
 	m.fields[fieldPriceOut] = strconv.FormatFloat(priceOut, 'f', -1, 64)
 }
 
-// applyFieldInput sets the input prompt, placeholder and value for the
-// currently edited field.
+// applyFieldInput updates the active input's prompt and placeholder. The
+// input value is only set explicitly when switching between fields, so the
+// user's in-progress edits are preserved across frames.
 func (m *ModelsConfig) applyFieldInput() {
+	var prompt, placeholder string
 	switch m.editing {
 	case fieldContextWindow:
-		m.input.Prompt = "Max context: "
-		m.input.Placeholder = "e.g. 200000"
+		prompt = "Max context: "
+		placeholder = "e.g. 200000"
 	case fieldPriceIn:
-		m.input.Prompt = "Input $/1M: "
-		m.input.Placeholder = "price per 1M input tokens, 0 = use catalog"
+		prompt = "Input $/1M: "
+		placeholder = "price per 1M input tokens, 0 = use catalog"
 	case fieldPriceOut:
-		m.input.Prompt = "Output $/1M: "
-		m.input.Placeholder = "price per 1M output tokens, 0 = use catalog"
+		prompt = "Output $/1M: "
+		placeholder = "price per 1M output tokens, 0 = use catalog"
 	}
+	m.input.Prompt = prompt
+	m.input.Placeholder = placeholder
+}
+
+// setFieldValue loads the current field value into the input, used when
+// switching to a different field.
+func (m *ModelsConfig) setFieldValue() {
 	m.input.SetValue(m.fields[m.editing])
 }
 
@@ -179,7 +190,7 @@ func (m *ModelsConfig) cycleField(direction int) {
 	m.editing = modelConfigField(next % total)
 	m.errorMsg = ""
 	m.applyFieldInput()
-	m.input.Focus()
+	m.setFieldValue()
 }
 
 // HandleMsg implements Dialog.
@@ -227,11 +238,17 @@ func (m *ModelsConfig) HandleMsg(msg tea.Msg) Action {
 				}
 				m.errorMsg = ""
 			default:
-				var cmd tea.Cmd
-				m.input, cmd = m.input.Update(msg)
+				cmd := m.focusAndInputUpdate(msg)
 				if cmd != nil {
 					return ActionCmd{cmd}
 				}
+			}
+		}
+	case tea.PasteMsg:
+		if m.state == modelConfigStateEditing {
+			cmd := m.focusAndInputUpdate(msg)
+			if cmd != nil {
+				return ActionCmd{cmd}
 			}
 		}
 	}
@@ -239,7 +256,7 @@ func (m *ModelsConfig) HandleMsg(msg tea.Msg) Action {
 }
 
 // reloadForType re-loads the selected model and catalog entry for the new
-// model type after a tab toggle.
+// model type after a type toggle.
 func (m *ModelsConfig) reloadForType() error {
 	cfg := m.com.Config()
 	selected, ok := cfg.Models[m.modelType.Config()]
@@ -256,7 +273,7 @@ func (m *ModelsConfig) reloadForType() error {
 	m.editing = fieldContextWindow
 	m.state = modelConfigStateEditing
 	m.applyFieldInput()
-	m.input.Focus()
+	m.setFieldValue()
 	return nil
 }
 
@@ -268,7 +285,6 @@ func (m *ModelsConfig) save() Action {
 	cw, err := strconv.ParseInt(m.fields[fieldContextWindow], 10, 64)
 	if err != nil || cw < 0 {
 		m.errorMsg = "Max context must be a non-negative integer"
-		m.input.SetValue(m.fields[fieldContextWindow])
 		return nil
 	}
 	priceIn, err := strconv.ParseFloat(m.fields[fieldPriceIn], 64)
@@ -276,6 +292,7 @@ func (m *ModelsConfig) save() Action {
 		m.errorMsg = "Input price must be a non-negative number"
 		m.editing = fieldPriceIn
 		m.applyFieldInput()
+		m.setFieldValue()
 		return nil
 	}
 	priceOut, err := strconv.ParseFloat(m.fields[fieldPriceOut], 64)
@@ -283,6 +300,7 @@ func (m *ModelsConfig) save() Action {
 		m.errorMsg = "Output price must be a non-negative number"
 		m.editing = fieldPriceOut
 		m.applyFieldInput()
+		m.setFieldValue()
 		return nil
 	}
 
@@ -311,12 +329,36 @@ type modelsConfigSavedMsg struct {
 	err           error
 }
 
-// Cursor returns the cursor for the dialog.
-func (m *ModelsConfig) Cursor() *tea.Cursor {
-	if m.state == modelConfigStateEditing {
-		return InputCursor(m.com.Styles, m.input.Cursor())
+// focusAndInputUpdate ensures the shared input is focused before routing a
+// key event to it, and returns any follow-up command (e.g. a cursor-blink
+// tick) that the caller must run.
+func (m *ModelsConfig) focusAndInputUpdate(msg tea.Msg) tea.Cmd {
+	if !m.input.Focused() {
+		cmd := m.input.Focus()
+		m.input.CursorEnd()
+		return cmd
 	}
-	return nil
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	return cmd
+}
+
+// Cursor returns the cursor for the dialog. The vertical offset is computed
+// from the content rows rendered above the input view, so it stays aligned
+// with the visible value even when the error line is present.
+func (m *ModelsConfig) Cursor() *tea.Cursor {
+	if m.state != modelConfigStateEditing {
+		return nil
+	}
+	cur := InputCursor(m.com.Styles, m.input.Cursor())
+	if cur != nil {
+		rowsAbove := 1
+		if m.errorMsg != "" {
+			rowsAbove++
+		}
+		cur.Y += rowsAbove
+	}
+	return cur
 }
 
 // Draw implements [Dialog].
@@ -342,7 +384,6 @@ func (m *ModelsConfig) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		}
 		m.applyFieldInput()
 		rc.AddPart(t.Dialog.InputPrompt.Render(m.input.View()))
-		rc.AddPart(t.Dialog.SecondaryText.Render("tab: next field · enter: save"))
 	case modelConfigStateSaving:
 		rc.AddPart(t.Dialog.SecondaryText.Render(m.spinner.View() + " Saving..."))
 	}
