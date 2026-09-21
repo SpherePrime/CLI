@@ -4,6 +4,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strconv"
+	"strings"
 )
 
 // Build-time parameters set via -ldflags.
@@ -27,7 +28,7 @@ func init() {
 	if ok {
 		mainVersion := info.Main.Version
 		if mainVersion != "" && mainVersion != "(devel)" {
-			Version = mainVersion
+			Version = strings.TrimSuffix(mainVersion, "+dirty")
 		}
 	}
 
