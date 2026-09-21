@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 	"github.com/dwertyfa288/CLI/internal/agent/hyper"
 	"github.com/dwertyfa288/CLI/internal/home"
 	"github.com/dwertyfa288/CLI/internal/ui/styles"
 	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 	"github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
 	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
 )
@@ -77,6 +77,11 @@ func ModelInfo(t *styles.Styles, modelName, providerName, reasoningInfo string, 
 	if context != nil {
 		formattedInfo := formatTokensAndCost(t, context.ContextUsed, context.ModelContext, context.Cost, context.EstimatedUsage)
 		parts = append(parts, lipgloss.NewStyle().PaddingLeft(2).Render(formattedInfo))
+
+		if context.ModelContext > 0 {
+			maxCtxText := "Max context: " + FormatContextTokens(context.ModelContext)
+			parts = append(parts, lipgloss.NewStyle().PaddingLeft(2).Render(t.ModelInfo.MaxContext.Render(maxCtxText)))
+		}
 	}
 
 	if providerName == hyper.DisplayName && hyperCredits != nil {
@@ -130,6 +135,20 @@ func formatTokensAndCost(t *styles.Styles, tokens, contextWindow int64, cost flo
 	}
 
 	return fmt.Sprintf("%s %s", formattedTokens, formattedCost)
+}
+
+// FormatContextTokens formats a context window token count with K/M units.
+func FormatContextTokens(n int64) string {
+	switch {
+	case n >= 1_000_000:
+		s := fmt.Sprintf("%.1fM", float64(n)/1_000_000)
+		return strings.TrimSuffix(s, ".0")
+	case n >= 1_000:
+		s := fmt.Sprintf("%.1fK", float64(n)/1_000)
+		return strings.TrimSuffix(s, ".0")
+	default:
+		return strconv.FormatInt(n, 10)
+	}
 }
 
 // FormatCredits formats an integer with comma separators for thousands.
