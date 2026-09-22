@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
@@ -37,6 +38,7 @@ type Status struct {
 		Refresh key.Binding
 		Close   key.Binding
 	}
+	help help.Model
 }
 
 var _ Dialog = (*Status)(nil)
@@ -44,6 +46,9 @@ var _ Dialog = (*Status)(nil)
 // NewStatus creates a new status dialog with the given data.
 func NewStatus(com *common.Common, data StatusData) *Status {
 	s := &Status{com: com, data: data}
+	help := help.New()
+	help.Styles = com.Styles.DialogHelpStyles()
+	s.help = help
 	s.keyMap.Refresh = key.NewBinding(
 		key.WithKeys("r"),
 		key.WithHelp("r", "refresh"),
@@ -94,7 +99,7 @@ func (s *Status) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	rc := NewRenderContext(t, width)
 	rc.Title = s.com.L("status.title")
 	rc.AddPart(s.renderContent(innerWidth))
-	rc.Help = renderDialogHelp(t, nil, s, innerWidth)
+	rc.Help = renderDialogHelp(t, &s.help, s, innerWidth)
 
 	view := rc.Render()
 	DrawCenter(scr, area, view)
