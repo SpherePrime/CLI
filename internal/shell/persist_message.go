@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/message"
 )
 
 // PersistOutput stores a bang-mode shell command result as a user message.

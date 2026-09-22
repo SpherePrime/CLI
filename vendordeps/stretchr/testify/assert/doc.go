@@ -10,7 +10,7 @@
 //
 //	import (
 //	  "testing"
-//	  "github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
+//	  "github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
 //	)
 //
 //	func TestSomething(t *testing.T) {
@@ -26,7 +26,7 @@
 //
 //	import (
 //	  "testing"
-//	  "github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
+//	  "github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
 //	)
 //
 //	func TestSomething(t *testing.T) {

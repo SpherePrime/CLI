@@ -28,11 +28,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/credsfile"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/jwt"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/credsfile"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/jwt"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 const (
@@ -55,7 +55,7 @@ type Options struct {
 	Logger      *slog.Logger
 }
 
-// NewTokenProvider returns a [github.com/dwertyfa288/CLI/vendordeps/go/auth.TokenProvider] from a
+// NewTokenProvider returns a [github.com/SpherePrime/CLI/vendordeps/go/auth.TokenProvider] from a
 // GDCH cred file.
 func NewTokenProvider(f *credsfile.GDCHServiceAccountFile, o *Options) (auth.TokenProvider, error) {
 	if !gdchSupportFormatVersions[f.FormatVersion] {

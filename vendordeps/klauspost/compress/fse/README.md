@@ -10,7 +10,7 @@ This can be used for compressing input with a lot of similar input values to the
 This does not perform any multi-byte [dictionary coding](https://en.wikipedia.org/wiki/Dictionary_coder) as LZ coders,
 but it can be used as a secondary step to compressors (like Snappy) that does not do entropy encoding. 
 
-* [Godoc documentation](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/fse)
+* [Godoc documentation](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/fse)
 
 ## News
 
@@ -23,7 +23,7 @@ This package provides a low level interface that allows to compress single indep
 Each block is separate, and there is no built in integrity checks. 
 This means that the caller should keep track of block sizes and also do checksums if needed.  
 
-Compressing a block is done via the [`Compress`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/fse#Compress) function.
+Compressing a block is done via the [`Compress`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/fse#Compress) function.
 You must provide input and will receive the output and maybe an error.
 
 These error values can be returned:
@@ -37,21 +37,21 @@ These error values can be returned:
 
 As can be seen above there are errors that will be returned even under normal operation so it is important to handle these.
 
-To reduce allocations you can provide a [`Scratch`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/fse#Scratch) object 
+To reduce allocations you can provide a [`Scratch`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/fse#Scratch) object 
 that can be re-used for successive calls. Both compression and decompression accepts a `Scratch` object, and the same 
 object can be used for both.   
 
 Be aware, that when re-using a `Scratch` object that the *output* buffer is also re-used, so if you are still using this
 you must set the `Out` field in the scratch to nil. The same buffer is used for compression and decompression output.
 
-Decompressing is done by calling the [`Decompress`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/fse#Decompress) function.
+Decompressing is done by calling the [`Decompress`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/fse#Decompress) function.
 You must provide the output from the compression stage, at exactly the size you got back. If you receive an error back
 your input was likely corrupted. 
 
 It is important to note that a successful decoding does *not* mean your output matches your original input. 
 There are no integrity checks, so relying on errors from the decompressor does not assure your data is valid.
 
-For more detailed usage, see examples in the [godoc documentation](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/fse#pkg-examples).
+For more detailed usage, see examples in the [godoc documentation](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/fse#pkg-examples).
 
 # Performance
 

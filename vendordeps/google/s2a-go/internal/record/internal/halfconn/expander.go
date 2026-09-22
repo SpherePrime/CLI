@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/hkdf"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/hkdf"
 )
 
 // hkdfExpander is the interface for the HKDF expansion function; see

@@ -26,10 +26,10 @@ import (
 	"math"
 	"net"
 
-	core "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal"
-	imem "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/mem"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/transport/readyreader"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
+	core "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal"
+	imem "github.com/SpherePrime/CLI/vendordeps/grpc/internal/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/transport/readyreader"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
 )
 
 // ALTSRecordCrypto is the interface for gRPC ALTS record protocol.

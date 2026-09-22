@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // newCancelTestAgent builds a DB-backed sessionAgent with no model. The

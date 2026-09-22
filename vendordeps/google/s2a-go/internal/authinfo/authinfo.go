@@ -23,10 +23,10 @@ package authinfo
 import (
 	"errors"
 
-	commonpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	contextpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/s2a_context_go_proto"
-	grpcpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/s2a_go_proto"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+	commonpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	contextpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/s2a_context_go_proto"
+	grpcpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/s2a_go_proto"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 )
 
 var _ credentials.AuthInfo = (*S2AAuthInfo)(nil)

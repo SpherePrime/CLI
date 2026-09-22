@@ -24,8 +24,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	internalgrpclog "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	internalgrpclog "github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpclog"
 )
 
 const logPrefix = "[googlecloud]"

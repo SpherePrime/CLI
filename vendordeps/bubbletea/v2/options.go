@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 )
 
 // ProgramOption is used to set options when initializing a Program. Program can

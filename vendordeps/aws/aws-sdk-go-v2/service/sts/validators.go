@@ -5,9 +5,9 @@ package sts
 import (
 	"context"
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts/types"
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts/types"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 type validateOpAssumeRole struct {

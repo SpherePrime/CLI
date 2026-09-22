@@ -18,9 +18,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/regionalaccessboundary"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/regionalaccessboundary"
 )
 
 type regionalAccessBoundaryProvider interface {

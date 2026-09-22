@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html/atom"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html/atom"
 )
 
 // This file implements the pseudo classes selectors,

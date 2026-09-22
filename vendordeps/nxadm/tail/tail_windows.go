@@ -1,4 +1,4 @@
-// Copyright (c) 2019 FOSS contributors of https://github.com/dwertyfa288/CLI/vendordeps/nxadm/tail
+// Copyright (c) 2019 FOSS contributors of https://github.com/SpherePrime/CLI/vendordeps/nxadm/tail
 // +build windows
 
 package tail
@@ -6,7 +6,7 @@ package tail
 import (
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/nxadm/tail/winfile"
+	"github.com/SpherePrime/CLI/vendordeps/nxadm/tail/winfile"
 )
 
 // Deprecated: this function is only useful internally and, as such,

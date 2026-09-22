@@ -28,21 +28,21 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/transport"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/transport/headers"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/callctx"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
-	"github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
-	grpccreds "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	grpcinsecure "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/insecure"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/transport"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/transport/headers"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/callctx"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
+	grpccreds "github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	grpcinsecure "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/insecure"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/stats"
 )
 
 const (
@@ -377,7 +377,7 @@ func dial(ctx context.Context, secure bool, opts *Options) (*grpc.ClientConn, er
 	return grpc.DialContext(ctx, transportCreds.Endpoint, grpcOpts...)
 }
 
-// grpcKeyProvider satisfies https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc/credentials#PerRPCCredentials.
+// grpcKeyProvider satisfies https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc/credentials#PerRPCCredentials.
 type grpcKeyProvider struct {
 	apiKey   string
 	metadata map[string]string
@@ -397,7 +397,7 @@ func (g *grpcKeyProvider) RequireTransportSecurity() bool {
 	return g.secure
 }
 
-// grpcCredentialsProvider satisfies https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc/credentials#PerRPCCredentials.
+// grpcCredentialsProvider satisfies https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc/credentials#PerRPCCredentials.
 type grpcCredentialsProvider struct {
 	creds *auth.Credentials
 

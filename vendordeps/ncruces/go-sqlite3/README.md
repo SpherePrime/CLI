@@ -1,15 +1,15 @@
 # Go bindings to SQLite using wasm2go
 
-[![Go Reference](https://pkg.go.dev/badge/image)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3)
-[![Go Coverage](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/wiki/coverage.svg)](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/wiki/Test-coverage-report)
+[![Go Reference](https://pkg.go.dev/badge/image)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3)
+[![Go Coverage](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/wiki/coverage.svg)](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/wiki/Test-coverage-report)
 
-Go module `github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3` is a `cgo`-free [SQLite](https://sqlite.org/) wrapper.\
+Go module `github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3` is a `cgo`-free [SQLite](https://sqlite.org/) wrapper.\
 It provides a [`database/sql`](https://pkg.go.dev/database/sql) compatible driver,
 as well as direct access to most of the [C SQLite API](https://sqlite.org/cintro.html).
 
 It wraps a [Wasm](https://webassembly.org/) build of SQLite,
 and uses [wasm2go](https://github.com/ncruces/wasm2go) to translate it to Go.\
-Go and [`x/sys`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/sys) are the _only_ required dependencies.
+Go and [`x/sys`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/sys) are the _only_ required dependencies.
 
 ### Getting started
 
@@ -17,7 +17,7 @@ Using the [`database/sql`](https://pkg.go.dev/database/sql) driver:
 ```go
 
 import "database/sql"
-import _ "github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver"
+import _ "github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver"
 
 var version string
 db, _ := sql.Open("sqlite3", "file:demo.db")
@@ -26,36 +26,36 @@ db.QueryRow(`SELECT sqlite_version()`).Scan(&version)
 
 ### Packages
 
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3)
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3)
   wraps the [C SQLite API](https://sqlite.org/cintro.html)
-  ([example](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3#example-package)).
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver)
+  ([example](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3#example-package)).
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver)
   provides a [`database/sql`](https://pkg.go.dev/database/sql) driver
-  ([example](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver#example-package)).
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs)
+  ([example](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver#example-package)).
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs)
   wraps the [C SQLite VFS API](https://sqlite.org/vfs.html) and provides a pure Go implementation.
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/gormlite`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/gormlite)
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/gormlite`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/gormlite)
   provides a [GORM](https://gorm.io) driver.
 
 ### Advanced features
 
 - [incremental BLOB I/O](https://sqlite.org/c3ref/blob_open.html)
-  ([example](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/ext/blobio#example-package))
+  ([example](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/ext/blobio#example-package))
 - [nested transactions](https://sqlite.org/lang_savepoint.html)
-  ([example](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver#example-Savepoint))
+  ([example](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver#example-Savepoint))
 - [custom functions](https://sqlite.org/c3ref/create_function.html)
-  ([example](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3#example-Conn.CreateFunction))
+  ([example](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3#example-Conn.CreateFunction))
 - [virtual tables](https://sqlite.org/vtab.html)
-  ([example](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3#example-CreateModule))
+  ([example](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3#example-CreateModule))
 - [custom VFSes](https://sqlite.org/vfs.html)
   ([examples](vfs/README.md#custom-vfses))
 - [online backup](https://sqlite.org/backup.html)
-  ([example](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver#Conn))
+  ([example](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver#Conn))
 - [JSON support](https://sqlite.org/json1.html)
-  ([example](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver#example-package-Json))
+  ([example](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver#example-package-Json))
 - [math functions](https://sqlite.org/lang_mathfunc.html)
-- [Unicode support](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/ext/unicode)
-- [statistics functions](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/ext/stats)
+- [Unicode support](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/ext/unicode)
+- [statistics functions](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/ext/stats)
 - [encryption at rest](vfs/adiantum/README.md)
 - [many extensions](ext/README.md)
 
@@ -71,7 +71,7 @@ memory usage will be higher than alternatives.
 
 ### Testing
 
-This project aims for [high test coverage](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/wiki/Test-coverage-report).
+This project aims for [high test coverage](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/wiki/Test-coverage-report).
 It also benefits greatly from [SQLite's](https://sqlite.org/testing.html) thorough testing.
 
 Every commit is tested on:
@@ -87,7 +87,7 @@ Every commit is tested on:
 * Solaris: amd64
 
 Certain operating system and CPU combinations have some limitations.
-See the [support matrix](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/wiki/Support-matrix) for a complete overview.
+See the [support matrix](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/wiki/Support-matrix) for a complete overview.
 
 The Go VFS is tested by running SQLite's
 [mptest](https://github.com/sqlite/sqlite/blob/master/mptest/mptest.c).
@@ -111,11 +111,11 @@ according to its documentation.
 
 ### FAQ, issues, new features
 
-For questions, please see [Discussions](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/discussions/categories/q-a).
+For questions, please see [Discussions](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/discussions/categories/q-a).
 
 Also, post there if you used this driver for something interesting
-([_"Show and tell"_](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/discussions/categories/show-and-tell)),
-have an [idea](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/discussions/categories/ideas)…
+([_"Show and tell"_](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/discussions/categories/show-and-tell)),
+have an [idea](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/discussions/categories/ideas)…
 
-The [Issues](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/issues) tracker is for bugs,
+The [Issues](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/issues) tracker is for bugs,
 and features we're working on, planning to work on, or asking for help with.

@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 func mkfifo(path string, mode uint32) error {

@@ -2,18 +2,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"strings"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fcntl"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fts"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/time"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/utime"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fcntl"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fts"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/time"
+	"github.com/SpherePrime/CLI/vendordeps/libc/utime"
 )
 
 type (
@@ -730,7 +730,7 @@ func Xchflags(t *TLS, path uintptr, flags uint32) int32 {
 func setTmGmtoff(tm *time.Tm, off int) { tm.Ftm_gmtoff = int32(off) }
 
 // Xmmap — see libc_freebsd.go. freebsd/386: the 64-bit off_t spans two argument
-// words, no PAD (matches github.com/dwertyfa288/CLI/vendordeps/x/sys/unix's freebsd/386 mmap).
+// words, no PAD (matches github.com/SpherePrime/CLI/vendordeps/x/sys/unix's freebsd/386 mmap).
 func Xmmap(t *TLS, addr uintptr, length types.Size_t, prot, flags, fd int32, offset types.Off_t) uintptr {
 	if __ccgo_strace {
 		trc("t=%v addr=%v length=%v fd=%v offset=%v, (%v:)", t, addr, length, fd, offset, origin(2))

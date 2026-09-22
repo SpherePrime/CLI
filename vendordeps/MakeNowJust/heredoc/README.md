@@ -1,6 +1,6 @@
 # heredoc
 
-[![Build Status](https://circleci.com/gh/MakeNowJust/heredoc.svg?style=svg)](https://circleci.com/gh/MakeNowJust/heredoc) [![GoDoc](https://godoc.org/github.com/MakeNowJusti/heredoc?status.svg)](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/MakeNowJust/heredoc)
+[![Build Status](https://circleci.com/gh/MakeNowJust/heredoc.svg?style=svg)](https://circleci.com/gh/MakeNowJust/heredoc) [![GoDoc](https://godoc.org/github.com/MakeNowJusti/heredoc?status.svg)](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/MakeNowJust/heredoc)
 
 ## About
 
@@ -9,14 +9,14 @@ Package heredoc provides the here-document with keeping indent.
 ## Install
 
 ```console
-$ go get github.com/dwertyfa288/CLI/vendordeps/MakeNowJust/heredoc
+$ go get github.com/SpherePrime/CLI/vendordeps/MakeNowJust/heredoc
 ```
 
 ## Import
 
 ```go
 // usual
-import "github.com/dwertyfa288/CLI/vendordeps/MakeNowJust/heredoc"
+import "github.com/SpherePrime/CLI/vendordeps/MakeNowJust/heredoc"
 ```
 
 ## Example
@@ -26,7 +26,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/MakeNowJust/heredoc"
+	"github.com/SpherePrime/CLI/vendordeps/MakeNowJust/heredoc"
 )
 
 func main() {
@@ -45,7 +45,7 @@ func main() {
 
 ## API Document
 
- - [heredoc - GoDoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/MakeNowJust/heredoc)
+ - [heredoc - GoDoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/MakeNowJust/heredoc)
 
 ## License
 

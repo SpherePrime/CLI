@@ -8,7 +8,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/internal/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/internal/language"
 )
 
 // A MatchOption configures a Matcher.

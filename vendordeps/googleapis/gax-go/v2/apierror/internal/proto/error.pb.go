@@ -25,10 +25,10 @@ import (
 	sync "sync"
 	unsafe "unsafe"
 
-	code "github.com/dwertyfa288/CLI/vendordeps/genproto/googleapis/rpc/code"
-	protoreflect "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	protoimpl "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoimpl"
-	anypb "github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/anypb"
+	code "github.com/SpherePrime/CLI/vendordeps/genproto/googleapis/rpc/code"
+	protoreflect "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	protoimpl "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoimpl"
+	anypb "github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/anypb"
 )
 
 const (

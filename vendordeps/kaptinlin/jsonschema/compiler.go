@@ -16,7 +16,7 @@ import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml"
 )
 
 var numberUnmarshalOptions = json.WithUnmarshalers(json.JoinUnmarshalers(

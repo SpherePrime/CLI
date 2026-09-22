@@ -4,7 +4,7 @@ package types
 
 import (
 	"fmt"
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // Indicates that a problem occurred with the input to the request. For example, a

@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/internal/oauth"
 )
 
 // ModelInfo mirrors one entry of the Codex backend model catalog.

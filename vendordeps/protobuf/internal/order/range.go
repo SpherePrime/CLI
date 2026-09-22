@@ -9,7 +9,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 type messageField struct {

@@ -11,11 +11,11 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/signin"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	smithyrand "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/rand"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/signin"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	smithyrand "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/rand"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // AWS signin DPOP always uses the P256 curve

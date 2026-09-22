@@ -3,8 +3,8 @@ package agent
 import (
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/event"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/event"
 )
 
 func (a *sessionAgent) eventPromptSent(sessionID string) {

@@ -9,7 +9,7 @@ import (
 	"io"
 	"math"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/internal/le"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/internal/le"
 )
 
 const (

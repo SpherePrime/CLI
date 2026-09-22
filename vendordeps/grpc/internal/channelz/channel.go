@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/connectivity"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/connectivity"
 )
 
 // Channel represents a channel within channelz, which includes metrics and

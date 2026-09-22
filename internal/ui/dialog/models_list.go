@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/internal/ui/list"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
 )
 
 // ModelsList is a list specifically for model items and groups.

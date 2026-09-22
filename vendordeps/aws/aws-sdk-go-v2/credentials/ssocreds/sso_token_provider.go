@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth/bearer"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth/bearer"
 )
 
 // CreateTokenAPIClient provides the interface for the SSOTokenProvider's API

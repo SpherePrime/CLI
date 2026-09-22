@@ -30,12 +30,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	mbits "math/bits"
 
-	"github.com/dwertyfa288/CLI/vendordeps/mathutil"
+	"github.com/SpherePrime/CLI/vendordeps/mathutil"
 )
 
 type Int128 mathutil.Int128

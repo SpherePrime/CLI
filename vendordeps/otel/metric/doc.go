@@ -6,7 +6,7 @@ Package metric provides the OpenTelemetry API used to measure metrics about
 source code operation.
 
 This API is separate from its implementation so the instrumentation built from
-it is reusable. See [github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric] for the official
+it is reusable. See [github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric] for the official
 OpenTelemetry implementation of this API.
 
 All measurements made with this package are made via instruments. These
@@ -152,14 +152,14 @@ make:
   - Default to another implementation
 
 All interfaces in this API embed a corresponding interface from
-[github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded]. If an author wants the default
+[github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded]. If an author wants the default
 behavior of their implementations to be a compilation failure, signaling to
 their users they need to update to the latest version of that implementation,
 they need to embed the corresponding interface from
-[github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded] in their implementation. For
+[github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded] in their implementation. For
 example,
 
-	import "github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded"
+	import "github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded"
 
 	type MeterProvider struct {
 		embedded.MeterProvider
@@ -169,7 +169,7 @@ example,
 If an author wants the default behavior of their implementations to a panic,
 they need to embed the API interface directly.
 
-	import "github.com/dwertyfa288/CLI/vendordeps/otel/metric"
+	import "github.com/SpherePrime/CLI/vendordeps/otel/metric"
 
 	type MeterProvider struct {
 		metric.MeterProvider
@@ -178,14 +178,14 @@ they need to embed the API interface directly.
 
 This is not a recommended behavior as it could lead to publishing packages that
 contain runtime panics when users update other package that use newer versions
-of [github.com/dwertyfa288/CLI/vendordeps/otel/metric].
+of [github.com/SpherePrime/CLI/vendordeps/otel/metric].
 
 Finally, an author can embed another implementation in theirs. The embedded
 implementation will be used for methods not defined by the author. For example,
 an author who wants to default to silently dropping the call can use
-[github.com/dwertyfa288/CLI/vendordeps/otel/metric/noop]:
+[github.com/SpherePrime/CLI/vendordeps/otel/metric/noop]:
 
-	import "github.com/dwertyfa288/CLI/vendordeps/otel/metric/noop"
+	import "github.com/SpherePrime/CLI/vendordeps/otel/metric/noop"
 
 	type MeterProvider struct {
 		noop.MeterProvider
@@ -193,12 +193,12 @@ an author who wants to default to silently dropping the call can use
 	}
 
 It is strongly recommended that authors only embed
-[github.com/dwertyfa288/CLI/vendordeps/otel/metric/noop] if they choose this default behavior.
+[github.com/SpherePrime/CLI/vendordeps/otel/metric/noop] if they choose this default behavior.
 That implementation is the only one OpenTelemetry authors can guarantee will
 fully implement all the API interfaces when a user updates their API.
 
 [instrument name syntax]: https://opentelemetry.io/docs/specs/otel/metrics/api/#instrument-name-syntax
 [OpenTelemetry documentation]: https://opentelemetry.io/docs/concepts/signals/metrics/
-[GetMeterProvider]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel#GetMeterProvider
+[GetMeterProvider]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel#GetMeterProvider
 */
 package metric

@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"unicode/utf16"
 
-	"github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio/internal/fs"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio/internal/fs"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 //sys backupRead(h windows.Handle, b []byte, bytesRead *uint32, abort bool, processSecurity bool, context *uintptr) (err error) = BackupRead

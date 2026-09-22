@@ -13,7 +13,7 @@ import (
 	rdebug "runtime/debug"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/zstd/internal/xxhash"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/zstd/internal/xxhash"
 )
 
 // Encoder provides encoding to Zstandard.

@@ -18,7 +18,7 @@
 
 package conn
 
-import core "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal"
+import core "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal"
 
 // NewOutCounter returns an outgoing counter initialized to the starting sequence
 // number for the client/server side of a connection.

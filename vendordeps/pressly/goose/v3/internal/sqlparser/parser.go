@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate"
+	"github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate"
 )
 
 type Direction string

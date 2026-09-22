@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // SigV4 is a constant representing
@@ -138,7 +138,7 @@ type disableDoubleEncoding struct{}
 // SetDisableDoubleEncoding sets or modifies the disable double encoding option
 // on the context.
 //
-// Scoped to stack values. Use github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
+// Scoped to stack values. Use github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
 // to clear all stack values.
 func SetDisableDoubleEncoding(ctx context.Context, value bool) context.Context {
 	return middleware.WithStackValue(ctx, disableDoubleEncoding{}, value)
@@ -147,7 +147,7 @@ func SetDisableDoubleEncoding(ctx context.Context, value bool) context.Context {
 // GetDisableDoubleEncoding retrieves the disable double encoding option
 // from the context.
 //
-// Scoped to stack values. Use github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
+// Scoped to stack values. Use github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
 // to clear all stack values.
 func GetDisableDoubleEncoding(ctx context.Context) (value bool, ok bool) {
 	value, ok = middleware.GetStackValue(ctx, disableDoubleEncoding{}).(bool)

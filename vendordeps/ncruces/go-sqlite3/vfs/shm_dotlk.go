@@ -7,8 +7,8 @@ import (
 	"io/fs"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/dotlk"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/dotlk"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
 )
 
 type vfsShmParent struct {

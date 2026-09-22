@@ -4,12 +4,12 @@
 
 //go:build !freebsd && !openbsd && !(linux && (amd64 || arm64 || loong64 || ppc64le || s390x || riscv64 || 386 || arm))
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc/pthread"
+	"github.com/SpherePrime/CLI/vendordeps/libc/pthread"
 )
 
 type pthreadAttr struct {

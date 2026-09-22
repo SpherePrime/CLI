@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
 )
 
 // SizeNotifier represents a notifier that listens for window size

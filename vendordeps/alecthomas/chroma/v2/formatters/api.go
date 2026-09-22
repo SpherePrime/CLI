@@ -4,9 +4,9 @@ import (
 	"io"
 	"sort"
 
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/formatters/html"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/formatters/svg"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/formatters/html"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/formatters/svg"
 )
 
 var (

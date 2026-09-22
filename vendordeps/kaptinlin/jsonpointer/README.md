@@ -1,7 +1,7 @@
 # JSON Pointer
 
 [![Go Module](https://img.shields.io/badge/go-module-blue.svg)](https://golang.org/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/kaptinlin/jsonpointer.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonpointer)
+[![Go Reference](https://pkg.go.dev/badge/github.com/kaptinlin/jsonpointer.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonpointer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A read-only JSON Pointer (RFC 6901) library for Go built around one strict,
@@ -25,7 +25,7 @@ immutable `Pointer` value.
 ## Installation
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonpointer
+go get github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonpointer
 ```
 
 Requires the Go version declared in `go.mod`.
@@ -39,7 +39,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonpointer"
+	"github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonpointer"
 )
 
 func main() {

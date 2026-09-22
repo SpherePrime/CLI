@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aymanbagabas/go-udiff"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/golden"
+	"github.com/SpherePrime/CLI/vendordeps/aymanbagabas/go-udiff"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/golden"
 )
 
 func TestUdiff(t *testing.T) {

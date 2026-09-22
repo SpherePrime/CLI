@@ -967,23 +967,23 @@
 
 # v1.10.0 (2022-03-08)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.9.0 (2022-02-24)
 
-* **Feature**: Adds support for `SourceIdentity` to `stscreds.AssumeRoleProvider` [#1588](https://github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/pull/1588). Fixes [#1575](https://github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/issues/1575)
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Adds support for `SourceIdentity` to `stscreds.AssumeRoleProvider` [#1588](https://github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/pull/1588). Fixes [#1575](https://github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/issues/1575)
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.8.0 (2022-01-14)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.7.0 (2022-01-07)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.6.5 (2021-12-21)
@@ -1009,7 +1009,7 @@
 # v1.6.0 (2021-11-06)
 
 * **Feature**: The SDK now supports configuration of FIPS and DualStack endpoints using environment variables, shared configuration, or programmatically.
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.5.0 (2021-10-21)
@@ -1031,8 +1031,8 @@
 
 # v1.4.0 (2021-08-27)
 
-* **Feature**: Adds support for Tags and TransitiveTagKeys to stscreds.AssumeRoleProvider. Closes https://github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/issues/723
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Adds support for Tags and TransitiveTagKeys to stscreds.AssumeRoleProvider. Closes https://github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/issues/723
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.3.3 (2021-08-19)
@@ -1041,18 +1041,18 @@
 
 # v1.3.2 (2021-08-04)
 
-* **Dependency Update**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version.
+* **Dependency Update**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version.
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.3.1 (2021-07-15)
 
-* **Dependency Update**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Dependency Update**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.3.0 (2021-06-25)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
-* **Bug Fix**: Fixed example usages of aws.CredentialsCache ([#1275](https://github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/pull/1275))
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
+* **Bug Fix**: Fixed example usages of aws.CredentialsCache ([#1275](https://github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/pull/1275))
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.2.1 (2021-05-20)

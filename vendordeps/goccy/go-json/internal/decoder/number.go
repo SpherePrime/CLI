@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/errors"
 )
 
 type numberDecoder struct {

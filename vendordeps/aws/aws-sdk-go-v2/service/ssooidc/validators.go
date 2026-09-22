@@ -5,8 +5,8 @@ package ssooidc
 import (
 	"context"
 	"fmt"
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 type validateOpCreateToken struct {

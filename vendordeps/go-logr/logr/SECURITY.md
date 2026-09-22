@@ -8,7 +8,7 @@ used before a patch is released.
 You may submit the report in the following ways:
 
 - send an email to go-logr-security@googlegroups.com
-- send us a [private vulnerability report](https://github.com/dwertyfa288/CLI/vendordeps/go-logr/logr/security/advisories/new)
+- send us a [private vulnerability report](https://github.com/SpherePrime/CLI/vendordeps/go-logr/logr/security/advisories/new)
 
 Please provide the following information in your report:
 

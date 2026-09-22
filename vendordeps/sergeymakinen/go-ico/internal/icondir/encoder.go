@@ -10,7 +10,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-bmp"
+	"github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-bmp"
 )
 
 type Encoder struct {

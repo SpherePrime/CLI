@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/authhandler"
+	"github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/authhandler"
 )
 
 const (

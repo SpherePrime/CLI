@@ -16,17 +16,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/home"
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	mcpoauth "github.com/dwertyfa288/CLI/internal/oauth/mcp"
-	"github.com/dwertyfa288/CLI/internal/permission"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/internal/version"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/home"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	mcpoauth "github.com/SpherePrime/CLI/internal/oauth/mcp"
+	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/version"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 // parseLevel converts an MCP logging level string to a slog.Level. The

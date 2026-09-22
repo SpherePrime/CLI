@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/internal/tag"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/internal/tag"
 )
 
 // isAlpha returns true if the byte is not a digit.

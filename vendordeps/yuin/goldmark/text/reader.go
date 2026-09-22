@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 const invalidValue = -1

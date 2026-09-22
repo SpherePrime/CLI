@@ -42,13 +42,13 @@ readable logging with batteries included.
 Use `go get` to download the dependency.
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/log/v2@latest
+go get github.com/SpherePrime/CLI/vendordeps/log/v2@latest
 ```
 
 Then, `import` it in your Go files:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/log/v2"
+import "github.com/SpherePrime/CLI/vendordeps/log/v2"
 ```
 
 The Charm logger comes with a global package-wise logger with timestamps turned

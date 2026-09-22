@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/env"
-	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/SpherePrime/CLI/internal/env"
+	"github.com/SpherePrime/CLI/internal/shell"
 )
 
 // resolveTimeout bounds how long a single ResolveValue call may spend

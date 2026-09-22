@@ -23,7 +23,7 @@
 ## Installation
 
 ```bash
-go get -u github.com/dwertyfa288/CLI/vendordeps/multierr@latest
+go get -u github.com/SpherePrime/CLI/vendordeps/multierr@latest
 ```
 
 ## Status
@@ -35,8 +35,8 @@ Stable: No breaking changes will be made before 2.0.
 Released under the [MIT License].
 
 [MIT License]: LICENSE.txt
-[doc-img]: https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/multierr
-[doc]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/multierr
+[doc-img]: https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/multierr
+[doc]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/multierr
 [ci-img]: https://github.com/uber-go/multierr/actions/workflows/go.yml/badge.svg
 [cov-img]: https://codecov.io/gh/uber-go/multierr/branch/master/graph/badge.svg
 [ci]: https://github.com/uber-go/multierr/actions/workflows/go.yml

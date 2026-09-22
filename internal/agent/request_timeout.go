@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 // requestTimeoutError reports that an LLM request exhausted its configured

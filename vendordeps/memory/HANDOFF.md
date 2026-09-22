@@ -126,7 +126,7 @@ Syscall counts and profile for DeltaBlue alone:
 ```
   10.43s 71.73%  internal/runtime/syscall/linux.Syscall6
    2.22s 15.27%  modernc.org/memory.(*Allocator).mmap        (62.79% cum)
-   0.03s  0.21%  github.com/dwertyfa288/CLI/vendordeps/x/sys/unix.munmap                (58.94% cum)
+   0.03s  0.21%  github.com/SpherePrime/CLI/vendordeps/x/sys/unix.munmap                (58.94% cum)
 ```
 
 72% of a JavaScript benchmark's runtime in `mmap`/`munmap`. Note the third

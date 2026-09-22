@@ -1,12 +1,12 @@
 ## beeep
-[![Build Status](https://github.com/dwertyfa288/CLI/vendordeps/gen2brain/beeep/actions/workflows/build.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/gen2brain/beeep/actions)
-[![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/beeep.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/gen2brain/beeep)
+[![Build Status](https://github.com/SpherePrime/CLI/vendordeps/gen2brain/beeep/actions/workflows/build.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/gen2brain/beeep/actions)
+[![Go Reference](https://pkg.go.dev/badge/github.com/gen2brain/beeep.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/gen2brain/beeep)
 
 `beeep` provides a cross-platform library for sending desktop notifications, alerts and beeps.
 
 ### Installation
 
-    go get -u github.com/dwertyfa288/CLI/vendordeps/gen2brain/beeep
+    go get -u github.com/SpherePrime/CLI/vendordeps/gen2brain/beeep
 
 ### Build tags
 

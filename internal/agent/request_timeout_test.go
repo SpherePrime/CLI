@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/x/vcr"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/x/vcr"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // fakeLanguageModel is a [fantasy.LanguageModel] stub that records the

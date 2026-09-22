@@ -1,9 +1,9 @@
 # gojq
-[![CI Status](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq/actions?query=branch:main)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq/blob/main/LICENSE)
-[![release](https://img.shields.io/github/release/itchyny/gojq/all.svg)](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq/releases)
-[![pkg.go.dev](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq)
+[![CI Status](https://github.com/SpherePrime/CLI/vendordeps/itchyny/gojq/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/SpherePrime/CLI/vendordeps/itchyny/gojq/actions?query=branch:main)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SpherePrime/CLI/vendordeps/itchyny/gojq/blob/main/LICENSE)
+[![release](https://img.shields.io/github/release/itchyny/gojq/all.svg)](https://github.com/SpherePrime/CLI/vendordeps/itchyny/gojq/releases)
+[![pkg.go.dev](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq)
 
 ### Pure Go implementation of [jq](https://github.com/jqlang/jq)
 This is an implementation of jq command written in Go language.
@@ -68,7 +68,7 @@ mise use -g gojq@latest
 
 ### Build from source
 ```sh
-go install github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq/cmd/gojq@latest
+go install github.com/SpherePrime/CLI/vendordeps/itchyny/gojq/cmd/gojq@latest
 ```
 
 ### Docker
@@ -104,7 +104,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq"
+	"github.com/SpherePrime/CLI/vendordeps/itchyny/gojq"
 )
 
 func main() {
@@ -130,32 +130,32 @@ func main() {
 }
 ```
 
-- Firstly, use [`gojq.Parse(string) (*Query, error)`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Parse) to get the query from a string.
-  - Use [`gojq.ParseError`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#ParseError) to get the error position and token of the parsing error.
+- Firstly, use [`gojq.Parse(string) (*Query, error)`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Parse) to get the query from a string.
+  - Use [`gojq.ParseError`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#ParseError) to get the error position and token of the parsing error.
 - Secondly, get the result iterator
-  - using [`query.Run`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Query.Run) or [`query.RunWithContext`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Query.RunWithContext)
-  - or alternatively, compile the query using [`gojq.Compile`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Compile) and then [`code.Run`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Code.Run) or [`code.RunWithContext`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Code.RunWithContext). You can reuse the `*Code` against multiple inputs to avoid compilation of the same query.
+  - using [`query.Run`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Query.Run) or [`query.RunWithContext`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Query.RunWithContext)
+  - or alternatively, compile the query using [`gojq.Compile`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Compile) and then [`code.Run`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Code.Run) or [`code.RunWithContext`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Code.RunWithContext). You can reuse the `*Code` against multiple inputs to avoid compilation of the same query.
   - In either case, you cannot use custom type values as the query input. The type should be `[]any` for an array and `map[string]any` for a map (just like decoded to an `any` using the [encoding/json](https://golang.org/pkg/encoding/json/) package). You can't use `[]int` or `map[string]string`, for example. If you want to query your custom struct, marshal to JSON, unmarshal to `any` and use it as the query input.
-- Thirdly, iterate through the results using [`iter.Next() (any, bool)`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Iter). The iterator can emit an error so make sure to handle it. The method returns `true` with results, and `false` when the iterator terminates.
+- Thirdly, iterate through the results using [`iter.Next() (any, bool)`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Iter). The iterator can emit an error so make sure to handle it. The method returns `true` with results, and `false` when the iterator terminates.
   - The return type is not `(any, error)` because the iterator may emit multiple errors. The `jq` and `gojq` commands stop the iteration on the first error, but the library user can choose to stop the iteration on errors, or to continue until it terminates.
-    - In any case, it is recommended to stop the iteration on [`gojq.HaltError`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#HaltError), which is emitted by `halt` and `halt_error` functions, although these functions are rarely used.
-      The error implements [`gojq.ValueError`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#ValueError), and if the error value is `nil`, stop the iteration without handling the error.
+    - In any case, it is recommended to stop the iteration on [`gojq.HaltError`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#HaltError), which is emitted by `halt` and `halt_error` functions, although these functions are rarely used.
+      The error implements [`gojq.ValueError`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#ValueError), and if the error value is `nil`, stop the iteration without handling the error.
       Technically speaking, we can fix the iterator to terminate on the halting error, but it does not terminate at the moment.
       The `halt` function in jq not only stops the iteration, but also terminates the command execution, even if there are still input values.
       So, gojq leaves it up to the library user how to handle the halting error.
   - Note that the result iterator may emit infinite number of values; `repeat(0)` and `range(infinite)`. It may stuck with no output value; `def f: f; f`. Use `RunWithContext` when you want to limit the execution time.
 
-[`gojq.Compile`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Compile) allows to configure the following compiler options.
+[`gojq.Compile`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Compile) allows to configure the following compiler options.
 
-- [`gojq.WithModuleLoader`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#WithModuleLoader) allows to load modules. By default, the module feature is disabled. If you want to load modules from the file system, use [`gojq.NewModuleLoader`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#NewModuleLoader).
-- [`gojq.WithEnvironLoader`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#WithEnvironLoader) allows to configure the environment variables referenced by `env` and `$ENV`. By default, OS environment variables are not accessible due to security reasons. You can use `gojq.WithEnvironLoader(os.Environ)` if you want.
-- [`gojq.WithVariables`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#WithVariables) allows to configure the variables which can be used in the query. Pass the values of the variables to [`code.Run`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Code.Run) in the same order.
-- [`gojq.WithFunction`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#WithFunction) allows to add a custom internal function. An internal function can return a single value (which can be an error) each invocation. To add a jq function (which may include a comma operator to emit multiple values, `empty` function, accept a filter for its argument, or call another built-in function), use `LoadInitModules` of the module loader.
-- [`gojq.WithIterFunction`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#WithIterFunction) allows to add a custom iterator function. An iterator function returns an iterator to emit multiple values. You cannot define both iterator and non-iterator functions of the same name (with possibly different arities). You can use [`gojq.NewIter`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#NewIter) to convert values or an error to a [`gojq.Iter`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#Iter).
-- [`gojq.WithInputIter`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq#WithInputIter) allows to use `input` and `inputs` functions. By default, these functions are disabled.
+- [`gojq.WithModuleLoader`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#WithModuleLoader) allows to load modules. By default, the module feature is disabled. If you want to load modules from the file system, use [`gojq.NewModuleLoader`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#NewModuleLoader).
+- [`gojq.WithEnvironLoader`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#WithEnvironLoader) allows to configure the environment variables referenced by `env` and `$ENV`. By default, OS environment variables are not accessible due to security reasons. You can use `gojq.WithEnvironLoader(os.Environ)` if you want.
+- [`gojq.WithVariables`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#WithVariables) allows to configure the variables which can be used in the query. Pass the values of the variables to [`code.Run`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Code.Run) in the same order.
+- [`gojq.WithFunction`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#WithFunction) allows to add a custom internal function. An internal function can return a single value (which can be an error) each invocation. To add a jq function (which may include a comma operator to emit multiple values, `empty` function, accept a filter for its argument, or call another built-in function), use `LoadInitModules` of the module loader.
+- [`gojq.WithIterFunction`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#WithIterFunction) allows to add a custom iterator function. An iterator function returns an iterator to emit multiple values. You cannot define both iterator and non-iterator functions of the same name (with possibly different arities). You can use [`gojq.NewIter`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#NewIter) to convert values or an error to a [`gojq.Iter`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#Iter).
+- [`gojq.WithInputIter`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/gojq#WithInputIter) allows to use `input` and `inputs` functions. By default, these functions are disabled.
 
 ## Bug Tracker
-Report bug at [Issues・itchyny/gojq - GitHub](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq/issues).
+Report bug at [Issues・itchyny/gojq - GitHub](https://github.com/SpherePrime/CLI/vendordeps/itchyny/gojq/issues).
 
 ## Author
 itchyny (<https://github.com/itchyny>)

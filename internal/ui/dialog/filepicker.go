@@ -9,15 +9,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/filepicker"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/home"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	fimage "github.com/dwertyfa288/CLI/internal/ui/image"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/filepicker"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/home"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	fimage "github.com/SpherePrime/CLI/internal/ui/image"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // FilePickerID is the identifier for the FilePicker dialog.

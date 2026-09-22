@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	// "encoding/hex"
@@ -17,26 +17,26 @@ import (
 	"time"
 	"unsafe"
 
-	guuid "github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fcntl"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fts"
-	gonetdb "github.com/dwertyfa288/CLI/vendordeps/libc/honnef.co/go/netdb"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/langinfo"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/limits"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/netdb"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/netinet/in"
+	guuid "github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fcntl"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fts"
+	gonetdb "github.com/SpherePrime/CLI/vendordeps/libc/honnef.co/go/netdb"
+	"github.com/SpherePrime/CLI/vendordeps/libc/langinfo"
+	"github.com/SpherePrime/CLI/vendordeps/libc/limits"
+	"github.com/SpherePrime/CLI/vendordeps/libc/netdb"
+	"github.com/SpherePrime/CLI/vendordeps/libc/netinet/in"
 
-	// "github.com/dwertyfa288/CLI/vendordeps/libc/signal"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/stdio"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/socket"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/stat"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/termios"
-	ctime "github.com/dwertyfa288/CLI/vendordeps/libc/time"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/unistd"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/uuid/uuid"
+	// "github.com/SpherePrime/CLI/vendordeps/libc/signal"
+	"github.com/SpherePrime/CLI/vendordeps/libc/stdio"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/socket"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/stat"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/termios"
+	ctime "github.com/SpherePrime/CLI/vendordeps/libc/time"
+	"github.com/SpherePrime/CLI/vendordeps/libc/unistd"
+	"github.com/SpherePrime/CLI/vendordeps/libc/uuid/uuid"
 )
 
 const (
@@ -264,7 +264,7 @@ func Xopenat(t *TLS, dirfd int32, pathname uintptr, flags int32, mode types.Mode
 		trc("t=%v dirfd=%v pathname=%v flags=%v mode=%v, (%v:)", t, dirfd, pathname, flags, mode, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// fd, _, err := unix.Syscall6(unix.SYS_OPENAT, uintptr(dirfd), pathname, uintptr(flags), uintptr(mode), 0, 0)
 	// if err != 0 {
 	// 	t.setErrno(err)
@@ -476,7 +476,7 @@ func Xfchmodat(t *TLS, dirfd int32, pathname uintptr, mode types.Mode_t, flags i
 		trc("t=%v dirfd=%v pathname=%v mode=%v flags=%v, (%v:)", t, dirfd, pathname, mode, flags, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/syscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/syscall_linux.go
 	// // Linux fchmodat doesn't support the flags parameter. Mimick glibc's behavior
 	// // and check the flags. Otherwise the mode would be applied to the symlink
 	// // destination which is not what the user expects.
@@ -488,7 +488,7 @@ func Xfchmodat(t *TLS, dirfd int32, pathname uintptr, mode types.Mode_t, flags i
 	// 	return -1
 	// }
 
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall(unix.SYS_FCHMODAT, uintptr(dirfd), pathname, uintptr(mode)); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -1883,7 +1883,7 @@ func Xmkdirat(t *TLS, dirfd int32, pathname uintptr, mode types.Mode_t) int32 {
 	if __ccgo_strace {
 		trc("t=%v dirfd=%v pathname=%v mode=%v, (%v:)", t, dirfd, pathname, mode, origin(2))
 	}
-	// From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	panic(todo(""))
 	// if _, _, err := unix.Syscall(unix.SYS_MKDIRAT, uintptr(dirfd), pathname, uintptr(mode)); err != 0 {
 	// 	t.setErrno(err)
@@ -1899,7 +1899,7 @@ func Xsymlinkat(t *TLS, target uintptr, newdirfd int32, linkpath uintptr) int32 
 		trc("t=%v target=%v newdirfd=%v linkpath=%v, (%v:)", t, target, newdirfd, linkpath, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall(unix.SYS_SYMLINKAT, target, uintptr(newdirfd), linkpath); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -1914,7 +1914,7 @@ func Xutimensat(t *TLS, dirfd int32, pathname, times uintptr, flags int32) int32
 		trc("t=%v dirfd=%v times=%v flags=%v, (%v:)", t, dirfd, times, flags, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall6(unix.SYS_UTIMENSAT, uintptr(dirfd), pathname, times, uintptr(flags), 0, 0); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -1929,7 +1929,7 @@ func Xunlinkat(t *TLS, dirfd int32, pathname uintptr, flags int32) int32 {
 		trc("t=%v dirfd=%v pathname=%v flags=%v, (%v:)", t, dirfd, pathname, flags, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall(unix.SYS_UNLINKAT, uintptr(dirfd), pathname, uintptr(flags)); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -1944,7 +1944,7 @@ func Xfaccessat(t *TLS, dirfd int32, pathname uintptr, mode, flags int32) int32 
 		trc("t=%v dirfd=%v pathname=%v flags=%v, (%v:)", t, dirfd, pathname, flags, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall(unix.SYS_FACCESSAT, uintptr(dirfd), pathname, uintptr(mode)); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -1959,7 +1959,7 @@ func Xrenameat2(t *TLS, olddirfd int32, oldpath uintptr, newdirfd int32, newpath
 		trc("t=%v olddirfd=%v oldpath=%v newdirfd=%v newpath=%v flags=%v, (%v:)", t, olddirfd, oldpath, newdirfd, newpath, flags, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall6(unix.SYS_RENAMEAT2, uintptr(olddirfd), oldpath, uintptr(newdirfd), newpath, uintptr(flags), 0); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -1974,7 +1974,7 @@ func Xmknodat(t *TLS, dirfd int32, pathname uintptr, mode types.Mode_t, dev type
 		trc("t=%v dirfd=%v pathname=%v mode=%v dev=%v, (%v:)", t, dirfd, pathname, mode, dev, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall6(unix.SYS_MKNODAT, uintptr(dirfd), pathname, uintptr(mode), uintptr(dev), 0, 0); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -1989,7 +1989,7 @@ func Xfchownat(t *TLS, dirfd int32, pathname uintptr, uid types.Uid_t, gid types
 		trc("t=%v dirfd=%v pathname=%v uid=%v gid=%v flags=%v, (%v:)", t, dirfd, pathname, uid, gid, flags, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall6(unix.SYS_FCHOWNAT, uintptr(dirfd), pathname, uintptr(uid), uintptr(gid), uintptr(flags), 0); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -2004,7 +2004,7 @@ func Xlinkat(t *TLS, olddirfd int32, oldpath uintptr, newdirfd int32, newpath ui
 		trc("t=%v olddirfd=%v oldpath=%v newdirfd=%v newpath=%v flags=%v, (%v:)", t, olddirfd, oldpath, newdirfd, newpath, flags, origin(2))
 	}
 	panic(todo(""))
-	// // From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// // From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	// if _, _, err := unix.Syscall6(unix.SYS_LINKAT, uintptr(olddirfd), oldpath, uintptr(newdirfd), newpath, uintptr(flags), 0); err != 0 {
 	// 	t.setErrno(err)
 	// 	return -1
@@ -2018,7 +2018,7 @@ func Xpipe2(t *TLS, pipefd uintptr, flags int32) int32 {
 	if __ccgo_strace {
 		trc("t=%v pipefd=%v flags=%v, (%v:)", t, pipefd, flags, origin(2))
 	}
-	// From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	panic(todo(""))
 	// if _, _, err := unix.Syscall(unix.SYS_PIPE2, pipefd, uintptr(flags), 0); err != 0 {
 	// 	t.setErrno(t)
@@ -2033,7 +2033,7 @@ func Xdup3(t *TLS, oldfd int32, newfd int32, flags int32) int32 {
 	if __ccgo_strace {
 		trc("t=%v oldfd=%v newfd=%v flags=%v, (%v:)", t, oldfd, newfd, flags, origin(2))
 	}
-	// From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	panic(todo(""))
 	// if _, _, err := unix.Syscall(unix.SYS_DUP3, uintptr(oldfd), uintptr(newfd), uintptr(flags)); err != 0 {
 	// 	t.setErrno(err)
@@ -2048,7 +2048,7 @@ func Xreadlinkat(t *TLS, dirfd int32, pathname, buf uintptr, bufsiz types.Size_t
 	if __ccgo_strace {
 		trc("t=%v dirfd=%v buf=%v bufsiz=%v, (%v:)", t, dirfd, buf, bufsiz, origin(2))
 	}
-	// From github.com/dwertyfa288/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
+	// From github.com/SpherePrime/CLI/vendordeps/x/sys/unix/zsyscall_linux.go
 	panic(todo(""))
 	// n, _, err := unix.Syscall6(unix.SYS_READLINKAT, uintptr(dirfd), pathname, buf, uintptr(bufsiz), 0, 0)
 	// if err != 0 {

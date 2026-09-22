@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio/pkg/guid"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio/pkg/guid"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
-//go:generate go run github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio/tools/mkwinsyscall -output zsyscall_windows.go socket.go
+//go:generate go run github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio/tools/mkwinsyscall -output zsyscall_windows.go socket.go
 
 //sys getsockname(s windows.Handle, name unsafe.Pointer, namelen *int32) (err error) [failretval==socketError] = ws2_32.getsockname
 //sys getpeername(s windows.Handle, name unsafe.Pointer, namelen *int32) (err error) [failretval==socketError] = ws2_32.getpeername
@@ -67,7 +67,7 @@ func Bind(s windows.Handle, rsa RawSockaddr) (err error) {
 	return bind(s, ptr, l)
 }
 
-// "github.com/dwertyfa288/CLI/vendordeps/x/sys/windows".ConnectEx and .Bind only accept internal implementations of the
+// "github.com/SpherePrime/CLI/vendordeps/x/sys/windows".ConnectEx and .Bind only accept internal implementations of the
 // their sockaddr interface, so they cannot be used with HvsockAddr
 // Replicate functionality here from
 // https://cs.opensource.google/go/x/sys/+/master:windows/syscall_windows.go

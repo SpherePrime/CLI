@@ -4,7 +4,7 @@ package ssooidc
 
 import (
 	"context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // Creates and returns access and refresh tokens for clients that are

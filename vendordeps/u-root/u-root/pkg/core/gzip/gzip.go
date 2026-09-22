@@ -14,8 +14,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/core"
-	pkggzip "github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/gzip"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/core"
+	pkggzip "github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/gzip"
 )
 
 // Gzip implements the gzip command.

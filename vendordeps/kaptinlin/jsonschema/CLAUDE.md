@@ -139,9 +139,9 @@ task bench                           # Package benchmarks
 | Dependency | Purpose |
 |------------|---------|
 | `encoding/json/v2` | Standard library JSON encoder/decoder backend and streaming support. |
-| `github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonpointer` | JSON Pointer parsing and reference resolution. |
+| `github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonpointer` | JSON Pointer parsing and reference resolution. |
 | `github.com/kaptinlin/go-i18n` | Localized validation messages and result rendering. |
-| `github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml` | YAML decoding support for content-related workflows. |
+| `github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml` | YAML decoding support for content-related workflows. |
 
 ## Error Handling
 

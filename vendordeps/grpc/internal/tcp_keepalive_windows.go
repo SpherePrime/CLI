@@ -24,7 +24,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 // NetDialerWithTCPKeepalive returns a net.Dialer that enables TCP keepalives on

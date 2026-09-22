@@ -14,9 +14,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/vendordeps/yaml.v3"
+	"github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/yaml.v3"
 )
 
 const (

@@ -21,7 +21,7 @@
 package networktype
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 // keyType is the key to use for storing State in Attributes.

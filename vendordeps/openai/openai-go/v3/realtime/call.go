@@ -10,12 +10,12 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apiform"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
-	shimjson "github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apiform"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
+	shimjson "github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
 )
 
 // CallService contains methods and other services that help with interacting with

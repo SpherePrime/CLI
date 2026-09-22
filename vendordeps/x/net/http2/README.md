@@ -1,4 +1,4 @@
-This package (github.com/dwertyfa288/CLI/vendordeps/x/net/http2) is the original source of truth
+This package (github.com/SpherePrime/CLI/vendordeps/x/net/http2) is the original source of truth
 of the Go HTTP/2 implementation.
 
 As of Go 1.27, the source of truth has moved to the standard library

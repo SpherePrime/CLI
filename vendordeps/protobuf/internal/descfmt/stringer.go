@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/detrand"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/pragma"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/detrand"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/pragma"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 type list interface {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	textm "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/text"
+	textm "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/text"
 )
 
 // A BaseBlock struct implements the Node interface partialliy.

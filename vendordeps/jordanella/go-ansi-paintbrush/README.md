@@ -28,7 +28,7 @@ I'm always looking to improve ANSI Paintbrush. Some features being considering f
 ### Installation
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/jordanella/go-ansi-paintbrush
+go get github.com/SpherePrime/CLI/vendordeps/jordanella/go-ansi-paintbrush
 ```
 
 ### Quickstart
@@ -40,7 +40,7 @@ import (
     "fmt"
 	_ "image/png"
 
-    "github.com/dwertyfa288/CLI/vendordeps/jordanella/go-ansi-paintbrush"
+    "github.com/SpherePrime/CLI/vendordeps/jordanella/go-ansi-paintbrush"
 )
 
 func main() {

@@ -19,14 +19,14 @@
 // Package metadata define the structure of the metadata supported by gRPC library.
 // Please refer to https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
 // for more information about custom-metadata.
-package metadata // import "github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
+package metadata // import "github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
 )
 
 func init() {

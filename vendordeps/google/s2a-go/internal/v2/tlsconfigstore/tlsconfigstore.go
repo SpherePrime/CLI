@@ -26,15 +26,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/v2/certverifier"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/v2/remotesigner"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/stream"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/v2/certverifier"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/v2/remotesigner"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/stream"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 
-	commonpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/v2/common_go_proto"
-	s2av2pb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/v2/s2a_go_proto"
+	commonpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/v2/common_go_proto"
+	s2av2pb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/v2/s2a_go_proto"
 )
 
 const (
@@ -263,7 +263,7 @@ func getTLSClientAuthType(tlsConfig *s2av2pb.GetTlsConfigurationResp_ServerTlsCo
 		// mapping triggers normal verification, followed by custom verification,
 		// specified in VerifyPeerCertificate. To bypass normal verification, and
 		// only do custom verification we set clientAuth to RequireAnyClientCert or
-		// RequestClientCert. See https://github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/pull/43 for full
+		// RequestClientCert. See https://github.com/SpherePrime/CLI/vendordeps/google/s2a-go/pull/43 for full
 		// discussion.
 		clientAuth = tls.RequireAnyClientCert
 	case s2av2pb.GetTlsConfigurationResp_ServerTlsConfiguration_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_BUT_DONT_VERIFY:
@@ -273,7 +273,7 @@ func getTLSClientAuthType(tlsConfig *s2av2pb.GetTlsConfigurationResp_ServerTlsCo
 		// mapping triggers normal verification, followed by custom verification,
 		// specified in VerifyPeerCertificate. To bypass normal verification, and
 		// only do custom verification we set clientAuth to RequireAnyClientCert or
-		// RequestClientCert. See https://github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/pull/43 for full
+		// RequestClientCert. See https://github.com/SpherePrime/CLI/vendordeps/google/s2a-go/pull/43 for full
 		// discussion.
 		clientAuth = tls.RequireAnyClientCert
 	default:

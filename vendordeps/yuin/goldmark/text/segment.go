@@ -3,7 +3,7 @@ package text
 import (
 	"bytes"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 var space = []byte(" ")

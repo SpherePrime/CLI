@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // A HeadingElement is used to render headings.

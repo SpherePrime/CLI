@@ -1,6 +1,6 @@
 SOURCE = parser.go
 CONTAINER = jsonparser
-SOURCE_PATH = /go/src/github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser
+SOURCE_PATH = /go/src/github.com/SpherePrime/CLI/vendordeps/buger/jsonparser
 BENCHMARK = JsonParser
 BENCHTIME = 5s
 TEST = .

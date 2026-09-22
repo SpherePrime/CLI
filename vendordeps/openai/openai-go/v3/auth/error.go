@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/shared"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/shared"
 )
 
 // SubjectTokenProviderError is raised when failing to get the subject token from the cloud environment.

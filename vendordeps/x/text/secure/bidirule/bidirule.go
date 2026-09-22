@@ -12,8 +12,8 @@ import (
 	"errors"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/transform"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/unicode/bidi"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/transform"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/unicode/bidi"
 )
 
 // This file contains an implementation of RFC 5893: Right-to-Left Scripts for

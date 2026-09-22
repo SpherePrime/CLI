@@ -1,7 +1,7 @@
 package json
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/errors"
 )
 
 // Before Go 1.2, an InvalidUTF8Error was returned by Marshal when

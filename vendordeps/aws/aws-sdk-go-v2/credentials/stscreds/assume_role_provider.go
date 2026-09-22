@@ -104,9 +104,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts/types"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts/types"
 )
 
 // StdinTokenProvider will prompt on stdout and read from stdin for a string value.

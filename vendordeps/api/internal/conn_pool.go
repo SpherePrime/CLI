@@ -5,7 +5,7 @@
 package internal
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
 )
 
 // ConnPool is a pool of grpc.ClientConns.

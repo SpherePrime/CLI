@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
 )
 
 //go:embed *.xml

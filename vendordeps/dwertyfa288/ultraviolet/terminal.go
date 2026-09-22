@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sync/errgroup"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/x/sync/errgroup"
 )
 
 // DefaultBufferSize is the default size of the input buffer used for reading

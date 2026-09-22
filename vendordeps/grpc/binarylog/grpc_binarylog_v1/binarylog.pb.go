@@ -25,10 +25,10 @@
 package grpc_binarylog_v1
 
 import (
-	protoreflect "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	protoimpl "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoimpl"
-	durationpb "github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/durationpb"
-	timestamppb "github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/timestamppb"
+	protoreflect "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	protoimpl "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoimpl"
+	durationpb "github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/durationpb"
+	timestamppb "github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"

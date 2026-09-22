@@ -7,7 +7,7 @@ package base64
 import (
 	"encoding/base64"
 
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/internal/unsafebytes"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/internal/unsafebytes"
 )
 
 // An Encoding is a radix 64 encoding/decoding scheme, defined by a

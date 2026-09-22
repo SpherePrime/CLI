@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/slice"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/slice"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2"
 )
 
 // Error is a custom error type for the fantasy package.

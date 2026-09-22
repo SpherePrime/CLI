@@ -3,7 +3,7 @@ package skills
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestTracker_MarkLoadedAndIsLoaded(t *testing.T) {

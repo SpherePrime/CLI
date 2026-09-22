@@ -6,11 +6,11 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/cases"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 // ColorScheme describes a colorscheme.

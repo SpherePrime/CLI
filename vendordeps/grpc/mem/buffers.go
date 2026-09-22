@@ -30,7 +30,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/mem"
 )
 
 // A Buffer represents a reference counted piece of data (in bytes) that can be

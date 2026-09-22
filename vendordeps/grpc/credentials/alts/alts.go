@@ -31,13 +31,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	core "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal/handshaker"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal/handshaker/service"
-	altspb "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal/proto/grpc_gcp"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/googlecloud"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	core "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal/handshaker"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal/handshaker/service"
+	altspb "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal/proto/grpc_gcp"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/googlecloud"
 )
 
 const (

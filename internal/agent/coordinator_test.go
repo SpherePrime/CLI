@@ -7,15 +7,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/anthropic"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/bedrock"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openaicompat"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/discover"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/bedrock"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openaicompat"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/discover"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // mockSessionAgent is a minimal mock for the SessionAgent interface.

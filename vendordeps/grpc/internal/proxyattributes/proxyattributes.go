@@ -23,7 +23,7 @@ package proxyattributes
 import (
 	"net/url"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 type keyType string

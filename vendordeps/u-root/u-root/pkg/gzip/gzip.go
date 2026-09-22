@@ -9,7 +9,7 @@ package gzip
 import (
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip"
 )
 
 // Compress takes input from io.Reader and deflates it using pgzip

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/database/dialect"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/internal/dialects"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/database/dialect"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/internal/dialects"
 )
 
 // Dialect is the type of database dialect.

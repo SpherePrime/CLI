@@ -38,8 +38,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/callctx"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/callctx"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
 )
 
 var (
@@ -104,7 +104,7 @@ func goVersion() string {
 }
 
 // XGoogHeader is for use by the Google Cloud Libraries only. See package
-// [github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/callctx] for help setting/retrieving
+// [github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/callctx] for help setting/retrieving
 // request/response headers.
 //
 // XGoogHeader formats key-value pairs.
@@ -127,7 +127,7 @@ func XGoogHeader(keyval ...string) string {
 }
 
 // InsertMetadataIntoOutgoingContext is for use by the Google Cloud Libraries
-// only. See package [github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/callctx] for help
+// only. See package [github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/callctx] for help
 // setting/retrieving request/response headers.
 //
 // InsertMetadataIntoOutgoingContext returns a new context that merges the
@@ -141,7 +141,7 @@ func InsertMetadataIntoOutgoingContext(ctx context.Context, keyvals ...string) c
 }
 
 // BuildHeaders is for use by the Google Cloud Libraries only. See package
-// [github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/callctx] for help setting/retrieving
+// [github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/callctx] for help setting/retrieving
 // request/response headers.
 //
 // BuildHeaders returns a new http.Header that merges the provided

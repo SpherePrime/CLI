@@ -12,11 +12,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/filepathext"
-	"github.com/dwertyfa288/CLI/internal/home"
-	"github.com/dwertyfa288/CLI/internal/shell"
-	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/filepathext"
+	"github.com/SpherePrime/CLI/internal/home"
+	"github.com/SpherePrime/CLI/internal/shell"
+	"github.com/SpherePrime/CLI/internal/skills"
 )
 
 // Prompt represents a template-based prompt generator.

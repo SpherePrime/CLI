@@ -1,8 +1,8 @@
 package x86
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu/cpuid"
-	. "github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu/cpuid"
+	. "github.com/SpherePrime/CLI/vendordeps/x/sys/cpu"
 )
 
 type CPU cpuid.CPU
@@ -47,12 +47,12 @@ const (
 
 func ABI() CPU {
 	cpu := CPU(0)
-	cpu.set(SSE, true) // TODO: github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu assumes all CPUs have SEE?
+	cpu.set(SSE, true) // TODO: github.com/SpherePrime/CLI/vendordeps/x/sys/cpu assumes all CPUs have SEE?
 	cpu.set(SSE2, X86.HasSSE2)
 	cpu.set(SSE3, X86.HasSSE3)
 	cpu.set(SSE41, X86.HasSSE41)
 	cpu.set(SSE42, X86.HasSSE42)
-	cpu.set(SSE4A, false) // TODO: add upstream support in github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu?
+	cpu.set(SSE4A, false) // TODO: add upstream support in github.com/SpherePrime/CLI/vendordeps/x/sys/cpu?
 	cpu.set(SSSE3, X86.HasSSSE3)
 	cpu.set(AVX, X86.HasAVX)
 	cpu.set(AVX2, X86.HasAVX2)
@@ -69,8 +69,8 @@ func ABI() CPU {
 	cpu.set(AVX512VBMI2, X86.HasAVX512VBMI2)
 	cpu.set(AVX512VL, X86.HasAVX512VL)
 	cpu.set(AVX512VNNI, X86.HasAVX512VNNI)
-	cpu.set(AVX512VP2INTERSECT, false) // TODO: add upstream support in github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu?
+	cpu.set(AVX512VP2INTERSECT, false) // TODO: add upstream support in github.com/SpherePrime/CLI/vendordeps/x/sys/cpu?
 	cpu.set(AVX512VPOPCNTDQ, X86.HasAVX512VPOPCNTDQ)
-	cpu.set(CMOV, true) // TODO: github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu assumes all CPUs have CMOV?
+	cpu.set(CMOV, true) // TODO: github.com/SpherePrime/CLI/vendordeps/x/sys/cpu assumes all CPUs have CMOV?
 	return cpu
 }

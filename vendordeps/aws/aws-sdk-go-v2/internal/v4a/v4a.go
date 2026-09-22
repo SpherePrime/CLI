@@ -20,10 +20,10 @@ import (
 	"strings"
 	"time"
 
-	signerCrypto "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/v4a/internal/crypto"
-	v4Internal "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/v4a/internal/v4"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/encoding/httpbinding"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
+	signerCrypto "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/v4a/internal/crypto"
+	v4Internal "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/v4a/internal/v4"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/encoding/httpbinding"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
 )
 
 const (

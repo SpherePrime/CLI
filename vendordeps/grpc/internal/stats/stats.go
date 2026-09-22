@@ -21,7 +21,7 @@ package stats
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/stats"
 )
 
 type combinedHandler struct {

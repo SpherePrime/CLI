@@ -22,7 +22,7 @@ package stream
 import (
 	"context"
 
-	s2av2pb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/v2/s2a_go_proto"
+	s2av2pb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/v2/s2a_go_proto"
 )
 
 // S2AStream defines the operation for communicating with the S2A server over a bidirectional stream.

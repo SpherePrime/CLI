@@ -6,15 +6,15 @@ import (
 	"image/color"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/internal/ui/diffview"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/filepicker"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textarea"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/ui/diffview"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/filepicker"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textarea"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 const (

@@ -7,10 +7,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/internal/autolink"
-	east "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
-	astext "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/extension/ast"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2/internal/autolink"
+	east "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
+	astext "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/extension/ast"
 )
 
 // ElementRenderer is called when entering a markdown node.

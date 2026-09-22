@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
 )
 
 var isWindows = runtime.GOOS == "windows"

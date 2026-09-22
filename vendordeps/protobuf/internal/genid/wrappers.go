@@ -4,7 +4,7 @@
 
 package genid
 
-import "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+import "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 
 // Generic field name and number for messages in wrappers.proto.
 const (

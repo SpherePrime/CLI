@@ -12,7 +12,7 @@
 // The fixed heap is initially filled with random bytes from a full cycle PRNG,
 // program startup time is substantially prolonged.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/mathutil"
+	"github.com/SpherePrime/CLI/vendordeps/mathutil"
 )
 
 const (

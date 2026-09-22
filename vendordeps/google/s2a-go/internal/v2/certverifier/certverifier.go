@@ -23,11 +23,11 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/stream"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/stream"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 
-	s2av2pb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/v2/s2a_go_proto"
+	s2av2pb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/v2/s2a_go_proto"
 )
 
 // VerifyClientCertificateChain builds a SessionReq, sends it to S2Av2 and

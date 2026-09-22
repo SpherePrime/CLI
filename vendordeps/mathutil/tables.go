@@ -4,7 +4,7 @@
 
 // "Static" data
 
-package mathutil // import "github.com/dwertyfa288/CLI/vendordeps/mathutil"
+package mathutil // import "github.com/SpherePrime/CLI/vendordeps/mathutil"
 
 var (
 	// Set bits count in a byte

@@ -7,7 +7,7 @@ package protoreflect
 import (
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/pragma"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/pragma"
 )
 
 type (

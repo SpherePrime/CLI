@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/client"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/server"
-	"github.com/dwertyfa288/CLI/internal/uninstall"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/internal/client"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/server"
+	"github.com/SpherePrime/CLI/internal/uninstall"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 var uninstallCmd = &cobra.Command{

@@ -6,7 +6,7 @@
 
 package chacha20
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu"
+import "github.com/SpherePrime/CLI/vendordeps/x/sys/cpu"
 
 var haveAsm = cpu.S390X.HasVX
 

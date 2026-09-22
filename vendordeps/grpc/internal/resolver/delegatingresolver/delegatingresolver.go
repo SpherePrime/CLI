@@ -27,13 +27,13 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/envconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/proxyattributes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/transport"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/transport/networktype"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/envconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/proxyattributes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/transport"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/transport/networktype"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
 )
 
 var (

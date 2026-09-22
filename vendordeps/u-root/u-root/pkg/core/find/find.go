@@ -14,8 +14,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/core"
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/ls"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/core"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/ls"
 )
 
 // File is a found file.

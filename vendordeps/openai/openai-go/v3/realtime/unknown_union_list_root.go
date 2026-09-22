@@ -4,7 +4,7 @@ package realtime
 
 import (
 	"bytes"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
 )
 
 func (r *RealtimeToolsConfigParam) UnmarshalJSON(data []byte) error {

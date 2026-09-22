@@ -14,9 +14,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 
-	"github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio/internal/fs"
+	"github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio/internal/fs"
 )
 
 //sys connectNamedPipe(pipe windows.Handle, o *windows.Overlapped) (err error) = ConnectNamedPipe

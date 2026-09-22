@@ -3,7 +3,7 @@ package xxh3
 import (
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/cpuid/v2"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/cpuid/v2"
 )
 
 var (

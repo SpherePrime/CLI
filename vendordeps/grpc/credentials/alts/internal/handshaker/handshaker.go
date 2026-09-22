@@ -27,16 +27,16 @@ import (
 	"net"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sync/semaphore"
-	grpc "github.com/dwertyfa288/CLI/vendordeps/grpc"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	core "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal/authinfo"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal/conn"
-	altsgrpc "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal/proto/grpc_gcp"
-	altspb "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal/proto/grpc_gcp"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/envconfig"
+	"github.com/SpherePrime/CLI/vendordeps/x/sync/semaphore"
+	grpc "github.com/SpherePrime/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	core "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal/authinfo"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal/conn"
+	altsgrpc "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal/proto/grpc_gcp"
+	altspb "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal/proto/grpc_gcp"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/envconfig"
 )
 
 const (

@@ -124,7 +124,7 @@ external-changelog:
 	cp changelog-template.json .changelog/00000000-0000-0000-0000-000000000000.json
 	@echo "Generate a new UUID and update the file at .changelog/00000000-0000-0000-0000-000000000000.json"
 	@echo "Make sure to rename the file with your new id, like .changelog/12345678-1234-1234-1234-123456789012.json"
-	@echo "See CONTRIBUTING.md 'Changelog Documents' and an example at https://github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/pull/543/files"
+	@echo "See CONTRIBUTING.md 'Changelog Documents' and an example at https://github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/pull/543/files"
 
 install-changelog:
 	go install ${REPOTOOLS_MODULE}/cmd/changelog@${REPOTOOLS_VERSION}

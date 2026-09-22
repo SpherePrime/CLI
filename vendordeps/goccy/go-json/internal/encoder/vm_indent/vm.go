@@ -7,8 +7,8 @@ import (
 	"sort"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/runtime"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/runtime"
 )
 
 func Run(ctx *encoder.RuntimeContext, b []byte, codeSet *encoder.OpcodeSet) ([]byte, error) {

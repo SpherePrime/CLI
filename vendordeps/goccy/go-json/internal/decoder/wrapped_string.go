@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/runtime"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/runtime"
 )
 
 type wrappedStringDecoder struct {

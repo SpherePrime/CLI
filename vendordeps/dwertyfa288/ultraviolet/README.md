@@ -3,8 +3,8 @@
 <img width="400" alt="Charm Ultraviolet" src="https://github.com/user-attachments/assets/3484e4b0-3741-4e8c-bebf-9ea51f5bb49c" />
 
 <p>
-    <a href="https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet?tab=doc"><img src="https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet?status.svg" alt="GoDoc"></a>
-    <a href="https://github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet/actions"><img src="https://github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
+    <a href="https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet?tab=doc"><img src="https://godoc.org/github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet?status.svg" alt="GoDoc"></a>
+    <a href="https://github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/actions"><img src="https://github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
 </p>
 
 Ultraviolet is a set of primitives for building terminal user interfaces in Go.
@@ -22,7 +22,7 @@ that can also be used standalone.
 ## Install
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet@latest
+go get github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet@latest
 ```
 
 ## Quick Start
@@ -33,8 +33,8 @@ package main
 import (
 	"log"
 
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet/screen"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/screen"
 )
 
 func main() {

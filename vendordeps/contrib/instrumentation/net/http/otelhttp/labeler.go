@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
 )
 
 // Labeler is used to allow instrumented HTTP handlers to add custom attributes to

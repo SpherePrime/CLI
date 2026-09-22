@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aymanbagabas/go-udiff/lcs"
+	"github.com/SpherePrime/CLI/vendordeps/aymanbagabas/go-udiff/lcs"
 )
 
 // Lines computes differences between two strings. All edits are at line boundaries.

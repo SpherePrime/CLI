@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image/color"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
+	"github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful"
 )
 
 // HexColor is a [color.Color] that can be formatted as a hex string.

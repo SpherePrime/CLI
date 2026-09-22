@@ -1,7 +1,7 @@
 package completions
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 )
 
 // KeyMap defines the key bindings for the completions component.

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/dwertyfa288/CLI/vendordeps/multierr"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sync/errgroup"
+	"github.com/SpherePrime/CLI/vendordeps/multierr"
+	"github.com/SpherePrime/CLI/vendordeps/x/sync/errgroup"
 )
 
 type ParsedSQL struct {

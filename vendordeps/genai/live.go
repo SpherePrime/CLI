@@ -24,7 +24,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/gorilla/websocket"
+	"github.com/SpherePrime/CLI/vendordeps/gorilla/websocket"
 )
 
 // Preview. Live serves as the entry point for establishing real-time WebSocket

@@ -6,7 +6,7 @@ package trace
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded"
 )
 
 // Tracer is the creator of Spans.

@@ -21,8 +21,8 @@ package mem
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/mem"
 )
 
 // BufferPool is a pool of buffers that can be shared and reused, resulting in

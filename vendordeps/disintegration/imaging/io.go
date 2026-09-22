@@ -14,8 +14,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/bmp"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/tiff"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/bmp"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/tiff"
 )
 
 type fileSystem interface {

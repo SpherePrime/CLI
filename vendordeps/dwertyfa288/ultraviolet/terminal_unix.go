@@ -4,8 +4,8 @@
 package uv
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/termios"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/termios"
 )
 
 func makeRaw(inTty, outTty term.File) (inTtyState, outTtyState *term.State, err error) {

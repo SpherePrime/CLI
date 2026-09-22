@@ -20,14 +20,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/impersonate"
-	intexternalaccount "github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/externalaccount"
-	intimpersonate "github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/impersonate"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/credsfile"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/impersonate"
+	intexternalaccount "github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/externalaccount"
+	intimpersonate "github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/impersonate"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/credsfile"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 const (

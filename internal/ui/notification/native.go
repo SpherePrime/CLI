@@ -3,7 +3,7 @@ package notification
 import (
 	"log/slog"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 // NativeBackend sends desktop notifications using the native OS notification

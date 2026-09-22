@@ -21,7 +21,7 @@ Remove access tokens, private keys, credential-bearing headers and URLs, and
 other sensitive diagnostics before sharing reproduction details.
 
 This policy covers the source code in this repository, official OpenAI Go SDK
-modules such as `github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3`, and official tagged SDK release
+modules such as `github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3`, and official tagged SDK release
 artifacts. Security issues affecting other OpenAI services may also be reported
 through the same private channel.
 

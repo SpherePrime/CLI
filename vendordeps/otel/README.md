@@ -2,8 +2,8 @@
 
 [![ci](https://github.com/open-telemetry/opentelemetry-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/open-telemetry/opentelemetry-go/actions/workflows/ci.yml)
 [![codecov.io](https://codecov.io/gh/open-telemetry/opentelemetry-go/coverage.svg?branch=main)](https://app.codecov.io/gh/open-telemetry/opentelemetry-go?branch=main)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/otel)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/otel)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/otel)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/otel)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/otel)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/otel)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/open-telemetry/opentelemetry-go/badge)](https://scorecard.dev/viewer/?uri=github.com/open-telemetry/opentelemetry-go)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9996/badge)](https://www.bestpractices.dev/projects/9996)
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/opentelemetry-go.svg)](https://issues.oss-fuzz.com/issues?q=project:opentelemetry-go)
@@ -99,7 +99,7 @@ libraries](https://github.com/open-telemetry/opentelemetry-go-contrib/tree/main/
 If you need to extend the telemetry an instrumentation library provides or want
 to build your own instrumentation for your application directly you will need
 to use the
-[Go otel](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel)
+[Go otel](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel)
 package. The [examples](https://github.com/open-telemetry/opentelemetry-go-contrib/tree/main/examples)
 are a good way to see some practical uses of this process.
 

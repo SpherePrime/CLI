@@ -19,9 +19,9 @@
 package grpc
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // PreparedMsg is responsible for creating a Marshalled and Compressed object.

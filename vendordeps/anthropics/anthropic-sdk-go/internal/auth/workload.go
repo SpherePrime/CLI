@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal"
 )
 
 // MaxAssertionSize bounds the JWT sent to /v1/oauth/token. Honest OIDC

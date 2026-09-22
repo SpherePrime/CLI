@@ -27,11 +27,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2/hpack"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/envconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2/hpack"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/envconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
 )
 
 var updateHeaderTblSize = func(e *hpack.Encoder, v uint32) {

@@ -23,4 +23,4 @@ Package grpc implements an RPC system called gRPC.
 
 See grpc.io for more information about gRPC.
 */
-package grpc // import "github.com/dwertyfa288/CLI/vendordeps/grpc"
+package grpc // import "github.com/SpherePrime/CLI/vendordeps/grpc"

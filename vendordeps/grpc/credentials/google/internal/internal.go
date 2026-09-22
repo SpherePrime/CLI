@@ -20,9 +20,9 @@
 package internal
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/idtoken"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/backoff"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/idtoken"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/backoff"
 )
 
 // The following variables are overridden in tests.

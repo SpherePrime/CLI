@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-// Code below this point is copied from github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog
+// Code below this point is copied from github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog
 // to avoid the dependency. The compute/metadata module is used by too many
 // non-client library modules that can't justify the dependency.
 

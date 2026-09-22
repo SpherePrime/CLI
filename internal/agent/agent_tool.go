@@ -5,11 +5,11 @@ import (
 	_ "embed"
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 
-	"github.com/dwertyfa288/CLI/internal/agent/prompt"
-	"github.com/dwertyfa288/CLI/internal/agent/tools"
-	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/agent/prompt"
+	"github.com/SpherePrime/CLI/internal/agent/tools"
+	"github.com/SpherePrime/CLI/internal/config"
 )
 
 //go:embed templates/agent_tool.md

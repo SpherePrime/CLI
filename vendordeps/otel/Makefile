@@ -40,12 +40,12 @@ $(TOOLS)/crosslink: PACKAGE=go.opentelemetry.io/build-tools/crosslink
 
 SEMCONVKIT = $(TOOLS)/semconvkit
 SEMCONVKIT_FILES := $(sort $(shell find $(TOOLS_MOD_DIR)/semconvkit -type f))
-$(TOOLS)/semconvkit: PACKAGE=github.com/dwertyfa288/CLI/vendordeps/otel/$(TOOLS_MOD_DIR)/semconvkit
+$(TOOLS)/semconvkit: PACKAGE=github.com/SpherePrime/CLI/vendordeps/otel/$(TOOLS_MOD_DIR)/semconvkit
 $(TOOLS)/semconvkit: $(SEMCONVKIT_FILES)
 
 VERIFYREADMES = $(TOOLS)/verifyreadmes
 VERIFYREADMES_FILES := $(sort $(shell find $(TOOLS_MOD_DIR)/verifyreadmes -type f))
-$(TOOLS)/verifyreadmes: PACKAGE=github.com/dwertyfa288/CLI/vendordeps/otel/$(TOOLS_MOD_DIR)/verifyreadmes
+$(TOOLS)/verifyreadmes: PACKAGE=github.com/SpherePrime/CLI/vendordeps/otel/$(TOOLS_MOD_DIR)/verifyreadmes
 $(TOOLS)/verifyreadmes: $(VERIFYREADMES_FILES)
 
 GOLANGCI_LINT = $(TOOLS)/golangci-lint
@@ -64,14 +64,14 @@ GOTMPL = $(TOOLS)/gotmpl
 $(GOTMPL): PACKAGE=go.opentelemetry.io/build-tools/gotmpl
 
 GORELEASE = $(TOOLS)/gorelease
-$(GORELEASE): PACKAGE=github.com/dwertyfa288/CLI/vendordeps/x/exp/cmd/gorelease
+$(GORELEASE): PACKAGE=github.com/SpherePrime/CLI/vendordeps/x/exp/cmd/gorelease
 
 GOVULNCHECK = $(TOOLS)/govulncheck
 $(TOOLS)/govulncheck: PACKAGE=golang.org/x/vuln/cmd/govulncheck
 
 AFFECTEDMODS = $(TOOLS)/affectedmods
 AFFECTEDMODS_FILES := $(sort $(shell find $(TOOLS_MOD_DIR)/affectedmods -type f))
-$(TOOLS)/affectedmods: PACKAGE=github.com/dwertyfa288/CLI/vendordeps/otel/$(TOOLS_MOD_DIR)/affectedmods
+$(TOOLS)/affectedmods: PACKAGE=github.com/SpherePrime/CLI/vendordeps/otel/$(TOOLS_MOD_DIR)/affectedmods
 $(TOOLS)/affectedmods: $(AFFECTEDMODS_FILES)
 
 .PHONY: tools
@@ -180,7 +180,7 @@ test-coverage: $(GOCOVMERGE)
 	@set -e; \
 	printf "" > coverage.txt; \
 	for dir in $(ALL_COVERAGE_MOD_DIRS); do \
-	  echo "$(GO) test -coverpkg=github.com/dwertyfa288/CLI/vendordeps/otel/... -covermode=$(COVERAGE_MODE) -coverprofile="$(COVERAGE_PROFILE)" $${dir}/..."; \
+	  echo "$(GO) test -coverpkg=github.com/SpherePrime/CLI/vendordeps/otel/... -covermode=$(COVERAGE_MODE) -coverprofile="$(COVERAGE_PROFILE)" $${dir}/..."; \
 	  (cd "$${dir}" && \
 	    $(GO) list ./... \
 	    | grep -v third_party \

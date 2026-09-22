@@ -10,7 +10,7 @@
 //
 // NOTE: UNDER CONSTRUCTION. This API may change in backwards incompatible ways
 // and without notice.
-package bidi // import "github.com/dwertyfa288/CLI/vendordeps/x/text/unicode/bidi"
+package bidi // import "github.com/SpherePrime/CLI/vendordeps/x/text/unicode/bidi"
 
 // TODO
 // - Transformer for reordering?

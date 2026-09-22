@@ -22,12 +22,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/compute"
-	"github.com/dwertyfa288/CLI/vendordeps/x/time/rate"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
-	grpcgoogle "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/google"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/compute"
+	"github.com/SpherePrime/CLI/vendordeps/x/time/rate"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
+	grpcgoogle "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/google"
 )
 
 var logRateLimiter = rate.Sometimes{Interval: 1 * time.Second}

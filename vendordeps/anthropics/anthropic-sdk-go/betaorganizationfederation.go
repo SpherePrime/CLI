@@ -3,7 +3,7 @@
 package anthropic
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
 )
 
 // BetaOrganizationFederationService contains methods and other services that help

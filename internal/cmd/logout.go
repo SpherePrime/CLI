@@ -7,11 +7,11 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/dwertyfa288/CLI/internal/client"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/logout"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/internal/client"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/logout"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 // providerDisplayNames maps OAuth-capable provider IDs to display names.

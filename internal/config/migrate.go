@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 )
 
 // schemaKey is the editor-facing pointer kept in the catch-all file so every

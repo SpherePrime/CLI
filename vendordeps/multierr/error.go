@@ -138,7 +138,7 @@
 //	} else {
 //		errors = []error{err}
 //	}
-package multierr // import "github.com/dwertyfa288/CLI/vendordeps/multierr"
+package multierr // import "github.com/SpherePrime/CLI/vendordeps/multierr"
 
 import (
 	"bytes"

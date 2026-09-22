@@ -1,8 +1,8 @@
 # logfmt
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/go-logfmt/logfmt.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt)
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-logfmt/logfmt.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt)
 [![Go Report Card](https://goreportcard.com/badge/go-logfmt/logfmt)](https://goreportcard.com/report/go-logfmt/logfmt)
-[![Github Actions](https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/actions/workflows/test.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/actions/workflows/test.yml)
+[![Github Actions](https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/actions/workflows/test.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/actions/workflows/test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/go-logfmt/logfmt/badge.svg?branch=master)](https://coveralls.io/github/go-logfmt/logfmt?branch=main)
 
 Package logfmt implements utilities to marshal and unmarshal data in the [logfmt

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"errors"
@@ -21,26 +21,26 @@ import (
 	"unicode"
 	"unsafe"
 
-	guuid "github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fcntl"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fts"
-	gonetdb "github.com/dwertyfa288/CLI/vendordeps/libc/honnef.co/go/netdb"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/langinfo"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/limits"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/netdb"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/netinet/in"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/pthread"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/signal"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/stdio"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/socket"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/stat"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/termios"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/time"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/unistd"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/uuid"
+	guuid "github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fcntl"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fts"
+	gonetdb "github.com/SpherePrime/CLI/vendordeps/libc/honnef.co/go/netdb"
+	"github.com/SpherePrime/CLI/vendordeps/libc/langinfo"
+	"github.com/SpherePrime/CLI/vendordeps/libc/limits"
+	"github.com/SpherePrime/CLI/vendordeps/libc/netdb"
+	"github.com/SpherePrime/CLI/vendordeps/libc/netinet/in"
+	"github.com/SpherePrime/CLI/vendordeps/libc/pthread"
+	"github.com/SpherePrime/CLI/vendordeps/libc/signal"
+	"github.com/SpherePrime/CLI/vendordeps/libc/stdio"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/socket"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/stat"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/termios"
+	"github.com/SpherePrime/CLI/vendordeps/libc/time"
+	"github.com/SpherePrime/CLI/vendordeps/libc/unistd"
+	"github.com/SpherePrime/CLI/vendordeps/libc/uuid"
 )
 
 var (
@@ -1994,7 +1994,7 @@ func X__inet_ntoa(t *TLS, in1 in.In_addr) uintptr {
 // freebsd mmap(2) syscall encodes the 64-bit off_t differently on 32-bit targets
 // (the off_t spans two argument words and, on arm, needs a PAD word for EABI
 // alignment), so Syscall6 truncates/misaligns it and the mapping faults (SIGBUS,
-// e.g. the SQLite WAL-index). Matches github.com/dwertyfa288/CLI/vendordeps/x/sys/unix's own per-arch mmap.
+// e.g. the SQLite WAL-index). Matches github.com/SpherePrime/CLI/vendordeps/x/sys/unix's own per-arch mmap.
 
 const PTHREAD_MUTEX_DEFAULT = 0
 

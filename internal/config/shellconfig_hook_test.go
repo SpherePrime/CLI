@@ -3,8 +3,8 @@ package config_test
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/hooks"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/hooks"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestShellConfigHookAdd(t *testing.T) {

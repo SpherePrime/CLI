@@ -10,10 +10,10 @@ package httpconv
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric/noop"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/semconv/internal/metricpool"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric/noop"
+	"github.com/SpherePrime/CLI/vendordeps/otel/semconv/internal/metricpool"
 )
 
 // ErrorTypeAttr is an attribute conforming to the error.type semantic

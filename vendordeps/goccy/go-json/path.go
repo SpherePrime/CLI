@@ -3,7 +3,7 @@ package json
 import (
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/decoder"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/decoder"
 )
 
 // CreatePath creates JSON Path.

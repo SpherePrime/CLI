@@ -3,7 +3,7 @@ package ast
 import (
 	"fmt"
 
-	gast "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
+	gast "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
 )
 
 // A TaskCheckBox struct represents a checkbox of a task list.

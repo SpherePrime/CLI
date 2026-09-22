@@ -3,8 +3,8 @@ package retry
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/metrics"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/metrics"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 type attemptMetrics struct {

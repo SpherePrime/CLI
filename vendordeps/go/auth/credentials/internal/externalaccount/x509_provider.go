@@ -29,8 +29,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/transport/cert"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/enterprise-certificate-proxy/client"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/transport/cert"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/enterprise-certificate-proxy/client"
 )
 
 // x509Provider implements the subjectTokenProvider type for x509 workload

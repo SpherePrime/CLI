@@ -21,7 +21,7 @@ package encoding
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
 )
 
 // CodecV2 defines the interface gRPC uses to encode and decode messages. Note

@@ -33,13 +33,13 @@ import (
 	"sync"
 	"time"
 
-	grpclbstate "github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/grpclb/state"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/backoff"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/envconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/resolver/dns/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
+	grpclbstate "github.com/SpherePrime/CLI/vendordeps/grpc/balancer/grpclb/state"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/backoff"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/envconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/resolver/dns/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
 )
 
 var (

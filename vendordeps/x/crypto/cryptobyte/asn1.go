@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/cryptobyte/asn1"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/cryptobyte/asn1"
 )
 
 // This file contains ASN.1-related methods for String and Builder.

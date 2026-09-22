@@ -26,10 +26,10 @@ import (
 	"os"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/jwt"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/jwt"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 )
 
 // TokenSource supplies PerRPCCredentials from an oauth2.TokenSource.

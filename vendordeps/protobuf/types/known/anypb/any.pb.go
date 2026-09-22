@@ -115,10 +115,10 @@
 package anypb
 
 import (
-	proto "github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
-	protoreflect "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	protoregistry "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoregistry"
-	protoimpl "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoimpl"
+	proto "github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
+	protoreflect "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	protoregistry "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoregistry"
+	protoimpl "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	strings "strings"
 	sync "sync"

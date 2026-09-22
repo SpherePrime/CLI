@@ -3,7 +3,7 @@
 
 package eventstreamapi
 
-import smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+import smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 
 // ApplyHTTPTransportFixes applies fixes to the HTTP request for proper event stream functionality.
 //

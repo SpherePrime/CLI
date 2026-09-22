@@ -33,12 +33,12 @@
 //
 // # Benchmarks
 //
-//	jnml@3900x:~/src/github.com/dwertyfa288/CLI/vendordeps/memory$ date ; go version ; go test -run @ -bench . -benchmem |& tee log
+//	jnml@3900x:~/src/github.com/SpherePrime/CLI/vendordeps/memory$ date ; go version ; go test -run @ -bench . -benchmem |& tee log
 //	Mon Sep 25 16:02:02 CEST 2023
 //	go version go1.21.1 linux/amd64
 //	goos: linux
 //	goarch: amd64
-//	pkg: github.com/dwertyfa288/CLI/vendordeps/memory
+//	pkg: github.com/SpherePrime/CLI/vendordeps/memory
 //	cpu: AMD Ryzen 9 3900X 12-Core Processor
 //	BenchmarkFree16-24             	123506772	         9.802 ns/op	       0 B/op	       0 allocs/op
 //	BenchmarkFree32-24             	73853230	        15.08 ns/op	       0 B/op	       0 allocs/op
@@ -62,9 +62,9 @@
 //	BenchmarkUintptrMalloc32-24    	241423840	         4.433 ns/op	       0 B/op	       0 allocs/op
 //	BenchmarkUintptrMalloc64-24    	256450324	         4.669 ns/op	       0 B/op	       0 allocs/op
 //	PASS
-//	ok  	github.com/dwertyfa288/CLI/vendordeps/memory	93.178s
-//	jnml@3900x:~/src/github.com/dwertyfa288/CLI/vendordeps/memory$
-package memory // import "github.com/dwertyfa288/CLI/vendordeps/memory"
+//	ok  	github.com/SpherePrime/CLI/vendordeps/memory	93.178s
+//	jnml@3900x:~/src/github.com/SpherePrime/CLI/vendordeps/memory$
+package memory // import "github.com/SpherePrime/CLI/vendordeps/memory"
 
 import (
 	"fmt"

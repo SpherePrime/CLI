@@ -4,7 +4,7 @@
 
 //go:build unix && !(linux && (amd64 || arm64 || loong64 || ppc64le || s390x || riscv64 || 386 || arm))
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"bufio"
@@ -21,19 +21,19 @@ import (
 	"time"
 	"unsafe"
 
-	guuid "github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-strftime"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/grp"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/limits"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/poll"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/pwd"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/signal"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/stdio"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/stdlib"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	ctime "github.com/dwertyfa288/CLI/vendordeps/libc/time"
+	guuid "github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-strftime"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/grp"
+	"github.com/SpherePrime/CLI/vendordeps/libc/limits"
+	"github.com/SpherePrime/CLI/vendordeps/libc/poll"
+	"github.com/SpherePrime/CLI/vendordeps/libc/pwd"
+	"github.com/SpherePrime/CLI/vendordeps/libc/signal"
+	"github.com/SpherePrime/CLI/vendordeps/libc/stdio"
+	"github.com/SpherePrime/CLI/vendordeps/libc/stdlib"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	ctime "github.com/SpherePrime/CLI/vendordeps/libc/time"
 )
 
 var staticGetpwnam pwd.Passwd

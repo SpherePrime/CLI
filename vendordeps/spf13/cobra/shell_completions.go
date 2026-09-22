@@ -15,7 +15,7 @@
 package cobra
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 // MarkFlagRequired instructs the various shell completion implementations to

@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/gorilla/css/scanner"
+	"github.com/SpherePrime/CLI/vendordeps/gorilla/css/scanner"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aymerick/douceur/css"
+	"github.com/SpherePrime/CLI/vendordeps/aymerick/douceur/css"
 )
 
 const (

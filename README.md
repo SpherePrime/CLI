@@ -19,22 +19,22 @@ your code, and your LLM provider of choice into one workflow.
 Linux / macOS:
 
 ```bash
-curl -sSfL https://raw.githubusercontent.com/dwertyfa288/CLI/main/scripts/install.sh | sh
+curl -sSfL https://raw.githubusercontent.com/SpherePrime/CLI/main/scripts/install.sh | sh
 ```
 
 Windows (PowerShell):
 
 ```powershell
-irm https://raw.githubusercontent.com/dwertyfa288/CLI/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/SpherePrime/CLI/main/scripts/install.ps1 | iex
 ```
 
 Prebuilt binaries (`.tar.gz`, `.zip`, `.deb`, `.rpm`, `.apk`):
-[releases](https://github.com/dwertyfa288/CLI/releases).
+[releases](https://github.com/SpherePrime/CLI/releases).
 
 With Go installed:
 
 ```bash
-go install github.com/dwertyfa288/CLI@latest
+go install github.com/SpherePrime/CLI@latest
 ```
 
 Build from source (requires Go):

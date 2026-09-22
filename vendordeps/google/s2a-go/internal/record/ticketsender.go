@@ -24,12 +24,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/handshaker/service"
-	commonpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	s2apb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/s2a_go_proto"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/handshaker/service"
+	commonpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	s2apb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/s2a_go_proto"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 )
 
 // sessionTimeout is the timeout for creating a session with the S2A handshaker

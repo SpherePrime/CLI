@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestCheckForUpdate_Old(t *testing.T) {

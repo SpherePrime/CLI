@@ -9,10 +9,10 @@ import (
 	"sort"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/flags"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/protolazy"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
-	piface "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/flags"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/protolazy"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
+	piface "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 type marshalOptions struct {

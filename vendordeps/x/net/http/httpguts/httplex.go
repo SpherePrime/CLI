@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/idna"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/idna"
 )
 
 var isTokenTable = [256]bool{

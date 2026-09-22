@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/fixed"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/fixed"
 )
 
 // maxAbs returns the maximum of abs(a) and abs(b).

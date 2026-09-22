@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/internal/tag"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/internal/tag"
 )
 
 // findIndex tries to find the given tag in idx and returns a standardized error

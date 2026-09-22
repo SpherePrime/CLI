@@ -5,10 +5,10 @@ import (
 	"context"
 	"math/bits"
 
-	sqlite3_wasm "github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3-wasm/v5"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs"
+	sqlite3_wasm "github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3-wasm/v5"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs"
 )
 
 type configKey struct{}

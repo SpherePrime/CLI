@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	githubApiUrl = "https://api.github.com/repos/dwertyfa288/CLI/releases/latest"
+	githubApiUrl = "https://api.github.com/repos/SpherePrime/CLI/releases/latest"
 	userAgent    = "prime/1.0"
 )
 

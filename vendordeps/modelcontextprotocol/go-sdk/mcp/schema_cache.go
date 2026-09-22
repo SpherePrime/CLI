@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go/jsonschema"
+	"github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go/jsonschema"
 )
 
 // A SchemaCache caches JSON schemas to avoid repeated reflection and resolution.

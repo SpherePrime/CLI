@@ -1,6 +1,6 @@
 package fantasy
 
-import "github.com/dwertyfa288/CLI/vendordeps/go-viper/mapstructure/v2"
+import "github.com/SpherePrime/CLI/vendordeps/go-viper/mapstructure/v2"
 
 // Opt creates a pointer to the given value.
 //

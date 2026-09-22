@@ -4,7 +4,7 @@
 [![receives](https://img.shields.io/liberapay/receives/jnml.svg?logo=liberapay)](https://liberapay.com/jnml/donate)
 [![patrons](https://img.shields.io/liberapay/patrons/jnml.svg?logo=liberapay)](https://liberapay.com/jnml/donate)
 
-[![Go Reference](https://pkg.go.dev/badge/modernc.org/libc.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/libc)
+[![Go Reference](https://pkg.go.dev/badge/modernc.org/libc.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/libc)
 
 Package libc is a partial reimplementation of C libc in pure Go.
 
@@ -45,6 +45,6 @@ broken path, which is the bug.
 The remedy is what it has always been, and it is **not** to pin an old libc and
 hope: recompile your C to Go with a ccgo new enough to depend on the libc you
 want, then use that pair together. If you consume translated code produced by
-someone else, `github.com/dwertyfa288/CLI/vendordeps/sqlite` for instance, take the libc version from that
+someone else, `github.com/SpherePrime/CLI/vendordeps/sqlite` for instance, take the libc version from that
 package's `go.mod` and do not bump it on your own just because a newer libc is
 tagged.

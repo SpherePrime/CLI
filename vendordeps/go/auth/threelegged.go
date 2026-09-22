@@ -28,8 +28,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 // AuthorizationHandler is a 3-legged-OAuth helper that prompts the user for

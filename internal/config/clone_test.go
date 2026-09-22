@@ -3,8 +3,8 @@ package config
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestCloneForWrite_Isolation verifies that mutating a clone never reaches

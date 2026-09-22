@@ -6,10 +6,10 @@ import (
 	"context"
 	"maps"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/internal/httpheaders"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/internal/httpheaders"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 const (

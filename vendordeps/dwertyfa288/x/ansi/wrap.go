@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi/parser"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi/parser"
 )
 
 // nbsp is a non-breaking space.

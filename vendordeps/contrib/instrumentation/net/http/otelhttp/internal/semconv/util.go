@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	semconvNew "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0"
+	"github.com/SpherePrime/CLI/vendordeps/otel"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	semconvNew "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0"
 )
 
 // SplitHostPort splits a network address hostport of the form "host",

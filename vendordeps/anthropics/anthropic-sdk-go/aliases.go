@@ -3,9 +3,9 @@
 package anthropic
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apierror"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/shared"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apierror"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/shared"
 )
 
 // aliased to make [param.APIUnion] private when embedding

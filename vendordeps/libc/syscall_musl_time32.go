@@ -4,7 +4,7 @@
 
 //go:build linux && (386 || arm)
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 // sysClockNanosleepTime64 is the clock_nanosleep(2) syscall taking a 64-bit
 // struct timespec, which musl uses on targets whose time_t is wider than long.

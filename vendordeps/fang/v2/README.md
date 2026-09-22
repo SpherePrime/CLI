@@ -27,8 +27,8 @@ The CLI starter kit. A small, experimental library for batteries-included [Cobra
 - **UX**: Silent `usage` output (help is not shown after a user error)
 
 [info]: https://pkg.go.dev/runtime/debug#BuildInfo
-[cobra]: https://github.com/dwertyfa288/CLI/vendordeps/spf13/cobra
-[mango]: https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango
+[cobra]: https://github.com/SpherePrime/CLI/vendordeps/spf13/cobra
+[mango]: https://github.com/SpherePrime/CLI/vendordeps/muesli/mango
 
 [^1]:
     Default cobra man pages generates one man page for each command. This is
@@ -49,7 +49,7 @@ import (
 	"os"
 
 	"github.com/dwertyfa288/fang"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 func main() {

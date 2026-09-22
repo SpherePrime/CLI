@@ -11,7 +11,7 @@
 // parsing logic (no sockets), so callers supply their own transport and it can
 // be unit tested on any platform.
 //
-// It was extracted from github.com/dwertyfa288/CLI/vendordeps/x/clipboard, where it backs the Cgo-free
+// It was extracted from github.com/SpherePrime/CLI/vendordeps/x/clipboard, where it backs the Cgo-free
 // X11 clipboard on Linux and the BSDs.
 //
 // References: the X Window System Protocol, version 11

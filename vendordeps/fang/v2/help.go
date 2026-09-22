@@ -13,12 +13,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 const (
@@ -132,7 +132,7 @@ func DefaultErrorHandler(w io.Writer, styles Styles, err error) {
 }
 
 // XXX: this is a hack to detect usage errors.
-// See: https://github.com/dwertyfa288/CLI/vendordeps/spf13/cobra/pull/2266
+// See: https://github.com/SpherePrime/CLI/vendordeps/spf13/cobra/pull/2266
 func isUsageError(err error) bool {
 	s := err.Error()
 	for _, prefix := range []string{

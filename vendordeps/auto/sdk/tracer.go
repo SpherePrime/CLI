@@ -8,10 +8,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/noop"
 
-	"github.com/dwertyfa288/CLI/vendordeps/auto/sdk/internal/telemetry"
+	"github.com/SpherePrime/CLI/vendordeps/auto/sdk/internal/telemetry"
 )
 
 type tracer struct {

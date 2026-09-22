@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip"
 )
 
 var (

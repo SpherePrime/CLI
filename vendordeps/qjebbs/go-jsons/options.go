@@ -4,7 +4,7 @@
 
 package jsons
 
-import "github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons/preprocess"
+import "github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons/preprocess"
 
 // Option is the option for merger
 type Option func(m *Merger)

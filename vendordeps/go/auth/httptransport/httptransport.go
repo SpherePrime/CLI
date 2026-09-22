@@ -23,11 +23,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	detect "github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/transport"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/transport/headers"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	detect "github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/transport"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/transport/headers"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 // ClientCertProvider is a function that returns a TLS client certificate to be
@@ -181,7 +181,7 @@ type InternalOptions struct {
 
 // AddAuthorizationMiddleware adds a middleware to the provided client's
 // transport that sets the Authorization header with the value produced by the
-// provided [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials]. An error is returned only
+// provided [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials]. An error is returned only
 // if client or creds is nil.
 //
 // This function does not support setting a universe domain value on the client.

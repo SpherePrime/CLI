@@ -1,11 +1,11 @@
 # mango-cobra
 
-[![Latest Release](https://img.shields.io/github/release/muesli/mango-cobra.svg)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango-cobra/releases)
-[![Build Status](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango-cobra/workflows/build/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango-cobra/actions)
+[![Latest Release](https://img.shields.io/github/release/muesli/mango-cobra.svg)](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango-cobra/releases)
+[![Build Status](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango-cobra/workflows/build/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango-cobra/actions)
 [![Go ReportCard](https://goreportcard.com/badge/muesli/mango-cobra)](https://goreportcard.com/report/muesli/mango-cobra)
-[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/muesli/mango-cobra)
+[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/muesli/mango-cobra)
 
-cobra adapter for [mango](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango).
+cobra adapter for [mango](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango).
 
 ## Example
 
@@ -13,9 +13,9 @@ cobra adapter for [mango](https://github.com/dwertyfa288/CLI/vendordeps/muesli/m
 import (
 	"fmt"
 
-	mcobra "github.com/dwertyfa288/CLI/vendordeps/muesli/mango-cobra"
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/roff"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	mcobra "github.com/SpherePrime/CLI/vendordeps/muesli/mango-cobra"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/roff"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 var (

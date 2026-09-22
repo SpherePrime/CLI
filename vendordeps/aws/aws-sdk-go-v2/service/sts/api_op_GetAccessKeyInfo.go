@@ -4,7 +4,7 @@ package sts
 
 import (
 	"context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // Returns the account identifier for the specified access key ID.

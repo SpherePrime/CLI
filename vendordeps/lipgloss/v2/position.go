@@ -4,7 +4,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // Position represents a position along a horizontal or vertical axis. It's in

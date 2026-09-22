@@ -14,9 +14,9 @@ import (
 	"math"
 	"strconv"
 
-	ptext "github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/text"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	ptext "github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/text"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 // Format is the serialization format used to represent the default value.

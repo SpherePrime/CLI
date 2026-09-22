@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
 )
 
 func init() {

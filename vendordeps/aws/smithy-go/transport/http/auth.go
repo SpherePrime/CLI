@@ -3,9 +3,9 @@ package http
 import (
 	"context"
 
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/eventstream"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/eventstream"
 )
 
 // AuthScheme defines an HTTP authentication scheme.

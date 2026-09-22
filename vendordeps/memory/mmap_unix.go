@@ -6,10 +6,10 @@
 
 // Modifications (c) 2017 The Memory Authors.
 
-package memory // import "github.com/dwertyfa288/CLI/vendordeps/memory"
+package memory // import "github.com/SpherePrime/CLI/vendordeps/memory"
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 	"os"
 	"unsafe"
 )

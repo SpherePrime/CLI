@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // StyledString is a string that can be decomposed into a series of styled

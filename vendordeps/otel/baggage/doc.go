@@ -4,6 +4,6 @@
 /*
 Package baggage provides functionality for storing and retrieving
 baggage items in Go context. For propagating the baggage, see the
-github.com/dwertyfa288/CLI/vendordeps/otel/propagation package.
+github.com/SpherePrime/CLI/vendordeps/otel/propagation package.
 */
 package baggage

@@ -3,7 +3,7 @@ package retry
 import (
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
 )
 
 // IsErrorThrottle provides the interface of an implementation to determine if

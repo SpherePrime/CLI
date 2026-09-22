@@ -33,7 +33,7 @@ if [ "$PROJECT_DIR" != "" ]; then
   cd $PROJECT_DIR || exit
 fi
 
-go mod graph | awk '{print $1}' | cut -d '@' -f 1 | sort | uniq | grep "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go" | while read x; do
+go mod graph | awk '{print $1}' | cut -d '@' -f 1 | sort | uniq | grep "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go" | while read x; do
   repPath=${x/github.com\/aws\/smithy-go/${SMITHY_SOURCE_DIR}}
   echo -replace $x=$repPath
 done | xargs go mod edit

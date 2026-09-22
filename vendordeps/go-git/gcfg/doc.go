@@ -142,4 +142,4 @@
 //    - make error context accessible programmatically?
 //    - limit input size?
 //
-package gcfg // import "github.com/dwertyfa288/CLI/vendordeps/go-git/gcfg"
+package gcfg // import "github.com/SpherePrime/CLI/vendordeps/go-git/gcfg"

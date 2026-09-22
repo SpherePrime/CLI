@@ -13,7 +13,7 @@ CRC calculation also takes place in a separate goroutine.
 You should only use this if you are (de)compressing big amounts of data, 
 say **more than 1MB** at the time, otherwise you will not see any benefit, 
 and it will likely be faster to use the internal gzip library 
-or [this package](https://github.com/dwertyfa288/CLI/vendordeps/klauspost/compress).
+or [this package](https://github.com/SpherePrime/CLI/vendordeps/klauspost/compress).
 
 It is important to note that this library creates and reads *standard gzip files*. 
 You do not have to match the compressor/decompressor to get the described speedups, 
@@ -26,30 +26,30 @@ See a comparison below.
 
 [![GoDoc][1]][2] [![Build Status][3]][4]
 
-[1]: https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip?status.svg
-[2]: https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip
+[1]: https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip?status.svg
+[2]: https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip
 [3]: https://travis-ci.org/klauspost/pgzip.svg
 [4]: https://travis-ci.org/klauspost/pgzip
 
 Installation
 ====
-```go get github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip/...```
+```go get github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip/...```
 
 You might need to get/update the dependencies:
 
 ```
-go get -u github.com/dwertyfa288/CLI/vendordeps/klauspost/compress
+go get -u github.com/SpherePrime/CLI/vendordeps/klauspost/compress
 ```
 
 Usage
 ====
-[Godoc Doumentation](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip)
+[Godoc Doumentation](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip)
 
 To use as a replacement for gzip, exchange 
 
 ```import "compress/gzip"``` 
 with 
-```import gzip "github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip"```.
+```import gzip "github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip"```.
 
 # Changes
 
@@ -59,7 +59,7 @@ with
 * Dec 8, 2015: Decoder now supports the io.WriterTo interface, giving a speedup and less GC pressure.
 * Oct 9, 2015: Reduced allocations by ~35 by using sync.Pool. ~15% overall speedup.
 
-Changes in [github.com/dwertyfa288/CLI/vendordeps/klauspost/compress](https://github.com/dwertyfa288/CLI/vendordeps/klauspost/compress#changelog) are also carried over, so see that for more changes.
+Changes in [github.com/SpherePrime/CLI/vendordeps/klauspost/compress](https://github.com/SpherePrime/CLI/vendordeps/klauspost/compress#changelog) are also carried over, so see that for more changes.
 
 ## Compression
 The simplest way to use this is to simply do the same as you would when using [compress/gzip](http://golang.org/pkg/compress/gzip). 
@@ -105,11 +105,11 @@ Content is [Matt Mahoneys 10GB corpus](http://mattmahoney.net/dc/10gb.html). Com
 Compressor  | MB/sec   | speedup | size | size overhead (lower=better)
 ------------|----------|---------|------|---------
 [gzip](http://golang.org/pkg/compress/gzip) (golang) | 16.91MB/s (1 thread) | 1.0x | 4781329307 | 0%
-[gzip](http://github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/gzip) (klauspost) | 127.10MB/s (1 thread) | 7.52x | 4885366806 | +2.17%
-[pgzip](https://github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip) (klauspost) | 2085.35MB/s|  123.34x | 4886132566 | +2.19%
+[gzip](http://github.com/SpherePrime/CLI/vendordeps/klauspost/compress/gzip) (klauspost) | 127.10MB/s (1 thread) | 7.52x | 4885366806 | +2.17%
+[pgzip](https://github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip) (klauspost) | 2085.35MB/s|  123.34x | 4886132566 | +2.19%
 [pargzip](https://godoc.org/github.com/golang/build/pargzip) (builder) | 334.04MB/s | 19.76x | 4786890417 | +0.12%
 
-pgzip also contains a [huffman only compression](https://github.com/dwertyfa288/CLI/vendordeps/klauspost/compress#linear-time-compression-huffman-only) mode, that will allow compression at ~450MB per core per second, largely independent of the content.
+pgzip also contains a [huffman only compression](https://github.com/SpherePrime/CLI/vendordeps/klauspost/compress#linear-time-compression-huffman-only) mode, that will allow compression at ~450MB per core per second, largely independent of the content.
 
 See the [complete sheet](https://docs.google.com/spreadsheets/d/1nuNE2nPfuINCZJRMt6wFWhKpToF95I47XjSsc-1rbPQ/edit?usp=sharing) for different content types and compression settings.
 
@@ -122,7 +122,7 @@ In the example above, the numbers are as follows on a 4 CPU machine:
 Decompressor | Time | Speedup
 -------------|------|--------
 [gzip](http://golang.org/pkg/compress/gzip) (golang) | 1m28.85s | 0%
-[pgzip](https://github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip) (klauspost) | 43.48s | 104%
+[pgzip](https://github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip) (klauspost) | 43.48s | 104%
 
 But wait, since gzip decompression is inherently singlethreaded (aside from CRC calculation) how can it be more than 100% faster?  Because pgzip due to its design also acts as a buffer. When using unbuffered gzip, you are also waiting for io when you are decompressing. If the gzip decoder can keep up, it will always have data ready for your reader, and you will not be waiting for input to the gzip decompressor to complete.
 

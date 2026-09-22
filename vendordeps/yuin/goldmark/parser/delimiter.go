@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/text"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/text"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 // A DelimiterProcessor interface provides a set of functions about

@@ -3,7 +3,7 @@ package apijson
 import (
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 )
 
 type UnionVariant struct {

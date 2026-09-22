@@ -18,8 +18,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fsnotify/fsnotify/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/fsnotify/fsnotify/internal"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 type readDirChangesW struct {
@@ -184,7 +184,7 @@ func (w *readDirChangesW) WatchList() []string {
 	return entries
 }
 
-// These options are from the old github.com/dwertyfa288/CLI/vendordeps/x/exp/winfsnotify, where you could
+// These options are from the old github.com/SpherePrime/CLI/vendordeps/x/exp/winfsnotify, where you could
 // add various options to the watch. This has long since been removed.
 //
 // The "sys" in the name is misleading as they're not part of any "system".

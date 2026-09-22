@@ -27,19 +27,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/connectivity"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/insecure"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/backoff"
-	imetadata "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/keepalive"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/timestamppb"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/connectivity"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/insecure"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/backoff"
+	imetadata "github.com/SpherePrime/CLI/vendordeps/grpc/internal/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/keepalive"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/timestamppb"
 
-	lbpb "github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/grpclb/grpc_lb_v1"
+	lbpb "github.com/SpherePrime/CLI/vendordeps/grpc/balancer/grpclb/grpc_lb_v1"
 )
 
 func serverListEqual(a, b []*lbpb.Server) bool {

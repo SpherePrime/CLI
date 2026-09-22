@@ -25,8 +25,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/expand"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 // A Runner interprets shell programs. It can be reused, but it is not safe for

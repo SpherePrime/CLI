@@ -15,8 +15,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http/httpguts"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2/hpack"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http/httpguts"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2/hpack"
 )
 
 var (

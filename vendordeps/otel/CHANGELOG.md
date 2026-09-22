@@ -19,250 +19,250 @@ The next release will require at least [Go 1.26].
 ### Added
 
 - Support testing of [Go 1.27]. (#8811)
-- Support `http/json` protocol in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#8273, #8775, #8831)
-- Add `Hasher` struct and methods in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` to compute authoritative `Distinct` hashes incrementally for attribute filtering and deduplication. (#8598)
+- Support `http/json` protocol in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#8273, #8775, #8831)
+- Add `Hasher` struct and methods in `github.com/SpherePrime/CLI/vendordeps/otel/attribute` to compute authoritative `Distinct` hashes incrementally for attribute filtering and deduplication. (#8598)
 
 ### Changed
 
-- Lazily evaluate filtered and dropped attributes on measurement hot paths in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` to avoid unnecessary attribute set allocations. (#8598)
-- Add `ErrExporterShutdown` to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` and return it from the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`, and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` exporters when `Export` is called after `Shutdown`. (#8773)
-- Clarify in `github.com/dwertyfa288/CLI/vendordeps/otel/log` that calling `Logger.Enabled` is optional and that cached results can become stale. (#8764)
+- Lazily evaluate filtered and dropped attributes on measurement hot paths in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` to avoid unnecessary attribute set allocations. (#8598)
+- Add `ErrExporterShutdown` to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` and return it from the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`, and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` exporters when `Export` is called after `Shutdown`. (#8773)
+- Clarify in `github.com/SpherePrime/CLI/vendordeps/otel/log` that calling `Logger.Enabled` is optional and that cached results can become stale. (#8764)
 
 ### Fixed
 
-- Export dropped attribute counts in OTLP log records from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8829)
-- Name span events created from OpenTracing logs after the `event` log field, falling back to `log`, instead of always using an empty name in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing`. (#8648)
-- Count exception attributes omitted due to the attribute count limit as dropped in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#8796)
-- Prevent log record and instrumentation scope attributes with empty keys from reaching processors and exporters in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#8797)
-- Fix a data race when span attributes are read concurrently in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#8706)
-- Prevent a panic in `(*Set).Filter` when called on a nil receiver in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#8792)
-- The simple span and log processors record `otel.sdk.processor.{span,log}.processed` when the record is submitted to the exporter instead of after the export completes, and no longer set `error.type` from the export outcome, in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` and `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#8705)
-- Prevent `Resource.MarshalLog` from panicking on nil resources in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`. (#8758)
+- Export dropped attribute counts in OTLP log records from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8829)
+- Name span events created from OpenTracing logs after the `event` log field, falling back to `log`, instead of always using an empty name in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing`. (#8648)
+- Count exception attributes omitted due to the attribute count limit as dropped in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#8796)
+- Prevent log record and instrumentation scope attributes with empty keys from reaching processors and exporters in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#8797)
+- Fix a data race when span attributes are read concurrently in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#8706)
+- Prevent a panic in `(*Set).Filter` when called on a nil receiver in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#8792)
+- The simple span and log processors record `otel.sdk.processor.{span,log}.processed` when the record is submitted to the exporter instead of after the export completes, and no longer set `error.type` from the export outcome, in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` and `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#8705)
+- Prevent `Resource.MarshalLog` from panicking on nil resources in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`. (#8758)
 
 ## [1.45.0/0.67.0/0.21.0/0.0.18] - 2026-08-03
 
 ### Added
 
-- Add experimental observability metrics to `BatchProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#7124)
-- Add the experimental `WithUnsafeAttributes` no-copy attribute option to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/x` for future performance improvements. This API is a work in progress. (#8251)
-- Add `Map` and `MapValue` functions for the new `MAP` attribute type in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#8445)
-- Support `MAP` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace`. (#8453)
-- Support `MAP` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog`. (#8453)
-- Support `MAP` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#8453)
-- Support `MAP` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin`. (#8453)
-- Apply `AttributeValueLengthLimit` recursively to values contained in `attribute.MAP` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#8454)
-- Remove duplicate keys from `attribute.MAP` values in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource` using last-value-wins semantics. (#8471)
-- Remove duplicate keys by default from `attribute.MAP` values in instrumentation scope attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` using last-value-wins semantics. (#8471)
-- Remove duplicate keys by default from `attribute.MAP` values in span, event, link, and instrumentation scope attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` using last-value-wins semantics. (#8471)
-- Remove duplicate keys by default from `attribute.MAP` values in measurement and instrumentation scope attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` using last-value-wins semantics. (#8471)
-- Extend `WithAllowKeyDuplication` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` to disable duplicate-key removal in `attribute.MAP` values for instrumentation scope attributes. (#8471)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.42.0` package.
+- Add experimental observability metrics to `BatchProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#7124)
+- Add the experimental `WithUnsafeAttributes` no-copy attribute option to `github.com/SpherePrime/CLI/vendordeps/otel/metric/x` for future performance improvements. This API is a work in progress. (#8251)
+- Add `Map` and `MapValue` functions for the new `MAP` attribute type in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#8445)
+- Support `MAP` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace`. (#8453)
+- Support `MAP` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog`. (#8453)
+- Support `MAP` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#8453)
+- Support `MAP` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin`. (#8453)
+- Apply `AttributeValueLengthLimit` recursively to values contained in `attribute.MAP` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#8454)
+- Remove duplicate keys from `attribute.MAP` values in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource` using last-value-wins semantics. (#8471)
+- Remove duplicate keys by default from `attribute.MAP` values in instrumentation scope attributes in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` using last-value-wins semantics. (#8471)
+- Remove duplicate keys by default from `attribute.MAP` values in span, event, link, and instrumentation scope attributes in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` using last-value-wins semantics. (#8471)
+- Remove duplicate keys by default from `attribute.MAP` values in measurement and instrumentation scope attributes in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` using last-value-wins semantics. (#8471)
+- Extend `WithAllowKeyDuplication` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` to disable duplicate-key removal in `attribute.MAP` values for instrumentation scope attributes. (#8471)
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.42.0` package.
   The package contains semantic conventions from the `v1.42.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.42.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.41.0`. (#8484)
-- Add `WithoutPanicRecording` as a `TracerProviderOption` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` to disable exception event recording for panics. (#8532)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0` package.
+  See the [migration documentation](./semconv/v1.42.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.41.0`. (#8484)
+- Add `WithoutPanicRecording` as a `TracerProviderOption` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` to disable exception event recording for panics. (#8532)
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0` package.
   The package contains semantic conventions from the `v1.43.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.43.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.42.0`. (#8628)
+  See the [migration documentation](./semconv/v1.43.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.42.0`. (#8628)
 
 ### Changed
 
-- `HistogramReservoir` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar` now uses a time-unbiased sampling algorithm for exemplars. (#8306)
-- ⚠️ **Breaking Change:** Use `github.com/dwertyfa288/CLI/vendordeps/otel/attribute.Value` and `github.com/dwertyfa288/CLI/vendordeps/otel/attribute.KeyValue` for log bodies and attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/log`, `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`, `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`, and `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest`. (#8490)
-- Encode log bodies and attributes as `github.com/dwertyfa288/CLI/vendordeps/otel/attribute.Value` JSON in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog`. (#8490)
-- Improve the performance of hashing `BOOLSLICE`, `INT64SLICE`, `FLOAT64SLICE`, and `STRINGSLICE` attribute values by avoiding reflection for short slices in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#8511)
-- ⚠️ **Breaking Change:** `WithEndpointURL` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` no longer appends the default signal path when an endpoint URL has no path, making the behavior consistent with `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` and with setting the endpoint through `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`. If the URL has no path component, the root path (`/`) is used. Use `WithEndpointURL(url.JoinPath(endpoint, "/v1/metrics"))` to preserve the previous behavior. (#8538)
-- ⚠️ **Breaking Change:** `WithEndpointURL` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` no longer appends the default signal path when an endpoint URL has no path, making the behavior consistent with `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` and with setting the endpoint through `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`. If the URL has no path component, the root path (`/`) is used. Use `WithEndpointURL(url.JoinPath(endpoint, "/v1/traces"))` to preserve the previous behavior. (#8538)
+- `HistogramReservoir` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar` now uses a time-unbiased sampling algorithm for exemplars. (#8306)
+- ⚠️ **Breaking Change:** Use `github.com/SpherePrime/CLI/vendordeps/otel/attribute.Value` and `github.com/SpherePrime/CLI/vendordeps/otel/attribute.KeyValue` for log bodies and attributes in `github.com/SpherePrime/CLI/vendordeps/otel/log`, `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`, `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`, and `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest`. (#8490)
+- Encode log bodies and attributes as `github.com/SpherePrime/CLI/vendordeps/otel/attribute.Value` JSON in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog`. (#8490)
+- Improve the performance of hashing `BOOLSLICE`, `INT64SLICE`, `FLOAT64SLICE`, and `STRINGSLICE` attribute values by avoiding reflection for short slices in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#8511)
+- ⚠️ **Breaking Change:** `WithEndpointURL` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` no longer appends the default signal path when an endpoint URL has no path, making the behavior consistent with `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` and with setting the endpoint through `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`. If the URL has no path component, the root path (`/`) is used. Use `WithEndpointURL(url.JoinPath(endpoint, "/v1/metrics"))` to preserve the previous behavior. (#8538)
+- ⚠️ **Breaking Change:** `WithEndpointURL` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` no longer appends the default signal path when an endpoint URL has no path, making the behavior consistent with `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` and with setting the endpoint through `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`. If the URL has no path component, the root path (`/`) is used. Use `WithEndpointURL(url.JoinPath(endpoint, "/v1/traces"))` to preserve the previous behavior. (#8538)
 
 ### Deprecated
 
-- Deprecate `WithExportBufferSize` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. The option remains available for source compatibility but no longer affects behavior; `BatchProcessor` no longer maintains a separate export-request buffer. (#8620)
+- Deprecate `WithExportBufferSize` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. The option remains available for source compatibility but no longer affects behavior; `BatchProcessor` no longer maintains a separate export-request buffer. (#8620)
 
 ### Removed
 
-- ⚠️ **Breaking Change:** Remove `Kind`, `Value`, `KeyValue`, their constructors, and attribute conversion helpers from `github.com/dwertyfa288/CLI/vendordeps/otel/log`. (#8490)
-- ⚠️ **Breaking Change:** Remove the `AttributeValueLengthLimit` and `AttributeCountLimit` fields from `RecordFactory` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest`; records produced by the factory now keep attribute limits disabled so test code can append exact attributes. (#8556)
+- ⚠️ **Breaking Change:** Remove `Kind`, `Value`, `KeyValue`, their constructors, and attribute conversion helpers from `github.com/SpherePrime/CLI/vendordeps/otel/log`. (#8490)
+- ⚠️ **Breaking Change:** Remove the `AttributeValueLengthLimit` and `AttributeCountLimit` fields from `RecordFactory` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest`; records produced by the factory now keep attribute limits disabled so test code can append exact attributes. (#8556)
 
 ### Fixed
 
-- Apply TLS certificates configured through environment variables to gRPC connections in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`.
-- Prevent panics in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` when OpenTracing baggage is propagated concurrently with `Span.SetBaggageItem`.
-- Fix an off-by-one error in `FixedSizeReservoir` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar` that prevented the first exemplar from being sampled after the reservoir was filled. (#8309)
-- Interpret HTTP `Retry-After` header values as seconds instead of nanoseconds when retrying OTLP HTTP exports in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`, and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8383)
-- Fix a memory leak in the `Reservoir` implementation in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar`, where storing the full `context.Context` pinned large objects such as gRPC transport buffers. (#8389)
-- Prevent a non-empty attribute set whose computed hash is zero from collapsing to an empty set in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#8402)
-- Fix histogram data point reuse in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` aggregation to avoid leaking stale sum, minimum, and maximum values when they are disabled in subsequent collections. (#8403)
-- Avoid preallocating scope attributes when they are disabled in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#8404)
-- Support HTTP-date values in the HTTP `Retry-After` header when retrying OTLP HTTP exports in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`, and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8417)
-- Reduce histogram heap allocations by reusing `BucketCounts` and `Exemplars` slices across `Collect` cycles in the cumulative histogram aggregation in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#8428)
-- Fix `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace` self-observability to record `error.type` on the operation-duration histogram when the `exportedSpans` metric is disabled. (#8432)
-- Stop including trace exporter endpoint configuration in internal logs from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin`. (#8438)
-- Fix invalid error formatting for out-of-range JSON code values in `github.com/dwertyfa288/CLI/vendordeps/otel/codes`. (#8497)
-- Clarify in `github.com/dwertyfa288/CLI/vendordeps/otel/log` that `Logger.Enabled` should be checked for every log emission because its result may change over time. (#8565)
-- Preserve user-provided exception attributes while independently deriving missing exception message and type attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#8566)
-- Make `WithAttributeCountLimit(0)` and `OTEL_LOGRECORD_ATTRIBUTE_COUNT_LIMIT=0` discard all log record attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#8570)
-- Clarify that the `Record` methods of `Float64Histogram` and `Int64Histogram` in `github.com/dwertyfa288/CLI/vendordeps/otel/metric` expect non-negative values. (#8574)
-- Clarify in `github.com/dwertyfa288/CLI/vendordeps/otel/log` that `LoggerProvider` implementations should retain an empty `Logger` name instead of replacing it with a default. (#8587)
-- Ensure that the built-in processors in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` call exporter `ForceFlush` during `Shutdown`. (#8599)
-- Prevent processor operations in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` from overlapping with processor shutdown or running after `LoggerProvider` shutdown. (#8608)
-- Prevent `BatchProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` from busy-spinning under exporter backpressure and serialize dequeue, export, force-flush, and shutdown work in one worker. (#8620)
-- Make `BatchProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` return errors encountered while draining records during `ForceFlush` and `Shutdown`, while continuing to attempt later batches as long as the request context remains valid. (#8620)
-- Keep the default `BatchProcessor` maximum export batch size in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` at or below the configured maximum queue size. (#8620)
+- Apply TLS certificates configured through environment variables to gRPC connections in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`.
+- Prevent panics in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` when OpenTracing baggage is propagated concurrently with `Span.SetBaggageItem`.
+- Fix an off-by-one error in `FixedSizeReservoir` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar` that prevented the first exemplar from being sampled after the reservoir was filled. (#8309)
+- Interpret HTTP `Retry-After` header values as seconds instead of nanoseconds when retrying OTLP HTTP exports in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`, and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8383)
+- Fix a memory leak in the `Reservoir` implementation in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar`, where storing the full `context.Context` pinned large objects such as gRPC transport buffers. (#8389)
+- Prevent a non-empty attribute set whose computed hash is zero from collapsing to an empty set in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#8402)
+- Fix histogram data point reuse in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` aggregation to avoid leaking stale sum, minimum, and maximum values when they are disabled in subsequent collections. (#8403)
+- Avoid preallocating scope attributes when they are disabled in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#8404)
+- Support HTTP-date values in the HTTP `Retry-After` header when retrying OTLP HTTP exports in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`, and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8417)
+- Reduce histogram heap allocations by reusing `BucketCounts` and `Exemplars` slices across `Collect` cycles in the cumulative histogram aggregation in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#8428)
+- Fix `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace` self-observability to record `error.type` on the operation-duration histogram when the `exportedSpans` metric is disabled. (#8432)
+- Stop including trace exporter endpoint configuration in internal logs from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin`. (#8438)
+- Fix invalid error formatting for out-of-range JSON code values in `github.com/SpherePrime/CLI/vendordeps/otel/codes`. (#8497)
+- Clarify in `github.com/SpherePrime/CLI/vendordeps/otel/log` that `Logger.Enabled` should be checked for every log emission because its result may change over time. (#8565)
+- Preserve user-provided exception attributes while independently deriving missing exception message and type attributes in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#8566)
+- Make `WithAttributeCountLimit(0)` and `OTEL_LOGRECORD_ATTRIBUTE_COUNT_LIMIT=0` discard all log record attributes in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#8570)
+- Clarify that the `Record` methods of `Float64Histogram` and `Int64Histogram` in `github.com/SpherePrime/CLI/vendordeps/otel/metric` expect non-negative values. (#8574)
+- Clarify in `github.com/SpherePrime/CLI/vendordeps/otel/log` that `LoggerProvider` implementations should retain an empty `Logger` name instead of replacing it with a default. (#8587)
+- Ensure that the built-in processors in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` call exporter `ForceFlush` during `Shutdown`. (#8599)
+- Prevent processor operations in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` from overlapping with processor shutdown or running after `LoggerProvider` shutdown. (#8608)
+- Prevent `BatchProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` from busy-spinning under exporter backpressure and serialize dequeue, export, force-flush, and shutdown work in one worker. (#8620)
+- Make `BatchProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` return errors encountered while draining records during `ForceFlush` and `Shutdown`, while continuing to attempt later batches as long as the request context remains valid. (#8620)
+- Keep the default `BatchProcessor` maximum export batch size in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` at or below the configured maximum queue size. (#8620)
 
 ## [1.44.0/0.66.0/0.20.0/0.0.17] 2026-05-27
 
 ### Added
 
-- Add `ByteSlice` and `ByteSliceValue` functions for new `BYTESLICE` attribute type in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#7948)
-- Apply attribute value limit to the `KindBytes` attribute type in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#7990)
-- Apply attribute value limit to the `BYTESLICE` attribute type in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#7990)
-- Support `BYTESLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/trace`. (#8153)
-- Support `BYTESLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace`. (#8153)
-- Support `BYTESLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog`. (#8153)
-- Support `BYTESLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#8153)
-- Support `BYTESLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin`. (#8153)
-- Add `String` method for `Value` type in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#8142)
-- Add `Slice` and `SliceValue` functions for new `SLICE` attribute type in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#8166)
-- Support `SLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace`. (#8216)
-- Support `SLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog`. (#8216)
-- Support `SLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#8216)
-- Support `SLICE` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin`. (#8216)
-- Apply `AttributeValueLengthLimit` to `attribute.SLICE` type attribute values in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`, recursively truncating contained string values. (#8217)
-- Add `Error` field on `Record` type in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#8148)
-- Add `WithMaxRequestSize` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#8157)
-- Add `WithMaxRequestSize` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#8157)
-- Add `WithMaxRequestSize` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#8157)
-- Add `WithMaxRequestSize` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#8157)
-- Add `WithMaxRequestSize` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#8157)
-- Add `WithMaxRequestSize` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8157)
-- Add `Settable` to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/x` to allow reusing attribute options. (#8178)
-- Add experimental support for splitting metric data across multiple batches in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`.
+- Add `ByteSlice` and `ByteSliceValue` functions for new `BYTESLICE` attribute type in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#7948)
+- Apply attribute value limit to the `KindBytes` attribute type in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#7990)
+- Apply attribute value limit to the `BYTESLICE` attribute type in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#7990)
+- Support `BYTESLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/trace`. (#8153)
+- Support `BYTESLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace`. (#8153)
+- Support `BYTESLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog`. (#8153)
+- Support `BYTESLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#8153)
+- Support `BYTESLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin`. (#8153)
+- Add `String` method for `Value` type in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#8142)
+- Add `Slice` and `SliceValue` functions for new `SLICE` attribute type in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#8166)
+- Support `SLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace`. (#8216)
+- Support `SLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog`. (#8216)
+- Support `SLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#8216)
+- Support `SLICE` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin`. (#8216)
+- Apply `AttributeValueLengthLimit` to `attribute.SLICE` type attribute values in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`, recursively truncating contained string values. (#8217)
+- Add `Error` field on `Record` type in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#8148)
+- Add `WithMaxRequestSize` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#8157)
+- Add `WithMaxRequestSize` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#8157)
+- Add `WithMaxRequestSize` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#8157)
+- Add `WithMaxRequestSize` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#8157)
+- Add `WithMaxRequestSize` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#8157)
+- Add `WithMaxRequestSize` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8157)
+- Add `Settable` to `github.com/SpherePrime/CLI/vendordeps/otel/metric/x` to allow reusing attribute options. (#8178)
+- Add experimental support for splitting metric data across multiple batches in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`.
   Set `OTEL_GO_X_METRIC_EXPORT_BATCH_SIZE=<max_size>` to enable for all periodic readers.
-  See `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/internal/x` for feature documentation. (#8071)
-- Add experimental self-observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`.
+  See `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/internal/x` for feature documentation. (#8071)
+- Add experimental self-observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`.
   Enable with `OTEL_GO_X_OBSERVABILITY=true` environment variable.
-  See `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc/internal/x` for feature documentation. (#8192)
-- Add experimental self-observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`.
+  See `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc/internal/x` for feature documentation. (#8192)
+- Add experimental self-observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`.
   Enable with `OTEL_GO_X_OBSERVABILITY=true` environment variable.
-  See `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp/internal/x` for feature documentation. (#8194)
-- Add experimental self-observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog`.
+  See `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp/internal/x` for feature documentation. (#8194)
+- Add experimental self-observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog`.
   Enable with `OTEL_GO_X_OBSERVABILITY=true` environment variable.
-  See `github.com/dwertyfa288/CLI/vendordeps/otel/stdout/stdoutlog/internal/x` for feature documentation. (#8263)
-- Add `WithDefaultAttributes` to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/x` to support setting default attributes on instruments. (#8135)
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.41.0` package.
+  See `github.com/SpherePrime/CLI/vendordeps/otel/stdout/stdoutlog/internal/x` for feature documentation. (#8263)
+- Add `WithDefaultAttributes` to `github.com/SpherePrime/CLI/vendordeps/otel/metric/x` to support setting default attributes on instruments. (#8135)
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.41.0` package.
   The package contains semantic conventions from the `v1.41.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.41.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.40.0`. (#8324)
-- Add Observable variants of instruments to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.41.0` package. (#8350)
-- Generate explicit histogram bucket boundaries from weaver configuration for HTTP and RPC duration instruments in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.41.0`. (#8002)
+  See the [migration documentation](./semconv/v1.41.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.40.0`. (#8324)
+- Add Observable variants of instruments to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.41.0` package. (#8350)
+- Generate explicit histogram bucket boundaries from weaver configuration for HTTP and RPC duration instruments in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.41.0`. (#8002)
 
 ### Changed
 
-- ⚠️ **Breaking Change:** `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` now applies a default cardinality limit of 2000 to comply with the Metrics SDK specification recommendation.
+- ⚠️ **Breaking Change:** `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` now applies a default cardinality limit of 2000 to comply with the Metrics SDK specification recommendation.
   New attribute sets are dropped when the cardinality limit is reached. The measurement of these sets are aggregated into a special attribute set containing `attribute.Bool("otel.metric.overflow", true)`.
   This can break users who relied on the previous unlimited default.
   Set `WithCardinalityLimit(0)` or the deprecated `OTEL_GO_X_CARDINALITY_LIMIT=0` environment variable to preserve unlimited cardinality.
   Note that support for `OTEL_GO_X_CARDINALITY_LIMIT` may be removed in a future release. (#8247)
-- `ErrorType` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv` now unwraps errors created with `fmt.Errorf` when deriving the `error.type` attribute. (#8133)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` now unwraps error chains created with `fmt.Errorf` when deriving the `error.type` attribute from errors on log records. (#8133)
-- `Set.MarshalLog` method in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` now uses `Value.String` formatting following the [OpenTelemetry AnyValue representation for non-OTLP protocols](https://opentelemetry.io/docs/specs/otel/common/#anyvalue). (#8169)
-- Optimize `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` to return a drop reservoir and short-circuit `Offer` calls to the exemplar reservoir when `exemplar.AlwaysOffFilter` is configured. (#8211) (#8267)
-- Optimize `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` to return a drop reservoir for asynchronous instruments when `exemplar.TraceBasedFilter` is configured. (#8286)
+- `ErrorType` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv` now unwraps errors created with `fmt.Errorf` when deriving the `error.type` attribute. (#8133)
+- `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` now unwraps error chains created with `fmt.Errorf` when deriving the `error.type` attribute from errors on log records. (#8133)
+- `Set.MarshalLog` method in `github.com/SpherePrime/CLI/vendordeps/otel/attribute` now uses `Value.String` formatting following the [OpenTelemetry AnyValue representation for non-OTLP protocols](https://opentelemetry.io/docs/specs/otel/common/#anyvalue). (#8169)
+- Optimize `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` to return a drop reservoir and short-circuit `Offer` calls to the exemplar reservoir when `exemplar.AlwaysOffFilter` is configured. (#8211) (#8267)
+- Optimize `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` to return a drop reservoir for asynchronous instruments when `exemplar.TraceBasedFilter` is configured. (#8286)
 
 ### Deprecated
 
-- Deprecate `Value.Emit` method in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`.
+- Deprecate `Value.Emit` method in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`.
   Use `Value.String` instead. (#8176)
 
 ### Fixed
 
-- Limit OTLP request size to 64 MiB by default in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`.
+- Limit OTLP request size to 64 MiB by default in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`.
   The limit applies before compression, oversized requests are treated as non-retryable errors, and the limit can be configured with the new `WithMaxRequestSize` option. (#8157, #8365)
-- Limit OTLP request size to 64 MiB by default in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`.
+- Limit OTLP request size to 64 MiB by default in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`.
   The limit applies before compression, oversized requests are treated as non-retryable errors, and the limit can be configured with the new `WithMaxRequestSize` option. (#8157, #8365)
-- Limit OTLP request size to 64 MiB by default in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`.
+- Limit OTLP request size to 64 MiB by default in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`.
   The limit applies before compression, oversized requests are treated as non-retryable errors, and the limit can be configured with the new `WithMaxRequestSize` option. (#8157, #8365)
-- Limit OTLP request size to 64 MiB by default in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`.
+- Limit OTLP request size to 64 MiB by default in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`.
   The limit applies before compression, oversized requests are treated as non-retryable errors, and the limit can be configured with the new `WithMaxRequestSize` option. (#8157, #8365)
-- Limit OTLP request size to 64 MiB by default in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`.
+- Limit OTLP request size to 64 MiB by default in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`.
   The limit applies before compression, oversized requests are treated as non-retryable errors, and the limit can be configured with the new `WithMaxRequestSize` option. (#8157, #8365)
-- Limit OTLP request size to 64 MiB by default in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`.
+- Limit OTLP request size to 64 MiB by default in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`.
   The limit applies before compression, oversized requests are treated as non-retryable errors, and the limit can be configured with the new `WithMaxRequestSize` option. (#8157, #8365)
-- Fix gzipped request body replay on redirect in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#8135)
-- Fix gzipped request body replay on redirect in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8152)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` now uses `Value.String` formatting for label values following the [OpenTelemetry AnyValue representation for non-OTLP protocols](https://opentelemetry.io/docs/specs/otel/common/#anyvalue). (#8170)
-- Propagate errors from the exporter when calling `Shutdown` on `BatchSpanProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#8197)
-- Fix stale status code reporting on self-observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8226)
-- Fix a concurrent `Collect` data race and potential panic in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` when `WithResourceAsConstantLabels` option is used. (#8227)
-- Fix race condition in `FixedSizeReservoir` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar` by reverting #7447. (#8249)
-- Fix `FixedSizeReservoir` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar` to safely handle zero size.
+- Fix gzipped request body replay on redirect in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#8135)
+- Fix gzipped request body replay on redirect in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8152)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` now uses `Value.String` formatting for label values following the [OpenTelemetry AnyValue representation for non-OTLP protocols](https://opentelemetry.io/docs/specs/otel/common/#anyvalue). (#8170)
+- Propagate errors from the exporter when calling `Shutdown` on `BatchSpanProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#8197)
+- Fix stale status code reporting on self-observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8226)
+- Fix a concurrent `Collect` data race and potential panic in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` when `WithResourceAsConstantLabels` option is used. (#8227)
+- Fix race condition in `FixedSizeReservoir` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar` by reverting #7447. (#8249)
+- Fix `FixedSizeReservoir` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar` to safely handle zero size.
   A capacity check in the constructor initializes the reservoir safely and skips initialization for zero-cap; early returns in `Offer()` and `Collect()` ensure no-op behavior. (#8295)
-- Fix counting of spans and logs in self-observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`, and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8254)
-- Drop conflicting scope attributes named `name`, `version`, or `schema_url` from metric labels in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`, preserving the dedicated `otel_scope_name`, `otel_scope_version`, and `otel_scope_schema_url` labels. (#8264)
-- Close schema files opened by `ParseFile` in `github.com/dwertyfa288/CLI/vendordeps/otel/schema/v1.0` and `github.com/dwertyfa288/CLI/vendordeps/otel/schema/v1.1`. ([GHSA-995v-fvrw-c78m](https://github.com/open-telemetry/opentelemetry-go/security/advisories/GHSA-995v-fvrw-c78m))
-- Enforce the 8192-byte baggage size limit during extraction/parsing, changing behavior when the limit is exceeded in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` and `github.com/dwertyfa288/CLI/vendordeps/otel/propagation`. (#8222)
-- Fix `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.41.0` to include `Attr*` helper methods for required attributes on observable instruments. (#8361)
-- Limit baggage extraction error reporting in `github.com/dwertyfa288/CLI/vendordeps/otel/propagation` to prevent malformed or oversized baggage headers from flooding logs. ([GHSA-5wrp-cwcj-q835](https://github.com/open-telemetry/opentelemetry-go/security/advisories/GHSA-5wrp-cwcj-q835))
+- Fix counting of spans and logs in self-observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`, and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8254)
+- Drop conflicting scope attributes named `name`, `version`, or `schema_url` from metric labels in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`, preserving the dedicated `otel_scope_name`, `otel_scope_version`, and `otel_scope_schema_url` labels. (#8264)
+- Close schema files opened by `ParseFile` in `github.com/SpherePrime/CLI/vendordeps/otel/schema/v1.0` and `github.com/SpherePrime/CLI/vendordeps/otel/schema/v1.1`. ([GHSA-995v-fvrw-c78m](https://github.com/open-telemetry/opentelemetry-go/security/advisories/GHSA-995v-fvrw-c78m))
+- Enforce the 8192-byte baggage size limit during extraction/parsing, changing behavior when the limit is exceeded in `github.com/SpherePrime/CLI/vendordeps/otel/baggage` and `github.com/SpherePrime/CLI/vendordeps/otel/propagation`. (#8222)
+- Fix `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.41.0` to include `Attr*` helper methods for required attributes on observable instruments. (#8361)
+- Limit baggage extraction error reporting in `github.com/SpherePrime/CLI/vendordeps/otel/propagation` to prevent malformed or oversized baggage headers from flooding logs. ([GHSA-5wrp-cwcj-q835](https://github.com/open-telemetry/opentelemetry-go/security/advisories/GHSA-5wrp-cwcj-q835))
 
 ## [1.43.0/0.65.0/0.19.0] 2026-04-02
 
 ### Added
 
-- Add `IsRandom` and `WithRandom` on `TraceFlags`, and `IsRandom` on `SpanContext` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace` for [W3C Trace Context Level 2 Random Trace ID Flag](https://www.w3.org/TR/trace-context-2/#random-trace-id-flag) support. (#8012)
-- Add service detection with `WithService` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`. (#7642)
-- Add `DefaultWithContext` and `EnvironmentWithContext` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource` to support plumbing `context.Context` through default and environment detectors. (#8051)
-- Support attributes with empty value (`attribute.EMPTY`) in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#8038)
-- Support attributes with empty value (`attribute.EMPTY`) in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#8038)
-- Support attributes with empty value (`attribute.EMPTY`) in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#8038)
-- Support attributes with empty value (`attribute.EMPTY`) in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#8038)
-- Support attributes with empty value (`attribute.EMPTY`) in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#8038)
-- Support attributes with empty value (`attribute.EMPTY`) in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8038)
-- Support attributes with empty value (`attribute.EMPTY`) in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata/metricdatatest`. (#8038)
-- Add support for per-series start time tracking for cumulative metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`.
+- Add `IsRandom` and `WithRandom` on `TraceFlags`, and `IsRandom` on `SpanContext` in `github.com/SpherePrime/CLI/vendordeps/otel/trace` for [W3C Trace Context Level 2 Random Trace ID Flag](https://www.w3.org/TR/trace-context-2/#random-trace-id-flag) support. (#8012)
+- Add service detection with `WithService` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`. (#7642)
+- Add `DefaultWithContext` and `EnvironmentWithContext` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource` to support plumbing `context.Context` through default and environment detectors. (#8051)
+- Support attributes with empty value (`attribute.EMPTY`) in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#8038)
+- Support attributes with empty value (`attribute.EMPTY`) in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#8038)
+- Support attributes with empty value (`attribute.EMPTY`) in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#8038)
+- Support attributes with empty value (`attribute.EMPTY`) in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#8038)
+- Support attributes with empty value (`attribute.EMPTY`) in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#8038)
+- Support attributes with empty value (`attribute.EMPTY`) in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#8038)
+- Support attributes with empty value (`attribute.EMPTY`) in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata/metricdatatest`. (#8038)
+- Add support for per-series start time tracking for cumulative metrics in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`.
   Set `OTEL_GO_X_PER_SERIES_START_TIMESTAMPS=true` to enable. (#8060)
 - Add `WithCardinalityLimitSelector` for metric reader for configuring cardinality limits specific to the instrument kind. (#7855)
 
 ### Changed
 
-- Introduce the `EMPTY` Type in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` to reflect that an empty value is now a valid value, with `INVALID` remaining as a deprecated alias of `EMPTY`. (#8038)
-- Improve slice handling in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` to optimize short slice values with fixed-size fast paths. (#8039)
-- Improve performance of span metric recording in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` by returning early if self-observability is not enabled. (#8067)
-- Improve formatting of metric data diffs in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata/metricdatatest`. (#8073)
+- Introduce the `EMPTY` Type in `github.com/SpherePrime/CLI/vendordeps/otel/attribute` to reflect that an empty value is now a valid value, with `INVALID` remaining as a deprecated alias of `EMPTY`. (#8038)
+- Improve slice handling in `github.com/SpherePrime/CLI/vendordeps/otel/attribute` to optimize short slice values with fixed-size fast paths. (#8039)
+- Improve performance of span metric recording in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` by returning early if self-observability is not enabled. (#8067)
+- Improve formatting of metric data diffs in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata/metricdatatest`. (#8073)
 
 ### Deprecated
 
-- Deprecate `INVALID` in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. Use `EMPTY` instead. (#8038)
+- Deprecate `INVALID` in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. Use `EMPTY` instead. (#8038)
 
 ### Fixed
 
 - Return spec-compliant `TraceIdRatioBased` description. This is a breaking behavioral change, but it is necessary to
   make the implementation [spec-compliant](https://opentelemetry.io/docs/specs/otel/trace/sdk/#traceidratiobased). (#8027)
-- Fix a race condition in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` where the lastvalue aggregation could collect the value 0 even when no zero-value measurements were recorded. (#8056)
-- Limit HTTP response body to 4 MiB in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` to mitigate excessive memory usage caused by a misconfigured or malicious server.
+- Fix a race condition in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` where the lastvalue aggregation could collect the value 0 even when no zero-value measurements were recorded. (#8056)
+- Limit HTTP response body to 4 MiB in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` to mitigate excessive memory usage caused by a misconfigured or malicious server.
   Responses exceeding the limit are treated as non-retryable errors. (#8108)
-- Limit HTTP response body to 4 MiB in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` to mitigate excessive memory usage caused by a misconfigured or malicious server.
+- Limit HTTP response body to 4 MiB in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` to mitigate excessive memory usage caused by a misconfigured or malicious server.
   Responses exceeding the limit are treated as non-retryable errors. (#8108)
-- Limit HTTP response body to 4 MiB in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` to mitigate excessive memory usage caused by a misconfigured or malicious server.
+- Limit HTTP response body to 4 MiB in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` to mitigate excessive memory usage caused by a misconfigured or malicious server.
   Responses exceeding the limit are treated as non-retryable errors. (#8108)
-- `WithHostID` detector in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource` to use full path for `kenv` command on BSD. (#8113)
-- Fix missing `request.GetBody` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` to correctly handle HTTP2 GOAWAY frame. (#8096)
+- `WithHostID` detector in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource` to use full path for `kenv` command on BSD. (#8113)
+- Fix missing `request.GetBody` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` to correctly handle HTTP2 GOAWAY frame. (#8096)
 
 ## [1.42.0/0.64.0/0.18.0/0.0.16] 2026-03-06
 
 ### Added
 
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.40.0` package.
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.40.0` package.
   The package contains semantic conventions from the `v1.40.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.40.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.39.0`. (#7985)
-- Add `Err` and `SetErr` on `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/log` to attach an error and set record exception attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/log/sdk`. (#7924)
+  See the [migration documentation](./semconv/v1.40.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.39.0`. (#7985)
+- Add `Err` and `SetErr` on `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/log` to attach an error and set record exception attributes in `github.com/SpherePrime/CLI/vendordeps/otel/log/sdk`. (#7924)
 
 ### Changed
 
-- `TracerProvider.ForceFlush` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` joins errors together and continues iteration through SpanProcessors as opposed to returning the first encountered error without attempting exports on subsequent SpanProcessors. (#7856)
+- `TracerProvider.ForceFlush` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` joins errors together and continues iteration through SpanProcessors as opposed to returning the first encountered error without attempting exports on subsequent SpanProcessors. (#7856)
 
 ### Fixed
 
-- Fix missing `request.GetBody` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` to correctly handle HTTP2 GOAWAY frame. (#7931)
+- Fix missing `request.GetBody` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` to correctly handle HTTP2 GOAWAY frame. (#7931)
 - Fix semconv v1.39.0 generated metric helpers skipping required attributes when extra attributes were empty. (#7964)
-- Preserve W3C TraceFlags bitmask (including the random Trace ID flag) during trace context extraction and injection in `github.com/dwertyfa288/CLI/vendordeps/otel/propagation`. (#7834)
+- Preserve W3C TraceFlags bitmask (including the random Trace ID flag) during trace context extraction and injection in `github.com/SpherePrime/CLI/vendordeps/otel/propagation`. (#7834)
 
 ### Removed
 
@@ -279,114 +279,114 @@ The next release will require at least [Go 1.25].
 
 ### Fixed
 
-- Update `Baggage` in `github.com/dwertyfa288/CLI/vendordeps/otel/propagation` and `Parse` and `New` in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` to comply with W3C Baggage specification limits.
+- Update `Baggage` in `github.com/SpherePrime/CLI/vendordeps/otel/propagation` and `Parse` and `New` in `github.com/SpherePrime/CLI/vendordeps/otel/baggage` to comply with W3C Baggage specification limits.
   `New` and `Parse` now return partial baggage along with an error when limits are exceeded.
   Errors from baggage extraction are reported to the global error handler. (#7880)
-- Return an error when the endpoint is configured as insecure and with TLS configuration in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#7914)
-- Return an error when the endpoint is configured as insecure and with TLS configuration in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#7914)
-- Return an error when the endpoint is configured as insecure and with TLS configuration in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#7914)
+- Return an error when the endpoint is configured as insecure and with TLS configuration in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#7914)
+- Return an error when the endpoint is configured as insecure and with TLS configuration in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#7914)
+- Return an error when the endpoint is configured as insecure and with TLS configuration in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#7914)
 
 ## [1.40.0/0.62.0/0.16.0] 2026-02-02
 
 ### Added
 
-- Add `AlwaysRecord` sampler in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#7724)
-- Add `Enabled` method to all synchronous instrument interfaces (`Float64Counter`, `Float64UpDownCounter`, `Float64Histogram`, `Float64Gauge`, `Int64Counter`, `Int64UpDownCounter`, `Int64Histogram`, `Int64Gauge`,) in `github.com/dwertyfa288/CLI/vendordeps/otel/metric`.
+- Add `AlwaysRecord` sampler in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#7724)
+- Add `Enabled` method to all synchronous instrument interfaces (`Float64Counter`, `Float64UpDownCounter`, `Float64Histogram`, `Float64Gauge`, `Int64Counter`, `Int64UpDownCounter`, `Int64Histogram`, `Int64Gauge`,) in `github.com/SpherePrime/CLI/vendordeps/otel/metric`.
   This stabilizes the synchronous instrument enabled feature, allowing users to check if an instrument will process measurements before performing computationally expensive operations. (#7763)
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.39.0` package.
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.39.0` package.
   The package contains semantic conventions from the `v1.39.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.39.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.38.0.` (#7783, #7789)
+  See the [migration documentation](./semconv/v1.39.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.38.0.` (#7783, #7789)
 
 ### Changed
 
-- Improve the concurrent performance of `HistogramReservoir` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar` by 4x. (#7443)
-- Improve the concurrent performance of `FixedSizeReservoir` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar`. (#7447)
-- Improve performance of concurrent histogram measurements in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#7474)
-- Improve performance of concurrent synchronous gauge measurements in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#7478)
-- Add experimental observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric`. (#7492)
-- `Exporter` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` ignores metrics with the scope `go.opentelemetry.io/contrib/bridges/prometheus`.
+- Improve the concurrent performance of `HistogramReservoir` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar` by 4x. (#7443)
+- Improve the concurrent performance of `FixedSizeReservoir` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar`. (#7447)
+- Improve performance of concurrent histogram measurements in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#7474)
+- Improve performance of concurrent synchronous gauge measurements in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#7478)
+- Add experimental observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric`. (#7492)
+- `Exporter` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` ignores metrics with the scope `go.opentelemetry.io/contrib/bridges/prometheus`.
   This prevents scrape failures when the Prometheus exporter is misconfigured to get data from the Prometheus bridge. (#7688)
-- Improve performance of concurrent exponential histogram measurements in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#7702)
-- The `rpc.grpc.status_code` attribute in the experimental metrics emitted from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` is replaced with the `rpc.response.status_code` attribute to align with the semantic conventions. (#7854)
-- The `rpc.grpc.status_code` attribute in the experimental metrics emitted from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` is replaced with the `rpc.response.status_code` attribute to align with the semantic conventions. (#7854)
+- Improve performance of concurrent exponential histogram measurements in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#7702)
+- The `rpc.grpc.status_code` attribute in the experimental metrics emitted from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` is replaced with the `rpc.response.status_code` attribute to align with the semantic conventions. (#7854)
+- The `rpc.grpc.status_code` attribute in the experimental metrics emitted from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` is replaced with the `rpc.response.status_code` attribute to align with the semantic conventions. (#7854)
 
 ### Fixed
 
-- Fix bad log message when key-value pairs are dropped because of key duplication in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#7662)
-- Fix `DroppedAttributes` on `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` to not count the non-attribute key-value pairs dropped because of key duplication. (#7662)
-- Fix `SetAttributes` on `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` to not log that attributes are dropped when they are actually not dropped. (#7662)
-- Fix missing `request.GetBody` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` to correctly handle HTTP/2 `GOAWAY` frame. (#7794)
-- `WithHostID` detector in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource` to use full path for `ioreg` command on Darwin (macOS). (#7818)
+- Fix bad log message when key-value pairs are dropped because of key duplication in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#7662)
+- Fix `DroppedAttributes` on `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` to not count the non-attribute key-value pairs dropped because of key duplication. (#7662)
+- Fix `SetAttributes` on `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` to not log that attributes are dropped when they are actually not dropped. (#7662)
+- Fix missing `request.GetBody` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` to correctly handle HTTP/2 `GOAWAY` frame. (#7794)
+- `WithHostID` detector in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource` to use full path for `ioreg` command on Darwin (macOS). (#7818)
 
 ### Deprecated
 
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin`.
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin`.
   For more information, see the [OTel blog post deprecating the Zipkin exporter](https://opentelemetry.io/blog/2025/deprecating-zipkin-exporters/). (#7670)
 
 ## [1.39.0/0.61.0/0.15.0/0.0.14] 2025-12-05
 
 ### Added
 
-- Greatly reduce the cost of recording metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` using hashing for map keys. (#7175)
-- Add `WithInstrumentationAttributeSet` option to `github.com/dwertyfa288/CLI/vendordeps/otel/log`, `github.com/dwertyfa288/CLI/vendordeps/otel/metric`, and `github.com/dwertyfa288/CLI/vendordeps/otel/trace` packages.
+- Greatly reduce the cost of recording metrics in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` using hashing for map keys. (#7175)
+- Add `WithInstrumentationAttributeSet` option to `github.com/SpherePrime/CLI/vendordeps/otel/log`, `github.com/SpherePrime/CLI/vendordeps/otel/metric`, and `github.com/SpherePrime/CLI/vendordeps/otel/trace` packages.
   This provides a concurrent-safe and performant alternative to `WithInstrumentationAttributes` by accepting a pre-constructed `attribute.Set`. (#7287)
-- Add experimental observability for the Prometheus exporter in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`.
-  Check the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus/internal/x` package documentation for more information. (#7345)
-- Add experimental observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#7353)
-- Add temporality selector functions `DeltaTemporalitySelector`, `CumulativeTemporalitySelector`, `LowMemoryTemporalitySelector` to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#7434)
-- Add experimental observability metrics for simple log processor in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#7548)
-- Add experimental observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#7459)
-- Add experimental observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#7486)
-- Add experimental observability metrics for simple span processor in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#7374)
-- Add experimental observability metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#7512)
-- Add experimental observability metrics for manual reader in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#7524)
-- Add experimental observability metrics for periodic reader in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#7571)
-- Support `OTEL_EXPORTER_OTLP_LOGS_INSECURE` and `OTEL_EXPORTER_OTLP_INSECURE` environmental variables in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#7608)
-- Add `Enabled` method to the `Processor` interface in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`.
+- Add experimental observability for the Prometheus exporter in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`.
+  Check the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus/internal/x` package documentation for more information. (#7345)
+- Add experimental observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#7353)
+- Add temporality selector functions `DeltaTemporalitySelector`, `CumulativeTemporalitySelector`, `LowMemoryTemporalitySelector` to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#7434)
+- Add experimental observability metrics for simple log processor in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#7548)
+- Add experimental observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#7459)
+- Add experimental observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#7486)
+- Add experimental observability metrics for simple span processor in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#7374)
+- Add experimental observability metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#7512)
+- Add experimental observability metrics for manual reader in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#7524)
+- Add experimental observability metrics for periodic reader in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#7571)
+- Support `OTEL_EXPORTER_OTLP_LOGS_INSECURE` and `OTEL_EXPORTER_OTLP_INSECURE` environmental variables in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#7608)
+- Add `Enabled` method to the `Processor` interface in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`.
   All `Processor` implementations now include an `Enabled` method. (#7639)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.38.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.38.0` package.
   The package contains semantic conventions from the `v1.38.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.38.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0.`(#7648)
+  See the [migration documentation](./semconv/v1.38.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0.`(#7648)
 
 ### Changed
 
-- `Distinct` in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` is no longer guaranteed to uniquely identify an attribute set.
+- `Distinct` in `github.com/SpherePrime/CLI/vendordeps/otel/attribute` is no longer guaranteed to uniquely identify an attribute set.
   Collisions between `Distinct` values for different Sets are possible with extremely high cardinality (billions of series per instrument), but are highly unlikely. (#7175)
-- `WithInstrumentationAttributes` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace` synchronously de-duplicates the passed attributes instead of delegating it to the returned `TracerOption`. (#7266)
-- `WithInstrumentationAttributes` in `github.com/dwertyfa288/CLI/vendordeps/otel/meter` synchronously de-duplicates the passed attributes instead of delegating it to the returned `MeterOption`. (#7266)
-- `WithInstrumentationAttributes` in `github.com/dwertyfa288/CLI/vendordeps/otel/log` synchronously de-duplicates the passed attributes instead of delegating it to the returned `LoggerOption`. (#7266)
-- Rename the `OTEL_GO_X_SELF_OBSERVABILITY` environment variable to `OTEL_GO_X_OBSERVABILITY` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`, `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`, and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace`. (#7302)
-- Improve performance of histogram `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` when min and max are disabled using `NoMinMax`. (#7306)
-- Improve error handling for dropped data during translation by using `prometheus.NewInvalidMetric` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`.
+- `WithInstrumentationAttributes` in `github.com/SpherePrime/CLI/vendordeps/otel/trace` synchronously de-duplicates the passed attributes instead of delegating it to the returned `TracerOption`. (#7266)
+- `WithInstrumentationAttributes` in `github.com/SpherePrime/CLI/vendordeps/otel/meter` synchronously de-duplicates the passed attributes instead of delegating it to the returned `MeterOption`. (#7266)
+- `WithInstrumentationAttributes` in `github.com/SpherePrime/CLI/vendordeps/otel/log` synchronously de-duplicates the passed attributes instead of delegating it to the returned `LoggerOption`. (#7266)
+- Rename the `OTEL_GO_X_SELF_OBSERVABILITY` environment variable to `OTEL_GO_X_OBSERVABILITY` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`, `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`, and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace`. (#7302)
+- Improve performance of histogram `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` when min and max are disabled using `NoMinMax`. (#7306)
+- Improve error handling for dropped data during translation by using `prometheus.NewInvalidMetric` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`.
   ⚠️ **Breaking Change:** Previously, these cases were only logged and scrapes succeeded.
   Now, when translation would drop data (e.g., invalid label/value), the exporter emits a `NewInvalidMetric`, and Prometheus scrapes **fail with HTTP 500** by default.
   To preserve the prior behavior (scrapes succeed while errors are logged), configure your Prometheus HTTP handler with: `promhttp.HandlerOpts{ ErrorHandling: promhttp.ContinueOnError }`. (#7363)
-- Replace fnv hash with xxhash in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` for better performance. (#7371)
+- Replace fnv hash with xxhash in `github.com/SpherePrime/CLI/vendordeps/otel/attribute` for better performance. (#7371)
 - The default `TranslationStrategy` in `go.opentelemetry.io/exporters/prometheus` is changed from `otlptranslator.NoUTF8EscapingWithSuffixes` to `otlptranslator.UnderscoreEscapingWithSuffixes`. (#7421)
-- Improve performance of concurrent measurements in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#7427)
+- Improve performance of concurrent measurements in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#7427)
 - Include W3C TraceFlags (bits 0–7) in the OTLP `Span.Flags` field in `go.opentelemetry.io/exporters/otlp/otlptrace/otlptracehttp` and `go.opentelemetry.io/exporters/otlp/otlptrace/otlptracegrpc`. (#7438)
-- The `ErrorType` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0` now handles custom error types.
+- The `ErrorType` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0` now handles custom error types.
   If an error implements an `ErrorType() string` method, the return value of that method will be used as the error type. (#7442)
 
 ### Fixed
 
-- Fix `WithInstrumentationAttributes` options in `github.com/dwertyfa288/CLI/vendordeps/otel/trace`, `github.com/dwertyfa288/CLI/vendordeps/otel/metric`, and `github.com/dwertyfa288/CLI/vendordeps/otel/log` to properly merge attributes when passed multiple times instead of replacing them.
+- Fix `WithInstrumentationAttributes` options in `github.com/SpherePrime/CLI/vendordeps/otel/trace`, `github.com/SpherePrime/CLI/vendordeps/otel/metric`, and `github.com/SpherePrime/CLI/vendordeps/otel/log` to properly merge attributes when passed multiple times instead of replacing them.
   Attributes with duplicate keys will use the last value passed. (#7300)
-- The equality of `attribute.Set` when using the `Equal` method is not affected by the user overriding the empty set pointed to by `attribute.EmptySet` in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#7357)
-- Return partial OTLP export errors to the caller in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#7372)
-- Return partial OTLP export errors to the caller in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#7372)
-- Return partial OTLP export errors to the caller in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#7372)
-- Return partial OTLP export errors to the caller in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#7372)
-- Return partial OTLP export errors to the caller in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#7372)
-- Return partial OTLP export errors to the caller in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#7372)
-- Fix `AddAttributes`, `SetAttributes`, `SetBody` on `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` to not mutate input. (#7403)
-- Do not double record measurements of `RecordSet` methods in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0`. (#7655)
-- Do not double record measurements of `RecordSet` methods in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.36.0`. (#7656)
+- The equality of `attribute.Set` when using the `Equal` method is not affected by the user overriding the empty set pointed to by `attribute.EmptySet` in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#7357)
+- Return partial OTLP export errors to the caller in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#7372)
+- Return partial OTLP export errors to the caller in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#7372)
+- Return partial OTLP export errors to the caller in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#7372)
+- Return partial OTLP export errors to the caller in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#7372)
+- Return partial OTLP export errors to the caller in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#7372)
+- Return partial OTLP export errors to the caller in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#7372)
+- Fix `AddAttributes`, `SetAttributes`, `SetBody` on `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` to not mutate input. (#7403)
+- Do not double record measurements of `RecordSet` methods in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0`. (#7655)
+- Do not double record measurements of `RecordSet` methods in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.36.0`. (#7656)
 
 ### Removed
 
 - Drop support for [Go 1.23]. (#7274)
-- Remove the `FilterProcessor` interface in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`.
+- Remove the `FilterProcessor` interface in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`.
   The `Enabled` method has been added to the `Processor` interface instead.
   All `Processor` implementations must now implement the `Enabled` method.
   Custom processors that do not filter records can implement `Enabled` to return `true`. (#7639)
@@ -398,7 +398,7 @@ The next release will require at least [Go 1.24].
 
 ### Added
 
-- Add native histogram exemplar support in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#6772)
+- Add native histogram exemplar support in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#6772)
 - Add template attribute functions to the `go.opentelmetry.io/otel/semconv/v1.34.0` package. (#6939)
   - `ContainerLabel`
   - `DBOperationParameter`
@@ -429,160 +429,160 @@ The next release will require at least [Go 1.24].
   - `RPCGRPCRequestMetadata`
   - `RPCGRPCResponseMetadata`
 - Add `ErrorType` attribute helper function to the `go.opentelmetry.io/otel/semconv/v1.34.0` package. (#6962)
-- Add `WithAllowKeyDuplication` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` which can be used to disable deduplication for log records. (#6968)
-- Add `WithCardinalityLimit` option to configure the cardinality limit in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#6996, #7065, #7081, #7164, #7165, #7179)
-- Add `Clone` method to `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/log` that returns a copy of the record with no shared state. (#7001)
-- Add experimental self-observability span and batch span processor metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`.
-  Check the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace/internal/x` package documentation for more information. (#7027, #6393, #7209)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.36.0` package.
+- Add `WithAllowKeyDuplication` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` which can be used to disable deduplication for log records. (#6968)
+- Add `WithCardinalityLimit` option to configure the cardinality limit in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#6996, #7065, #7081, #7164, #7165, #7179)
+- Add `Clone` method to `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/log` that returns a copy of the record with no shared state. (#7001)
+- Add experimental self-observability span and batch span processor metrics in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`.
+  Check the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace/internal/x` package documentation for more information. (#7027, #6393, #7209)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.36.0` package.
   The package contains semantic conventions from the `v1.36.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.36.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.34.0.`(#7032, #7041)
-- Add support for configuring Prometheus name translation using `WithTranslationStrategy` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. The current default translation strategy when UTF-8 mode is enabled is `NoUTF8EscapingWithSuffixes`, but a future release will change the default strategy to `UnderscoreEscapingWithSuffixes` for compliance with the specification. (#7111)
-- Add experimental self-observability log metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`.
-  Check the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/internal/x` package documentation for more information. (#7121)
-- Add experimental self-observability trace exporter metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace`.
-  Check the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace/internal/x` package documentation for more information. (#7133)
+  See the [migration documentation](./semconv/v1.36.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.34.0.`(#7032, #7041)
+- Add support for configuring Prometheus name translation using `WithTranslationStrategy` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. The current default translation strategy when UTF-8 mode is enabled is `NoUTF8EscapingWithSuffixes`, but a future release will change the default strategy to `UnderscoreEscapingWithSuffixes` for compliance with the specification. (#7111)
+- Add experimental self-observability log metrics in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`.
+  Check the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/internal/x` package documentation for more information. (#7121)
+- Add experimental self-observability trace exporter metrics in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace`.
+  Check the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace/internal/x` package documentation for more information. (#7133)
 - Support testing of [Go 1.25]. (#7187)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0` package.
   The package contains semantic conventions from the `v1.37.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.37.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.36.0.`(#7254)
+  See the [migration documentation](./semconv/v1.37.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.36.0.`(#7254)
 
 ### Changed
 
-- Optimize `TraceIDFromHex` and `SpanIDFromHex` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#6791)
-- Change `AssertEqual` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest` to accept `TestingT` in order to support benchmarks and fuzz tests. (#6908)
-- Change `DefaultExemplarReservoirProviderSelector` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` to use `runtime.GOMAXPROCS(0)` instead of `runtime.NumCPU()` for the `FixedSizeReservoirProvider` default size. (#7094)
+- Optimize `TraceIDFromHex` and `SpanIDFromHex` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#6791)
+- Change `AssertEqual` in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest` to accept `TestingT` in order to support benchmarks and fuzz tests. (#6908)
+- Change `DefaultExemplarReservoirProviderSelector` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` to use `runtime.GOMAXPROCS(0)` instead of `runtime.NumCPU()` for the `FixedSizeReservoirProvider` default size. (#7094)
 
 ### Fixed
 
-- `SetBody` method of `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` now deduplicates key-value collections (`log.Value` of `log.KindMap` from `github.com/dwertyfa288/CLI/vendordeps/otel/log`). (#7002)
-- Fix `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` to not append a suffix if it's already present in metric name. (#7088)
-- Fix the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace` self-observability component type and name. (#7195)
-- Fix partial export count metric in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace`. (#7199)
+- `SetBody` method of `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` now deduplicates key-value collections (`log.Value` of `log.KindMap` from `github.com/SpherePrime/CLI/vendordeps/otel/log`). (#7002)
+- Fix `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` to not append a suffix if it's already present in metric name. (#7088)
+- Fix the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace` self-observability component type and name. (#7195)
+- Fix partial export count metric in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace`. (#7199)
 
 ### Deprecated
 
 - Deprecate `WithoutUnits` and `WithoutCounterSuffixes` options, preferring `WithTranslationStrategy` instead. (#7111)
-- Deprecate support for `OTEL_GO_X_CARDINALITY_LIMIT` environment variable in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. Use `WithCardinalityLimit` option instead. (#7166)
+- Deprecate support for `OTEL_GO_X_CARDINALITY_LIMIT` environment variable in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. Use `WithCardinalityLimit` option instead. (#7166)
 
 ## [0.59.1] 2025-07-21
 
 ### Changed
 
-- Retract `v0.59.0` release of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` module which appends incorrect unit suffixes. (#7046)
-- Change `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` to no longer deduplicate suffixes when UTF8 is enabled.
+- Retract `v0.59.0` release of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` module which appends incorrect unit suffixes. (#7046)
+- Change `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` to no longer deduplicate suffixes when UTF8 is enabled.
   It is recommended to disable unit and counter suffixes in the exporter, and manually add suffixes if you rely on the existing behavior. (#7044)
 
 ### Fixed
 
-- Fix `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` to properly handle unit suffixes when the unit is in brackets.
+- Fix `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` to properly handle unit suffixes when the unit is in brackets.
   E.g. `{spans}`. (#7044)
 
 ## [1.37.0/0.59.0/0.13.0] 2025-06-25
 
 ### Added
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.33.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.33.0` package.
   The package contains semantic conventions from the `v1.33.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.33.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.32.0.`(#6799)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.34.0` package.
+  See the [migration documentation](./semconv/v1.33.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.32.0.`(#6799)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.34.0` package.
   The package contains semantic conventions from the `v1.34.0` version of the OpenTelemetry Semantic Conventions. (#6812)
-- Add metric's schema URL as `otel_scope_schema_url` label in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#5947)
-- Add metric's scope attributes as `otel_scope_[attribute]` labels in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#5947)
-- Add `EventName` to `EnabledParameters` in `github.com/dwertyfa288/CLI/vendordeps/otel/log`. (#6825)
-- Add `EventName` to `EnabledParameters` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#6825)
-- Changed handling of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` metric renaming to add unit suffixes when it doesn't match one of the pre-defined values in the unit suffix map. (#6839)
+- Add metric's schema URL as `otel_scope_schema_url` label in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#5947)
+- Add metric's scope attributes as `otel_scope_[attribute]` labels in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#5947)
+- Add `EventName` to `EnabledParameters` in `github.com/SpherePrime/CLI/vendordeps/otel/log`. (#6825)
+- Add `EventName` to `EnabledParameters` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#6825)
+- Changed handling of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` metric renaming to add unit suffixes when it doesn't match one of the pre-defined values in the unit suffix map. (#6839)
 
 ### Changed
 
-- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing`. (#6827)
-- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin`. (#6829)
-- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/metric`. (#6832)
-- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`. (#6834)
-- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#6835)
-- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace`. (#6836)
-- `Record.Resource` now returns `*resource.Resource` instead of `resource.Resource` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#6864)
-- Retry now shows error cause for context timeout in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6898)
+- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing`. (#6827)
+- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin`. (#6829)
+- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/SpherePrime/CLI/vendordeps/otel/metric`. (#6832)
+- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`. (#6834)
+- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#6835)
+- The semantic conventions have been upgraded from `v1.26.0` to `v1.34.0` in `github.com/SpherePrime/CLI/vendordeps/otel/trace`. (#6836)
+- `Record.Resource` now returns `*resource.Resource` instead of `resource.Resource` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#6864)
+- Retry now shows error cause for context timeout in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6898)
 
 ### Fixed
 
-- Stop stripping trailing slashes from configured endpoint URL in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#6710)
-- Stop stripping trailing slashes from configured endpoint URL in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#6710)
-- Stop stripping trailing slashes from configured endpoint URL in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#6710)
-- Stop stripping trailing slashes from configured endpoint URL in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#6710)
-- Validate exponential histogram scale range for Prometheus compatibility in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#6822)
-- Context cancellation during metric pipeline produce does not corrupt data in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#6914)
+- Stop stripping trailing slashes from configured endpoint URL in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#6710)
+- Stop stripping trailing slashes from configured endpoint URL in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#6710)
+- Stop stripping trailing slashes from configured endpoint URL in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#6710)
+- Stop stripping trailing slashes from configured endpoint URL in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#6710)
+- Validate exponential histogram scale range for Prometheus compatibility in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#6822)
+- Context cancellation during metric pipeline produce does not corrupt data in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#6914)
 
 ### Removed
 
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` no longer exports `otel_scope_info` metric. (#6770)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` no longer exports `otel_scope_info` metric. (#6770)
 
 ## [0.12.2] 2025-05-22
 
 ### Fixed
 
-- Retract `v0.12.0` release of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` module that contains invalid dependencies. (#6804)
-- Retract `v0.12.0` release of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` module that contains invalid dependencies. (#6804)
-- Retract `v0.12.0` release of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog` module that contains invalid dependencies. (#6804)
+- Retract `v0.12.0` release of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` module that contains invalid dependencies. (#6804)
+- Retract `v0.12.0` release of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` module that contains invalid dependencies. (#6804)
+- Retract `v0.12.0` release of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog` module that contains invalid dependencies. (#6804)
 
 ## [0.12.1] 2025-05-21
 
 ### Fixes
 
-- Use the proper dependency version of `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#6800)
-- Use the proper dependency version of `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6800)
-- Use the proper dependency version of `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog`. (#6800)
+- Use the proper dependency version of `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#6800)
+- Use the proper dependency version of `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6800)
+- Use the proper dependency version of `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog`. (#6800)
 
 ## [1.36.0/0.58.0/0.12.0] 2025-05-20
 
 ### Added
 
-- Add exponential histogram support in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#6421)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.31.0` package.
+- Add exponential histogram support in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#6421)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.31.0` package.
   The package contains semantic conventions from the `v1.31.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.31.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.30.0`. (#6479)
-- Add `Recording`, `Scope`, and `Record` types in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#6507)
-- Add `WithHTTPClient` option to configure the `http.Client` used by `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#6751)
-- Add `WithHTTPClient` option to configure the `http.Client` used by `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#6752)
-- Add `WithHTTPClient` option to configure the `http.Client` used by `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6688)
-- Add `ValuesGetter` in `github.com/dwertyfa288/CLI/vendordeps/otel/propagation`, a `TextMapCarrier` that supports retrieving multiple values for a single key. (#5973)
-- Add `Values` method to `HeaderCarrier` to implement the new `ValuesGetter` interface in `github.com/dwertyfa288/CLI/vendordeps/otel/propagation`. (#5973)
-- Update `Baggage` in `github.com/dwertyfa288/CLI/vendordeps/otel/propagation` to retrieve multiple values for a key when the carrier implements `ValuesGetter`. (#5973)
-- Add `AssertEqual` function in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#6662)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.32.0` package.
+  See the [migration documentation](./semconv/v1.31.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.30.0`. (#6479)
+- Add `Recording`, `Scope`, and `Record` types in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#6507)
+- Add `WithHTTPClient` option to configure the `http.Client` used by `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#6751)
+- Add `WithHTTPClient` option to configure the `http.Client` used by `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#6752)
+- Add `WithHTTPClient` option to configure the `http.Client` used by `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6688)
+- Add `ValuesGetter` in `github.com/SpherePrime/CLI/vendordeps/otel/propagation`, a `TextMapCarrier` that supports retrieving multiple values for a single key. (#5973)
+- Add `Values` method to `HeaderCarrier` to implement the new `ValuesGetter` interface in `github.com/SpherePrime/CLI/vendordeps/otel/propagation`. (#5973)
+- Update `Baggage` in `github.com/SpherePrime/CLI/vendordeps/otel/propagation` to retrieve multiple values for a key when the carrier implements `ValuesGetter`. (#5973)
+- Add `AssertEqual` function in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#6662)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.32.0` package.
   The package contains semantic conventions from the `v1.32.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.32.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.31.0`(#6782)
-- Add `Transform` option in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#6794)
-- Add `Desc` option in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#6796)
+  See the [migration documentation](./semconv/v1.32.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.31.0`(#6782)
+- Add `Transform` option in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#6794)
+- Add `Desc` option in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#6796)
 
 ### Removed
 
 - Drop support for [Go 1.22]. (#6381, #6418)
-- Remove `Resource` field from `EnabledParameters` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#6494)
-- Remove `RecordFactory` type from `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#6492)
-- Remove `ScopeRecords`, `EmittedRecord`, and `RecordFactory` types from `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#6507)
-- Remove `AssertRecordEqual` function in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`, use `AssertEqual` instead. (#6662)
+- Remove `Resource` field from `EnabledParameters` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#6494)
+- Remove `RecordFactory` type from `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#6492)
+- Remove `ScopeRecords`, `EmittedRecord`, and `RecordFactory` types from `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#6507)
+- Remove `AssertRecordEqual` function in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`, use `AssertEqual` instead. (#6662)
 
 ### Changed
 
 - ⚠️ Update `github.com/prometheus/client_golang` to `v1.21.1`, which changes the `NameValidationScheme` to `UTF8Validation`.
   This allows metrics names to keep original delimiters (e.g. `.`), rather than replacing with underscores.
   This can be reverted by setting `github.com/prometheus/common/model.NameValidationScheme` to `LegacyValidation` in `github.com/prometheus/common/model`. (#6433)
-- Initialize map with `len(keys)` in `NewAllowKeysFilter` and `NewDenyKeysFilter` to avoid unnecessary allocations in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#6455)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest` is now a separate Go module. (#6465)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest` is now a separate Go module. (#6466)
-- `Recorder` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest` no longer separately stores records emitted by loggers with the same instrumentation scope. (#6507)
-- Improve performance of `BatchProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` by not exporting when exporter cannot accept more. (#6569, #6641)
+- Initialize map with `len(keys)` in `NewAllowKeysFilter` and `NewDenyKeysFilter` to avoid unnecessary allocations in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#6455)
+- `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest` is now a separate Go module. (#6465)
+- `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest` is now a separate Go module. (#6466)
+- `Recorder` in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest` no longer separately stores records emitted by loggers with the same instrumentation scope. (#6507)
+- Improve performance of `BatchProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` by not exporting when exporter cannot accept more. (#6569, #6641)
 
 ### Deprecated
 
-- Deprecate support for `model.LegacyValidation` for `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#6449)
+- Deprecate support for `model.LegacyValidation` for `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#6449)
 
 ### Fixes
 
-- Stop percent encoding header environment variables in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6392)
-- Ensure the `noopSpan.tracerProvider` method is not inlined in `github.com/dwertyfa288/CLI/vendordeps/otel/trace` so the `go.opentelemetry.io/auto` instrumentation can instrument non-recording spans. (#6456)
-- Use a `sync.Pool` instead of allocating `metricdata.ResourceMetrics` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#6472)
+- Stop percent encoding header environment variables in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6392)
+- Ensure the `noopSpan.tracerProvider` method is not inlined in `github.com/SpherePrime/CLI/vendordeps/otel/trace` so the `go.opentelemetry.io/auto` instrumentation can instrument non-recording spans. (#6456)
+- Use a `sync.Pool` instead of allocating `metricdata.ResourceMetrics` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#6472)
 
 ## [1.35.0/0.57.0/0.11.0] 2025-03-05
 
@@ -591,26 +591,26 @@ The next release will require at least [Go 1.23].
 
 ### Added
 
-- Add `ValueFromAttribute` and `KeyValueFromAttribute` in `github.com/dwertyfa288/CLI/vendordeps/otel/log`. (#6180)
-- Add `EventName` and `SetEventName` to `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/log`. (#6187)
-- Add `EventName` to `RecordFactory` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#6187)
-- `AssertRecordEqual` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest` checks `Record.EventName`. (#6187)
-- Add `EventName` and `SetEventName` to `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#6193)
-- Add `EventName` to `RecordFactory` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest`. (#6193)
-- Emit `Record.EventName` field in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#6211)
-- Emit `Record.EventName` field in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6211)
-- Emit `Record.EventName` field in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog` (#6210)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.28.0` package.
+- Add `ValueFromAttribute` and `KeyValueFromAttribute` in `github.com/SpherePrime/CLI/vendordeps/otel/log`. (#6180)
+- Add `EventName` and `SetEventName` to `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/log`. (#6187)
+- Add `EventName` to `RecordFactory` in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#6187)
+- `AssertRecordEqual` in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest` checks `Record.EventName`. (#6187)
+- Add `EventName` and `SetEventName` to `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#6193)
+- Add `EventName` to `RecordFactory` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest`. (#6193)
+- Emit `Record.EventName` field in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#6211)
+- Emit `Record.EventName` field in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#6211)
+- Emit `Record.EventName` field in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog` (#6210)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.28.0` package.
   The package contains semantic conventions from the `v1.28.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.28.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.27.0`(#6236)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.30.0` package.
+  See the [migration documentation](./semconv/v1.28.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.27.0`(#6236)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.30.0` package.
   The package contains semantic conventions from the `v1.30.0` version of the OpenTelemetry Semantic Conventions.
-  See the [migration documentation](./semconv/v1.30.0/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.28.0`(#6240)
+  See the [migration documentation](./semconv/v1.30.0/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.28.0`(#6240)
 - Document the pitfalls of using `Resource` as a comparable type.
   `Resource.Equal` and `Resource.Equivalent` should be used instead. (#6272)
 - Support [Go 1.24]. (#6304)
-- Add `FilterProcessor` and `EnabledParameters` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`.
-  It replaces `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/internal/x.FilterProcessor`.
+- Add `FilterProcessor` and `EnabledParameters` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`.
+  It replaces `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/internal/x.FilterProcessor`.
   Compared to previous version it additionally gives the possibility to filter by resource and instrumentation scope. (#6317)
 
 ### Changed
@@ -621,28 +621,28 @@ The next release will require at least [Go 1.23].
 
 ### Fixes
 
-- Eliminate goroutine leak for the processor returned by `NewSimpleSpanProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` when `Shutdown` is called and the passed `ctx` is canceled and `SpanExporter.Shutdown` has not returned. (#6368)
-- Eliminate goroutine leak for the processor returned by `NewBatchSpanProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` when `ForceFlush` is called and the passed `ctx` is canceled and `SpanExporter.Export` has not returned. (#6369)
+- Eliminate goroutine leak for the processor returned by `NewSimpleSpanProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` when `Shutdown` is called and the passed `ctx` is canceled and `SpanExporter.Shutdown` has not returned. (#6368)
+- Eliminate goroutine leak for the processor returned by `NewBatchSpanProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` when `ForceFlush` is called and the passed `ctx` is canceled and `SpanExporter.Export` has not returned. (#6369)
 
 ## [1.34.0/0.56.0/0.10.0] 2025-01-17
 
 ### Changed
 
-- Remove the notices from `Logger` to make the whole Logs API user-facing in `github.com/dwertyfa288/CLI/vendordeps/otel/log`. (#6167)
+- Remove the notices from `Logger` to make the whole Logs API user-facing in `github.com/SpherePrime/CLI/vendordeps/otel/log`. (#6167)
 
 ### Fixed
 
 - Relax minimum Go version to 1.22.0 in various modules. (#6073)
-- The `Type` name logged for the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` client is corrected from `otlphttpgrpc` to `otlptracegrpc`. (#6143)
-- The `Type` name logged for the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlphttpgrpc` client is corrected from `otlphttphttp` to `otlptracehttp`. (#6143)
+- The `Type` name logged for the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` client is corrected from `otlphttpgrpc` to `otlptracegrpc`. (#6143)
+- The `Type` name logged for the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlphttpgrpc` client is corrected from `otlphttphttp` to `otlptracehttp`. (#6143)
 
 ## [1.33.0/0.55.0/0.9.0/0.0.12] 2024-12-12
 
 ### Added
 
-- Add `Reset` method to `SpanRecorder` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace/tracetest`. (#5994)
-- Add `EnabledInstrument` interface in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/internal/x`.
-  This is an experimental interface that is implemented by synchronous instruments provided by `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`.
+- Add `Reset` method to `SpanRecorder` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace/tracetest`. (#5994)
+- Add `EnabledInstrument` interface in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/internal/x`.
+  This is an experimental interface that is implemented by synchronous instruments provided by `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`.
   Users can use it to avoid performing computationally expensive operations when recording measurements.
   It does not fall within the scope of the OpenTelemetry Go versioning and stability [policy](./VERSIONING.md) and it may be changed in backwards incompatible ways or removed in feature releases. (#6016)
 
@@ -650,87 +650,87 @@ The next release will require at least [Go 1.23].
 
 - The default global API now supports full auto-instrumentation from the `go.opentelemetry.io/auto` package.
   See that package for more information. (#5920)
-- Propagate non-retryable error messages to client in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#5929)
-- Propagate non-retryable error messages to client in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5929)
-- Propagate non-retryable error messages to client in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#5929)
+- Propagate non-retryable error messages to client in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#5929)
+- Propagate non-retryable error messages to client in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5929)
+- Propagate non-retryable error messages to client in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#5929)
 - Performance improvements for attribute value `AsStringSlice`, `AsFloat64Slice`, `AsInt64Slice`, `AsBoolSlice`. (#6011)
-- Change `EnabledParameters` to have a `Severity` field instead of a getter and setter in `github.com/dwertyfa288/CLI/vendordeps/otel/log`. (#6009)
+- Change `EnabledParameters` to have a `Severity` field instead of a getter and setter in `github.com/SpherePrime/CLI/vendordeps/otel/log`. (#6009)
 
 ### Fixed
 
-- Fix inconsistent request body closing in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#5954)
-- Fix inconsistent request body closing in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5954)
-- Fix inconsistent request body closing in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#5954)
-- Fix invalid exemplar keys in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#5995)
-- Fix attribute value truncation in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#5997)
-- Fix attribute value truncation in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#6032)
+- Fix inconsistent request body closing in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#5954)
+- Fix inconsistent request body closing in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5954)
+- Fix inconsistent request body closing in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#5954)
+- Fix invalid exemplar keys in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#5995)
+- Fix attribute value truncation in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#5997)
+- Fix attribute value truncation in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#6032)
 
 ## [1.32.0/0.54.0/0.8.0/0.0.11] 2024-11-08
 
 ### Added
 
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar.AlwaysOffFilter`, which can be used to disable exemplar recording. (#5850)
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric.WithExemplarFilter`, which can be used to configure the exemplar filter used by the metrics SDK. (#5850)
-- Add `ExemplarReservoirProviderSelector` and `DefaultExemplarReservoirProviderSelector` to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`, which defines the exemplar reservoir to use based on the aggregation of the metric. (#5861)
-- Add `ExemplarReservoirProviderSelector` to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric.Stream` to allow using views to configure the exemplar reservoir to use for a metric. (#5861)
-- Add `ReservoirProvider`, `HistogramReservoirProvider` and `FixedSizeReservoirProvider` to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar` to make it convenient to use providers of Reservoirs. (#5861)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.27.0` package.
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar.AlwaysOffFilter`, which can be used to disable exemplar recording. (#5850)
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric.WithExemplarFilter`, which can be used to configure the exemplar filter used by the metrics SDK. (#5850)
+- Add `ExemplarReservoirProviderSelector` and `DefaultExemplarReservoirProviderSelector` to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`, which defines the exemplar reservoir to use based on the aggregation of the metric. (#5861)
+- Add `ExemplarReservoirProviderSelector` to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric.Stream` to allow using views to configure the exemplar reservoir to use for a metric. (#5861)
+- Add `ReservoirProvider`, `HistogramReservoirProvider` and `FixedSizeReservoirProvider` to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar` to make it convenient to use providers of Reservoirs. (#5861)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.27.0` package.
   The package contains semantic conventions from the `v1.27.0` version of the OpenTelemetry Semantic Conventions. (#5894)
-- Add `Attributes attribute.Set` field to `Scope` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/instrumentation`. (#5903)
-- Add `Attributes attribute.Set` field to `ScopeRecords` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest`. (#5927)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` adds instrumentation scope attributes. (#5934)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` adds instrumentation scope attributes. (#5934)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` adds instrumentation scope attributes. (#5935)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` adds instrumentation scope attributes. (#5935)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` adds instrumentation scope attributes. (#5933)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` adds instrumentation scope attributes. (#5933)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` adds instrumentation scope attributes in `otel_scope_info` metric as labels. (#5932)
+- Add `Attributes attribute.Set` field to `Scope` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/instrumentation`. (#5903)
+- Add `Attributes attribute.Set` field to `ScopeRecords` in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest`. (#5927)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` adds instrumentation scope attributes. (#5934)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` adds instrumentation scope attributes. (#5934)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` adds instrumentation scope attributes. (#5935)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` adds instrumentation scope attributes. (#5935)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` adds instrumentation scope attributes. (#5933)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` adds instrumentation scope attributes. (#5933)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` adds instrumentation scope attributes in `otel_scope_info` metric as labels. (#5932)
 
 ### Changed
 
-- Support scope attributes and make them as identifying for `Tracer` in `github.com/dwertyfa288/CLI/vendordeps/otel` and `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#5924)
-- Support scope attributes and make them as identifying for `Meter` in `github.com/dwertyfa288/CLI/vendordeps/otel` and `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#5926)
-- Support scope attributes and make them as identifying for `Logger` in `github.com/dwertyfa288/CLI/vendordeps/otel` and `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#5925)
-- Make schema URL and scope attributes as identifying for `Tracer` in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing`. (#5931)
-- Clear unneeded slice elements to allow GC to collect the objects in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` and `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#5804)
+- Support scope attributes and make them as identifying for `Tracer` in `github.com/SpherePrime/CLI/vendordeps/otel` and `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#5924)
+- Support scope attributes and make them as identifying for `Meter` in `github.com/SpherePrime/CLI/vendordeps/otel` and `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#5926)
+- Support scope attributes and make them as identifying for `Logger` in `github.com/SpherePrime/CLI/vendordeps/otel` and `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#5925)
+- Make schema URL and scope attributes as identifying for `Tracer` in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing`. (#5931)
+- Clear unneeded slice elements to allow GC to collect the objects in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` and `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#5804)
 
 ### Fixed
 
 - Global MeterProvider registration unwraps global instrument Observers, the undocumented Unwrap() methods are now private. (#5881)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` now keeps the metadata already present in the context when `WithHeaders` is used. (#5892)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` now keeps the metadata already present in the context when `WithHeaders` is used. (#5911)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` now keeps the metadata already present in the context when `WithHeaders` is used. (#5915)
-- Fix `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` trying to add exemplars to Gauge metrics, which is unsupported. (#5912)
-- Fix `WithEndpointURL` to always use a secure connection when an https URL is passed in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#5944)
-- Fix `WithEndpointURL` to always use a secure connection when an https URL is passed in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#5944)
-- Fix `WithEndpointURL` to always use a secure connection when an https URL is passed in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#5944)
-- Fix `WithEndpointURL` to always use a secure connection when an https URL is passed in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5944)
-- Fix incorrect metrics generated from callbacks when multiple readers are used in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#5900)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` now keeps the metadata already present in the context when `WithHeaders` is used. (#5892)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc` now keeps the metadata already present in the context when `WithHeaders` is used. (#5911)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` now keeps the metadata already present in the context when `WithHeaders` is used. (#5915)
+- Fix `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` trying to add exemplars to Gauge metrics, which is unsupported. (#5912)
+- Fix `WithEndpointURL` to always use a secure connection when an https URL is passed in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#5944)
+- Fix `WithEndpointURL` to always use a secure connection when an https URL is passed in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#5944)
+- Fix `WithEndpointURL` to always use a secure connection when an https URL is passed in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#5944)
+- Fix `WithEndpointURL` to always use a secure connection when an https URL is passed in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5944)
+- Fix incorrect metrics generated from callbacks when multiple readers are used in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#5900)
 
 ### Removed
 
-- Remove all examples under `github.com/dwertyfa288/CLI/vendordeps/otel/example` as they are moved to [Contrib repository](https://github.com/open-telemetry/opentelemetry-go-contrib/tree/main/examples). (#5930)
+- Remove all examples under `github.com/SpherePrime/CLI/vendordeps/otel/example` as they are moved to [Contrib repository](https://github.com/open-telemetry/opentelemetry-go-contrib/tree/main/examples). (#5930)
 
 ## [1.31.0/0.53.0/0.7.0/0.0.10] 2024-10-11
 
 ### Added
 
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/exemplar` package which includes `Exemplar`, `Filter`, `TraceBasedFilter`, `AlwaysOnFilter`, `HistogramReservoir`, `FixedSizeReservoir`, `Reservoir`, `Value` and `ValueType` types. These will be used for configuring the exemplar reservoir for the metrics sdk. (#5747, #5862)
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/exemplar` package which includes `Exemplar`, `Filter`, `TraceBasedFilter`, `AlwaysOnFilter`, `HistogramReservoir`, `FixedSizeReservoir`, `Reservoir`, `Value` and `ValueType` types. These will be used for configuring the exemplar reservoir for the metrics sdk. (#5747, #5862)
 - Add `WithExportBufferSize` option to log batch processor.(#5877)
 
 ### Changed
 
-- Enable exemplars by default in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. Exemplars can be disabled by setting `OTEL_METRICS_EXEMPLAR_FILTER=always_off` (#5778)
-- `Logger.Enabled` in `github.com/dwertyfa288/CLI/vendordeps/otel/log` now accepts a newly introduced `EnabledParameters` type instead of `Record`. (#5791)
-- `FilterProcessor.Enabled` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/internal/x` now accepts `EnabledParameters` instead of `Record`. (#5791)
-- The `Record` type in `github.com/dwertyfa288/CLI/vendordeps/otel/log` is no longer comparable. (#5847)
+- Enable exemplars by default in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. Exemplars can be disabled by setting `OTEL_METRICS_EXEMPLAR_FILTER=always_off` (#5778)
+- `Logger.Enabled` in `github.com/SpherePrime/CLI/vendordeps/otel/log` now accepts a newly introduced `EnabledParameters` type instead of `Record`. (#5791)
+- `FilterProcessor.Enabled` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/internal/x` now accepts `EnabledParameters` instead of `Record`. (#5791)
+- The `Record` type in `github.com/SpherePrime/CLI/vendordeps/otel/log` is no longer comparable. (#5847)
 - Performance improvements for the trace SDK `SetAttributes` method in `Span`. (#5864)
 - Reduce memory allocations for the `Event` and `Link` lists in `Span`. (#5858)
 - Performance improvements for the trace SDK `AddEvent`, `AddLink`, `RecordError` and `End` methods in `Span`. (#5874)
 
 ### Deprecated
 
-- Deprecate all examples under `github.com/dwertyfa288/CLI/vendordeps/otel/example` as they are moved to [Contrib repository](https://github.com/open-telemetry/opentelemetry-go-contrib/tree/main/examples). (#5854)
+- Deprecate all examples under `github.com/SpherePrime/CLI/vendordeps/otel/example` as they are moved to [Contrib repository](https://github.com/open-telemetry/opentelemetry-go-contrib/tree/main/examples). (#5854)
 
 ### Fixed
 
@@ -744,16 +744,16 @@ The next release will require at least [Go 1.23].
 
 ### Added
 
-- Support `OTEL_EXPORTER_OTLP_LOGS_INSECURE` and `OTEL_EXPORTER_OTLP_INSECURE` environments in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#5739)
+- Support `OTEL_EXPORTER_OTLP_LOGS_INSECURE` and `OTEL_EXPORTER_OTLP_INSECURE` environments in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`. (#5739)
 - The `WithResource` option for `NewMeterProvider` now merges the provided resources with the ones from environment variables. (#5773)
 - The `WithResource` option for `NewLoggerProvider` now merges the provided resources with the ones from environment variables. (#5773)
-- Add UTF-8 support to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#5755)
+- Add UTF-8 support to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#5755)
 
 ### Fixed
 
 - Fix memory leak in the global `MeterProvider` when identical instruments are repeatedly created. (#5754)
 - Fix panic on instruments creation when setting meter provider. (#5758)
-- Fix an issue where `SetMeterProvider` in `github.com/dwertyfa288/CLI/vendordeps/otel` might miss the delegation for instruments and registries. (#5780)
+- Fix an issue where `SetMeterProvider` in `github.com/SpherePrime/CLI/vendordeps/otel` might miss the delegation for instruments and registries. (#5780)
 
 ### Removed
 
@@ -767,15 +767,15 @@ The next release will require at least [Go 1.22].
 ### Added
 
 - Add MacOS ARM64 platform to the compatibility testing suite. (#5577)
-- Add `InstrumentationScope` field to `SpanStub` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace/tracetest`, as a replacement for the deprecated `InstrumentationLibrary`. (#5627)
-- Make the initial release of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`.
+- Add `InstrumentationScope` field to `SpanStub` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace/tracetest`, as a replacement for the deprecated `InstrumentationLibrary`. (#5627)
+- Make the initial release of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc`.
   This new module contains an OTLP exporter that transmits log telemetry using gRPC.
   This module is unstable and breaking changes may be introduced.
   See our [versioning policy](VERSIONING.md) for more information about these stability guarantees. (#5629)
-- Add `Walk` function to `TraceState` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace` to iterate all the key-value pairs. (#5651)
-- Bridge the trace state in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`. (#5651)
-- Zero value of `SimpleProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` no longer panics. (#5665)
-- The `FilterProcessor` interface type is added in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/internal/x`.
+- Add `Walk` function to `TraceState` in `github.com/SpherePrime/CLI/vendordeps/otel/trace` to iterate all the key-value pairs. (#5651)
+- Bridge the trace state in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`. (#5651)
+- Zero value of `SimpleProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` no longer panics. (#5665)
+- The `FilterProcessor` interface type is added in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/internal/x`.
   This is an optional and experimental interface that log `Processor`s can implement to instruct the `Logger` if a `Record` will be processed or not.
   It replaces the existing `Enabled` method that is removed from the `Processor` interface itself.
   It does not fall within the scope of the OpenTelemetry Go versioning and stability [policy](./VERSIONING.md) and it may be changed in backwards incompatible ways or removed in feature releases. (#5692)
@@ -783,178 +783,178 @@ The next release will require at least [Go 1.22].
 
 ### Changed
 
-- `NewMemberRaw`, `NewKeyProperty` and `NewKeyValuePropertyRaw` in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` allow UTF-8 string in key. (#5132)
-- `Processor.OnEmit` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` now accepts a pointer to `Record` instead of a value so that the record modifications done in a processor are propagated to subsequent registered processors. (#5636)
-- `SimpleProcessor.Enabled` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` now returns `false` if the exporter is `nil`. (#5665)
-- Update the concurrency requirements of `Exporter` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#5666)
-- `SimpleProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` synchronizes `OnEmit` calls. (#5666)
-- The `Processor` interface in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` no longer includes the `Enabled` method.
-  See the `FilterProcessor` interface type added in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/internal/x` to continue providing this functionality. (#5692)
-- The `SimpleProcessor` type in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` is no longer comparable. (#5693)
-- The `BatchProcessor` type in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` is no longer comparable. (#5693)
+- `NewMemberRaw`, `NewKeyProperty` and `NewKeyValuePropertyRaw` in `github.com/SpherePrime/CLI/vendordeps/otel/baggage` allow UTF-8 string in key. (#5132)
+- `Processor.OnEmit` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` now accepts a pointer to `Record` instead of a value so that the record modifications done in a processor are propagated to subsequent registered processors. (#5636)
+- `SimpleProcessor.Enabled` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` now returns `false` if the exporter is `nil`. (#5665)
+- Update the concurrency requirements of `Exporter` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#5666)
+- `SimpleProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` synchronizes `OnEmit` calls. (#5666)
+- The `Processor` interface in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` no longer includes the `Enabled` method.
+  See the `FilterProcessor` interface type added in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/internal/x` to continue providing this functionality. (#5692)
+- The `SimpleProcessor` type in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` is no longer comparable. (#5693)
+- The `BatchProcessor` type in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` is no longer comparable. (#5693)
 
 ### Fixed
 
-- Correct comments for the priority of the `WithEndpoint` and `WithEndpointURL` options and their corresponding environment variables in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5584)
-- Pass the underlying error rather than a generic retry-able failure in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5541)
-- Correct the `Tracer`, `Meter`, and `Logger` names used in `github.com/dwertyfa288/CLI/vendordeps/otel/example/dice`. (#5612)
-- Correct the `Tracer` names used in `github.com/dwertyfa288/CLI/vendordeps/otel/example/namedtracer`. (#5612)
-- Correct the `Tracer` name used in `github.com/dwertyfa288/CLI/vendordeps/otel/example/opencensus`. (#5612)
-- Correct the `Tracer` and `Meter` names used in `github.com/dwertyfa288/CLI/vendordeps/otel/example/otel-collector`. (#5612)
-- Correct the `Tracer` names used in `github.com/dwertyfa288/CLI/vendordeps/otel/example/passthrough`. (#5612)
-- Correct the `Meter` name used in `github.com/dwertyfa288/CLI/vendordeps/otel/example/prometheus`. (#5612)
-- Correct the `Tracer` names used in `github.com/dwertyfa288/CLI/vendordeps/otel/example/zipkin`. (#5612)
-- Correct comments for the priority of the `WithEndpoint` and `WithEndpointURL` options and their corresponding environment variables in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#5641)
-- Correct comments for the priority of the `WithEndpoint` and `WithEndpointURL` options and their corresponding environment variables in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#5650)
-- Stop percent encoding header environment variables in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` (#5705)
-- Remove invalid environment variable header keys in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` (#5705)
+- Correct comments for the priority of the `WithEndpoint` and `WithEndpointURL` options and their corresponding environment variables in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5584)
+- Pass the underlying error rather than a generic retry-able failure in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#5541)
+- Correct the `Tracer`, `Meter`, and `Logger` names used in `github.com/SpherePrime/CLI/vendordeps/otel/example/dice`. (#5612)
+- Correct the `Tracer` names used in `github.com/SpherePrime/CLI/vendordeps/otel/example/namedtracer`. (#5612)
+- Correct the `Tracer` name used in `github.com/SpherePrime/CLI/vendordeps/otel/example/opencensus`. (#5612)
+- Correct the `Tracer` and `Meter` names used in `github.com/SpherePrime/CLI/vendordeps/otel/example/otel-collector`. (#5612)
+- Correct the `Tracer` names used in `github.com/SpherePrime/CLI/vendordeps/otel/example/passthrough`. (#5612)
+- Correct the `Meter` name used in `github.com/SpherePrime/CLI/vendordeps/otel/example/prometheus`. (#5612)
+- Correct the `Tracer` names used in `github.com/SpherePrime/CLI/vendordeps/otel/example/zipkin`. (#5612)
+- Correct comments for the priority of the `WithEndpoint` and `WithEndpointURL` options and their corresponding environment variables in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#5641)
+- Correct comments for the priority of the `WithEndpoint` and `WithEndpointURL` options and their corresponding environment variables in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#5650)
+- Stop percent encoding header environment variables in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` (#5705)
+- Remove invalid environment variable header keys in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`, `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` (#5705)
 
 ### Removed
 
-- The `Enabled` method of the `SimpleProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` is removed. (#5692)
-- The `Enabled` method of the `BatchProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` is removed. (#5692)
+- The `Enabled` method of the `SimpleProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` is removed. (#5692)
+- The `Enabled` method of the `BatchProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` is removed. (#5692)
 
 ## [1.28.0/0.50.0/0.4.0] 2024-07-02
 
 ### Added
 
-- The `IsEmpty` method is added to the `Instrument` type in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`.
+- The `IsEmpty` method is added to the `Instrument` type in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`.
   This method is used to check if an `Instrument` instance is a zero-value. (#5431)
-- Store and provide the emitted `context.Context` in `ScopeRecords` of `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest`. (#5468)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.26.0` package.
+- Store and provide the emitted `context.Context` in `ScopeRecords` of `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest`. (#5468)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.26.0` package.
   The package contains semantic conventions from the `v1.26.0` version of the OpenTelemetry Semantic Conventions. (#5476)
-- The `AssertRecordEqual` method to `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest` to allow comparison of two log records in tests. (#5499)
-- The `WithHeaders` option to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin` to allow configuring custom http headers while exporting spans. (#5530)
+- The `AssertRecordEqual` method to `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest` to allow comparison of two log records in tests. (#5499)
+- The `WithHeaders` option to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin` to allow configuring custom http headers while exporting spans. (#5530)
 
 ### Changed
 
-- `Tracer.Start` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop` no longer allocates a span for empty span context. (#5457)
-- Upgrade `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/example/otel-collector`. (#5490)
-- Upgrade `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/example/zipkin`. (#5490)
-- Upgrade `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin`. (#5490)
+- `Tracer.Start` in `github.com/SpherePrime/CLI/vendordeps/otel/trace/noop` no longer allocates a span for empty span context. (#5457)
+- Upgrade `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/SpherePrime/CLI/vendordeps/otel/example/otel-collector`. (#5490)
+- Upgrade `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/SpherePrime/CLI/vendordeps/otel/example/zipkin`. (#5490)
+- Upgrade `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin`. (#5490)
   - The exporter no longer exports the deprecated "otel.library.name" or "otel.library.version" attributes.
-- Upgrade `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`. (#5490)
-- Upgrade `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#5490)
-- `SimpleProcessor.OnEmit` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` no longer allocates a slice which makes it possible to have a zero-allocation log processing using `SimpleProcessor`. (#5493)
-- Use non-generic functions in the `Start` method of `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".Trace` to reduce memory allocation. (#5497)
-- `service.instance.id` is populated for a `Resource` created with `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource".Default` with a default value when `OTEL_GO_X_RESOURCE` is set. (#5520)
-- Improve performance of metric instruments in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` by removing unnecessary calls to `time.Now`. (#5545)
+- Upgrade `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`. (#5490)
+- Upgrade `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.25.0` to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.26.0` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#5490)
+- `SimpleProcessor.OnEmit` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` no longer allocates a slice which makes it possible to have a zero-allocation log processing using `SimpleProcessor`. (#5493)
+- Use non-generic functions in the `Start` method of `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".Trace` to reduce memory allocation. (#5497)
+- `service.instance.id` is populated for a `Resource` created with `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource".Default` with a default value when `OTEL_GO_X_RESOURCE` is set. (#5520)
+- Improve performance of metric instruments in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` by removing unnecessary calls to `time.Now`. (#5545)
 
 ### Fixed
 
-- Log a warning to the OpenTelemetry internal logger when a `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` drops an attribute due to a limit being reached. (#5376)
-- Identify the `Tracer` returned from the global `TracerProvider` in `github.com/dwertyfa288/CLI/vendordeps/otel/global` with its schema URL. (#5426)
-- Identify the `Meter` returned from the global `MeterProvider` in `github.com/dwertyfa288/CLI/vendordeps/otel/global` with its schema URL. (#5426)
-- Log a warning to the OpenTelemetry internal logger when a `Span` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` drops an attribute, event, or link due to a limit being reached. (#5434)
-- Document instrument name requirements in `github.com/dwertyfa288/CLI/vendordeps/otel/metric`. (#5435)
-- Prevent random number generation data-race for experimental rand exemplars in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#5456)
-- Fix counting number of dropped attributes of `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#5464)
+- Log a warning to the OpenTelemetry internal logger when a `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` drops an attribute due to a limit being reached. (#5376)
+- Identify the `Tracer` returned from the global `TracerProvider` in `github.com/SpherePrime/CLI/vendordeps/otel/global` with its schema URL. (#5426)
+- Identify the `Meter` returned from the global `MeterProvider` in `github.com/SpherePrime/CLI/vendordeps/otel/global` with its schema URL. (#5426)
+- Log a warning to the OpenTelemetry internal logger when a `Span` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` drops an attribute, event, or link due to a limit being reached. (#5434)
+- Document instrument name requirements in `github.com/SpherePrime/CLI/vendordeps/otel/metric`. (#5435)
+- Prevent random number generation data-race for experimental rand exemplars in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#5456)
+- Fix counting number of dropped attributes of `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#5464)
 - Fix panic in baggage creation when a member contains `0x80` char in key or value. (#5494)
-- Correct comments for the priority of the `WithEndpoint` and `WithEndpointURL` options and their corresponding environment variables in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#5508)
-- Retry trace and span ID generation if it generated an invalid one in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#5514)
+- Correct comments for the priority of the `WithEndpoint` and `WithEndpointURL` options and their corresponding environment variables in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#5508)
+- Retry trace and span ID generation if it generated an invalid one in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#5514)
 - Fix stale timestamps reported by the last-value aggregation. (#5517)
-- Indicate the `Exporter` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` must be created by the `New` method. (#5521)
+- Indicate the `Exporter` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp` must be created by the `New` method. (#5521)
 - Improved performance in all `{Bool,Int64,Float64,String}SliceValue` functions of `go.opentelemetry.io/attributes` by reducing the number of allocations. (#5549)
-- Replace invalid percent-encoded octet sequences with replacement char in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage`. (#5528)
+- Replace invalid percent-encoded octet sequences with replacement char in `github.com/SpherePrime/CLI/vendordeps/otel/baggage`. (#5528)
 
 ## [1.27.0/0.49.0/0.3.0] 2024-05-21
 
 ### Added
 
-- Add example for `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog`. (#5242)
-- Add `RecordFactory` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest` to facilitate testing exporter and processor implementations. (#5258)
-- Add `RecordFactory` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest` to facilitate testing bridge implementations. (#5263)
-- The count of dropped records from the `BatchProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log` is logged. (#5276)
+- Add example for `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog`. (#5242)
+- Add `RecordFactory` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest` to facilitate testing exporter and processor implementations. (#5258)
+- Add `RecordFactory` in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest` to facilitate testing bridge implementations. (#5263)
+- The count of dropped records from the `BatchProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log` is logged. (#5276)
 - Add metrics in the `otel-collector` example. (#5283)
-- Add the synchronous gauge instrument to `github.com/dwertyfa288/CLI/vendordeps/otel/metric`. (#5304)
+- Add the synchronous gauge instrument to `github.com/SpherePrime/CLI/vendordeps/otel/metric`. (#5304)
   - An `int64` or `float64` synchronous gauge instrument can now be created from a `Meter`.
-  - All implementations of the API (`github.com/dwertyfa288/CLI/vendordeps/otel/metric/noop`, `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`) are updated to support this instrument.
-- Add logs to `github.com/dwertyfa288/CLI/vendordeps/otel/example/dice`. (#5349)
+  - All implementations of the API (`github.com/SpherePrime/CLI/vendordeps/otel/metric/noop`, `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`) are updated to support this instrument.
+- Add logs to `github.com/SpherePrime/CLI/vendordeps/otel/example/dice`. (#5349)
 
 ### Changed
 
-- The `Shutdown` method of `Exporter` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace` ignores the context cancellation and always returns `nil`. (#5189)
-- The `ForceFlush` and `Shutdown` methods of the exporter returned by `New` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` ignore the context cancellation and always return `nil`. (#5189)
-- Apply the value length limits to `Record` attributes in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#5230)
-- De-duplicate map attributes added to a `Record` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`. (#5230)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog` won't print timestamps when `WithoutTimestamps` option is set. (#5241)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog` exporter won't print `AttributeValueLengthLimit` and `AttributeCountLimit` fields now, instead it prints the `DroppedAttributes` field. (#5272)
-- Improved performance in the `Stringer` implementation of `github.com/dwertyfa288/CLI/vendordeps/otel/baggage.Member` by reducing the number of allocations. (#5286)
-- Set the start time for last-value aggregates in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#5305)
-- The `Span` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` will record links without span context if either non-empty `TraceState` or attributes are provided. (#5315)
-- Upgrade all dependencies of `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.24.0` to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.25.0`. (#5374)
+- The `Shutdown` method of `Exporter` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace` ignores the context cancellation and always returns `nil`. (#5189)
+- The `ForceFlush` and `Shutdown` methods of the exporter returned by `New` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` ignore the context cancellation and always return `nil`. (#5189)
+- Apply the value length limits to `Record` attributes in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#5230)
+- De-duplicate map attributes added to a `Record` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`. (#5230)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog` won't print timestamps when `WithoutTimestamps` option is set. (#5241)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog` exporter won't print `AttributeValueLengthLimit` and `AttributeCountLimit` fields now, instead it prints the `DroppedAttributes` field. (#5272)
+- Improved performance in the `Stringer` implementation of `github.com/SpherePrime/CLI/vendordeps/otel/baggage.Member` by reducing the number of allocations. (#5286)
+- Set the start time for last-value aggregates in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#5305)
+- The `Span` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` will record links without span context if either non-empty `TraceState` or attributes are provided. (#5315)
+- Upgrade all dependencies of `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.24.0` to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.25.0`. (#5374)
 
 ### Fixed
 
-- Comparison of unordered maps for `github.com/dwertyfa288/CLI/vendordeps/otel/log.KeyValue` and `github.com/dwertyfa288/CLI/vendordeps/otel/log.Value`. (#5306)
-- Fix the empty output of `github.com/dwertyfa288/CLI/vendordeps/otel/log.Value` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog`. (#5311)
-- Split the behavior of `Recorder` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest` so it behaves as a `LoggerProvider` only. (#5365)
-- Fix wrong package name of the error message when parsing endpoint URL in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#5371)
-- Identify the `Logger` returned from the global `LoggerProvider` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/global` with its schema URL. (#5375)
+- Comparison of unordered maps for `github.com/SpherePrime/CLI/vendordeps/otel/log.KeyValue` and `github.com/SpherePrime/CLI/vendordeps/otel/log.Value`. (#5306)
+- Fix the empty output of `github.com/SpherePrime/CLI/vendordeps/otel/log.Value` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog`. (#5311)
+- Split the behavior of `Recorder` in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest` so it behaves as a `LoggerProvider` only. (#5365)
+- Fix wrong package name of the error message when parsing endpoint URL in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`. (#5371)
+- Identify the `Logger` returned from the global `LoggerProvider` in `github.com/SpherePrime/CLI/vendordeps/otel/log/global` with its schema URL. (#5375)
 
 ## [1.26.0/0.48.0/0.2.0-alpha] 2024-04-24
 
 ### Added
 
-- Add `Recorder` in `github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest` to facilitate testing the log bridge implementations. (#5134)
-- Add span flags to OTLP spans and links exported by `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace`. (#5194)
-- Make the initial alpha release of `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log`.
+- Add `Recorder` in `github.com/SpherePrime/CLI/vendordeps/otel/log/logtest` to facilitate testing the log bridge implementations. (#5134)
+- Add span flags to OTLP spans and links exported by `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace`. (#5194)
+- Make the initial alpha release of `github.com/SpherePrime/CLI/vendordeps/otel/sdk/log`.
   This new module contains the Go implementation of the OpenTelemetry Logs SDK.
   This module is unstable and breaking changes may be introduced.
   See our [versioning policy](VERSIONING.md) for more information about these stability guarantees. (#5240)
-- Make the initial alpha release of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`.
+- Make the initial alpha release of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp`.
   This new module contains an OTLP exporter that transmits log telemetry using HTTP.
   This module is unstable and breaking changes may be introduced.
   See our [versioning policy](VERSIONING.md) for more information about these stability guarantees. (#5240)
-- Make the initial alpha release of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog`.
+- Make the initial alpha release of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog`.
   This new module contains an exporter prints log records to STDOUT.
   This module is unstable and breaking changes may be introduced.
   See our [versioning policy](VERSIONING.md) for more information about these stability guarantees. (#5240)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.25.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.25.0` package.
   The package contains semantic conventions from the `v1.25.0` version of the OpenTelemetry Semantic Conventions. (#5254)
 
 ### Changed
 
 - Update `go.opentelemetry.io/proto/otlp` from v1.1.0 to v1.2.0. (#5177)
-- Improve performance of baggage member character validation in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage`. (#5214)
+- Improve performance of baggage member character validation in `github.com/SpherePrime/CLI/vendordeps/otel/baggage`. (#5214)
 - The `otel-collector` example now uses docker compose to bring up services instead of kubernetes. (#5244)
 
 ### Fixed
 
-- Slice attribute values in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` are now emitted as their JSON representation. (#5159)
+- Slice attribute values in `github.com/SpherePrime/CLI/vendordeps/otel/attribute` are now emitted as their JSON representation. (#5159)
 
 ## [1.25.0/0.47.0/0.0.8/0.1.0-alpha] 2024-04-05
 
 ### Added
 
-- Add `WithProxy` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4906)
-- Add `WithProxy` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlptracehttp`. (#4906)
-- Add `AddLink` method to the `Span` interface in `github.com/dwertyfa288/CLI/vendordeps/otel/trace`. (#5032)
-- The `Enabled` method is added to the `Logger` interface in `github.com/dwertyfa288/CLI/vendordeps/otel/log`.
+- Add `WithProxy` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4906)
+- Add `WithProxy` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlptracehttp`. (#4906)
+- Add `AddLink` method to the `Span` interface in `github.com/SpherePrime/CLI/vendordeps/otel/trace`. (#5032)
+- The `Enabled` method is added to the `Logger` interface in `github.com/SpherePrime/CLI/vendordeps/otel/log`.
   This method is used to notify users if a log record will be emitted or not. (#5071)
-- Add `SeverityUndefined` `const` to `github.com/dwertyfa288/CLI/vendordeps/otel/log`.
+- Add `SeverityUndefined` `const` to `github.com/SpherePrime/CLI/vendordeps/otel/log`.
   This value represents an unset severity level. (#5072)
-- Add `Empty` function in `github.com/dwertyfa288/CLI/vendordeps/otel/log` to return a `KeyValue` for an empty value. (#5076)
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/log/global` to manage the global `LoggerProvider`.
-  This package is provided with the anticipation that all functionality will be migrate to `github.com/dwertyfa288/CLI/vendordeps/otel` when `github.com/dwertyfa288/CLI/vendordeps/otel/log` stabilizes.
+- Add `Empty` function in `github.com/SpherePrime/CLI/vendordeps/otel/log` to return a `KeyValue` for an empty value. (#5076)
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/log/global` to manage the global `LoggerProvider`.
+  This package is provided with the anticipation that all functionality will be migrate to `github.com/SpherePrime/CLI/vendordeps/otel` when `github.com/SpherePrime/CLI/vendordeps/otel/log` stabilizes.
   At which point, users will be required to migrage their code, and this package will be deprecated then removed. (#5085)
-- Add support for `Summary` metrics in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` exporters. (#5100)
-- Add `otel.scope.name` and `otel.scope.version` tags to spans exported by `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin`. (#5108)
-- Add support for `AddLink` to `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`. (#5116)
-- Add `String` method to `Value` and `KeyValue` in `github.com/dwertyfa288/CLI/vendordeps/otel/log`. (#5117)
-- Add Exemplar support to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus`. (#5111)
-- Add metric semantic conventions to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.24.0`. Future `semconv` packages will include metric semantic conventions as well. (#4528)
+- Add support for `Summary` metrics in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` exporters. (#5100)
+- Add `otel.scope.name` and `otel.scope.version` tags to spans exported by `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin`. (#5108)
+- Add support for `AddLink` to `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`. (#5116)
+- Add `String` method to `Value` and `KeyValue` in `github.com/SpherePrime/CLI/vendordeps/otel/log`. (#5117)
+- Add Exemplar support to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus`. (#5111)
+- Add metric semantic conventions to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.24.0`. Future `semconv` packages will include metric semantic conventions as well. (#4528)
 
 ### Changed
 
-- `SpanFromContext` and `SpanContextFromContext` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace` no longer make a heap allocation when the passed context has no span. (#5049)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` now create a gRPC client in idle mode and with "dns" as the default resolver using [`grpc.NewClient`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc#NewClient). (#5151)
-  Because of that `WithDialOption` ignores [`grpc.WithBlock`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc#WithBlock), [`grpc.WithTimeout`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc#WithTimeout), and [`grpc.WithReturnConnectionError`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc#WithReturnConnectionError).
-  Notice that [`grpc.DialContext`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc#DialContext) which was used before is now deprecated.
+- `SpanFromContext` and `SpanContextFromContext` in `github.com/SpherePrime/CLI/vendordeps/otel/trace` no longer make a heap allocation when the passed context has no span. (#5049)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` now create a gRPC client in idle mode and with "dns" as the default resolver using [`grpc.NewClient`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc#NewClient). (#5151)
+  Because of that `WithDialOption` ignores [`grpc.WithBlock`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc#WithBlock), [`grpc.WithTimeout`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc#WithTimeout), and [`grpc.WithReturnConnectionError`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc#WithReturnConnectionError).
+  Notice that [`grpc.DialContext`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc#DialContext) which was used before is now deprecated.
 
 ### Fixed
 
-- Clarify the documentation about equivalence guarantees for the `Set` and `Distinct` types in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#5027)
+- Clarify the documentation about equivalence guarantees for the `Set` and `Distinct` types in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#5027)
 - Prevent default `ErrorHandler` self-delegation. (#5137)
 - Update all dependencies to address [GO-2024-2687]. (#5139)
 
@@ -964,9 +964,9 @@ The next release will require at least [Go 1.22].
 
 ### Deprecated
 
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/attribute.Sortable` type. (#4734)
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/attribute.NewSetWithSortable` function. (#4734)
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/attribute.NewSetWithSortableFiltered` function. (#4734)
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/attribute.Sortable` type. (#4734)
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/attribute.NewSetWithSortable` function. (#4734)
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/attribute.NewSetWithSortableFiltered` function. (#4734)
 
 ## [1.24.0/0.46.0/0.0.1-alpha] 2024-02-23
 
@@ -976,9 +976,9 @@ The next release will require at least [Go 1.21].
 ### Added
 
 - Support [Go 1.22]. (#4890)
-- Add exemplar support to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4900)
-- Add exemplar support to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4900)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/log` module is added.
+- Add exemplar support to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4900)
+- Add exemplar support to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4900)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/log` module is added.
   This module includes OpenTelemetry Go's implementation of the Logs Bridge API.
   This module is in an alpha state, it is subject to breaking changes.
   See our [versioning policy](./VERSIONING.md) for more info. (#4961)
@@ -986,25 +986,25 @@ The next release will require at least [Go 1.21].
 
 ### Fixed
 
-- Fix registration of multiple callbacks when using the global meter provider from `github.com/dwertyfa288/CLI/vendordeps/otel`. (#4945)
+- Fix registration of multiple callbacks when using the global meter provider from `github.com/SpherePrime/CLI/vendordeps/otel`. (#4945)
 - Fix negative buckets in output of exponential histograms. (#4956)
 
 ## [1.23.1] 2024-02-07
 
 ### Fixed
 
-- Register all callbacks passed during observable instrument creation instead of just the last one multiple times in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4888)
+- Register all callbacks passed during observable instrument creation instead of just the last one multiple times in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4888)
 
 ## [1.23.0] 2024-02-06
 
 This release contains the first stable, `v1`, release of the following modules:
 
-- `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus/test`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/example/opencensus`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric`
+- `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`
+- `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus/test`
+- `github.com/SpherePrime/CLI/vendordeps/otel/example/opencensus`
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric`
 
 See our [versioning policy](VERSIONING.md) for more information about these stability guarantees.
 
@@ -1013,12 +1013,12 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 - Add `WithEndpointURL` option to the `exporters/otlp/otlpmetric/otlpmetricgrpc`, `exporters/otlp/otlpmetric/otlpmetrichttp`, `exporters/otlp/otlptrace/otlptracegrpc` and `exporters/otlp/otlptrace/otlptracehttp` packages. (#4808)
 - Experimental exemplar exporting is added to the metric SDK.
   See [metric documentation](./sdk/metric/internal/x/README.md#exemplars) for more information about this feature and how to enable it. (#4871)
-- `ErrSchemaURLConflict` is added to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`.
+- `ErrSchemaURLConflict` is added to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`.
   This error is returned when a merge of two `Resource`s with different (non-empty) schema URL is attempted. (#4876)
 
 ### Changed
 
-- The `Merge` and `New` functions in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource` now returns a partial result if there is a schema URL merge conflict.
+- The `Merge` and `New` functions in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource` now returns a partial result if there is a schema URL merge conflict.
   Instead of returning `nil` when two `Resource`s with different (non-empty) schema URLs are merged the merged `Resource`, along with the new `ErrSchemaURLConflict` error, is returned.
   It is up to the user to decide if they want to use the returned `Resource` or not.
   It may have desired attributes overwritten or include stale semantic conventions. (#4876)
@@ -1026,20 +1026,20 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 ### Fixed
 
 - Fix `ContainerID` resource detection on systemd when cgroup path has a colon. (#4449)
-- Fix `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` to cache instruments to avoid leaking memory when the same instrument is created multiple times. (#4820)
-- Fix missing `Mix` and `Max` values for `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` by introducing `MarshalText` and `MarshalJSON` for the `Extrema` type in `go.opentelemetry.io/sdk/metric/metricdata`. (#4827)
+- Fix `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` to cache instruments to avoid leaking memory when the same instrument is created multiple times. (#4820)
+- Fix missing `Mix` and `Max` values for `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` by introducing `MarshalText` and `MarshalJSON` for the `Extrema` type in `go.opentelemetry.io/sdk/metric/metricdata`. (#4827)
 
 ## [1.23.0-rc.1] 2024-01-18
 
 This is a release candidate for the v1.23.0 release.
 That release is expected to include the `v1` release of the following modules:
 
-- `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus/test`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/example/opencensus`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric`
+- `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`
+- `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus/test`
+- `github.com/SpherePrime/CLI/vendordeps/otel/example/opencensus`
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric`
 
 See our [versioning policy](VERSIONING.md) for more information about these stability guarantees.
 
@@ -1047,137 +1047,137 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 
 ### Added
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.22.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.22.0` package.
   The package contains semantic conventions from the `v1.22.0` version of the OpenTelemetry Semantic Conventions. (#4735)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.23.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.23.0` package.
   The package contains semantic conventions from the `v1.23.0` version of the OpenTelemetry Semantic Conventions. (#4746)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.23.1` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.23.1` package.
   The package contains semantic conventions from the `v1.23.1` version of the OpenTelemetry Semantic Conventions. (#4749)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.24.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.24.0` package.
   The package contains semantic conventions from the `v1.24.0` version of the OpenTelemetry Semantic Conventions. (#4770)
 - Add `WithResourceAsConstantLabels` option to apply resource attributes for every metric emitted by the Prometheus exporter. (#4733)
 - Experimental cardinality limiting is added to the metric SDK.
   See [metric documentation](./sdk/metric/internal/x/README.md#cardinality-limit) for more information about this feature and how to enable it. (#4457)
-- Add `NewMemberRaw` and `NewKeyValuePropertyRaw` in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage`. (#4804)
+- Add `NewMemberRaw` and `NewKeyValuePropertyRaw` in `github.com/SpherePrime/CLI/vendordeps/otel/baggage`. (#4804)
 
 ### Changed
 
-- Upgrade all use of `github.com/dwertyfa288/CLI/vendordeps/otel/semconv` to use `v1.24.0`. (#4754)
-- Update transformations in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin` to follow `v1.24.0` version of the OpenTelemetry specification. (#4754)
-- Record synchronous measurements when the passed context is canceled instead of dropping in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`.
+- Upgrade all use of `github.com/SpherePrime/CLI/vendordeps/otel/semconv` to use `v1.24.0`. (#4754)
+- Update transformations in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin` to follow `v1.24.0` version of the OpenTelemetry specification. (#4754)
+- Record synchronous measurements when the passed context is canceled instead of dropping in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`.
   If you do not want to make a measurement when the context is cancelled, you need to handle it yourself (e.g  `if ctx.Err() != nil`). (#4671)
-- Improve `github.com/dwertyfa288/CLI/vendordeps/otel/trace.TraceState`'s performance. (#4722)
-- Improve `github.com/dwertyfa288/CLI/vendordeps/otel/propagation.TraceContext`'s performance. (#4721)
-- Improve `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` performance. (#4743)
-- Improve performance of the `(*Set).Filter` method in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` when the passed filter does not filter out any attributes from the set. (#4774)
-- `Member.String` in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` percent-encodes only when necessary. (#4775)
-- Improve `github.com/dwertyfa288/CLI/vendordeps/otel/trace.Span`'s performance when adding multiple attributes. (#4818)
-- `Property.Value` in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` now returns a raw string instead of a percent-encoded value. (#4804)
+- Improve `github.com/SpherePrime/CLI/vendordeps/otel/trace.TraceState`'s performance. (#4722)
+- Improve `github.com/SpherePrime/CLI/vendordeps/otel/propagation.TraceContext`'s performance. (#4721)
+- Improve `github.com/SpherePrime/CLI/vendordeps/otel/baggage` performance. (#4743)
+- Improve performance of the `(*Set).Filter` method in `github.com/SpherePrime/CLI/vendordeps/otel/attribute` when the passed filter does not filter out any attributes from the set. (#4774)
+- `Member.String` in `github.com/SpherePrime/CLI/vendordeps/otel/baggage` percent-encodes only when necessary. (#4775)
+- Improve `github.com/SpherePrime/CLI/vendordeps/otel/trace.Span`'s performance when adding multiple attributes. (#4818)
+- `Property.Value` in `github.com/SpherePrime/CLI/vendordeps/otel/baggage` now returns a raw string instead of a percent-encoded value. (#4804)
 
 ### Fixed
 
-- Fix `Parse` in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` to validate member value before percent-decoding. (#4755)
-- Fix whitespace encoding of `Member.String` in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage`. (#4756)
-- Fix observable not registered error when the asynchronous instrument has a drop aggregation in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4772)
-- Fix baggage item key so that it is not canonicalized in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing`. (#4776)
-- Fix `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` to properly handle baggage values that requires escaping during propagation. (#4804)
-- Fix a bug where using multiple readers resulted in incorrect asynchronous counter values in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4742)
+- Fix `Parse` in `github.com/SpherePrime/CLI/vendordeps/otel/baggage` to validate member value before percent-decoding. (#4755)
+- Fix whitespace encoding of `Member.String` in `github.com/SpherePrime/CLI/vendordeps/otel/baggage`. (#4756)
+- Fix observable not registered error when the asynchronous instrument has a drop aggregation in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4772)
+- Fix baggage item key so that it is not canonicalized in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing`. (#4776)
+- Fix `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` to properly handle baggage values that requires escaping during propagation. (#4804)
+- Fix a bug where using multiple readers resulted in incorrect asynchronous counter values in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4742)
 
 ## [1.21.0/0.44.0] 2023-11-16
 
 ### Removed
 
-- Remove the deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus.NewTracer`. (#4706)
-- Remove the deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric` module. (#4707)
-- Remove the deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/example/view` module. (#4708)
-- Remove the deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/example/fib` module. (#4723)
+- Remove the deprecated `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus.NewTracer`. (#4706)
+- Remove the deprecated `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric` module. (#4707)
+- Remove the deprecated `github.com/SpherePrime/CLI/vendordeps/otel/example/view` module. (#4708)
+- Remove the deprecated `github.com/SpherePrime/CLI/vendordeps/otel/example/fib` module. (#4723)
 
 ### Fixed
 
-- Do not parse non-protobuf responses in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4719)
-- Do not parse non-protobuf responses in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#4719)
+- Do not parse non-protobuf responses in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4719)
+- Do not parse non-protobuf responses in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#4719)
 
 ## [1.20.0/0.43.0] 2023-11-10
 
-This release brings a breaking change for custom trace API implementations. Some interfaces (`TracerProvider`, `Tracer`, `Span`) now embed the `github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded` types. Implementers need to update their implementations based on what they want the default behavior to be. See the "API Implementations" section of the [trace API] package documentation for more information about how to accomplish this.
+This release brings a breaking change for custom trace API implementations. Some interfaces (`TracerProvider`, `Tracer`, `Span`) now embed the `github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded` types. Implementers need to update their implementations based on what they want the default behavior to be. See the "API Implementations" section of the [trace API] package documentation for more information about how to accomplish this.
 
 ### Added
 
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus.InstallTraceBridge`, which installs the OpenCensus trace bridge, and replaces `opencensus.NewTracer`. (#4567)
-- Add scope version to trace and metric bridges in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`. (#4584)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded` package to be embedded in the exported trace API interfaces. (#4620)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop` package as a default no-op implementation of the trace API. (#4620)
-- Add context propagation in `github.com/dwertyfa288/CLI/vendordeps/otel/example/dice`. (#4644)
-- Add view configuration to `github.com/dwertyfa288/CLI/vendordeps/otel/example/prometheus`. (#4649)
-- Add `github.com/dwertyfa288/CLI/vendordeps/otel/metric.WithExplicitBucketBoundaries`, which allows defining default explicit bucket boundaries when creating histogram instruments. (#4603)
-- Add `Version` function in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4660)
-- Add `Version` function in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4660)
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus.InstallTraceBridge`, which installs the OpenCensus trace bridge, and replaces `opencensus.NewTracer`. (#4567)
+- Add scope version to trace and metric bridges in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`. (#4584)
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded` package to be embedded in the exported trace API interfaces. (#4620)
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/trace/noop` package as a default no-op implementation of the trace API. (#4620)
+- Add context propagation in `github.com/SpherePrime/CLI/vendordeps/otel/example/dice`. (#4644)
+- Add view configuration to `github.com/SpherePrime/CLI/vendordeps/otel/example/prometheus`. (#4649)
+- Add `github.com/SpherePrime/CLI/vendordeps/otel/metric.WithExplicitBucketBoundaries`, which allows defining default explicit bucket boundaries when creating histogram instruments. (#4603)
+- Add `Version` function in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4660)
+- Add `Version` function in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4660)
 - Add Summary, SummaryDataPoint, and QuantileValue to `go.opentelemetry.io/sdk/metric/metricdata`. (#4622)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus.NewMetricProducer` now supports exemplars from OpenCensus. (#4585)
-- Add support for `WithExplicitBucketBoundaries` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4605)
-- Add support for Summary metrics in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`. (#4668)
+- `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus.NewMetricProducer` now supports exemplars from OpenCensus. (#4585)
+- Add support for `WithExplicitBucketBoundaries` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4605)
+- Add support for Summary metrics in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`. (#4668)
 
 ### Deprecated
 
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus.NewTracer` in favor of `opencensus.InstallTraceBridge`. (#4567)
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/example/fib` package is in favor of `github.com/dwertyfa288/CLI/vendordeps/otel/example/dice`. (#4618)
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/trace.NewNoopTracerProvider`.
-  Use the added `NewTracerProvider` function in `github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop` instead. (#4620)
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/example/view` package in favor of `github.com/dwertyfa288/CLI/vendordeps/otel/example/prometheus`. (#4649)
-- Deprecate `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#4693)
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus.NewTracer` in favor of `opencensus.InstallTraceBridge`. (#4567)
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/example/fib` package is in favor of `github.com/SpherePrime/CLI/vendordeps/otel/example/dice`. (#4618)
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/trace.NewNoopTracerProvider`.
+  Use the added `NewTracerProvider` function in `github.com/SpherePrime/CLI/vendordeps/otel/trace/noop` instead. (#4620)
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/example/view` package in favor of `github.com/SpherePrime/CLI/vendordeps/otel/example/prometheus`. (#4649)
+- Deprecate `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#4693)
 
 ### Changed
 
-- `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus.NewMetricProducer` returns a `*MetricProducer` struct instead of the metric.Producer interface. (#4583)
-- The `TracerProvider` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace` now embeds the `github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded.TracerProvider` type.
+- `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus.NewMetricProducer` returns a `*MetricProducer` struct instead of the metric.Producer interface. (#4583)
+- The `TracerProvider` in `github.com/SpherePrime/CLI/vendordeps/otel/trace` now embeds the `github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded.TracerProvider` type.
   This extends the `TracerProvider` interface and is is a breaking change for any existing implementation.
   Implementers need to update their implementations based on what they want the default behavior of the interface to be.
-  See the "API Implementations" section of the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package documentation for more information about how to accomplish this. (#4620)
-- The `Tracer` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace` now embeds the `github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded.Tracer` type.
+  See the "API Implementations" section of the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package documentation for more information about how to accomplish this. (#4620)
+- The `Tracer` in `github.com/SpherePrime/CLI/vendordeps/otel/trace` now embeds the `github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded.Tracer` type.
   This extends the `Tracer` interface and is is a breaking change for any existing implementation.
   Implementers need to update their implementations based on what they want the default behavior of the interface to be.
-  See the "API Implementations" section of the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package documentation for more information about how to accomplish this. (#4620)
-- The `Span` in `github.com/dwertyfa288/CLI/vendordeps/otel/trace` now embeds the `github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded.Span` type.
+  See the "API Implementations" section of the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package documentation for more information about how to accomplish this. (#4620)
+- The `Span` in `github.com/SpherePrime/CLI/vendordeps/otel/trace` now embeds the `github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded.Span` type.
   This extends the `Span` interface and is is a breaking change for any existing implementation.
   Implementers need to update their implementations based on what they want the default behavior of the interface to be.
-  See the "API Implementations" section of the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package documentation for more information about how to accomplish this. (#4620)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` does no longer depend on `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#4660)
-- `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` does no longer depend on `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#4660)
-- Retry for `502 Bad Gateway` and `504 Gateway Timeout` HTTP statuses in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4670)
-- Retry for `502 Bad Gateway` and `504 Gateway Timeout` HTTP statuses in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#4670)
-- Retry for `RESOURCE_EXHAUSTED` only if RetryInfo is returned in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4669)
-- Retry for `RESOURCE_EXHAUSTED` only if RetryInfo is returned in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#4669)
-- Retry temporary HTTP request failures in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4679)
-- Retry temporary HTTP request failures in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#4679)
+  See the "API Implementations" section of the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package documentation for more information about how to accomplish this. (#4620)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` does no longer depend on `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#4660)
+- `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` does no longer depend on `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric`. (#4660)
+- Retry for `502 Bad Gateway` and `504 Gateway Timeout` HTTP statuses in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4670)
+- Retry for `502 Bad Gateway` and `504 Gateway Timeout` HTTP statuses in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#4670)
+- Retry for `RESOURCE_EXHAUSTED` only if RetryInfo is returned in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4669)
+- Retry for `RESOURCE_EXHAUSTED` only if RetryInfo is returned in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#4669)
+- Retry temporary HTTP request failures in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4679)
+- Retry temporary HTTP request failures in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#4679)
 
 ### Fixed
 
-- Fix improper parsing of characters such us `+`, `/` by `Parse` in `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` as they were rendered as a whitespace. (#4667)
-- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_RESOURCE_ATTRIBUTES` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource` as they were rendered as a whitespace. (#4699)
-- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_METRICS_HEADERS` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` as they were rendered as a whitespace. (#4699)
-- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_METRICS_HEADERS` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` as they were rendered as a whitespace. (#4699)
-- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_TRACES_HEADERS` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlptracegrpc` as they were rendered as a whitespace. (#4699)
-- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_TRACES_HEADERS` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlptracehttp` as they were rendered as a whitespace. (#4699)
+- Fix improper parsing of characters such us `+`, `/` by `Parse` in `github.com/SpherePrime/CLI/vendordeps/otel/baggage` as they were rendered as a whitespace. (#4667)
+- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_RESOURCE_ATTRIBUTES` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource` as they were rendered as a whitespace. (#4699)
+- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_METRICS_HEADERS` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` as they were rendered as a whitespace. (#4699)
+- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_METRICS_HEADERS` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` as they were rendered as a whitespace. (#4699)
+- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_TRACES_HEADERS` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlptracegrpc` as they were rendered as a whitespace. (#4699)
+- Fix improper parsing of characters such us `+`, `/` passed via `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_EXPORTER_OTLP_TRACES_HEADERS` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlptracehttp` as they were rendered as a whitespace. (#4699)
 - In `go.opentelemetry.op/otel/exporters/prometheus`, the exporter no longer `Collect`s metrics after `Shutdown` is invoked. (#4648)
-- Fix documentation for `WithCompressor` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#4695)
-- Fix documentation for `WithCompressor` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4695)
+- Fix documentation for `WithCompressor` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc`. (#4695)
+- Fix documentation for `WithCompressor` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4695)
 
 ## [1.19.0/0.42.0/0.0.7] 2023-09-28
 
 This release contains the first stable release of the OpenTelemetry Go [metric SDK].
-Our project stability guarantees now apply to the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` package.
+Our project stability guarantees now apply to the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` package.
 See our [versioning policy](VERSIONING.md) for more information about these stability guarantees.
 
 ### Added
 
-- Add the "Roll the dice" getting started application example in `github.com/dwertyfa288/CLI/vendordeps/otel/example/dice`. (#4539)
-- The `WithWriter` and `WithPrettyPrint` options to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` to set a custom `io.Writer`, and allow displaying the output in human-readable JSON. (#4507)
+- Add the "Roll the dice" getting started application example in `github.com/SpherePrime/CLI/vendordeps/otel/example/dice`. (#4539)
+- The `WithWriter` and `WithPrettyPrint` options to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` to set a custom `io.Writer`, and allow displaying the output in human-readable JSON. (#4507)
 
 ### Changed
 
 - Allow '/' characters in metric instrument names. (#4501)
-- The exporter in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` does not prettify its output by default anymore. (#4507)
-- Upgrade `gopkg.io/yaml` from `v2` to `v3` in `github.com/dwertyfa288/CLI/vendordeps/otel/schema`. (#4535)
+- The exporter in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` does not prettify its output by default anymore. (#4507)
+- Upgrade `gopkg.io/yaml` from `v2` to `v3` in `github.com/SpherePrime/CLI/vendordeps/otel/schema`. (#4535)
 
 ### Fixed
 
@@ -1185,7 +1185,7 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 
 ### Removed
 
-- Remove `"github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus".NewMetricExporter`, which is replaced by `NewMetricProducer`. (#4566)
+- Remove `"github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus".NewMetricExporter`, which is replaced by `NewMetricProducer`. (#4566)
 
 ## [1.19.0-rc.1/0.42.0-rc.1] 2023-09-14
 
@@ -1208,133 +1208,133 @@ This release drops the compatibility guarantee of [Go 1.19].
 ### Added
 
 - Add `WithProducer` option in `go.opentelemetry.op/otel/exporters/prometheus` to restore the ability to register producers on the prometheus exporter's manual reader. (#4473)
-- Add `IgnoreValue` option in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata/metricdatatest` to allow ignoring values when comparing metrics. (#4447)
+- Add `IgnoreValue` option in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata/metricdatatest` to allow ignoring values when comparing metrics. (#4447)
 
 ### Changed
 
-- Use a `TestingT` interface instead of `*testing.T` struct in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata/metricdatatest`. (#4483)
+- Use a `TestingT` interface instead of `*testing.T` struct in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata/metricdatatest`. (#4483)
 
 ### Deprecated
 
-- The `NewMetricExporter` in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus` was deprecated in `v0.35.0` (#3541).
+- The `NewMetricExporter` in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus` was deprecated in `v0.35.0` (#3541).
   The deprecation notice format for the function has been corrected to trigger Go documentation and build tooling. (#4470)
 
 ### Removed
 
-- Removed the deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/jaeger` package. (#4467)
-- Removed the deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/example/jaeger` package. (#4467)
-- Removed the deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregation` package. (#4468)
-- Removed the deprecated internal packages in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` and its sub-packages. (#4469)
+- Removed the deprecated `github.com/SpherePrime/CLI/vendordeps/otel/exporters/jaeger` package. (#4467)
+- Removed the deprecated `github.com/SpherePrime/CLI/vendordeps/otel/example/jaeger` package. (#4467)
+- Removed the deprecated `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregation` package. (#4468)
+- Removed the deprecated internal packages in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` and its sub-packages. (#4469)
 - Dropped guaranteed support for versions of Go less than 1.20. (#4481)
 
 ## [1.17.0/0.40.0/0.0.5] 2023-08-28
 
 ### Added
 
-- Export the `ManualReader` struct in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4244)
-- Export the `PeriodicReader` struct in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4244)
+- Export the `ManualReader` struct in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4244)
+- Export the `PeriodicReader` struct in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4244)
 - Add support for exponential histogram aggregations.
-  A histogram can be configured as an exponential histogram using a view with `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".ExponentialHistogram` as the aggregation. (#4245)
-- Export the `Exporter` struct in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4272)
-- Export the `Exporter` struct in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4272)
-- The exporters in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric` now support the `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` environment variable. (#4287)
-- Add `WithoutCounterSuffixes` option in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` to disable addition of `_total` suffixes. (#4306)
-- Add info and debug logging to the metric SDK in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4315)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.21.0` package.
+  A histogram can be configured as an exponential histogram using a view with `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".ExponentialHistogram` as the aggregation. (#4245)
+- Export the `Exporter` struct in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc`. (#4272)
+- Export the `Exporter` struct in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#4272)
+- The exporters in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric` now support the `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` environment variable. (#4287)
+- Add `WithoutCounterSuffixes` option in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` to disable addition of `_total` suffixes. (#4306)
+- Add info and debug logging to the metric SDK in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4315)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.21.0` package.
   The package contains semantic conventions from the `v1.21.0` version of the OpenTelemetry Semantic Conventions. (#4362)
-- Accept 201 to 299 HTTP status as success in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#4365)
-- Document the `Temporality` and `Aggregation` methods of the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".Exporter"` need to be concurrent safe. (#4381)
+- Accept 201 to 299 HTTP status as success in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`. (#4365)
+- Document the `Temporality` and `Aggregation` methods of the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".Exporter"` need to be concurrent safe. (#4381)
 - Expand the set of units supported by the Prometheus exporter, and don't add unit suffixes if they are already present in `go.opentelemetry.op/otel/exporters/prometheus` (#4374)
-- Move the `Aggregation` interface and its implementations from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregation` to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4435)
-- The exporters in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric` now support the `OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION` environment variable. (#4437)
-- Add the `NewAllowKeysFilter` and `NewDenyKeysFilter` functions to `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` to allow convenient creation of allow-keys and deny-keys filters. (#4444)
+- Move the `Aggregation` interface and its implementations from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregation` to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4435)
+- The exporters in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric` now support the `OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION` environment variable. (#4437)
+- Add the `NewAllowKeysFilter` and `NewDenyKeysFilter` functions to `github.com/SpherePrime/CLI/vendordeps/otel/attribute` to allow convenient creation of allow-keys and deny-keys filters. (#4444)
 - Support Go 1.21. (#4463)
 
 ### Changed
 
-- Starting from `v1.21.0` of semantic conventions, `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/{version}/httpconv` and `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/{version}/netconv` packages will no longer be published. (#4145)
-- Log duplicate instrument conflict at a warning level instead of info in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4202)
-- Return an error on the creation of new instruments in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` if their name doesn't pass regexp validation. (#4210)
-- `NewManualReader` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` returns `*ManualReader` instead of `Reader`. (#4244)
-- `NewPeriodicReader` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` returns `*PeriodicReader` instead of `Reader`. (#4244)
-- Count the Collect time in the `PeriodicReader` timeout in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4221)
-- The function `New` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` returns `*Exporter` instead of `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".Exporter`. (#4272)
-- The function `New` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` returns `*Exporter` instead of `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".Exporter`. (#4272)
-- If an attribute set is omitted from an async callback, the previous value will no longer be exported in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4290)
-- If an attribute set is observed multiple times in an async callback in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`, the values will be summed instead of the last observation winning. (#4289)
-- Allow the explicit bucket histogram aggregation to be used for the up-down counter, observable counter, observable up-down counter, and observable gauge in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` package. (#4332)
-- Restrict `Meter`s in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` to only register and collect instruments it created. (#4333)
-- `PeriodicReader.Shutdown` and `PeriodicReader.ForceFlush` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` now apply the periodic reader's timeout to the operation if the user provided context does not contain a deadline. (#4356, #4377)
-- Upgrade all use of `github.com/dwertyfa288/CLI/vendordeps/otel/semconv` to use `v1.21.0`. (#4408)
-- Increase instrument name maximum length from 63 to 255 characters in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4434)
-- Add `go.opentelemetry.op/otel/sdk/metric.WithProducer` as an `Option` for `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".NewManualReader` and `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".NewPeriodicReader`. (#4346)
+- Starting from `v1.21.0` of semantic conventions, `github.com/SpherePrime/CLI/vendordeps/otel/semconv/{version}/httpconv` and `github.com/SpherePrime/CLI/vendordeps/otel/semconv/{version}/netconv` packages will no longer be published. (#4145)
+- Log duplicate instrument conflict at a warning level instead of info in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4202)
+- Return an error on the creation of new instruments in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` if their name doesn't pass regexp validation. (#4210)
+- `NewManualReader` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` returns `*ManualReader` instead of `Reader`. (#4244)
+- `NewPeriodicReader` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` returns `*PeriodicReader` instead of `Reader`. (#4244)
+- Count the Collect time in the `PeriodicReader` timeout in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4221)
+- The function `New` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` returns `*Exporter` instead of `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".Exporter`. (#4272)
+- The function `New` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` returns `*Exporter` instead of `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".Exporter`. (#4272)
+- If an attribute set is omitted from an async callback, the previous value will no longer be exported in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4290)
+- If an attribute set is observed multiple times in an async callback in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`, the values will be summed instead of the last observation winning. (#4289)
+- Allow the explicit bucket histogram aggregation to be used for the up-down counter, observable counter, observable up-down counter, and observable gauge in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` package. (#4332)
+- Restrict `Meter`s in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` to only register and collect instruments it created. (#4333)
+- `PeriodicReader.Shutdown` and `PeriodicReader.ForceFlush` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` now apply the periodic reader's timeout to the operation if the user provided context does not contain a deadline. (#4356, #4377)
+- Upgrade all use of `github.com/SpherePrime/CLI/vendordeps/otel/semconv` to use `v1.21.0`. (#4408)
+- Increase instrument name maximum length from 63 to 255 characters in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4434)
+- Add `go.opentelemetry.op/otel/sdk/metric.WithProducer` as an `Option` for `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".NewManualReader` and `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".NewPeriodicReader`. (#4346)
 
 ### Removed
 
-- Remove `Reader.RegisterProducer` in `github.com/dwertyfa288/CLI/vendordeps/otel/metric`.
+- Remove `Reader.RegisterProducer` in `github.com/SpherePrime/CLI/vendordeps/otel/metric`.
   Use the added `WithProducer` option instead. (#4346)
-- Remove `Reader.ForceFlush` in `github.com/dwertyfa288/CLI/vendordeps/otel/metric`.
+- Remove `Reader.ForceFlush` in `github.com/SpherePrime/CLI/vendordeps/otel/metric`.
   Notice that `PeriodicReader.ForceFlush` is still available. (#4375)
 
 ### Fixed
 
-- Correctly format log messages from the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin` exporter. (#4143)
-- Log an error for calls to `NewView` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` that have empty criteria. (#4307)
-- Fix `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource".WithHostID()` to not set an empty `host.id`. (#4317)
-- Use the instrument identifying fields to cache aggregators and determine duplicate instrument registrations in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4337)
-- Detect duplicate instruments for case-insensitive names in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4338)
-- The `ManualReader` will not panic if `AggregationSelector` returns `nil` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4350)
+- Correctly format log messages from the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin` exporter. (#4143)
+- Log an error for calls to `NewView` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` that have empty criteria. (#4307)
+- Fix `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource".WithHostID()` to not set an empty `host.id`. (#4317)
+- Use the instrument identifying fields to cache aggregators and determine duplicate instrument registrations in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4337)
+- Detect duplicate instruments for case-insensitive names in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4338)
+- The `ManualReader` will not panic if `AggregationSelector` returns `nil` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4350)
 - If a `Reader`'s `AggregationSelector` returns `nil` or `DefaultAggregation` the pipeline will use the default aggregation. (#4350)
-- Log a suggested view that fixes instrument conflicts in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4349)
-- Fix possible panic, deadlock and race condition in batch span processor in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#4353)
-- Improve context cancellation handling in batch span processor's `ForceFlush` in  `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#4369)
-- Decouple `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal` from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal` using gotmpl. (#4397, #3846)
-- Decouple `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc/internal` from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal` using gotmpl. (#4404, #3846)
-- Decouple `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp/internal` from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal` using gotmpl. (#4407, #3846)
-- Decouple `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc/internal` from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal` using gotmpl. (#4400, #3846)
-- Decouple `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp/internal` from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal` using gotmpl. (#4401, #3846)
-- Do not block the metric SDK when OTLP metric exports are blocked in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#3925, #4395)
-- Do not append `_total` if the counter already has that suffix for the Prometheus exproter in `github.com/dwertyfa288/CLI/vendordeps/otel/exporter/prometheus`. (#4373)
-- Fix resource detection data race in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`. (#4409)
-- Use the first-seen instrument name during instrument name conflicts in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#4428)
+- Log a suggested view that fixes instrument conflicts in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4349)
+- Fix possible panic, deadlock and race condition in batch span processor in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#4353)
+- Improve context cancellation handling in batch span processor's `ForceFlush` in  `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#4369)
+- Decouple `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal` from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal` using gotmpl. (#4397, #3846)
+- Decouple `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc/internal` from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal` using gotmpl. (#4404, #3846)
+- Decouple `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp/internal` from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal` using gotmpl. (#4407, #3846)
+- Decouple `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc/internal` from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal` using gotmpl. (#4400, #3846)
+- Decouple `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp/internal` from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal` using gotmpl. (#4401, #3846)
+- Do not block the metric SDK when OTLP metric exports are blocked in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp`. (#3925, #4395)
+- Do not append `_total` if the counter already has that suffix for the Prometheus exproter in `github.com/SpherePrime/CLI/vendordeps/otel/exporter/prometheus`. (#4373)
+- Fix resource detection data race in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`. (#4409)
+- Use the first-seen instrument name during instrument name conflicts in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#4428)
 
 ### Deprecated
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/jaeger` package is deprecated.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/jaeger` package is deprecated.
   OpenTelemetry dropped support for Jaeger exporter in July 2023.
-  Use `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`
-  or `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` instead. (#4423)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/example/jaeger` package is deprecated. (#4423)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal` package is deprecated. (#4420)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal/oconf` package is deprecated. (#4420)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal/otest` package is deprecated. (#4420)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal/transform` package is deprecated. (#4420)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal` package is deprecated. (#4421)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal/envconfig` package is deprecated. (#4421)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal/retry` package is deprecated. (#4421)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal` package is deprecated. (#4425)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal/envconfig` package is deprecated. (#4425)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal/otlpconfig` package is deprecated. (#4425)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal/otlptracetest` package is deprecated. (#4425)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal/retry` package is deprecated. (#4425)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregation` package is deprecated.
-  Use the aggregation types added to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` instead. (#4435)
+  Use `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp`
+  or `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` instead. (#4423)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/example/jaeger` package is deprecated. (#4423)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal` package is deprecated. (#4420)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal/oconf` package is deprecated. (#4420)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal/otest` package is deprecated. (#4420)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal/transform` package is deprecated. (#4420)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal` package is deprecated. (#4421)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal/envconfig` package is deprecated. (#4421)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal/retry` package is deprecated. (#4421)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal` package is deprecated. (#4425)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal/envconfig` package is deprecated. (#4425)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal/otlpconfig` package is deprecated. (#4425)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal/otlptracetest` package is deprecated. (#4425)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal/retry` package is deprecated. (#4425)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregation` package is deprecated.
+  Use the aggregation types added to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` instead. (#4435)
 
 ## [1.16.0/0.39.0] 2023-05-18
 
 This release contains the first stable release of the OpenTelemetry Go [metric API].
-Our project stability guarantees now apply to the `github.com/dwertyfa288/CLI/vendordeps/otel/metric` package.
+Our project stability guarantees now apply to the `github.com/SpherePrime/CLI/vendordeps/otel/metric` package.
 See our [versioning policy](VERSIONING.md) for more information about these stability guarantees.
 
 ### Added
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.19.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.19.0` package.
   The package contains semantic conventions from the `v1.19.0` version of the OpenTelemetry specification. (#3848)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.20.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.20.0` package.
   The package contains semantic conventions from the `v1.20.0` version of the OpenTelemetry specification. (#4078)
-- The Exponential Histogram data types in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata`. (#4165)
+- The Exponential Histogram data types in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata`. (#4165)
 - OTLP metrics exporter now supports the Exponential Histogram Data Type. (#4222)
-- Fix serialization of `time.Time` zero values in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` packages. (#4271)
+- Fix serialization of `time.Time` zero values in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp` packages. (#4271)
 
 ### Changed
 
@@ -1343,12 +1343,12 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 
 ### Removed
 
-- The deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` package is removed.
-  Use `github.com/dwertyfa288/CLI/vendordeps/otel/metric` instead. (#4055)
+- The deprecated `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` package is removed.
+  Use `github.com/SpherePrime/CLI/vendordeps/otel/metric` instead. (#4055)
 
 ### Fixed
 
-- Fix build for BSD based systems in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`. (#4077)
+- Fix build for BSD based systems in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`. (#4077)
 
 ## [1.16.0-rc.1/0.39.0-rc.1] 2023-05-03
 
@@ -1358,20 +1358,20 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 
 ### Added
 
-- Support global `MeterProvider` in `github.com/dwertyfa288/CLI/vendordeps/otel`. (#4039)
+- Support global `MeterProvider` in `github.com/SpherePrime/CLI/vendordeps/otel`. (#4039)
   - Use `Meter` for a `metric.Meter` from the global `metric.MeterProvider`.
   - Use `GetMeterProivder` for a global `metric.MeterProvider`.
   - Use `SetMeterProivder` to set the global `metric.MeterProvider`.
 
 ### Changed
 
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/metric` module to the `stable-v1` module set.
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/metric` module to the `stable-v1` module set.
   This stages the metric API to be released as a stable module. (#4038)
 
 ### Removed
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/global` package is removed.
-  Use `github.com/dwertyfa288/CLI/vendordeps/otel` instead. (#4039)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/global` package is removed.
+  Use `github.com/SpherePrime/CLI/vendordeps/otel` instead. (#4039)
 
 ## [1.15.1/0.38.1] 2023-05-02
 
@@ -1383,10 +1383,10 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 
 ### Added
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded` package. (#3916)
-- The `Version` function to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk` to return the SDK version. (#3949)
-- Add a `WithNamespace` option to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` to allow users to prefix metrics with a namespace. (#3970)
-- The following configuration types were added to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` to be used in the configuration of measurement methods. (#3971)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded` package. (#3916)
+- The `Version` function to `github.com/SpherePrime/CLI/vendordeps/otel/sdk` to return the SDK version. (#3949)
+- Add a `WithNamespace` option to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` to allow users to prefix metrics with a namespace. (#3970)
+- The following configuration types were added to `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` to be used in the configuration of measurement methods. (#3971)
   - The `AddConfig` used to hold configuration for addition measurements
     - `NewAddConfig` used to create a new `AddConfig`
     - `AddOption` used to configure an `AddConfig`
@@ -1396,21 +1396,21 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
   - The `ObserveConfig` used to hold configuration for observed measurements
     - `NewObserveConfig` used to create a new `ObserveConfig`
     - `ObserveOption` used to configure an `ObserveConfig`
-- `WithAttributeSet` and `WithAttributes` are added to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument`.
+- `WithAttributeSet` and `WithAttributes` are added to `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument`.
   They return an option used during a measurement that defines the attribute Set associated with the measurement. (#3971)
-- The `Version` function to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric` to return the OTLP metrics client version. (#3956)
-- The `Version` function to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace` to return the OTLP trace client version. (#3956)
+- The `Version` function to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric` to return the OTLP metrics client version. (#3956)
+- The `Version` function to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace` to return the OTLP trace client version. (#3956)
 
 ### Changed
 
-- The `Extrema` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata` is redefined with a generic argument of `[N int64 | float64]`. (#3870)
-- Update all exported interfaces from `github.com/dwertyfa288/CLI/vendordeps/otel/metric` to embed their corresponding interface from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded`.
+- The `Extrema` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata` is redefined with a generic argument of `[N int64 | float64]`. (#3870)
+- Update all exported interfaces from `github.com/SpherePrime/CLI/vendordeps/otel/metric` to embed their corresponding interface from `github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded`.
   This adds an implementation requirement to set the interface default behavior for unimplemented methods. (#3916)
-- Move No-Op implementation from `github.com/dwertyfa288/CLI/vendordeps/otel/metric` into its own package `github.com/dwertyfa288/CLI/vendordeps/otel/metric/noop`. (#3941)
+- Move No-Op implementation from `github.com/SpherePrime/CLI/vendordeps/otel/metric` into its own package `github.com/SpherePrime/CLI/vendordeps/otel/metric/noop`. (#3941)
   - `metric.NewNoopMeterProvider` is replaced with `noop.NewMeterProvider`
-- Add all the methods from `"github.com/dwertyfa288/CLI/vendordeps/otel/trace".SpanContext` to `bridgeSpanContext` by embedding `otel.SpanContext` in `bridgeSpanContext`. (#3966)
-- Wrap `UploadMetrics` error in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/` to improve error message when encountering generic grpc errors. (#3974)
-- The measurement methods for all instruments in `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` accept an option instead of the variadic `"github.com/dwertyfa288/CLI/vendordeps/otel/attribute".KeyValue`. (#3971)
+- Add all the methods from `"github.com/SpherePrime/CLI/vendordeps/otel/trace".SpanContext` to `bridgeSpanContext` by embedding `otel.SpanContext` in `bridgeSpanContext`. (#3966)
+- Wrap `UploadMetrics` error in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/` to improve error message when encountering generic grpc errors. (#3974)
+- The measurement methods for all instruments in `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` accept an option instead of the variadic `"github.com/SpherePrime/CLI/vendordeps/otel/attribute".KeyValue`. (#3971)
   - The `Int64Counter.Add` method now accepts `...AddOption`
   - The `Float64Counter.Add` method now accepts `...AddOption`
   - The `Int64UpDownCounter.Add` method now accepts `...AddOption`
@@ -1419,23 +1419,23 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
   - The `Float64Histogram.Record` method now accepts `...RecordOption`
   - The `Int64Observer.Observe` method now accepts `...ObserveOption`
   - The `Float64Observer.Observe` method now accepts `...ObserveOption`
-- The `Observer` methods in `github.com/dwertyfa288/CLI/vendordeps/otel/metric` accept an option instead of the variadic `"github.com/dwertyfa288/CLI/vendordeps/otel/attribute".KeyValue`. (#3971)
+- The `Observer` methods in `github.com/SpherePrime/CLI/vendordeps/otel/metric` accept an option instead of the variadic `"github.com/SpherePrime/CLI/vendordeps/otel/attribute".KeyValue`. (#3971)
   - The `Observer.ObserveInt64` method now accepts `...ObserveOption`
   - The `Observer.ObserveFloat64` method now accepts `...ObserveOption`
-- Move global metric back to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/global` from `github.com/dwertyfa288/CLI/vendordeps/otel`. (#3986)
+- Move global metric back to `github.com/SpherePrime/CLI/vendordeps/otel/metric/global` from `github.com/SpherePrime/CLI/vendordeps/otel`. (#3986)
 
 ### Fixed
 
 - `TracerProvider` allows calling `Tracer()` while it's shutting down.
   It used to deadlock. (#3924)
-- Use the SDK version for the Telemetry SDK resource detector in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`. (#3949)
-- Fix a data race in `SpanProcessor` returned by `NewSimpleSpanProcessor` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`. (#3951)
+- Use the SDK version for the Telemetry SDK resource detector in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`. (#3949)
+- Fix a data race in `SpanProcessor` returned by `NewSimpleSpanProcessor` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`. (#3951)
 - Automatically figure out the default aggregation with `aggregation.Default`. (#3967)
 
 ### Deprecated
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` package is deprecated.
-  Use the equivalent types added to `github.com/dwertyfa288/CLI/vendordeps/otel/metric` instead. (#4018)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` package is deprecated.
+  Use the equivalent types added to `github.com/SpherePrime/CLI/vendordeps/otel/metric` instead. (#4018)
 
 ## [1.15.0-rc.2/0.38.0-rc.2] 2023-03-23
 
@@ -1445,25 +1445,25 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 
 ### Added
 
-- The `WithHostID` option to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource`. (#3812)
-- The `WithoutTimestamps` option to `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` to sets all timestamps to zero. (#3828)
-- The new `Exemplar` type is added to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata`.
+- The `WithHostID` option to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource`. (#3812)
+- The `WithoutTimestamps` option to `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` to sets all timestamps to zero. (#3828)
+- The new `Exemplar` type is added to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata`.
   Both the `DataPoint` and `HistogramDataPoint` types from that package have a new field of `Exemplars` containing the sampled exemplars for their timeseries. (#3849)
-- Configuration for each metric instrument in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/instrument`. (#3895)
+- Configuration for each metric instrument in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/instrument`. (#3895)
 - The internal logging introduces a warning level verbosity equal to `V(1)`. (#3900)
 - Added a log message warning about usage of `SimpleSpanProcessor` in production environments. (#3854)
 
 ### Changed
 
-- Optimize memory allocation when creation a new `Set` using `NewSet` or `NewSetWithFiltered` in `github.com/dwertyfa288/CLI/vendordeps/otel/attribute`. (#3832)
-- Optimize memory allocation when creation new metric instruments in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#3832)
+- Optimize memory allocation when creation a new `Set` using `NewSet` or `NewSetWithFiltered` in `github.com/SpherePrime/CLI/vendordeps/otel/attribute`. (#3832)
+- Optimize memory allocation when creation new metric instruments in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#3832)
 - Avoid creating new objects on all calls to `WithDeferredSetup` and `SkipContextSetup` in OpenTracing bridge. (#3833)
-- The `New` and `Detect` functions from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource` return errors that wrap underlying errors instead of just containing the underlying error strings. (#3844)
-- Both the `Histogram` and `HistogramDataPoint` are redefined with a generic argument of `[N int64 | float64]` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata`. (#3849)
-- The metric `Export` interface from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` accepts a `*ResourceMetrics` instead of `ResourceMetrics`. (#3853)
-- Rename `Asynchronous` to `Observable` in `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument`. (#3892)
-- Rename `Int64ObserverOption` to `Int64ObservableOption` in `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument`. (#3895)
-- Rename `Float64ObserverOption` to `Float64ObservableOption` in `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument`. (#3895)
+- The `New` and `Detect` functions from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource` return errors that wrap underlying errors instead of just containing the underlying error strings. (#3844)
+- Both the `Histogram` and `HistogramDataPoint` are redefined with a generic argument of `[N int64 | float64]` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata`. (#3849)
+- The metric `Export` interface from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` accepts a `*ResourceMetrics` instead of `ResourceMetrics`. (#3853)
+- Rename `Asynchronous` to `Observable` in `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument`. (#3892)
+- Rename `Int64ObserverOption` to `Int64ObservableOption` in `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument`. (#3895)
+- Rename `Float64ObserverOption` to `Float64ObservableOption` in `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument`. (#3895)
 - The internal logging changes the verbosity level of info to `V(4)`, the verbosity level of debug to `V(8)`. (#3900)
 
 ### Fixed
@@ -1472,13 +1472,13 @@ See our [versioning policy](VERSIONING.md) for more information about these stab
 
 ### Removed
 
-- The deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/metric/global` package is removed. (#3829)
-- The unneeded `Synchronous` interface in `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` was removed. (#3892)
-- The `Float64ObserverConfig` and `NewFloat64ObserverConfig` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/instrument`.
+- The deprecated `github.com/SpherePrime/CLI/vendordeps/otel/metric/global` package is removed. (#3829)
+- The unneeded `Synchronous` interface in `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` was removed. (#3892)
+- The `Float64ObserverConfig` and `NewFloat64ObserverConfig` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/instrument`.
   Use the added `float64` instrument configuration instead. (#3895)
-- The `Int64ObserverConfig` and `NewInt64ObserverConfig` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/instrument`.
+- The `Int64ObserverConfig` and `NewInt64ObserverConfig` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/instrument`.
   Use the added `int64` instrument configuration instead. (#3895)
-- The `NewNoopMeter` function in `github.com/dwertyfa288/CLI/vendordeps/otel/metric`, use `NewMeterProvider().Meter("")` instead. (#3893)
+- The `NewNoopMeter` function in `github.com/SpherePrime/CLI/vendordeps/otel/metric`, use `NewMeterProvider().Meter("")` instead. (#3893)
 
 ## [1.15.0-rc.1/0.38.0-rc.1] 2023-03-01
 
@@ -1490,7 +1490,7 @@ This release drops the compatibility guarantee of [Go 1.18].
 
 ### Added
 
-- Support global `MeterProvider` in `github.com/dwertyfa288/CLI/vendordeps/otel`. (#3818)
+- Support global `MeterProvider` in `github.com/SpherePrime/CLI/vendordeps/otel`. (#3818)
   - Use `Meter` for a `metric.Meter` from the global `metric.MeterProvider`.
   - Use `GetMeterProivder` for a global `metric.MeterProvider`.
   - Use `SetMeterProivder` to set the global `metric.MeterProvider`.
@@ -1503,18 +1503,18 @@ This release drops the compatibility guarantee of [Go 1.18].
 ### Fixed
 
 - Handle empty environment variable as it they were not set. (#3764)
-- Clarify the `httpconv` and `netconv` packages in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/*` provide tracing semantic conventions. (#3823)
-- Fix race conditions in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/metric/prometheus` that could cause a panic. (#3899)
-- Fix sending nil `scopeInfo` to metrics channel in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/metric/prometheus` that could cause a panic in `github.com/prometheus/client_golang/prometheus`. (#3899)
+- Clarify the `httpconv` and `netconv` packages in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/*` provide tracing semantic conventions. (#3823)
+- Fix race conditions in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/metric/prometheus` that could cause a panic. (#3899)
+- Fix sending nil `scopeInfo` to metrics channel in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/metric/prometheus` that could cause a panic in `github.com/prometheus/client_golang/prometheus`. (#3899)
 
 ### Deprecated
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/global` package is deprecated.
-  Use `github.com/dwertyfa288/CLI/vendordeps/otel` instead. (#3818)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/global` package is deprecated.
+  Use `github.com/SpherePrime/CLI/vendordeps/otel` instead. (#3818)
 
 ### Removed
 
-- The deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/metric/unit` package is removed. (#3814)
+- The deprecated `github.com/SpherePrime/CLI/vendordeps/otel/metric/unit` package is removed. (#3814)
 
 ## [1.14.0/0.37.0/0.0.4] 2023-02-27
 
@@ -1523,11 +1523,11 @@ The next release will require at least [Go 1.19].
 
 ### Added
 
-- The `event` type semantic conventions are added to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.17.0`. (#3697)
+- The `event` type semantic conventions are added to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.17.0`. (#3697)
 - Support [Go 1.20]. (#3693)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.18.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.18.0` package.
   The package contains semantic conventions from the `v1.18.0` version of the OpenTelemetry specification. (#3719)
-  - The following `const` renames from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.17.0` are included:
+  - The following `const` renames from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.17.0` are included:
     - `OtelScopeNameKey` -> `OTelScopeNameKey`
     - `OtelScopeVersionKey` -> `OTelScopeVersionKey`
     - `OtelLibraryNameKey` -> `OTelLibraryNameKey`
@@ -1536,40 +1536,40 @@ The next release will require at least [Go 1.19].
     - `OtelStatusDescriptionKey` -> `OTelStatusDescriptionKey`
     - `OtelStatusCodeOk` -> `OTelStatusCodeOk`
     - `OtelStatusCodeError` -> `OTelStatusCodeError`
-  - The following `func` renames from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.17.0` are included:
+  - The following `func` renames from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.17.0` are included:
     - `OtelScopeName` -> `OTelScopeName`
     - `OtelScopeVersion` -> `OTelScopeVersion`
     - `OtelLibraryName` -> `OTelLibraryName`
     - `OtelLibraryVersion` -> `OTelLibraryVersion`
     - `OtelStatusDescription` -> `OTelStatusDescription`
-- A `IsSampled` method is added to the `SpanContext` implementation in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` to expose the span sampled state.
+- A `IsSampled` method is added to the `SpanContext` implementation in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` to expose the span sampled state.
   See the [README](./bridge/opentracing/README.md) for more information. (#3570)
-- The `WithInstrumentationAttributes` option to `github.com/dwertyfa288/CLI/vendordeps/otel/metric`. (#3738)
-- The `WithInstrumentationAttributes` option to `github.com/dwertyfa288/CLI/vendordeps/otel/trace`. (#3739)
-- The following environment variables are supported by the periodic `Reader` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#3763)
+- The `WithInstrumentationAttributes` option to `github.com/SpherePrime/CLI/vendordeps/otel/metric`. (#3738)
+- The `WithInstrumentationAttributes` option to `github.com/SpherePrime/CLI/vendordeps/otel/trace`. (#3739)
+- The following environment variables are supported by the periodic `Reader` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#3763)
   - `OTEL_METRIC_EXPORT_INTERVAL` sets the time between collections and exports.
   - `OTEL_METRIC_EXPORT_TIMEOUT` sets the timeout an export is attempted.
 
 ### Changed
 
-- Fall-back to `TextMapCarrier` when it's not `HttpHeader`s in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing`. (#3679)
-- The `Collect` method of the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".Reader` interface is updated to accept the `metricdata.ResourceMetrics` value the collection will be made into.
+- Fall-back to `TextMapCarrier` when it's not `HttpHeader`s in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing`. (#3679)
+- The `Collect` method of the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".Reader` interface is updated to accept the `metricdata.ResourceMetrics` value the collection will be made into.
   This change is made to enable memory reuse by SDK users. (#3732)
-- The `WithUnit` option in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/instrument` is updated to accept a `string` for the unit value. (#3776)
+- The `WithUnit` option in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/instrument` is updated to accept a `string` for the unit value. (#3776)
 
 ### Fixed
 
-- Ensure `github.com/dwertyfa288/CLI/vendordeps/otel` does not use generics. (#3723, #3725)
+- Ensure `github.com/SpherePrime/CLI/vendordeps/otel` does not use generics. (#3723, #3725)
 - Multi-reader `MeterProvider`s now export metrics for all readers, instead of just the first reader. (#3720, #3724)
-- Remove use of deprecated `"math/rand".Seed` in `github.com/dwertyfa288/CLI/vendordeps/otel/example/prometheus`. (#3733)
-- Do not silently drop unknown schema data with `Parse` in  `github.com/dwertyfa288/CLI/vendordeps/otel/schema/v1.1`. (#3743)
+- Remove use of deprecated `"math/rand".Seed` in `github.com/SpherePrime/CLI/vendordeps/otel/example/prometheus`. (#3733)
+- Do not silently drop unknown schema data with `Parse` in  `github.com/SpherePrime/CLI/vendordeps/otel/schema/v1.1`. (#3743)
 - Data race issue in OTLP exporter retry mechanism. (#3755, #3756)
-- Wrapping empty errors when exporting in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`. (#3698, #3772)
-- Incorrect "all" and "resource" definition for schema files in `github.com/dwertyfa288/CLI/vendordeps/otel/schema/v1.1`. (#3777)
+- Wrapping empty errors when exporting in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`. (#3698, #3772)
+- Incorrect "all" and "resource" definition for schema files in `github.com/SpherePrime/CLI/vendordeps/otel/schema/v1.1`. (#3777)
 
 ### Deprecated
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/unit` package is deprecated.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/unit` package is deprecated.
   Use the equivalent unit string instead. (#3776)
   - Use `"1"` instead of `unit.Dimensionless`
   - Use `"By"` instead of `unit.Bytes`
@@ -1579,57 +1579,57 @@ The next release will require at least [Go 1.19].
 
 ### Added
 
-- Attribute `KeyValue` creations functions to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.17.0` for all non-enum semantic conventions.
+- Attribute `KeyValue` creations functions to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.17.0` for all non-enum semantic conventions.
   These functions ensure semantic convention type correctness. (#3675)
 
 ### Fixed
 
 - Removed the `http.target` attribute from being added by `ServerRequest` in the following packages. (#3687)
-  - `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`
-  - `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.14.0/httpconv`
-  - `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.15.0/httpconv`
-  - `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.16.0/httpconv`
-  - `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.17.0/httpconv`
+  - `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`
+  - `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.14.0/httpconv`
+  - `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.15.0/httpconv`
+  - `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.16.0/httpconv`
+  - `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.17.0/httpconv`
 
 ### Removed
 
-- The deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/asyncfloat64` package is removed. (#3631)
-- The deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/asyncint64` package is removed. (#3631)
-- The deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/syncfloat64` package is removed. (#3631)
-- The deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/syncint64` package is removed. (#3631)
+- The deprecated `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/asyncfloat64` package is removed. (#3631)
+- The deprecated `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/asyncint64` package is removed. (#3631)
+- The deprecated `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/syncfloat64` package is removed. (#3631)
+- The deprecated `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/syncint64` package is removed. (#3631)
 
 ## [1.12.0/0.35.0] 2023-01-28
 
 ### Added
 
-- The `WithInt64Callback` option to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument`.
+- The `WithInt64Callback` option to `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument`.
   This options is used to configure `int64` Observer callbacks during their creation. (#3507)
-- The `WithFloat64Callback` option to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument`.
+- The `WithFloat64Callback` option to `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument`.
   This options is used to configure `float64` Observer callbacks during their creation. (#3507)
-- The `Producer` interface and `Reader.RegisterProducer(Producer)` to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`.
+- The `Producer` interface and `Reader.RegisterProducer(Producer)` to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`.
   These additions are used to enable external metric Producers. (#3524)
-- The `Callback` function type to `github.com/dwertyfa288/CLI/vendordeps/otel/metric`.
+- The `Callback` function type to `github.com/SpherePrime/CLI/vendordeps/otel/metric`.
   This new named function type is registered with a `Meter`. (#3564)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0` package.
   The package contains semantic conventions from the `v1.13.0` version of the OpenTelemetry specification. (#3499)
-  - The `EndUserAttributesFromHTTPRequest` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` is merged into `ClientRequest` and `ServerRequest` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
-  - The `HTTPAttributesFromHTTPStatusCode` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` is merged into `ClientResponse` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
-  - The `HTTPClientAttributesFromHTTPRequest` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` is replaced by `ClientRequest` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
-  - The `HTTPServerAttributesFromHTTPRequest` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` is replaced by `ServerRequest` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
-  - The `HTTPServerMetricAttributesFromHTTPRequest` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` is replaced by `ServerRequest` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
-  - The `NetAttributesFromHTTPRequest` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` is split into `Transport` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/netconv` and `ClientRequest` or `ServerRequest` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
-  - The `SpanStatusFromHTTPStatusCode` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` is replaced by `ClientStatus` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
-  - The `SpanStatusFromHTTPStatusCodeAndSpanKind` function in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` is split into `ClientStatus` and `ServerStatus` in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
-  - The `Client` function is included in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/netconv` to generate attributes for a `net.Conn`.
-  - The `Server` function is included in `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.13.0/netconv` to generate attributes for a `net.Listener`.
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.14.0` package.
+  - The `EndUserAttributesFromHTTPRequest` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` is merged into `ClientRequest` and `ServerRequest` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
+  - The `HTTPAttributesFromHTTPStatusCode` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` is merged into `ClientResponse` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
+  - The `HTTPClientAttributesFromHTTPRequest` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` is replaced by `ClientRequest` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
+  - The `HTTPServerAttributesFromHTTPRequest` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` is replaced by `ServerRequest` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
+  - The `HTTPServerMetricAttributesFromHTTPRequest` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` is replaced by `ServerRequest` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
+  - The `NetAttributesFromHTTPRequest` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` is split into `Transport` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/netconv` and `ClientRequest` or `ServerRequest` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
+  - The `SpanStatusFromHTTPStatusCode` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` is replaced by `ClientStatus` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
+  - The `SpanStatusFromHTTPStatusCodeAndSpanKind` function in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` is split into `ClientStatus` and `ServerStatus` in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/httpconv`.
+  - The `Client` function is included in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/netconv` to generate attributes for a `net.Conn`.
+  - The `Server` function is included in `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.13.0/netconv` to generate attributes for a `net.Listener`.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.14.0` package.
   The package contains semantic conventions from the `v1.14.0` version of the OpenTelemetry specification. (#3566)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.15.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.15.0` package.
   The package contains semantic conventions from the `v1.15.0` version of the OpenTelemetry specification. (#3578)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.16.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.16.0` package.
   The package contains semantic conventions from the `v1.16.0` version of the OpenTelemetry specification. (#3579)
-- Metric instruments to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument`.
-  These instruments are use as replacements of the deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/{asyncfloat64,asyncint64,syncfloat64,syncint64}` packages.(#3575, #3586)
+- Metric instruments to `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument`.
+  These instruments are use as replacements of the deprecated `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/{asyncfloat64,asyncint64,syncfloat64,syncint64}` packages.(#3575, #3586)
   - `Float64ObservableCounter` replaces the `asyncfloat64.Counter`
   - `Float64ObservableUpDownCounter` replaces the `asyncfloat64.UpDownCounter`
   - `Float64ObservableGauge` replaces the `asyncfloat64.Gauge`
@@ -1642,91 +1642,91 @@ The next release will require at least [Go 1.19].
   - `Int64Counter` replaces the `syncint64.Counter`
   - `Int64UpDownCounter` replaces the `syncint64.UpDownCounter`
   - `Int64Histogram` replaces the `syncint64.Histogram`
-- `NewTracerProvider` to `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing`.
+- `NewTracerProvider` to `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing`.
   This is used to create `WrapperTracer` instances from a `TracerProvider`. (#3116)
-- The `Extrema` type to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata`.
+- The `Extrema` type to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata`.
   This type is used to represent min/max values and still be able to distinguish unset and zero values. (#3487)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.17.0` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.17.0` package.
   The package contains semantic conventions from the `v1.17.0` version of the OpenTelemetry specification. (#3599)
 
 ### Changed
 
-- Jaeger and Zipkin exporter use `github.com/dwertyfa288/CLI/vendordeps/go-logr/logr` as the logging interface, and add the `WithLogr` option. (#3497, #3500)
-- Instrument configuration in `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` is split into specific options and configuration based on the instrument type. (#3507)
-  - Use the added `Int64Option` type to configure instruments from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/syncint64`.
-  - Use the added `Float64Option` type to configure instruments from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/syncfloat64`.
-  - Use the added `Int64ObserverOption` type to configure instruments from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/asyncint64`.
-  - Use the added `Float64ObserverOption` type to configure instruments from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/asyncfloat64`.
-- Return a `Registration` from the `RegisterCallback` method of a `Meter` in the `github.com/dwertyfa288/CLI/vendordeps/otel/metric` package.
+- Jaeger and Zipkin exporter use `github.com/SpherePrime/CLI/vendordeps/go-logr/logr` as the logging interface, and add the `WithLogr` option. (#3497, #3500)
+- Instrument configuration in `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` is split into specific options and configuration based on the instrument type. (#3507)
+  - Use the added `Int64Option` type to configure instruments from `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/syncint64`.
+  - Use the added `Float64Option` type to configure instruments from `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/syncfloat64`.
+  - Use the added `Int64ObserverOption` type to configure instruments from `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/asyncint64`.
+  - Use the added `Float64ObserverOption` type to configure instruments from `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/asyncfloat64`.
+- Return a `Registration` from the `RegisterCallback` method of a `Meter` in the `github.com/SpherePrime/CLI/vendordeps/otel/metric` package.
   This `Registration` can be used to unregister callbacks. (#3522)
 - Global error handler uses an atomic value instead of a mutex. (#3543)
-- Add `NewMetricProducer` to `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`, which can be used to pass OpenCensus metrics to an OpenTelemetry Reader. (#3541)
+- Add `NewMetricProducer` to `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`, which can be used to pass OpenCensus metrics to an OpenTelemetry Reader. (#3541)
 - Global logger uses an atomic value instead of a mutex. (#3545)
-- The `Shutdown` method of the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".TracerProvider` releases all computational resources when called the first time. (#3551)
-- The `Sampler` returned from `TraceIDRatioBased` `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` now uses the rightmost bits for sampling decisions.
+- The `Shutdown` method of the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".TracerProvider` releases all computational resources when called the first time. (#3551)
+- The `Sampler` returned from `TraceIDRatioBased` `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` now uses the rightmost bits for sampling decisions.
   This fixes random sampling when using ID generators like `xray.IDGenerator` and increasing parity with other language implementations. (#3557)
-- Errors from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace` exporters are wrapped in errors identifying their signal name.
+- Errors from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace` exporters are wrapped in errors identifying their signal name.
   Existing users of the exporters attempting to identify specific errors will need to use `errors.Unwrap()` to get the underlying error. (#3516)
-- Exporters from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` will print the final retryable error message when attempts to retry time out. (#3514)
-- The instrument kind names in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` are updated to match the API. (#3562)
+- Exporters from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` will print the final retryable error message when attempts to retry time out. (#3514)
+- The instrument kind names in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` are updated to match the API. (#3562)
   - `InstrumentKindSyncCounter` is renamed to `InstrumentKindCounter`
   - `InstrumentKindSyncUpDownCounter` is renamed to `InstrumentKindUpDownCounter`
   - `InstrumentKindSyncHistogram` is renamed to `InstrumentKindHistogram`
   - `InstrumentKindAsyncCounter` is renamed to `InstrumentKindObservableCounter`
   - `InstrumentKindAsyncUpDownCounter` is renamed to `InstrumentKindObservableUpDownCounter`
   - `InstrumentKindAsyncGauge` is renamed to `InstrumentKindObservableGauge`
-- The `RegisterCallback` method of the `Meter` in `github.com/dwertyfa288/CLI/vendordeps/otel/metric` changed.
+- The `RegisterCallback` method of the `Meter` in `github.com/SpherePrime/CLI/vendordeps/otel/metric` changed.
   - The named `Callback` replaces the inline function parameter. (#3564)
   - `Callback` is required to return an error. (#3576)
   - `Callback` accepts the added `Observer` parameter added.
     This new parameter is used by `Callback` implementations to observe values for asynchronous instruments instead of calling the `Observe` method of the instrument directly. (#3584)
   - The slice of `instrument.Asynchronous` is now passed as a variadic argument. (#3587)
-- The exporter from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin` is updated to use the `v1.16.0` version of semantic conventions.
+- The exporter from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin` is updated to use the `v1.16.0` version of semantic conventions.
   This means it no longer uses the removed `net.peer.ip` or `http.host` attributes to determine the remote endpoint.
   Instead it uses the `net.sock.peer` attributes. (#3581)
-- The `Min` and `Max` fields of the `HistogramDataPoint` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metricdata` are now defined with the added `Extrema` type instead of a `*float64`. (#3487)
+- The `Min` and `Max` fields of the `HistogramDataPoint` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metricdata` are now defined with the added `Extrema` type instead of a `*float64`. (#3487)
 
 ### Fixed
 
 - Asynchronous instruments that use sum aggregators and attribute filters correctly add values from equivalent attribute sets that have been filtered. (#3439, #3549)
-- The `RegisterCallback` method of the `Meter` from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` only registers a callback for instruments created by that meter.
+- The `RegisterCallback` method of the `Meter` from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` only registers a callback for instruments created by that meter.
   Trying to register a callback with instruments from a different meter will result in an error being returned. (#3584)
 
 ### Deprecated
 
-- The `NewMetricExporter` in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus` is deprecated.
+- The `NewMetricExporter` in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus` is deprecated.
   Use `NewMetricProducer` instead. (#3541)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/asyncfloat64` package is deprecated.
-  Use the instruments from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` instead. (#3575)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/asyncint64` package is deprecated.
-  Use the instruments from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` instead. (#3575)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/syncfloat64` package is deprecated.
-  Use the instruments from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` instead. (#3575)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument/syncint64` package is deprecated.
-  Use the instruments from `github.com/dwertyfa288/CLI/vendordeps/otel/metric/instrument` instead. (#3575)
-- The `NewWrappedTracerProvider` in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` is now deprecated.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/asyncfloat64` package is deprecated.
+  Use the instruments from `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` instead. (#3575)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/asyncint64` package is deprecated.
+  Use the instruments from `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` instead. (#3575)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/syncfloat64` package is deprecated.
+  Use the instruments from `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` instead. (#3575)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument/syncint64` package is deprecated.
+  Use the instruments from `github.com/SpherePrime/CLI/vendordeps/otel/metric/instrument` instead. (#3575)
+- The `NewWrappedTracerProvider` in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` is now deprecated.
   Use `NewTracerProvider` instead. (#3116)
 
 ### Removed
 
-- The deprecated `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/view` package is removed. (#3520)
-- The `InstrumentProvider` from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/asyncint64` is removed.
-  Use the new creation methods of the `Meter` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` instead. (#3530)
+- The deprecated `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/view` package is removed. (#3520)
+- The `InstrumentProvider` from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/asyncint64` is removed.
+  Use the new creation methods of the `Meter` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` instead. (#3530)
   - The `Counter` method is replaced by `Meter.Int64ObservableCounter`
   - The `UpDownCounter` method is replaced by `Meter.Int64ObservableUpDownCounter`
   - The `Gauge` method is replaced by `Meter.Int64ObservableGauge`
-- The `InstrumentProvider` from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/asyncfloat64` is removed.
-  Use the new creation methods of the `Meter` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` instead. (#3530)
+- The `InstrumentProvider` from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/asyncfloat64` is removed.
+  Use the new creation methods of the `Meter` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` instead. (#3530)
   - The `Counter` method is replaced by `Meter.Float64ObservableCounter`
   - The `UpDownCounter` method is replaced by `Meter.Float64ObservableUpDownCounter`
   - The `Gauge` method is replaced by `Meter.Float64ObservableGauge`
-- The `InstrumentProvider` from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/syncint64` is removed.
-  Use the new creation methods of the `Meter` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` instead. (#3530)
+- The `InstrumentProvider` from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/syncint64` is removed.
+  Use the new creation methods of the `Meter` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` instead. (#3530)
   - The `Counter` method is replaced by `Meter.Int64Counter`
   - The `UpDownCounter` method is replaced by `Meter.Int64UpDownCounter`
   - The `Histogram` method is replaced by `Meter.Int64Histogram`
-- The `InstrumentProvider` from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/syncfloat64` is removed.
-  Use the new creation methods of the `Meter` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` instead. (#3530)
+- The `InstrumentProvider` from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/syncfloat64` is removed.
+  Use the new creation methods of the `Meter` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` instead. (#3530)
   - The `Counter` method is replaced by `Meter.Float64Counter`
   - The `UpDownCounter` method is replaced by `Meter.Float64UpDownCounter`
   - The `Histogram` method is replaced by `Meter.Float64Histogram`
@@ -1735,7 +1735,7 @@ The next release will require at least [Go 1.19].
 
 ### Added
 
-- The `WithView` `Option` is added to the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` package.
+- The `WithView` `Option` is added to the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` package.
    This option is used to configure the view(s) a `MeterProvider` will use for all `Reader`s that are registered with it. (#3387)
 - Add Instrumentation Scope and Version as info metric and label in Prometheus exporter.
   This can be disabled using the `WithoutScopeInfo()` option added to that package.(#3273, #3357)
@@ -1749,61 +1749,61 @@ The next release will require at least [Go 1.19].
   - `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE`
   - `OTEL_EXPORTER_OTLP_TRACES_CLIENT_CERTIFICATE`
   - `OTEL_EXPORTER_OTLP_METRICS_CLIENT_CERTIFICATE`
-- The `View` type and related `NewView` function to create a view according to the OpenTelemetry specification are added to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`.
-  These additions are replacements for the `View` type and `New` function from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/view`. (#3459)
-- The `Instrument` and `InstrumentKind` type are added to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric`.
-  These additions are replacements for the `Instrument` and `InstrumentKind` types from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/view`. (#3459)
-- The `Stream` type is added to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` to define a metric data stream a view will produce. (#3459)
+- The `View` type and related `NewView` function to create a view according to the OpenTelemetry specification are added to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`.
+  These additions are replacements for the `View` type and `New` function from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/view`. (#3459)
+- The `Instrument` and `InstrumentKind` type are added to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric`.
+  These additions are replacements for the `Instrument` and `InstrumentKind` types from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/view`. (#3459)
+- The `Stream` type is added to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` to define a metric data stream a view will produce. (#3459)
 - The `AssertHasAttributes` allows instrument authors to test that datapoints returned have appropriate attributes. (#3487)
 
 ### Changed
 
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".WithReader` option no longer accepts views to associate with the `Reader`.
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".WithReader` option no longer accepts views to associate with the `Reader`.
    Instead, views are now registered directly with the `MeterProvider` via the new `WithView` option.
    The views registered with the `MeterProvider` apply to all `Reader`s. (#3387)
-- The `Temporality(view.InstrumentKind) metricdata.Temporality` and `Aggregation(view.InstrumentKind) aggregation.Aggregation` methods are added to the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".Exporter` interface. (#3260)
-- The `Temporality(view.InstrumentKind) metricdata.Temporality` and `Aggregation(view.InstrumentKind) aggregation.Aggregation` methods are added to the `"github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric".Client` interface. (#3260)
-- The `WithTemporalitySelector` and `WithAggregationSelector` `ReaderOption`s have been changed to `ManualReaderOption`s in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` package. (#3260)
-- The periodic reader in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` package now uses the temporality and aggregation selectors from its configured exporter instead of accepting them as options. (#3260)
+- The `Temporality(view.InstrumentKind) metricdata.Temporality` and `Aggregation(view.InstrumentKind) aggregation.Aggregation` methods are added to the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".Exporter` interface. (#3260)
+- The `Temporality(view.InstrumentKind) metricdata.Temporality` and `Aggregation(view.InstrumentKind) aggregation.Aggregation` methods are added to the `"github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric".Client` interface. (#3260)
+- The `WithTemporalitySelector` and `WithAggregationSelector` `ReaderOption`s have been changed to `ManualReaderOption`s in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` package. (#3260)
+- The periodic reader in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` package now uses the temporality and aggregation selectors from its configured exporter instead of accepting them as options. (#3260)
 
 ### Fixed
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` exporter fixes duplicated `_total` suffixes. (#3369)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` exporter fixes duplicated `_total` suffixes. (#3369)
 - Remove comparable requirement for `Reader`s. (#3387)
-- Cumulative metrics from the OpenCensus bridge (`github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`) are defined as monotonic sums, instead of non-monotonic. (#3389)
+- Cumulative metrics from the OpenCensus bridge (`github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`) are defined as monotonic sums, instead of non-monotonic. (#3389)
 - Asynchronous counters (`Counter` and `UpDownCounter`) from the metric SDK now produce delta sums when configured with delta temporality. (#3398)
-- Exported `Status` codes in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin` exporter are now exported as all upper case values. (#3340)
-- `Aggregation`s from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` with no data are not exported. (#3394, #3436)
+- Exported `Status` codes in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin` exporter are now exported as all upper case values. (#3340)
+- `Aggregation`s from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` with no data are not exported. (#3394, #3436)
 - Re-enabled Attribute Filters in the Metric SDK. (#3396)
 - Asynchronous callbacks are only called if they are registered with at least one instrument that does not use drop aggregation. (#3408)
-- Do not report empty partial-success responses in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` exporters. (#3438, #3432)
-- Handle partial success responses in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric` exporters. (#3162, #3440)
+- Do not report empty partial-success responses in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` exporters. (#3438, #3432)
+- Handle partial success responses in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric` exporters. (#3162, #3440)
 - Prevent duplicate Prometheus description, unit, and type. (#3469)
 - Prevents panic when using incorrect `attribute.Value.As[Type]Slice()`. (#3489)
 
 ### Removed
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric.Client` interface is removed. (#3486)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric.New` function is removed. Use the `otlpmetric[http|grpc].New` directly. (#3486)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric.Client` interface is removed. (#3486)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric.New` function is removed. Use the `otlpmetric[http|grpc].New` directly. (#3486)
 
 ### Deprecated
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/view` package is deprecated.
-  Use `Instrument`, `InstrumentKind`, `View`, and `NewView` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` instead. (#3476)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/view` package is deprecated.
+  Use `Instrument`, `InstrumentKind`, `View`, and `NewView` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` instead. (#3476)
 
 ## [1.11.1/0.33.0] 2022-10-19
 
 ### Added
 
-- The Prometheus exporter in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` registers with a Prometheus registerer on creation.
+- The Prometheus exporter in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` registers with a Prometheus registerer on creation.
    By default, it will register with the default Prometheus registerer.
    A non-default registerer can be used by passing the `WithRegisterer` option. (#3239)
-- Added the `WithAggregationSelector` option to the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` package to change the default `AggregationSelector` used. (#3341)
-- The Prometheus exporter in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` converts the `Resource` associated with metric exports into a `target_info` metric. (#3285)
+- Added the `WithAggregationSelector` option to the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` package to change the default `AggregationSelector` used. (#3341)
+- The Prometheus exporter in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` converts the `Resource` associated with metric exports into a `target_info` metric. (#3285)
 
 ### Changed
 
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus".New` function is updated to return an error.
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus".New` function is updated to return an error.
    It will return an error if the exporter fails to register with Prometheus. (#3239)
 
 ### Fixed
@@ -1812,28 +1812,28 @@ The next release will require at least [Go 1.19].
 - The `baggage.NewMember` function decodes the `value` parameter instead of directly using it.
    This fixes the implementation to be compliant with the W3C specification. (#3226)
 - Slice attributes of the `attribute` package are now comparable based on their value, not instance. (#3108 #3252)
-- The `Shutdown` and `ForceFlush` methods of the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".TraceProvider` no longer return an error when no processor is registered. (#3268)
-- The Prometheus exporter in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` cumulatively sums histogram buckets. (#3281)
-- The sum of each histogram data point is now uniquely exported by the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlpmetric` exporters. (#3284, #3293)
+- The `Shutdown` and `ForceFlush` methods of the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".TraceProvider` no longer return an error when no processor is registered. (#3268)
+- The Prometheus exporter in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` cumulatively sums histogram buckets. (#3281)
+- The sum of each histogram data point is now uniquely exported by the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlpmetric` exporters. (#3284, #3293)
 - Recorded values for asynchronous counters (`Counter` and `UpDownCounter`) are interpreted as exact, not incremental, sum values by the metric SDK. (#3350, #3278)
-- `UpDownCounters` are now correctly output as Prometheus gauges in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` exporter. (#3358)
-- The Prometheus exporter in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` no longer describes the metrics it will send to Prometheus on startup.
+- `UpDownCounters` are now correctly output as Prometheus gauges in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` exporter. (#3358)
+- The Prometheus exporter in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` no longer describes the metrics it will send to Prometheus on startup.
    Instead the exporter is defined as an "unchecked" collector for Prometheus.
    This fixes the `reader is not registered` warning currently emitted on startup. (#3291 #3342)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` exporter now correctly adds `_total` suffixes to counter metrics. (#3360)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` exporter now adds a unit suffix to metric names.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` exporter now correctly adds `_total` suffixes to counter metrics. (#3360)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` exporter now adds a unit suffix to metric names.
    This can be disabled using the `WithoutUnits()` option added to that package. (#3352)
 
 ## [1.11.0/0.32.3] 2022-10-12
 
 ### Added
 
-- Add default User-Agent header to OTLP exporter requests (`github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlptrace/otlptracegrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlptrace/otlptracehttp`). (#3261)
+- Add default User-Agent header to OTLP exporter requests (`github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlptrace/otlptracegrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlptrace/otlptracehttp`). (#3261)
 
 ### Changed
 
 - `span.SetStatus` has been updated such that calls that lower the status are now no-ops. (#3214)
-- Upgrade `github.com/dwertyfa288/CLI/vendordeps/x/sys/unix` from `v0.0.0-20210423185535-09eb48e85fd7` to `v0.0.0-20220919091848-fb04ddd9f9c8`.
+- Upgrade `github.com/SpherePrime/CLI/vendordeps/x/sys/unix` from `v0.0.0-20210423185535-09eb48e85fd7` to `v0.0.0-20220919091848-fb04ddd9f9c8`.
   This addresses [GO-2022-0493](https://pkg.go.dev/vuln/GO-2022-0493). (#3235)
 
 ## [0.32.2] Metric SDK (Alpha) - 2022-10-11
@@ -1841,13 +1841,13 @@ The next release will require at least [Go 1.19].
 ### Added
 
 - Added an example of using metric views to customize instruments. (#3177)
-- Add default User-Agent header to OTLP exporter requests (`github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlpmetric/otlpmetricgrpc` and `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlpmetric/otlpmetrichttp`). (#3261)
+- Add default User-Agent header to OTLP exporter requests (`github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlpmetric/otlpmetricgrpc` and `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlpmetric/otlpmetrichttp`). (#3261)
 
 ### Changed
 
-- Flush pending measurements with the `PeriodicReader` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` when `ForceFlush` or `Shutdown` are called. (#3220)
+- Flush pending measurements with the `PeriodicReader` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` when `ForceFlush` or `Shutdown` are called. (#3220)
 - Update histogram default bounds to match the requirements of the latest specification. (#3222)
-- Encode the HTTP status code in the OpenTracing bridge (`github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing`) as an integer.  (#3265)
+- Encode the HTTP status code in the OpenTracing bridge (`github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing`) as an integer.  (#3265)
 
 ### Fixed
 
@@ -1866,8 +1866,8 @@ The next release will require at least [Go 1.19].
 
 ### Added
 
-- The metric portion of the OpenCensus bridge (`github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`) has been reintroduced. (#3192)
-- The OpenCensus bridge example (`github.com/dwertyfa288/CLI/vendordeps/otel/example/opencensus`) has been reintroduced. (#3206)
+- The metric portion of the OpenCensus bridge (`github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`) has been reintroduced. (#3192)
+- The OpenCensus bridge example (`github.com/SpherePrime/CLI/vendordeps/otel/example/opencensus`) has been reintroduced. (#3206)
 
 ### Fixed
 
@@ -1878,38 +1878,38 @@ The next release will require at least [Go 1.19].
 
 ### Changed
 
-- The metric SDK in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` is completely refactored to comply with the OpenTelemetry specification.
+- The metric SDK in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` is completely refactored to comply with the OpenTelemetry specification.
   Please see the package documentation for how the new SDK is initialized and configured. (#3175)
 - Update the minimum supported go version to go1.18. Removes support for go1.17 (#3179)
 
 ### Removed
 
-- The metric portion of the OpenCensus bridge (`github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus`) has been removed.
+- The metric portion of the OpenCensus bridge (`github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus`) has been removed.
   A new bridge compliant with the revised metric SDK will be added back in a future release. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregator/aggregatortest` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregator/histogram` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregator/lastvalue` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregator/sum` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregator` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/controller/basic` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/controller/controllertest` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/controller/time` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/export/aggregation` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/export` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metrictest` package is removed.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregator/aggregatortest` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregator/histogram` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregator/lastvalue` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregator/sum` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregator` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/controller/basic` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/controller/controllertest` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/controller/time` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/export/aggregation` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/export` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metrictest` package is removed.
   A replacement package that supports the new metric SDK will be added back in a future release. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/number` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/processor/basic` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/processor/processortest` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/processor/reducer` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/registry` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/sdkapi` package is removed, see the new metric SDK. (#3175)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/selector/simple` package is removed, see the new metric SDK. (#3175)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".ErrUninitializedInstrument` variable was removed. (#3175)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".ErrBadInstrument` variable was removed. (#3175)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".Accumulator` type was removed, see the `MeterProvider`in the new metric SDK. (#3175)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".NewAccumulator` function was removed, see `NewMeterProvider`in the new metric SDK. (#3175)
-- The deprecated `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".AtomicFieldOffsets` function was removed. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/number` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/processor/basic` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/processor/processortest` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/processor/reducer` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/registry` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/sdkapi` package is removed, see the new metric SDK. (#3175)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/selector/simple` package is removed, see the new metric SDK. (#3175)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".ErrUninitializedInstrument` variable was removed. (#3175)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".ErrBadInstrument` variable was removed. (#3175)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".Accumulator` type was removed, see the `MeterProvider`in the new metric SDK. (#3175)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".NewAccumulator` function was removed, see `NewMeterProvider`in the new metric SDK. (#3175)
+- The deprecated `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".AtomicFieldOffsets` function was removed. (#3175)
 
 ## [1.10.0] - 2022-09-09
 
@@ -1922,7 +1922,7 @@ The next release will require at least [Go 1.19].
 
 ### Changed
 
-- Fix misidentification of OpenTelemetry `SpanKind` in OpenTracing bridge (`github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing`).  (#3096)
+- Fix misidentification of OpenTelemetry `SpanKind` in OpenTracing bridge (`github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing`).  (#3096)
 - Attempting to start a span with a nil `context` will no longer cause a panic. (#3110)
 - All exporters will be shutdown even if one reports an error (#3091)
 - Ensure valid UTF-8 when truncating over-length attribute values. (#3156)
@@ -1931,28 +1931,28 @@ The next release will require at least [Go 1.19].
 
 ### Added
 
-- Add support for Schema Files format 1.1.x (metric "split" transform) with the new `github.com/dwertyfa288/CLI/vendordeps/otel/schema/v1.1` package. (#2999)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.11.0` package.
+- Add support for Schema Files format 1.1.x (metric "split" transform) with the new `github.com/SpherePrime/CLI/vendordeps/otel/schema/v1.1` package. (#2999)
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.11.0` package.
   The package contains semantic conventions from the `v1.11.0` version of the OpenTelemetry specification. (#3009)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.12.0` package.
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.12.0` package.
   The package contains semantic conventions from the `v1.12.0` version of the OpenTelemetry specification. (#3010)
-- Add the `http.method` attribute to HTTP server metric from all `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/*` packages. (#3018)
+- Add the `http.method` attribute to HTTP server metric from all `github.com/SpherePrime/CLI/vendordeps/otel/semconv/*` packages. (#3018)
 
 ### Fixed
 
-- Invalid warning for context setup being deferred in `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` package. (#3029)
+- Invalid warning for context setup being deferred in `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` package. (#3029)
 
 ## [1.8.0/0.31.0] - 2022-07-08
 
 ### Added
 
 - Add support for `opentracing.TextMap` format in the `Inject` and `Extract` methods
-of the `"github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing".BridgeTracer` type. (#2911)
+of the `"github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing".BridgeTracer` type. (#2911)
 
 ### Changed
 
 - The `crosslink` make target has been updated to use the `go.opentelemetry.io/build-tools/crosslink` package. (#2886)
-- In the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/instrumentation` package rename `Library` to `Scope` and alias `Library` as `Scope` (#2976)
+- In the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/instrumentation` package rename `Library` to `Scope` and alias `Library` as `Scope` (#2976)
 - Move metric no-op implementation form `nonrecording` to `metric` package. (#2866)
 
 ### Removed
@@ -1961,67 +1961,67 @@ of the `"github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing".BridgeTr
 
 ### Deprecated
 
-- The `Library` struct in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/instrumentation` package is deprecated.
+- The `Library` struct in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/instrumentation` package is deprecated.
   Use the equivalent `Scope` struct instead. (#2977)
-- The `ReadOnlySpan.InstrumentationLibrary` method from the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package is deprecated.
+- The `ReadOnlySpan.InstrumentationLibrary` method from the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package is deprecated.
   Use the equivalent `ReadOnlySpan.InstrumentationScope` method instead. (#2977)
 
 ## [1.7.0/0.30.0] - 2022-04-28
 
 ### Added
 
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.8.0` package.
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.8.0` package.
   The package contains semantic conventions from the `v1.8.0` version of the OpenTelemetry specification. (#2763)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.9.0` package.
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.9.0` package.
   The package contains semantic conventions from the `v1.9.0` version of the OpenTelemetry specification. (#2792)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.10.0` package.
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.10.0` package.
   The package contains semantic conventions from the `v1.10.0` version of the OpenTelemetry specification. (#2842)
 - Added an in-memory exporter to metrictest to aid testing with a full SDK. (#2776)
 
 ### Fixed
 
 - Globally delegated instruments are unwrapped before delegating asynchronous callbacks. (#2784)
-- Remove import of `testing` package in non-tests builds of the `github.com/dwertyfa288/CLI/vendordeps/otel` package. (#2786)
+- Remove import of `testing` package in non-tests builds of the `github.com/SpherePrime/CLI/vendordeps/otel` package. (#2786)
 
 ### Changed
 
-- The `WithLabelEncoder` option from the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` package is renamed to `WithAttributeEncoder`. (#2790)
-- The `LabelFilterSelector` interface from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/processor/reducer` is renamed to `AttributeFilterSelector`.
+- The `WithLabelEncoder` option from the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` package is renamed to `WithAttributeEncoder`. (#2790)
+- The `LabelFilterSelector` interface from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/processor/reducer` is renamed to `AttributeFilterSelector`.
   The method included in the renamed interface also changed from `LabelFilterFor` to `AttributeFilterFor`. (#2790)
-- The `Metadata.Labels` method from the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/export` package is renamed to `Metadata.Attributes`.
+- The `Metadata.Labels` method from the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/export` package is renamed to `Metadata.Attributes`.
   Consequentially, the `Record` type from the same package also has had the embedded method renamed. (#2790)
 
 ### Deprecated
 
-- The `Iterator.Label` method in the `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` package is deprecated.
+- The `Iterator.Label` method in the `github.com/SpherePrime/CLI/vendordeps/otel/attribute` package is deprecated.
   Use the equivalent `Iterator.Attribute` method instead. (#2790)
-- The `Iterator.IndexedLabel` method in the `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` package is deprecated.
+- The `Iterator.IndexedLabel` method in the `github.com/SpherePrime/CLI/vendordeps/otel/attribute` package is deprecated.
   Use the equivalent `Iterator.IndexedAttribute` method instead. (#2790)
-- The `MergeIterator.Label` method in the `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` package is deprecated.
+- The `MergeIterator.Label` method in the `github.com/SpherePrime/CLI/vendordeps/otel/attribute` package is deprecated.
   Use the equivalent `MergeIterator.Attribute` method instead. (#2790)
 
 ### Removed
 
-- Removed the `Batch` type from the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metrictest` package. (#2864)
-- Removed the `Measurement` type from the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/metrictest` package. (#2864)
+- Removed the `Batch` type from the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metrictest` package. (#2864)
+- Removed the `Measurement` type from the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/metrictest` package. (#2864)
 
 ## [0.29.0] - 2022-04-11
 
 ### Added
 
 - The metrics global package was added back into several test files. (#2764)
-- The `Meter` function is added back to the `github.com/dwertyfa288/CLI/vendordeps/otel/metric/global` package.
+- The `Meter` function is added back to the `github.com/SpherePrime/CLI/vendordeps/otel/metric/global` package.
   This function is a convenience function equivalent to calling `global.MeterProvider().Meter(...)`. (#2750)
 
 ### Removed
 
-- Removed module the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/metric`.
-  Use the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` module instead. (#2720)
+- Removed module the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/metric`.
+  Use the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` module instead. (#2720)
 
 ### Changed
 
 - Don't panic anymore when setting a global MeterProvider to itself. (#2749)
-- Upgrade `go.opentelemetry.io/proto/otlp` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric` from `v0.12.1` to `v0.15.0`.
+- Upgrade `go.opentelemetry.io/proto/otlp` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric` from `v0.12.1` to `v0.15.0`.
   This replaces the use of the now deprecated `InstrumentationLibrary` and `InstrumentationLibraryMetrics` types and fields in the proto library with the equivalent `InstrumentationScope` and `ScopeMetrics`. (#2748)
 
 ## [1.6.3] - 2022-04-07
@@ -2035,14 +2035,14 @@ of the `"github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing".BridgeTr
 ### Changed
 
 - Don't panic anymore when setting a global TracerProvider or TextMapPropagator to itself. (#2749)
-- Upgrade `go.opentelemetry.io/proto/otlp` in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace` from `v0.12.1` to `v0.15.0`.
+- Upgrade `go.opentelemetry.io/proto/otlp` in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace` from `v0.12.1` to `v0.15.0`.
   This replaces the use of the now deprecated `InstrumentationLibrary` and `InstrumentationLibrarySpans` types and fields in the proto library with the equivalent `InstrumentationScope` and `ScopeSpans`. (#2748)
 
 ## [1.6.1] - 2022-03-28
 
 ### Fixed
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/schema/*` packages now use the correct schema URL for their `SchemaURL` constant.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/schema/*` packages now use the correct schema URL for their `SchemaURL` constant.
   Instead of using `"https://opentelemetry.io/schemas/v<version>"` they now use the correct URL without a `v` prefix, `"https://opentelemetry.io/schemas/<version>"`. (#2743, #2744)
 
 ### Security
@@ -2055,7 +2055,7 @@ of the `"github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing".BridgeTr
 ### ⚠️ Notice ⚠️
 
 This update is a breaking change of the unstable Metrics API.
-Code instrumented with the `github.com/dwertyfa288/CLI/vendordeps/otel/metric` will need to be modified.
+Code instrumented with the `github.com/SpherePrime/CLI/vendordeps/otel/metric` will need to be modified.
 
 ### Added
 
@@ -2099,9 +2099,9 @@ Code instrumented with the `github.com/dwertyfa288/CLI/vendordeps/otel/metric` w
 - Rename the `gc` runtime name to `go` (#2560)
 - Add resource container ID detection. (#2418)
 - Add span attribute value length limit.
-  The new `AttributeValueLengthLimit` field is added to the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".SpanLimits` type to configure this limit for a `TracerProvider`.
+  The new `AttributeValueLengthLimit` field is added to the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".SpanLimits` type to configure this limit for a `TracerProvider`.
   The default limit for this resource is "unlimited". (#2637)
-- Add the `WithRawSpanLimits` option to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`.
+- Add the `WithRawSpanLimits` option to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`.
   This option replaces the `WithSpanLimits` option.
   Zero or negative values will not be changed to the default value like `WithSpanLimits` does.
   Setting a limit to zero will effectively disable the related resource it limits and setting to a negative value will mean that resource is unlimited.
@@ -2124,7 +2124,7 @@ Code instrumented with the `github.com/dwertyfa288/CLI/vendordeps/otel/metric` w
 
 ### Deprecated
 
-- Deprecated `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".WithSpanLimits`.
+- Deprecated `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".WithSpanLimits`.
   Use `WithRawSpanLimits` instead.
   That option allows setting unlimited and zero limits, this option does not.
   This option will be kept until the next major version incremented release. (#2637)
@@ -2155,9 +2155,9 @@ Code instrumented with the `github.com/dwertyfa288/CLI/vendordeps/otel/metric` w
 
 ### Deprecated
 
-- Deprecate module the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/metric`.
-  Use the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric` module instead. (#2382)
-- Deprecate `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric".AtomicFieldOffsets`. (#2445)
+- Deprecate module the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/metric`.
+  Use the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric` module instead. (#2382)
+- Deprecate `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric".AtomicFieldOffsets`. (#2445)
 
 ### Fixed
 
@@ -2167,7 +2167,7 @@ Code instrumented with the `github.com/dwertyfa288/CLI/vendordeps/otel/metric` w
 - Specify explicit buckets in Prometheus example, fixing issue where example only has `+inf` bucket. (#2419, #2493)
 - W3C baggage will now decode urlescaped values. (#2529)
 - Baggage members are now only validated once, when calling `NewMember` and not also when adding it to the baggage itself. (#2522)
-- The order attributes are dropped from spans in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package when capacity is reached is fixed to be in compliance with the OpenTelemetry specification.
+- The order attributes are dropped from spans in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package when capacity is reached is fixed to be in compliance with the OpenTelemetry specification.
   Instead of dropping the least-recently-used attribute, the last added attribute is dropped.
   This drop order still only applies to attributes with unique keys not already contained in the span.
   If an attribute is added with a key already contained in the span, that attribute is updated to the new value being added. (#2576)
@@ -2190,29 +2190,29 @@ We have updated the project minimum supported Go version to 1.16
 - Added an internal Logger.
   This can be used by the SDK and API to provide users with feedback of the internal state.
   To enable verbose logs configure the logger which will print V(1) logs. For debugging information configure to print V(5) logs. (#2343)
-- Add the `WithRetry` `Option` and the `RetryConfig` type to the `github.com/dwertyfa288/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetrichttp` package to specify retry behavior consistently. (#2425)
+- Add the `WithRetry` `Option` and the `RetryConfig` type to the `github.com/SpherePrime/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetrichttp` package to specify retry behavior consistently. (#2425)
 - Add `SpanStatusFromHTTPStatusCodeAndSpanKind` to all `semconv` packages to return a span status code similar to `SpanStatusFromHTTPStatusCode`, but exclude `4XX` HTTP errors as span errors if the span is of server kind. (#2296)
 
 ### Changed
 
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/exporter/otel/otlptrace/otlptracegrpc".Client` now uses the underlying gRPC `ClientConn` to handle name resolution, TCP connection establishment (with retries and backoff) and TLS handshakes, and handling errors on established connections by re-resolving the name and reconnecting. (#2329)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetricgrpc".Client` now uses the underlying gRPC `ClientConn` to handle name resolution, TCP connection establishment (with retries and backoff) and TLS handshakes, and handling errors on established connections by re-resolving the name and reconnecting. (#2425)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetricgrpc".RetrySettings` type is renamed to `RetryConfig`. (#2425)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporter/otel/*` gRPC exporters now default to using the host's root CA set if none are provided by the user and `WithInsecure` is not specified. (#2432)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/exporter/otel/otlptrace/otlptracegrpc".Client` now uses the underlying gRPC `ClientConn` to handle name resolution, TCP connection establishment (with retries and backoff) and TLS handshakes, and handling errors on established connections by re-resolving the name and reconnecting. (#2329)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetricgrpc".Client` now uses the underlying gRPC `ClientConn` to handle name resolution, TCP connection establishment (with retries and backoff) and TLS handshakes, and handling errors on established connections by re-resolving the name and reconnecting. (#2425)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetricgrpc".RetrySettings` type is renamed to `RetryConfig`. (#2425)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporter/otel/*` gRPC exporters now default to using the host's root CA set if none are provided by the user and `WithInsecure` is not specified. (#2432)
 - Change `resource.Default` to be evaluated the first time it is called, rather than on import. This allows the caller the option to update `OTEL_RESOURCE_ATTRIBUTES` first, such as with `os.Setenv`. (#2371)
 
 ### Fixed
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporter/otel/*` exporters are updated to handle per-signal and universal endpoints according to the OpenTelemetry specification.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporter/otel/*` exporters are updated to handle per-signal and universal endpoints according to the OpenTelemetry specification.
   Any per-signal endpoint set via an `OTEL_EXPORTER_OTLP_<signal>_ENDPOINT` environment variable is now used without modification of the path.
   When `OTEL_EXPORTER_OTLP_ENDPOINT` is set, if it contains a path, that path is used as a base path which per-signal paths are appended to. (#2433)
 - Basic metric controller updated to use sync.Map to avoid blocking calls (#2381)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporter/jaeger` correctly sets the `otel.status_code` value to be a string of `ERROR` or `OK` instead of an integer code. (#2439, #2440)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporter/jaeger` correctly sets the `otel.status_code` value to be a string of `ERROR` or `OK` instead of an integer code. (#2439, #2440)
 
 ### Deprecated
 
-- Deprecated the `"github.com/dwertyfa288/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetrichttp".WithMaxAttempts` `Option`, use the new `WithRetry` `Option` instead. (#2425)
-- Deprecated the `"github.com/dwertyfa288/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetrichttp".WithBackoff` `Option`, use the new `WithRetry` `Option` instead. (#2425)
+- Deprecated the `"github.com/SpherePrime/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetrichttp".WithMaxAttempts` `Option`, use the new `WithRetry` `Option` instead. (#2425)
+- Deprecated the `"github.com/SpherePrime/CLI/vendordeps/otel/exporter/otel/otlpmetric/otlpmetrichttp".WithBackoff` `Option`, use the new `WithRetry` `Option` instead. (#2425)
 
 ### Removed
 
@@ -2235,20 +2235,20 @@ We have updated the project minimum supported Go version to 1.16
 
 ### Added
 
-- Add the `"github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc".WithGRPCConn` option so the exporter can reuse an existing gRPC connection. (#2002)
+- Add the `"github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc".WithGRPCConn` option so the exporter can reuse an existing gRPC connection. (#2002)
 - Added a new `schema` module to help parse Schema Files in OTEP 0152 format. (#2267)
-- Added a new `MapCarrier` to the `github.com/dwertyfa288/CLI/vendordeps/otel/propagation` package to hold propagated cross-cutting concerns as a `map[string]string` held in memory. (#2334)
+- Added a new `MapCarrier` to the `github.com/SpherePrime/CLI/vendordeps/otel/propagation` package to hold propagated cross-cutting concerns as a `map[string]string` held in memory. (#2334)
 
 ## [1.1.0] - 2021-10-27
 
 ### Added
 
-- Add the `"github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc".WithGRPCConn` option so the exporter can reuse an existing gRPC connection. (#2002)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.7.0` package.
+- Add the `"github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc".WithGRPCConn` option so the exporter can reuse an existing gRPC connection. (#2002)
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.7.0` package.
   The package contains semantic conventions from the `v1.7.0` version of the OpenTelemetry specification. (#2320)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.6.1` package.
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.6.1` package.
   The package contains semantic conventions from the `v1.6.1` version of the OpenTelemetry specification. (#2321)
-- Add the `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.5.0` package.
+- Add the `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.5.0` package.
   The package contains semantic conventions from the `v1.5.0` version of the OpenTelemetry specification. (#2322)
   - When upgrading from the `semconv/v1.4.0` package note the following name changes:
     - `K8SReplicasetUIDKey` -> `K8SReplicaSetUIDKey`
@@ -2264,8 +2264,8 @@ We have updated the project minimum supported Go version to 1.16
 
 ### Fixed
 
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.4.0".HTTPServerAttributesFromHTTPRequest` now correctly only sets the HTTP client IP attribute even if the connection was routed with proxies and there are multiple addresses in the `X-Forwarded-For` header. (#2282, #2284)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.4.0".NetAttributesFromHTTPRequest` function correctly handles IPv6 addresses as IP addresses and sets the correct net peer IP instead of the net peer hostname attribute. (#2283, #2285)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.4.0".HTTPServerAttributesFromHTTPRequest` now correctly only sets the HTTP client IP attribute even if the connection was routed with proxies and there are multiple addresses in the `X-Forwarded-For` header. (#2282, #2284)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.4.0".NetAttributesFromHTTPRequest` function correctly handles IPv6 addresses as IP addresses and sets the correct net peer IP instead of the net peer hostname attribute. (#2283, #2285)
 - The simple span processor shutdown method deterministically returns the exporter error status if it simultaneously finishes when the deadline is reached. (#2290, #2289)
 
 ## [1.0.1] - 2021-10-01
@@ -2280,8 +2280,8 @@ We have updated the project minimum supported Go version to 1.16
 
 - NoopMeterProvider is now private and NewNoopMeterProvider must be used to obtain a noopMeterProvider. (#2237)
 - The Metric SDK `Export()` function takes a new two-level reader interface for iterating over results one instrumentation library at a time. (#2197)
-  - The former `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/metric".CheckpointSet` is renamed `Reader`.
-  - The new interface is named `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/metric".InstrumentationLibraryReader`.
+  - The former `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/metric".CheckpointSet` is renamed `Reader`.
+  - The new interface is named `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/metric".InstrumentationLibraryReader`.
 
 ## [1.0.0] - 2021-09-20
 
@@ -2298,10 +2298,10 @@ This release includes an API and SDK for the tracing signal that will comply wit
 
 ### Removed
 
-- Removed the `"github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin".WithSDKOptions` function. (#2248)
-- Removed the deprecated package `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest`. (#2234)
-- Removed the deprecated package `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus/utils`. (#2233)
-- Removed deprecated functions, types, and methods from `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` package.
+- Removed the `"github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin".WithSDKOptions` function. (#2248)
+- Removed the deprecated package `github.com/SpherePrime/CLI/vendordeps/otel/oteltest`. (#2234)
+- Removed the deprecated package `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus/utils`. (#2233)
+- Removed deprecated functions, types, and methods from `github.com/SpherePrime/CLI/vendordeps/otel/attribute` package.
   Use the typed functions and methods added to the package instead. (#2235)
   - The `Key.Array` method is removed.
   - The `Array` function is removed.
@@ -2313,11 +2313,11 @@ This release includes an API and SDK for the tracing signal that will comply wit
 
 ### Added
 
-- Added `ErrorHandlerFunc` to use a function as an `"github.com/dwertyfa288/CLI/vendordeps/otel".ErrorHandler`. (#2149)
-- Added `"github.com/dwertyfa288/CLI/vendordeps/otel/trace".WithStackTrace` option to add a stack trace when using `span.RecordError` or when panic is handled in `span.End`. (#2163)
-- Added typed slice attribute types and functionality to the `github.com/dwertyfa288/CLI/vendordeps/otel/attribute` package to replace the existing array type and functions. (#2162)
+- Added `ErrorHandlerFunc` to use a function as an `"github.com/SpherePrime/CLI/vendordeps/otel".ErrorHandler`. (#2149)
+- Added `"github.com/SpherePrime/CLI/vendordeps/otel/trace".WithStackTrace` option to add a stack trace when using `span.RecordError` or when panic is handled in `span.End`. (#2163)
+- Added typed slice attribute types and functionality to the `github.com/SpherePrime/CLI/vendordeps/otel/attribute` package to replace the existing array type and functions. (#2162)
   - `BoolSlice`, `IntSlice`, `Int64Slice`, `Float64Slice`, and `StringSlice` replace the use of the `Array` function in the package.
-- Added the `github.com/dwertyfa288/CLI/vendordeps/otel/example/fib` example package.
+- Added the `github.com/SpherePrime/CLI/vendordeps/otel/example/fib` example package.
   Included is an example application that computes Fibonacci numbers. (#2203)
 
 ### Changed
@@ -2329,33 +2329,33 @@ This release includes an API and SDK for the tracing signal that will comply wit
   - UpDownSumObserver becomes UpDownCounterObserver
   The API exported from this project is still considered experimental. (#2202)
 - Metric SDK/API implementation type `InstrumentKind` moves into `sdkapi` sub-package. (#2091)
-- The Metrics SDK export record no longer contains a Resource pointer, the SDK `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace/export/metric".Exporter.Export()` function for push-based exporters now takes a single Resource argument, pull-based exporters use `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/controller/basic".Controller.Resource()`. (#2120)
-- The JSON output of the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace` is harmonized now such that the output is "plain" JSON objects after each other of the form `{ ... } { ... } { ... }`. Earlier the JSON objects describing a span were wrapped in a slice for each `Exporter.ExportSpans` call, like `[ { ... } ][ { ... } { ... } ]`. Outputting JSON object directly after each other is consistent with JSON loggers, and a bit easier to parse and read. (#2196)
-- Update the `NewTracerConfig`, `NewSpanStartConfig`, `NewSpanEndConfig`, and `NewEventConfig` function in the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package to return their respective configurations as structs instead of pointers to the struct. (#2212)
+- The Metrics SDK export record no longer contains a Resource pointer, the SDK `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace/export/metric".Exporter.Export()` function for push-based exporters now takes a single Resource argument, pull-based exporters use `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/controller/basic".Controller.Resource()`. (#2120)
+- The JSON output of the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace` is harmonized now such that the output is "plain" JSON objects after each other of the form `{ ... } { ... } { ... }`. Earlier the JSON objects describing a span were wrapped in a slice for each `Exporter.ExportSpans` call, like `[ { ... } ][ { ... } { ... } ]`. Outputting JSON object directly after each other is consistent with JSON loggers, and a bit easier to parse and read. (#2196)
+- Update the `NewTracerConfig`, `NewSpanStartConfig`, `NewSpanEndConfig`, and `NewEventConfig` function in the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package to return their respective configurations as structs instead of pointers to the struct. (#2212)
 
 ### Deprecated
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus/utils` package is deprecated.
-  All functionality from this package now exists in the `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus` package.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus/utils` package is deprecated.
+  All functionality from this package now exists in the `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus` package.
   The functions from that package should be used instead. (#2166)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/attribute".Array` function and the related `ARRAY` value type is deprecated.
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/attribute".Array` function and the related `ARRAY` value type is deprecated.
   Use the typed `*Slice` functions and types added to the package instead. (#2162)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/attribute".Any` function is deprecated.
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/attribute".Any` function is deprecated.
   Use the typed functions instead. (#2181)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest` package is deprecated.
-  The `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace/tracetest".SpanRecorder` can be registered with the default SDK (`github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`) as a `SpanProcessor` and used as a replacement for this deprecated package. (#2188)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/oteltest` package is deprecated.
+  The `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace/tracetest".SpanRecorder` can be registered with the default SDK (`github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`) as a `SpanProcessor` and used as a replacement for this deprecated package. (#2188)
 
 ### Removed
 
-- Removed metrics test package `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/metric/metrictest`. (#2105)
+- Removed metrics test package `github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/metric/metrictest`. (#2105)
 
 ### Fixed
 
 - The `fromEnv` detector no longer throws an error when `OTEL_RESOURCE_ATTRIBUTES` environment variable is not set or empty. (#2138)
-- Setting the global `ErrorHandler` with `"github.com/dwertyfa288/CLI/vendordeps/otel".SetErrorHandler` multiple times is now supported. (#2160, #2140)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel/attribute".Any` function now supports `int32` values. (#2169)
-- Multiple calls to `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/controller/basic".WithResource()` are handled correctly, and when no resources are provided `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource".Default()` is used. (#2120)
-- The `WithoutTimestamps` option for the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace` exporter causes the exporter to correctly omit timestamps. (#2195)
+- Setting the global `ErrorHandler` with `"github.com/SpherePrime/CLI/vendordeps/otel".SetErrorHandler` multiple times is now supported. (#2160, #2140)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel/attribute".Any` function now supports `int32` values. (#2169)
+- Multiple calls to `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/controller/basic".WithResource()` are handled correctly, and when no resources are provided `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource".Default()` is used. (#2120)
+- The `WithoutTimestamps` option for the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace` exporter causes the exporter to correctly omit timestamps. (#2195)
 - Fixed typos in resources.go. (#2201)
 
 ## [1.0.0-RC2] - 2021-07-26
@@ -2364,34 +2364,34 @@ This release includes an API and SDK for the tracing signal that will comply wit
 
 - Added `WithOSDescription` resource configuration option to set OS (Operating System) description resource attribute (`os.description`). (#1840)
 - Added `WithOS` resource configuration option to set all OS (Operating System) resource attributes at once. (#1840)
-- Added the `WithRetry` option to the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` package.
+- Added the `WithRetry` option to the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` package.
   This option is a replacement for the removed `WithMaxAttempts` and `WithBackoff` options. (#2095)
 - Added API `LinkFromContext` to return Link which encapsulates SpanContext from provided context and also encapsulates attributes. (#2115)
 - Added a new `Link` type under the SDK `otel/sdk/trace` package that counts the number of attributes that were dropped for surpassing the `AttributePerLinkCountLimit` configured in the Span's `SpanLimits`.
   This new type replaces the equal-named API `Link` type found in the `otel/trace` package for most usages within the SDK.
   For example, instances of this type are now returned by the `Links()` function of `ReadOnlySpan`s provided in places like the `OnEnd` function of `SpanProcessor` implementations. (#2118)
-- Added the `SpanRecorder` type to the `github.com/dwertyfa288/CLI/vendordeps/otel/skd/trace/tracetest` package.
+- Added the `SpanRecorder` type to the `github.com/SpherePrime/CLI/vendordeps/otel/skd/trace/tracetest` package.
   This type can be used with the default SDK as a `SpanProcessor` during testing. (#2132)
 
 ### Changed
 
-- The `SpanModels` function is now exported from the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin` package to convert OpenTelemetry spans into Zipkin model spans. (#2027)
-- Rename the `"github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc".RetrySettings` to `RetryConfig`. (#2095)
+- The `SpanModels` function is now exported from the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin` package to convert OpenTelemetry spans into Zipkin model spans. (#2027)
+- Rename the `"github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc".RetrySettings` to `RetryConfig`. (#2095)
 
 ### Deprecated
 
-- The `TextMapCarrier` and `TextMapPropagator` from the `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest` package and their associated creation functions (`TextMapCarrier`, `NewTextMapPropagator`) are deprecated. (#2114)
-- The `Harness` type from the `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest` package and its associated creation function, `NewHarness` are deprecated and will be removed in the next release. (#2123)
-- The `TraceStateFromKeyValues` function from the `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest` package is deprecated.
+- The `TextMapCarrier` and `TextMapPropagator` from the `github.com/SpherePrime/CLI/vendordeps/otel/oteltest` package and their associated creation functions (`TextMapCarrier`, `NewTextMapPropagator`) are deprecated. (#2114)
+- The `Harness` type from the `github.com/SpherePrime/CLI/vendordeps/otel/oteltest` package and its associated creation function, `NewHarness` are deprecated and will be removed in the next release. (#2123)
+- The `TraceStateFromKeyValues` function from the `github.com/SpherePrime/CLI/vendordeps/otel/oteltest` package is deprecated.
   Use the `trace.ParseTraceState` function instead. (#2122)
 
 ### Removed
 
-- Removed the deprecated package `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/jaeger`. (#2020)
-- Removed the deprecated package `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/zipkin`. (#2020)
-- Removed the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource".WithBuiltinDetectors` function.
+- Removed the deprecated package `github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/jaeger`. (#2020)
+- Removed the deprecated package `github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/zipkin`. (#2020)
+- Removed the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource".WithBuiltinDetectors` function.
   The explicit `With*` options for every built-in detector should be used instead. (#2026 #2097)
-- Removed the `WithMaxAttempts` and `WithBackoff` options from the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` package.
+- Removed the `WithMaxAttempts` and `WithBackoff` options from the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` package.
   The retry logic of the package has been updated to match the `otlptracegrpc` package and accordingly a `WithRetry` option is added that should be used instead. (#2095)
 - Removed `DroppedAttributeCount` field from `otel/trace.Link` struct. (#2118)
 
@@ -2400,9 +2400,9 @@ This release includes an API and SDK for the tracing signal that will comply wit
 - When using WithNewRoot, don't use the parent context for making sampling decisions. (#2032)
 - `oteltest.Tracer` now creates a valid `SpanContext` when using `WithNewRoot`. (#2073)
 - OS type detector now sets the correct `dragonflybsd` value for DragonFly BSD. (#2092)
-- The OTel span status is correctly transformed into the OTLP status in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace` package.
+- The OTel span status is correctly transformed into the OTLP status in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace` package.
   This fix will by default set the status to `Unset` if it is not explicitly set to `Ok` or `Error`. (#2099 #2102)
-- The `Inject` method for the `"github.com/dwertyfa288/CLI/vendordeps/otel/propagation".TraceContext` type no longer injects empty `tracestate` values. (#2108)
+- The `Inject` method for the `"github.com/SpherePrime/CLI/vendordeps/otel/propagation".TraceContext` type no longer injects empty `tracestate` values. (#2108)
 - Use `6831` as default Jaeger agent port instead of `6832`. (#2131)
 
 ## [Experimental Metrics v0.22.0] - 2021-07-19
@@ -2413,7 +2413,7 @@ This release includes an API and SDK for the tracing signal that will comply wit
 
 ### Removed
 
-- Removed the deprecated package `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/metric/prometheus`. (#2020)
+- Removed the deprecated package `github.com/SpherePrime/CLI/vendordeps/otel/exporters/metric/prometheus`. (#2020)
 
 ## [1.0.0-RC1] / 0.21.0 - 2021-06-18
 
@@ -2434,108 +2434,108 @@ with major version 0.
       | 10 | Out of Range |
       | 14 | Unavailable |
       | 15 | Data Loss |
-- Added `Status` type to the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package to represent the status of a span. (#1874)
-- Added `SpanStub` type and its associated functions to the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace/tracetest` package.
-  This type can be used as a testing replacement for the `SpanSnapshot` that was removed from the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package. (#1873)
+- Added `Status` type to the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package to represent the status of a span. (#1874)
+- Added `SpanStub` type and its associated functions to the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace/tracetest` package.
+  This type can be used as a testing replacement for the `SpanSnapshot` that was removed from the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package. (#1873)
 - Adds support for scheme in `OTEL_EXPORTER_OTLP_ENDPOINT` according to the spec. (#1886)
 - Adds `trace.WithSchemaURL` option for configuring the tracer with a Schema URL. (#1889)
 - Added an example of using OpenTelemetry Go as a trace context forwarder. (#1912)
-- `ParseTraceState` is added to the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package.
+- `ParseTraceState` is added to the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package.
   It can be used to decode a `TraceState` from a `tracestate` header string value. (#1937)
-- Added `Len` method to the `TraceState` type in the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package.
+- Added `Len` method to the `TraceState` type in the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package.
   This method returns the number of list-members the `TraceState` holds. (#1937)
-- Creates package `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace` that defines a trace exporter that uses a `otlptrace.Client` to send data.
-  Creates package `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` implementing a gRPC `otlptrace.Client` and offers convenience functions, `NewExportPipeline` and `InstallNewPipeline`, to setup and install a `otlptrace.Exporter` in tracing .(#1922)
-- Added `Baggage`, `Member`, and `Property` types to the `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` package along with their related functions. (#1967)
-- Added `ContextWithBaggage`, `ContextWithoutBaggage`, and `FromContext` functions to the `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` package.
+- Creates package `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace` that defines a trace exporter that uses a `otlptrace.Client` to send data.
+  Creates package `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc` implementing a gRPC `otlptrace.Client` and offers convenience functions, `NewExportPipeline` and `InstallNewPipeline`, to setup and install a `otlptrace.Exporter` in tracing .(#1922)
+- Added `Baggage`, `Member`, and `Property` types to the `github.com/SpherePrime/CLI/vendordeps/otel/baggage` package along with their related functions. (#1967)
+- Added `ContextWithBaggage`, `ContextWithoutBaggage`, and `FromContext` functions to the `github.com/SpherePrime/CLI/vendordeps/otel/baggage` package.
   These functions replace the `Set`, `Value`, `ContextWithValue`, `ContextWithoutValue`, and `ContextWithEmpty` functions from that package and directly work with the new `Baggage` type. (#1967)
 - The `OTEL_SERVICE_NAME` environment variable is the preferred source for `service.name`, used by the environment resource detector if a service name is present both there and in `OTEL_RESOURCE_ATTRIBUTES`. (#1969)
-- Creates package `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` implementing an HTTP `otlptrace.Client` and offers convenience functions, `NewExportPipeline` and `InstallNewPipeline`, to setup and install a `otlptrace.Exporter` in tracing. (#1963)
-- Changes `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource.NewWithAttributes` to require a schema URL. The old function is still available as `resource.NewSchemaless`. This is a breaking change. (#1938)
+- Creates package `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp` implementing an HTTP `otlptrace.Client` and offers convenience functions, `NewExportPipeline` and `InstallNewPipeline`, to setup and install a `otlptrace.Exporter` in tracing. (#1963)
+- Changes `github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource.NewWithAttributes` to require a schema URL. The old function is still available as `resource.NewSchemaless`. This is a breaking change. (#1938)
 - Several builtin resource detectors now correctly populate the schema URL. (#1938)
-- Creates package `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric` that defines a metrics exporter that uses a `otlpmetric.Client` to send data.
-- Creates package `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` implementing a gRPC `otlpmetric.Client` and offers convenience functions, `New` and `NewUnstarted`, to create an `otlpmetric.Exporter`.(#1991)
-- Added `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace` exporter. (#2005)
-- Added `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` exporter. (#2005)
-- Added a `TracerProvider()` method to the `"github.com/dwertyfa288/CLI/vendordeps/otel/trace".Span` interface. This can be used to obtain a `TracerProvider` from a given span that utilizes the same trace processing pipeline.  (#2009)
+- Creates package `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric` that defines a metrics exporter that uses a `otlpmetric.Client` to send data.
+- Creates package `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc` implementing a gRPC `otlpmetric.Client` and offers convenience functions, `New` and `NewUnstarted`, to create an `otlpmetric.Exporter`.(#1991)
+- Added `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace` exporter. (#2005)
+- Added `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` exporter. (#2005)
+- Added a `TracerProvider()` method to the `"github.com/SpherePrime/CLI/vendordeps/otel/trace".Span` interface. This can be used to obtain a `TracerProvider` from a given span that utilizes the same trace processing pipeline.  (#2009)
 
 ### Changed
 
-- Make `NewSplitDriver` from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` take variadic arguments instead of a `SplitConfig` item.
+- Make `NewSplitDriver` from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` take variadic arguments instead of a `SplitConfig` item.
   `NewSplitDriver` now automatically implements an internal `noopDriver` for `SplitConfig` fields that are not initialized. (#1798)
 - `resource.New()` now creates a Resource without builtin detectors. Previous behavior is now achieved by using `WithBuiltinDetectors` Option. (#1810)
-- Move the `Event` type from the `github.com/dwertyfa288/CLI/vendordeps/otel` package to the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package. (#1846)
+- Move the `Event` type from the `github.com/SpherePrime/CLI/vendordeps/otel` package to the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package. (#1846)
 - CI builds validate against last two versions of Go, dropping 1.14 and adding 1.16. (#1865)
 - BatchSpanProcessor now report export failures when calling `ForceFlush()` method. (#1860)
 - `Set.Encoded(Encoder)` no longer caches the result of an encoding. (#1855)
 - Renamed `CloudZoneKey` to `CloudAvailabilityZoneKey` in Resource semantic conventions according to spec. (#1871)
-- The `StatusCode` and `StatusMessage` methods of the `ReadOnlySpan` interface and the `Span` produced by the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package have been replaced with a single `Status` method.
+- The `StatusCode` and `StatusMessage` methods of the `ReadOnlySpan` interface and the `Span` produced by the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package have been replaced with a single `Status` method.
   This method returns the status of a span using the new `Status` type. (#1874)
 - Updated `ExportSpans` method of the`SpanExporter` interface type to accept `ReadOnlySpan`s instead of the removed `SpanSnapshot`.
   This brings the export interface into compliance with the specification in that it now accepts an explicitly immutable type instead of just an implied one. (#1873)
 - Unembed `SpanContext` in `Link`. (#1877)
 - Generate Semantic conventions from the specification YAML. (#1891)
-- Spans created by the global `Tracer` obtained from `github.com/dwertyfa288/CLI/vendordeps/otel`, prior to a functioning `TracerProvider` being set, now propagate the span context from their parent if one exists. (#1901)
-- The `"github.com/dwertyfa288/CLI/vendordeps/otel".Tracer` function now accepts tracer options. (#1902)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/unit` package to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/unit`. (#1903)
-- Changed `github.com/dwertyfa288/CLI/vendordeps/otel/trace.TracerConfig` to conform to the [Contributing guidelines](CONTRIBUTING.md#config.) (#1921)
-- Changed `github.com/dwertyfa288/CLI/vendordeps/otel/trace.SpanConfig` to conform to the [Contributing guidelines](CONTRIBUTING.md#config). (#1921)
+- Spans created by the global `Tracer` obtained from `github.com/SpherePrime/CLI/vendordeps/otel`, prior to a functioning `TracerProvider` being set, now propagate the span context from their parent if one exists. (#1901)
+- The `"github.com/SpherePrime/CLI/vendordeps/otel".Tracer` function now accepts tracer options. (#1902)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/unit` package to `github.com/SpherePrime/CLI/vendordeps/otel/metric/unit`. (#1903)
+- Changed `github.com/SpherePrime/CLI/vendordeps/otel/trace.TracerConfig` to conform to the [Contributing guidelines](CONTRIBUTING.md#config.) (#1921)
+- Changed `github.com/SpherePrime/CLI/vendordeps/otel/trace.SpanConfig` to conform to the [Contributing guidelines](CONTRIBUTING.md#config). (#1921)
 - Changed `span.End()` now only accepts Options that are allowed at `End()`. (#1921)
-- Changed `github.com/dwertyfa288/CLI/vendordeps/otel/metric.InstrumentConfig` to conform to the [Contributing guidelines](CONTRIBUTING.md#config). (#1921)
-- Changed `github.com/dwertyfa288/CLI/vendordeps/otel/metric.MeterConfig` to conform to the [Contributing guidelines](CONTRIBUTING.md#config). (#1921)
+- Changed `github.com/SpherePrime/CLI/vendordeps/otel/metric.InstrumentConfig` to conform to the [Contributing guidelines](CONTRIBUTING.md#config). (#1921)
+- Changed `github.com/SpherePrime/CLI/vendordeps/otel/metric.MeterConfig` to conform to the [Contributing guidelines](CONTRIBUTING.md#config). (#1921)
 - Refactored option types according to the contribution style guide. (#1882)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/trace.TraceStateFromKeyValues` function to the `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest` package.
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/trace.TraceStateFromKeyValues` function to the `github.com/SpherePrime/CLI/vendordeps/otel/oteltest` package.
   This function is preserved for testing purposes where it may be useful to create a `TraceState` from `attribute.KeyValue`s, but it is not intended for production use.
   The new `ParseTraceState` function should be used to create a `TraceState`. (#1931)
-- Updated `MarshalJSON` method of the `github.com/dwertyfa288/CLI/vendordeps/otel/trace.TraceState` type to marshal the type into the string representation of the `TraceState`. (#1931)
-- The `TraceState.Delete` method from the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package no longer returns an error in addition to a `TraceState`. (#1931)
-- Updated `Get` method of the `TraceState` type from the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package to accept a `string` instead of an `attribute.Key` type. (#1931)
-- Updated `Insert` method of the `TraceState` type from the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package to accept a pair of `string`s instead of an `attribute.KeyValue` type. (#1931)
-- Updated `Delete` method of the `TraceState` type from the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package to accept a `string` instead of an `attribute.Key` type. (#1931)
-- Renamed `NewExporter` to `New` in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout` package. (#1985)
-- Renamed `NewExporter` to `New` in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/metric/prometheus` package. (#1985)
-- Renamed `NewExporter` to `New` in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/jaeger` package. (#1985)
-- Renamed `NewExporter` to `New` in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/zipkin` package. (#1985)
-- Renamed `NewExporter` to `New` in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` package. (#1985)
-- Renamed `NewUnstartedExporter` to `NewUnstarted` in the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` package. (#1985)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv` package has been moved to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.4.0` to allow for multiple [telemetry schema](https://github.com/open-telemetry/oteps/blob/main/text/0152-telemetry-schemas.md) versions to be used concurrently. (#1987)
-- Metrics test helpers in `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest` have been moved to `github.com/dwertyfa288/CLI/vendordeps/otel/metric/metrictest`. (#1988)
+- Updated `MarshalJSON` method of the `github.com/SpherePrime/CLI/vendordeps/otel/trace.TraceState` type to marshal the type into the string representation of the `TraceState`. (#1931)
+- The `TraceState.Delete` method from the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package no longer returns an error in addition to a `TraceState`. (#1931)
+- Updated `Get` method of the `TraceState` type from the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package to accept a `string` instead of an `attribute.Key` type. (#1931)
+- Updated `Insert` method of the `TraceState` type from the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package to accept a pair of `string`s instead of an `attribute.KeyValue` type. (#1931)
+- Updated `Delete` method of the `TraceState` type from the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package to accept a `string` instead of an `attribute.Key` type. (#1931)
+- Renamed `NewExporter` to `New` in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout` package. (#1985)
+- Renamed `NewExporter` to `New` in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/metric/prometheus` package. (#1985)
+- Renamed `NewExporter` to `New` in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/jaeger` package. (#1985)
+- Renamed `NewExporter` to `New` in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/zipkin` package. (#1985)
+- Renamed `NewExporter` to `New` in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` package. (#1985)
+- Renamed `NewUnstartedExporter` to `NewUnstarted` in the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` package. (#1985)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv` package has been moved to `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.4.0` to allow for multiple [telemetry schema](https://github.com/open-telemetry/oteps/blob/main/text/0152-telemetry-schemas.md) versions to be used concurrently. (#1987)
+- Metrics test helpers in `github.com/SpherePrime/CLI/vendordeps/otel/oteltest` have been moved to `github.com/SpherePrime/CLI/vendordeps/otel/metric/metrictest`. (#1988)
 
 ### Deprecated
 
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/metric/prometheus` is deprecated, use `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus` instead. (#1993)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/jaeger` is deprecated, use `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/jaeger` instead. (#1993)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/zipkin` is deprecated, use `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin` instead. (#1993)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/metric/prometheus` is deprecated, use `github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus` instead. (#1993)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/jaeger` is deprecated, use `github.com/SpherePrime/CLI/vendordeps/otel/exporters/jaeger` instead. (#1993)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/zipkin` is deprecated, use `github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin` instead. (#1993)
 
 ### Removed
 
 - Removed `resource.WithoutBuiltin()`. Use `resource.New()`. (#1810)
 - Unexported types `resource.FromEnv`, `resource.Host`, and `resource.TelemetrySDK`, Use the corresponding `With*()` to use individually. (#1810)
-- Removed the `Tracer` and `IsRecording` method from the `ReadOnlySpan` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace`.
+- Removed the `Tracer` and `IsRecording` method from the `ReadOnlySpan` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace`.
   The `Tracer` method is not a required to be included in this interface and given the mutable nature of the tracer that is associated with a span, this method is not appropriate.
   The `IsRecording` method returns if the span is recording or not.
   A read-only span value does not need to know if updates to it will be recorded or not.
   By definition, it cannot be updated so there is no point in communicating if an update is recorded. (#1873)
-- Removed the `SpanSnapshot` type from the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package.
+- Removed the `SpanSnapshot` type from the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package.
   The use of this type has been replaced with the use of the explicitly immutable `ReadOnlySpan` type.
-  When a concrete representation of a read-only span is needed for testing, the newly added `SpanStub` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace/tracetest` package should be used. (#1873)
-- Removed the `Tracer` method from the `Span` interface in the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package.
+  When a concrete representation of a read-only span is needed for testing, the newly added `SpanStub` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace/tracetest` package should be used. (#1873)
+- Removed the `Tracer` method from the `Span` interface in the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package.
   Using the same tracer that created a span introduces the error where an instrumentation library's `Tracer` is used by other code instead of their own.
-  The `"github.com/dwertyfa288/CLI/vendordeps/otel".Tracer` function or a `TracerProvider` should be used to acquire a library specific `Tracer` instead. (#1900)
+  The `"github.com/SpherePrime/CLI/vendordeps/otel".Tracer` function or a `TracerProvider` should be used to acquire a library specific `Tracer` instead. (#1900)
   - The `TracerProvider()` method on the `Span` interface may also be used to obtain a `TracerProvider` using the same trace processing pipeline. (#2009)
 - The `http.url` attribute generated by `HTTPClientAttributesFromHTTPRequest` will no longer include username or password information. (#1919)
-- Removed `IsEmpty` method of the `TraceState` type in the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package in favor of using the added `TraceState.Len` method. (#1931)
-- Removed `Set`, `Value`, `ContextWithValue`, `ContextWithoutValue`, and `ContextWithEmpty` functions in the `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` package.
+- Removed `IsEmpty` method of the `TraceState` type in the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package in favor of using the added `TraceState.Len` method. (#1931)
+- Removed `Set`, `Value`, `ContextWithValue`, `ContextWithoutValue`, and `ContextWithEmpty` functions in the `github.com/SpherePrime/CLI/vendordeps/otel/baggage` package.
   Handling of baggage is now done using the added `Baggage` type and related context functions (`ContextWithBaggage`, `ContextWithoutBaggage`, and `FromContext`) in that package. (#1967)
 - The `InstallNewPipeline` and `NewExportPipeline` creation functions in all the exporters (prometheus, otlp, stdout, jaeger, and zipkin) have been removed.
   These functions were deemed premature attempts to provide convenience that did not achieve this aim. (#1985)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` exporter has been removed.  Use `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace` instead. (#1990)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout` exporter has been removed.  Use `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace` or `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` instead. (#2005)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` exporter has been removed.  Use `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace` instead. (#1990)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout` exporter has been removed.  Use `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace` or `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric` instead. (#2005)
 
 ### Fixed
 
-- Only report errors from the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource".Environment` function when they are not `nil`. (#1850, #1851)
-- The `Shutdown` method of the simple `SpanProcessor` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package now honors the context deadline or cancellation. (#1616, #1856)
+- Only report errors from the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource".Environment` function when they are not `nil`. (#1850, #1851)
+- The `Shutdown` method of the simple `SpanProcessor` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package now honors the context deadline or cancellation. (#1616, #1856)
 - BatchSpanProcessor now drops span batches that failed to be exported. (#1860)
 - Use `http://localhost:14268/api/traces` as default Jaeger collector endpoint instead of `http://localhost:14250`. (#1898)
 - Allow trailing and leading whitespace in the parsing of a `tracestate` header. (#1931)
@@ -2554,7 +2554,7 @@ with major version 0.
   These environment variables can be used to override Jaeger agent hostname and port (#1752)
 - Option `ExportTimeout` was added to batch span processor. (#1755)
 - `trace.TraceFlags` is now a defined type over `byte` and `WithSampled(bool) TraceFlags` and `IsSampled() bool` methods have been added to it. (#1770)
-- The `Event` and `Link` struct types from the `github.com/dwertyfa288/CLI/vendordeps/otel` package now include a `DroppedAttributeCount` field to record the number of attributes that were not recorded due to configured limits being reached. (#1771)
+- The `Event` and `Link` struct types from the `github.com/SpherePrime/CLI/vendordeps/otel` package now include a `DroppedAttributeCount` field to record the number of attributes that were not recorded due to configured limits being reached. (#1771)
 - The Jaeger exporter now reports dropped attributes for a Span event in the exported log. (#1771)
 - Adds test to check BatchSpanProcessor ignores `OnEnd` and `ForceFlush` post `Shutdown`. (#1772)
 - Extract resource attributes from the `OTEL_RESOURCE_ATTRIBUTES` environment variable and merge them with the `resource.Default` resource as well as resources provided to the `TracerProvider` and metric `Controller`. (#1785)
@@ -2590,7 +2590,7 @@ with major version 0.
 
 ### Fixed
 
-- The `Span.IsRecording` implementation from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` always returns false when not being sampled. (#1750)
+- The `Span.IsRecording` implementation from `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` always returns false when not being sampled. (#1750)
 - The Jaeger exporter now correctly sets tags for the Span status code and message.
   This means it uses the correct tag keys (`"otel.status_code"`, `"otel.status_description"`) and does not set the status message as a tag unless it is set on the span. (#1761)
 - The Jaeger exporter now correctly records Span event's names using the `"event"` key for a tag.
@@ -2606,23 +2606,23 @@ with major version 0.
 - Span `RecordError` now records an `exception` event to comply with the semantic convention specification. (#1492)
 - Jaeger exporter was updated to use thrift v0.14.1. (#1712)
 - Migrate from using internally built and maintained version of the OTLP to the one hosted at `go.opentelemetry.io/proto/otlp`. (#1713)
-- Migrate from using `github.com/gogo/protobuf` to `github.com/dwertyfa288/CLI/vendordeps/protobuf` to match `go.opentelemetry.io/proto/otlp`. (#1713)
+- Migrate from using `github.com/gogo/protobuf` to `github.com/SpherePrime/CLI/vendordeps/protobuf` to match `go.opentelemetry.io/proto/otlp`. (#1713)
 - The storage of a local or remote Span in a `context.Context` using its SpanContext is unified to store just the current Span.
   The Span's SpanContext can now self-identify as being remote or not.
-  This means that `"github.com/dwertyfa288/CLI/vendordeps/otel/trace".ContextWithRemoteSpanContext` will now overwrite any existing current Span, not just existing remote Spans, and make it the current Span in a `context.Context`. (#1731)
+  This means that `"github.com/SpherePrime/CLI/vendordeps/otel/trace".ContextWithRemoteSpanContext` will now overwrite any existing current Span, not just existing remote Spans, and make it the current Span in a `context.Context`. (#1731)
 - Improve OTLP/gRPC exporter connection errors. (#1737)
-- Information about a parent span context in a `"github.com/dwertyfa288/CLI/vendordeps/otel/export/trace".SpanSnapshot` is unified in a new `Parent` field.
+- Information about a parent span context in a `"github.com/SpherePrime/CLI/vendordeps/otel/export/trace".SpanSnapshot` is unified in a new `Parent` field.
   The existing `ParentSpanID` and `HasRemoteParent` fields are removed in favor of this. (#1748)
-- The `ParentContext` field of the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".SamplingParameters` is updated to hold a `context.Context` containing the parent span.
+- The `ParentContext` field of the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".SamplingParameters` is updated to hold a `context.Context` containing the parent span.
   This changes it to make `SamplingParameters` conform with the OpenTelemetry specification. (#1749)
 - Updated Jaeger Environment Variables: `JAEGER_ENDPOINT`, `JAEGER_USER`, `JAEGER_PASSWORD`
   to `OTEL_EXPORTER_JAEGER_ENDPOINT`, `OTEL_EXPORTER_JAEGER_USER`, `OTEL_EXPORTER_JAEGER_PASSWORD` in compliance with OTel specification. (#1752)
 - Modify `BatchSpanProcessor.ForceFlush` to abort after timeout/cancellation. (#1757)
-- The `DroppedAttributeCount` field of the `Span` in the `github.com/dwertyfa288/CLI/vendordeps/otel` package now only represents the number of attributes dropped for the span itself.
+- The `DroppedAttributeCount` field of the `Span` in the `github.com/SpherePrime/CLI/vendordeps/otel` package now only represents the number of attributes dropped for the span itself.
   It no longer is a conglomerate of itself, events, and link attributes that have been dropped. (#1771)
 - Make `ExportSpans` in Jaeger Exporter honor context deadline. (#1773)
 - Modify Zipkin Exporter default service name, use default resource's serviceName instead of empty. (#1777)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/trace` package is merged into the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package. (#1778)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/trace` package is merged into the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package. (#1778)
 - The prometheus.InstallNewPipeline example is moved from comment to example test (#1796)
 - The convenience functions for the stdout exporter have been updated to return the `TracerProvider` implementation and enable the shutdown of the exporter. (#1800)
 - Replace the flush function returned from the Jaeger exporter's convenience creation functions (`InstallNewPipeline` and `NewExportPipeline`) with the `TracerProvider` implementation they create.
@@ -2637,15 +2637,15 @@ with major version 0.
 
 - Removed Jaeger Environment variables: `JAEGER_SERVICE_NAME`, `JAEGER_DISABLED`, `JAEGER_TAGS`
   These environment variables will no longer be used to override values of the Jaeger exporter (#1752)
-- No longer set the links for a `Span` in `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` that is configured to be a new root.
+- No longer set the links for a `Span` in `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` that is configured to be a new root.
   This is unspecified behavior that the OpenTelemetry community plans to standardize in the future.
   To prevent backwards incompatible changes when it is specified, these links are removed. (#1726)
 - Setting error status while recording error with Span from oteltest package. (#1729)
 - The concept of a remote and local Span stored in a context is unified to just the current Span.
-  Because of this `"github.com/dwertyfa288/CLI/vendordeps/otel/trace".RemoteSpanContextFromContext` is removed as it is no longer needed.
-  Instead, `"github.com/dwertyfa288/CLI/vendordeps/otel/trace".SpanContextFromContext` can be used to return the current Span.
+  Because of this `"github.com/SpherePrime/CLI/vendordeps/otel/trace".RemoteSpanContextFromContext` is removed as it is no longer needed.
+  Instead, `"github.com/SpherePrime/CLI/vendordeps/otel/trace".SpanContextFromContext` can be used to return the current Span.
   If needed, that Span's `SpanContext.IsRemote()` can then be used to determine if it is remote or not. (#1731)
-- The `HasRemoteParent` field of the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".SamplingParameters` is removed.
+- The `HasRemoteParent` field of the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".SamplingParameters` is removed.
   This field is redundant to the information returned from the `Remote` method of the `SpanContext` held in the `ParentContext` field. (#1749)
 - The `trace.FlagsDebug` and `trace.FlagsDeferred` constants have been removed and will be localized to the B3 propagator. (#1770)
 - Remove `Process` configuration, `WithProcessFromEnv` and `ProcessFromEnv`, and type from the Jaeger exporter package.
@@ -2671,26 +2671,26 @@ with major version 0.
 ### Added
 
 - Added `Marshaler` config option to `otlphttp` to enable otlp over json or protobufs. (#1586)
-- A `ForceFlush` method to the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".TracerProvider` to flush all registered `SpanProcessor`s. (#1608)
+- A `ForceFlush` method to the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".TracerProvider` to flush all registered `SpanProcessor`s. (#1608)
 - Added `WithSampler` and `WithSpanLimits` to tracer provider. (#1633, #1702)
-- `"github.com/dwertyfa288/CLI/vendordeps/otel/trace".SpanContext` now has a `remote` property, and `IsRemote()` predicate, that is true when the `SpanContext` has been extracted from remote context data. (#1701)
-- A `Valid` method to the `"github.com/dwertyfa288/CLI/vendordeps/otel/attribute".KeyValue` type. (#1703)
+- `"github.com/SpherePrime/CLI/vendordeps/otel/trace".SpanContext` now has a `remote` property, and `IsRemote()` predicate, that is true when the `SpanContext` has been extracted from remote context data. (#1701)
+- A `Valid` method to the `"github.com/SpherePrime/CLI/vendordeps/otel/attribute".KeyValue` type. (#1703)
 
 ### Changed
 
 - `trace.SpanContext` is now immutable and has no exported fields. (#1573)
   - `trace.NewSpanContext()` can be used in conjunction with the `trace.SpanContextConfig` struct to initialize a new `SpanContext` where all values are known.
-- Update the `ForceFlush` method signature to the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".SpanProcessor` to accept a `context.Context` and return an error. (#1608)
-- Update the `Shutdown` method to the `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".TracerProvider` return an error on shutdown failure. (#1608)
+- Update the `ForceFlush` method signature to the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".SpanProcessor` to accept a `context.Context` and return an error. (#1608)
+- Update the `Shutdown` method to the `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".TracerProvider` return an error on shutdown failure. (#1608)
 - The SimpleSpanProcessor will now shut down the enclosed `SpanExporter` and gracefully ignore subsequent calls to `OnEnd` after `Shutdown` is called. (#1612)
 - `"go.opentelemetry.io/sdk/metric/controller.basic".WithPusher` is replaced with `WithExporter` to provide consistent naming across project. (#1656)
 - Added non-empty string check for trace `Attribute` keys. (#1659)
 - Add `description` to SpanStatus only when `StatusCode` is set to error. (#1662)
 - Jaeger exporter falls back to `resource.Default`'s `service.name` if the exported Span does not have one. (#1673)
 - Jaeger exporter populates Jaeger's Span Process from Resource. (#1673)
-- Renamed the `LabelSet` method of `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/resource".Resource` to `Set`. (#1692)
-- Changed `WithSDK` to `WithSDKOptions` to accept variadic arguments of `TracerProviderOption` type in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/jaeger` package. (#1693)
-- Changed `WithSDK` to `WithSDKOptions` to accept variadic arguments of `TracerProviderOption` type in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/zipkin` package. (#1693)
+- Renamed the `LabelSet` method of `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/resource".Resource` to `Set`. (#1692)
+- Changed `WithSDK` to `WithSDKOptions` to accept variadic arguments of `TracerProviderOption` type in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/jaeger` package. (#1693)
+- Changed `WithSDK` to `WithSDKOptions` to accept variadic arguments of `TracerProviderOption` type in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/zipkin` package. (#1693)
 
 ### Removed
 
@@ -2701,7 +2701,7 @@ with major version 0.
 - Removed `WithRecord()` from `trace.SpanOption` when creating a span. (#1660)
 - Removed setting status to `Error` while recording an error as a span event in `RecordError`. (#1663)
 - Removed `jaeger.WithProcess` configuration option. (#1673)
-- Removed `ApplyConfig` method from `"github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace".TracerProvider` and the now unneeded `Config` struct. (#1693)
+- Removed `ApplyConfig` method from `"github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace".TracerProvider` and the now unneeded `Config` struct. (#1693)
 
 ### Fixed
 
@@ -2719,7 +2719,7 @@ with major version 0.
 - Added `resource.Default()` for use with meter and tracer providers. (#1507)
 - `AttributePerEventCountLimit` and `AttributePerLinkCountLimit` for `SpanLimits`. (#1535)
 - Added `Keys()` method to `propagation.TextMapCarrier` and `propagation.HeaderCarrier` to adapt `http.Header` to this interface. (#1544)
-- Added `code` attributes to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv` package. (#1558)
+- Added `code` attributes to `github.com/SpherePrime/CLI/vendordeps/otel/semconv` package. (#1558)
 - Compatibility testing suite in the CI system for the following systems. (#1567)
    | OS      | Go Version | Architecture |
    | ------- | ---------- | ------------ |
@@ -2773,7 +2773,7 @@ with major version 0.
 
 - The sequential timing check of timestamps in the stdout exporter are now setup explicitly to be sequential (#1571). (#1572)
 - Windows build of Jaeger tests now compiles with OS specific functions (#1576). (#1577)
-- The sequential timing check of timestamps of github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregator/lastvalue are now setup explicitly to be sequential (#1578). (#1579)
+- The sequential timing check of timestamps of github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregator/lastvalue are now setup explicitly to be sequential (#1578). (#1579)
 - Validate tracestate header keys with vendors according to the W3C TraceContext specification (#1475). (#1581)
 - The OTLP exporter includes related labels for translations of a GaugeArray (#1563). (#1570)
 
@@ -2790,7 +2790,7 @@ with major version 0.
 ## Fixed
 
 - Fixed otlpgrpc reconnection issue.
-- The example code in the README.md of `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` is moved to a compiled example test and used the new `WithAddress` instead of `WithEndpoint`. (#1513)
+- The example code in the README.md of `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` is moved to a compiled example test and used the new `WithAddress` instead of `WithEndpoint`. (#1513)
 - The otel-collector example now uses the default OTLP receiver port of the collector.
 
 ## [0.16.0] - 2021-01-13
@@ -2846,15 +2846,15 @@ with major version 0.
 
 ### Added
 
-- The `WithIDGenerator` `TracerProviderOption` is added to the `github.com/dwertyfa288/CLI/vendordeps/otel/trace` package to configure an `IDGenerator` for the `TracerProvider`. (#1363)
+- The `WithIDGenerator` `TracerProviderOption` is added to the `github.com/SpherePrime/CLI/vendordeps/otel/trace` package to configure an `IDGenerator` for the `TracerProvider`. (#1363)
 
 ### Changed
 
 - The Zipkin exporter now uses the Span status code to determine. (#1328)
-- `NewExporter` and `Start` functions in `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp` now receive `context.Context` as a first parameter. (#1357)
+- `NewExporter` and `Start` functions in `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp` now receive `context.Context` as a first parameter. (#1357)
 - Move the OpenCensus example into `example` directory. (#1359)
 - Moved the SDK's `internal.IDGenerator` interface in to the `sdk/trace` package to enable support for externally-defined ID generators. (#1363)
-- Bump `github.com/dwertyfa288/CLI/vendordeps/google/go-cmp` from 0.5.3 to 0.5.4 (#1374)
+- Bump `github.com/SpherePrime/CLI/vendordeps/google/go-cmp` from 0.5.3 to 0.5.4 (#1374)
 - Bump `github.com/golangci/golangci-lint` in `/internal/tools` (#1375)
 
 ### Fixed
@@ -2865,38 +2865,38 @@ with major version 0.
 
 ### Added
 
-- An `EventOption` and the related `NewEventConfig` function are added to the `github.com/dwertyfa288/CLI/vendordeps/otel` package to configure Span events. (#1254)
-- A `TextMapPropagator` and associated `TextMapCarrier` are added to the `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest` package to test `TextMap` type propagators and their use. (#1259)
+- An `EventOption` and the related `NewEventConfig` function are added to the `github.com/SpherePrime/CLI/vendordeps/otel` package to configure Span events. (#1254)
+- A `TextMapPropagator` and associated `TextMapCarrier` are added to the `github.com/SpherePrime/CLI/vendordeps/otel/oteltest` package to test `TextMap` type propagators and their use. (#1259)
 - `SpanContextFromContext` returns `SpanContext` from context. (#1255)
 - `TraceState` has been added to `SpanContext`. (#1340)
-- `DeploymentEnvironmentKey` added to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv` package. (#1323)
+- `DeploymentEnvironmentKey` added to `github.com/SpherePrime/CLI/vendordeps/otel/semconv` package. (#1323)
 - Add an OpenCensus to OpenTelemetry tracing bridge. (#1305)
 - Add a parent context argument to `SpanProcessor.OnStart` to follow the specification. (#1333)
 - Add missing tests for `sdk/trace/attributes_map.go`. (#1337)
 
 ### Changed
 
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` package into `github.com/dwertyfa288/CLI/vendordeps/otel/trace` with the following changes. (#1229) (#1307)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` package into `github.com/SpherePrime/CLI/vendordeps/otel/trace` with the following changes. (#1229) (#1307)
   - `ID` has been renamed to `TraceID`.
   - `IDFromHex` has been renamed to `TraceIDFromHex`.
   - `EmptySpanContext` is removed.
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace/tracetest` package into `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest`. (#1229)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace/tracetest` package into `github.com/SpherePrime/CLI/vendordeps/otel/oteltest`. (#1229)
 - OTLP Exporter updates:
   - supports OTLP v0.6.0 (#1230, #1354)
   - supports configurable aggregation temporality (default: Cumulative, optional: Stateless). (#1296)
 - The Sampler is now called on local child spans. (#1233)
-- The `Kind` type from the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric` package was renamed to `InstrumentKind` to more specifically describe what it is and avoid semantic ambiguity. (#1240)
-- The `MetricKind` method of the `Descriptor` type in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric` package was renamed to `Descriptor.InstrumentKind`.
+- The `Kind` type from the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric` package was renamed to `InstrumentKind` to more specifically describe what it is and avoid semantic ambiguity. (#1240)
+- The `MetricKind` method of the `Descriptor` type in the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric` package was renamed to `Descriptor.InstrumentKind`.
    This matches the returned type and fixes misuse of the term metric. (#1240)
-- Move test harness from the `github.com/dwertyfa288/CLI/vendordeps/otel/api/apitest` package into `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest`. (#1241)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric/metrictest` package into `go.opentelemetry.io/oteltest` as part of #964. (#1252)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric` package into `github.com/dwertyfa288/CLI/vendordeps/otel/metric` as part of #1303. (#1321)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric/registry` package into `github.com/dwertyfa288/CLI/vendordeps/otel/metric/registry` as a part of #1303. (#1316)
-- Move the `Number` type (together with related functions) from `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric` package into `github.com/dwertyfa288/CLI/vendordeps/otel/metric/number` as a part of #1303. (#1316)
-- The function signature of the Span `AddEvent` method in `github.com/dwertyfa288/CLI/vendordeps/otel` is updated to no longer take an unused context and instead take a required name and a variable number of `EventOption`s. (#1254)
-- The function signature of the Span `RecordError` method in `github.com/dwertyfa288/CLI/vendordeps/otel` is updated to no longer take an unused context and instead take a required error value and a variable number of `EventOption`s. (#1254)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/api/global` package to `github.com/dwertyfa288/CLI/vendordeps/otel`. (#1262) (#1330)
-- Move the `Version` function from `github.com/dwertyfa288/CLI/vendordeps/otel/sdk` to `github.com/dwertyfa288/CLI/vendordeps/otel`. (#1330)
+- Move test harness from the `github.com/SpherePrime/CLI/vendordeps/otel/api/apitest` package into `github.com/SpherePrime/CLI/vendordeps/otel/oteltest`. (#1241)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric/metrictest` package into `go.opentelemetry.io/oteltest` as part of #964. (#1252)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric` package into `github.com/SpherePrime/CLI/vendordeps/otel/metric` as part of #1303. (#1321)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric/registry` package into `github.com/SpherePrime/CLI/vendordeps/otel/metric/registry` as a part of #1303. (#1316)
+- Move the `Number` type (together with related functions) from `github.com/SpherePrime/CLI/vendordeps/otel/api/metric` package into `github.com/SpherePrime/CLI/vendordeps/otel/metric/number` as a part of #1303. (#1316)
+- The function signature of the Span `AddEvent` method in `github.com/SpherePrime/CLI/vendordeps/otel` is updated to no longer take an unused context and instead take a required name and a variable number of `EventOption`s. (#1254)
+- The function signature of the Span `RecordError` method in `github.com/SpherePrime/CLI/vendordeps/otel` is updated to no longer take an unused context and instead take a required error value and a variable number of `EventOption`s. (#1254)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/api/global` package to `github.com/SpherePrime/CLI/vendordeps/otel`. (#1262) (#1330)
+- Move the `Version` function from `github.com/SpherePrime/CLI/vendordeps/otel/sdk` to `github.com/SpherePrime/CLI/vendordeps/otel`. (#1330)
 - Rename correlation context header from `"otcorrelations"` to `"baggage"` to match the OpenTelemetry specification. (#1267)
 - Fix `Code.UnmarshalJSON` to work with valid JSON only. (#1276)
 - The `resource.New()` method changes signature to support builtin attributes and functional options, including `telemetry.sdk.*` and
@@ -2908,18 +2908,18 @@ with major version 0.
 
 ### Removed
 
-- The `ErrInvalidHexID`, `ErrInvalidTraceIDLength`, `ErrInvalidSpanIDLength`, `ErrInvalidSpanIDLength`, or `ErrNilSpanID` from the `github.com/dwertyfa288/CLI/vendordeps/otel` package are unexported now. (#1243)
-- The `AddEventWithTimestamp` method on the `Span` interface in `github.com/dwertyfa288/CLI/vendordeps/otel` is removed due to its redundancy.
+- The `ErrInvalidHexID`, `ErrInvalidTraceIDLength`, `ErrInvalidSpanIDLength`, `ErrInvalidSpanIDLength`, or `ErrNilSpanID` from the `github.com/SpherePrime/CLI/vendordeps/otel` package are unexported now. (#1243)
+- The `AddEventWithTimestamp` method on the `Span` interface in `github.com/SpherePrime/CLI/vendordeps/otel` is removed due to its redundancy.
    It is replaced by using the `AddEvent` method with a `WithTimestamp` option. (#1254)
-- The `MockSpan` and `MockTracer` types are removed from `github.com/dwertyfa288/CLI/vendordeps/otel/oteltest`.
+- The `MockSpan` and `MockTracer` types are removed from `github.com/SpherePrime/CLI/vendordeps/otel/oteltest`.
    `Tracer` and `Span` from the same module should be used in their place instead. (#1306)
-- `WorkerCount` option is removed from `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp`. (#1350)
+- `WorkerCount` option is removed from `github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp`. (#1350)
 - Remove the following labels types: INT32, UINT32, UINT64 and FLOAT32. (#1314)
 
 ### Fixed
 
-- Rename `MergeItererator` to `MergeIterator` in the `github.com/dwertyfa288/CLI/vendordeps/otel/label` package. (#1244)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/api/global` packages global TextMapPropagator now delegates functionality to a globally set delegate for all previously returned propagators. (#1258)
+- Rename `MergeItererator` to `MergeIterator` in the `github.com/SpherePrime/CLI/vendordeps/otel/label` package. (#1244)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/api/global` packages global TextMapPropagator now delegates functionality to a globally set delegate for all previously returned propagators. (#1258)
 - Fix condition in `label.Any`. (#1299)
 - Fix global `TracerProvider` to pass options to its configured provider. (#1329)
 - Fix missing handler for `ExactKind` aggregator in OTLP metrics transformer (#1309)
@@ -2929,32 +2929,32 @@ with major version 0.
 ### Added
 
 - OTLP Metric exporter supports Histogram aggregation. (#1209)
-- The `Code` struct from the `github.com/dwertyfa288/CLI/vendordeps/otel/codes` package now supports JSON marshaling and unmarshaling as well as implements the `Stringer` interface. (#1214)
+- The `Code` struct from the `github.com/SpherePrime/CLI/vendordeps/otel/codes` package now supports JSON marshaling and unmarshaling as well as implements the `Stringer` interface. (#1214)
 - A Baggage API to implement the OpenTelemetry specification. (#1217)
 - Add Shutdown method to sdk/trace/provider, shutdown processors in the order they were registered. (#1227)
 
 ### Changed
 
 - Set default propagator to no-op propagator. (#1184)
-- The `HTTPSupplier`, `HTTPExtractor`, `HTTPInjector`, and `HTTPPropagator` from the `github.com/dwertyfa288/CLI/vendordeps/otel/api/propagation` package were replaced with unified `TextMapCarrier` and `TextMapPropagator` in the `github.com/dwertyfa288/CLI/vendordeps/otel/propagation` package. (#1212) (#1325)
-- The `New` function from the `github.com/dwertyfa288/CLI/vendordeps/otel/api/propagation` package was replaced with `NewCompositeTextMapPropagator` in the `github.com/dwertyfa288/CLI/vendordeps/otel` package. (#1212)
-- The status codes of the `github.com/dwertyfa288/CLI/vendordeps/otel/codes` package have been updated to match the latest OpenTelemetry specification.
+- The `HTTPSupplier`, `HTTPExtractor`, `HTTPInjector`, and `HTTPPropagator` from the `github.com/SpherePrime/CLI/vendordeps/otel/api/propagation` package were replaced with unified `TextMapCarrier` and `TextMapPropagator` in the `github.com/SpherePrime/CLI/vendordeps/otel/propagation` package. (#1212) (#1325)
+- The `New` function from the `github.com/SpherePrime/CLI/vendordeps/otel/api/propagation` package was replaced with `NewCompositeTextMapPropagator` in the `github.com/SpherePrime/CLI/vendordeps/otel` package. (#1212)
+- The status codes of the `github.com/SpherePrime/CLI/vendordeps/otel/codes` package have been updated to match the latest OpenTelemetry specification.
    They now are `Unset`, `Error`, and `Ok`.
    They no longer track the gRPC codes. (#1214)
-- The `StatusCode` field of the `SpanData` struct in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/trace` package now uses the codes package from this package instead of the gRPC project. (#1214)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/api/baggage` package into `github.com/dwertyfa288/CLI/vendordeps/otel/baggage`. (#1217) (#1325)
+- The `StatusCode` field of the `SpanData` struct in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/trace` package now uses the codes package from this package instead of the gRPC project. (#1214)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/api/baggage` package into `github.com/SpherePrime/CLI/vendordeps/otel/baggage`. (#1217) (#1325)
 - A `Shutdown` method of `SpanProcessor` and all its implementations receives a context and returns an error. (#1264)
 
 ### Fixed
 
-- Copies of data from arrays and slices passed to `github.com/dwertyfa288/CLI/vendordeps/otel/label.ArrayValue()` are now used in the returned `Value` instead of using the mutable data itself. (#1226)
+- Copies of data from arrays and slices passed to `github.com/SpherePrime/CLI/vendordeps/otel/label.ArrayValue()` are now used in the returned `Value` instead of using the mutable data itself. (#1226)
 
 ### Removed
 
-- The `ExtractHTTP` and `InjectHTTP` functions from the `github.com/dwertyfa288/CLI/vendordeps/otel/api/propagation` package were removed. (#1212)
-- The `Propagators` interface from the `github.com/dwertyfa288/CLI/vendordeps/otel/api/propagation` package was removed to conform to the OpenTelemetry specification.
+- The `ExtractHTTP` and `InjectHTTP` functions from the `github.com/SpherePrime/CLI/vendordeps/otel/api/propagation` package were removed. (#1212)
+- The `Propagators` interface from the `github.com/SpherePrime/CLI/vendordeps/otel/api/propagation` package was removed to conform to the OpenTelemetry specification.
    The explicit `TextMapPropagator` type can be used in its place as this is the `Propagator` type the specification defines. (#1212)
-- The `SetAttribute` method of the `Span` from the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` package was removed given its redundancy with the `SetAttributes` method. (#1216)
+- The `SetAttribute` method of the `Span` from the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` package was removed given its redundancy with the `SetAttributes` method. (#1216)
 - The internal implementation of Baggage storage is removed in favor of using the new Baggage API functionality. (#1217)
 - Remove duplicate hostname key `HostHostNameKey` in Resource semantic conventions. (#1219)
 - Nested array/slice support has been removed. (#1226)
@@ -2963,8 +2963,8 @@ with major version 0.
 
 ### Added
 
-- A `SpanConfigure` function in `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` to create a new `SpanConfig` from `SpanOption`s. (#1108)
-- In the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` package, `NewTracerConfig` was added to construct new `TracerConfig`s.
+- A `SpanConfigure` function in `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` to create a new `SpanConfig` from `SpanOption`s. (#1108)
+- In the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` package, `NewTracerConfig` was added to construct new `TracerConfig`s.
    This addition was made to conform with our project option conventions. (#1155)
 - Instrumentation library information was added to the Zipkin exporter. (#1119)
 - The `SpanProcessor` interface now has a `ForceFlush()` method. (#1166)
@@ -2975,20 +2975,20 @@ with major version 0.
 - Add reconnecting udp connection type to Jaeger exporter.
    This change adds a new optional implementation of the udp conn interface used to detect changes to an agent's host dns record.
    It then adopts the new destination address to ensure the exporter doesn't get stuck. This change was ported from jaegertracing/jaeger-client-go#520. (#1063)
-- Replace `StartOption` and `EndOption` in `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` with `SpanOption`.
+- Replace `StartOption` and `EndOption` in `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` with `SpanOption`.
    This change is matched by replacing the `StartConfig` and `EndConfig` with a unified `SpanConfig`. (#1108)
-- Replace the `LinkedTo` span option in `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` with `WithLinks`.
+- Replace the `LinkedTo` span option in `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` with `WithLinks`.
    This is be more consistent with our other option patterns, i.e. passing the item to be configured directly instead of its component parts, and provides a cleaner function signature. (#1108)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` `TracerOption` was changed to an interface to conform to project option conventions. (#1109)
-- Move the `B3` and `TraceContext` from within the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` package to their own `github.com/dwertyfa288/CLI/vendordeps/otel/propagators` package.
-    This removal of the propagators is reflective of the OpenTelemetry specification for these propagators as well as cleans up the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` API. (#1118)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` `TracerOption` was changed to an interface to conform to project option conventions. (#1109)
+- Move the `B3` and `TraceContext` from within the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` package to their own `github.com/SpherePrime/CLI/vendordeps/otel/propagators` package.
+    This removal of the propagators is reflective of the OpenTelemetry specification for these propagators as well as cleans up the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` API. (#1118)
 - Rename Jaeger tags used for instrumentation library information to reflect changes in OpenTelemetry specification. (#1119)
 - Rename `ProbabilitySampler` to `TraceIDRatioBased` and change semantics to ignore parent span sampling status. (#1115)
 - Move `tools` package under `internal`. (#1141)
-- Move `github.com/dwertyfa288/CLI/vendordeps/otel/api/correlation` package to `github.com/dwertyfa288/CLI/vendordeps/otel/api/baggage`. (#1142)
+- Move `github.com/SpherePrime/CLI/vendordeps/otel/api/correlation` package to `github.com/SpherePrime/CLI/vendordeps/otel/api/baggage`. (#1142)
    The `correlation.CorrelationContext` propagator has been renamed `baggage.Baggage`.  Other exported functions and types are unchanged.
 - Rename `ParentOrElse` sampler to `ParentBased` and allow setting samplers depending on parent span. (#1153)
-- In the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` package, `SpanConfigure` was renamed to `NewSpanConfig`. (#1155)
+- In the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` package, `SpanConfigure` was renamed to `NewSpanConfig`. (#1155)
 - Change `dependabot.yml` to add a `Skip Changelog` label to dependabot-sourced PRs. (#1161)
 - The [configuration style guide](https://github.com/open-telemetry/opentelemetry-go/blob/master/CONTRIBUTING.md#config) has been updated to
    recommend the use of `newConfig()` instead of `configure()`. (#1163)
@@ -2996,28 +2996,28 @@ with major version 0.
 - Ensure exported interface types include parameter names and update the
    Style Guide to reflect this styling rule. (#1172)
 - Don't consider unset environment variable for resource detection to be an error. (#1170)
-- Rename `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric.ConfigureInstrument` to `NewInstrumentConfig` and
-  `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric.ConfigureMeter` to `NewMeterConfig`.
+- Rename `github.com/SpherePrime/CLI/vendordeps/otel/api/metric.ConfigureInstrument` to `NewInstrumentConfig` and
+  `github.com/SpherePrime/CLI/vendordeps/otel/api/metric.ConfigureMeter` to `NewMeterConfig`.
 - ValueObserver instruments use LastValue aggregator by default. (#1165)
 - OTLP Metric exporter supports LastValue aggregation. (#1165)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/api/unit` package to `github.com/dwertyfa288/CLI/vendordeps/otel/unit`. (#1185)
-- Rename `Provider` to `MeterProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric` package. (#1190)
-- Rename `NoopProvider` to `NoopMeterProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric` package. (#1190)
-- Rename `NewProvider` to `NewMeterProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric/metrictest` package. (#1190)
-- Rename `Provider` to `MeterProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metric/registry` package. (#1190)
-- Rename `NewProvider` to `NewMeterProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/metri/registryc` package. (#1190)
-- Rename `Provider` to `TracerProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` package. (#1190)
-- Rename `NoopProvider` to `NoopTracerProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace` package. (#1190)
-- Rename `Provider` to `TracerProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace/tracetest` package. (#1190)
-- Rename `NewProvider` to `NewTracerProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/trace/tracetest` package. (#1190)
-- Rename `WrapperProvider` to `WrapperTracerProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` package. (#1190)
-- Rename `NewWrapperProvider` to `NewWrapperTracerProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` package. (#1190)
-- Rename `Provider` method of the pull controller to `MeterProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/controller/pull` package. (#1190)
-- Rename `Provider` method of the push controller to `MeterProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/controller/push` package. (#1190)
-- Rename `ProviderOptions` to `TracerProviderConfig` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package. (#1190)
-- Rename `ProviderOption` to `TracerProviderOption` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package. (#1190)
-- Rename `Provider` to `TracerProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package. (#1190)
-- Rename `NewProvider` to `NewTracerProvider` in the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package. (#1190)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/api/unit` package to `github.com/SpherePrime/CLI/vendordeps/otel/unit`. (#1185)
+- Rename `Provider` to `MeterProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric` package. (#1190)
+- Rename `NoopProvider` to `NoopMeterProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric` package. (#1190)
+- Rename `NewProvider` to `NewMeterProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric/metrictest` package. (#1190)
+- Rename `Provider` to `MeterProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/metric/registry` package. (#1190)
+- Rename `NewProvider` to `NewMeterProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/metri/registryc` package. (#1190)
+- Rename `Provider` to `TracerProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` package. (#1190)
+- Rename `NoopProvider` to `NoopTracerProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace` package. (#1190)
+- Rename `Provider` to `TracerProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace/tracetest` package. (#1190)
+- Rename `NewProvider` to `NewTracerProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/trace/tracetest` package. (#1190)
+- Rename `WrapperProvider` to `WrapperTracerProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` package. (#1190)
+- Rename `NewWrapperProvider` to `NewWrapperTracerProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` package. (#1190)
+- Rename `Provider` method of the pull controller to `MeterProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/controller/pull` package. (#1190)
+- Rename `Provider` method of the push controller to `MeterProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/controller/push` package. (#1190)
+- Rename `ProviderOptions` to `TracerProviderConfig` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package. (#1190)
+- Rename `ProviderOption` to `TracerProviderOption` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package. (#1190)
+- Rename `Provider` to `TracerProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package. (#1190)
+- Rename `NewProvider` to `NewTracerProvider` in the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package. (#1190)
 - Renamed `SamplingDecision` values to comply with OpenTelemetry specification change. (#1192)
 - Renamed Zipkin attribute names from `ot.status_code & ot.status_description` to `otel.status_code & otel.status_description`. (#1201)
 - The default SDK now invokes registered `SpanProcessor`s in the order they were registered with the `TracerProvider`. (#1195)
@@ -3025,9 +3025,9 @@ with major version 0.
 
 ### Removed
 
-- Remove the B3 propagator from `github.com/dwertyfa288/CLI/vendordeps/otel/propagators`. It is now located in the
+- Remove the B3 propagator from `github.com/SpherePrime/CLI/vendordeps/otel/propagators`. It is now located in the
    `go.opentelemetry.io/contrib/propagators/` module. (#1191)
-- Remove the semantic convention for HTTP status text, `HTTPStatusTextKey` from package `github.com/dwertyfa288/CLI/vendordeps/otel/semconv`. (#1194)
+- Remove the semantic convention for HTTP status text, `HTTPStatusTextKey` from package `github.com/SpherePrime/CLI/vendordeps/otel/semconv`. (#1194)
 
 ### Fixed
 
@@ -3044,7 +3044,7 @@ with major version 0.
 - Support for filtering metric label sets. (#1047)
 - A dimensionality-reducing metric Processor. (#1057)
 - Integration tests for more OTel Collector Attribute types. (#1062)
-- A new `WithSpanProcessor` `ProviderOption` is added to the `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` package to create a `Provider` and automatically register the `SpanProcessor`. (#1078)
+- A new `WithSpanProcessor` `ProviderOption` is added to the `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` package to create a `Provider` and automatically register the `SpanProcessor`. (#1078)
 
 ### Changed
 
@@ -3053,22 +3053,22 @@ with major version 0.
 - Rename `api/testharness` to `api/apitest`. (#1049)
 - Rename `api/trace/testtrace` to `api/trace/tracetest`. (#1049)
 - Change Metric Processor to merge multiple observations. (#1024)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` bridge package has been made into its own module.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` bridge package has been made into its own module.
    This removes the package dependencies of this bridge from the rest of the OpenTelemetry based project. (#1038)
-- Renamed `github.com/dwertyfa288/CLI/vendordeps/otel/api/standard` package to `github.com/dwertyfa288/CLI/vendordeps/otel/semconv` to avoid the ambiguous and generic name `standard` and better describe the package as containing OpenTelemetry semantic conventions. (#1016)
+- Renamed `github.com/SpherePrime/CLI/vendordeps/otel/api/standard` package to `github.com/SpherePrime/CLI/vendordeps/otel/semconv` to avoid the ambiguous and generic name `standard` and better describe the package as containing OpenTelemetry semantic conventions. (#1016)
 - The environment variable used for resource detection has been changed from `OTEL_RESOURCE_LABELS` to `OTEL_RESOURCE_ATTRIBUTES` (#1042)
 - Replace `WithSyncer` with `WithBatcher` in examples. (#1044)
-- Replace the `github.com/dwertyfa288/CLI/vendordeps/grpc/codes` dependency in the API with an equivalent `github.com/dwertyfa288/CLI/vendordeps/otel/codes` package. (#1046)
-- Merge the `github.com/dwertyfa288/CLI/vendordeps/otel/api/label` and `github.com/dwertyfa288/CLI/vendordeps/otel/api/kv` into the new `github.com/dwertyfa288/CLI/vendordeps/otel/label` package. (#1060)
+- Replace the `github.com/SpherePrime/CLI/vendordeps/grpc/codes` dependency in the API with an equivalent `github.com/SpherePrime/CLI/vendordeps/otel/codes` package. (#1046)
+- Merge the `github.com/SpherePrime/CLI/vendordeps/otel/api/label` and `github.com/SpherePrime/CLI/vendordeps/otel/api/kv` into the new `github.com/SpherePrime/CLI/vendordeps/otel/label` package. (#1060)
 - Unify Callback Function Naming.
    Rename `*Callback` with `*Func`. (#1061)
 - CI builds validate against last two versions of Go, dropping 1.13 and adding 1.15. (#1064)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/trace` interfaces `SpanSyncer` and `SpanBatcher` have been replaced with a specification compliant `Exporter` interface.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/trace` interfaces `SpanSyncer` and `SpanBatcher` have been replaced with a specification compliant `Exporter` interface.
    This interface still supports the export of `SpanData`, but only as a slice.
    Implementation are also required now to return any error from `ExportSpans` if one occurs as well as implement a `Shutdown` method for exporter clean-up. (#1078)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` `NewBatchSpanProcessor` function no longer returns an error.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` `NewBatchSpanProcessor` function no longer returns an error.
    If a `nil` exporter is passed as an argument to this function, instead of it returning an error, it now returns a `BatchSpanProcessor` that handles the export of `SpanData` by not taking any action. (#1078)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace` `NewProvider` function to create a `Provider` no longer returns an error, instead only a `*Provider`.
+- The `github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace` `NewProvider` function to create a `Provider` no longer returns an error, instead only a `*Provider`.
    This change is related to `NewBatchSpanProcessor` not returning an error which was the only error this function would return. (#1078)
 
 ### Removed
@@ -3090,7 +3090,7 @@ with major version 0.
 - The `semconv.HTTPServerMetricAttributesFromHTTPRequest()` function no longer generates the high-cardinality `http.request.content.length` label. (#1031)
 - Correct instrumentation version tag in Jaeger exporter. (#1037)
 - The SDK span will now set an error event if the `End` method is called during a panic (i.e. it was deferred). (#1043)
-- Move internally generated protobuf code from the `github.com/dwertyfa288/CLI/vendordeps/otel` to the OTLP exporter to reduce dependency overhead. (#1050)
+- Move internally generated protobuf code from the `github.com/SpherePrime/CLI/vendordeps/otel` to the OTLP exporter to reduce dependency overhead. (#1050)
 - The `otel-collector` example referenced outdated collector processors. (#1006)
 
 ## [0.10.0] - 2020-07-29
@@ -3108,10 +3108,10 @@ This release migrates the default OpenTelemetry SDK into its own Go module, deco
 
 - Replace the `RegisterGlobal` `Option` in the Jaeger exporter with an `InstallNewPipeline` constructor function.
    This matches the other exporter constructor patterns and will register a new exporter after building it with default configuration. (#944)
-- The trace (`github.com/dwertyfa288/CLI/vendordeps/otel/exporters/trace/stdout`) and metric (`github.com/dwertyfa288/CLI/vendordeps/otel/exporters/metric/stdout`) `stdout` exporters are now merged into a single exporter at `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout`.
-   This new exporter was made into its own Go module to follow the pattern of all exporters and decouple it from the `github.com/dwertyfa288/CLI/vendordeps/otel` module. (#956, #963)
-- Move the `github.com/dwertyfa288/CLI/vendordeps/otel/exporters/test` test package to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/export/metric/metrictest`. (#962)
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/api/kv/value` package was merged into the parent `github.com/dwertyfa288/CLI/vendordeps/otel/api/kv` package. (#968)
+- The trace (`github.com/SpherePrime/CLI/vendordeps/otel/exporters/trace/stdout`) and metric (`github.com/SpherePrime/CLI/vendordeps/otel/exporters/metric/stdout`) `stdout` exporters are now merged into a single exporter at `github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout`.
+   This new exporter was made into its own Go module to follow the pattern of all exporters and decouple it from the `github.com/SpherePrime/CLI/vendordeps/otel` module. (#956, #963)
+- Move the `github.com/SpherePrime/CLI/vendordeps/otel/exporters/test` test package to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/export/metric/metrictest`. (#962)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/api/kv/value` package was merged into the parent `github.com/SpherePrime/CLI/vendordeps/otel/api/kv` package. (#968)
   - `value.Bool` was replaced with `kv.BoolValue`.
   - `value.Int64` was replaced with `kv.Int64Value`.
   - `value.Uint64` was replaced with `kv.Uint64Value`.
@@ -3123,25 +3123,25 @@ This release migrates the default OpenTelemetry SDK into its own Go module, deco
   - `value.Int` was replaced with `kv.IntValue`.
   - `value.Uint` was replaced with `kv.UintValue`.
   - `value.Array` was replaced with `kv.ArrayValue`.
-- Rename `Infer` to `Any` in the `github.com/dwertyfa288/CLI/vendordeps/otel/api/kv` package. (#972)
+- Rename `Infer` to `Any` in the `github.com/SpherePrime/CLI/vendordeps/otel/api/kv` package. (#972)
 - Change `othttp` to use the `httpsnoop` package to wrap the `ResponseWriter` so that optional interfaces (`http.Hijacker`, `http.Flusher`, etc.) that are implemented by the original `ResponseWriter`are also implemented by the wrapped `ResponseWriter`. (#979)
-- Rename `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregator/test` package to `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric/aggregator/aggregatortest`. (#980)
-- Make the SDK into its own Go module called `github.com/dwertyfa288/CLI/vendordeps/otel/sdk`. (#985)
+- Rename `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregator/test` package to `github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric/aggregator/aggregatortest`. (#980)
+- Make the SDK into its own Go module called `github.com/SpherePrime/CLI/vendordeps/otel/sdk`. (#985)
 - Changed the default trace `Sampler` from `AlwaysOn` to `ParentOrElse(AlwaysOn)`. (#989)
 
 ### Removed
 
-- The `IndexedAttribute` function from the `github.com/dwertyfa288/CLI/vendordeps/otel/api/label` package was removed in favor of `IndexedLabel` which it was synonymous with. (#970)
+- The `IndexedAttribute` function from the `github.com/SpherePrime/CLI/vendordeps/otel/api/label` package was removed in favor of `IndexedLabel` which it was synonymous with. (#970)
 
 ### Fixed
 
 - Bump github.com/golangci/golangci-lint from 1.28.3 to 1.29.0 in /tools. (#953)
-- Bump github.com/dwertyfa288/CLI/vendordeps/google/go-cmp from 0.5.0 to 0.5.1. (#957)
+- Bump github.com/SpherePrime/CLI/vendordeps/google/go-cmp from 0.5.0 to 0.5.1. (#957)
 - Use `global.Handle` for span export errors in the OTLP exporter. (#946)
 - Correct Go language formatting in the README documentation. (#961)
-- Remove default SDK dependencies from the `github.com/dwertyfa288/CLI/vendordeps/otel/api` package. (#977)
-- Remove default SDK dependencies from the `github.com/dwertyfa288/CLI/vendordeps/otel/instrumentation` package. (#983)
-- Move documented examples for `github.com/dwertyfa288/CLI/vendordeps/otel/instrumentation/grpctrace` interceptors into Go example tests. (#984)
+- Remove default SDK dependencies from the `github.com/SpherePrime/CLI/vendordeps/otel/api` package. (#977)
+- Remove default SDK dependencies from the `github.com/SpherePrime/CLI/vendordeps/otel/instrumentation` package. (#983)
+- Move documented examples for `github.com/SpherePrime/CLI/vendordeps/otel/instrumentation/grpctrace` interceptors into Go example tests. (#984)
 
 ## [0.9.0] - 2020-07-20
 
@@ -3151,7 +3151,7 @@ This release migrates the default OpenTelemetry SDK into its own Go module, deco
 - A Detector to automatically detect resources from an environment variable. (#939)
 - Github action to generate protobuf Go bindings locally in `internal/opentelemetry-proto-gen`. (#938)
 - OTLP .proto files from `open-telemetry/opentelemetry-proto` imported as a git submodule under `internal/opentelemetry-proto`.
-   References to `github.com/open-telemetry/opentelemetry-proto` changed to `github.com/dwertyfa288/CLI/vendordeps/otel/internal/opentelemetry-proto-gen`. (#942)
+   References to `github.com/open-telemetry/opentelemetry-proto` changed to `github.com/SpherePrime/CLI/vendordeps/otel/internal/opentelemetry-proto-gen`. (#942)
 
 ### Changed
 
@@ -3209,7 +3209,7 @@ This release migrates the default OpenTelemetry SDK into its own Go module, deco
    This removes the behavior of changing the debug flag into a set sampling bit.
    Instead, this now follow the B3 specification and omits the `X-B3-Sampling` header. (#882)
 - The B3 propagator now tracks "unset" sampling state (meaning "defer the decision") and does not set the `X-B3-Sampling` header when injecting. (#882)
-- Bump github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq from 0.10.3 to 0.10.4 in /tools. (#883)
+- Bump github.com/SpherePrime/CLI/vendordeps/itchyny/gojq from 0.10.3 to 0.10.4 in /tools. (#883)
 - Bump github.com/opentracing/opentracing-go from v1.1.1-0.20190913142402-a7454ce5950e to v1.2.0. (#885)
 - The tracing time conversion for OTLP spans is now correctly set to `UnixNano`. (#896)
 - Ensure span status is not set to `Unknown` when no HTTP status code is provided as it is assumed to be `200 OK`. (#908)
@@ -3223,8 +3223,8 @@ This release migrates the default OpenTelemetry SDK into its own Go module, deco
 - The `grpctrace` instrumentation `rpc.service` attribute now contains the package name if one exists.
    This is in accordance with OpenTelemetry semantic conventions. (#922)
 - Correlation Context extractor will no longer insert an empty map into the returned context when no valid values are extracted. (#923)
-- Bump github.com/dwertyfa288/CLI/vendordeps/api from 0.28.0 to 0.29.0 in /exporters/trace/jaeger. (#925)
-- Bump github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq from 0.10.4 to 0.11.0 in /tools. (#926)
+- Bump github.com/SpherePrime/CLI/vendordeps/api from 0.28.0 to 0.29.0 in /exporters/trace/jaeger. (#925)
+- Bump github.com/SpherePrime/CLI/vendordeps/itchyny/gojq from 0.10.4 to 0.11.0 in /tools. (#926)
 - Bump github.com/golangci/golangci-lint from 1.28.1 to 1.28.2 in /tools. (#930)
 
 ## [0.7.0] - 2020-06-26
@@ -3249,8 +3249,8 @@ This release implements the v0.5.0 version of the OpenTelemetry specification.
 - New example that uses OTLP and the collector. (#790)
 - Handle errors in the span `SetName` during span initialization. (#791)
 - Default service config to enable retries for retry-able failed requests in the OTLP exporter and an option to override this default. (#777)
-- New `github.com/dwertyfa288/CLI/vendordeps/otel/api/oterror` package to uniformly support error handling and definitions for the project. (#778)
-- New `global` default implementation of the `github.com/dwertyfa288/CLI/vendordeps/otel/api/oterror.Handler` interface to be used to handle errors prior to an user defined `Handler`.
+- New `github.com/SpherePrime/CLI/vendordeps/otel/api/oterror` package to uniformly support error handling and definitions for the project. (#778)
+- New `global` default implementation of the `github.com/SpherePrime/CLI/vendordeps/otel/api/oterror.Handler` interface to be used to handle errors prior to an user defined `Handler`.
    There is also functionality for the user to register their `Handler` as well as a convenience function `Handle` to handle an error with this global `Handler`(#778)
 - Options to specify propagators for httptrace and grpctrace instrumentation. (#784)
 - The required `application/json` header for the Zipkin exporter is included in all exports. (#774)
@@ -3287,25 +3287,25 @@ This release implements the v0.5.0 version of the OpenTelemetry specification.
 
 - Upgrade OTLP exporter to opentelemetry-proto matching the opentelemetry-collector v0.4.0 release. (#866)
 - Allow changes to `go.sum` and `go.mod` when running dependabot tidy-up. (#871)
-- Bump github.com/dwertyfa288/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1. (#824)
+- Bump github.com/SpherePrime/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1. (#824)
 - Bump github.com/prometheus/client_golang from 1.7.0 to 1.7.1 in /exporters/metric/prometheus. (#867)
-- Bump github.com/dwertyfa288/CLI/vendordeps/grpc from 1.29.1 to 1.30.0 in /exporters/trace/jaeger. (#853)
-- Bump github.com/dwertyfa288/CLI/vendordeps/grpc from 1.29.1 to 1.30.0 in /exporters/trace/zipkin. (#854)
+- Bump github.com/SpherePrime/CLI/vendordeps/grpc from 1.29.1 to 1.30.0 in /exporters/trace/jaeger. (#853)
+- Bump github.com/SpherePrime/CLI/vendordeps/grpc from 1.29.1 to 1.30.0 in /exporters/trace/zipkin. (#854)
 - Bumps github.com/golang/protobuf from 1.3.2 to 1.4.2 (#848)
-- Bump github.com/dwertyfa288/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1 in /exporters/otlp (#817)
+- Bump github.com/SpherePrime/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1 in /exporters/otlp (#817)
 - Bump github.com/golangci/golangci-lint from 1.25.1 to 1.27.0 in /tools (#828)
 - Bump github.com/prometheus/client_golang from 1.5.0 to 1.7.0 in /exporters/metric/prometheus (#838)
-- Bump github.com/dwertyfa288/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1 in /exporters/trace/jaeger (#829)
+- Bump github.com/SpherePrime/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1 in /exporters/trace/jaeger (#829)
 - Bump github.com/benbjohnson/clock from 1.0.0 to 1.0.3 (#815)
-- Bump github.com/dwertyfa288/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1 in /exporters/trace/zipkin (#823)
-- Bump github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq from 0.10.1 to 0.10.3 in /tools (#830)
-- Bump github.com/dwertyfa288/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1 in /exporters/metric/prometheus (#822)
-- Bump github.com/dwertyfa288/CLI/vendordeps/grpc from 1.27.1 to 1.29.1 in /exporters/trace/zipkin (#820)
-- Bump github.com/dwertyfa288/CLI/vendordeps/grpc from 1.27.1 to 1.29.1 in /exporters/trace/jaeger (#831)
-- Bump github.com/dwertyfa288/CLI/vendordeps/google/go-cmp from 0.4.0 to 0.5.0 (#836)
-- Bump github.com/dwertyfa288/CLI/vendordeps/google/go-cmp from 0.4.0 to 0.5.0 in /exporters/trace/jaeger (#837)
-- Bump github.com/dwertyfa288/CLI/vendordeps/google/go-cmp from 0.4.0 to 0.5.0 in /exporters/otlp (#839)
-- Bump github.com/dwertyfa288/CLI/vendordeps/api from 0.20.0 to 0.28.0 in /exporters/trace/jaeger (#843)
+- Bump github.com/SpherePrime/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1 in /exporters/trace/zipkin (#823)
+- Bump github.com/SpherePrime/CLI/vendordeps/itchyny/gojq from 0.10.1 to 0.10.3 in /tools (#830)
+- Bump github.com/SpherePrime/CLI/vendordeps/stretchr/testify from 1.4.0 to 1.6.1 in /exporters/metric/prometheus (#822)
+- Bump github.com/SpherePrime/CLI/vendordeps/grpc from 1.27.1 to 1.29.1 in /exporters/trace/zipkin (#820)
+- Bump github.com/SpherePrime/CLI/vendordeps/grpc from 1.27.1 to 1.29.1 in /exporters/trace/jaeger (#831)
+- Bump github.com/SpherePrime/CLI/vendordeps/google/go-cmp from 0.4.0 to 0.5.0 (#836)
+- Bump github.com/SpherePrime/CLI/vendordeps/google/go-cmp from 0.4.0 to 0.5.0 in /exporters/trace/jaeger (#837)
+- Bump github.com/SpherePrime/CLI/vendordeps/google/go-cmp from 0.4.0 to 0.5.0 in /exporters/otlp (#839)
+- Bump github.com/SpherePrime/CLI/vendordeps/api from 0.20.0 to 0.28.0 in /exporters/trace/jaeger (#843)
 - Set span status from HTTP status code in the othttp instrumentation. (#832)
 - Fixed typo in push controller comment. (#834)
 - The `Aggregator` testing has been updated and cleaned. (#812)
@@ -3571,7 +3571,7 @@ There is still a possibility of breaking changes.
 ### Changed
 
 - Rename the `exporter` directory to `exporters`.
-   The `github.com/dwertyfa288/CLI/vendordeps/otel/exporter/trace/jaeger` package was mistakenly released with a `v1.0.0` tag instead of `v0.1.0`.
+   The `github.com/SpherePrime/CLI/vendordeps/otel/exporter/trace/jaeger` package was mistakenly released with a `v1.0.0` tag instead of `v0.1.0`.
    This resulted in all subsequent releases not becoming the default latest.
    A consequence of this was that all `go get`s pulled in the incompatible `v0.1.0` release of that package when pulling in more recent packages from other otel packages.
    Renaming the `exporter` directory to `exporters` fixes this issue by renaming the package and therefore clearing any existing dependency tags.
@@ -3927,8 +3927,8 @@ It contains api and sdk for trace and meter.
 [Go 1.19]: https://go.dev/doc/go1.19
 [Go 1.18]: https://go.dev/doc/go1.18
 
-[metric API]:https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel/metric
-[metric SDK]:https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric
-[trace API]:https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel/trace
+[metric API]:https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel/metric
+[metric SDK]:https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric
+[trace API]:https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel/trace
 
 [GO-2024-2687]: https://pkg.go.dev/vuln/GO-2024-2687

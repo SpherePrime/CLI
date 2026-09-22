@@ -15,7 +15,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	attribute "github.com/dwertyfa288/CLI/vendordeps/otel/attribute/internal"
+	attribute "github.com/SpherePrime/CLI/vendordeps/otel/attribute/internal"
 )
 
 //go:generate stringer -type=Type

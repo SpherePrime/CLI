@@ -10,7 +10,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/encoding/json"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/encoding/json"
 )
 
 type Decoder struct {

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	format "github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/plumbing/format/config"
+	format "github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/plumbing/format/config"
 )
 
 var (

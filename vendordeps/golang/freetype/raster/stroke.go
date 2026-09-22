@@ -6,7 +6,7 @@
 package raster
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/fixed"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/fixed"
 )
 
 // Two points are considered practically equal if the square of the distance

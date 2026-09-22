@@ -3,17 +3,17 @@ goldmark-emoji
 
 [![GoDev][godev-image]][godev-url]
 
-[godev-image]: https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji
-[godev-url]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji
+[godev-image]: https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji
+[godev-url]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji
 
-goldmark-emoji is an extension for the [goldmark](http://github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark)
+goldmark-emoji is an extension for the [goldmark](http://github.com/SpherePrime/CLI/vendordeps/yuin/goldmark)
 that parses `:joy:` style emojis.
 
 Installation
 --------------------
 
 ```sh
-go get github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji
+go get github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji
 ```
 
 Usage
@@ -24,9 +24,9 @@ import (
     "bytes"
     "fmt"
 
-    "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark"
-    "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji"
-    "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji/definition"
+    "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark"
+    "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji"
+    "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji/definition"
 )
 
 func main() {

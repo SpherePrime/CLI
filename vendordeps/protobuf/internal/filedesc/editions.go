@@ -7,10 +7,10 @@ package filedesc
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/editiondefaults"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/genid"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/editiondefaults"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/genid"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 var (

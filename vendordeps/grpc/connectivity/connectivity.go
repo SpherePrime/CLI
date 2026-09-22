@@ -21,7 +21,7 @@
 package connectivity
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 )
 
 var logger = grpclog.Component("core")

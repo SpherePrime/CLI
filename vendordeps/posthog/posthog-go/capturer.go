@@ -1,7 +1,7 @@
 package posthog
 
 import (
-	json "github.com/dwertyfa288/CLI/vendordeps/goccy/go-json"
+	json "github.com/SpherePrime/CLI/vendordeps/goccy/go-json"
 )
 
 // capturer isolates every legacy-vs-v1 divergence: both the per-message wire

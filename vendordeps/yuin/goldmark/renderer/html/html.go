@@ -8,9 +8,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/renderer"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/renderer"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 // A Config struct has configurations for the HTML based renderers.

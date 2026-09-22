@@ -30,30 +30,30 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/base"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/pickfirst"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/connectivity"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	expstats "github.com/dwertyfa288/CLI/vendordeps/grpc/experimental/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/channelz"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpcsync"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/idle"
-	iresolver "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/resolver"
-	istats "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/transport"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/keepalive"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/base"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/pickfirst"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/connectivity"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	expstats "github.com/SpherePrime/CLI/vendordeps/grpc/experimental/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/channelz"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpcsync"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/idle"
+	iresolver "github.com/SpherePrime/CLI/vendordeps/grpc/internal/resolver"
+	istats "github.com/SpherePrime/CLI/vendordeps/grpc/internal/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/transport"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/keepalive"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 
-	_ "github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/roundrobin"           // To register roundrobin.
-	_ "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/resolver/passthrough" // To register passthrough resolver.
-	_ "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/resolver/unix"        // To register unix resolver.
-	_ "github.com/dwertyfa288/CLI/vendordeps/grpc/resolver/dns"                  // To register dns resolver.
+	_ "github.com/SpherePrime/CLI/vendordeps/grpc/balancer/roundrobin"           // To register roundrobin.
+	_ "github.com/SpherePrime/CLI/vendordeps/grpc/internal/resolver/passthrough" // To register passthrough resolver.
+	_ "github.com/SpherePrime/CLI/vendordeps/grpc/internal/resolver/unix"        // To register unix resolver.
+	_ "github.com/SpherePrime/CLI/vendordeps/grpc/resolver/dns"                  // To register dns resolver.
 )
 
 const (

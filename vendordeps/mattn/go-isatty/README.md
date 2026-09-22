@@ -1,6 +1,6 @@
 # go-isatty
 
-[![Godoc Reference](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/mattn/go-isatty?status.svg)](http://godoc.org/github.com/dwertyfa288/CLI/vendordeps/mattn/go-isatty)
+[![Godoc Reference](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/mattn/go-isatty?status.svg)](http://godoc.org/github.com/SpherePrime/CLI/vendordeps/mattn/go-isatty)
 [![Codecov](https://codecov.io/gh/mattn/go-isatty/branch/master/graph/badge.svg)](https://codecov.io/gh/mattn/go-isatty)
 [![Coverage Status](https://coveralls.io/repos/github/mattn/go-isatty/badge.svg?branch=master)](https://coveralls.io/github/mattn/go-isatty?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/mattn/go-isatty)](https://goreportcard.com/report/mattn/go-isatty)
@@ -14,7 +14,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/mattn/go-isatty"
+	"github.com/SpherePrime/CLI/vendordeps/mattn/go-isatty"
 	"os"
 )
 
@@ -32,7 +32,7 @@ func main() {
 ## Installation
 
 ```
-$ go get github.com/dwertyfa288/CLI/vendordeps/mattn/go-isatty
+$ go get github.com/SpherePrime/CLI/vendordeps/mattn/go-isatty
 ```
 
 ## License

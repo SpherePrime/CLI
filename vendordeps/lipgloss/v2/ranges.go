@@ -3,7 +3,7 @@ package lipgloss
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // StyleRanges applying styling to ranges in a string. Existing styles will be

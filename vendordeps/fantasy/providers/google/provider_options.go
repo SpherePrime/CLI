@@ -4,7 +4,7 @@ package google
 import (
 	"encoding/json"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 // Global type identifiers for Google-specific provider data.

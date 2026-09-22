@@ -1,6 +1,6 @@
 package goquery
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+import "github.com/SpherePrime/CLI/vendordeps/x/net/html"
 
 type siblingType int
 
@@ -25,7 +25,7 @@ const (
 // compiled and applied by the cascadia package and inherits its behavior and
 // constraints regarding supported selectors. See the note on cascadia in
 // the goquery documentation here:
-// https://github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery?tab=readme-ov-file#api
+// https://github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery?tab=readme-ov-file#api
 func (s *Selection) Find(selector string) *Selection {
 	return pushStack(s, findWithMatcher(s.Nodes, compileMatcher(selector)))
 }

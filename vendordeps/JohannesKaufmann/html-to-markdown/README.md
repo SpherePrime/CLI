@@ -1,18 +1,18 @@
 # html-to-markdown
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown)
 [![codecov](https://codecov.io/gh/JohannesKaufmann/html-to-markdown/branch/master/graph/badge.svg)](https://codecov.io/gh/JohannesKaufmann/html-to-markdown)
 ![GitHub MIT License](https://img.shields.io/github/license/JohannesKaufmann/html-to-markdown)
-[![GoDoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown?status.png)](http://godoc.org/github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown)
+[![GoDoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown?status.png)](http://godoc.org/github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown)
 
 ![Gopher, the mascot of Golang, is wearing a party hat and holding a balloon. Next to the Gopher is a machine that converts characters associated with HTML to characters associated with Markdown.](/logo_five_years.png)
 
-Convert HTML into Markdown with Go. It is using an [HTML Parser](https://github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery) to avoid the use of `regexp` as much as possible. That should prevent some [weird cases](https://stackoverflow.com/a/1732454) and allows it to be used for cases where the input is totally unknown.
+Convert HTML into Markdown with Go. It is using an [HTML Parser](https://github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery) to avoid the use of `regexp` as much as possible. That should prevent some [weird cases](https://stackoverflow.com/a/1732454) and allows it to be used for cases where the input is totally unknown.
 
 ## Installation
 
 ```
-go get github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown
+go get github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"log"
 
-	md "github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown"
+	md "github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown"
 )
 
 converter := md.NewConverter("", true, nil)
@@ -36,7 +36,7 @@ if err != nil {
 fmt.Println("md ->", markdown)
 ```
 
-If you are already using [goquery](https://github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery) you can pass a selection to `Convert`.
+If you are already using [goquery](https://github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery) you can pass a selection to `Convert`.
 
 ```go
 markdown, err := converter.Convert(selec)
@@ -60,7 +60,7 @@ opt := &md.Options{
 converter := md.NewConverter("", true, opt)
 ```
 
-For all the possible options look at [godocs](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown/#Options) and for a example look at the [example](/examples/options/main.go).
+For all the possible options look at [godocs](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown/#Options) and for a example look at the [example](/examples/options/main.go).
 
 ## Adding Rules
 
@@ -88,7 +88,7 @@ For more information have a look at the example [add_rules](/examples/add_rules/
 If you want plugins (github flavored markdown like striketrough, tables, ...) you can pass it to `Use`.
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown/plugin"
+import "github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown/plugin"
 
 // Use the `GitHubFlavored` plugin from the `plugin` package.
 converter.Use(plugin.GitHubFlavored())
@@ -105,7 +105,7 @@ For more information have a look at the example [github_flavored](/examples/gith
 
 ---
 
-These are the plugins located in the [plugin folder](/plugin) which you can use by importing "github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown/plugin".
+These are the plugins located in the [plugin folder](/plugin) which you can use by importing "github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown/plugin".
 
 | Name                  | Description                                                                                 |
 | --------------------- | ------------------------------------------------------------------------------------------- |
@@ -137,13 +137,13 @@ Have a look at the [plugin folder](/plugin) for a reference implementation. The 
 
 This library produces markdown that is readable and can be changed by humans.
 
-Once you convert this markdown back to HTML (e.g. using [goldmark](https://github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark) or [blackfriday](https://github.com/russross/blackfriday)) you need to be careful of malicious content.
+Once you convert this markdown back to HTML (e.g. using [goldmark](https://github.com/SpherePrime/CLI/vendordeps/yuin/goldmark) or [blackfriday](https://github.com/russross/blackfriday)) you need to be careful of malicious content.
 
-This library does NOT sanitize untrusted content. Use an HTML sanitizer such as [bluemonday](https://github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday) before displaying the HTML in the browser.
+This library does NOT sanitize untrusted content. Use an HTML sanitizer such as [bluemonday](https://github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday) before displaying the HTML in the browser.
 
 ## Other Methods
 
-[Godoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown)
+[Godoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown)
 
 ### `func (c *Converter) Keep(tags ...string) *Converter`
 

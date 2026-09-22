@@ -46,7 +46,7 @@ working without breaking changes.
 All ongoing work, including new features and routine bug-fixes, will happen in
 **`v4`**.
 If you’re starting a new project or upgrading an existing one, please use the
-`github.com/dwertyfa288/CLI/vendordeps/yaml/v4` import path.
+`github.com/SpherePrime/CLI/vendordeps/yaml/v4` import path.
 
 
 ## Compatibility
@@ -71,18 +71,18 @@ Specifically, v3 of the `yaml` package:
 
 ## Installation and Usage
 
-The import path for the package is *github.com/dwertyfa288/CLI/vendordeps/yaml/v4*.
+The import path for the package is *github.com/SpherePrime/CLI/vendordeps/yaml/v4*.
 
 To install it, run:
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/yaml/v4
+go get github.com/SpherePrime/CLI/vendordeps/yaml/v4
 ```
 
 
 ## API Documentation
 
-See: <https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/yaml/v4>
+See: <https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/yaml/v4>
 
 
 ## API Stability
@@ -100,7 +100,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yaml/v4"
+	"github.com/SpherePrime/CLI/vendordeps/yaml/v4"
 )
 
 var data = `
@@ -217,7 +217,7 @@ foo: &a1 bar
 You can also install it with:
 
 ```bash
-go install github.com/dwertyfa288/CLI/vendordeps/yaml/v4/cmd/go-yaml@latest
+go install github.com/SpherePrime/CLI/vendordeps/yaml/v4/cmd/go-yaml@latest
 ```
 
 

@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/defval"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/filedesc"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/strs"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/defval"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/filedesc"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/strs"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 var byteType = reflect.TypeOf(byte(0))

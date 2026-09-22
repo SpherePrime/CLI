@@ -35,8 +35,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/apierror"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/callctx"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/apierror"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/callctx"
 )
 
 // APICall is a user defined call stub.

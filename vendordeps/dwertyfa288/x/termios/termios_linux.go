@@ -3,7 +3,7 @@
 
 package termios
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+import "github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 
 const (
 	ioctlGets       = unix.TCGETS

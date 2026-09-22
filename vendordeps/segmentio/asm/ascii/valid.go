@@ -1,6 +1,6 @@
 package ascii
 
-import "github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/internal/unsafebytes"
+import "github.com/SpherePrime/CLI/vendordeps/segmentio/asm/internal/unsafebytes"
 
 // Valid returns true if b contains only ASCII characters.
 func Valid(b []byte) bool {

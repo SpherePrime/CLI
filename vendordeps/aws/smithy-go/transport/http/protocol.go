@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // ClientProtocol defines the interface through which client-side operation

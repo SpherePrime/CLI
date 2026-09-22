@@ -4,7 +4,7 @@
 
 // Package googleapi contains the common code shared by all Google API
 // libraries.
-package googleapi // import "github.com/dwertyfa288/CLI/vendordeps/api/googleapi"
+package googleapi // import "github.com/SpherePrime/CLI/vendordeps/api/googleapi"
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/third_party/uritemplates"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/third_party/uritemplates"
 )
 
 // ContentTyper is an interface for Readers which know (or would like

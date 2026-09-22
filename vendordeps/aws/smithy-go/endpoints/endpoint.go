@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // Endpoint is the endpoint object returned by Endpoint resolution V2

@@ -3,17 +3,17 @@
 // license that can be found in the LICENSE file.
 
 // Package gldriver provides an OpenGL driver for accessing a screen.
-package gldriver // import "github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/gldriver"
+package gldriver // import "github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/gldriver"
 
 import (
 	"encoding/binary"
 	"fmt"
 	"math"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/errscreen"
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/f64"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/gl"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/errscreen"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/f64"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/gl"
 )
 
 // Main is called by the program's main function to run the graphical

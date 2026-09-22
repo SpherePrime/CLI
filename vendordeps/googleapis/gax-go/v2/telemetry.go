@@ -38,13 +38,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/apierror"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/callctx"
-	"github.com/dwertyfa288/CLI/vendordeps/otel"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/apierror"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/callctx"
+	"github.com/SpherePrime/CLI/vendordeps/otel"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // TransportTelemetryData contains mutable telemetry information that the transport
@@ -120,7 +120,7 @@ const (
 	ClientService = "client_service"
 	// ClientVersion is the version of the client. E.g. "1.43.0".
 	ClientVersion = "client_version"
-	// ClientArtifact is the library name. E.g. "github.com/dwertyfa288/CLI/vendordeps/go/storage".
+	// ClientArtifact is the library name. E.g. "github.com/SpherePrime/CLI/vendordeps/go/storage".
 	ClientArtifact = "client_artifact"
 	// RPCSystem is the RPC system type. E.g. "grpc" or "http".
 	RPCSystem = "rpc_system"

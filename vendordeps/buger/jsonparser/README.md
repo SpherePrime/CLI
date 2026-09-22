@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser) ![License](https://img.shields.io/dub/l/vibe-d.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/buger/jsonparser)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/buger/jsonparser) ![License](https://img.shields.io/dub/l/vibe-d.svg)
 # Alternative JSON parser for Go (10x times faster standard library)
 
 It does not require you to know the structure of the payload (eg. create structs), and allows accessing fields by providing the path to them. It is up to **10 times faster** than standard `encoding/json` package (depending on payload size and usage), **allocates no memory**. See benchmarks below.
@@ -15,7 +15,7 @@ Goal of this project is to push JSON parser to the performance limits and not sa
 For the given JSON our goal is to extract the user's full name, number of github followers and avatar.
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser"
+import "github.com/SpherePrime/CLI/vendordeps/buger/jsonparser"
 
 ...
 
@@ -94,7 +94,7 @@ jsonparser.EachKey(data, func(idx int, value []byte, vt jsonparser.ValueType, er
 
 Library API is really simple. You just need the `Get` method to perform any operation. The rest is just helpers around it.
 
-You also can view API at [godoc.org](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser)
+You also can view API at [godoc.org](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/buger/jsonparser)
 
 
 ### **`Get`**
@@ -248,7 +248,7 @@ Compared libraries:
 * https://github.com/ugorji/go/codec
 * https://github.com/pquerna/ffjson
 * https://github.com/mailru/easyjson
-* https://github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser
+* https://github.com/SpherePrime/CLI/vendordeps/buger/jsonparser
 
 #### TLDR
 If you want to skip next sections we have 2 winner: `jsonparser` and `easyjson`.
@@ -268,7 +268,7 @@ With great power comes great responsibility! :)
 
 Each test processes 190 bytes of http log as a JSON record.
 It should read multiple fields.
-https://github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser/blob/master/benchmark/benchmark_small_payload_test.go
+https://github.com/SpherePrime/CLI/vendordeps/buger/jsonparser/blob/master/benchmark/benchmark_small_payload_test.go
 
 Library | time/op | bytes/op | allocs/op 
  ------ | ------- | -------- | -------
@@ -293,7 +293,7 @@ If you look at memory allocation, jsonparser has no rivals, as it makes no data 
 Each test processes a 2.4kb JSON record (based on Clearbit API).
 It should read multiple nested fields and 1 array.
 
-https://github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser/blob/master/benchmark/benchmark_medium_payload_test.go
+https://github.com/SpherePrime/CLI/vendordeps/buger/jsonparser/blob/master/benchmark/benchmark_medium_payload_test.go
 
 | Library | time/op | bytes/op | allocs/op |
 | ------- | ------- | -------- | --------- |
@@ -322,7 +322,7 @@ Each test processes a 24kb JSON record (based on Discourse API)
 It should read 2 arrays, and for each item in array get a few fields.
 Basically it means processing a full JSON file.
 
-https://github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser/blob/master/benchmark/benchmark_large_payload_test.go
+https://github.com/SpherePrime/CLI/vendordeps/buger/jsonparser/blob/master/benchmark/benchmark_large_payload_test.go
 
 | Library | time/op | bytes/op | allocs/op |
 | --- | --- | --- | --- |

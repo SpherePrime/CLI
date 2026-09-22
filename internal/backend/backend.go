@@ -15,15 +15,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/app"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/db"
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/internal/skills"
-	"github.com/dwertyfa288/CLI/internal/ui/util"
-	"github.com/dwertyfa288/CLI/internal/version"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/internal/app"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/skills"
+	"github.com/SpherePrime/CLI/internal/ui/util"
+	"github.com/SpherePrime/CLI/internal/version"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 )
 
 // Common errors returned by backend operations.

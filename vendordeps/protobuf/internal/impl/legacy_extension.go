@@ -7,14 +7,14 @@ package impl
 import (
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/descopts"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/messageset"
-	ptag "github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/tag"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/filedesc"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/pragma"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoregistry"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/descopts"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/messageset"
+	ptag "github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/tag"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/filedesc"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/pragma"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoregistry"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 func (xi *ExtensionInfo) initToLegacy() {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
 )
 
 // JSON formatter outputs the raw token structures as JSON.

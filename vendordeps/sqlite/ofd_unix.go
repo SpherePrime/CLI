@@ -4,11 +4,11 @@
 
 //go:build unix
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
-	sqlite3 "github.com/dwertyfa288/CLI/vendordeps/sqlite/lib"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
+	sqlite3 "github.com/SpherePrime/CLI/vendordeps/sqlite/lib"
 )
 
 // ofdLocking calls the modernc_ofd_locking() gate the transpiled library

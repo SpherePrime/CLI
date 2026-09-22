@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 // fakeASOpts configures the fake authorization server so each test can

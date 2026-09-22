@@ -4,7 +4,7 @@
 
 package cases
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/text/transform"
+import "github.com/SpherePrime/CLI/vendordeps/x/text/transform"
 
 type caseFolder struct{ transform.NopResetter }
 

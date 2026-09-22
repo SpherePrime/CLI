@@ -8,11 +8,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/client"
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/internal/version"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/client"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/version"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // controlServerOpts describes the server restartIfStale will find.

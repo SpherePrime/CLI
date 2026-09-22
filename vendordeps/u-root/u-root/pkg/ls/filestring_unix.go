@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	humanize "github.com/dwertyfa288/CLI/vendordeps/dustin/go-humanize"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	humanize "github.com/SpherePrime/CLI/vendordeps/dustin/go-humanize"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 // FileString implements Stringer.FileString.

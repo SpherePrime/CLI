@@ -26,7 +26,7 @@ package grpclog
 import (
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog/internal"
 )
 
 func init() {

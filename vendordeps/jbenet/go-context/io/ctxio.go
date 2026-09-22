@@ -13,7 +13,7 @@ package ctxio
 import (
 	"io"
 
-	context "github.com/dwertyfa288/CLI/vendordeps/x/net/context"
+	context "github.com/SpherePrime/CLI/vendordeps/x/net/context"
 )
 
 type ioret struct {

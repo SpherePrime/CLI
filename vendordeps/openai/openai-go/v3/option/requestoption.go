@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/auth"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 )
 
 // RequestOption is an option for the requests made by the openai API Client
@@ -197,7 +197,7 @@ func WithQueryDel(key string) RequestOption {
 // WithJSONSet returns a RequestOption that sets the body's JSON value associated with the key.
 // The key accepts a string as defined by the [sjson format].
 //
-// [sjson format]: https://github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson
+// [sjson format]: https://github.com/SpherePrime/CLI/vendordeps/tidwall/sjson
 func WithJSONSet(key string, value any) RequestOption {
 	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) (err error) {
 		var b []byte
@@ -225,7 +225,7 @@ func WithJSONSet(key string, value any) RequestOption {
 // WithJSONDel returns a RequestOption that deletes the body's JSON value associated with the key.
 // The key accepts a string as defined by the [sjson format].
 //
-// [sjson format]: https://github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson
+// [sjson format]: https://github.com/SpherePrime/CLI/vendordeps/tidwall/sjson
 func WithJSONDel(key string) RequestOption {
 	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) (err error) {
 		if buffer, ok := r.Body.(*bytes.Buffer); ok {

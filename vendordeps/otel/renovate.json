@@ -35,7 +35,7 @@
       "groupName": "golang.org/x"
     },
     {
-      "matchPackageNames": ["github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest"],
+      "matchPackageNames": ["github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest"],
       "enabled": false
     }
   ]

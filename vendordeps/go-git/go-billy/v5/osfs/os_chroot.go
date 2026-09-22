@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5/helper/chroot"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5/helper/chroot"
 )
 
 // ChrootOS is a legacy filesystem based on a "soft chroot" of the os filesystem.

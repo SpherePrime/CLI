@@ -7,15 +7,15 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
-	"github.com/dwertyfa288/CLI/vendordeps/api/option"
-	"github.com/dwertyfa288/CLI/vendordeps/api/transport"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"
+	"github.com/SpherePrime/CLI/vendordeps/api/option"
+	"github.com/SpherePrime/CLI/vendordeps/api/transport"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
-	sdkoption "github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
+	sdkoption "github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 )
 
 const DefaultVersion = "vertex-2023-10-16"

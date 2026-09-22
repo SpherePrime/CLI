@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/civil"
+	"github.com/SpherePrime/CLI/vendordeps/go/civil"
 )
 
 type int64SliceJSON []int64

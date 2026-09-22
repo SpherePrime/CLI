@@ -7,7 +7,7 @@ package norm
 import (
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/transform"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/transform"
 )
 
 // Reset implements the Reset method of the transform.Transformer interface.

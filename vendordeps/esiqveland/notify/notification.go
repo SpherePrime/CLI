@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/godbus/dbus/v5"
+	"github.com/SpherePrime/CLI/vendordeps/godbus/dbus/v5"
 )
 
 const (

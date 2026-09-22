@@ -27,7 +27,7 @@
 //     both values, much like [reflect.DeepEqual]. Unlike [reflect.DeepEqual],
 //     unexported fields are not compared by default; they result in panics
 //     unless suppressed by using an [Ignore] option
-//     (see [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/cmpopts.IgnoreUnexported])
+//     (see [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/cmpopts.IgnoreUnexported])
 //     or explicitly compared using the [Exporter] option.
 package cmp
 
@@ -36,9 +36,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/internal/diff"
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/internal/function"
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/internal/value"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/internal/diff"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/internal/function"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/internal/value"
 )
 
 // TODO(≥go1.18): Use any instead of interface{}.
@@ -68,21 +68,21 @@ import (
 //
 // Structs are equal if recursively calling Equal on all fields report equal.
 // If a struct contains unexported fields, Equal panics unless an [Ignore] option
-// (e.g., [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/cmpopts.IgnoreUnexported]) ignores that field
+// (e.g., [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/cmpopts.IgnoreUnexported]) ignores that field
 // or the [Exporter] option explicitly permits comparing the unexported field.
 //
 // Slices are equal if they are both nil or both non-nil, where recursively
 // calling Equal on all non-ignored slice or array elements report equal.
 // Empty non-nil slices and nil slices are not equal; to equate empty slices,
-// consider using [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/cmpopts.EquateEmpty].
+// consider using [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/cmpopts.EquateEmpty].
 //
 // Maps are equal if they are both nil or both non-nil, where recursively
 // calling Equal on all non-ignored map entries report equal.
 // Map keys are equal according to the == operator.
 // To use custom comparisons for map keys, consider using
-// [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/cmpopts.SortMaps].
+// [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/cmpopts.SortMaps].
 // Empty non-nil maps and nil maps are not equal; to equate empty maps,
-// consider using [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/cmpopts.EquateEmpty].
+// consider using [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/cmpopts.EquateEmpty].
 //
 // Pointers and interfaces are equal if they are both nil or both non-nil,
 // where they have the same underlying concrete type and recursively

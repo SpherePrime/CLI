@@ -11,15 +11,15 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/object"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/anthropic"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/internal/httpheaders"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/schema"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/slice"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/genai"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/object"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/internal/httpheaders"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/schema"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/slice"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/genai"
 )
 
 // Name is the name of the Google provider.

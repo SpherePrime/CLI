@@ -1,8 +1,8 @@
 # notify
 
-[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify?tab=doc)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify)
-![Build](https://github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify/actions/workflows/go.yml/badge.svg?branch=master)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/esiqveland/notify?tab=doc)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/esiqveland/notify)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/esiqveland/notify)
+![Build](https://github.com/SpherePrime/CLI/vendordeps/esiqveland/notify/actions/workflows/go.yml/badge.svg?branch=master)
 
 Notify is a go library for interacting with the dbus notification service defined by freedesktop.org:
 https://developer.gnome.org/notification-spec/
@@ -20,13 +20,13 @@ Depends on:
 - v0.11.2: Introduce helpers ExpireTimeoutSetByNotificationServer, ExpireTimeoutNever
 - v0.11.1: Fix a race during Close() #11
 - v0.11.0: re-release under BSD license
-- v0.10.0: stricter types: [some breaking changes](https://github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify/releases/tag/v0.10.0)
-- v0.9.0: [some breaking changes](https://github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify/releases/tag/v0.9.0)
+- v0.10.0: stricter types: [some breaking changes](https://github.com/SpherePrime/CLI/vendordeps/esiqveland/notify/releases/tag/v0.10.0)
+- v0.9.0: [some breaking changes](https://github.com/SpherePrime/CLI/vendordeps/esiqveland/notify/releases/tag/v0.9.0)
 - v0.2.1: dbus: gomod: lock to dbus v5
 - v0.2.0: `Notifier.Close()` no longer calls `.Close()` on the underlying `dbus.Conn`
 
 ## Quick intro
-See example: [main.go](https://github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify/blob/master/example/main.go).
+See example: [main.go](https://github.com/SpherePrime/CLI/vendordeps/esiqveland/notify/blob/master/example/main.go).
 
 Clone repo and go to examples folder:
 

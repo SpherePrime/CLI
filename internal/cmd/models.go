@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/tree"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/vendordeps/mattn/go-isatty"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/vendordeps/mattn/go-isatty"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 var modelsCmd = &cobra.Command{

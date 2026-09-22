@@ -1,6 +1,6 @@
 goos: linux
 goarch: amd64
-pkg: github.com/dwertyfa288/CLI/vendordeps/x/exp/slog
+pkg: github.com/SpherePrime/CLI/vendordeps/x/exp/slog
 cpu: Intel(R) Xeon(R) CPU @ 2.20GHz
 BenchmarkNopLog/attrs-8         	 1000000	      1090 ns/op	       0 B/op	       0 allocs/op
 BenchmarkNopLog/attrs-8         	 1000000	      1097 ns/op	       0 B/op	       0 allocs/op
@@ -33,4 +33,4 @@ BenchmarkNopLog/Ctx-8                    	  959730	      1266 ns/op	       0 B/o
 BenchmarkNopLog/Ctx-8                    	  943473	      1290 ns/op	       0 B/op	       0 allocs/op
 BenchmarkNopLog/Ctx-8                    	  919414	      1259 ns/op	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/dwertyfa288/CLI/vendordeps/x/exp/slog	40.566s
+ok  	github.com/SpherePrime/CLI/vendordeps/x/exp/slog	40.566s

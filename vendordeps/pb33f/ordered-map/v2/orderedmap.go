@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"iter"
 
-	list "github.com/dwertyfa288/CLI/vendordeps/bahlo/generic-list-go"
+	list "github.com/SpherePrime/CLI/vendordeps/bahlo/generic-list-go"
 )
 
 type Pair[K comparable, V any] struct {

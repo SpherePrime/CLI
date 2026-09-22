@@ -1,17 +1,17 @@
 An implementation of grapheme cluster boundaries from [Unicode text segmentation](https://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries) (UAX 29), for Unicode 17.
 
-[![Documentation](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes)
+[![Documentation](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes)
 ![Tests](https://github.com/clipperhouse/uax29/actions/workflows/gotest.yml/badge.svg)
 ![Fuzz](https://github.com/clipperhouse/uax29/actions/workflows/gofuzz.yml/badge.svg)
 
 ## Quick start
 
 ```
-go get github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes
+go get github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes
 ```
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
+import "github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
 
 text := "Hello, 世界. Nice dog! 👍🐶"
 g := graphemes.FromString(text)

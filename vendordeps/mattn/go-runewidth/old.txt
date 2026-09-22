@@ -1,6 +1,6 @@
 goos: darwin
 goarch: arm64
-pkg: github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth
+pkg: github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth
 cpu: Apple M2
 BenchmarkString1WidthAll/regular-8    	      10	 108559258 ns/op	111412145 B/op	 3342342 allocs/op
 BenchmarkString1WidthAll/regular-8    	      10	 108968079 ns/op	111412364 B/op	 3342343 allocs/op
@@ -51,4 +51,4 @@ BenchmarkString1Width768EastAsian/lut-8             	   19771	     60653 ns/op	 
 BenchmarkString1Width768EastAsian/lut-8             	   19737	     61027 ns/op	   76801 B/op	    2304 allocs/op
 BenchmarkString1Width768EastAsian/lut-8             	   19657	     60820 ns/op	   76801 B/op	    2304 allocs/op
 PASS
-ok  	github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth	76.165s
+ok  	github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth	76.165s

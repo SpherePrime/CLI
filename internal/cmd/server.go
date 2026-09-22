@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	primelog "github.com/dwertyfa288/CLI/internal/log"
-	"github.com/dwertyfa288/CLI/internal/server"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/internal/config"
+	primelog "github.com/SpherePrime/CLI/internal/log"
+	"github.com/SpherePrime/CLI/internal/server"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 var serverHost string

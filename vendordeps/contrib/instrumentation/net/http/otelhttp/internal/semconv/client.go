@@ -17,11 +17,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	semconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0/httpconv"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/codes"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	semconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0"
+	"github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0/httpconv"
 )
 
 type HTTPClient struct {

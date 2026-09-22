@@ -1,6 +1,6 @@
 package styles
 
-import "github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
+import "github.com/SpherePrime/CLI/vendordeps/glamour/v2/ansi"
 
 // DraculaStyleConfig is the dracula style.
 var DraculaStyleConfig = ansi.StyleConfig{

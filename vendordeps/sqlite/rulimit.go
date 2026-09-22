@@ -5,10 +5,10 @@
 //go:build linux || darwin || netbsd || openbsd
 // +build linux darwin netbsd openbsd
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 func setMaxOpenFiles(n int64) error {

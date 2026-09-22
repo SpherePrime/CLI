@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/internal/sqlparser"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/internal/sqlparser"
 )
 
 // NewGoMigration creates a new Go migration.

@@ -23,10 +23,10 @@ package xds
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/attributes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/xds/clients"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/attributes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/xds/clients"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 // handshakeClusterNameKey is the type used as the key to store cluster name in

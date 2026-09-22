@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/jsonrepair"
-	"github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonschema"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/jsonrepair"
+	"github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonschema"
 )
 
 // ObjectRepairFunc is a function that attempts to repair invalid JSON output.

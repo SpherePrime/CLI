@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/agent/tools"
-	"github.com/dwertyfa288/CLI/internal/hooks"
-	"github.com/dwertyfa288/CLI/internal/permission"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/agent/tools"
+	"github.com/SpherePrime/CLI/internal/hooks"
+	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 )
 
 // hookedTool wraps a fantasy.AgentTool to run PreToolUse hooks before

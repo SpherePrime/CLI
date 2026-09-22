@@ -4,10 +4,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/ui/chat"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/ui/chat"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // drawTestArea is a fixed area used by the cache tests; it must be at least

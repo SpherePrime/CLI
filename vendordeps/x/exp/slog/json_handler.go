@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/slog/internal/buffer"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/slog/internal/buffer"
 )
 
 // JSONHandler is a Handler that writes Records to an io.Writer as

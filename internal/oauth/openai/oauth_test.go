@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // stubTokenServer serves an OAuth token endpoint that always returns the

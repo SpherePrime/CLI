@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/internal/httpheaders"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/internal/httpheaders"
 )
 
 type callUAKey struct{}

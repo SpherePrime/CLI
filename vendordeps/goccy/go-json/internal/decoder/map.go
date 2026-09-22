@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/runtime"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/runtime"
 )
 
 type mapDecoder struct {
@@ -36,7 +36,7 @@ const (
 	mapMaxElemSize = 128
 )
 
-// See detail: https://github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/pull/283
+// See detail: https://github.com/SpherePrime/CLI/vendordeps/goccy/go-json/pull/283
 func canUseAssignFaststrType(key *runtime.Type, value *runtime.Type) bool {
 	indirectElem := value.Size() > mapMaxElemSize
 	if indirectElem {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // Identity contains information that identifies who the user making the

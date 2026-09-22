@@ -17,7 +17,7 @@
 //
 // This package is a wrapper around the GCE metadata service,
 // as documented at https://cloud.google.com/compute/docs/metadata/overview.
-package metadata // import "github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
+package metadata // import "github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
 
 import (
 	"context"

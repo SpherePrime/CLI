@@ -11,7 +11,7 @@
 // The gzip decompression has not been modified, but remains in the package,
 // so you can use it as a complete replacement for "compress/gzip".
 //
-// See more at https://github.com/dwertyfa288/CLI/vendordeps/klauspost/pgzip
+// See more at https://github.com/SpherePrime/CLI/vendordeps/klauspost/pgzip
 package pgzip
 
 import (
@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/flate"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/flate"
 )
 
 const (

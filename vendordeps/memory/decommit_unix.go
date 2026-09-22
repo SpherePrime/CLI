@@ -4,12 +4,12 @@
 
 //go:build unix
 
-package memory // import "github.com/dwertyfa288/CLI/vendordeps/memory"
+package memory // import "github.com/SpherePrime/CLI/vendordeps/memory"
 
 import (
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 // canDecommit gates the decommit policy: pooled regions past the hot window

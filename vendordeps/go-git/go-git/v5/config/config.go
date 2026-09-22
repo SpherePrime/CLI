@@ -11,10 +11,10 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5/osfs"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/internal/url"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/plumbing"
-	format "github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/plumbing/format/config"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5/osfs"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/internal/url"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/plumbing"
+	format "github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/plumbing/format/config"
 )
 
 const (

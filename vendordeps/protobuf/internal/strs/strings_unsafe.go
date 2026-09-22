@@ -7,7 +7,7 @@ package strs
 import (
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 // UnsafeString returns an unsafe string reference of b.

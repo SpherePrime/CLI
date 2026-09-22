@@ -2,7 +2,7 @@
 
 <!-- x-release-please-start-version -->
 
-<a href="https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"><img src="https://pkg.go.dev/badge/github.com/openai/openai-go.svg" alt="Go Reference"></a>
+<a href="https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"><img src="https://pkg.go.dev/badge/github.com/openai/openai-go.svg" alt="Go Reference"></a>
 
 <!-- x-release-please-end -->
 
@@ -19,7 +19,7 @@ from applications written in Go.
 
 ```go
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3" // imported as openai
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3" // imported as openai
 )
 ```
 
@@ -30,7 +30,7 @@ Or to pin an SDK version (see the Go compatibility note below):
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3@v3.56.0'
+go get -u 'github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3@v3.56.0'
 ```
 
 <!-- x-release-please-end -->
@@ -56,9 +56,9 @@ package main
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/responses"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/responses"
 )
 
 func main() {
@@ -264,7 +264,7 @@ for _, item := range response.Output {
 ```go
 import (
 	"encoding/json"
-	"github.com/dwertyfa288/CLI/vendordeps/invopop/jsonschema"
+	"github.com/SpherePrime/CLI/vendordeps/invopop/jsonschema"
 	// ...
 )
 
@@ -365,7 +365,7 @@ package main
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
 )
 
 func main() {
@@ -756,9 +756,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/webhooks"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/webhooks"
 )
 
 const maxWebhookBodySize = 1 << 20 // 1 MiB
@@ -837,8 +837,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 const maxWebhookBodySize = 1 << 20 // 1 MiB
@@ -1121,9 +1121,9 @@ For cloud workloads (Kubernetes, Azure, Google Cloud Platform), you can use work
 
 ```go
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/auth"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 client := openai.NewClient(
@@ -1167,9 +1167,9 @@ You can implement your own subject token provider:
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/auth"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 type customTokenProvider struct{}
@@ -1220,9 +1220,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/auth"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 certificate, err := tls.LoadX509KeyPair("workload.crt", "workload.key")
@@ -1342,7 +1342,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/bedrock"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/bedrock"
 )
 
 func main() {
@@ -1407,8 +1407,8 @@ package main
 
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/azure"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/azure"
 )
 
 func main() {

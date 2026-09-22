@@ -12,13 +12,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/pkg/browser"
 
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/internal/oauth/copilot"
-	"github.com/dwertyfa288/CLI/internal/oauth/hyper"
-	"github.com/dwertyfa288/CLI/internal/oauth/openai"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/internal/oauth/copilot"
+	"github.com/SpherePrime/CLI/internal/oauth/hyper"
+	"github.com/SpherePrime/CLI/internal/oauth/openai"
 )
 
 // Platforms accepted by Run.

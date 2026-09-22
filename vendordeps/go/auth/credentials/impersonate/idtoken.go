@@ -19,12 +19,12 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/impersonate"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/httptransport"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/impersonate"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/httptransport"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 // IDTokenOptions for generating an impersonated ID token.
@@ -47,7 +47,7 @@ type IDTokenOptions struct {
 
 	// Credentials used in generating the impersonated ID token. If empty, an
 	// attempt will be made to detect credentials from the environment (see
-	// [github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials.DetectDefault]). Optional.
+	// [github.com/SpherePrime/CLI/vendordeps/go/auth/credentials.DetectDefault]). Optional.
 	Credentials *auth.Credentials
 	// Client configures the underlying client used to make network requests
 	// when fetching tokens. If provided this should be a fully-authenticated
@@ -83,7 +83,7 @@ var (
 )
 
 // NewIDTokenCredentials creates an impersonated
-// [github.com/dwertyfa288/CLI/vendordeps/go/auth/Credentials] that returns ID tokens configured
+// [github.com/SpherePrime/CLI/vendordeps/go/auth/Credentials] that returns ID tokens configured
 // with the provided config and using credentials loaded from Application
 // Default Credentials as the base credentials if not provided with the opts.
 // The tokens produced are valid for one hour and are automatically refreshed.

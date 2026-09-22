@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/database"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/database"
 )
 
 // A StoreController is used by the goose package to interact with a database. This type is a

@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/impersonate"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/stsexchange"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/credsfile"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/impersonate"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/stsexchange"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/credsfile"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 const (
@@ -224,7 +224,7 @@ func (o *Options) resolveTokenURL() {
 	}
 }
 
-// NewTokenProvider returns a [github.com/dwertyfa288/CLI/vendordeps/go/auth.TokenProvider]
+// NewTokenProvider returns a [github.com/SpherePrime/CLI/vendordeps/go/auth.TokenProvider]
 // configured with the provided options.
 func NewTokenProvider(opts *Options) (auth.TokenProvider, error) {
 	if err := opts.validate(); err != nil {

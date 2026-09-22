@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/expand"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/interp"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 // maxInnerStderrBytes bounds how much stderr from a failing $(...) is

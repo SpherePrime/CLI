@@ -6,11 +6,11 @@ import (
 	"os"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder/vm"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder/vm_color"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder/vm_color_indent"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder/vm_indent"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder/vm"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder/vm_color"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder/vm_color_indent"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder/vm_indent"
 )
 
 // An Encoder writes JSON values to an output stream.

@@ -17,7 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/idna"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/idna"
 )
 
 // ConfigureTransport configures a net/http HTTP/1 Transport to use HTTP/2.

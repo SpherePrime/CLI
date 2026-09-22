@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/parser"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/printer"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/ast"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/parser"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/printer"
 )
 
 // PathString create Path from string

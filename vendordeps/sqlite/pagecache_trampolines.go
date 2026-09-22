@@ -9,9 +9,9 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	sqlite3 "github.com/dwertyfa288/CLI/vendordeps/sqlite/lib"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	sqlite3 "github.com/SpherePrime/CLI/vendordeps/sqlite/lib"
 )
 
 // The pcache binding owns the sqlite3_pcache_page stub that SQLite sees

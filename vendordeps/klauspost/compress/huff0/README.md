@@ -10,11 +10,11 @@ This can be used for compressing input with a lot of similar input values to the
 This does not perform any multi-byte [dictionary coding](https://en.wikipedia.org/wiki/Dictionary_coder) as LZ coders,
 but it can be used as a secondary step to compressors (like Snappy) that does not do entropy encoding. 
 
-* [Godoc documentation](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0)
+* [Godoc documentation](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0)
 
 ## News
 
-This is used as part of the [zstandard](https://github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/tree/master/zstd#zstd) compression and decompression package.
+This is used as part of the [zstandard](https://github.com/SpherePrime/CLI/vendordeps/klauspost/compress/tree/master/zstd#zstd) compression and decompression package.
 
 This ensures that most functionality is well tested.
 
@@ -25,8 +25,8 @@ This package provides a low level interface that allows to compress single indep
 Each block is separate, and there is no built in integrity checks. 
 This means that the caller should keep track of block sizes and also do checksums if needed.  
 
-Compressing a block is done via the [`Compress1X`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#Compress1X) and 
-[`Compress4X`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#Compress4X) functions.
+Compressing a block is done via the [`Compress1X`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#Compress1X) and 
+[`Compress4X`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#Compress4X) functions.
 You must provide input and will receive the output and maybe an error.
 
 These error values can be returned:
@@ -42,7 +42,7 @@ These error values can be returned:
 
 As can be seen above some of there are errors that will be returned even under normal operation so it is important to handle these.
 
-To reduce allocations you can provide a [`Scratch`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#Scratch) object 
+To reduce allocations you can provide a [`Scratch`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#Scratch) object 
 that can be re-used for successive calls. Both compression and decompression accepts a `Scratch` object, and the same 
 object can be used for both.   
 
@@ -55,27 +55,27 @@ The `Scratch` object will retain state that allows to re-use previous tables for
 
 Huff0 allows for reusing tables from the previous block to save space if that is expected to give better/faster results. 
 
-The Scratch object allows you to set a [`ReusePolicy`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#ReusePolicy) 
+The Scratch object allows you to set a [`ReusePolicy`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#ReusePolicy) 
 that controls this behaviour. See the documentation for details. This can be altered between each block.
 
 Do however note that this information is *not* stored in the output block and it is up to the users of the package to
-record whether [`ReadTable`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#ReadTable) should be called,
+record whether [`ReadTable`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#ReadTable) should be called,
 based on the boolean reported back from the CompressXX call. 
 
 If you want to store the table separate from the data, you can access them as `OutData` and `OutTable` on the 
-[`Scratch`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#Scratch) object.
+[`Scratch`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#Scratch) object.
 
 ## Decompressing
 
-The first part of decoding is to initialize the decoding table through [`ReadTable`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#ReadTable).
+The first part of decoding is to initialize the decoding table through [`ReadTable`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#ReadTable).
 This will initialize the decoding tables. 
 You can supply the complete block to `ReadTable` and it will return the data part of the block 
 which can be given to the decompressor. 
 
-Decompressing is done by calling the [`Decompress1X`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#Scratch.Decompress1X) 
-or [`Decompress4X`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#Scratch.Decompress4X) function.
+Decompressing is done by calling the [`Decompress1X`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#Scratch.Decompress1X) 
+or [`Decompress4X`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#Scratch.Decompress4X) function.
 
-For concurrently decompressing content with a fixed table a stateless [`Decoder`](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0#Decoder) can be requested which will remain correct as long as the scratch is unchanged. The capacity of the provided slice indicates the expected output size.
+For concurrently decompressing content with a fixed table a stateless [`Decoder`](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0#Decoder) can be requested which will remain correct as long as the scratch is unchanged. The capacity of the provided slice indicates the expected output size.
 
 You must provide the output from the compression stage, at exactly the size you got back. If you receive an error back
 your input was likely corrupted. 

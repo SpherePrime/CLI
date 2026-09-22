@@ -2,7 +2,7 @@ package param
 
 import (
 	"encoding/json"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json/sentinel"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json/sentinel"
 	"reflect"
 )
 

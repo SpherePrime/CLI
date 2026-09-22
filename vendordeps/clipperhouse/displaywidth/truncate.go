@@ -3,7 +3,7 @@ package displaywidth
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
 )
 
 // TruncateString truncates a string to the given maxWidth, and appends the

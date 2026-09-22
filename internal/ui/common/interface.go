@@ -1,7 +1,7 @@
 package common
 
 import (
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 // Model represents a common interface for UI components.

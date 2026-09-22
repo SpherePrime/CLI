@@ -4,7 +4,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html"
 )
 
 // used to determine if a set (map[*html.Node]bool) should be used

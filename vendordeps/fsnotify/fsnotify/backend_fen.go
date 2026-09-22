@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fsnotify/fsnotify/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/fsnotify/fsnotify/internal"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 type fen struct {

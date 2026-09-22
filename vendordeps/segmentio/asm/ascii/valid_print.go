@@ -1,6 +1,6 @@
 package ascii
 
-import "github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/internal/unsafebytes"
+import "github.com/SpherePrime/CLI/vendordeps/segmentio/asm/internal/unsafebytes"
 
 // ValidPrint returns true if b contains only printable ASCII characters.
 func ValidPrint(b []byte) bool {

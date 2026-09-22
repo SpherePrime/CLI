@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded"
 )
 
 // meterProvider is a placeholder for a configured SDK MeterProvider.

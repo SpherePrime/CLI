@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	smithysync "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/sync"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	smithysync "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/sync"
 )
 
 // EventStreamWriter writes events to a stream using a ClientProtocol.

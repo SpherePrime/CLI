@@ -7,7 +7,7 @@
 package sqlite3
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
 )
 
 // Format and write a message to the log if logging is enabled.

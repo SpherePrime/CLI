@@ -25,8 +25,8 @@ import (
 	"sync"
 	"time"
 
-	binlogpb "github.com/dwertyfa288/CLI/vendordeps/grpc/binarylog/grpc_binarylog_v1"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
+	binlogpb "github.com/SpherePrime/CLI/vendordeps/grpc/binarylog/grpc_binarylog_v1"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
 )
 
 var (

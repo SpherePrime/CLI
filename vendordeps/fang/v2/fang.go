@@ -9,11 +9,11 @@ import (
 	"os/signal"
 	"runtime/debug"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
-	mango "github.com/dwertyfa288/CLI/vendordeps/muesli/mango-cobra"
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/roff"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
+	mango "github.com/SpherePrime/CLI/vendordeps/muesli/mango-cobra"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/roff"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 const shaLen = 7

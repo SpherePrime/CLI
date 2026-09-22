@@ -3,7 +3,7 @@ package http
 import (
 	"time"
 
-	smithytime "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/time"
+	smithytime "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/time"
 )
 
 // ParseTime parses a time string like the HTTP Date header. This uses a more

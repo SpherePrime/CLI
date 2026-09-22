@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/document"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/document"
 )
 
 // ShapeSerializer implements the marshaling of an in-code representation of a

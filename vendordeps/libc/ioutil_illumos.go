@@ -6,7 +6,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"fmt"
@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 	"unsafe"
-	// "github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	// "github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	// "github.com/dwertyfa288/CLI/vendordeps/libc/fcntl"
+	// "github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	// "github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	// "github.com/SpherePrime/CLI/vendordeps/libc/fcntl"
 )
 
 // Random number state.

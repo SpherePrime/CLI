@@ -6,7 +6,7 @@ package metric
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded"
 )
 
 // Int64Counter is an instrument that records increasing int64 values.

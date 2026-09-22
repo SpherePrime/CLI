@@ -7,9 +7,9 @@ package chacha20poly1305
 import (
 	"encoding/binary"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/chacha20"
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/internal/alias"
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/internal/poly1305"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/chacha20"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/internal/alias"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/internal/poly1305"
 )
 
 func writeWithPadding(p *poly1305.MAC, b []byte) {

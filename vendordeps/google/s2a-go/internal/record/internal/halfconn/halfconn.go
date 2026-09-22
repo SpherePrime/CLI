@@ -24,9 +24,9 @@ import (
 	"fmt"
 	"sync"
 
-	s2apb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/record/internal/aeadcrypter"
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/cryptobyte"
+	s2apb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/record/internal/aeadcrypter"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/cryptobyte"
 )
 
 // The constants below were taken from Section 7.2 and 7.3 in

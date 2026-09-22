@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oauth2adapt helps converts types used in [github.com/dwertyfa288/CLI/vendordeps/go/auth]
-// and [github.com/dwertyfa288/CLI/vendordeps/x/oauth2].
+// Package oauth2adapt helps converts types used in [github.com/SpherePrime/CLI/vendordeps/go/auth]
+// and [github.com/SpherePrime/CLI/vendordeps/x/oauth2].
 package oauth2adapt
 
 import (
@@ -21,9 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 )
 
 // TokenProviderFromTokenSource converts any [golang.org/x/oauth2.TokenSource]
-// into a [github.com/dwertyfa288/CLI/vendordeps/go/auth.TokenProvider].
+// into a [github.com/SpherePrime/CLI/vendordeps/go/auth.TokenProvider].
 func TokenProviderFromTokenSource(ts oauth2.TokenSource) auth.TokenProvider {
 	return &tokenProviderAdapter{ts: ts}
 }
@@ -43,7 +43,7 @@ type tokenProviderAdapter struct {
 	ts oauth2.TokenSource
 }
 
-// Token fulfills the [github.com/dwertyfa288/CLI/vendordeps/go/auth.TokenProvider] interface. It
+// Token fulfills the [github.com/SpherePrime/CLI/vendordeps/go/auth.TokenProvider] interface. It
 // is a light wrapper around the underlying TokenSource.
 func (tp *tokenProviderAdapter) Token(context.Context) (*auth.Token, error) {
 	tok, err := tp.ts.Token()
@@ -73,7 +73,7 @@ func (tp *tokenProviderAdapter) Token(context.Context) (*auth.Token, error) {
 }
 
 // TokenSourceFromTokenProvider converts any
-// [github.com/dwertyfa288/CLI/vendordeps/go/auth.TokenProvider] into a
+// [github.com/SpherePrime/CLI/vendordeps/go/auth.TokenProvider] into a
 // [golang.org/x/oauth2.TokenSource].
 func TokenSourceFromTokenProvider(tp auth.TokenProvider) oauth2.TokenSource {
 	return &tokenSourceAdapter{tp: tp}
@@ -119,8 +119,8 @@ func (ts *tokenSourceAdapter) Token() (*oauth2.Token, error) {
 	return tok2, nil
 }
 
-// AuthCredentialsFromOauth2Credentials converts a [github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google.Credentials]
-// to a [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials].
+// AuthCredentialsFromOauth2Credentials converts a [github.com/SpherePrime/CLI/vendordeps/x/oauth2/google.Credentials]
+// to a [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials].
 func AuthCredentialsFromOauth2Credentials(creds *google.Credentials) *auth.Credentials {
 	if creds == nil {
 		return nil
@@ -137,8 +137,8 @@ func AuthCredentialsFromOauth2Credentials(creds *google.Credentials) *auth.Crede
 	})
 }
 
-// Oauth2CredentialsFromAuthCredentials converts a [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials]
-// to a [github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google.Credentials].
+// Oauth2CredentialsFromAuthCredentials converts a [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials]
+// to a [github.com/SpherePrime/CLI/vendordeps/x/oauth2/google.Credentials].
 func Oauth2CredentialsFromAuthCredentials(creds *auth.Credentials) *google.Credentials {
 	if creds == nil {
 		return nil
@@ -165,7 +165,7 @@ type oauth2Error struct {
 
 // AddRetrieveErrorToAuthError returns the same error provided and adds a
 // [golang.org/x/oauth2.RetrieveError] to the error chain by setting the `Err` field on the
-// [github.com/dwertyfa288/CLI/vendordeps/go/auth.Error].
+// [github.com/SpherePrime/CLI/vendordeps/go/auth.Error].
 func AddRetrieveErrorToAuthError(err *auth.Error) *auth.Error {
 	if err == nil {
 		return nil
@@ -186,7 +186,7 @@ func AddRetrieveErrorToAuthError(err *auth.Error) *auth.Error {
 	return err
 }
 
-// AuthErrorFromRetrieveError returns an [github.com/dwertyfa288/CLI/vendordeps/go/auth.Error] that
+// AuthErrorFromRetrieveError returns an [github.com/SpherePrime/CLI/vendordeps/go/auth.Error] that
 // wraps the provided [golang.org/x/oauth2.RetrieveError].
 func AuthErrorFromRetrieveError(err *oauth2.RetrieveError) *auth.Error {
 	if err == nil {

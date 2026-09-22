@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 import (
 	"fmt"
@@ -10,10 +10,10 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	sqlite3 "github.com/dwertyfa288/CLI/vendordeps/sqlite/lib"
-	"github.com/dwertyfa288/CLI/vendordeps/sqlite/vtab"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	sqlite3 "github.com/SpherePrime/CLI/vendordeps/sqlite/lib"
+	"github.com/SpherePrime/CLI/vendordeps/sqlite/vtab"
 )
 
 func init() {
@@ -123,7 +123,7 @@ func registerModule(name string, m vtab.Module) error {
 
 // RegisterModule registers a virtual table module on d alone, so it reaches
 // only the connections d opens. It is the per-driver counterpart of
-// [github.com/dwertyfa288/CLI/vendordeps/sqlite/vtab.RegisterModule], which reaches it by way of the
+// [github.com/SpherePrime/CLI/vendordeps/sqlite/vtab.RegisterModule], which reaches it by way of the
 // *sql.DB passed as that function's first argument.
 //
 // Connections d opens also receive every module registered through the
@@ -137,7 +137,7 @@ func registerModule(name string, m vtab.Module) error {
 // that cannot collide, or register through the package-level path instead.
 //
 // Registration applies to new connections only; see
-// [github.com/dwertyfa288/CLI/vendordeps/sqlite/vtab.RegisterModule] for the full contract.
+// [github.com/SpherePrime/CLI/vendordeps/sqlite/vtab.RegisterModule] for the full contract.
 func (d *Driver) RegisterModule(name string, m vtab.Module) (err error) {
 	if dmesgs {
 		defer func() {

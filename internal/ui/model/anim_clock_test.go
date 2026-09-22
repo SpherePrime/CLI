@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/ui/chat"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/ui/chat"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // spinTestItem is a chat item with a controllable spinner.

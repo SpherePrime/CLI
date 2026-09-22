@@ -1,6 +1,6 @@
 package tea
 
-import "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+import "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 
 // ColorProfileMsg is a message that describes the terminal's color profile.
 // This message is send to the program's update function when the program is

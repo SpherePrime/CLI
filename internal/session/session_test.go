@@ -3,8 +3,8 @@ package session
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/db"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestEstimatedUsageStateSurvivesFetchModifySave(t *testing.T) {

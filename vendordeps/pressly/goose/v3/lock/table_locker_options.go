@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/lock/internal/table"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/lock/internal/table"
 )
 
 const (

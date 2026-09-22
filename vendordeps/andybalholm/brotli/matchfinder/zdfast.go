@@ -11,7 +11,7 @@ const (
 )
 
 // ZDFast is a MatchFinder based on the "Default" setting in
-// github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/zstd.
+// github.com/SpherePrime/CLI/vendordeps/klauspost/compress/zstd.
 type ZDFast struct {
 	MaxDistance int
 

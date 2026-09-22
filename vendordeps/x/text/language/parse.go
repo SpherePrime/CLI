@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/internal/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/internal/language"
 )
 
 // ValueError is returned by any of the parsing functions when the

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/shared"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/shared"
 )
 
 const (

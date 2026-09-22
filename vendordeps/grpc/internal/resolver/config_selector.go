@@ -23,8 +23,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/serviceconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 // ConfigSelector controls what configuration to use for every RPC.

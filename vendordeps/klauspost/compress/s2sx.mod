@@ -1,3 +1,3 @@
-module github.com/dwertyfa288/CLI/vendordeps/klauspost/compress
+module github.com/SpherePrime/CLI/vendordeps/klauspost/compress
 
 go 1.22

@@ -5,6 +5,6 @@
 //go:build amd64 || amd64p32 || arm64 || arm64be || mips64 || mips64le || mips64p32 || mips64p32le || ppc64 || ppc64le || sparc64 || riscv64 || loong64
 // +build amd64 amd64p32 arm64 arm64be mips64 mips64le mips64p32 mips64p32le ppc64 ppc64le sparc64 riscv64 loong64
 
-package memory // import "github.com/dwertyfa288/CLI/vendordeps/memory"
+package memory // import "github.com/SpherePrime/CLI/vendordeps/memory"
 
 type rawmem [1<<50 - 1]byte

@@ -28,10 +28,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/transport/cert"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/transport/cert"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 )
 
 const (
@@ -137,7 +137,7 @@ type GRPCTransportCredentials struct {
 }
 
 // GetGRPCTransportCredsAndEndpoint returns an instance of
-// [github.com/dwertyfa288/CLI/vendordeps/grpc/credentials.TransportCredentials], and the
+// [github.com/SpherePrime/CLI/vendordeps/grpc/credentials.TransportCredentials], and the
 // corresponding endpoint and transport type to use for GRPC client.
 func GetGRPCTransportCredsAndEndpoint(opts *Options) (*GRPCTransportCredentials, error) {
 	config, err := getTransportConfig(opts)

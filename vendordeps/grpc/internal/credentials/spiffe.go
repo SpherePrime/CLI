@@ -26,7 +26,7 @@ import (
 	"crypto/x509"
 	"net/url"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 )
 
 var logger = grpclog.Component("credentials")

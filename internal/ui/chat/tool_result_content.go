@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/internal/diffdetect"
-	"github.com/dwertyfa288/CLI/internal/stringext"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/internal/diffdetect"
+	"github.com/SpherePrime/CLI/internal/stringext"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
 
 type toolResultContentWidths struct {

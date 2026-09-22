@@ -28,7 +28,7 @@ package tap
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
 )
 
 // Info defines the relevant information needed by the handles.

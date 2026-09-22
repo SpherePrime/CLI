@@ -6,7 +6,7 @@ package interp
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 const illegalTok = 0

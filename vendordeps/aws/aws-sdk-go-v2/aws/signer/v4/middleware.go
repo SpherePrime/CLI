@@ -9,14 +9,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	awsmiddleware "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
-	v4Internal "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/internal/v4"
-	internalauth "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/tracing"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	awsmiddleware "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
+	v4Internal "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/internal/v4"
+	internalauth "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/auth"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/tracing"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 const computePayloadHashMiddlewareID = "ComputePayloadHash"
@@ -404,7 +404,7 @@ type payloadHashKey struct{}
 
 // GetPayloadHash retrieves the payload hash to use for signing
 //
-// Scoped to stack values. Use github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
+// Scoped to stack values. Use github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
 // to clear all stack values.
 func GetPayloadHash(ctx context.Context) (v string) {
 	v, _ = middleware.GetStackValue(ctx, payloadHashKey{}).(string)
@@ -413,7 +413,7 @@ func GetPayloadHash(ctx context.Context) (v string) {
 
 // SetPayloadHash sets the payload hash to be used for signing the request
 //
-// Scoped to stack values. Use github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
+// Scoped to stack values. Use github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
 // to clear all stack values.
 func SetPayloadHash(ctx context.Context, hash string) context.Context {
 	return middleware.WithStackValue(ctx, payloadHashKey{}, hash)

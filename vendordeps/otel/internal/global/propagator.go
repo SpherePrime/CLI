@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/propagation"
+	"github.com/SpherePrime/CLI/vendordeps/otel/propagation"
 )
 
 // textMapPropagator is a default TextMapPropagator that delegates calls to a

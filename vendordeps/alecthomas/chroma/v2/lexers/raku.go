@@ -6,9 +6,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dlclark/regexp2/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dlclark/regexp2/v2"
 
-	. "github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2" // nolint
+	. "github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2" // nolint
 )
 
 // Raku lexer.

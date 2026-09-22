@@ -35,8 +35,8 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yaml/v4"
-	"github.com/dwertyfa288/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/cassette"
+	"github.com/SpherePrime/CLI/vendordeps/yaml/v4"
+	"github.com/SpherePrime/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/cassette"
 )
 
 type MatcherFunc = cassette.MatcherFunc

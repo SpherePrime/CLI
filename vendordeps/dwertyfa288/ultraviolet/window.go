@@ -1,6 +1,6 @@
 package uv
 
-import "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+import "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 
 // Window represents a rectangular area on the screen. It can be a root window
 // with no parent, or a sub-window with a parent window. A window can have its

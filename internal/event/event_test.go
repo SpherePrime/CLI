@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/posthog/posthog-go"
+	"github.com/SpherePrime/CLI/vendordeps/posthog/posthog-go"
 )
 
 func TestSetNonInteractive(t *testing.T) {

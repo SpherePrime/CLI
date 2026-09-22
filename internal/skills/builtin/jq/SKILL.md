@@ -5,7 +5,7 @@ description: Use when the user needs to query, filter, reshape, extract, create,
 
 # jq — Built-in JSON Processor
 
-Prime ships a built-in `jq` command (via `github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq`) available
+Prime ships a built-in `jq` command (via `github.com/SpherePrime/CLI/vendordeps/itchyny/gojq`) available
 in the bash tool. No external binary is required.
 
 ## Supported Flags

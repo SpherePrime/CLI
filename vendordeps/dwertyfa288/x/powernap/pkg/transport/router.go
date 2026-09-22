@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sourcegraph/jsonrpc2"
+	"github.com/SpherePrime/CLI/vendordeps/sourcegraph/jsonrpc2"
 )
 
 // Handler is a function that handles incoming messages.

@@ -4,7 +4,7 @@
 package otel
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/otel/internal/global"
+	"github.com/SpherePrime/CLI/vendordeps/otel/internal/global"
 )
 
 // Compile-time check global.ErrDelegator implements ErrorHandler.

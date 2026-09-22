@@ -5,7 +5,7 @@
 // Package bmp implements a BMP image decoder and encoder.
 //
 // The BMP specification is at http://www.digicamsoft.com/bmp/bmp.html.
-package bmp // import "github.com/dwertyfa288/CLI/vendordeps/x/image/bmp"
+package bmp // import "github.com/SpherePrime/CLI/vendordeps/x/image/bmp"
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 	"image/color"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/internal/safemath"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/internal/safemath"
 )
 
 // ErrUnsupported means that the input BMP image uses a valid but unsupported

@@ -3,7 +3,7 @@ package uv
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // scrollOptimize optimizes the screen to transform the old buffer into the new

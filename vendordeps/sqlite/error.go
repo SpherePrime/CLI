@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 import (
-	sqlite3 "github.com/dwertyfa288/CLI/vendordeps/sqlite/lib"
+	sqlite3 "github.com/SpherePrime/CLI/vendordeps/sqlite/lib"
 )
 
 // Error represents sqlite library error code.

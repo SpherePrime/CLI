@@ -8,13 +8,13 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
 
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/api/option"
-	gtransport "github.com/dwertyfa288/CLI/vendordeps/api/transport/grpc"
-	htransport "github.com/dwertyfa288/CLI/vendordeps/api/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal"
+	"github.com/SpherePrime/CLI/vendordeps/api/option"
+	gtransport "github.com/SpherePrime/CLI/vendordeps/api/transport/grpc"
+	htransport "github.com/SpherePrime/CLI/vendordeps/api/transport/http"
 )
 
 // NewHTTPClient returns an HTTP client for use communicating with a Google cloud

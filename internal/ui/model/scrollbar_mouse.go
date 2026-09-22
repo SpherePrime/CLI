@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 // handleScrollbarMouseDown grabs the sidebar or chat scrollbar thumb sitting

@@ -4,7 +4,7 @@ package notification
 
 // NativeSupported reports whether native OS notifications are available on
 // this platform. It is false on illumos/solaris: beeep pulls in
-// github.com/dwertyfa288/CLI/vendordeps/godbus/dbus/v5, whose connection code is excluded on the solaris
+// github.com/SpherePrime/CLI/vendordeps/godbus/dbus/v5, whose connection code is excluded on the solaris
 // build tag (which illumos also satisfies) and has no replacement, so it fails
 // to compile. OSC and bell backends still work, so callers hide the native
 // option and fall back to a terminal-based backend.

@@ -51,14 +51,14 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/app/internal/callfn"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/key"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/lifecycle"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/paint"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/size"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/touch"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/geom"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/internal/mobileinit"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/app/internal/callfn"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/key"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/lifecycle"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/paint"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/size"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/touch"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/geom"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/internal/mobileinit"
 )
 
 // RunOnJVM runs fn on a new goroutine locked to an OS thread with a JNIEnv.

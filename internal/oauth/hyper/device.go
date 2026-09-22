@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/agent/hyper"
-	"github.com/dwertyfa288/CLI/internal/event"
-	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/event"
+	"github.com/SpherePrime/CLI/internal/oauth"
 )
 
 // DeviceAuthResponse contains the response from the device authorization endpoint.

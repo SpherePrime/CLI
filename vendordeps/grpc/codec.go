@@ -19,9 +19,9 @@
 package grpc
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/encoding"
-	_ "github.com/dwertyfa288/CLI/vendordeps/grpc/encoding/proto" // to register the Codec for "proto"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/encoding"
+	_ "github.com/SpherePrime/CLI/vendordeps/grpc/encoding/proto" // to register the Codec for "proto"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
 )
 
 // baseCodec captures the new encoding.CodecV2 interface without the Name

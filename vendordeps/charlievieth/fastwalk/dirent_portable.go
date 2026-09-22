@@ -11,7 +11,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk/internal/fmtdirent"
+	"github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk/internal/fmtdirent"
 )
 
 var _ DirEntry = (*portableDirent)(nil)

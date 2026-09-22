@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/url"
 
-	_ "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+	_ "github.com/SpherePrime/CLI/vendordeps/sqlite"
 )
 
 func openDBReadOnly(dbPath string) (*sql.DB, error) {

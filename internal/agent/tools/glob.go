@@ -14,10 +14,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/filepathext"
-	"github.com/dwertyfa288/CLI/internal/fsext"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/filepathext"
+	"github.com/SpherePrime/CLI/internal/fsext"
 )
 
 const GlobToolName = "glob"

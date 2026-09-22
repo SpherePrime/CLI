@@ -1,6 +1,6 @@
 package internal
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+import "github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 
 var names = []struct {
 	n string

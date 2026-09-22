@@ -5,7 +5,7 @@ import (
 	stdjson "encoding/json"
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/encoding/json/shims"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/encoding/json/shims"
 )
 
 type Option func(*encOpts)

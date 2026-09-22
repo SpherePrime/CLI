@@ -1,9 +1,9 @@
 # Colorprofile
 
 <p>
-    <a href="https://github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile/releases"><img src="https://img.shields.io/github/release/dwertyfa288/colorprofile.svg" alt="Latest Release"></a>
-    <a href="https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile?tab=doc"><img src="https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile?status.svg" alt="GoDoc"></a>
-    <a href="https://github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile/actions"><img src="https://github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
+    <a href="https://github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile/releases"><img src="https://img.shields.io/github/release/dwertyfa288/colorprofile.svg" alt="Latest Release"></a>
+    <a href="https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile?tab=doc"><img src="https://godoc.org/github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile?status.svg" alt="GoDoc"></a>
+    <a href="https://github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile/actions"><img src="https://github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
 </p>
 
 A simple, powerful—and at times magical—package for detecting terminal color
@@ -14,7 +14,7 @@ profiles and performing color (and CSI) degradation.
 Detecting the terminal’s color profile is easy.
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+import "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 
 // Detect the color profile. If you’re planning on writing to stderr you'd want
 // to use os.Stderr instead.
@@ -86,7 +86,7 @@ fmt.Fprintf(w, myFancyANSI) // not as fancy
 
 See [contributing][contribute].
 
-[contribute]: https://github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile/contribute
+[contribute]: https://github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile/contribute
 
 ## Feedback
 

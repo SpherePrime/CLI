@@ -31,11 +31,11 @@ import (
 	"errors"
 	"fmt"
 
-	spb "github.com/dwertyfa288/CLI/vendordeps/genproto/googleapis/rpc/status"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/protoadapt"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/anypb"
+	spb "github.com/SpherePrime/CLI/vendordeps/genproto/googleapis/rpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/protoadapt"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/anypb"
 )
 
 // Status represents an RPC status code, message, and details.  It is immutable

@@ -5,6 +5,6 @@
 //go:build windows
 // +build windows
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 func setMaxOpenFiles(n int) error { return nil }

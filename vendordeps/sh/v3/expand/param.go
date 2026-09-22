@@ -13,9 +13,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/pattern"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/internal"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/pattern"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 func nodeLit(node syntax.Node) string {

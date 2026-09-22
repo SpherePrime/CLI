@@ -1,8 +1,8 @@
 # ico
 
-[![tests](https://github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico/workflows/tests/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico/actions?query=workflow%3Atests)
-[![Go Reference](https://pkg.go.dev/badge/github.com/sergeymakinen/go-ico.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico)
+[![tests](https://github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico/workflows/tests/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico/actions?query=workflow%3Atests)
+[![Go Reference](https://pkg.go.dev/badge/github.com/sergeymakinen/go-ico.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico)
 [![codecov](https://codecov.io/gh/sergeymakinen/go-ico/branch/main/graph/badge.svg)](https://codecov.io/gh/sergeymakinen/go-ico)
 
 Package ico implements an ICO file decoder and encoder.
@@ -15,13 +15,13 @@ See https://en.wikipedia.org/wiki/ICO_(file_format) for more information.
 Use go get:
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico
+go get github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico
 ```
 
 Then import the package into your own code:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico"
+import "github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico"
 ```
 
 ## Example

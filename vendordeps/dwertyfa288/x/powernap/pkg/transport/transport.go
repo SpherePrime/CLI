@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sourcegraph/jsonrpc2"
+	"github.com/SpherePrime/CLI/vendordeps/sourcegraph/jsonrpc2"
 )
 
 // Transport handles the low-level communication with the language server.

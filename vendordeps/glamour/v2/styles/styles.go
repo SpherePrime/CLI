@@ -4,7 +4,7 @@ package styles
 //go:generate go run ../internal/generate-style-json
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2/ansi"
 )
 
 const (

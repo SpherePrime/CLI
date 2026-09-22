@@ -1,7 +1,7 @@
 # Unicode Text Segmentation for Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/rivo/uniseg.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg)
-[![Go Report](https://img.shields.io/badge/go%20report-A%2B-brightgreen.svg)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg)
+[![Go Reference](https://pkg.go.dev/badge/github.com/rivo/uniseg.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg)
+[![Go Report](https://img.shields.io/badge/go%20report-A%2B-brightgreen.svg)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg)
 
 This Go package implements Unicode Text Segmentation according to [Unicode Standard Annex #29](https://unicode.org/reports/tr29/), Unicode Line Breaking according to [Unicode Standard Annex #14](https://unicode.org/reports/tr14/) (Unicode version 15.0.0), and monospace font string width calculation similar to [wcwidth](https://man7.org/linux/man-pages/man3/wcwidth.3.html).
 
@@ -33,12 +33,12 @@ Line breaking, also known as word wrapping, is the process of breaking a section
 
 ### Monospace Width
 
-Most terminals or text displays / text editors using a monospace font (for example source code editors) use a fixed width for each character. Some characters such as emojis or characters found in Asian and other languages may take up more than one character cell. This package provides tools to determine the number of cells a string will take up when displayed in a monospace font. See [here](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#hdr-Monospace_Width) for more information.
+Most terminals or text displays / text editors using a monospace font (for example source code editors) use a fixed width for each character. Some characters such as emojis or characters found in Asian and other languages may take up more than one character cell. This package provides tools to determine the number of cells a string will take up when displayed in a monospace font. See [here](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#hdr-Monospace_Width) for more information.
 
 ## Installation
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg
+go get github.com/SpherePrime/CLI/vendordeps/rivo/uniseg
 ```
 
 ## Examples
@@ -59,7 +59,7 @@ fmt.Println(width)
 // 5
 ```
 
-### Using the [`Graphemes`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#Graphemes) Class
+### Using the [`Graphemes`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#Graphemes) Class
 
 This is the most convenient method of iterating over grapheme clusters:
 
@@ -71,7 +71,7 @@ for gr.Next() {
 // [1f44d 1f3fc] [21]
 ```
 
-### Using the [`Step`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#Step) or [`StepString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#StepString) Function
+### Using the [`Step`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#Step) or [`StepString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#StepString) Function
 
 This avoids allocating a new `Graphemes` object but it requires the handling of states and boundaries:
 
@@ -88,7 +88,7 @@ for len(str) > 0 {
 
 ### Advanced Examples
 
-The [`Graphemes`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#Graphemes) class offers the most convenient way to access all functionality of this package. But in some cases, it may be better to use the specialized functions directly. For example, if you're only interested in word segmentation, use [`FirstWord`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstWord) or [`FirstWordInString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstWordInString):
+The [`Graphemes`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#Graphemes) class offers the most convenient way to access all functionality of this package. But in some cases, it may be better to use the specialized functions directly. For example, if you're only interested in word segmentation, use [`FirstWord`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstWord) or [`FirstWordInString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstWordInString):
 
 ```go
 str := "Hello, world!"
@@ -107,13 +107,13 @@ for len(str) > 0 {
 
 Similarly, use
 
-- [`FirstGraphemeCluster`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstGraphemeCluster) or [`FirstGraphemeClusterInString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstGraphemeClusterInString) for grapheme cluster determination only,
-- [`FirstSentence`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstSentence) or [`FirstSentenceInString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstSentenceInString) for sentence segmentation only, and
-- [`FirstLineSegment`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstLineSegment) or [`FirstLineSegmentInString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstLineSegmentInString) for line breaking / word wrapping (although using [`Step`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#Step) or [`StepString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#StepString) is preferred as it will observe grapheme cluster boundaries).
+- [`FirstGraphemeCluster`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstGraphemeCluster) or [`FirstGraphemeClusterInString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstGraphemeClusterInString) for grapheme cluster determination only,
+- [`FirstSentence`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstSentence) or [`FirstSentenceInString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstSentenceInString) for sentence segmentation only, and
+- [`FirstLineSegment`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstLineSegment) or [`FirstLineSegmentInString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstLineSegmentInString) for line breaking / word wrapping (although using [`Step`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#Step) or [`StepString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#StepString) is preferred as it will observe grapheme cluster boundaries).
 
-If you're only interested in the width of characters, use [`FirstGraphemeCluster`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstGraphemeCluster) or [`FirstGraphemeClusterInString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#FirstGraphemeClusterInString). It is much faster than using [`Step`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#Step), [`StepString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#StepString), or the [`Graphemes`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#Graphemes) class because it does not include the logic for word / sentence / line boundaries.
+If you're only interested in the width of characters, use [`FirstGraphemeCluster`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstGraphemeCluster) or [`FirstGraphemeClusterInString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#FirstGraphemeClusterInString). It is much faster than using [`Step`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#Step), [`StepString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#StepString), or the [`Graphemes`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#Graphemes) class because it does not include the logic for word / sentence / line boundaries.
 
-Finally, if you need to reverse a string while preserving grapheme clusters, use [`ReverseString`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg#ReverseString):
+Finally, if you need to reverse a string while preserving grapheme clusters, use [`ReverseString`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg#ReverseString):
 
 ```go
 fmt.Println(uniseg.ReverseString("🇩🇪🏳️‍🌈"))
@@ -122,7 +122,7 @@ fmt.Println(uniseg.ReverseString("🇩🇪🏳️‍🌈"))
 
 ## Documentation
 
-Refer to https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg for the package's documentation.
+Refer to https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/rivo/uniseg for the package's documentation.
 
 ## Dependencies
 

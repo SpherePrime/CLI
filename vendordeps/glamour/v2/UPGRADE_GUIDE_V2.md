@@ -10,21 +10,21 @@ This guide will help you migrate from Glamour v1 to v2. Most upgrades are straig
 -import "github.com/dwertyfa288/glamour"
 -import "github.com/dwertyfa288/glamour/ansi"
 -import "github.com/dwertyfa288/glamour/styles"
-+import "github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
-+import "github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
-+import "github.com/dwertyfa288/CLI/vendordeps/glamour/v2/styles"
++import "github.com/SpherePrime/CLI/vendordeps/glamour/v2"
++import "github.com/SpherePrime/CLI/vendordeps/glamour/v2/ansi"
++import "github.com/SpherePrime/CLI/vendordeps/glamour/v2/styles"
 ```
 
 ## Update Dependencies
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/glamour/v2@latest
+go get github.com/SpherePrime/CLI/vendordeps/glamour/v2@latest
 ```
 
 If you need color downsampling (most apps do):
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2@latest
+go get github.com/SpherePrime/CLI/vendordeps/lipgloss/v2@latest
 ```
 
 ## Remove Auto Style Detection
@@ -57,7 +57,7 @@ r, _ := glamour.NewTermRenderer(glamour.WithStylePath("dracula"))
 Want to detect the terminal background yourself? You can use Lip Gloss:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 
 // Detect if we're on a dark background
 isDark := lipgloss.HasDarkBackground()
@@ -82,7 +82,7 @@ r, _ := glamour.NewTermRenderer(glamour.WithStylePath(style))
 -)
 -out, _ := r.Render(markdown)
 -fmt.Print(out)
-+import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
++import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 +
 +r, _ := glamour.NewTermRenderer(
 +    glamour.WithWordWrap(80),
@@ -125,7 +125,7 @@ If you maintain custom `StyleConfig` definitions, update the import paths:
 
 ```diff
 -import "github.com/dwertyfa288/glamour/ansi"
-+import "github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
++import "github.com/SpherePrime/CLI/vendordeps/glamour/v2/ansi"
 
  var myStyle = &ansi.StyleConfig{
      // Your custom style definition
@@ -147,7 +147,7 @@ If you implemented custom margin or padding writers using `ansi.MarginWriter`:
 2. The new `IndentWriter` and `PaddingWriter` types are available for custom use
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
+import "github.com/SpherePrime/CLI/vendordeps/glamour/v2/ansi"
 
 mw := ansi.NewMarginWriter(ctx, w, style)
 defer mw.Close()  // Important: always close writers now
@@ -197,8 +197,8 @@ package main
 
 import (
     "fmt"
-    "github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
-    "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+    "github.com/SpherePrime/CLI/vendordeps/glamour/v2"
+    "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 func main() {
@@ -233,7 +233,7 @@ After making changes:
 Make sure you've updated your `go.mod`:
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/glamour/v2
+go get github.com/SpherePrime/CLI/vendordeps/glamour/v2
 ```
 
 And that all imports use the new path with `/v2`.

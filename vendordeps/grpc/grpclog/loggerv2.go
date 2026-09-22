@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog/internal"
 )
 
 // LoggerV2 does underlying logging work for grpclog.

@@ -3,7 +3,7 @@ package lipgloss
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // Perform text alignment. If the string is multi-lined, we also make all lines

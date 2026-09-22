@@ -3,7 +3,7 @@
 <p>
   <img width="475" alt="The Charm Fantasy logo" src="https://github.com/user-attachments/assets/b22c5862-792a-44c1-bc98-55a2e46c8fb9" /><br>
   <a href="https://github.com/dwertyfa288/fantasy/releases"><img src="https://img.shields.io/github/release/dwertyfa288/fantasy.svg" alt="Latest Release"></a>
-  <a href="https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/fantasy?tab=doc"><img src="https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/fantasy?status.svg" alt="GoDoc"></a>
+  <a href="https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/fantasy?tab=doc"><img src="https://godoc.org/github.com/SpherePrime/CLI/vendordeps/fantasy?status.svg" alt="GoDoc"></a>
   <a href="https://github.com/dwertyfa288/fantasy/actions"><img src="https://github.com/dwertyfa288/fantasy/actions/workflows/build.yml/badge.svg?branch=main" alt="Build Status"></a>
 </p>
 
@@ -15,8 +15,8 @@ Build AI agents with Go. Multi-provider, multi-model, one API.
 
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/fantasy"
-import "github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openrouter"
+import "github.com/SpherePrime/CLI/vendordeps/fantasy"
+import "github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openrouter"
 
 // Choose your fave provider.
 provider, err := openrouter.New(openrouter.WithAPIKey(myHotKey))

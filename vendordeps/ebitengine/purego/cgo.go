@@ -15,5 +15,5 @@ package purego
 import (
 	_ "runtime/cgo"
 
-	_ "github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego/internal/cgo"
+	_ "github.com/SpherePrime/CLI/vendordeps/ebitengine/purego/internal/cgo"
 )

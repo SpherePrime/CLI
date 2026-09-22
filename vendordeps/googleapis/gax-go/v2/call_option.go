@@ -34,10 +34,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/api/googleapi"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/api/googleapi"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // CallOption is an option used by Invoke to control behaviors of RPC calls.

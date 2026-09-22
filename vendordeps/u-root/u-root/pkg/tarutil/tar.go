@@ -13,7 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/upath"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/upath"
 )
 
 // Opts contains options for creating and extracting tar files.

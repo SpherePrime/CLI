@@ -19,7 +19,7 @@ package metadata
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows/registry"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows/registry"
 )
 
 // NOTE: systemInfoSuggestsGCE is assigned to a varible for test stubbing purposes.

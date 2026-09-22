@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/db"
+	"github.com/SpherePrime/CLI/internal/db"
 )
 
 // Service defines the interface for tracking file reads in sessions.

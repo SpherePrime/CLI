@@ -1,7 +1,7 @@
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk)
-[![Test fastwalk on macOS](https://github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/macos.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/macos.yml)
-[![Test fastwalk on Linux](https://github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/linux.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/linux.yml)
-[![Test fastwalk on Windows](https://github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/windows.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/windows.yml)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk)
+[![Test fastwalk on macOS](https://github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/macos.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/macos.yml)
+[![Test fastwalk on Linux](https://github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/linux.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/linux.yml)
+[![Test fastwalk on Windows](https://github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/windows.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk/actions/workflows/windows.yml)
 
 # fastwalk
 
@@ -19,19 +19,19 @@ Inspired by and based off of [golang.org/x/tools/internal/fastwalk](https://pkg.
 
 * Fast: multiple goroutines stat the filesystem and call the
   [`filepath.WalkDirFunc`](https://pkg.go.dev/io/fs#WalkDirFunc) callback concurrently
-* Safe symbolic link traversal ([`Config.Follow`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#Config))
+* Safe symbolic link traversal ([`Config.Follow`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#Config))
 * Same behavior and callback signature as [`filepath.WalkDir`](https://pkg.go.dev/path/filepath#WalkDir)
 * Wrapper functions are provided to ignore duplicate files and directories:
-	[`IgnoreDuplicateFiles()`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#IgnoreDuplicateFiles)
+	[`IgnoreDuplicateFiles()`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#IgnoreDuplicateFiles)
 	and
-	[`IgnoreDuplicateDirs()`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#IgnoreDuplicateDirs)
+	[`IgnoreDuplicateDirs()`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#IgnoreDuplicateDirs)
 * Extensively tested on macOS, Linux, and Windows
 
 ## Usage
 
 Usage is the same as [`filepath.WalkDir`](https://pkg.go.dev/io/fs#WalkDirFunc),
 but the [`walkFn`](https://pkg.go.dev/path/filepath@go1.17.7#WalkFunc)
-argument to [`fastwalk.Walk`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#Walk)
+argument to [`fastwalk.Walk`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#Walk)
 must be safe for concurrent use.
 
 Examples can be found in the [examples](./examples) directory.
@@ -52,7 +52,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk"
+	"github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk"
 )
 
 const usageMsg = `Usage: %[1]s [-L] [-name] [PATH...]:
@@ -120,7 +120,7 @@ goarch: arm64
 cpu: Apple M1 Max
 ```
 
-#### [`filepath.WalkDir`](https://pkg.go.dev/path/filepath@go1.17.7#WalkDir) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#Walk):
+#### [`filepath.WalkDir`](https://pkg.go.dev/path/filepath@go1.17.7#WalkDir) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#Walk):
 ```
               filepath       fastwalk       delta
 time/op       27.9ms ± 1%    13.0ms ± 1%    -53.33%
@@ -128,7 +128,7 @@ alloc/op      4.33MB ± 0%    2.14MB ± 0%    -50.55%
 allocs/op     50.9k ± 0%     37.7k ± 0%     -26.01%
 ```
 
-#### [`godirwalk.Walk()`](https://pkg.go.dev/github.com/karrick/godirwalk@v1.16.1#Walk) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#Walk):
+#### [`godirwalk.Walk()`](https://pkg.go.dev/github.com/karrick/godirwalk@v1.16.1#Walk) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#Walk):
 ```
               godirwalk      fastwalk       delta
 time/op       58.5ms ± 3%    18.0ms ± 2%    -69.30%
@@ -146,7 +146,7 @@ cpu: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
 drive: Samsung SSD 970 PRO 1TB
 ```
 
-#### [`filepath.WalkDir`](https://pkg.go.dev/path/filepath@go1.17.7#WalkDir) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#Walk):
+#### [`filepath.WalkDir`](https://pkg.go.dev/path/filepath@go1.17.7#WalkDir) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#Walk):
 
 ```
               filepath       fastwalk       delta
@@ -155,7 +155,7 @@ alloc/op      2.44MB ± 0%    1.70MB ± 0%    -30.46%
 allocs/op     47.2k ± 0%     36.9k ± 0%     -21.80%
 ```
 
-#### [`godirwalk.Walk()`](https://pkg.go.dev/github.com/karrick/godirwalk@v1.16.1#Walk) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#Walk):
+#### [`godirwalk.Walk()`](https://pkg.go.dev/github.com/karrick/godirwalk@v1.16.1#Walk) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#Walk):
 
 ```
               filepath       fastwalk       delta
@@ -170,11 +170,11 @@ allocs/op     53.8k ± 0%     36.9k ± 0%     -31.38%
 ```
 goos: windows
 goarch: amd64
-pkg: github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk
+pkg: github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk
 cpu: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
 ```
 
-#### [`filepath.WalkDir`](https://pkg.go.dev/path/filepath@go1.17.7#WalkDir) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#Walk):
+#### [`filepath.WalkDir`](https://pkg.go.dev/path/filepath@go1.17.7#WalkDir) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#Walk):
 
 ```
               filepath       fastwalk       delta
@@ -183,7 +183,7 @@ alloc/op      5.68MB ± 0%    6.76MB ± 0%    +19.01%
 allocs/op     69.6k ± 0%     90.4k ± 0%     +29.87%
 ```
 
-#### [`godirwalk.Walk()`](https://pkg.go.dev/github.com/karrick/godirwalk@v1.16.1#Walk) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk#Walk):
+#### [`godirwalk.Walk()`](https://pkg.go.dev/github.com/karrick/godirwalk@v1.16.1#Walk) vs. [`fastwalk.Walk()`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk#Walk):
 
 ```
               filepath       fastwalk       delta

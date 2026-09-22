@@ -108,7 +108,7 @@
 
 * **deps:** bump actions/checkout from 6.0.2 to 7.0.1 ([#848](https://github.com/openai/openai-go/issues/848)) ([fbddc21](https://github.com/openai/openai-go/commit/fbddc21d13c33e55222dbc5a34df4996136b6a0e))
 * **deps:** bump actions/github-script from 7.1.0 to 9.0.0 ([#849](https://github.com/openai/openai-go/issues/849)) ([9d7c09e](https://github.com/openai/openai-go/commit/9d7c09e7cb761486cfba37bd11e18f17860d9ae6))
-* **deps:** bump github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/config in / ([#850](https://github.com/openai/openai-go/issues/850)) ([a5fedc0](https://github.com/openai/openai-go/commit/a5fedc01b16f88a082aad74c49326f63d374ad48))
+* **deps:** bump github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/config in / ([#850](https://github.com/openai/openai-go/issues/850)) ([a5fedc0](https://github.com/openai/openai-go/commit/a5fedc01b16f88a082aad74c49326f63d374ad48))
 * **deps:** bump github.com/Azure/azure-sdk-for-go/sdk/azcore in / ([#845](https://github.com/openai/openai-go/issues/845)) ([f0079ac](https://github.com/openai/openai-go/commit/f0079ac64a790f49b9c8bcec5cc062e19dc3e6b0))
 * **deps:** bump github.com/ebitengine/oto/v3 in /examples ([#851](https://github.com/openai/openai-go/issues/851)) ([65e8a8f](https://github.com/openai/openai-go/commit/65e8a8f024c019b6bf156b65753651458ab9805c))
 * **deps:** bump the codeql group with 2 updates ([#847](https://github.com/openai/openai-go/issues/847)) ([29b2a11](https://github.com/openai/openai-go/commit/29b2a1123ade1d9d587501c58911341fd212bb0d))
@@ -157,7 +157,7 @@
 
 ### Build System
 
-* **deps:** bump github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/config in / ([#759](https://github.com/openai/openai-go/issues/759)) ([e8dfbe0](https://github.com/openai/openai-go/commit/e8dfbe097d282f0c0aee74f6aed00a6b4decb7c0))
+* **deps:** bump github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/config in / ([#759](https://github.com/openai/openai-go/issues/759)) ([e8dfbe0](https://github.com/openai/openai-go/commit/e8dfbe097d282f0c0aee74f6aed00a6b4decb7c0))
 * **deps:** bump the codeql group with 2 updates ([#760](https://github.com/openai/openai-go/issues/760)) ([9bbfebf](https://github.com/openai/openai-go/commit/9bbfebf71e721d0575ccbd56d0aaeacc4a4cef10))
 * **deps:** enforce an eight-day dependency cooldown ([#762](https://github.com/openai/openai-go/issues/762)) ([744e64f](https://github.com/openai/openai-go/commit/744e64ff17ba988371534849e22555255d90bb56))
 
@@ -171,7 +171,7 @@
 
 ### Build System
 
-* **deps:** bump github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/config in / ([#745](https://github.com/openai/openai-go/issues/745)) ([af89b42](https://github.com/openai/openai-go/commit/af89b4276381d98193419f46429f79d74b490ec9))
+* **deps:** bump github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/config in / ([#745](https://github.com/openai/openai-go/issues/745)) ([af89b42](https://github.com/openai/openai-go/commit/af89b4276381d98193419f46429f79d74b490ec9))
 * **deps:** bump the codeql group with 2 updates ([#746](https://github.com/openai/openai-go/issues/746)) ([41c8a70](https://github.com/openai/openai-go/commit/41c8a70fef4c2f7067a7eb6bc095c94d1782a2fe))
 
 ## 3.49.0 (2026-07-31)
@@ -215,7 +215,7 @@ Full Changelog: [v3.46.0...v3.47.0](https://github.com/openai/openai-go/compare/
 * **deps:** bump actions/setup-go from 6.4.0 to 7.0.0 ([#737](https://github.com/openai/openai-go/issues/737)) ([1fcc7ce](https://github.com/openai/openai-go/commit/1fcc7cef36599d8a0d8f3858fa6c4fe6d27bf241))
 * **deps:** bump actions/setup-node from 6.3.0 to 7.0.0 ([#734](https://github.com/openai/openai-go/issues/734)) ([15562ec](https://github.com/openai/openai-go/commit/15562ec9fc84b9e26b6e3cad42f7284405b5b36e))
 * **deps:** bump actions/upload-artifact from 6.0.0 to 7.0.1 ([#738](https://github.com/openai/openai-go/issues/738)) ([16fcc6a](https://github.com/openai/openai-go/commit/16fcc6a835f0791764841f5a6fc3f0d00b6c1e4d))
-* **deps:** bump github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/config in / ([#733](https://github.com/openai/openai-go/issues/733)) ([279abc1](https://github.com/openai/openai-go/commit/279abc1d002c6a87a07470aeae1c3da1e35cfb41))
+* **deps:** bump github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/config in / ([#733](https://github.com/openai/openai-go/issues/733)) ([279abc1](https://github.com/openai/openai-go/commit/279abc1d002c6a87a07470aeae1c3da1e35cfb41))
 * **deps:** bump github/codeql-action from 4.37.2 to 4.37.3 ([#736](https://github.com/openai/openai-go/issues/736)) ([6032a46](https://github.com/openai/openai-go/commit/6032a4681950b0bc426e5528b5ca4d2a2590b815))
 
 ## 3.46.0 (2026-07-23)
@@ -238,7 +238,7 @@ Full Changelog: [v3.44.0...v3.45.0](https://github.com/openai/openai-go/compare/
 ### Go version requirement
 
 openai-go v3.45.0 requires Go 1.25 or newer. This release upgrades
-`github.com/dwertyfa288/CLI/vendordeps/x/net` to v0.57.0 to address security findings and aligns the SDK
+`github.com/SpherePrime/CLI/vendordeps/x/net` to v0.57.0 to address security findings and aligns the SDK
 with supported Go toolchains. v3.44.0 is the final release that builds with Go
 1.22–1.24; older SDK releases do not receive guaranteed security backports. No
 exported SDK API or `/v3` import path changes are included.

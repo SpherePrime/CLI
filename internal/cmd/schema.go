@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/internal/agent/hyper"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/discover"
-	"github.com/dwertyfa288/CLI/vendordeps/invopop/jsonschema"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/discover"
+	"github.com/SpherePrime/CLI/vendordeps/invopop/jsonschema"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 var schemaCmd = &cobra.Command{

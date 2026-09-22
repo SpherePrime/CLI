@@ -1,11 +1,11 @@
-# Humane Units [![Build Status](https://travis-ci.org/dustin/go-humanize.svg?branch=master)](https://travis-ci.org/dustin/go-humanize) [![GoDoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/dustin/go-humanize?status.svg)](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/dustin/go-humanize)
+# Humane Units [![Build Status](https://travis-ci.org/dustin/go-humanize.svg?branch=master)](https://travis-ci.org/dustin/go-humanize) [![GoDoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/dustin/go-humanize?status.svg)](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/dustin/go-humanize)
 
 Just a few functions for helping humanize times and sizes.
 
-`go get` it as `github.com/dwertyfa288/CLI/vendordeps/dustin/go-humanize`, import it as
-`"github.com/dwertyfa288/CLI/vendordeps/dustin/go-humanize"`, use it as `humanize`.
+`go get` it as `github.com/SpherePrime/CLI/vendordeps/dustin/go-humanize`, import it as
+`"github.com/SpherePrime/CLI/vendordeps/dustin/go-humanize"`, use it as `humanize`.
 
-See [godoc](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/dustin/go-humanize) for
+See [godoc](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/dustin/go-humanize) for
 complete documentation.
 
 ## Sizes

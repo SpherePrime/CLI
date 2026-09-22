@@ -3,7 +3,7 @@ package log
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // Styles defines the styles for the text logger.

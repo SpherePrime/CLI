@@ -9,7 +9,7 @@
 // See https://cloud.google.com/endpoint-verification/docs/overview
 //
 // This package is not intended for use by end developers. Use the
-// github.com/dwertyfa288/CLI/vendordeps/api/option package to configure API clients.
+// github.com/SpherePrime/CLI/vendordeps/api/option package to configure API clients.
 package cert
 
 import (

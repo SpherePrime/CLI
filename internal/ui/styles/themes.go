@@ -1,7 +1,7 @@
 package styles
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 // ThemeKeyForProvider returns a stable identifier for the theme

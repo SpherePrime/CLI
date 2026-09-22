@@ -12,10 +12,10 @@
 package protoimpl
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/filedesc"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/filetype"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/impl"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/protolazy"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/filedesc"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/filetype"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/impl"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/protolazy"
 )
 
 // UnsafeEnabled specifies whether package unsafe can be used.

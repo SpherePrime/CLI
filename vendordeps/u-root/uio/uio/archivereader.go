@@ -9,7 +9,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4"
+	"github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4"
 )
 
 const (

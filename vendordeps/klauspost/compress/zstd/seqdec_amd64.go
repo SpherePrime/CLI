@@ -3,7 +3,7 @@
 package zstd
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/internal/cpuinfo"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/internal/cpuinfo"
 )
 
 // The shared decode/decodeSync/executeSimple wrappers and context structs live

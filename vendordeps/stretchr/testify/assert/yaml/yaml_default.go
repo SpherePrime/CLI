@@ -6,14 +6,14 @@
 // indirection with an alternative implementation of this package that uses
 // another implementation of YAML deserialization. This allows to not either not
 // use YAML deserialization at all, or to use another implementation than
-// [github.com/dwertyfa288/CLI/vendordeps/yaml/v3] (for example for license compatibility reasons, see [PR #1120]).
+// [github.com/SpherePrime/CLI/vendordeps/yaml/v3] (for example for license compatibility reasons, see [PR #1120]).
 //
 // Alternative implementations are selected using build tags:
 //
 //   - testify_yaml_fail: [Unmarshal] always fails with an error
 //   - testify_yaml_custom: [Unmarshal] is a variable. Caller must initialize it
-//     before calling any of [github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert.YAMLEq] or
-//     [github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert.YAMLEqf].
+//     before calling any of [github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert.YAMLEq] or
+//     [github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert.YAMLEqf].
 //
 // Usage:
 //
@@ -21,14 +21,14 @@
 //
 // You can check with "go list" which implementation is linked:
 //
-//	go list -f '{{.Imports}}' github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert/yaml
-//	go list -tags testify_yaml_fail -f '{{.Imports}}' github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert/yaml
-//	go list -tags testify_yaml_custom -f '{{.Imports}}' github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert/yaml
+//	go list -f '{{.Imports}}' github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert/yaml
+//	go list -tags testify_yaml_fail -f '{{.Imports}}' github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert/yaml
+//	go list -tags testify_yaml_custom -f '{{.Imports}}' github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert/yaml
 //
-// [PR #1120]: https://github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/pull/1120
+// [PR #1120]: https://github.com/SpherePrime/CLI/vendordeps/stretchr/testify/pull/1120
 package yaml
 
-import goyaml "github.com/dwertyfa288/CLI/vendordeps/yaml/v3"
+import goyaml "github.com/SpherePrime/CLI/vendordeps/yaml/v3"
 
 // Unmarshal is just a wrapper of [go.yaml.in/yaml/v3.Unmarshal].
 func Unmarshal(in []byte, out interface{}) error {

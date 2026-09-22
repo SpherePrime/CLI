@@ -2,7 +2,7 @@
 
 <!-- x-release-please-start-version -->
 
-<a href="https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go"><img src="https://pkg.go.dev/badge/github.com/anthropics/anthropic-sdk-go.svg" alt="Go Reference"></a>
+<a href="https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go"><img src="https://pkg.go.dev/badge/github.com/anthropics/anthropic-sdk-go.svg" alt="Go Reference"></a>
 
 <!-- x-release-please-end -->
 
@@ -18,7 +18,7 @@ Full documentation is available at **[platform.claude.com/docs/en/api/sdks/go](h
 
 ```go
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go" // imported as anthropic
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go" // imported as anthropic
 )
 ```
 
@@ -29,7 +29,7 @@ Or explicitly add the dependency:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go@v1.68.0'
+go get -u 'github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go@v1.68.0'
 ```
 
 <!-- x-release-please-end -->
@@ -43,8 +43,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
 )
 
 func main() {

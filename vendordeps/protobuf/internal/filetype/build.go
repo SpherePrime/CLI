@@ -9,11 +9,11 @@ package filetype
 import (
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/descopts"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/filedesc"
-	pimpl "github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/impl"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoregistry"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/descopts"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/filedesc"
+	pimpl "github.com/SpherePrime/CLI/vendordeps/protobuf/internal/impl"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoregistry"
 )
 
 // Builder constructs type descriptors from a raw file descriptor

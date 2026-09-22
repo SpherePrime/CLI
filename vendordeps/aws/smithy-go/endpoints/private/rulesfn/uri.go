@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // IsValidHostLabel returns if the input is a single valid [RFC 1123] host

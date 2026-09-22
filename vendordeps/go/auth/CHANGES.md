@@ -152,9 +152,9 @@
 
 ### Bug Fixes
 
-* **auth/oauth2adapt:** Update github.com/dwertyfa288/CLI/vendordeps/x/net to v0.33.0 ([e9b0b69](https://github.com/googleapis/google-cloud-go/commit/e9b0b69644ea5b276cacff0a707e8a5e87efafc9))
+* **auth/oauth2adapt:** Update github.com/SpherePrime/CLI/vendordeps/x/net to v0.33.0 ([e9b0b69](https://github.com/googleapis/google-cloud-go/commit/e9b0b69644ea5b276cacff0a707e8a5e87efafc9))
 * **auth:** Fix copy of delegates in impersonate.NewIDTokenCredentials ([#11386](https://github.com/googleapis/google-cloud-go/issues/11386)) ([ff7ef8e](https://github.com/googleapis/google-cloud-go/commit/ff7ef8e7ade7171bce3e4f30ff10a2e9f6c27ca0)), refs [#11379](https://github.com/googleapis/google-cloud-go/issues/11379)
-* **auth:** Update github.com/dwertyfa288/CLI/vendordeps/x/net to v0.33.0 ([e9b0b69](https://github.com/googleapis/google-cloud-go/commit/e9b0b69644ea5b276cacff0a707e8a5e87efafc9))
+* **auth:** Update github.com/SpherePrime/CLI/vendordeps/x/net to v0.33.0 ([e9b0b69](https://github.com/googleapis/google-cloud-go/commit/e9b0b69644ea5b276cacff0a707e8a5e87efafc9))
 
 ## [0.13.0](https://github.com/googleapis/google-cloud-go/compare/auth/v0.12.1...auth/v0.13.0) (2024-12-13)
 
@@ -332,7 +332,7 @@
 
 ### Bug Fixes
 
-* **auth:** Bump github.com/dwertyfa288/CLI/vendordeps/grpc@v1.64.1 ([8ecc4e9](https://github.com/googleapis/google-cloud-go/commit/8ecc4e9622e5bbe9b90384d5848ab816027226c5))
+* **auth:** Bump github.com/SpherePrime/CLI/vendordeps/grpc@v1.64.1 ([8ecc4e9](https://github.com/googleapis/google-cloud-go/commit/8ecc4e9622e5bbe9b90384d5848ab816027226c5))
 
 ## [0.7.0](https://github.com/googleapis/google-cloud-go/compare/auth/v0.6.1...auth/v0.7.0) (2024-07-09)
 
@@ -344,8 +344,8 @@
 
 ### Bug Fixes
 
-* **auth/oauth2adapt:** Bump github.com/dwertyfa288/CLI/vendordeps/api@v0.187.0 ([8fa9e39](https://github.com/googleapis/google-cloud-go/commit/8fa9e398e512fd8533fd49060371e61b5725a85b))
-* **auth:** Bump github.com/dwertyfa288/CLI/vendordeps/api@v0.187.0 ([8fa9e39](https://github.com/googleapis/google-cloud-go/commit/8fa9e398e512fd8533fd49060371e61b5725a85b))
+* **auth/oauth2adapt:** Bump github.com/SpherePrime/CLI/vendordeps/api@v0.187.0 ([8fa9e39](https://github.com/googleapis/google-cloud-go/commit/8fa9e398e512fd8533fd49060371e61b5725a85b))
+* **auth:** Bump github.com/SpherePrime/CLI/vendordeps/api@v0.187.0 ([8fa9e39](https://github.com/googleapis/google-cloud-go/commit/8fa9e398e512fd8533fd49060371e61b5725a85b))
 * **auth:** Check len of slices, not non-nil ([#10483](https://github.com/googleapis/google-cloud-go/issues/10483)) ([0a966a1](https://github.com/googleapis/google-cloud-go/commit/0a966a183e5f0e811977216d736d875b7233e942))
 
 ## [0.6.1](https://github.com/googleapis/google-cloud-go/compare/auth/v0.6.0...auth/v0.6.1) (2024-07-01)
@@ -520,5 +520,5 @@ depend on.
 
 ### Bug Fixes
 
-* **auth/oauth2adapt:** Update github.com/dwertyfa288/CLI/vendordeps/x/net to v0.17.0 ([174da47](https://github.com/googleapis/google-cloud-go/commit/174da47254fefb12921bbfc65b7829a453af6f5d))
-* **auth:** Update github.com/dwertyfa288/CLI/vendordeps/x/net to v0.17.0 ([174da47](https://github.com/googleapis/google-cloud-go/commit/174da47254fefb12921bbfc65b7829a453af6f5d))
+* **auth/oauth2adapt:** Update github.com/SpherePrime/CLI/vendordeps/x/net to v0.17.0 ([174da47](https://github.com/googleapis/google-cloud-go/commit/174da47254fefb12921bbfc65b7829a453af6f5d))
+* **auth:** Update github.com/SpherePrime/CLI/vendordeps/x/net to v0.17.0 ([174da47](https://github.com/googleapis/google-cloud-go/commit/174da47254fefb12921bbfc65b7829a453af6f5d))

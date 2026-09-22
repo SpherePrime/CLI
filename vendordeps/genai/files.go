@@ -17,7 +17,7 @@
 package genai
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
 	"context"
 	"fmt"
 	"io"

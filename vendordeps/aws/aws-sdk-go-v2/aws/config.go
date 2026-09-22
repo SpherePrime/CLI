@@ -3,10 +3,10 @@ package aws
 import (
 	"net/http"
 
-	smithybearer "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth/bearer"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	smithybearer "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth/bearer"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // HTTPClient provides the interface to provide custom HTTPClients. Generally

@@ -5,14 +5,14 @@
 
 ### Bug Fixes
 
-* **auth/oauth2adapt:** Update github.com/dwertyfa288/CLI/vendordeps/x/net to 0.37.0 ([1144978](https://github.com/googleapis/google-cloud-go/commit/11449782c7fb4896bf8b8b9cde8e7441c84fb2fd))
+* **auth/oauth2adapt:** Update github.com/SpherePrime/CLI/vendordeps/x/net to 0.37.0 ([1144978](https://github.com/googleapis/google-cloud-go/commit/11449782c7fb4896bf8b8b9cde8e7441c84fb2fd))
 
 ## [0.2.7](https://github.com/googleapis/google-cloud-go/compare/auth/oauth2adapt/v0.2.6...auth/oauth2adapt/v0.2.7) (2025-01-09)
 
 
 ### Bug Fixes
 
-* **auth/oauth2adapt:** Update github.com/dwertyfa288/CLI/vendordeps/x/net to v0.33.0 ([e9b0b69](https://github.com/googleapis/google-cloud-go/commit/e9b0b69644ea5b276cacff0a707e8a5e87efafc9))
+* **auth/oauth2adapt:** Update github.com/SpherePrime/CLI/vendordeps/x/net to v0.33.0 ([e9b0b69](https://github.com/googleapis/google-cloud-go/commit/e9b0b69644ea5b276cacff0a707e8a5e87efafc9))
 
 ## [0.2.6](https://github.com/googleapis/google-cloud-go/compare/auth/oauth2adapt/v0.2.5...auth/oauth2adapt/v0.2.6) (2024-11-21)
 
@@ -40,7 +40,7 @@
 
 ### Bug Fixes
 
-* **auth/oauth2adapt:** Bump github.com/dwertyfa288/CLI/vendordeps/api@v0.187.0 ([8fa9e39](https://github.com/googleapis/google-cloud-go/commit/8fa9e398e512fd8533fd49060371e61b5725a85b))
+* **auth/oauth2adapt:** Bump github.com/SpherePrime/CLI/vendordeps/api@v0.187.0 ([8fa9e39](https://github.com/googleapis/google-cloud-go/commit/8fa9e398e512fd8533fd49060371e61b5725a85b))
 
 ## [0.2.2](https://github.com/googleapis/google-cloud-go/compare/auth/oauth2adapt/v0.2.1...auth/oauth2adapt/v0.2.2) (2024-04-23)
 
@@ -79,4 +79,4 @@
 
 ### Bug Fixes
 
-* **auth/oauth2adapt:** Update github.com/dwertyfa288/CLI/vendordeps/x/net to v0.17.0 ([174da47](https://github.com/googleapis/google-cloud-go/commit/174da47254fefb12921bbfc65b7829a453af6f5d))
+* **auth/oauth2adapt:** Update github.com/SpherePrime/CLI/vendordeps/x/net to v0.17.0 ([174da47](https://github.com/googleapis/google-cloud-go/commit/174da47254fefb12921bbfc65b7829a453af6f5d))

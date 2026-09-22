@@ -4,7 +4,7 @@
 
 // Package grpc supports network connections to GRPC servers.
 // This package is not intended for use by end developers. Use the
-// github.com/dwertyfa288/CLI/vendordeps/api/option package to configure API clients.
+// github.com/SpherePrime/CLI/vendordeps/api/option package to configure API clients.
 package grpc
 
 import (
@@ -16,23 +16,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/grpctransport"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/oauth2adapt"
-	"github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/time/rate"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/api/option"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
-	grpcgoogle "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/google"
-	grpcinsecure "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/insecure"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/oauth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/grpctransport"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/oauth2adapt"
+	"github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/time/rate"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal"
+	"github.com/SpherePrime/CLI/vendordeps/api/option"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
+	grpcgoogle "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/google"
+	grpcinsecure "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/insecure"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/oauth"
 
 	// Install grpclb, which is required for direct path.
-	_ "github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/grpclb"
+	_ "github.com/SpherePrime/CLI/vendordeps/grpc/balancer/grpclb"
 )
 
 // Check env to disable DirectPath traffic.

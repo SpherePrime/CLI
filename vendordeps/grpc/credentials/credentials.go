@@ -20,7 +20,7 @@
 // which encapsulate all the state needed by a client to authenticate with a
 // server and make various assertions, e.g., about the client's identity, role,
 // or whether it is authorized to make a particular call.
-package credentials // import "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+package credentials // import "github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 
 import (
 	"context"
@@ -28,9 +28,9 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/attributes"
-	icredentials "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/attributes"
+	icredentials "github.com/SpherePrime/CLI/vendordeps/grpc/internal/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
 )
 
 // PerRPCCredentials defines the common interface for the credentials which need to

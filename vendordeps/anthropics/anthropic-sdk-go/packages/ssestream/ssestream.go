@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apierror"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apierror"
 )
 
 type Decoder interface {

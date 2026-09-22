@@ -3,8 +3,8 @@ package vcr
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/cassette"
-	"github.com/dwertyfa288/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/recorder"
+	"github.com/SpherePrime/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/cassette"
+	"github.com/SpherePrime/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/recorder"
 )
 
 var headersToKeep = map[string]struct{}{

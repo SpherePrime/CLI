@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp"
-	"github.com/dwertyfa288/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/cassette"
-	"github.com/dwertyfa288/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/recorder"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp"
+	"github.com/SpherePrime/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/cassette"
+	"github.com/SpherePrime/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/recorder"
 )
 
 func customMatcher(t *testing.T) recorder.MatcherFunc {

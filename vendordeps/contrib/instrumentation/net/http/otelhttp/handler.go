@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/felixge/httpsnoop"
-	"github.com/dwertyfa288/CLI/vendordeps/otel"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/propagation"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/felixge/httpsnoop"
+	"github.com/SpherePrime/CLI/vendordeps/otel"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/propagation"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
 
-	"github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp/internal/request"
-	"github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp/internal/semconv"
+	"github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp/internal/request"
+	"github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp/internal/semconv"
 )
 
 // middleware is an http middleware which wraps the next handler in a span.

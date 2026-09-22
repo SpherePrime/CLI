@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico"
-	"github.com/dwertyfa288/CLI/vendordeps/tadvi/systray"
+	"github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico"
+	"github.com/SpherePrime/CLI/vendordeps/tadvi/systray"
 )
 
 var isWindows10 = false

@@ -13,8 +13,8 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/runtime"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/runtime"
 )
 
 func (t OpType) IsMultipleOpHead() bool {

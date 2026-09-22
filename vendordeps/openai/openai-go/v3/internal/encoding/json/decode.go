@@ -15,7 +15,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json/shims"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json/shims"
 	"reflect"
 	"strconv"
 	"strings"

@@ -22,7 +22,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/buffer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/buffer"
 )
 
 // ErrSerializerClosed is returned by ScheduleAndWait if the CallbackSerializer

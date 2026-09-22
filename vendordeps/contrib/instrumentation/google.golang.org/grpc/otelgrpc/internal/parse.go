@@ -7,9 +7,9 @@ package internal
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	oldsemconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0" //nolint:depguard // Use of v1.37.0 is required for backward compatibility stability opt-in.
-	semconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	oldsemconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0" //nolint:depguard // Use of v1.37.0 is required for backward compatibility stability opt-in.
+	semconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0"
 )
 
 // ParseFullMethod returns a span name following the OpenTelemetry semantic
@@ -31,7 +31,7 @@ func ParseFullMethod(fullMethod string) (string, []attribute.KeyValue) {
 // conventions as well as all applicable span attribute.KeyValue attributes based
 // on a gRPC's FullMethod.
 // Based on the implementation in:
-// https://github.com/open-telemetry/opentelemetry-go-contrib/blob/072dcf8ad7e5e48b506e05720b29d8b078759606/instrumentation/github.com/dwertyfa288/CLI/vendordeps/grpc/otelgrpc/internal/parse.go#L20
+// https://github.com/open-telemetry/opentelemetry-go-contrib/blob/072dcf8ad7e5e48b506e05720b29d8b078759606/instrumentation/github.com/SpherePrime/CLI/vendordeps/grpc/otelgrpc/internal/parse.go#L20
 func ParseFullMethodOld(fullMethod string) (string, []attribute.KeyValue) {
 	if !strings.HasPrefix(fullMethod, "/") {
 		return fullMethod, nil

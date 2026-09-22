@@ -1,4 +1,4 @@
-// Code generated with github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/_codegen; DO NOT EDIT.
+// Code generated with github.com/SpherePrime/CLI/vendordeps/stretchr/testify/_codegen; DO NOT EDIT.
 
 package assert
 

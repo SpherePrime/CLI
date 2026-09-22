@@ -7,7 +7,7 @@ package sqlite3
 import (
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
 )
 
 const SQLITE_MAX_MMAP_SIZE = 2147418112

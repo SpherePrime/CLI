@@ -22,7 +22,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-logr/logr"
+	"github.com/SpherePrime/CLI/vendordeps/go-logr/logr"
 )
 
 var _ logr.SlogSink = &fnlogger{}

@@ -3,8 +3,8 @@ package posthog
 import (
 	"time"
 
-	json "github.com/dwertyfa288/CLI/vendordeps/goccy/go-json"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	json "github.com/SpherePrime/CLI/vendordeps/goccy/go-json"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 )
 
 // Callback is implemented by applications that want delivery notifications.

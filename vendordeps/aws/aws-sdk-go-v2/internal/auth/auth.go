@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // HTTPAuthScheme is the SDK's internal implementation of smithyhttp.AuthScheme

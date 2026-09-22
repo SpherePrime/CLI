@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/oauthex"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/oauthex"
 )
 
 // GetAuthServerMetadata fetches authorization server metadata for the given issuer URL.

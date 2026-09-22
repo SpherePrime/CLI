@@ -4,8 +4,8 @@ package signin
 
 import (
 	"context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/ptr"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/ptr"
 )
 
 // Grants permission to revoke an OAuth 2.0 refresh token and its associated

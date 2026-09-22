@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // A ParagraphElement is used to render individual paragraphs.

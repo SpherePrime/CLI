@@ -24,7 +24,7 @@ package grpc
 import (
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/backoff"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/backoff"
 )
 
 // DefaultBackoffConfig uses values specified for backoff in

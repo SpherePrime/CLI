@@ -1,6 +1,6 @@
 package brotli
 
-import "github.com/dwertyfa288/CLI/vendordeps/andybalholm/brotli/matchfinder"
+import "github.com/SpherePrime/CLI/vendordeps/andybalholm/brotli/matchfinder"
 
 // An Encoder implements the matchfinder.Encoder interface, writing in Brotli format.
 type Encoder struct {

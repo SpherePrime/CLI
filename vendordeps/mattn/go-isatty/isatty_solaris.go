@@ -4,7 +4,7 @@
 package isatty
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 // IsTerminal returns true if the given file descriptor is a terminal.

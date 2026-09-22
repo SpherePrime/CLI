@@ -2,13 +2,13 @@
 
 A high-performance Go package for measuring the monospace display width of strings, UTF-8 bytes, and runes.
 
-[![Documentation](https://pkg.go.dev/badge/github.com/clipperhouse/displaywidth.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth)
-[![Test](https://github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth/actions/workflows/gotest.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth/actions/workflows/gotest.yml)
-[![Fuzz](https://github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth/actions/workflows/gofuzz.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth/actions/workflows/gofuzz.yml)
+[![Documentation](https://pkg.go.dev/badge/github.com/clipperhouse/displaywidth.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth)
+[![Test](https://github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth/actions/workflows/gotest.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth/actions/workflows/gotest.yml)
+[![Fuzz](https://github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth/actions/workflows/gofuzz.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth/actions/workflows/gofuzz.yml)
 
 ## Install
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth
+go get github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ package main
 
 import (
     "fmt"
-    "github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth"
+    "github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth"
 )
 
 func main() {
@@ -46,7 +46,7 @@ If you need the individual graphemes:
 ```go
 import (
     "fmt"
-    "github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth"
+    "github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth"
 )
 
 func main() {
@@ -100,7 +100,7 @@ When `true`, they are treated as width 2.
 
 You may wish to configure this based on environment variables or locale.
  `go-runewidth`, for example, does so
- [during package initialization](https://github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth/blob/master/runewidth.go#L26C1-L45C2). `displaywidth` does not do this automatically, we prefer to leave it to you.
+ [during package initialization](https://github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth/blob/master/runewidth.go#L26C1-L45C2). `displaywidth` does not do this automatically, we prefer to leave it to you.
 
 
 ## Technical standards and compatibility
@@ -131,13 +131,13 @@ happen to also be UTF-8 continuation bytes. Use with caution.
 
 ## Prior Art
 
-[mattn/go-runewidth](https://github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth)
+[mattn/go-runewidth](https://github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth)
 
-[rivo/uniseg](https://github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg)
+[rivo/uniseg](https://github.com/SpherePrime/CLI/vendordeps/rivo/uniseg)
 
-[x/text/width](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/text/width)
+[x/text/width](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/text/width)
 
-[x/text/internal/triegen](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/text/internal/triegen)
+[x/text/internal/triegen](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/text/internal/triegen)
 
 ## Benchmarks
 
@@ -149,7 +149,7 @@ go test -bench=. -benchmem
 ```
 goos: darwin
 goarch: arm64
-pkg: github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth/comparison
+pkg: github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth/comparison
 cpu: Apple M2
 
 BenchmarkString_Mixed/clipperhouse/displaywidth-8             5784 ns/op	      291.69 MB/s	      0 B/op	   0 allocs/op

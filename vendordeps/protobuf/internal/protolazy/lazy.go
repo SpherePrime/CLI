@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	piface "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	piface "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 // IndexEntry is the structure for an index of the fields in a message of a

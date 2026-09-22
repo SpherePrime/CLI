@@ -3,7 +3,7 @@ package middleware
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
 )
 
 // loggerKey is the context value key for which the logger is associated with.

@@ -3,8 +3,8 @@ package layout
 import (
 	"sync"
 
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet/internal/lru"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/internal/lru"
 )
 
 // globalCacheSize is chosen to comfortably hold one entry per row and column

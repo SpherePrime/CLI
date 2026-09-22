@@ -1,6 +1,6 @@
 package sqlite3_wrap
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+import "github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 
 // https://devblogs.microsoft.com/oldnewthing/?p=42223
 const allocationGranularity = 64 * 1024

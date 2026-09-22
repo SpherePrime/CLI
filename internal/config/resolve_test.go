@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/env"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/env"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // fakeExpander returns a canned value/error for the last passed value and

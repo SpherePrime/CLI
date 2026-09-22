@@ -7,10 +7,10 @@
 package app
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/lifecycle"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/size"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/gl"
-	_ "github.com/dwertyfa288/CLI/vendordeps/x/mobile/internal/mobileinit"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/lifecycle"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/size"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/gl"
+	_ "github.com/SpherePrime/CLI/vendordeps/x/mobile/internal/mobileinit"
 )
 
 // Main is called by the main.main function to run the mobile application.
@@ -30,7 +30,7 @@ type App interface {
 	//  - paint.Event
 	//  - size.Event
 	//  - touch.Event
-	// from the github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/etc packages. Other packages may
+	// from the github.com/SpherePrime/CLI/vendordeps/x/mobile/event/etc packages. Other packages may
 	// define other event types that are carried on this channel.
 	Events() <-chan interface{}
 

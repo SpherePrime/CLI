@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-ole/go-ole"
+	"github.com/SpherePrime/CLI/vendordeps/go-ole/go-ole"
 )
 
 const SignatureToastNotificationManagerForUser string = "rc(Windows.UI.Notifications.ToastNotificationManagerForUser;{79ab57f6-43fe-487b-8a7f-99567200ae94})"

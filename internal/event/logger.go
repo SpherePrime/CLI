@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/dwertyfa288/CLI/vendordeps/posthog/posthog-go"
+	"github.com/SpherePrime/CLI/vendordeps/posthog/posthog-go"
 )
 
 var _ posthog.Logger = logger{}

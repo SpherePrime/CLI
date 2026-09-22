@@ -23,7 +23,7 @@ package grpc
 import (
 	"context"
 
-	t "github.com/dwertyfa288/CLI/vendordeps/x/net/trace"
+	t "github.com/SpherePrime/CLI/vendordeps/x/net/trace"
 )
 
 func newTrace(family, title string) traceLog {

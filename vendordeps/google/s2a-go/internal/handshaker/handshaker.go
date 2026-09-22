@@ -27,15 +27,15 @@ import (
 	"net"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/authinfo"
-	commonpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	s2apb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/s2a_go_proto"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/record"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
-	grpc "github.com/dwertyfa288/CLI/vendordeps/grpc"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/authinfo"
+	commonpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	s2apb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/s2a_go_proto"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/record"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
+	grpc "github.com/SpherePrime/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 )
 
 var (

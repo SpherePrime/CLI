@@ -7,7 +7,7 @@
 package genid
 
 import (
-	protoreflect "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	protoreflect "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 const File_google_protobuf_descriptor_proto = "google/protobuf/descriptor.proto"

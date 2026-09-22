@@ -4,7 +4,7 @@ with the `c2go` tool at https://github.com/andybalholm/c2go.
 
 I am using it in production with https://github.com/andybalholm/redwood.
 
-API documentation is found at https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/andybalholm/brotli?tab=doc.
+API documentation is found at https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/andybalholm/brotli?tab=doc.
 
 ## Roadmap
 

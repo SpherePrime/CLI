@@ -4,7 +4,7 @@
 
 … because sometimes you just need to reliably identify your machines.
 
-[![GoDoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid?status.svg)](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid) [![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid)
+[![GoDoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid?status.svg)](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid) [![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid)
 
 ## Main Features
 
@@ -18,13 +18,13 @@
 Get the library with
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid
+go get github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid
 ```
 
 You can also add the cli app directly to your `$GOPATH/bin` with
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid/cmd/machineid
+go get github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid/cmd/machineid
 ```
 
 ## Usage
@@ -35,7 +35,7 @@ package main
 import (
   "fmt"
   "log"
-  "github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid"
+  "github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid"
 )
 
 func main() {
@@ -55,7 +55,7 @@ package main
 import (
   "fmt"
   "log"
-  "github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid"
+  "github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid"
 )
 
 func main() {
@@ -113,7 +113,7 @@ import (
   "crypto/hmac"
   "crypto/sha256"
   "fmt"
-  "github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid"
+  "github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid"
 )
 
 const appKey = "WowSuchNiceApp"

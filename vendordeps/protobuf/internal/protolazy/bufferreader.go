@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
 )
 
 // BufferReader is a structure encapsulating a protobuf and a current position

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/table"
-	astext "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/extension/ast"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/table"
+	astext "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/extension/ast"
 )
 
 // A TableElement is used to render tables.

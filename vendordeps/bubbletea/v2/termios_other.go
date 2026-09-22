@@ -3,6 +3,6 @@
 
 package tea
 
-import "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+import "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
 
 func (*Program) checkOptimizedMovements(*term.State) {}

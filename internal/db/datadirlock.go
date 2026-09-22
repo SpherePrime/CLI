@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/lock"
-	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/SpherePrime/CLI/internal/lock"
+	"github.com/SpherePrime/CLI/internal/version"
 )
 
 // ErrDataDirLocked is returned by Connect when the data directory is

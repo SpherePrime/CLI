@@ -93,7 +93,7 @@ var goSQLMigrationTemplate = template.Must(template.New("goose.go-migration").Pa
 import (
 	"context"
 	"database/sql"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3"
 )
 
 func init() {

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html/atom"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html/atom"
 )
 
 // A TokenType is the type of a Token.

@@ -13,9 +13,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/core"
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/tarutil"
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/uroot/unixflag"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/core"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/tarutil"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/uroot/unixflag"
 )
 
 // Tar implements the tar command.

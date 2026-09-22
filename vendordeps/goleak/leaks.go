@@ -24,7 +24,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goleak/internal/stack"
+	"github.com/SpherePrime/CLI/vendordeps/goleak/internal/stack"
 )
 
 // TestingT is the minimal subset of testing.TB that we use.

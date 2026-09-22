@@ -2,7 +2,7 @@
 
 package vfs
 
-import "github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+import "github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
 
 // +checklocks:s.Mutex
 func (s *vfsShm) shmMemLock(offset, n int32, flags _ShmFlag) error {

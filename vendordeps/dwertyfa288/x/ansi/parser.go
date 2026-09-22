@@ -4,7 +4,7 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi/parser"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi/parser"
 )
 
 // Parser represents a DEC ANSI compatible sequence parser.

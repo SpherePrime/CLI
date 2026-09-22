@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/invopop/jsonschema"
-	orderedmap "github.com/dwertyfa288/CLI/vendordeps/pb33f/ordered-map/v2"
+	"github.com/SpherePrime/CLI/vendordeps/invopop/jsonschema"
+	orderedmap "github.com/SpherePrime/CLI/vendordeps/pb33f/ordered-map/v2"
 )
 
 // supportedSchemaKeySet is a set version of supportedSchemaKeys for O(1) lookups.

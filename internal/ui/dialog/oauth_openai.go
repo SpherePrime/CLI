@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/oauth/openai"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/oauth/openai"
+	"github.com/SpherePrime/CLI/internal/ui/common"
 )
 
 // NewOAuthOpenAI creates an OAuth dialog for signing in with a ChatGPT

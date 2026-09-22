@@ -5,7 +5,7 @@ import (
 	"image"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico/internal/icondir"
+	"github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico/internal/icondir"
 )
 
 // FormatError reports that the input is not a valid ICO.

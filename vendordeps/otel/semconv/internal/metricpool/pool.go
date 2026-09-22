@@ -8,7 +8,7 @@ package metricpool
 import (
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
 )
 
 var (

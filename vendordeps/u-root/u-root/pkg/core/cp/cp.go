@@ -16,8 +16,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/core"
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/uroot/unixflag"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/core"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/uroot/unixflag"
 )
 
 // ErrSkip can be returned by PreCallback to skip a file.

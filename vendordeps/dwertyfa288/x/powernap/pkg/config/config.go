@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/mitchellh/mapstructure"
+	"github.com/SpherePrime/CLI/vendordeps/mitchellh/mapstructure"
 )
 
 //go:embed lsps.json

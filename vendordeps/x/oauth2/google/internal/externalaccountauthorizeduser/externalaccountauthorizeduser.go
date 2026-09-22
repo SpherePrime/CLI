@@ -9,8 +9,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google/internal/stsexchange"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google/internal/stsexchange"
 )
 
 // now aliases time.Now for testing.

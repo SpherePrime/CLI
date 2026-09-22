@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/~jackmordaunt/go-toast/internal/winrt/data/xml/dom"
-	"github.com/dwertyfa288/CLI/vendordeps/~jackmordaunt/go-toast/internal/winrt/ui/notifications"
-	"github.com/dwertyfa288/CLI/vendordeps/~jackmordaunt/go-toast/tmpl"
-	"github.com/dwertyfa288/CLI/vendordeps/go-ole/go-ole"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/~jackmordaunt/go-toast/internal/winrt/data/xml/dom"
+	"github.com/SpherePrime/CLI/vendordeps/~jackmordaunt/go-toast/internal/winrt/ui/notifications"
+	"github.com/SpherePrime/CLI/vendordeps/~jackmordaunt/go-toast/tmpl"
+	"github.com/SpherePrime/CLI/vendordeps/go-ole/go-ole"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 func pushPowershell(xml string) error {

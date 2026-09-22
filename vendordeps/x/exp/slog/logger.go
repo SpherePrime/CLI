@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/slog/internal"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/slog/internal"
 )
 
 var defaultLogger atomic.Value

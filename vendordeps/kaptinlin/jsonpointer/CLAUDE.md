@@ -142,7 +142,7 @@ traversal semantics, and coding standards:
 
 ## Dependencies
 
-- `github.com/dwertyfa288/CLI/vendordeps/stretchr/testify`: test assertions and requirements only.
+- `github.com/SpherePrime/CLI/vendordeps/stretchr/testify`: test assertions and requirements only.
 
 ## Performance
 

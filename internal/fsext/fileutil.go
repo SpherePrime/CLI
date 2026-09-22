@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bmatcuk/doublestar/v4"
-	"github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk"
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/home"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/bmatcuk/doublestar/v4"
+	"github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/home"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 type FileInfo struct {

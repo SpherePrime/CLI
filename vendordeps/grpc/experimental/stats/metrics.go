@@ -22,8 +22,8 @@ package stats
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/stats"
 )
 
 type customLabelKey struct{}

@@ -52,7 +52,7 @@ builds:
       - goos: windows
         goarch: arm
     ldflags:
-      - -s -w -X github.com/dwertyfa288/CLI/internal/version.Version={{.Version}}
+      - -s -w -X github.com/SpherePrime/CLI/internal/version.Version={{.Version}}
     flags:
       - -trimpath
 
@@ -86,7 +86,7 @@ nfpms:
     file_name_template: "{{ .ConventionalFileName }}"
     maintainer: "dwertyfa288"
     vendor: "dwertyfa288"
-    homepage: "https://github.com/dwertyfa288/CLI"
+    homepage: "https://github.com/SpherePrime/CLI"
     description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
     contents:
       - src: ./completions/prime.bash

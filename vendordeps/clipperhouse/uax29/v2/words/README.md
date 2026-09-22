@@ -1,17 +1,17 @@
 An implementation of word boundaries from [Unicode text segmentation](https://unicode.org/reports/tr29/#Word_Boundaries) (UAX 29), for Unicode 17.
 
-[![Documentation](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/words.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/words)
+[![Documentation](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/words.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/words)
 ![Tests](https://github.com/clipperhouse/uax29/actions/workflows/gotest.yml/badge.svg)
 ![Fuzz](https://github.com/clipperhouse/uax29/actions/workflows/gofuzz.yml/badge.svg)
 
 ## Quick start
 
 ```
-go get "github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/words"
+go get "github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/words"
 ```
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/words"
+import "github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/words"
 
 text := "Hello, 世界. Nice dog! 👍🐶"
 

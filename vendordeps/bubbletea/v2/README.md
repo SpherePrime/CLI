@@ -3,7 +3,7 @@
 <p>
     <img src="https://github.com/user-attachments/assets/ad408275-8799-488f-9303-441e7f869535" width="350"><br>
     <a href="https://github.com/dwertyfa288/bubbletea/releases"><img src="https://img.shields.io/github/release/dwertyfa288/bubbletea.svg" alt="Latest Release"></a>
-    <a href="https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2?tab=doc"><img src="https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2?status.svg" alt="GoDoc"></a>
+    <a href="https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/bubbletea/v2?tab=doc"><img src="https://godoc.org/github.com/SpherePrime/CLI/vendordeps/bubbletea/v2?status.svg" alt="GoDoc"></a>
     <a href="https://github.com/dwertyfa288/bubbletea/actions"><img src="https://github.com/dwertyfa288/bubbletea/actions/workflows/build.yml/badge.svg?branch=main" alt="Build Status"></a>
 </p>
 
@@ -72,7 +72,7 @@ import (
     "fmt"
     "os"
 
-    tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+    tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 ```
 
@@ -265,7 +265,7 @@ there are [Go Docs][docs].
 
 [cmd]: https://github.com/dwertyfa288/bubbletea/tree/main/tutorials/commands/
 [examples]: https://github.com/dwertyfa288/bubbletea/tree/main/examples
-[docs]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2?tab=doc
+[docs]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/bubbletea/v2?tab=doc
 
 ## Debugging
 

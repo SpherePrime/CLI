@@ -17,7 +17,7 @@ package cert
 import (
 	"crypto/tls"
 
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/enterprise-certificate-proxy/client"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/enterprise-certificate-proxy/client"
 )
 
 type ecpSource struct {

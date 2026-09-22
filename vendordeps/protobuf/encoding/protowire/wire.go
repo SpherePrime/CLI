@@ -6,7 +6,7 @@
 // See https://protobuf.dev/programming-guides/encoding.
 //
 // For marshaling and unmarshaling entire protobuf messages,
-// use the [github.com/dwertyfa288/CLI/vendordeps/protobuf/proto] package instead.
+// use the [github.com/SpherePrime/CLI/vendordeps/protobuf/proto] package instead.
 package protowire
 
 import (
@@ -14,7 +14,7 @@ import (
 	"math"
 	"math/bits"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
 )
 
 // Number represents the field number.

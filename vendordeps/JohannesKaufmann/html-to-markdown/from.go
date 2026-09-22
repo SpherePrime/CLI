@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery"
+	"github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery"
 )
 
 type simpleRuleFunc func(content string, selec *goquery.Selection, options *Options) *string

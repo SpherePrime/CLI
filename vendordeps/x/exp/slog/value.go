@@ -13,7 +13,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/slices"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/slices"
 )
 
 // A Value can represent any Go value, but unlike type any,

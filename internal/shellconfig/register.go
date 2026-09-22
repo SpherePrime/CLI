@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/SpherePrime/CLI/internal/shell"
 )
 
 func init() {

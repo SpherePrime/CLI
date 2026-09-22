@@ -2,8 +2,8 @@ set -e
 echo "See http://www.tpc.org/tpc_documents_current_versions/pdf/tpc-h_v2.17.1.pdf for details"
 tmp=$(mktemp -d)
 cd $tmp
-echo "installing github.com/dwertyfa288/CLI/vendordeps/sqlite/tpch@latest into $tmp"
-GOBIN=$tmp go install github.com/dwertyfa288/CLI/vendordeps/sqlite/tpch@latest
+echo "installing github.com/SpherePrime/CLI/vendordeps/sqlite/tpch@latest into $tmp"
+GOBIN=$tmp go install github.com/SpherePrime/CLI/vendordeps/sqlite/tpch@latest
 echo "generating pseudotext"
 ./tpch -pseudotext
 for sf in 1 10 ; do

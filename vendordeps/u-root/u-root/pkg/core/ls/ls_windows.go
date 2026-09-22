@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/ls"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/ls"
 )
 
 // addOSSpecificFlags adds OS-specific flags to the flag set.

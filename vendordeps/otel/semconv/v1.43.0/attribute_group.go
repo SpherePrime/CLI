@@ -5,7 +5,7 @@
 
 package semconv
 
-import "github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
+import "github.com/SpherePrime/CLI/vendordeps/otel/attribute"
 
 // Namespace: android
 const (

@@ -4,7 +4,7 @@
 package huff0
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/internal/cpuinfo"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/internal/cpuinfo"
 )
 
 // decompress4x_main_loop_amd64 is an x86 assembler implementation

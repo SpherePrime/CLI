@@ -1,9 +1,9 @@
 package mcobra
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/mango"
-	mpflag "github.com/dwertyfa288/CLI/vendordeps/muesli/mango-pflag"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/mango"
+	mpflag "github.com/SpherePrime/CLI/vendordeps/muesli/mango-pflag"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 // NewManPageFromCobra creates a new mango.ManPage from a cobra.Command.

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/config"
 )
 
 const projectsFileName = "projects.json"

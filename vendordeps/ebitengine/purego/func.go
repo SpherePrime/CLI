@@ -13,7 +13,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego/internal/strings"
+	"github.com/SpherePrime/CLI/vendordeps/ebitengine/purego/internal/strings"
 )
 
 const (

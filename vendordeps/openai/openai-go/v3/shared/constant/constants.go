@@ -3,7 +3,7 @@
 package constant
 
 import (
-	shimjson "github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json"
+	shimjson "github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json"
 )
 
 type Constant[T any] interface {

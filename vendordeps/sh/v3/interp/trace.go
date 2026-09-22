@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 // tracer prints expressions like a shell would do if its

@@ -10,12 +10,12 @@ change is the ability to represent an invalid UUID (vs a NIL UUID).
 
 ###### Install
 ```sh
-go get github.com/dwertyfa288/CLI/vendordeps/google/uuid
+go get github.com/SpherePrime/CLI/vendordeps/google/uuid
 ```
 
 ###### Documentation 
-[![Go Reference](https://pkg.go.dev/badge/github.com/google/uuid.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/google/uuid)
+[![Go Reference](https://pkg.go.dev/badge/github.com/google/uuid.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/google/uuid)
 
 Full `go doc` style documentation for the package can be viewed online without
 installing this package by using the GoDoc site here: 
-http://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/google/uuid
+http://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/google/uuid

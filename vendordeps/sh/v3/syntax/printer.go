@@ -12,7 +12,7 @@ import (
 	"text/tabwriter"
 	"unicode"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/fileutil"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/fileutil"
 )
 
 // PrinterOption is a function which can be passed to NewPrinter

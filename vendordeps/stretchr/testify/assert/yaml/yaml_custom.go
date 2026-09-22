@@ -7,11 +7,11 @@
 //	go test -tags testify_yaml_custom
 //
 // This implementation can be used at build time to replace the default implementation
-// to avoid linking with [github.com/dwertyfa288/CLI/vendordeps/yaml/v3].
+// to avoid linking with [github.com/SpherePrime/CLI/vendordeps/yaml/v3].
 //
 // In your test package:
 //
-//		import assertYaml "github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert/yaml"
+//		import assertYaml "github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert/yaml"
 //
 //		func init() {
 //			assertYaml.Unmarshal = func (in []byte, out interface{}) error {

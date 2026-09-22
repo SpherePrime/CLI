@@ -19,9 +19,9 @@ package stats
 import (
 	"fmt"
 
-	estats "github.com/dwertyfa288/CLI/vendordeps/grpc/experimental/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
+	estats "github.com/SpherePrime/CLI/vendordeps/grpc/experimental/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/stats"
 )
 
 // MetricsRecorderList forwards Record calls to all of its metricsRecorders.

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
 )
 
 //go:generate go run script/generate.go

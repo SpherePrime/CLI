@@ -3,10 +3,10 @@
 This package implements the SQLite [OS Interface](https://sqlite.org/vfs.html) (aka VFS).
 
 It replaces the default SQLite VFS with a **pure Go** implementation,
-and exposes [interfaces](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs#VFS)
+and exposes [interfaces](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs#VFS)
 that should allow you to implement your own [custom VFSes](#custom-vfses).
 
-See the [support matrix](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/wiki/Support-matrix)
+See the [support matrix](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/wiki/Support-matrix)
 for the list of supported OS and CPU architectures.
 
 Since this is a from scratch reimplementation,
@@ -48,7 +48,7 @@ To use the [`database/sql`](https://pkg.go.dev/database/sql) driver
 with `nolock=1` you must disable connection pooling by calling
 [`db.SetMaxOpenConns(1)`](https://pkg.go.dev/database/sql#DB.SetMaxOpenConns).
 
-You can use [`vfs.SupportsFileLocking`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs#SupportsFileLocking)
+You can use [`vfs.SupportsFileLocking`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs#SupportsFileLocking)
 to check if your build supports file locking.
 
 ### Write-Ahead Logging
@@ -61,7 +61,7 @@ On Windows, this package uses `MapViewOfFile`, like SQLite.
 
 You can also opt into a cross-platform, in-process, memory sharing implementation
 with the `sqlite3_dotlk` build tag.
-This implementation [shares memory through copying](https://github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/wiki/Sharing-memory-through-copying),
+This implementation [shares memory through copying](https://github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/wiki/Sharing-memory-through-copying),
 and is best used with moderate concurrency. Call
 [`db.SetMaxOpenConns(max(2, runtime.GOMAXPROCS(0)))`](https://pkg.go.dev/database/sql#DB.SetMaxOpenConns)
 to avoid excessive concurrency.
@@ -73,7 +73,7 @@ To use `EXCLUSIVE` locking mode with the
 you must disable connection pooling by calling
 [`db.SetMaxOpenConns(1)`](https://pkg.go.dev/database/sql#DB.SetMaxOpenConns).
 
-You can use [`vfs.SupportsSharedMemory`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs#SupportsSharedMemory)
+You can use [`vfs.SupportsSharedMemory`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs#SupportsSharedMemory)
 to check if your build supports shared memory.
 
 ### Blocking Locks
@@ -89,7 +89,7 @@ on the F2FS filesystem.
 
 ### Checksums
 
-This package can be [configured](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3#Conn.EnableChecksums)
+This package can be [configured](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3#Conn.EnableChecksums)
 to add an 8-byte checksum to the end of every page in an SQLite database.
 The checksum is added as each page is written
 and verified as each page is read.\
@@ -119,15 +119,15 @@ The VFS can be customized with a few build tags:
 
 ### Custom VFSes
 
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/memdb`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/memdb)
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/memdb`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/memdb)
   implements an in-memory VFS.
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/mvcc`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/mvcc)
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/mvcc`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/mvcc)
   implements an in-memory MVCC VFS.
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/readervfs`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/readervfs)
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/readervfs`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/readervfs)
   implements a VFS for immutable databases.
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/adiantum`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/adiantum)
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/adiantum`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/adiantum)
   wraps a VFS to offer encryption at rest.
-- [`github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/xts`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/vfs/xts)
+- [`github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/xts`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/vfs/xts)
   wraps a VFS to offer encryption at rest.
 - [`github.com/ncruces/litestream`](https://pkg.go.dev/github.com/ncruces/litestream)
   implements Litestream [lightweight read-replicas](https://fly.io/blog/litestream-revamped/#lightweight-read-replicas).

@@ -1,6 +1,6 @@
 # Go terminal/console support
 
-[![Go Reference](https://pkg.go.dev/badge/golang.org/x/term.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/term)
+[![Go Reference](https://pkg.go.dev/badge/golang.org/x/term.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/term)
 
 This repository provides Go terminal and console support packages.
 

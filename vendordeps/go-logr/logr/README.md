@@ -1,8 +1,8 @@
 # A minimal logging API for Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/go-logr/logr.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go-logr/logr)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/go-logr/logr)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/go-logr/logr)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/dwertyfa288/CLI/vendordeps/go-logr/logr/badge)](https://securityscorecards.dev/viewer/?platform=github.com&org=go-logr&repo=logr)
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-logr/logr.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go-logr/logr)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/go-logr/logr)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/go-logr/logr)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/SpherePrime/CLI/vendordeps/go-logr/logr/badge)](https://securityscorecards.dev/viewer/?platform=github.com&org=go-logr&repo=logr)
 
 logr offers an(other) opinion on how Go programs and libraries can do logging
 without becoming coupled to a particular logging implementation.  This is not
@@ -130,13 +130,13 @@ with higher verbosity means more (and less important) logs will be generated.
 
 There are implementations for the following logging libraries:
 
-- **a function** (can bridge to non-structured libraries): [funcr](https://github.com/dwertyfa288/CLI/vendordeps/go-logr/logr/tree/master/funcr)
-- **a testing.T** (for use in Go tests, with JSON-like output): [testr](https://github.com/dwertyfa288/CLI/vendordeps/go-logr/logr/tree/master/testr)
+- **a function** (can bridge to non-structured libraries): [funcr](https://github.com/SpherePrime/CLI/vendordeps/go-logr/logr/tree/master/funcr)
+- **a testing.T** (for use in Go tests, with JSON-like output): [testr](https://github.com/SpherePrime/CLI/vendordeps/go-logr/logr/tree/master/testr)
 - **github.com/google/glog**: [glogr](https://github.com/go-logr/glogr)
 - **k8s.io/klog** (for Kubernetes): [klogr](https://git.k8s.io/klog/klogr)
 - **a testing.T** (with klog-like text output): [ktesting](https://git.k8s.io/klog/ktesting)
 - **go.uber.org/zap**: [zapr](https://github.com/go-logr/zapr)
-- **log** (the Go standard library logger): [stdr](https://github.com/dwertyfa288/CLI/vendordeps/go-logr/stdr)
+- **log** (the Go standard library logger): [stdr](https://github.com/SpherePrime/CLI/vendordeps/go-logr/stdr)
 - **github.com/sirupsen/logrus**: [logrusr](https://github.com/bombsimon/logrusr)
 - **github.com/wojas/genericr**: [genericr](https://github.com/wojas/genericr) (makes it easy to implement your own backend)
 - **logfmt** (Heroku style [logging](https://www.brandur.org/logfmt)): [logfmtr](https://github.com/iand/logfmtr)

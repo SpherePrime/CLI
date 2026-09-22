@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/spf13/pflag.svg?branch=master)](https://travis-ci.org/spf13/pflag)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/spf13/pflag)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/spf13/pflag)
-[![GoDoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/spf13/pflag?status.svg)](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/spf13/pflag)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/spf13/pflag)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/spf13/pflag)
+[![GoDoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/spf13/pflag?status.svg)](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/spf13/pflag)
 
 ## Description
 
@@ -22,11 +22,11 @@ pflag is available using the standard `go get` command.
 
 Install by running:
 
-    go get github.com/dwertyfa288/CLI/vendordeps/spf13/pflag
+    go get github.com/SpherePrime/CLI/vendordeps/spf13/pflag
 
 Run tests by running:
 
-    go test github.com/dwertyfa288/CLI/vendordeps/spf13/pflag
+    go test github.com/SpherePrime/CLI/vendordeps/spf13/pflag
 
 ## Usage
 
@@ -35,7 +35,7 @@ pflag under the name "flag" then all code should continue to function
 with no changes.
 
 ``` go
-import flag "github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+import flag "github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 ```
 
 There is one exception to this: if you directly instantiate the Flag struct
@@ -273,7 +273,7 @@ to support flags defined by third-party dependencies (e.g. `golang/glog`).
 ```go
 import (
 	goflag "flag"
-	flag "github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+	flag "github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 var ip *int = flag.Int("flagname", 1234, "help message for flagname")
@@ -286,7 +286,7 @@ func main() {
 
 ### Using pflag with go test
 `pflag` does not parse the shorthand versions of go test's built-in flags (i.e., those starting with `-test.`).
-For more context, see issues [#63](https://github.com/dwertyfa288/CLI/vendordeps/spf13/pflag/issues/63) and [#238](https://github.com/dwertyfa288/CLI/vendordeps/spf13/pflag/issues/238) for more details.
+For more context, see issues [#63](https://github.com/SpherePrime/CLI/vendordeps/spf13/pflag/issues/63) and [#238](https://github.com/SpherePrime/CLI/vendordeps/spf13/pflag/issues/238) for more details.
 
 For example, if you use pflag in your `TestMain` function and call `pflag.Parse()` after defining your custom flags, running a test like this:
 ```bash
@@ -299,7 +299,7 @@ To work around this, you can use the `ParseSkippedFlags` function, which ensures
 ```go
 import (
 	goflag "flag"
-	flag "github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+	flag "github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 var ip *int = flag.Int("flagname", 1234, "help message for flagname")
@@ -316,8 +316,8 @@ func main() {
 You can see the full reference documentation of the pflag package
 [at godoc.org][3], or through go's standard documentation system by
 running `godoc -http=:6060` and browsing to
-[http://localhost:6060/pkg/github.com/dwertyfa288/CLI/vendordeps/spf13/pflag][2] after
+[http://localhost:6060/pkg/github.com/SpherePrime/CLI/vendordeps/spf13/pflag][2] after
 installation.
 
-[2]: http://localhost:6060/pkg/github.com/dwertyfa288/CLI/vendordeps/spf13/pflag
-[3]: http://godoc.org/github.com/dwertyfa288/CLI/vendordeps/spf13/pflag
+[2]: http://localhost:6060/pkg/github.com/SpherePrime/CLI/vendordeps/spf13/pflag
+[3]: http://godoc.org/github.com/SpherePrime/CLI/vendordeps/spf13/pflag

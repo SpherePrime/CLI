@@ -3,8 +3,8 @@ http://git.nic.cz/redmine/projects/gornd/repository
 
 Packages in this repository:
 
-Install: $ go get github.com/dwertyfa288/CLI/vendordeps/mathutil
-Godocs:  http://godoc.org/github.com/dwertyfa288/CLI/vendordeps/mathutil
+Install: $ go get github.com/SpherePrime/CLI/vendordeps/mathutil
+Godocs:  http://godoc.org/github.com/SpherePrime/CLI/vendordeps/mathutil
 
-Install: $ go get github.com/dwertyfa288/CLI/vendordeps/mathutil/mersenne
-Godocs:  http://godoc.org/github.com/dwertyfa288/CLI/vendordeps/mathutil/mersenne
+Install: $ go get github.com/SpherePrime/CLI/vendordeps/mathutil/mersenne
+Godocs:  http://godoc.org/github.com/SpherePrime/CLI/vendordeps/mathutil/mersenne

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5"
 )
 
 // RemoveAll removes path and any children it contains. It removes everything it

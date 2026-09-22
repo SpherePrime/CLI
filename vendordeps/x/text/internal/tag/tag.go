@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package tag contains functionality handling tags and related data.
-package tag // import "github.com/dwertyfa288/CLI/vendordeps/x/text/internal/tag"
+package tag // import "github.com/SpherePrime/CLI/vendordeps/x/text/internal/tag"
 
 import "sort"
 

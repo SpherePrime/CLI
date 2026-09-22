@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpcutil"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpcutil"
 )
 
 var grpclogLogger = grpclog.Component("binarylog")

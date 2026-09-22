@@ -32,7 +32,7 @@
 // must be implemented. The following is an example of what the above snippet
 // could look like using the warnings package:
 //
-//  import "github.com/dwertyfa288/CLI/vendordeps/warnings.v0"
+//  import "github.com/SpherePrime/CLI/vendordeps/warnings.v0"
 //
 //  func isFatal(err error) bool {
 //      _, ok := err.(WarningType)
@@ -78,7 +78,7 @@
 //  - go vet-style invocations verifier
 //  - semi-automatic code converter
 //
-package warnings // import "github.com/dwertyfa288/CLI/vendordeps/warnings.v0"
+package warnings // import "github.com/SpherePrime/CLI/vendordeps/warnings.v0"
 
 import (
 	"bytes"

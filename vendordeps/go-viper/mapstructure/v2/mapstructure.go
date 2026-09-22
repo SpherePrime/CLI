@@ -206,7 +206,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-viper/mapstructure/v2/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/go-viper/mapstructure/v2/internal/errors"
 )
 
 // DecodeHookFunc is the callback function that can be used for

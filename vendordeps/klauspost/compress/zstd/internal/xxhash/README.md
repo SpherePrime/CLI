@@ -33,7 +33,7 @@ opts into using the Go code even on those architectures.
 
 This package is in a module and the latest code is in version 2 of the module.
 You need a version of Go with at least "minimal module compatibility" to use
-github.com/dwertyfa288/CLI/vendordeps/cespare/xxhash/v2:
+github.com/SpherePrime/CLI/vendordeps/cespare/xxhash/v2:
 
 * 1.9.7+ for Go 1.9
 * 1.10.3+ for Go 1.10

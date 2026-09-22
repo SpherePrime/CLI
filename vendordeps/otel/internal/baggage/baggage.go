@@ -7,7 +7,7 @@ baggage in Go context. This package exists because the OpenTracing bridge to
 OpenTelemetry needs to synchronize state whenever baggage for a context is
 modified and that context contains an OpenTracing span. If it were not for
 this need this package would not need to exist and the
-`github.com/dwertyfa288/CLI/vendordeps/otel/baggage` package would be the singular place where
+`github.com/SpherePrime/CLI/vendordeps/otel/baggage` package would be the singular place where
 W3C baggage is handled.
 */
 package baggage

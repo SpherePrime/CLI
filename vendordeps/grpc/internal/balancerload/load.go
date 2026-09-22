@@ -19,7 +19,7 @@
 package balancerload
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
 )
 
 // Parser converts loads from metadata into a concrete type.

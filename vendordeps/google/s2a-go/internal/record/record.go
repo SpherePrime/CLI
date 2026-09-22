@@ -28,10 +28,10 @@ import (
 	"net"
 	"sync"
 
-	commonpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/record/internal/halfconn"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	commonpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/record/internal/halfconn"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 )
 
 // recordType is the `ContentType` as described in

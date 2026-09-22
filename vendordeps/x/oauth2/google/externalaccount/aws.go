@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 // AwsSecurityCredentials models AWS security credentials.

@@ -25,12 +25,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	binlogpb "github.com/dwertyfa288/CLI/vendordeps/grpc/binarylog/grpc_binarylog_v1"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/durationpb"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/timestamppb"
+	binlogpb "github.com/SpherePrime/CLI/vendordeps/grpc/binarylog/grpc_binarylog_v1"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/durationpb"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/timestamppb"
 )
 
 type callIDGenerator struct {

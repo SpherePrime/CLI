@@ -10,9 +10,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/expand"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/interp"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 // RunOptions configures a single stateless shell execution via [Run].

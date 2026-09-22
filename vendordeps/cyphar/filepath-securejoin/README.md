@@ -1,7 +1,7 @@
 ## `filepath-securejoin` ##
 
-[![Go Documentation](https://pkg.go.dev/badge/github.com/cyphar/filepath-securejoin.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin)
-[![Build Status](https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/actions/workflows/ci.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/actions/workflows/ci.yml)
+[![Go Documentation](https://pkg.go.dev/badge/github.com/cyphar/filepath-securejoin.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin)
+[![Build Status](https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/actions/workflows/ci.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/actions/workflows/ci.yml)
 
 ### Old API ###
 

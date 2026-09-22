@@ -14,16 +14,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/object"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/internal/httpheaders"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/bedrock"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/vertex"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/config"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/object"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/internal/httpheaders"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/bedrock"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/vertex"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/config"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"
 )
 
 // betaRequestOptions converts beta flag strings into request

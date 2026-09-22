@@ -1,9 +1,9 @@
-// Code generated with github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/_codegen; DO NOT EDIT.
+// Code generated with github.com/SpherePrime/CLI/vendordeps/stretchr/testify/_codegen; DO NOT EDIT.
 
 package require
 
 import (
-	assert "github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
+	assert "github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
 	http "net/http"
 	url "net/url"
 	time "time"

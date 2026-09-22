@@ -4,7 +4,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // JoinHorizontal is a utility function for horizontally joining two

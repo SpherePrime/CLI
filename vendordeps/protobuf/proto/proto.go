@@ -5,8 +5,8 @@
 package proto
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 // Message is the top-level interface that all messages must implement.
@@ -18,9 +18,9 @@ import (
 // The v1 interface definition is [github.com/golang/protobuf/proto.Message].
 //
 //   - To convert a v1 message to a v2 message,
-//     use [github.com/dwertyfa288/CLI/vendordeps/protobuf/protoadapt.MessageV2Of].
+//     use [github.com/SpherePrime/CLI/vendordeps/protobuf/protoadapt.MessageV2Of].
 //   - To convert a v2 message to a v1 message,
-//     use [github.com/dwertyfa288/CLI/vendordeps/protobuf/protoadapt.MessageV1Of].
+//     use [github.com/SpherePrime/CLI/vendordeps/protobuf/protoadapt.MessageV1Of].
 type Message = protoreflect.ProtoMessage
 
 // Error matches all errors produced by packages in the protobuf module

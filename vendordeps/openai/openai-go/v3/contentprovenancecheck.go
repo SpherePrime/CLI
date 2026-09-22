@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apiform"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/shared/constant"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apiform"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/shared/constant"
 )
 
 // ContentProvenanceCheckService contains methods and other services that help with

@@ -105,7 +105,7 @@ func (b *WString) Pointer() *uint16 {
 //
 // It assumes that the data is null-terminated.
 func (b *WString) String() string {
-	// Using [windows.UTF16ToString] would require importing "github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	// Using [windows.UTF16ToString] would require importing "github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 	// and would make this code Windows-only, which makes no sense.
 	// So copy UTF16ToString code into here.
 	// If other windows-specific code is added, switch to [windows.UTF16ToString]

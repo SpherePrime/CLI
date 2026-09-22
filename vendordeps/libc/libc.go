@@ -7,7 +7,7 @@
 ///go.generate echo package libc > ccgo.go
 ///go:generate go fmt -l -s -w ./...
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 //TODO use O_RDONLY etc. from fcntl header
 
@@ -30,13 +30,13 @@ import (
 	gotime "time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/mattn/go-isatty"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/stdio"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/time"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/unistd"
-	"github.com/dwertyfa288/CLI/vendordeps/mathutil"
+	"github.com/SpherePrime/CLI/vendordeps/mattn/go-isatty"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/stdio"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/time"
+	"github.com/SpherePrime/CLI/vendordeps/libc/unistd"
+	"github.com/SpherePrime/CLI/vendordeps/mathutil"
 )
 
 const (

@@ -22,8 +22,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-logr/logr"
-	"github.com/dwertyfa288/CLI/vendordeps/go-logr/logr/funcr"
+	"github.com/SpherePrime/CLI/vendordeps/go-logr/logr"
+	"github.com/SpherePrime/CLI/vendordeps/go-logr/logr/funcr"
 )
 
 // The global verbosity level.  See SetVerbosity().

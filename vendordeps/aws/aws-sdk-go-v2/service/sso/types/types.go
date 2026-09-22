@@ -3,7 +3,7 @@
 package types
 
 import (
-	smithydocument "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/document"
+	smithydocument "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/document"
 )
 
 // Provides information about your AWS account.

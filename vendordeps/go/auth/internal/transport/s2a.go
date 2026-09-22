@@ -24,8 +24,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/transport/cert"
-	"github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/transport/cert"
+	"github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
 )
 
 const (

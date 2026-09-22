@@ -35,7 +35,7 @@ linters:
             - '!internal/global/trace.go'
             - ~internal/global/trace_test.go
           deny:
-            - pkg: github.com/dwertyfa288/CLI/vendordeps/auto/sdk
+            - pkg: github.com/SpherePrime/CLI/vendordeps/auto/sdk
               desc: Do not use SDK from automatic instrumentation.
         non-tests:
           files:
@@ -44,7 +44,7 @@ linters:
             - '!**/internal/matchers/*.go'
           deny:
             - pkg: testing
-            - pkg: github.com/dwertyfa288/CLI/vendordeps/stretchr/testify
+            - pkg: github.com/SpherePrime/CLI/vendordeps/stretchr/testify
             - pkg: crypto/md5
             - pkg: crypto/sha1
             - pkg: crypto/**/pkix
@@ -65,29 +65,29 @@ linters:
             - '**/log/*.go'
             - '**/log/**/*.go'
           deny:
-            - pkg: github.com/dwertyfa288/CLI/vendordeps/otel/internal$
+            - pkg: github.com/SpherePrime/CLI/vendordeps/otel/internal$
               desc: Do not use cross-module internal packages.
-            - pkg: github.com/dwertyfa288/CLI/vendordeps/otel/internal/internaltest
+            - pkg: github.com/SpherePrime/CLI/vendordeps/otel/internal/internaltest
               desc: Do not use cross-module internal packages.
         otlp-internal:
           files:
             - '!**/exporters/otlp/internal/**/*.go'
           deny:
-            - pkg: github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/internal
+            - pkg: github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/internal
               desc: Do not use cross-module internal packages.
         otlpmetric-internal:
           files:
             - '!**/exporters/otlp/otlpmetric/internal/*.go'
             - '!**/exporters/otlp/otlpmetric/internal/**/*.go'
           deny:
-            - pkg: github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal
+            - pkg: github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/internal
               desc: Do not use cross-module internal packages.
         otlptrace-internal:
           files:
             - '!**/exporters/otlp/otlptrace/*.go'
             - '!**/exporters/otlp/otlptrace/internal/**.go'
           deny:
-            - pkg: github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal
+            - pkg: github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/internal
               desc: Do not use cross-module internal packages.
         semconv:
           list-mode: lax
@@ -95,10 +95,10 @@ linters:
             - "!**/semconv/**"
             - "!**/exporters/zipkin/**"
           deny:
-            - pkg: github.com/dwertyfa288/CLI/vendordeps/otel/semconv
-              desc: "Use github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0 instead. If a newer semconv version has been released, update the depguard rule."
+            - pkg: github.com/SpherePrime/CLI/vendordeps/otel/semconv
+              desc: "Use github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0 instead. If a newer semconv version has been released, update the depguard rule."
           allow:
-            - github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0
+            - github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0
     gocritic:
       disabled-checks:
         - appendAssign
@@ -275,7 +275,7 @@ formatters:
       extra-rules: true
     goimports:
       local-prefixes:
-        - github.com/dwertyfa288/CLI/vendordeps/otel
+        - github.com/SpherePrime/CLI/vendordeps/otel
     golines:
       max-len: 120
   exclusions:

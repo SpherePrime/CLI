@@ -74,7 +74,7 @@ func isAnchorChar(b []byte, i int) bool {
 		// but it can lead to ambiguity.
 		// https://github.com/yaml/go-yaml/issues/109
 		//
-		// Also, it would have been a breaking change to support it, as github.com/dwertyfa288/CLI/vendordeps/yaml/v3 ignores it.
+		// Also, it would have been a breaking change to support it, as github.com/SpherePrime/CLI/vendordeps/yaml/v3 ignores it.
 		// Supporting it could lead to unexpected behavior.
 		return false
 	}

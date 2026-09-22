@@ -105,7 +105,7 @@ func (e *expirationTime) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// AuthStyle is a copy of the github.com/dwertyfa288/CLI/vendordeps/x/oauth2 package's AuthStyle type.
+// AuthStyle is a copy of the github.com/SpherePrime/CLI/vendordeps/x/oauth2 package's AuthStyle type.
 type AuthStyle int
 
 const (

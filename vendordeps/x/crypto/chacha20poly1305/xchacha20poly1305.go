@@ -8,7 +8,7 @@ import (
 	"crypto/cipher"
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/chacha20"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/chacha20"
 )
 
 type xchacha20poly1305 struct {

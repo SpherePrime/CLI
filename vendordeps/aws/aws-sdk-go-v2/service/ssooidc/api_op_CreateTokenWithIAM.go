@@ -4,8 +4,8 @@ package ssooidc
 
 import (
 	"context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc/types"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc/types"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // Creates and returns access and refresh tokens for authorized client

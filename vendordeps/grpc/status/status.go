@@ -32,16 +32,16 @@ import (
 	"errors"
 	"fmt"
 
-	spb "github.com/dwertyfa288/CLI/vendordeps/genproto/googleapis/rpc/status"
+	spb "github.com/SpherePrime/CLI/vendordeps/genproto/googleapis/rpc/status"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/status"
 )
 
-// Status references github.com/dwertyfa288/CLI/vendordeps/grpc/internal/status. It represents an
+// Status references github.com/SpherePrime/CLI/vendordeps/grpc/internal/status. It represents an
 // RPC status code, message, and details.  It is immutable and should be
 // created with New, Newf, or FromProto.
-// https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/grpc/internal/status
+// https://godoc.org/github.com/SpherePrime/CLI/vendordeps/grpc/internal/status
 type Status = status.Status
 
 // New returns a Status representing c and msg.

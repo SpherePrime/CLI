@@ -2,7 +2,7 @@ package param
 
 import (
 	"encoding/json"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/encoding/json/sentinel"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/encoding/json/sentinel"
 	"reflect"
 )
 

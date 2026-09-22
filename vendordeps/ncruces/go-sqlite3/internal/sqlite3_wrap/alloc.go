@@ -1,6 +1,6 @@
 package sqlite3_wrap
 
-import "github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+import "github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
 
 func (w *Wrapper) Free(ptr Ptr_t) {
 	if ptr == 0 {

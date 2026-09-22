@@ -22,7 +22,7 @@
 // These calls return err == nil to indicate success; otherwise
 // err represents an operating system error describing the failure and
 // holds a value of type syscall.ErrorString.
-package plan9 // import "github.com/dwertyfa288/CLI/vendordeps/x/sys/plan9"
+package plan9 // import "github.com/SpherePrime/CLI/vendordeps/x/sys/plan9"
 
 import (
 	"bytes"

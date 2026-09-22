@@ -4,8 +4,8 @@ import (
 	"image/color"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // EmptyCell is a cell with a single space, width of 1, and no style or link.

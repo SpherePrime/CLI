@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/env"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/env"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestMCPConfig_ResolvedURL(t *testing.T) {

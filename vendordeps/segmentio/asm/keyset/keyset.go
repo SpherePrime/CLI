@@ -3,9 +3,9 @@ package keyset
 import (
 	"bytes"
 
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu"
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu/arm64"
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu/x86"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu/arm64"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu/x86"
 )
 
 // New prepares a set of keys for use with Lookup.

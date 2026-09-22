@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	iointernal "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http/internal/io"
+	iointernal "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http/internal/io"
 )
 
 // Request provides the HTTP specific request structure for HTTP specific

@@ -3,7 +3,7 @@ package tree
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // StyleFunc allows the tree to be styled per item.

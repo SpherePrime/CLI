@@ -5,7 +5,7 @@ import (
 	"io"
 	"regexp"
 
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
 )
 
 // TTY16m is a true-colour terminal formatter.

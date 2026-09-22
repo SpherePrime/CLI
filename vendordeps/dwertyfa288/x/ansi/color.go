@@ -3,7 +3,7 @@ package ansi
 import (
 	"image/color"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
+	"github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful"
 )
 
 // Color is a color that can be used in a terminal. ANSI (including

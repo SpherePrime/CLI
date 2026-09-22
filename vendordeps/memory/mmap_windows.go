@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package memory // import "github.com/dwertyfa288/CLI/vendordeps/memory"
+package memory // import "github.com/SpherePrime/CLI/vendordeps/memory"
 
 import (
-	syscall "github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	syscall "github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 	"os"
 )
 

@@ -22,7 +22,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go"
+	"github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go"
 )
 
 //go:generate go run -modfile=go.dev.mod _tools/gen_builtin.go -i builtin.jq -o builtin.go

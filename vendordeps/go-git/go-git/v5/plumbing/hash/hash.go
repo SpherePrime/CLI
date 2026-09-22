@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pjbgf/sha1cd"
+	"github.com/SpherePrime/CLI/vendordeps/pjbgf/sha1cd"
 )
 
 // algos is a map of hash algorithms.

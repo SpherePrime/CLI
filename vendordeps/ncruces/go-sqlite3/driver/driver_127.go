@@ -8,7 +8,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3"
 )
 
 func (r *rows) ScanColumn(ctx driver.ScanContext, i int, dest any) error {

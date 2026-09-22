@@ -17,7 +17,7 @@ the environment variable `GOOGLEAPIS`
 
 From this directory run the following command:
 ```sh
-protoc -I $GOOGLEAPIS -I. --go_out=. --go_opt=module=github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/apierror/internal/proto error.proto
+protoc -I $GOOGLEAPIS -I. --go_out=. --go_opt=module=github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/apierror/internal/proto error.proto
 goimports -w .
 ```
 

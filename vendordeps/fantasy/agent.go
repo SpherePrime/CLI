@@ -13,9 +13,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/jsonrepair"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/schema"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/slice"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/jsonrepair"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/schema"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/slice"
 )
 
 // StepResult represents the result of a single step in an agent execution.

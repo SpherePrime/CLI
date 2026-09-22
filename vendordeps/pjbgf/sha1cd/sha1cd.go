@@ -16,7 +16,7 @@ import (
 	"errors"
 	"hash"
 
-	shared "github.com/dwertyfa288/CLI/vendordeps/pjbgf/sha1cd/internal"
+	shared "github.com/SpherePrime/CLI/vendordeps/pjbgf/sha1cd/internal"
 )
 
 // The size of a SHA-1 checksum in bytes.

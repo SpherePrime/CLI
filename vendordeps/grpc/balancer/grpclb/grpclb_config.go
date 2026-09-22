@@ -21,9 +21,9 @@ package grpclb
 import (
 	"encoding/json"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/pickfirst"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/roundrobin"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/pickfirst"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/roundrobin"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
 )
 
 const (

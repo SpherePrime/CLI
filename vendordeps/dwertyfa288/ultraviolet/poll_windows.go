@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 var fileShareValidFlags uint32 = windows.FILE_SHARE_DELETE | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_READ

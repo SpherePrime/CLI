@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/grpctransport"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/grpctransport"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
 )
 
 // ConnPool is a pool of grpc.ClientConns.

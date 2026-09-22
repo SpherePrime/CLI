@@ -5,6 +5,6 @@
 //go:build !memory.trace
 // +build !memory.trace
 
-package memory // import "github.com/dwertyfa288/CLI/vendordeps/memory"
+package memory // import "github.com/SpherePrime/CLI/vendordeps/memory"
 
 const trace = false

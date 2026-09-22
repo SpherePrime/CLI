@@ -12,8 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	shimjson "github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	shimjson "github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 )
 
 type Decoder interface {

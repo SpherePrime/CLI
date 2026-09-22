@@ -5,7 +5,7 @@
 // Package tiff implements a TIFF image decoder and encoder.
 //
 // The TIFF specification is at http://partners.adobe.com/public/developer/en/tiff/TIFF6.pdf
-package tiff // import "github.com/dwertyfa288/CLI/vendordeps/x/image/tiff"
+package tiff // import "github.com/SpherePrime/CLI/vendordeps/x/image/tiff"
 
 import (
 	"bytes"
@@ -17,9 +17,9 @@ import (
 	"io"
 	"math"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/ccitt"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/internal/safemath"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/tiff/lzw"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/ccitt"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/internal/safemath"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/tiff/lzw"
 )
 
 // A FormatError reports that the input is not a valid TIFF image.

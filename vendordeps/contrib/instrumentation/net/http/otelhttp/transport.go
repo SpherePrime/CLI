@@ -12,15 +12,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/propagation"
-	otelsemconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/codes"
+	"github.com/SpherePrime/CLI/vendordeps/otel/propagation"
+	otelsemconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
 
-	"github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp/internal/request"
-	"github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp/internal/semconv"
+	"github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp/internal/request"
+	"github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp/internal/semconv"
 )
 
 // Transport implements the http.RoundTripper interface and wraps

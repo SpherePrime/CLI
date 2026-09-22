@@ -18,14 +18,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/externalaccount"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/externalaccountuser"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/gdch"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/impersonate"
-	internalauth "github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/credsfile"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/regionalaccessboundary"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/externalaccount"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/externalaccountuser"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/gdch"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/impersonate"
+	internalauth "github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/credsfile"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/regionalaccessboundary"
 )
 
 const cloudPlatformScope = "https://www.googleapis.com/auth/cloud-platform"

@@ -3,7 +3,7 @@ package agent
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 func usageIsZero(usage fantasy.Usage) bool {

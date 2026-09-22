@@ -34,7 +34,7 @@
 //
 //   - [Equal] compares two messages. For more control over comparisons
 //     and detailed reporting of differences, see package
-//     [github.com/dwertyfa288/CLI/vendordeps/protobuf/testing/protocmp].
+//     [github.com/SpherePrime/CLI/vendordeps/protobuf/testing/protocmp].
 //
 //   - [Reset] clears the content of a message.
 //
@@ -64,20 +64,20 @@
 //
 // # Related packages
 //
-//   - Package [github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protojson] converts messages to
+//   - Package [github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protojson] converts messages to
 //     and from JSON.
 //
-//   - Package [github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/prototext] converts messages to
+//   - Package [github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/prototext] converts messages to
 //     and from the text format.
 //
-//   - Package [github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect] provides a
+//   - Package [github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect] provides a
 //     reflection interface for protocol buffer data types.
 //
-//   - Package [github.com/dwertyfa288/CLI/vendordeps/protobuf/testing/protocmp] provides features
-//     to compare protocol buffer messages with the [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp]
+//   - Package [github.com/SpherePrime/CLI/vendordeps/protobuf/testing/protocmp] provides features
+//     to compare protocol buffer messages with the [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp]
 //     package.
 //
-//   - Package [github.com/dwertyfa288/CLI/vendordeps/protobuf/types/dynamicpb] provides a dynamic
+//   - Package [github.com/SpherePrime/CLI/vendordeps/protobuf/types/dynamicpb] provides a dynamic
 //     message type, suitable for working with messages where the protocol buffer
 //     type is only known at runtime.
 //

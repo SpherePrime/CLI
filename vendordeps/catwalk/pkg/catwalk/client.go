@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	xetag "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/etag"
+	xetag "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/etag"
 )
 
 const defaultURL = "http://localhost:8080"

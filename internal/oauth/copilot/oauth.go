@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/internal/oauth"
 )
 
 const (

@@ -1,9 +1,9 @@
 package extension
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/parser"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/renderer/html"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/parser"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/renderer/html"
 )
 
 // A CJKOption sets options for CJK support mostly for HTML based renderers.

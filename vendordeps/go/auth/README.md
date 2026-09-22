@@ -1,11 +1,11 @@
 # Google Auth Library for Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/go/auth.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go/auth)
+[![Go Reference](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/go/auth.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go/auth)
 
 ## Install
 
 ``` bash
-go get github.com/dwertyfa288/CLI/vendordeps/go/auth@latest
+go get github.com/SpherePrime/CLI/vendordeps/go/auth@latest
 ```
 
 ## Usage
@@ -16,16 +16,16 @@ of our Go client libraries.
 ### Notable use-cases
 
 - To create a credential directly please see examples in the
-  [credentials](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials)
+  [credentials](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go/auth/credentials)
   package.
 - To create a authenticated HTTP client please see examples in the
-  [httptransport](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go/auth/httptransport)
+  [httptransport](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go/auth/httptransport)
   package.
 - To create a authenticated gRPC connection please see examples in the
-  [grpctransport](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go/auth/grpctransport)
+  [grpctransport](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go/auth/grpctransport)
   package.
 - To create an ID token please see examples in the
-  [idtoken](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/idtoken)
+  [idtoken](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/idtoken)
   package.
 
 ## Contributing

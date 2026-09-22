@@ -6,8 +6,8 @@ package otelgrpc
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/propagation"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/otel/propagation"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
 )
 
 type metadataSupplier struct {

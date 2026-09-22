@@ -4,7 +4,7 @@
 
 package language
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/text/internal/language/compact"
+import "github.com/SpherePrime/CLI/vendordeps/x/text/internal/language/compact"
 
 // TODO: Various sets of commonly use tags and regions.
 

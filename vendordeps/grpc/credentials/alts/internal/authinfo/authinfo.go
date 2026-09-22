@@ -20,8 +20,8 @@
 package authinfo
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	altspb "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal/proto/grpc_gcp"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	altspb "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal/proto/grpc_gcp"
 )
 
 var _ credentials.AuthInfo = (*altsAuthInfo)(nil)

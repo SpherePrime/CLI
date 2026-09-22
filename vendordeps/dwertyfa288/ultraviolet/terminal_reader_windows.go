@@ -11,10 +11,10 @@ import (
 	"time"
 	"unicode/utf16"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	xwindows "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/windows"
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	xwindows "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/windows"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 // streamData sends data from the input stream to the event channel.

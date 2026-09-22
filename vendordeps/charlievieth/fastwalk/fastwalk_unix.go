@@ -10,7 +10,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk/internal/dirent"
+	"github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk/internal/dirent"
 )
 
 // More than 5760 to work around https://golang.org/issue/24015.

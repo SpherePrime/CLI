@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/flate"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/flate"
 )
 
 const (

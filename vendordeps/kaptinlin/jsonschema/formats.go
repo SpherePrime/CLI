@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonpointer"
+	"github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonpointer"
 )
 
 // Formats is a registry of functions, which know how to validate

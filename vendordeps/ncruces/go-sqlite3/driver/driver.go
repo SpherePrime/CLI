@@ -2,7 +2,7 @@
 //
 // Importing package driver registers a [database/sql] driver named "sqlite3".
 //
-//	import _ "github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver"
+//	import _ "github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver"
 //
 // The data source name for "sqlite3" databases can be a filename or a "file:" [URI].
 //
@@ -107,14 +107,14 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/util"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/util"
 )
 
 // This variable can be replaced with -ldflags:
 //
-//	go build -ldflags="-X github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver.driverName=sqlite"
+//	go build -ldflags="-X github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver.driverName=sqlite"
 var driverName = "sqlite3"
 
 func init() {

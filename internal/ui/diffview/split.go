@@ -3,8 +3,8 @@ package diffview
 import (
 	"slices"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aymanbagabas/go-udiff"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/slice"
+	"github.com/SpherePrime/CLI/vendordeps/aymanbagabas/go-udiff"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/slice"
 )
 
 type splitHunk struct {

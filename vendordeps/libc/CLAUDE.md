@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`github.com/dwertyfa288/CLI/vendordeps/libc` is a partial reimplementation of C libc in pure Go. It is the **runtime** for C programs translated to Go by the `modernc.org/ccgo` transpiler (notably `github.com/dwertyfa288/CLI/vendordeps/sqlite`). It is not a standalone library for general use; its API tracks the needs of ccgo-generated code and may change incompatibly between versions.
+`github.com/SpherePrime/CLI/vendordeps/libc` is a partial reimplementation of C libc in pure Go. It is the **runtime** for C programs translated to Go by the `modernc.org/ccgo` transpiler (notably `github.com/SpherePrime/CLI/vendordeps/sqlite`). It is not a standalone library for general use; its API tracks the needs of ccgo-generated code and may change incompatibly between versions.
 
-Compatibility note: callers of this package (e.g. `github.com/dwertyfa288/CLI/vendordeps/sqlite`) must use the libc version that matches their generated code (see the consumer's `go.mod`). Do not bump the libc version of a downstream consumer in isolation without re-translating its C sources.
+Compatibility note: callers of this package (e.g. `github.com/SpherePrime/CLI/vendordeps/sqlite`) must use the libc version that matches their generated code (see the consumer's `go.mod`). Do not bump the libc version of a downstream consumer in isolation without re-translating its C sources.
 
 ## Architectural split: musl-derived vs hand-written
 

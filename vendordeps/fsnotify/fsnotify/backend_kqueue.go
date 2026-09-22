@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fsnotify/fsnotify/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/fsnotify/fsnotify/internal"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 type kqueue struct {
@@ -505,7 +505,7 @@ func (w *kqueue) readEvents() {
 					if found {
 						// TODO: this branch is never triggered in any test.
 						// Added in d6220df (2012).
-						// isDir check added in 8611c35 (2016): https://github.com/dwertyfa288/CLI/vendordeps/fsnotify/fsnotify/pull/111
+						// isDir check added in 8611c35 (2016): https://github.com/SpherePrime/CLI/vendordeps/fsnotify/fsnotify/pull/111
 						//
 						// I don't really get how this can be triggered either.
 						// And it wasn't triggered in the patch that added it,

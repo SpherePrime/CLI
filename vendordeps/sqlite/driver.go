@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 import (
 	"database/sql/driver"
 	"fmt"
 	"sync"
 
-	sqlite3 "github.com/dwertyfa288/CLI/vendordeps/sqlite/lib"
-	"github.com/dwertyfa288/CLI/vendordeps/sqlite/vtab"
+	sqlite3 "github.com/SpherePrime/CLI/vendordeps/sqlite/lib"
+	"github.com/SpherePrime/CLI/vendordeps/sqlite/vtab"
 )
 
 // Driver implements database/sql/driver.Driver.
@@ -237,7 +237,7 @@ func defaultDriver() *Driver { return d }
 // underscore prefix: this is the same parameter SQLite recognizes in a file:
 // URI, and its value is passed on as the sqlite3_open_v2 zVfs argument. It
 // selects any VFS registered with SQLite, in particular one returned by
-// [github.com/dwertyfa288/CLI/vendordeps/sqlite/vfs.New], which exposes a Go fs.FS as a read-only VFS.
+// [github.com/SpherePrime/CLI/vendordeps/sqlite/vfs.New], which exposes a Go fs.FS as a read-only VFS.
 // When absent or empty the default VFS is used. Supplying the parameter more
 // than once with values that differ is an error.
 func (d *Driver) Open(name string) (conn driver.Conn, err error) {

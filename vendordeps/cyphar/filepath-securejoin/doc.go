@@ -38,10 +38,10 @@
 // openat2(RESOLVE_BENEATH) which does not fit the usecase of container
 // runtimes and most system tools.
 //
-// [pathrs-lite]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite
+// [pathrs-lite]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite
 // [libpathrs]: https://github.com/openSUSE/libpathrs
-// [OpenInRoot]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite#OpenInRoot
-// [MkdirAll]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite#MkdirAll
-// [procfs.Handle]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite/procfs#Handle
+// [OpenInRoot]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite#OpenInRoot
+// [MkdirAll]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite#MkdirAll
+// [procfs.Handle]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite/procfs#Handle
 // [os.Root]: https:///pkg.go.dev/os#Root
 package securejoin

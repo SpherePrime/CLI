@@ -3,7 +3,7 @@ package tea
 import (
 	"image/color"
 
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // backgroundColorMsg is a message that requests the terminal background color.

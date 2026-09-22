@@ -1,10 +1,10 @@
 # CancelReader
 
-[![Latest Release](https://img.shields.io/github/release/muesli/cancelreader.svg?style=for-the-badge)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader/releases)
-[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader)
+[![Latest Release](https://img.shields.io/github/release/muesli/cancelreader.svg?style=for-the-badge)](https://github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader/releases)
+[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader)
 [![Software License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](/LICENSE)
-[![Build Status](https://img.shields.io/github/workflow/status/muesli/cancelreader/build?style=for-the-badge)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader/actions)
-[![Go ReportCard](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader?style=for-the-badge)](https://goreportcard.com/report/muesli/cancelreader)
+[![Build Status](https://img.shields.io/github/workflow/status/muesli/cancelreader/build?style=for-the-badge)](https://github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader/actions)
+[![Go ReportCard](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader?style=for-the-badge)](https://goreportcard.com/report/muesli/cancelreader)
 
 A cancelable reader for Go
 

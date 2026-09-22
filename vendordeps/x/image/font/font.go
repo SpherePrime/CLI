@@ -7,7 +7,7 @@
 //
 // Other packages provide font face implementations. For example, a truetype
 // package would provide one based on .ttf font files.
-package font // import "github.com/dwertyfa288/CLI/vendordeps/x/image/font"
+package font // import "github.com/SpherePrime/CLI/vendordeps/x/image/font"
 
 import (
 	"image"
@@ -15,7 +15,7 @@ import (
 	"io"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/fixed"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/fixed"
 )
 
 // TODO: who is responsible for caches (glyph images, glyph indices, kerns)?

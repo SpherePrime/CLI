@@ -23,12 +23,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/channelz"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpcsync"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/pretty"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/resolver/delegatingresolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/channelz"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpcsync"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/pretty"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/resolver/delegatingresolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
 )
 
 // ccResolverWrapper is a wrapper on top of cc for resolvers.

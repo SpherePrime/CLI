@@ -5,8 +5,8 @@ import (
 	"image/color"
 	"strings"
 
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
 )
 
 // Context represents a drawing context for rendering operations on a screen.

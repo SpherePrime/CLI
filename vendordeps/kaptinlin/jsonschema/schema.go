@@ -12,7 +12,7 @@ import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 
-	"github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonpointer"
+	"github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonpointer"
 )
 
 // Schema represents a JSON Schema as per the 2020-12 draft, containing all

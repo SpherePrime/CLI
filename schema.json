@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/dwertyfa288/CLI/internal/config/config",
+  "$id": "https://github.com/SpherePrime/CLI/internal/config/config",
   "$ref": "#/$defs/Config",
   "$defs": {
     "Attribution": {

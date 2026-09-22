@@ -1,6 +1,6 @@
 package tea
 
-import uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+import uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 
 // KeyMod represents modifier keys.
 type KeyMod = uv.KeyMod

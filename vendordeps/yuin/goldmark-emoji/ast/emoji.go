@@ -4,8 +4,8 @@ package ast
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji/definition"
-	gast "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji/definition"
+	gast "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
 )
 
 // Emoji represents an inline emoji.

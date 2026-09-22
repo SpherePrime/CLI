@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/config"
 )
 
 // reinitAction describes how to reconcile one MCP server against the

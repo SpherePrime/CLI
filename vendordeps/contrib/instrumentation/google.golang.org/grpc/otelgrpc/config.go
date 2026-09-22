@@ -8,16 +8,16 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/propagation"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
+	"github.com/SpherePrime/CLI/vendordeps/otel"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/otel/propagation"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/stats"
 )
 
 // ScopeName is the instrumentation scope name.
-const ScopeName = "github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+const ScopeName = "github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 // InterceptorFilter is a predicate used to determine whether a given request in
 // interceptor info should be instrumented. A InterceptorFilter must return true if

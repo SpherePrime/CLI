@@ -38,9 +38,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aymerick/douceur/parser"
+	"github.com/SpherePrime/CLI/vendordeps/aymerick/douceur/parser"
 )
 
 var (
@@ -239,7 +239,7 @@ func (p *Policy) sanitize(r io.Reader, w io.Writer) error {
 		case html.DoctypeToken:
 
 			// DocType is not handled as there is no safe parsing mechanism
-			// provided by github.com/dwertyfa288/CLI/vendordeps/x/net/html for the content, and this can
+			// provided by github.com/SpherePrime/CLI/vendordeps/x/net/html for the content, and this can
 			// be misused to insert HTML tags that are not then sanitized
 			//
 			// One might wish to recursively sanitize here using the same policy

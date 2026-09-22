@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows/registry"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows/registry"
 )
 
 var (

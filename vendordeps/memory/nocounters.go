@@ -5,6 +5,6 @@
 //go:build !memory.counters
 // +build !memory.counters
 
-package memory // import "github.com/dwertyfa288/CLI/vendordeps/memory"
+package memory // import "github.com/SpherePrime/CLI/vendordeps/memory"
 
 const counters = false

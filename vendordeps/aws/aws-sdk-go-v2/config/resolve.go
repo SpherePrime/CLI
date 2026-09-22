@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	awshttp "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/transport/http"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
 )
 
 // resolveDefaultAWSConfig will write default configuration values into the cfg

@@ -15,13 +15,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/codes"
-	semconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/codes"
+	semconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/noop"
 
-	"github.com/dwertyfa288/CLI/vendordeps/auto/sdk/internal/telemetry"
+	"github.com/SpherePrime/CLI/vendordeps/auto/sdk/internal/telemetry"
 )
 
 type span struct {

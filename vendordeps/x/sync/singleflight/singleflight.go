@@ -4,7 +4,7 @@
 
 // Package singleflight provides a duplicate function call suppression
 // mechanism.
-package singleflight // import "github.com/dwertyfa288/CLI/vendordeps/x/sync/singleflight"
+package singleflight // import "github.com/SpherePrime/CLI/vendordeps/x/sync/singleflight"
 
 import (
 	"bytes"

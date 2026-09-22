@@ -20,7 +20,7 @@
 
 package grpc
 
-// grpcnotrace can be used to avoid importing github.com/dwertyfa288/CLI/vendordeps/x/net/trace, which in
+// grpcnotrace can be used to avoid importing github.com/SpherePrime/CLI/vendordeps/x/net/trace, which in
 // turn enables binaries using gRPC-Go for dead code elimination, which can
 // yield 10-15% improvements in binary size when tracing is not needed.
 

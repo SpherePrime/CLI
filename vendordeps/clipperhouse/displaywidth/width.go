@@ -3,7 +3,7 @@ package displaywidth
 import (
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
 )
 
 // String calculates the display width of a string,

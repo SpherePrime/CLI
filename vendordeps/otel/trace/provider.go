@@ -3,7 +3,7 @@
 
 package trace
 
-import "github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded"
+import "github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded"
 
 // TracerProvider provides Tracers that are used by instrumentation code to
 // trace computational workflows.
@@ -17,7 +17,7 @@ import "github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded"
 //
 // Commonly, instrumentation code will accept a TracerProvider implementation
 // at runtime from its users or it can simply use the globally registered one
-// (see https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel#GetTracerProvider).
+// (see https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel#GetTracerProvider).
 //
 // Warning: Methods may be added to this interface in minor releases. See
 // package documentation on API implementation for information on how to set

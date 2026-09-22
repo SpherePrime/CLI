@@ -4,7 +4,7 @@ package google
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
 )
 
 type dummyTokenProvider struct{}

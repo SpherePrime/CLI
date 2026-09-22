@@ -1,4 +1,4 @@
-# bluemonday [![GoDoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday?status.png)](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday) [![Sourcegraph](https://sourcegraph.com/github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday/-/badge.svg)](https://sourcegraph.com/github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday?badge)
+# bluemonday [![GoDoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday?status.png)](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday) [![Sourcegraph](https://sourcegraph.com/github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday/-/badge.svg)](https://sourcegraph.com/github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday?badge)
 
 bluemonday is a HTML sanitizer implemented in Go. It is fast and highly configurable.
 
@@ -52,7 +52,7 @@ bluemonday is heavily inspired by both the [OWASP Java HTML Sanitizer](https://c
 
 Allowlist based, you need to either build a policy describing the HTML elements and attributes to permit (and the `regexp` patterns of attributes), or use one of the supplied policies representing good defaults.
 
-The policy containing the allowlist is applied using a fast non-validating, forward only, token-based parser implemented in the [Go net/html library](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/x/net/html) by the core Go team.
+The policy containing the allowlist is applied using a fast non-validating, forward only, token-based parser implemented in the [Go net/html library](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/x/net/html) by the core Go team.
 
 We expect to be supplied with well-formatted HTML (closing elements for every applicable open element, nested correctly) and so we do not focus on repairing badly nested or incomplete HTML. We focus on simply ensuring that whatever elements do exist are described in the policy allowlist and that attributes and links are safe for use on your web page. [GIGO](http://en.wikipedia.org/wiki/Garbage_in,_garbage_out) does apply and if you feed it bad HTML bluemonday is not tasked with figuring out how to make it good again.
 
@@ -62,13 +62,13 @@ We expect to be supplied with well-formatted HTML (closing elements for every ap
 
 We are using bluemonday in production having migrated from the widely used and heavily field tested OWASP Java HTML Sanitizer.
 
-We are passing our extensive test suite (including AntiSamy tests as well as tests for any issues raised). Check for any [unresolved issues](https://github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday/issues?page=1&state=open) to see whether anything may be a blocker for you.
+We are passing our extensive test suite (including AntiSamy tests as well as tests for any issues raised). Check for any [unresolved issues](https://github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday/issues?page=1&state=open) to see whether anything may be a blocker for you.
 
 We invite pull requests and issues to help us ensure we are offering comprehensive protection against various attacks via user generated content.
 
 ## Usage
 
-Install using `go get github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday`
+Install using `go get github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday`
 
 Then call it:
 ```go
@@ -77,7 +77,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday"
+	"github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday"
 )
 
 func main() {
@@ -112,7 +112,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday"
+	"github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday"
 )
 
 func main() {

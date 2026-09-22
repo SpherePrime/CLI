@@ -4,10 +4,10 @@ import (
 	"image/color"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/formatters"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/internal/ui/xchroma"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/formatters"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/internal/ui/xchroma"
 )
 
 const formatterName = "prime"

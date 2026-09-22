@@ -24,12 +24,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/credsfile"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/regionalaccessboundary"
-	"github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/credsfile"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/regionalaccessboundary"
+	"github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 const (
@@ -313,7 +313,7 @@ type DetectOptions struct {
 	Logger *slog.Logger
 }
 
-// NewCredentialsFromFile creates a [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials] from
+// NewCredentialsFromFile creates a [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials] from
 // the provided file. The credType argument specifies the expected credential
 // type. If the file content does not match the expected type, an error is
 // returned.
@@ -333,7 +333,7 @@ func NewCredentialsFromFile(credType CredType, filename string, opts *DetectOpti
 	return NewCredentialsFromJSON(credType, b, opts)
 }
 
-// NewCredentialsFromJSON creates a [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials] from
+// NewCredentialsFromJSON creates a [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials] from
 // the provided JSON bytes. The credType argument specifies the expected
 // credential type. If the JSON does not match the expected type, an error is
 // returned.

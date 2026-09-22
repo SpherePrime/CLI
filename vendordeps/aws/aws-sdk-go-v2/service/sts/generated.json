@@ -1,12 +1,12 @@
 {
     "dependencies": {
-        "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2": "v1.4.0",
-        "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/configsources": "v0.0.0-00010101000000-000000000000",
-        "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/endpoints/v2": "v2.0.0-00010101000000-000000000000",
-        "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/v4a": "v0.0.0-00010101000000-000000000000",
-        "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/internal/accept-encoding": "v1.0.5",
-        "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/internal/presigned-url": "v1.0.7",
-        "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go": "v1.4.0"
+        "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2": "v1.4.0",
+        "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/configsources": "v0.0.0-00010101000000-000000000000",
+        "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/endpoints/v2": "v2.0.0-00010101000000-000000000000",
+        "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/v4a": "v0.0.0-00010101000000-000000000000",
+        "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/internal/accept-encoding": "v1.0.5",
+        "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/internal/presigned-url": "v1.0.7",
+        "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go": "v1.4.0"
     },
     "files": [
         "api_client.go",
@@ -42,6 +42,6 @@
         "validators.go"
     ],
     "go": "1.24",
-    "module": "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts",
+    "module": "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts",
     "unstable": false
 }

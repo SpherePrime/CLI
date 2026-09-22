@@ -7,7 +7,7 @@ package mcp
 import (
 	"encoding/json"
 
-	internaljson "github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
+	internaljson "github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
 )
 
 func assert(cond bool, msg string) {

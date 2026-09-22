@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/internal/path_util"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/plumbing/format/config"
-	gioutil "github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/utils/ioutil"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/internal/path_util"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/plumbing/format/config"
+	gioutil "github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/utils/ioutil"
 )
 
 const (

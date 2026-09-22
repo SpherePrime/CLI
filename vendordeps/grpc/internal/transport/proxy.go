@@ -29,9 +29,9 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/proxyattributes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/proxyattributes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 const proxyAuthHeaderKey = "Proxy-Authorization"

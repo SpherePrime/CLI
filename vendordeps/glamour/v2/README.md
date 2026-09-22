@@ -21,7 +21,7 @@ the stylish defaults.
 ## Usage
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
+import "github.com/SpherePrime/CLI/vendordeps/glamour/v2"
 
 in := `# Hello World
 
@@ -40,7 +40,7 @@ fmt.Print(out)
 ### Custom Renderer
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
+import "github.com/SpherePrime/CLI/vendordeps/glamour/v2"
 
 r, _ := glamour.NewTermRenderer(
     // wrap output at specific width (default is 80)
@@ -60,8 +60,8 @@ to perform downsampling before rendering:
 
 ```go
 import (
-    "github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
-    "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+    "github.com/SpherePrime/CLI/vendordeps/glamour/v2"
+    "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 r, _ := glamour.NewTermRenderer(

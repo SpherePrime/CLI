@@ -3,13 +3,13 @@
     src="logo.png" 
     width="240" height="78" border="0" alt="SJSON">
 <br>
-<a href="https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"><img src="https://img.shields.io/badge/api-reference-blue.svg?style=flat-square" alt="GoDoc"></a>
+<a href="https://godoc.org/github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"><img src="https://img.shields.io/badge/api-reference-blue.svg?style=flat-square" alt="GoDoc"></a>
 </p>
 
 <p align="center">set a json value quickly</p>
 
 SJSON is a Go package that provides a [very fast](#performance) and simple way to set a value in a json document.
-For quickly retrieving json values check out [GJSON](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson).
+For quickly retrieving json values check out [GJSON](https://github.com/SpherePrime/CLI/vendordeps/tidwall/gjson).
 
 For a command line interface check out [JJ](https://github.com/tidwall/jj).
 
@@ -22,7 +22,7 @@ Installing
 To start using SJSON, install Go and run `go get`:
 
 ```sh
-$ go get -u github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson
+$ go get -u github.com/SpherePrime/CLI/vendordeps/tidwall/sjson
 ```
 
 This will retrieve the library.
@@ -38,7 +38,7 @@ Invalid paths may return an error.
 ```go
 package main
 
-import "github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+import "github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 
 const json = `{"name":{"first":"Janet","last":"Prichard"},"age":47}`
 

@@ -4,8 +4,8 @@
 
 // Package transport provides utility methods for creating authenticated
 // transports to Google's HTTP and gRPC APIs. It is intended to be used in
-// conjunction with github.com/dwertyfa288/CLI/vendordeps/api/option.
+// conjunction with github.com/SpherePrime/CLI/vendordeps/api/option.
 //
 // This package is not intended for use by end developers. Use the
-// github.com/dwertyfa288/CLI/vendordeps/api/option package to configure API clients.
+// github.com/SpherePrime/CLI/vendordeps/api/option package to configure API clients.
 package transport

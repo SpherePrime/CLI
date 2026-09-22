@@ -21,10 +21,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/internal/stsexchange"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/internal/stsexchange"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 // Options stores the configuration for fetching tokens with external authorized
@@ -61,7 +61,7 @@ func (c *Options) validate() bool {
 	return c.ClientID != "" && c.ClientSecret != "" && c.RefreshToken != "" && c.TokenURL != ""
 }
 
-// NewTokenProvider returns a [github.com/dwertyfa288/CLI/vendordeps/go/auth.TokenProvider]
+// NewTokenProvider returns a [github.com/SpherePrime/CLI/vendordeps/go/auth.TokenProvider]
 // configured with the provided options.
 func NewTokenProvider(opts *Options) (auth.TokenProvider, error) {
 	if !opts.validate() {

@@ -24,11 +24,11 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/lifecycle"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/paint"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/size"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/touch"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/geom"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/lifecycle"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/paint"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/size"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/touch"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/geom"
 )
 
 func init() {

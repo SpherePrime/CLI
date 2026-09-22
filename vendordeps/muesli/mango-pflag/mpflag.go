@@ -1,8 +1,8 @@
 package mpflag
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/mango"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/mango"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 // PFlagVisitor is used to visit all flags and track them in a mango.ManPage.

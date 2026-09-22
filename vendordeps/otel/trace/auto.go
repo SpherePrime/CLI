@@ -18,11 +18,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/codes"
-	semconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/internal/telemetry"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/codes"
+	semconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/internal/telemetry"
 )
 
 // newAutoTracerProvider returns an auto-instrumentable [trace.TracerProvider].

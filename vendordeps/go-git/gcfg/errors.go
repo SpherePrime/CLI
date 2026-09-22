@@ -1,7 +1,7 @@
 package gcfg
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/warnings.v0"
+	"github.com/SpherePrime/CLI/vendordeps/warnings.v0"
 )
 
 // FatalOnly filters the results of a Read*Into invocation and returns only

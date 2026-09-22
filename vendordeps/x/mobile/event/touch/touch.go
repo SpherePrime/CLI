@@ -4,7 +4,7 @@
 
 // Package touch defines an event for touch input.
 //
-// See the github.com/dwertyfa288/CLI/vendordeps/x/mobile/app package for details on the event model.
+// See the github.com/SpherePrime/CLI/vendordeps/x/mobile/app package for details on the event model.
 package touch
 
 // The best source on android input events is the NDK: include/android/input.h

@@ -27,7 +27,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yaml/v4/internal/libyaml"
+	"github.com/SpherePrime/CLI/vendordeps/yaml/v4/internal/libyaml"
 )
 
 type encoder struct {

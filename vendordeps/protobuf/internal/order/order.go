@@ -5,7 +5,7 @@
 package order
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 // FieldOrder specifies the ordering to visit message fields.

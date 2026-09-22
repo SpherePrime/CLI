@@ -11,7 +11,7 @@ import (
 )
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/gcfg/token"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/gcfg/token"
 )
 
 // In an ErrorList, an error is represented by an *Error.

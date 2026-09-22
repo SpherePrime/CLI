@@ -21,9 +21,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	json "github.com/dwertyfa288/CLI/vendordeps/goccy/go-json"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
+	json "github.com/SpherePrime/CLI/vendordeps/goccy/go-json"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/cases"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 const (

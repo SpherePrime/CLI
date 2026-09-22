@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 )
 
 // Writer is the default writer that prints to stdout, automatically

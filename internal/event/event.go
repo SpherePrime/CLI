@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/version"
-	"github.com/dwertyfa288/CLI/vendordeps/posthog/posthog-go"
+	"github.com/SpherePrime/CLI/internal/version"
+	"github.com/SpherePrime/CLI/vendordeps/posthog/posthog-go"
 )
 
 const (

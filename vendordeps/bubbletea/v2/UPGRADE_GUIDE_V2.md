@@ -32,8 +32,8 @@ import tea "github.com/dwertyfa288/bubbletea"
 import "github.com/dwertyfa288/lipgloss"
 
 // After
-import tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+import tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 ```
 
 ## The Big Idea: Declarative Views
@@ -410,7 +410,7 @@ import (
     "fmt"
     "os"
 
-    tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+    tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 type model struct {
@@ -464,8 +464,8 @@ A flat old → new lookup table. Handy for search-and-replace and LLM-assisted m
 
 | v1 | v2 |
 |---|---|
-| `github.com/dwertyfa288/bubbletea` | `github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2` |
-| `github.com/dwertyfa288/lipgloss` | `github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2` |
+| `github.com/dwertyfa288/bubbletea` | `github.com/SpherePrime/CLI/vendordeps/bubbletea/v2` |
+| `github.com/dwertyfa288/lipgloss` | `github.com/SpherePrime/CLI/vendordeps/lipgloss/v2` |
 
 ### Model Interface
 

@@ -4,7 +4,7 @@ package types
 
 import (
 	"fmt"
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // Error thrown for access denied scenarios with flexible HTTP status mapping

@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/interp"
 )
 
 // defaultKillTimeout matches mvdan's DefaultExecHandler default. Extracted

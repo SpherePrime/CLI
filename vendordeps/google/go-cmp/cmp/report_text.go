@@ -12,7 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/internal/flags"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/internal/flags"
 )
 
 var randBool = rand.New(rand.NewSource(time.Now().Unix())).Intn(2) == 0

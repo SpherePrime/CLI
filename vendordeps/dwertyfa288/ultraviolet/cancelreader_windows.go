@@ -9,9 +9,9 @@ import (
 	"os"
 	"sync"
 
-	xwindows "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/windows"
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	xwindows "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/windows"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 type conInputReader struct {

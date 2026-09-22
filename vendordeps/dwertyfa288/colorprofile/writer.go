@@ -7,7 +7,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // NewWriter creates a new color profile writer that downgrades color sequences

@@ -24,11 +24,11 @@ package roundrobin
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/endpointsharding"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/pickfirst"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	internalgrpclog "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/endpointsharding"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/pickfirst"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	internalgrpclog "github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpclog"
 )
 
 // Name is the name of round_robin balancer.

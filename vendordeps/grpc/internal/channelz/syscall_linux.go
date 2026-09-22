@@ -21,7 +21,7 @@ package channelz
 import (
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 // SocketOptionData defines the struct to hold socket option data, and related

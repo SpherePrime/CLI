@@ -26,7 +26,7 @@
 // or removed in a later release.
 package weight
 
-import "github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+import "github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 
 // attributeKey is the type used as the key to store EndpointInfo in the
 // Attributes field of resolver.Endpoint.
