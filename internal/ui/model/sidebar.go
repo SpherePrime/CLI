@@ -65,6 +65,7 @@ func (m *UI) modelInfo(width int) string {
 // state mutation in the update path rather than in the draw function.
 func (m *UI) updateSidebarScrollState() {
 	if m.session == nil || m.isCompact {
+		m.sidebarScrollbarTrack = common.ScrollbarTrack{}
 		return
 	}
 
@@ -125,6 +126,7 @@ func (m *UI) updateSidebarScrollState() {
 	m.sidebarDrawLogo = sidebarLogo
 	m.sidebarScrollable = totalLines > contentHeight
 	m.sidebarMaxOffsetVal = max(0, totalLines-contentHeight)
+	m.sidebarContentTop = contentRect.Min.Y
 
 	// If the sidebar is focused but no longer scrollable (e.g. after a
 	// resize), return focus to the chat.
@@ -137,6 +139,36 @@ func (m *UI) updateSidebarScrollState() {
 	if m.sidebarOffset > m.sidebarMaxOffsetVal {
 		m.sidebarOffset = m.sidebarMaxOffsetVal
 	}
+
+	// Record where the thumb is painted so a press on that column grabs it.
+	m.recordSidebarScrollbarTrack()
+}
+
+// recordSidebarScrollbarTrack stores the sidebar scrollbar column geometry for
+// pointer hit-testing, or clears it when no thumb is painted.
+func (m *UI) recordSidebarScrollbarTrack() {
+	if !m.sidebarScrollbarShown() {
+		m.sidebarScrollbarTrack = common.ScrollbarTrack{}
+		return
+	}
+	m.sidebarScrollbarTrack = common.ScrollbarTrack{
+		X:            m.layout.sidebar.Max.X - 1,
+		MinY:         m.sidebarContentTop,
+		Height:       m.sidebarContentHeight,
+		ContentSize:  m.sidebarTotalLines,
+		ViewportSize: m.sidebarContentHeight,
+		Offset:       m.sidebarOffset,
+	}
+}
+
+// sidebarScrollbarShown reports whether the sidebar scrollbar is painted this
+// frame: it needs scrollable content and either focus, recent scroll activity,
+// or a pointer holding the thumb.
+func (m *UI) sidebarScrollbarShown() bool {
+	if !m.sidebarScrollable {
+		return false
+	}
+	return m.sidebarScrollbarVisible || m.focus == uiFocusSidebar || m.sidebarScrollbarDrag.Active()
 }
 
 // drawSidebar renders the chat sidebar with a fixed logo and a
@@ -166,7 +198,7 @@ func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
 
 	// Determine scrollbar visibility: always visible when focused, otherwise
 	// auto-hide.
-	scrollbarVisible := totalLines > contentHeight && (m.sidebarScrollbarVisible || m.focus == uiFocusSidebar)
+	scrollbarVisible := m.sidebarScrollbarShown()
 
 	// Draw the fixed logo.
 	uv.NewStyledString(

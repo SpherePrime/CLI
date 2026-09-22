@@ -1,7 +1,6 @@
 package model
 
 import (
-	"image"
 	"strings"
 	"time"
 
@@ -144,6 +143,12 @@ type Chat struct {
 	scrollbarHideSeq int    // current sequence number for hide timer
 	scrollbarMode    string // "default", "always", or "never"
 
+	// scrollbarTrack is where the thumb was painted last draw (screen cells)
+	// and scrollbarDrag the pointer grab on it, so a press and drag on the
+	// column scrolls the chat.
+	scrollbarTrack common.ScrollbarTrack
+	scrollbarDrag  common.ScrollbarDrag
+
 	// resizing suppresses the O(N) total-height scan while a resize is in
 	// flight (and during the incremental warm afterward), so a drag only
 	// reflows the visible items. resizeSettleSeq guards stale settle/warm
@@ -224,7 +229,9 @@ func (m *Chat) Draw(scr uv.Screen, area uv.Rectangle) {
 	case config.ScrollbarAlways:
 		showScrollbar = needsScrollbar
 	case config.ScrollbarDefault:
-		showScrollbar = needsScrollbar && m.scrollbarVisible
+		// Keep the thumb painted while the pointer is holding it, otherwise
+		// a held drag would scroll content that is no longer reachable.
+		showScrollbar = needsScrollbar && (m.scrollbarVisible || m.scrollbarDrag.Active())
 	case config.ScrollbarNever:
 		showScrollbar = false
 	}
@@ -268,14 +275,9 @@ func (m *Chat) Draw(scr uv.Screen, area uv.Rectangle) {
 	// (showScrollbar requires it), so TotalHeight is already computed and
 	// cached above.
 	if scrollbarWidth > 0 {
-		scrollbar := common.Scrollbar(m.com.Styles, listHeight, m.list.TotalHeight()-1, listHeight, m.list.Offset())
-		if scrollbar != "" {
-			scrollbarArea := image.Rectangle{
-				Min: image.Point{X: area.Max.X - scrollbarWidth, Y: area.Min.Y},
-				Max: image.Point{X: area.Max.X, Y: area.Max.Y},
-			}
-			uv.NewStyledString(scrollbar).Draw(scr, scrollbarArea)
-		}
+		m.drawScrollbar(scr, area, listHeight, scrollbarWidth)
+	} else {
+		m.scrollbarTrack = common.ScrollbarTrack{}
 	}
 }
 
