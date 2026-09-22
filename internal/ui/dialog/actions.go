@@ -110,6 +110,10 @@ type (
 	// ActionSaveProvider is sent when the provider add dialog has persisted
 	// a new provider to the global config.
 	ActionSaveProvider struct{}
+	// ActionRefreshStatus is a message to refresh the status dialog.
+	ActionRefreshStatus struct{}
+	// ActionRestartSystems is a message to restart SKILLs, MCPs, and LSPs.
+	ActionRestartSystems struct{}
 )
 
 // Messages for MCP OAuth authentication dialog.

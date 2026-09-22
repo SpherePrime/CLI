@@ -38,6 +38,8 @@ func enStrings() map[string]string {
 		"cmd.toggle_yolo_mode":          "Toggle Yolo Mode",
 		"cmd.toggle_help":               "Toggle Help",
 		"cmd.initialize_project":        "Initialize Project",
+		"cmd.restart_systems":           "Restart Systems",
+		"cmd.status":                    "Status",
 		"cmd.add_provider":              "Add Provider",
 		"cmd.enable_background_color":   "Enable Background Color",
 		"cmd.disable_background_color":  "Disable Background Color",
@@ -89,6 +91,26 @@ func enStrings() map[string]string {
 		"quit.confirm":         "Are you sure you want to quit?",
 		"quit.hint":           "To quit without confirmation",
 		"quit.hint2":          "press ctrl+c twice.",
+
+		// Status dialog.
+		"status.title":          "Status",
+		"status.usage":          "Usage",
+		"status.session":        "Session",
+		"status.tokens_prompt":  "Prompt tokens",
+		"status.tokens_completion": "Completion tokens",
+		"status.tokens_total":   "Total tokens",
+		"status.cost":           "Cost",
+		"status.messages":       "Messages",
+		"status.estimated":      "(estimated)",
+		"status.no_session":     "No active session",
+		"status.mcp_servers":    "MCP Servers",
+		"status.lsp_servers":    "LSP Servers",
+		"status.none":           "None",
+		"status.state_started":  "started",
+		"status.state_stopped":  "stopped",
+		"status.state_error":    "error",
+		"status.state_connecting": "connecting",
+		"status.state_auth":     "needs auth",
 
 		// Sessions.
 		"sessions.enter_name":      "Enter session name",
@@ -209,6 +231,8 @@ func enStrings() map[string]string {
 		"info.language_set":          "Language set to %s",
 		"info.enabled":               "enabled",
 		"info.disabled":              "disabled",
+		"info.systems_restarted":     "SKILLs, MCPs and LSPs restarted",
+		"info.systems_restart_failed": "Failed to restart systems: %v",
 	}
 }
 
@@ -235,6 +259,8 @@ func ruStrings() map[string]string {
 		"cmd.toggle_yolo_mode":          "Режим Yolo",
 		"cmd.toggle_help":               "Справка",
 		"cmd.initialize_project":        "Инициализировать проект",
+		"cmd.restart_systems":           "Перезапустить системы",
+		"cmd.status":                    "Статус",
 		"cmd.add_provider":              "Добавить провайдера",
 		"cmd.enable_background_color":   "Включить цвет фона",
 		"cmd.disable_background_color":  "Выключить цвет фона",
@@ -407,5 +433,27 @@ func ruStrings() map[string]string {
 		"info.language_set":          "Язык: %s",
 		"info.enabled":               "включено",
 		"info.disabled":              "выключено",
+		"info.systems_restarted":     "SKILLs, MCPs и LSPs перезапущены",
+		"info.systems_restart_failed": "Не удалось перезапустить системы: %v",
+
+		// Status dialog.
+		"status.title":          "Статус",
+		"status.usage":          "Использование",
+		"status.session":        "Сессия",
+		"status.tokens_prompt":  "Токены промпта",
+		"status.tokens_completion": "Токены ответа",
+		"status.tokens_total":   "Всего токенов",
+		"status.cost":           "Стоимость",
+		"status.messages":       "Сообщения",
+		"status.estimated":      "(оценка)",
+		"status.no_session":     "Нет активной сессии",
+		"status.mcp_servers":    "MCP-серверы",
+		"status.lsp_servers":    "LSP-серверы",
+		"status.none":           "Нет",
+		"status.state_started":  "запущен",
+		"status.state_stopped":  "остановлен",
+		"status.state_error":    "ошибка",
+		"status.state_connecting": "подключение",
+		"status.state_auth":     "нужна аутентификация",
 	}
 }
