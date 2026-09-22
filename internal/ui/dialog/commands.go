@@ -153,6 +153,16 @@ func (c *Commands) ID() string {
 	return CommandsID
 }
 
+// RefreshLocale retranslates the placeholder, close-key hint and visible
+// command items after the UI language changes.
+func (c *Commands) RefreshLocale() {
+	c.input.Placeholder = c.com.L("cmd.type_to_filter")
+	closeKey := CloseKey
+	closeKey.SetHelp("esc", c.com.L("key.cancel"))
+	c.keyMap.Close = closeKey
+	c.setCommandItems(c.selected)
+}
+
 // HandleMsg implements [Dialog].
 func (c *Commands) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {

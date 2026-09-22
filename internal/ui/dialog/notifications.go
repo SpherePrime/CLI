@@ -118,6 +118,11 @@ func (n *Notifications) ID() string {
 	return NotificationsID
 }
 
+// RefreshLocale retranslates the placeholder after the UI language changes.
+func (n *Notifications) RefreshLocale() {
+	n.input.Placeholder = n.com.L("cmd.type_to_filter")
+}
+
 // HandleMsg implements [Dialog].
 func (n *Notifications) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {

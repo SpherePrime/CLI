@@ -114,6 +114,11 @@ func (r *Reasoning) ID() string {
 	return ReasoningID
 }
 
+// RefreshLocale retranslates the placeholder after the UI language changes.
+func (r *Reasoning) RefreshLocale() {
+	r.input.Placeholder = r.com.L("cmd.type_to_filter")
+}
+
 // HandleMsg implements [Dialog].
 func (r *Reasoning) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {

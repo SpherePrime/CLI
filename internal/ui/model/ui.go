@@ -3542,6 +3542,11 @@ func (m *UI) applyProgressBar(v *tea.View) {
 func (m *UI) applyLanguage() {
 	tr := m.com.T()
 	m.keyMap = BuildKeyMap(tr)
+	for _, dlg := range m.dialog.Dialogs() {
+		if r, ok := dlg.(dialog.LocaleRefreshable); ok {
+			r.RefreshLocale()
+		}
+	}
 }
 
 // ShortHelp implements [help.KeyMap].

@@ -84,15 +84,15 @@ func (m *UI) initializeView() string {
 	cwd := home.Short(m.com.Workspace.WorkingDir())
 	initFile := m.com.Config().Options.InitializeAs
 
-	header := s.Header.Render("Would you like to initialize this project?")
+	header := s.Header.Render(m.com.L("onboard.init_title"))
 	path := s.Accent.PaddingLeft(2).Render(cwd)
-	desc := s.Content.Render(fmt.Sprintf("When I initialize your codebase I examine the project and put the result into an %s file which serves as general context.", initFile))
-	hint := s.Content.Render("You can also initialize anytime via ") + s.Accent.Render("ctrl+p") + s.Content.Render(".")
-	prompt := s.Content.Render("Would you like to initialize now?")
+	desc := s.Content.Render(m.com.LSprintf("onboard.init_body", initFile))
+	hint := s.Content.Render(m.com.L("onboard.init_hint"))
+	prompt := s.Content.Render(m.com.L("onboard.init_now"))
 
 	buttons := common.ButtonGroup(m.com.Styles, []common.ButtonOpts{
-		{Text: "Yep!", Selected: m.onboarding.yesInitializeSelected},
-		{Text: "Nope", Selected: !m.onboarding.yesInitializeSelected},
+		{Text: m.com.L("btn.yep"), Selected: m.onboarding.yesInitializeSelected},
+		{Text: m.com.L("btn.nope"), Selected: !m.onboarding.yesInitializeSelected},
 	}, " ")
 
 	// max width 60 so the text is compact
