@@ -105,9 +105,12 @@ func Render(base lipgloss.Style, version string, compact bool, o Opts) string {
 	prime = strings.TrimSpace(metaRow + "\n" + prime)
 
 	// Narrow version. If this is Hyperprime, this is also a stacked version.
+	// One field row above the title and one below keeps the block symmetric,
+	// and both match the title width so the right edge lines up with the
+	// version, which is padded out to the same width.
 	if compact {
 		field := fg(o.FieldColor, strings.Repeat(diag, primeWidth))
-		return strings.Join([]string{field, field, prime, field, ""}, "\n")
+		return strings.Join([]string{field, prime, field}, "\n")
 	}
 
 	fieldHeight := lipgloss.Height(prime)
