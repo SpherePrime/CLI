@@ -40,6 +40,7 @@ type PromptDat struct {
 	ContextFiles       []ContextFile
 	GlobalContextFiles []ContextFile
 	AvailSkillXML      string
+	SmartTools         bool
 }
 
 type ContextFile struct {
@@ -214,6 +215,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 		Platform:      platform,
 		Date:          p.now().Format("1/2/2006"),
 		AvailSkillXML: availSkillXML,
+		SmartTools:    cfg.Options.SmartTools,
 	}
 	if isGit {
 		var err error

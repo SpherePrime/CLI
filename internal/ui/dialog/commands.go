@@ -535,9 +535,15 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	notificationLabel := "Notification Style"
 	commands = append(commands, NewCommandItem(c.com.Styles, "select_notifications", notificationLabel, "", ActionOpenDialog{DialogID: NotificationsID}))
 
+	smartToolsLabel := "Enable Smart Tools Mode"
+	if cfg != nil && cfg.Options != nil && cfg.Options.SmartTools {
+		smartToolsLabel = "Disable Smart Tools Mode"
+	}
+
 	commands = append(
 		commands,
 		NewCommandItem(c.com.Styles, "toggle_yolo", "Toggle Yolo Mode", "ctrl+y", ActionToggleYoloMode{}),
+		NewCommandItem(c.com.Styles, "toggle_smart_tools", smartToolsLabel, "", ActionToggleSmartTools{}).WithAliases("smart tools"),
 		NewCommandItem(c.com.Styles, "toggle_help", "Toggle Help", "ctrl+g", ActionToggleHelp{}),
 		NewCommandItem(c.com.Styles, "init", "Initialize Project", "", ActionInitializeProject{}),
 	)

@@ -884,6 +884,10 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		)
 	}
 
+	if c.cfg.Config().Options.SmartTools {
+		allTools = c.appendSmartSearchTools(allTools, agent)
+	}
+
 	var filteredTools []fantasy.AgentTool
 	for _, tool := range allTools {
 		if slices.Contains(agent.AllowedTools, tool.Info().Name) {
@@ -926,6 +930,44 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 	filteredTools = wrapToolsWithHooks(filteredTools, hookRunner, isSubAgent)
 
 	return filteredTools, nil
+}
+
+// appendSmartSearchTools adds the capability-search tools used by tool search
+// mode. Each one scans a catalog built from what the agent could actually call
+// right now, so a search hit is always a tool the model can use next.
+func (c *coordinator) appendSmartSearchTools(allTools []fantasy.AgentTool, agent config.Agent) []fantasy.AgentTool {
+	toolEntries := tools.SmartSearchEntriesFromTools(allTools)
+
+	var mcpEntries []tools.SmartSearchEntry
+	for _, tool := range tools.GetMCPTools(c.permissions, c.cfg, c.cfg.WorkingDir()) {
+		if !agentAllowsMCPTool(agent, tool) {
+			continue
+		}
+		mcpEntries = append(mcpEntries, tool.SmartSearchEntry())
+	}
+
+	return append(
+		allTools,
+		tools.NewSearchSkillsTool(c.allSkills, c.cfg.Config().Options.DisabledSkills),
+		tools.NewSearchMCPTool(mcpEntries),
+		tools.NewSearchToolsTool(toolEntries),
+	)
+}
+
+// agentAllowsMCPTool reports whether an agent may call an MCP tool, applying
+// the same AllowedMCP gating that buildTools uses for the tool palette itself.
+func agentAllowsMCPTool(agent config.Agent, tool *tools.Tool) bool {
+	if agent.AllowedMCP == nil {
+		return true
+	}
+	if len(agent.AllowedMCP) == 0 {
+		return false
+	}
+	allowed, ok := agent.AllowedMCP[tool.MCP()]
+	if !ok {
+		return false
+	}
+	return len(allowed) == 0 || slices.Contains(allowed, tool.MCPToolName())
 }
 
 // TODO: when we support multiple agents we need to change this so that we pass in the agent specific model config
@@ -1439,6 +1481,25 @@ func (c *coordinator) updateAgentModels(ctx context.Context, agent SessionAgent,
 	if !ok {
 		return fmt.Errorf("%w: %s", errMainAgentNotFound, name)
 	}
+
+	// Rebuild the system prompt too: tool search mode changes which capability
+	// sections the model is told about, and that has to land as soon as the
+	// mode is toggled rather than on the next session.
+	promptOpts := []prompt.Option{prompt.WithWorkingDir(c.cfg.WorkingDir())}
+	var p *prompt.Prompt
+	if name == config.AgentPlan {
+		p, err = planPrompt(promptOpts...)
+	} else {
+		p, err = coderPrompt(promptOpts...)
+	}
+	if err != nil {
+		return err
+	}
+	systemPrompt, err := p.Build(ctx, large.Model.Provider(), large.Model.Model(), c.cfg)
+	if err != nil {
+		return err
+	}
+	agent.SetSystemPrompt(systemPrompt)
 
 	tools, err := c.buildTools(ctx, agentCfg, false)
 	if err != nil {
