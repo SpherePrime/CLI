@@ -13,9 +13,9 @@ Cobra is used in many Go projects such as [Kubernetes](https://kubernetes.io/),
 [Hugo](https://gohugo.io), and [GitHub CLI](https://github.com/cli/cli) to
 name a few. [This list](site/content/projects_using_cobra.md) contains a more extensive list of projects using Cobra.
 
-[![](https://img.shields.io/github/actions/workflow/status/spf13/cobra/test.yml?branch=main&longCache=true&label=Test&logo=github%20actions&logoColor=fff)](https://github.com/dwertyfa288/CLI/vendordeps/spf13/cobra/actions?query=workflow%3ATest)
-[![Go Reference](https://pkg.go.dev/badge/github.com/spf13/cobra.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/spf13/cobra)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/spf13/cobra)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/spf13/cobra)
+[![](https://img.shields.io/github/actions/workflow/status/spf13/cobra/test.yml?branch=main&longCache=true&label=Test&logo=github%20actions&logoColor=fff)](https://github.com/SpherePrime/CLI/vendordeps/spf13/cobra/actions?query=workflow%3ATest)
+[![Go Reference](https://pkg.go.dev/badge/github.com/spf13/cobra.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/spf13/cobra)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/spf13/cobra)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/spf13/cobra)
 [![Slack](https://img.shields.io/badge/Slack-cobra-brightgreen)](https://gophers.slack.com/archives/CD3LP1199)
 <hr>
 <div align="center" markdown="1">
@@ -84,7 +84,7 @@ have children commands and optionally run an action.
 
 In the example above, 'server' is the command.
 
-[More about cobra.Command](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/spf13/cobra#Command)
+[More about cobra.Command](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/spf13/cobra#Command)
 
 ## Flags
 
@@ -96,7 +96,7 @@ and flags that are only available to that command.
 In the example above, 'port' is the flag.
 
 Flag functionality is provided by the [pflag
-library](https://github.com/dwertyfa288/CLI/vendordeps/spf13/pflag), a fork of the flag standard library
+library](https://github.com/SpherePrime/CLI/vendordeps/spf13/pflag), a fork of the flag standard library
 which maintains the same interface while adding POSIX compliance.
 
 # Installing
@@ -104,13 +104,13 @@ Using Cobra is easy. First, use `go get` to install the latest version
 of the library.
 
 ```
-go get -u github.com/dwertyfa288/CLI/vendordeps/spf13/cobra@latest
+go get -u github.com/SpherePrime/CLI/vendordeps/spf13/cobra@latest
 ```
 
 Next, include Cobra in your application:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+import "github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 ```
 
 # Usage

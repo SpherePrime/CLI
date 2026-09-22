@@ -10,7 +10,7 @@ from the terminfo database.
 Install in the usual Go way:
 
 ```sh
-$ go get -u github.com/dwertyfa288/CLI/vendordeps/xo/terminfo
+$ go get -u github.com/SpherePrime/CLI/vendordeps/xo/terminfo
 ```
 
 ## Using
@@ -31,7 +31,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/xo/terminfo"
+	"github.com/SpherePrime/CLI/vendordeps/xo/terminfo"
 )
 
 func main() {
@@ -135,5 +135,5 @@ func termcolors(ti *terminfo.Terminfo) int {
 }
 ```
 
-[1]: https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/xo/terminfo?status.svg
-[2]: https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/xo/terminfo
+[1]: https://godoc.org/github.com/SpherePrime/CLI/vendordeps/xo/terminfo?status.svg
+[2]: https://godoc.org/github.com/SpherePrime/CLI/vendordeps/xo/terminfo

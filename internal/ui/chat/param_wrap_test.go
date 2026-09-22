@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // A wrapped parameter keeps the colour of the token it was broken in the

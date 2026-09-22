@@ -11,10 +11,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	md "github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown"
-	"github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery"
-	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	md "github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown"
+	"github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery"
+	"github.com/SpherePrime/CLI/internal/permission"
 )
 
 const (

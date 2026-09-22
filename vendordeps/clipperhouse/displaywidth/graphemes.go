@@ -1,7 +1,7 @@
 package displaywidth
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
 )
 
 // Graphemes is an iterator over grapheme clusters.

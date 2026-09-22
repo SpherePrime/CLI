@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 func unwrapWebhook(r *WebhookService, body []byte, headers http.Header, opts ...option.RequestOption) (*UnwrapWebhookEventUnion, error) {

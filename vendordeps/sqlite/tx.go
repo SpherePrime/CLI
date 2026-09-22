@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 import (
 	"context"
 	"database/sql/driver"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
-	sqlite3 "github.com/dwertyfa288/CLI/vendordeps/sqlite/lib"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
+	sqlite3 "github.com/SpherePrime/CLI/vendordeps/sqlite/lib"
 )
 
 type tx struct {

@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
 )
 
 // IsErrorRetryable provides the interface of an implementation to determine if

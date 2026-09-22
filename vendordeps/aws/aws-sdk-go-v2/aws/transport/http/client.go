@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/tracing"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/tracing"
 )
 
 // Defaults for the HTTPTransportBuilder.

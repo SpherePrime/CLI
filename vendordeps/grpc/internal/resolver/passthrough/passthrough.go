@@ -23,7 +23,7 @@ package passthrough
 import (
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 const scheme = "passthrough"

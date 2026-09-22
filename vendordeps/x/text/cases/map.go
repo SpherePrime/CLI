@@ -13,10 +13,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/transform"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/unicode/norm"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/internal"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/transform"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/unicode/norm"
 )
 
 // A mapFunc takes a context set to the current rune and writes the mapped

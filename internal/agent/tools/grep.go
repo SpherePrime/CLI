@@ -19,11 +19,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/fsext"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/fsext"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // regexCache provides thread-safe caching of compiled regex patterns

@@ -1,9 +1,9 @@
-# clipboard [![PkgGoDev](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/x/clipboard)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/clipboard) ![](https://changkun.de/urlstat?mode=github&repo=golang-design/clipboard) ![clipboard](https://github.com/golang-design/clipboard/workflows/clipboard/badge.svg?branch=main)
+# clipboard [![PkgGoDev](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/x/clipboard)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/clipboard) ![](https://changkun.de/urlstat?mode=github&repo=golang-design/clipboard) ![clipboard](https://github.com/golang-design/clipboard/workflows/clipboard/badge.svg?branch=main)
 
 Cross platform (macOS/Linux/Windows/BSD/Android/iOS) clipboard package in Go
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/x/clipboard"
+import "github.com/SpherePrime/CLI/vendordeps/x/clipboard"
 ```
 
 ## Features
@@ -97,7 +97,7 @@ Note that the clipboard serves images as PNG (it serves the alpha-blending
 purpose used by other graphical software), so `Read(FmtImage)` always returns
 PNG. `Write(FmtImage, ...)` accepts PNG directly and will also normalize other
 encodings to PNG when their decoder is registered — blank-import the decoder you
-need (e.g. `import _ "image/jpeg"` or `import _ "github.com/dwertyfa288/CLI/vendordeps/x/image/webp"`); no
+need (e.g. `import _ "image/jpeg"` or `import _ "github.com/SpherePrime/CLI/vendordeps/x/image/webp"`); no
 decoder is a mandatory dependency of this package. If you need to put raw,
 unconverted bytes on the clipboard, register a custom format instead (see above).
 
@@ -284,7 +284,7 @@ an empty slice.
 from the shell. To install:
 
 ```bash
-$ go install github.com/dwertyfa288/CLI/vendordeps/x/clipboard/cmd/gclip@latest
+$ go install github.com/SpherePrime/CLI/vendordeps/x/clipboard/cmd/gclip@latest
 ```
 
 ```bash
@@ -343,7 +343,7 @@ accessing system clipboards, but here are a few details you might need to know.
    FreeBSD and OpenBSD are verified to build in CI; NetBSD is best-effort and
    untested.
 - Windows: no Cgo, no dependency
-- iOS/Android: collaborate with [`gomobile`](https://github.com/dwertyfa288/CLI/vendordeps/x/mobile)
+- iOS/Android: collaborate with [`gomobile`](https://github.com/SpherePrime/CLI/vendordeps/x/mobile)
 
 ### Caveats
 

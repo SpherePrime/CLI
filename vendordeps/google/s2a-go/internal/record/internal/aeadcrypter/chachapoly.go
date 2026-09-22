@@ -22,7 +22,7 @@ import (
 	"crypto/cipher"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/chacha20poly1305"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/chacha20poly1305"
 )
 
 // Supported key size in bytes.

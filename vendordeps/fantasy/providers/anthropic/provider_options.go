@@ -4,7 +4,7 @@ package anthropic
 import (
 	"encoding/json"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 // Effort represents the output effort level for Anthropic models.

@@ -12,12 +12,12 @@ import (
 	"sort"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/protolazy"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	preg "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoregistry"
-	piface "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/protolazy"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	preg "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoregistry"
+	piface "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 var enableLazy int32 = func() int32 {

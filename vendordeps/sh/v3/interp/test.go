@@ -9,10 +9,10 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/x/term"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/expand"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 // non-empty string is true, empty string is false

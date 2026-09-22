@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/env"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/env"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 var errDockerUnavailable = errors.New("docker unavailable")

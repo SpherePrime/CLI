@@ -18,10 +18,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go/jsonschema"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/jsonrpc2"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go/jsonschema"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/jsonrpc2"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
 )
 
 // A Client is an MCP client, which may be connected to an MCP server

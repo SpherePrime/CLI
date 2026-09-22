@@ -52,7 +52,7 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml)
+        - prefix(github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml)
         - blank
         - dot
     gofmt:

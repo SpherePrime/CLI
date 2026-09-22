@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestPermissionService_AllowedCommands(t *testing.T) {

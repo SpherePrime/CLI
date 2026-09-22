@@ -9,12 +9,12 @@
 // to another should not send multiple events from StageVisible to
 // StageVisible, even though the underlying window system's message might only
 // hold the new position, and not whether the window was previously visible.
-package lifecycler // import "github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/lifecycler"
+package lifecycler // import "github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/lifecycler"
 
 import (
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/lifecycle"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/lifecycle"
 )
 
 // State is a window's lifecycle state.

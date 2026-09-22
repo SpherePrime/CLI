@@ -1,6 +1,6 @@
 goos: darwin
 goarch: arm64
-pkg: github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth
+pkg: github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth
 cpu: Apple M2
                                    │   old.txt    │              new.txt               │
                                    │    sec/op    │   sec/op     vs base               │

@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/filetracker"
-	"github.com/dwertyfa288/CLI/internal/permission"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/filetracker"
+	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestReadTextFileBoundaryCases(t *testing.T) {

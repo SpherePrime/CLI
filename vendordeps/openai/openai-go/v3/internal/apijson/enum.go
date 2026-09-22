@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"slices"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 )
 
 /********************/

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/ssocreds"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc"
-	smithybearer "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth/bearer"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/ssocreds"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc"
+	smithybearer "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth/bearer"
 )
 
 // resolveBearerAuthToken extracts a token provider from the config sources.

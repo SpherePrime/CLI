@@ -2,7 +2,7 @@
 
 package compact
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/text/internal/language"
+import "github.com/SpherePrime/CLI/vendordeps/x/text/internal/language"
 
 // CLDRVersion is the CLDR version from which the tables in this package are derived.
 const CLDRVersion = "32"

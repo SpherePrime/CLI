@@ -1,8 +1,8 @@
 # Interpolate
 
-[![Build Status](https://github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate/actions/workflows/ci.yaml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate/actions/workflows/ci.yaml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/mfridman/interpolate.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate)
+[![Build Status](https://github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate/actions/workflows/ci.yaml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate/actions/workflows/ci.yaml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/mfridman/interpolate.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate)
 
 A Go library for parameter expansion (like `${NAME}` or `$NAME`) in strings from environment
 variables. An implementation of [POSIX Parameter
@@ -13,7 +13,7 @@ bash](https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansi
 ## Installation
 
 ```
-go get github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate@latest
+go get github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate@latest
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ go get github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate@latest
 package main
 
 import (
-  "github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate"
+  "github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate"
   "fmt"
 )
 

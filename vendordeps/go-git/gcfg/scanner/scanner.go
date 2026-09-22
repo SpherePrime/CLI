@@ -16,7 +16,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/gcfg/token"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/gcfg/token"
 )
 
 // An ErrorHandler may be provided to Scanner.Init. If a syntax error is

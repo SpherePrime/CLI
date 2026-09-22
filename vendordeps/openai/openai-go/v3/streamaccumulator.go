@@ -4,7 +4,7 @@ import (
 	"unsafe"
 	"weak"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/shared/constant"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/shared/constant"
 )
 
 const (

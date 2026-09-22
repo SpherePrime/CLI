@@ -26,11 +26,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal/credsfile"
-	"github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal/credsfile"
+	"github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
 )
 
 // ComputeTokenFormat dictates the the token format when requesting an ID token
@@ -170,11 +170,11 @@ func (o *Options) validate() error {
 	return nil
 }
 
-// NewCredentials creates a [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials] that returns
+// NewCredentials creates a [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials] that returns
 // ID tokens configured by the opts provided. The parameter opts.Audience must
 // not be empty. If both opts.CredentialsFile and opts.CredentialsJSON are
 // empty, an attempt will be made to detect credentials from the environment
-// (see [github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials.DetectDefault]). Only service
+// (see [github.com/SpherePrime/CLI/vendordeps/go/auth/credentials.DetectDefault]). Only service
 // account, impersonated service account, external account and Compute
 // credentials are supported. Note: If the provided external account
 // configuration (e.g., Workload Identity Federation) is configured to
@@ -217,7 +217,7 @@ func (o *Options) jsonBytes() []byte {
 	return nil
 }
 
-// NewCredentialsFromJSON creates a [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials] that
+// NewCredentialsFromJSON creates a [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials] that
 // returns ID tokens from the provided JSON bytes. The credType argument
 // specifies the expected credential type. If the JSON does not match the
 // expected type, an error is returned.
@@ -248,7 +248,7 @@ func NewCredentialsFromJSON(credType credentials.CredType, b []byte, opts *Optio
 	return credsFromDefault(creds, opts)
 }
 
-// NewCredentialsFromFile creates a [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials] that
+// NewCredentialsFromFile creates a [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials] that
 // returns ID tokens from the provided file. The credType argument specifies the
 // expected credential type. If the file content does not match the expected
 // type, an error is returned.

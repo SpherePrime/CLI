@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/anim"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/ui/anim"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // Spinner wraps the bubbles spinner for non-interactive mode

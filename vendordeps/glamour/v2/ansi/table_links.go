@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/internal/autolink"
-	xansi "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/slice"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
-	astext "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/extension/ast"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2/internal/autolink"
+	xansi "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/slice"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
+	astext "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/extension/ast"
 )
 
 type tableLink struct {

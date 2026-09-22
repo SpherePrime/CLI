@@ -11,9 +11,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
 )
 
 // The channel contract lets an MCP server push events straight into the

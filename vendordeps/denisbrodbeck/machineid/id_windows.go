@@ -3,7 +3,7 @@
 package machineid
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows/registry"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows/registry"
 )
 
 // machineID returns the key MachineGuid in registry `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography`.

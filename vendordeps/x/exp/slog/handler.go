@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/slices"
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/slog/internal/buffer"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/slices"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/slog/internal/buffer"
 )
 
 // A Handler handles log records produced by a Logger..

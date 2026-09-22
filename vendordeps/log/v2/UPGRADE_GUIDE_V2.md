@@ -37,7 +37,7 @@ import "github.com/dwertyfa288/log"
 ### After (v2)
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/log/v2"
+import "github.com/SpherePrime/CLI/vendordeps/log/v2"
 ```
 
 **Update in your project:**
@@ -55,7 +55,7 @@ grep -r "github.com/dwertyfa288/log" .
 Update your `go.mod` file:
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/log/v2@latest
+go get github.com/SpherePrime/CLI/vendordeps/log/v2@latest
 go mod tidy
 ```
 
@@ -63,8 +63,8 @@ go mod tidy
 
 Log v2 brings these updated dependencies:
 
-- **github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2** — Lip Gloss v2 for styling
-- **github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile** — Replaces termenv for color profile detection
+- **github.com/SpherePrime/CLI/vendordeps/lipgloss/v2** — Lip Gloss v2 for styling
+- **github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile** — Replaces termenv for color profile detection
 
 ### Removed Dependencies
 
@@ -93,8 +93,8 @@ logger.SetColorProfile(termenv.TrueColor)
 
 ```go
 import (
-    "github.com/dwertyfa288/CLI/vendordeps/log/v2"
-    "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+    "github.com/SpherePrime/CLI/vendordeps/log/v2"
+    "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 )
 
 logger := log.New(os.Stderr)
@@ -132,8 +132,8 @@ styles.Levels[log.ErrorLevel] = lipgloss.NewStyle().
 
 ```go
 import (
-    "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-    "github.com/dwertyfa288/CLI/vendordeps/log/v2"
+    "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+    "github.com/SpherePrime/CLI/vendordeps/log/v2"
 )
 
 styles := log.DefaultStyles()
@@ -163,7 +163,7 @@ If you're using custom styles, update your Lip Gloss import:
 import "github.com/dwertyfa288/lipgloss"
 
 // After
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 ```
 
 The Lip Gloss v2 API is mostly the same. See the [Lip Gloss v2 upgrade guide][lg-upgrade] for details on any style-specific changes.
@@ -174,10 +174,10 @@ The Lip Gloss v2 API is mostly the same. See the [Lip Gloss v2 upgrade guide][lg
 
 Use this checklist to ensure a smooth upgrade:
 
-- [ ] **Update import paths** from `github.com/dwertyfa288/log` to `github.com/dwertyfa288/CLI/vendordeps/log/v2`
-- [ ] **Update Lip Gloss imports** from `github.com/dwertyfa288/lipgloss` to `github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2` (if using custom styles)
+- [ ] **Update import paths** from `github.com/dwertyfa288/log` to `github.com/SpherePrime/CLI/vendordeps/log/v2`
+- [ ] **Update Lip Gloss imports** from `github.com/dwertyfa288/lipgloss` to `github.com/SpherePrime/CLI/vendordeps/lipgloss/v2` (if using custom styles)
 - [ ] **Replace termenv usage** with `colorprofile` (if calling `SetColorProfile`)
-- [ ] **Run `go get github.com/dwertyfa288/CLI/vendordeps/log/v2@latest`**
+- [ ] **Run `go get github.com/SpherePrime/CLI/vendordeps/log/v2@latest`**
 - [ ] **Run `go mod tidy`** to clean up dependencies
 - [ ] **Build your project** with `go build` or `go test`
 - [ ] **Run your tests** to verify everything works
@@ -201,7 +201,7 @@ You missed updating an import path. Search your codebase:
 grep -r "github.com/dwertyfa288/log" .
 ```
 
-Update all occurrences to `github.com/dwertyfa288/CLI/vendordeps/log/v2`.
+Update all occurrences to `github.com/SpherePrime/CLI/vendordeps/log/v2`.
 
 ---
 
@@ -223,7 +223,7 @@ import "github.com/muesli/termenv"
 logger.SetColorProfile(termenv.TrueColor)
 
 // After
-import "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+import "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 logger.SetColorProfile(colorprofile.TrueColor)
 ```
 
@@ -235,7 +235,7 @@ logger.SetColorProfile(colorprofile.TrueColor)
 
 ```
 cannot use lipgloss.NewStyle() (type "github.com/dwertyfa288/lipgloss".Style)
-as type "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2".Style
+as type "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2".Style
 ```
 
 **Solution:**
@@ -247,7 +247,7 @@ Update Lip Gloss imports to v2:
 import "github.com/dwertyfa288/lipgloss"
 
 // After
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 ```
 
 ---
@@ -257,7 +257,7 @@ import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 **Symptom:**
 
 ```
-module declares its path as: github.com/dwertyfa288/CLI/vendordeps/log/v2
+module declares its path as: github.com/SpherePrime/CLI/vendordeps/log/v2
         but was required as: github.com/dwertyfa288/log
 ```
 
@@ -289,7 +289,7 @@ Logs display incorrectly or with garbled colors in some terminals.
 Log v2 automatically detects color profiles. If you were manually setting a profile, verify you're using the correct `colorprofile` constant:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+import "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 
 // Explicitly set if needed
 logger.SetColorProfile(colorprofile.TrueColor) // or ANSI256, ANSI, etc.

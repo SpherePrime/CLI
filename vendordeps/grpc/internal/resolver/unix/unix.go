@@ -22,8 +22,8 @@ package unix
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/transport/networktype"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/transport/networktype"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 const unixScheme = "unix"

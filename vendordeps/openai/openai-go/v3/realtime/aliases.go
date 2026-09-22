@@ -3,9 +3,9 @@
 package realtime
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apierror"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/shared"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apierror"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/shared"
 )
 
 // aliased to make [param.APIUnion] private when embedding

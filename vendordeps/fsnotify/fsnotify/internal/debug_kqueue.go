@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 func Debug(name string, kevent *unix.Kevent_t) {

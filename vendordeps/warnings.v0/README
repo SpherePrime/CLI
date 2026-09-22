@@ -1,7 +1,7 @@
 Package warnings implements error handling with non-fatal errors (warnings).
 
-import path:   "github.com/dwertyfa288/CLI/vendordeps/warnings.v0"
-package docs:  https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/warnings.v0 
+import path:   "github.com/SpherePrime/CLI/vendordeps/warnings.v0"
+package docs:  https://godoc.org/github.com/SpherePrime/CLI/vendordeps/warnings.v0 
 issues:        https://github.com/go-warnings/warnings/issues
 pull requests: https://github.com/go-warnings/warnings/pulls
 
@@ -37,7 +37,7 @@ distinguished programmatically; that is a function such as
 must be implemented. The following is an example of what the above snippet
 could look like using the warnings package:
 
- import "github.com/dwertyfa288/CLI/vendordeps/warnings.v0"
+ import "github.com/SpherePrime/CLI/vendordeps/warnings.v0"
 
  func isFatal(err error) bool {
      _, ok := err.(WarningType)

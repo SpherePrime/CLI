@@ -3,7 +3,7 @@
 package aws
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/ptr"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/ptr"
 	"time"
 )
 

@@ -5,14 +5,14 @@ import (
 	"math/rand/v2"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/session"
-	"github.com/dwertyfa288/CLI/internal/ui/logo"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/internal/version"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/internal/ui/logo"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/internal/version"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 // FallbackWidth is used when stdout is not a terminal, so the banner still

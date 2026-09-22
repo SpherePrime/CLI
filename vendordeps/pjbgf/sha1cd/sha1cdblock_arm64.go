@@ -6,8 +6,8 @@ package sha1cd
 import (
 	"runtime"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/cpuid/v2"
-	shared "github.com/dwertyfa288/CLI/vendordeps/pjbgf/sha1cd/internal"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/cpuid/v2"
+	shared "github.com/SpherePrime/CLI/vendordeps/pjbgf/sha1cd/internal"
 )
 
 var hasSHA1 = (runtime.GOARCH == "arm64" && cpuid.CPU.Supports(cpuid.SHA1))

@@ -2,5 +2,5 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package internal contains support packages for [github.com/dwertyfa288/CLI/vendordeps/x/oauth2].
+// Package internal contains support packages for [github.com/SpherePrime/CLI/vendordeps/x/oauth2].
 package internal

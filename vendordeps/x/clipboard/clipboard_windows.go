@@ -29,7 +29,7 @@ import (
 	"unicode/utf16"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/bmp"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/bmp"
 )
 
 func initialize() error { return nil }

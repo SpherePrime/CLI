@@ -4,7 +4,7 @@ package sso
 
 import (
 	"context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // Removes the locally stored SSO tokens from the client-side cache and sends an

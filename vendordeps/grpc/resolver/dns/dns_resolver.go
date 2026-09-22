@@ -23,8 +23,8 @@ package dns
 import (
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/resolver/dns"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/resolver/dns"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 // SetResolvingTimeout sets the maximum duration for DNS resolution requests.

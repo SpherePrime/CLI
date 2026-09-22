@@ -3,12 +3,12 @@
 package fs
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 
-	"github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio/internal/stringbuffer"
+	"github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio/internal/stringbuffer"
 )
 
-//go:generate go run github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio/tools/mkwinsyscall -output zsyscall_windows.go fs.go
+//go:generate go run github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio/tools/mkwinsyscall -output zsyscall_windows.go fs.go
 
 // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew
 //sys CreateFile(name string, access AccessMask, mode FileShareMode, sa *windows.SecurityAttributes, createmode FileCreationDisposition, attrs FileFlagOrAttribute, templatefile windows.Handle) (handle windows.Handle, err error) [failretval==windows.InvalidHandle] = CreateFileW

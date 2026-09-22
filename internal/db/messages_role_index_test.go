@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestUserMessagesUseRoleIndex pins why idx_messages_role_created_at exists:

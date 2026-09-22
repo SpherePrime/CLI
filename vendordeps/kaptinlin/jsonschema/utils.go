@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonpointer"
+	"github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonpointer"
 )
 
 // replace substitutes placeholders in a template string with actual parameter values.

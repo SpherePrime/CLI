@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/config"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/shared/constant"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/config"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/auth"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/shared/constant"
 )
 
 // Client creates a struct with services and top level methods that help with

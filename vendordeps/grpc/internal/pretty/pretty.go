@@ -24,8 +24,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protojson"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/protoadapt"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protojson"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/protoadapt"
 )
 
 const jsonIndent = "  "

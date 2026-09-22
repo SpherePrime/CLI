@@ -4,7 +4,7 @@
 
 //go:build !(linux && (amd64 || arm64 || loong64 || ppc64le || s390x || riscv64 || 386 || arm))
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"fmt"
@@ -21,9 +21,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/signal"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/signal"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
 )
 
 const (

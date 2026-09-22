@@ -3,7 +3,7 @@ package jsonschema
 import (
 	"encoding/json"
 
-	orderedmap "github.com/dwertyfa288/CLI/vendordeps/pb33f/ordered-map/v2"
+	orderedmap "github.com/SpherePrime/CLI/vendordeps/pb33f/ordered-map/v2"
 )
 
 // Version is the JSON Schema version.

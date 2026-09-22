@@ -1,6 +1,6 @@
 # Retry
 
-[![Test](https://github.com/dwertyfa288/CLI/vendordeps/sethvargo/go-retry/actions/workflows/test.yml/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/sethvargo/go-retry/actions/workflows/test.yml)[![GoDoc](https://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://pkg.go.dev/mod/github.com/dwertyfa288/CLI/vendordeps/sethvargo/go-retry)
+[![Test](https://github.com/SpherePrime/CLI/vendordeps/sethvargo/go-retry/actions/workflows/test.yml/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/sethvargo/go-retry/actions/workflows/test.yml)[![GoDoc](https://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://pkg.go.dev/mod/github.com/SpherePrime/CLI/vendordeps/sethvargo/go-retry)
 
 Retry is a Go library for facilitating retry logic and backoff. It's highly
 extensible with full control over how and when retries occur. You can also write
@@ -34,7 +34,7 @@ import (
   "log"
   "time"
 
-  "github.com/dwertyfa288/CLI/vendordeps/sethvargo/go-retry"
+  "github.com/SpherePrime/CLI/vendordeps/sethvargo/go-retry"
 )
 
 func main() {

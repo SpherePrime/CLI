@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 // A Config struct is a data structure that holds configuration of the Renderer.

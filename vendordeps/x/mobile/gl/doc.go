@@ -7,7 +7,7 @@ Package gl implements Go bindings for OpenGL ES 2.0 and ES 3.0.
 
 The GL functions are defined on a Context object that is responsible for
 tracking a GL context. Typically a windowing system package (such as
-github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen) will call NewContext and provide
+github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen) will call NewContext and provide
 a gl.Context for a user application.
 
 If the gl package is compiled on a platform capable of supporting ES 3.0,

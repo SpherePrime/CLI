@@ -8,17 +8,17 @@ You can access the CPU information by accessing the shared CPU variable of the c
 
 Package home: https://github.com/klauspost/cpuid
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/klauspost/cpuid)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/klauspost/cpuid/v2)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/klauspost/cpuid)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/klauspost/cpuid/v2)
 [![Go](https://github.com/klauspost/cpuid/actions/workflows/go.yml/badge.svg)](https://github.com/klauspost/cpuid/actions/workflows/go.yml)
 
 ## installing
 
-`go get -u github.com/dwertyfa288/CLI/vendordeps/klauspost/cpuid/v2` using modules.
+`go get -u github.com/SpherePrime/CLI/vendordeps/klauspost/cpuid/v2` using modules.
 Drop `v2` for others.
 
 Installing binary:
 
-`go install github.com/dwertyfa288/CLI/vendordeps/klauspost/cpuid/v2/cmd/cpuid@latest`
+`go install github.com/SpherePrime/CLI/vendordeps/klauspost/cpuid/v2/cmd/cpuid@latest`
 
 Or download binaries from release page: https://github.com/klauspost/cpuid/releases
 
@@ -39,7 +39,7 @@ import (
 	"fmt"
 	"strings"
 
-	. "github.com/dwertyfa288/CLI/vendordeps/klauspost/cpuid/v2"
+	. "github.com/SpherePrime/CLI/vendordeps/klauspost/cpuid/v2"
 )
 
 func main() {
@@ -131,7 +131,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/cpuid/v2"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/cpuid/v2"
 )
 
 func main() {
@@ -152,7 +152,7 @@ Download as binary from: https://github.com/klauspost/cpuid/releases
 
 Install from source:
 
-`go install github.com/dwertyfa288/CLI/vendordeps/klauspost/cpuid/v2/cmd/cpuid@latest`
+`go install github.com/SpherePrime/CLI/vendordeps/klauspost/cpuid/v2/cmd/cpuid@latest`
 
 ### Example
 

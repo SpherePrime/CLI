@@ -7,7 +7,7 @@
 package poly1305
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/cpu"
 )
 
 // updateVX is an assembly implementation of Poly1305 that uses vector

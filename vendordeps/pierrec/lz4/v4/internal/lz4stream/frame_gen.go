@@ -2,7 +2,7 @@
 
 package lz4stream
 
-import "github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4/internal/lz4block"
+import "github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4/internal/lz4block"
 
 // DescriptorFlags is defined as follow:
 //   field              bits

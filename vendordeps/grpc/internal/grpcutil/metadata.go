@@ -21,7 +21,7 @@ package grpcutil
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
 )
 
 type mdExtraKey struct{}

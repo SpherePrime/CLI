@@ -4,7 +4,7 @@ package metrics
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // MeterProvider is the entry point for creating a Meter.

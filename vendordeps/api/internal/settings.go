@@ -14,12 +14,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/credentialstype"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/impersonate"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/credentialstype"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/impersonate"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
 )
 
 const (
@@ -174,7 +174,7 @@ func (ds *DialSettings) Validate() error {
 	// Credentials should not appear with other options.
 	// AuthCredentials is a special case that may be present with
 	// with other options in order to facilitate automatic conversion of
-	// oauth2 types (old auth) to github.com/dwertyfa288/CLI/vendordeps/go/auth types (new auth).
+	// oauth2 types (old auth) to github.com/SpherePrime/CLI/vendordeps/go/auth types (new auth).
 	// We currently allow TokenSource and CredentialsFile to coexist.
 	// TODO(jba): make TokenSource & CredentialsFile an error (breaking change).
 	nCreds := 0

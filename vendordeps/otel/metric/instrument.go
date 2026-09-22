@@ -4,7 +4,7 @@
 package metric
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
 )
 
 // Observable is used as a grouping mechanism for all instruments that are
@@ -367,7 +367,7 @@ func (o *attrOpt) applyObserve(c ObserveConfig) ObserveConfig {
 // with duplicate keys will use the last value passed.
 //
 // Experimental: The returned option may implement
-// [github.com/dwertyfa288/CLI/vendordeps/otel/metric/x.Settable][attribute.Set], which can be
+// [github.com/SpherePrime/CLI/vendordeps/otel/metric/x.Settable][attribute.Set], which can be
 // used to replace the option's attribute set and reuse the option without
 // additional allocations. This behavior is experimental and may be changed or
 // removed in a future release without notice.
@@ -392,7 +392,7 @@ func WithAttributeSet(attributes attribute.Set) MeasurementOption {
 // merged.
 //
 // Experimental: The returned option may implement
-// [github.com/dwertyfa288/CLI/vendordeps/otel/metric/x.Settable][[]attribute.KeyValue], which can be
+// [github.com/SpherePrime/CLI/vendordeps/otel/metric/x.Settable][[]attribute.KeyValue], which can be
 // used to replace the option's attributes and reuse the option without
 // additional allocations. This behavior is experimental and may be changed or
 // removed in a future release without notice.

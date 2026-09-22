@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textarea"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/session"
-	"github.com/dwertyfa288/CLI/internal/ui/chat"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textarea"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/internal/ui/chat"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // testMessageItem is a minimal chat item used to populate the chat list

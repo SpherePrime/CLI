@@ -14,7 +14,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/internal/diff"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/internal/diff"
 )
 
 // CanFormatDiffSlice reports whether we support custom formatting for nodes

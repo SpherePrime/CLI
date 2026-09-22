@@ -15,8 +15,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	json "github.com/dwertyfa288/CLI/vendordeps/goccy/go-json"
-	lru "github.com/dwertyfa288/CLI/vendordeps/hashicorp/golang-lru/v2"
+	json "github.com/SpherePrime/CLI/vendordeps/goccy/go-json"
+	lru "github.com/SpherePrime/CLI/vendordeps/hashicorp/golang-lru/v2"
 )
 
 const (

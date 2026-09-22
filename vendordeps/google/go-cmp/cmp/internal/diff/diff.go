@@ -16,7 +16,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/internal/flags"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/internal/flags"
 )
 
 // EditType represents a single operation within an edit-script.

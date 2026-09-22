@@ -33,13 +33,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2/hpack"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/envconfig"
-	imem "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/mem"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/transport/readyreader"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2/hpack"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/envconfig"
+	imem "github.com/SpherePrime/CLI/vendordeps/grpc/internal/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/transport/readyreader"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
 )
 
 const _WALINDEX_PGSZ = 32768

@@ -23,9 +23,9 @@ import (
 	"context"
 	"sync"
 
-	grpc "github.com/dwertyfa288/CLI/vendordeps/grpc"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/insecure"
+	grpc "github.com/SpherePrime/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/insecure"
 )
 
 var (

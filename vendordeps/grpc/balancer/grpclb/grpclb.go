@@ -20,7 +20,7 @@
 //
 // To install grpclb balancer, import this package as:
 //
-//	import _ "github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/grpclb"
+//	import _ "github.com/SpherePrime/CLI/vendordeps/grpc/balancer/grpclb"
 package grpclb
 
 import (
@@ -30,23 +30,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/base"
-	grpclbstate "github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/grpclb/state"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/connectivity"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/backoff"
-	internalgrpclog "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/pretty"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/resolver/dns"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver/manual"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/durationpb"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/base"
+	grpclbstate "github.com/SpherePrime/CLI/vendordeps/grpc/balancer/grpclb/state"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/connectivity"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/backoff"
+	internalgrpclog "github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/pretty"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/resolver/dns"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver/manual"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/durationpb"
 
-	lbpb "github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/grpclb/grpc_lb_v1"
+	lbpb "github.com/SpherePrime/CLI/vendordeps/grpc/balancer/grpclb/grpc_lb_v1"
 )
 
 const (

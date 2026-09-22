@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	textm "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/text"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	textm "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/text"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 // A BaseInline struct implements the Node interface partialliy.

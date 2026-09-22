@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
 )
 
 const (

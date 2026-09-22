@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/internal/apigen"
+	"github.com/SpherePrime/CLI/internal/apigen"
 )
 
 // apiInfo is the top-level metadata for the Prime API documentation.

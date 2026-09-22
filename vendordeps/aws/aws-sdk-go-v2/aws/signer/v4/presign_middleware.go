@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	awsmiddleware "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	smithyHTTP "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	awsmiddleware "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	smithyHTTP "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // HTTPPresigner is an interface to a SigV4 signer that can sign create a

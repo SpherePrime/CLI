@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/SpherePrime/CLI/internal/session"
 )
 
 // roundedBorderRunes are chars that only appear when a pill has a visible

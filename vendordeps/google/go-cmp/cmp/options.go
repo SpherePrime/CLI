@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/internal/function"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/internal/function"
 )
 
 // Option configures for specific behavior of [Equal] and [Diff]. In particular,
@@ -20,7 +20,7 @@ import (
 // The fundamental options may be composed with filters ([FilterPath] and
 // [FilterValues]) to control the scope over which they are applied.
 //
-// The [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/cmpopts] package provides helper functions
+// The [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/cmpopts] package provides helper functions
 // for creating options that may be used with [Equal] and [Diff].
 type Option interface {
 	// filter applies all filters and returns the option that remains.
@@ -235,11 +235,11 @@ func (validator) apply(s *state, vx, vy reflect.Value) {
 			isProtoMessage := func(t reflect.Type) bool {
 				m, ok := reflect.PointerTo(t).MethodByName("ProtoReflect")
 				return ok && m.Type.NumIn() == 1 && m.Type.NumOut() == 1 &&
-					m.Type.Out(0).PkgPath() == "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect" &&
+					m.Type.Out(0).PkgPath() == "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect" &&
 					m.Type.Out(0).Name() == "Message"
 			}
 			if isProtoMessage(t) {
-				help = `consider using "github.com/dwertyfa288/CLI/vendordeps/protobuf/testing/protocmp".Transform to compare proto.Message types`
+				help = `consider using "github.com/SpherePrime/CLI/vendordeps/protobuf/testing/protocmp".Transform to compare proto.Message types`
 			} else if _, ok := reflect.New(t).Interface().(error); ok {
 				help = "consider using cmpopts.EquateErrors to compare error values"
 			} else if t.Comparable() {
@@ -277,7 +277,7 @@ var identsRx = regexp.MustCompile(`^` + identRx + `(\.` + identRx + `)*$`)
 // a transformer is applicable only if that exact transformer is not already
 // in the tail of the [Path] since the last non-[Transform] step.
 // For situations where the implicit filter is still insufficient,
-// consider using [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/cmpopts.AcyclicTransformer],
+// consider using [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/cmpopts.AcyclicTransformer],
 // which adds a filter to prevent the transformer from
 // being recursively applied upon itself.
 //
@@ -411,7 +411,7 @@ func (cm comparer) String() string {
 //	Comparer(func(x, y reflect.Type) bool { return x == y })
 //	Comparer(func(x, y *regexp.Regexp) bool { return x.String() == y.String() })
 //
-// In other cases, the [github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/cmpopts.IgnoreUnexported]
+// In other cases, the [github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/cmpopts.IgnoreUnexported]
 // option can be used to ignore all unexported fields on specified struct types.
 func Exporter(f func(reflect.Type) bool) Option {
 	return exporter(f)

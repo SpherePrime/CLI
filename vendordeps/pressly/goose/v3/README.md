@@ -5,9 +5,9 @@
 [![Goose
 CI](https://github.com/pressly/goose/actions/workflows/ci.yaml/badge.svg)](https://github.com/pressly/goose/actions/workflows/ci.yaml)
 [![Go
-Reference](https://pkg.go.dev/badge/github.com/pressly/goose/v3.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3)
+Reference](https://pkg.go.dev/badge/github.com/pressly/goose/v3.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3)
 [![Go Report
-Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3)
+Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3)
 
 Goose is a database migration tool. Both a CLI and a library.
 
@@ -28,7 +28,7 @@ Manage your **database schema** by creating incremental SQL changes or Go functi
 # Install
 
 ```shell
-go install github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/cmd/goose@latest
+go install github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/cmd/goose@latest
 ```
 
 This will install the `goose` binary to your `$GOPATH/bin` directory.
@@ -377,7 +377,7 @@ $$ LANGUAGE plpgsql;
   and error if `VAR` unset or null.~~ **THIS IS NOT SUPPORTED**
 
 See
-[mfridman/interpolate](https://github.com/dwertyfa288/CLI/vendordeps/mfridman/interpolate?tab=readme-ov-file#supported-expansions)
+[mfridman/interpolate](https://github.com/SpherePrime/CLI/vendordeps/mfridman/interpolate?tab=readme-ov-file#supported-expansions)
 for more details on supported expansions.
 
 </details>
@@ -403,7 +403,7 @@ import (
     "database/sql"
     "embed"
 
-    "github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3"
+    "github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3"
 )
 
 //go:embed migrations/*.sql
@@ -447,7 +447,7 @@ package migrations
 import (
 	"database/sql"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3"
 )
 
 func init() {

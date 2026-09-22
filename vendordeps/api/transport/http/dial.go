@@ -4,7 +4,7 @@
 
 // Package http supports network connections to HTTP servers.
 // This package is not intended for use by end developers. Use the
-// github.com/dwertyfa288/CLI/vendordeps/api/option package to configure API clients.
+// github.com/SpherePrime/CLI/vendordeps/api/option package to configure API clients.
 package http
 
 import (
@@ -15,17 +15,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/httptransport"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/oauth2adapt"
-	"github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/api/googleapi/transport"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/cert"
-	"github.com/dwertyfa288/CLI/vendordeps/api/option"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/httptransport"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/oauth2adapt"
+	"github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/api/googleapi/transport"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/cert"
+	"github.com/SpherePrime/CLI/vendordeps/api/option"
 )
 
 // NewClient returns an HTTP client for use communicating with a Google cloud

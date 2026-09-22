@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/internal/update"
-	"github.com/dwertyfa288/CLI/internal/version"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/update"
+	"github.com/SpherePrime/CLI/internal/version"
 )
 
 type updateDoneMsg struct {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/ratelimit"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/ratelimit"
 )
 
 // BackoffDelayer provides the interface for determining the delay to before

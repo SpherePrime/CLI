@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	json "github.com/dwertyfa288/CLI/vendordeps/goccy/go-json"
+	json "github.com/SpherePrime/CLI/vendordeps/goccy/go-json"
 )
 
 // captureV1Path is the capture-v1 analytics batch endpoint.

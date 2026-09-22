@@ -8,9 +8,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 )
 
 // hookApprovalKey is the unexported context key used to mark a tool call as

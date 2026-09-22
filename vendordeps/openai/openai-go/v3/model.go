@@ -9,12 +9,12 @@ import (
 	"slices"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/pagination"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/shared/constant"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/pagination"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/shared/constant"
 )
 
 // List and describe the various models available in the API.

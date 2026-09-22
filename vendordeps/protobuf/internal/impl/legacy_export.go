@@ -11,9 +11,9 @@ import (
 	"math"
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 // These functions exist to support exported APIs in generated protobufs.

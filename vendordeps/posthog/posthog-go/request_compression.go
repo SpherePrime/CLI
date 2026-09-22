@@ -6,7 +6,7 @@ import (
 	"compress/zlib"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/andybalholm/brotli"
+	"github.com/SpherePrime/CLI/vendordeps/andybalholm/brotli"
 )
 
 var (

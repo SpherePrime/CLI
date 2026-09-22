@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // nonGRPCDataMaxLen is the maximum length of nonGRPCDataBuf.

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/internal/home"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/home"
+	"github.com/SpherePrime/CLI/internal/pubsub"
 )
 
 // Manager owns per-workspace skill discovery state: the latest discovery

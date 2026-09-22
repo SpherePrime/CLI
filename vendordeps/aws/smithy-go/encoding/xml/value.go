@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/encoding"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/encoding"
 )
 
 // Value represents an XML Value type

@@ -16,10 +16,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/authutil"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/oauthex"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/authutil"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/oauthex"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 // ClientIDMetadataDocumentConfig is used to configure the Client ID Metadata Document
@@ -665,7 +665,7 @@ func (h *AuthorizationCodeHandler) exchangeAuthorizationCode(ctx context.Context
 	// The token source outlives this authorization request: it is stored on the
 	// handler and used by the transport for the lifetime of the connection. The
 	// oauth2 library captures the context passed to TokenSource and reuses it for
-	// every subsequent token refresh (see github.com/dwertyfa288/CLI/vendordeps/x/oauth2: tokenRefresher
+	// every subsequent token refresh (see github.com/SpherePrime/CLI/vendordeps/x/oauth2: tokenRefresher
 	// retains the context and passes it to each refresh round-trip). Binding it to
 	// the per-request ctx makes all later refreshes fail with "context canceled"
 	// once that request (or the connect operation that triggered authorization)

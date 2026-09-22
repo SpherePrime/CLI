@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/lsp"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/lsp"
 )
 
 // Workspace represents a running app.App workspace with its associated

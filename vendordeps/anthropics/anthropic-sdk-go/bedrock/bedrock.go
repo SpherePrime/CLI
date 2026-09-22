@@ -15,17 +15,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/protocol/eventstream"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/protocol/eventstream/eventstreamapi"
-	v4 "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/config"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth/bearer"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/protocol/eventstream"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/protocol/eventstream/eventstreamapi"
+	v4 "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/config"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth/bearer"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
 )
 
 const DefaultVersion = "bedrock-2023-05-31"
@@ -114,14 +114,14 @@ func (b *sseTranslatingBody) translate(msg eventstream.Message) {
 		}
 
 	case eventstreamapi.ExceptionMessageType:
-		// See https://github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/blob/885de40869f9bcee29ad11d60967aa0f1b571d46/service/iotsitewise/deserializers.go#L15511C1-L15567C2
+		// See https://github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/blob/885de40869f9bcee29ad11d60967aa0f1b571d46/service/iotsitewise/deserializers.go#L15511C1-L15567C2
 		exceptionType := msg.Headers.Get(eventstreamapi.ExceptionTypeHeader)
 		if exceptionType == nil {
 			b.err = fmt.Errorf("%s event header not present", eventstreamapi.ExceptionTypeHeader)
 			return
 		}
 
-		// See https://github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/blob/885de40869f9bcee29ad11d60967aa0f1b571d46/aws/protocol/restjson/decoder_util.go#L15-L48k
+		// See https://github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/blob/885de40869f9bcee29ad11d60967aa0f1b571d46/aws/protocol/restjson/decoder_util.go#L15-L48k
 		var errInfo struct {
 			Code    string
 			Type    string `json:"__type"`

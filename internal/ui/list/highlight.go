@@ -4,11 +4,11 @@ import (
 	"image"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/stringext"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/stringext"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // DefaultHighlighter is the default highlighter function that applies inverse style.

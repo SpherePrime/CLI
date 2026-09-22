@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/httptransport"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/httptransport"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog"
 )
 
 var (
@@ -46,7 +46,7 @@ var (
 // TODO(codyoss): plumb through base for this and idtoken
 
 // NewCredentials returns an impersonated
-// [github.com/dwertyfa288/CLI/vendordeps/go/auth/NewCredentials] configured with the provided options
+// [github.com/SpherePrime/CLI/vendordeps/go/auth/NewCredentials] configured with the provided options
 // and using credentials loaded from Application Default Credentials as the base
 // credentials if not provided with the opts.
 func NewCredentials(opts *CredentialsOptions) (*auth.Credentials, error) {
@@ -181,7 +181,7 @@ type CredentialsOptions struct {
 
 	// Credentials used in generating the impersonated token. If empty, an
 	// attempt will be made to detect credentials from the environment (see
-	// [github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials.DetectDefault]). Optional.
+	// [github.com/SpherePrime/CLI/vendordeps/go/auth/credentials.DetectDefault]). Optional.
 	Credentials *auth.Credentials
 	// Client configures the underlying client used to make network requests
 	// when fetching tokens. If provided this should be a fully-authenticated

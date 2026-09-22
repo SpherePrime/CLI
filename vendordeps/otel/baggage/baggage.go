@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/internal/baggage"
+	"github.com/SpherePrime/CLI/vendordeps/otel/internal/baggage"
 )
 
 const (

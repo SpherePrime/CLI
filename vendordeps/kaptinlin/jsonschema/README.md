@@ -19,7 +19,7 @@ A high-performance JSON Schema validator for Go with direct struct validation, d
 ## Installation
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonschema
+go get github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonschema
 ```
 
 Requires the Go version declared in `go.mod`.
@@ -33,7 +33,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonschema"
+	"github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonschema"
 )
 
 type User struct {
@@ -202,7 +202,7 @@ fmt.Println(schema.Validate(map[string]any{
 Install the generator when you want compile-time helpers:
 
 ```bash
-go install github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonschema/cmd/schemagen@latest
+go install github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonschema/cmd/schemagen@latest
 schemagen
 ```
 
@@ -242,7 +242,7 @@ compiler.RegisterDefaultFunc("now", jsonschema.DefaultNowFunc)
 The root package knows nothing about translation frameworks — pure validation users pay zero Intl compile, link, and binary cost. Localization lives in the optional `i18n` subpackage:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonschema/i18n"
+import "github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonschema/i18n"
 
 zh, err := i18n.New("zh-Hans") // one translator per locale
 if err != nil {

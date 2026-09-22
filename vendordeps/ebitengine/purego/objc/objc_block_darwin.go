@@ -9,7 +9,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego"
+	"github.com/SpherePrime/CLI/vendordeps/ebitengine/purego"
 )
 
 const (

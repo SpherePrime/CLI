@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 var errUnknownAgentForTest = errors.New("main agent not found: bogus")

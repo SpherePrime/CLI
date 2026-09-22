@@ -4,7 +4,7 @@
 package otelgrpc
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
 )
 
 // InterceptorType is the flag to define which gRPC interceptor

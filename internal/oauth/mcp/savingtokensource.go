@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 // NewSavingTokenSource wraps an oauth2.TokenSource and calls saver whenever

@@ -29,7 +29,7 @@
 // later release.
 package channelz
 
-import "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/channelz"
+import "github.com/SpherePrime/CLI/vendordeps/grpc/internal/channelz"
 
 // Identifier is an opaque identifier which uniquely identifies an entity in the
 // channelz database.

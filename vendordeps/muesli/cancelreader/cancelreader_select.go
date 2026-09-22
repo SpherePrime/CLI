@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 // newSelectCancelReader returns a reader and a cancel function. If the input

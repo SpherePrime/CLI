@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"image/color"
 
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/formatters"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/lexers"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/internal/ui/xchroma"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/formatters"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/lexers"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/internal/ui/xchroma"
 )
 
 // SyntaxHighlight applies syntax highlighting to the given source code based

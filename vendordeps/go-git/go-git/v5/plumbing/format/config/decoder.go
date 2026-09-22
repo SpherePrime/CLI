@@ -3,7 +3,7 @@ package config
 import (
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/gcfg"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/gcfg"
 )
 
 // A Decoder reads and decodes config files from an input stream.

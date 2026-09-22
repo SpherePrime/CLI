@@ -10,8 +10,8 @@
 package protoiface
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/pragma"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/pragma"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 // Methods is a set of optional fast-path implementations of various operations.

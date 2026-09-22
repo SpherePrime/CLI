@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 func osCreateTemp(flags OpenFlag) (*os.File, error) {

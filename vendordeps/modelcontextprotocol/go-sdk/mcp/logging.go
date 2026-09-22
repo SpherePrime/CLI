@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/time/rate"
+	"github.com/SpherePrime/CLI/vendordeps/x/time/rate"
 )
 
 // Logging levels.

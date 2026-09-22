@@ -4,7 +4,7 @@ import (
 	"image"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico/internal/icondir"
+	"github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico/internal/icondir"
 )
 
 // EncodeAll writes the icons in mm to w in ICO format.

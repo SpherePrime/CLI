@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/database"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/lock"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/database"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/lock"
 )
 
 const (

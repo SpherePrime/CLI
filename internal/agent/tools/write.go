@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/diff"
-	"github.com/dwertyfa288/CLI/internal/filepathext"
-	"github.com/dwertyfa288/CLI/internal/filetracker"
-	"github.com/dwertyfa288/CLI/internal/fsext"
-	"github.com/dwertyfa288/CLI/internal/history"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/diff"
+	"github.com/SpherePrime/CLI/internal/filepathext"
+	"github.com/SpherePrime/CLI/internal/filetracker"
+	"github.com/SpherePrime/CLI/internal/fsext"
+	"github.com/SpherePrime/CLI/internal/history"
 
-	"github.com/dwertyfa288/CLI/internal/lsp"
-	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/lsp"
+	"github.com/SpherePrime/CLI/internal/permission"
 )
 
 //go:embed write.md

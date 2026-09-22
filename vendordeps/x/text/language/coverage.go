@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/internal/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/internal/language"
 )
 
 // The Coverage interface is used to define the level of coverage of an

@@ -1,7 +1,7 @@
 package tea
 
 import (
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // translateInputEvent translates an input event into a Bubble Tea Msg.

@@ -2,7 +2,7 @@
 
 Path pattern matching and globbing supporting `doublestar` (`**`) patterns.
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/bmatcuk/doublestar)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/bmatcuk/doublestar/v4)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/bmatcuk/doublestar)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/bmatcuk/doublestar/v4)
 [![Release](https://img.shields.io/github/release/bmatcuk/doublestar.svg?branch=master)](https://github.com/bmatcuk/doublestar/releases)
 [![Build Status](https://github.com/bmatcuk/doublestar/actions/workflows/test.yml/badge.svg)](https://github.com/bmatcuk/doublestar/actions)
 [![codecov.io](https://img.shields.io/codecov/c/github/bmatcuk/doublestar.svg?branch=master)](https://codecov.io/github/bmatcuk/doublestar?branch=master)
@@ -45,13 +45,13 @@ access. As a result, it is only supported by [golang] v1.16+.
 **doublestar** can be installed via `go get`:
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/bmatcuk/doublestar/v4
+go get github.com/SpherePrime/CLI/vendordeps/bmatcuk/doublestar/v4
 ```
 
 To use it in your code, you must import it:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/bmatcuk/doublestar/v4"
+import "github.com/SpherePrime/CLI/vendordeps/bmatcuk/doublestar/v4"
 ```
 
 ## Usage
@@ -449,7 +449,7 @@ Alternatives can also be nested, like `some{thing{new,},}`, which would match
 ```
 goos: darwin
 goarch: amd64
-pkg: github.com/dwertyfa288/CLI/vendordeps/bmatcuk/doublestar/v4
+pkg: github.com/SpherePrime/CLI/vendordeps/bmatcuk/doublestar/v4
 cpu: Intel(R) Core(TM) i7-4870HQ CPU @ 2.50GHz
 BenchmarkMatch-8                  285639              3868 ns/op               0 B/op          0 allocs/op
 BenchmarkGoMatch-8                286945              3726 ns/op               0 B/op          0 allocs/op

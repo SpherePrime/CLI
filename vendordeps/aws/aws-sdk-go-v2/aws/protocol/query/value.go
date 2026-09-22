@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"net/url"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/encoding/httpbinding"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/encoding/httpbinding"
 )
 
 const keySeparator = "."

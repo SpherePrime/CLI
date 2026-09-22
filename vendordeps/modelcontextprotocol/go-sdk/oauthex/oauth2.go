@@ -15,8 +15,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
 )
 
 type httpStatusError struct {

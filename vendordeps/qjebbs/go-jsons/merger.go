@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons/internal/merge"
-	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
+	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons/internal/merge"
+	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
 )
 
 // Merger is the json merger

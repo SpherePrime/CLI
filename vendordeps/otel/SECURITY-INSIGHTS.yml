@@ -38,35 +38,35 @@ contribution-policy:
   code-of-conduct: https://github.com/open-telemetry/.github/blob/ffa15f76b65ec7bcc41f6a0b277edbb74f832206/CODE_OF_CONDUCT.md
 
 documentation:
-  - https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel
+  - https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel
   - https://opentelemetry.io/docs/instrumentation/go/
 
 distribution-points:
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opencensus/test
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutmetric
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdouttrace
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/zipkin
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/metric
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/sdk
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/sdk/metric
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/trace
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/prometheus
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/log
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/log/logtest
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/sdk/log/logtest
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/exporters/stdout/stdoutlog
-  - pkg:golang/github.com/dwertyfa288/CLI/vendordeps/otel/schema
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/bridge/opencensus/test
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetricgrpc
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlpmetric/otlpmetrichttp
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracegrpc
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlptrace/otlptracehttp
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutmetric
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdouttrace
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/zipkin
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/metric
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/sdk
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/sdk/metric
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/trace
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/prometheus
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/log
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/log/logtest
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/sdk/log
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/sdk/log/logtest
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploggrpc
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/otlp/otlplog/otlploghttp
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/exporters/stdout/stdoutlog
+  - pkg:golang/github.com/SpherePrime/CLI/vendordeps/otel/schema
 
 security-artifacts:
   threat-model:

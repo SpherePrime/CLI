@@ -7,9 +7,9 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/dwertyfa288/CLI/internal/cmd"
-	_ "github.com/dwertyfa288/CLI/internal/dns"
-	_ "github.com/dwertyfa288/CLI/vendordeps/joho/godotenv/autoload"
+	"github.com/SpherePrime/CLI/internal/cmd"
+	_ "github.com/SpherePrime/CLI/internal/dns"
+	_ "github.com/SpherePrime/CLI/vendordeps/joho/godotenv/autoload"
 )
 
 func main() {

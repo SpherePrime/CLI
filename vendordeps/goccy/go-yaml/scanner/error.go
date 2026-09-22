@@ -1,6 +1,6 @@
 package scanner
 
-import "github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/token"
+import "github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/token"
 
 type InvalidTokenError struct {
 	Token *token.Token

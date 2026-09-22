@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/ui/attachments"
-	"github.com/dwertyfa288/CLI/internal/ui/list"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/ui/attachments"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // versionedItem is the cross-cutting interface every chat item type

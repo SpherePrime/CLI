@@ -6,7 +6,7 @@ Verifying a webhook payload:
 
 ```go
 import (
-    standardwebhooks "github.com/dwertyfa288/CLI/vendordeps/standard-webhooks/standard-webhooks/libraries/go"
+    standardwebhooks "github.com/SpherePrime/CLI/vendordeps/standard-webhooks/standard-webhooks/libraries/go"
 )
 
 wh, err := standardwebhooks.NewWebhook(base64Secret)

@@ -4,8 +4,8 @@
 package sdk
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/noop"
 )
 
 // TracerProvider returns an auto-instrumentable [trace.TracerProvider].

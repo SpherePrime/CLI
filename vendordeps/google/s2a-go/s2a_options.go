@@ -23,12 +23,12 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/fallback"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/stream"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/fallback"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/stream"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 
-	s2av1pb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	s2apb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/v2/common_go_proto"
+	s2av1pb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	s2apb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/v2/common_go_proto"
 )
 
 // Identity is the interface for S2A identities.

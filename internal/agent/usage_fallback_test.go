@@ -4,11 +4,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/session"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestUsageIsZero(t *testing.T) {

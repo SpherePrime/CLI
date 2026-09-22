@@ -5,8 +5,8 @@ package wintoast
 import (
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-ole/go-ole"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/go-ole/go-ole"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 var (

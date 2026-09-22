@@ -8,8 +8,8 @@ import (
 	"os"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-logr/logr"
-	"github.com/dwertyfa288/CLI/vendordeps/go-logr/stdr"
+	"github.com/SpherePrime/CLI/vendordeps/go-logr/logr"
+	"github.com/SpherePrime/CLI/vendordeps/go-logr/stdr"
 )
 
 // globalLogger holds a reference to the [logr.Logger] used within

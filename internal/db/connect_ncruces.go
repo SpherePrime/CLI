@@ -6,8 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/driver"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/driver"
 )
 
 func openDBReadOnly(dbPath string) (*sql.DB, error) {

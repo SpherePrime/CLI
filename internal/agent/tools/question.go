@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/question"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/question"
 )
 
 const QuestionToolName = "question"

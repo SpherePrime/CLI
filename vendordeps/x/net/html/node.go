@@ -5,7 +5,7 @@
 package html
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html/atom"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html/atom"
 )
 
 // A NodeType is the type of a Node.

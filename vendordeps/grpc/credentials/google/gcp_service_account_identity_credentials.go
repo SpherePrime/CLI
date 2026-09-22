@@ -25,15 +25,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/idtoken"
-	"github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/google/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/backoff"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/transport"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/idtoken"
+	"github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/google/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/backoff"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/transport"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 const (

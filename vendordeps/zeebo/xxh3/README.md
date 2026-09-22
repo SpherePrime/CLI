@@ -1,7 +1,7 @@
 # XXH3
-[![GoDoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3?status.svg)](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3)
-[![Sourcegraph](https://sourcegraph.com/github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3/-/badge.svg)](https://sourcegraph.com/github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3?badge)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3)
+[![GoDoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/zeebo/xxh3?status.svg)](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/zeebo/xxh3)
+[![Sourcegraph](https://sourcegraph.com/github.com/SpherePrime/CLI/vendordeps/zeebo/xxh3/-/badge.svg)](https://sourcegraph.com/github.com/SpherePrime/CLI/vendordeps/zeebo/xxh3?badge)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/zeebo/xxh3)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/zeebo/xxh3)
 
 This package is a port of the [xxh3](https://github.com/Cyan4973/xxHash) library to Go.
 

@@ -4,8 +4,8 @@ package sts
 
 import (
 	"context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts/types"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/sts/types"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 	"time"
 )
 

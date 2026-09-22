@@ -3,11 +3,11 @@ package model
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/skills"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	uistyles "github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/skills"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	uistyles "github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestSkillStatusItemsIncludesBuiltinSkills verifies sidebar skills include

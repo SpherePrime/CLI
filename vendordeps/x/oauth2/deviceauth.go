@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/internal"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/internal"
 )
 
 // https://datatracker.ietf.org/doc/html/rfc8628#section-3.5

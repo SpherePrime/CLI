@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
+	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
 )
 
 // OrderedMap is an alias of ordered.Map

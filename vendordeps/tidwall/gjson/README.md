@@ -5,7 +5,7 @@
   <img src="/.github/images/logo-light.png" width="240" alt="GJSON" >
 </picture>
 <br>
-<a href="https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"><img src="https://img.shields.io/badge/api-reference-blue.svg?style=flat-square" alt="GoDoc"></a>
+<a href="https://godoc.org/github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"><img src="https://img.shields.io/badge/api-reference-blue.svg?style=flat-square" alt="GoDoc"></a>
 <a href="https://tidwall.com/gjson-play"><img src="https://img.shields.io/badge/%F0%9F%8F%90-playground-9900cc.svg?style=flat-square" alt="GJSON Playground"></a>
 <a href="SYNTAX.md"><img src="https://img.shields.io/badge/{}-syntax-33aa33.svg?style=flat-square" alt="GJSON Syntax"></a>
 	
@@ -16,7 +16,7 @@
 GJSON is a Go package that provides a [fast](#performance) and [simple](#get-a-value) way to get values from a json document.
 It has features such as [one line retrieval](#get-a-value), [dot notation paths](#path-syntax), [iteration](#iterate-through-an-object-or-array), and [parsing json lines](#json-lines).
 
-Also check out [SJSON](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson) for modifying json, and the [JJ](https://github.com/tidwall/jj) command line tool.
+Also check out [SJSON](https://github.com/SpherePrime/CLI/vendordeps/tidwall/sjson) for modifying json, and the [JJ](https://github.com/tidwall/jj) command line tool.
 
 This README is a quick overview of how to use GJSON, for more information check out [GJSON Syntax](SYNTAX.md).
 
@@ -30,7 +30,7 @@ Getting Started
 To start using GJSON, install Go and run `go get`:
 
 ```sh
-$ go get -u github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson
+$ go get -u github.com/SpherePrime/CLI/vendordeps/tidwall/gjson
 ```
 
 This will retrieve the library.
@@ -41,7 +41,7 @@ Get searches json for the specified path. A path is in dot syntax, such as "name
 ```go
 package main
 
-import "github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+import "github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 
 const json = `{"name":{"first":"Janet","last":"Prichard"},"age":47}`
 
@@ -212,8 +212,8 @@ There are currently the following built-in modifiers:
 - `@values`: Returns an array of values for an object.
 - `@tostr`: Converts json to a string. Wraps a json string.
 - `@fromstr`: Converts a string from json. Unwraps a json string.
-- `@group`: Groups arrays of objects. See [e4fc67c](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson/commit/e4fc67c92aeebf2089fabc7872f010e340d105db).
-- `@dig`: Search for a value without providing its entire path. See [e8e87f2](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson/commit/e8e87f2a00dc41f3aba5631094e21f59a8cf8cbf).
+- `@group`: Groups arrays of objects. See [e4fc67c](https://github.com/SpherePrime/CLI/vendordeps/tidwall/gjson/commit/e4fc67c92aeebf2089fabc7872f010e340d105db).
+- `@dig`: Search for a value without providing its entire path. See [e8e87f2](https://github.com/SpherePrime/CLI/vendordeps/tidwall/gjson/commit/e8e87f2a00dc41f3aba5631094e21f59a8cf8cbf).
 
 ### Modifier arguments
 
@@ -243,7 +243,7 @@ Which makes the json pretty and orders all of its keys.
 ```
 
 *The full list of `@pretty` options are `sortKeys`, `indent`, `prefix`, and `width`. 
-Please see [Pretty Options](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/pretty#customized-output) for more information.*
+Please see [Pretty Options](https://github.com/SpherePrime/CLI/vendordeps/tidwall/pretty#customized-output) for more information.*
 
 ### Custom modifiers
 
@@ -407,7 +407,7 @@ if !ok {
 
 ## Working with Bytes
 
-If your JSON is contained in a `[]byte` slice, there's the [GetBytes](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson#GetBytes) function. This is preferred over `Get(string(data), path)`.
+If your JSON is contained in a `[]byte` slice, there's the [GetBytes](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/tidwall/gjson#GetBytes) function. This is preferred over `Get(string(data), path)`.
 
 ```go
 var json []byte = ...
@@ -434,7 +434,7 @@ This is a best-effort no allocation sub slice of the original json. This method 
 Benchmarks of GJSON alongside [encoding/json](https://golang.org/pkg/encoding/json/), 
 [ffjson](https://github.com/pquerna/ffjson), 
 [EasyJSON](https://github.com/mailru/easyjson),
-[jsonparser](https://github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser),
+[jsonparser](https://github.com/SpherePrime/CLI/vendordeps/buger/jsonparser),
 and [json-iterator](https://github.com/json-iterator/go)
 
 ```

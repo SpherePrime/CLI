@@ -7,8 +7,8 @@
 package proto
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 func (o MarshalOptions) sizeSingular(num protowire.Number, kind protoreflect.Kind, v protoreflect.Value) int {

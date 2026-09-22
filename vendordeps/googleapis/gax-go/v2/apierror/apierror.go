@@ -31,7 +31,7 @@
 // API calls. Both HTTP & gRPC status errors are supported.
 //
 // For examples of how to use [APIError] with client libraries please reference
-// [Inspecting errors](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go#hdr-Inspecting_errors)
+// [Inspecting errors](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go#hdr-Inspecting_errors)
 // in the client library documentation.
 package apierror
 
@@ -41,13 +41,13 @@ import (
 	"net/http"
 	"strings"
 
-	jsonerror "github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/apierror/internal/proto"
-	"github.com/dwertyfa288/CLI/vendordeps/api/googleapi"
-	"github.com/dwertyfa288/CLI/vendordeps/genproto/googleapis/rpc/errdetails"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protojson"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
+	jsonerror "github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/apierror/internal/proto"
+	"github.com/SpherePrime/CLI/vendordeps/api/googleapi"
+	"github.com/SpherePrime/CLI/vendordeps/genproto/googleapis/rpc/errdetails"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protojson"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
 )
 
 // canonicalMap maps HTTP codes to gRPC status code equivalents.
@@ -261,7 +261,7 @@ func (a *APIError) Message() string {
 
 // GRPCStatus extracts the underlying gRPC Status error.
 // This method is necessary to fulfill the interface
-// described in https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc/status#FromError.
+// described in https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc/status#FromError.
 //
 // For errors that originated as an HTTP-based googleapi.Error, GRPCStatus()
 // returns a status that attempts to map from the original HTTP code to an
@@ -403,8 +403,8 @@ func parseHTTPDetails(gae *googleapi.Error) ErrDetails {
 }
 
 // HTTPCode returns the underlying HTTP response status code. This method returns
-// `-1` if the underlying error is a [github.com/dwertyfa288/CLI/vendordeps/grpc/status.Status]. To
-// check gRPC error codes use [github.com/dwertyfa288/CLI/vendordeps/grpc/status.Code].
+// `-1` if the underlying error is a [github.com/SpherePrime/CLI/vendordeps/grpc/status.Status]. To
+// check gRPC error codes use [github.com/SpherePrime/CLI/vendordeps/grpc/status.Code].
 func (a *APIError) HTTPCode() int {
 	if a.httpErr == nil {
 		return -1

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonschema/pkg/tagparser"
+	"github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonschema/pkg/tagparser"
 )
 
 // StructTagError represents an error that occurred during struct tag processing.

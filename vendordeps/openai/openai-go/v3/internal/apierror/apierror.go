@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
 )
 
 // Error represents an error that originates from the API, i.e. when a request is

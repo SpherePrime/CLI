@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"errors"
@@ -22,16 +22,16 @@ import (
 	"unicode/utf16"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-strftime"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fcntl"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/limits"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/stdio"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/stat"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/time"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/unistd"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-strftime"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fcntl"
+	"github.com/SpherePrime/CLI/vendordeps/libc/limits"
+	"github.com/SpherePrime/CLI/vendordeps/libc/stdio"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/stat"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/time"
+	"github.com/SpherePrime/CLI/vendordeps/libc/unistd"
 )
 
 // Keep these outside of the var block otherwise go generate will miss them.
@@ -882,7 +882,7 @@ func Xgettimeofday(t *TLS, tv, tz uintptr) int32 {
 	// (*Timeval)(unsafe.Pointer(tv)).Ftv_usec = int32(u64%1e6)
 	// return 0
 
-	// But let's use the github.com/dwertyfa288/CLI/vendordeps/x/sys version
+	// But let's use the github.com/SpherePrime/CLI/vendordeps/x/sys version
 	windows.Gettimeofday((*windows.Timeval)(unsafe.Pointer(tv)))
 	return 0
 }

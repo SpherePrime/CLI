@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/andybalholm/brotli/matchfinder"
+	"github.com/SpherePrime/CLI/vendordeps/andybalholm/brotli/matchfinder"
 )
 
 const (

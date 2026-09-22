@@ -164,7 +164,7 @@ without data-control that means the XWayland bridge, as before. FromPrimary
 needs version 2 of the data-control manager, which is where the primary
 selection was added; under an older one a primary read returns nil.
 */
-package clipboard // import "github.com/dwertyfa288/CLI/vendordeps/x/clipboard"
+package clipboard // import "github.com/SpherePrime/CLI/vendordeps/x/clipboard"
 
 import (
 	"bytes"
@@ -413,7 +413,7 @@ func Read(ctx context.Context, t Format, opts ...Option) ([]byte, error) {
 // If format t indicates an image, buf is normalized to PNG before being placed
 // on the clipboard. PNG input is stored as-is; other formats are accepted if the
 // program has registered the matching image decoder (e.g. blank-import
-// _ "image/jpeg" or _ "github.com/dwertyfa288/CLI/vendordeps/x/image/webp"), and undecodable input passes
+// _ "image/jpeg" or _ "github.com/SpherePrime/CLI/vendordeps/x/image/webp"), and undecodable input passes
 // through unchanged. The clipboard therefore always serves PNG, regardless of
 // the input encoding.
 func Write(ctx context.Context, t Format, buf []byte, opts ...Option) (<-chan struct{}, error) {
@@ -517,7 +517,7 @@ func normalizeItems(items []Item) []Item {
 // Decoding relies on the image decoders the importing program has registered, so
 // no decoder is a mandatory dependency of this package: to accept JPEG/GIF/WebP
 // input, blank-import the corresponding decoder (e.g. _ "image/jpeg",
-// _ "github.com/dwertyfa288/CLI/vendordeps/x/image/webp"). Unknown or undecodable input passes through
+// _ "github.com/SpherePrime/CLI/vendordeps/x/image/webp"). Unknown or undecodable input passes through
 // unchanged, preserving the previous bytes-in behavior.
 func toPNG(buf []byte) []byte {
 	// Cheap path: already PNG (avoid a needless decode/encode round-trip).

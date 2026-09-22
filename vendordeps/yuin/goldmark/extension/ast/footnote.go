@@ -3,7 +3,7 @@ package ast
 import (
 	"fmt"
 
-	gast "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
+	gast "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
 )
 
 // A FootnoteLink struct represents a link to a footnote of Markdown

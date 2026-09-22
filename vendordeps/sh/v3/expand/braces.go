@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 // Braces performs brace expansion on a word, given that it contains any

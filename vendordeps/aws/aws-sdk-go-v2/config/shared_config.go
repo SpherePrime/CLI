@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/config/internal/ini"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/shareddefaults"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	smithyrequestcompression "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/private/requestcompression"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/config/internal/ini"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/shareddefaults"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	smithyrequestcompression "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/private/requestcompression"
 )
 
 const (

@@ -29,8 +29,8 @@ import (
 	"hash/fnv"
 	"math"
 
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet/internal/casso"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/internal/casso"
 )
 
 // floatPrecisionMultiplier scales cell positions into a higher-precision

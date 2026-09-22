@@ -32,17 +32,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/pickfirst/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/connectivity"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/experimental/balancer/weight"
-	expstats "github.com/dwertyfa288/CLI/vendordeps/grpc/experimental/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/envconfig"
-	internalgrpclog "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/pretty"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/pickfirst/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/connectivity"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/experimental/balancer/weight"
+	expstats "github.com/SpherePrime/CLI/vendordeps/grpc/experimental/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/envconfig"
+	internalgrpclog "github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/pretty"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
 )
 
 func init() {

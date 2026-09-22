@@ -1,6 +1,6 @@
 package goquery
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+import "github.com/SpherePrime/CLI/vendordeps/x/net/html"
 
 // Filter reduces the set of matched elements to those that match the selector string.
 // It returns a new Selection object for this subset of matching elements.

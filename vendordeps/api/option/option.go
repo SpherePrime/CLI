@@ -10,13 +10,13 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/credentialstype"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/impersonate"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/credentialstype"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/impersonate"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
 )
 
 // CredentialsType specifies the type of JSON credentials being provided
@@ -318,7 +318,7 @@ func (w withGRPCConnectionPool) Apply(o *internal.DialSettings) {
 // as the basis for authentication.
 //
 // API Keys can only be used for JSON-over-HTTP APIs, including those under
-// the import path github.com/dwertyfa288/CLI/vendordeps/api/....
+// the import path github.com/SpherePrime/CLI/vendordeps/api/....
 func WithAPIKey(apiKey string) ClientOption {
 	return withAPIKey(apiKey)
 }
@@ -465,7 +465,7 @@ func (w withClientCertSource) Apply(o *internal.DialSettings) {
 // This is an EXPERIMENTAL API and may be changed or removed in the future.
 //
 // Deprecated: This option has been replaced by `impersonate` package:
-// `github.com/dwertyfa288/CLI/vendordeps/api/impersonate`. Please use the `impersonate` package
+// `github.com/SpherePrime/CLI/vendordeps/api/impersonate`. Please use the `impersonate` package
 // instead with the WithTokenSource option.
 func ImpersonateCredentials(target string, delegates ...string) ClientOption {
 	return impersonateServiceAccount{
@@ -499,7 +499,7 @@ func WithCredentials(creds *google.Credentials) ClientOption {
 }
 
 // WithAuthCredentials returns a ClientOption that specifies an
-// [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials] to be used as the basis for
+// [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials] to be used as the basis for
 // authentication.
 func WithAuthCredentials(creds *auth.Credentials) ClientOption {
 	return withAuthCredentials{creds}

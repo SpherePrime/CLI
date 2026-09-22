@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/tree"
-	"github.com/dwertyfa288/CLI/internal/agent"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
+	"github.com/SpherePrime/CLI/internal/agent"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
 
 // -----------------------------------------------------------------------------

@@ -12,9 +12,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/base64"
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/keyset"
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/encoding/iso8601"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/base64"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/keyset"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/encoding/iso8601"
 )
 
 func (d decoder) anyFlagsSet(flags ParseFlags) bool {

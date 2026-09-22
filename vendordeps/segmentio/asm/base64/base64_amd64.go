@@ -6,8 +6,8 @@ package base64
 import (
 	"encoding/base64"
 
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu"
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu/x86"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu/x86"
 )
 
 const (

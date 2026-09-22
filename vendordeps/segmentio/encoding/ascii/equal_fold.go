@@ -2,7 +2,7 @@
 package ascii
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/ascii"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/ascii"
 )
 
 // EqualFold is a version of bytes.EqualFold designed to work on ASCII input

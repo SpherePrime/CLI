@@ -4,8 +4,8 @@ package sso
 
 import (
 	"context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/sso/types"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/sso/types"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // Returns the STS short-term credentials for a given role name that is assigned

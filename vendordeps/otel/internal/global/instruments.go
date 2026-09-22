@@ -7,8 +7,8 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded"
 )
 
 // unwrapper unwraps to return the underlying instrument implementation.

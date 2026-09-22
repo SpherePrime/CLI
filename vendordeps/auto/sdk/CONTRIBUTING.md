@@ -1,6 +1,6 @@
-# Contributing to github.com/dwertyfa288/CLI/vendordeps/auto/sdk
+# Contributing to github.com/SpherePrime/CLI/vendordeps/auto/sdk
 
-The `github.com/dwertyfa288/CLI/vendordeps/auto/sdk` module is a purpose built OpenTelemetry SDK.
+The `github.com/SpherePrime/CLI/vendordeps/auto/sdk` module is a purpose built OpenTelemetry SDK.
 It is designed to be:
 
 0. An OpenTelemetry compliant SDK
@@ -11,14 +11,14 @@ It is designed to be:
 These design choices are listed in the order of their importance.
 
 The primary design goal of this module is to be an OpenTelemetry SDK.
-This means that it needs to implement the Go APIs found in `github.com/dwertyfa288/CLI/vendordeps/otel`.
+This means that it needs to implement the Go APIs found in `github.com/SpherePrime/CLI/vendordeps/otel`.
 
 Having met the requirement of SDK compliance, this module needs to provide code that the `go.opentelemetry.io/auto` module can instrument.
 The chosen approach to meet this goal is to ensure the telemetry from the SDK is serializable into JSON encoded OTLP.
 This ensures then that the serialized form is compatible with other OpenTelemetry systems, and the auto-instrumentation can use these systems to deserialize any telemetry it is sent.
 
 Outside of these first two goals, the intended use becomes relevant.
-This package is intended to be used in the `github.com/dwertyfa288/CLI/vendordeps/otel` global API as a default when the auto-instrumentation is running.
+This package is intended to be used in the `github.com/SpherePrime/CLI/vendordeps/otel` global API as a default when the auto-instrumentation is running.
 Because of this, this package needs to not add unnecessary dependencies to that API.
 Ideally, it adds none.
 It also needs to operate efficiently.

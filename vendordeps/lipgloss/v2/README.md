@@ -3,7 +3,7 @@
 <p >
     <img src="https://github.com/user-attachments/assets/d13bbe1a-d2b2-4d18-9302-419a0bc3f579" width="350"><br>
     <a href="https://github.com/dwertyfa288/lipgloss/releases"><img src="https://img.shields.io/github/release/dwertyfa288/lipgloss.svg" alt="Latest Release"></a>
-    <a href="https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2?tab=doc"><img src="https://godoc.org/github.com/golang/gddo?status.svg" alt="GoDoc"></a>
+    <a href="https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/lipgloss/v2?tab=doc"><img src="https://godoc.org/github.com/golang/gddo?status.svg" alt="GoDoc"></a>
     <a href="https://github.com/dwertyfa288/lipgloss/actions"><img src="https://github.com/dwertyfa288/lipgloss/workflows/build/badge.svg" alt="Build Status"></a>
 </p>
 
@@ -15,7 +15,7 @@ Lip Gloss takes an expressive, declarative approach to terminal rendering.
 Users familiar with CSS will feel at home with Lip Gloss.
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 
 var style = lipgloss.NewStyle().
     Bold(true).
@@ -31,7 +31,7 @@ lipgloss.Println(style.Render("Hello, kitty"))
 ## Installation
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2
+go get github.com/SpherePrime/CLI/vendordeps/lipgloss/v2
 ```
 
 > [!TIP]
@@ -289,7 +289,7 @@ s := lipgloss.NewStyle().
     BorderForegroundBlend(lipgloss.Color("#FF0000"), lipgloss.Color("#0000FF"))
 ```
 
-For more on borders see [the docs](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2#Border).
+For more on borders see [the docs](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/lipgloss/v2#Border).
 
 ## Copying Styles
 
@@ -493,7 +493,7 @@ You can also style the whitespace. For details, see [the docs][docs].
 Lip Gloss ships with a table rendering sub-package.
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/table"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/table"
 ```
 
 Define some rows of data.
@@ -593,7 +593,7 @@ For more on tables see [the docs][docs] and [examples](https://github.com/dwerty
 Lip Gloss ships with a list rendering sub-package.
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/list"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/list"
 ```
 
 Define a new list.
@@ -700,7 +700,7 @@ for i := 0; i < repeat; i++ {
 Lip Gloss ships with a tree rendering sub-package.
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/tree"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
 ```
 
 Define a new tree.
@@ -812,7 +812,7 @@ The `compat` package provides `AdaptiveColor`, `CompleteColor`, and
 looking at `stdin` and `stdout` on a global basis:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/compat"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/compat"
 
 color := compat.AdaptiveColor{
     Light: lipgloss.Color("#f1f1f1"),
@@ -904,7 +904,7 @@ In some cases where you may want to specify exact values for each color profile
 
 ```go
 // You'll need the colorprofile package.
-import "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+import "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 
 // Get the color profile.
 profile := colorprofile.Detect(os.Stdout, os.Environ())
@@ -946,7 +946,7 @@ The full set: `Print`, `Println`, `Printf`, `Fprint`, `Fprintln`, `Fprintf`,
 `Sprint`, `Sprintln`, `Sprintf`.
 
 Need more control? Check out
-[Colorprofile](https://github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile), which Lip Gloss
+[Colorprofile](https://github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile), which Lip Gloss
 uses under the hood.
 
 ## What about [Bubble Tea][tea]?
@@ -993,4 +993,4 @@ Part of [Charm](https://dwerty.local).
 
 Charm热爱开源 • Charm loves open source
 
-[docs]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2?tab=doc
+[docs]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/lipgloss/v2?tab=doc

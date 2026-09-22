@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/token"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/token"
 )
 
 // Context context at scanning

@@ -6,16 +6,16 @@
 package protoadapt
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoimpl"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoimpl"
 )
 
 // MessageV1 is the original [github.com/golang/protobuf/proto.Message] type.
 type MessageV1 = protoiface.MessageV1
 
-// MessageV2 is the [github.com/dwertyfa288/CLI/vendordeps/protobuf/proto.Message] type used by the
-// current [github.com/dwertyfa288/CLI/vendordeps/protobuf] module, adding support for reflection.
+// MessageV2 is the [github.com/SpherePrime/CLI/vendordeps/protobuf/proto.Message] type used by the
+// current [github.com/SpherePrime/CLI/vendordeps/protobuf] module, adding support for reflection.
 type MessageV2 = proto.Message
 
 // MessageV1Of converts a v2 message to a v1 message.

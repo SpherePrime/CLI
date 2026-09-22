@@ -1,8 +1,8 @@
 package dialog
 
 import (
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 // HandleScrollbarMouse drags the choice list scrollbar thumb. Satisfies

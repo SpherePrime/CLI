@@ -12,7 +12,7 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 	// default is 20 seconds.
 	tcpUserTimeoutMilliseconds = 20000
 
-	// Copied from github.com/dwertyfa288/CLI/vendordeps/x/sys/unix.TCP_USER_TIMEOUT.
+	// Copied from github.com/SpherePrime/CLI/vendordeps/x/sys/unix.TCP_USER_TIMEOUT.
 	tcpUserTimeoutOp = 0x12
 )
 

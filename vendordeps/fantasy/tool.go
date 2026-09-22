@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/schema"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/schema"
 )
 
 // Schema represents a JSON schema for tool input validation.

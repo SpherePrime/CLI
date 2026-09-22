@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/database/dialect"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/database/dialect"
 )
 
 // NewPostgres returns a new [dialect.Querier] for PostgreSQL dialect.

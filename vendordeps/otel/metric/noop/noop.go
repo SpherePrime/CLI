@@ -15,8 +15,8 @@ package noop
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded"
 )
 
 var (

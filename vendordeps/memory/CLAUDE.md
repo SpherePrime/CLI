@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`github.com/dwertyfa288/CLI/vendordeps/memory` is a single-package, dependency-light Go library implementing a C-style `malloc`/`free` allocator on top of raw OS mappings (`mmap` on unix, `VirtualAlloc` on Windows). It exists to serve the modernc C-to-Go stack (`github.com/dwertyfa288/CLI/vendordeps/libc` and everything above it), which needs memory the Go GC neither moves nor scans, and addresses that stay valid when held only as `uintptr`.
+`github.com/SpherePrime/CLI/vendordeps/memory` is a single-package, dependency-light Go library implementing a C-style `malloc`/`free` allocator on top of raw OS mappings (`mmap` on unix, `VirtualAlloc` on Windows). It exists to serve the modernc C-to-Go stack (`github.com/SpherePrime/CLI/vendordeps/libc` and everything above it), which needs memory the Go GC neither moves nor scans, and addresses that stay valid when held only as `uintptr`.
 
 The repo is flat: ten Go files, one test file. `internal/autogen/` is an empty placeholder for the modernc builder infrastructure described by `builder.json`.
 

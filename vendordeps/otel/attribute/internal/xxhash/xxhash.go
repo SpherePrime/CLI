@@ -8,7 +8,7 @@ import (
 	"encoding/binary"
 	"math"
 
-	"github.com/dwertyfa288/CLI/vendordeps/cespare/xxhash/v2"
+	"github.com/SpherePrime/CLI/vendordeps/cespare/xxhash/v2"
 )
 
 // Hash wraps xxhash.Digest to provide an API friendly for hashing attribute values.

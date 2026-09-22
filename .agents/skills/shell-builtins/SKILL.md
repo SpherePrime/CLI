@@ -5,7 +5,7 @@ description: Use when creating a new shell builtin command for Prime (internal/s
 
 # Shell Builtins
 
-Prime's shell (`internal/shell/`) uses `github.com/dwertyfa288/CLI/vendordeps/sh/v3` for POSIX shell
+Prime's shell (`internal/shell/`) uses `github.com/SpherePrime/CLI/vendordeps/sh/v3` for POSIX shell
 emulation. Commands can be intercepted before they reach the OS by adding
 **builtins** — functions handled in-process.
 
@@ -69,4 +69,4 @@ inline or delegates to a helper function.
 
 | Command | File | Description |
 |---------|------|-------------|
-| `jq` | `jq.go` | JSON processor using `github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq` |
+| `jq` | `jq.go` | JSON processor using `github.com/SpherePrime/CLI/vendordeps/itchyny/gojq` |

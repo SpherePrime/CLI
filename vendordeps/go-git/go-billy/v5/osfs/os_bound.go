@@ -26,8 +26,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	securejoin "github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5"
+	securejoin "github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5"
 )
 
 var (

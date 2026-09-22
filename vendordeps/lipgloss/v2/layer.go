@@ -5,7 +5,7 @@ import (
 	"image"
 	"slices"
 
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // Layer represents a visual layer with content and positioning. It's a pure

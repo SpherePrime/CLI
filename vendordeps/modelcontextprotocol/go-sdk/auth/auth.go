@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/oauthex"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/oauthex"
 )
 
 // TokenInfo holds information from a bearer token.

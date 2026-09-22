@@ -3,8 +3,8 @@ package goose
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/database"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/internal/legacystore"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/database"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/internal/legacystore"
 )
 
 // Dialect is the type of database dialect. It is an alias for [database.Dialect].

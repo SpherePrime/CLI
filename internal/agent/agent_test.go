@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/session"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 
-	_ "github.com/dwertyfa288/CLI/vendordeps/joho/godotenv/autoload"
+	_ "github.com/SpherePrime/CLI/vendordeps/joho/godotenv/autoload"
 )
 
 func TestMain(m *testing.M) {

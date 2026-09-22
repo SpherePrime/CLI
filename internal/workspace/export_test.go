@@ -3,7 +3,7 @@ package workspace
 import (
 	"time"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 // ConsumeEventsForTest runs the event-handling loop on the given

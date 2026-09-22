@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
 )
 
 // TracerConfig is a group of options for a Tracer.

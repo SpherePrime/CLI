@@ -17,7 +17,7 @@
 package genai
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/go/civil"
+	"github.com/SpherePrime/CLI/vendordeps/go/civil"
 	"encoding/json"
 	"fmt"
 	"log"

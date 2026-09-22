@@ -11,7 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp/internal/value"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp/internal/value"
 )
 
 // Path is a list of [PathStep] describing the sequence of operations to get

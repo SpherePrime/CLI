@@ -31,7 +31,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yaml/v4/internal/libyaml"
+	"github.com/SpherePrime/CLI/vendordeps/yaml/v4/internal/libyaml"
 )
 
 // The Unmarshaler interface may be implemented by types to customize their

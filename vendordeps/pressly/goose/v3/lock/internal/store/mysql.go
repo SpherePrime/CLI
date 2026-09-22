@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/multierr"
+	"github.com/SpherePrime/CLI/vendordeps/multierr"
 )
 
 // NewMySQL creates a new MySQL-based [LockStore].

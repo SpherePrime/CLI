@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	v4Internal "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/internal/v4"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	v4Internal "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/internal/v4"
 	"strings"
 	"time"
 )

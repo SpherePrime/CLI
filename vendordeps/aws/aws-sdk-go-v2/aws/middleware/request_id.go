@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // requestIDKey is used to retrieve request id from response metadata

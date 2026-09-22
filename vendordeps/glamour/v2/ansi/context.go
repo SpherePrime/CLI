@@ -4,7 +4,7 @@ import (
 	"html"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday"
+	"github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday"
 )
 
 // RenderContext holds the current rendering options and state.

@@ -445,9 +445,9 @@ func (st *state) validate(instance reflect.Value, schema *Schema, callerAnns *an
 
 	// objects
 	// https://json-schema.org/draft/2020-12/json-schema-core#section-10.3.2
-	// Validating structs is problematic. See https://github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go/issues/23.
+	// Validating structs is problematic. See https://github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go/issues/23.
 	if instance.Kind() == reflect.Struct {
-		return errors.New("cannot validate against a struct; see https://github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go/issues/23 for details")
+		return errors.New("cannot validate against a struct; see https://github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go/issues/23 for details")
 	}
 	if instance.Kind() == reflect.Map {
 		if kt := instance.Type().Key(); kt.Kind() != reflect.String {

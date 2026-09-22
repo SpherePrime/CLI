@@ -1,9 +1,9 @@
 # timefmt-go
-[![CI Status](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go/actions?query=branch:main)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go/blob/main/LICENSE)
-[![release](https://img.shields.io/github/release/itchyny/timefmt-go/all.svg)](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go/releases)
-[![pkg.go.dev](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go)
+[![CI Status](https://github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go/actions?query=branch:main)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go/blob/main/LICENSE)
+[![release](https://img.shields.io/github/release/itchyny/timefmt-go/all.svg)](https://github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go/releases)
+[![pkg.go.dev](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go)
 
 ### Efficient time formatting library (strftime, strptime) for Golang
 This is a Go language package for formatting and parsing date time strings.
@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go"
+	"github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go"
 )
 
 func main() {
@@ -60,7 +60,7 @@ Note that `E` and `O` modifier characters are not supported.
 ![](https://user-images.githubusercontent.com/375258/88606920-de475c80-d0b8-11ea-8d40-cbfee9e35c2e.jpg)
 
 ## Bug Tracker
-Report bug at [Issues・itchyny/timefmt-go - GitHub](https://github.com/dwertyfa288/CLI/vendordeps/itchyny/timefmt-go/issues).
+Report bug at [Issues・itchyny/timefmt-go - GitHub](https://github.com/SpherePrime/CLI/vendordeps/itchyny/timefmt-go/issues).
 
 ## Author
 itchyny (<https://github.com/itchyny>)

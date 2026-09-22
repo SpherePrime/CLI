@@ -11,8 +11,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/detrand"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/detrand"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
 )
 
 // encType represents an encoding type.

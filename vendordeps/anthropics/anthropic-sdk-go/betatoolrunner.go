@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"iter"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/stainlessheader"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sync/errgroup"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/stainlessheader"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/x/sync/errgroup"
 )
 
 // BetaTool represents a tool that can be executed by the BetaToolRunner.

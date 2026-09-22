@@ -1,6 +1,6 @@
 package layout
 
-import uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+import uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 
 // Padding defines the inset applied to a [Layout]'s outer area before solving.
 type Padding struct {

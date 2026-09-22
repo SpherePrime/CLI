@@ -5,10 +5,10 @@
 package proto
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/messageset"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/messageset"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 // Size returns the size in bytes of the wire-format encoding of m.

@@ -29,7 +29,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/enterprise-certificate-proxy/client/util"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/enterprise-certificate-proxy/client/util"
 )
 
 const signAPI = "EnterpriseCertSigner.Sign"

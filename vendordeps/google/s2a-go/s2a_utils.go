@@ -22,9 +22,9 @@ import (
 	"context"
 	"errors"
 
-	commonpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/peer"
+	commonpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/peer"
 )
 
 // AuthInfo exposes security information from the S2A to the application.

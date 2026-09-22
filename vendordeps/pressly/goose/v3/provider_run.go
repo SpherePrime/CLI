@@ -13,10 +13,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/database"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/internal/sqlparser"
-	"github.com/dwertyfa288/CLI/vendordeps/sethvargo/go-retry"
-	"github.com/dwertyfa288/CLI/vendordeps/multierr"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/database"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/internal/sqlparser"
+	"github.com/SpherePrime/CLI/vendordeps/sethvargo/go-retry"
+	"github.com/SpherePrime/CLI/vendordeps/multierr"
 )
 
 var (

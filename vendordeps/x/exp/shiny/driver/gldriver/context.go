@@ -9,7 +9,7 @@ package gldriver
 import (
 	"runtime"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/gl"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/gl"
 )
 
 // NewContext creates an OpenGL ES context with a dedicated processing thread.

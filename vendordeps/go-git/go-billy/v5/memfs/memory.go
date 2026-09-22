@@ -1,5 +1,5 @@
 // Package memfs provides a billy filesystem base on memory.
-package memfs // import "github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5/memfs"
+package memfs // import "github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5/memfs"
 
 import (
 	"errors"
@@ -12,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5/helper/chroot"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5/util"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5/helper/chroot"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5/util"
 )
 
 const separator = filepath.Separator

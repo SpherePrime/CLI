@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `pathrs-lite` now has support for using libpathrs as a backend. This is
   opt-in and can be enabled at build time with the `libpathrs` build tag. The
   intention is to allow for downstream libraries and other projects to make use
-  of the pure-Go `github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite` package
+  of the pure-Go `github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite` package
   and distributors can then opt-in to using `libpathrs` for the entire binary
   if they wish.
 
@@ -87,7 +87,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 > Let the past die. Kill it if you have to.
 
 > **NOTE**: With this release, some parts of
-> `github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin` are now licensed under the Mozilla
+> `github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin` are now licensed under the Mozilla
 > Public License (version 2). Please see [COPYING.md][] as well as the the
 > license header in each file for more details.
 
@@ -108,7 +108,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added ###
 - Most of the key bits the safe `procfs` API have now been exported and are
-  available in `github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite/procfs`. At
+  available in `github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/pathrs-lite/procfs`. At
   the moment this primarily consists of a new `procfs.Handle` API:
 
    * `OpenProcRoot` returns a new handle to `/proc`, endeavouring to make it
@@ -260,7 +260,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   library is probably better for most downstreams than a hand-rolled
   workaround, we now have compatibility shims that allow us to build on older
   Go versions.
-- Lower minimum version requirement for `github.com/dwertyfa288/CLI/vendordeps/x/sys` to `v0.18.0` (we
+- Lower minimum version requirement for `github.com/SpherePrime/CLI/vendordeps/x/sys` to `v0.18.0` (we
   need the wrappers for `fsconfig(2)`), which should also make backporting
   patches to older branches easier.
 
@@ -426,28 +426,28 @@ We now have 100% test coverage!
 
 ## 0.1.0 - 2017-07-19
 
-This is our first release of `github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin`,
+This is our first release of `github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin`,
 containing a full implementation with a coverage of 93.5% (the only missing
 cases are the error cases, which are hard to mocktest at the moment).
 
-[Unreleased]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.6.1...HEAD
-[0.6.1]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.6.0...v0.6.1
-[0.6.0]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.5.0...v0.6.0
-[0.5.2]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.5.1...v0.5.2
-[0.5.1]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.5.0...v0.5.1
-[0.5.0]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.4.1...v0.5.0
-[0.4.1]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.4.0...v0.4.1
-[0.4.0]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.6...v0.4.0
-[0.3.6]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.5...v0.3.6
-[0.3.5]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.4...v0.3.5
-[0.3.4]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.3...v0.3.4
-[0.3.3]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.2...v0.3.3
-[0.3.2]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.1...v0.3.2
-[0.3.1]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.5...v0.3.0
-[0.2.5]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.4...v0.2.5
-[0.2.4]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.3...v0.2.4
-[0.2.3]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.2...v0.2.3
-[0.2.2]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.1...v0.2.2
-[0.2.1]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.0...v0.2.1
-[0.2.0]: https://github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.1.0...v0.2.0
+[Unreleased]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.5.0...v0.6.0
+[0.5.2]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.6...v0.4.0
+[0.3.6]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.5...v0.3.6
+[0.3.5]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.4...v0.3.5
+[0.3.4]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.3...v0.3.4
+[0.3.3]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.5...v0.3.0
+[0.2.5]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.4...v0.2.5
+[0.2.4]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.3...v0.2.4
+[0.2.3]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/compare/v0.1.0...v0.2.0

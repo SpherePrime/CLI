@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/cases"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 func Capitalize(text string) string {

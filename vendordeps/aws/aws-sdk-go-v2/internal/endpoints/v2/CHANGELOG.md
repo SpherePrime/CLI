@@ -543,22 +543,22 @@
 
 # v2.4.0 (2022-03-08)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v2.3.0 (2022-02-24)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v2.2.0 (2022-01-14)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v2.1.0 (2022-01-07)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v2.0.2 (2021-12-02)
@@ -573,6 +573,6 @@
 
 * **Release**: Endpoint Variant Model Support
 * **Feature**: The SDK now supports configuration of FIPS and DualStack endpoints using environment variables, shared configuration, or programmatically.
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 

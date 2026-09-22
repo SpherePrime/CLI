@@ -5,6 +5,6 @@
 //go:build !libc.nofsync
 // +build !libc.nofsync
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 const noFsync = false

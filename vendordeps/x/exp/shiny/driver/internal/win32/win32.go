@@ -7,7 +7,7 @@
 // Package win32 implements a partial shiny screen driver using the Win32 API.
 // It provides window, lifecycle, key, and mouse management, but no drawing.
 // That is left to windriver (using GDI) or gldriver (using DirectX via ANGLE).
-package win32 // import "github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/win32"
+package win32 // import "github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/win32"
 
 import (
 	"fmt"
@@ -16,13 +16,13 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/key"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/lifecycle"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/mouse"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/paint"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/size"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/geom"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/key"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/lifecycle"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/mouse"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/paint"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/size"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/geom"
 )
 
 // screenHWND is the handle to the "Screen window".
@@ -268,7 +268,7 @@ var (
 	KeyEvent       func(hwnd syscall.Handle, e key.Event)
 	LifecycleEvent func(hwnd syscall.Handle, e lifecycle.Stage)
 
-	// TODO: use the github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/lifecycler package
+	// TODO: use the github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/lifecycler package
 	// instead of or together with the LifecycleEvent callback?
 )
 

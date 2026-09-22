@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	anthropicsdk "github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	anthropicsdk "github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
 )
 
 // computerUseToolID is the canonical identifier for

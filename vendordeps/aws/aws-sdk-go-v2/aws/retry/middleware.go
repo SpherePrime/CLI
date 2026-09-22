@@ -9,17 +9,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	internalcontext "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	internalcontext "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/context"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	awsmiddle "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/metrics"
-	smithymiddle "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/tracing"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	awsmiddle "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/metrics"
+	smithymiddle "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/tracing"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // RequestCloner is a function that can take an input request type and clone
@@ -434,7 +434,7 @@ type retryMetadataKey struct{}
 // getRetryMetadata retrieves retryMetadata from the context and a bool
 // indicating if it was set.
 //
-// Scoped to stack values. Use github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
+// Scoped to stack values. Use github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
 // to clear all stack values.
 func getRetryMetadata(ctx context.Context) (metadata retryMetadata, ok bool) {
 	metadata, ok = smithymiddle.GetStackValue(ctx, retryMetadataKey{}).(retryMetadata)
@@ -443,7 +443,7 @@ func getRetryMetadata(ctx context.Context) (metadata retryMetadata, ok bool) {
 
 // setRetryMetadata sets the retryMetadata on the context.
 //
-// Scoped to stack values. Use github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
+// Scoped to stack values. Use github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware#ClearStackValues
 // to clear all stack values.
 func setRetryMetadata(ctx context.Context, metadata retryMetadata) context.Context {
 	return smithymiddle.WithStackValue(ctx, retryMetadataKey{}, metadata)

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	v4 "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
-	smithygo "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/eventstream"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	v4 "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
+	smithygo "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/eventstream"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 var _ smithyhttp.EventStreamSigner = (*V4SignerAdapter)(nil)

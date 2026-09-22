@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/retry"
-	awshttp "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/transport/http"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	smithymiddleware "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/retry"
+	awshttp "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	smithymiddleware "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // ServiceID is the client identifer

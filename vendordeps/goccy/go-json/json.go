@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder"
 )
 
 // Marshaler is the interface implemented by types that

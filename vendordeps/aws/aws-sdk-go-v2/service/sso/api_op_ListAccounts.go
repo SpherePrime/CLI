@@ -5,8 +5,8 @@ package sso
 import (
 	"context"
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/sso/types"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/sso/types"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // Lists all AWS accounts assigned to the user. These AWS accounts are assigned by

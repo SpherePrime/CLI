@@ -1,8 +1,8 @@
 # mango
 
-[![Build Status](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango/workflows/build/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango/actions)
+[![Build Status](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango/workflows/build/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango/actions)
 [![Go ReportCard](https://goreportcard.com/badge/muesli/mango)](https://goreportcard.com/report/muesli/mango)
-[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/muesli/mango)
+[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/muesli/mango)
 
 mango is a man-page generator for the Go flag, pflag, cobra, and coral packages.
 It extracts commands, flags, and arguments from your program and enables it to
@@ -13,9 +13,9 @@ self-document.
 Currently the following adapters exist:
 
 - flag: support for Go's standard flag package
-- [mango-cobra](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango-cobra): an adapter for [cobra](https://github.com/dwertyfa288/CLI/vendordeps/spf13/cobra)
+- [mango-cobra](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango-cobra): an adapter for [cobra](https://github.com/SpherePrime/CLI/vendordeps/spf13/cobra)
 - [mango-coral](https://github.com/muesli/mango-coral): an adapter for [coral](https://github.com/muesli/coral)
-- [mango-pflag](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango-pflag): an adapter for the [pflag](https://github.com/dwertyfa288/CLI/vendordeps/spf13/pflag) package
+- [mango-pflag](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango-pflag): an adapter for the [pflag](https://github.com/SpherePrime/CLI/vendordeps/spf13/pflag) package
 
 ## Usage with flag:
 
@@ -24,9 +24,9 @@ import (
     "flag"
     "fmt"
 
-    "github.com/dwertyfa288/CLI/vendordeps/muesli/mango"
-    "github.com/dwertyfa288/CLI/vendordeps/muesli/mango/mflag"
-    "github.com/dwertyfa288/CLI/vendordeps/muesli/roff"
+    "github.com/SpherePrime/CLI/vendordeps/muesli/mango"
+    "github.com/SpherePrime/CLI/vendordeps/muesli/mango/mflag"
+    "github.com/SpherePrime/CLI/vendordeps/muesli/roff"
 )
 
 var (
@@ -61,10 +61,10 @@ to this example:
 import (
     "fmt"
 
-    "github.com/dwertyfa288/CLI/vendordeps/muesli/mango"
-    mpflag "github.com/dwertyfa288/CLI/vendordeps/muesli/mango-pflag"
-    "github.com/dwertyfa288/CLI/vendordeps/muesli/roff"
-    flag "github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+    "github.com/SpherePrime/CLI/vendordeps/muesli/mango"
+    mpflag "github.com/SpherePrime/CLI/vendordeps/muesli/mango-pflag"
+    "github.com/SpherePrime/CLI/vendordeps/muesli/roff"
+    flag "github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 func main() {
@@ -86,9 +86,9 @@ func main() {
 import (
 	"fmt"
 
-	mcobra "github.com/dwertyfa288/CLI/vendordeps/muesli/mango-cobra"
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/roff"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	mcobra "github.com/SpherePrime/CLI/vendordeps/muesli/mango-cobra"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/roff"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 var (
@@ -118,7 +118,7 @@ import (
 	"fmt"
 
 	mcoral "github.com/muesli/mango-coral"
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/roff"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/roff"
 	"github.com/muesli/coral"
 )
 

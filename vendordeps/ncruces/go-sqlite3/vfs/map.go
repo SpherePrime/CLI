@@ -5,7 +5,7 @@ package vfs
 import (
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
 )
 
 func (f *vfsFile) MemoryMapper() MemoryMapper { return f.mmap }

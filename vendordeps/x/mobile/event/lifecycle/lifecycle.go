@@ -16,7 +16,7 @@
 // StageFocused means that the app has gained the focus. A negative crossing
 // means it has lost the focus.
 //
-// See the github.com/dwertyfa288/CLI/vendordeps/x/mobile/app package for details on the event model.
+// See the github.com/SpherePrime/CLI/vendordeps/x/mobile/app package for details on the event model.
 package lifecycle
 
 import (

@@ -27,16 +27,16 @@ import (
 	"net"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/channelz"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/connectivity"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	estats "github.com/dwertyfa288/CLI/vendordeps/grpc/experimental/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/envconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/channelz"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/connectivity"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	estats "github.com/SpherePrime/CLI/vendordeps/grpc/experimental/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/envconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
 )
 
 var (

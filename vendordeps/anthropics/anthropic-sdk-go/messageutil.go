@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/paramutil"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/paramutil"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
 )
 
 // Accumulate builds up the Message incrementally from a MessageStreamEvent. The Message then can be used as

@@ -1,5 +1,5 @@
 // Package guid provides a GUID type. The backing structure for a GUID is
-// identical to that used by the github.com/dwertyfa288/CLI/vendordeps/x/sys/windows GUID type.
+// identical to that used by the github.com/SpherePrime/CLI/vendordeps/x/sys/windows GUID type.
 // There are two main binary encodings used for a GUID, the big-endian encoding,
 // and the Windows (mixed-endian) encoding. See here for details:
 // https://en.wikipedia.org/wiki/Universally_unique_identifier#Encoding

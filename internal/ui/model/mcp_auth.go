@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
-	"github.com/dwertyfa288/CLI/internal/ui/dialog"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
+	"github.com/SpherePrime/CLI/internal/ui/dialog"
 )
 
 // isAuthTimeout reports whether an error indicates the OAuth flow was

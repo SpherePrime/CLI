@@ -87,7 +87,7 @@
 
 ### Bug Fixes
 
-* update github.com/dwertyfa288/CLI/vendordeps/x/net to v0.33.0 ([#391](https://github.com/googleapis/gax-go/issues/391)) ([547a5b4](https://github.com/googleapis/gax-go/commit/547a5b43aa6f376f71242da9f18e65fbdfb342f6))
+* update github.com/SpherePrime/CLI/vendordeps/x/net to v0.33.0 ([#391](https://github.com/googleapis/gax-go/issues/391)) ([547a5b4](https://github.com/googleapis/gax-go/commit/547a5b43aa6f376f71242da9f18e65fbdfb342f6))
 
 
 ### Documentation
@@ -208,7 +208,7 @@
 
 ### Features
 
-* update github.com/dwertyfa288/CLI/vendordeps/api to latest ([#240](https://github.com/googleapis/gax-go/issues/240)) ([f690a02](https://github.com/googleapis/gax-go/commit/f690a02c806a2903bdee943ede3a58e3a331ebd6))
+* update github.com/SpherePrime/CLI/vendordeps/api to latest ([#240](https://github.com/googleapis/gax-go/issues/240)) ([f690a02](https://github.com/googleapis/gax-go/commit/f690a02c806a2903bdee943ede3a58e3a331ebd6))
 * **v2/apierror:** add apierror.FromWrappingError ([#238](https://github.com/googleapis/gax-go/issues/238)) ([9dbd96d](https://github.com/googleapis/gax-go/commit/9dbd96d59b9d54ceb7c025513aa8c1a9d727382f))
 
 ## [2.6.0](https://github.com/googleapis/gax-go/compare/v2.5.1...v2.6.0) (2022-10-13)

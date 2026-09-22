@@ -4,8 +4,8 @@
 package otel
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/otel/internal/global"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/propagation"
+	"github.com/SpherePrime/CLI/vendordeps/otel/internal/global"
+	"github.com/SpherePrime/CLI/vendordeps/otel/propagation"
 )
 
 // GetTextMapPropagator returns the global TextMapPropagator. If none has been

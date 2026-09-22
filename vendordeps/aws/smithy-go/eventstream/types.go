@@ -1,6 +1,6 @@
 package eventstream
 
-import "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+import "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 
 // UnknownUnionMember is returned when a union member is returned over the
 // wire, but has an unknown tag.

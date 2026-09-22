@@ -17,13 +17,13 @@ D-Bus message bus system.
 This packages requires Go 1.20 or later. It can be installed by running the command below:
 
 ```
-go get github.com/dwertyfa288/CLI/vendordeps/godbus/dbus/v5
+go get github.com/SpherePrime/CLI/vendordeps/godbus/dbus/v5
 ```
 
 ### Usage
 
 The complete package documentation and some simple examples are available at
-[pkg.go.dev](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/godbus/dbus/v5). Also, the
+[pkg.go.dev](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/godbus/dbus/v5). Also, the
 [_examples](https://github.com/godbus/dbus/tree/master/_examples) directory
 gives a short overview over the basic usage. 
 
@@ -32,7 +32,7 @@ gives a short overview over the basic usage.
 - [fynedesk](https://github.com/fyne-io/fynedesk) a full desktop environment for Linux/Unix using Fyne.
 - [go-bluetooth](https://github.com/muka/go-bluetooth) provides a bluetooth client over bluez dbus API.
 - [iwd](https://github.com/shibumi/iwd) go bindings for the internet wireless daemon "iwd".
-- [notify](https://github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify) provides desktop notifications over dbus into a library.
+- [notify](https://github.com/SpherePrime/CLI/vendordeps/esiqveland/notify) provides desktop notifications over dbus into a library.
 - [playerbm](https://github.com/altdesktop/playerbm) a bookmark utility for media players.
 - [rpic](https://github.com/stephenhu/rpic) lightweight web app and RESTful API for managing a Raspberry Pi
 

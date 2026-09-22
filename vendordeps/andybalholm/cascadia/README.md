@@ -6,7 +6,7 @@ The Cascadia package implements CSS selectors for use with the parse trees produ
 
 To test CSS selectors without writing Go code, check out [cascadia](https://github.com/suntong/cascadia) the command line tool, a thin wrapper around this package.
 
-[Refer to godoc here](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/andybalholm/cascadia).
+[Refer to godoc here](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/andybalholm/cascadia).
 
 ## Example
 
@@ -20,8 +20,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/andybalholm/cascadia"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+	"github.com/SpherePrime/CLI/vendordeps/andybalholm/cascadia"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html"
 )
 
 var pricingHtml string = `

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/shell"
-	"github.com/dwertyfa288/CLI/internal/version"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/shell"
+	"github.com/SpherePrime/CLI/internal/version"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestLoadShellConfig_Provider verifies that the provider builtin produces

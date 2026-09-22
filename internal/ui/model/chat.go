@@ -4,17 +4,17 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/ui/anim"
-	"github.com/dwertyfa288/CLI/internal/ui/chat"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	"github.com/dwertyfa288/CLI/internal/ui/list"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth"
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/words"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/ui/anim"
+	"github.com/SpherePrime/CLI/internal/ui/chat"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/words"
 )
 
 // Constants for multi-click detection.

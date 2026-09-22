@@ -5,7 +5,7 @@ go:
   - 1.4
 
 install:
-  - go get github.com/dwertyfa288/CLI/vendordeps/andybalholm/cascadia
+  - go get github.com/SpherePrime/CLI/vendordeps/andybalholm/cascadia
 
 script:
  - go test -v

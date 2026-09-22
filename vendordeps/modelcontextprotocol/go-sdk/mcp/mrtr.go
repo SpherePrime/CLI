@@ -10,8 +10,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sync/errgroup"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/SpherePrime/CLI/vendordeps/x/sync/errgroup"
 )
 
 const maxMultiRoundTripRetries = 10

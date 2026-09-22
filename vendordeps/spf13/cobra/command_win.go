@@ -22,7 +22,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/inconshreveable/mousetrap"
+	"github.com/SpherePrime/CLI/vendordeps/inconshreveable/mousetrap"
 )
 
 var preExecHookFn = preExecHook

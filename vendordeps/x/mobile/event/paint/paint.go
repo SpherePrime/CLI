@@ -4,7 +4,7 @@
 
 // Package paint defines an event for the app being ready to paint.
 //
-// See the github.com/dwertyfa288/CLI/vendordeps/x/mobile/app package for details on the event model.
+// See the github.com/SpherePrime/CLI/vendordeps/x/mobile/app package for details on the event model.
 package paint
 
 // Event indicates that the app is ready to paint the next frame of the GUI.

@@ -1,6 +1,6 @@
 # gRPC-Go
 
-[![GoDoc](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/grpc)][API]
+[![GoDoc](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/grpc)][API]
 [![GoReportCard](https://goreportcard.com/badge/grpc/grpc-go)](https://goreportcard.com/report/github.com/grpc/grpc-go)
 [![codecov](https://codecov.io/gh/grpc/grpc-go/graph/badge.svg)](https://codecov.io/gh/grpc/grpc-go)
 
@@ -19,7 +19,7 @@ will automatically fetch the necessary dependencies:
 
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/grpc"
+import "github.com/SpherePrime/CLI/vendordeps/grpc"
 ```
 
 > **Note:** If you are trying to access `grpc-go` from **China**, see the
@@ -42,8 +42,8 @@ The `golang.org` domain may be blocked from some countries. `go get` usually
 produces an error like the following when this happens:
 
 ```console
-$ go get -u github.com/dwertyfa288/CLI/vendordeps/grpc
-package github.com/dwertyfa288/CLI/vendordeps/grpc: unrecognized import path "github.com/dwertyfa288/CLI/vendordeps/grpc" (https fetch: Get https://github.com/dwertyfa288/CLI/vendordeps/grpc?go-get=1: dial tcp 216.239.37.1:443: i/o timeout)
+$ go get -u github.com/SpherePrime/CLI/vendordeps/grpc
+package github.com/SpherePrime/CLI/vendordeps/grpc: unrecognized import path "github.com/SpherePrime/CLI/vendordeps/grpc" (https fetch: Get https://github.com/SpherePrime/CLI/vendordeps/grpc?go-get=1: dial tcp 216.239.37.1:443: i/o timeout)
 ```
 
 To build Go code, there are several options:
@@ -54,7 +54,7 @@ To build Go code, there are several options:
   mod` to create aliases for golang.org packages.  In your project's directory:
 
   ```sh
-  go mod edit -replace=github.com/dwertyfa288/CLI/vendordeps/grpc=github.com/grpc/grpc-go@latest
+  go mod edit -replace=github.com/SpherePrime/CLI/vendordeps/grpc=github.com/grpc/grpc-go@latest
   go mod tidy
   go mod vendor
   go build -mod=vendor
@@ -67,7 +67,7 @@ To build Go code, there are several options:
 ### Compiling error, undefined: grpc.SupportPackageIsVersion
 
 Please update to the latest version of gRPC-Go using
-`go get github.com/dwertyfa288/CLI/vendordeps/grpc`.
+`go get github.com/SpherePrime/CLI/vendordeps/grpc`.
 
 ### How to turn on logging
 
@@ -90,7 +90,7 @@ possible reasons, including:
     configured your server to terminate connections regularly to [trigger DNS
     lookups](https://github.com/grpc/grpc-go/issues/3170#issuecomment-552517779).
     If this is the case, you may want to increase your
-    [MaxConnectionAgeGrace](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc/keepalive?tab=doc#ServerParameters),
+    [MaxConnectionAgeGrace](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc/keepalive?tab=doc#ServerParameters),
     to allow longer RPC calls to finish.
 
 It can be tricky to debug this because the error happens on the client side but
@@ -98,7 +98,7 @@ the root cause of the connection being closed is on the server side. Turn on
 logging on __both client and server__, and see if there are any transport
 errors.
 
-[API]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/grpc
+[API]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/grpc
 [Go]: https://golang.org
 [Go module]: https://github.com/golang/go/wiki/Modules
 [gRPC]: https://grpc.io

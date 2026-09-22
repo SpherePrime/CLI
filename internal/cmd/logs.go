@@ -10,12 +10,12 @@ import (
 	"slices"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/log/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/nxadm/tail"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/log/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/nxadm/tail"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 const defaultTailLines = 1000

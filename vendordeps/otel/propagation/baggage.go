@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/baggage"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/internal/errorhandler"
+	"github.com/SpherePrime/CLI/vendordeps/otel/baggage"
+	"github.com/SpherePrime/CLI/vendordeps/otel/internal/errorhandler"
 )
 
 const (

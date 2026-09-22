@@ -6,7 +6,7 @@ package baggage
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/internal/baggage"
+	"github.com/SpherePrime/CLI/vendordeps/otel/internal/baggage"
 )
 
 // ContextWithBaggage returns a copy of parent with baggage.

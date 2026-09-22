@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	pkggzip "github.com/dwertyfa288/CLI/vendordeps/u-root/u-root/pkg/gzip"
+	pkggzip "github.com/SpherePrime/CLI/vendordeps/u-root/u-root/pkg/gzip"
 )
 
 // getOutputPath is a helper function to replicate the outputPath method of the File struct

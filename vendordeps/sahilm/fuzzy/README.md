@@ -2,7 +2,7 @@
 
 # fuzzy
 [![Build Status](https://travis-ci.org/sahilm/fuzzy.svg?branch=master)](https://travis-ci.org/sahilm/fuzzy)
-[![Documentation](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy?status.svg)](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy)
+[![Documentation](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy?status.svg)](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy)
 
 Go library that provides fuzzy string matching optimized for filenames and code symbols in the style of Sublime Text, 
 VSCode, IntelliJ IDEA et al. This library is external dependency-free. It only depends on the Go standard library.
@@ -45,7 +45,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy"
+	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
 )
 
 func main() {
@@ -85,7 +85,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy"
+	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
 )
 
 type employee struct {
@@ -125,11 +125,11 @@ func main() {
 }
 ```
 
-Check out the [godoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy) for detailed documentation.
+Check out the [godoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy) for detailed documentation.
 
 ## Installation
 
-`go get github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy` or use your favorite dependency management tool.
+`go get github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy` or use your favorite dependency management tool.
 
 ## Speed
 

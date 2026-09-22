@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/sendwindow"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/stainlessheader"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sync/errgroup"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/sendwindow"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/stainlessheader"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/x/sync/errgroup"
 )
 
 // DefaultMaxIdle is used for [SessionToolRunnerOptions.MaxIdle] when it is nil:
@@ -79,7 +79,7 @@ type SessionToolRunnerOptions struct {
 	// looks up each agent.tool_use and agent.custom_tool_use event's Name
 	// against this slice and routes to the matching tool. Use
 	// agenttoolset.BetaAgentToolset20260401(env) (from
-	// github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/tools/agenttoolset) for the
+	// github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/tools/agenttoolset) for the
 	// standard agent_toolset_20260401 set; filter or extend the slice to
 	// customise. Tool lifetime — including Close on tools that implement
 	// io.Closer — is the caller's responsibility: the runner never closes
@@ -228,7 +228,7 @@ type DispatchedToolCall struct {
 // via the events list endpoint, dispatch the registered tools, post results,
 // and the idle-after-end_turn timeout.
 // Lease heartbeating, work claiming, and skill download are not its concern —
-// see [github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/lib/environments.EnvironmentWorker]
+// see [github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/lib/environments.EnvironmentWorker]
 // for the full self-hosted runner composition.
 //
 // A SessionToolRunner is NOT safe for concurrent use. All methods must be

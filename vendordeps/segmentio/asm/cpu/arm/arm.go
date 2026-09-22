@@ -1,8 +1,8 @@
 package arm
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu/cpuid"
-	. "github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu/cpuid"
+	. "github.com/SpherePrime/CLI/vendordeps/x/sys/cpu"
 )
 
 type CPU cpuid.CPU

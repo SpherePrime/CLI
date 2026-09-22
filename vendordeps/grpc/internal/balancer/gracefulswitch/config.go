@@ -22,8 +22,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
 )
 
 type lbConfig struct {

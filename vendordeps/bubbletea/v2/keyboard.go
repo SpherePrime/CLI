@@ -1,7 +1,7 @@
 package tea
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // KeyboardEnhancementsMsg is a message that gets sent when the terminal

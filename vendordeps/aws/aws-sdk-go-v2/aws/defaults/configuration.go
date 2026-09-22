@@ -3,7 +3,7 @@ package defaults
 import (
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
 )
 
 // Configuration is the set of SDK configuration options that are determined based

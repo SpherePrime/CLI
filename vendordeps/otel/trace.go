@@ -4,8 +4,8 @@
 package otel
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/otel/internal/global"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel/internal/global"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
 )
 
 // Tracer creates a named tracer that implements Tracer interface.

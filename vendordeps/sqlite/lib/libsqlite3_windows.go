@@ -7,7 +7,7 @@ package sqlite3
 import (
 	"math/bits"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
 )
 
 func ___umulh(tls *libc.TLS, a, b uint64) uint64 {

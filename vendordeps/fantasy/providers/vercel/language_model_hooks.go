@@ -7,12 +7,12 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/anthropic"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/google"
-	openaipkg "github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openai"
-	openaisdk "github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/google"
+	openaipkg "github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
+	openaisdk "github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
 )
 
 const reasoningStartedCtx = "reasoning_started"

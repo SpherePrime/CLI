@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestTryFile_AcquiresWhenFree(t *testing.T) {

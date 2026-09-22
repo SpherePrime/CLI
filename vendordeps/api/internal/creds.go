@@ -15,15 +15,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/oauth2adapt"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/cert"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/credentialstype"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/impersonate"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/oauth2adapt"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/cert"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/credentialstype"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/impersonate"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"
 )
 
 const quotaProjectEnvVar = "GOOGLE_CLOUD_QUOTA_PROJECT"
@@ -44,11 +44,11 @@ func Creds(ctx context.Context, ds *DialSettings) (*google.Credentials, error) {
 	return creds, nil
 }
 
-// AuthCreds returns [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials] based on credentials
+// AuthCreds returns [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials] based on credentials
 // options provided via [option.ClientOption], including legacy oauth2/google
 // options. If there are no applicable options, then it returns the result of
-// [github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials.DetectDefault].
-// Note: If NoAuth is true, when [github.com/dwertyfa288/CLI/vendordeps/api/option.WithoutAuthentication]
+// [github.com/SpherePrime/CLI/vendordeps/go/auth/credentials.DetectDefault].
+// Note: If NoAuth is true, when [github.com/SpherePrime/CLI/vendordeps/api/option.WithoutAuthentication]
 // is passed, then no authentication will be performed and this function will
 // return nil, nil.
 func AuthCreds(ctx context.Context, settings *DialSettings) (*auth.Credentials, error) {

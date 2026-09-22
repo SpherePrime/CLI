@@ -13,10 +13,10 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 
-	"github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio/internal/socket"
-	"github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio/pkg/guid"
+	"github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio/internal/socket"
+	"github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio/pkg/guid"
 )
 
 const afHVSock = 34 // AF_HYPERV

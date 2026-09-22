@@ -12,14 +12,14 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/object"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/schema"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/responses"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/shared"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/object"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/schema"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/responses"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/shared"
 )
 
 const topLogprobsMax = 20

@@ -5,7 +5,7 @@
 package zstd
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/huff0"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/huff0"
 )
 
 // history contains the information transferred between blocks.

@@ -7,9 +7,9 @@ package anthropic
 import (
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 )
 
 func registerStringPromotion[SliceT ~[]E, E any](wrap func(string) E) {

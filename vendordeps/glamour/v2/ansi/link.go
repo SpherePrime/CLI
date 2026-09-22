@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // A LinkElement is used to render hyperlinks.

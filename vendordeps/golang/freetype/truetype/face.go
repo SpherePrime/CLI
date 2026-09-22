@@ -9,9 +9,9 @@ import (
 	"image"
 	"math"
 
-	"github.com/dwertyfa288/CLI/vendordeps/golang/freetype/raster"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/font"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/fixed"
+	"github.com/SpherePrime/CLI/vendordeps/golang/freetype/raster"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/font"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/fixed"
 )
 
 func powerOf2(i int) bool {

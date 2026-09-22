@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // Profile is a color profile: NoTTY, Ascii, ANSI, ANSI256, or TrueColor.

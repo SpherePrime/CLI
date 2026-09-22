@@ -18,11 +18,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apierror"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apiform"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apiquery"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apierror"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apiform"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apiquery"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 )
 
 // DefaultMaxServerDelay bounds server-directed retry and polling waits unless

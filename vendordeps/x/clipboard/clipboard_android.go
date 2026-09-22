@@ -23,7 +23,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/app"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/app"
 )
 
 func initialize() error { return nil }

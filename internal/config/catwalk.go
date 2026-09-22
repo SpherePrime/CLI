@@ -7,8 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/embedded"
 )
 
 type catwalkClient interface {

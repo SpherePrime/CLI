@@ -7,7 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
 )
 
 // CollationNeeded registers a callback to be invoked

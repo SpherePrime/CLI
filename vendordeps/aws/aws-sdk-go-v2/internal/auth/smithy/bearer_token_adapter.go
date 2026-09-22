@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth/bearer"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth/bearer"
 )
 
 // BearerTokenAdapter adapts smithy bearer.Token to smithy auth.Identity.

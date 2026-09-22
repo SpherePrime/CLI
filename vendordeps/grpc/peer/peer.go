@@ -26,7 +26,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 )
 
 // Peer contains the information of the peer for an RPC, such as the address

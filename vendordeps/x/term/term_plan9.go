@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/plan9"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/plan9"
 )
 
 type state struct{}

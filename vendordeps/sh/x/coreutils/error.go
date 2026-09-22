@@ -3,7 +3,7 @@ package coreutils
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/interp"
 )
 
 // Error wraps any error returned from the core utilities.

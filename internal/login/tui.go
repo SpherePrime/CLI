@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/spinner"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
-	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/spinner"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/SpherePrime/CLI/vendordeps/pkg/browser"
 
-	"github.com/dwertyfa288/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/internal/oauth"
 )
 
 // authState represents the state of the OAuth TUI flow.

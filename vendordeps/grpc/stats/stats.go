@@ -19,14 +19,14 @@
 // Package stats is for collecting and reporting various network and RPC stats.
 // This package is for monitoring purpose only. All fields are read-only.
 // All APIs are experimental.
-package stats // import "github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
+package stats // import "github.com/SpherePrime/CLI/vendordeps/grpc/stats"
 
 import (
 	"context"
 	"net"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
 )
 
 // RPCStats contains stats information about RPCs.

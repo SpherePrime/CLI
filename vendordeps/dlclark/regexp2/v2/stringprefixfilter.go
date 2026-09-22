@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dlclark/regexp2/v2/helpers"
-	"github.com/dwertyfa288/CLI/vendordeps/dlclark/regexp2/v2/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/dlclark/regexp2/v2/helpers"
+	"github.com/SpherePrime/CLI/vendordeps/dlclark/regexp2/v2/syntax"
 )
 
 const maxStringFilterLiteralLen = 8

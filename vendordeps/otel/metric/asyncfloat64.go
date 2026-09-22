@@ -6,7 +6,7 @@ package metric
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric/embedded"
 )
 
 // Float64Observable describes a set of instruments used asynchronously to

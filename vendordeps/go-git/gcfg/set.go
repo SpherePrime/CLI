@@ -11,9 +11,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/warnings.v0"
+	"github.com/SpherePrime/CLI/vendordeps/warnings.v0"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/gcfg/types"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/gcfg/types"
 )
 
 type tag struct {

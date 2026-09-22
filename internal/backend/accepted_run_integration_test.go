@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/agent"
-	"github.com/dwertyfa288/CLI/internal/agent/agenttest"
-	"github.com/dwertyfa288/CLI/internal/db"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/internal/session"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/agent"
+	"github.com/SpherePrime/CLI/internal/agent/agenttest"
+	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // gatedCoordinator wraps a real agent.Coordinator and parks RunAccepted

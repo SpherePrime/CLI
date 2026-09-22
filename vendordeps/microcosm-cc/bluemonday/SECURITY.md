@@ -8,6 +8,6 @@ Changes are not backported, please verify any issue against the latest tag and t
 
 ## Reporting a Vulnerability
 
-Report vulnerabilities either via [GitHub's private reporting flow](https://github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday/security/advisories/new) or via email to the security@ alias of geomys.org.
+Report vulnerabilities either via [GitHub's private reporting flow](https://github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday/security/advisories/new) or via email to the security@ alias of geomys.org.
 
 There is no bug bounty program but security issues will be taken seriously and resolved as soon as possible.

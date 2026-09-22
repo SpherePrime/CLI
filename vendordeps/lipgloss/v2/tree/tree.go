@@ -29,7 +29,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // Node defines a node in a tree.

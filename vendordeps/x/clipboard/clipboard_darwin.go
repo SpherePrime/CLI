@@ -17,9 +17,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego"
-	"github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego/objc"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/tiff"
+	"github.com/SpherePrime/CLI/vendordeps/ebitengine/purego"
+	"github.com/SpherePrime/CLI/vendordeps/ebitengine/purego/objc"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/tiff"
 )
 
 var (

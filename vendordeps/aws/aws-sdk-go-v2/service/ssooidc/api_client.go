@@ -6,23 +6,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/defaults"
-	awsmiddleware "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/retry"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
-	awshttp "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/transport/http"
-	internalauth "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/auth"
-	internalauthsmithy "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/auth/smithy"
-	internalConfig "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/configsources"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/timeouts"
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	smithydocument "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/document"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/metrics"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/tracing"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/defaults"
+	awsmiddleware "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
+	awshttp "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/transport/http"
+	internalauth "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/auth"
+	internalauthsmithy "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/auth/smithy"
+	internalConfig "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/configsources"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/timeouts"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	smithydocument "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/document"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/metrics"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/tracing"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 	"net"
 	"net/http"
 	"sync/atomic"
@@ -121,7 +121,7 @@ func withOperationMetrics(parent context.Context, mp metrics.MeterProvider) (con
 		return parent, nil
 	}
 
-	meter := mp.Meter("github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc")
+	meter := mp.Meter("github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc")
 	om := &operationMetrics{}
 
 	var err error
@@ -175,7 +175,7 @@ func getOperationMetrics(ctx context.Context) *operationMetrics {
 }
 
 func operationTracer(p tracing.TracerProvider) tracing.Tracer {
-	return p.Tracer("github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc")
+	return p.Tracer("github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc")
 }
 
 // Client provides the API client to make operations call for AWS SSO OIDC.
@@ -301,7 +301,7 @@ func (c *Client) invokeOperation(
 	defer span.End()
 
 	handler := smithyhttp.NewClientHandlerWithOptions(options.HTTPClient, func(o *smithyhttp.ClientHandler) {
-		o.Meter = options.MeterProvider.Meter("github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc")
+		o.Meter = options.MeterProvider.Meter("github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc")
 	})
 	decorated := middleware.DecorateHandler(handler, stack)
 	result, metadata, err = decorated.Handle(ctx, params)
@@ -743,7 +743,7 @@ func addIsPaginatorUserAgent(o *Options) {
 func addRetry(stack *middleware.Stack, o Options, c *Client) error {
 	attempt := retry.NewAttemptMiddleware(o.Retryer, smithyhttp.RequestCloner, func(m *retry.Attempt) {
 		m.LogAttempts = o.ClientLogMode.IsRetries()
-		m.OperationMeter = o.MeterProvider.Meter("github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc")
+		m.OperationMeter = o.MeterProvider.Meter("github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/ssooidc")
 		m.ClientSkew = c.timeOffset
 		m.DisableClockSkewCorrection = o.DisableClockSkewCorrection
 	})

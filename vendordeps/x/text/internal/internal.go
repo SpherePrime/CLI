@@ -4,12 +4,12 @@
 
 // Package internal contains non-exported functionality that are used by
 // packages in the text repository.
-package internal // import "github.com/dwertyfa288/CLI/vendordeps/x/text/internal"
+package internal // import "github.com/SpherePrime/CLI/vendordeps/x/text/internal"
 
 import (
 	"sort"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 // SortTags sorts tags in place.

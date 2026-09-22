@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/respjson"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/shared/constant"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/shared/constant"
 )
 
 // BetaOrganizationService contains methods and other services that help with

@@ -1,6 +1,6 @@
 # lz4 : LZ4 compression in pure Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/pierrec/lz4/v4.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4)
+[![Go Reference](https://pkg.go.dev/badge/github.com/pierrec/lz4/v4.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4)
 [![CI](https://github.com/pierrec/lz4/workflows/ci/badge.svg)](https://github.com/pierrec/lz4/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/pierrec/lz4)](https://goreportcard.com/report/github.com/pierrec/lz4)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/pierrec/lz4.svg?style=social)](https://github.com/pierrec/lz4/tags)
@@ -15,13 +15,13 @@ The implementation is based on the reference C [one](https://github.com/lz4/lz4)
 Assuming you have the go toolchain installed:
 
 ```
-go get github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4
+go get github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4
 ```
 
 There is a command line interface tool to compress and decompress LZ4 files.
 
 ```
-go install github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4/cmd/lz4c@latest
+go install github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4/cmd/lz4c@latest
 ```
 
 Usage

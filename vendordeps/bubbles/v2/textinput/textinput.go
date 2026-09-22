@@ -8,14 +8,14 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/cursor"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/internal/runeutil"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/atotto/clipboard"
-	rw "github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth"
-	"github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/cursor"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/internal/runeutil"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/atotto/clipboard"
+	rw "github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth"
+	"github.com/SpherePrime/CLI/vendordeps/rivo/uniseg"
 )
 
 // Internal messages for clipboard operations.

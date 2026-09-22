@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
 )
 
 const useLifecycler = true

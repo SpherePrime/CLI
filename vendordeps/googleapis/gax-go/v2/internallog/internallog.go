@@ -39,7 +39,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internallog/internal"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internallog/internal"
 )
 
 // New returns a new [slog.Logger] default logger, or the provided logger if

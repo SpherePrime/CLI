@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/internal/skills"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/skills"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 const SmartSearchDefaultLimit = 8

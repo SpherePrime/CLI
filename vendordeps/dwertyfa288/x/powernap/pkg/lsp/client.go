@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/transport"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/transport"
 )
 
 // LSP method constants.

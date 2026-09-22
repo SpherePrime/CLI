@@ -9,13 +9,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 
-	"github.com/dwertyfa288/CLI/internal/filetracker"
-	"github.com/dwertyfa288/CLI/internal/history"
-	"github.com/dwertyfa288/CLI/internal/lsp"
-	lsputil "github.com/dwertyfa288/CLI/internal/lsp/util"
-	"github.com/dwertyfa288/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/filetracker"
+	"github.com/SpherePrime/CLI/internal/history"
+	"github.com/SpherePrime/CLI/internal/lsp"
+	lsputil "github.com/SpherePrime/CLI/internal/lsp/util"
+	"github.com/SpherePrime/CLI/internal/permission"
 )
 
 type RenameParams struct {

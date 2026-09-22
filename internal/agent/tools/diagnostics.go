@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/lsp"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/lsp"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
 )
 
 type DiagnosticsParams struct {

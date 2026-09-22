@@ -4,9 +4,9 @@ package help
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // KeyMap is a map of keybindings used to generate help. Since it's an

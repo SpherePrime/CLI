@@ -11,14 +11,14 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apiform"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/ssestream"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/shared/constant"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apiform"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/ssestream"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/shared/constant"
 )
 
 // Turn audio into text or text into audio.

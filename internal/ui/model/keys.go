@@ -1,6 +1,6 @@
 package model
 
-import "github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
+import "github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 
 type KeyMap struct {
 	Editor struct {

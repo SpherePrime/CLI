@@ -9,12 +9,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/conversations"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/realtime"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/responses"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/webhooks"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/conversations"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/realtime"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/responses"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/webhooks"
 )
 
 // Client creates a struct with services and top level methods that help with

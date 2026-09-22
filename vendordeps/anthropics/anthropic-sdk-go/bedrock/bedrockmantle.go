@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/awsauth"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/awsauth"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
 )
 
 const mantleServiceName = "bedrock-mantle"

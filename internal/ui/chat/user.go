@@ -4,13 +4,13 @@ import (
 	"encoding/xml"
 	"strings"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/ui/attachments"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	"github.com/dwertyfa288/CLI/internal/ui/list"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/ui/attachments"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
 
 // skillInvocation represents the XML structure for a loaded skill.

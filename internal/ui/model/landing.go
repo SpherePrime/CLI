@@ -3,10 +3,10 @@ package model
 import (
 	"image"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	"github.com/dwertyfa288/CLI/internal/workspace"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet/layout"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/workspace"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/layout"
 )
 
 // selectedLargeModel returns the currently selected large language model as

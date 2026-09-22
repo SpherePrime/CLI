@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"unicode/utf16"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/key"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/key"
 )
 
 // convVirtualKeyCode converts a Win32 virtual key code number

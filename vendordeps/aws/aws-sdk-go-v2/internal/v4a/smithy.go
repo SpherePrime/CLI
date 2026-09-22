@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	internalcontext "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/context"
+	internalcontext "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/context"
 
-	v4 "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	v4 "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // CredentialsAdapter adapts v4a.Credentials to smithy auth.Identity.

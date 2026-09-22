@@ -3,8 +3,8 @@ package sqlite3_wrap
 import (
 	"io"
 
-	sqlite3_wasm "github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3-wasm/v5"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+	sqlite3_wasm "github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3-wasm/v5"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
 )
 
 type Wrapper struct {

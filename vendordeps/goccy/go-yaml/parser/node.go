@@ -3,9 +3,9 @@ package parser
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/token"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/ast"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/token"
 )
 
 func newMappingNode(ctx *context, tk *Token, isFlow bool, values ...*ast.MappingValueNode) (*ast.MappingNode, error) {

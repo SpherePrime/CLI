@@ -8,15 +8,15 @@ import (
 	"net/http"
 	"net/http/httptrace"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/propagation"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/otel/propagation"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
 )
 
 // ScopeName is the instrumentation scope name.
-const ScopeName = "github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp"
+const ScopeName = "github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/net/http/otelhttp"
 
 // config represents the configuration options available for the http.Handler
 // and http.Transport types.

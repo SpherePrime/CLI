@@ -4,9 +4,9 @@ import (
 	"image/color"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
-	chromastyles "github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/styles"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
+	chromastyles "github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/styles"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
 
 // Building a chroma style from a theme (chroma.MustNewStyle) parses every

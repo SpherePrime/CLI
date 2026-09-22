@@ -3,7 +3,7 @@ package sqlite3_wrap
 import (
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/testenv"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/testenv"
 )
 
 const _MAX_NAME = 1e6 // Self-imposed limit for most NUL terminated strings.

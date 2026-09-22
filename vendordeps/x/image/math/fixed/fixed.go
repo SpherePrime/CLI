@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package fixed implements fixed-point integer types.
-package fixed // import "github.com/dwertyfa288/CLI/vendordeps/x/image/math/fixed"
+package fixed // import "github.com/SpherePrime/CLI/vendordeps/x/image/math/fixed"
 
 import (
 	"fmt"

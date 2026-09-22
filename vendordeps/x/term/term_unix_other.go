@@ -6,7 +6,7 @@
 
 package term
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+import "github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 
 const ioctlReadTermios = unix.TCGETS
 const ioctlWriteTermios = unix.TCSETS

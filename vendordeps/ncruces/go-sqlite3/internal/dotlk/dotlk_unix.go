@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 // TryLock returns nil if it acquired the lock,

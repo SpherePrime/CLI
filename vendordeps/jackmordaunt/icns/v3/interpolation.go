@@ -1,7 +1,7 @@
 package icns
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/nfnt/resize"
+	"github.com/SpherePrime/CLI/vendordeps/nfnt/resize"
 )
 
 // InterpolationFunction is the algorithm used to resize the image.

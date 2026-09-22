@@ -1,14 +1,14 @@
 package dialog
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	"github.com/dwertyfa288/CLI/internal/ui/list"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/sahilm/fuzzy"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
 )
 
 // ModelGroup represents a group of model items.

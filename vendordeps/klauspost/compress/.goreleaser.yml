@@ -123,7 +123,7 @@ nfpms:
   -
     file_name_template: "s2_package__{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     vendor: Klaus Post
-    homepage: https://github.com/dwertyfa288/CLI/vendordeps/klauspost/compress
+    homepage: https://github.com/SpherePrime/CLI/vendordeps/klauspost/compress
     maintainer: Klaus Post <klauspost@gmail.com>
     description: S2 Compression Tool
     license: BSD 3-Clause

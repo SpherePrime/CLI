@@ -1,8 +1,8 @@
 package retry
 
 import (
-	awsmiddle "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	awsmiddle "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // attemptResultsKey is a metadata accessor key to retrieve metadata

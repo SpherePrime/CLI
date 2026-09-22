@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
 )
 
 // DetectLanguage detects the language of a given file path.

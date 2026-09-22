@@ -30,8 +30,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/encoding/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpcutil"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/encoding/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpcutil"
 )
 
 // Identity specifies the optional encoding for uncompressed streams.

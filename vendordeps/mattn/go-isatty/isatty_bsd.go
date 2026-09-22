@@ -5,7 +5,7 @@
 
 package isatty
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+import "github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 
 // IsTerminal return true if the file descriptor is terminal.
 func IsTerminal(fd uintptr) bool {

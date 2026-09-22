@@ -6,7 +6,7 @@
 // bytes passing through as well as various transformations. Example
 // transformations provided by other packages include normalization and
 // conversion between character sets.
-package transform // import "github.com/dwertyfa288/CLI/vendordeps/x/text/transform"
+package transform // import "github.com/SpherePrime/CLI/vendordeps/x/text/transform"
 
 import (
 	"bytes"

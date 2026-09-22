@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4/internal/lz4block"
-	"github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4/internal/lz4errors"
-	"github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4/internal/lz4stream"
+	"github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4/internal/lz4block"
+	"github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4/internal/lz4errors"
+	"github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4/internal/lz4stream"
 )
 
 var readerStates = []aState{

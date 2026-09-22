@@ -12,11 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Encode DEL (0x7f) control character by [@spaceone]
 - Modernize code through Go 1.21 by [@ChrisHines]
 
-[0.6.1]: https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/compare/v0.6.0...v0.6.1
+[0.6.1]: https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/compare/v0.6.0...v0.6.1
 
 ## [0.6.0] - 2023-01-30
 
-[0.6.0]: https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/compare/v0.5.1...v0.6.0
+[0.6.0]: https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/compare/v0.5.1...v0.6.0
 
 ### Added
 
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.1] - 2021-08-18
 
-[0.5.1]: https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/compare/v0.5.0...v0.5.1
+[0.5.1]: https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/compare/v0.5.0...v0.5.1
 
 ### Changed
 
@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.0] - 2020-01-03
 
-[0.5.0]: https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/compare/v0.4.0...v0.5.0
+[0.5.0]: https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/compare/v0.4.0...v0.5.0
 
 ### Changed
 
@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2018-11-21
 
-[0.4.0]: https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/compare/v0.3.0...v0.4.0
+[0.4.0]: https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/compare/v0.3.0...v0.4.0
 
 ### Added
 
@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2016-11-15
 
-[0.3.0]: https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/compare/v0.2.0...v0.3.0
+[0.3.0]: https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/compare/v0.2.0...v0.3.0
 
 ### Added
 
@@ -68,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2016-05-08
 
-[0.2.0]: https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/compare/v0.1.0...v0.2.0
+[0.2.0]: https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/compare/v0.1.0...v0.2.0
 
 ### Added
 
@@ -76,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2016-03-28
 
-[0.1.0]: https://github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt/commits/v0.1.0
+[0.1.0]: https://github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt/commits/v0.1.0
 
 ### Added
 

@@ -14,10 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/config"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/config"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/auth"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 )
 
 // IdentityTokenFunc returns a fresh JWT identity token (e.g. from SPIFFE/SPIRE,
@@ -137,7 +137,7 @@ func WithFederationTokenProvider(provider IdentityTokenFunc, opts FederationOpti
 // which can be supplied to clients, services, and methods. You can read more about this functional
 // options pattern in our [README].
 //
-// [README]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go#readme-requestoptions
+// [README]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go#readme-requestoptions
 type RequestOption = requestconfig.RequestOption
 
 // WithBaseURL returns a RequestOption that sets the BaseURL for the client.
@@ -285,7 +285,7 @@ func WithQueryDel(key string) RequestOption {
 // WithJSONSet returns a RequestOption that sets the body's JSON value associated with the key.
 // The key accepts a string as defined by the [sjson format].
 //
-// [sjson format]: https://github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson
+// [sjson format]: https://github.com/SpherePrime/CLI/vendordeps/tidwall/sjson
 func WithJSONSet(key string, value any) RequestOption {
 	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) (err error) {
 		var b []byte
@@ -313,7 +313,7 @@ func WithJSONSet(key string, value any) RequestOption {
 // WithJSONDel returns a RequestOption that deletes the body's JSON value associated with the key.
 // The key accepts a string as defined by the [sjson format].
 //
-// [sjson format]: https://github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson
+// [sjson format]: https://github.com/SpherePrime/CLI/vendordeps/tidwall/sjson
 func WithJSONDel(key string) RequestOption {
 	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) (err error) {
 		if buffer, ok := r.Body.(*bytes.Buffer); ok {

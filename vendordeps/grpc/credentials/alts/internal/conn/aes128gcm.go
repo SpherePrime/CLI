@@ -22,7 +22,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 
-	core "github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts/internal"
+	core "github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts/internal"
 )
 
 const (

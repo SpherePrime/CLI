@@ -6,7 +6,7 @@ package semconv
 import (
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
 )
 
 // ErrorType returns an [attribute.KeyValue] identifying the error type of err.

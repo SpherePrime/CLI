@@ -14,8 +14,8 @@ import (
 	"os/exec"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/esiqveland/notify"
-	"github.com/dwertyfa288/CLI/vendordeps/godbus/dbus/v5"
+	"github.com/SpherePrime/CLI/vendordeps/esiqveland/notify"
+	"github.com/SpherePrime/CLI/vendordeps/godbus/dbus/v5"
 )
 
 // Notify sends desktop notification.

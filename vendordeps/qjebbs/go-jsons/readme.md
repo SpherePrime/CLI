@@ -7,7 +7,7 @@ A universal `JSON` merge library for `Go`.
 ## Installation
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons
+go get github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons
 ```
 
 ## Usage
@@ -137,9 +137,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons"
+	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons"
 	// goccy/go-yaml is able to use json.Unmarshaler
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml"
 )
 
 func ExampleMerger_RegisterLoader() {

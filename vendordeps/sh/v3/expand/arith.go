@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 // TODO(v4): the arithmetic APIs should return int64 for portability with 32-bit systems,

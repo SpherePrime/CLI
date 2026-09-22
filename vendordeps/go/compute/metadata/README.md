@@ -1,6 +1,6 @@
 # Compute API
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/go/compute.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata)
+[![Go Reference](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/go/compute.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/go/compute/metadata)
 
 This is a utility library for communicating with Google Cloud metadata service
 on Google Cloud.
@@ -8,7 +8,7 @@ on Google Cloud.
 ## Install
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata
+go get github.com/SpherePrime/CLI/vendordeps/go/compute/metadata
 ```
 
 ## Go Version Support

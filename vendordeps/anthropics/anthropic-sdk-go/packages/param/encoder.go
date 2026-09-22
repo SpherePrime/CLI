@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	shimjson "github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/encoding/json"
+	shimjson "github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/encoding/json"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
 )
 
 // EncodedAsDate is not be stable and shouldn't be relied upon

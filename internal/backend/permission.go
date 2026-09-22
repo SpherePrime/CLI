@@ -1,8 +1,8 @@
 package backend
 
 import (
-	"github.com/dwertyfa288/CLI/internal/permission"
-	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/proto"
 )
 
 // GrantPermission grants, denies, or persistently grants a permission

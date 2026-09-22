@@ -9,7 +9,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
 )
 
 // Quote escapes and quotes a value

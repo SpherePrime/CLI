@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/permission"
-	"github.com/dwertyfa288/CLI/internal/question"
-	"github.com/dwertyfa288/CLI/internal/session"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/question"
+	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // cellContent returns the glyph painted at a screen cell.

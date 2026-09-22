@@ -22,7 +22,7 @@
 // These calls return err == nil to indicate success; otherwise
 // err represents an operating system error describing the failure and
 // holds a value of type syscall.Errno.
-package unix // import "github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+package unix // import "github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 
 import (
 	"bytes"

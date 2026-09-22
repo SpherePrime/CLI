@@ -5,7 +5,7 @@
 package protoreflect
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/pragma"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/pragma"
 )
 
 // The following types are used by the fast-path Message.ProtoMethods method.

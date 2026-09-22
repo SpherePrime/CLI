@@ -3,7 +3,7 @@ package sqlite3
 import (
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
 )
 
 // Stmt is a prepared statement object.

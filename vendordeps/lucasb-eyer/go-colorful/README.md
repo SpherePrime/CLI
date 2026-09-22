@@ -1,8 +1,8 @@
 go-colorful
 ===========
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/lucasb-eyer/go-colorful.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful)
-[![go reportcard](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful)
+[![Go Reference](https://pkg.go.dev/badge/github.com/lucasb-eyer/go-colorful.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful)
+[![go reportcard](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful)
 
 A library for playing with colors in Go. Supports Go 1.13 onwards.
 
@@ -72,13 +72,13 @@ How?
 Installing the library is as easy as
 
 ```bash
-$ go get github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful
+$ go get github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful
 ```
 
 The package can then be used through an
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
+import "github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful"
 ```
 
 ### Basic usage
@@ -156,7 +156,7 @@ and bottom two colors in RGB, CIE-L\*a\*b\* and CIE-L\*u\*v\* space. You can fin
 package main
 
 import "fmt"
-import "github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
+import "github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful"
 
 func main() {
 	c1a := colorful.Color{150.0 / 255.0, 10.0 / 255.0, 150.0 / 255.0}
@@ -231,7 +231,7 @@ The following is the code creating the above three images; it can be found in `d
 package main
 
 import "fmt"
-import "github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
+import "github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful"
 import "image"
 import "image/draw"
 import "image/png"
@@ -368,13 +368,13 @@ from top to bottom: `Warm`, `FastWarm`, `Happy`, `FastHappy`, `Soft`,
 
 ![All example palettes](doc/palettegens/palettegens.png)
 
-Again, the code used for generating the above image is available as [doc/palettegens/palettegens.go](https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/blob/master/doc/palettegens/palettegens.go).
+Again, the code used for generating the above image is available as [doc/palettegens/palettegens.go](https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/blob/master/doc/palettegens/palettegens.go).
 
 ### Sorting colors
 
 Sorting colors is not a well-defined operation.  For example, {dark blue, dark red, light blue, light red} is already sorted if darker colors should precede lighter colors but would need to be re-sorted as {dark red, light red, dark blue, light blue} if longer-wavelength colors should precede shorter-wavelength colors.
 
-Go-Colorful's `Sorted` function orders a list of colors so as to minimize the average distance between adjacent colors, including between the last and the first.  (`Sorted` does not necessarily find the true minimum, only a reasonably close approximation.)  The following picture, drawn by [doc/colorsort/colorsort.go](https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/blob/master/doc/colorsort/colorsort.go), illustrates `Sorted`'s behavior:
+Go-Colorful's `Sorted` function orders a list of colors so as to minimize the average distance between adjacent colors, including between the last and the first.  (`Sorted` does not necessarily find the true minimum, only a reasonably close approximation.)  The following picture, drawn by [doc/colorsort/colorsort.go](https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/blob/master/doc/colorsort/colorsort.go), illustrates `Sorted`'s behavior:
 
 ![Sorting colors](doc/colorsort/colorsort.png)
 
@@ -436,10 +436,10 @@ color to its nearest existing one, living with the consequences:
 
 <img height="150" src="https://user-images.githubusercontent.com/1476029/29596343-9a8c62c6-8771-11e7-9026-b8eb8852cc4a.png">
 
-[Here's an issue going in-depth about this](https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/issues/14),
-as well as [my answer](https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/issues/14#issuecomment-324205385),
+[Here's an issue going in-depth about this](https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/issues/14),
+as well as [my answer](https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/issues/14#issuecomment-324205385),
 both with code and pretty pictures. Also note that this was somewhat covered above in the
-["Blending colors" section](https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful#blending-colors).
+["Blending colors" section](https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful#blending-colors).
 
 ### Q: In a tight loop, conversion to Lab/Luv/HCl/... are slooooow!
 A: Yes, they are.
@@ -467,11 +467,11 @@ More speed could be gained by using SIMD instructions in many places.
 You can also get more speed for specific conversions by approximating the full conversion function,
 but that is outside the scope of this library.
 Thanks to [@ZirconiumX](https://github.com/ZirconiumX) for starting this investigation,
-see [issue #18](https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/issues/18) for details.
+see [issue #18](https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/issues/18) for details.
 
 ### Q: Why would `MakeColor` ever fail!?
 A: `MakeColor` fails when the alpha channel is zero. In that case, the
-conversion is undefined. See [issue 21](https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/issues/21)
+conversion is undefined. See [issue 21](https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/issues/21)
 as well as the short caveat note in the ["The `color.Color` interface"](README.md#the-colorcolor-interface)
 section above.
 
@@ -481,7 +481,7 @@ Who?
 This library was originally developed by Lucas Beyer, with notable
 contributions from Bastien Dejean (@baskerville), Phil Kulak (@pkulak),
 Christian Muehlhaeuser (@muesli), Scott Pakin (@spakin), and many others.
-See the [contributors list](https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/graphs/contributors) for the full roster.
+See the [contributors list](https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/graphs/contributors) for the full roster.
 
 It is currently maintained by makeworld (@makew0rld).
 

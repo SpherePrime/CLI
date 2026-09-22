@@ -5,9 +5,9 @@ import (
 	"iter"
 	"log/slog"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
 )
 
 type Prompt = mcp.Prompt

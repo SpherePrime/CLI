@@ -24,7 +24,7 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
 )
 
 // Reader is an optional interface that can be implemented by [net.Conn]

@@ -11,7 +11,7 @@ Installation
 ------------
 
 ```bash
-$ go get github.com/dwertyfa288/CLI/vendordeps/nfnt/resize
+$ go get github.com/SpherePrime/CLI/vendordeps/nfnt/resize
 ```
 
 It's that easy!
@@ -22,7 +22,7 @@ Usage
 This package needs at least Go 1.1. Import package with
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/nfnt/resize"
+import "github.com/SpherePrime/CLI/vendordeps/nfnt/resize"
 ```
 
 The resize package provides 2 functions:
@@ -54,7 +54,7 @@ Sample usage:
 package main
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/nfnt/resize"
+	"github.com/SpherePrime/CLI/vendordeps/nfnt/resize"
 	"image/jpeg"
 	"log"
 	"os"

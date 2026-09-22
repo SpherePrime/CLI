@@ -275,7 +275,7 @@ __%[1]s_handle_completion_types() {
         # Type: menu-complete/menu-complete-backward and insert-completions
         # If the user requested inserting one completion at a time, or all
         # completions at once on the command-line we must remove the descriptions.
-        # https://github.com/dwertyfa288/CLI/vendordeps/spf13/cobra/issues/1508
+        # https://github.com/SpherePrime/CLI/vendordeps/spf13/cobra/issues/1508
 
         # If there are no completions, we don't need to do anything
         (( ${#completions[@]} == 0 )) && return 0

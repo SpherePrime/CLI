@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/env"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/env"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestClient(t *testing.T) {

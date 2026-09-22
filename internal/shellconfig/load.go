@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/shell"
-	"github.com/dwertyfa288/CLI/internal/version"
+	"github.com/SpherePrime/CLI/internal/shell"
+	"github.com/SpherePrime/CLI/internal/version"
 )
 
 // loadTimeout bounds a single primerc execution. Config loading runs on the

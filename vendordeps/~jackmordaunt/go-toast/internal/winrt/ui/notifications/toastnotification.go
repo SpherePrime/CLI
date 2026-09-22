@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/~jackmordaunt/go-toast/internal/winrt/data/xml/dom"
-	"github.com/dwertyfa288/CLI/vendordeps/go-ole/go-ole"
+	"github.com/SpherePrime/CLI/vendordeps/~jackmordaunt/go-toast/internal/winrt/data/xml/dom"
+	"github.com/SpherePrime/CLI/vendordeps/go-ole/go-ole"
 )
 
 const SignatureToastNotification string = "rc(Windows.UI.Notifications.ToastNotification;{997e2675-059e-4e60-8b06-1760917c8b80})"

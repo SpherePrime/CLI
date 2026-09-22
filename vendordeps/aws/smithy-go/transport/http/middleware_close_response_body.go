@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // CloseResponseBody closes the HTTP response body. It leaves the body open only

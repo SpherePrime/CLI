@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // GetErrorInfo util looks for code, __type, and message members in the

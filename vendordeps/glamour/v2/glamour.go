@@ -10,15 +10,15 @@ import (
 	"io"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark"
-	emoji "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/extension"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/parser"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/renderer"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark"
+	emoji "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/extension"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/parser"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/renderer"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2/ansi"
-	styles "github.com/dwertyfa288/CLI/vendordeps/glamour/v2/styles"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2/ansi"
+	styles "github.com/SpherePrime/CLI/vendordeps/glamour/v2/styles"
 )
 
 const (

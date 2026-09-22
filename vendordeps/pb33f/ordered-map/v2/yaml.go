@@ -3,7 +3,7 @@ package orderedmap
 import (
     "fmt"
 
-    "github.com/dwertyfa288/CLI/vendordeps/yaml/v4"
+    "github.com/SpherePrime/CLI/vendordeps/yaml/v4"
 )
 
 var (

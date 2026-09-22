@@ -7,10 +7,10 @@ import (
 	"io"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	smithyio "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/io"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	smithyio "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/io"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 const getInstanceIdentityDocumentPath = getDynamicDataPath + "/instance-identity/document"

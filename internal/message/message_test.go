@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/db"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/internal/session"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // slowUpdateQuerier wraps a [db.Querier] and forces UpdateMessage to

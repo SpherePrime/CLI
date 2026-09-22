@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // IsVirtualHostableS3Bucket returns if the input is a DNS compatible bucket

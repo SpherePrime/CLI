@@ -1,10 +1,10 @@
 goldmark
 ==========================================
 
-[![https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark](https://pkg.go.dev/badge/github.com/yuin/goldmark.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark)
-[![https://github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/actions?query=workflow:test](https://github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/actions/workflows/test.yaml/badge.svg?branch=master&event=push)](https://github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/actions?query=workflow:test)
+[![https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/yuin/goldmark](https://pkg.go.dev/badge/github.com/yuin/goldmark.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/yuin/goldmark)
+[![https://github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/actions?query=workflow:test](https://github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/actions/workflows/test.yaml/badge.svg?branch=master&event=push)](https://github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/actions?query=workflow:test)
 [![https://coveralls.io/github/yuin/goldmark](https://coveralls.io/repos/github/yuin/goldmark/badge.svg?branch=master)](https://coveralls.io/github/yuin/goldmark)
-[![https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark](https://goreportcard.com/badge/github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark)](https://goreportcard.com/report/github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark)
+[![https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/yuin/goldmark](https://goreportcard.com/badge/github.com/SpherePrime/CLI/vendordeps/yuin/goldmark)](https://goreportcard.com/report/github.com/SpherePrime/CLI/vendordeps/yuin/goldmark)
 
 > A Markdown parser written in Go. Easy to extend, standards-compliant, well-structured.
 
@@ -58,7 +58,7 @@ Features
 Installation
 ----------------------
 ```bash
-$ go get github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark
+$ go get github.com/SpherePrime/CLI/vendordeps/yuin/goldmark
 ```
 
 
@@ -69,7 +69,7 @@ Import packages:
 ```go
 import (
     "bytes"
-    "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark"
+    "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark"
 )
 ```
 
@@ -110,10 +110,10 @@ Custom parser and renderer
 ```go
 import (
     "bytes"
-    "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark"
-    "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/extension"
-    "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/parser"
-    "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/renderer/html"
+    "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark"
+    "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/extension"
+    "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/parser"
+    "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/renderer/html"
 )
 
 md := goldmark.New(
@@ -177,7 +177,7 @@ Parser and Renderer options
     - This extension enables Table, Strikethrough, Linkify and TaskList.
     - This extension does not filter tags defined in [6.11: Disallowed Raw HTML (extension)](https://github.github.com/gfm/#disallowed-raw-html-extension-).
     If you need to filter HTML tags, see [Security](#security).
-    - If you need to parse github emojis, you can use [goldmark-emoji](https://github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji) extension.
+    - If you need to parse github emojis, you can use [goldmark-emoji](https://github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji) extension.
 - `extension.DefinitionList`
     - [PHP Markdown Extra: Definition lists](https://michelf.ca/projects/php-markdown/extra/#def-list)
 - `extension.Footnote`
@@ -429,7 +429,7 @@ Security
 --------------------
 By default, goldmark does not render raw HTML or potentially-dangerous URLs.
 If you need to gain more control over untrusted contents, it is recommended that you
-use an HTML sanitizer such as [bluemonday](https://github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday).
+use an HTML sanitizer such as [bluemonday](https://github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday).
 
 Benchmark
 --------------------
@@ -477,7 +477,7 @@ Extensions
   extension for the goldmark Markdown parser.
 - [goldmark-highlighting](https://github.com/yuin/goldmark-highlighting): A syntax-highlighting extension
   for the goldmark markdown parser.
-- [goldmark-emoji](https://github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji): An emoji
+- [goldmark-emoji](https://github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji): An emoji
   extension for the goldmark Markdown parser.
 - [goldmark-mathjax](https://github.com/litao91/goldmark-mathjax): Mathjax support for the goldmark markdown parser
 - [goldmark-pdf](https://github.com/stephenafamo/goldmark-pdf): A PDF renderer that can be passed to `goldmark.WithRenderer()`.

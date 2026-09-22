@@ -8,20 +8,20 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	oldrpcconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0/rpcconv" //nolint:depguard // Use of v1.37.0 is required for backward compatibility stability opt-in.
-	semconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0/rpcconv"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/codes"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	oldrpcconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0/rpcconv" //nolint:depguard // Use of v1.37.0 is required for backward compatibility stability opt-in.
+	semconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0"
+	"github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0/rpcconv"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
 
-	grpc_codes "github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	grpc_codes "github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 
-	"github.com/dwertyfa288/CLI/vendordeps/contrib/instrumentation/google.golang.org/grpc/otelgrpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/contrib/instrumentation/google.golang.org/grpc/otelgrpc/internal"
 )
 
 type gRPCContextKey struct{}

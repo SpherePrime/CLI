@@ -3,7 +3,7 @@
 
 package termios
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+import "github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 
 // see https://src.illumos.org/source/xref/illumos-gate/usr/src/lib/libc/port/gen/isatty.c
 // see https://github.com/omniti-labs/illumos-omnios/blob/master/usr/src/uts/common/sys/termios.h

@@ -3,7 +3,7 @@
 package ole
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 var (

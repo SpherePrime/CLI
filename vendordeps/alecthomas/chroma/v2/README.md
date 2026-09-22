@@ -2,7 +2,7 @@
 
 # A general purpose syntax highlighter in pure Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/alecthomas/chroma/v2.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2) [![CI](https://github.com/alecthomas/chroma/actions/workflows/ci.yml/badge.svg)](https://github.com/alecthomas/chroma/actions/workflows/ci.yml) [![Slack chat](https://img.shields.io/static/v1?logo=slack&style=flat&label=slack&color=green&message=gophers)](https://invite.slack.golangbridge.org/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/alecthomas/chroma/v2.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2) [![CI](https://github.com/alecthomas/chroma/actions/workflows/ci.yml/badge.svg)](https://github.com/alecthomas/chroma/actions/workflows/ci.yml) [![Slack chat](https://img.shields.io/static/v1?logo=slack&style=flat&label=slack&color=green&message=gophers)](https://invite.slack.golangbridge.org/)
 
 
 Chroma takes source code and other structured text and converts it into syntax
@@ -75,7 +75,7 @@ Try out various languages and styles on the [Chroma Playground](https://swapoff.
 This is version 2 of Chroma, use the import path:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+import "github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
 ```
 
 Chroma, like Pygments, has the concepts of

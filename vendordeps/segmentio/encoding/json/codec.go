@@ -15,7 +15,7 @@ import (
 	"unicode"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/keyset"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/keyset"
 )
 
 const (

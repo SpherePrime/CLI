@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 // http://golang.org/src/pkg/syscall/ztypes_linux_amd64.go

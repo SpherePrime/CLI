@@ -1,7 +1,7 @@
 package extension
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark"
 )
 
 type gfm struct {

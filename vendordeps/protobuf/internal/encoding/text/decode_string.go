@@ -12,7 +12,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/strs"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/strs"
 )
 
 // parseStringValue parses string field token.

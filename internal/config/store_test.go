@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 )
 
 func TestConfigStore_ConfigPath_GlobalAlwaysWorks(t *testing.T) {

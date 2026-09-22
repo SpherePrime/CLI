@@ -31,8 +31,8 @@
 package base
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 // PickerBuilder creates balancer.Picker.

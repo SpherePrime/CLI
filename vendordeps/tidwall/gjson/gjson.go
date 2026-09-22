@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 //
-// https://github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson
+// https://github.com/SpherePrime/CLI/vendordeps/tidwall/gjson
 
 // Package gjson provides searching for json strings.
 package gjson
@@ -16,8 +16,8 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/match"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/pretty"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/match"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/pretty"
 )
 
 // Type is Result type

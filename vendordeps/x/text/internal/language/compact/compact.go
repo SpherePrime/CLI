@@ -11,13 +11,13 @@
 //
 // It may want to export this functionality at some point, but at this point
 // this is only available for use within x/text.
-package compact // import "github.com/dwertyfa288/CLI/vendordeps/x/text/internal/language/compact"
+package compact // import "github.com/SpherePrime/CLI/vendordeps/x/text/internal/language/compact"
 
 import (
 	"sort"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/internal/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/internal/language"
 )
 
 // ID is an integer identifying a single tag.

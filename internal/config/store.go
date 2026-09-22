@@ -12,17 +12,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	hyperp "github.com/dwertyfa288/CLI/internal/agent/hyper"
-	"github.com/dwertyfa288/CLI/internal/env"
-	"github.com/dwertyfa288/CLI/internal/lock"
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/internal/oauth/copilot"
-	"github.com/dwertyfa288/CLI/internal/oauth/hyper"
-	"github.com/dwertyfa288/CLI/internal/oauth/openai"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/sjson"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sync/singleflight"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	hyperp "github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/env"
+	"github.com/SpherePrime/CLI/internal/lock"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/internal/oauth/copilot"
+	"github.com/SpherePrime/CLI/internal/oauth/hyper"
+	"github.com/SpherePrime/CLI/internal/oauth/openai"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/x/sync/singleflight"
 )
 
 // configLockDeadline bounds how long lockConfig waits for the

@@ -23,10 +23,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	lbpb "github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/grpclb/grpc_lb_v1"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	lbpb "github.com/SpherePrime/CLI/vendordeps/grpc/balancer/grpclb/grpc_lb_v1"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // rpcStats is same as lbpb.ClientStats, except that numCallsDropped is a map

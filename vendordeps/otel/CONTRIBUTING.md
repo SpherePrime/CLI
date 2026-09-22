@@ -56,20 +56,20 @@ To create a new PR, fork the project in GitHub and clone the upstream
 repo:
 
 ```sh
-go get -d github.com/dwertyfa288/CLI/vendordeps/otel
+go get -d github.com/SpherePrime/CLI/vendordeps/otel
 ```
 
 (This may print some warning about "build constraints exclude all Go
 files", just ignore it.)
 
-This will put the project in `${GOPATH}/src/github.com/dwertyfa288/CLI/vendordeps/otel`.
+This will put the project in `${GOPATH}/src/github.com/SpherePrime/CLI/vendordeps/otel`.
 Alternatively, you can use `git` directly with:
 
 ```sh
 git clone https://github.com/open-telemetry/opentelemetry-go
 ```
 
-(Note that `git clone` is *not* using the `github.com/dwertyfa288/CLI/vendordeps/otel` name -
+(Note that `git clone` is *not* using the `github.com/SpherePrime/CLI/vendordeps/otel` name -
 that name is a kind of a redirector to GitHub that `go get` can
 understand, but `git` does not.)
 
@@ -245,7 +245,7 @@ You can install and run a "local Go Doc site" in the following way:
   pkgsite
   ```
 
-[`github.com/dwertyfa288/CLI/vendordeps/otel/metric`](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/otel/metric)
+[`github.com/SpherePrime/CLI/vendordeps/otel/metric`](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/otel/metric)
 is an example of a very well-documented package.
 
 ### README files
@@ -312,8 +312,8 @@ how the user can extend the configuration.
 It is important that internal `config` are not shared across package boundaries.
 Meaning a `config` from one package should not be directly used by another. The
 one exception is the API packages.  The configs from the base API, eg.
-`github.com/dwertyfa288/CLI/vendordeps/otel/trace.TracerConfig` and
-`github.com/dwertyfa288/CLI/vendordeps/otel/metric.InstrumentConfig`, are intended to be consumed
+`github.com/SpherePrime/CLI/vendordeps/otel/trace.TracerConfig` and
+`github.com/SpherePrime/CLI/vendordeps/otel/metric.InstrumentConfig`, are intended to be consumed
 by the SDK therefore it is expected that these are exported.
 
 When a config is exported we want to maintain forward and backward
@@ -626,7 +626,7 @@ See also:
 
 ### Testing
 
-We allow using [`testify`](https://github.com/dwertyfa288/CLI/vendordeps/stretchr/testify) even though
+We allow using [`testify`](https://github.com/SpherePrime/CLI/vendordeps/stretchr/testify) even though
 it is seen as non-idiomatic according to
 the [Go Test Comments](https://go.dev/wiki/TestComments#assert-libraries) page.
 
@@ -647,16 +647,16 @@ and if the internal package API has changed, it will fail to upgrade[^3].
 
 There are two known exceptions to this rule:
 
-- `github.com/dwertyfa288/CLI/vendordeps/otel/internal/global`
+- `github.com/SpherePrime/CLI/vendordeps/otel/internal/global`
   - This package manages global state for all of opentelemetry-go. It needs to
   be a single package in order to ensure the uniqueness of the global state.
-- `github.com/dwertyfa288/CLI/vendordeps/otel/internal/baggage`
+- `github.com/SpherePrime/CLI/vendordeps/otel/internal/baggage`
   - This package provides values in a `context.Context` that need to be
-  recognized by `github.com/dwertyfa288/CLI/vendordeps/otel/baggage` and
-  `github.com/dwertyfa288/CLI/vendordeps/otel/bridge/opentracing` but remain private.
+  recognized by `github.com/SpherePrime/CLI/vendordeps/otel/baggage` and
+  `github.com/SpherePrime/CLI/vendordeps/otel/bridge/opentracing` but remain private.
 
 If you have duplicate code in multiple modules, make that code into a Go
-template stored in `github.com/dwertyfa288/CLI/vendordeps/otel/internal/shared` and use [gotmpl]
+template stored in `github.com/SpherePrime/CLI/vendordeps/otel/internal/shared` and use [gotmpl]
 to render the templates in the desired locations. See [#4404] for an example of
 this.
 
@@ -698,7 +698,7 @@ This follows the established experimental feature pattern used throughout the SD
 Components should check for this environment variable using a consistent pattern:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/otel/*/internal/x"
+import "github.com/SpherePrime/CLI/vendordeps/otel/*/internal/x"
 
 if x.Observability.Enabled() {
     // Initialize observability metrics
@@ -754,8 +754,8 @@ Encapsulate setup in constructor functions, ensuring clear ownership and scope:
 import (
 	"errors"
 
-	semconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.43.0/otelconv"
+	semconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0"
+	"github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.43.0/otelconv"
 )
 
 type SDKComponent struct {
@@ -1065,7 +1065,7 @@ Component names and types should follow [semantic convention](https://github.com
 If a component is not a well-known type specified in the semantic conventions, use the package path scope type as a stable identifier.
 
 ```go
-componentType := "github.com/dwertyfa288/CLI/vendordeps/otel/sdk/trace.Span"
+componentType := "github.com/SpherePrime/CLI/vendordeps/otel/sdk/trace.Span"
 ```
 
 ```go
@@ -1138,23 +1138,23 @@ The feature must be documented in a `README.md` file in the `/internal/x` packag
 
 #### Experimental methods on SDK-only interfaces
 
-Features that require new methods on SDK interfaces are defined as a new interface in an experimental module (e.g., `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/x`).
+Features that require new methods on SDK interfaces are defined as a new interface in an experimental module (e.g., `github.com/SpherePrime/CLI/vendordeps/otel/sdk/x`).
 The SDK uses type assertions (without importing the unstable package) to check if passing types implement these experimental interfaces.
 The SDK must not depend on the experimental module.
 
 #### Experimental structs, functions, or interfaces
 
-Features that don't need any changes to the existing stable package are implemented in an experimental module (e.g., `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/x`).
+Features that don't need any changes to the existing stable package are implemented in an experimental module (e.g., `github.com/SpherePrime/CLI/vendordeps/otel/sdk/x`).
 
 #### Experimental signals and components
 
-New telemetry signals (e.g., Logs before stabilization) and components (e.g. bridges) are hosted in new, unstable modules (e.g., `github.com/dwertyfa288/CLI/vendordeps/otel/log` before 1.0.0).
+New telemetry signals (e.g., Logs before stabilization) and components (e.g. bridges) are hosted in new, unstable modules (e.g., `github.com/SpherePrime/CLI/vendordeps/otel/log` before 1.0.0).
 The package should have the final name it will use once stabilized (i.e. not `/x`), and is released at a v0.x.y version to indicate it is not stable.
 Most new components are hosted in [opentelemetry-go-contrib](https://github.com/open-telemetry/opentelemetry-go-contrib).
 
 #### Experimental options for API or SDK functions
 
-Experimental Options functions are implemented in an experimental module (e.g., `github.com/dwertyfa288/CLI/vendordeps/otel/sdk/x`).
+Experimental Options functions are implemented in an experimental module (e.g., `github.com/SpherePrime/CLI/vendordeps/otel/sdk/x`).
 The return type of the Option function must embed the option's type (e.g. `metric.InstrumentOption`), and have an `Experimental()` method to prevent the API from panicking when the option is used.
 The SDK uses type assertions (without importing the unstable package) to check if passing types implement these experimental interfaces.
 The SDK must not depend on the experimental module.

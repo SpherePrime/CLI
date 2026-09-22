@@ -23,16 +23,16 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/connectivity"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/experimental/stats"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/balancer/gracefulswitch"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/channelz"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpcsync"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/connectivity"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/experimental/stats"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/balancer/gracefulswitch"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/channelz"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpcsync"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 var (

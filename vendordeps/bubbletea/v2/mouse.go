@@ -3,7 +3,7 @@ package tea
 import (
 	"fmt"
 
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // MouseButton represents the button that was pressed during a mouse message.

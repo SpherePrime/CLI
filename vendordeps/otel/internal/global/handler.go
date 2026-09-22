@@ -5,7 +5,7 @@
 package global
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/otel/internal/errorhandler"
+	"github.com/SpherePrime/CLI/vendordeps/otel/internal/errorhandler"
 )
 
 // ErrorHandler is an alias for errorhandler.ErrorHandler, kept for backward

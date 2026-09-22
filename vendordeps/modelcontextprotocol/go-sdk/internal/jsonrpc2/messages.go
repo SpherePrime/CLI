@@ -10,7 +10,7 @@ import (
 	"errors"
 	"fmt"
 
-	internaljson "github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
+	internaljson "github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
 )
 
 // ID is a Request identifier, which is defined by the spec to be a string, integer, or null.

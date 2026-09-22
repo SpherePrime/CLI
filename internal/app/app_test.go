@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestSetupSubscriber_NormalFlow verifies that events published to the source

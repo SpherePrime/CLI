@@ -5,7 +5,7 @@ import (
 	"unsafe"
 	"weak"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
 )
 
 type chatCompletionAccumulatorLogprobState struct {

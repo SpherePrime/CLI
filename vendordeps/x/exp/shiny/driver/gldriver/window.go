@@ -10,14 +10,14 @@ import (
 	"image/draw"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/drawer"
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/event"
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/lifecycler"
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/f64"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/lifecycle"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/size"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/gl"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/drawer"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/event"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/lifecycler"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/f64"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/lifecycle"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/size"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/gl"
 )
 
 type windowImpl struct {

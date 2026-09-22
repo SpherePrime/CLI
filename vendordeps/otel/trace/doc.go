@@ -24,7 +24,7 @@ operation being performed as part of a traced workflow. In its simplest form:
 A Tracer is unique to the instrumentation and is used to create Spans.
 Instrumentation should be designed to accept a TracerProvider from which it
 can create its own unique Tracer. Alternatively, the registered global
-TracerProvider from the github.com/dwertyfa288/CLI/vendordeps/otel package can be used as
+TracerProvider from the github.com/SpherePrime/CLI/vendordeps/otel package can be used as
 a default.
 
 	const (
@@ -70,14 +70,14 @@ make:
   - Default to another implementation
 
 All interfaces in this API embed a corresponding interface from
-[github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded]. If an author wants the default
+[github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded]. If an author wants the default
 behavior of their implementations to be a compilation failure, signaling to
 their users they need to update to the latest version of that implementation,
 they need to embed the corresponding interface from
-[github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded] in their implementation. For
+[github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded] in their implementation. For
 example,
 
-	import "github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded"
+	import "github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded"
 
 	type TracerProvider struct {
 		embedded.TracerProvider
@@ -87,7 +87,7 @@ example,
 If an author wants the default behavior of their implementations to panic, they
 can embed the API interface directly.
 
-	import "github.com/dwertyfa288/CLI/vendordeps/otel/trace"
+	import "github.com/SpherePrime/CLI/vendordeps/otel/trace"
 
 	type TracerProvider struct {
 		trace.TracerProvider
@@ -96,15 +96,15 @@ can embed the API interface directly.
 
 This option is not recommended. It will lead to publishing packages that
 contain runtime panics when users update to newer versions of
-[github.com/dwertyfa288/CLI/vendordeps/otel/trace], which may be done with a transitive
+[github.com/SpherePrime/CLI/vendordeps/otel/trace], which may be done with a transitive
 dependency.
 
 Finally, an author can embed another implementation in theirs. The embedded
 implementation will be used for methods not defined by the author. For example,
 an author who wants to default to silently dropping the call can use
-[github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop]:
+[github.com/SpherePrime/CLI/vendordeps/otel/trace/noop]:
 
-	import "github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop"
+	import "github.com/SpherePrime/CLI/vendordeps/otel/trace/noop"
 
 	type TracerProvider struct {
 		noop.TracerProvider
@@ -112,7 +112,7 @@ an author who wants to default to silently dropping the call can use
 	}
 
 It is strongly recommended that authors only embed
-[github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop] if they choose this default behavior.
+[github.com/SpherePrime/CLI/vendordeps/otel/trace/noop] if they choose this default behavior.
 That implementation is the only one OpenTelemetry authors can guarantee will
 fully implement all the API interfaces when a user updates their API.
 */

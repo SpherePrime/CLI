@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
 )
 
 // call specifies which Decoder method was invoked.

@@ -12,12 +12,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/env"
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
-	"github.com/dwertyfa288/CLI/vendordeps/goleak"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/env"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/goleak"
 )
 
 // shellResolverWithPath builds a shell resolver whose env carries PATH

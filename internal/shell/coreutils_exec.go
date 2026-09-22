@@ -3,7 +3,7 @@
 package shell
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/sh/x/coreutils"
+	"github.com/SpherePrime/CLI/vendordeps/sh/x/coreutils"
 )
 
 // coreUtilsExecHandler installs mvdan.cc/sh's Go coreutils. It is only wired

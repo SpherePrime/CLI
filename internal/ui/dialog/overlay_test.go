@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // stubDialog is a minimal Dialog for testing Overlay behavior.

@@ -30,14 +30,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
-	internaljson "github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/jsonrpc2"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/mcpgodebug"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/xcontext"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
+	internaljson "github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/jsonrpc2"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/mcpgodebug"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/xcontext"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 // A StreamableHTTPHandler is an http.Handler that serves streamable MCP

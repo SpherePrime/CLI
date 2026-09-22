@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/termios"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/termios"
 )
 
 func (n *SizeNotifier) start() error {

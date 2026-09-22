@@ -7,8 +7,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/internal/message"
 )
 
 // CreateMessageParams represents parameters for creating a message.

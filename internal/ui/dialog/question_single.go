@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/internal/question"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/question"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // SingleChoice is an inline single-choice question component.

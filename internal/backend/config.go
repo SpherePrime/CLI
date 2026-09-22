@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/internal/agent"
-	mcptools "github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
-	"github.com/dwertyfa288/CLI/internal/commands"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/internal/skills"
+	"github.com/SpherePrime/CLI/internal/agent"
+	mcptools "github.com/SpherePrime/CLI/internal/agent/tools/mcp"
+	"github.com/SpherePrime/CLI/internal/commands"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/skills"
 )
 
 // publishConfigChanged publishes a ConfigChanged event on the workspace's

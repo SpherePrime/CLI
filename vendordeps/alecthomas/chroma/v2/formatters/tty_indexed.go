@@ -4,7 +4,7 @@ import (
 	"io"
 	"math"
 
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
 )
 
 type ttyTable struct {

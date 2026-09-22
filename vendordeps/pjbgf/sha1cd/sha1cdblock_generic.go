@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"math/bits"
 
-	shared "github.com/dwertyfa288/CLI/vendordeps/pjbgf/sha1cd/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/pjbgf/sha1cd/ubc"
+	shared "github.com/SpherePrime/CLI/vendordeps/pjbgf/sha1cd/internal"
+	"github.com/SpherePrime/CLI/vendordeps/pjbgf/sha1cd/ubc"
 )
 
 var forceGeneric bool

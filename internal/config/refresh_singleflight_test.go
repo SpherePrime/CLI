@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func isolateHyperCredentials(t *testing.T) {

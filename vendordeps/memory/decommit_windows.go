@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package memory // import "github.com/dwertyfa288/CLI/vendordeps/memory"
+package memory // import "github.com/SpherePrime/CLI/vendordeps/memory"
 
 // canDecommit gates the decommit policy: pooled regions past the hot window
 // hand their pages back to the OS.

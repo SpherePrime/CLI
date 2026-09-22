@@ -3,8 +3,8 @@ package format
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/token"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/ast"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/token"
 )
 
 func FormatNodeWithResolvedAlias(n ast.Node, anchorNodeMap map[string]ast.Node) string {

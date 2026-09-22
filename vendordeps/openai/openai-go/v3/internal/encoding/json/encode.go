@@ -29,8 +29,8 @@ import (
 	"unicode/utf8"
 	_ "unsafe" // for linkname
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json/sentinel"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json/shims"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json/sentinel"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/encoding/json/shims"
 )
 
 // Marshal returns the JSON encoding of v.

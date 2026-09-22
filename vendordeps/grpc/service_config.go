@@ -25,13 +25,13 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer/pickfirst"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/balancer/gracefulswitch"
-	internalserviceconfig "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/serviceconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer/pickfirst"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/balancer/gracefulswitch"
+	internalserviceconfig "github.com/SpherePrime/CLI/vendordeps/grpc/internal/serviceconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/serviceconfig"
 )
 
 const maxInt = int(^uint(0) >> 1)

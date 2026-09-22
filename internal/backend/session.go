@@ -3,9 +3,9 @@ package backend
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/internal/session"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/session"
 )
 
 // CreateSession creates a new session in the given workspace.

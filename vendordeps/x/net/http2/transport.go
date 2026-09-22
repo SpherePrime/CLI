@@ -32,9 +32,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http/httpguts"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http2/hpack"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/internal/httpcommon"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http/httpguts"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http2/hpack"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/internal/httpcommon"
 )
 
 const (

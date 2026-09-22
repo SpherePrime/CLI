@@ -5,8 +5,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/cases"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 // TemplateFuncMap contains a few useful template helpers.

@@ -3,8 +3,8 @@ package chat
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2"
+	"github.com/SpherePrime/CLI/internal/ui/common"
 )
 
 // streamingMarkdown caches a "stable prefix" glamour render so each

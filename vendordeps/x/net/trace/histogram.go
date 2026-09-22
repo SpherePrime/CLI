@@ -14,7 +14,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/internal/timeseries"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/internal/timeseries"
 )
 
 const (

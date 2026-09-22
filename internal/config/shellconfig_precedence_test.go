@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestShellConfigDotPrimercTakesPrecedence verifies that a project-local

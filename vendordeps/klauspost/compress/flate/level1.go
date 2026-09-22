@@ -3,7 +3,7 @@ package flate
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/internal/le"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/internal/le"
 )
 
 // fastGen maintains the table for matches,

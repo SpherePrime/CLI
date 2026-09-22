@@ -23,7 +23,7 @@ package manual
 import (
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/resolver"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/resolver"
 )
 
 // NewBuilderWithScheme creates a new manual resolver builder with the given

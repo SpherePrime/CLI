@@ -1,6 +1,6 @@
 package goquery
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+import "github.com/SpherePrime/CLI/vendordeps/x/net/html"
 
 // Is checks the current matched set of elements against a selector and
 // returns true if at least one of these elements matches.

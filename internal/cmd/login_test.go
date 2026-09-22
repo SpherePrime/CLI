@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestLoginCmd_Aliases(t *testing.T) {

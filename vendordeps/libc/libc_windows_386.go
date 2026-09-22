@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 	"os"
 	"strings"
 	gotime "time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/stat"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/time"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/stat"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/time"
 )
 
 // int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);

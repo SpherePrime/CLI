@@ -5,10 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/lexer"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/token"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/ast"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/lexer"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/token"
 )
 
 type Mode uint
@@ -91,7 +91,7 @@ func newParser(tokens token.Tokens, mode Mode, opts []Option) (*parser, error) {
 				continue
 			}
 			// keep prev/next reference between tokens containing comments
-			// https://github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/issues/254
+			// https://github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/issues/254
 			filteredTokens = append(filteredTokens, tk)
 		}
 	}

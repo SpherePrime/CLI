@@ -4,9 +4,9 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
 )
 
 var apiUnionType = reflect.TypeOf(param.APIUnion{})

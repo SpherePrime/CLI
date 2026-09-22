@@ -28,19 +28,19 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/fallback"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/handshaker/service"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/v2/tlsconfigstore"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/retry"
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/stream"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/fallback"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/handshaker/service"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/tokenmanager"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/v2/tlsconfigstore"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/retry"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go/stream"
+	"github.com/SpherePrime/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
 
-	commonpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/v2/common_go_proto"
-	s2av2pb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/v2/s2a_go_proto"
+	commonpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/v2/common_go_proto"
+	s2av2pb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/v2/s2a_go_proto"
 )
 
 const (

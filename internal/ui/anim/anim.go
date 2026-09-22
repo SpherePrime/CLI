@@ -9,12 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/zeebo/xxh3"
+	"github.com/SpherePrime/CLI/vendordeps/zeebo/xxh3"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful"
 
-	"github.com/dwertyfa288/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/csync"
 )
 
 const (

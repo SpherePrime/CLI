@@ -8,14 +8,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
 	"reflect"
 	"strconv"
 	"sync"
 	"time"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson"
+	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 )
 
 // decoders is a synchronized map with roughly the following type:

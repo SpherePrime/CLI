@@ -24,12 +24,12 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/balancer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/channelz"
-	istatus "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/status"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/transport"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/balancer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/channelz"
+	istatus "github.com/SpherePrime/CLI/vendordeps/grpc/internal/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/transport"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // pickerGeneration stores a picker and a channel used to signal that a picker

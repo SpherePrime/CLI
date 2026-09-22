@@ -11,12 +11,12 @@ import (
 	"os"
 	"time"
 
-	awssdk "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	v4 "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/config"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/credentials"
+	awssdk "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/config"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/credentials"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
 )
 
 // ClientConfig holds the configuration for creating an Anthropic client that authenticates

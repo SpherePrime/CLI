@@ -11,14 +11,14 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/descfmt"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/descopts"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/defval"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/messageset"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/genid"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/pragma"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/strs"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/descfmt"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/descopts"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/defval"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/messageset"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/genid"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/pragma"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/strs"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 // Edition is an Enum for proto2.Edition

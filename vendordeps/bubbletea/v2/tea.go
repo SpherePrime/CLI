@@ -28,11 +28,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader"
 )
 
 // ErrProgramPanic is returned by [Program.Run] when the program recovers from a panic.

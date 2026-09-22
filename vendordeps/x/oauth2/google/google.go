@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google/externalaccount"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google/internal/externalaccountauthorizeduser"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google/internal/impersonate"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/jwt"
+	"github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google/externalaccount"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google/internal/externalaccountauthorizeduser"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google/internal/impersonate"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/jwt"
 )
 
 // Endpoint is Google's OAuth 2.0 default endpoint.

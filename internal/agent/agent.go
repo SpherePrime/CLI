@@ -26,28 +26,28 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/anthropic"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/bedrock"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/google"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openai"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openrouter"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/vercel"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/agent/hyper"
-	"github.com/dwertyfa288/CLI/internal/agent/notify"
-	"github.com/dwertyfa288/CLI/internal/agent/tools"
-	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/internal/session"
-	"github.com/dwertyfa288/CLI/internal/stringext"
-	"github.com/dwertyfa288/CLI/internal/version"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/bedrock"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/google"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openrouter"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/vercel"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/agent/tools"
+	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/internal/stringext"
+	"github.com/SpherePrime/CLI/internal/version"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 )
 
 const (
@@ -59,7 +59,7 @@ const (
 	smallContextWindowRatio     = 0.2
 )
 
-var userAgent = fmt.Sprintf("Prime/%s (https://github.com/dwertyfa288/CLI)", version.Version)
+var userAgent = fmt.Sprintf("Prime/%s (https://github.com/SpherePrime/CLI)", version.Version)
 
 //go:embed templates/title.md
 var titlePrompt []byte

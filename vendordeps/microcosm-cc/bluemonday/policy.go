@@ -36,7 +36,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/microcosm-cc/bluemonday/css"
+	"github.com/SpherePrime/CLI/vendordeps/microcosm-cc/bluemonday/css"
 )
 
 // Policy encapsulates the allowlist of HTML elements and attributes that will
@@ -302,7 +302,7 @@ func (p *Policy) AllowDataAttributes() {
 //
 // What is not permitted are CDATA XML comments, as the x/net/html package we depend
 // on does not handle this fully and we are not choosing to take on that work:
-// https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/net/html#Tokenizer.AllowCDATA . If the x/net/html
+// https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/net/html#Tokenizer.AllowCDATA . If the x/net/html
 // package changes this then these will be considered, otherwise if you AllowComments
 // but provide a CDATA comment, then as per the documentation in x/net/html this will
 // be treated as a plain HTML comment.

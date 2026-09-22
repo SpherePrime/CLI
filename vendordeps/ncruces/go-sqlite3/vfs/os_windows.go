@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 func osReadAt(file *os.File, p []byte, off int64) (int, error) {

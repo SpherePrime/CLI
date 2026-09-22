@@ -6,9 +6,9 @@ import (
 	"image"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/golang/freetype/truetype"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/font"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/fixed"
+	"github.com/SpherePrime/CLI/vendordeps/golang/freetype/truetype"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/font"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/fixed"
 )
 
 //go:embed assets/FiraMono-Regular.ttf

@@ -1,6 +1,6 @@
 package auth
 
-import "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+import "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 
 type (
 	authOptionsKey struct{}

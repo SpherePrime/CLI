@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/respjson"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/shared"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/shared"
 )
 
 // Error represents an error that originates from the API, i.e. when a request is

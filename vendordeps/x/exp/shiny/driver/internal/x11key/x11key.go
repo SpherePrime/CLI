@@ -5,12 +5,12 @@
 //go:generate go run gen.go
 
 // x11key contains X11 numeric codes for the keyboard and mouse.
-package x11key // import "github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/x11key"
+package x11key // import "github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/x11key"
 
 import (
 	"unicode"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/key"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/key"
 )
 
 // These constants come from /usr/include/X11/X.h

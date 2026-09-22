@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/ast"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/internal/errors"
 )
 
 // BytesMarshaler interface may be implemented by types to customize their
@@ -110,7 +110,7 @@ func (s MapSlice) ToMap() map[interface{}]interface{} {
 //	             case the field will be included if that method returns true.
 //	             Note that this definition is slightly different from the Go's
 //	             encoding/json 'omitempty' definition. It combines some elements
-//	             of 'omitempty' and 'omitzero'. See https://github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/issues/695.
+//	             of 'omitempty' and 'omitzero'. See https://github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/issues/695.
 //
 //	omitzero      The omitzero tag behaves in the same way as the interpretation of the omitzero tag in the encoding/json library.
 //	              1) If the field type has an "IsZero() bool" method, that will be used to determine whether the value is zero.

@@ -17,10 +17,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	// Wrapper around github.com/dwertyfa288/CLI/vendordeps/yaml/v3
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert/yaml"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/internal/difflib"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/internal/spew"
+	// Wrapper around github.com/SpherePrime/CLI/vendordeps/yaml/v3
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert/yaml"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/internal/difflib"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/internal/spew"
 )
 
 //go:generate sh -c "cd ../_codegen && go build && cd - && ../_codegen/_codegen -output-package=assert -template=assertion_format.go.tmpl"

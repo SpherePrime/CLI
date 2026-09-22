@@ -46,7 +46,7 @@ decoding process.
 This is crucial for understanding what go-yaml is doing internally.
 
 The `go-yaml` CLI tool can be built with the `make go-yaml` command or installed
-with the `go install github.com/dwertyfa288/CLI/vendordeps/yaml/v4/cmd/go-yaml@latest` command.
+with the `go install github.com/SpherePrime/CLI/vendordeps/yaml/v4/cmd/go-yaml@latest` command.
 
 You can learn about all of its options with the `go-yaml -h` command.
 

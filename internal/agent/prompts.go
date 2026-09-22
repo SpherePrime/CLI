@@ -4,8 +4,8 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/dwertyfa288/CLI/internal/agent/prompt"
-	"github.com/dwertyfa288/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/agent/prompt"
+	"github.com/SpherePrime/CLI/internal/config"
 )
 
 //go:embed templates/coder.md.tpl

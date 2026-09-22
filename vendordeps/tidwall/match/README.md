@@ -1,6 +1,6 @@
 # Match
 
-[![GoDoc](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/tidwall/match?status.svg)](https://godoc.org/github.com/dwertyfa288/CLI/vendordeps/tidwall/match)
+[![GoDoc](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/tidwall/match?status.svg)](https://godoc.org/github.com/SpherePrime/CLI/vendordeps/tidwall/match)
 
 Match is a very simple pattern matcher where '*' matches on any 
 number characters and '?' matches on any one character.
@@ -8,7 +8,7 @@ number characters and '?' matches on any one character.
 ## Installing
 
 ```
-go get -u github.com/dwertyfa288/CLI/vendordeps/tidwall/match
+go get -u github.com/SpherePrime/CLI/vendordeps/tidwall/match
 ```
 
 ## Example

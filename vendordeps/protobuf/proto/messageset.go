@@ -5,13 +5,13 @@
 package proto
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/messageset"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/flags"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/order"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoregistry"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/messageset"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/flags"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/order"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoregistry"
 )
 
 func (o MarshalOptions) sizeMessageSet(m protoreflect.Message) (size int) {

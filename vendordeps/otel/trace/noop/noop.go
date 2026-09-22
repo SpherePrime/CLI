@@ -15,10 +15,10 @@ package noop
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/codes"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded"
 )
 
 var (

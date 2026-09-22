@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aymanbagabas/go-udiff"
+	"github.com/SpherePrime/CLI/vendordeps/aymanbagabas/go-udiff"
 )
 
 var update = flag.Bool("update", false, "update .golden files")

@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+	"github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html"
 )
 
 var (

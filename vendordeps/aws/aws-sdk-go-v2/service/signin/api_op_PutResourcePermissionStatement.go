@@ -5,8 +5,8 @@ package signin
 import (
 	"context"
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/ptr"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/ptr"
 )
 
 // Create a permission statement in the account's SignIn resource-based policy

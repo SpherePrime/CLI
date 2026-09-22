@@ -1,7 +1,7 @@
 <!-- Generated. DO NOT MODIFY. -->
 # Migration from v1.36.0 to v1.37.0
 
-The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0` package should be a drop-in replacement for `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.36.0` with the following exceptions.
+The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0` package should be a drop-in replacement for `github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.36.0` with the following exceptions.
 
 ## Removed
 

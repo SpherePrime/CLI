@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
 )
 
 // TerminalScreen represents a terminal screen, providing methods for managing

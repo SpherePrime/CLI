@@ -1,14 +1,14 @@
 package extension
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark"
-	gast "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/extension/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/parser"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/renderer"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/renderer/html"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/text"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark"
+	gast "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/extension/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/parser"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/renderer"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/renderer/html"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/text"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 type definitionListParser struct {

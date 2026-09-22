@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/invopop/jsonschema"
+	"github.com/SpherePrime/CLI/vendordeps/invopop/jsonschema"
 )
 
 // ErrStructuredOutputParse is returned (wrapped) by [BetaMessageService.New]

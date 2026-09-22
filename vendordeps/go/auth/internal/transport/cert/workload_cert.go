@@ -21,7 +21,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/googleapis/enterprise-certificate-proxy/client/util"
+	"github.com/SpherePrime/CLI/vendordeps/googleapis/enterprise-certificate-proxy/client/util"
 )
 
 type certConfigs struct {

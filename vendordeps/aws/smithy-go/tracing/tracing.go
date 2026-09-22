@@ -4,7 +4,7 @@ package tracing
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // SpanStatus records the "success" state of an observed span.

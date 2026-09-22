@@ -10,7 +10,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/encoding/ascii"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/encoding/ascii"
 )
 
 // All spaces characters defined in the json specification.

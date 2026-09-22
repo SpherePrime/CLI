@@ -13,7 +13,7 @@
 // UTS #46 is defined in https://www.unicode.org/reports/tr46.
 // See https://unicode.org/cldr/utility/idna.jsp for a visualization of the
 // differences between these two standards.
-package idna // import "github.com/dwertyfa288/CLI/vendordeps/x/net/idna"
+package idna // import "github.com/SpherePrime/CLI/vendordeps/x/net/idna"
 
 import (
 	"fmt"
@@ -21,9 +21,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/secure/bidirule"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/unicode/bidi"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/unicode/norm"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/secure/bidirule"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/unicode/bidi"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/unicode/norm"
 )
 
 const unicode16 = unicode.Version >= "16.0.0"

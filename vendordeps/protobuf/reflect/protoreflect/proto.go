@@ -22,7 +22,7 @@
 // The protobuf descriptor interfaces are not meant to be implemented by
 // user code since they might need to be extended in the future to support
 // additions to the protobuf language.
-// The [github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protodesc] package converts between
+// The [github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protodesc] package converts between
 // google.protobuf.DescriptorProto messages and protobuf descriptors.
 //
 // # Go Type Descriptors
@@ -36,7 +36,7 @@
 // where the Type and ProtoReflect.Type accessors respectively
 // return the protobuf descriptor for the values.
 //
-// The [github.com/dwertyfa288/CLI/vendordeps/protobuf/types/dynamicpb] package can be used to
+// The [github.com/SpherePrime/CLI/vendordeps/protobuf/types/dynamicpb] package can be used to
 // create Go type descriptors from protobuf descriptors.
 //
 // # Value Interfaces
@@ -46,7 +46,7 @@
 // the enum value number for any concrete enum type. For messages, it provides
 // the ability to access or manipulate fields of the message.
 //
-// To convert a [github.com/dwertyfa288/CLI/vendordeps/protobuf/proto.Message] to a [protoreflect.Message], use the
+// To convert a [github.com/SpherePrime/CLI/vendordeps/protobuf/proto.Message] to a [protoreflect.Message], use the
 // former's ProtoReflect method. Since the ProtoReflect method is new to the
 // v2 message interface, it may not be present on older message implementations.
 // The [github.com/golang/protobuf/proto.MessageReflect] function can be used
@@ -99,9 +99,9 @@
 // It has no understanding of Go types. In order to construct a [MessageType]
 // from just a [MessageDescriptor], you can consider looking up the message type
 // in the global registry using the FindMessageByName method on
-// [github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoregistry.GlobalTypes]
+// [github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoregistry.GlobalTypes]
 // or constructing a dynamic [MessageType] using
-// [github.com/dwertyfa288/CLI/vendordeps/protobuf/types/dynamicpb.NewMessageType].
+// [github.com/SpherePrime/CLI/vendordeps/protobuf/types/dynamicpb.NewMessageType].
 //
 // • A [Message] is a reflective view over a concrete message instance.
 // Generated messages implement [ProtoMessage], which can convert to a [Message].
@@ -136,15 +136,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/pragma"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/pragma"
 )
 
 type doNotImplement pragma.DoNotImplement
 
 // ProtoMessage is the top-level interface that all proto messages implement.
 // This is declared in the protoreflect package to avoid a cyclic dependency;
-// use the [github.com/dwertyfa288/CLI/vendordeps/protobuf/proto.Message] type instead, which aliases this type.
+// use the [github.com/SpherePrime/CLI/vendordeps/protobuf/proto.Message] type instead, which aliases this type.
 type ProtoMessage interface{ ProtoReflect() Message }
 
 // Syntax is the language version of the proto file.

@@ -117,7 +117,7 @@ func (c1 Color) DistanceLinearRGB(c2 Color) float64 {
 // Sources:
 //
 //	https://www.compuphase.com/cmetric.htm
-//	https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/issues/52
+//	https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/issues/52
 func (c1 Color) DistanceRiemersma(c2 Color) float64 {
 	rAvg := (c1.R + c2.R) / 2.0
 	// Deltas
@@ -225,7 +225,7 @@ func (c1 Color) BlendHsv(c2 Color, t float64) Color {
 	h1, s1, v1 := c1.Hsv()
 	h2, s2, v2 := c2.Hsv()
 
-	// https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/pull/60
+	// https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/pull/60
 	if s1 == 0 && s2 != 0 {
 		h1 = h2
 	} else if s2 == 0 && s1 != 0 {
@@ -983,7 +983,7 @@ func (col1 Color) BlendHcl(col2 Color, t float64) Color {
 	h1, c1, l1 := col1.Hcl()
 	h2, c2, l2 := col2.Hcl()
 
-	// https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/pull/60
+	// https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/pull/60
 	if c1 <= 0.00015 && c2 >= 0.00015 {
 		h1 = h2
 	} else if c2 <= 0.00015 && c1 >= 0.00015 {
@@ -1144,7 +1144,7 @@ func (col1 Color) BlendOkLch(col2 Color, t float64) Color {
 	l1, c1, h1 := col1.OkLch()
 	l2, c2, h2 := col2.OkLch()
 
-	// https://github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful/pull/60
+	// https://github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful/pull/60
 	if c1 <= 0.00015 && c2 >= 0.00015 {
 		h1 = h2
 	} else if c2 <= 0.00015 && c1 >= 0.00015 {

@@ -24,8 +24,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/xds"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/xds"
 )
 
 const cfeClusterNamePrefix = "google_cfe_"

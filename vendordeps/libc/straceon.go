@@ -5,6 +5,6 @@
 //go:build libc.strace
 // +build libc.strace
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 const __ccgo_strace = true

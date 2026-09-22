@@ -67,7 +67,7 @@ maintainers will work with you to determine the severity and ecosystem impact.
 
 Information about known security vulnerabilities and CVEs affecting `cobra` will
 be published as GitHub Security Advisories at
-https://github.com/dwertyfa288/CLI/vendordeps/spf13/cobra/security/advisories.
+https://github.com/SpherePrime/CLI/vendordeps/spf13/cobra/security/advisories.
 
 All users are encouraged to watch the repository and upgrade promptly when
 security releases are published.

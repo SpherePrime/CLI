@@ -16,9 +16,9 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/jsonrpc2"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/jsonrpc2"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
 )
 
 // This file implements support for SSE (HTTP with server-sent events)

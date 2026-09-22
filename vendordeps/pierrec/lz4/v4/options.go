@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"runtime"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4/internal/lz4block"
-	"github.com/dwertyfa288/CLI/vendordeps/pierrec/lz4/v4/internal/lz4errors"
+	"github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4/internal/lz4block"
+	"github.com/SpherePrime/CLI/vendordeps/pierrec/lz4/v4/internal/lz4errors"
 )
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=BlockSize,CompressionLevel -output options_gen.go

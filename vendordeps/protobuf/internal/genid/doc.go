@@ -6,6 +6,6 @@
 // and the well-known types.
 package genid
 
-import "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+import "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 
 const GoogleProtobuf_package protoreflect.FullName = "google.protobuf"

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/plumbing"
-	format "github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/plumbing/format/config"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/plumbing"
+	format "github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/plumbing/format/config"
 )
 
 var (

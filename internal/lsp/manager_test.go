@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/csync"
-	powernapconfig "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/config"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/csync"
+	powernapconfig "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/config"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestUnavailableBackoff(t *testing.T) {

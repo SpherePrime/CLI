@@ -9,12 +9,12 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/messageset"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/filedesc"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/order"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	piface "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/messageset"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/filedesc"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/order"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	piface "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 func (mi *MessageInfo) makeOpaqueCoderMethods(t reflect.Type, si opaqueStructInfo) {

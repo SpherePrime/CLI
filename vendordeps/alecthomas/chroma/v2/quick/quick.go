@@ -4,10 +4,10 @@ package quick
 import (
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/formatters"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/lexers"
-	"github.com/dwertyfa288/CLI/vendordeps/alecthomas/chroma/v2/styles"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/formatters"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/lexers"
+	"github.com/SpherePrime/CLI/vendordeps/alecthomas/chroma/v2/styles"
 )
 
 // Highlight some text.

@@ -2,9 +2,9 @@
 package vercel
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openai"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 type options struct {

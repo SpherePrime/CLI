@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/rand"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	smithyrand "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/rand"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/rand"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	smithyrand "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/rand"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // ClientRequestID is a Smithy BuildMiddleware that will generate a unique ID for logical API operation

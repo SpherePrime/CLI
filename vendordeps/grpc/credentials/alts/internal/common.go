@@ -23,7 +23,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 )
 
 const (

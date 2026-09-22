@@ -93,7 +93,7 @@ Standard
 
 ## Library
 
-`go get github.com/dwertyfa288/CLI/vendordeps/jackmordaunt/icns/v3`
+`go get github.com/SpherePrime/CLI/vendordeps/jackmordaunt/icns/v3`
 
 ```go
 func main() {

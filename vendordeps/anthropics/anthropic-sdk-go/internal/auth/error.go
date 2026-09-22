@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/config"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/config"
 )
 
 // ErrNoCredentials is the sentinel for the case where the default credential

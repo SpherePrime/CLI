@@ -13,7 +13,7 @@ package compact
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/internal/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/internal/language"
 )
 
 // Tag represents a BCP 47 language tag. It is used to specify an instance of a

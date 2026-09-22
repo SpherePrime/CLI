@@ -3,7 +3,7 @@ package ansi
 import (
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi/parser"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi/parser"
 )
 
 var parserPool = sync.Pool{

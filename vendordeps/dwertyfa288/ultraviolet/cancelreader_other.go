@@ -6,7 +6,7 @@ package uv
 import (
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader"
 )
 
 // NewCancelReader creates a new [cancelreader.CancelReader] that provides a

@@ -27,7 +27,7 @@
 //
 // # Credentials
 //
-// The [github.com/dwertyfa288/CLI/vendordeps/go/auth.Credentials] type represents Google
+// The [github.com/SpherePrime/CLI/vendordeps/go/auth.Credentials] type represents Google
 // credentials, including Application Default Credentials.
 //
 // Use [DetectDefault] to obtain Application Default Credentials.
@@ -41,5 +41,5 @@
 //
 // # Workforce Identity Federation
 //
-// For more information on this feature see [github.com/dwertyfa288/CLI/vendordeps/go/auth/credentials/externalaccount].
+// For more information on this feature see [github.com/SpherePrime/CLI/vendordeps/go/auth/credentials/externalaccount].
 package credentials

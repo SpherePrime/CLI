@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/metrics"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/tracing"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/metrics"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/tracing"
 )
 
 // ClientDo provides the interface for custom HTTP client implementations.

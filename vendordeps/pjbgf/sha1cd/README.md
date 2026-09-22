@@ -13,7 +13,7 @@ The Go and native implementations are largely based off upstream Go.
 `sha1cd` can be used as a drop-in replacement for `crypto/sha1`:
 
 ```golang
-import "github.com/dwertyfa288/CLI/vendordeps/pjbgf/sha1cd"
+import "github.com/SpherePrime/CLI/vendordeps/pjbgf/sha1cd"
 
 func test(){
 	data := []byte("data to be sha1 hashed")
@@ -26,7 +26,7 @@ To obtain information as to whether a collision was found, use the
 func `CollisionResistantSum`.
 
 ```golang
-import "github.com/dwertyfa288/CLI/vendordeps/pjbgf/sha1cd"
+import "github.com/SpherePrime/CLI/vendordeps/pjbgf/sha1cd"
 
 func test(){
 	data := []byte("data to be sha1 hashed")

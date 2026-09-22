@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
+	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
 )
 
 // OrderedMaps merges source ordered maps into target

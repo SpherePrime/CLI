@@ -3,8 +3,8 @@ package http
 import (
 	"context"
 
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth"
 )
 
 // NewAnonymousScheme returns the anonymous HTTP auth scheme.

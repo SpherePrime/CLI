@@ -13,7 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dlclark/regexp2/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dlclark/regexp2/v2"
 )
 
 // A Rule is the fundamental matching unit of the Regex lexer state machine.

@@ -44,7 +44,7 @@ const (
 	// must adhere to format described in [fieldmaskpb].
 	//
 	// [System Parameter]: https://cloud.google.com/apis/docs/system-parameters
-	// [fieldmaskpb]: https://github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/fieldmaskpb
+	// [fieldmaskpb]: https://github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/fieldmaskpb
 	XGoogFieldMaskHeader = "x-goog-fieldmask"
 
 	headerKey = contextKey("header")

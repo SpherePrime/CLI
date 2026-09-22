@@ -18,7 +18,7 @@
 
 package grpclog
 
-import "github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog/internal"
+import "github.com/SpherePrime/CLI/vendordeps/grpc/grpclog/internal"
 
 // Logger mimics golang's standard Logger as an interface.
 //

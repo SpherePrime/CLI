@@ -5,7 +5,7 @@
 package proto
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 // HasExtension reports whether an extension field is populated.

@@ -1,6 +1,6 @@
 package goquery
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+import "github.com/SpherePrime/CLI/vendordeps/x/net/html"
 
 // Add adds the selector string's matching nodes to those in the current
 // selection and returns a new Selection object.

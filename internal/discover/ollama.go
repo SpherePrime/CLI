@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 func init() {

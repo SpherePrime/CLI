@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/fse"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/fse"
 )
 
 type dTable struct {

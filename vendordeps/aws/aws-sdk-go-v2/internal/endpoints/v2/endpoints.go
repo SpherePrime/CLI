@@ -2,11 +2,11 @@ package endpoints
 
 import (
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
 	"regexp"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
 )
 
 // DefaultKey is a compound map key of a variant and other values.

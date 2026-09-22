@@ -25,12 +25,12 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/auto/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/auto/sdk"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/codes"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded"
 )
 
 // tracerProvider is a placeholder for a configured SDK TracerProvider.

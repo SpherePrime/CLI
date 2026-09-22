@@ -1,8 +1,8 @@
 package lipgloss
 
 import (
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // Canvas is a cell-buffer that can be used to compose and draw [uv.Drawable]s

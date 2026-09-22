@@ -1,8 +1,8 @@
 # goquery - a little like that j-thing, only in Go
 
-[![Build Status](https://github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery/actions)
-[![Go Reference](https://pkg.go.dev/badge/github.com/PuerkitoBio/goquery.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery)
-[![Sourcegraph Badge](https://sourcegraph.com/github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery/-/badge.svg)](https://sourcegraph.com/github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery?badge)
+[![Build Status](https://github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery/actions)
+[![Go Reference](https://pkg.go.dev/badge/github.com/PuerkitoBio/goquery.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery)
+[![Sourcegraph Badge](https://sourcegraph.com/github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery/-/badge.svg)](https://sourcegraph.com/github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery?badge)
 
 goquery brings a syntax and a set of features similar to [jQuery][] to the [Go language][go]. It is based on Go's [net/html package][html] and the CSS Selector library [cascadia][]. Since the net/html parser returns nodes, and not a full-featured DOM tree, jQuery's stateful manipulation functions (like height(), css(), detach()) have been left off.
 
@@ -32,16 +32,16 @@ Required Go version:
 
 Ongoing goquery development is tested on the latest 2 versions of Go.
 
-    $ go get github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery
+    $ go get github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery
 
 (optional) To run unit tests:
 
-    $ cd $GOPATH/src/github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery
+    $ cd $GOPATH/src/github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery
     $ go test
 
 (optional) To run benchmarks (warning: it runs for a few minutes):
 
-    $ cd $GOPATH/src/github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery
+    $ cd $GOPATH/src/github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery
     $ go test -bench=".*"
 
 ## Changelog
@@ -81,7 +81,7 @@ Ongoing goquery development is tested on the latest 2 versions of Go.
 *    **2015-02-04** : Add more manipulation functions - Prepend* - thanks again to [Andrew Stone][thatguystone].
 *    **2014-11-28** : Add more manipulation functions - ReplaceWith*, Wrap* and Unwrap - thanks again to [Andrew Stone][thatguystone].
 *    **2014-11-07** : Add manipulation functions (thanks to [Andrew Stone][thatguystone]) and `*Matcher` functions, that receive compiled cascadia selectors instead of selector strings, thus avoiding potential panics thrown by goquery via `cascadia.MustCompile` calls. This results in better performance (selectors can be compiled once and reused) and more idiomatic error handling (you can handle cascadia's compilation errors, instead of recovering from panics, which had been bugging me for a long time). Note that the actual type expected is a `Matcher` interface, that `cascadia.Selector` implements. Other matcher implementations could be used.
-*    **2014-11-06** : Change import paths of net/html to github.com/dwertyfa288/CLI/vendordeps/x/net/html (see https://groups.google.com/forum/#!topic/golang-nuts/eD8dh3T9yyA). Make sure to update your code to use the new import path too when you call goquery with `html.Node`s.
+*    **2014-11-06** : Change import paths of net/html to github.com/SpherePrime/CLI/vendordeps/x/net/html (see https://groups.google.com/forum/#!topic/golang-nuts/eD8dh3T9yyA). Make sure to update your code to use the new import path too when you call goquery with `html.Node`s.
 *    **v0.3.2** : Add `NewDocumentFromReader()` (thanks jweir) which allows creating a goquery document from an io.Reader.
 *    **v0.3.1** : Add `NewDocumentFromResponse()` (thanks assassingj) which allows creating a goquery document from an http response.
 *    **v0.3.0** : Add `EachWithBreak()` which allows to break out of an `Each()` loop by returning false. This function was added instead of changing the existing `Each()` to avoid breaking compatibility.
@@ -107,7 +107,7 @@ Utility functions that are not in jQuery but are useful in Go are implemented as
 
 The complete [package reference documentation can be found here][doc].
 
-Please note that Cascadia's selectors do not necessarily match all supported selectors of jQuery (Sizzle). See the [cascadia project][cascadia] for details. Also, the selectors work more like the DOM's `querySelectorAll`, than jQuery's matchers - they have no concept of contextual matching (for some concrete examples of what that means, see [this ticket](https://github.com/dwertyfa288/CLI/vendordeps/andybalholm/cascadia/issues/61)). In practice, it doesn't matter very often but it's something worth mentioning. Invalid selector strings compile to a `Matcher` that fails to match any node. Behaviour of the various functions that take a selector string as argument follows from that fact, e.g. (where `~` is an invalid selector string):
+Please note that Cascadia's selectors do not necessarily match all supported selectors of jQuery (Sizzle). See the [cascadia project][cascadia] for details. Also, the selectors work more like the DOM's `querySelectorAll`, than jQuery's matchers - they have no concept of contextual matching (for some concrete examples of what that means, see [this ticket](https://github.com/SpherePrime/CLI/vendordeps/andybalholm/cascadia/issues/61)). In practice, it doesn't matter very often but it's something worth mentioning. Invalid selector strings compile to a `Matcher` that fails to match any node. Behaviour of the various functions that take a selector string as argument follows from that fact, e.g. (where `~` is an invalid selector string):
 
 * `Find("~")` returns an empty selection because the selector string doesn't match anything.
 * `Add("~")` returns a new selection that holds the same nodes as the original selection, because it didn't add any node (selector string didn't match anything).
@@ -128,7 +128,7 @@ import (
   "log"
   "net/http"
 
-  "github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery"
+  "github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery"
 )
 
 func ExampleScrape() {
@@ -202,16 +202,16 @@ The [BSD 3-Clause license][bsd], the same as the [Go language][golic]. Cascadia'
 
 [jquery]: https://jquery.com/
 [go]: https://go.dev/
-[cascadia]: https://github.com/dwertyfa288/CLI/vendordeps/andybalholm/cascadia
+[cascadia]: https://github.com/SpherePrime/CLI/vendordeps/andybalholm/cascadia
 [cascadiacli]: https://github.com/suntong/cascadia
 [bsd]: https://opensource.org/licenses/BSD-3-Clause
 [golic]: https://go.dev/LICENSE
-[caslic]: https://github.com/dwertyfa288/CLI/vendordeps/andybalholm/cascadia/blob/master/LICENSE
-[doc]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery
+[caslic]: https://github.com/SpherePrime/CLI/vendordeps/andybalholm/cascadia/blob/master/LICENSE
+[doc]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery
 [index]: https://api.jquery.com/index/
 [gonet]: https://github.com/golang/net/
-[html]: https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/net/html
-[wiki]: https://github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery/wiki/Tips-and-tricks
+[html]: https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/net/html
+[wiki]: https://github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery/wiki/Tips-and-tricks
 [thatguystone]: https://github.com/thatguystone
 [piotr]: https://github.com/piotrkowalczuk
 [goq]: https://github.com/andrewstuart/goq

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yaml/v4"
+	"github.com/SpherePrime/CLI/vendordeps/yaml/v4"
 )
 
 func customMarshaler(in any) ([]byte, error) {

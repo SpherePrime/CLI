@@ -1,9 +1,9 @@
 # GEMINI.md
 
-This file provides guidance for the Gemini AI assistant when working with the `github.com/dwertyfa288/CLI/vendordeps/libc` repository.
+This file provides guidance for the Gemini AI assistant when working with the `github.com/SpherePrime/CLI/vendordeps/libc` repository.
 
 ## Overview
-`github.com/dwertyfa288/CLI/vendordeps/libc` is a partial reimplementation of C libc in pure Go. It acts as the runtime for C programs transpiled to Go by the `modernc.org/ccgo` transpiler (used notably by `github.com/dwertyfa288/CLI/vendordeps/sqlite`). It is not intended as a general-purpose standalone library.
+`github.com/SpherePrime/CLI/vendordeps/libc` is a partial reimplementation of C libc in pure Go. It acts as the runtime for C programs transpiled to Go by the `modernc.org/ccgo` transpiler (used notably by `github.com/SpherePrime/CLI/vendordeps/sqlite`). It is not intended as a general-purpose standalone library.
 
 **Key Rule:** The API tracks the needs of `ccgo`-generated code. Callers must use the libc version matching their generated code. Do not bump the libc version of downstream consumers without re-translating their C sources.
 

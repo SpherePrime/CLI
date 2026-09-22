@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"regexp"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/parser"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/text"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/parser"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/text"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 var wwwURLRegxp = regexp.MustCompile(`^www\.[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-z]+(?:[/#?][-a-zA-Z0-9@:%_\+.~#!?&/=\(\);,'">\^{}\[\]` + "`" + `]*)?`) //nolint:golint,lll

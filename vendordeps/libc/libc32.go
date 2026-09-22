@@ -4,13 +4,13 @@
 
 //go:build !linux && (arm || 386)
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc/limits"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/limits"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
 )
 
 const (

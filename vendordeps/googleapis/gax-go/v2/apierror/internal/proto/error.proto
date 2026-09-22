@@ -19,7 +19,7 @@ package error;
 import "google/protobuf/any.proto";
 import "google/rpc/code.proto";
 
-option go_package = "github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/apierror/internal/proto;jsonerror";
+option go_package = "github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/apierror/internal/proto;jsonerror";
 
 // The error format v2 for Google JSON REST APIs.
 // Copied from https://cloud.google.com/apis/design/errors#http_mapping.

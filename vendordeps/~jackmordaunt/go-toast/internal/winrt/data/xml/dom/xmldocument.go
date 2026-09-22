@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-ole/go-ole"
+	"github.com/SpherePrime/CLI/vendordeps/go-ole/go-ole"
 )
 
 const SignatureXmlDocument string = "rc(Windows.Data.Xml.Dom.XmlDocument;{f7f3a506-1e87-42d6-bcfb-b8c809fa5494})"

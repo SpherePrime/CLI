@@ -11,7 +11,7 @@ import (
 	stdstrings "strings"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego/internal/strings"
+	"github.com/SpherePrime/CLI/vendordeps/ebitengine/purego/internal/strings"
 )
 
 // structReturnInMemory always reports false on arm64: a struct returned in

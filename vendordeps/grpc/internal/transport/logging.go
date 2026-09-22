@@ -21,8 +21,8 @@ package transport
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	internalgrpclog "github.com/dwertyfa288/CLI/vendordeps/grpc/internal/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	internalgrpclog "github.com/SpherePrime/CLI/vendordeps/grpc/internal/grpclog"
 )
 
 var logger = grpclog.Component("transport")

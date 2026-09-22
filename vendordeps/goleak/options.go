@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goleak/internal/stack"
+	"github.com/SpherePrime/CLI/vendordeps/goleak/internal/stack"
 )
 
 // Option lets users specify custom verifications.

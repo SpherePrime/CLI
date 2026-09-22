@@ -9,8 +9,8 @@ package chacha20poly1305
 import (
 	"encoding/binary"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/crypto/internal/alias"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/cpu"
+	"github.com/SpherePrime/CLI/vendordeps/x/crypto/internal/alias"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/cpu"
 )
 
 //go:noescape

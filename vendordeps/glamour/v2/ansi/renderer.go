@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"strings"
 
-	east "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark-emoji/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
-	astext "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/extension/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/renderer"
-	"github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/util"
+	east "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark-emoji/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
+	astext "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/extension/ast"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/renderer"
+	"github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/util"
 )
 
 // Options is used to configure an ANSIRenderer.

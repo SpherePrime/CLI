@@ -5,8 +5,8 @@
 package jsons
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons/internal/merge"
-	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
+	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons/internal/merge"
+	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
 )
 
 func mergeByFields(s []interface{}, fields []field, typeOverride bool) ([]interface{}, error) {

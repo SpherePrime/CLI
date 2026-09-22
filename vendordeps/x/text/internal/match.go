@@ -12,7 +12,7 @@ package internal
 // the cldr package.
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 // TODO: consider if (some of the) matching algorithm needs to be public after

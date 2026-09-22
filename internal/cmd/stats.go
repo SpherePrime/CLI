@@ -17,12 +17,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/db"
-	"github.com/dwertyfa288/CLI/internal/event"
-	"github.com/dwertyfa288/CLI/internal/projects"
-	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/internal/event"
+	"github.com/SpherePrime/CLI/internal/projects"
+	"github.com/SpherePrime/CLI/vendordeps/pkg/browser"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 //go:embed stats/index.html

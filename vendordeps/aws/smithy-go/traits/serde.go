@@ -1,6 +1,6 @@
 package traits
 
-import smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+import smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 
 // JSONName represents smithy.api#jsonName.
 type JSONName struct {

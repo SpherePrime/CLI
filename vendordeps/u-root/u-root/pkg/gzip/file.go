@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/u-root/uio/uio"
+	"github.com/SpherePrime/CLI/vendordeps/u-root/uio/uio"
 )
 
 // File is a file path to be compressed or decompressed.

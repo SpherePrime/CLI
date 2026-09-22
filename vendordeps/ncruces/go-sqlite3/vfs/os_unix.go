@@ -6,7 +6,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 const (

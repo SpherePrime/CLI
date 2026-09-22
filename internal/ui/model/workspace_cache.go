@@ -28,9 +28,9 @@ import (
 	"slices"
 	"time"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 
-	"github.com/dwertyfa288/CLI/internal/workspace"
+	"github.com/SpherePrime/CLI/internal/workspace"
 )
 
 // busyCacheTTL bounds how long the memoized busy/permission state may go

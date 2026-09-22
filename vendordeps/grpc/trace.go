@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-// EnableTracing controls whether to trace RPCs using the github.com/dwertyfa288/CLI/vendordeps/x/net/trace package.
+// EnableTracing controls whether to trace RPCs using the github.com/SpherePrime/CLI/vendordeps/x/net/trace package.
 // This should only be set before any RPCs are sent or received by this program.
 var EnableTracing bool
 
@@ -42,7 +42,7 @@ func methodFamily(m string) string {
 	return m
 }
 
-// traceEventLog mirrors github.com/dwertyfa288/CLI/vendordeps/x/net/trace.EventLog.
+// traceEventLog mirrors github.com/SpherePrime/CLI/vendordeps/x/net/trace.EventLog.
 //
 // It exists in order to avoid importing x/net/trace on grpcnotrace builds.
 type traceEventLog interface {
@@ -51,7 +51,7 @@ type traceEventLog interface {
 	Finish()
 }
 
-// traceLog mirrors github.com/dwertyfa288/CLI/vendordeps/x/net/trace.Trace.
+// traceLog mirrors github.com/SpherePrime/CLI/vendordeps/x/net/trace.Trace.
 //
 // It exists in order to avoid importing x/net/trace on grpcnotrace builds.
 type traceLog interface {

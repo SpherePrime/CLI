@@ -14,7 +14,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin/internal/consts"
+	"github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin/internal/consts"
 )
 
 // IsNotExist tells you if err is an error that implies that either the path

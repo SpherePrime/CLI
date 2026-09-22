@@ -9,7 +9,7 @@ import (
 // DefaultUserAgent returns the default User-Agent string for the SDK.
 // The result is "Charm Fantasy/<version>".
 func DefaultUserAgent(version string) string {
-	return fmt.Sprintf("Charm-Fantasy/%s (https://github.com/dwertyfa288/CLI/vendordeps/fantasy)", version)
+	return fmt.Sprintf("Charm-Fantasy/%s (https://github.com/SpherePrime/CLI/vendordeps/fantasy)", version)
 }
 
 // ResolveHeaders returns a new header map, with a User-Agent field.

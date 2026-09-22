@@ -10,8 +10,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 	"io"
 )
 

@@ -35,7 +35,7 @@
 // to simplify code generation and to provide more convenient and idiomatic API surfaces.
 package gax
 
-import "github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/internal"
+import "github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/internal"
 
 // Version specifies the gax-go version being used.
 const Version = internal.Version

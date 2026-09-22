@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 const osc99QueryID = "prime-osc99-query"

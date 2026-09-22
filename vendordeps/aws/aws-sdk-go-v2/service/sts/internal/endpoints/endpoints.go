@@ -3,9 +3,9 @@
 package endpoints
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	endpoints "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/endpoints/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	endpoints "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/endpoints/v2"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
 	"regexp"
 )
 

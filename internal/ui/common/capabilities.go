@@ -4,13 +4,13 @@ import (
 	"slices"
 	"strings"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	xstrings "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/strings"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	xstrings "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/strings"
 
-	"github.com/dwertyfa288/CLI/internal/ui/notification"
+	"github.com/SpherePrime/CLI/internal/ui/notification"
 )
 
 // Capabilities define different terminal capabilities supported.

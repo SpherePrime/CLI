@@ -3,7 +3,7 @@ package herdr
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/assert"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
 )
 
 // recordingSender captures state transitions without connecting to a

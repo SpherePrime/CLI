@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dlclark/regexp2/v2/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/dlclark/regexp2/v2/syntax"
 )
 
 func IndexOfAny(in []rune, find []rune) int {

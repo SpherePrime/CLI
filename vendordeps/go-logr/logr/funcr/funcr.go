@@ -46,7 +46,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-logr/logr"
+	"github.com/SpherePrime/CLI/vendordeps/go-logr/logr"
 )
 
 // New returns a logr.Logger which is implemented by an arbitrary function.

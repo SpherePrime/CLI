@@ -1,7 +1,7 @@
 package goquery
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html"
 )
 
 const (

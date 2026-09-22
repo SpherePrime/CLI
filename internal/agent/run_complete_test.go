@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/agent/notify"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // TestSessionAgentRun_QueueStripsOnComplete verifies that when a Run

@@ -11,12 +11,12 @@ import (
 	"strings"
 	"sync"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/util"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi/kitty"
-	"github.com/dwertyfa288/CLI/vendordeps/disintegration/imaging"
-	paintbrush "github.com/dwertyfa288/CLI/vendordeps/jordanella/go-ansi-paintbrush"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/ui/util"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi/kitty"
+	"github.com/SpherePrime/CLI/vendordeps/disintegration/imaging"
+	paintbrush "github.com/SpherePrime/CLI/vendordeps/jordanella/go-ansi-paintbrush"
 )
 
 // TransmittedMsg is a message indicating that an image has been transmitted to

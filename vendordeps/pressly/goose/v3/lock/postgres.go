@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/lock/internal/store"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/lock/internal/table"
-	"github.com/dwertyfa288/CLI/vendordeps/sethvargo/go-retry"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/lock/internal/store"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/lock/internal/table"
+	"github.com/SpherePrime/CLI/vendordeps/sethvargo/go-retry"
 )
 
 // NewPostgresTableLocker returns a Locker that uses PostgreSQL table-based locking. It manages a

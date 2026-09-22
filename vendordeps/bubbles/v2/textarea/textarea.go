@@ -12,17 +12,17 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/cursor"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/internal/memoization"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/internal/runeutil"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/viewport"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/atotto/clipboard"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	rw "github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth"
-	"github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/cursor"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/internal/memoization"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/internal/runeutil"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/viewport"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/atotto/clipboard"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	rw "github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth"
+	"github.com/SpherePrime/CLI/vendordeps/rivo/uniseg"
 )
 
 const (

@@ -31,7 +31,7 @@
 // linked with a specific version of, say GNU libc. When such code asking for
 // glibc5 is run on a system with glibc6, or vice versa, it will fail.
 //
-// As a particular example, if your project imports github.com/dwertyfa288/CLI/vendordeps/sqlite you
+// As a particular example, if your project imports github.com/SpherePrime/CLI/vendordeps/sqlite you
 // should use the same libc version as seen in the go.mod file of the sqlite
 // package.
 //
@@ -115,7 +115,7 @@
 //
 // [Linux man-pages Copyleft]: https://spdx.org/licenses/Linux-man-pages-copyleft.html
 // [ccgo]: http://modernc.org/ccgo/v4
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"fmt"
@@ -134,10 +134,10 @@ import (
 	"time"
 	"unsafe"
 
-	guuid "github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/uuid/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/memory"
+	guuid "github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/libc/uuid/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/memory"
 )
 
 const (

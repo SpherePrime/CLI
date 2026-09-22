@@ -2,7 +2,7 @@
 package screen
 
 import (
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
 // Clear clears the screen with empty cells. This is equivalent to filling the

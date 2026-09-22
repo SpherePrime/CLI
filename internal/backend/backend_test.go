@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // newTestBackend returns a Backend whose teardown path skips any

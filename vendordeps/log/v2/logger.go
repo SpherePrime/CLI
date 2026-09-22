@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 )
 
 // ErrMissingValue is returned when a key is missing a value.

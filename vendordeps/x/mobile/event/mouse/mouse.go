@@ -4,13 +4,13 @@
 
 // Package mouse defines an event for mouse input.
 //
-// See the github.com/dwertyfa288/CLI/vendordeps/x/mobile/app package for details on the event model.
+// See the github.com/SpherePrime/CLI/vendordeps/x/mobile/app package for details on the event model.
 package mouse
 
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/key"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/key"
 )
 
 // Event is a mouse event.

@@ -1,6 +1,6 @@
 
 # browser
-    import "github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
+    import "github.com/SpherePrime/CLI/vendordeps/pkg/browser"
 
 Package browser provides helpers to open files, readers, and urls in a browser window.
 

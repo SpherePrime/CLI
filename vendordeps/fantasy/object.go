@@ -7,7 +7,7 @@ import (
 	"iter"
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/schema"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/schema"
 )
 
 // ObjectMode specifies how structured output should be generated.

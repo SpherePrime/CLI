@@ -12,7 +12,7 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/base64"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/base64"
 )
 
 const hex = "0123456789abcdef"

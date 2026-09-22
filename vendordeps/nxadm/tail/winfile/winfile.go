@@ -1,4 +1,4 @@
-// Copyright (c) 2019 FOSS contributors of https://github.com/dwertyfa288/CLI/vendordeps/nxadm/tail
+// Copyright (c) 2019 FOSS contributors of https://github.com/SpherePrime/CLI/vendordeps/nxadm/tail
 // +build windows
 
 package winfile

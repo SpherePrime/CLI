@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 // Annotations for Bash completion.

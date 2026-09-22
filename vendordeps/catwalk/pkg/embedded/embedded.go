@@ -3,8 +3,8 @@
 package embedded
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/internal/providers"
-	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/internal/providers"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 // GetAll returns all embedded providers.

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/JohannesKaufmann/html-to-markdown/escape"
-	"github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery"
+	"github.com/SpherePrime/CLI/vendordeps/JohannesKaufmann/html-to-markdown/escape"
+	"github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery"
 )
 
 var multipleSpacesR = regexp.MustCompile(`  +`)
@@ -386,7 +386,7 @@ var commonmark = []Rule{
 		Replacement: func(content string, selec *goquery.Selection, opt *Options) *string {
 			// for now remove the contents of noscript. But in the future we could
 			// tell goquery to parse the contents of the tag.
-			// -> https://github.com/dwertyfa288/CLI/vendordeps/PuerkitoBio/goquery/issues/139#issuecomment-517526070
+			// -> https://github.com/SpherePrime/CLI/vendordeps/PuerkitoBio/goquery/issues/139#issuecomment-517526070
 			return nil
 		},
 	},

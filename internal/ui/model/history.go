@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"strings"
 
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 
-	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/message"
 )
 
 // promptHistoryLoadedMsg is sent when prompt history is loaded.

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"maps"
 
-	internaljson "github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/mcpgodebug"
+	internaljson "github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/mcpgodebug"
 )
 
 // resultType indicates whether a result is complete or requires further input
@@ -1915,7 +1915,7 @@ type Tool struct {
 	// valid JSON schema (including json.RawMessage). However, for tools added
 	// using [AddTool], which automatically validates inputs and outputs, the
 	// schema must be in a draft the SDK understands. Currently, the SDK uses
-	// github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go for inference and validation, which only
+	// github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go for inference and validation, which only
 	// supports the 2020-12 draft of JSON schema. To do your own validation, use
 	// [Server.AddTool].
 	//
@@ -1933,7 +1933,7 @@ type Tool struct {
 	// valid JSON schema (including json.RawMessage). However, for tools added
 	// using [AddTool], which automatically validates inputs and outputs, the
 	// schema must be in a draft the SDK understands. Currently, the SDK uses
-	// github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go for inference and validation, which only
+	// github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go for inference and validation, which only
 	// supports the 2020-12 draft of JSON schema. To do your own validation, use
 	// [Server.AddTool].
 	//
@@ -2136,7 +2136,7 @@ type ElicitParams struct {
 	//
 	// From the server, this field may be set to any value that can JSON-marshal
 	// to valid JSON schema (including json.RawMessage for raw schema values).
-	// Internally, the SDK uses github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go for validation,
+	// Internally, the SDK uses github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go for validation,
 	// which only supports the 2020-12 draft of the JSON schema spec.
 	//
 	// From the client, this field will use the default JSON marshaling (a

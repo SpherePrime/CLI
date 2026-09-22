@@ -5,9 +5,9 @@ package signin
 import (
 	"context"
 	"fmt"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/signin/types"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/ptr"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/signin/types"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/ptr"
 )
 
 // Retrieve all permission statements in the account's SignIn resource-based policy

@@ -47,7 +47,7 @@ To use a custom function to supply the token, define a struct that implements th
 or one that implements [AwsSecurityCredentialsSupplier] for AWS providers. This can then be used when building a [Config].
 The [golang.org/x/oauth2.TokenSource] created from the config using [NewTokenSource] can then be used to access Google
 Cloud resources. For instance, you can create a new client from the
-[github.com/dwertyfa288/CLI/vendordeps/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
+[github.com/SpherePrime/CLI/vendordeps/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
 
 Note that this library does not perform any validation on the token_url, token_info_url,
 or service_account_impersonation_url fields of the credential configuration.
@@ -96,7 +96,7 @@ To use a custom function to supply the token, define a struct that implements th
 This can then be used when building a [Config].
 The [golang.org/x/oauth2.TokenSource] created from the config using [NewTokenSource] can then be used access Google
 Cloud resources. For instance, you can create a new client from the
-[github.com/dwertyfa288/CLI/vendordeps/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
+[github.com/SpherePrime/CLI/vendordeps/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
 
 # Security considerations
 
@@ -116,9 +116,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google/internal/impersonate"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google/internal/stsexchange"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google/internal/impersonate"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/google/internal/stsexchange"
 )
 
 const (

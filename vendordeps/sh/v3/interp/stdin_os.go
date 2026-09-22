@@ -9,7 +9,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/x/term"
 )
 
 // stdinFile is the runner's standard input. Outside of js/wasm it is

@@ -24,13 +24,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go/jsonschema"
-	internaljson "github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/jsonrpc2"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/mcpgodebug"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
-	"github.com/dwertyfa288/CLI/vendordeps/yosida95/uritemplate/v3"
+	"github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go/jsonschema"
+	internaljson "github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/json"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/jsonrpc2"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/mcpgodebug"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/internal/util"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/SpherePrime/CLI/vendordeps/yosida95/uritemplate/v3"
 )
 
 // DefaultPageSize is the default for [ServerOptions.PageSize].
@@ -543,7 +543,7 @@ func setSchema[T any](sfield *any, rfield **jsonschema.Resolved, cache *SchemaCa
 // If the tool's input schema is nil, it is set to the schema inferred from the
 // In type parameter. Types are inferred from Go types, and property
 // descriptions are read from the 'jsonschema' struct tag. Internally, the SDK
-// uses the github.com/dwertyfa288/CLI/vendordeps/google/jsonschema-go package for inference and
+// uses the github.com/SpherePrime/CLI/vendordeps/google/jsonschema-go package for inference and
 // validation. The In type argument must be a map or a struct, so that its
 // inferred JSON Schema has type "object", as required by the spec. As a
 // special case, if the In type is 'any', the tool's input schema is set to an

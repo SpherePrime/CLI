@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 func newVectorStoreFileBatchAndPoll(r *VectorStoreFileBatchService, ctx context.Context, vectorStoreId string, body VectorStoreFileBatchNewParams, pollIntervalMs int, opts ...option.RequestOption) (res *VectorStoreFileBatch, err error) {

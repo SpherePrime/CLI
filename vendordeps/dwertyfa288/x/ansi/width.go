@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi/parser"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi/parser"
 )
 
 // Strip removes ANSI escape codes from a string.

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/shell"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/shell"
 )
 
 // abandonGrace is how long runOne waits after ctx cancellation for the

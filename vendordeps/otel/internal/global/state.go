@@ -8,10 +8,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/internal/errorhandler"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/metric"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/propagation"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel/internal/errorhandler"
+	"github.com/SpherePrime/CLI/vendordeps/otel/metric"
+	"github.com/SpherePrime/CLI/vendordeps/otel/propagation"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
 )
 
 type (

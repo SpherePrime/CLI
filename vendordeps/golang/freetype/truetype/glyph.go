@@ -6,8 +6,8 @@
 package truetype
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/font"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/fixed"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/font"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/fixed"
 )
 
 // TODO: implement VerticalHinting.

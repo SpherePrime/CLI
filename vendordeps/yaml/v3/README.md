@@ -59,18 +59,18 @@ Specifically, v3 of the `yaml` package:
 
 ## Installation and Usage
 
-The import path for the package is *github.com/dwertyfa288/CLI/vendordeps/yaml/v3*.
+The import path for the package is *github.com/SpherePrime/CLI/vendordeps/yaml/v3*.
 
 To install it, run:
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/yaml/v3
+go get github.com/SpherePrime/CLI/vendordeps/yaml/v3
 ```
 
 
 ## API Documentation
 
-See: <https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/yaml/v3>
+See: <https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/yaml/v3>
 
 
 ## API Stability
@@ -88,7 +88,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dwertyfa288/CLI/vendordeps/yaml/v3"
+	"github.com/SpherePrime/CLI/vendordeps/yaml/v3"
 )
 
 var data = `

@@ -75,7 +75,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonschema
+        - github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonschema
 
 issues:
   max-issues-per-linter: 0

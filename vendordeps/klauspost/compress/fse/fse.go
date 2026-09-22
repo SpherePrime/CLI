@@ -8,7 +8,7 @@
 // Finite State Entropy encoding provides a fast near-optimal symbol encoding/decoding
 // for byte blocks as implemented in zstd.
 //
-// See https://github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/tree/master/fse for more information.
+// See https://github.com/SpherePrime/CLI/vendordeps/klauspost/compress/tree/master/fse for more information.
 package fse
 
 import (

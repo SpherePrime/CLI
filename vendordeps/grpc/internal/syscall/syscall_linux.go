@@ -26,8 +26,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 )
 
 var logger = grpclog.Component("core")

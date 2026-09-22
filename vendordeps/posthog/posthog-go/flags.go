@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	json "github.com/dwertyfa288/CLI/vendordeps/goccy/go-json"
+	json "github.com/SpherePrime/CLI/vendordeps/goccy/go-json"
 )
 
 // FlagsRequestData is the wire-format request body sent to the /flags endpoint.

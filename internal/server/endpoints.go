@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/dwertyfa288/CLI/internal/apigen"
-	"github.com/dwertyfa288/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/apigen"
+	"github.com/SpherePrime/CLI/internal/proto"
 )
 
 // endpoints is the single source of truth for the v1 API: every entry

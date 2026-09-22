@@ -24,9 +24,9 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	protoreflect "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	protoimpl "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoimpl"
-	durationpb "github.com/dwertyfa288/CLI/vendordeps/protobuf/types/known/durationpb"
+	protoreflect "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	protoimpl "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoimpl"
+	durationpb "github.com/SpherePrime/CLI/vendordeps/protobuf/types/known/durationpb"
 )
 
 const (

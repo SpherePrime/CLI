@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/powernap/pkg/transport"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/transport"
 )
 
 // OffsetEncoding represents the character encoding used for text document offsets.

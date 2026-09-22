@@ -15,7 +15,7 @@ This document is designed to explain the structure of a GJSON Path through examp
 - [Multipaths](#multipaths)
 - [Literals](#literals)
 
-The definitive implementation is [github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson).  
+The definitive implementation is [github.com/SpherePrime/CLI/vendordeps/tidwall/gjson](https://github.com/SpherePrime/CLI/vendordeps/tidwall/gjson).  
 Use the [GJSON Playground](https://gjson.dev) to experiment with the syntax online.
 
 ## Path structure
@@ -257,8 +257,8 @@ There are currently the following built-in modifiers:
 - `@values`: Returns an array of values for an object.
 - `@tostr`: Converts json to a string. Wraps a json string.
 - `@fromstr`: Converts a string from json. Unwraps a json string.
-- `@group`: Groups arrays of objects. See [e4fc67c](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson/commit/e4fc67c92aeebf2089fabc7872f010e340d105db).
-- `@dig`: Search for a value without providing its entire path. See [e8e87f2](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson/commit/e8e87f2a00dc41f3aba5631094e21f59a8cf8cbf).
+- `@group`: Groups arrays of objects. See [e4fc67c](https://github.com/SpherePrime/CLI/vendordeps/tidwall/gjson/commit/e4fc67c92aeebf2089fabc7872f010e340d105db).
+- `@dig`: Search for a value without providing its entire path. See [e8e87f2](https://github.com/SpherePrime/CLI/vendordeps/tidwall/gjson/commit/e8e87f2a00dc41f3aba5631094e21f59a8cf8cbf).
 
 #### Modifier arguments
 
@@ -287,7 +287,7 @@ Which makes the json pretty and orders all of its keys.
 ```
 
 *The full list of `@pretty` options are `sortKeys`, `indent`, `prefix`, and `width`. 
-Please see [Pretty Options](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/pretty#customized-output) for more information.*
+Please see [Pretty Options](https://github.com/SpherePrime/CLI/vendordeps/tidwall/pretty#customized-output) for more information.*
 
 #### Custom modifiers
 
@@ -357,4 +357,4 @@ This results in
 {"first":"Tom","age":37,"company":"Happysoft","employed":true}
 ```
 
-*See issue [#249](https://github.com/dwertyfa288/CLI/vendordeps/tidwall/gjson/issues/249) for additional context on JSON Literals.*
+*See issue [#249](https://github.com/SpherePrime/CLI/vendordeps/tidwall/gjson/issues/249) for additional context on JSON Literals.*

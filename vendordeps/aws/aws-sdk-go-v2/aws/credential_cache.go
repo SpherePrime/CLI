@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdkrand "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/rand"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sync/singleflight"
+	sdkrand "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/rand"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sync/singleflight"
 )
 
 // CredentialsCacheOptions are the options

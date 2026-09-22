@@ -5,16 +5,16 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/endpointcreds"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/processcreds"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/ssocreds"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds"
-	smithybearer "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth/bearer"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/endpointcreds"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/processcreds"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/ssocreds"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds"
+	smithybearer "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth/bearer"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
 )
 
 // sharedConfigProfileProvider provides access to the shared config profile

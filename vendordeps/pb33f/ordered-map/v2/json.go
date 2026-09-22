@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser"
+	"github.com/SpherePrime/CLI/vendordeps/buger/jsonparser"
 )
 
 var (

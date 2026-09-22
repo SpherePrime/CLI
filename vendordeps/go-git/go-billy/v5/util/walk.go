@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5"
 )
 
 // walk recursively descends path, calling walkFn

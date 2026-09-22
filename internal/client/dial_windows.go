@@ -7,7 +7,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/dwertyfa288/CLI/vendordeps/Microsoft/go-winio"
+	"github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio"
 )
 
 func dialPipeContext(ctx context.Context, address string) (net.Conn, error) {

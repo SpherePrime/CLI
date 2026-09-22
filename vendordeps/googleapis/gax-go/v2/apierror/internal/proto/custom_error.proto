@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package error;
 
-option go_package = "github.com/dwertyfa288/CLI/vendordeps/googleapis/gax-go/v2/apierror/internal/proto;jsonerror";
+option go_package = "github.com/SpherePrime/CLI/vendordeps/googleapis/gax-go/v2/apierror/internal/proto;jsonerror";
 
 
 // CustomError is an example of a custom error message  which may be included

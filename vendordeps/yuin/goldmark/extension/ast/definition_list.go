@@ -1,7 +1,7 @@
 package ast
 
 import (
-	gast "github.com/dwertyfa288/CLI/vendordeps/yuin/goldmark/ast"
+	gast "github.com/SpherePrime/CLI/vendordeps/yuin/goldmark/ast"
 )
 
 // A DefinitionList struct represents a definition list of Markdown

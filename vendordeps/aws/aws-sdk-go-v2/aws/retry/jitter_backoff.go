@@ -4,9 +4,9 @@ import (
 	"math"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/rand"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/timeconv"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/rand"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/timeconv"
 )
 
 // ExponentialJitterBackoff provides backoff delays with jitter based on the

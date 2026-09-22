@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/internal/pubsub"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 )
 
 // ErrCancelled is returned by Ask when the user cancels the question.

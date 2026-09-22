@@ -11,14 +11,14 @@ import (
 	"reflect"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/encoding/protowire"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/messageset"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/flags"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/genid"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/strs"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoregistry"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/encoding/protowire"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/messageset"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/flags"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/genid"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/strs"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoregistry"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 // ValidationStatus is the result of validating the wire-format encoding of a message.

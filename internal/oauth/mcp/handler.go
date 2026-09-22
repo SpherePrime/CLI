@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/internal/oauth/callback"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/oauthex"
-	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/internal/oauth/callback"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/auth"
+	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/oauthex"
+	"github.com/SpherePrime/CLI/vendordeps/pkg/browser"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 // ErrInteractiveAuthRequired is returned by Authorize when a server needs

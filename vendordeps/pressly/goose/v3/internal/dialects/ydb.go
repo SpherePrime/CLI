@@ -3,7 +3,7 @@ package dialects
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/database/dialect"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/database/dialect"
 )
 
 // NewYDB returns a new [dialect.Querier] for Vertica dialect.

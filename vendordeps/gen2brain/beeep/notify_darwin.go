@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/dwertyfa288/CLI/vendordeps/jackmordaunt/icns/v3"
+	"github.com/SpherePrime/CLI/vendordeps/jackmordaunt/icns/v3"
 )
 
 // Notify sends desktop notification.

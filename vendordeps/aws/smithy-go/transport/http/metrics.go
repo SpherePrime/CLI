@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/metrics"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/metrics"
 )
 
 var now = time.Now

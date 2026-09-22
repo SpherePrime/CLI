@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/internal/agent/hyper"
-	"github.com/dwertyfa288/CLI/internal/home"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/home"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/cases"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 // PrettyPath formats a file path with home directory shortening and applies

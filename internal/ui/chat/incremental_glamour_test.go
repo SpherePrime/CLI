@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // newTestRenderer builds a fresh glamour renderer for the given

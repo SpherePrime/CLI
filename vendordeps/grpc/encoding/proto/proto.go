@@ -23,10 +23,10 @@ package proto
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/encoding"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/proto"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/protoadapt"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/encoding"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/proto"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/protoadapt"
 )
 
 // Name is the name registered for the proto compressor.
@@ -60,7 +60,7 @@ func (c *codecV2) Marshal(v any) (data mem.BufferSlice, err error) {
 	// becomes unsafe and may lead to incorrect marshaling.
 	//
 	// For more details, see the doc of UseCachedSize:
-	// https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/protobuf/proto#MarshalOptions
+	// https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/protobuf/proto#MarshalOptions
 	marshalOptions := proto.MarshalOptions{UseCachedSize: true}
 
 	if mem.IsBelowBufferPoolingThreshold(size) {

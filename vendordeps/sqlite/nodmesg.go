@@ -5,7 +5,7 @@
 //go:build !sqlite.dmesg
 // +build !sqlite.dmesg
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 const dmesgs = false
 

@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds"
-	smithyrequestcompression "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/private/requestcompression"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds"
+	smithyrequestcompression "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/private/requestcompression"
 )
 
 // CredentialsSourceName provides a name of the provider when config is

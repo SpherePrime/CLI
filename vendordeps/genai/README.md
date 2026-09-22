@@ -1,5 +1,5 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/googleapis/go-genai)
-[![Go Reference](https://pkg.go.dev/badge/google.golang.org/genai.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/genai)
+[![Go Reference](https://pkg.go.dev/badge/google.golang.org/genai.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/genai)
 
 # Google Gen AI Go SDK
 
@@ -39,13 +39,13 @@ result, err := client.Models.GenerateContent(ctx, "gemini-2.5-flash", []*genai.C
 
 ## Installation and usage
 
-Add the SDK to your module with `go get github.com/dwertyfa288/CLI/vendordeps/genai`.
+Add the SDK to your module with `go get github.com/SpherePrime/CLI/vendordeps/genai`.
 
 ## Create Clients
 
 ### Imports
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/genai"
+import "github.com/SpherePrime/CLI/vendordeps/genai"
 ```
 
 ### Gemini API Client:

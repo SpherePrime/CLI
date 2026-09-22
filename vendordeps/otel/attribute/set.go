@@ -10,7 +10,7 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute/internal/xxhash"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute/internal/xxhash"
 )
 
 type (

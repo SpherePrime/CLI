@@ -3,9 +3,9 @@ package model
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/permission"
-	"github.com/dwertyfa288/CLI/internal/ui/dialog"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/ui/dialog"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 // newTestUIForPermissions builds a UI with a chat, dialog overlay, and

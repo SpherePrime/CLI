@@ -4,15 +4,15 @@ package signin
 
 import (
 	"context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	awsmiddleware "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
-	internalauthsmithy "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/auth/smithy"
-	smithyauth "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/metrics"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/tracing"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	awsmiddleware "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/middleware"
+	internalauthsmithy "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/auth/smithy"
+	smithyauth "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/metrics"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/tracing"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 	"net/http"
 )
 

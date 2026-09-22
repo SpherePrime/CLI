@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/recorder"
+	"github.com/SpherePrime/CLI/vendordeps/dnaeon/go-vcr.v4/pkg/recorder"
 )
 
 // Recorder is an alias for the go-vcr Recorder.

@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
+	"github.com/SpherePrime/CLI/vendordeps/itchyny/gojq"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/interp"
 )
 
 const jqUsage = `jq - Go implementation of jq (gojq 0.12.19 builtin)
@@ -44,7 +44,7 @@ Options:
 // "filter exited non-zero" from "we ran out of time".
 //
 // Note that this is somewhat of a reimplmentation of the CLI of the glorious
-// github.com/dwertyfa288/CLI/vendordeps/itchyny/gojq, and we'd ideally get the CLI exposed upstream to
+// github.com/SpherePrime/CLI/vendordeps/itchyny/gojq, and we'd ideally get the CLI exposed upstream to
 // avoid this falling out of sync.
 func handleJQ(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	// Fast-fail when ctx is already cancelled so callers don't pay for

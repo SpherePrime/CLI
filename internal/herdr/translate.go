@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/agent/notify"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/permission"
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/pubsub"
 )
 
 // Translate converts a pub/sub event (domain or proto) into a herdr

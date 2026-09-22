@@ -14,11 +14,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/database"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/internal/controller"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/internal/gooseutil"
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/internal/sqlparser"
-	"github.com/dwertyfa288/CLI/vendordeps/multierr"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/database"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/internal/controller"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/internal/gooseutil"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/internal/sqlparser"
+	"github.com/SpherePrime/CLI/vendordeps/multierr"
 )
 
 // Provider is a goose migration provider.

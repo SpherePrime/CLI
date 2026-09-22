@@ -10,7 +10,7 @@ import (
 	"io"
 	"math/bits"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/internal/le"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/internal/le"
 )
 
 // bitReader reads a bitstream in reverse.

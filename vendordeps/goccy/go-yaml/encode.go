@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/ast"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/parser"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/printer"
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-yaml/token"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/ast"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/parser"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/printer"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-yaml/token"
 )
 
 const (

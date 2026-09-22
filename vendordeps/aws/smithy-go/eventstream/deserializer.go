@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/document"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/traits"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/document"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/traits"
 )
 
 // ShapeDeserializer wraps a [smithy.ShapeDeserializer] to handle event stream

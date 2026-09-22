@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/internal/oauth"
-	"github.com/dwertyfa288/CLI/internal/oauth/callback"
+	"github.com/SpherePrime/CLI/internal/oauth"
+	"github.com/SpherePrime/CLI/internal/oauth/callback"
 )
 
 // The redirect URI must be a loopback address on a port OpenAI's

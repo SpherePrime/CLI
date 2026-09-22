@@ -5,7 +5,7 @@
 package sqlite3
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/libc"
+	"github.com/SpherePrime/CLI/vendordeps/libc"
 )
 
 const SIG_ATOMIC_MAX = 2147483647

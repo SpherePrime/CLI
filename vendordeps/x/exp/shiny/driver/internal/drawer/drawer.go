@@ -3,14 +3,14 @@
 // license that can be found in the LICENSE file.
 
 // Package drawer provides functions that help implement screen.Drawer methods.
-package drawer // import "github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/drawer"
+package drawer // import "github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/drawer"
 
 import (
 	"image"
 	"image/draw"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/f64"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/f64"
 )
 
 // Copy implements the Copy method of the screen.Drawer interface by calling

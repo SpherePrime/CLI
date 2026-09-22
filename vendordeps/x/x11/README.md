@@ -1,11 +1,11 @@
 # x11
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/x/x11)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/x11)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/x/x11)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/x11)
 
 A minimal, **pure-Go** client for the X11 wire protocol — no Cgo, no `libX11`.
 
 ```
-import "github.com/dwertyfa288/CLI/vendordeps/x/x11"
+import "github.com/SpherePrime/CLI/vendordeps/x/x11"
 ```
 
 Package `x11` implements the encoding, decoding, and parsing for the slice of
@@ -24,7 +24,7 @@ It contains **only** the wire logic — no sockets. Callers own the transport
 (`net.Conn`, an `io.Reader`, …), which keeps the package free of OS-specific
 code and unit-testable on any platform.
 
-This package was extracted from [`github.com/dwertyfa288/CLI/vendordeps/x/clipboard`](https://github.com/golang-design/clipboard),
+This package was extracted from [`github.com/SpherePrime/CLI/vendordeps/x/clipboard`](https://github.com/golang-design/clipboard),
 where it backs the Cgo-free X11 clipboard on Linux and the BSDs.
 
 ## Example
@@ -43,7 +43,7 @@ win := ids.Next()
 conn.Write(x11.CreateWindow(win, setup.Root))
 ```
 
-See [`github.com/dwertyfa288/CLI/vendordeps/x/clipboard`](https://github.com/golang-design/clipboard)'s
+See [`github.com/SpherePrime/CLI/vendordeps/x/clipboard`](https://github.com/golang-design/clipboard)'s
 X11 backend for a complete, working consumer.
 
 ## License

@@ -15,7 +15,7 @@
 //
 // To create HTTP/1 or HTTP/2 connections, see
 // [http.Transport.NewClientConn].
-package http2 // import "github.com/dwertyfa288/CLI/vendordeps/x/net/http2"
+package http2 // import "github.com/SpherePrime/CLI/vendordeps/x/net/http2"
 
 import (
 	"bufio"
@@ -31,7 +31,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/http/httpguts"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/http/httpguts"
 )
 
 var (

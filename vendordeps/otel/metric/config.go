@@ -6,7 +6,7 @@ package metric
 import (
 	"slices"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
 )
 
 // MeterConfig contains options for Meters.

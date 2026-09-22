@@ -3,7 +3,7 @@ package openai
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/option"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 )
 
 func newVectorStoreFileAndPoll(r *VectorStoreFileService, ctx context.Context, vectorStoreId string, body VectorStoreFileNewParams, pollIntervalMs int, opts ...option.RequestOption) (res *VectorStoreFile, err error) {

@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/protolazy"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/protolazy"
 )
 
 const UnsafeEnabled = true

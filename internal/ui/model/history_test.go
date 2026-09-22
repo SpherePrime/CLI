@@ -3,9 +3,9 @@ package model
 import (
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/workspace"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/workspace"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 type historyWorkspace struct {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-logfmt/logfmt"
+	"github.com/SpherePrime/CLI/vendordeps/go-logfmt/logfmt"
 )
 
 func (l *Logger) logfmtFormatter(keyvals ...any) {

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sourcegraph/jsonrpc2"
+	"github.com/SpherePrime/CLI/vendordeps/sourcegraph/jsonrpc2"
 )
 
 // Connection represents a managed connection to a language server.

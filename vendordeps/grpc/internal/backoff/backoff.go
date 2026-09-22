@@ -28,7 +28,7 @@ import (
 	rand "math/rand/v2"
 	"time"
 
-	grpcbackoff "github.com/dwertyfa288/CLI/vendordeps/grpc/backoff"
+	grpcbackoff "github.com/SpherePrime/CLI/vendordeps/grpc/backoff"
 )
 
 // Strategy defines the methodology for backing off after a grpc connection

@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 // GetBold returns the style's bold value. If no value is set false is returned.

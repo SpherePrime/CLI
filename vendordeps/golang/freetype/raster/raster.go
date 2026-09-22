@@ -13,12 +13,12 @@
 // the Freetype "smooth" module, and the Anti-Grain Geometry library. A
 // description of the area/coverage algorithm is at
 // http://projects.tuxee.net/cl-vectors/section-the-cl-aa-algorithm
-package raster // import "github.com/dwertyfa288/CLI/vendordeps/golang/freetype/raster"
+package raster // import "github.com/SpherePrime/CLI/vendordeps/golang/freetype/raster"
 
 import (
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/fixed"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/fixed"
 )
 
 // A cell is part of a linked list (for a given yi co-ordinate) of accumulated

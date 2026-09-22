@@ -15,8 +15,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/~jackmordaunt/go-toast/tmpl"
-	"github.com/dwertyfa288/CLI/vendordeps/~jackmordaunt/go-toast/wintoast"
+	"github.com/SpherePrime/CLI/vendordeps/~jackmordaunt/go-toast/tmpl"
+	"github.com/SpherePrime/CLI/vendordeps/~jackmordaunt/go-toast/wintoast"
 )
 
 // Notification

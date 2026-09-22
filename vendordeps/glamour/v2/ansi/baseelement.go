@@ -7,10 +7,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/cases"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 // BaseElement renders a styled primitive element.

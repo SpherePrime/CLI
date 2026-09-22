@@ -4,7 +4,7 @@
 
 package cases
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/text/transform"
+import "github.com/SpherePrime/CLI/vendordeps/x/text/transform"
 
 // A context is used for iterating over source bytes, fetching case info and
 // writing to a destination buffer.

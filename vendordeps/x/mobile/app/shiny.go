@@ -9,12 +9,12 @@ package app
 import (
 	"log"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/gldriver"
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/lifecycle"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/mouse"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/touch"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/gl"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/gldriver"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/lifecycle"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/mouse"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/touch"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/gl"
 )
 
 func main(f func(a App)) {

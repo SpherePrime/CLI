@@ -3,7 +3,7 @@
 
 package purego
 
-import "github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego/internal/cgo"
+import "github.com/SpherePrime/CLI/vendordeps/ebitengine/purego/internal/cgo"
 
 // Source for constants: https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/include/dlfcn.h
 

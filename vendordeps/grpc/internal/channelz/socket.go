@@ -23,7 +23,7 @@ import (
 	"net"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 )
 
 // SocketMetrics defines the struct that the implementor of Socket interface

@@ -7,12 +7,12 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/login"
-	"github.com/dwertyfa288/CLI/internal/oauth/copilot"
-	"github.com/dwertyfa288/CLI/internal/workspace"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/login"
+	"github.com/SpherePrime/CLI/internal/oauth/copilot"
+	"github.com/SpherePrime/CLI/internal/workspace"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 var loginCmd = &cobra.Command{

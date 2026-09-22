@@ -3,7 +3,7 @@ package json
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder"
 )
 
 type (

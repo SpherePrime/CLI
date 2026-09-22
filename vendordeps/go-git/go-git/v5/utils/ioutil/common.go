@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	ctxio "github.com/dwertyfa288/CLI/vendordeps/jbenet/go-context/io"
+	ctxio "github.com/SpherePrime/CLI/vendordeps/jbenet/go-context/io"
 )
 
 type readPeeker interface {

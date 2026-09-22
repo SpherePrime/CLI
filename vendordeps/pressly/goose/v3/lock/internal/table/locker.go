@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/pressly/goose/v3/lock/internal/store"
-	"github.com/dwertyfa288/CLI/vendordeps/sethvargo/go-retry"
+	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3/lock/internal/store"
+	"github.com/SpherePrime/CLI/vendordeps/sethvargo/go-retry"
 )
 
 // RetryPolicyFunc inspects an error and returns whether the caller should retry the operation. This

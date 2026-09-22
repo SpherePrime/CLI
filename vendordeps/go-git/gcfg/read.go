@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/warnings.v0"
+	"github.com/SpherePrime/CLI/vendordeps/warnings.v0"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/gcfg/scanner"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/gcfg/token"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/gcfg/scanner"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/gcfg/token"
 )
 
 var unescape = map[rune]rune{'\\': '\\', '"': '"', 'n': '\n', 't': '\t', 'b': '\b', '\n': '\n'}

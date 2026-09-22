@@ -7,7 +7,7 @@ package jsons
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
+	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons/internal/ordered"
 )
 
 // apply applies rule according to m

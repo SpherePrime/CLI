@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/table"
-	"github.com/dwertyfa288/CLI/internal/projects"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/term"
-	"github.com/dwertyfa288/CLI/vendordeps/spf13/cobra"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/table"
+	"github.com/SpherePrime/CLI/internal/projects"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
 var projectsCmd = &cobra.Command{

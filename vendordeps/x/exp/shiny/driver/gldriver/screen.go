@@ -9,8 +9,8 @@ import (
 	"image"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/gl"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/gl"
 )
 
 var theScreen = &screenImpl{

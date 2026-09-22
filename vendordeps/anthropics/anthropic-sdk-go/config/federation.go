@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal"
 )
 
 // OAuth 2.0 wire-contract constants. These are the authoritative

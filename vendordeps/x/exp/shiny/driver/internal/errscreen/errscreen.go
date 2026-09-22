@@ -3,12 +3,12 @@
 // license that can be found in the LICENSE file.
 
 // Package errscreen provides a stub Screen implementation.
-package errscreen // import "github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/errscreen"
+package errscreen // import "github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/errscreen"
 
 import (
 	"image"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
 )
 
 // Stub returns a Screen whose methods all return the given error.

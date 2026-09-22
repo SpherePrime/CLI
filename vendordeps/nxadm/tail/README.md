@@ -1,5 +1,5 @@
-[![Go Reference](https://pkg.go.dev/badge/github.com/nxadm/tail.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/nxadm/tail#section-documentation)
-![ci](https://github.com/dwertyfa288/CLI/vendordeps/nxadm/tail/workflows/ci/badge.svg)
+[![Go Reference](https://pkg.go.dev/badge/github.com/nxadm/tail.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/nxadm/tail#section-documentation)
+![ci](https://github.com/SpherePrime/CLI/vendordeps/nxadm/tail/workflows/ci/badge.svg)
 [![FreeBSD](https://api.cirrus-ci.com/github/nxadm/tail.svg)](https://cirrus-ci.com/github/nxadm/tail)
 # tail functionality in Go
 
@@ -25,18 +25,18 @@ for line := range t.Lines {
 }
 ```
 
-See [API documentation](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/nxadm/tail#section-documentation).
+See [API documentation](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/nxadm/tail#section-documentation).
 
 ## Installing
 
-    go get github.com/dwertyfa288/CLI/vendordeps/nxadm/tail/...
+    go get github.com/SpherePrime/CLI/vendordeps/nxadm/tail/...
 
 ## History
 
 This project is an active, drop-in replacement for the
 [abandoned](https://en.wikipedia.org/wiki/HPE_Helion) Go tail library at
 [hpcloud](https://github.com/hpcloud/tail). Next to
-[addressing open issues/PRs of the original project](https://github.com/dwertyfa288/CLI/vendordeps/nxadm/tail/issues/6),
+[addressing open issues/PRs of the original project](https://github.com/SpherePrime/CLI/vendordeps/nxadm/tail/issues/6),
 nxadm/tail continues the development by keeping up to date with the Go toolchain
 (e.g. go modules) and dependencies, completing the documentation, adding features
 and fixing bugs.

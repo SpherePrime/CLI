@@ -6,9 +6,9 @@ import (
 	"encoding/json/v2"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
-	"github.com/dwertyfa288/CLI/vendordeps/ncruces/go-sqlite3/internal/util"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/errutil"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/sqlite3_wrap"
+	"github.com/SpherePrime/CLI/vendordeps/ncruces/go-sqlite3/internal/util"
 )
 
 // JSON returns a value that can be used as an argument to

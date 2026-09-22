@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/dwertyfa288/CLI/vendordeps/denisbrodbeck/machineid"
+	"github.com/SpherePrime/CLI/vendordeps/denisbrodbeck/machineid"
 )
 
 var distinctId string

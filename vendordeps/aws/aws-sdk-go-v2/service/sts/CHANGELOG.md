@@ -806,25 +806,25 @@
 
 # v1.16.0 (2022-03-08)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Documentation**: Updated service client model to latest release.
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.15.0 (2022-02-24)
 
 * **Feature**: API client updated
-* **Feature**: Adds RetryMaxAttempts and RetryMod to API client Options. This allows the API clients' default Retryer to be configured from the shared configuration files or environment variables. Adding a new Retry mode of `Adaptive`. `Adaptive` retry mode is an experimental mode, adding client rate limiting when throttles reponses are received from an API. See [retry.AdaptiveMode](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/retry#AdaptiveMode) for more details, and configuration options.
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Adds RetryMaxAttempts and RetryMod to API client Options. This allows the API clients' default Retryer to be configured from the shared configuration files or environment variables. Adding a new Retry mode of `Adaptive`. `Adaptive` retry mode is an experimental mode, adding client rate limiting when throttles reponses are received from an API. See [retry.AdaptiveMode](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/retry#AdaptiveMode) for more details, and configuration options.
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.14.0 (2022-01-14)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.13.0 (2022-01-07)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.12.0 (2021-12-21)
@@ -833,7 +833,7 @@
 
 # v1.11.1 (2021-12-02)
 
-* **Bug Fix**: Fixes a bug that prevented aws.EndpointResolverWithOptions from being used by the service client. ([#1514](https://github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/pull/1514))
+* **Bug Fix**: Fixes a bug that prevented aws.EndpointResolverWithOptions from being used by the service client. ([#1514](https://github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/pull/1514))
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.11.0 (2021-11-30)
@@ -851,7 +851,7 @@
 # v1.9.0 (2021-11-06)
 
 * **Feature**: The SDK now supports configuration of FIPS and DualStack endpoints using environment variables, shared configuration, or programmatically.
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.8.0 (2021-10-21)
@@ -870,7 +870,7 @@
 
 # v1.7.0 (2021-08-27)
 
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.6.2 (2021-08-19)
@@ -879,20 +879,20 @@
 
 # v1.6.1 (2021-08-04)
 
-* **Dependency Update**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version.
+* **Dependency Update**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version.
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.6.0 (2021-07-15)
 
 * **Feature**: The ErrorCode method on generated service error types has been corrected to match the API model.
 * **Documentation**: Updated service model to latest revision.
-* **Dependency Update**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Dependency Update**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.5.0 (2021-06-25)
 
 * **Feature**: API client updated
-* **Feature**: Updated `github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go` to latest version
+* **Feature**: Updated `github.com/SpherePrime/CLI/vendordeps/aws/smithy-go` to latest version
 * **Dependency Update**: Updated to the latest SDK module versions
 
 # v1.4.1 (2021-05-20)

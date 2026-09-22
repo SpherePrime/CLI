@@ -8,5 +8,5 @@ RUN go get github.com/mreiferson/go-ujson
 RUN go get -tags=unsafe -u github.com/ugorji/go/codec
 RUN go get github.com/mailru/easyjson
 
-WORKDIR /go/src/github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser
-ADD . /go/src/github.com/dwertyfa288/CLI/vendordeps/buger/jsonparser
+WORKDIR /go/src/github.com/SpherePrime/CLI/vendordeps/buger/jsonparser
+ADD . /go/src/github.com/SpherePrime/CLI/vendordeps/buger/jsonparser

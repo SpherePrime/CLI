@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/help"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
-	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/spinner"
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	mcptools "github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
-	"github.com/dwertyfa288/CLI/internal/ui/common"
-	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
-	"github.com/dwertyfa288/CLI/vendordeps/pkg/browser"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/spinner"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	mcptools "github.com/SpherePrime/CLI/internal/agent/tools/mcp"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/pkg/browser"
 )
 
 // MCPAuthID is the identifier for the MCP authentication dialog.

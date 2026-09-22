@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
-	"github.com/dwertyfa288/CLI/internal/agent/hyper"
-	"github.com/dwertyfa288/CLI/internal/message"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/message"
 
-	"github.com/dwertyfa288/CLI/vendordeps/fantasy/providers/openai"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 func TestExtractPrismModel(t *testing.T) {

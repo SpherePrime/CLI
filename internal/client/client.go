@@ -13,10 +13,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/config"
-	"github.com/dwertyfa288/CLI/internal/proto"
-	"github.com/dwertyfa288/CLI/internal/server"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/server"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 )
 
 // DummyHost is used to satisfy the http.Client's requirement for a URL.

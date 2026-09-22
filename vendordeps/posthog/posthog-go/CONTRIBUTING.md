@@ -28,11 +28,11 @@ module example/posthog-go-app
 
 go 1.22.5
 
-require github.com/dwertyfa288/CLI/vendordeps/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
+require github.com/SpherePrime/CLI/vendordeps/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
 
-require github.com/dwertyfa288/CLI/vendordeps/google/uuid v1.3.0 // indirect
+require github.com/SpherePrime/CLI/vendordeps/google/uuid v1.3.0 // indirect
 
-replace github.com/dwertyfa288/CLI/vendordeps/posthog/posthog-go => /path-to-your-local/posthog-go
+replace github.com/SpherePrime/CLI/vendordeps/posthog/posthog-go => /path-to-your-local/posthog-go
 ```
 
 ## Pull requests

@@ -10,11 +10,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/charlievieth/fastwalk"
-	"github.com/dwertyfa288/CLI/internal/csync"
-	"github.com/dwertyfa288/CLI/internal/home"
-	gitconfig "github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/config"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-git/v5/plumbing/format/gitignore"
+	"github.com/SpherePrime/CLI/vendordeps/charlievieth/fastwalk"
+	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/home"
+	gitconfig "github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/config"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-git/v5/plumbing/format/gitignore"
 )
 
 // fastIgnoreDirs is a set of directory names that are always ignored.

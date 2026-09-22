@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 //sys cancelIoEx(file windows.Handle, o *windows.Overlapped) (err error) = CancelIoEx

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/log"
+	"github.com/SpherePrime/CLI/internal/log"
 )
 
 var getRg = sync.OnceValue(func() string {

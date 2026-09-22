@@ -23,8 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth"
-	"github.com/dwertyfa288/CLI/vendordeps/go/compute/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth"
+	"github.com/SpherePrime/CLI/vendordeps/go/compute/metadata"
 )
 
 var (
@@ -35,7 +35,7 @@ var (
 	computeTokenURI = "instance/service-accounts/default/token"
 )
 
-// computeTokenProvider creates a [github.com/dwertyfa288/CLI/vendordeps/go/auth.TokenProvider] that
+// computeTokenProvider creates a [github.com/SpherePrime/CLI/vendordeps/go/auth.TokenProvider] that
 // uses the metadata service to retrieve tokens.
 func computeTokenProvider(opts *DetectOptions, client *metadata.Client) auth.TokenProvider {
 	return auth.NewCachedTokenProvider(&computeProvider{

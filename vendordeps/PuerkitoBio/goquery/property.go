@@ -3,7 +3,7 @@ package goquery
 import (
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html"
 )
 
 var classTrimReplacer = strings.NewReplacer("\t", " ", "\r", " ", "\n", " ")

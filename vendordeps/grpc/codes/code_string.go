@@ -21,7 +21,7 @@ package codes
 import (
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
 )
 
 func init() {

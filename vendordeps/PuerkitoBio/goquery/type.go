@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/dwertyfa288/CLI/vendordeps/andybalholm/cascadia"
-	"github.com/dwertyfa288/CLI/vendordeps/x/net/html"
+	"github.com/SpherePrime/CLI/vendordeps/andybalholm/cascadia"
+	"github.com/SpherePrime/CLI/vendordeps/x/net/html"
 )
 
 // Document represents an HTML document to be manipulated. Unlike jQuery, which

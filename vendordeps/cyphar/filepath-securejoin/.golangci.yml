@@ -57,4 +57,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/dwertyfa288/CLI/vendordeps/cyphar/filepath-securejoin
+        - github.com/SpherePrime/CLI/vendordeps/cyphar/filepath-securejoin

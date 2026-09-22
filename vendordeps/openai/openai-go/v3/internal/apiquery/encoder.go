@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
 )
 
 var encoders sync.Map // map[reflect.Type]encoderFunc

@@ -4,15 +4,15 @@
 
 //go:build !libc.membrk && !libc.memgrind && !(linux && (amd64 || arm64 || loong64 || ppc64le || s390x || riscv64 || 386 || arm))
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"math"
 	"math/bits"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/memory"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/memory"
 )
 
 const memgrind = false

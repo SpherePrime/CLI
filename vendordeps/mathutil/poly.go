@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package mathutil // import "github.com/dwertyfa288/CLI/vendordeps/mathutil"
+package mathutil // import "github.com/SpherePrime/CLI/vendordeps/mathutil"
 
 import (
 	"fmt"

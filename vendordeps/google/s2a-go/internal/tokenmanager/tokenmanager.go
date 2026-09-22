@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"os"
 
-	commonpbv1 "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	commonpb "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/v2/common_go_proto"
+	commonpbv1 "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	commonpb "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/v2/common_go_proto"
 )
 
 const (

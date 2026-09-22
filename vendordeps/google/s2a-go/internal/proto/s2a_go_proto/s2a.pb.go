@@ -21,9 +21,9 @@
 package s2a_go_proto
 
 import (
-	common_go_proto "github.com/dwertyfa288/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
-	protoreflect "github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	protoimpl "github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoimpl"
+	common_go_proto "github.com/SpherePrime/CLI/vendordeps/google/s2a-go/internal/proto/common_go_proto"
+	protoreflect "github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	protoimpl "github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 )

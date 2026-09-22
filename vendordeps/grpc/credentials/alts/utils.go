@@ -23,9 +23,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/peer"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/peer"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // AuthInfoFromContext extracts the alts.AuthInfo object from the given context,

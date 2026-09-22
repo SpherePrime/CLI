@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	humanize "github.com/dwertyfa288/CLI/vendordeps/dustin/go-humanize"
+	humanize "github.com/SpherePrime/CLI/vendordeps/dustin/go-humanize"
 )
 
 // FileInfo holds file metadata.

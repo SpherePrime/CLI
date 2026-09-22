@@ -23,7 +23,7 @@
 
 package goleak
 
-import "github.com/dwertyfa288/CLI/vendordeps/goleak/internal/stack"
+import "github.com/SpherePrime/CLI/vendordeps/goleak/internal/stack"
 
 func isTraceStack(s stack.Stack) bool {
 	return s.HasFunction("runtime.ReadTrace")

@@ -1,6 +1,6 @@
 package windows
 
-import "github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+import "github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 
 // NewLazySystemDLL is a type alias for windows.NewLazySystemDLL.
 var NewLazySystemDLL = windows.NewLazySystemDLL

@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	smithycontext "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/context"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/internal/sync/singleflight"
+	smithycontext "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/context"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/internal/sync/singleflight"
 )
 
 // package variable that can be override in unit tests.

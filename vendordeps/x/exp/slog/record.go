@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/slices"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/slices"
 )
 
 const nAttrsInline = 5

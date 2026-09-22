@@ -12,7 +12,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
 )
 
 type PartEncoding struct {

@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	json "github.com/dwertyfa288/CLI/vendordeps/goccy/go-json"
-	"github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress/zstd"
+	json "github.com/SpherePrime/CLI/vendordeps/goccy/go-json"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress/zstd"
 )
 
 // getZstdEncoder returns a shared zstd encoder, lazily initialized on first

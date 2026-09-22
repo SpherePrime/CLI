@@ -4,7 +4,7 @@ package types
 
 import (
 	"fmt"
-	smithy "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
+	smithy "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
 )
 
 // You do not have sufficient access to perform this action.

@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/slog"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/slog"
 )
 
 // type aliases for slog.

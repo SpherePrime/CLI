@@ -4,7 +4,7 @@ package windows
 import (
 	"encoding/binary"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 // FocusEventRecord corresponds to the FocusEventRecord structure from the

@@ -6,8 +6,8 @@ package otelhttp
 import (
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace"
 )
 
 // Attribute keys that can be added to a span.

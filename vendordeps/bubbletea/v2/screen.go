@@ -1,6 +1,6 @@
 package tea
 
-import "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
+import "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 
 // WindowSizeMsg is used to report the terminal size. It's sent to Update once
 // initially and then on every terminal resize.

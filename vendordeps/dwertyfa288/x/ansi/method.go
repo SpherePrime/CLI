@@ -4,8 +4,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/displaywidth"
-	"github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/displaywidth"
+	"github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth"
 )
 
 var wcOptions = &runewidth.Condition{

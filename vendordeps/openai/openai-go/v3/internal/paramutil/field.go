@@ -1,8 +1,8 @@
 package paramutil
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/param"
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/param"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/packages/respjson"
 )
 
 func AddrIfPresent[T comparable](v param.Opt[T]) *T {

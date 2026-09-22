@@ -19,7 +19,7 @@ import (
 	"sort"
 	"strings"
 
-	flag "github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+	flag "github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 const (

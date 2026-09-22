@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/klauspost/compress"
+	"github.com/SpherePrime/CLI/vendordeps/klauspost/compress"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/goccy/go-json/internal/encoder"
+	"github.com/SpherePrime/CLI/vendordeps/goccy/go-json/internal/encoder"
 )
 
 func DebugRun(ctx *encoder.RuntimeContext, b []byte, codeSet *encoder.OpcodeSet) ([]byte, error) {

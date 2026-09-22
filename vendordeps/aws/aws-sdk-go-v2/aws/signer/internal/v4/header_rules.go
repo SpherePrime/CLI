@@ -1,7 +1,7 @@
 package v4
 
 import (
-	sdkstrings "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/strings"
+	sdkstrings "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/strings"
 )
 
 // Rules houses a set of Rule needed for validation of a

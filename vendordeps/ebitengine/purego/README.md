@@ -1,5 +1,5 @@
 # purego
-[![Go Reference](https://pkg.go.dev/badge/github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego?GOOS=darwin.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego?GOOS=darwin)
+[![Go Reference](https://pkg.go.dev/badge/github.com/SpherePrime/CLI/vendordeps/ebitengine/purego?GOOS=darwin.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/ebitengine/purego?GOOS=darwin)
 
 A library for calling C functions from Go without Cgo.
 
@@ -51,7 +51,7 @@ Tier 2 platforms are supported by PureGo on a best-effort basis. Critical bugs o
 1. These architectures require CGO_ENABLED=1 to compile
 2. These architectures support passing structs by value as arguments and return values when calling C functions, but not in callbacks created with `NewCallback`
 3. These architectures do not support passing structs by value as arguments or return values
-4. These architectures require the special flag `-gcflags="github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego/internal/fakecgo=-std"` to compile with CGO_ENABLED=0
+4. These architectures require the special flag `-gcflags="github.com/SpherePrime/CLI/vendordeps/ebitengine/purego/internal/fakecgo=-std"` to compile with CGO_ENABLED=0
 5. These architectures require CGO_ENABLED=1 to compile in versions before Go 1.27, but will be supported without Cgo in Go 1.27 and later
 6. These architectures only support `SyscallN` and `NewCallback`
 7. These architectures are no longer supported as of Go 1.26
@@ -59,7 +59,7 @@ Tier 2 platforms are supported by PureGo on a best-effort basis. Critical bugs o
 ## Example
 
 The example below only showcases purego use for macOS and Linux. The other platforms require special handling which can
-be seen in the complete example at [examples/libc](https://github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego/tree/main/examples/libc) which supports FreeBSD and Windows.
+be seen in the complete example at [examples/libc](https://github.com/SpherePrime/CLI/vendordeps/ebitengine/purego/tree/main/examples/libc) which supports FreeBSD and Windows.
 
 ```go
 package main
@@ -68,7 +68,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/dwertyfa288/CLI/vendordeps/ebitengine/purego"
+	"github.com/SpherePrime/CLI/vendordeps/ebitengine/purego"
 )
 
 func getSystemLibrary() string {

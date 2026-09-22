@@ -18,7 +18,7 @@
 
 package balancer
 
-import "github.com/dwertyfa288/CLI/vendordeps/grpc/connectivity"
+import "github.com/SpherePrime/CLI/vendordeps/grpc/connectivity"
 
 // ConnectivityStateEvaluator takes the connectivity states of multiple SubConns
 // and returns one aggregated connectivity state.

@@ -2,18 +2,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"strings"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fcntl"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fts"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/time"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/utime"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fcntl"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fts"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/time"
+	"github.com/SpherePrime/CLI/vendordeps/libc/utime"
 )
 
 type (

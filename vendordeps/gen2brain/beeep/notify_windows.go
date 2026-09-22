@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/~jackmordaunt/go-toast"
-	"github.com/dwertyfa288/CLI/vendordeps/sergeymakinen/go-ico"
-	"github.com/dwertyfa288/CLI/vendordeps/tadvi/systray"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows/registry"
+	"github.com/SpherePrime/CLI/vendordeps/~jackmordaunt/go-toast"
+	"github.com/SpherePrime/CLI/vendordeps/sergeymakinen/go-ico"
+	"github.com/SpherePrime/CLI/vendordeps/tadvi/systray"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows/registry"
 )
 
 var isWindows10 bool

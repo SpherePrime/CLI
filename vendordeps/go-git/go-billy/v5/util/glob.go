@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5"
 )
 
 // Glob returns the names of all files matching pattern or nil

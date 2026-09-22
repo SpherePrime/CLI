@@ -25,9 +25,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/mem"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/metadata"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/mem"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/metadata"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // ServerStream implements streaming functionality for a gRPC server.

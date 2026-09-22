@@ -27,7 +27,7 @@ Ensure things look correct before submitting a pull request to include the addit
 The `CHANGELOG.md` should also be updated to reflect the new changes:
 
 ```md
-- The `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/<NEW VERSION>` package. The package contains semantic conventions from the `<NEW VERSION>` version of the OpenTelemetry Semantic Conventions. See the [migration documentation](./semconv/<NEW VERSION>/MIGRATION.md) for information on how to upgrade from `github.com/dwertyfa288/CLI/vendordeps/otel/semconv/<PREVIOUS VERSION>`. (#PR_NUMBER)
+- The `github.com/SpherePrime/CLI/vendordeps/otel/semconv/<NEW VERSION>` package. The package contains semantic conventions from the `<NEW VERSION>` version of the OpenTelemetry Semantic Conventions. See the [migration documentation](./semconv/<NEW VERSION>/MIGRATION.md) for information on how to upgrade from `github.com/SpherePrime/CLI/vendordeps/otel/semconv/<PREVIOUS VERSION>`. (#PR_NUMBER)
 ```
 
 > **Tip:** Change to the release and prior version to match the changes
@@ -38,13 +38,13 @@ Once the new semconv module has been generated, update all semconv imports throu
 
 ```go
 // Before
-semconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0"
-"github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.37.0/otelconv"
+semconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0"
+"github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.37.0/otelconv"
 
 
 // After
-semconv "github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.39.0"
-"github.com/dwertyfa288/CLI/vendordeps/otel/semconv/v1.39.0/otelconv"
+semconv "github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.39.0"
+"github.com/SpherePrime/CLI/vendordeps/otel/semconv/v1.39.0/otelconv"
 ```
 
 Once complete, run `make` to check for any compilation or test failures.
@@ -63,7 +63,7 @@ Update [.golangci.yml](https://github.com/open-telemetry/opentelemetry-go-contri
 
 ## Breaking changes validation
 
-You can run `make gorelease` which runs [gorelease](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/x/exp/cmd/gorelease) to ensure that there are no unwanted changes made in the public API.
+You can run `make gorelease` which runs [gorelease](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/x/exp/cmd/gorelease) to ensure that there are no unwanted changes made in the public API.
 
 You can check/report problems with `gorelease` [here](https://golang.org/issues/26420).
 

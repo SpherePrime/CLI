@@ -1,10 +1,10 @@
 # roff
 
-[![Latest Release](https://img.shields.io/github/release/muesli/roff.svg)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/roff/releases)
-[![Build Status](https://github.com/dwertyfa288/CLI/vendordeps/muesli/roff/workflows/build/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/roff/actions)
+[![Latest Release](https://img.shields.io/github/release/muesli/roff.svg)](https://github.com/SpherePrime/CLI/vendordeps/muesli/roff/releases)
+[![Build Status](https://github.com/SpherePrime/CLI/vendordeps/muesli/roff/workflows/build/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/muesli/roff/actions)
 [![Coverage Status](https://coveralls.io/repos/github/muesli/roff/badge.svg?branch=main)](https://coveralls.io/github/muesli/roff?branch=main)
 [![Go ReportCard](https://goreportcard.com/badge/muesli/roff)](https://goreportcard.com/report/muesli/roff)
-[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/muesli/roff)
+[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/muesli/roff)
 
 roff lets you write roff documents in Go
 
@@ -13,7 +13,7 @@ roff lets you write roff documents in Go
 Import the library:
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/muesli/roff"
+import "github.com/SpherePrime/CLI/vendordeps/muesli/roff"
 ```
 
 Then start a new roff document and write to it:

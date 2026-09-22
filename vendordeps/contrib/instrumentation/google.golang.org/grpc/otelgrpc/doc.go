@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
-Package otelgrpc is the instrumentation library for [github.com/dwertyfa288/CLI/vendordeps/grpc].
+Package otelgrpc is the instrumentation library for [github.com/SpherePrime/CLI/vendordeps/grpc].
 
 Use [NewClientHandler] with [grpc.WithStatsHandler] to instrument a gRPC client.
 

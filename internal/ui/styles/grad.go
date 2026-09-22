@@ -5,8 +5,8 @@ import (
 	"image/color"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
-	"github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/rivo/uniseg"
 )
 
 // ForegroundGrad returns a slice of strings representing the input string

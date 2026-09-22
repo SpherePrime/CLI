@@ -27,7 +27,7 @@
 // endpoint override is an mTLS url, since the url pattern may change at anytime.
 //
 // This package is not intended for use by end developers. Use the
-// github.com/dwertyfa288/CLI/vendordeps/api/option package to configure API clients.
+// github.com/SpherePrime/CLI/vendordeps/api/option package to configure API clients.
 
 // Package internal supports the options and transport packages.
 package internal
@@ -41,9 +41,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/s2a-go"
-	"github.com/dwertyfa288/CLI/vendordeps/api/internal/cert"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/google/s2a-go"
+	"github.com/SpherePrime/CLI/vendordeps/api/internal/cert"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
 )
 
 const (

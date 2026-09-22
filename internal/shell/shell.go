@@ -4,7 +4,7 @@
 // working directory and environment. Each shell execution is independent.
 //
 // WINDOWS COMPATIBILITY:
-// This implementation provides POSIX shell emulation (github.com/dwertyfa288/CLI/vendordeps/sh/v3) even on
+// This implementation provides POSIX shell emulation (github.com/SpherePrime/CLI/vendordeps/sh/v3) even on
 // Windows. Commands should use forward slashes (/) as path separators to work
 // correctly on all platforms.
 package shell
@@ -20,9 +20,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/exp/slice"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/interp"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/slice"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/interp"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 // ShellType represents the type of shell to use

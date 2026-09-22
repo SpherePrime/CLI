@@ -7,7 +7,7 @@ package proto
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
 )
 
 // Reset clears every field in the message.

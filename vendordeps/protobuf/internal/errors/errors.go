@@ -9,7 +9,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/detrand"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/detrand"
 )
 
 // Error is a sentinel matching all errors produced by this package.

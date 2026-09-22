@@ -8,7 +8,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 // OAuthHandler is an interface for handling OAuth flows.
@@ -19,7 +19,7 @@ import (
 // Authorization header. If a request fails with a 401 or 403, it should call
 // Authorize, and if that returns nil, it should retry the request. It should
 // not call Authorize after the second failure. See
-// [github.com/dwertyfa288/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp.StreamableClientTransport]
+// [github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp.StreamableClientTransport]
 // for an example.
 type OAuthHandler interface {
 	// TokenSource returns a token source to be used for outgoing requests.

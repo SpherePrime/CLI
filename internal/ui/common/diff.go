@@ -1,8 +1,8 @@
 package common
 
 import (
-	"github.com/dwertyfa288/CLI/internal/ui/diffview"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/internal/ui/diffview"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
 
 // DiffFormatter returns a diff formatter with the given styles that can be

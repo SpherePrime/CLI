@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute/internal/xxhash"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute/internal/xxhash"
 )
 
 // Type identifiers. These identifiers are hashed before the value of the

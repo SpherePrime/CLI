@@ -5,7 +5,7 @@ package sqlite3_wrap
 import (
 	"math"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 )
 
 type Memory struct {

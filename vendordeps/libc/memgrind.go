@@ -8,7 +8,7 @@
 // program is built with -tags=libc.memgrind the functions MemAuditStart and
 // MemAuditReport can be used to check for memory leaks.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"fmt"
@@ -19,9 +19,9 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/memory"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/memory"
 )
 
 const memgrind = true

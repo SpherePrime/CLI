@@ -3,7 +3,7 @@
 
 package mathutil
 
-import "github.com/dwertyfa288/CLI/vendordeps/remyoudompheng/bigfft"
+import "github.com/SpherePrime/CLI/vendordeps/remyoudompheng/bigfft"
 
 func (f *float) sqr() {
 	f.n = bigfft.Mul(f.n, f.n)

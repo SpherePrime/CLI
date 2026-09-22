@@ -47,7 +47,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Upgrade `github.com/dwertyfa288/CLI/vendordeps/x/crypto` and `github.com/dwertyfa288/CLI/vendordeps/x/net` to address security advisories (CVE fixes)
+- Upgrade `github.com/SpherePrime/CLI/vendordeps/x/crypto` and `github.com/SpherePrime/CLI/vendordeps/x/net` to address security advisories (CVE fixes)
 - Various dependency upgrades
 
 ## [v3.27.1] - 2026-04-24

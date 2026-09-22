@@ -32,7 +32,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/google/go-cmp/cmp"
+	"github.com/SpherePrime/CLI/vendordeps/google/go-cmp/cmp"
 )
 
 // ReplayAPIClient is a client that reads responses from a replay session file.

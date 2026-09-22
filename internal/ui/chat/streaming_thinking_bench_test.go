@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/vendordeps/glamour/v2"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/glamour/v2"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
 
 // buildThinkingBlock generates a realistic long thinking block with

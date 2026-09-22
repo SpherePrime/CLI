@@ -34,14 +34,14 @@ import (
 	"runtime"
 	"unsafe"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver/internal/lifecycler"
-	"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/key"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/mouse"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/paint"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/size"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/geom"
-	"github.com/dwertyfa288/CLI/vendordeps/x/mobile/gl"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver/internal/lifecycler"
+	"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/key"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/mouse"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/paint"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/size"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/geom"
+	"github.com/SpherePrime/CLI/vendordeps/x/mobile/gl"
 )
 
 const useLifecycler = true

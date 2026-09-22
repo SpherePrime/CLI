@@ -14,9 +14,9 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/muesli/cancelreader"
-	"github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/muesli/cancelreader"
+	"github.com/SpherePrime/CLI/vendordeps/rivo/uniseg"
 )
 
 // ErrReaderNotStarted is returned when the reader has not been started yet.

@@ -4,7 +4,7 @@
 
 package cpu
 
-//go:generate go run github.com/dwertyfa288/CLI/vendordeps/x/sys/windows/mkwinsyscall -systemdll=false -output zcpu_windows.go cpu_windows.go
+//go:generate go run github.com/SpherePrime/CLI/vendordeps/x/sys/windows/mkwinsyscall -systemdll=false -output zcpu_windows.go cpu_windows.go
 
 //sys	isProcessorFeaturePresent(ProcessorFeature uint32) (ret bool) = kernel32.IsProcessorFeaturePresent
 

@@ -10,10 +10,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/signin"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/service/signin/types"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/internal/sdk"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/signin"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/service/signin/types"
 )
 
 // ProviderName identifies the login provider.

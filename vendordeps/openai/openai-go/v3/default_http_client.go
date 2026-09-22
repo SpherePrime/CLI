@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/internal/requestconfig"
 )
 
 // defaultResponseHeaderTimeout bounds the time between a fully written request

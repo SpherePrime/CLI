@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go/auth/internal"
+	"github.com/SpherePrime/CLI/vendordeps/go/auth/internal"
 )
 
 const (

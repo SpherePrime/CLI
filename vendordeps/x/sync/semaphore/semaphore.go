@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package semaphore provides a weighted semaphore implementation.
-package semaphore // import "github.com/dwertyfa288/CLI/vendordeps/x/sync/semaphore"
+package semaphore // import "github.com/SpherePrime/CLI/vendordeps/x/sync/semaphore"
 
 import (
 	"container/list"

@@ -23,7 +23,7 @@ package grpclog
 import (
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
 )
 
 // PrefixLogger does logging with a prefix.

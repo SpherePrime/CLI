@@ -8,8 +8,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5"
-	"github.com/dwertyfa288/CLI/vendordeps/go-git/go-billy/v5/helper/polyfill"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5"
+	"github.com/SpherePrime/CLI/vendordeps/go-git/go-billy/v5/helper/polyfill"
 )
 
 // ChrootHelper is a helper to implement billy.Chroot.

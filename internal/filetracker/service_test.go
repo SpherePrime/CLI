@@ -6,8 +6,8 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/dwertyfa288/CLI/internal/db"
-	"github.com/dwertyfa288/CLI/vendordeps/stretchr/testify/require"
+	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
 type testEnv struct {

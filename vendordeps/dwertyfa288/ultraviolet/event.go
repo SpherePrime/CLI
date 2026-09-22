@@ -7,8 +7,8 @@ import (
 	"image/color"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi/kitty"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi/kitty"
 )
 
 // Event represents an input event that can be received from an input source.

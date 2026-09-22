@@ -1,7 +1,7 @@
 # Lip Gloss v2 Upgrade Guide
 
 This guide covers migrating from Lip Gloss v1 (`github.com/dwertyfa288/lipgloss`)
-to Lip Gloss v2 (`github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2`). It is written for both humans and
+to Lip Gloss v2 (`github.com/SpherePrime/CLI/vendordeps/lipgloss/v2`). It is written for both humans and
 LLMs performing automated migrations.
 
 ---
@@ -30,7 +30,7 @@ For the fastest possible upgrade, do these two things:
 ### 1. Use the `compat` package for adaptive/complete colors
 
 ```go
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/compat"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/compat"
 
 // v1
 color := lipgloss.AdaptiveColor{Light: "#f1f1f1", Dark: "#cccccc"}
@@ -44,8 +44,8 @@ customize:
 
 ```go
 import (
-    "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/compat"
-    "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/colorprofile"
+    "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/compat"
+    "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 )
 
 func init() {
@@ -80,13 +80,13 @@ The import path has changed.
 import "github.com/dwertyfa288/lipgloss"
 
 // v2
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 ```
 
 **Install:**
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2
+go get github.com/SpherePrime/CLI/vendordeps/lipgloss/v2
 ```
 
 All subpackages follow the same pattern:
@@ -98,15 +98,15 @@ import "github.com/dwertyfa288/lipgloss/tree"
 import "github.com/dwertyfa288/lipgloss/list"
 
 // v2
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/table"
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/tree"
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/list"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/table"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/list"
 ```
 
 **Search-and-replace pattern:**
 
 ```
-github.com/dwertyfa288/lipgloss → github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2
+github.com/dwertyfa288/lipgloss → github.com/SpherePrime/CLI/vendordeps/lipgloss/v2
 ```
 
 ---
@@ -428,7 +428,7 @@ The import path changes and there are new styling options:
 import "github.com/dwertyfa288/lipgloss/tree"
 
 // v2
-import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2/tree"
+import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
 ```
 
 New methods:
@@ -473,7 +473,7 @@ A side-by-side summary for common patterns:
 
 | Task | v1 | v2 |
 |---|---|---|
-| Import | `"github.com/dwertyfa288/lipgloss"` | `"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"` |
+| Import | `"github.com/dwertyfa288/lipgloss"` | `"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"` |
 | Create style | `lipgloss.NewStyle()` | `lipgloss.NewStyle()` |
 | Hex color | `lipgloss.Color("#ff00ff")` | `lipgloss.Color("#ff00ff")` |
 | ANSI color | `lipgloss.Color("5")` | `lipgloss.Color("5")` or `lipgloss.Magenta` |

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 FOSS contributors of https://github.com/dwertyfa288/CLI/vendordeps/nxadm/tail
+// Copyright (c) 2019 FOSS contributors of https://github.com/SpherePrime/CLI/vendordeps/nxadm/tail
 // Copyright (c) 2015 HPE Software Inc. All rights reserved.
 // Copyright (c) 2013 ActiveState Software Inc. All rights reserved.
 
@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/nxadm/tail/ratelimiter"
-	"github.com/dwertyfa288/CLI/vendordeps/nxadm/tail/util"
-	"github.com/dwertyfa288/CLI/vendordeps/nxadm/tail/watch"
-	"github.com/dwertyfa288/CLI/vendordeps/tomb.v1"
+	"github.com/SpherePrime/CLI/vendordeps/nxadm/tail/ratelimiter"
+	"github.com/SpherePrime/CLI/vendordeps/nxadm/tail/util"
+	"github.com/SpherePrime/CLI/vendordeps/nxadm/tail/watch"
+	"github.com/SpherePrime/CLI/vendordeps/tomb.v1"
 )
 
 var (

@@ -1,11 +1,11 @@
 # mango-pflag
 
-[![Latest Release](https://img.shields.io/github/release/muesli/mango-pflag.svg)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango-pflag/releases)
-[![Build Status](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango-pflag/workflows/build/badge.svg)](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango-pflag/actions)
+[![Latest Release](https://img.shields.io/github/release/muesli/mango-pflag.svg)](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango-pflag/releases)
+[![Build Status](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango-pflag/workflows/build/badge.svg)](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango-pflag/actions)
 [![Go ReportCard](https://goreportcard.com/badge/muesli/mango-pflag)](https://goreportcard.com/report/muesli/mango-pflag)
-[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/dwertyfa288/CLI/vendordeps/muesli/mango-pflag)
+[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/SpherePrime/CLI/vendordeps/muesli/mango-pflag)
 
-pflag adapter for [mango](https://github.com/dwertyfa288/CLI/vendordeps/muesli/mango).
+pflag adapter for [mango](https://github.com/SpherePrime/CLI/vendordeps/muesli/mango).
 
 ## Example
 
@@ -13,10 +13,10 @@ pflag adapter for [mango](https://github.com/dwertyfa288/CLI/vendordeps/muesli/m
 import (
     "fmt"
 
-    "github.com/dwertyfa288/CLI/vendordeps/muesli/mango"
-    mpflag "github.com/dwertyfa288/CLI/vendordeps/muesli/mango-pflag"
-    "github.com/dwertyfa288/CLI/vendordeps/muesli/roff"
-    flag "github.com/dwertyfa288/CLI/vendordeps/spf13/pflag"
+    "github.com/SpherePrime/CLI/vendordeps/muesli/mango"
+    mpflag "github.com/SpherePrime/CLI/vendordeps/muesli/mango-pflag"
+    "github.com/SpherePrime/CLI/vendordeps/muesli/roff"
+    flag "github.com/SpherePrime/CLI/vendordeps/spf13/pflag"
 )
 
 func main() {

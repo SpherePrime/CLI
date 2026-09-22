@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/config"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/config"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal"
 )
 
 // Credentials file schema — credentials/<name>.json. Reads only; all writes

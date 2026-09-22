@@ -3,8 +3,8 @@ package ansi
 import (
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi/parser"
-	"github.com/dwertyfa288/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi/parser"
+	"github.com/SpherePrime/CLI/vendordeps/clipperhouse/uax29/v2/graphemes"
 )
 
 // State represents the state of the ANSI escape sequence parser used by

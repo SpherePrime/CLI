@@ -4,12 +4,12 @@
 
 //go:build unix && !illumos && !(linux && (amd64 || arm64 || loong64 || ppc64le || s390x || riscv64 || 386 || arm)) && !openbsd
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
 
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
 )
 
 // ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);

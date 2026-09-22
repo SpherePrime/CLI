@@ -6,16 +6,16 @@ package trace
 import (
 	"context"
 
-	"github.com/dwertyfa288/CLI/vendordeps/otel/attribute"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/codes"
-	"github.com/dwertyfa288/CLI/vendordeps/otel/trace/embedded"
+	"github.com/SpherePrime/CLI/vendordeps/otel/attribute"
+	"github.com/SpherePrime/CLI/vendordeps/otel/codes"
+	"github.com/SpherePrime/CLI/vendordeps/otel/trace/embedded"
 )
 
 // NewNoopTracerProvider returns an implementation of TracerProvider that
 // performs no operations. The Tracer and Spans created from the returned
 // TracerProvider also perform no operations.
 //
-// Deprecated: Use [github.com/dwertyfa288/CLI/vendordeps/otel/trace/noop.NewTracerProvider]
+// Deprecated: Use [github.com/SpherePrime/CLI/vendordeps/otel/trace/noop.NewTracerProvider]
 // instead.
 func NewNoopTracerProvider() TracerProvider {
 	return noopTracerProvider{}

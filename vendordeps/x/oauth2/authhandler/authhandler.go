@@ -10,7 +10,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2"
 )
 
 const (

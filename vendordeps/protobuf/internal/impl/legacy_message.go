@@ -10,13 +10,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/descopts"
-	ptag "github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/encoding/tag"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/errors"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/filedesc"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/internal/strs"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/reflect/protoreflect"
-	"github.com/dwertyfa288/CLI/vendordeps/protobuf/runtime/protoiface"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/descopts"
+	ptag "github.com/SpherePrime/CLI/vendordeps/protobuf/internal/encoding/tag"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/errors"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/filedesc"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/internal/strs"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/reflect/protoreflect"
+	"github.com/SpherePrime/CLI/vendordeps/protobuf/runtime/protoiface"
 )
 
 // legacyWrapMessage wraps v as a protoreflect.Message,

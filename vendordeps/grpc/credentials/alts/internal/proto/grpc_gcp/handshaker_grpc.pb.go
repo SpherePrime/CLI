@@ -25,9 +25,9 @@ package grpc_gcp
 
 import (
 	context "context"
-	grpc "github.com/dwertyfa288/CLI/vendordeps/grpc"
-	codes "github.com/dwertyfa288/CLI/vendordeps/grpc/codes"
-	status "github.com/dwertyfa288/CLI/vendordeps/grpc/status"
+	grpc "github.com/SpherePrime/CLI/vendordeps/grpc"
+	codes "github.com/SpherePrime/CLI/vendordeps/grpc/codes"
+	status "github.com/SpherePrime/CLI/vendordeps/grpc/status"
 )
 
 // This is a compile-time assertion to ensure that this generated file

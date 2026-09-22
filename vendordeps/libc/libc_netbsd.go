@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package libc // import "github.com/dwertyfa288/CLI/vendordeps/libc"
+package libc // import "github.com/SpherePrime/CLI/vendordeps/libc"
 
 import (
 	"fmt"
@@ -16,24 +16,24 @@ import (
 	gotime "time"
 	"unsafe"
 
-	guuid "github.com/dwertyfa288/CLI/vendordeps/google/uuid"
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/unix"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/errno"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fcntl"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/fts"
-	gonetdb "github.com/dwertyfa288/CLI/vendordeps/libc/honnef.co/go/netdb"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/langinfo"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/limits"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/netdb"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/netinet/in"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/stdio"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/socket"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/stat"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/sys/types"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/termios"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/time"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/unistd"
-	"github.com/dwertyfa288/CLI/vendordeps/libc/uuid"
+	guuid "github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/unix"
+	"github.com/SpherePrime/CLI/vendordeps/libc/errno"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fcntl"
+	"github.com/SpherePrime/CLI/vendordeps/libc/fts"
+	gonetdb "github.com/SpherePrime/CLI/vendordeps/libc/honnef.co/go/netdb"
+	"github.com/SpherePrime/CLI/vendordeps/libc/langinfo"
+	"github.com/SpherePrime/CLI/vendordeps/libc/limits"
+	"github.com/SpherePrime/CLI/vendordeps/libc/netdb"
+	"github.com/SpherePrime/CLI/vendordeps/libc/netinet/in"
+	"github.com/SpherePrime/CLI/vendordeps/libc/stdio"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/socket"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/stat"
+	"github.com/SpherePrime/CLI/vendordeps/libc/sys/types"
+	"github.com/SpherePrime/CLI/vendordeps/libc/termios"
+	"github.com/SpherePrime/CLI/vendordeps/libc/time"
+	"github.com/SpherePrime/CLI/vendordeps/libc/unistd"
+	"github.com/SpherePrime/CLI/vendordeps/libc/uuid"
 )
 
 var (
@@ -1869,7 +1869,7 @@ func Xmmap(t *TLS, addr uintptr, length types.Size_t, prot, flags, fd int32, off
 	// returns an unaligned/unbacked pointer that faults on first access (e.g.
 	// the SQLite WAL-index shm). On 32-bit (netbsd/arm) off_t additionally spans
 	// two argument words, so pass offset>>32 as the high word; it is read on
-	// 32-bit and ignored on 64-bit. Matches github.com/dwertyfa288/CLI/vendordeps/x/sys/unix's own per-arch
+	// 32-bit and ignored on 64-bit. Matches github.com/SpherePrime/CLI/vendordeps/x/sys/unix's own per-arch
 	// netbsd mmap.
 	data, _, err := unix.Syscall9(unix.SYS_MMAP, addr, uintptr(length), uintptr(prot), uintptr(flags), uintptr(fd), 0, uintptr(offset), uintptr(offset>>32), 0)
 	if err != 0 {

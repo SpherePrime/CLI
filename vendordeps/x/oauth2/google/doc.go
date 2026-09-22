@@ -24,7 +24,7 @@
 //
 // # Workload and Workforce Identity Federation
 //
-// For information on how to use Workload and Workforce Identity Federation, see [github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google/externalaccount].
+// For information on how to use Workload and Workforce Identity Federation, see [github.com/SpherePrime/CLI/vendordeps/x/oauth2/google/externalaccount].
 //
 // # Credentials
 //
@@ -50,4 +50,4 @@
 // same as the one obtained from the oauth2.Config returned from ConfigFromJSON or
 // JWTConfigFromJSON, but the Credentials may contain additional information
 // that is useful is some circumstances.
-package google // import "github.com/dwertyfa288/CLI/vendordeps/x/oauth2/google"
+package google // import "github.com/SpherePrime/CLI/vendordeps/x/oauth2/google"

@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/retry"
-	awshttp "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/aws/transport/http"
-	internalconfig "github.com/dwertyfa288/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds/internal/config"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/logging"
-	"github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/middleware"
-	smithyhttp "github.com/dwertyfa288/CLI/vendordeps/aws/smithy-go/transport/http"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws"
+	"github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/retry"
+	awshttp "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/aws/transport/http"
+	internalconfig "github.com/SpherePrime/CLI/vendordeps/aws/aws-sdk-go-v2/feature/ec2/imds/internal/config"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/logging"
+	"github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/middleware"
+	smithyhttp "github.com/SpherePrime/CLI/vendordeps/aws/smithy-go/transport/http"
 )
 
 // ServiceID provides the unique name of this API client

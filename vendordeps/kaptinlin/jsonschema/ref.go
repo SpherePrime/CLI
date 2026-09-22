@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/kaptinlin/jsonpointer"
+	"github.com/SpherePrime/CLI/vendordeps/kaptinlin/jsonpointer"
 )
 
 // resolveRef resolves a reference to another schema, either locally or globally, supporting both $ref and $dynamicRef.

@@ -14,7 +14,7 @@ security updates.
 
 If you discover a security vulnerability in go-runewidth, please report it
 privately via GitHub's "Report a vulnerability" feature on the Security tab
-of the repository (https://github.com/dwertyfa288/CLI/vendordeps/mattn/go-runewidth/security), or by
+of the repository (https://github.com/SpherePrime/CLI/vendordeps/mattn/go-runewidth/security), or by
 emailing the maintainer at mattn.jp@gmail.com.
 
 Please include a description of the issue, reproduction steps, and the

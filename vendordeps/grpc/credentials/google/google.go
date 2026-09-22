@@ -23,11 +23,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/alts"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/oauth"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/grpclog"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/alts"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/oauth"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/grpclog"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal"
 )
 
 const defaultCloudPlatformScope = "https://www.googleapis.com/auth/cloud-platform"

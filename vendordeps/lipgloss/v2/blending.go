@@ -5,7 +5,7 @@ import (
 	"math"
 	"slices"
 
-	"github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
+	"github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful"
 )
 
 // Blend1D blends a series of colors together in one linear dimension using multiple

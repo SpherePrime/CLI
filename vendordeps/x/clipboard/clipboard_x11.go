@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	x11wire "github.com/dwertyfa288/CLI/vendordeps/x/x11"
+	x11wire "github.com/SpherePrime/CLI/vendordeps/x/x11"
 )
 
 // x11Deadline is when a read should give up: the caller's deadline when it has

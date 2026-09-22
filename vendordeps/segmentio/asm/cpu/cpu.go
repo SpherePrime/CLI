@@ -2,9 +2,9 @@
 package cpu
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu/arm"
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu/arm64"
-	"github.com/dwertyfa288/CLI/vendordeps/segmentio/asm/cpu/x86"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu/arm"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu/arm64"
+	"github.com/SpherePrime/CLI/vendordeps/segmentio/asm/cpu/x86"
 )
 
 var (

@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dlclark/regexp2/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dlclark/regexp2/v2"
 )
 
 // Serialisation of Chroma rules to XML. The format is:

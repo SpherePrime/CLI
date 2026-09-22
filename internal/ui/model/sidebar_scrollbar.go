@@ -1,7 +1,7 @@
 package model
 
 import (
-	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 // handleSidebarScrollbarMouseDown grabs the sidebar thumb when the press at

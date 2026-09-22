@@ -15,7 +15,7 @@ Installation
 
 .. code-block:: sh
 
-   $ go get -u github.com/dwertyfa288/CLI/vendordeps/yosida95/uritemplate/v3
+   $ go get -u github.com/SpherePrime/CLI/vendordeps/yosida95/uritemplate/v3
 
 Documentation
 ~~~~~~~~~~~~~

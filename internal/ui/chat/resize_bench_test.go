@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dwertyfa288/CLI/internal/db"
-	"github.com/dwertyfa288/CLI/internal/message"
-	"github.com/dwertyfa288/CLI/internal/ui/list"
-	"github.com/dwertyfa288/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
 
 // BenchmarkResizeSession reproduces the resize re-render path over a real

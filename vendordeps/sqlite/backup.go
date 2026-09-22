@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package sqlite // import "github.com/dwertyfa288/CLI/vendordeps/sqlite"
+package sqlite // import "github.com/SpherePrime/CLI/vendordeps/sqlite"
 
 import (
 	"database/sql/driver"
 
-	sqlite3 "github.com/dwertyfa288/CLI/vendordeps/sqlite/lib"
+	sqlite3 "github.com/SpherePrime/CLI/vendordeps/sqlite/lib"
 )
 
 // Backup object is used to manage progress and cleanup an online backup. It

@@ -5,8 +5,8 @@ import (
 	"image/color"
 	"io"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/lucasb-eyer/go-colorful"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lucasb-eyer/go-colorful"
 )
 
 var (

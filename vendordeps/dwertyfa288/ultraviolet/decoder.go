@@ -12,10 +12,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi"
-	"github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/ansi/parser"
-	xwindows "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/x/windows"
-	"github.com/dwertyfa288/CLI/vendordeps/rivo/uniseg"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi/parser"
+	xwindows "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/windows"
+	"github.com/SpherePrime/CLI/vendordeps/rivo/uniseg"
 )
 
 // Flags to control the behavior of the parser.

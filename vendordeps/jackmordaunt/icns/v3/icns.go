@@ -7,7 +7,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/dwertyfa288/CLI/vendordeps/nfnt/resize"
+	"github.com/SpherePrime/CLI/vendordeps/nfnt/resize"
 )
 
 // Encoder encodes ICNS files from a source image.

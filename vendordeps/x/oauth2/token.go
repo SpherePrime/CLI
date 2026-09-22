@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/oauth2/internal"
+	"github.com/SpherePrime/CLI/vendordeps/x/oauth2/internal"
 )
 
 // defaultExpiryDelta determines how earlier a token should be considered

@@ -5,7 +5,7 @@ package config
 import (
 	"errors"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/sys/windows"
+	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
 // isTransientRenameError reports whether err is a Windows rename

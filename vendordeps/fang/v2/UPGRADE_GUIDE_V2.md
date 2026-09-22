@@ -8,13 +8,13 @@ For most users, upgrading is as simple as updating your import path:
 
 ```diff
 - import "github.com/dwertyfa288/fang"
-+ import "github.com/dwertyfa288/CLI/vendordeps/fang/v2"
++ import "github.com/SpherePrime/CLI/vendordeps/fang/v2"
 ```
 
 Then update your `go.mod`:
 
 ```bash
-go get github.com/dwertyfa288/CLI/vendordeps/fang/v2@latest
+go get github.com/SpherePrime/CLI/vendordeps/fang/v2@latest
 ```
 
 That's it! For most applications, no other changes are needed.
@@ -30,7 +30,7 @@ The module path has changed to use the Charm vanity domain and includes a v2 maj
 import "github.com/dwertyfa288/fang"
 
 // After
-import "github.com/dwertyfa288/CLI/vendordeps/fang/v2"
+import "github.com/SpherePrime/CLI/vendordeps/fang/v2"
 ```
 
 ### Lip Gloss v2
@@ -39,7 +39,7 @@ Fang v2 uses Lip Gloss v2, which has its own breaking changes. If you're using c
 
 ```diff
 - import "github.com/dwertyfa288/lipgloss"
-+ import "github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
++ import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 ```
 
 See the [Lip Gloss v2 upgrade guide][lg-upgrade] for full details on Lip Gloss changes.
@@ -88,12 +88,12 @@ On Windows, VT processing is now automatically enabled. You don't need to worry 
 1. **Update your imports**:
    ```bash
    # Use your favorite tool to update imports
-   gofmt -w -r 'github.com/dwertyfa288/fang -> github.com/dwertyfa288/CLI/vendordeps/fang/v2' .
+   gofmt -w -r 'github.com/dwertyfa288/fang -> github.com/SpherePrime/CLI/vendordeps/fang/v2' .
    ```
 
 2. **Update go.mod**:
    ```bash
-   go get github.com/dwertyfa288/CLI/vendordeps/fang/v2@latest
+   go get github.com/SpherePrime/CLI/vendordeps/fang/v2@latest
    go mod tidy
    ```
 

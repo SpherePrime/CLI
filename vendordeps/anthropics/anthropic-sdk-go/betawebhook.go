@@ -9,12 +9,12 @@ import (
 	"slices"
 	"time"
 
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/respjson"
-	"github.com/dwertyfa288/CLI/vendordeps/anthropics/anthropic-sdk-go/shared/constant"
-	standardwebhooks "github.com/dwertyfa288/CLI/vendordeps/standard-webhooks/standard-webhooks/libraries/go"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/apijson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/internal/requestconfig"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/option"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/packages/respjson"
+	"github.com/SpherePrime/CLI/vendordeps/anthropics/anthropic-sdk-go/shared/constant"
+	standardwebhooks "github.com/SpherePrime/CLI/vendordeps/standard-webhooks/standard-webhooks/libraries/go"
 )
 
 // BetaWebhookService contains methods and other services that help with

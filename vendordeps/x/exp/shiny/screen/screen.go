@@ -7,7 +7,7 @@
 //
 // Screens are not created directly. Instead, driver packages provide access to
 // the screen through a Main function that is designed to be called by the
-// program's main function. The github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver package provides
+// program's main function. The github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver package provides
 // the default driver for the system, such as the X11 driver for desktop Linux,
 // but other drivers, such as the OpenGL driver, can be explicitly invoked by
 // calling that driver's Main function. To use the default driver:
@@ -15,9 +15,9 @@
 //	package main
 //
 //	import (
-//		"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/driver"
-//		"github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
-//		"github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/lifecycle"
+//		"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/driver"
+//		"github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
+//		"github.com/SpherePrime/CLI/vendordeps/x/mobile/event/lifecycle"
 //	)
 //
 //	func main() {
@@ -52,7 +52,7 @@
 // implementation will generally work only with that driver's Buffer
 // implementation, and will not work with an arbitrary type that happens to
 // implement the Buffer methods.
-package screen // import "github.com/dwertyfa288/CLI/vendordeps/x/exp/shiny/screen"
+package screen // import "github.com/SpherePrime/CLI/vendordeps/x/exp/shiny/screen"
 
 import (
 	"image"
@@ -60,7 +60,7 @@ import (
 	"image/draw"
 	"unicode/utf8"
 
-	"github.com/dwertyfa288/CLI/vendordeps/x/image/math/f64"
+	"github.com/SpherePrime/CLI/vendordeps/x/image/math/f64"
 )
 
 // TODO: specify image format (Alpha or Gray, not just RGBA) for NewBuffer
@@ -190,7 +190,7 @@ type EventDeque interface {
 	//	- key.Event
 	//	- mouse.Event
 	//	- touch.Event
-	// from the github.com/dwertyfa288/CLI/vendordeps/x/mobile/event/... packages. Other packages may send
+	// from the github.com/SpherePrime/CLI/vendordeps/x/mobile/event/... packages. Other packages may send
 	// events, of those types above or of other types, via Send or SendFirst.
 	NextEvent() interface{}
 

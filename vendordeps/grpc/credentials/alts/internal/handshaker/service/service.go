@@ -24,10 +24,10 @@ import (
 	"sync"
 	"time"
 
-	grpc "github.com/dwertyfa288/CLI/vendordeps/grpc"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/credentials/insecure"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/internal/envconfig"
-	"github.com/dwertyfa288/CLI/vendordeps/grpc/keepalive"
+	grpc "github.com/SpherePrime/CLI/vendordeps/grpc"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/credentials/insecure"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/internal/envconfig"
+	"github.com/SpherePrime/CLI/vendordeps/grpc/keepalive"
 )
 
 var (

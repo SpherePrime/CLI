@@ -5,11 +5,11 @@
 //go:generate go run gen.go gen_trieval.go
 
 // Package cases provides general and language-specific case mappers.
-package cases // import "github.com/dwertyfa288/CLI/vendordeps/x/text/cases"
+package cases // import "github.com/SpherePrime/CLI/vendordeps/x/text/cases"
 
 import (
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/language"
-	"github.com/dwertyfa288/CLI/vendordeps/x/text/transform"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/transform"
 )
 
 // References:
@@ -88,7 +88,7 @@ func Title(t language.Tag, opts ...Option) Caser {
 //
 // Case folding does not normalize the input and may not preserve a normal form.
 // Use the collate or search package for more convenient and linguistically
-// sound comparisons. Use github.com/dwertyfa288/CLI/vendordeps/x/text/secure/precis for string comparisons
+// sound comparisons. Use github.com/SpherePrime/CLI/vendordeps/x/text/secure/precis for string comparisons
 // where security aspects are a concern.
 func Fold(opts ...Option) Caser {
 	return Caser{makeFold(getOpts(opts...))}

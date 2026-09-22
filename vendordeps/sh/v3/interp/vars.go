@@ -16,9 +16,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/expand"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/internal"
-	"github.com/dwertyfa288/CLI/vendordeps/sh/v3/syntax"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/expand"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/internal"
+	"github.com/SpherePrime/CLI/vendordeps/sh/v3/syntax"
 )
 
 func newOverlayEnviron(parent expand.Environ, background bool) *overlayEnviron {
