@@ -155,6 +155,29 @@ func (m *Manager) SubscribeEvents(ctx context.Context) <-chan pubsub.Event[Event
 	return m.broker.Subscribe(ctx)
 }
 
+// ReloadInput carries a freshly discovered skill set for an atomic
+// Manager update.
+type ReloadInput struct {
+	AllSkills    []*Skill
+	ActiveSkills []*Skill
+	States       []*SkillState
+}
+
+// Reload atomically replaces the manager's skill snapshot and publishes
+// a discovery event, so subscribers observe the new set in one step.
+// The caller computes the input via DiscoverFromConfig and the same
+// resolved paths / working dir that discovery used.
+func (m *Manager) Reload(in ReloadInput, resolvedPaths []string, workingDir string) {
+	m.mu.Lock()
+	m.allSkills = in.AllSkills
+	m.activeSkills = in.ActiveSkills
+	m.states = cloneStates(in.States)
+	m.resolvedPaths = resolvedPaths
+	m.workingDir = workingDir
+	m.mu.Unlock()
+	m.PublishStates(in.States)
+}
+
 // Shutdown releases broker resources.
 func (m *Manager) Shutdown() {
 	if m.broker != nil {

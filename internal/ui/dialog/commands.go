@@ -462,6 +462,8 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "switch_session", c.com.L("cmd.sessions"), "ctrl+s", ActionOpenDialog{SessionsID}),
 		NewCommandItem(c.com.Styles, "switch_model", c.com.L("cmd.switch_model"), "ctrl+l", ActionOpenDialog{ModelsID}),
 		NewCommandItem(c.com.Styles, "model_settings", c.com.L("cmd.model_settings"), "", ActionOpenDialog{ModelsConfigID}),
+		NewCommandItem(c.com.Styles, "status", c.com.L("cmd.status"), "", ActionOpenDialog{StatusID}),
+		NewCommandItem(c.com.Styles, "restart_systems", c.com.L("cmd.restart_systems"), "", ActionRestartSystems{}).WithAliases("restart", "reload"),
 	}
 
 	// Only show compact command if there's an active session

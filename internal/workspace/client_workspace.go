@@ -519,6 +519,12 @@ func (w *ClientWorkspace) LSPGetDiagnosticCounts(name string) lsp.DiagnosticCoun
 	return counts
 }
 
+// RestartSystems asks the server to re-initialize LSP, MCP, and skill
+// discovery for this workspace.
+func (w *ClientWorkspace) RestartSystems(ctx context.Context) error {
+	return w.client.RestartSystems(ctx, w.workspaceID())
+}
+
 // -- Config (read-only) --
 
 func (w *ClientWorkspace) Config() *config.Config {

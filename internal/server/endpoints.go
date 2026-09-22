@@ -247,6 +247,13 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(404, 500).
 			Handle(c.handlePostWorkspaceLSPStopAll),
 
+		apigen.Post("/v1/workspaces/{id}/systems/restart").
+			Summary("Restart LSP, MCP, and skill discovery for a workspace").
+			Tags("systems").
+			PathParam("id", "Workspace ID").
+			Fails(404, 500).
+			Handle(c.handlePostWorkspaceSystemsRestart),
+
 		apigen.Get("/v1/workspaces/{id}/permissions/skip").
 			Summary("Get skip permissions status").
 			Tags("permissions").

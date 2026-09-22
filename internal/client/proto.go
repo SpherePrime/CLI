@@ -311,6 +311,20 @@ func (c *Client) GetLSPs(ctx context.Context, id string) (map[string]proto.LSPCl
 	return lsps, nil
 }
 
+// RestartSystems re-initializes LSP, MCP, and skill discovery on the
+// server side.
+func (c *Client) RestartSystems(ctx context.Context, id string) error {
+	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/systems/restart", id), nil, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to restart systems: %w", err)
+	}
+	rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to restart systems: status code %d", rsp.StatusCode)
+	}
+	return nil
+}
+
 // MCPGetStates retrieves the MCP client states for a workspace.
 func (c *Client) MCPGetStates(ctx context.Context, id string) (map[string]proto.MCPClientInfo, error) {
 	rsp, err := c.get(ctx, fmt.Sprintf("/workspaces/%s/mcp/states", id), nil, nil)

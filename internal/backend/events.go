@@ -9,6 +9,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/app"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/skills"
 )
 
 // SubscribeEvents returns a per-caller event channel for a workspace.
@@ -90,6 +91,30 @@ func (b *Backend) LSPStopAll(ctx context.Context, workspaceID string) error {
 	}
 
 	ws.LSPManager.StopAll(ctx)
+	return nil
+}
+
+// RestartSystems re-initializes a workspace's LSP clients, MCP servers,
+// and skill discovery without a full process restart.
+func (b *Backend) RestartSystems(ctx context.Context, workspaceID string) error {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+
+	ws.LSPManager.StopAll(ctx)
+	mcptools.Reinitialize(ctx, ws.Cfg)
+
+	if ws.Skills != nil {
+		disc := skillsDiscoveryConfig(ws.Cfg)
+		all, active, states := skills.DiscoverFromConfig(disc)
+		ws.Skills.Reload(skills.ReloadInput{
+			AllSkills:    all,
+			ActiveSkills: active,
+			States:       states,
+		}, disc.ResolvePaths(), disc.WorkingDir)
+	}
+
 	return nil
 }
 

@@ -465,6 +465,17 @@ func (c *controllerV1) handlePostWorkspaceLSPStart(w http.ResponseWriter, r *htt
 	w.WriteHeader(http.StatusOK)
 }
 
+// handlePostWorkspaceSystemsRestart re-initializes LSP, MCP, and skill
+// discovery for a workspace.
+func (c *controllerV1) handlePostWorkspaceSystemsRestart(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := c.backend.RestartSystems(r.Context(), id); err != nil {
+		c.handleError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // handlePostWorkspaceLSPStopAll stops all LSP servers.
 func (c *controllerV1) handlePostWorkspaceLSPStopAll(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")

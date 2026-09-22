@@ -2177,6 +2177,24 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			return nil
 		})
 		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionRestartSystems:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		cmds = append(cmds, func() tea.Msg {
+			if err := m.com.Workspace.RestartSystems(context.Background()); err != nil {
+				return util.CmdHandler(util.NewInfoMsg(m.com.LSprintf("info.systems_restart_failed", err.Error())))()
+			}
+			return util.CmdHandler(util.NewInfoMsg(m.com.L("info.systems_restarted")))()
+		})
+		if cmd := m.handleStateChanged(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		if cmd := m.dispatchLSPRefresh(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	case dialog.ActionRefreshStatus:
+		if s, ok := m.dialog.Dialog(dialog.StatusID).(*dialog.Status); ok {
+			s.SetData(m.buildStatusData())
+		}
 	case dialog.ActionToggleHelp:
 		m.status.ToggleHelp()
 		m.dialog.CloseDialog(dialog.CommandsID)
@@ -5071,6 +5089,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openQuitDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.StatusID:
+		if cmd := m.openStatusDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	default:
 		// Unknown dialog
 		break
@@ -5089,6 +5111,40 @@ func (m *UI) openQuitDialog() tea.Cmd {
 	quitDialog := dialog.NewQuit(m.com)
 	m.dialog.OpenDialog(quitDialog)
 	return nil
+}
+
+// openStatusDialog opens the status dialog showing usage and server states.
+func (m *UI) openStatusDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.StatusID) {
+		m.dialog.BringToFront(dialog.StatusID)
+		return nil
+	}
+
+	data := m.buildStatusData()
+	statusDialog := dialog.NewStatus(m.com, data)
+	m.dialog.OpenDialog(statusDialog)
+	return nil
+}
+
+// buildStatusData assembles the data for the status dialog from the
+// memoized LSP/MCP states and the current session.
+func (m *UI) buildStatusData() dialog.StatusData {
+	var session *session.Session
+	if m.session != nil {
+		session = m.session
+	}
+
+	diags := make(map[string]lsp.DiagnosticCounts, len(m.lspStates))
+	for name := range m.lspStates {
+		diags[name] = m.lspDiagnostics[name]
+	}
+
+	return dialog.StatusData{
+		Session:  session,
+		MCPStates: m.mcpStates,
+		LSPStates: m.lspStates,
+		LSPDiags:  diags,
+	}
 }
 
 // openModelsDialog opens the models dialog.

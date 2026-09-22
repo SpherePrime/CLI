@@ -197,6 +197,12 @@ type Workspace interface {
 	LSPGetStates() map[string]LSPClientInfo
 	LSPGetDiagnosticCounts(name string) lsp.DiagnosticCounts
 
+	// Systems lifecycle.
+	// RestartSystems re-initializes the workspace's MCP servers, LSP clients,
+	// and skill discovery, so configuration or environment changes take
+	// effect without a full process restart.
+	RestartSystems(ctx context.Context) error
+
 	// Config (read-only data)
 	Config() *config.Config
 	WorkingDir() string

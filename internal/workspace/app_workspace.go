@@ -303,6 +303,49 @@ func (w *AppWorkspace) ListSessionHistory(ctx context.Context, sessionID string)
 
 // -- LSP --
 
+// RestartSystems stops LSP clients, reconciles MCP servers, and
+// re-runs skill discovery.
+func (w *AppWorkspace) RestartSystems(ctx context.Context) error {
+	if w.app.LSPManager != nil {
+		w.app.LSPManager.StopAll(ctx)
+	}
+
+	mcptools.Reinitialize(ctx, w.store)
+
+	if w.app.Skills != nil {
+		disc := w.skillsDiscoveryConfig()
+		all, active, states := skills.DiscoverFromConfig(disc)
+		w.app.Skills.Reload(skills.ReloadInput{
+			AllSkills:    all,
+			ActiveSkills: active,
+			States:       states,
+		}, disc.ResolvePaths(), disc.WorkingDir)
+	}
+
+	return nil
+}
+
+// skillsDiscoveryConfig adapts the config store to the inputs
+// skills.DiscoverFromConfig expects.
+func (w *AppWorkspace) skillsDiscoveryConfig() skills.DiscoveryConfig {
+	opts := w.store.Config().Options
+	var paths, disabled []string
+	if opts != nil {
+		paths = opts.SkillsPaths
+		disabled = opts.DisabledSkills
+	}
+	var resolver func(string) (string, error)
+	if r := w.store.Resolver(); r != nil {
+		resolver = r.ResolveValue
+	}
+	return skills.DiscoveryConfig{
+		SkillsPaths:    paths,
+		DisabledSkills: disabled,
+		WorkingDir:     w.store.WorkingDir(),
+		Resolver:       resolver,
+	}
+}
+
 func (w *AppWorkspace) LSPStart(ctx context.Context, path string) {
 	w.app.LSPManager.Start(ctx, path)
 }
