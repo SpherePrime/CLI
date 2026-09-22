@@ -101,7 +101,7 @@ func NewCommands(com *common.Common, sessionID string, hasSession, hasTodos, has
 
 	c.input = textinput.New()
 	c.input.SetVirtualCursor(false)
-	c.input.Placeholder = "Type to filter"
+	c.input.Placeholder = c.com.L("cmd.type_to_filter")
 	c.input.SetStyles(com.Styles.TextInput)
 	c.input.Focus()
 
@@ -448,15 +448,15 @@ func (c *Commands) setCommandItems(commandType CommandType) {
 // defaultCommands returns the list of default system commands.
 func (c *Commands) defaultCommands() []*CommandItem {
 	commands := []*CommandItem{
-		NewCommandItem(c.com.Styles, "new_session", "New Session", "ctrl+n", ActionNewSession{}).WithAliases("clear"),
-		NewCommandItem(c.com.Styles, "switch_session", "Sessions", "ctrl+s", ActionOpenDialog{SessionsID}),
-		NewCommandItem(c.com.Styles, "switch_model", "Switch Model", "ctrl+l", ActionOpenDialog{ModelsID}),
-		NewCommandItem(c.com.Styles, "model_settings", "Model Settings", "", ActionOpenDialog{ModelsConfigID}),
+		NewCommandItem(c.com.Styles, "new_session", c.com.L("cmd.new_session"), "ctrl+n", ActionNewSession{}).WithAliases("clear"),
+		NewCommandItem(c.com.Styles, "switch_session", c.com.L("cmd.sessions"), "ctrl+s", ActionOpenDialog{SessionsID}),
+		NewCommandItem(c.com.Styles, "switch_model", c.com.L("cmd.switch_model"), "ctrl+l", ActionOpenDialog{ModelsID}),
+		NewCommandItem(c.com.Styles, "model_settings", c.com.L("cmd.model_settings"), "", ActionOpenDialog{ModelsConfigID}),
 	}
 
 	// Only show compact command if there's an active session
 	if c.hasSession {
-		commands = append(commands, NewCommandItem(c.com.Styles, "summarize", "Summarize Session", "", ActionSummarize{SessionID: c.sessionID}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "summarize", c.com.L("cmd.summarize_session"), "", ActionSummarize{SessionID: c.sessionID}))
 	}
 
 	// Add reasoning toggle for models that support it
@@ -469,16 +469,16 @@ func (c *Commands) defaultCommands() []*CommandItem {
 
 			// Anthropic models: thinking toggle
 			if model.CanReason && len(model.ReasoningLevels) == 0 {
-				status := "Enable"
+				status := c.com.L("cmd.enable_thinking_mode")
 				if selectedModel.Think {
-					status = "Disable"
+					status = c.com.L("cmd.disable_thinking_mode")
 				}
-				commands = append(commands, NewCommandItem(c.com.Styles, "toggle_thinking", status+" Thinking Mode", "", ActionToggleThinking{}))
+				commands = append(commands, NewCommandItem(c.com.Styles, "toggle_thinking", status+" "+c.com.L("cmd.thinking_suffix"), "", ActionToggleThinking{}))
 			}
 
 			// OpenAI models: reasoning effort dialog
 			if len(model.ReasoningLevels) > 0 {
-				commands = append(commands, NewCommandItem(c.com.Styles, "select_reasoning_effort", "Select Reasoning Effort", "", ActionOpenDialog{
+				commands = append(commands, NewCommandItem(c.com.Styles, "select_reasoning_effort", c.com.L("cmd.select_reasoning_effort"), "", ActionOpenDialog{
 					DialogID: ReasoningID,
 				}))
 			}
@@ -486,14 +486,14 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	}
 	// Only show toggle compact mode command if window width is larger than compact breakpoint (120)
 	if c.windowWidth >= sidebarCompactModeBreakpoint && c.hasSession {
-		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_sidebar", "Toggle Sidebar", "", ActionToggleCompactMode{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_sidebar", c.com.L("cmd.toggle_sidebar"), "", ActionToggleCompactMode{}))
 	}
 	if c.hasSession {
 		cfgPrime := c.com.Config()
 		agentCfg := cfgPrime.Agents[config.AgentCoder]
 		model := cfgPrime.GetModelByType(agentCfg.Model)
 		if model != nil && model.SupportsImages {
-			commands = append(commands, NewCommandItem(c.com.Styles, "file_picker", "Open File Picker", "ctrl+f", ActionOpenDialog{
+			commands = append(commands, NewCommandItem(c.com.Styles, "file_picker", c.com.L("cmd.open_file_picker"), "ctrl+f", ActionOpenDialog{
 				DialogID: FilePickerID,
 			}))
 		}
@@ -505,68 +505,71 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	// because os.Getenv does IO is breaks the TEA paradigm and is generally an
 	// antipattern.
 	if os.Getenv("EDITOR") != "" {
-		commands = append(commands, NewCommandItem(c.com.Styles, "open_external_editor", "Open External Editor", "ctrl+o", ActionExternalEditor{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "open_external_editor", c.com.L("cmd.open_external_editor"), "ctrl+o", ActionExternalEditor{}))
 	}
 
 	// Add Docker MCP command if available and not already enabled.
 	if !cfg.IsDockerMCPEnabled() && c.dockerMCPAvailable != nil && *c.dockerMCPAvailable {
-		commands = append(commands, NewCommandItem(c.com.Styles, "enable_docker_mcp", "Enable Docker MCP Catalog", "", ActionEnableDockerMCP{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "enable_docker_mcp", c.com.L("cmd.enable_docker_mcp"), "", ActionEnableDockerMCP{}))
 	}
 
 	// Add disable Docker MCP command if it's currently enabled
 	if cfg.IsDockerMCPEnabled() {
-		commands = append(commands, NewCommandItem(c.com.Styles, "disable_docker_mcp", "Disable Docker MCP Catalog", "", ActionDisableDockerMCP{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "disable_docker_mcp", c.com.L("cmd.disable_docker_mcp"), "", ActionDisableDockerMCP{}))
 	}
 
 	if c.hasTodos || c.hasQueue {
 		var label string
 		switch {
 		case c.hasTodos && c.hasQueue:
-			label = "Toggle To-Dos/Queue"
+			label = c.com.L("cmd.toggle_todos_queue")
 		case c.hasQueue:
-			label = "Toggle Queue"
+			label = c.com.L("cmd.toggle_queue")
 		default:
-			label = "Toggle To-Dos"
+			label = c.com.L("cmd.toggle_todos")
 		}
 		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_pills", label, "ctrl+t", ActionTogglePills{}))
 	}
 
 	// Add a command for selecting notification style via picker dialog.
-	notificationLabel := "Notification Style"
+	notificationLabel := c.com.L("cmd.notification_style")
 	commands = append(commands, NewCommandItem(c.com.Styles, "select_notifications", notificationLabel, "", ActionOpenDialog{DialogID: NotificationsID}))
 
-	smartToolsLabel := "Enable Smart Tools Mode"
+	// Add a command for selecting the UI language via picker dialog.
+	commands = append(commands, NewCommandItem(c.com.Styles, "select_language", c.com.L("cmd.language"), "", ActionOpenDialog{DialogID: LanguageID}))
+
+	smartToolsLabel := c.com.L("cmd.enable_smart_tools")
 	if cfg != nil && cfg.Options != nil && cfg.Options.SmartTools {
-		smartToolsLabel = "Disable Smart Tools Mode"
+		smartToolsLabel = c.com.L("cmd.disable_smart_tools")
 	}
 
 	commands = append(
 		commands,
-		NewCommandItem(c.com.Styles, "toggle_yolo", "Toggle Yolo Mode", "ctrl+y", ActionToggleYoloMode{}),
+		NewCommandItem(c.com.Styles, "toggle_yolo", c.com.L("cmd.toggle_yolo_mode"), "ctrl+y", ActionToggleYoloMode{}),
 		NewCommandItem(c.com.Styles, "toggle_smart_tools", smartToolsLabel, "", ActionToggleSmartTools{}).WithAliases("smart tools"),
-		NewCommandItem(c.com.Styles, "toggle_help", "Toggle Help", "ctrl+g", ActionToggleHelp{}),
-		NewCommandItem(c.com.Styles, "init", "Initialize Project", "", ActionInitializeProject{}),
+		NewCommandItem(c.com.Styles, "toggle_help", c.com.L("cmd.toggle_help"), "ctrl+g", ActionToggleHelp{}),
+		NewCommandItem(c.com.Styles, "init", c.com.L("cmd.initialize_project"), "", ActionInitializeProject{}),
 	)
 
-	commands = append(commands, NewCommandItem(c.com.Styles, "add_provider", "Add Provider", "", ActionOpenDialog{DialogID: ProvidersID}))
+	commands = append(commands, NewCommandItem(c.com.Styles, "add_provider", c.com.L("cmd.add_provider"), "", ActionOpenDialog{DialogID: ProvidersID}))
 
 	// Add transparent background toggle.
-	transparentLabel := "Disable Background Color"
+	transparentLabel := c.com.L("cmd.disable_background_color")
 	if cfg != nil && cfg.Options != nil && cfg.Options.TUI.IsTransparent() {
-		transparentLabel = "Enable Background Color"
+		transparentLabel = c.com.L("cmd.enable_background_color")
 	}
 	commands = append(commands, NewCommandItem(c.com.Styles, "toggle_transparent", transparentLabel, "", ActionToggleTransparentBackground{}))
 
 	// Add mouse support toggle.
-	mouseLabel := "Disable Mouse"
+	mouseLabel := c.com.L("cmd.disable_mouse")
 	if cfg != nil && cfg.Options != nil && cfg.Options.TUI.Mouse != nil && !*cfg.Options.TUI.Mouse {
-		mouseLabel = "Enable Mouse"
+		mouseLabel = c.com.L("cmd.enable_mouse")
 	}
 	commands = append(commands, NewCommandItem(c.com.Styles, "toggle_mouse", mouseLabel, "", ActionToggleMouseSupport{}))
 
 	commands = append(
 		commands,
-		NewCommandItem(c.com.Styles, "quit", "Quit", "ctrl+c", tea.QuitMsg{}).WithAliases("exit"),
+		NewCommandItem(c.com.Styles, "quit", c.com.L("cmd.quit"), "ctrl+c", tea.QuitMsg{}).WithAliases("exit"),
 	)
 
 	return commands

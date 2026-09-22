@@ -21,6 +21,7 @@ type FreeText struct {
 	Styles  *styles.Styles
 	Request question.Question
 	focused bool
+	com     *common.Common
 
 	editor        textarea.Model
 	scrollOffset  int  // lines scrolled past the top of the textarea viewport
@@ -32,6 +33,21 @@ type FreeText struct {
 
 	lastResponse question.Answer
 	lastWidth    int
+}
+
+// setCom attaches locale-aware helpers for UI strings and updates
+// the textarea placeholder to the localized version.
+func (d *FreeText) setCom(com *common.Common) {
+	d.com = com
+	d.editor.Placeholder = d.L("ph.type_answer")
+}
+
+// L returns a translated UI string for the active locale.
+func (d *FreeText) L(key string) string {
+	if d.com == nil {
+		return key
+	}
+	return d.com.L(key)
 }
 
 // freeTextMinEditorHeight and freeTextMaxEditorHeight bound the

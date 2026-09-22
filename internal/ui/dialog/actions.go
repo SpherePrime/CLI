@@ -62,6 +62,9 @@ type (
 	ActionSelectNotificationStyle struct {
 		Style string
 	}
+	ActionSelectLanguage struct {
+		Locale string
+	}
 	ActionToggleTransparentBackground struct{}
 	ActionToggleMouseSupport          struct{}
 	ActionToggleSmartTools            struct{}

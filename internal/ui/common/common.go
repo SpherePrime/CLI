@@ -11,6 +11,7 @@ import (
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/internal/clipboard"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/internal/ui/util"
 	"github.com/SpherePrime/CLI/internal/workspace"
@@ -168,6 +169,26 @@ func largeModelProviderID(ws workspace.Workspace) string {
 // by Hyper.
 func (c *Common) IsHyper() bool {
 	return largeModelProviderID(c.Workspace) == "hyper"
+}
+
+// T returns the translator for the UI language configured in this
+// workspace, falling back to English.
+func (c *Common) T() i18n.Translator {
+	locale := i18n.En
+	if c.Workspace != nil {
+		locale = c.Workspace.Language()
+	}
+	return i18n.New(locale)
+}
+
+// L returns the translated label for key under the configured UI language.
+func (c *Common) L(key string) string {
+	return c.T().Label(key)
+}
+
+// LSprintf formats a translated string with args.
+func (c *Common) LSprintf(key string, args ...any) string {
+	return c.T().Sprintf(key, args...)
 }
 
 // CenterRect returns a new [Rectangle] centered within the given area with the

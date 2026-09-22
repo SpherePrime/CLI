@@ -87,7 +87,7 @@ func NewNotifications(com *common.Common) *Notifications {
 
 	n.input = textinput.New()
 	n.input.SetVirtualCursor(false)
-	n.input.Placeholder = "Type to filter"
+	n.input.Placeholder = com.L("cmd.type_to_filter")
 	n.input.SetStyles(com.Styles.TextInput)
 	n.input.Focus()
 
@@ -190,7 +190,7 @@ func (n *Notifications) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	n.list.SetSize(innerWidth, max(0, height-heightOffset))
 
 	rc := NewRenderContext(t, width)
-	rc.Title = "Notification Style"
+	rc.Title = n.com.L("cmd.notification_style")
 	inputView := t.Dialog.InputPrompt.Render(n.input.View())
 	rc.AddPart(inputView)
 

@@ -70,20 +70,28 @@ var _ CollapsibleInlineEditor = (*QuestionForm)(nil)
 // batch request. Each question is wrapped in its existing
 // component type (YesNo, SingleChoice, MultiChoice, FreeText).
 // A Confirm tab is appended for multi-question batches.
-func NewQuestionForm(sty *styles.Styles, batch question.Request) *QuestionForm {
+func NewQuestionForm(sty *styles.Styles, com *common.Common, batch question.Request) *QuestionForm {
 	comps := make([]questionResponder, len(batch.Questions))
 	labels := make([]string, len(batch.Questions))
 	ids := make([]string, len(batch.Questions))
 	for i, req := range batch.Questions {
 		switch req.Type {
 		case question.TypeYesNo:
-			comps[i] = NewYesNo(sty, req)
+			c := NewYesNo(sty, req)
+			c.setCom(com)
+			comps[i] = c
 		case question.TypeSingleChoice:
-			comps[i] = NewSingleChoice(sty, req)
+			c := NewSingleChoice(sty, req)
+			c.setCom(com)
+			comps[i] = c
 		case question.TypeMultiChoice:
-			comps[i] = NewMultiChoice(sty, req)
+			c := NewMultiChoice(sty, req)
+			c.setCom(com)
+			comps[i] = c
 		case question.TypeFreeText:
-			comps[i] = NewFreeText(sty, req)
+			c := NewFreeText(sty, req)
+			c.setCom(com)
+			comps[i] = c
 		}
 		if req.Label != "" {
 			labels[i] = req.Label
@@ -103,7 +111,7 @@ func NewQuestionForm(sty *styles.Styles, batch question.Request) *QuestionForm {
 	if hasConfirm {
 		confirmTitle := batch.ConfirmTitle
 		if confirmTitle == "" {
-			confirmTitle = "Confirm"
+			confirmTitle = com.L("tab.confirm")
 		}
 		confirmComp = NewConfirmComponent(
 			sty,
@@ -115,7 +123,7 @@ func NewQuestionForm(sty *styles.Styles, batch question.Request) *QuestionForm {
 		)
 		allLabels = make([]string, len(labels)+1)
 		copy(allLabels, labels)
-		allLabels[len(labels)] = "Confirm"
+		allLabels[len(labels)] = com.L("tab.confirm")
 	}
 	showTabs := numQuestions > 1
 

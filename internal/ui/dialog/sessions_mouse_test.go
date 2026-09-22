@@ -25,6 +25,10 @@ func (w *sessionMouseWorkspace) ListSessions(context.Context) ([]session.Session
 	return w.sessions, nil
 }
 
+func (w *sessionMouseWorkspace) Language() string {
+	return ""
+}
+
 func (w *sessionMouseWorkspace) AgentIsReady() bool {
 	return false
 }

@@ -93,7 +93,7 @@ func NewSessions(com *common.Common, selectedSessionID string) (*Session, error)
 
 	s.input = textinput.New()
 	s.input.SetVirtualCursor(false)
-	s.input.Placeholder = "Enter session name"
+	s.input.Placeholder = s.com.L("sessions.enter_name")
 	s.input.SetStyles(com.Styles.TextInput)
 	s.input.Focus()
 
@@ -312,20 +312,20 @@ func (s *Session) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	var cur *tea.Cursor
 	rc := NewRenderContext(t, width)
-	rc.Title = "Sessions"
+	rc.Title = s.com.L("cmd.sessions")
 	switch s.sessionsMode {
 	case sessionsModeDeleting:
 		rc.TitleStyle = t.Dialog.Sessions.DeletingTitle
 		rc.TitleGradientFromColor = t.Dialog.Sessions.DeletingTitleGradientFromColor
 		rc.TitleGradientToColor = t.Dialog.Sessions.DeletingTitleGradientToColor
 		rc.ViewStyle = t.Dialog.Sessions.DeletingView
-		rc.AddPart(t.Dialog.Sessions.DeletingMessage.Render("Delete this session?"))
+		rc.AddPart(t.Dialog.Sessions.DeletingMessage.Render(s.com.L("sessions.delete_confirm")))
 	case sessionsModeUpdating:
 		rc.TitleStyle = t.Dialog.Sessions.RenamingingTitle
 		rc.TitleGradientFromColor = t.Dialog.Sessions.RenamingTitleGradientFromColor
 		rc.TitleGradientToColor = t.Dialog.Sessions.RenamingTitleGradientToColor
 		rc.ViewStyle = t.Dialog.Sessions.RenamingView
-		message := t.Dialog.Sessions.RenamingingMessage.Render("Rename this session?")
+		message := t.Dialog.Sessions.RenamingingMessage.Render(s.com.L("sessions.rename_title"))
 		rc.AddPart(message)
 		item := s.selectedSessionItem()
 		if item == nil {

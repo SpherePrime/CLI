@@ -344,6 +344,15 @@ func (w *AppWorkspace) WorkingDir() string {
 	return w.store.WorkingDir()
 }
 
+// Language returns the configured UI locale for the workspace.
+func (w *AppWorkspace) Language() string {
+	cfg := w.Config()
+	if cfg == nil || cfg.Options == nil || cfg.Options.Language == "" {
+		return "en"
+	}
+	return cfg.Options.Language
+}
+
 func (w *AppWorkspace) Resolver() config.VariableResolver {
 	return w.store.Resolver()
 }
