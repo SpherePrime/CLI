@@ -91,7 +91,12 @@ func stopServerQuietly(ctx context.Context) {
 	}
 	shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	_ = c.ShutdownServer(shutdownCtx)
+	// ShutdownServerIfIdle refuses to stop a server that is still hosting
+	// active sessions (a running TUI). The old unconditional
+	// ShutdownServer used to kill the shared server even while the TUI
+	// was connected, causing the terminal to lose its connection and
+	// appear to "shrink" / close.
+	_ = c.ShutdownServerIfIdle(shutdownCtx)
 }
 
 func init() {

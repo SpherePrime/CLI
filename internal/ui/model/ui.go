@@ -3494,7 +3494,12 @@ func (m *UI) View() tea.View {
 	}
 	v.MouseMode = mouseMode(m.mouseEnabled, m.activeInline != nil)
 	v.ReportFocus = m.caps.ReportFocusEvents
-	v.WindowTitle = "prime " + home.Short(m.com.Workspace.WorkingDir())
+	if m.session != nil && m.session.Title != "" && m.session.Title != "Untitled Session" {
+		v.WindowTitle = m.session.Title
+	} else {
+		v.WindowTitle = "prime " + home.Short(m.com.Workspace.WorkingDir())
+	}
+	setConsoleTitle(v.WindowTitle)
 
 	key, cacheable := m.currentFrameKey()
 	if cacheable {
