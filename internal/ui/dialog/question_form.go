@@ -30,7 +30,8 @@ type questionResponder interface {
 // its own internal keybindings. For multi-question batches, a
 // Confirm tab is appended automatically.
 type QuestionForm struct {
-	Styles       *styles.Styles
+	Styles *styles.Styles
+	com    *common.Common
 	BatchID      string
 	questions    []questionResponder // includes ConfirmComponent as last item for batches
 	labels       []string            // includes "Confirm" for batches
@@ -129,6 +130,7 @@ func NewQuestionForm(sty *styles.Styles, com *common.Common, batch question.Requ
 
 	f := &QuestionForm{
 		Styles:       sty,
+		com:          com,
 		BatchID:      batch.ID,
 		questions:    comps,
 		labels:       allLabels,
@@ -382,7 +384,12 @@ func (f *QuestionForm) ShouldCollapse(width, terminalHeight int) bool {
 }
 
 // CollapsedHelp returns the help description for restoring the form.
-func (f *QuestionForm) CollapsedHelp() string { return "answer questions" }
+func (f *QuestionForm) CollapsedHelp() string {
+	if f.com == nil {
+		return "answer questions"
+	}
+	return f.com.L("key.answer_questions")
+}
 
 // DrawCollapsed renders a compact one-line summary of the form
 // when the user has tabbed away to the chat. For multi-question

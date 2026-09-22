@@ -459,7 +459,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 
 	ch := NewChat(com, com.Config().Options.TUI.Scrollbar)
 
-	keyMap := DefaultKeyMap()
+	keyMap := BuildKeyMap(com.T())
 
 	// Completions component
 	comp := completions.New(
@@ -1101,8 +1101,8 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyboardEnhancementsMsg:
 		m.keyenh = msg
 		if msg.SupportsKeyDisambiguation() {
-			m.keyMap.Models.SetHelp("ctrl+m", "models")
-			m.keyMap.Editor.Newline.SetHelp("shift+enter", "newline")
+			m.keyMap.Models.SetHelp("ctrl+m", m.com.L("key.models"))
+			m.keyMap.Editor.Newline.SetHelp("shift+enter", m.com.L("key.newline"))
 		}
 	case copyChatHighlightMsg:
 		cmds = append(cmds, m.copyChatHighlight())
@@ -2154,7 +2154,8 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 				}
 			}
 			m.dialog.CloseDialog(dialog.LanguageID)
-	case dialog.ActionNewSession:
+			m.applyLanguage()
+		case dialog.ActionNewSession:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
 			break
@@ -3536,6 +3537,13 @@ func (m *UI) applyProgressBar(v *tea.View) {
 	}
 }
 
+// applyLanguage rebuilds all locale-dependent UI state: keymap help
+// labels, status bar, and dialog content.
+func (m *UI) applyLanguage() {
+	tr := m.com.T()
+	m.keyMap = BuildKeyMap(tr)
+}
+
 // ShortHelp implements [help.KeyMap].
 func (m *UI) ShortHelp() []key.Binding {
 	var binds []key.Binding
@@ -3557,7 +3565,7 @@ func (m *UI) ShortHelp() []key.Binding {
 	tab := k.Tab
 	commands := k.Commands
 	if m.focus == uiFocusEditor && m.textarea.Value() == "" {
-		commands.SetHelp("/ or ctrl+p", "commands")
+		commands.SetHelp("/ or ctrl+p", m.com.L("key.commands"))
 	}
 
 	switch m.state {
@@ -3568,18 +3576,18 @@ func (m *UI) ShortHelp() []key.Binding {
 		if m.isAgentBusy() {
 			cancelBinding := k.Chat.Cancel
 			if m.isCanceling {
-				cancelBinding.SetHelp("esc", "press again to cancel")
+				cancelBinding.SetHelp("esc", m.com.L("key.cancel_cancelling"))
 			} else if m.promptQueue > 0 {
-				cancelBinding.SetHelp("esc", "clear queue")
+				cancelBinding.SetHelp("esc", m.com.L("key.clear_queue"))
 			}
 			binds = append(binds, cancelBinding)
 		}
 
 		switch m.focus {
 		case uiFocusEditor:
-			tab.SetHelp("tab", "focus chat")
+			tab.SetHelp("tab", m.com.L("key.focus_chat"))
 		default:
-			tab.SetHelp("tab", "focus editor")
+			tab.SetHelp("tab", m.com.L("key.focus_editor"))
 		}
 
 		binds = append(
@@ -3664,12 +3672,12 @@ func (m *UI) FullHelp() [][]key.Binding {
 	var binds [][]key.Binding
 	k := &m.keyMap
 	help := k.Help
-	help.SetHelp("ctrl+g", "less")
+	help.SetHelp("ctrl+g", m.com.L("key.more"))
 	hasAttachments := len(m.attachments.List()) > 0
 	hasSession := m.hasSession()
 	commands := k.Commands
 	if m.focus == uiFocusEditor && m.textarea.Value() == "" {
-		commands.SetHelp("/ or ctrl+p", "commands")
+		commands.SetHelp("/ or ctrl+p", m.com.L("key.commands"))
 	}
 
 	switch m.state {
@@ -3683,9 +3691,9 @@ func (m *UI) FullHelp() [][]key.Binding {
 		if m.isAgentBusy() {
 			cancelBinding := k.Chat.Cancel
 			if m.isCanceling {
-				cancelBinding.SetHelp("esc", "press again to cancel")
+				cancelBinding.SetHelp("esc", m.com.L("key.cancel_cancelling"))
 			} else if m.promptQueue > 0 {
-				cancelBinding.SetHelp("esc", "clear queue")
+				cancelBinding.SetHelp("esc", m.com.L("key.clear_queue"))
 			}
 			binds = append(binds, []key.Binding{cancelBinding})
 		}
@@ -3694,9 +3702,9 @@ func (m *UI) FullHelp() [][]key.Binding {
 		tab := k.Tab
 		switch m.focus {
 		case uiFocusEditor:
-			tab.SetHelp("tab", "focus chat")
+			tab.SetHelp("tab", m.com.L("key.focus_chat"))
 		default:
-			tab.SetHelp("tab", "focus editor")
+			tab.SetHelp("tab", m.com.L("key.focus_editor"))
 		}
 
 		mainBinds = append(
@@ -3833,7 +3841,7 @@ func (m *UI) FullHelp() [][]key.Binding {
 // editor. Collapsible editors provide context-specific wording.
 func (m *UI) inlineFocusHelp() key.Binding {
 	tab := m.keyMap.Tab
-	description := "focus editor"
+	description := m.com.L("key.focus_editor")
 	if collapsed, ok := m.activeInline.(dialog.CollapsibleInlineEditor); ok {
 		description = collapsed.CollapsedHelp()
 	}
