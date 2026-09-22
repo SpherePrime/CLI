@@ -20,7 +20,7 @@ func TestFileList(t *testing.T) {
 		files := []SessionFile{
 			{FirstVersion: history.File{Path: "main.go"}, Additions: 0, Deletions: 0},
 		}
-		got := fileList(st, "/", files, 30, 10)
+		got := fileList(st, nil, "/", files, 30, 10)
 		require.Contains(t, stripANSI(got), "main.go")
 	})
 
@@ -31,7 +31,7 @@ func TestFileList(t *testing.T) {
 		files := []SessionFile{
 			{FirstVersion: history.File{Path: "/very/long/path/to/some/deeply/nested/file.go"}, Additions: 0, Deletions: 0},
 		}
-		got := fileList(st, "/", files, 10, 10)
+		got := fileList(st, nil, "/", files, 10, 10)
 		plain := stripANSI(got)
 		for _, line := range strings.Split(plain, "\n") {
 			require.LessOrEqual(t, lipgloss.Width(line), 10, "line exceeds sidebar width: %q", line)
@@ -45,7 +45,7 @@ func TestFileList(t *testing.T) {
 		files := []SessionFile{
 			{FirstVersion: history.File{Path: "main.go"}, Additions: 5, Deletions: 3},
 		}
-		got := fileList(st, "/", files, 20, 10)
+		got := fileList(st, nil, "/", files, 20, 10)
 		plain := stripANSI(got)
 		require.Contains(t, plain, "+5")
 		require.Contains(t, plain, "-3")
@@ -61,7 +61,7 @@ func TestFileList(t *testing.T) {
 		files := []SessionFile{
 			{FirstVersion: history.File{Path: "main.go"}, Additions: 100, Deletions: 200},
 		}
-		got := fileList(st, "/", files, 5, 10)
+		got := fileList(st, nil, "/", files, 5, 10)
 		plain := stripANSI(got)
 		require.NotContains(t, plain, "main.go")
 		require.Equal(t, "+100 -200", strings.TrimSpace(plain))
@@ -74,7 +74,7 @@ func TestFileList(t *testing.T) {
 		files := []SessionFile{
 			{FirstVersion: history.File{Path: "main.go"}, Additions: 3, Deletions: 0},
 		}
-		got := fileList(st, "/", files, 20, 10)
+		got := fileList(st, nil, "/", files, 20, 10)
 		plain := stripANSI(got)
 		require.Contains(t, plain, "+3")
 		require.NotContains(t, plain, "-0")
@@ -90,7 +90,7 @@ func TestFileList(t *testing.T) {
 		files := []SessionFile{
 			{FirstVersion: history.File{Path: "main.go"}, Additions: 0, Deletions: 7},
 		}
-		got := fileList(st, "/", files, 20, 10)
+		got := fileList(st, nil, "/", files, 20, 10)
 		plain := stripANSI(got)
 		require.NotContains(t, plain, "+0")
 		require.Contains(t, plain, "-7")
@@ -106,7 +106,7 @@ func TestFileList(t *testing.T) {
 		files := []SessionFile{
 			{FirstVersion: history.File{Path: "main.go"}, Additions: 1, Deletions: 1},
 		}
-		got := fileList(st, "/", files, 20, 0)
+		got := fileList(st, nil, "/", files, 20, 0)
 		require.Empty(t, got)
 	})
 }

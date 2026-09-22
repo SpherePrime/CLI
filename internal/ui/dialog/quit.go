@@ -95,18 +95,16 @@ func (q *Quit) HandleMsg(msg tea.Msg) Action {
 
 // Draw implements [Dialog].
 func (q *Quit) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
-	const (
-		question    = "Are you sure you want to quit?"
-		hintLineOne = "To quit without confirmation"
-		hintLineTwo = "press ctrl+c twice."
-	)
 	var (
 		baseStyle = q.com.Styles.Dialog.Quit.Content
 		hintStyle = q.com.Styles.Dialog.Quit.Hint
 	)
+	question := q.com.L("quit.confirm")
+	hintLineOne := q.com.L("quit.hint")
+	hintLineTwo := q.com.L("quit.hint2")
 	buttonOpts := []common.ButtonOpts{
-		{Text: "Yep!", Selected: !q.selectedNo, Padding: 3},
-		{Text: "Nope", Selected: q.selectedNo, Padding: 3},
+		{Text: q.com.L("btn.yep"), Selected: !q.selectedNo, Padding: 3},
+		{Text: q.com.L("btn.nope"), Selected: q.selectedNo, Padding: 3},
 	}
 	buttons := common.ButtonGroup(q.com.Styles, buttonOpts, " ")
 	content := baseStyle.Render(

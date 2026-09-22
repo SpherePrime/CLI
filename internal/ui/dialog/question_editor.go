@@ -8,6 +8,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textarea"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
@@ -41,6 +42,7 @@ func newQuestionTextarea(sty *styles.Styles, placeholder string, charLimit int) 
 // logic.
 type questionEditor struct {
 	Styles *styles.Styles
+	com    *common.Common
 
 	fillIn        textarea.Model
 	noteEditor    textarea.Model
@@ -64,6 +66,22 @@ func newQuestionEditor(sty *styles.Styles) questionEditor {
 		navUp:      key.NewBinding(key.WithKeys("up"), key.WithHelp("↑", "up")),
 		navDown:    key.NewBinding(key.WithKeys("down"), key.WithHelp("↓", "down")),
 	}
+}
+
+// setCom attaches locale-aware helpers for UI strings and updates
+// the textarea placeholders to the localized versions.
+func (e *questionEditor) setCom(com *common.Common) {
+	e.com = com
+	e.fillIn.Placeholder = e.L("ph.something_else")
+	e.noteEditor.Placeholder = e.L("ph.add_note")
+}
+
+// L returns a translated UI string for the active locale.
+func (e *questionEditor) L(key string) string {
+	if e.com == nil {
+		return key
+	}
+	return e.com.L(key)
 }
 
 // openNote opens the note editor for the given key, pre-populating

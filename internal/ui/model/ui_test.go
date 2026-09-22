@@ -141,6 +141,10 @@ func (w *testWorkspace) WorkingDir() string {
 	return "/tmp/prime-test"
 }
 
+func (w *testWorkspace) Language() string {
+	return "en"
+}
+
 func (w *testWorkspace) AgentSetMain(agentID string) error {
 	w.setMainCalledWith = agentID
 	return nil

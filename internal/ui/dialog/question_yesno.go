@@ -188,8 +188,8 @@ func (d *YesNo) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	// Draw buttons. Build compositor first so hover uses current geometry.
 	buttonOptsList := []common.ButtonOpts{
-		{Text: "Yes", Selected: !d.selectedNo, Padding: 3, UnderlineIndex: 0},
-		{Text: "No", Selected: d.selectedNo, Padding: 3, UnderlineIndex: 0},
+		{Text: d.L("btn.yes"), Selected: !d.selectedNo, Padding: 3, UnderlineIndex: 0},
+		{Text: d.L("btn.no"), Selected: d.selectedNo, Padding: 3, UnderlineIndex: 0},
 	}
 	d.compositor = common.ButtonHitCompositor(d.Styles, buttonOptsList, " ", area.Min.X, y)
 	hoveredBtn := common.HitButtonIndex(d.compositor, d.hoverX, d.hoverY)

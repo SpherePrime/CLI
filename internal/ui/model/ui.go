@@ -34,6 +34,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/app"
 	"github.com/SpherePrime/CLI/internal/clipboard"
 	"github.com/SpherePrime/CLI/internal/commands"
+	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/event"
 	"github.com/SpherePrime/CLI/internal/fsext"
@@ -1676,13 +1677,13 @@ func (m *UI) handleConnectionEvent(msg workspace.ConnectionEvent) []tea.Cmd {
 		slog.Warn("Server connection degraded", "error", msg.Err, "stuck", msg.Stuck)
 		if msg.Stuck {
 			info.Type = util.InfoTypeError
-			info.Msg = "Can't restore the connection to the Prime server. Restart Prime to recover."
+			info.Msg = m.com.L("info.reconnect_failed")
 			info.TTL = time.Minute
 		}
 	case workspace.ConnectionRecovered:
 		info = util.InfoMsg{
 			Type: util.InfoTypeSuccess,
-			Msg:  "Reconnected to the Prime server.",
+			Msg:  m.com.L("info.reconnected"),
 			TTL:  DefaultStatusTTL,
 		}
 	}
@@ -2134,12 +2135,25 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.notifications", msg.Style); err != nil {
 				cmds = append(cmds, util.ReportError(err))
 			} else {
-				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Notifications set to: "+msg.Style)))
+				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(m.com.LSprintf("info.notifications_set", msg.Style))))
 			}
 			// Reinitialize notification backend with new style.
 			m.notifyBackend = selectNotificationBackend(m.caps, cfg)
-		}
-		m.dialog.CloseDialog(dialog.NotificationsID)
+			}
+			m.dialog.CloseDialog(dialog.NotificationsID)
+
+		case dialog.ActionSelectLanguage:
+			cfg := m.com.Config()
+			if cfg != nil && cfg.Options != nil {
+				cfg.Options.Language = msg.Locale
+				if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.language", msg.Locale); err != nil {
+					cmds = append(cmds, util.ReportError(err))
+				} else {
+					localeTitle := i18n.Title(msg.Locale)
+					cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(i18n.New(cfg.Options.Language).Sprintf("info.language_set", localeTitle))))
+				}
+			}
+			m.dialog.CloseDialog(dialog.LanguageID)
 	case dialog.ActionNewSession:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
@@ -2202,11 +2216,11 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 				return util.ReportError(err)()
 			}
 			m.com.Workspace.UpdateAgentModel(context.TODO())
-			status := "disabled"
+			status := m.com.L("info.disabled")
 			if currentModel.Think {
-				status = "enabled"
+				status = m.com.L("info.enabled")
 			}
-			return util.NewInfoMsg("Thinking mode " + status)
+			return util.NewInfoMsg(m.com.LSprintf("info.thinking_mode", status))
 		}))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleTransparentBackground:
@@ -2223,11 +2237,11 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			}
 			m.isTransparent = newValue
 
-			status := "disabled"
+			status := m.com.L("info.disabled")
 			if newValue {
-				status = "enabled"
+				status = m.com.L("info.enabled")
 			}
-			return util.NewInfoMsg("Transparent background " + status)
+			return util.NewInfoMsg(m.com.LSprintf("info.transparent_bg", status))
 		})
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleMouseSupport:
@@ -2247,11 +2261,11 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 				return util.ReportError(err)()
 			}
 
-			status := "disabled"
+			status := m.com.L("info.disabled")
 			if newValue {
-				status = "enabled"
+				status = m.com.L("info.enabled")
 			}
-			return util.NewInfoMsg("Mouse support " + status)
+			return util.NewInfoMsg(m.com.LSprintf("info.mouse_support", status))
 		})
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleSmartTools:
@@ -2269,11 +2283,11 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			// prompt, so the mode takes effect on the next message.
 			m.com.Workspace.UpdateAgentModel(context.TODO())
 
-			status := "disabled"
+			status := m.com.L("info.disabled")
 			if newValue {
-				status = "enabled"
+				status = m.com.L("info.enabled")
 			}
-			return util.NewInfoMsg("Smart Tools mode " + status)
+			return util.NewInfoMsg(m.com.LSprintf("info.smart_tools_mode", status))
 		}))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionQuit:
@@ -2286,12 +2300,12 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		cmds = append(cmds, m.disableDockerMCP)
 	case dialog.ActionSaveProvider:
 		m.dialog.CloseDialog(dialog.ProvidersID)
-		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Provider added to global config")))
+		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(m.com.L("info.provider_added"))))
 	case dialog.ActionModelConfigSaved:
 		m.dialog.CloseDialog(dialog.ModelsConfigID)
 		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
 			m.com.Workspace.UpdateAgentModel(context.TODO())
-			return util.NewInfoMsg("Model settings saved")
+			return util.NewInfoMsg(m.com.L("info.model_settings_saved"))
 		}))
 	case dialog.ActionInitializeProject:
 		if m.isAgentBusy() {
@@ -2332,7 +2346,7 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 
 		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
 			m.com.Workspace.UpdateAgentModel(context.TODO())
-			return util.NewInfoMsg("Reasoning effort set to " + msg.Effort)
+			return util.NewInfoMsg(m.com.LSprintf("info.reasoning_effort", msg.Effort))
 		}))
 		m.dialog.CloseDialog(dialog.ReasoningID)
 	case dialog.ActionPermissionResponse:
@@ -2816,7 +2830,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 			if yolo {
 				cmds = append(cmds, util.CmdHandler(util.InfoMsg{Type: util.InfoTypeYolo, Msg: yoloModeBannerMsg}))
 			} else {
-				cmds = append(cmds, util.ReportInfo("Yolo mode disabled"))
+				cmds = append(cmds, util.ReportInfo(m.com.L("info.yolo_disabled")))
 			}
 			return true
 		}
@@ -3026,7 +3040,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				if m.textarea.HasSelection() {
 					cmds = append(cmds, common.CopyToClipboardWithCallback(
 						m.textarea.SelectedText(),
-						"Selection copied to clipboard",
+						m.com.L("info.selection_copied"),
 						nil,
 					))
 					m.textarea.ClearSelection()
@@ -4258,7 +4272,7 @@ func (m *UI) openEditor(value string) tea.Cmd {
 			return util.ReportError(err)
 		}
 		if len(content) == 0 {
-			return util.ReportWarn("Message is empty")
+			return util.ReportWarn(m.com.L("info.empty_message"))
 		}
 		return openEditorMsg{
 			Text: strings.TrimSpace(string(content)),
@@ -4434,7 +4448,7 @@ func (m *UI) applyModeSwitch(msg modeSwitchedMsg) []tea.Cmd {
 	m.setEditorPrompt(m.yoloModeCached())
 	var cmds []tea.Cmd
 	if msg.continueSessionID != "" && m.session != nil && m.session.ID == msg.continueSessionID {
-		cmds = append(cmds, m.sendMessageInternal("Implement the plan.", true))
+		cmds = append(cmds, m.sendMessageInternal(m.com.L("info.plan_implement"), true))
 	}
 	switch {
 	case msg.mode == uiInputModePlan:
@@ -4492,7 +4506,7 @@ func (m *UI) insertFileCompletion(path string) tea.Cmd {
 
 	fileCmd := func() tea.Msg {
 		if !m.currentModelSupportsImages() && common.IsImagePath(path) {
-			return util.NewWarnMsg("The current model does not support image attachments")
+			return util.NewWarnMsg(m.com.L("info.no_image_support"))
 		}
 
 		absPath, _ := filepath.Abs(path)
@@ -4573,7 +4587,7 @@ func (m *UI) insertMCPResourceCompletion(item completions.ResourceCompletionValu
 		}
 
 		if !m.currentModelSupportsImages() && strings.HasPrefix(mimeType, "image/") {
-			return util.NewWarnMsg("The current model does not support image attachments")
+			return util.NewWarnMsg(m.com.L("info.no_image_support"))
 		}
 
 		return message.Attachment{
@@ -4640,14 +4654,14 @@ func mimeOf(content []byte) string {
 	return http.DetectContentType(content[:mimeBufferSize])
 }
 
-var readyPlaceholders = [...]string{
+var readyPlaceholders = []string{
 	"Ready!",
 	"Ready...",
 	"Ready?",
 	"Ready for instructions",
 }
 
-var workingPlaceholders = [...]string{
+var workingPlaceholders = []string{
 	"Working!",
 	"Working...",
 	"Brrrrr...",
@@ -4656,11 +4670,28 @@ var workingPlaceholders = [...]string{
 	"Thinking...",
 }
 
+func localizedReadyPlaceholders(tr i18n.Translator) []string {
+	if tr.Locale() == i18n.Ru {
+		return []string{"Готов!", "Готов...", "Готов?", "Готов к командам"}
+	}
+	return readyPlaceholders
+}
+
+func localizedWorkingPlaceholders(tr i18n.Translator) []string {
+	if tr.Locale() == i18n.Ru {
+		return []string{"Работаю!", "Работаю...", "Скорее...", "Шуршу...", "Обработка...", "Думаю..."}
+	}
+	return workingPlaceholders
+}
+
 // randomizePlaceholders selects random placeholder text for the textarea's
 // ready and working states.
 func (m *UI) randomizePlaceholders() {
-	m.workingPlaceholder = workingPlaceholders[rand.Intn(len(workingPlaceholders))]
-	m.readyPlaceholder = readyPlaceholders[rand.Intn(len(readyPlaceholders))]
+	tr := m.com.T()
+	ready := localizedReadyPlaceholders(tr)
+	working := localizedWorkingPlaceholders(tr)
+	m.workingPlaceholder = working[rand.Intn(len(working))]
+	m.readyPlaceholder = ready[rand.Intn(len(ready))]
 }
 
 // renderEditorView renders the editor view with attachments if any.
@@ -4771,7 +4802,7 @@ func (m *UI) sendMessageInternal(content string, hidden bool, attachments ...mes
 
 	var cmds []tea.Cmd
 	if !m.hasSession() {
-		newSession, err := m.com.Workspace.CreateSession(context.Background(), "New Session")
+		newSession, err := m.com.Workspace.CreateSession(context.Background(), m.com.L("sessions.new_title"))
 		if err != nil {
 			return util.ReportError(err)
 		}
@@ -4838,7 +4869,7 @@ func (m *UI) runShellCommand(command string) tea.Cmd {
 func (m *UI) runShellCommandInternal(command string, isFirstMessage bool) tea.Cmd {
 	var cmds []tea.Cmd
 	if !m.hasSession() {
-		newSession, err := m.com.Workspace.CreateSession(context.Background(), "New Session")
+		newSession, err := m.com.Workspace.CreateSession(context.Background(), m.com.L("sessions.new_title"))
 		if err != nil {
 			return util.ReportError(err)
 		}
@@ -5006,6 +5037,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openNotificationsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.LanguageID:
+		if cmd := m.openLanguageDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.ProvidersID:
 		if cmd := m.openProvidersDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -5137,6 +5172,18 @@ func (m *UI) openNotificationsDialog() tea.Cmd {
 	return nil
 }
 
+// openLanguageDialog opens the language picker dialog.
+func (m *UI) openLanguageDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.LanguageID) {
+		m.dialog.BringToFront(dialog.LanguageID)
+		return nil
+	}
+
+	languageDialog := dialog.NewLanguage(m.com)
+	m.dialog.OpenDialog(languageDialog)
+	return nil
+}
+
 // openProvidersDialog opens the provider add dialog.
 func (m *UI) openProvidersDialog() tea.Cmd {
 	if m.dialog.ContainsDialog(dialog.ProvidersID) {
@@ -5176,7 +5223,7 @@ func (m *UI) openSessionsDialog() tea.Cmd {
 // openFilesDialog opens the file picker dialog.
 func (m *UI) openFilesDialog() tea.Cmd {
 	if !m.currentModelSupportsImages() {
-		return util.ReportWarn("The current model does not support image attachments")
+		return util.ReportWarn(m.com.L("info.no_image_support"))
 	}
 	if m.dialog.ContainsDialog(dialog.FilePickerID) {
 		// Bring to front
@@ -5216,7 +5263,7 @@ func (m *UI) openBatchFormDialog(batch question.Request) {
 		m.activeInline = nil
 	}
 
-	form := dialog.NewQuestionForm(m.com.Styles, batch)
+	form := dialog.NewQuestionForm(m.com.Styles, m.com, batch)
 	form.OnAnswer = func(responses []question.Answer) {
 		m.com.Workspace.QuestionAnswer(responses)
 	}
@@ -5594,7 +5641,7 @@ func (m *UI) handlePasteMsg(msg tea.PasteMsg) tea.Cmd {
 		return cmd
 	}
 	if !m.currentModelSupportsImages() {
-		return util.ReportWarn("The current model does not support image attachments")
+		return util.ReportWarn(m.com.L("info.no_image_support"))
 	}
 
 	var cmds []tea.Cmd
@@ -5628,7 +5675,7 @@ func (m *UI) handleFilePathPaste(path string) tea.Cmd {
 			return util.ReportError(err)
 		}
 		if fileInfo.IsDir() {
-			return util.ReportWarn("Cannot attach a directory")
+			return util.ReportWarn(m.com.L("info.cannot_attach_dir"))
 		}
 		if fileInfo.Size() > common.MaxAttachmentSize {
 			return util.ReportWarn("File is too big (>5mb)")
@@ -5669,13 +5716,13 @@ func (m *UI) pasteTextFromClipboard() tea.Msg {
 // interpreting clipboard text as a file path.
 func (m *UI) pasteImageFromClipboard() tea.Msg {
 	if !m.currentModelSupportsImages() {
-		return util.NewWarnMsg("The current model does not support image attachments")
+		return util.NewWarnMsg(m.com.L("info.no_image_support"))
 	}
 	imageData, err := clipboard.Read(clipboard.FormatImage)
 	if int64(len(imageData)) > common.MaxAttachmentSize {
 		return util.InfoMsg{
 			Type: util.InfoTypeError,
-			Msg:  "File too large, max 5MB",
+			Msg:  m.com.L("info.file_too_large"),
 		}
 	}
 	name := fmt.Sprintf("paste_%d.png", m.pasteIdx())
@@ -5700,20 +5747,20 @@ func (m *UI) pasteImageFromClipboard() tea.Msg {
 	}
 
 	if !common.IsImagePath(path) {
-		return util.NewInfoMsg("File type is not a supported image format")
+		return util.NewInfoMsg(m.com.L("info.bad_image_format"))
 	}
 
 	fileInfo, statErr := os.Stat(path)
 	if statErr != nil {
 		return util.InfoMsg{
 			Type: util.InfoTypeError,
-			Msg:  fmt.Sprintf("Unable to read file: %v", statErr),
+			Msg:  m.com.LSprintf("info.unable_read_file", statErr),
 		}
 	}
 	if fileInfo.Size() > common.MaxAttachmentSize {
 		return util.InfoMsg{
 			Type: util.InfoTypeError,
-			Msg:  "File too large, max 5MB",
+			Msg:  m.com.L("info.file_too_large"),
 		}
 	}
 
@@ -5721,7 +5768,7 @@ func (m *UI) pasteImageFromClipboard() tea.Msg {
 	if readErr != nil {
 		return util.InfoMsg{
 			Type: util.InfoTypeError,
-			Msg:  fmt.Sprintf("Unable to read file: %v", readErr),
+			Msg:  m.com.LSprintf("info.unable_read_file", readErr),
 		}
 	}
 
@@ -5862,7 +5909,7 @@ func (m *UI) copyChatHighlight() tea.Cmd {
 	text := m.chat.HighlightContent()
 	return common.CopyToClipboardWithCallback(
 		text,
-		"Selected text copied to clipboard",
+		m.com.L("info.copied_to_clipboard"),
 		func() tea.Msg {
 			m.chat.ClearMouse()
 			return nil
@@ -5876,7 +5923,7 @@ func (m *UI) enableDockerMCP() tea.Msg {
 		return util.ReportError(err)()
 	}
 
-	return util.NewInfoMsg("Docker MCP enabled and started successfully")
+	return util.NewInfoMsg(m.com.L("info.docker_mcp_on"))
 }
 
 func (m *UI) disableDockerMCP() tea.Msg {
@@ -5884,7 +5931,7 @@ func (m *UI) disableDockerMCP() tea.Msg {
 		return util.ReportError(err)()
 	}
 
-	return util.NewInfoMsg("Docker MCP disabled successfully")
+	return util.NewInfoMsg(m.com.L("info.docker_mcp_off"))
 }
 
 // renderLogo renders the Prime logo with the given styles and dimensions.

@@ -193,11 +193,11 @@ func (m *UI) handleFileEvent(file history.File) tea.Cmd {
 func (m *UI) filesInfo(cwd string, width, maxItems int, isSection bool) string {
 	t := m.com.Styles
 
-	title := t.Files.SectionTitle.Render("Modified Files")
+	title := t.Files.SectionTitle.Render(m.com.L("sidebar.modified_files"))
 	if isSection {
-		title = common.Section(t, "Modified Files", width)
+		title = common.Section(t, m.com.L("sidebar.modified_files"), width)
 	}
-	list := t.Files.EmptyMessage.Render("None")
+	list := t.Files.EmptyMessage.Render(m.com.L("sidebar.none"))
 	var filesWithChanges []SessionFile
 	for _, f := range m.sessionFiles {
 		if f.Additions == 0 && f.Deletions == 0 {
@@ -206,7 +206,7 @@ func (m *UI) filesInfo(cwd string, width, maxItems int, isSection bool) string {
 		filesWithChanges = append(filesWithChanges, f)
 	}
 	if len(filesWithChanges) > 0 {
-		list = fileList(t, cwd, filesWithChanges, width, maxItems)
+		list = fileList(t, m.com, cwd, filesWithChanges, width, maxItems)
 	}
 
 	return lipgloss.NewStyle().Width(width).Render(fmt.Sprintf("%s\n\n%s", title, list))
@@ -214,7 +214,7 @@ func (m *UI) filesInfo(cwd string, width, maxItems int, isSection bool) string {
 
 // fileList renders a list of files with their diff statistics, truncating to
 // maxItems and showing a "...and N more" message if needed.
-func fileList(t *styles.Styles, cwd string, filesWithChanges []SessionFile, width, maxItems int) string {
+func fileList(t *styles.Styles, c *common.Common, cwd string, filesWithChanges []SessionFile, width, maxItems int) string {
 	if maxItems <= 0 {
 		return ""
 	}
@@ -261,7 +261,13 @@ func fileList(t *styles.Styles, cwd string, filesWithChanges []SessionFile, widt
 
 	if len(filesWithChanges) > maxItems {
 		remaining := len(filesWithChanges) - maxItems
-		renderedFiles = append(renderedFiles, t.Files.TruncationHint.Render(fmt.Sprintf("…and %d more", remaining)))
+		var hint string
+		if c != nil {
+			hint = c.LSprintf("sidebar.more", remaining)
+		} else {
+			hint = fmt.Sprintf("…and %d more", remaining)
+		}
+		renderedFiles = append(renderedFiles, t.Files.TruncationHint.Render(hint))
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left, renderedFiles...)

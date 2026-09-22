@@ -18,6 +18,8 @@ type attachmentClickWorkspace struct {
 
 func (attachmentClickWorkspace) AgentIsReady() bool { return false }
 
+func (attachmentClickWorkspace) Language() string { return "" }
+
 func newAttachmentClickTestUI(t *testing.T) (*UI, int) {
 	t.Helper()
 

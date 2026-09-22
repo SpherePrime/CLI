@@ -529,6 +529,15 @@ func (w *ClientWorkspace) WorkingDir() string {
 	return w.cached().Path
 }
 
+// Language returns the configured UI locale for the workspace.
+func (w *ClientWorkspace) Language() string {
+	cfg := w.Config()
+	if cfg == nil || cfg.Options == nil || cfg.Options.Language == "" {
+		return "en"
+	}
+	return cfg.Options.Language
+}
+
 func (w *ClientWorkspace) Resolver() config.VariableResolver {
 	return config.IdentityResolver()
 }
