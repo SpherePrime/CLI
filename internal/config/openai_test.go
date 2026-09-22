@@ -175,7 +175,7 @@ func TestSetProviderAPIKeyOpenAIIsEitherOr(t *testing.T) {
 		require.Equal(t, "gpt-5.1-codex", pc.ChatGPTModels[0].ID, "the subscription catalog lands in its own field")
 		require.Equal(t, "gpt-5.1", pc.Models[0].ID, "the API catalog is untouched")
 
-		disk, err := os.ReadFile(store.globalDataPath)
+		disk, err := os.ReadFile(sectionPath(filepath.Dir(store.globalDataPath), "providers"))
 		require.NoError(t, err)
 		require.NotContains(t, string(disk), "sk-keep", "the retired key is gone from the config file")
 		require.Contains(t, string(disk), "chatgpt-rt", "the login is persisted")
@@ -201,7 +201,7 @@ func TestSetProviderAPIKeyOpenAIIsEitherOr(t *testing.T) {
 		require.Nil(t, pc.OAuthToken, "the API key replaces the ChatGPT login")
 		require.Empty(t, pc.ChatGPTModels, "the subscription catalog goes with it")
 
-		disk, err := os.ReadFile(store.globalDataPath)
+		disk, err := os.ReadFile(sectionPath(filepath.Dir(store.globalDataPath), "providers"))
 		require.NoError(t, err)
 		require.NotContains(t, string(disk), "old-rt", "the retired login is gone from the config file")
 		require.NotContains(t, string(disk), "gpt-5.6-luna")

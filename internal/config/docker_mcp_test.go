@@ -85,8 +85,8 @@ func TestEnableDockerMCP(t *testing.T) {
 		require.Equal(t, []string{"mcp", "gateway", "run"}, mcpConfig.Args)
 		require.False(t, mcpConfig.Disabled)
 
-		// Check persisted config.
-		data, err := os.ReadFile(configPath)
+		// Check persisted config: the mcp section lives in its own file.
+		data, err := os.ReadFile(sectionPath(tmpDir, "mcp"))
 		require.NoError(t, err)
 		require.Contains(t, string(data), "docker")
 		require.Contains(t, string(data), "gateway")

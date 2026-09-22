@@ -15,9 +15,12 @@ import (
 var dirsCmd = &cobra.Command{
 	Use:   "dirs",
 	Short: "Show config and data directories",
-	Long: `Show where Prime stores its configuration and data,
-including any project-level config files discovered
-from the current directory up to the project root.`,
+	Long: `Show where Prime stores its configuration and data.
+Global settings live in the config directory as one JSON file
+per section (providers.json, models.json, mcp.json, lsp.json,
+skills.json, options.json). Project-level config files are also
+listed, discovered from the current directory up to the project
+root.`,
 	Example: `
 # Show all directories
 prime dirs

@@ -115,13 +115,15 @@ func MarkProjectInitialized(store *ConfigStore) error {
 	return nil
 }
 
+// HasInitialDataConfig reports whether Prime already has any persisted global
+// configuration: at least one config file in the user config directory, and a
+// configured provider.
 func HasInitialDataConfig(store *ConfigStore) bool {
 	if store == nil {
 		return false
 	}
-	cfgPath := GlobalConfigData()
-	if _, err := os.Stat(cfgPath); err != nil {
-		return false
+	if len(configFilesForDir(GlobalConfigDir())) > 0 || len(configFilesForDir(GlobalDataDir())) > 0 {
+		return store.Config().IsConfigured()
 	}
-	return store.Config().IsConfigured()
+	return false
 }

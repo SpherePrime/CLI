@@ -40,7 +40,8 @@ var providerAddCmd = &cobra.Command{
 
 When run interactively, models are fetched from the provider's /models
 endpoint and every model gets a 270k token context window. The result is
-written to the global config (prime.json) unless --workspace is set.`,
+written to the global config in the user config directory
+(~/.config/prime, one JSON file per section) unless --workspace is set.`,
 	Example: `# Add a provider interactively
 prime provider add
 

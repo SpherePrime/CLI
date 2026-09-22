@@ -97,8 +97,8 @@ func TestSearchToolResultsTeachUsage(t *testing.T) {
 	searchSkills := builtToolByName(t, built, "search_skills")
 	require.NotNil(t, searchSkills)
 	result, err := searchSkills.Run(context.Background(), fantasy.ToolCall{
-		ID:   "call-1",
-		Name: searchSkills.Info().Name,
+		ID:    "call-1",
+		Name:  searchSkills.Info().Name,
 		Input: `{"query":"commit rebase"}`,
 	})
 	require.NoError(t, err)

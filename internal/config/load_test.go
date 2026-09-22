@@ -25,6 +25,18 @@ import (
 func TestMain(m *testing.M) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
 
+	// Default the global config and data locations to a scratch directory.
+	// Loading config migrates a legacy single file into per-section files, and
+	// tests that call Load without setting these variables must not do that to
+	// the developer's real config. The directory is left behind for the
+	// process lifetime; the OS reaps temp files.
+	if dir, err := os.MkdirTemp("", "prime-config-tests"); err == nil {
+		os.Setenv("PRIME_GLOBAL_CONFIG", filepath.Join(dir, "config", "prime"))
+		os.Setenv("PRIME_GLOBAL_DATA", filepath.Join(dir, "data", "prime"))
+		os.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
+		os.Setenv("XDG_DATA_HOME", filepath.Join(dir, "data"))
+	}
+
 	exitVal := m.Run()
 	os.Exit(exitVal)
 }

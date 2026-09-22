@@ -44,9 +44,9 @@ disallow the use of Haskell (but we love you, Simon Peyton Jones).
 ### Config
 
 The first thing we need to do is hook up our hook. Let's add the following to
-our **project-level** `prime.json`. Relative paths like `./no-haskell.sh` work
+our **project-level** `options.json`. Relative paths like `./no-haskell.sh` work
 here because the project root is your working directory. If you're configuring
-a global hook (`~/.config/prime/prime.json`), use an absolute path instead.
+a global hook (`~/.config/prime/options.json`), use an absolute path instead.
 
 ```jsonc
 {
@@ -131,8 +131,8 @@ What this means in practice:
 
 ## Configuration
 
-Hooks can be added to your `prime.json` (or `.prime.json`) at both the global
-and project-level, with project level hooks taking precedence.
+Hooks live in the `hooks` section of `options.json` (or a `primerc`) at both the
+global and project level, with project level hooks taking precedence.
 
 ```jsonc
 {
@@ -152,12 +152,12 @@ and project-level, with project level hooks taking precedence.
 > [!IMPORTANT]
 > The `command` is resolved relative to your **current working directory** —
 > not relative to the config file. Relative paths like `./hooks/whatever.sh`
-> work fine in project-level `prime.json` because the project root is also
+> work fine in project-level `options.json` because the project root is also
 > your working directory. For **global** config (`~/.config/prime/`),
 > however, you must use either an absolute path or an inline command:
 >
 > ```jsonc
-> // Global ~/.config/prime/prime.json
+> // Global ~/.config/prime/options.json
 > {
 >   "hooks": {
 >     "PreToolUse": [
@@ -382,7 +382,7 @@ EOF
 
 Hooks run in parallel, but their results compose in config order. Whichever hook
 finishes first doesn't get to "win" by virtue of timing; composition is
-deterministic based on the order hooks appear in `prime.json`.
+deterministic based on the order hooks appear in `options.json`.
 
 When multiple hooks match the same tool call:
 
