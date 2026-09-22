@@ -216,6 +216,48 @@ option ui exit-banner compact
 > `skill-path`: `.agents/skills`, `.prime/skills`, `.claude/skills`,
 > `.cursor/skills`.
 
+## Installing third-party skills
+
+Prime has no plugin manager and no plugin API: a skill is a folder with a
+`SKILL.md`, and installing one means making that folder discoverable. A README
+that says "install as a plugin for OpenCode / Claude Code / Cursor / Codex", or
+that writes to `~/.config/opencode/`, describes a different product. Do that
+only when the user names it. For Prime:
+
+```bash
+# 1. Clone into the global skills directory. It is searched recursively for
+#    <anything>/<skill-name>/SKILL.md, so no config change is needed.
+git clone https://github.com/obra/superpowers ~/.config/prime/skills/superpowers
+
+# 2. Only if the pack needs always-on bootstrap text in every session, register
+#    one of its files as global context.
+echo 'option global-context-path "$HOME/.config/prime/skills/superpowers/skills/using-superpowers/SKILL.md"' \
+  >> ~/.config/prime/primerc
+```
+
+Keeping the clone elsewhere (a vendored folder in a repo, a shared checkout)
+needs the directory registered instead:
+
+```bash
+option skill-path "$HOME/tools/superpowers/skills"
+```
+
+which is the same as `skills_paths` in JSON. Because skill folders are scanned
+recursively, register the directory that *contains* the per-skill folders.
+
+```json
+// ~/.config/prime/skills.json
+{
+  "options": {
+    "skills_paths": ["~/.config/prime/skills/superpowers/skills"]
+  }
+}
+```
+
+Skills and context files load at startup, so a running session won't see them
+until Prime restarts. Check the result with `prime dirs` (config directory) and
+by asking for one of the new skill names.
+
 ## Hooks runtime
 
 Hooks are user-defined shell commands that fire on agent events. Currently only
