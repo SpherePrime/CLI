@@ -11,7 +11,7 @@ TEXT ·ValidPrintString(SB), NOSPLIT, $0-17
 	MOVQ s_len+8(FP), CX
 	CMPQ CX, $0x10
 	JB   init_x86
-	BTL  $0x08, github·com∕dwertyfa288∕CLI∕vendordeps∕segmentio∕asm∕cpu·X86+0(SB)
+	BTL  $0x08, github·com∕SpherePrime∕CLI∕vendordeps∕segmentio∕asm∕cpu·X86+0(SB)
 	JCS  init_avx
 
 init_x86:

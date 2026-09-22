@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$Repo = if ($env:PRIME_REPO) { $env:PRIME_REPO } else { "dwertyfa288/CLI" }
+$Repo = if ($env:PRIME_REPO) { $env:PRIME_REPO } else { "SpherePrime/CLI" }
 $BinDir = if ($env:PRIME_INSTALL_DIR) { $env:PRIME_INSTALL_DIR } else { "$env:LOCALAPPDATA\Programs\prime" }
 
 $Arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x86_64" }
@@ -54,7 +54,9 @@ try {
   }
 
   New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
-  Move-Item -Force $Binary.FullName (Join-Path $BinDir "prime.exe")
+  $Dest = Join-Path $BinDir "prime.exe"
+  if (Test-Path $Dest) { Remove-Item -Force $Dest }
+  Move-Item -Force $Binary.FullName $Dest
 } finally {
   Remove-Item -Recurse -Force $Tmp.FullName -ErrorAction SilentlyContinue
 }
