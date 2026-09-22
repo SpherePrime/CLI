@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/dwertyfa288/CLI/internal/ui/common"
 	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
 )
 
@@ -26,6 +27,16 @@ func (m *UI) handleScrollbarMouseDrag(y int) (bool, tea.Cmd) {
 		return m.chat.HandleScrollbarMouseDrag(y)
 	}
 	return false, nil
+}
+
+// handleInlineScrollbar routes a mouse message to the active inline editor's
+// scrollbar thumb, reporting whether it consumed the event.
+func (m *UI) handleInlineScrollbar(msg tea.Msg) bool {
+	if m.activeInline == nil {
+		return false
+	}
+	draggable, ok := m.activeInline.(common.ScrollbarDraggable)
+	return ok && draggable.HandleScrollbarMouse(msg)
 }
 
 // scrollbarDragging reports whether the pointer is holding a thumb.

@@ -37,12 +37,13 @@ type ConfirmComponent struct {
 	keyUp    key.Binding
 	keyDown  key.Binding
 
-	focused      bool
-	lastWidth    int
-	scrollOffset int
-	compositor   *lipgloss.Compositor
-	hoverX       int
-	hoverY       int
+	focused       bool
+	lastWidth     int
+	scrollOffset  int
+	scrollbarZone ScrollbarZone
+	compositor    *lipgloss.Compositor
+	hoverX        int
+	hoverY        int
 
 	// OnConfirm is called when the user confirms.
 	OnConfirm func()
@@ -295,7 +296,10 @@ func (c *ConfirmComponent) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		if sb != "" {
 			x := area.Max.X - 1
 			uv.NewStyledString(sb).Draw(scr, image.Rect(x, area.Min.Y, x+1, area.Min.Y+viewport))
+			c.scrollbarZone.PaintedColumn(image.Pt(x, area.Min.Y), viewport, totalLines, viewport, c.scrollOffset)
 		}
+	} else {
+		c.scrollbarZone.Clear()
 	}
 
 	return nil

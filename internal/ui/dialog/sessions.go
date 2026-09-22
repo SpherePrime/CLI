@@ -43,6 +43,7 @@ type Session struct {
 
 	sessionsMode  sessionsMode
 	bodyArea      image.Rectangle
+	scrollbarZone ScrollbarZone
 	mouseScrolled bool
 	lastClickTime time.Time
 	lastClickID   string
@@ -232,9 +233,21 @@ func (s *Session) HandleMsg(msg tea.Msg) Action {
 			s.mouseScrolled = true
 		}
 	case tea.MouseClickMsg:
+		if s.scrollbarZone.HandleMsg(msg, s.scrollListTo) {
+			return nil
+		}
 		return s.handleMouseClick(msg)
+	case tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		s.scrollbarZone.HandleMsg(msg, s.scrollListTo)
 	}
 	return nil
+}
+
+// scrollListTo scrolls the session list so the scrollbar thumb lines up with
+// the pointer.
+func (s *Session) scrollListTo(offset int) {
+	s.mouseScrolled = true
+	s.list.ScrollBy(offset - s.list.Offset())
 }
 
 func (s *Session) handleMouseClick(msg tea.MouseClickMsg) Action {
@@ -358,54 +371,17 @@ func (s *Session) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		rc.AddPart(inputView)
 	}
 	bodyView := t.Dialog.List.Height(s.list.Height()).Render(s.list.Render())
+	listView := bodyView
 	bodyView = joinScrollbar(t, bodyView, listHeight, listTotalHeight, listHeight, s.list.Offset())
 	rc.AddPart(bodyView)
 	rc.Help = renderDialogHelp(t, &s.help, s, innerWidth)
 
 	view := rc.Render()
-	s.updateSessionListArea(area, view, bodyView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, listHeight)
+	s.bodyArea = dialogBodyRect(area, dialogRectCentered(area, view), bodyView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, listHeight)
+	s.scrollbarZone.Painted(s.bodyArea.Min, listView, listHeight, listTotalHeight, listHeight, s.list.Offset())
 
 	DrawCenterCursor(scr, area, view, cur)
 	return cur
-}
-
-func (s *Session) updateSessionListArea(
-	area uv.Rectangle,
-	view string,
-	bodyView string,
-	helpView string,
-	viewStyle lipgloss.Style,
-	bodyStyle lipgloss.Style,
-	bodyWidth int,
-	bodyHeight int,
-) {
-	viewWidth, viewHeight := lipgloss.Size(view)
-	dialogArea := common.CenterRect(area, min(viewWidth, area.Dx()), min(viewHeight, area.Dy()))
-	bodyViewTop := dialogArea.Max.Y -
-		viewStyle.GetMarginBottom() -
-		viewStyle.GetBorderBottomSize() -
-		viewStyle.GetPaddingBottom() -
-		lipgloss.Height(helpView) -
-		lipgloss.Height(bodyView)
-	bodyMin := image.Pt(
-		dialogArea.Min.X+
-			viewStyle.GetMarginLeft()+
-			viewStyle.GetBorderLeftSize()+
-			viewStyle.GetPaddingLeft()+
-			bodyStyle.GetMarginLeft()+
-			bodyStyle.GetBorderLeftSize()+
-			bodyStyle.GetPaddingLeft(),
-		bodyViewTop+
-			bodyStyle.GetMarginTop()+
-			bodyStyle.GetBorderTopSize()+
-			bodyStyle.GetPaddingTop(),
-	)
-	s.bodyArea = image.Rect(
-		bodyMin.X,
-		bodyMin.Y,
-		bodyMin.X+bodyWidth,
-		bodyMin.Y+bodyHeight,
-	).Intersect(dialogArea).Intersect(area)
 }
 
 func (s *Session) sessionListArea() image.Rectangle {

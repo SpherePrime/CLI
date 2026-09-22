@@ -67,6 +67,9 @@ type Permissions struct {
 	viewportDirty bool // true when viewport content needs to be re-rendered
 	viewportWidth int
 
+	// scrollbarZone ties the painted content scrollbar to pointer drags.
+	scrollbarZone ScrollbarZone
+
 	// Diff view state.
 	diffSplitMode        *bool // nil means use default based on width
 	defaultDiffSplitMode bool  // default split mode based on width
@@ -278,6 +281,9 @@ func (p *Permissions) HandleMsg(msg tea.Msg) Action {
 				p.viewport, _ = p.viewport.Update(msg)
 			}
 		}
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		p.scrollbarZone.HandleMsg(msg, p.scrollContentTo)
+		return nil
 	case common.CoalescedWheelMsg:
 		if p.hasDiffView() {
 			if msg.DeltaX < 0 {
@@ -430,8 +436,9 @@ func (p *Permissions) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		p.viewportDirty = false
 	}
 	content = p.viewport.View()
+	viewportView := content
 	if needsScrollbar {
-		content = joinScrollbar(t, content, availableHeight, p.viewport.TotalLineCount(), availableHeight, p.viewport.YOffset())
+		content = joinScrollbar(t, viewportView, availableHeight, p.viewport.TotalLineCount(), availableHeight, p.viewport.YOffset())
 	}
 
 	parts := []string{header}
@@ -441,8 +448,24 @@ func (p *Permissions) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	parts = append(parts, "", buttons, "", helpView)
 
 	innerContent := lipgloss.JoinVertical(lipgloss.Left, parts...)
-	DrawCenterCursor(scr, area, dialogStyle.Render(innerContent), nil)
+	view := dialogStyle.Render(innerContent)
+	if needsScrollbar {
+		// The content block sits above the buttons and help line, so its
+		// position is measured from the bottom of the rendered dialog.
+		linesBelow := 2 + lipgloss.Height(buttons) + lipgloss.Height(helpView)
+		origin := contentOriginFromBottom(area, view, styleLeftInset(dialogStyle), styleBottomInset(dialogStyle), linesBelow, lipgloss.Height(content))
+		p.scrollbarZone.Painted(origin, viewportView, availableHeight, p.viewport.TotalLineCount(), availableHeight, p.viewport.YOffset())
+	} else {
+		p.scrollbarZone.Clear()
+	}
+	DrawCenterCursor(scr, area, view, nil)
 	return nil
+}
+
+// scrollContentTo scrolls the permission content so the scrollbar thumb lines
+// up with the pointer.
+func (p *Permissions) scrollContentTo(offset int) {
+	p.viewport.SetYOffset(offset)
 }
 
 func (p *Permissions) renderHeader(contentWidth int) string {

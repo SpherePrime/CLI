@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"cmp"
+	"image"
 	"image/color"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/key"
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
+	uv "github.com/dwertyfa288/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 	"github.com/dwertyfa288/CLI/internal/ui/common"
 	"github.com/dwertyfa288/CLI/internal/ui/list"
@@ -78,6 +80,86 @@ func joinScrollbar(t *styles.Styles, view string, height, contentSize, viewportS
 		return lipgloss.JoinHorizontal(lipgloss.Top, view, sb)
 	}
 	return view
+}
+
+// styleLeftInset returns the cells a style reserves left of its content.
+func styleLeftInset(s lipgloss.Style) int {
+	return s.GetMarginLeft() + s.GetBorderLeftSize() + s.GetPaddingLeft()
+}
+
+// styleBottomInset returns the cells a style reserves below its content.
+func styleBottomInset(s lipgloss.Style) int {
+	return s.GetMarginBottom() + s.GetBorderBottomSize() + s.GetPaddingBottom()
+}
+
+// contentOriginFromBottom returns the top-left cell of a content block inside
+// a centered dialog view, measured from the bottom: the block sits contentRows
+// tall directly above linesBelow other rows of dialog chrome.
+func contentOriginFromBottom(
+	screen uv.Rectangle,
+	view string,
+	leftInset, bottomInset, linesBelow, contentRows int,
+) image.Point {
+	dialogArea := dialogRectCentered(screen, view)
+	return image.Pt(
+		dialogArea.Min.X+leftInset,
+		dialogArea.Max.Y-bottomInset-linesBelow-contentRows,
+	)
+}
+
+// dialogRectCentered returns the on-screen rectangle of a dialog view drawn
+// with DrawCenter.
+func dialogRectCentered(screen uv.Rectangle, view string) image.Rectangle {
+	viewWidth, viewHeight := lipgloss.Size(view)
+	return common.CenterRect(screen, min(viewWidth, screen.Dx()), min(viewHeight, screen.Dy()))
+}
+
+// dialogRectBottomLeft returns the on-screen rectangle of a dialog view drawn
+// with DrawOnboarding.
+func dialogRectBottomLeft(screen uv.Rectangle, view string) image.Rectangle {
+	viewWidth, viewHeight := lipgloss.Size(view)
+	return common.BottomLeftRect(screen, min(viewWidth, screen.Dx()), min(viewHeight, screen.Dy()))
+}
+
+// dialogBodyRect returns the absolute on-screen rectangle of a dialog's body
+// block, measured from the bottom of the dialog: the scrollable body always
+// sits directly above the help footer inside the dialog frame. dialogArea is
+// where the rendered view was placed on screen.
+func dialogBodyRect(
+	screen uv.Rectangle,
+	dialogArea image.Rectangle,
+	bodyView string,
+	helpView string,
+	viewStyle lipgloss.Style,
+	bodyStyle lipgloss.Style,
+	bodyWidth int,
+	bodyHeight int,
+) image.Rectangle {
+	bodyViewTop := dialogArea.Max.Y -
+		viewStyle.GetMarginBottom() -
+		viewStyle.GetBorderBottomSize() -
+		viewStyle.GetPaddingBottom() -
+		lipgloss.Height(helpView) -
+		lipgloss.Height(bodyView)
+	bodyMin := image.Pt(
+		dialogArea.Min.X+
+			viewStyle.GetMarginLeft()+
+			viewStyle.GetBorderLeftSize()+
+			viewStyle.GetPaddingLeft()+
+			bodyStyle.GetMarginLeft()+
+			bodyStyle.GetBorderLeftSize()+
+			bodyStyle.GetPaddingLeft(),
+		bodyViewTop+
+			bodyStyle.GetMarginTop()+
+			bodyStyle.GetBorderTopSize()+
+			bodyStyle.GetPaddingTop(),
+	)
+	return image.Rect(
+		bodyMin.X,
+		bodyMin.Y,
+		bodyMin.X+bodyWidth,
+		bodyMin.Y+bodyHeight,
+	).Intersect(dialogArea).Intersect(screen)
 }
 
 // Maximum share of a list row width the secondary info column may take

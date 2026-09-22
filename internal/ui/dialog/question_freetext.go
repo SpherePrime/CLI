@@ -22,12 +22,13 @@ type FreeText struct {
 	Request question.Question
 	focused bool
 
-	editor       textarea.Model
-	scrollOffset int  // lines scrolled past the top of the textarea viewport
-	wheelActive  bool // wheel-scroll mode: skip cursor-follow until next key press
-	keyEnter     key.Binding
-	keyNewline   key.Binding
-	keyClose     key.Binding
+	editor        textarea.Model
+	scrollOffset  int  // lines scrolled past the top of the textarea viewport
+	wheelActive   bool // wheel-scroll mode: skip cursor-follow until next key press
+	scrollbarZone ScrollbarZone
+	keyEnter      key.Binding
+	keyNewline    key.Binding
+	keyClose      key.Binding
 
 	lastResponse question.Answer
 	lastWidth    int
@@ -270,7 +271,10 @@ func (d *FreeText) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		if sb != "" {
 			x := area.Max.X - 1
 			uv.NewStyledString(sb).Draw(scr, image.Rect(x, area.Min.Y, x+1, area.Min.Y+viewport))
+			d.scrollbarZone.PaintedColumn(image.Pt(x, area.Min.Y), viewport, len(lines), viewport, d.scrollOffset)
 		}
+	} else {
+		d.scrollbarZone.Clear()
 	}
 
 	return cur
