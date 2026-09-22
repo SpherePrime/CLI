@@ -147,6 +147,11 @@ func (s *Session) ID() string {
 	return SessionsID
 }
 
+// RefreshLocale retranslates the placeholder after the UI language changes.
+func (s *Session) RefreshLocale() {
+	s.input.Placeholder = s.com.L("sessions.enter_name")
+}
+
 // HandleMsg implements Dialog.
 func (s *Session) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {

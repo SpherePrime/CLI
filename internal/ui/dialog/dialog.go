@@ -182,6 +182,35 @@ func (d *Overlay) removeDialog(idx int) {
 	}
 }
 
+// Dialogs returns a snapshot of the currently open dialogs in stack order.
+func (d *Overlay) Dialogs() []Dialog {
+	out := make([]Dialog, len(d.dialogs))
+	copy(out, d.dialogs)
+	return out
+}
+
+// ReplaceDialog replaces an open dialog with a new instance that has the
+// same ID, preserving its position in the stack. Used when a locale change
+// requires rebuilding cached UI strings. Returns false when the dialog is
+// not open.
+func (d *Overlay) ReplaceDialog(id string, replacement Dialog) bool {
+	for i, dlg := range d.dialogs {
+		if dlg.ID() == id {
+			d.dialogs[i] = replacement
+			return true
+		}
+	}
+	return false
+}
+
+// LocaleRefreshable is implemented by dialogs that cache translated strings
+// in fields set at construction time. applyLanguage calls RefreshLocale on
+// every open dialog implementing this interface so labels update without a
+// restart.
+type LocaleRefreshable interface {
+	RefreshLocale()
+}
+
 // Dialog returns the dialog with the specified ID, or nil if not found.
 func (d *Overlay) Dialog(dialogID string) Dialog {
 	for _, dialog := range d.dialogs {
