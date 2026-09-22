@@ -163,9 +163,9 @@ func LetterH(stretch bool) string {
 func LetterI(stretch bool) string {
 	// Here's what we're making:
 	//
-	// ▀▀▀█▀▀▀
-	//     █
-	// ▀▀▀▀▀▀▀
+	// ▀▀█▀▀
+	//   █
+	// ▀▀▀▀▀
 
 	serif := heredoc.Doc(`
 		▀
@@ -181,16 +181,16 @@ func LetterI(stretch bool) string {
 		serif,
 		stretchLetterformPart(serif, letterformProps{
 			stretch:    stretch,
-			width:      2,
-			minStretch: 4,
-			maxStretch: 8,
+			width:      1,
+			minStretch: 2,
+			maxStretch: 5,
 		}),
 		stem,
 		stretchLetterformPart(serif, letterformProps{
 			stretch:    stretch,
-			width:      2,
-			minStretch: 4,
-			maxStretch: 8,
+			width:      1,
+			minStretch: 2,
+			maxStretch: 5,
 		}),
 		serif,
 	)
@@ -223,7 +223,7 @@ func LetterM(stretch bool) string {
 		shoulder,
 		stretchLetterformPart(valley, letterformProps{
 			stretch:    stretch,
-			width:      2,
+			width:      1,
 			minStretch: 5,
 			maxStretch: 9,
 		}),
