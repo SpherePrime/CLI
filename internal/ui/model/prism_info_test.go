@@ -21,6 +21,7 @@ type prismWorkspace struct {
 
 func (w *prismWorkspace) Config() *config.Config { return &config.Config{} }
 func (w *prismWorkspace) WorkingDir() string     { return "/" }
+func (w *prismWorkspace) Language() string       { return "" }
 
 func newPrismTestUI() *UI {
 	com := common.DefaultCommon(&prismWorkspace{})

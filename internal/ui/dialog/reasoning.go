@@ -80,7 +80,7 @@ func NewReasoning(com *common.Common) (*Reasoning, error) {
 
 	r.input = textinput.New()
 	r.input.SetVirtualCursor(false)
-	r.input.Placeholder = "Type to filter"
+	r.input.Placeholder = com.L("cmd.type_to_filter")
 	r.input.SetStyles(com.Styles.TextInput)
 	r.input.Focus()
 
