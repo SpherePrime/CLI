@@ -51,6 +51,7 @@ type choiceList struct {
 	hoverX, hoverY   int  // current mouse position for hover highlight
 	hoveredChoice    int  // choice index under mouse, or -1
 	mouseActive      bool // true when last interaction was mouse (hover mode)
+	scrollbarZone    ScrollbarZone
 
 	// Cached layout for wheel-scroll bounds checking.
 	lastLines    []contentLine // last rendered lines from drawContent
@@ -539,7 +540,10 @@ func (c *choiceList) drawContent(scr uv.Screen, area uv.Rectangle, fillInPrefix 
 		if sb != "" {
 			x := area.Max.X - 1
 			uv.NewStyledString(sb).Draw(scr, image.Rect(x, area.Min.Y, x+1, area.Min.Y+viewport))
+			c.scrollbarZone.PaintedColumn(image.Pt(x, area.Min.Y), viewport, len(lines), viewport, c.scrollOffset)
 		}
+	} else {
+		c.scrollbarZone.Clear()
 	}
 
 	// Build hit layers for choice rows.

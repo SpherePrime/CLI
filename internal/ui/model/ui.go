@@ -1119,6 +1119,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Route clicks to inline editors that support mouse interaction.
 		if m.activeInline != nil {
+			if m.handleInlineScrollbar(msg) {
+				return m, tea.Batch(cmds...)
+			}
 			if selectable, ok := m.activeInline.(dialog.MouseSelectableEditor); ok &&
 				selectable.HandleMouseDown(msg.X, msg.Y) {
 				return m, tea.Batch(cmds...)
@@ -1196,6 +1199,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Track hover position for inline editors.
 		if m.activeInline != nil {
+			if m.handleInlineScrollbar(msg) {
+				return m, tea.Batch(cmds...)
+			}
 			if selectable, ok := m.activeInline.(dialog.MouseSelectableEditor); ok &&
 				selectable.HandleMouseDrag(msg.X, msg.Y) {
 				return m, tea.Batch(cmds...)
@@ -1261,6 +1267,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.activeInline != nil {
+			if m.handleInlineScrollbar(msg) {
+				return m, tea.Batch(cmds...)
+			}
 			if selectable, ok := m.activeInline.(dialog.MouseSelectableEditor); ok {
 				if handled, cmd := selectable.HandleMouseRelease(msg.X, msg.Y); handled {
 					if cmd != nil {

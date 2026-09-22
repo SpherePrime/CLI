@@ -55,6 +55,9 @@ type Arguments struct {
 	}
 
 	viewport viewport.Model
+
+	// scrollbarZone ties the painted content scrollbar to pointer drags.
+	scrollbarZone ScrollbarZone
 }
 
 var _ Dialog = (*Arguments)(nil)
@@ -230,6 +233,9 @@ func (a *Arguments) HandleMsg(msg tea.Msg) Action {
 			a.inputs[a.focused], cmd = a.inputs[a.focused].Update(msg)
 			return ActionCmd{Cmd: cmd}
 		}
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		a.scrollbarZone.HandleMsg(msg, a.scrollContentTo)
+		return nil
 	case common.CoalescedWheelMsg:
 		a.viewport, _ = a.viewport.Update(tea.MouseWheelMsg(msg.Mouse))
 		// If focused field scrolled out of view, focus the visible field
@@ -335,7 +341,8 @@ func (a *Arguments) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	a.viewport.SetHeight(viewportHeight)
 	a.viewport.SetContent(renderedFields)
 
-	content := joinScrollbar(s, a.viewport.View(), viewportHeight, a.viewport.TotalLineCount(), viewportHeight, a.viewport.YOffset())
+	viewportView := a.viewport.View()
+	content := joinScrollbar(s, viewportView, viewportHeight, a.viewport.TotalLineCount(), viewportHeight, a.viewport.YOffset())
 	var contentParts []string
 	if description != "" {
 		contentParts = append(contentParts, description)
@@ -350,6 +357,14 @@ func (a *Arguments) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	)
 
 	dialog := s.Dialog.View.Render(view)
+
+	// The content block is the last thing inside the dialog content style, so
+	// only the help line and the frames below it separate it from the bottom.
+	linesBelow := lipgloss.Height(helpView) + styleBottomInset(dialogContentStyle)
+	bottomInset := styleBottomInset(s.Dialog.View)
+	leftInset := styleLeftInset(s.Dialog.View) + styleLeftInset(dialogContentStyle)
+	origin := contentOriginFromBottom(area, dialog, leftInset, bottomInset, linesBelow, lipgloss.Height(content))
+	a.scrollbarZone.Painted(origin, viewportView, viewportHeight, a.viewport.TotalLineCount(), viewportHeight, a.viewport.YOffset())
 
 	descriptionHeight := 0
 	if a.description != "" {
@@ -373,6 +388,12 @@ func (a *Arguments) StartLoading() tea.Cmd {
 // StopLoading implements [LoadingDialog].
 func (a *Arguments) StopLoading() {
 	a.loading = false
+}
+
+// scrollContentTo scrolls the argument fields so the scrollbar thumb lines up
+// with the pointer.
+func (a *Arguments) scrollContentTo(offset int) {
+	a.viewport.SetYOffset(offset)
 }
 
 // ShortHelp implements help.KeyMap.

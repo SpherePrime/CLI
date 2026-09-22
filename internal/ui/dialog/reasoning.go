@@ -30,6 +30,11 @@ type Reasoning struct {
 	list  *list.FilterableList
 	input textinput.Model
 
+	// scrollbarZone ties the painted list scrollbar to pointer drags; once
+	// the pointer scrolls the list, the selected item is left where it is.
+	scrollbarZone ScrollbarZone
+	mouseScrolled bool
+
 	keyMap struct {
 		Select   key.Binding
 		Next     key.Binding
@@ -112,6 +117,9 @@ func (r *Reasoning) ID() string {
 // HandleMsg implements [Dialog].
 func (r *Reasoning) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		r.scrollbarZone.HandleMsg(msg, r.scrollListTo)
+		return nil
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, r.keyMap.Close):
@@ -193,20 +201,31 @@ func (r *Reasoning) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	visibleCount := len(r.list.FilteredItems())
 	if r.list.Height() >= visibleCount {
 		r.list.ScrollToTop()
-	} else {
+	} else if !r.mouseScrolled {
 		r.list.ScrollToSelected()
 	}
 
 	listView := t.Dialog.List.Height(r.list.Height()).Render(r.list.Render())
+	scrollable := listView
 	listView = joinScrollbar(t, listView, listHeight, listTotalHeight, listHeight, r.list.Offset())
 	rc.AddPart(listView)
 	rc.Help = renderDialogHelp(t, &r.help, r, innerWidth)
 
 	view := rc.Render()
 
+	body := dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, listHeight)
+	r.scrollbarZone.Painted(body.Min, scrollable, listHeight, listTotalHeight, listHeight, r.list.Offset())
+
 	cur := r.Cursor()
 	DrawCenterCursor(scr, area, view, cur)
 	return cur
+}
+
+// scrollListTo scrolls the reasoning list so the scrollbar thumb lines up with
+// the pointer.
+func (r *Reasoning) scrollListTo(offset int) {
+	r.mouseScrolled = true
+	r.list.ScrollBy(offset - r.list.Offset())
 }
 
 // ShortHelp implements [help.KeyMap].

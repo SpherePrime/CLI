@@ -27,3 +27,12 @@ type WheelScrollable interface {
 	// vertically, DeltaX scrolls horizontally.
 	HandleWheel(deltaX, deltaY float64)
 }
+
+// ScrollbarDraggable is an optional interface for components that paint a
+// scrollbar column and can be scrolled by dragging its thumb. The UI
+// type-asserts for this before routing mouse messages to the component.
+type ScrollbarDraggable interface {
+	// HandleScrollbarMouse routes a mouse press, drag, or release to the
+	// component's scrollbar. It reports whether the message was consumed.
+	HandleScrollbarMouse(msg tea.Msg) bool
+}

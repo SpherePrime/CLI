@@ -11,6 +11,7 @@ import (
 	"github.com/dwertyfa288/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/dwertyfa288/CLI/vendordeps/bubbletea/v2"
 	"github.com/dwertyfa288/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/dwertyfa288/CLI/vendordeps/lipgloss/v2"
 	"github.com/dwertyfa288/CLI/internal/config"
 	"github.com/dwertyfa288/CLI/internal/ui/common"
 	"github.com/dwertyfa288/CLI/internal/ui/util"
@@ -92,6 +93,9 @@ type Models struct {
 	list  *ModelsList
 	input textinput.Model
 	help  help.Model
+
+	// scrollbarZone ties the painted list scrollbar to pointer drags.
+	scrollbarZone ScrollbarZone
 }
 
 var _ Dialog = (*Models)(nil)
@@ -233,8 +237,16 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 			}
 			return ActionCmd{cmd}
 		}
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		m.scrollbarZone.HandleMsg(msg, m.scrollListTo)
 	}
 	return nil
+}
+
+// scrollListTo scrolls the model list so the scrollbar thumb lines up with the
+// pointer.
+func (m *Models) scrollListTo(offset int) {
+	m.list.ScrollBy(offset - m.list.Offset())
 }
 
 // Cursor returns the cursor for the dialog.
@@ -285,6 +297,7 @@ func (m *Models) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	rc.AddPart(inputView)
 
 	listView := t.Dialog.List.Height(m.list.Height()).Render(m.list.Render())
+	scrollable := listView
 	listView = joinScrollbar(t, listView, listHeight, listTotalHeight, listHeight, m.list.Offset())
 	rc.AddPart(listView)
 
@@ -298,9 +311,15 @@ func (m *Models) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		rc.IsOnboarding = true
 		view := rc.Render()
 		cur = adjustOnboardingInputCursor(t, cur)
+		// Onboarding dialogs render without the View frame, so only the body
+		// style insets apply.
+		body := dialogBodyRect(area, dialogRectBottomLeft(area, view), listView, rc.Help, lipgloss.Style{}, t.Dialog.List, innerWidth, listHeight)
+		m.scrollbarZone.Painted(body.Min, scrollable, listHeight, listTotalHeight, listHeight, m.list.Offset())
 		DrawOnboardingCursor(scr, area, view, cur)
 	} else {
 		view := rc.Render()
+		body := dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, listHeight)
+		m.scrollbarZone.Painted(body.Min, scrollable, listHeight, listTotalHeight, listHeight, m.list.Offset())
 		DrawCenterCursor(scr, area, view, cur)
 	}
 	return cur
