@@ -557,6 +557,80 @@ func TestConfig_configureProvidersWithNewProvider(t *testing.T) {
 	require.True(t, ok, "OpenAI provider should still be present")
 }
 
+func TestConfig_configureProvidersOpenCodeIsHiddenUntilAdded(t *testing.T) {
+	knownProviders := []catwalk.Provider{
+		{
+			ID:          catwalk.InferenceProviderOpenCodeZen,
+			APIKey:      "$OPENCODE_API_KEY",
+			APIEndpoint: "https://opencode.ai/zen/v1",
+			Models:      []catwalk.Model{{ID: "kimi-k2"}},
+		},
+	}
+
+	cfg := &Config{}
+	cfg.setDefaults("/tmp", "")
+	env := env.NewFromMap(map[string]string{})
+	resolver := NewShellVariableResolver(env)
+	err := cfg.configureProviders(context.Background(), testStore(cfg), env, resolver, knownProviders)
+	require.NoError(t, err)
+	// OpenCode answers keyless requests, so it must not join the config on
+	// its own: nobody would have added it, and the model picker would list
+	// a provider the user never asked for.
+	require.Equal(t, 0, cfg.Providers.Len())
+}
+
+func TestConfig_configureProvidersOpenCodeWhenAddedToConfig(t *testing.T) {
+	knownProviders := []catwalk.Provider{
+		{
+			ID:          catwalk.InferenceProviderOpenCodeGo,
+			APIKey:      "$OPENCODE_API_KEY",
+			APIEndpoint: "https://opencode.ai/zen/go/v1",
+			Models:      []catwalk.Model{{ID: "minimax-m2.7"}},
+		},
+	}
+
+	cfg := &Config{
+		Providers: csync.NewMap[string, ProviderConfig](),
+	}
+	cfg.Providers.Set(string(catwalk.InferenceProviderOpenCodeGo), ProviderConfig{
+		ID: string(catwalk.InferenceProviderOpenCodeGo),
+	})
+	cfg.setDefaults("/tmp", "")
+	env := env.NewFromMap(map[string]string{})
+	resolver := NewShellVariableResolver(env)
+	err := cfg.configureProviders(context.Background(), testStore(cfg), env, resolver, knownProviders)
+	require.NoError(t, err)
+
+	provider, ok := cfg.Providers.Get(string(catwalk.InferenceProviderOpenCodeGo))
+	require.True(t, ok, "a keyless OpenCode provider the user added should stay usable")
+	require.Len(t, provider.Models, 1)
+	require.Equal(t, "minimax-m2.7", provider.Models[0].ID)
+}
+
+func TestConfig_configureProvidersOpenCodeWithEnvAPIKey(t *testing.T) {
+	knownProviders := []catwalk.Provider{
+		{
+			ID:          catwalk.InferenceProviderOpenCodeGo,
+			APIKey:      "$OPENCODE_API_KEY",
+			APIEndpoint: "https://opencode.ai/zen/go/v1",
+			Models:      []catwalk.Model{{ID: "minimax-m2.7"}},
+		},
+	}
+
+	cfg := &Config{}
+	cfg.setDefaults("/tmp", "")
+	env := env.NewFromMap(map[string]string{
+		"OPENCODE_API_KEY": "test-key",
+	})
+	resolver := NewShellVariableResolver(env)
+	err := cfg.configureProviders(context.Background(), testStore(cfg), env, resolver, knownProviders)
+	require.NoError(t, err)
+
+	provider, ok := cfg.Providers.Get(string(catwalk.InferenceProviderOpenCodeGo))
+	require.True(t, ok, "an OpenCode provider with a supplied API key should be configured")
+	require.Equal(t, "$OPENCODE_API_KEY", provider.APIKey)
+}
+
 func TestConfig_configureProvidersBedrockWithCredentials(t *testing.T) {
 	knownProviders := []catwalk.Provider{
 		{

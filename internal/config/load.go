@@ -365,9 +365,16 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 				}
 			}
 		case catwalk.InferenceProviderOpenCodeGo, catwalk.InferenceProviderOpenCodeZen:
-			// OpenCode providers work without an API key, similar to
-			// how OpenCode native operates — no registration or token
-			// is required to use the service.
+			// OpenCode authorizes keyless calls, so a missing API key says
+			// nothing about whether the user wants the provider. These stay
+			// out of the config until they are added by hand, selected with
+			// a key, or supplied through OPENCODE_API_KEY, so their model
+			// catalogs don't show up in the model picker on their own.
+			if apiKey, err := resolver.ResolveValue(p.APIKey); err != nil || apiKey == "" {
+				if !configExists {
+					continue
+				}
+			}
 		default:
 			// An OAuth login is a credential too: providers signed in
 			// through OAuth (e.g. OpenAI with a ChatGPT account) are
