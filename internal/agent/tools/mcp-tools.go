@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/dwertyfa288/CLI/vendordeps/fantasy"
 	"github.com/dwertyfa288/CLI/internal/agent/tools/mcp"
@@ -45,6 +46,25 @@ type Tool struct {
 	permissions     permission.Service
 	workingDir      string
 	providerOptions fantasy.ProviderOptions
+}
+
+// SmartSearchEntry converts an MCP Tool into a searchable entry for tool-search mode.
+func (m *Tool) SmartSearchEntry() SmartSearchEntry {
+	info := m.Info()
+	required := ""
+	if len(info.Required) > 0 {
+		required = strings.Join(info.Required, ", ")
+	}
+	instruction := fmt.Sprintf("Call %s with JSON parameters.", info.Name)
+	if required != "" {
+		instruction += " Required parameters: " + required + "."
+	}
+	return SmartSearchEntry{
+		Kind:        "mcp",
+		Name:        info.Name,
+		Description: info.Description,
+		Instruction: instruction,
+	}
 }
 
 func (m *Tool) SetProviderOptions(opts fantasy.ProviderOptions) {

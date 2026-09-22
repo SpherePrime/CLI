@@ -409,6 +409,7 @@ type Options struct {
 	Notifications             string       `json:"notifications,omitempty" jsonschema:"description=Notification style to use. Options: auto (default)\\, native\\, osc\\, bell\\, disabled. Auto selects based on environment: native for local sessions\\, osc for SSH (with automatic OSC 99/777 detection).,enum=auto,enum=native,enum=osc,enum=bell,enum=disabled,default=auto"`
 	DisabledSkills            []string     `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=prime-config"`
 	AutoUpdate                bool         `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
+	SmartTools                bool         `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
 	RequestTimeout            *int         `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. 0 disables it\\, negative values are invalid.,default=60,example=120,example=300,example=0"`
 }
 
@@ -965,6 +966,9 @@ func allToolNames() []string {
 		"write",
 		"list_mcp_resources",
 		"read_mcp_resource",
+		"search_skills",
+		"search_mcp",
+		"search_tools",
 	}
 }
 

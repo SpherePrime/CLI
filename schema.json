@@ -582,6 +582,11 @@
           "description": "Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.",
           "default": false
         },
+        "smart_tools": {
+          "type": "boolean",
+          "description": "Enable tool search mode: expose search_skills",
+          "default": false
+        },
         "request_timeout": {
           "type": "integer",
           "description": "Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity, so slow but active streams are never killed. 0 disables it, negative values are invalid.",
@@ -753,6 +758,27 @@
           "description": "Maximum number of tokens for model responses",
           "examples": [
             4096
+          ]
+        },
+        "context_window": {
+          "type": "integer",
+          "description": "Override the model's maximum context window in tokens",
+          "examples": [
+            200000
+          ]
+        },
+        "price_in": {
+          "type": "number",
+          "description": "Price per 1M input tokens in USD",
+          "examples": [
+            1.5
+          ]
+        },
+        "price_out": {
+          "type": "number",
+          "description": "Price per 1M output tokens in USD",
+          "examples": [
+            6.0
           ]
         },
         "temperature": {

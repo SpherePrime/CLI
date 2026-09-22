@@ -2223,6 +2223,28 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			return util.NewInfoMsg("Mouse support " + status)
 		})
 		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionToggleSmartTools:
+		cfg := m.com.Config()
+		if cfg == nil {
+			cmds = append(cmds, util.ReportError(errors.New("configuration not found")))
+			break
+		}
+		newValue := cfg.Options == nil || !cfg.Options.SmartTools
+		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
+			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.smart_tools", newValue); err != nil {
+				return util.ReportError(err)()
+			}
+			// Rebuilding the agent re-reads the tool palette and the system
+			// prompt, so the mode takes effect on the next message.
+			m.com.Workspace.UpdateAgentModel(context.TODO())
+
+			status := "disabled"
+			if newValue {
+				status = "enabled"
+			}
+			return util.NewInfoMsg("Smart Tools mode " + status)
+		}))
+		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionQuit:
 		cmds = append(cmds, tea.Quit)
 	case dialog.ActionEnableDockerMCP:
