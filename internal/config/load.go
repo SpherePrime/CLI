@@ -41,6 +41,8 @@ const defaultCatwalkURL = "https://catwalk.dwerty.local"
 func Load(workingDir, dataDir string, debug bool) (*ConfigStore, error) {
 	// Migrate deprecated disable_notifications before loading config.
 	migrateDisableNotifications()
+	// Move any pre-split single config files into the per-section layout.
+	migrateToSectionFiles()
 
 	configPaths := lookupConfigs(workingDir)
 
@@ -52,31 +54,28 @@ func Load(workingDir, dataDir string, debug bool) (*ConfigStore, error) {
 	cfg.setDefaults(workingDir, dataDir)
 
 	store := &ConfigStore{
-		config:         cfg,
-		workingDir:     workingDir,
-		globalDataPath: GlobalConfigData(),
-		workspacePath:  filepath.Join(cfg.Options.DataDirectory, fmt.Sprintf("%s.json", appName)),
-		loadedPaths:    loadedPaths,
+		config:          cfg,
+		workingDir:      workingDir,
+		globalDataPath:  GlobalConfig(),
+		workspacePath:   filepath.Join(cfg.Options.DataDirectory, fmt.Sprintf("%s.json", appName)),
+		loadedPaths:     loadedPaths,
 	}
 
 	if debug {
 		cfg.Options.Debug = true
 	}
 
-	// Load workspace config last so it has highest priority.
-	if wsData, err := os.ReadFile(store.workspacePath); err == nil && len(wsData) > 0 {
-		if !json.Valid(wsData) {
-			return nil, fmt.Errorf("invalid JSON in config file %s", store.workspacePath)
-		}
-		merged, mergeErr := loadFromBytes(append([][]byte{mustMarshalConfig(cfg)}, wsData))
-		if mergeErr == nil {
-			// Preserve defaults that setDefaults already applied.
-			dataDir := cfg.Options.DataDirectory
-			*cfg = *merged
-			cfg.setDefaults(workingDir, dataDir)
-			store.config = cfg
-			store.loadedPaths = append(store.loadedPaths, store.workspacePath)
-		}
+	// Load workspace config last so it has highest priority. Every config
+	// file in the workspace directory counts, so a project can keep its
+	// settings split the same way the global config is.
+	merged, wsLoaded, wsErr := mergeWorkspaceConfig(cfg, store.workspacePath, workingDir)
+	if wsErr != nil {
+		return nil, fmt.Errorf("failed to load workspace config: %w", wsErr)
+	}
+	if len(wsLoaded) > 0 {
+		cfg = merged
+		store.config = cfg
+		store.loadedPaths = append(store.loadedPaths, wsLoaded...)
 	}
 
 	// Validate hooks after all config merging is complete so workspace
@@ -952,18 +951,22 @@ func lookupConfigs(cwd string) []string {
 	// Prepend global user config and machine-owned data JSON. Only the user
 	// config directory contributes a primerc; the data directory is writable
 	// machine state and must never be executed as Bash. Missing files are
-	// skipped when loaded.
-	configPaths := []string{
-		systemConfigPath,
-		GlobalConfig(),
-		shellConfigSibling(GlobalConfig()),
-		GlobalConfigData(),
-	}
+	// skipped when loaded. Each directory contributes its per-section files in
+	// load order, so a split config and a legacy single file both work.
+	configPaths := []string{systemConfigPath}
+	configPaths = append(configPaths, configFilesForDir(GlobalConfigDir())...)
+	configPaths = append(configPaths, shellConfigSibling(GlobalConfig()))
+	configPaths = append(configPaths, configFilesForDir(GlobalDataDir())...)
 
 	// Ordered high-to-low priority within a directory. LookupBounded returns
 	// matches in this order, and the later reverse + merge make the earliest
 	// listed name win on conflict. So: .primerc beats primerc, both beat the
 	// JSON configs, and .prime.json beats prime.json.
+	//
+	// Only these fixed names are searched for in a project tree: a repository
+	// may legitimately contain its own providers.json or options.json, and
+	// those are not Prime config. Project settings Prime writes live in the
+	// .prime data directory, handled by mergeWorkspaceConfig.
 	configNames := []string{
 		"." + appName + "rc",
 		appName + "rc",
@@ -1130,41 +1133,84 @@ func hasAWSCredentials(env env.Env) bool {
 	return false
 }
 
+// mergeWorkspaceConfig applies the project's config files on top of cfg. Prime
+// writes project settings into its data directory, so every JSON file there
+// counts and a project can keep its settings split the same way the global
+// config is. Files outside that directory are untouched: a repository's own
+// providers.json is never mistaken for Prime config.
+func mergeWorkspaceConfig(cfg *Config, workspacePath, workingDir string) (*Config, []string, error) {
+	var raw [][]byte
+	var loaded []string
+	for _, path := range configFilesForDir(filepath.Dir(workspacePath)) {
+		data, err := os.ReadFile(path)
+		if err != nil || len(data) == 0 {
+			continue
+		}
+		if !json.Valid(data) {
+			return cfg, loaded, fmt.Errorf("invalid JSON in config file %s", path)
+		}
+		raw = append(raw, data)
+		loaded = append(loaded, path)
+	}
+	if len(raw) == 0 {
+		return cfg, nil, nil
+	}
+
+	merged, err := loadFromBytes(append([][]byte{mustMarshalConfig(cfg)}, raw...))
+	if err != nil {
+		return cfg, loaded, nil
+	}
+
+	// setDefaults is idempotent and keeps values a project cannot supply,
+	// such as the resolved data directory.
+	dataDir := cfg.Options.DataDirectory
+	*cfg = *merged
+	cfg.setDefaults(workingDir, dataDir)
+	return cfg, loaded, nil
+}
+
 // migrateDisableNotifications migrates the deprecated disable_notifications
 // and notification_style fields to the unified notifications field. It checks
-// both the user config (~/.config) and data config (~/.local) files. If
+// every global config file in the user config and data directories. If
 // disable_notifications is true, it sets notifications to "disabled" in the
-// data file. If notification_style is set, it moves the value to notifications.
+// options section. If notification_style is set, it moves the value there.
 // Regardless of value, it removes the deprecated fields from any file that
 // contains them.
 func migrateDisableNotifications() {
-	globalConfig := GlobalConfig()
-	dataConfig := GlobalConfigData()
-
 	var wasDisabled bool
 	var styleValue string
 	filesToClean := []string{}
 
-	for _, path := range []string{globalConfig, dataConfig} {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			continue
-		}
-		needsClean := false
-		if gjson.Get(string(data), "options.disable_notifications").Exists() {
-			needsClean = true
-			if gjson.Get(string(data), "options.disable_notifications").Bool() {
-				wasDisabled = true
+	// Scan every global config file: the deprecated keys can sit in the
+	// catch-all file or, on an already split config, in options.json.
+	seen := make(map[string]bool)
+	for _, dir := range []string{GlobalConfigDir(), GlobalDataDir()} {
+		for _, path := range configFilesForDir(dir) {
+			if seen[path] {
+				continue
 			}
-		}
-		if v := gjson.Get(string(data), "options.notification_style"); v.Exists() {
-			needsClean = true
-			if styleValue == "" {
-				styleValue = v.String()
+			seen[path] = true
+
+			data, err := os.ReadFile(path)
+			if err != nil {
+				continue
 			}
-		}
-		if needsClean {
-			filesToClean = append(filesToClean, path)
+			needsClean := false
+			if gjson.Get(string(data), "options.disable_notifications").Exists() {
+				needsClean = true
+				if gjson.Get(string(data), "options.disable_notifications").Bool() {
+					wasDisabled = true
+				}
+			}
+			if v := gjson.Get(string(data), "options.notification_style"); v.Exists() {
+				needsClean = true
+				if styleValue == "" {
+					styleValue = v.String()
+				}
+			}
+			if needsClean {
+				filesToClean = append(filesToClean, path)
+			}
 		}
 	}
 
@@ -1180,12 +1226,13 @@ func migrateDisableNotifications() {
 	}
 
 	if migratedValue != "" {
-		data, err := os.ReadFile(dataConfig)
+		target := sectionPath(GlobalConfigDir(), "options.notifications")
+		data, err := os.ReadFile(target)
 		if err == nil {
 			if !gjson.Get(string(data), "options.notifications").Exists() {
 				updated, err := sjson.Set(string(data), "options.notifications", migratedValue)
 				if err == nil {
-					if err := atomicWriteFile(dataConfig, []byte(updated), 0o600); err != nil {
+					if err := atomicWriteFile(target, []byte(updated), 0o600); err != nil {
 						slog.Warn("Failed to migrate to notifications field", "error", err)
 					} else {
 						slog.Info("Migrated notification settings to notifications field", "value", migratedValue)

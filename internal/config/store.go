@@ -92,7 +92,7 @@ type ConfigStore struct {
 	config             *Config
 	workingDir         string
 	resolver           VariableResolver
-	globalDataPath     string   // ~/.local/share/prime/prime.json
+	globalDataPath     string   // global config anchor: ~/.config/prime/prime.json
 	workspacePath      string   // .prime/prime.json
 	loadedPaths        []string // config files that were successfully loaded
 	knownProviders     []catwalk.Provider
@@ -266,21 +266,24 @@ func (s *ConfigStore) LoadedPaths() []string {
 	return slices.Clone(s.loadedPaths)
 }
 
-// lockConfig acquires both the in-process mutex and a cross-process flock
-// on the config file for the given scope. Callers that need to do I/O
-// between reading and writing (e.g. an HTTP token exchange) must use
-// lockConfig explicitly rather than atomicWrite.
+// lockConfig locks the anchor file for a scope. Section writes lock their own
+// file via lockConfigFile, so this is only used by callers that need to hold a
+// scope-wide lock across separate I/O steps.
 //
-// The returned release function drops both locks. Callers must call it
-// as soon as the file access is complete — no I/O should be performed
-// while the lock is held.
+// The returned release function drops both locks. Callers must call it as soon
+// as the file access is complete — no I/O should be performed while the lock
+// is held.
 func (s *ConfigStore) lockConfig(scope Scope) (func(), error) {
-	s.mu.Lock()
 	path, err := s.configPath(scope)
 	if err != nil {
-		s.mu.Unlock()
 		return nil, err
 	}
+	return s.lockConfigFile(path)
+}
+
+// lockConfigFile locks one config file, creating its directory when needed.
+func (s *ConfigStore) lockConfigFile(path string) (func(), error) {
+	s.mu.Lock()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		s.mu.Unlock()
 		return nil, fmt.Errorf("create config directory: %w", err)
@@ -298,21 +301,13 @@ func (s *ConfigStore) lockConfig(scope Scope) (func(), error) {
 	}, nil
 }
 
-// atomicWrite handles the lock-read-transform-write-unlock cycle for
-// config file mutations. The fn callback receives the current file
-// contents (raw bytes, or {} if the file is missing) and must return the
-// new contents. fn must be pure — no I/O, no network calls.
-func (s *ConfigStore) atomicWrite(scope Scope, fn func(current []byte) ([]byte, error)) error {
-	unlock, err := s.lockConfig(scope)
+// atomicWriteFileContents applies fn to one config file under its lock.
+func (s *ConfigStore) atomicWriteFileContents(path string, fn func(current []byte) ([]byte, error)) error {
+	unlock, err := s.lockConfigFile(path)
 	if err != nil {
 		return err
 	}
 	defer unlock()
-
-	path, err := s.configPath(scope)
-	if err != nil {
-		return err
-	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -331,7 +326,9 @@ func (s *ConfigStore) atomicWrite(scope Scope, fn func(current []byte) ([]byte, 
 	return atomicWriteFile(path, newData, 0o600)
 }
 
-// configPath returns the file path for the given scope.
+// configPath returns the anchor file for the given scope. Keys are stored in
+// per-section files next to it; this path is the legacy single-file location
+// and the base callers use to derive the scope's directory.
 func (s *ConfigStore) configPath(scope Scope) (string, error) {
 	switch scope {
 	case ScopeWorkspace:
@@ -344,13 +341,26 @@ func (s *ConfigStore) configPath(scope Scope) (string, error) {
 	}
 }
 
-// HasConfigField checks whether a key exists in the config file for the given
-// scope.
+// HasConfigField checks whether a key exists in the config for the given
+// scope. Both the section file that owns the key and the legacy single file
+// are consulted, so configs written before the split keep working.
 func (s *ConfigStore) HasConfigField(scope Scope, key string) bool {
-	path, err := s.configPath(scope)
+	path, err := s.configPathForKey(scope, key)
 	if err != nil {
 		return false
 	}
+	if readConfigKey(path, key) {
+		return true
+	}
+	dir, err := s.configDirForScope(scope)
+	if err != nil {
+		return false
+	}
+	return readConfigKey(legacyConfigPath(dir), key)
+}
+
+// readConfigKey reports whether a dotted key is present in one config file.
+func readConfigKey(path, key string) bool {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return false
@@ -388,32 +398,44 @@ func (s *ConfigStore) SetConfigFields(scope Scope, kv map[string]any) error {
 	return nil
 }
 
-// writeConfigFields persists key/value pairs to the config file. It does not
-// touch in-memory config state or the staleness snapshot: callers either
-// reload (SetConfigFields, whose reload recaptures the snapshot) or have
-// already published an updated clone and capture the snapshot themselves
-// (update). Both of those run under writeMu, which is what keeps the
+// writeConfigFields persists key/value pairs, routing each key to the section
+// file that owns it. It does not touch in-memory config state or the staleness
+// snapshot: callers either reload (SetConfigFields, whose reload recaptures the
+// snapshot) or have already published an updated clone and capture the snapshot
+// themselves (update). Both of those run under writeMu, which is what keeps the
 // snapshot map free of concurrent writers.
 func (s *ConfigStore) writeConfigFields(scope Scope, kv map[string]any) error {
-	// Sort keys for deterministic output regardless of map iteration
-	// order. This also ensures consistent results when callers pass
-	// overlapping JSONPath keys (e.g. "a" and "a.b").
+	dir, err := s.configDirForScope(scope)
+	if err != nil {
+		return err
+	}
+
+	// Sort keys for deterministic output regardless of map iteration order.
+	// This also ensures consistent results when callers pass overlapping
+	// JSONPath keys (e.g. "a" and "a.b").
 	keys := make([]string, 0, len(kv))
 	for k := range kv {
 		keys = append(keys, k)
 	}
 	slices.Sort(keys)
 
-	return s.atomicWrite(scope, func(data []byte) ([]byte, error) {
-		v := string(data)
-		for _, key := range keys {
-			var sErr error
-			if v, sErr = sjson.Set(v, key, kv[key]); sErr != nil {
-				return nil, fmt.Errorf("failed to set config field %s: %w", key, sErr)
+	for _, path := range sectionPathsForKeys(dir, keys) {
+		pathKeys := keysForSectionFile(dir, path, keys)
+		err := s.atomicWriteFileContents(path, func(data []byte) ([]byte, error) {
+			v := string(data)
+			for _, key := range pathKeys {
+				var sErr error
+				if v, sErr = sjson.Set(v, key, kv[key]); sErr != nil {
+					return nil, fmt.Errorf("failed to set config field %s: %w", key, sErr)
+				}
 			}
+			return []byte(v), nil
+		})
+		if err != nil {
+			return err
 		}
-		return []byte(v), nil
-	})
+	}
+	return nil
 }
 
 // mutateInMemory applies a copy-on-write change to the config without
@@ -454,8 +476,8 @@ func (s *ConfigStore) updateLocked(scope Scope, mutate func(*Config) map[string]
 	// Refresh the staleness snapshot so the file watcher does not treat
 	// our own write as an external change. Safe to touch the snapshot map
 	// here because we hold writeMu.
-	if path, err := s.configPath(scope); err == nil {
-		s.captureStalenessSnapshot(append(slices.Clone(s.loadedPaths), path))
+	if dir, err := s.configDirForScope(scope); err == nil {
+		s.captureStalenessSnapshot(append(slices.Clone(s.loadedPaths), configFilesForDir(dir)...))
 	}
 	return nil
 }
@@ -489,21 +511,23 @@ func (s *ConfigStore) pinPreferredModelLocked(modelType SelectedModelType, model
 	s.overrides.Models[modelType] = model
 }
 
-// RemoveConfigField removes a key from the config file for the given scope.
+// RemoveConfigField removes a key from the config for the given scope. The key
+// is dropped from its section file and from the legacy single file, so a value
+// written before the file split cannot reappear through the older copy.
 // After a successful write, it automatically reloads config to keep in-memory
 // state fresh.
 //
 // The write is protected by an in-process mutex and a cross-process flock.
 func (s *ConfigStore) RemoveConfigField(scope Scope, key string) error {
-	err := s.atomicWrite(scope, func(data []byte) ([]byte, error) {
-		v, sErr := sjson.Delete(string(data), key)
-		if sErr != nil {
-			return nil, fmt.Errorf("failed to delete config field %s: %w", key, sErr)
-		}
-		return []byte(v), nil
-	})
-	if err != nil {
+	if err := s.removeConfigKey(scope, key, sectionFileFor(key)); err != nil {
 		return err
+	}
+	if dir, err := s.configDirForScope(scope); err == nil {
+		if legacy := legacyConfigPath(dir); fileHasContent(legacy) {
+			if err := s.atomicWriteFileContents(legacy, deleteKeyFn(key)); err != nil {
+				return err
+			}
+		}
 	}
 
 	if err := s.autoReload(context.Background()); err != nil {
@@ -511,6 +535,30 @@ func (s *ConfigStore) RemoveConfigField(scope Scope, key string) error {
 	}
 
 	return nil
+}
+
+// removeConfigKey deletes a key from one file of the scope's config directory.
+func (s *ConfigStore) removeConfigKey(scope Scope, key, file string) error {
+	dir, err := s.configDirForScope(scope)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, file)
+	if !fileHasContent(path) {
+		return nil
+	}
+	return s.atomicWriteFileContents(path, deleteKeyFn(key))
+}
+
+// deleteKeyFn returns the transform that removes key from a config file body.
+func deleteKeyFn(key string) func([]byte) ([]byte, error) {
+	return func(data []byte) ([]byte, error) {
+		v, err := sjson.Delete(string(data), key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to delete config field %s: %w", key, err)
+		}
+		return []byte(v), nil
+	}
 }
 
 // UpdatePreferredModel updates the preferred model for the given type and
@@ -998,12 +1046,12 @@ func (s *ConfigStore) withRefreshLock(providerID string, fn func() error) error 
 }
 
 // refreshLockPath returns the path to the per-provider cross-process refresh
-// lock file. Lock files live under a dedicated locks/ subdirectory of the
-// data dir so they do not clutter the config directory. The file is created
+// lock file. Lock files live under a dedicated locks/ subdirectory of the data
+// dir so they do not clutter the config directory. The file is created
 // on demand by lock.File and is never removed (flock keys on inode, not
 // path).
 func (s *ConfigStore) refreshLockPath(providerID string) string {
-	dir := filepath.Join(filepath.Dir(s.globalDataPath), "locks")
+	dir := filepath.Join(filepath.Dir(GlobalConfigData()), "locks")
 	_ = os.MkdirAll(dir, 0o755)
 	return filepath.Join(dir, fmt.Sprintf("%s.refresh.lock", providerID))
 }
@@ -1024,38 +1072,55 @@ func (s *ConfigStore) applyToken(providerConfig ProviderConfig, token *oauth.Tok
 }
 
 // loadTokenFromDisk reads the OAuth token for the given provider from the
-// config file on disk. Returns nil if the token is not found or matches the
-// current in-memory token.
+// config files on disk. Returns nil if the token is not found or matches the
+// current in-memory token. The legacy single file is consulted as a fallback so
+// a config that has not been split yet still authenticates.
 func (s *ConfigStore) loadTokenFromDisk(scope Scope, providerID string) (*oauth.Token, error) {
-	path, err := s.configPath(scope)
+	oauthKey := fmt.Sprintf("providers.%s.oauth", providerID)
+
+	path, err := s.configPathForKey(scope, oauthKey)
 	if err != nil {
 		return nil, err
 	}
+	candidates := []string{path}
+	if dir, err := s.configDirForScope(scope); err == nil {
+		if legacy := legacyConfigPath(dir); legacy != path {
+			candidates = append(candidates, legacy)
+		}
+	}
 
+	for _, candidate := range candidates {
+		token, found, err := readTokenFromConfigFile(candidate, oauthKey)
+		if err != nil || found {
+			return token, err
+		}
+	}
+	return nil, nil
+}
+
+// readTokenFromConfigFile decodes the OAuth token stored at oauthKey, if any.
+func readTokenFromConfigFile(path, oauthKey string) (*oauth.Token, bool, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return nil, false, nil
 		}
-		return nil, err
+		return nil, false, err
 	}
 
-	oauthKey := fmt.Sprintf("providers.%s.oauth", providerID)
 	oauthResult := gjson.Get(string(data), oauthKey)
 	if !oauthResult.Exists() {
-		return nil, nil
+		return nil, false, nil
 	}
 
 	var token oauth.Token
 	if err := json.Unmarshal([]byte(oauthResult.Raw), &token); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-
 	if token.AccessToken == "" {
-		return nil, nil
+		return nil, false, nil
 	}
-
-	return &token, nil
+	return &token, true, nil
 }
 
 // nextRecentModels computes the recent-models list for the given type
@@ -1227,32 +1292,33 @@ func (s *ConfigStore) RefreshStalenessSnapshot() error {
 func (s *ConfigStore) CaptureStalenessSnapshot(paths []string) {
 	// Build unique set of normalized paths
 	seen := make(map[string]struct{})
-	for _, p := range paths {
-		if p == "" {
-			continue
+	addTracked := func(path string) {
+		if path == "" {
+			return
 		}
-		// Normalize path
-		abs, err := filepath.Abs(p)
+		abs, err := filepath.Abs(path)
 		if err != nil {
-			abs = p
+			abs = path
 		}
 		seen[abs] = struct{}{}
 	}
-
-	// Also track workspace and global config paths if set
-	if s.workspacePath != "" {
-		abs, err := filepath.Abs(s.workspacePath)
-		if err == nil {
-			seen[abs] = struct{}{}
-		}
-	}
-	if s.globalDataPath != "" {
-		abs, err := filepath.Abs(s.globalDataPath)
-		if err == nil {
-			seen[abs] = struct{}{}
-		}
+	for _, p := range paths {
+		addTracked(p)
 	}
 
+	// Also track every config file of both scopes: with per-section storage a
+	// hand edit can touch any of them, and a new section file appearing counts
+	// as a change.
+	if dir, err := s.configDirForScope(ScopeWorkspace); err == nil {
+		for _, path := range configFilesForDir(dir) {
+			addTracked(path)
+		}
+	}
+	if dir, err := s.configDirForScope(ScopeGlobal); err == nil {
+		for _, path := range configFilesForDir(dir) {
+			addTracked(path)
+		}
+	}
 	// Build sorted list for deterministic ordering
 	s.trackedConfigPaths = make([]string, 0, len(seen))
 	for p := range seen {
@@ -1286,8 +1352,22 @@ func (s *ConfigStore) ReloadFromDisk(ctx context.Context) error {
 func (s *ConfigStore) reloadFromDiskLocked(ctx context.Context) error {
 	// Migrate deprecated disable_notifications before reloading config.
 	migrateDisableNotifications()
+	// Pick up any config a sibling instance still has in the old single file.
+	migrateToSectionFiles()
 
 	configPaths := lookupConfigs(s.workingDir)
+	// A store can be pointed at a config directory outside the standard
+	// locations (a custom --data-dir, or a test sandbox whose anchor is also a
+	// project file). Its section files sit next to that anchor, so add the ones
+	// discovery did not already report, last so they win like any other
+	// machine-written config.
+	if dir, err := s.configDirForScope(ScopeGlobal); err == nil {
+		for _, path := range configFilesForDir(dir) {
+			if !slices.Contains(configPaths, path) {
+				configPaths = append(configPaths, path)
+			}
+		}
+	}
 	cfg, loadedPaths, err := loadFromConfigPaths(ctx, configPaths)
 	if err != nil {
 		return fmt.Errorf("failed to reload config: %w", err)
@@ -1302,17 +1382,11 @@ func (s *ConfigStore) reloadFromDiskLocked(ctx context.Context) error {
 
 	// Merge workspace config if present
 	workspacePath := filepath.Join(cfg.Options.DataDirectory, fmt.Sprintf("%s.json", appName))
-	if wsData, err := os.ReadFile(workspacePath); err == nil && len(wsData) > 0 {
-		if !json.Valid(wsData) {
-			return fmt.Errorf("invalid JSON in config file %s", workspacePath)
-		}
-		merged, mergeErr := loadFromBytes(append([][]byte{mustMarshalConfig(cfg)}, wsData))
-		if mergeErr == nil {
-			dataDir := cfg.Options.DataDirectory
-			*cfg = *merged
-			cfg.setDefaults(s.workingDir, dataDir)
-			loadedPaths = append(loadedPaths, workspacePath)
-		}
+	if merged, wsLoaded, wsErr := mergeWorkspaceConfig(cfg, workspacePath, s.workingDir); wsErr != nil {
+		return fmt.Errorf("failed to reload workspace config: %w", wsErr)
+	} else if len(wsLoaded) > 0 {
+		cfg = merged
+		loadedPaths = append(loadedPaths, wsLoaded...)
 	}
 
 	// Validate hooks after all config merging is complete so matcher

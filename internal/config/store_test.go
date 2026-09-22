@@ -582,7 +582,7 @@ func TestSetConfigFields_ProviderDottedKeys(t *testing.T) {
 	require.NoError(t, err)
 
 	// All six fields must coexist on disk, none clobbering the others.
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(sectionPath(dir, "providers"))
 	require.NoError(t, err)
 	var parsed map[string]any
 	require.NoError(t, json.Unmarshal(data, &parsed))

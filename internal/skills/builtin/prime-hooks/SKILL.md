@@ -1,11 +1,11 @@
 ---
 name: prime-hooks
-description: Use when the user wants to add, write, debug, or configure a Prime hook — gating or blocking tool calls, approving or rewriting tool input before execution, injecting context into tool results, or troubleshooting hook behavior in prime.json.
+description: Use when the user wants to add, write, debug, or configure a Prime hook — gating or blocking tool calls, approving or rewriting tool input before execution, injecting context into tool results, or troubleshooting hook behavior in options.json or primerc.
 ---
 
 # Prime Hooks
 
-Hooks are user-defined commands in `prime.json` that fire at specific points
+Hooks are user-defined commands in `options.json` (or a `primerc`) that fire at specific points
 during execution, giving deterministic control over tool behavior. They run
 **before** permission checks and **only on the top-level agent's** tool calls —
 sub-agent calls (task tool, agentic_fetch, etc.) are not intercepted, though
@@ -187,7 +187,7 @@ preserved.
 
 1. Add `#!/usr/bin/env bash` and `set -euo pipefail` (for shell scripts).
 2. `chmod +x` the script.
-3. Add the entry under `hooks.PreToolUse` in `prime.json` with the right matcher.
+3. Add the entry under `hooks.PreToolUse` in `options.json` with the right matcher.
 4. Decide intent: inject context (omit `decision`), auto-approve (`"allow"`),
    block (`exit 2`), or halt (`exit 49`).
 5. If rewriting input, remember `updated_input` is a shallow merge — only

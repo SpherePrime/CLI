@@ -1,6 +1,6 @@
 ---
 name: prime-config
-description: Use when the user needs help configuring Prime — writing primerc (the Bash config format) or prime.json, setting up providers, models, LSPs, MCP servers, hooks, skills, permissions, or changing Prime behavior.
+description: Use when the user needs help configuring Prime — writing primerc (the Bash config format) or the per-section JSON files (providers.json, models.json, mcp.json, lsp.json, skills.json, options.json), setting up providers, models, LSPs, MCP servers, hooks, skills, permissions, or changing Prime behavior.
 ---
 
 # Prime Configuration
@@ -10,23 +10,29 @@ Prime supports two config formats:
 - **`primerc`** — a Bash script that builds config by calling Prime builtins.
   **Preferred.** Because it is real Bash you get includes, secrets,
   conditionals, and variables for free.
-- **`prime.json`** — static JSON. Fully supported; see
-  [Legacy JSON format](#legacy-json-format).
+- **JSON** — static files, one per section, in the config directory. Fully
+  supported; see [JSON storage layout](#json-storage-layout).
 
 Both are discovered together and deep-merged. Priority (highest to lowest):
 
 1. `.primerc` / `primerc` / `.prime.json` / `prime.json` (project-local,
    closer-to-cwd wins; Windows uses `.\.primerc` / `.\primerc`)
-2. `$XDG_CONFIG_HOME/prime/primerc` or `~/.config/prime/primerc`
+2. The project data directory (`.prime/` by default): `options.json`,
+   `providers.json`, and the other section files, plus `prime.json`
+3. `$XDG_CONFIG_HOME/prime/primerc` or `~/.config/prime/primerc`
    (`%XDG_CONFIG_HOME%\prime\primerc` or
    `%USERPROFILE%\.config\prime\primerc` on Windows)
+4. The global section files in the same config directory
+
+Within one directory the section files win over that directory's `prime.json`,
+and `primerc` wins over JSON.
 
 Data directories (`~/.local/share/prime` and `%LOCALAPPDATA%\prime`) contain
-machine-owned JSON state only; Prime does not discover or execute a `primerc`
-from those locations.
-
-If a directory has both `primerc` and `prime.json`, they merge (`primerc` wins
-on conflicts) and Prime logs a warning.
+machine-owned state only: caches, provider catalogs, `projects.json`, logs, and
+locks. Older Prime releases kept the global config there as a single
+`prime.json`; on the next start Prime moves its keys into the config directory
+section files and leaves the original as `prime.json.bak`. Prime does not
+discover or execute a `primerc` from those locations.
 
 ## primerc at a glance
 
@@ -312,49 +318,66 @@ user-invocable: true
 
 - `PRIME_VERSION` — exported into `primerc` at load; the running version (or
   `devel` for local builds).
-- `PRIME_GLOBAL_CONFIG` — override global config location.
+- `PRIME_GLOBAL_CONFIG` — override the global config directory (where the
+  section JSON files live).
 - `PRIME_GLOBAL_DATA` — override data directory location.
 - `PRIME_SKILLS_DIR` — override default skills directory.
 
-## Legacy JSON format
+## JSON storage layout
 
-`prime.json` is the original static format. It still works and merges with
-`primerc`. Basic structure:
+Persisted settings are JSON files, one per section, in the config directory
+(`~/.config/prime`, or `PRIME_GLOBAL_CONFIG`). A project uses the same split in
+its data directory (`.prime/` by default). Every file repeats the schema path it
+owns, so `providers.json` starts with `"providers"`.
+
+| File             | Keys stored                                                     |
+| ---------------- | --------------------------------------------------------------- |
+| `providers.json` | `providers`                                                      |
+| `models.json`    | `models`, `recent_models`                                        |
+| `mcp.json`       | `mcp`                                                            |
+| `lsp.json`       | `lsp`                                                            |
+| `skills.json`    | `options.skills_paths`, `options.disabled_skills`                 |
+| `options.json`   | the rest of `options`, plus `tools`, `permissions`, `hooks`, `env` |
+| `prime.json`     | `$schema` and any key with no section of its own                  |
+
+Write to the file that owns the key you are changing; a key in the wrong file
+still loads but is overridden by the owning section on the next migration.
+Merging is a deep merge of everything found, so a value set in several places
+resolves by the priority list above.
 
 ```json
+// ~/.config/prime/providers.json
 {
-  "$schema": "https://raw.githubusercontent.com/dwertyfa288/CLI/main/schema.json",
-  "models": {},
-  "providers": {},
-  "mcp": {},
-  "lsp": {},
-  "hooks": {},
-  "options": {},
-  "permissions": {}
+  "providers": {
+    "anthropic": { "api_key": "$ANTHROPIC_API_KEY" }
+  }
 }
 ```
 
-The `$schema` property enables IDE autocomplete but is optional.
+`$schema` is optional and only enables IDE autocomplete; put it in
+`prime.json`.
 
-### primerc ↔ prime.json mapping
+### primerc ↔ JSON mapping
 
-| primerc                             | prime.json                                             |
-| ------------------------------------ | ------------------------------------------------------ |
-| `provider add openai --api-key "$K"` | `providers.openai = {"api_key": "$K"}`                 |
-| `model add openai/gpt-x --name X`    | append to `providers.openai.models[]`                  |
-| `model large openai/gpt-x`           | `models.large = {"provider":"openai","model":"gpt-x"}` |
-| `mcp add gh --type http --url U`     | `mcp.gh = {"type":"http","url":"U"}`                   |
-| `lsp add go --command gopls`         | `lsp.go = {"command":"gopls"}`                         |
-| `hook add PreToolUse --command C`    | append to `hooks.PreToolUse[]`                         |
-| `permissions allow view ls`          | `permissions.allowed_tools = ["view","ls"]`            |
-| `permissions deny bash`              | `options.disabled_tools = ["bash"]`                    |
-| `option skill-path ./skills`         | `options.skills_paths = ["./skills"]`                  |
-| `option metrics false`               | `options.disable_metrics = true`                       |
-| `option request-timeout 300`          | `options.request_timeout = 300`                        |
-| `option attribution-trailer-style none` | `options.attribution.trailer_style = "none"`        |
-| `option attribution-generated-with false` | `options.attribution.generated_with = false`       |
+| primerc                             | file + key                                               |
+| ------------------------------------ | -------------------------------------------------------- |
+| `provider add openai --api-key "$K"` | `providers.json`: `providers.openai = {"api_key": "$K"}` |
+| `model add openai/gpt-x --name X`    | `providers.json`: append to `providers.openai.models[]`  |
+| `model large openai/gpt-x`           | `models.json`: `models.large = {"provider":"openai","model":"gpt-x"}` |
+| `mcp add gh --type http --url U`     | `mcp.json`: `mcp.gh = {"type":"http","url":"U"}`         |
+| `lsp add go --command gopls`         | `lsp.json`: `lsp.go = {"command":"gopls"}`               |
+| `hook add PreToolUse --command C`    | `options.json`: append to `hooks.PreToolUse[]`           |
+| `permissions allow view ls`          | `options.json`: `permissions.allowed_tools = ["view","ls"]` |
+| `permissions deny bash`              | `options.json`: `options.disabled_tools = ["bash"]`      |
+| `option skill-path ./skills`         | `skills.json`: `options.skills_paths = ["./skills"]`     |
+| `option disable-skill prime-config`  | `skills.json`: `options.disabled_skills = ["prime-config"]` |
+| `option smart-tools true`            | `options.json`: `options.smart_tools = true`             |
+| `option metrics false`               | `options.json`: `options.disable_metrics = true`         |
+| `option request-timeout 300`          | `options.json`: `options.request_timeout = 300`          |
+| `option attribution-trailer-style none` | `options.json`: `options.attribution.trailer_style = "none"` |
+| `option attribution-generated-with false` | `options.json`: `options.attribution.generated_with = false` |
 
-### Shell expansion in prime.json
+### Shell expansion in JSON
 
 In JSON, only selected string fields are run through the embedded shell at load
 time (in `primerc`, everything is native Bash so this table does not apply):

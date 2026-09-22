@@ -64,8 +64,10 @@ Two reasons:
 
 ## What about JSON?
 
-JSON is still supported but is deprecated and, while it's supported, it won't
-be receiving new features. For more see [Legacy JSON](#legacy-json).
+JSON is fully supported: it is how Prime persists every setting, one file per
+section. See [Where config lives](#where-config-lives) and
+[JSON config](#json-config). `primerc` stays the easiest way to write config by
+hand because variables and includes come free with Bash.
 
 ## Config versioning
 
@@ -80,12 +82,29 @@ fi
 
 ## Security
 
-Just like `prime.json`, `primerc` is a trusted file. Guard it carefully and
+Just like `primerc`, the JSON config files are trusted. Guard them carefully and
 don't download random configs without reading them first.
 
 ## Where config lives
 
-Prime looks for config in the following places, with lower numbers taking
+Every setting Prime persists is JSON, one file per section, in the global
+config directory (`$XDG_CONFIG_HOME/prime`, `~/.config/prime`, or
+`%USERPROFILE%\.config\prime` on Windows):
+
+| File              | Holds                                                        |
+| ----------------- | ------------------------------------------------------------ |
+| `providers.json`  | Provider credentials, base URLs, and model catalogs           |
+| `models.json`     | Selected large/small models and recently used models          |
+| `mcp.json`        | MCP servers                                                   |
+| `lsp.json`        | Language servers                                              |
+| `skills.json`     | Skill directories and disabled skills (`options.*` fields)    |
+| `options.json`    | Remaining options, plus `tools`, `permissions`, `hooks`, `env` |
+| `prime.json`      | The `$schema` pointer and any key with no section of its own  |
+
+Project settings use the same split inside the project's data directory
+(`.prime/providers.json`, `.prime/options.json`, and so on).
+
+Prime reads config from the following places, with lower numbers taking
 precedence:
 
 | Priority | Unix-like                        | Windows                           |
@@ -94,14 +113,18 @@ precedence:
 | 2        | `./primerc`                      | `.\primerc`                       |
 | 3        | `$XDG_CONFIG_HOME/prime/primerc` | `%XDG_CONFIG_HOME%\prime\primerc` |
 
-Legacy JSON uses `.prime.json` / `prime.json` in the same directories as the
-above. Everything found is merged, with project settings overriding global ones
-and `primerc` overriding JSON in the same directory. If a folder has both, they
-merge and Prime logs a warning.
+Everything found is merged: later files override earlier ones, project settings
+override global ones, and within one directory a section file overrides
+`prime.json`. A legacy single-file `prime.json` still works: on the next start
+Prime copies its keys into the section files, leaves `$schema` behind, and keeps
+the original as `prime.json.bak`.
 
 Data directories (`~/.local/share/prime` on Unix-like systems and
-`%LOCALAPPDATA%\prime` on Windows) contain machine-owned JSON state. Prime does
-not discover or execute a `primerc` from those locations.
+`%LOCALAPPDATA%\prime` on Windows) contain machine-owned state: the update
+cache, provider catalogs, project registry, and locks. Prime does not discover
+or execute a `primerc` from those locations. An older Prime release kept the
+global config there as a single `prime.json`; that file is migrated into the
+config directory described above.
 
 > [!NOTE]
 > Prime also stores state data in `$XDG_DATA_HOME/prime`
@@ -590,22 +613,32 @@ option skill-path ~/my/skills
 `remove`, `rm`, and `option reset` all act on whatever was set earlier in the
 script or pulled in via `source`. Later lines win, just like a shell.
 
-## Legacy JSON
+## JSON config
 
-`prime.json` is the original format and is now deprecated. We plan to support
-it for the forseeable future, but new configuration options will only be added
-to Bash-based config.
+Prime's persisted settings are JSON, split across one file per section in the
+config directory (see [Where config lives](#where-config-lives)). Each file
+carries the keys it owns at the same path the schema uses, so
+`providers.json` holds `"providers"` and `skills.json` holds the skill fields
+under `"options"`.
+
+A single `prime.json` with every section is still read. On the next start its
+keys are moved into the section files and the original is kept as
+`prime.json.bak`, so a hand-written `prime.json` you add later still takes
+effect instead of silently losing to a stale section file.
 
 ```jsonc
+// ~/.config/prime/providers.json
 {
-  "$schema": "https://raw.githubusercontent.com/dwertyfa288/CLI/main/schema.json",
   "providers": {
     "anthropic": { "api_key": "$ANTHROPIC_API_KEY" },
   },
-  "models": {
-    "large": { "provider": "anthropic", "model": "claude-sonnet-4-20250514" },
-  },
-  "permissions": { "allowed_tools": ["view", "ls", "grep"] },
+}
+```
+
+```jsonc
+// ~/.config/prime/prime.json - the schema pointer stays here
+{
+  "$schema": "https://raw.githubusercontent.com/dwertyfa288/CLI/main/schema.json",
 }
 ```
 
