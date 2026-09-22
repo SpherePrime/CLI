@@ -347,7 +347,13 @@ type UI struct {
 	sidebarTotalLines       int    // total lines in sidebarContent
 	sidebarContentHeight    int    // available height for sidebar content
 	sidebarContentWidth     int    // available width for sidebar content
+	sidebarContentTop       int    // first screen row of the scrollable content
 	sidebarDrawLogo         string // logo to render (may differ from sidebarLogo for short heights)
+
+	// Sidebar scrollbar pointer state: where the thumb was painted and the
+	// drag currently holding it.
+	sidebarScrollbarTrack common.ScrollbarTrack
+	sidebarScrollbarDrag  common.ScrollbarDrag
 
 	// Notification state
 	notifyBackend       notification.Backend
@@ -1160,6 +1166,13 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.state {
 		case uiChat:
+			if handled, cmd := m.handleScrollbarMouseDown(msg.X, msg.Y); handled {
+				if cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return m, tea.Batch(cmds...)
+			}
+
 			x, y := msg.X, msg.Y
 			// Adjust for chat area position
 			x -= m.layout.main.Min.X
@@ -1207,6 +1220,13 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.state {
 		case uiChat:
+			if handled, cmd := m.handleScrollbarMouseDrag(msg.Y); handled {
+				if cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return m, tea.Batch(cmds...)
+			}
+
 			// Skip chat edge-scrolling when an inline editor is
 			// active to prevent accidental scrolling while hovering
 			// over question forms or other inline components.
@@ -1262,6 +1282,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.state {
 		case uiChat:
+			if m.scrollbarDragging() {
+				m.handleScrollbarMouseUp()
+				return m, tea.Batch(cmds...)
+			}
+
 			x, y := msg.X, msg.Y
 			// Adjust for chat area position
 			x -= m.layout.main.Min.X
@@ -1302,10 +1327,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.focus == uiFocusSidebar {
 				lines := int(msg.DeltaY)
 				if lines != 0 {
-					m.sidebarOffset = max(0, min(m.sidebarOffset+lines, m.sidebarMaxOffsetVal))
-					m.sidebarScrollbarSeq++
-					m.sidebarScrollbarVisible = true
-					cmds = append(cmds, sidebarScrollbarHideCmd(m.sidebarScrollbarSeq))
+					cmds = append(cmds, m.setSidebarOffset(m.sidebarOffset+lines))
 				}
 				break
 			}
