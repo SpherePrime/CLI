@@ -9,8 +9,12 @@ import (
 // atomicWriteFile writes data to a file atomically by writing to a unique
 // temporary file in the same directory and renaming it into place. This
 // prevents concurrent readers from observing a partially-written file.
+//
+// JSON content is formatted before it lands on disk, which keeps the section
+// files that sjson rewrites readable.
 func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	path = filepath.Clean(path)
+	data = formatConfigJSON(path, data)
 	dir := filepath.Dir(path)
 	f, err := os.CreateTemp(dir, filepath.Base(path)+".*.tmp")
 	if err != nil {

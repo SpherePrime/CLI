@@ -582,11 +582,19 @@ func (s *ConfigStore) updatePreferredModelFields(c *Config, modelType SelectedMo
 	if c.Models == nil {
 		c.Models = make(map[SelectedModelType]SelectedModel)
 	}
+	// Record and restore per-model overrides first: the write below replaces
+	// the whole selected-model object, and callers that rebuild it from the
+	// catalog or from session metadata would otherwise drop the values the
+	// model settings dialog stored.
+	model = c.rememberModelSettings(model)
 	c.Models[modelType] = model
 	s.pinPreferredModelLocked(modelType, model)
 
 	fields := map[string]any{
 		fmt.Sprintf("models.%s", modelType): model,
+	}
+	if len(c.ModelSettings) > 0 {
+		fields["model_settings"] = c.ModelSettings
 	}
 	if updated, changed := nextRecentModels(c, modelType, model); changed {
 		if c.RecentModels == nil {

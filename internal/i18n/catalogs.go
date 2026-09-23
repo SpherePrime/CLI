@@ -40,6 +40,7 @@ func enStrings() map[string]string {
 		"cmd.initialize_project":        "Initialize Project",
 		"cmd.restart_systems":           "Restart Systems",
 		"cmd.status":                    "Status",
+		"cmd.provider_settings":         "Provider Settings",
 		"cmd.add_provider":              "Add Provider",
 		"cmd.enable_background_color":   "Enable Background Color",
 		"cmd.disable_background_color":  "Disable Background Color",
@@ -234,6 +235,12 @@ func enStrings() map[string]string {
 		"info.disabled":              "disabled",
 		"info.systems_restarted":     "SKILLs, MCPs and LSPs restarted",
 		"info.systems_restart_failed": "Failed to restart systems: %v",
+		"info.provider_models_updated": "Models updated for %s",
+
+		// Provider settings dialog.
+		"provider_settings.title":          "Provider Settings",
+		"provider_settings.add_model":      "Add Model",
+		"provider_settings.context_window": "Context Window",
 	}
 }
 
@@ -262,6 +269,7 @@ func ruStrings() map[string]string {
 		"cmd.initialize_project":        "Инициализировать проект",
 		"cmd.restart_systems":           "Перезапустить системы",
 		"cmd.status":                    "Статус",
+		"cmd.provider_settings":         "Настройки провайдеров",
 		"cmd.add_provider":              "Добавить провайдера",
 		"cmd.enable_background_color":   "Включить цвет фона",
 		"cmd.disable_background_color":  "Выключить цвет фона",
@@ -436,6 +444,12 @@ func ruStrings() map[string]string {
 		"info.disabled":              "выключено",
 		"info.systems_restarted":     "SKILLs, MCPs и LSPs перезапущены",
 		"info.systems_restart_failed": "Не удалось перезапустить системы: %v",
+		"info.provider_models_updated": "Модели провайдера %s обновлены",
+
+		// Provider settings dialog.
+		"provider_settings.title":          "Настройки провайдеров",
+		"provider_settings.add_model":      "Добавить модель",
+		"provider_settings.context_window": "Контекст",
 
 		// Status dialog.
 		"status.title":          "Статус",

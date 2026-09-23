@@ -145,6 +145,16 @@ func Load(workingDir, dataDir string, debug bool) (*ConfigStore, error) {
 	cfg.Models[SelectedModelTypeLarge] = resolved.Large
 	cfg.Models[SelectedModelTypeSmall] = resolved.Small
 
+	// Stored per-model overrides apply to whichever model is selected, so a
+	// hand-written or session-restored selection sees the same context window
+	// and prices the model settings dialog recorded.
+	if cfg.applyModelSettings(&resolved.Large) {
+		cfg.Models[SelectedModelTypeLarge] = resolved.Large
+	}
+	if cfg.applyModelSettings(&resolved.Small) {
+		cfg.Models[SelectedModelTypeSmall] = resolved.Small
+	}
+
 	// Persist any fallback corrections while we still hold writeMu.
 	if resolved.LargeFallback {
 		if err := store.updateLocked(ScopeGlobal, func(c *Config) map[string]any {
@@ -392,6 +402,7 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 				continue
 			}
 		}
+		prepared.UserConfigured = configExists
 		c.Providers.Set(string(p.ID), prepared)
 	}
 
@@ -514,6 +525,7 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			providerConfig.ExtraHeaders[k] = resolved
 		}
 
+		providerConfig.UserConfigured = true
 		c.Providers.Set(id, providerConfig)
 	}
 

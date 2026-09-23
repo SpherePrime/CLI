@@ -99,6 +99,26 @@ type SelectedModel struct {
 	ProviderOptions map[string]any `json:"provider_options,omitempty" jsonschema:"description=Additional provider-specific options for the model"`
 }
 
+// ModelSettings holds the overrides configured for a single model through the
+// model settings dialog. They are stored per provider and model ID so that
+// selecting a different model, restoring a session, or reloading the config
+// cannot silently drop them.
+type ModelSettings struct {
+	ContextWindow int64   `json:"context_window,omitempty" jsonschema:"description=Override the model's maximum context window in tokens,example=200000"`
+	PriceIn       float64 `json:"price_in,omitempty" jsonschema:"description=Price per 1M input tokens in USD,example=1.5"`
+	PriceOut      float64 `json:"price_out,omitempty" jsonschema:"description=Price per 1M output tokens in USD,example=6.0"`
+}
+
+// Empty reports whether the entry carries no overrides.
+func (s ModelSettings) Empty() bool {
+	return s.ContextWindow <= 0 && s.PriceIn <= 0 && s.PriceOut <= 0
+}
+
+// modelSettingsKey identifies the settings entry for a provider and model.
+func modelSettingsKey(provider, model string) string {
+	return provider + "|" + model
+}
+
 type ProviderConfig struct {
 	// The provider's id.
 	ID string `json:"id,omitempty" jsonschema:"description=Unique identifier for the provider,example=openai"`
@@ -164,6 +184,11 @@ type ProviderConfig struct {
 	// the provider's whole catalog in that case: the API-key models in
 	// Models are not served by the subscription.
 	ChatGPTModels []catwalk.Model `json:"chatgpt_models,omitempty" jsonschema:"-"`
+
+	// UserConfigured marks providers that come from the user's own config
+	// files, as opposed to the built-in catalog. It is derived while the
+	// config loads and is never written to disk.
+	UserConfigured bool `json:"-"`
 }
 
 // ToProvider converts the [ProviderConfig] to a [catwalk.Provider].
@@ -773,6 +798,11 @@ type Config struct {
 	// Recently used models stored in the data directory config.
 	RecentModels map[SelectedModelType][]SelectedModel `json:"recent_models,omitempty" jsonschema:"-"`
 
+	// Per-model overrides configured through the model settings dialog,
+	// keyed by provider and model ID. Kept separate from Models so
+	// selecting another model cannot drop them.
+	ModelSettings map[string]ModelSettings `json:"model_settings,omitempty" jsonschema:"description=Per-model context window and price overrides, keyed by provider|model"`
+
 	// The providers that are configured
 	Providers *csync.Map[string, ProviderConfig] `json:"providers,omitempty" jsonschema:"description=AI provider configurations"`
 
@@ -809,6 +839,7 @@ func (c *Config) cloneForWrite() *Config {
 	nc := *c
 	nc.Models = maps.Clone(c.Models)
 	nc.RecentModels = maps.Clone(c.RecentModels)
+	nc.ModelSettings = maps.Clone(c.ModelSettings)
 	nc.MCP = maps.Clone(c.MCP)
 	if c.Options != nil {
 		opts := *c.Options
@@ -831,6 +862,73 @@ func (c *Config) ensureTUI() *TUIOptions {
 		c.Options.TUI = &TUIOptions{}
 	}
 	return c.Options.TUI
+}
+
+// ModelSettingsFor returns the stored overrides for a provider and model.
+func (c *Config) ModelSettingsFor(provider, model string) (ModelSettings, bool) {
+	if c == nil || len(c.ModelSettings) == 0 {
+		return ModelSettings{}, false
+	}
+	settings, ok := c.ModelSettings[modelSettingsKey(provider, model)]
+	return settings, ok && !settings.Empty()
+}
+
+// rememberModelSettings records the overrides carried by model and returns
+// the selection with any stored values restored. Fields the model leaves
+// empty are taken from the existing entry, so a selection rebuilt without
+// overrides cannot erase what the model settings dialog stored.
+func (c *Config) rememberModelSettings(model SelectedModel) SelectedModel {
+	if c.ModelSettings == nil {
+		c.ModelSettings = make(map[string]ModelSettings)
+	}
+	key := modelSettingsKey(model.Provider, model.Model)
+	settings := c.ModelSettings[key]
+
+	if model.ContextWindow > 0 {
+		settings.ContextWindow = model.ContextWindow
+	} else {
+		model.ContextWindow = settings.ContextWindow
+	}
+	if model.PriceIn > 0 {
+		settings.PriceIn = model.PriceIn
+	} else {
+		model.PriceIn = settings.PriceIn
+	}
+	if model.PriceOut > 0 {
+		settings.PriceOut = model.PriceOut
+	} else {
+		model.PriceOut = settings.PriceOut
+	}
+
+	if settings.Empty() {
+		delete(c.ModelSettings, key)
+		return model
+	}
+	c.ModelSettings[key] = settings
+	return model
+}
+
+// applyModelSettings fills overrides that a selected model does not carry
+// from the stored per-model settings. It reports whether anything changed.
+func (c *Config) applyModelSettings(model *SelectedModel) bool {
+	settings, ok := c.ModelSettingsFor(model.Provider, model.Model)
+	if !ok {
+		return false
+	}
+	changed := false
+	if model.ContextWindow <= 0 && settings.ContextWindow > 0 {
+		model.ContextWindow = settings.ContextWindow
+		changed = true
+	}
+	if model.PriceIn <= 0 && settings.PriceIn > 0 {
+		model.PriceIn = settings.PriceIn
+		changed = true
+	}
+	if model.PriceOut <= 0 && settings.PriceOut > 0 {
+		model.PriceOut = settings.PriceOut
+		changed = true
+	}
+	return changed
 }
 
 func (c *Config) EnabledProviders() []ProviderConfig {
