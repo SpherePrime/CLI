@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
@@ -26,9 +25,6 @@ const ProvidersID = "providers"
 // providerContextWindowOverride is the context window assigned to every
 // discovered model.
 const providerContextWindowOverride = 270_000
-
-// providerDiscoveryTimeout bounds the /models fetch.
-const providerDiscoveryTimeout = 3 * time.Second
 
 type providersState int
 
@@ -207,9 +203,9 @@ func (m *Providers) advance() {
 		}
 		m.state = providersStateDiscovering
 	case providersStateError:
-		m.state = providersStateID
-		m.idInput.SetValue(m.providerID)
-		m.idInput.Focus()
+		// Keep the filled-in ID, URL and key so enter retries the
+		// discovery instead of restarting the whole form.
+		m.state = providersStateDiscovering
 	}
 }
 
@@ -242,7 +238,7 @@ func (m *Providers) discoverModels() tea.Cmd {
 	baseURL := strings.TrimRight(strings.TrimSpace(m.urlInput.Value()), "/")
 	apiKey := strings.TrimSpace(m.keyInput.Value())
 
-	ctx, cancel := context.WithTimeout(context.Background(), providerDiscoveryTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), discover.ProviderDiscoveryTimeout)
 	cfg := discover.Config{
 		ID:      m.providerID,
 		BaseURL: baseURL,

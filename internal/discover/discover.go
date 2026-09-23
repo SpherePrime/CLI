@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -15,7 +16,21 @@ import (
 // httpClient is shared across all discovery and enrichment calls. It
 // has a reasonable timeout so individual requests cannot block forever
 // even if the caller forgets to set a context deadline.
-var httpClient = &http.Client{Timeout: 10 * time.Second}
+var httpClient = &http.Client{
+	Timeout: 10 * time.Second,
+	Transport: &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          10,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	},
+}
 
 // stripV1Suffix removes a trailing /v1 from a base URL. Enricher
 // endpoints (e.g. Ollama's /api/show, LM Studio's /api/v1/models) are
@@ -25,6 +40,27 @@ var httpClient = &http.Client{Timeout: 10 * time.Second}
 // their own request paths.
 func stripV1Suffix(baseURL string) string {
 	return strings.TrimSuffix(strings.TrimRight(baseURL, "/"), "/v1")
+}
+
+// describeDiscoveryError wraps a discovery failure with a hint when the
+// cause is local (DNS, proxy, timeout, TLS) rather than the provider.
+func describeDiscoveryError(cfg Config, err error) error {
+	hint := ""
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "deadline exceeded") || strings.Contains(msg, "timeout"):
+		hint = "the request timed out: the network, DNS, or a proxy may be slow or blocking the connection"
+	case strings.Contains(msg, "no such host") || strings.Contains(msg, "dns"):
+		hint = "DNS resolution failed: check the host name and the system DNS settings"
+	case strings.Contains(msg, "proxyconnect") || strings.Contains(msg, "proxy"):
+		hint = "a local proxy (http_proxy/https_proxy) is interfering: unset it or add the host to no_proxy"
+	case strings.Contains(msg, "certificate") || strings.Contains(msg, "tls"):
+		hint = "TLS verification failed: check the system CA certificates and clock"
+	}
+	if hint == "" {
+		return fmt.Errorf("discover models for provider %s: %w", cfg.ID, err)
+	}
+	return fmt.Errorf("discover models for provider %s: %w (%s)", cfg.ID, err, hint)
 }
 
 // doRequest builds and executes an authenticated HTTP request using the
@@ -74,6 +110,9 @@ func doRequest(ctx context.Context, method, baseURL, path, apiKey string, extraH
 	return httpClient.Do(req)
 }
 
+// ProviderDiscoveryTimeout bounds a single /models fetch from the UI.
+const ProviderDiscoveryTimeout = 10 * time.Second
+
 // Config holds the provider configuration needed for model discovery.
 type Config struct {
 	ID           string
@@ -107,7 +146,7 @@ type modelsResponse struct {
 func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwalk.Model, error) {
 	resp, err := doRequest(ctx, http.MethodGet, cfg.BaseURL, "/models", cfg.APIKey, cfg.ExtraHeaders, resolver, nil)
 	if err != nil {
-		return nil, fmt.Errorf("discover models for provider %s: %w", cfg.ID, err)
+		return nil, describeDiscoveryError(cfg, err)
 	}
 	defer resp.Body.Close()
 
