@@ -2,6 +2,7 @@ package dialog
 
 import (
 	"fmt"
+	"image"
 	"slices"
 
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
@@ -11,6 +12,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/internal/skills"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/workspace"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
@@ -28,6 +30,7 @@ type StatusData struct {
 	MCPStates map[string]mcp.ClientInfo
 	LSPStates map[string]workspace.LSPClientInfo
 	LSPDiags  map[string]lsp.DiagnosticCounts
+	Skills    []skills.CatalogEntry
 }
 
 // Status is a read-only dialog showing session usage and server states.
@@ -39,6 +42,10 @@ type Status struct {
 		Close   key.Binding
 	}
 	help help.Model
+
+	scrollOffset int
+	bodyRect     image.Rectangle
+	scrollbarZone ScrollbarZone
 }
 
 var _ Dialog = (*Status)(nil)
@@ -86,8 +93,24 @@ func (s *Status) HandleMsg(msg tea.Msg) Action {
 		case key.Matches(msg, s.keyMap.Refresh):
 			return ActionRefreshStatus{}
 		}
+	case common.CoalescedWheelMsg:
+		if s.scrollbarZone.track.Visible() &&
+			msg.Mouse.X >= s.bodyRect.Min.X && msg.Mouse.X < s.bodyRect.Max.X &&
+			msg.Mouse.Y >= s.bodyRect.Min.Y && msg.Mouse.Y < s.bodyRect.Max.Y {
+			s.scrollBy(int(msg.DeltaY))
+		}
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		s.scrollbarZone.HandleMsg(msg, s.scrollTo)
 	}
 	return nil
+}
+
+func (s *Status) scrollTo(offset int) {
+	s.scrollOffset = offset
+}
+
+func (s *Status) scrollBy(delta int) {
+	s.scrollOffset = max(0, s.scrollOffset+delta)
 }
 
 // Draw implements [Dialog].
@@ -96,17 +119,39 @@ func (s *Status) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	width := min(statusDialogMaxWidth, area.Dx()-t.Dialog.View.GetHorizontalBorderSize())
 	innerWidth := width - t.Dialog.View.GetHorizontalFrameSize()
 
+	allLines := s.contentLines(innerWidth)
+	total := len(allLines)
+
+	heightOffset := t.Dialog.Title.GetVerticalFrameSize() + titleContentHeight +
+		t.Dialog.HelpView.GetVerticalFrameSize() + 1 +
+		t.Dialog.View.GetVerticalFrameSize()
+	viewport := total
+	if maxBody := area.Dy() - t.Dialog.View.GetVerticalBorderSize() - heightOffset; total > maxBody {
+		viewport = max(0, maxBody)
+	}
+	s.scrollOffset = min(s.scrollOffset, total-viewport)
+	visible := allLines[s.scrollOffset : s.scrollOffset+viewport]
+
 	rc := NewRenderContext(t, width)
 	rc.Title = s.com.L("status.title")
-	rc.AddPart(s.renderContent(innerWidth))
+	body := joinScrollbar(t, lipgloss.JoinVertical(lipgloss.Left, visible...), viewport, total, viewport, s.scrollOffset)
+	rc.AddPart(body)
 	rc.Help = renderDialogHelp(t, &s.help, s, innerWidth)
 
 	view := rc.Render()
+	if total > viewport {
+		s.bodyRect = dialogBodyRect(area, dialogRectCentered(area, view), body, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, viewport)
+		s.scrollbarZone.Painted(s.bodyRect.Min, body, viewport, total, viewport, s.scrollOffset)
+	} else {
+		s.bodyRect = image.Rect(0, 0, 0, 0)
+		s.scrollbarZone.Clear()
+	}
+
 	DrawCenter(scr, area, view)
 	return nil
 }
 
-func (s *Status) renderContent(width int) string {
+func (s *Status) contentLines(width int) []string {
 	t := s.com.Styles
 	section := t.Dialog.PrimaryText
 	label := t.Dialog.ListItem.InfoBlurred
@@ -122,7 +167,27 @@ func (s *Status) renderContent(width int) string {
 	lines = append(lines, "", section.Render(s.com.L("status.lsp_servers")))
 	lines = append(lines, s.lspSection(label, width)...)
 
-	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+	lines = append(lines, "", section.Render(s.com.L("status.skills")))
+	lines = append(lines, s.skillsSection(label, width)...)
+
+	return lines
+}
+
+func (s *Status) skillsSection(label lipgloss.Style, width int) []string {
+	if len(s.data.Skills) == 0 {
+		return []string{label.Render(s.com.L("status.none"))}
+	}
+	names := make([]string, 0, len(s.data.Skills))
+	for _, entry := range s.data.Skills {
+		names = append(names, entry.Name)
+	}
+	slices.Sort(names)
+
+	var lines []string
+	for _, name := range names {
+		lines = append(lines, label.Render(name))
+	}
+	return lines
 }
 
 func (s *Status) usageSection(label lipgloss.Style, width int) []string {

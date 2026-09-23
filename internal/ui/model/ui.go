@@ -5139,11 +5139,14 @@ func (m *UI) buildStatusData() dialog.StatusData {
 		diags[name] = m.lspDiagnostics[name]
 	}
 
+	skillEntries, _ := m.com.Workspace.ListSkills(context.Background())
+
 	return dialog.StatusData{
-		Session:  session,
+		Session:   session,
 		MCPStates: m.mcpStates,
 		LSPStates: m.lspStates,
 		LSPDiags:  diags,
+		Skills:    skillEntries,
 	}
 }
 
