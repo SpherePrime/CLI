@@ -99,10 +99,9 @@ func TestBackgroundShellManager_Kill(t *testing.T) {
 		t.Error("expected shell to be removed after kill")
 	}
 
-	// Verify the shell is done
-	if !bgShell.IsDone() {
-		t.Error("expected shell to be done after kill")
-	}
+	// Verify the shell is done. Kill issues the cancellation without
+	// blocking on the OS process, so the exit lands asynchronously.
+	require.Eventually(t, bgShell.IsDone, 5*time.Second, 50*time.Millisecond, "expected shell to be done after kill")
 }
 
 func TestBackgroundShellManager_KillNonExistent(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/internal/shell"
@@ -12,6 +13,10 @@ import (
 
 const (
 	JobOutputToolName = "job_output"
+
+	// jobOutputWaitCap bounds how long job_output(wait=true) blocks, so a
+	// job that never exits cannot stall the agent run.
+	jobOutputWaitCap = 30 * time.Second
 )
 
 //go:embed job_output.md
@@ -19,7 +24,7 @@ var jobOutputDescription string
 
 type JobOutputParams struct {
 	ShellID string `json:"shell_id" description:"The ID of the background shell to retrieve output from"`
-	Wait    bool   `json:"wait" description:"If true, block until the background shell completes before returning output"`
+	Wait    bool   `json:"wait" description:"If true, wait for the shell to finish, up to a bounded timeout. A still-running job returns its current output with status running"`
 }
 
 type JobOutputResponseMetadata struct {
@@ -45,8 +50,19 @@ func NewJobOutputTool(spillDir string) fantasy.AgentTool {
 				return fantasy.NewTextErrorResponse(fmt.Sprintf("background shell not found: %s", params.ShellID)), nil
 			}
 
+			timedOut := false
 			if params.Wait {
-				bgShell.WaitContext(ctx)
+				// Bound the wait so a job that never exits (server, watch
+				// loop) cannot stall the agent. Agent-context cancellation
+				// still wins immediately, so ESC cancels the wait at once.
+				timer := time.NewTimer(jobOutputWaitCap)
+				select {
+				case <-bgShell.Done():
+				case <-ctx.Done():
+				case <-timer.C:
+					timedOut = true
+				}
+				timer.Stop()
 			}
 
 			stdout, stderr, done, err := bgShell.GetOutput()
@@ -68,6 +84,8 @@ func NewJobOutputTool(spillDir string) fantasy.AgentTool {
 						outputParts = append(outputParts, fmt.Sprintf("Exit code %d", exitCode))
 					}
 				}
+			} else if timedOut {
+				status = fmt.Sprintf("running (still running after %s; use job_kill to terminate)", jobOutputWaitCap)
 			}
 
 			output := strings.Join(outputParts, "\n")

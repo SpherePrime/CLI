@@ -143,7 +143,12 @@ func (m *BackgroundShellManager) Remove(id string) error {
 	return nil
 }
 
-// Kill terminates a background shell by ID.
+// Kill terminates a background shell by ID. The cancel is issued but the
+// caller does not block on the OS process exiting: on Windows the process
+// group can hold pipes via grandchildren, so waiting on done can deadlock
+// the agent tool call. The shell is removed from the map immediately; the
+// background goroutine that closes done is still allowed to finish on its
+// own.
 func (m *BackgroundShellManager) Kill(id string) error {
 	shell, ok := m.shells.Take(id)
 	if !ok {
@@ -151,7 +156,6 @@ func (m *BackgroundShellManager) Kill(id string) error {
 	}
 
 	shell.cancel()
-	<-shell.done
 	return nil
 }
 
@@ -233,6 +237,11 @@ func (bs *BackgroundShell) IsDone() bool {
 // Wait blocks until the background shell completes.
 func (bs *BackgroundShell) Wait() {
 	<-bs.done
+}
+
+// Done returns a channel that is closed when the background shell exits.
+func (bs *BackgroundShell) Done() <-chan struct{} {
+	return bs.done
 }
 
 func (bs *BackgroundShell) WaitContext(ctx context.Context) bool {
