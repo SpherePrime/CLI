@@ -313,10 +313,13 @@ func (m *Models) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	rc := NewRenderContext(t, width)
 	if m.agentID != "" {
 		rc.Title = m.com.L("cmd.pick_agent_model")
+		if agentCfg, ok := m.com.Config().Agents[m.agentID]; ok {
+			rc.TitleInfo = agentCfg.Name
+		}
 	} else {
 		rc.Title = "Switch Model"
+		rc.TitleInfo = m.modelTypeRadioView()
 	}
-	rc.TitleInfo = m.modelTypeRadioView()
 
 	if m.isOnboarding {
 		titleText := t.Dialog.PrimaryText.Render("To start, let's choose a provider and model.")
@@ -402,6 +405,11 @@ func (m *Models) setProviderItems() error {
 	var selectedItemID string
 	selectedType := m.modelType.Config()
 	currentModel := cfg.Models[selectedType]
+	if m.agentID != "" {
+		if agent, ok := cfg.Agents[m.agentID]; ok && agent.ModelOverride != nil {
+			currentModel = *agent.ModelOverride
+		}
+	}
 	recentItems := cfg.RecentModels[selectedType]
 
 	// Track providers already added to avoid duplicates
