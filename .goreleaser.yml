@@ -28,13 +28,7 @@ builds:
       - GOEXPERIMENT=greenteagc
     goos:
       - windows
-      # Temporarily Windows-only builds; uncomment others to restore multi-platform.
-      # - linux
-      # - darwin
-      # - freebsd
-      # - openbsd
-      # - netbsd
-      # - android
+      - linux
     goarch:
       - amd64
       - arm64
