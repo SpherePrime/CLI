@@ -102,6 +102,7 @@ func (m *Agents) setAgentsItems() {
 			Versioned: list.NewVersioned(),
 			agentID:   agentID,
 			agent:     agent,
+			com:       m.com,
 			t:         m.com.Styles,
 			cache:     make(map[int]string),
 		}
@@ -234,6 +235,7 @@ type AgentsItem struct {
 
 	agentID string
 	agent   config.Agent
+	com     *common.Common
 
 	t *styles.Styles
 
@@ -297,8 +299,19 @@ func (i *AgentsItem) SetMatch(fm fuzzy.Match) {
 
 // modelInfo returns the model the agent currently runs on.
 func (i *AgentsItem) modelInfo() string {
+	cfg := i.com.Config()
+	model := cfg.GetModelForAgent(i.agent)
+
 	if i.agent.ModelOverride != nil {
-		return i.agent.ModelOverride.Model + " (pinned)"
+		pinLabel := i.com.L("cmd.pinned")
+		if model != nil {
+			return model.Name + " (" + pinLabel + ")"
+		}
+		return i.agent.ModelOverride.Model + " (" + pinLabel + ")"
+	}
+
+	if model != nil {
+		return model.Name
 	}
 	return string(i.agent.Model)
 }
