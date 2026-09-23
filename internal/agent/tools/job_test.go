@@ -56,8 +56,9 @@ func TestBackgroundShell_Kill(t *testing.T) {
 	_, ok := bgManager.Get(bgShell.ID)
 	require.False(t, ok)
 
-	// Verify the shell is done
-	require.True(t, bgShell.IsDone())
+	// Verify the shell is done. Kill issues cancellation without blocking
+	// on the OS process, so the exit lands asynchronously.
+	require.Eventually(t, bgShell.IsDone, 5*time.Second, 50*time.Millisecond, "expected shell to be done after kill")
 }
 
 func TestBackgroundShell_MultipleOutputCalls(t *testing.T) {
