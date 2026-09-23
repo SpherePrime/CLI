@@ -49,6 +49,25 @@ type ActionSelectModel struct {
 	ReAuthenticate bool
 }
 
+// ActionOpenAgentModel is a message to open the model picker for a
+// specific subagent.
+type ActionOpenAgentModel struct {
+	AgentID string
+}
+
+// ActionSetAgentModel pins a concrete model to a subagent instead of
+// following its large/small model type.
+type ActionSetAgentModel struct {
+	AgentID string
+	Model   config.SelectedModel
+}
+
+// ActionClearAgentModel removes the pinned model from a subagent so it
+// follows its large/small model type again.
+type ActionClearAgentModel struct {
+	AgentID string
+}
+
 // Messages for commands
 type (
 	ActionNewSession              struct{}

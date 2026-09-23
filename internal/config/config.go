@@ -719,6 +719,21 @@ type Agent struct {
 
 	// Overrides the context paths for this agent
 	ContextPaths []string `json:"context_paths,omitempty"`
+
+	// ModelOverride pins a concrete model for this agent instead of
+	// following the large/small model type.
+	ModelOverride *SelectedModel `json:"model_override,omitempty"`
+}
+
+// GetModelForAgent returns the concrete model the agent runs on: the pinned
+// override when set, otherwise the model selected for its model type.
+func (c *Config) GetModelForAgent(agent Agent) *catwalk.Model {
+	if agent.ModelOverride != nil {
+		if model := c.GetModel(agent.ModelOverride.Provider, agent.ModelOverride.Model); model != nil {
+			return model
+		}
+	}
+	return c.GetModelByType(agent.Model)
 }
 
 type Tools struct {
@@ -821,7 +836,7 @@ type Config struct {
 	// Env is a map of environment variables set on startup.
 	Env map[string]string `json:"env,omitempty" jsonschema:"description=Environment variables to set on startup"`
 
-	Agents map[string]Agent `json:"-"`
+	Agents map[string]Agent `json:"agents,omitempty"`
 }
 
 // cloneForWrite returns a copy of c that the store's typed field mutators
@@ -1115,6 +1130,8 @@ func filterSlice(data []string, mask []string, include bool) []string {
 	return filtered
 }
 
+// SetupAgents fills in the built-in agents. Model overrides stored in the
+// config file are preserved across calls.
 func (c *Config) SetupAgents() {
 	allowedTools := resolveAllowedTools(allToolNames(), c.Options.DisabledTools)
 
@@ -1150,7 +1167,19 @@ func (c *Config) SetupAgents() {
 			AllowedMCP: map[string][]string{},
 		},
 	}
+	overrides := map[string]*SelectedModel{}
+	for id, agent := range c.Agents {
+		if agent.ModelOverride != nil {
+			overrides[id] = agent.ModelOverride
+		}
+	}
 	c.Agents = agents
+	for id, override := range overrides {
+		if agent, ok := c.Agents[id]; ok {
+			agent.ModelOverride = override
+			c.Agents[id] = agent
+		}
+	}
 }
 
 func (c *ProviderConfig) TestConnection(resolver VariableResolver) error {

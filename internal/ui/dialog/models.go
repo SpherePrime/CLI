@@ -78,6 +78,10 @@ type Models struct {
 	com          *common.Common
 	isOnboarding bool
 
+	// agentID scopes the dialog to a subagent: selections are pinned to
+	// that agent instead of updating the global model.
+	agentID string
+
 	modelType ModelType
 	providers []catwalk.Provider
 
@@ -102,10 +106,25 @@ var _ Dialog = (*Models)(nil)
 
 // NewModels creates a new Models dialog.
 func NewModels(com *common.Common, isOnboarding bool) (*Models, error) {
+	return NewModelsForAgent(com, isOnboarding, "")
+}
+
+// NewModelsForAgent creates a new Models dialog. When agentID is set, the
+// dialog pins the chosen model to that subagent instead of updating the
+// global large/small model.
+func NewModelsForAgent(com *common.Common, isOnboarding bool, agentID string) (*Models, error) {
 	t := com.Styles
 	m := &Models{}
 	m.com = com
 	m.isOnboarding = isOnboarding
+	m.agentID = agentID
+
+	if agentID != "" {
+		cfg := com.Config()
+		if agent, ok := cfg.Agents[agentID]; ok && agent.Model == config.SelectedModelTypeSmall {
+			m.modelType = ModelTypeSmall
+		}
+	}
 
 	help := help.New()
 	help.Styles = t.DialogHelpStyles()
@@ -206,6 +225,13 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 
 			isEdit := key.Matches(msg, m.keyMap.Edit)
 
+			if m.agentID != "" {
+				return ActionSetAgentModel{
+					AgentID: m.agentID,
+					Model:   modelItem.SelectedModel(),
+				}
+			}
+
 			return ActionSelectModel{
 				Provider:       modelItem.prov,
 				Model:          modelItem.SelectedModel(),
@@ -285,7 +311,11 @@ func (m *Models) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	listHeight, listTotalHeight, _ := sizeDialogList(t, m.list, innerWidth, height)
 
 	rc := NewRenderContext(t, width)
-	rc.Title = "Switch Model"
+	if m.agentID != "" {
+		rc.Title = m.com.L("cmd.pick_agent_model")
+	} else {
+		rc.Title = "Switch Model"
+	}
 	rc.TitleInfo = m.modelTypeRadioView()
 
 	if m.isOnboarding {

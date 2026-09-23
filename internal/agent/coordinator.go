@@ -748,7 +748,7 @@ func mergeCallOptions(model Model, cfg config.ProviderConfig) (fantasy.ProviderO
 }
 
 func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, agent config.Agent, isSubAgent bool) (SessionAgent, error) {
-	large, small, err := c.buildAgentModels(ctx, isSubAgent)
+	large, small, err := c.buildAgentModels(ctx, isSubAgent, agent)
 	if err != nil {
 		return nil, err
 	}
@@ -971,17 +971,26 @@ func agentAllowsMCPTool(agent config.Agent, tool *tools.Tool) bool {
 }
 
 // TODO: when we support multiple agents we need to change this so that we pass in the agent specific model config
-func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool) (Model, Model, error) {
-	largeModelCfg, ok := c.cfg.Config().Models[config.SelectedModelTypeLarge]
+func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool, agent config.Agent) (Model, Model, error) {
+	cfg := c.cfg.Config()
+
+	largeModelCfg, ok := cfg.Models[config.SelectedModelTypeLarge]
 	if !ok {
 		return Model{}, Model{}, errLargeModelNotSelected
 	}
-	smallModelCfg, ok := c.cfg.Config().Models[config.SelectedModelTypeSmall]
+	smallModelCfg, ok := cfg.Models[config.SelectedModelTypeSmall]
 	if !ok {
 		return Model{}, Model{}, errSmallModelNotSelected
 	}
 
-	largeProviderCfg, ok := c.cfg.Config().Providers.Get(largeModelCfg.Provider)
+	if override := agent.ModelOverride; override != nil {
+		// A pinned model replaces both the agent's primary and helper
+		// models so the whole agent runs on the selected one.
+		largeModelCfg = *override
+		smallModelCfg = *override
+	}
+
+	largeProviderCfg, ok := cfg.Providers.Get(largeModelCfg.Provider)
 	if !ok {
 		return Model{}, Model{}, errLargeModelProviderNotConfigured
 	}
@@ -991,7 +1000,7 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool) (Mo
 		return Model{}, Model{}, err
 	}
 
-	smallProviderCfg, ok := c.cfg.Config().Providers.Get(smallModelCfg.Provider)
+	smallProviderCfg, ok := cfg.Providers.Get(smallModelCfg.Provider)
 	if !ok {
 		return Model{}, Model{}, errSmallModelProviderNotConfigured
 	}
@@ -1470,17 +1479,17 @@ func (c *coordinator) UpdateModels(ctx context.Context) error {
 // updateAgentModels rebuilds the model and tool configuration for the
 // given agent from the current config.
 func (c *coordinator) updateAgentModels(ctx context.Context, agent SessionAgent, name string) error {
-	// build the models again so we make sure we get the latest config
-	large, small, err := c.buildAgentModels(ctx, false)
-	if err != nil {
-		return err
-	}
-	agent.SetModels(large, small)
-
 	agentCfg, ok := c.cfg.Config().Agents[name]
 	if !ok {
 		return fmt.Errorf("%w: %s", errMainAgentNotFound, name)
 	}
+
+	// build the models again so we make sure we get the latest config
+	large, small, err := c.buildAgentModels(ctx, false, agentCfg)
+	if err != nil {
+		return err
+	}
+	agent.SetModels(large, small)
 
 	// Rebuild the system prompt too: tool search mode changes which capability
 	// sections the model is told about, and that has to land as soon as the

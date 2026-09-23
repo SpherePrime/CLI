@@ -2343,6 +2343,14 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		if cmd := m.handleSelectModel(msg); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.ActionSetAgentModel:
+		cmds = append(cmds, m.handleSetAgentModel(msg))
+	case dialog.ActionClearAgentModel:
+		cmds = append(cmds, m.handleClearAgentModel(msg))
+	case dialog.ActionOpenAgentModel:
+		if cmd := m.openAgentModelDialog(msg.AgentID); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.ActionSelectReasoningEffort:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait..."))
@@ -2580,6 +2588,101 @@ func (m *UI) restoreModelFromSession(msgs []message.Message) tea.Cmd {
 
 // handleSelectModel performs the model selection after any provider
 // pre-checks (such as a silent Hyper OAuth refresh) have completed.
+// openAgentsDialog opens the subagent model settings dialog.
+func (m *UI) openAgentsDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.AgentsID) {
+		m.dialog.BringToFront(dialog.AgentsID)
+		return nil
+	}
+
+	agentsDialog := dialog.NewAgents(m.com)
+	m.dialog.OpenDialog(agentsDialog)
+	return nil
+}
+
+// openAgentModelDialog opens the model picker scoped to a subagent.
+func (m *UI) openAgentModelDialog(agentID string) tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.ModelsID) {
+		m.dialog.BringToFront(dialog.ModelsID)
+		return nil
+	}
+
+	modelsDialog, err := dialog.NewModelsForAgent(m.com, false, agentID)
+	if err != nil {
+		return util.ReportError(err)
+	}
+
+	m.dialog.OpenDialog(modelsDialog)
+
+	return nil
+}
+
+// handleSetAgentModel pins a concrete model to a subagent.
+func (m *UI) handleSetAgentModel(msg dialog.ActionSetAgentModel) tea.Cmd {
+	cfg := m.com.Config()
+	if cfg == nil {
+		return util.ReportError(errors.New("configuration not found"))
+	}
+
+	agent, ok := cfg.Agents[msg.AgentID]
+	if !ok {
+		return util.ReportError(fmt.Errorf("unknown agent %q", msg.AgentID))
+	}
+
+	override := msg.Model
+	agent.ModelOverride = &override
+	cfg.Agents[msg.AgentID] = agent
+
+	if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "agents."+msg.AgentID, agent); err != nil {
+		return util.ReportError(err)
+	}
+
+	m.dialog.CloseDialog(dialog.ModelsID)
+	m.dialog.CloseDialog(dialog.AgentsID)
+
+	agentName := agent.Name
+	cmd := m.updateAgentModelCmd(func() tea.Msg {
+		if err := m.com.Workspace.UpdateAgentModel(context.TODO()); err != nil {
+			return util.ReportError(err)
+		}
+		return util.NewInfoMsg(agentName + " agent now uses " + override.Model)
+	})
+
+	return cmd
+}
+
+// handleClearAgentModel removes a pinned model from a subagent.
+func (m *UI) handleClearAgentModel(msg dialog.ActionClearAgentModel) tea.Cmd {
+	cfg := m.com.Config()
+	if cfg == nil {
+		return util.ReportError(errors.New("configuration not found"))
+	}
+
+	agent, ok := cfg.Agents[msg.AgentID]
+	if !ok {
+		return util.ReportError(fmt.Errorf("unknown agent %q", msg.AgentID))
+	}
+
+	agent.ModelOverride = nil
+	cfg.Agents[msg.AgentID] = agent
+
+	if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "agents."+msg.AgentID, agent); err != nil {
+		return util.ReportError(err)
+	}
+
+	m.dialog.CloseDialog(dialog.AgentsID)
+
+	agentName := agent.Name
+	cmd := m.updateAgentModelCmd(func() tea.Msg {
+		if err := m.com.Workspace.UpdateAgentModel(context.TODO()); err != nil {
+			return util.ReportError(err)
+		}
+		return util.NewInfoMsg(agentName + " agent follows its model type again")
+	})
+
+	return cmd
+}
+
 func (m *UI) handleSelectModel(msg dialog.ActionSelectModel) tea.Cmd {
 	var cmds []tea.Cmd
 
@@ -5060,6 +5163,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		}
 	case dialog.ModelsID:
 		if cmd := m.openModelsDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	case dialog.AgentsID:
+		if cmd := m.openAgentsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.ModelsConfigID:
