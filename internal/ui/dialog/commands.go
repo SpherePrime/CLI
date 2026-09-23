@@ -461,6 +461,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "new_session", c.com.L("cmd.new_session"), "ctrl+n", ActionNewSession{}).WithAliases("clear"),
 		NewCommandItem(c.com.Styles, "switch_session", c.com.L("cmd.sessions"), "ctrl+s", ActionOpenDialog{SessionsID}),
 		NewCommandItem(c.com.Styles, "switch_model", c.com.L("cmd.switch_model"), "ctrl+l", ActionOpenDialog{ModelsID}),
+		NewCommandItem(c.com.Styles, "agent_models", c.com.L("cmd.agent_models"), "", ActionOpenDialog{AgentsID}).WithAliases("subagents", "agents"),
 		NewCommandItem(c.com.Styles, "model_settings", c.com.L("cmd.model_settings"), "", ActionOpenDialog{ModelsConfigID}),
 		NewCommandItem(c.com.Styles, "provider_settings", c.com.L("cmd.provider_settings"), "", ActionOpenDialog{ProviderSettingsID}).WithAliases("providers", "provider"),
 		NewCommandItem(c.com.Styles, "status", c.com.L("cmd.status"), "", ActionOpenDialog{StatusID}),

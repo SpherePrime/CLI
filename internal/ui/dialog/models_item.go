@@ -1,6 +1,8 @@
 package dialog
 
 import (
+	"fmt"
+
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/config"
@@ -132,6 +134,9 @@ func (m *ModelItem) Render(width int) string {
 	if m.showProvider {
 		providerInfo = string(m.prov.Name)
 	}
+	if m.model.SupportsImages {
+		providerInfo = appendVisionBadge(providerInfo)
+	}
 	styles := ListItemStyles{
 		ItemBlurred:     m.t.Dialog.NormalItem,
 		ItemFocused:     m.t.Dialog.SelectedItem,
@@ -163,4 +168,13 @@ func (m *ModelItem) SetMatch(fm fuzzy.Match) {
 	if m.Versioned != nil {
 		m.Bump()
 	}
+}
+
+// appendVisionBadge marks models that accept image attachments.
+func appendVisionBadge(info string) string {
+	const badge = "vision"
+	if info == "" {
+		return badge
+	}
+	return fmt.Sprintf("%s · %s", info, badge)
 }
