@@ -2326,6 +2326,11 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			m.com.Workspace.UpdateAgentModel(context.TODO())
 			return util.NewInfoMsg(m.com.L("info.model_settings_saved"))
 		}))
+	case dialog.ActionProviderSettingsChanged:
+		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
+			m.com.Workspace.UpdateAgentModel(context.TODO())
+			return util.NewInfoMsg(m.com.LSprintf("info.provider_models_updated", msg.ProviderID))
+		}))
 	case dialog.ActionInitializeProject:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
@@ -5081,6 +5086,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openProvidersDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.ProviderSettingsID:
+		if cmd := m.openProviderSettingsDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.FilePickerID:
 		if cmd := m.openFilesDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -5270,6 +5279,18 @@ func (m *UI) openProvidersDialog() tea.Cmd {
 
 	providersDialog := dialog.NewProviders(m.com)
 	m.dialog.OpenDialog(providersDialog)
+	return nil
+}
+
+// openProviderSettingsDialog opens the dialog for managing the models of the
+// providers already in the config.
+func (m *UI) openProviderSettingsDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.ProviderSettingsID) {
+		m.dialog.BringToFront(dialog.ProviderSettingsID)
+		return nil
+	}
+
+	m.dialog.OpenDialog(dialog.NewProviderSettings(m.com))
 	return nil
 }
 

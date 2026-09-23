@@ -94,7 +94,7 @@ config directory (`$XDG_CONFIG_HOME/prime`, `~/.config/prime`, or
 | File              | Holds                                                        |
 | ----------------- | ------------------------------------------------------------ |
 | `providers.json`  | Provider credentials, base URLs, and model catalogs           |
-| `models.json`     | Selected large/small models and recently used models          |
+| `models.json`     | Selected large/small models, recent models, per-model settings |
 | `mcp.json`        | MCP servers                                                   |
 | `lsp.json`        | Language servers                                              |
 | `skills.json`     | Skill directories and disabled skills (`options.*` fields)    |

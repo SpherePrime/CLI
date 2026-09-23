@@ -18,13 +18,26 @@ func TestAtomicWriteFile(t *testing.T) {
 
 	data, err := os.ReadFile(path)
 	require.NoError(t, err)
-	require.Equal(t, `{"key":"value"}`, string(data))
+	// JSON is formatted on the way to disk so config sections stay readable.
+	require.Equal(t, "{\n  \"key\": \"value\"\n}\n", string(data))
 
 	// No temp files should linger.
 	entries, err := os.ReadDir(dir)
 	require.NoError(t, err)
 	require.Len(t, entries, 1)
 	require.Equal(t, "test.json", entries[0].Name())
+}
+
+func TestAtomicWriteFile_LeavesNonJSONVerbatim(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "primerrc")
+
+	require.NoError(t, atomicWriteFile(path, []byte("source something"), 0o600))
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, "source something", string(data))
 }
 
 func TestAtomicWriteFile_PermissionsApplied(t *testing.T) {
