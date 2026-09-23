@@ -35,6 +35,7 @@ agent.exe
 agent-tui.exe
 prime.exe
 prime
+CLI
 CLI.exe
 *.test
 

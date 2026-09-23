@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPO="${PRIME_REPO:-dwertyfa288/CLI}"
+REPO="${PRIME_REPO:-SpherePrime/CLI}"
 BIN_DIR="${PRIME_INSTALL_DIR:-$HOME/.local/bin}"
 
 os=$(uname -s)

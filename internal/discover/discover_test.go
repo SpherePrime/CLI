@@ -2,6 +2,7 @@ package discover
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -180,6 +181,19 @@ func TestDiscoverModels_SkipsEmptyExtraHeaders(t *testing.T) {
 	models, err := DiscoverModels(context.Background(), cfg, resolver)
 	require.NoError(t, err)
 	require.Len(t, models, 1)
+}
+
+func TestDescribeDiscoveryErrorHints(t *testing.T) {
+	t.Parallel()
+
+	cfg := Config{ID: "test", BaseURL: "https://example.com/v1"}
+
+	// Timeout and DNS failures must carry an actionable hint.
+	require.Contains(t, describeDiscoveryError(cfg, context.DeadlineExceeded).Error(), "timed out")
+	require.Contains(t, describeDiscoveryError(cfg, errors.New("dial tcp: lookup vyceai.com: no such host")).Error(), "DNS resolution failed")
+
+	// Unknown failures stay as plain wrapped errors without a hint.
+	require.Contains(t, describeDiscoveryError(cfg, errors.New("plain failure")).Error(), "plain failure")
 }
 
 func TestDiscoverModels_NoAuthWhenNoAPIKey(t *testing.T) {
