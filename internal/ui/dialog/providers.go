@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
@@ -34,6 +35,7 @@ const (
 	providersStateAPIKey
 	providersStateDiscovering
 	providersStateError
+	providersStateModels
 )
 
 // Providers is a step-based form dialog for adding a custom LLM provider.
@@ -48,11 +50,18 @@ type Providers struct {
 	urlInput textinput.Model
 	keyInput textinput.Model
 
+	// modelInputs holds one text field per manually added model. Entering
+	// a model ID and pressing enter appends a fresh field for the next one.
+	modelInputs []textinput.Model
+	modelIDs    []string
+
 	spinner spinner.Model
 	help    help.Model
 
 	keyMap struct {
 		Submit key.Binding
+		Add    key.Binding
+		Remove key.Binding
 		Close  key.Binding
 	}
 
@@ -96,6 +105,14 @@ func NewProviders(com *common.Common) *Providers {
 		key.WithKeys("enter", "ctrl+y"),
 		key.WithHelp("enter", "next"),
 	)
+	m.keyMap.Add = key.NewBinding(
+		key.WithKeys("ctrl+n"),
+		key.WithHelp("ctrl+n", "add model"),
+	)
+	m.keyMap.Remove = key.NewBinding(
+		key.WithKeys("ctrl+x"),
+		key.WithHelp("ctrl+x", "remove model"),
+	)
 	m.keyMap.Close = CloseKey
 
 	return m
@@ -113,6 +130,11 @@ func (m *Providers) activeInput() *textinput.Model {
 		return &m.idInput
 	case providersStateBaseURL:
 		return &m.urlInput
+	case providersStateModels:
+		if len(m.modelInputs) == 0 {
+			m.ensureModelInput()
+		}
+		return &m.modelInputs[len(m.modelInputs)-1]
 	default:
 		return &m.keyInput
 	}
@@ -123,10 +145,12 @@ func (m *Providers) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
 	case providersDiscoveredMsg:
 		if msg.err != nil {
-			m.state = providersStateError
+			m.state = providersStateModels
 			m.errorMessage = msg.err.Error()
-			m.idInput.SetValue(m.providerID)
-			m.idInput.Focus()
+			if len(m.modelInputs) == 0 {
+				m.ensureModelInput()
+			}
+			m.modelInputs[len(m.modelInputs)-1].Focus()
 			return nil
 		}
 		if err := m.persistProvider(msg.models); err != nil {
@@ -148,11 +172,37 @@ func (m *Providers) HandleMsg(msg tea.Msg) Action {
 		case m.state == providersStateDiscovering:
 			// Ignore keys while the discovery request is in flight.
 		case key.Matches(msg, m.keyMap.Submit):
+			if m.state == providersStateModels {
+				if len(m.modelInputs) == 0 {
+					return nil
+				}
+				m.CommitModelInputs()
+				models := make([]catwalk.Model, 0, len(m.modelIDs))
+				for _, id := range m.modelIDs {
+					models = append(models, catwalk.Model{ID: id, Name: id})
+				}
+				if err := m.persistProvider(models); err != nil {
+					m.errorMessage = err.Error()
+					return nil
+				}
+				return ActionSaveProvider{}
+			}
 			m.advance()
 			if m.state == providersStateDiscovering {
 				return ActionCmd{tea.Batch(m.spinner.Tick, m.discoverModels())}
 			}
-		default:
+		case m.state == providersStateModels && key.Matches(msg, m.keyMap.Add):
+			if len(m.modelInputs) > 0 {
+				m.CommitModelInputs()
+			}
+			m.ensureModelInput()
+			m.modelInputs[len(m.modelInputs)-1].Focus()
+	case m.state == providersStateModels && key.Matches(msg, m.keyMap.Remove):
+		if len(m.modelInputs) > 1 {
+			m.modelInputs = m.modelInputs[:len(m.modelInputs)-1]
+			m.modelInputs[len(m.modelInputs)-1].Focus()
+		}
+	default:
 			input := m.activeInput()
 			var cmd tea.Cmd
 			*input, cmd = input.Update(msg)
@@ -172,6 +222,57 @@ func (m *Providers) HandleMsg(msg tea.Msg) Action {
 		}
 	}
 	return nil
+}
+
+// ensureModelInput creates the model input fields: one per manually added
+// model plus one fresh field waiting for input.
+func (m *Providers) ensureModelInput() {
+	for _, id := range m.modelIDs {
+		input := m.buildModelInput()
+		input.SetValue(id)
+		m.modelInputs = append(m.modelInputs, input)
+	}
+	if len(m.modelInputs) == 0 {
+		m.modelInputs = append(m.modelInputs, m.buildModelInput())
+	} else {
+		last := &m.modelInputs[len(m.modelInputs)-1]
+		last.SetValue("")
+		last.Focus()
+	}
+}
+
+// CommitModelInputs finalizes the manually entered model fields: filled-in
+// values become the committed list, and a fresh empty field is opened for
+// the next entry.
+func (m *Providers) CommitModelInputs() {
+	trimmed := make([]string, 0, len(m.modelIDs)+1)
+	for _, input := range m.modelInputs {
+		value := strings.TrimSpace(input.Value())
+		if value != "" && !slices.Contains(trimmed, value) {
+			trimmed = append(trimmed, value)
+		}
+	}
+	m.modelIDs = trimmed
+
+	committed := m.modelInputs
+	m.modelInputs = nil
+	for _, input := range committed {
+		input.SetValue("")
+	}
+	for range m.modelIDs {
+		m.modelInputs = append(m.modelInputs, m.buildModelInput())
+	}
+	m.modelInputs = append(m.modelInputs, m.buildModelInput())
+	m.modelInputs[len(m.modelInputs)-1].Focus()
+}
+
+func (m *Providers) buildModelInput() textinput.Model {
+	input := textinput.New()
+	input.SetVirtualCursor(false)
+	input.Prompt = "Model: "
+	input.Placeholder = "model ID, e.g. llama-3-70b"
+	input.SetStyles(m.com.Styles.TextInput)
+	return input
 }
 
 // advance moves to the next form step when the current value is valid.
@@ -197,15 +298,27 @@ func (m *Providers) advance() {
 		m.state = providersStateAPIKey
 		m.keyInput.SetValue("")
 		m.keyInput.Focus()
+	case providersStateError:
+		m.state = providersStateModels
+		m.ensureModelInput()
 	case providersStateAPIKey:
 		if strings.TrimSpace(m.keyInput.Value()) == "" {
 			return
 		}
 		m.state = providersStateDiscovering
-	case providersStateError:
-		// Keep the filled-in ID, URL and key so enter retries the
-		// discovery instead of restarting the whole form.
-		m.state = providersStateDiscovering
+	case providersStateModels:
+		if len(m.modelInputs) == 0 {
+			return
+		}
+		m.CommitModelInputs()
+		models := make([]catwalk.Model, 0, len(m.modelIDs))
+		for _, id := range m.modelIDs {
+			models = append(models, catwalk.Model{ID: id, Name: id})
+		}
+		if err := m.persistProvider(models); err != nil {
+			m.errorMessage = err.Error()
+			return
+		}
 	}
 }
 
@@ -265,7 +378,7 @@ type providersDiscoveredMsg struct {
 // state without a rendered input would place it on the wrong line.
 func (m *Providers) Cursor() *tea.Cursor {
 	switch m.state {
-	case providersStateID, providersStateBaseURL, providersStateAPIKey:
+	case providersStateID, providersStateBaseURL, providersStateAPIKey, providersStateModels:
 		return InputCursor(m.com.Styles, m.activeInput().Cursor())
 	}
 	return nil
@@ -303,10 +416,17 @@ func (m *Providers) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	case providersStateDiscovering:
 		rc.Title = "Adding Provider"
 		rc.AddPart(textStyle.Render(m.spinner.View() + " Fetching models from " + strings.TrimRight(strings.TrimSpace(m.urlInput.Value()), "/") + "..."))
-	case providersStateError:
-		rc.Title = t.Dialog.TitleError.Render("Discovery failed")
-		rc.AddPart(textStyle.Render(m.errorMessage))
-		rc.AddPart(textStyle.Render("Press enter to retry."))
+	case providersStateModels:
+		rc.Title = "Add Models"
+		for _, input := range m.modelInputs {
+			input.SetWidth(dialogInputTextWidth(t, input, innerWidth))
+			rc.AddPart(t.Dialog.InputPrompt.Render(input.View()))
+		}
+		if m.errorMessage != "" {
+			rc.AddPart(textStyle.Render(m.errorMessage))
+			m.errorMessage = ""
+		}
+		rc.AddPart(textStyle.Render("Ctrl+n adds a field, Ctrl+x removes the active one, enter saves the provider."))
 	}
 
 	rc.Help = helpView
@@ -318,10 +438,16 @@ func (m *Providers) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 // ShortHelp implements [help.KeyMap].
 func (m *Providers) ShortHelp() []key.Binding {
+	if m.state == providersStateModels {
+		return []key.Binding{m.keyMap.Submit, m.keyMap.Add, m.keyMap.Remove, m.keyMap.Close}
+	}
 	return []key.Binding{m.keyMap.Submit, m.keyMap.Close}
 }
 
 // FullHelp implements [help.KeyMap].
 func (m *Providers) FullHelp() [][]key.Binding {
+	if m.state == providersStateModels {
+		return [][]key.Binding{{m.keyMap.Submit, m.keyMap.Add, m.keyMap.Remove, m.keyMap.Close}}
+	}
 	return [][]key.Binding{{m.keyMap.Submit, m.keyMap.Close}}
 }
