@@ -18,6 +18,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/embedded"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/etag"
 )
 
@@ -269,6 +270,7 @@ func (c cache[T]) Store(v T) error {
 	if err := os.MkdirAll(filepath.Dir(c.path), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for provider cache: %w", err)
 	}
+	home.Chown(filepath.Dir(c.path))
 
 	data, err := json.Marshal(v)
 	if err != nil {

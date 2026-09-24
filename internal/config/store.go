@@ -15,6 +15,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	hyperp "github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/env"
+	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/internal/lock"
 	"github.com/SpherePrime/CLI/internal/oauth"
 	"github.com/SpherePrime/CLI/internal/oauth/copilot"
@@ -288,6 +289,7 @@ func (s *ConfigStore) lockConfigFile(path string) (func(), error) {
 		s.mu.Unlock()
 		return nil, fmt.Errorf("create config directory: %w", err)
 	}
+	home.Chown(filepath.Dir(path))
 	ctx, cancel := context.WithTimeout(context.Background(), configLockDeadline)
 	defer cancel()
 	release, err := lock.File(ctx, path+".lock")
@@ -1061,6 +1063,7 @@ func (s *ConfigStore) withRefreshLock(providerID string, fn func() error) error 
 func (s *ConfigStore) refreshLockPath(providerID string) string {
 	dir := filepath.Join(filepath.Dir(GlobalConfigData()), "locks")
 	_ = os.MkdirAll(dir, 0o755)
+	home.Chown(dir)
 	return filepath.Join(dir, fmt.Sprintf("%s.refresh.lock", providerID))
 }
 
