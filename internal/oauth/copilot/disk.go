@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/SpherePrime/CLI/internal/home"
 )
 
 func RefreshTokenFromDisk() (string, bool) {
@@ -31,6 +33,6 @@ func tokenFilePath() string {
 	case "windows":
 		return filepath.Join(os.Getenv("LOCALAPPDATA"), "github-copilot/apps.json")
 	default:
-		return filepath.Join(os.Getenv("HOME"), ".config/github-copilot/apps.json")
+		return filepath.Join(home.Config(), "github-copilot/apps.json")
 	}
 }

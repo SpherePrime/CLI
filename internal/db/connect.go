@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/vendordeps/pressly/goose/v3"
 )
 
@@ -50,6 +51,7 @@ type connEntry struct {
 	db       *sql.DB
 	refCount int
 	lock     *dataDirLock
+	dataDir  string
 }
 
 var (
@@ -167,7 +169,13 @@ func Connect(ctx context.Context, dataDir string, opts ...ConnectOption) (*sql.D
 		return nil, fmt.Errorf("failed to apply migrations: %w", err)
 	}
 
-	pool[absPath] = &connEntry{db: conn, refCount: 1, lock: lock}
+	// A root run (e.g. "sudo prime") shares the workspace data directory
+	// with the unprivileged user's Prime. Hand everything in it back to
+	// that user so its own daemon can keep opening the database, lock
+	// file, and logs afterwards.
+	home.ChownTree(dataDir)
+
+	pool[absPath] = &connEntry{db: conn, refCount: 1, lock: lock, dataDir: dataDir}
 	return conn, nil
 }
 
@@ -199,6 +207,10 @@ func Release(dataDir string) error {
 	if entry.lock != nil {
 		entry.lock.release()
 	}
+	// SQLite may have created WAL/shared-memory sidecar files during
+	// this connection's lifetime. Hand those over too before the next
+	// (unprivileged) prime opens the same directory.
+	home.ChownTree(entry.dataDir)
 	return closeErr
 }
 

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/SpherePrime/CLI/internal/home"
 )
 
 // atomicWriteFile writes data to a file atomically by writing to a unique
@@ -35,6 +37,11 @@ func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
 		os.Remove(tmp)
 		return err
 	}
+	// When Prime runs as root through sudo it writes into the invoking
+	// user's config directory. Handing the new file back before the
+	// rename keeps those config files readable by the unprivileged
+	// installation afterwards.
+	home.Chown(tmp)
 	if err := renameFile(tmp, path); err != nil {
 		os.Remove(tmp)
 		return err
