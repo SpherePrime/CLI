@@ -27,7 +27,7 @@ func TestProvidersRetryKeepsFormState(t *testing.T) {
 	d.state = providersStateError
 
 	d.advance()
-	require.Equal(t, providersStateDiscovering, d.state, "retry must re-run discovery without clearing the form")
+	require.Equal(t, providersStateModels, d.state, "retry must open the model entry step without clearing the form")
 }
 
 func TestProvidersErrorSubmitSchedulesDiscovery(t *testing.T) {
@@ -44,7 +44,7 @@ func TestProvidersErrorSubmitSchedulesDiscovery(t *testing.T) {
 	// Only verify the state transition: the discovery command would
 	// resolve config variables, which is not wired up in this test.
 	d.advance()
-	require.Equal(t, providersStateDiscovering, d.state)
+	require.Equal(t, providersStateModels, d.state)
 }
 
 func TestProvidersDiscoveringIgnoresKeys(t *testing.T) {
