@@ -57,14 +57,14 @@ var DefaultHotkeys = []string{"alt+v", "ctrl+shift+space"}
 var (
 	// ErrNoRecorder means no microphone capture tool was found.
 	ErrNoRecorder = errors.New(
-		"no microphone recorder found. Install ffmpeg (winget install Gyan.FFmpeg, brew install ffmpeg) " +
-			"or sox, run pip install sounddevice, or set option voice record-command",
+		"no microphone recorder found. Run \"prime voice setup\", or install ffmpeg " +
+			"(winget install Gyan.FFmpeg, brew install ffmpeg) or sox, " +
+			"or set option voice record-command",
 	)
 	// ErrNoTranscriber means no Whisper engine was found.
 	ErrNoTranscriber = errors.New(
-		"no Whisper engine found. Install whisper.cpp, run pip install -U openai-whisper, " +
-			"start a whisper.cpp server, or point option voice base-url and api-key at an " +
-			"OpenAI-compatible transcription endpoint",
+		"no Whisper engine found. Run \"prime voice setup\" to download whisper.cpp and a model, "+
+			"or set option voice base-url and api-key at an OpenAI-compatible transcription endpoint",
 	)
 	// ErrNoSpeech means the recording is too short to transcribe.
 	ErrNoSpeech = errors.New("recording too short, nothing to transcribe")

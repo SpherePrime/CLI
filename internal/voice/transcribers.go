@@ -113,7 +113,8 @@ func autoServerTranscriber(ctx context.Context, settings Settings, p prober) (Tr
 	return newServerTranscriber(inferenceEndpoint(localWhisperServer), settings), true
 }
 
-// localWhisperTranscriber finds a command line Whisper engine on PATH.
+// localWhisperTranscriber finds a command line Whisper engine on PATH,
+// which must have a model to use it.
 func localWhisperTranscriber(settings Settings, p prober) (Transcriber, bool) {
 	return namedWhisperTranscriber(settings, p, EngineAuto)
 }
@@ -153,7 +154,8 @@ const (
 const inferenceRoute = "/inference"
 
 // whisperCPPFromPath resolves whisper.cpp, which is the only engine addressed
-// by a model file instead of a model name.
+// by a model file instead of a model name. When no model is configured the
+// one Prime downloaded for it is used.
 func whisperCPPFromPath(settings Settings, p prober) (Transcriber, bool) {
 	var bin string
 	for _, candidate := range []string{whisperCPPBinary, whisperCPPLegacyBinary} {
@@ -165,13 +167,13 @@ func whisperCPPFromPath(settings Settings, p prober) (Transcriber, bool) {
 	if bin == "" {
 		return nil, false
 	}
-	model, ok := ggmlModelFile(settings.Model, modelSearchDirs())
+	model, ok := ggmlModelFile(settings.Model, p.layout.modelSearchDirs())
 	if !ok {
 		return nil, false
 	}
 	resolved := settings
 	resolved.Model = model
-	return whisperCPPTranscriber(bin, model, resolved), true
+	return whisperCPPTranscriber(bin, model, resolved, p.layout.libraryPathEnv()), true
 }
 
 // hostedTranscriber falls back to a hosted endpoint when credentials are

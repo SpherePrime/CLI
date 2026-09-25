@@ -26,6 +26,9 @@ type cliTranscriber struct {
 	argv func(t cliTranscriber, wavPath, dir string) []string
 	// result names the text file the engine writes, relative to dir.
 	result func(wavPath, dir string) string
+	// env carries extra environment entries, needed when the engine was
+	// installed by Prime and must find the libraries beside it.
+	env []string
 }
 
 func (t cliTranscriber) Name() string { return t.label }
@@ -46,7 +49,7 @@ func (t cliTranscriber) Transcribe(ctx context.Context, audio *Audio) (string, e
 	}
 
 	args := t.argv(t, wavPath, dir)
-	stdout, stderr, err := runCommand(ctx, t.bin, args)
+	stdout, stderr, err := runCommandWithEnv(ctx, t.bin, args, mergeEnv(t.env))
 	if err != nil {
 		return "", engineError(err, stderr)
 	}
@@ -76,11 +79,12 @@ const dictationStem = "dictation"
 
 // whisperCPPTranscriber runs whisper.cpp, which needs a model file rather than
 // a model name.
-func whisperCPPTranscriber(bin, model string, settings Settings) Transcriber {
+func whisperCPPTranscriber(bin, model string, settings Settings, env []string) Transcriber {
 	return cliTranscriber{
 		label:    "whisper.cpp",
 		bin:      bin,
 		settings: settings,
+		env:      env,
 		argv: func(t cliTranscriber, wavPath, dir string) []string {
 			// whisper.cpp defaults to English, so detection is asked for
 			// explicitly whenever the user has not pinned a language.
@@ -224,7 +228,8 @@ func commandTranscribeEnv(language string) []string {
 }
 
 // ggmlModelFile resolves a whisper.cpp model, which is addressed by file
-// rather than by name.
+// rather than by name. When no name is configured, any model that exists is
+// used, so a model installed by "prime voice setup" works without settings.
 func ggmlModelFile(configured string, searchDirs []string) (string, bool) {
 	if configured != "" && filepath.IsAbs(configured) {
 		if info, err := os.Stat(configured); err == nil && !info.IsDir() {
@@ -232,23 +237,48 @@ func ggmlModelFile(configured string, searchDirs []string) (string, bool) {
 		}
 		return "", false
 	}
-	name := configured
-	if name == "" {
-		name = defaultModel
-	}
-	candidates := []string{"ggml-" + name + ".bin", name + ".bin"}
-	if !strings.HasSuffix(name, ".bin") {
-		candidates = append(candidates, name)
-	}
 	for _, dir := range searchDirs {
-		for _, candidate := range candidates {
-			path := filepath.Join(dir, candidate)
-			if info, err := os.Stat(path); err == nil && !info.IsDir() {
-				return path, true
+		for _, name := range modelCandidateNames(configured) {
+			for _, candidate := range modelFileCandidates(name) {
+				path := filepath.Join(dir, candidate)
+				if info, err := os.Stat(path); err == nil && !info.IsDir() && info.Size() > 0 {
+					return path, true
+				}
 			}
 		}
 	}
 	return "", false
+}
+
+// modelCandidateNames is the order model names are tried in: the configured one
+// first, then the model setup downloads by default, then Prime's fallback and
+// every other downloadable model.
+func modelCandidateNames(configured string) []string {
+	names := make([]string, 0, 3+len(SetupModels))
+	seen := make(map[string]bool, 3+len(SetupModels))
+	add := func(name string) {
+		if name == "" || seen[name] {
+			return
+		}
+		seen[name] = true
+		names = append(names, name)
+	}
+	add(configured)
+	add(DefaultSetupModel)
+	add(defaultModel)
+	for _, model := range SetupModels {
+		add(model.Name)
+	}
+	return names
+}
+
+// modelFileCandidates are the file names one model can appear under.
+func modelFileCandidates(name string) []string {
+	candidates := []string{"ggml-" + name + ".bin", name + ".bin"}
+	if !strings.HasSuffix(name, ".bin") {
+		candidates = append(candidates, name)
+	}
+	return candidates
 }
 
 // modelSearchDirs is where a ggml model file is looked for.

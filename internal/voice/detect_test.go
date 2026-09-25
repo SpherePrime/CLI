@@ -163,6 +163,9 @@ func emptyProber() prober {
 		pythonSounddevice: func(context.Context) (string, bool) {
 			return "", false
 		},
+		pythonInterpreter: func(context.Context) (string, bool) {
+			return "", false
+		},
 		reachable: func(context.Context, string) bool { return false },
 	}
 }
@@ -207,6 +210,7 @@ type proberWith struct {
 	paths    map[string]string
 	python   string
 	serverOK bool
+	layout   InstallLayout
 }
 
 func (p proberWith) toProber() prober {
@@ -218,6 +222,10 @@ func (p proberWith) toProber() prober {
 		pythonSounddevice: func(context.Context) (string, bool) {
 			return p.python, p.python != ""
 		},
+		pythonInterpreter: func(context.Context) (string, bool) {
+			return p.python, p.python != ""
+		},
 		reachable: func(context.Context, string) bool { return p.serverOK },
+		layout:    p.layout,
 	}
 }
