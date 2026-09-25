@@ -2,6 +2,7 @@ package i18n
 
 import (
 	"testing"
+	"unicode/utf8"
 
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
@@ -35,4 +36,24 @@ func TestSprintf(t *testing.T) {
 	require.Equal(t, "Изменённые файлы", tr.Label("sidebar.modified_files"))
 	require.Equal(t, "…ещё 3", tr.Sprintf("sidebar.more", 3))
 	require.Equal(t, "Нет", tr.Label("btn.no"))
+}
+
+// The recording badges share the status bar with the mode badges and the key
+// hints, so they must stay translated and short in every locale.
+func TestVoiceStringsAreLocalized(t *testing.T) {
+	require.Equal(t, "voice input", New(En).Label("key.voice"))
+	require.Equal(t, "голосовой ввод", New(Ru).Label("key.voice"))
+
+	for _, locale := range Locales() {
+		tr := New(locale)
+		for _, key := range []string{
+			"voice.preparing",
+			"voice.recording",
+			"voice.transcribing",
+		} {
+			label := tr.Label(key)
+			require.NotEqual(t, key, label, "missing translation for "+key)
+			require.LessOrEqual(t, utf8.RuneCountInString(label), 12, key)
+		}
+	}
 }

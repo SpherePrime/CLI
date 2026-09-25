@@ -145,6 +145,10 @@ func (w *testWorkspace) Language() string {
 	return "en"
 }
 
+func (w *testWorkspace) Resolver() config.VariableResolver {
+	return nil
+}
+
 func (w *testWorkspace) AgentSetMain(agentID string) error {
 	w.setMainCalledWith = agentID
 	return nil

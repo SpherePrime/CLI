@@ -248,6 +248,10 @@ type UI struct {
 	keyMap KeyMap
 	keyenh tea.KeyboardEnhancementsMsg
 
+	// voice holds microphone dictation state: the capture process, its timer,
+	// and which recorder and Whisper engine this machine offers.
+	voice voiceRuntime
+
 	dialog *dialog.Overlay
 	status *Status
 
@@ -513,6 +517,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	}
 
 	status := NewStatus(com, ui)
+	ui.applyVoiceHotkey()
 
 	// Seed the active theme key from the large model provider so the
 	// first model selection can correctly skip a redundant theme swap.
@@ -1394,6 +1399,10 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case voiceStartedMsg, voiceTranscriptMsg, voiceTickMsg, voiceLimitMsg:
+		if cmd, ok := m.updateVoice(msg); ok && cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case tea.KeyPressMsg:
 		if cmd := m.handleKeyPressMsg(msg); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -2310,7 +2319,15 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		}))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionQuit:
+		// A capture left running would keep the microphone busy after the
+		// terminal is gone.
+		m.abortVoiceCapture()
 		cmds = append(cmds, tea.Quit)
+	case dialog.ActionStartVoiceDictation:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		if cmd := m.toggleVoiceInput(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.ActionEnableDockerMCP:
 		m.dialog.CloseDialog(dialog.CommandsID)
 		cmds = append(cmds, m.enableDockerMCP)
@@ -3025,6 +3042,23 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 		}
 	}
 
+	// Dictation is available from the editor, the chat view, and the sidebar,
+	// so its keys are matched before focus-specific handling can take them.
+	if m.activeInline == nil && (m.state == uiChat || m.state == uiLanding) {
+		if key.Matches(msg, m.keyMap.Voice) {
+			if cmd := m.toggleVoiceInput(); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			return tea.Batch(cmds...)
+		}
+		if m.dictationActive() && key.Matches(msg, m.keyMap.Chat.Cancel) {
+			if cmd := m.cancelVoiceInput(); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			return tea.Batch(cmds...)
+		}
+	}
+
 	switch m.state {
 	case uiOnboarding:
 		return tea.Batch(cmds...)
@@ -3673,6 +3707,8 @@ func (m *UI) applyProgressBar(v *tea.View) {
 func (m *UI) applyLanguage() {
 	tr := m.com.T()
 	m.keyMap = BuildKeyMap(tr)
+	m.applyVoiceHotkey()
+	m.status.SetVoiceBadge(m.voiceBadge())
 	for _, dlg := range m.dialog.Dialogs() {
 		if r, ok := dlg.(dialog.LocaleRefreshable); ok {
 			r.RefreshLocale()
@@ -3733,6 +3769,15 @@ func (m *UI) ShortHelp() []key.Binding {
 			commands,
 			k.Models,
 		)
+
+		if m.voiceEnabled() {
+			binds = append(binds, k.Voice)
+			if m.voice.state == voiceRecording {
+				cancelRecording := k.Chat.Cancel
+				cancelRecording.SetHelp("esc", m.com.L("key.cancel_recording"))
+				binds = append(binds, cancelRecording)
+			}
+		}
 
 		switch m.focus {
 		case uiFocusEditor:
@@ -5331,6 +5376,7 @@ func (m *UI) openCommandsDialog() tea.Cmd {
 	if err != nil {
 		return util.ReportError(err)
 	}
+	commands.SetVoiceHotkey(m.keyMap.Voice.Help().Key)
 
 	m.dialog.OpenDialog(commands)
 
