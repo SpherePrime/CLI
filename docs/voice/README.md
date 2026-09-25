@@ -20,6 +20,21 @@ cursor already was, so you can dictate in the middle of a sentence.
 Nothing is sent anywhere until you stop recording, and nothing is sent to the
 model until you press enter.
 
+## Install it in one step
+
+```
+prime voice setup
+```
+
+This downloads a prebuilt whisper.cpp engine and the default model, Whisper
+Large V3 Turbo quantized to q5_0 (about 574 MB), into Prime's own data
+directory, and installs a microphone recorder when none is present. Nothing is
+written to system locations and no administrator rights are needed. Already
+working pieces are left alone.
+
+Pick a different model with `--model small`, preview without installing with
+`--print`, or skip the prompt for scripts with `--yes`.
+
 ## What Prime looks for
 
 Prime does not bundle audio code. It uses tools that are already installed,

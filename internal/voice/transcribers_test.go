@@ -190,11 +190,22 @@ func TestGGMLModelFileResolution(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, model, found)
 
-	_, ok = ggmlModelFile("large", []string{dir})
-	require.False(t, ok)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "ggml-small.bin"), []byte("weights"), 0o600))
 
-	_, ok = ggmlModelFile(filepath.Join(dir, "missing.bin"), []string{dir})
-	require.False(t, ok)
+	found, ok = ggmlModelFile("small", []string{dir})
+	require.True(t, ok)
+	require.Equal(t, filepath.Join(dir, "ggml-small.bin"), found)
+
+	// A model that exists in the layout is found even when nothing is
+	// configured, which is how a setup download becomes the working engine.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "ggml-large.bin"), []byte("weights"), 0o600))
+	found, ok = ggmlModelFile("", []string{dir})
+	require.True(t, ok)
+
+	// A name with no matching file still finds the model another install
+	// placed in the same directory, which is the case setup relies on.
+	_, ok = ggmlModelFile("huge", []string{dir})
+	require.True(t, ok)
 }
 
 func TestTidyTranscript(t *testing.T) {
@@ -238,14 +249,14 @@ func TestTidyTranscript(t *testing.T) {
 func TestWhisperCPPArguments(t *testing.T) {
 	t.Parallel()
 
-	engine := whisperCPPTranscriber("/bin/whisper-cli", "/models/ggml-base.bin", Settings{}).(cliTranscriber)
+	engine := whisperCPPTranscriber("/bin/whisper-cli", "/models/ggml-base.bin", Settings{}, nil).(cliTranscriber)
 	args := engine.argv(engine, "/tmp/dictation.wav", "/tmp/out")
 
 	require.True(t, slices.Contains(args, "-nt"), "timestamps are not wanted in dictation")
 	require.Equal(t, "/models/ggml-base.bin", valueAfter(args, "-m"))
 	require.Equal(t, "auto", valueAfter(args, "-l"), "whisper.cpp assumes English unless told to detect")
 
-	withLanguage := whisperCPPTranscriber("/bin/whisper-cli", "/models/ggml-base.bin", Settings{Language: "ru"}).(cliTranscriber)
+	withLanguage := whisperCPPTranscriber("/bin/whisper-cli", "/models/ggml-base.bin", Settings{Language: "ru"}, nil).(cliTranscriber)
 	require.Equal(t, "ru", valueAfter(withLanguage.argv(withLanguage, "/tmp/a.wav", "/tmp/out"), "-l"))
 }
 

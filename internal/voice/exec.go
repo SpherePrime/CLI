@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -24,6 +25,15 @@ func shellFields(command string) ([]string, error) {
 // runCommand runs argv and returns the trimmed output streams.
 func runCommand(ctx context.Context, name string, args []string) (string, string, error) {
 	return runCommandWithEnv(ctx, name, args, nil)
+}
+
+// mergeEnv returns an environment with extra entries appended, or nil to keep
+// inheriting the current environment untouched.
+func mergeEnv(extra []string) []string {
+	if len(extra) == 0 {
+		return nil
+	}
+	return append(os.Environ(), extra...)
 }
 
 // runCommandWithEnv runs argv with an explicit environment, or the current one

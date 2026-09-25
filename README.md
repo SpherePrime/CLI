@@ -87,7 +87,7 @@ Prime. The quickest setup:
 
 ```bash
 pip install sounddevice                 # microphone capture
-pip install -U openai-whisper           # local Whisper
+prime voice setup                       # whisper.cpp + Large V3 Turbo Q5 model
 
 # or transcribe remotely instead of locally
 option voice base-url https://api.openai.com/v1
