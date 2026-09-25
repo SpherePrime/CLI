@@ -87,8 +87,10 @@ type (
 	ActionToggleTransparentBackground struct{}
 	ActionToggleMouseSupport          struct{}
 	ActionToggleSmartTools            struct{}
-	ActionInitializeProject           struct{}
-	ActionSummarize                   struct {
+	// ActionStartVoiceDictation starts microphone dictation into the prompt.
+	ActionStartVoiceDictation struct{}
+	ActionInitializeProject   struct{}
+	ActionSummarize           struct {
 		SessionID string
 	}
 	// ActionSelectReasoningEffort is a message indicating a reasoning effort

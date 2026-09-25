@@ -3,6 +3,60 @@
   "$id": "https://github.com/SpherePrime/CLI/internal/config/config",
   "$ref": "#/$defs/Config",
   "$defs": {
+    "Agent": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "model": {
+          "type": "string",
+          "enum": [
+            "large",
+            "small"
+          ],
+          "description": "The model type to use for this agent",
+          "default": "large"
+        },
+        "allowed_tools": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "allowed_mcp": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "object"
+        },
+        "context_paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "model_override": {
+          "$ref": "#/$defs/SelectedModel"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "model"
+      ]
+    },
     "Attribution": {
       "properties": {
         "trailer_style": {
@@ -63,6 +117,13 @@
           "type": "object",
           "description": "Model configurations for different model types"
         },
+        "model_settings": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ModelSettings"
+          },
+          "type": "object",
+          "description": "Per-model context window and price overrides"
+        },
         "providers": {
           "additionalProperties": {
             "$ref": "#/$defs/ProviderConfig"
@@ -106,6 +167,12 @@
           },
           "type": "object",
           "description": "Environment variables to set on startup"
+        },
+        "agents": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Agent"
+          },
+          "type": "object"
         }
       },
       "additionalProperties": false,
@@ -421,6 +488,33 @@
       "additionalProperties": false,
       "type": "object"
     },
+    "ModelSettings": {
+      "properties": {
+        "context_window": {
+          "type": "integer",
+          "description": "Override the model's maximum context window in tokens",
+          "examples": [
+            200000
+          ]
+        },
+        "price_in": {
+          "type": "number",
+          "description": "Price per 1M input tokens in USD",
+          "examples": [
+            1.5
+          ]
+        },
+        "price_out": {
+          "type": "number",
+          "description": "Price per 1M output tokens in USD",
+          "examples": [
+            6.0
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
     "OAuthClient": {
       "properties": {
         "client_id": {
@@ -576,6 +670,19 @@
           },
           "type": "array",
           "description": "List of skill names to disable and hide from the agent"
+        },
+        "language": {
+          "type": "string",
+          "enum": [
+            "en",
+            "ru"
+          ],
+          "description": "UI language. Options: en (default)",
+          "default": "en"
+        },
+        "voice": {
+          "$ref": "#/$defs/VoiceOptions",
+          "description": "Voice dictation settings for the TUI"
         },
         "auto_update": {
           "type": "boolean",
@@ -960,6 +1067,84 @@
         },
         "glob": {
           "$ref": "#/$defs/ToolGlob"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "VoiceOptions": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable voice dictation in the TUI",
+          "default": true
+        },
+        "hotkey": {
+          "type": "string",
+          "description": "Keys that start and stop dictation",
+          "examples": [
+            "alt+v",
+            "ctrl+shift+space"
+          ]
+        },
+        "engine": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "whispercpp",
+            "openai-whisper",
+            "whisper-ctranslate2",
+            "server",
+            "openai",
+            "command"
+          ],
+          "description": "Whisper engine to use",
+          "default": "auto"
+        },
+        "model": {
+          "type": "string",
+          "description": "Whisper model name or path to a ggml model file",
+          "examples": [
+            "base",
+            "/path/to/ggml-base.bin"
+          ]
+        },
+        "language": {
+          "type": "string",
+          "description": "Language of dictation as an ISO 639-1 code",
+          "examples": [
+            "ru",
+            "en"
+          ]
+        },
+        "base_url": {
+          "type": "string",
+          "description": "Base URL of a Whisper HTTP endpoint",
+          "examples": [
+            "http://localhost:8000",
+            "https://api.openai.com/v1"
+          ]
+        },
+        "api_key": {
+          "type": "string",
+          "description": "API key for options.voice.base_url"
+        },
+        "record_command": {
+          "type": "string",
+          "description": "Custom microphone recorder command streaming 16 kHz mono PCM to stdout"
+        },
+        "transcribe_command": {
+          "type": "string",
+          "description": "Custom Whisper transcription command reading the WAV file at the %s placeholder and printing text to stdout"
+        },
+        "max_duration": {
+          "type": "integer",
+          "description": "Hard limit in seconds for a single recording",
+          "default": 300,
+          "examples": [
+            60,
+            120
+          ]
         }
       },
       "additionalProperties": false,

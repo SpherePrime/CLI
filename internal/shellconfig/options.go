@@ -51,6 +51,10 @@ func handleOption(ctx context.Context, args []string, stdin io.Reader, stdout, s
 		return optionUI(o, args, stderr)
 	}
 
+	if key == "voice" {
+		return optionVoice(o, args, stderr)
+	}
+
 	// "option reset <key>" wipes a list back to empty. Because the builder
 	// applies operations in execution order, this is just an assignment:
 	// values added after the reset are kept, earlier ones are dropped.

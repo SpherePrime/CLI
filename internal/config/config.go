@@ -355,6 +355,42 @@ func (c Completions) Limits() (depth, items int) {
 	return ptrValOr(c.MaxDepth, 0), ptrValOr(c.MaxItems, 0)
 }
 
+// VoiceOptions configures microphone dictation. Recording and transcription
+// are delegated to external tools, so every field is a hint about which tool
+// to use rather than a switch for built-in behavior.
+type VoiceOptions struct {
+	Enabled *bool `json:"enabled,omitempty" jsonschema:"description=Enable voice dictation in the TUI,default=true"`
+	// Hotkey is a comma separated list of keys that start and stop recording.
+	// Empty means Prime's default binding.
+	Hotkey string `json:"hotkey,omitempty" jsonschema:"description=Keys that start and stop dictation, comma separated,example=alt+v,example=ctrl+shift+space"`
+	// Engine pins a Whisper backend. Empty or auto lets Prime probe for the
+	// fastest one available.
+	Engine string `json:"engine,omitempty" jsonschema:"description=Whisper engine to use,enum=auto,enum=whispercpp,enum=openai-whisper,enum=whisper-ctranslate2,enum=server,enum=openai,enum=command,default=auto"`
+	// Model is a Whisper model name for the Python and CTranslate2 engines and
+	// for hosted APIs, or a ggml model file for whisper.cpp.
+	Model string `json:"model,omitempty" jsonschema:"description=Whisper model name or path to a ggml model file,example=base,example=/path/to/ggml-base.bin"`
+	// Language is an ISO 639-1 code. Empty lets Whisper detect the language.
+	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as an ISO 639-1 code, empty means auto-detect,example=ru,example=en"`
+	// BaseURL points at an OpenAI-compatible API root or a whisper.cpp server.
+	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of a Whisper HTTP endpoint,example=http://localhost:8000,example=https://api.openai.com/v1"`
+	// APIKey authorizes BaseURL and may be an environment variable reference.
+	APIKey string `json:"api_key,omitempty" jsonschema:"description=API key for options.voice.base_url, may reference a variable like $OPENAI_API_KEY"`
+	// RecordCommand overrides microphone capture. It either streams raw
+	// 16 kHz mono PCM on stdout or writes a file to a %s placeholder.
+	RecordCommand string `json:"record_command,omitempty" jsonschema:"description=Custom microphone recorder command streaming 16 kHz mono PCM to stdout, or writing to the %s placeholder"`
+	// TranscribeCommand overrides transcription, with %s replaced by the
+	// recorded WAV file and the transcript on stdout.
+	TranscribeCommand string `json:"transcribe_command,omitempty" jsonschema:"description=Custom Whisper transcription command reading the WAV file at the %s placeholder and printing text to stdout"`
+	// MaxDuration bounds one recording in seconds.
+	MaxDuration int `json:"max_duration,omitempty" jsonschema:"description=Hard limit in seconds for a single recording,default=300,example=60,example=120"`
+}
+
+// IsEnabled reports whether dictation is available. An unset option means
+// enabled, so the feature works out of the box wherever the tools are present.
+func (v *VoiceOptions) IsEnabled() bool {
+	return v == nil || v.Enabled == nil || *v.Enabled
+}
+
 // Diff mode options.
 const (
 	DiffModeUnified = "unified" // Inline unified diffs
@@ -422,21 +458,22 @@ type Options struct {
 	// the SQLite database and workspace overrides. Relative paths are
 	// resolved against the working directory; absolute paths are used
 	// verbatim. After defaulting the stored value is always absolute.
-	DataDirectory             string       `json:"data_directory,omitempty" jsonschema:"description=Directory for storing application data. Relative paths are resolved against the working directory; absolute paths are used as-is.,default=.prime,example=.prime"`
-	DisabledTools             []string     `json:"disabled_tools,omitempty" jsonschema:"description=List of built-in tools to disable and hide from the agent,example=bash,example=sourcegraph"`
-	DisableProviderAutoUpdate bool         `json:"disable_provider_auto_update,omitempty" jsonschema:"description=Disable providers auto-update,default=false"`
-	DisableDefaultProviders   bool         `json:"disable_default_providers,omitempty" jsonschema:"description=Ignore all default/embedded providers. When enabled\\, providers must be fully specified in the config file with base_url\\, models\\, and api_key - no merging with defaults occurs,default=false"`
-	Attribution               *Attribution `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
-	DisableMetrics            bool         `json:"disable_metrics,omitempty" jsonschema:"description=Disable sending metrics,default=false"`
-	InitializeAs              string       `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=PRIME.md,example=CLAUDE.md,example=docs/LLMs.md"`
-	AutoLSP                   *bool        `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
-	Progress                  *bool        `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
-	Notifications             string       `json:"notifications,omitempty" jsonschema:"description=Notification style to use. Options: auto (default)\\, native\\, osc\\, bell\\, disabled. Auto selects based on environment: native for local sessions\\, osc for SSH (with automatic OSC 99/777 detection).,enum=auto,enum=native,enum=osc,enum=bell,enum=disabled,default=auto"`
-	DisabledSkills            []string     `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=prime-config"`
-	Language                  string       `json:"language,omitempty" jsonschema:"description=UI language. Options: en (default), ru.,enum=en,enum=ru,default=en"`
-	AutoUpdate                bool         `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
-	SmartTools                bool         `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
-	RequestTimeout            *int         `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. 0 disables it\\, negative values are invalid.,default=60,example=120,example=300,example=0"`
+	DataDirectory             string        `json:"data_directory,omitempty" jsonschema:"description=Directory for storing application data. Relative paths are resolved against the working directory; absolute paths are used as-is.,default=.prime,example=.prime"`
+	DisabledTools             []string      `json:"disabled_tools,omitempty" jsonschema:"description=List of built-in tools to disable and hide from the agent,example=bash,example=sourcegraph"`
+	DisableProviderAutoUpdate bool          `json:"disable_provider_auto_update,omitempty" jsonschema:"description=Disable providers auto-update,default=false"`
+	DisableDefaultProviders   bool          `json:"disable_default_providers,omitempty" jsonschema:"description=Ignore all default/embedded providers. When enabled\\, providers must be fully specified in the config file with base_url\\, models\\, and api_key - no merging with defaults occurs,default=false"`
+	Attribution               *Attribution  `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
+	DisableMetrics            bool          `json:"disable_metrics,omitempty" jsonschema:"description=Disable sending metrics,default=false"`
+	InitializeAs              string        `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=PRIME.md,example=CLAUDE.md,example=docs/LLMs.md"`
+	AutoLSP                   *bool         `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
+	Progress                  *bool         `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
+	Notifications             string        `json:"notifications,omitempty" jsonschema:"description=Notification style to use. Options: auto (default)\\, native\\, osc\\, bell\\, disabled. Auto selects based on environment: native for local sessions\\, osc for SSH (with automatic OSC 99/777 detection).,enum=auto,enum=native,enum=osc,enum=bell,enum=disabled,default=auto"`
+	DisabledSkills            []string      `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=prime-config"`
+	Language                  string        `json:"language,omitempty" jsonschema:"description=UI language. Options: en (default), ru.,enum=en,enum=ru,default=en"`
+	Voice                     *VoiceOptions `json:"voice,omitempty" jsonschema:"description=Voice dictation settings for the TUI"`
+	AutoUpdate                bool          `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
+	SmartTools                bool          `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
+	RequestTimeout            *int          `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. 0 disables it\\, negative values are invalid.,default=60,example=120,example=300,example=0"`
 }
 
 // DefaultRequestTimeout bounds each LLM API request when the user has not

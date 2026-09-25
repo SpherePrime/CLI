@@ -584,6 +584,47 @@ option ui completions-max-depth 4
 option ui completions-max-items 200
 ```
 
+#### `option voice`
+
+Configure microphone dictation. Prime records with an external tool and
+transcribes with Whisper, so these options pick the engines rather than
+switching built-in behavior on and off.
+
+```text
+Usage:
+  option voice <key> [value]
+
+Available Keys:
+  on|off                     enable or disable dictation (default on)
+  hotkey string              comma separated keys that start and stop
+                             recording (default alt+v, ctrl+shift+space)
+  language string            ISO 639-1 code, for example ru or en; empty or
+                             auto lets Whisper detect the language
+  model string               Whisper model name (base, small) or the path to
+                             a ggml model file for whisper.cpp
+  engine string              pin one backend: auto, whispercpp, openai-whisper,
+                             whisper-ctranslate2, server, openai, command
+  base-url string            OpenAI-compatible API root, or a whisper.cpp
+                             server such as http://localhost:8000
+  api-key string             key for base-url, may be a $VAR reference
+  record-command string      custom recorder: streams raw 16 kHz mono PCM on
+                             stdout, or writes a file to the %s placeholder
+  transcribe-command string  custom engine: %s is replaced by the recorded WAV
+                             file, and its stdout becomes the text
+  max-duration int           hard limit in seconds for one recording
+                             (default 300)
+```
+
+```bash
+option voice on
+option voice language ru
+option voice base-url http://localhost:8000
+option voice record-command "rec -q -b 16 -c 1 -r 16000 -t raw -"
+```
+
+Run `prime voice` to see which recorder and engine were found, and
+`prime voice test` to record a sample and print the transcript.
+
 > [!IMPORTANT]
 > These skill paths load by default — you do NOT need `skill-path`
 > for them: `.agents/skills`, `.prime/skills`, `.claude/skills`,

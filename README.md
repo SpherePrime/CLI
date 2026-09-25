@@ -12,6 +12,8 @@ your code, and your LLM provider of choice into one workflow.
 - **LSP-enhanced:** pulls context from language servers, like a human would
 - **Extensible:** add capabilities via MCP servers and agent skills
 - **Safe by default:** per-tool permission prompts, with allow/deny lists
+- **Voice input:** dictate prompts with Whisper on a hotkey, with a live
+  microphone indicator
 - **Cross-platform:** macOS, Linux, Windows, and the BSDs
 
 ## Install
@@ -74,6 +76,31 @@ Local models work too — Prime auto-discovers what the server exposes:
 provider add ollama --type ollama --base-url "http://localhost:11434/v1"
 ```
 
+## Voice input
+
+Press <kbd>alt+v</kbd> (or <kbd>ctrl+shift+space</kbd>) to start recording, and
+the same key to stop. The status bar shows `● REC` with a timer while the
+microphone is open, and the transcript lands in the prompt at your cursor.
+
+Capture and transcription use external tools, so nothing extra is bundled with
+Prime. The quickest setup:
+
+```bash
+pip install sounddevice                 # microphone capture
+pip install -U openai-whisper           # local Whisper
+
+# or transcribe remotely instead of locally
+option voice base-url https://api.openai.com/v1
+option voice api-key $OPENAI_API_KEY
+
+option voice language ru                # optional, detected by default
+prime voice                             # show what was found
+prime voice test                        # record a sample and print the text
+```
+
+Other backends, the hotkey setting, and the full priority list:
+[docs/voice](docs/voice/README.md).
+
 ## Configuration
 
 Prime runs great with zero config. When you do want to customize it, the
@@ -127,6 +154,8 @@ prime provider add     # add a provider interactively
 prime models           # list known models
 prime sessions         # manage sessions
 prime stats            # token and cost stats
+prime voice            # check microphone and Whisper setup
+prime voice test       # dictate a sample outside the TUI
 prime logs             # print recent logs
 ```
 
