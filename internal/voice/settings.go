@@ -28,7 +28,6 @@ func SettingsFrom(options *config.VoiceOptions, resolver VariableResolver) Setti
 		return settings
 	}
 	settings.Enabled = options.IsEnabled()
-	settings.Hotkey = strings.TrimSpace(options.Hotkey)
 	settings.Engine = normalizedEngine(options.Engine)
 	settings.Model = strings.TrimSpace(options.Model)
 	settings.Language = normalizedLanguage(options.Language)
@@ -61,22 +60,4 @@ func normalizedLanguage(language string) string {
 		return ""
 	}
 	return candidate
-}
-
-// Hotkeys returns the keys that toggle dictation, honoring
-// options.voice.hotkey over the defaults.
-func (s Settings) Hotkeys() []string {
-	if strings.TrimSpace(s.Hotkey) == "" {
-		return DefaultHotkeys
-	}
-	var keys []string
-	for key := range strings.SplitSeq(s.Hotkey, ",") {
-		if trimmed := strings.ToLower(strings.TrimSpace(key)); trimmed != "" {
-			keys = append(keys, trimmed)
-		}
-	}
-	if len(keys) == 0 {
-		return DefaultHotkeys
-	}
-	return keys
 }

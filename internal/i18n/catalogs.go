@@ -191,24 +191,6 @@ func enStrings() map[string]string {
 		"key.clear_queue":            "clear queue",
 		"key.cancel_cancelling":      "press again to cancel",
 		"key.answer_questions":       "answer questions",
-		"key.voice":                  "voice input",
-		"key.cancel_recording":       "cancel recording",
-
-		// Voice dictation. The badges keep the same dot so the status bar does
-		// not shift while recording.
-		"voice.preparing":          "● MIC…",
-		"voice.recording":          "● REC",
-		"voice.transcribing":       "● WHISPER",
-		"info.voice_started":       "Recording from %s. Press the same key to stop.",
-		"info.voice_preparing":     "Preparing the microphone…",
-		"info.voice_transcribing":  "Whisper is still transcribing the last recording.",
-		"info.voice_canceled":      "Recording canceled",
-		"info.voice_disabled":      "Voice input is off. Turn it on with: option voice on",
-		"info.voice_limit_reached": "Recording limit reached, transcribing now.",
-		"info.voice_too_short":     "Recording was too short to transcribe.",
-		"info.voice_empty":         "Whisper did not hear any speech.",
-		"info.voice_done":          "Dictated with %s.",
-		"cmd.voice_dictate":        "start voice dictation",
 
 		// Prime's own MCP servers, listed by the /mcp menu.
 		"cmd.mcp_install":    "Install MCP server: %s",
@@ -429,23 +411,6 @@ func ruStrings() map[string]string {
 		"key.clear_queue":            "очистить очередь",
 		"key.cancel_cancelling":      "нажми ещё раз, чтобы отменить",
 		"key.answer_questions":       "ответить на вопросы",
-		"key.voice":                  "голосовой ввод",
-		"key.cancel_recording":       "отменить запись",
-
-		// Voice dictation.
-		"voice.preparing":          "● МИК…",
-		"voice.recording":          "● ЗАПИСЬ",
-		"voice.transcribing":       "● WHISPER",
-		"info.voice_started":       "Идёт запись с %s. Нажми ту же клавишу, чтобы остановить.",
-		"info.voice_preparing":     "Готовлю микрофон…",
-		"info.voice_transcribing":  "Whisper ещё распознаёт предыдущую запись.",
-		"info.voice_canceled":      "Запись отменена",
-		"info.voice_disabled":      "Голосовой ввод выключен. Включи командой: option voice on",
-		"info.voice_limit_reached": "Достигнут лимит записи, распознаю.",
-		"info.voice_too_short":     "Запись слишком короткая, чтобы распознавать.",
-		"info.voice_empty":         "Whisper не услышал речь.",
-		"info.voice_done":          "Распознано через %s.",
-		"cmd.voice_dictate":        "голосовой ввод",
 
 		// Собственные MCP-серверы Prime в меню /mcp.
 		"cmd.mcp_install":    "Установить MCP-сервер: %s",

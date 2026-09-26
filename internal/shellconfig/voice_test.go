@@ -31,7 +31,6 @@ option voice language ru
 option voice model /models/ggml-small.bin
 option voice base-url http://localhost:8000
 option voice api-key sk-test-key
-option voice hotkey CTRL+SHIFT+SPACE
 option voice engine whispercpp
 option voice max-duration 60
 option voice record-command "rec -q -t raw -"
@@ -45,7 +44,6 @@ option voice transcribe-command "my-whisper %s"`)
 	require.Equal(t, "/models/ggml-small.bin", voice["model"])
 	require.Equal(t, "http://localhost:8000", voice["base_url"])
 	require.Equal(t, "sk-test-key", voice["api_key"])
-	require.Equal(t, "ctrl+shift+space", voice["hotkey"])
 	require.Equal(t, "whispercpp", voice["engine"])
 	require.Equal(t, float64(60), voice["max_duration"])
 	require.Equal(t, "rec -q -t raw -", voice["record_command"])
@@ -79,10 +77,8 @@ func TestOptionVoiceWithoutQuotes(t *testing.T) {
 
 	// Values that were not quoted arrive as separate words, so they are joined
 	// back together.
-	options := optionsFromShell(t, `option voice hotkey alt+v, ctrl+shift+space
-option voice record-command rec -q -t raw -`)
+	options := optionsFromShell(t, `option voice record-command rec -q -t raw -`)
 	voice := options["voice"].(map[string]any)
-	require.Equal(t, "alt+v, ctrl+shift+space", voice["hotkey"])
 	require.Equal(t, "rec -q -t raw -", voice["record_command"])
 }
 
@@ -93,7 +89,7 @@ func TestOptionVoiceRejectsBadValues(t *testing.T) {
 		"option voice max-duration zero",
 		"option voice max-duration -5",
 		"option voice enabled maybe",
-		"option voice hotkey",
+		"option voice language",
 		"option voice unknown-key value",
 	} {
 		t.Run(script, func(t *testing.T) {

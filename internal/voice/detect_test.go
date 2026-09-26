@@ -22,7 +22,6 @@ func TestSettingsFromDefaults(t *testing.T) {
 	settings := SettingsFrom(nil, nil)
 	require.True(t, settings.Enabled, "voice input works out of the box")
 	require.Empty(t, settings.Model)
-	require.Equal(t, DefaultHotkeys, settings.Hotkeys())
 	require.Equal(t, DefaultMaxDuration, settings.MaxDurationOr())
 	require.Equal(t, defaultModel, settings.modelOrDefault())
 }
@@ -32,7 +31,6 @@ func TestSettingsFromOptions(t *testing.T) {
 
 	settings := SettingsFrom(&config.VoiceOptions{
 		Enabled:           boolPtr(false),
-		Hotkey:            "CTRL+SHIFT+SPACE, f2",
 		Engine:            "WHISPERCPP",
 		Model:             "/models/ggml-small.bin",
 		Language:          "RU",
@@ -44,7 +42,6 @@ func TestSettingsFromOptions(t *testing.T) {
 	}, nil)
 
 	require.False(t, settings.Enabled)
-	require.Equal(t, []string{"ctrl+shift+space", "f2"}, settings.Hotkeys())
 	require.Equal(t, EngineWhisperCPP, settings.Engine)
 	require.Equal(t, "ru", settings.Language)
 	require.Equal(t, 45*time.Second, settings.MaxDurationOr())
@@ -64,13 +61,6 @@ func TestSettingsAutoLanguageMeansDetect(t *testing.T) {
 
 	settings := SettingsFrom(&config.VoiceOptions{Language: "auto"}, nil)
 	require.Empty(t, settings.Language)
-}
-
-func TestSettingsHotkeysIgnoreEmptyEntries(t *testing.T) {
-	t.Parallel()
-
-	settings := SettingsFrom(&config.VoiceOptions{Hotkey: " , alt+j , "}, nil)
-	require.Equal(t, []string{"alt+j"}, settings.Hotkeys())
 }
 
 func TestSettingsResolvesAPIKeyThroughResolver(t *testing.T) {

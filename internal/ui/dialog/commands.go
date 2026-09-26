@@ -72,10 +72,6 @@ type Commands struct {
 	customCommands []commands.CustomCommand
 	mcpPrompts     []commands.MCPPrompt
 
-	// voiceHotkey is the key shown next to the dictation command, taken from
-	// the model's keymap so a rebound hotkey reads correctly here.
-	voiceHotkey string
-
 	dockerMCPAvailable     *bool
 	dockerMCPCheckInFlight bool
 }
@@ -573,9 +569,6 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	// Add a command for selecting the UI language via picker dialog.
 	commands = append(commands, NewCommandItem(c.com.Styles, "select_language", c.com.L("cmd.language"), "", ActionOpenDialog{DialogID: LanguageID}))
 
-	voiceLabel := c.com.L("cmd.voice_dictate")
-	commands = append(commands, NewCommandItem(c.com.Styles, "voice_dictate", voiceLabel, c.voiceHotkey, ActionStartVoiceDictation{}).WithAliases("voice", "dictation", "microphone", "whisper"))
-
 	smartToolsLabel := c.com.L("cmd.enable_smart_tools")
 	if cfg != nil && cfg.Options != nil && cfg.Options.SmartTools {
 		smartToolsLabel = c.com.L("cmd.disable_smart_tools")
@@ -611,18 +604,6 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	)
 
 	return commands
-}
-
-// SetVoiceHotkey records the key shown next to the dictation command and
-// refreshes the list when it is visible.
-func (c *Commands) SetVoiceHotkey(key string) {
-	if c.voiceHotkey == key {
-		return
-	}
-	c.voiceHotkey = key
-	if c.selected == SystemCommands {
-		c.setCommandItems(c.selected)
-	}
 }
 
 // builtinMCPTitle prefers the translated server name and falls back to the

@@ -13,7 +13,6 @@ import (
 func TestShellConfigOptionVoice(t *testing.T) {
 	store := loadPrimeSh(t, `option voice on
 option voice language ru
-option voice hotkey F7, ctrl+shift+space
 option voice engine openai
 option voice model small
 option voice base-url http://localhost:8000
@@ -29,7 +28,6 @@ option voice transcribe-command "my-whisper %s"`)
 	require.NotNil(t, blocks)
 	require.True(t, blocks.IsEnabled())
 	require.Equal(t, "ru", blocks.Language)
-	require.Equal(t, "f7, ctrl+shift+space", blocks.Hotkey)
 	require.Equal(t, "openai", blocks.Engine)
 	require.Equal(t, "small", blocks.Model)
 	require.Equal(t, "http://localhost:8000", blocks.BaseURL)
@@ -52,11 +50,9 @@ func TestVoiceEnabledByDefault(t *testing.T) {
 }
 
 func TestVoiceSettingsFollowConfig(t *testing.T) {
-	store := loadPrimeSh(t, `option voice language ru
-option voice hotkey f7`)
+	store := loadPrimeSh(t, `option voice language ru`)
 
 	settings := voice.SettingsFrom(store.Config().Options.Voice, store.Resolver())
 	require.True(t, settings.Enabled)
 	require.Equal(t, "ru", settings.Language)
-	require.Equal(t, []string{"f7"}, settings.Hotkeys())
 }

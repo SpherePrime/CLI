@@ -586,9 +586,10 @@ option ui completions-max-items 200
 
 #### `option voice`
 
-Configure microphone dictation. Prime records with an external tool and
-transcribes with Whisper, so these options pick the engines rather than
-switching built-in behavior on and off.
+Configure the voice MCP server's dictation pipeline. Prime records with an
+external tool and transcribes with Whisper, so these options pick the engines
+rather than switching built-in behavior on and off. The server itself installs
+from the `/mcp` menu in the commands dialog.
 
 ```text
 Usage:
@@ -596,8 +597,6 @@ Usage:
 
 Available Keys:
   on|off                     enable or disable dictation (default on)
-  hotkey string              comma separated keys that start and stop
-                             recording (default alt+v, ctrl+shift+space)
   language string            ISO 639-1 code, for example ru or en; empty or
                              auto lets Whisper detect the language
   model string               Whisper model name (base, small) or the path to
@@ -622,8 +621,9 @@ option voice base-url http://localhost:8000
 option voice record-command "rec -q -b 16 -c 1 -r 16000 -t raw -"
 ```
 
-Run `prime voice` to see which recorder and engine were found, and
-`prime voice test` to record a sample and print the transcript.
+Run `prime mcp list` to see Prime's own MCP servers; install voice dictation
+from the `/mcp` menu so the agent gets the `dictate`, `setup`, and `warm`
+tools.
 
 > [!IMPORTANT]
 > These skill paths load by default — you do NOT need `skill-path`

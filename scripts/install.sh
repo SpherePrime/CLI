@@ -108,12 +108,3 @@ case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
   *) echo "prime: add $BIN_DIR to your PATH" ;;
 esac
-
-if [ "${PRIME_SKIP_VOICE:-}" = "1" ]; then
-  echo "prime: voice setup skipped (PRIME_SKIP_VOICE=1)"
-else
-  echo "prime: setting up voice input (whisper.cpp + Large V3 Turbo Q5, about 580 MB)"
-  if ! "$BIN_DIR/$binary_name" voice setup --yes; then
-    echo "prime: voice setup failed, run 'prime voice setup' later"
-  fi
-fi

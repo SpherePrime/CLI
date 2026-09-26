@@ -48,22 +48,18 @@ const (
 	EngineCommand     = "command"
 )
 
-// DefaultHotkeys are the keys that start and stop dictation. They are chosen
-// to avoid collisions with the rest of the keymap and with shell reading:
-// ctrl+r, ctrl+b, and ctrl+f are taken, and alt+letter is free of editor
-// bindings in every mainstream terminal.
-var DefaultHotkeys = []string{"alt+v", "ctrl+shift+space"}
-
 var (
 	// ErrNoRecorder means no microphone capture tool was found.
 	ErrNoRecorder = errors.New(
-		"no microphone recorder found. Run \"prime voice setup\", or install ffmpeg " +
+		"no microphone recorder found. Run the voice MCP server's setup tool " +
+			"(install it from the /mcp menu), or install ffmpeg " +
 			"(winget install Gyan.FFmpeg, brew install ffmpeg) or sox, " +
 			"or set option voice record-command",
 	)
 	// ErrNoTranscriber means no Whisper engine was found.
 	ErrNoTranscriber = errors.New(
-		"no Whisper engine found. Run \"prime voice setup\" to download whisper.cpp and a model, " +
+		"no Whisper engine found. Run the voice MCP server's setup tool to download " +
+			"whisper.cpp and a model (install it from the /mcp menu), " +
 			"or set option voice base-url and api-key at an OpenAI-compatible transcription endpoint",
 	)
 	// ErrNoSpeech means the recording is too short to transcribe.
@@ -80,8 +76,6 @@ var (
 type Settings struct {
 	// Enabled gates the whole feature.
 	Enabled bool
-	// Hotkey is a comma-separated list of keys overriding DefaultHotkeys.
-	Hotkey string
 	// Engine pins a specific Whisper backend, or EngineAuto to probe.
 	Engine string
 	// Model is a Whisper model name ("base", "small") or a whisper.cpp
