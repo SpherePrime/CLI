@@ -19,7 +19,7 @@ const (
 
 	// DefaultTrailingSilence is how long the speaker must stay quiet before
 	// Dictate ends the recording.
-	DefaultTrailingSilence = 700 * time.Millisecond
+	DefaultTrailingSilence = 400 * time.Millisecond
 
 	// DefaultStartTimeout bounds the wait for the first spoken word.
 	DefaultStartTimeout = 20 * time.Second
@@ -36,7 +36,7 @@ const (
 
 	// vadQuietRMS is the default loudness floor. Normal speech sits well
 	// above it; fan hiss and room tone sit well below.
-	vadQuietRMS = 500.0
+	vadQuietRMS = 250.0
 )
 
 // DictateOptions tunes one recording. Zero values select the defaults.
