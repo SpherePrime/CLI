@@ -18,7 +18,8 @@ const (
 	vadFrame = SampleRate * bytesPerSample / 50
 
 	// DefaultTrailingSilence is how long the speaker must stay quiet before
-	// Dictate ends the recording.
+	// Dictate ends the recording. With a manual stop channel, this timer is
+	// ignored; recording runs until the stop signal or max duration.
 	DefaultTrailingSilence = 400 * time.Millisecond
 
 	// DefaultStartTimeout bounds the wait for the first spoken word.
@@ -213,7 +214,7 @@ func waitForSpeechEnd(ctx context.Context, live capturedSource, options DictateO
 		}
 
 		switch {
-		case gate.silentTooLong(now):
+		case stop == nil && gate.silentTooLong(now):
 			return true, nil
 		case !gate.started && now.After(startDeadline):
 			return false, nil
