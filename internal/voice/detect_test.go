@@ -2,6 +2,7 @@ package voice
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -202,6 +203,22 @@ func TestNewRecordersWithoutTools(t *testing.T) {
 	t.Parallel()
 
 	require.Empty(t, newRecorders(context.Background(), Settings{}, emptyProber()))
+}
+
+// The Windows Store alias for python resolves on PATH but runs no code, so
+// the launcher probe has to execute the candidate rather than trust LookPath.
+func TestPythonInterpreterProbeRejectsStubLaunchers(t *testing.T) {
+	t.Parallel()
+
+	stub := filepath.Join(t.TempDir(), "python.exe")
+	probe := pythonInterpreterProbe(func(name string) (string, bool) {
+		if name == "python" {
+			return stub, true
+		}
+		return "", false
+	})
+	_, ok := probe(context.Background())
+	require.False(t, ok, "a launcher that cannot run code is not usable")
 }
 
 // proberWith is a declarative fake: names found on PATH and a reachable
