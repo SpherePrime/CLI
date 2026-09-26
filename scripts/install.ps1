@@ -68,3 +68,13 @@ if ($UserPath -notlike "*$BinDir*") {
   [Environment]::SetEnvironmentVariable("Path", "$UserPath;$BinDir", "User")
   Write-Host "prime: added $BinDir to user PATH (restart your terminal)"
 }
+
+if ($env:PRIME_SKIP_VOICE -eq "1") {
+  Write-Host "prime: voice setup skipped (PRIME_SKIP_VOICE=1)"
+} else {
+  Write-Host "prime: setting up voice input (whisper.cpp + Large V3 Turbo Q5, about 580 MB)"
+  & $Dest voice setup --yes
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "prime: voice setup failed, run 'prime voice setup' later"
+  }
+}
