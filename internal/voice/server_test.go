@@ -21,29 +21,23 @@ func useServerTestState(t *testing.T, port int) *[]serverSpec {
 	t.Helper()
 
 	oldPort := managedServerPort
-	oldIdle := ServerIdleTimeout
 	oldHealthy := serverHealthy
 	oldSpawn := spawnDetached
 	oldKill := killProcess
-	oldScan := scanProcesses
 
 	managedServerPort = port
-	ServerIdleTimeout = time.Hour
 	spawned := []serverSpec{}
 	spawnDetached = func(spec serverSpec) (int, error) {
 		spawned = append(spawned, spec)
 		return 4242, nil
 	}
 	killProcess = func(int) error { return nil }
-	scanProcesses = func() ([]processEntry, error) { return nil, errors.New("unused") }
 
 	t.Cleanup(func() {
 		managedServerPort = oldPort
-		ServerIdleTimeout = oldIdle
 		serverHealthy = oldHealthy
 		spawnDetached = oldSpawn
 		killProcess = oldKill
-		scanProcesses = oldScan
 	})
 	return &spawned
 }
@@ -97,18 +91,12 @@ func TestServerStateRoundTrip(t *testing.T) {
 	_, ok := loadServerState(path)
 	require.False(t, ok, "no file means no state")
 
-	state := ServerState{PID: 7, Port: 8000, Model: "m", LastUsed: time.Now().Add(-time.Hour)}
+	state := ServerState{PID: 7, Port: 8000, Model: "m"}
 	require.NoError(t, saveServerState(path, state))
 
 	loaded, ok := loadServerState(path)
 	require.True(t, ok)
 	require.Equal(t, state.PID, loaded.PID)
-
-	touchServerState(path)
-	touched, ok := loadServerState(path)
-	require.True(t, ok)
-	require.True(t, touched.LastUsed.After(loaded.LastUsed), "touching restarts the idle countdown")
-	require.Equal(t, state.PID, touched.PID, "touching keeps the record otherwise intact")
 
 	clearServerState(path)
 	_, ok = loadServerState(path)
@@ -142,7 +130,7 @@ func TestServerArgs(t *testing.T) {
 	require.LessOrEqual(t, threads, 16)
 }
 
-func TestEnsureServerStartsOnceAndSpawnsWatchdog(t *testing.T) {
+func TestEnsureServerStartsOnce(t *testing.T) {
 	backend := healthServer(t, true)
 	spawned := useServerTestState(t, healthPort(t, backend))
 
@@ -155,13 +143,9 @@ func TestEnsureServerStartsOnceAndSpawnsWatchdog(t *testing.T) {
 	endpoint, err := ensureServer(context.Background(), Settings{Enabled: true}, p)
 	require.NoError(t, err)
 	require.Equal(t, serverInferenceURL(managedServerPort), endpoint)
-	require.Len(t, *spawned, 2, "the server and its idle watchdog are both launched")
+	require.Len(t, *spawned, 1, "the server is launched once")
 	require.Contains(t, filepath.Base((*spawned)[0].Exe), whisperServerBinary)
 	require.Equal(t, valueAfter((*spawned)[0].Args, "-m"), filepath.Join(layout.Models(), "ggml-base.bin"))
-
-	watchdog := (*spawned)[1]
-	require.Equal(t, []string{"voice", "server", "watchdog"}, watchdog.Args[:3])
-	require.Contains(t, strings.Join(watchdog.Args, " "), "--pid 4242")
 
 	state, ok := loadServerState(layout.serverStatePath())
 	require.True(t, ok)
@@ -183,7 +167,7 @@ func TestEnsureServerRestartsWhenModelChanged(t *testing.T) {
 	stale := filepath.Join(layout.Models(), "ggml-old.bin")
 	require.NoError(t, os.WriteFile(stale, []byte("weights"), 0o600))
 	require.NoError(t, saveServerState(layout.serverStatePath(), ServerState{
-		PID: 55, Port: managedServerPort, Model: stale, LastUsed: time.Now(),
+		PID: 55, Port: managedServerPort, Model: stale,
 	}))
 
 	killed := 0
@@ -208,7 +192,6 @@ func TestEnsureServerRestartsWhenLanguagePinned(t *testing.T) {
 	layout := serverTestLayout(t)
 	require.NoError(t, saveServerState(layout.serverStatePath(), ServerState{
 		PID: 55, Port: managedServerPort, Model: filepath.Join(layout.Models(), "ggml-base.bin"),
-		LastUsed: time.Now(),
 	}))
 
 	killed := 0
@@ -312,7 +295,7 @@ func TestStopServerInClearsState(t *testing.T) {
 	require.True(t, stopped)
 	require.Equal(t, 1, killed)
 	_, ok := loadServerState(layout.serverStatePath())
-	require.False(t, ok, "stopping forgets the server so a watchdog stops chasing it")
+	require.False(t, ok, "stopping forgets the server")
 }
 
 func TestTouchServerIn(t *testing.T) {
@@ -321,9 +304,6 @@ func TestTouchServerIn(t *testing.T) {
 	require.False(t, TouchServerIn(layout), "nothing recorded means nothing to touch")
 
 	require.NoError(t, saveServerState(layout.serverStatePath(),
-		ServerState{PID: 9, Port: 8001, LastUsed: time.Now().Add(-time.Hour)}))
+		ServerState{PID: 9, Port: 8001}))
 	require.True(t, TouchServerIn(layout))
-
-	state, _ := loadServerState(layout.serverStatePath())
-	require.Less(t, time.Since(state.LastUsed), time.Minute, "the idle countdown restarted")
 }

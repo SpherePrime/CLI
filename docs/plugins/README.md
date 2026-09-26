@@ -31,15 +31,13 @@ Toggling takes effect immediately: no `/restart_systems`, no restart.
 
 With the plugin on, <kbd>alt+v</kbd> (also <kbd>ctrl+shift+space</kbd>)
 starts dictation anywhere in the TUI. The status bar shows `● REC` with a
-timer; recording ends by itself when you go quiet (~0.7 s) — or press the
-hotkey again to end immediately. The transcript lands in the prompt at the
-cursor. Esc cancels without transcribing.
+timer; press the hotkey again to end the recording and get the transcript
+at the cursor. Esc cancels without transcribing.
 
 The engine is a resident local whisper.cpp server: it loads the model once
 and answers in about a second instead of reloading hundreds of megabytes per
-dictation. Prime starts it automatically, stops it ~15 minutes after the
-last use, and warms it in the background when the TUI launches with the
-plugin installed.
+dictation. Prime starts it automatically when the plugin is enabled and keeps
+it running for the whole session; deactivating the plugin stops it.
 
 Engine options (`primerc`):
 

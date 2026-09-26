@@ -114,8 +114,7 @@ func TestWaitForSpeechEndStopSignalTranscribesImmediately(t *testing.T) {
 }
 
 // staticRecorder hands Dictate a ready-made Session whose audio file is
-// already complete, so the silence gate sees speech and trailing quiet on the
-// very first poll.
+// already complete.
 type staticRecorder struct {
 	pcm []byte
 }

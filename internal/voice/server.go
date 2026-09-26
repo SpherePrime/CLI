@@ -1,12 +1,11 @@
 package voice
 
-// Prime keeps a whisper.cpp HTTP server resident while dictation is in use.
-// A one-shot whisper-cli run reloads a half-gigabyte model from disk on every
-// keypress, which costs tens of seconds; the server loads it once and answers
-// transcriptions in about a second. The pieces here start the server when
-// first needed, record it on disk so any Prime process (and a detached idle
-// watchdog) can find and stop it, and fall back to the plain command when the
-// server cannot be used.
+// Prime keeps a whisper.cpp HTTP server resident while the voice plugin is
+// enabled. A one-shot whisper-cli run reloads a half-gigabyte model from
+// disk on every keypress, which costs tens of seconds; the server loads it
+// once and answers transcriptions in about a second. The pieces here start
+// the server when first needed and record it on disk so the plugin
+// deactivate hook can stop it later.
 
 import (
 	"context"
@@ -46,10 +45,6 @@ var (
 	// preferred engine on its own.
 	managedServerPort = 8000
 
-	// ServerIdleTimeout is how long the managed server may sit unused before
-	// Prime stops it and gives the model's memory back.
-	ServerIdleTimeout = 15 * time.Minute
-
 	// serverStartTimeout bounds waiting for a large model to load.
 	serverStartTimeout = 3 * time.Minute
 
@@ -60,13 +55,12 @@ var (
 
 // ServerState is Prime's on-disk record of the managed whisper server.
 type ServerState struct {
-	PID       int       `json:"pid"`
-	Port      int       `json:"port"`
-	Model     string    `json:"model"`
-	Language  string    `json:"language"`
-	Exe       string    `json:"exe"`
+	PID      int       `json:"pid"`
+	Port     int       `json:"port"`
+	Model    string    `json:"model"`
+	Language string    `json:"language"`
+	Exe      string    `json:"exe"`
 	StartedAt time.Time `json:"started_at"`
-	LastUsed  time.Time `json:"last_used"`
 }
 
 // serverStatePath and serverLogPath keep the managed server's bookkeeping
@@ -111,14 +105,13 @@ func clearServerState(path string) {
 	}
 }
 
-// touchServerState records that the server was just used, which keeps the
-// idle watchdog from stopping a server in the middle of a session.
+// touchServerState rewrites the state file so the record reflects the server
+// is still alive; it does not stop the server on its own.
 func touchServerState(path string) {
 	state, ok := loadServerState(path)
 	if !ok {
 		return
 	}
-	state.LastUsed = time.Now()
 	_ = saveServerState(path, state)
 }
 
@@ -277,16 +270,9 @@ func ensureServer(ctx context.Context, settings Settings, p prober) (string, err
 		Language:  settings.Language,
 		Exe:       exe,
 		StartedAt: now,
-		LastUsed:  now,
 	}
 	if err := saveServerState(statePath, state); err != nil {
 		return "", fmt.Errorf("cannot record the whisper server: %w", err)
-	}
-	if err := startIdleWatchdog(state, statePath); err != nil {
-		// The watchdog is what returns memory after every Prime window has
-		// closed. Losing it leaves a slightly longer-lived server, which is
-		// no reason to deny the user their dictation.
-		_ = err
 	}
 
 	return waitForServerUp(ctx, managedServerPort, endpoint, statePath)
@@ -414,9 +400,6 @@ func ServerStatusIn(ctx context.Context, layout InstallLayout) ServerInfo {
 	info := ServerInfo{Port: managedServerPort, LogFile: layout.serverLogPath()}
 	info.Listening = serverHealthy(ctx, managedServerPort)
 	info.State, info.HasState = loadServerState(layout.serverStatePath())
-	if info.HasState {
-		info.IdleFor = time.Since(info.State.LastUsed)
-	}
 	return info
 }
 
