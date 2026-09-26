@@ -20,6 +20,12 @@ func TestIsLegacyVoiceServer(t *testing.T) {
 		Args:    []string{"mcp", "serve", "voice"},
 	}))
 
+	require.True(t, isLegacyVoiceServer(config.MCPConfig{
+		Type:    config.MCPStdio,
+		Command: "C:\\Tools\\Prime.EXE",
+		Args:    []string{"mcp", "serve", "voice"},
+	}), "matching must not depend on the OS that runs the migration")
+
 	require.False(t, isLegacyVoiceServer(config.MCPConfig{
 		Type:    config.MCPStdio,
 		Command: "some-other-tool",

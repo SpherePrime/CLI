@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"path/filepath"
 	"strings"
 
 	"github.com/SpherePrime/CLI/internal/config"
@@ -41,11 +40,27 @@ func isLegacyVoiceServer(entry config.MCPConfig) bool {
 	if entry.Type != config.MCPStdio {
 		return false
 	}
-	if base := strings.ToLower(strings.TrimSuffix(filepath.Base(entry.Command), filepath.Ext(entry.Command))); base != "prime" && base != "cli" {
+	switch commandBaseName(entry.Command) {
+	case "prime", "cli":
+	default:
 		return false
 	}
 	return len(entry.Args) == 3 &&
 		entry.Args[0] == "mcp" &&
 		entry.Args[1] == "serve" &&
 		entry.Args[2] == VoiceName
+}
+
+// commandBaseName extracts the executable name from a path written on any
+// platform: the old menu stored a Windows path with backslashes, and CI
+// matches it on Linux, so filepath is the wrong tool here.
+func commandBaseName(command string) string {
+	command = strings.TrimSpace(command)
+	if i := strings.LastIndexAny(command, `/\`); i >= 0 {
+		command = command[i+1:]
+	}
+	for _, ext := range []string{".exe", ".cmd", ".bat"} {
+		command = strings.TrimSuffix(strings.ToLower(command), ext)
+	}
+	return command
 }
