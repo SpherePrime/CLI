@@ -1076,16 +1076,8 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Enable voice dictation in the TUI",
+          "description": "Enable voice dictation",
           "default": true
-        },
-        "hotkey": {
-          "type": "string",
-          "description": "Keys that start and stop dictation",
-          "examples": [
-            "alt+v",
-            "ctrl+shift+space"
-          ]
         },
         "engine": {
           "type": "string",
