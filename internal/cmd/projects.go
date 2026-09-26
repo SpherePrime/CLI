@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/table"
 	"github.com/SpherePrime/CLI/internal/projects"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/table"
 	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 

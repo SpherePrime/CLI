@@ -49,10 +49,18 @@ func newTranscribers(ctx context.Context, settings Settings, p prober) []Transcr
 	var transcribers []Transcriber
 	// A running server wins because it answers without reloading a model,
 	// which is seconds faster per dictation than a cold CLI run.
+	serverListening := false
 	if transcriber, ok := autoServerTranscriber(ctx, settings, p); ok {
 		transcribers = append(transcribers, transcriber)
+		serverListening = true
 	}
 	if transcriber, ok := localWhisperTranscriber(settings, p); ok {
+		if !serverListening {
+			// With no server up yet the command is the seed the warm
+			// wrapper promotes from. When one already answers, the plain
+			// command stays listed as the second choice.
+			transcriber = keepModelWarm(transcriber, settings, p)
+		}
 		transcribers = append(transcribers, transcriber)
 	}
 	if transcriber, ok := hostedTranscriber(settings); ok {
@@ -67,6 +75,9 @@ func pinnedTranscribers(ctx context.Context, settings Settings, p prober) []Tran
 	switch settings.Engine {
 	case EngineServer:
 		if settings.BaseURL == "" {
+			// The managed server is started on demand here too: an engine
+			// pinned to "server" means the user wants the resident model.
+			_, _ = ensureServer(ctx, settings, p)
 			if transcriber, ok := autoServerTranscriber(ctx, settings, p); ok {
 				return []Transcriber{transcriber}
 			}

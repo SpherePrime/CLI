@@ -7,11 +7,11 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/login"
 	"github.com/SpherePrime/CLI/internal/oauth/copilot"
 	"github.com/SpherePrime/CLI/internal/workspace"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 

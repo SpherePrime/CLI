@@ -14,8 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
-	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/db"
@@ -24,9 +22,11 @@ import (
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/internal/ui/chat"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
@@ -560,12 +560,12 @@ func sessionWriter(ctx context.Context, contentHeight int) (io.Writer, func(), b
 	}
 
 	return &colorprofile.Writer{
-			Forward: pipe,
-			Profile: profile,
-		}, func() {
-			pipe.Close()
-			_ = cmd.Wait()
-		}, true
+		Forward: pipe,
+		Profile: profile,
+	}, func() {
+		pipe.Close()
+		_ = cmd.Wait()
+	}, true
 }
 
 type sessionShowMeta struct {

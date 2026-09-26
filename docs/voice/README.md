@@ -35,6 +35,42 @@ working pieces are left alone.
 Pick a different model with `--model small`, preview without installing with
 `--print`, or skip the prompt for scripts with `--yes`.
 
+## The always-on server
+
+Loading a half-gigabyte model on every dictation is what makes whisper.cpp
+slow to answer, so Prime keeps a local server loaded instead:
+
+```bash
+prime voice server           # report state, model, pid, and idle time
+prime voice server start     # load the model now instead of at first dictation
+prime voice server touch     # restart the idle countdown
+prime voice server stop      # free the model's memory right away
+```
+
+How it behaves:
+
+- The TUI warms the server in the background at launch, and dictation prefers
+  it over the one-shot CLI while it runs.
+- It listens on `http://127.0.0.1:8000` only and uses every CPU core Prime
+  can see, with your `option voice language` at startup (detection when unset).
+- It stops itself about 15 minutes after the last dictation through a small
+  detached watcher, so the RAM comes back even after Prime exits.
+- If the terminal that owned the server was killed, the watcher restarts
+  Prime in a fresh window and clears session files that died mid-turn. A live
+  Prime elsewhere means it stays hands-off.
+- Change the model or language in the options and the server restarts with
+  the new settings on next use.
+- If anything about the server fails, dictation transparently falls back to
+  the `whisper-cli` command, so a broken server never blocks voice input.
+
+A server you started yourself on `127.0.0.1:8000` is used as-is and Prime
+never kills it.
+
+Pinning `option voice language ru` skips per-request language detection,
+which is worth roughly half the wait on short phrases. The default Large V3
+Turbo model is accurate but not instant on CPU; a smaller model answers
+faster if speed matters more than recognition quality.
+
 ## What Prime looks for
 
 Prime does not bundle audio code. It uses tools that are already installed,
@@ -55,8 +91,8 @@ checked in this order:
 | Backend                | Notes |
 | ---------------------- | ----- |
 | `transcribe-command`   | set with `option voice transcribe-command` |
-| whisper.cpp server     | auto-detected on `http://127.0.0.1:8000`, or point `base-url` at it |
-| whisper.cpp CLI        | `whisper-cli` plus a ggml model file |
+| whisper.cpp server     | Prime-managed and always-on, see below; auto-detected on `http://127.0.0.1:8000`, or point `base-url` at it |
+| whisper.cpp CLI        | `whisper-cli` plus a ggml model file; the fallback whenever the server is unavailable |
 | openai-whisper (Python)| `pip install -U openai-whisper` |
 | whisper-ctranslate2    | `pip install whisper-ctranslate2` |
 | OpenAI-compatible API  | `OPENAI_API_KEY` or `GROQ_API_KEY`, or set `base-url` and `api-key` |

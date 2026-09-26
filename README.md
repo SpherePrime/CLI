@@ -83,7 +83,10 @@ the same key to stop. The status bar shows `● REC` with a timer while the
 microphone is open, and the transcript lands in the prompt at your cursor.
 
 Capture and transcription use external tools, so nothing extra is bundled with
-Prime. The quickest setup:
+Prime. Dictation runs against a resident local whisper.cpp server: Prime warms
+it at TUI launch and stops it about 15 minutes after the last dictation, so the
+model is never reloaded per keystroke. Control it with `prime voice server`.
+The quickest setup:
 
 ```bash
 pip install sounddevice                 # microphone capture
