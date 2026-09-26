@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
-	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/vendordeps/mattn/go-isatty"
 	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )

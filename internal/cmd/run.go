@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/log/v2"
 	"github.com/SpherePrime/CLI/internal/client"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/event"
@@ -25,6 +24,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
 	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
+	"github.com/SpherePrime/CLI/vendordeps/log/v2"
 	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 

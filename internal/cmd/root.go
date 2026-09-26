@@ -20,10 +20,6 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	fang "github.com/SpherePrime/CLI/vendordeps/fang/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
-	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 	"github.com/SpherePrime/CLI/internal/app"
 	"github.com/SpherePrime/CLI/internal/client"
 	"github.com/SpherePrime/CLI/internal/config"
@@ -41,11 +37,15 @@ import (
 	ui "github.com/SpherePrime/CLI/internal/ui/model"
 	"github.com/SpherePrime/CLI/internal/version"
 	"github.com/SpherePrime/CLI/internal/workspace"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 	xstrings "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/strings"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	fang "github.com/SpherePrime/CLI/vendordeps/fang/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
 
@@ -136,6 +136,9 @@ prime --continue
 
 		com := common.DefaultCommon(ws)
 		model := ui.New(com, sessionID, continueLast)
+		// Load the Whisper model while the user reads the screen instead of
+		// making the first dictation wait for it.
+		model.WarmVoiceServer()
 
 		inputFilter := ui.NewFilter()
 		var env uv.Environ = os.Environ()

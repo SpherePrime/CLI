@@ -63,7 +63,7 @@ var (
 	)
 	// ErrNoTranscriber means no Whisper engine was found.
 	ErrNoTranscriber = errors.New(
-		"no Whisper engine found. Run \"prime voice setup\" to download whisper.cpp and a model, "+
+		"no Whisper engine found. Run \"prime voice setup\" to download whisper.cpp and a model, " +
 			"or set option voice base-url and api-key at an OpenAI-compatible transcription endpoint",
 	)
 	// ErrNoSpeech means the recording is too short to transcribe.

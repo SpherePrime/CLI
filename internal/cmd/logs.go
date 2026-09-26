@@ -10,10 +10,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/log/v2"
-	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/colorprofile"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/log/v2"
 	"github.com/SpherePrime/CLI/vendordeps/nxadm/tail"
 	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
 )
