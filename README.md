@@ -12,8 +12,8 @@ your code, and your LLM provider of choice into one workflow.
 - **LSP-enhanced:** pulls context from language servers, like a human would
 - **Extensible:** add capabilities via MCP servers and agent skills
 - **Safe by default:** per-tool permission prompts, with allow/deny lists
-- **Voice input:** dictate prompts with Whisper on a hotkey, with a live
-  microphone indicator
+- **Voice dictation:** install Prime's own voice MCP server from the /mcp
+  menu and dictate prompts with Whisper
 - **Cross-platform:** macOS, Linux, Windows, and the BSDs
 
 ## Install
@@ -76,33 +76,22 @@ Local models work too — Prime auto-discovers what the server exposes:
 provider add ollama --type ollama --base-url "http://localhost:11434/v1"
 ```
 
-## Voice input
+## MCP servers
 
-Press <kbd>alt+v</kbd> (or <kbd>ctrl+shift+space</kbd>) to start recording, and
-the same key to stop. The status bar shows `● REC` with a timer while the
-microphone is open, and the transcript lands in the prompt at your cursor.
+Prime ships its own MCP servers inside the same binary. Nothing runs by
+default: open the commands menu (`ctrl+p`), search **mcp**, and install a
+server from there. The entry is written to the `mcp` config section and its
+tools connect right away.
 
-Capture and transcription use external tools, so nothing extra is bundled with
-Prime. Dictation runs against a resident local whisper.cpp server: Prime warms
-it at TUI launch and stops it about 15 minutes after the last dictation, so the
-model is never reloaded per keystroke. Control it with `prime voice server`.
-The quickest setup:
+Built-in servers:
 
-```bash
-pip install sounddevice                 # microphone capture
-prime voice setup                       # whisper.cpp + Large V3 Turbo Q5 model
+| Server | What it adds |
+| --- | --- |
+| `voice` | Microphone dictation for agents: `dictate` records until the speaker goes quiet and returns the transcript, plus `setup`, `warm`, `status`, and `stop_server` for the resident local whisper.cpp server. |
 
-# or transcribe remotely instead of locally
-option voice base-url https://api.openai.com/v1
-option voice api-key $OPENAI_API_KEY
-
-option voice language ru                # optional, detected by default
-prime voice                             # show what was found
-prime voice test                        # record a sample and print the text
-```
-
-Other backends, the hotkey setting, and the full priority list:
-[docs/voice](docs/voice/README.md).
+Voice options (`option voice engine|model|language|base-url|api-key ...`)
+configure the engine the voice server uses. See
+[docs/mcp](docs/mcp/README.md).
 
 ## Configuration
 
@@ -157,8 +146,8 @@ prime provider add     # add a provider interactively
 prime models           # list known models
 prime sessions         # manage sessions
 prime stats            # token and cost stats
-prime voice            # check microphone and Whisper setup
-prime voice test       # dictate a sample outside the TUI
+prime mcp list         # list Prime's built-in MCP servers
+prime mcp serve voice  # run one as an MCP server over stdio (used by config)
 prime logs             # print recent logs
 ```
 

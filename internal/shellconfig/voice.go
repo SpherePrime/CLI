@@ -20,7 +20,6 @@ import (
 //	option voice language ru
 //	option voice model /models/ggml-small.bin
 //	option voice base-url http://localhost:8000
-//	option voice hotkey ctrl+shift+space
 //	option voice record-command "sox -t alsa default -t raw -r 16000 -b 16 -c 1 -"
 func optionVoice(options map[string]any, args []string, stderr io.Writer) error {
 	if len(args) < 3 {
@@ -39,9 +38,8 @@ func optionVoice(options map[string]any, args []string, stderr io.Writer) error 
 		return nil
 	}
 
-	// A value may arrive as several words when it was not quoted, for example
-	// a hotkey list. Joining them keeps "option voice hotkey a, b" working the
-	// way it reads.
+	// A value may arrive as several words when it was not quoted. Joining
+	// them keeps commands like record-command working the way they read.
 	value := ""
 	if len(args) > 3 {
 		value = strings.TrimSpace(strings.Join(args[3:], " "))
@@ -54,11 +52,6 @@ func optionVoice(options map[string]any, args []string, stderr io.Writer) error 
 			return usage(stderr, fmt.Sprintf("option voice enabled expects true/false, got %q", value))
 		}
 		voice["enabled"] = parsed
-	case "hotkey":
-		if value == "" {
-			return usage(stderr, "option voice hotkey requires a value")
-		}
-		voice["hotkey"] = strings.ToLower(value)
 	case "engine", "model", "language", "base-url", "api-key", "record-command", "transcribe-command":
 		if value == "" {
 			return usage(stderr, fmt.Sprintf("option voice %s requires a value", key))

@@ -229,7 +229,7 @@ func commandTranscribeEnv(language string) []string {
 
 // ggmlModelFile resolves a whisper.cpp model, which is addressed by file
 // rather than by name. When no name is configured, any model that exists is
-// used, so a model installed by "prime voice setup" works without settings.
+// used, so a model installed by the voice MCP setup tool works without settings.
 func ggmlModelFile(configured string, searchDirs []string) (string, bool) {
 	if configured != "" && filepath.IsAbs(configured) {
 		if info, err := os.Stat(configured); err == nil && !info.IsDir() {

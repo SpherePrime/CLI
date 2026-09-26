@@ -36,8 +36,9 @@ type RecorderSetup struct {
 	Text    string
 }
 
-// SetupPlan is what prime voice setup would install, and what it does when the
-// user agrees. Nothing is downloaded or run until Apply is called.
+// SetupPlan is what the voice MCP server's setup tool would install, and what
+// it does when the user agrees. Nothing is downloaded or run until Apply is
+// called.
 type SetupPlan struct {
 	// Layout is where downloaded tools are placed.
 	Layout InstallLayout
@@ -143,7 +144,7 @@ func planSetup(ctx context.Context, settings Settings, p prober, options SetupOp
 		plan.ModelURL = modelURLFor(name)
 	}
 	if plan.Engine == nil && plan.Model == "" && plan.Recorder.Kind == RecorderNone {
-		plan.Notes = append(plan.Notes, "nothing to install: run prime voice test to try dictation")
+		plan.Notes = append(plan.Notes, "nothing to install: the voice MCP server is ready to dictate")
 	}
 	return plan, nil
 }

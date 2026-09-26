@@ -136,9 +136,6 @@ prime --continue
 
 		com := common.DefaultCommon(ws)
 		model := ui.New(com, sessionID, continueLast)
-		// Load the Whisper model while the user reads the screen instead of
-		// making the first dictation wait for it.
-		model.WarmVoiceServer()
 
 		inputFilter := ui.NewFilter()
 		var env uv.Environ = os.Environ()

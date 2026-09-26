@@ -2,21 +2,8 @@ package model
 
 import (
 	"github.com/SpherePrime/CLI/internal/i18n"
-	"github.com/SpherePrime/CLI/internal/voice"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 )
-
-// SetVoiceHotkey rebinds dictation to the keys from options.voice.hotkey,
-// keeping the translated help label.
-func (km *KeyMap) SetVoiceHotkey(keys []string) {
-	if len(keys) == 0 {
-		return
-	}
-	km.Voice = key.NewBinding(
-		key.WithKeys(keys...),
-		key.WithHelp(keys[0], km.Voice.Help().Desc),
-	)
-}
 
 type KeyMap struct {
 	Editor struct {
@@ -101,8 +88,6 @@ type KeyMap struct {
 	Tab        key.Binding
 	ToggleYolo key.Binding
 	ShiftTab   key.Binding
-	// Voice starts and stops microphone dictation.
-	Voice key.Binding
 }
 
 // DefaultKeyMap builds a keymap with the default locale. The help labels
@@ -150,10 +135,6 @@ func BuildKeyMap(tr i18n.Translator) KeyMap {
 	km.ShiftTab = key.NewBinding(
 		key.WithKeys("shift+tab"),
 		key.WithHelp("shift+tab", tr.Label("key.mode")),
-	)
-	km.Voice = key.NewBinding(
-		key.WithKeys(voice.DefaultHotkeys...),
-		key.WithHelp(voice.DefaultHotkeys[0], tr.Label("key.voice")),
 	)
 
 	km.Editor.SendMessage = key.NewBinding(

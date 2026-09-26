@@ -357,12 +357,10 @@ func (c Completions) Limits() (depth, items int) {
 
 // VoiceOptions configures microphone dictation. Recording and transcription
 // are delegated to external tools, so every field is a hint about which tool
-// to use rather than a switch for built-in behavior.
+// to use rather than a switch for built-in behavior. Prime's voice MCP server
+// reads the same options.
 type VoiceOptions struct {
-	Enabled *bool `json:"enabled,omitempty" jsonschema:"description=Enable voice dictation in the TUI,default=true"`
-	// Hotkey is a comma separated list of keys that start and stop recording.
-	// Empty means Prime's default binding.
-	Hotkey string `json:"hotkey,omitempty" jsonschema:"description=Keys that start and stop dictation, comma separated,example=alt+v,example=ctrl+shift+space"`
+	Enabled *bool `json:"enabled,omitempty" jsonschema:"description=Enable voice dictation,default=true"`
 	// Engine pins a Whisper backend. Empty or auto lets Prime probe for the
 	// fastest one available.
 	Engine string `json:"engine,omitempty" jsonschema:"description=Whisper engine to use,enum=auto,enum=whispercpp,enum=openai-whisper,enum=whisper-ctranslate2,enum=server,enum=openai,enum=command,default=auto"`
