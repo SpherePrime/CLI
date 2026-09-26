@@ -24,18 +24,19 @@ var SetupModels = []struct {
 	MB   int
 	Note string
 }{
-	{Name: "large-v3-turbo-q5_0", MB: 574, Note: "the default: accurate multilingual model that still runs on a CPU"},
+	{Name: "small", MB: 465, Note: "the default: fast on a CPU, multilingual, accurate for dictation"},
+	{Name: "large-v3-turbo-q5_0", MB: 574, Note: "most accurate on CPU; noticeably slower than small"},
 	{Name: "tiny", MB: 75, Note: "fastest, weakest accuracy"},
 	{Name: "base", MB: 142, Note: "good balance, multilingual"},
 	{Name: "small", MB: 465, Note: "smaller than the default, faster on old hardware"},
 	{Name: "medium", MB: 1500, Note: "needs a strong GPU"},
 }
 
-// DefaultSetupModel is the model Prime downloads when none is chosen: Whisper
-// Large V3 Turbo quantized to q5_0, which is the best accuracy that still
-// transcribes dictation in real time on a laptop CPU. It is multilingual,
-// which matters for dictation in the languages Prime's UI speaks.
-const DefaultSetupModel = "large-v3-turbo-q5_0"
+// DefaultSetupModel is the model Prime downloads when none is chosen: the
+// multilingual "small" model, which is the best speed the default install
+// should give a laptop CPU for dictation. The more accurate large-v3-turbo-q5_0
+// stays on the list for machines that want it.
+const DefaultSetupModel = "small"
 
 // releaseAsset is one downloadable file attached to a GitHub release.
 type releaseAsset struct {
