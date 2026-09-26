@@ -41,6 +41,9 @@ type voiceRuntime struct {
 	stopCtx   context.CancelFunc
 	startedAt time.Time
 	elapsed   time.Duration
+	// warmStarted records that the background server warm-up already ran, so
+	// a keymap rebuild does not launch a second load attempt.
+	warmStarted bool
 }
 
 // voiceStartedMsg reports that capture is running or failed to start.
@@ -88,6 +91,21 @@ func (m *UI) voiceEnabled() bool {
 // wherever the keymap is rebuilt so a config reload takes effect.
 func (m *UI) applyVoiceHotkey() {
 	m.keyMap.SetVoiceHotkey(m.voiceSettings().Hotkeys())
+}
+
+// WarmVoiceServer starts the resident Whisper server in the background so
+// the first dictation of a session meets an already-loaded model. Prime
+// calls it when the TUI launches; the engine list prefers the server
+// automatically once it answers.
+func (m *UI) WarmVoiceServer() {
+	if m.voice.warmStarted {
+		return
+	}
+	m.voice.warmStarted = true
+	settings := m.voiceSettings()
+	go func() {
+		_ = voice.WarmServer(context.Background(), settings)
+	}()
 }
 
 // voiceDetector returns a detector reused while the settings are unchanged,
