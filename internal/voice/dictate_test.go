@@ -70,7 +70,7 @@ func TestWaitForSpeechEndStopsAfterSilence(t *testing.T) {
 		TrailingSilence: 30 * time.Millisecond,
 		MaxDuration:     time.Second,
 		StartTimeout:    time.Second,
-	})
+	}, nil)
 	require.NoError(t, err)
 	require.True(t, spoke)
 }
@@ -81,7 +81,7 @@ func TestWaitForSpeechEndGivesUpOnSilenceOnly(t *testing.T) {
 		TrailingSilence: 30 * time.Millisecond,
 		MaxDuration:     time.Second,
 		StartTimeout:    80 * time.Millisecond,
-	})
+	}, nil)
 	require.NoError(t, err)
 	require.False(t, spoke)
 }
@@ -96,8 +96,21 @@ func TestWaitForSpeechEndRespectsCancel(t *testing.T) {
 		Poll:         5 * time.Millisecond,
 		StartTimeout: time.Minute,
 		MaxDuration:  time.Minute,
-	})
+	}, nil)
 	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestWaitForSpeechEndStopSignalTranscribesImmediately(t *testing.T) {
+	stop := make(chan struct{})
+	close(stop)
+	spoke, err := waitForSpeechEnd(context.Background(), &staticSource{samples: 0}, DictateOptions{
+		Poll:            5 * time.Millisecond,
+		TrailingSilence: time.Second,
+		MaxDuration:     time.Minute,
+		StartTimeout:    time.Minute,
+	}, stop)
+	require.NoError(t, err)
+	require.True(t, spoke, "a manual end always tries to transcribe what was captured")
 }
 
 // staticRecorder hands Dictate a ready-made Session whose audio file is

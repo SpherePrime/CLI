@@ -237,27 +237,87 @@ func (p *SetupPlan) TotalBytes() int64 {
 	return total
 }
 
-// Apply carries out the plan: engine binaries, then the model, then the
-// recorder. Progress goes to log, which keeps the CLI and any future UI caller
-// in control of output.
+// SetupProgress is one structured update from Apply. Text carries the human
+// line; Done/Total carry byte counts when the step is a download, so a UI can
+// render a real progress bar instead of re-reading log lines.
+type SetupProgress struct {
+	Phase string // "engine", "model", or "recorder"
+	Text  string
+	Done  int64
+	Total int64
+}
+
+// Apply carries out the plan, forwarding readable lines to log.
 func (p *SetupPlan) Apply(ctx context.Context, log func(string)) error {
 	if log == nil {
 		log = func(string) {}
 	}
-	if err := p.installEngine(ctx, log); err != nil {
+	return p.ApplyProgress(ctx, func(pr SetupProgress) {
+		if pr.Text != "" {
+			log(pr.Text)
+		}
+	})
+}
+
+// ApplyProgress carries out the plan: engine binaries, then the model, then
+// the recorder, reporting structured progress to emit.
+func (p *SetupPlan) ApplyProgress(ctx context.Context, emit func(SetupProgress)) error {
+	if emit == nil {
+		emit = func(SetupProgress) {}
+	}
+	if err := p.installEngine(ctx, emit); err != nil {
 		return err
 	}
-	if err := p.installModel(ctx, log); err != nil {
+	if err := p.installModel(ctx, emit); err != nil {
 		return err
 	}
-	return p.installRecorder(ctx, log)
+	return p.installRecorder(ctx, emit)
+}
+
+// EnsureInstalled downloads everything voice dictation still lacks on this
+// machine — engine, model, recorder — and reports progress. It finishes in
+// one step when the machine is already ready, so callers can run it every
+// time a voice feature switches on.
+func EnsureInstalled(ctx context.Context, settings Settings, emit func(SetupProgress)) error {
+	if EngineInstalled(settings) {
+		return nil
+	}
+	detector := NewDetector(settings)
+	plan, err := detector.SetupPlan(ctx, SetupOptions{})
+	if err != nil {
+		return err
+	}
+	if plan.Empty() {
+		return nil
+	}
+	if err := plan.ApplyProgress(ctx, emit); err != nil {
+		return err
+	}
+	detector.Invalidate()
+	return nil
+}
+
+// EngineInstalled is the cheap on-disk check for "already downloaded":
+// Prime's own directory holds both whisper binaries and the configured (or
+// any) ggml model. It never spawns probes, so a menu can decide instantly
+// whether enabling a feature needs a wait.
+func EngineInstalled(settings Settings) bool {
+	layout := DefaultLayout()
+	for _, binary := range []string{whisperCPPBinary, whisperServerBinary} {
+		if _, ok := layout.Binary(binary); !ok {
+			return false
+		}
+	}
+	_, ok := whisperModelFile(settings, layout)
+	return ok
 }
 
 // installEngine downloads and unpacks the whisper.cpp archive.
-func (p *SetupPlan) installEngine(ctx context.Context, log func(string)) error {
+func (p *SetupPlan) installEngine(ctx context.Context, emit func(SetupProgress)) error {
 	if p.Engine == nil {
 		return nil
 	}
+	say := func(text string) { emit(SetupProgress{Phase: "engine", Text: text}) }
 	if err := os.MkdirAll(p.Layout.Bin(), 0o755); err != nil {
 		return err
 	}
@@ -270,14 +330,21 @@ func (p *SetupPlan) installEngine(ctx context.Context, log func(string)) error {
 	_ = temp.Close()
 	defer func() { _ = os.Remove(archive) }()
 
-	log(fmt.Sprintf("Downloading %s (%.1f MB)...", p.Engine.Name, float64(p.Engine.Size)/(1<<20)))
+	say(fmt.Sprintf("Downloading %s (%.1f MB)...", p.Engine.Name, float64(p.Engine.Size)/(1<<20)))
 	client := &http.Client{Timeout: downloadTimeout}
 	if err := downloadFile(ctx, client, p.Engine.URL, archive, assetSHA256(*p.Engine),
-		func(done, total int64) { log(fmt.Sprintf("  %s of %s", humanBytes(done), humanMB(total))) }); err != nil {
+		func(done, total int64) {
+			emit(SetupProgress{
+				Phase: "engine",
+				Text:  fmt.Sprintf("  %s of %s", humanBytes(done), humanMB(total)),
+				Done:  done,
+				Total: total,
+			})
+		}); err != nil {
 		return err
 	}
 
-	log("Unpacking into " + p.Layout.Bin())
+	say("Unpacking into " + p.Layout.Bin())
 	if _, err := extractArchive(archive, p.Layout.Bin()); err != nil {
 		return err
 	}
@@ -288,20 +355,21 @@ func (p *SetupPlan) installEngine(ctx context.Context, log func(string)) error {
 }
 
 // installModel downloads the ggml model file next to the engine.
-func (p *SetupPlan) installModel(ctx context.Context, log func(string)) error {
+func (p *SetupPlan) installModel(ctx context.Context, emit func(SetupProgress)) error {
 	if p.Model == "" {
 		return nil
 	}
+	say := func(text string) { emit(SetupProgress{Phase: "model", Text: text}) }
 	if err := os.MkdirAll(p.Layout.Models(), 0o755); err != nil {
 		return err
 	}
 	dest := filepath.Join(p.Layout.Models(), modelFileName(p.Model))
 	if info, err := os.Stat(dest); err == nil && info.Size() > 0 {
-		log("Model " + p.Model + " is already downloaded")
+		say("Model " + p.Model + " is already downloaded")
 		return nil
 	}
 
-	log(fmt.Sprintf("Downloading the %s model (about %d MB)... this is the slow part",
+	say(fmt.Sprintf("Downloading the %s model (about %d MB)... this is the slow part",
 		p.Model, modelSizeMB(p.Model)))
 	url := p.ModelURL
 	if url == "" {
@@ -309,24 +377,33 @@ func (p *SetupPlan) installModel(ctx context.Context, log func(string)) error {
 	}
 	client := &http.Client{Timeout: downloadTimeout}
 	if err := downloadFile(ctx, client, url, dest, "",
-		func(done, total int64) { log(fmt.Sprintf("  %s downloaded", humanBytes(done))) }); err != nil {
+		func(done, total int64) {
+			emit(SetupProgress{
+				Phase: "model",
+				Text:  fmt.Sprintf("  %s downloaded", humanBytes(done)),
+				Done:  done,
+				Total: total,
+			})
+		}); err != nil {
 		return err
 	}
-	log("Model ready: " + dest)
+	say("Model ready: " + dest)
 	return nil
 }
 
 // installRecorder runs the installer chosen by the plan, or explains what has
 // to be done by hand.
-func (p *SetupPlan) installRecorder(ctx context.Context, log func(string)) error {
+func (p *SetupPlan) installRecorder(ctx context.Context, emit func(SetupProgress)) error {
+	say := func(text string) { emit(SetupProgress{Phase: "recorder", Text: text}) }
+	log := func(text string) { say(text) }
 	switch p.Recorder.Kind {
 	case RecorderNone:
 		return nil
 	case RecorderManual:
-		log(p.Recorder.Text)
+		say(p.Recorder.Text)
 		return fmt.Errorf("voice input still needs a microphone recorder: %s", p.Recorder.Text)
 	case RecorderPip, RecorderWinget:
-		log(p.Recorder.Text + "...")
+		say(p.Recorder.Text + "...")
 		if err := runInstaller(ctx, p.Recorder.Command, log); err != nil {
 			return fmt.Errorf("%s failed: %w", p.Recorder.Text, err)
 		}

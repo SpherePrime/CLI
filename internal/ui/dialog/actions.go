@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/internal/commands"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/message"
@@ -18,6 +16,8 @@ import (
 	"github.com/SpherePrime/CLI/internal/skills"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/util"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 // ActionClose is a message to close the current dialog.
@@ -88,7 +88,7 @@ type (
 	ActionToggleMouseSupport          struct{}
 	ActionToggleSmartTools            struct{}
 	ActionInitializeProject           struct{}
-	ActionSummarize           struct {
+	ActionSummarize                   struct {
 		SessionID string
 	}
 	// ActionSelectReasoningEffort is a message indicating a reasoning effort
@@ -126,11 +126,10 @@ type (
 	ActionEnableDockerMCP struct{}
 	// ActionDisableDockerMCP is a message to disable Docker MCP.
 	ActionDisableDockerMCP struct{}
-	// ActionInstallBuiltinMCP installs one of Prime's own MCP servers from
-	// the /mcp menu and writes its config section.
-	ActionInstallBuiltinMCP struct{ Name string }
-	// ActionRemoveBuiltinMCP removes a built-in MCP server's config entry.
-	ActionRemoveBuiltinMCP struct{ Name string }
+	// ActionTogglePlugin installs or removes one of Prime's own plugins from
+	// the plugins menu. Installing downloads what the plugin needs on first
+	// use; the plugins dialog renders that progress itself.
+	ActionTogglePlugin struct{ Name string }
 	// ActionSaveProvider is sent when the provider add dialog has persisted
 	// a new provider to the global config.
 	ActionSaveProvider struct{}

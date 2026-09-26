@@ -116,6 +116,14 @@ func (s *Session) Captured() ([]byte, error) {
 // It reports ErrNoRecorder or ErrNoTranscriber untouched so callers can point
 // at voice setup, and ErrNoSpeech when nothing was said in time.
 func (p *Plan) Dictate(ctx context.Context, options DictateOptions) (Dictation, error) {
+	return p.DictateWithStop(ctx, options, nil)
+}
+
+// DictateWithStop is Dictate with an extra early-end signal: when stop is
+// closed the recording ends right away, so a UI can wire its hotkey to
+// "stop now" without waiting for the silence threshold. Whatever was already
+// said is still transcribed.
+func (p *Plan) DictateWithStop(ctx context.Context, options DictateOptions, stop <-chan struct{}) (Dictation, error) {
 	if p == nil || p.Recorder == nil {
 		return Dictation{}, ErrNoRecorder
 	}
@@ -128,7 +136,7 @@ func (p *Plan) Dictate(ctx context.Context, options DictateOptions) (Dictation, 
 		return Dictation{}, err
 	}
 
-	spoke, err := waitForSpeechEnd(ctx, session, options)
+	spoke, err := waitForSpeechEnd(ctx, session, options, stop)
 	if err != nil {
 		session.Abort()
 		return Dictation{}, err
@@ -168,9 +176,9 @@ func (d *Detector) Dictate(ctx context.Context, options DictateOptions) (Dictati
 }
 
 // waitForSpeechEnd polls the live recording until the gate sees speech end,
-// the recording hits its bounds, or the caller's context dies. The return
-// says whether anything was spoken.
-func waitForSpeechEnd(ctx context.Context, live capturedSource, options DictateOptions) (bool, error) {
+// the caller asks to stop now, the recording hits its bounds, or the
+// context dies. The return says whether anything should be transcribed.
+func waitForSpeechEnd(ctx context.Context, live capturedSource, options DictateOptions, stop <-chan struct{}) (bool, error) {
 	gate := &vadGate{silenceNeeded: options.silence(), threshold: options.threshold()}
 	startDeadline := time.Now().Add(options.startTimeout())
 	recordDeadline := time.Now().Add(options.max())
@@ -182,6 +190,10 @@ func waitForSpeechEnd(ctx context.Context, live capturedSource, options DictateO
 		select {
 		case <-ctx.Done():
 			return gate.started, ctx.Err()
+		case <-stop:
+			// A manual end always tries to transcribe: the caller knows
+			// better than the silence gate when a phrase is finished.
+			return true, nil
 		case <-ticker.C:
 		}
 

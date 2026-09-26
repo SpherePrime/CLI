@@ -98,6 +98,7 @@ config directory (`$XDG_CONFIG_HOME/prime`, `~/.config/prime`, or
 | `mcp.json`        | MCP servers                                                   |
 | `lsp.json`        | Language servers                                              |
 | `skills.json`     | Skill directories and disabled skills (`options.*` fields)    |
+| `plugins.json`    | Prime's own plugins, keyed by name (`plugins.<name>`)         |
 | `options.json`    | Remaining options, plus `tools`, `permissions`, `hooks`, `env` |
 | `prime.json`      | The `$schema` pointer and any key with no section of its own  |
 
@@ -586,10 +587,10 @@ option ui completions-max-items 200
 
 #### `option voice`
 
-Configure the voice MCP server's dictation pipeline. Prime records with an
+Configure the voice plugin's dictation pipeline. Prime records with an
 external tool and transcribes with Whisper, so these options pick the engines
-rather than switching built-in behavior on and off. The server itself installs
-from the `/mcp` menu in the commands dialog.
+rather than switching built-in behavior on and off. The plugin itself installs
+from the `plugins` menu in the commands dialog.
 
 ```text
 Usage:
@@ -621,9 +622,9 @@ option voice base-url http://localhost:8000
 option voice record-command "rec -q -b 16 -c 1 -r 16000 -t raw -"
 ```
 
-Run `prime mcp list` to see Prime's own MCP servers; install voice dictation
-from the `/mcp` menu so the agent gets the `dictate`, `setup`, and `warm`
-tools.
+Switch voice on from the `plugins` menu (see
+[../plugins/README.md](../plugins/README.md)); the plugin downloads the
+Whisper engine and model on first enable and binds `alt+v` to dictation.
 
 > [!IMPORTANT]
 > These skill paths load by default — you do NOT need `skill-path`

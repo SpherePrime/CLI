@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/internal/csync"
 	"github.com/SpherePrime/CLI/internal/oauth"
 	"github.com/SpherePrime/CLI/internal/oauth/copilot"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/invopop/jsonschema"
 )
 
@@ -872,6 +872,30 @@ type Config struct {
 	Env map[string]string `json:"env,omitempty" jsonschema:"description=Environment variables to set on startup"`
 
 	Agents map[string]Agent `json:"agents,omitempty"`
+
+	// Plugins is the state of Prime's own optional plugins, keyed by name.
+	// A plugin is fully off unless its entry exists here and is enabled, so
+	// nothing downloads or binds keys until the user installs it from the
+	// plugins menu.
+	Plugins map[string]PluginConfig `json:"plugins,omitempty" jsonschema:"description=State of Prime's own plugins, keyed by plugin name"`
+}
+
+// PluginConfig is the persisted choice for one first-party plugin. Extra
+// per-plugin state lives with the plugin; this is just the on/off switch the
+// plugins menu writes.
+type PluginConfig struct {
+	Enabled bool `json:"enabled" jsonschema:"description=Whether the plugin is installed and active,default=false"`
+}
+
+// IsPluginEnabled reports whether a first-party plugin is installed. An
+// absent entry means the plugin was never installed, which is the default
+// state for every plugin.
+func (c *Config) IsPluginEnabled(name string) bool {
+	if c == nil || c.Plugins == nil {
+		return false
+	}
+	entry, exists := c.Plugins[name]
+	return exists && entry.Enabled
 }
 
 // cloneForWrite returns a copy of c that the store's typed field mutators

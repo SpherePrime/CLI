@@ -591,6 +591,8 @@ type Styles struct {
 		// Mode badges shown before the help hints.
 		ModeBadgePlan lipgloss.Style
 		ModeBadgeYolo lipgloss.Style
+		// ModeBadgeVoice wraps the microphone indicator shown while dictating.
+		ModeBadgeVoice lipgloss.Style
 
 		// Full-width banners shown when switching modes.
 		ModeBannerPlan      lipgloss.Style

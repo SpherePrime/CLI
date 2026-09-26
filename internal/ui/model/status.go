@@ -4,13 +4,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/util"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // DefaultStatusTTL is the default time-to-live for status messages.
@@ -31,6 +31,10 @@ type Status struct {
 	// inputMode and yolo drive the mode badge shown before the help hints.
 	inputMode uiInputMode
 	yolo      bool
+
+	// voiceBadge is the microphone indicator shown next to the mode badge,
+	// empty while dictation is idle.
+	voiceBadge string
 }
 
 // NewStatus creates a new status bar and help model.
@@ -59,18 +63,39 @@ func (s *Status) SetMode(mode uiInputMode, yolo bool) {
 	s.yolo = yolo
 }
 
+// SetVoiceBadge sets the microphone indicator shown before the help hints. An
+// empty badge hides it.
+func (s *Status) SetVoiceBadge(badge string) {
+	s.voiceBadge = badge
+}
+
+// VoiceBadge returns the microphone indicator, empty while dictation is idle.
+func (s *Status) VoiceBadge() string {
+	return s.voiceBadge
+}
+
 // modeBadge renders the badges shown before the help hints. The coding mode
-// badge is empty in default mode, and planning wins over YOLO, which can be
-// carried into plan mode.
+// badge is empty in default mode, and the microphone indicator is appended so
+// recording stays visible in every mode.
 func (s *Status) modeBadge() string {
 	t := s.com.Styles
+	// Mirror the editor prompt precedence: planning wins over YOLO, which
+	// can be carried into plan mode.
+	var badge string
 	switch {
 	case s.inputMode == uiInputModePlan:
-		return t.Status.ModeBadgePlan.String()
+		badge = t.Status.ModeBadgePlan.String()
 	case s.yolo:
-		return t.Status.ModeBadgeYolo.String()
+		badge = t.Status.ModeBadgeYolo.String()
 	}
-	return ""
+	if s.voiceBadge == "" {
+		return badge
+	}
+	voice := t.Status.ModeBadgeVoice.Render(s.voiceBadge)
+	if badge == "" {
+		return voice
+	}
+	return badge + " " + voice
 }
 
 // SetWidth sets the width of the status bar and help view.

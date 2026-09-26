@@ -173,6 +173,13 @@
             "$ref": "#/$defs/Agent"
           },
           "type": "object"
+        },
+        "plugins": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PluginConfig"
+          },
+          "type": "object",
+          "description": "State of Prime's own plugins"
         }
       },
       "additionalProperties": false,
@@ -724,6 +731,20 @@
       },
       "additionalProperties": false,
       "type": "object"
+    },
+    "PluginConfig": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the plugin is installed and active",
+          "default": false
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "enabled"
+      ]
     },
     "ProviderConfig": {
       "properties": {

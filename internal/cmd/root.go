@@ -136,6 +136,9 @@ prime --continue
 
 		com := common.DefaultCommon(ws)
 		model := ui.New(com, sessionID, continueLast)
+		// Loads the Whisper model in the background when the voice plugin is
+		// installed, so the first dictation does not wait for it.
+		model.WarmVoiceServer()
 
 		inputFilter := ui.NewFilter()
 		var env uv.Environ = os.Environ()

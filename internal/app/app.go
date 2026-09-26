@@ -33,6 +33,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/plugins"
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/internal/question"
 	"github.com/SpherePrime/CLI/internal/session"
@@ -144,6 +145,10 @@ func New(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr
 
 	// Check for updates in the background.
 	go app.checkForUpdates(ctx)
+
+	// Retire the retired "voice as an MCP server" config before any MCP
+	// connect, so the removed server never gets spawned.
+	plugins.MigrateLegacy(store)
 
 	// Arm initialization synchronously before launching it so WaitForInit
 	// blocks for the in-flight init instead of racing the goroutine and

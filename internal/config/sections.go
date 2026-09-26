@@ -19,6 +19,7 @@ const (
 	lspSectionFile       = "lsp.json"
 	skillsSectionFile    = "skills.json"
 	optionsSectionFile   = "options.json"
+	pluginsSectionFile   = "plugins.json"
 )
 
 // legacyConfigName is the pre-split single config file. It is still read, so
@@ -37,6 +38,7 @@ var sectionFileOrder = []string{
 	lspSectionFile,
 	skillsSectionFile,
 	optionsSectionFile,
+	pluginsSectionFile,
 }
 
 // skillOptionKeys are the option fields stored in skills.json. They stay under
@@ -67,6 +69,8 @@ func sectionFileFor(key string) string {
 		return modelsSectionFile
 	case "mcp":
 		return mcpSectionFile
+	case "plugins":
+		return pluginsSectionFile
 	case "lsp":
 		return lspSectionFile
 	case "options", "tools", "permissions", "hooks", "env":
