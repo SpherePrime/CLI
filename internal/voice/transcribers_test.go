@@ -255,6 +255,8 @@ func TestWhisperCPPArguments(t *testing.T) {
 	require.True(t, slices.Contains(args, "-nt"), "timestamps are not wanted in dictation")
 	require.Equal(t, "/models/ggml-base.bin", valueAfter(args, "-m"))
 	require.Equal(t, "auto", valueAfter(args, "-l"), "whisper.cpp assumes English unless told to detect")
+	require.Contains(t, args, "-otxt", "text output is -otxt; -ot is now --offset-t and crashes the run")
+	require.NotContains(t, args, "-ot", "-ot followed by another flag is parsed as a broken number")
 
 	withLanguage := whisperCPPTranscriber("/bin/whisper-cli", "/models/ggml-base.bin", Settings{Language: "ru"}, nil).(cliTranscriber)
 	require.Equal(t, "ru", valueAfter(withLanguage.argv(withLanguage, "/tmp/a.wav", "/tmp/out"), "-l"))

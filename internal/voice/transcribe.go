@@ -97,7 +97,7 @@ func whisperCPPTranscriber(bin, model string, settings Settings, env []string) T
 				"-m", model,
 				"-l", language,
 				"-nt", "-np",
-				"-ot", "-of", filepath.Join(dir, dictationStem),
+				"-otxt", "-of", filepath.Join(dir, dictationStem),
 			}
 		},
 		result: func(_, dir string) string {

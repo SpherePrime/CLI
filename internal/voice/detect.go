@@ -41,15 +41,17 @@ func newProber(layout InstallLayout) prober {
 	}
 }
 
-// pythonInterpreterProbe returns the first Python launcher on this machine.
+// pythonInterpreterProbe returns the first Python launcher on this machine
+// that actually runs code. Windows keeps a Store alias on PATH which only
+// prints an install hint, so resolving the name alone is not enough.
 func pythonInterpreterProbe(look func(string) (string, bool)) func(context.Context) (string, bool) {
-	return func(context.Context) (string, bool) {
-		for _, candidate := range pythonCandidates {
-			if path, ok := look(candidate); ok {
-				return path, true
-			}
-		}
-		return "", false
+	var (
+		once sync.Once
+		path string
+	)
+	return func(ctx context.Context) (string, bool) {
+		once.Do(func() { path = findPython(ctx, look, "import sys") })
+		return path, path != ""
 	}
 }
 
@@ -61,7 +63,7 @@ func cachedPythonSounddeviceProbe(look func(string) (string, bool)) func(context
 		path string
 	)
 	return func(ctx context.Context) (string, bool) {
-		once.Do(func() { path = findPythonWithSounddevice(ctx, look) })
+		once.Do(func() { path = findPython(ctx, look, "import numpy, sounddevice") })
 		return path, path != ""
 	}
 }
@@ -71,9 +73,10 @@ func cachedPythonSounddeviceProbe(look func(string) (string, bool)) func(context
 // launcher names come first.
 var pythonCandidates = []string{"python", "py", "python3"}
 
-// findPythonWithSounddevice returns the first interpreter whose sounddevice
-// module imports cleanly, which is what microphone capture needs.
-func findPythonWithSounddevice(ctx context.Context, look func(string) (string, bool)) string {
+// findPython returns the first candidate interpreter that runs the given code
+// cleanly, which is how both the sounddevice check and the probe for a usable
+// launcher tell a real Python from a Store stub.
+func findPython(ctx context.Context, look func(string) (string, bool), code string) string {
 	ctx, cancel := context.WithTimeout(ctx, pythonProbeTimeout)
 	defer cancel()
 	for _, candidate := range pythonCandidates {
@@ -81,7 +84,7 @@ func findPythonWithSounddevice(ctx context.Context, look func(string) (string, b
 		if !ok {
 			continue
 		}
-		probe := exec.CommandContext(ctx, interpreter, "-c", "import numpy, sounddevice")
+		probe := exec.CommandContext(ctx, interpreter, "-c", code)
 		if err := probe.Run(); err == nil {
 			return interpreter
 		}
