@@ -210,6 +210,13 @@ func enStrings() map[string]string {
 		"info.voice_done":          "Dictated with %s.",
 		"cmd.voice_dictate":        "start voice dictation",
 
+		// Prime's own MCP servers, listed by the /mcp menu.
+		"cmd.mcp_install":    "Install MCP server: %s",
+		"cmd.mcp_remove":     "Remove MCP server: %s",
+		"mcp.voice.title":    "Voice dictation (Whisper)",
+		"info.mcp_installed": "MCP server %s installed. Its tools connect in a moment.",
+		"info.mcp_removed":   "MCP server %s removed.",
+
 		// Onboarding.
 		"onboard.init_title": "Would you like to initialize this project?",
 		"onboard.init_body":  "When I initialize your codebase I examine the project and put the result into an %s file which serves as general context.",
@@ -439,6 +446,13 @@ func ruStrings() map[string]string {
 		"info.voice_empty":         "Whisper не услышал речь.",
 		"info.voice_done":          "Распознано через %s.",
 		"cmd.voice_dictate":        "голосовой ввод",
+
+		// Собственные MCP-серверы Prime в меню /mcp.
+		"cmd.mcp_install":    "Установить MCP-сервер: %s",
+		"cmd.mcp_remove":     "Удалить MCP-сервер: %s",
+		"mcp.voice.title":    "Голосовая диктовка (Whisper)",
+		"info.mcp_installed": "MCP-сервер %s установлен. Его тулзы подключатся с минуты.",
+		"info.mcp_removed":   "MCP-сервер %s удалён.",
 
 		// Onboarding.
 		"onboard.init_title": "Инициализировать этот проект?",
