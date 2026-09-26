@@ -92,13 +92,13 @@ else
   tar -xzf "$tmp/$name" -C "$tmp"
 fi
 
-binary=$(find "$tmp" -type f -name "prime*" ! -name "*.gz" ! -name "*.zip" ! -name "*.txt" | head -n1)
+if [ "$os" = "Windows" ]; then binary_name="prime.exe"; else binary_name="prime"; fi
+binary=$(find "$tmp" -type f -name "$binary_name" | head -n1)
 if [ -z "$binary" ]; then
-  echo "prime: could not locate binary in archive" >&2
+  echo "prime: could not locate $binary_name in archive" >&2
   exit 1
 fi
 
-if [ "$os" = "Windows" ]; then binary_name="prime.exe"; else binary_name="prime"; fi
 mkdir -p "$BIN_DIR"
 mv "$binary" "$BIN_DIR/$binary_name"
 chmod 755 "$BIN_DIR/$binary_name"
@@ -108,3 +108,12 @@ case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
   *) echo "prime: add $BIN_DIR to your PATH" ;;
 esac
+
+if [ "${PRIME_SKIP_VOICE:-}" = "1" ]; then
+  echo "prime: voice setup skipped (PRIME_SKIP_VOICE=1)"
+else
+  echo "prime: setting up voice input (whisper.cpp + Large V3 Turbo Q5, about 580 MB)"
+  if ! "$BIN_DIR/$binary_name" voice setup --yes; then
+    echo "prime: voice setup failed, run 'prime voice setup' later"
+  fi
+fi
