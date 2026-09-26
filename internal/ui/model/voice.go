@@ -33,6 +33,7 @@ const (
 type voiceRuntime struct {
 	state     voiceState
 	settings  voice.Settings
+	detector  *voice.Detector
 	stopCh    chan struct{}
 	stopCtx   context.CancelFunc
 	startedAt time.Time
@@ -125,14 +126,34 @@ func (m *UI) startVoiceInput() tea.Cmd {
 	}
 }
 
-// voiceDictate runs one full capture. A plugin switch that is on but whose
-// components are missing (never installed, or removed later) triggers the
-// download in place instead of failing, so the user only waits once.
+// voiceDetector returns a detector reused while the settings are unchanged:
+// finding a recorder costs a live probe, and re-running it on every keypress
+// is what made dictation feel slow.
+func (m *UI) voiceDetector(settings voice.Settings) *voice.Detector {
+	if m.voice.detector != nil && m.voice.detector.Settings() == settings {
+		return m.voice.detector
+	}
+	m.voice.detector = voice.NewDetector(settings)
+	m.voice.settings = settings
+	return m.voice.detector
+}
+
+// voiceDictate runs one full capture. The resident Whisper server is warmed
+// in parallel with the recording so the model load (after an idle stop, or
+// the first use after install) overlaps speech instead of the transcription
+// wait. A plugin switch that is on but whose components are missing (never
+// installed, or removed later) triggers the download in place instead of
+// failing, so the user only waits once.
 func (m *UI) voiceDictate(ctx context.Context, settings voice.Settings, stop chan struct{}) (voice.Dictation, error) {
-	detector := voice.NewDetector(settings)
+	detector := m.voiceDetector(settings)
+	go func() {
+		_ = voice.WarmServer(context.Background(), settings)
+	}()
+
 	plan, err := detector.Plan(ctx)
 	if errors.Is(err, voice.ErrNoRecorder) || errors.Is(err, voice.ErrNoTranscriber) {
 		if plugin, ok := plugins.Get(plugins.VoiceName); ok && plugins.Running(plugin.Name) == nil {
+			m.abortWarmDetector()
 			installCtx, installCancel := context.WithTimeout(context.Background(), 30*time.Minute)
 			defer installCancel()
 			if installErr := plugin.Install(installCtx, settings, nil); installErr != nil {
@@ -145,6 +166,13 @@ func (m *UI) voiceDictate(ctx context.Context, settings voice.Settings, stop cha
 		return voice.Dictation{}, err
 	}
 	return plan.DictateWithStop(ctx, voice.DictateOptions{MaxDuration: settings.MaxDurationOr()}, stop)
+}
+
+// abortWarmDetector drops the cached machine lookup after a failed attempt,
+// so the next dictation re-reads what just changed on disk.
+func (m *UI) abortWarmDetector() {
+	m.voice.detector = nil
+	m.voice.warmStarted = false
 }
 
 // stopVoiceInput ends a running recording early; what was said so far is
