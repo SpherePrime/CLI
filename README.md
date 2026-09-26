@@ -12,8 +12,8 @@ your code, and your LLM provider of choice into one workflow.
 - **LSP-enhanced:** pulls context from language servers, like a human would
 - **Extensible:** add capabilities via MCP servers and agent skills
 - **Safe by default:** per-tool permission prompts, with allow/deny lists
-- **Voice dictation:** install Prime's own voice MCP server from the /mcp
-  menu and dictate prompts with Whisper
+- **Plugins:** optional features Prime installs on demand — voice dictation
+  with alt+v, downloaded automatically from the plugins menu
 - **Cross-platform:** macOS, Linux, Windows, and the BSDs
 
 ## Install
@@ -76,22 +76,23 @@ Local models work too — Prime auto-discovers what the server exposes:
 provider add ollama --type ollama --base-url "http://localhost:11434/v1"
 ```
 
-## MCP servers
+## Plugins
 
-Prime ships its own MCP servers inside the same binary. Nothing runs by
-default: open the commands menu (`ctrl+p`), search **mcp**, and install a
-server from there. The entry is written to the `mcp` config section and its
-tools connect right away.
+Prime has its own optional-features system, separate from MCP servers.
+Nothing is installed by default: open the commands menu (`ctrl+p`), run
+**plugins**, and toggle a plugin on. Enabling `voice` downloads the Whisper
+engine and model on first use (with an in-menu progress bar; if the pieces
+are already there it switches on instantly) and binds <kbd>alt+v</kbd> to
+dictate into the prompt — recording stops by itself when you go quiet. No
+restart is needed to start using it.
 
-Built-in servers:
-
-| Server | What it adds |
+| Plugin | What it adds |
 | --- | --- |
-| `voice` | Microphone dictation for agents: `dictate` records until the speaker goes quiet and returns the transcript, plus `setup`, `warm`, `status`, and `stop_server` for the resident local whisper.cpp server. |
+| `voice` | Microphone dictation with alt+v, on a resident local whisper.cpp server |
 
-Voice options (`option voice engine|model|language|base-url|api-key ...`)
-configure the engine the voice server uses. See
-[docs/mcp](docs/mcp/README.md).
+Voice engine options (`option voice engine|model|language|base-url|api-key ...`)
+configure what the plugin runs. State lives in `plugins.json`. See
+[docs/plugins](docs/plugins/README.md).
 
 ## Configuration
 
@@ -146,8 +147,6 @@ prime provider add     # add a provider interactively
 prime models           # list known models
 prime sessions         # manage sessions
 prime stats            # token and cost stats
-prime mcp list         # list Prime's built-in MCP servers
-prime mcp serve voice  # run one as an MCP server over stdio (used by config)
 prime logs             # print recent logs
 ```
 

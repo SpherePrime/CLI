@@ -20,13 +20,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/spinner"
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textarea"
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
 	agenttools "github.com/SpherePrime/CLI/internal/agent/tools"
@@ -34,12 +27,12 @@ import (
 	"github.com/SpherePrime/CLI/internal/app"
 	"github.com/SpherePrime/CLI/internal/clipboard"
 	"github.com/SpherePrime/CLI/internal/commands"
-	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/event"
 	"github.com/SpherePrime/CLI/internal/fsext"
 	"github.com/SpherePrime/CLI/internal/history"
 	"github.com/SpherePrime/CLI/internal/home"
+	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/permission"
@@ -60,11 +53,18 @@ import (
 	"github.com/SpherePrime/CLI/internal/ui/util"
 	"github.com/SpherePrime/CLI/internal/version"
 	"github.com/SpherePrime/CLI/internal/workspace"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/spinner"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textarea"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/layout"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/screen"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/editor"
 	xstrings "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/strings"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // Compact mode breakpoints.
@@ -247,6 +247,10 @@ type UI struct {
 
 	keyMap KeyMap
 	keyenh tea.KeyboardEnhancementsMsg
+
+	// voice holds microphone dictation state: the capture goroutine's stop
+	// signal, its timer, and whether the voice plugin is offering the key.
+	voice voiceRuntime
 
 	dialog *dialog.Overlay
 	status *Status
@@ -1394,6 +1398,12 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case voiceTranscriptMsg, voiceTickMsg:
+		if cmd, ok := m.updateVoice(msg); ok && cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	case pluginInstallMsg:
+		cmds = append(cmds, m.handlePluginInstall(msg))
 	case tea.KeyPressMsg:
 		if cmd := m.handleKeyPressMsg(msg); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -2139,23 +2149,23 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			}
 			// Reinitialize notification backend with new style.
 			m.notifyBackend = selectNotificationBackend(m.caps, cfg)
-			}
-			m.dialog.CloseDialog(dialog.NotificationsID)
+		}
+		m.dialog.CloseDialog(dialog.NotificationsID)
 
-		case dialog.ActionSelectLanguage:
-			cfg := m.com.Config()
-			if cfg != nil && cfg.Options != nil {
-				cfg.Options.Language = msg.Locale
-				if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.language", msg.Locale); err != nil {
-					cmds = append(cmds, util.ReportError(err))
-				} else {
-					localeTitle := i18n.Title(msg.Locale)
-					cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(i18n.New(cfg.Options.Language).Sprintf("info.language_set", localeTitle))))
-				}
+	case dialog.ActionSelectLanguage:
+		cfg := m.com.Config()
+		if cfg != nil && cfg.Options != nil {
+			cfg.Options.Language = msg.Locale
+			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.language", msg.Locale); err != nil {
+				cmds = append(cmds, util.ReportError(err))
+			} else {
+				localeTitle := i18n.Title(msg.Locale)
+				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(i18n.New(cfg.Options.Language).Sprintf("info.language_set", localeTitle))))
 			}
-			m.dialog.CloseDialog(dialog.LanguageID)
-			m.applyLanguage()
-		case dialog.ActionNewSession:
+		}
+		m.dialog.CloseDialog(dialog.LanguageID)
+		m.applyLanguage()
+	case dialog.ActionNewSession:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
 			break
@@ -2310,6 +2320,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		}))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionQuit:
+		// A capture left running would keep the microphone busy after the
+		// terminal is gone.
+		m.abortVoiceCapture()
 		cmds = append(cmds, tea.Quit)
 	case dialog.ActionEnableDockerMCP:
 		m.dialog.CloseDialog(dialog.CommandsID)
@@ -2317,12 +2330,11 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	case dialog.ActionDisableDockerMCP:
 		m.dialog.CloseDialog(dialog.CommandsID)
 		cmds = append(cmds, m.disableDockerMCP)
-	case dialog.ActionInstallBuiltinMCP:
-		m.dialog.CloseDialog(dialog.CommandsID)
-		cmds = append(cmds, func() tea.Msg { return m.installBuiltinMCP(msg.Name) })
-	case dialog.ActionRemoveBuiltinMCP:
-		m.dialog.CloseDialog(dialog.CommandsID)
-		cmds = append(cmds, func() tea.Msg { return m.removeBuiltinMCP(msg.Name) })
+	case dialog.ActionTogglePlugin:
+		cmds = append(cmds, m.togglePlugin(msg.Name))
+		if cmd := m.dialog.StartLoading(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.ActionSaveProvider:
 		m.dialog.CloseDialog(dialog.ProvidersID)
 		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(m.com.L("info.provider_added"))))
@@ -3025,6 +3037,23 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 	if key.Matches(msg, m.keyMap.Chat.Cancel) {
 		if m.isAgentBusy() {
 			if cmd := m.cancelAgent(); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			return tea.Batch(cmds...)
+		}
+	}
+
+	// Dictation is available from the editor, the chat view, and the sidebar,
+	// so its keys are matched before focus-specific handling can take them.
+	if m.activeInline == nil && (m.state == uiChat || m.state == uiLanding) {
+		if m.voiceEnabled() && key.Matches(msg, m.keyMap.Voice) {
+			if cmd := m.toggleVoiceInput(); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			return tea.Batch(cmds...)
+		}
+		if m.dictationActive() && key.Matches(msg, m.keyMap.Chat.Cancel) {
+			if cmd := m.cancelVoiceInput(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
 			return tea.Batch(cmds...)
@@ -3739,6 +3768,10 @@ func (m *UI) ShortHelp() []key.Binding {
 			commands,
 			k.Models,
 		)
+
+		if m.voiceEnabled() {
+			binds = append(binds, k.Voice)
+		}
 
 		switch m.focus {
 		case uiFocusEditor:
@@ -5193,6 +5226,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		}
 	case dialog.LanguageID:
 		if cmd := m.openLanguageDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	case dialog.PluginsID:
+		if cmd := m.openPluginsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.ProvidersID:

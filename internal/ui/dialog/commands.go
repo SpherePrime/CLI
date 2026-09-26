@@ -4,17 +4,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/SpherePrime/CLI/internal/commands"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/spinner"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/internal/commands"
-	"github.com/SpherePrime/CLI/internal/config"
-	"github.com/SpherePrime/CLI/internal/mcps"
-	"github.com/SpherePrime/CLI/internal/ui/common"
-	"github.com/SpherePrime/CLI/internal/ui/list"
-	"github.com/SpherePrime/CLI/internal/ui/styles"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
@@ -466,6 +465,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "model_settings", c.com.L("cmd.model_settings"), "", ActionOpenDialog{ModelsConfigID}),
 		NewCommandItem(c.com.Styles, "provider_settings", c.com.L("cmd.provider_settings"), "", ActionOpenDialog{ProviderSettingsID}).WithAliases("providers", "provider"),
 		NewCommandItem(c.com.Styles, "status", c.com.L("cmd.status"), "", ActionOpenDialog{StatusID}),
+		NewCommandItem(c.com.Styles, "plugins", c.com.L("cmd.plugins"), "", ActionOpenDialog{DialogID: PluginsID}).WithAliases("plugin"),
 		NewCommandItem(c.com.Styles, "restart_systems", c.com.L("cmd.restart_systems"), "", ActionRestartSystems{}).WithAliases("restart", "reload"),
 	}
 
@@ -533,22 +533,6 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		commands = append(commands, NewCommandItem(c.com.Styles, "disable_docker_mcp", c.com.L("cmd.disable_docker_mcp"), "", ActionDisableDockerMCP{}))
 	}
 
-	// /mcp: Prime's own MCP servers, installable straight from this menu.
-	for _, server := range mcps.Servers() {
-		title := c.builtinMCPTitle(server.Name, server.Title)
-		if entry, installed := cfg.MCP[server.Name]; installed && !entry.Disabled {
-			commands = append(commands, NewCommandItem(c.com.Styles,
-				"mcp_remove_"+server.Name,
-				c.com.LSprintf("cmd.mcp_remove", title), "",
-				ActionRemoveBuiltinMCP{Name: server.Name}).WithAliases("mcp", server.Name))
-			continue
-		}
-		commands = append(commands, NewCommandItem(c.com.Styles,
-			"mcp_install_"+server.Name,
-			c.com.LSprintf("cmd.mcp_install", title), "",
-			ActionInstallBuiltinMCP{Name: server.Name}).WithAliases("mcp", server.Name))
-	}
-
 	if c.hasTodos || c.hasQueue {
 		var label string
 		switch {
@@ -604,16 +588,6 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	)
 
 	return commands
-}
-
-// builtinMCPTitle prefers the translated server name and falls back to the
-// registry title when the catalog has no entry for it.
-func (c *Commands) builtinMCPTitle(name, fallback string) string {
-	key := "mcp." + name + ".title"
-	if title := c.com.L(key); title != "" && title != key {
-		return title
-	}
-	return fallback
 }
 
 // SetCustomCommands sets the custom commands and refreshes the view if user commands are currently displayed.

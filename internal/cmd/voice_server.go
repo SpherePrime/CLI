@@ -12,7 +12,7 @@ import (
 // voiceServerCmd is hidden plumbing, not user-facing UX: Prime's resident
 // Whisper server detaches one "prime voice server watchdog" child to stop
 // itself after idling, so the engine needs this exact command line to exist.
-// Dictation itself lives in the voice MCP server ("prime mcp serve voice").
+// Dictation itself is offered by the voice plugin in the TUI (alt+v).
 var (
 	voiceWatchdogPID    int
 	voiceWatchdogPort   int

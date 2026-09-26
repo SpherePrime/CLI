@@ -51,15 +51,15 @@ const (
 var (
 	// ErrNoRecorder means no microphone capture tool was found.
 	ErrNoRecorder = errors.New(
-		"no microphone recorder found. Run the voice MCP server's setup tool " +
-			"(install it from the /mcp menu), or install ffmpeg " +
+		"no microphone recorder found. Enable the voice plugin from the /plugins menu, " +
+			"or install ffmpeg " +
 			"(winget install Gyan.FFmpeg, brew install ffmpeg) or sox, " +
 			"or set option voice record-command",
 	)
 	// ErrNoTranscriber means no Whisper engine was found.
 	ErrNoTranscriber = errors.New(
-		"no Whisper engine found. Run the voice MCP server's setup tool to download " +
-			"whisper.cpp and a model (install it from the /mcp menu), " +
+		"no Whisper engine found. Enable the voice plugin from the /plugins menu to download " +
+			"whisper.cpp and a model, " +
 			"or set option voice base-url and api-key at an OpenAI-compatible transcription endpoint",
 	)
 	// ErrNoSpeech means the recording is too short to transcribe.

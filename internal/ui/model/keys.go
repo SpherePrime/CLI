@@ -88,6 +88,10 @@ type KeyMap struct {
 	Tab        key.Binding
 	ToggleYolo key.Binding
 	ShiftTab   key.Binding
+	// Voice starts and stops microphone dictation while the voice plugin is
+	// installed. The binding is always present so installing the plugin needs
+	// no keymap rebuild; only the help hint is gated.
+	Voice key.Binding
 }
 
 // DefaultKeyMap builds a keymap with the default locale. The help labels
@@ -135,6 +139,10 @@ func BuildKeyMap(tr i18n.Translator) KeyMap {
 	km.ShiftTab = key.NewBinding(
 		key.WithKeys("shift+tab"),
 		key.WithHelp("shift+tab", tr.Label("key.mode")),
+	)
+	km.Voice = key.NewBinding(
+		key.WithKeys("alt+v", "ctrl+shift+space"),
+		key.WithHelp("alt+v", tr.Label("key.voice")),
 	)
 
 	km.Editor.SendMessage = key.NewBinding(

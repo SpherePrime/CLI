@@ -191,13 +191,34 @@ func enStrings() map[string]string {
 		"key.clear_queue":            "clear queue",
 		"key.cancel_cancelling":      "press again to cancel",
 		"key.answer_questions":       "answer questions",
+		"key.voice":                  "voice input",
 
-		// Prime's own MCP servers, listed by the /mcp menu.
-		"cmd.mcp_install":    "Install MCP server: %s",
-		"cmd.mcp_remove":     "Remove MCP server: %s",
-		"mcp.voice.title":    "Voice dictation (Whisper)",
-		"info.mcp_installed": "MCP server %s installed. Its tools connect in a moment.",
-		"info.mcp_removed":   "MCP server %s removed.",
+		// Voice dictation. The badges keep the same dot so the status bar does
+		// not shift while recording.
+		"voice.preparing":         "● MIC…",
+		"voice.recording":         "● REC",
+		"voice.transcribing":      "● WHISPER",
+		"info.voice_transcribing": "Whisper is still transcribing the last recording.",
+		"info.voice_canceled":     "Recording canceled",
+		"info.voice_disabled":     "Voice input is off. Turn it on with: option voice on",
+		"info.voice_needs_setup":  "Voice is missing components — run the /plugins menu to finish installing",
+		"info.voice_too_short":    "Recording was too short to transcribe.",
+		"info.voice_empty":        "Whisper did not hear any speech.",
+		"info.voice_done":         "Dictated with %s.",
+
+		// Prime's own plugins, listed by the /plugins menu.
+		"cmd.plugins":              "manage plugins",
+		"dialog.plugins":           "Prime plugins",
+		"plugins.state.on":         "on",
+		"plugins.state.off":        "off",
+		"plugins.state.installing": "installing…",
+		"plugins.waiting":          "Please wait, installing components…",
+		"plugins.voice.title":      "Voice dictation",
+		"plugins.voice.desc":       "dictate into the prompt with alt+v (local Whisper)",
+		"info.plugin_enabling":     "%s: installing components…",
+		"info.plugin_disabled":     "%s is off.",
+		"info.plugin_ready":        "%s is ready.",
+		"info.plugin_voice_ready":  "Voice is ready — press alt+v to dictate.",
 
 		// Onboarding.
 		"onboard.init_title": "Would you like to initialize this project?",
@@ -411,13 +432,33 @@ func ruStrings() map[string]string {
 		"key.clear_queue":            "очистить очередь",
 		"key.cancel_cancelling":      "нажми ещё раз, чтобы отменить",
 		"key.answer_questions":       "ответить на вопросы",
+		"key.voice":                  "голосовой ввод",
 
-		// Собственные MCP-серверы Prime в меню /mcp.
-		"cmd.mcp_install":    "Установить MCP-сервер: %s",
-		"cmd.mcp_remove":     "Удалить MCP-сервер: %s",
-		"mcp.voice.title":    "Голосовая диктовка (Whisper)",
-		"info.mcp_installed": "MCP-сервер %s установлен. Его тулзы подключатся с минуты.",
-		"info.mcp_removed":   "MCP-сервер %s удалён.",
+		// Voice dictation.
+		"voice.preparing":         "● МИК…",
+		"voice.recording":         "● ЗАПИСЬ",
+		"voice.transcribing":      "● WHISPER",
+		"info.voice_transcribing": "Whisper ещё распознаёт предыдущую запись.",
+		"info.voice_canceled":     "Запись отменена",
+		"info.voice_disabled":     "Голосовой ввод выключен. Включи командой: option voice on",
+		"info.voice_needs_setup":  "Голосу не хватает компонентов — докупи через меню /plugins",
+		"info.voice_too_short":    "Запись слишком короткая, чтобы распознавать.",
+		"info.voice_empty":        "Whisper не услышал речь.",
+		"info.voice_done":         "Распознано через %s.",
+
+		// Собственные плагины Prime в меню /plugins.
+		"cmd.plugins":              "плагины",
+		"dialog.plugins":           "Плагины Prime",
+		"plugins.state.on":         "включен",
+		"plugins.state.off":        "выключен",
+		"plugins.state.installing": "установка…",
+		"plugins.waiting":          "Подождите, докачиваю компоненты…",
+		"plugins.voice.title":      "Голосовой ввод",
+		"plugins.voice.desc":       "диктовка в промпт по alt+v (локальный Whisper)",
+		"info.plugin_enabling":     "%s: докачиваю компоненты…",
+		"info.plugin_disabled":     "%s выключен.",
+		"info.plugin_ready":        "%s готов.",
+		"info.plugin_voice_ready":  "Голос готов — нажми alt+v для диктовки.",
 
 		// Onboarding.
 		"onboard.init_title": "Инициализировать этот проект?",
