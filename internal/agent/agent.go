@@ -688,6 +688,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		fantasy.WithSystemPrompt(systemPrompt),
 		fantasy.WithTools(agentTools...),
 		fantasy.WithUserAgent(userAgent),
+		fantasy.WithRepairToolCall(repairToolCall),
 	)
 
 	sessionLock := sync.Mutex{}

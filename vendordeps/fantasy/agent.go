@@ -853,7 +853,10 @@ func (a *agent) executeSingleTool(ctx context.Context, toolMap map[string]AgentT
 		if toolResultCallback != nil {
 			_ = toolResultCallback(result)
 		}
-		return result, true
+		// The failed call already carries an error result, so the model sees
+		// why it failed and can correct the arguments on the next step. Only
+		// stop the loop when the run itself was cancelled.
+		return result, ctx.Err() != nil || errors.Is(err, context.Canceled)
 	}
 
 	result.ClientMetadata = toolResult.Metadata
@@ -1224,7 +1227,10 @@ func (a *agent) validateToolCall(toolCall ToolCallContent, availableTools []Agen
 		for _, ept := range execProviderTools {
 			names = append(names, ept.GetName())
 		}
-		return fmt.Errorf("tool not found: %s. Available tools: %s", toolCall.ToolName, strings.Join(names, ", "))
+		return fmt.Errorf(
+			"tool not found: %s. Available tools: %s. Retry with one of these exact tool names",
+			toolCall.ToolName, strings.Join(names, ", "),
+		)
 	}
 
 	// Validate JSON parsing
@@ -1238,7 +1244,10 @@ func (a *agent) validateToolCall(toolCall ToolCallContent, availableTools []Agen
 	toolInfo := tool.Info()
 	for _, required := range toolInfo.Required {
 		if _, exists := input[required]; !exists {
-			return fmt.Errorf("missing required parameter: %s", required)
+			return fmt.Errorf(
+				"missing required parameter %q for tool %q; required parameters: [%s]. Retry the call with all required parameters",
+				required, toolCall.ToolName, strings.Join(toolInfo.Required, ", "),
+			)
 		}
 	}
 	return nil
