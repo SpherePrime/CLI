@@ -95,12 +95,18 @@ func (t httpTranscriber) Transcribe(ctx context.Context, audio *Audio) (string, 
 			ErrTranscribeFailed, t.endpoint, res.Status, strings.TrimSpace(string(payload)))
 	}
 
-	text, err := decodeTranscriptionJSON(payload)
+	text, language, err := decodeTranscription(payload)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrTranscribeFailed, err)
 	}
 	if text == "" {
 		return "", fmt.Errorf("%w: %s returned no text", ErrTranscribeFailed, t.label)
+	}
+	// A server run with auto-detect reports which language it heard; later
+	// requests pin it and skip the detection pass, which on short phrases
+	// costs about as much as the transcription itself.
+	if t.style == styleWhisperServer && t.language == "" {
+		rememberDetectedLanguage(language)
 	}
 	return tidyTranscript(text), nil
 }
@@ -127,9 +133,14 @@ func (t httpTranscriber) uploadBody(audio *Audio) (io.Reader, string, error) {
 	case styleWhisperServer:
 		fields["response_format"] = "json"
 		fields["temperature"] = "0"
+		fields["no_timestamps"] = "1"
 	}
-	if t.language != "" {
-		fields["language"] = t.language
+	language := t.language
+	if language == "" && t.style == styleWhisperServer {
+		language = recallDetectedLanguage()
+	}
+	if language != "" {
+		fields["language"] = language
 	}
 	for name, value := range fields {
 		if value == "" {
@@ -152,6 +163,7 @@ type transcriptionPayload struct {
 	Message     string `json:"message"`
 	Translation string `json:"translation"`
 	Transcribed string `json:"transcribed"`
+	Language    string `json:"language"`
 	Error       any    `json:"error"`
 }
 
@@ -168,21 +180,28 @@ func (p transcriptionPayload) transcript() string {
 // decodeTranscriptionJSON reads a transcript out of a JSON answer, and also
 // accepts a plain text body so servers configured for text output still work.
 func decodeTranscriptionJSON(payload []byte) (string, error) {
+	text, _, err := decodeTranscription(payload)
+	return text, err
+}
+
+// decodeTranscription returns the transcript and the language the server
+// says it heard, if it says so at all.
+func decodeTranscription(payload []byte) (text string, language string, err error) {
 	trimmed := bytes.TrimSpace(payload)
 	if len(trimmed) == 0 {
-		return "", nil
+		return "", "", nil
 	}
 	if trimmed[0] != '{' {
-		return string(trimmed), nil
+		return string(trimmed), "", nil
 	}
 	var decoded transcriptionPayload
 	if err := json.Unmarshal(trimmed, &decoded); err != nil {
-		return "", fmt.Errorf("unexpected response: %w", err)
+		return "", "", fmt.Errorf("unexpected response: %w", err)
 	}
 	if decoded.Error != nil {
-		return "", fmt.Errorf("server reported: %v", decoded.Error)
+		return "", "", fmt.Errorf("server reported: %v", decoded.Error)
 	}
-	return decoded.transcript(), nil
+	return decoded.transcript(), decoded.Language, nil
 }
 
 // orDefault returns value, or fallback when it is empty.

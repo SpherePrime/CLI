@@ -87,8 +87,13 @@ func whisperCPPTranscriber(bin, model string, settings Settings, env []string) T
 		env:      env,
 		argv: func(t cliTranscriber, wavPath, dir string) []string {
 			// whisper.cpp defaults to English, so detection is asked for
-			// explicitly whenever the user has not pinned a language.
+			// explicitly whenever the user has not pinned a language. A
+			// language the server already detected is pinned too: one
+			// dictation session rarely changes spoken language mid-flight.
 			language := settings.Language
+			if language == "" {
+				language = recallDetectedLanguage()
+			}
 			if language == "" {
 				language = "auto"
 			}

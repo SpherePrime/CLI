@@ -148,3 +148,32 @@ func TestDecodeTranscriptionJSONAcceptsPlainText(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "boom")
 }
+
+// TestWhisperServerCachesDetectedLanguage pins the latency fix: the first
+// auto-detect answer is reused on later requests, so whisper.cpp skips its
+// per-request language pass. It touches process-global cache state, so it
+// runs without t.Parallel.
+func TestWhisperServerCachesDetectedLanguage(t *testing.T) {
+	clearDetectedLanguage()
+	t.Cleanup(clearDetectedLanguage)
+
+	var gotLanguages []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fields, _, _ := formOf(t, r)
+		gotLanguages = append(gotLanguages, fields["language"])
+		_, _ = w.Write([]byte(`{"text":"привет","language":"ru"}`))
+	}))
+	defer server.Close()
+
+	transcriber := newServerTranscriber(server.URL+"/inference", Settings{})
+	audio := testAudio(t)
+
+	_, err := transcriber.Transcribe(context.Background(), audio)
+	require.NoError(t, err)
+	_, err = transcriber.Transcribe(context.Background(), audio)
+	require.NoError(t, err)
+
+	require.Len(t, gotLanguages, 2)
+	require.Empty(t, gotLanguages[0], "the first pass lets the server detect")
+	require.Equal(t, "ru", gotLanguages[1], "the cached language skips re-detection")
+}
