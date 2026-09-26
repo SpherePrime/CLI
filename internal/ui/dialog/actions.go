@@ -128,6 +128,11 @@ type (
 	ActionEnableDockerMCP struct{}
 	// ActionDisableDockerMCP is a message to disable Docker MCP.
 	ActionDisableDockerMCP struct{}
+	// ActionInstallBuiltinMCP installs one of Prime's own MCP servers from
+	// the /mcp menu and writes its config section.
+	ActionInstallBuiltinMCP struct{ Name string }
+	// ActionRemoveBuiltinMCP removes a built-in MCP server's config entry.
+	ActionRemoveBuiltinMCP struct{ Name string }
 	// ActionSaveProvider is sent when the provider add dialog has persisted
 	// a new provider to the global config.
 	ActionSaveProvider struct{}

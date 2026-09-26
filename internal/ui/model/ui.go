@@ -2334,6 +2334,12 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	case dialog.ActionDisableDockerMCP:
 		m.dialog.CloseDialog(dialog.CommandsID)
 		cmds = append(cmds, m.disableDockerMCP)
+	case dialog.ActionInstallBuiltinMCP:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		cmds = append(cmds, func() tea.Msg { return m.installBuiltinMCP(msg.Name) })
+	case dialog.ActionRemoveBuiltinMCP:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		cmds = append(cmds, func() tea.Msg { return m.removeBuiltinMCP(msg.Name) })
 	case dialog.ActionSaveProvider:
 		m.dialog.CloseDialog(dialog.ProvidersID)
 		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(m.com.L("info.provider_added"))))
