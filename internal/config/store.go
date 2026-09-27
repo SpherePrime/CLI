@@ -1363,6 +1363,9 @@ func (s *ConfigStore) ReloadFromDisk(ctx context.Context) error {
 func (s *ConfigStore) reloadFromDiskLocked(ctx context.Context) error {
 	// Migrate deprecated disable_notifications before reloading config.
 	migrateDisableNotifications()
+	// Hand dictation back its language choice when the configured one is not a
+	// language tag the endpoint can be asked about.
+	migrateVoiceLanguage()
 	// Pick up any config a sibling instance still has in the old single file.
 	migrateToSectionFiles()
 
