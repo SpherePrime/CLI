@@ -1,11 +1,11 @@
-// Package voice turns microphone audio into text with Whisper.
+// Package voice turns microphone audio into text with Google Web Speech.
 //
-// Both halves of the pipeline are delegated to external tools so Prime stays
-// a pure Go binary without a cgo audio dependency. Capture uses ffmpeg,
-// PipeWire/ALSA helpers, sox, Python's sounddevice module, or a user-supplied
-// command. Transcription uses whisper.cpp, the Python Whisper CLI,
-// whisper-ctranslate2, a whisper.cpp HTTP server, or any OpenAI-compatible
-// audio/transcriptions endpoint.
+// Capture is delegated to external tools so Prime stays a pure Go binary
+// without a cgo audio dependency: ffmpeg, sox, Python's sounddevice module,
+// or a user-supplied command. Transcription defaults to Google's free Web
+// Speech API, the same endpoint a browser's speech recognition uses, and
+// also supports any OpenAI-compatible audio/transcriptions endpoint and a
+// user-supplied command.
 package voice
 
 import (
@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-// Captured audio format. Whisper expects 16 kHz mono PCM, so recorders are
-// asked for exactly that and the RIFF header is written by Prime itself.
+// Captured audio format. Transcribers expect 16 kHz mono PCM, so recorders
+// are asked for exactly that and the RIFF header is written by Prime itself.
 const (
 	SampleRate = 16000
 	Channels   = 1
@@ -30,22 +30,15 @@ const (
 	// minSpeechDuration is the shortest recording worth transcribing. Taps
 	// shorter than this are treated as mistakes and dropped.
 	minSpeechDuration = 300 * time.Millisecond
-
-	// defaultModel is the Whisper model used when options.voice.model is
-	// unset. It is multilingual, which matters because dictation is offered
-	// in languages Prime's UI supports.
-	defaultModel = "base"
 )
 
-// Engine names accepted by options.voice.engine. EngineAuto lets Prime pick.
+// Engine names accepted by options.voice.engine. EngineAuto lets Prime pick:
+// Google Web Speech always answers, so auto lands there.
 const (
-	EngineAuto        = "auto"
-	EngineWhisperCPP  = "whispercpp"
-	EngineWhisperPy   = "openai-whisper"
-	EngineCTranslate2 = "whisper-ctranslate2"
-	EngineServer      = "server"
-	EngineOpenAI      = "openai"
-	EngineCommand     = "command"
+	EngineAuto    = "auto"
+	EngineGoogle  = "google"
+	EngineOpenAI  = "openai"
+	EngineCommand = "command"
 )
 
 var (
@@ -56,18 +49,17 @@ var (
 			"(winget install Gyan.FFmpeg, brew install ffmpeg) or sox, " +
 			"or set option voice record-command",
 	)
-	// ErrNoTranscriber means no Whisper engine was found.
+	// ErrNoTranscriber means no transcription engine was found.
 	ErrNoTranscriber = errors.New(
-		"no Whisper engine found. Enable the voice plugin from the /plugins menu to download " +
-			"whisper.cpp and a model, " +
-			"or set option voice base-url and api-key at an OpenAI-compatible transcription endpoint",
+		"no transcription engine available. Enable the voice plugin from the /plugins menu, " +
+			"or set option voice base-url to an OpenAI-compatible transcription endpoint",
 	)
 	// ErrNoSpeech means the recording is too short to transcribe.
 	ErrNoSpeech = errors.New("recording too short, nothing to transcribe")
 	// ErrCaptureFailed means the recorder stopped before capturing audio.
 	ErrCaptureFailed = errors.New("microphone capture failed")
-	// ErrTranscribeFailed means the Whisper engine returned an error.
-	ErrTranscribeFailed = errors.New("whisper transcription failed")
+	// ErrTranscribeFailed means the engine returned an error.
+	ErrTranscribeFailed = errors.New("transcription failed")
 )
 
 // Settings configures the voice pipeline. It is derived from
@@ -76,18 +68,18 @@ var (
 type Settings struct {
 	// Enabled gates the whole feature.
 	Enabled bool
-	// Engine pins a specific Whisper backend, or EngineAuto to probe.
+	// Engine pins a specific backend, or EngineAuto to probe.
 	Engine string
-	// Model is a Whisper model name ("base", "small") or a whisper.cpp
-	// ggml model file.
+	// Model is a hosted API model name, like "whisper-1".
 	Model string
-	// Language is an ISO 639-1 code ("ru", "en"). Empty means auto-detect.
+	// Language is a BCP-47 tag ("ru-RU", "en-US"). Empty lets the engine
+	// detect the language.
 	Language string
-	// BaseURL points at an OpenAI-compatible API root or a whisper.cpp
-	// server /inference endpoint.
+	// BaseURL points at an OpenAI-compatible API root.
 	BaseURL string
-	// APIKey authorizes BaseURL. It may still be an unresolved "$ENV_VAR"
-	// reference when the settings are built.
+	// APIKey authorizes BaseURL, or with the google engine a personal Google
+	// Web Speech key. It may still be an unresolved "$ENV_VAR" reference
+	// when the settings are built.
 	APIKey string
 	// RecordCommand overrides microphone capture with a custom command.
 	RecordCommand string
@@ -114,17 +106,8 @@ func (s Settings) MaxDurationOr() time.Duration {
 	return DefaultMaxDuration
 }
 
-// modelOrDefault returns the configured model name, or the multilingual
-// default when unset.
-func (s Settings) modelOrDefault() string {
-	if s.Model == "" {
-		return defaultModel
-	}
-	return s.Model
-}
-
 // resolveAPIKey expands an environment-variable reference in the configured
-// API key and falls back to well-known provider variables.
+// API key.
 func (s Settings) resolveAPIKey() string {
 	key := s.APIKey
 	if key != "" && s.Resolver != nil {
@@ -143,7 +126,7 @@ type Recorder interface {
 	Start(ctx context.Context) (*Session, error)
 }
 
-// Transcriber turns captured audio into text with Whisper.
+// Transcriber turns captured audio into text.
 type Transcriber interface {
 	// Name identifies the backend, for status messages.
 	Name() string
@@ -179,7 +162,7 @@ func (p *Plan) Start(ctx context.Context) (*Session, error) {
 	return p.Recorder.Start(ctx)
 }
 
-// Transcribe runs the plan's Whisper engine over a recording.
+// Transcribe runs the plan's engine over a recording.
 func (p *Plan) Transcribe(ctx context.Context, audio *Audio) (string, error) {
 	if p == nil || p.Transcriber == nil {
 		return "", ErrNoTranscriber

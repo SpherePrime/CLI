@@ -16,10 +16,10 @@ Open the commands dialog (`ctrl+p`), run **plugins**:
 | esc | close |
 
 Enabling a plugin whose components are already on disk switches it on
-instantly. When something is still missing (Whisper engine, model,
-microphone recorder), the menu shows a spinner with a progress bar and
-waits — a few hundred MB on first install, then it stays. The switch lives
-in `plugins.json` (global config), per plugin:
+instantly. When something is still missing (a microphone recorder), the
+menu shows a spinner with a progress bar and waits — a few MB on first
+install, then it stays. The switch lives in `plugins.json` (global
+config), per plugin:
 
 ```json
 { "voice": { "enabled": true } }
@@ -34,25 +34,21 @@ starts dictation anywhere in the TUI. The status bar shows `● REC` with a
 timer; press the hotkey again to end the recording and get the transcript
 at the cursor. Esc cancels without transcribing.
 
-The engine is a resident local whisper.cpp server: it loads the model once
-and answers in about a second instead of reloading hundreds of megabytes per
-dictation. Prime starts it automatically when the plugin is enabled and keeps
-it running for the whole session; deactivating the plugin stops it.
+Transcription goes to Google's free Web Speech API, the same endpoint a
+browser's speech recognition uses: no engine, no model, nothing to download.
+The recording is a plain HTTPS POST, and the text comes back in a second or
+two. A personal Google API key is optional (see `option voice api-key`);
+without one the shared browser key is used and Google may throttle it.
 
 Engine options (`primerc`):
 
 ```bash
-option voice language ru        # ISO 639-1; default: auto-detect
-option voice model small        # or large-v3-turbo-q5_0, base, a ggml path
-option voice engine auto        # auto, whispercpp, server, openai, command...
-option voice base-url https://api.openai.com/v1   # remote transcription
+option voice language ru-RU     # BCP-47 tag; default: auto-detect
+option voice engine auto        # auto, google, openai, command
+option voice base-url https://api.openai.com/v1   # OpenAI-compatible endpoint
 option voice api-key $OPENAI_API_KEY
 option voice off                # keep the plugin installed but silent
 ```
-
-Where things live: the `voice` folder under the Prime data directory
-(`prime dirs`) — `bin/` for the engine, `models/` for ggml weights,
-`server.json`/`server.log` for the resident server.
 
 ## Adding a plugin
 

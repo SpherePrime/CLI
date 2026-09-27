@@ -23,7 +23,6 @@ func TestSettingsFromDefaults(t *testing.T) {
 	require.True(t, settings.Enabled, "voice input works out of the box")
 	require.Empty(t, settings.Model)
 	require.Equal(t, DefaultMaxDuration, settings.MaxDurationOr())
-	require.Equal(t, defaultModel, settings.modelOrDefault())
 }
 
 func TestSettingsFromOptions(t *testing.T) {
@@ -31,10 +30,10 @@ func TestSettingsFromOptions(t *testing.T) {
 
 	settings := SettingsFrom(&config.VoiceOptions{
 		Enabled:           boolPtr(false),
-		Engine:            "WHISPERCPP",
-		Model:             "/models/ggml-small.bin",
+		Engine:            "GOOGLE",
+		Model:             "whisper-1",
 		Language:          "RU",
-		BaseURL:           "http://localhost:8000",
+		BaseURL:           "https://api.openai.com/v1",
 		APIKey:            "secret",
 		RecordCommand:     "rec -t raw -",
 		TranscribeCommand: "whisper %s",
@@ -42,7 +41,7 @@ func TestSettingsFromOptions(t *testing.T) {
 	}, nil)
 
 	require.False(t, settings.Enabled)
-	require.Equal(t, EngineWhisperCPP, settings.Engine)
+	require.Equal(t, EngineGoogle, settings.Engine)
 	require.Equal(t, "ru", settings.Language)
 	require.Equal(t, 45*time.Second, settings.MaxDurationOr())
 	require.Equal(t, "rec -t raw -", settings.RecordCommand)
@@ -94,12 +93,15 @@ func TestDetectPlanReportsMissingRecorder(t *testing.T) {
 	require.ErrorIs(t, err, ErrNoRecorder)
 }
 
-func TestDetectPlanReportsMissingEngine(t *testing.T) {
+func TestDetectPlanFallsBackToGoogleEngine(t *testing.T) {
 	t.Parallel()
 
+	// Google Web Speech needs no install, so a machine with only a custom
+	// recorder still gets a working plan.
 	settings := Settings{RecordCommand: "some-recorder"}
-	_, err := detectPlan(context.Background(), settings, emptyProber())
-	require.ErrorIs(t, err, ErrNoTranscriber)
+	plan, err := detectPlan(context.Background(), settings, emptyProber())
+	require.NoError(t, err)
+	require.Equal(t, "google-stt", plan.Transcriber.Name())
 }
 
 func TestDetectPlanPairsFirstBackend(t *testing.T) {
@@ -157,7 +159,6 @@ func emptyProber() prober {
 		pythonInterpreter: func(context.Context) (string, bool) {
 			return "", false
 		},
-		reachable: func(context.Context, string) bool { return false },
 	}
 }
 
@@ -211,13 +212,10 @@ func TestPythonInterpreterProbeRejectsStubLaunchers(t *testing.T) {
 	require.False(t, ok, "a launcher that cannot run code is not usable")
 }
 
-// proberWith is a declarative fake: names found on PATH and a reachable
-// localhost Whisper server.
+// proberWith is a declarative fake: names found on PATH and a Python probe.
 type proberWith struct {
-	paths    map[string]string
-	python   string
-	serverOK bool
-	layout   InstallLayout
+	paths  map[string]string
+	python string
 }
 
 func (p proberWith) toProber() prober {
@@ -232,7 +230,5 @@ func (p proberWith) toProber() prober {
 		pythonInterpreter: func(context.Context) (string, bool) {
 			return p.python, p.python != ""
 		},
-		reachable: func(context.Context, string) bool { return p.serverOK },
-		layout:    p.layout,
 	}
 }

@@ -2,7 +2,6 @@ package voice
 
 import (
 	"context"
-	"net/http"
 	"os/exec"
 	"sync"
 	"time"
@@ -21,23 +20,23 @@ type prober struct {
 	// pythonInterpreter reports any usable Python, sounddevice or not, which is
 	// how setup knows it can install the module.
 	pythonInterpreter func(ctx context.Context) (string, bool)
-	reachable         func(ctx context.Context, url string) bool
-	// layout is where Prime keeps the tools it installed itself.
-	layout InstallLayout
 }
 
-// newProber builds the production prober for an install layout. Tools Prime
-// installed itself are found first, without touching PATH. The Python check is
-// cached because it costs a process spawn and would otherwise run on every
-// detection pass.
-func newProber(layout InstallLayout) prober {
-	look := layout.lookPath
+// newProber builds the production prober. Tools are resolved from the system
+// PATH; the Python check is cached because it costs a process spawn and would
+// otherwise run on every detection pass.
+func newProber() prober {
+	look := func(name string) (string, bool) {
+		path, err := exec.LookPath(name)
+		if err != nil || path == "" {
+			return "", false
+		}
+		return path, true
+	}
 	return prober{
 		lookPath:          look,
 		pythonSounddevice: cachedPythonSounddeviceProbe(look),
 		pythonInterpreter: pythonInterpreterProbe(look),
-		reachable:         urlReachable,
-		layout:            layout,
 	}
 }
 
@@ -92,12 +91,8 @@ func findPython(ctx context.Context, look func(string) (string, bool), code stri
 	return ""
 }
 
-// localWhisperServer is where a whisper.cpp server usually waits, which lets
-// voice input work with nothing installed beyond the server itself.
-const localWhisperServer = "http://127.0.0.1:8000/health"
-
-// lookPathTool resolves a tool from Prime's own install directory or PATH, and
-// is safe to call on a zero prober so tests can build partial fakes.
+// lookPathTool resolves a tool from PATH, and is safe to call on a zero prober
+// so tests can build partial fakes.
 func (p prober) lookPathTool(name string) (string, bool) {
 	if p.lookPath == nil {
 		return "", false
@@ -113,38 +108,12 @@ func (p prober) python(ctx context.Context) (string, bool) {
 	return p.pythonInterpreter(ctx)
 }
 
-// reachable reports whether a URL answers.
-func (p prober) canReach(ctx context.Context, url string) bool {
-	if p.reachable == nil {
-		return false
-	}
-	return p.reachable(ctx, url)
-}
-
-// urlReachable reports whether an HTTP endpoint answers at all. Any response
-// counts, including a 404 from a server that has no health route.
-func urlReachable(ctx context.Context, url string) bool {
-	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return false
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return false
-	}
-	_ = res.Body.Close()
-	return true
-}
-
 // Detector resolves the capture and transcription backends once and keeps the
-// result. Probing spawns processes and touches the network, which is far too
-// slow to repeat on every keypress.
+// result. Probing spawns processes, which is far too slow to repeat on every
+// keypress.
 type Detector struct {
 	settings Settings
 	prober   prober
-	layout   InstallLayout
 
 	mu       sync.Mutex
 	plan     *Plan
@@ -152,28 +121,16 @@ type Detector struct {
 	resolved bool
 }
 
-// NewDetector returns a detector for the given settings, looking for tools in
-// Prime's own install directory and on PATH.
+// NewDetector returns a detector for the given settings, looking for tools on
+// PATH.
 func NewDetector(settings Settings) *Detector {
-	return NewDetectorIn(settings, DefaultLayout())
-}
-
-// NewDetectorIn returns a detector that also considers tools Prime installed in
-// the given layout.
-func NewDetectorIn(settings Settings, layout InstallLayout) *Detector {
-	p := newProber(layout)
-	return &Detector{settings: settings, prober: p, layout: layout}
+	return &Detector{settings: settings, prober: newProber()}
 }
 
 // newDetectorWithProber lets tests drive detection without a machine that has
 // every tool installed.
 func newDetectorWithProber(settings Settings, p prober) *Detector {
-	return &Detector{settings: settings, prober: p, layout: p.layout}
-}
-
-// Layout returns where Prime keeps self-installed voice tools.
-func (d *Detector) Layout() InstallLayout {
-	return d.layout
+	return &Detector{settings: settings, prober: p}
 }
 
 // Settings returns the settings the detector was built with.

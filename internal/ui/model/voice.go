@@ -38,8 +38,6 @@ type voiceRuntime struct {
 	stopCtx   context.CancelFunc
 	startedAt time.Time
 	elapsed   time.Duration
-	// warmStarted records that the startup warm-up already ran.
-	warmStarted bool
 }
 
 // voiceTranscriptMsg carries dictated text (or the failure) back to the
@@ -72,20 +70,6 @@ func (m *UI) voiceSettings() voice.Settings {
 // voice plugin must be installed, and the engine options must not disable it.
 func (m *UI) voiceEnabled() bool {
 	return m.voicePluginOn() && m.voiceSettings().Enabled
-}
-
-// WarmVoiceServer loads the Whisper model in the background at startup, so
-// the first dictation of a session meets an already-loaded server. It does
-// nothing while the voice plugin is not installed.
-func (m *UI) WarmVoiceServer() {
-	if m.voice.warmStarted || !m.voiceEnabled() {
-		return
-	}
-	m.voice.warmStarted = true
-	settings := m.voiceSettings()
-	go func() {
-		_ = voice.WarmServer(context.Background(), settings)
-	}()
 }
 
 // toggleVoiceInput starts dictation, and ends the recording early when the
@@ -146,14 +130,10 @@ func (m *UI) voiceDetector(settings voice.Settings) *voice.Detector {
 // failing, so the user only waits once.
 func (m *UI) voiceDictate(ctx context.Context, settings voice.Settings, stop chan struct{}) (voice.Dictation, error) {
 	detector := m.voiceDetector(settings)
-	go func() {
-		_ = voice.WarmServer(context.Background(), settings)
-	}()
-
 	plan, err := detector.Plan(ctx)
 	if errors.Is(err, voice.ErrNoRecorder) || errors.Is(err, voice.ErrNoTranscriber) {
 		if plugin, ok := plugins.Get(plugins.VoiceName); ok && plugins.Running(plugin.Name) == nil {
-			m.abortWarmDetector()
+			m.abortDetector()
 			installCtx, installCancel := context.WithTimeout(context.Background(), 30*time.Minute)
 			defer installCancel()
 			if installErr := plugin.Install(installCtx, settings, nil); installErr != nil {
@@ -168,11 +148,10 @@ func (m *UI) voiceDictate(ctx context.Context, settings voice.Settings, stop cha
 	return plan.DictateWithStop(ctx, voice.DictateOptions{MaxDuration: settings.MaxDurationOr()}, stop)
 }
 
-// abortWarmDetector drops the cached machine lookup after a failed attempt,
-// so the next dictation re-reads what just changed on disk.
-func (m *UI) abortWarmDetector() {
+// abortDetector drops the cached machine lookup after a failed attempt, so
+// the next dictation re-reads what just changed on disk.
+func (m *UI) abortDetector() {
 	m.voice.detector = nil
-	m.voice.warmStarted = false
 }
 
 // stopVoiceInput ends a running recording early; what was said so far is
