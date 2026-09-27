@@ -11,17 +11,13 @@ import (
 // Engines lists the accepted values of options.voice.engine.
 var Engines = []string{
 	EngineAuto,
-	EngineWhisperCPP,
-	EngineWhisperPy,
-	EngineCTranslate2,
-	EngineServer,
+	EngineGoogle,
 	EngineOpenAI,
 	EngineCommand,
 }
 
 // SettingsFrom translates options.voice into pipeline settings. A nil options
-// block yields working defaults, so voice input needs no configuration on a
-// machine that already has a Whisper engine.
+// block yields working defaults, so voice input needs no configuration.
 func SettingsFrom(options *config.VoiceOptions, resolver VariableResolver) Settings {
 	settings := Settings{Enabled: true, Resolver: resolver}
 	if options == nil {
@@ -52,8 +48,8 @@ func normalizedEngine(engine string) string {
 	return EngineAuto
 }
 
-// normalizedLanguage trims the language code and treats "auto" as unset, which
-// keeps "let Whisper detect" the single way to ask for detection.
+// normalizedLanguage trims the language tag and treats "auto" as unset, which
+// keeps "let the engine detect" the single way to ask for detection.
 func normalizedLanguage(language string) string {
 	candidate := strings.ToLower(strings.TrimSpace(language))
 	if candidate == "auto" {

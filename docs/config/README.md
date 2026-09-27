@@ -588,9 +588,9 @@ option ui completions-max-items 200
 #### `option voice`
 
 Configure the voice plugin's dictation pipeline. Prime records with an
-external tool and transcribes with Whisper, so these options pick the engines
-rather than switching built-in behavior on and off. The plugin itself installs
-from the `plugins` menu in the commands dialog.
+external tool and transcribes with Google Web Speech by default, so these
+options pick the engines rather than switching built-in behavior on and off.
+The plugin itself installs from the `plugins` menu in the commands dialog.
 
 ```text
 Usage:
@@ -598,15 +598,14 @@ Usage:
 
 Available Keys:
   on|off                     enable or disable dictation (default on)
-  language string            ISO 639-1 code, for example ru or en; empty or
-                             auto lets Whisper detect the language
-  model string               Whisper model name (base, small) or the path to
-                             a ggml model file for whisper.cpp
-  engine string              pin one backend: auto, whispercpp, openai-whisper,
-                             whisper-ctranslate2, server, openai, command
-  base-url string            OpenAI-compatible API root, or a whisper.cpp
-                             server such as http://localhost:8000
-  api-key string             key for base-url, may be a $VAR reference
+  language string            BCP-47 tag like ru-RU or en-US; empty or auto
+                             lets the engine detect the language
+  model string               hosted model name, for example whisper-1
+  engine string              pin one backend: auto, google, openai, command
+  base-url string            OpenAI-compatible API root, for example
+                             https://api.openai.com/v1
+  api-key string             key for base-url or a Google Web Speech key,
+                             may be a $VAR reference
   record-command string      custom recorder: streams raw 16 kHz mono PCM on
                              stdout, or writes a file to the %s placeholder
   transcribe-command string  custom engine: %s is replaced by the recorded WAV
@@ -617,8 +616,9 @@ Available Keys:
 
 ```bash
 option voice on
-option voice language ru
-option voice base-url http://localhost:8000
+option voice language ru-RU
+option voice base-url https://api.openai.com/v1
+option voice api-key $OPENAI_API_KEY
 option voice record-command "rec -q -b 16 -c 1 -r 16000 -t raw -"
 ```
 

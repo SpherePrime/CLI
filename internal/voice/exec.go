@@ -88,15 +88,14 @@ func (w *limitedWriter) Write(p []byte) (int, error) {
 	return w.buf.Write(p)
 }
 
-// transcriptMarker matches the timing prefixes command line Whisper engines
-// put in front of spoken text, for example "[00:00.000 --> 00:04.000]".
+// transcriptMarker matches the timing prefixes command line engines
+// put in front of spoken text.
 var transcriptMarker = regexp.MustCompile(`(?m)^\s*\[[0-9:.]{4,}\s*-*>\s*[0-9:.]{4,}\]\s*`)
 
 // spokenTag matches engine annotations such as "<noise>" or "[BLANK_AUDIO]".
 var spokenTag = regexp.MustCompile(`(?i)[\[(?:<]*(?:noise|blank_audio|silence|backchannel)[\])>]*`)
 
-// tidyTranscript flattens engine output into a single line of dictated text,
-// which is what gets inserted at the editor cursor.
+// tidyTranscript flattens engine output into a single line of dictated text.
 func tidyTranscript(raw string) string {
 	text := transcriptMarker.ReplaceAllString(raw, "")
 	text = spokenTag.ReplaceAllString(text, "")
@@ -104,4 +103,81 @@ func tidyTranscript(raw string) string {
 	text = strings.ReplaceAll(text, "\n", " ")
 	text = strings.Join(strings.Fields(text), " ")
 	return strings.TrimSpace(text)
+}
+
+// commandTranscriber runs options.voice.transcribe-command, whose stdout is
+// taken as the transcript.
+type commandTranscriber struct {
+	command string
+	lang    string
+}
+
+func (t commandTranscriber) Name() string { return "transcribe-command" }
+
+func (t commandTranscriber) Transcribe(ctx context.Context, audio *Audio) (string, error) {
+	if audio == nil || len(audio.WAV) == 0 {
+		return "", ErrNoSpeech
+	}
+	file, err := os.CreateTemp("", "prime-voice-dictation-*.wav")
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrTranscribeFailed, err)
+	}
+	path := file.Name()
+	defer func() { _ = os.Remove(path) }()
+
+	if _, err := file.Write(audio.WAV); err != nil {
+		_ = file.Close()
+		_ = os.Remove(path)
+		return "", fmt.Errorf("%w: %v", ErrTranscribeFailed, err)
+	}
+	if err := file.Close(); err != nil {
+		return "", fmt.Errorf("%w: %v", ErrTranscribeFailed, err)
+	}
+
+	args, err := commandTranscribeArgs(t.command, path)
+	if err != nil {
+		return "", err
+	}
+
+	stdout, stderr, err := runCommandWithEnv(ctx, args[0], args[1:], commandTranscribeEnv(t.lang))
+	if err != nil {
+		return "", engineError(err, stderr)
+	}
+	return tidyTranscript(stdout), nil
+}
+
+// commandTranscribeArgs turns options.voice.transcribe-command into argv.
+func commandTranscribeArgs(command string, wavPath string) ([]string, error) {
+	fields, err := shellFields(command)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrTranscribeFailed, err)
+	}
+	if len(fields) == 0 {
+		return nil, fmt.Errorf("%w: empty transcription command", ErrTranscribeFailed)
+	}
+	args := make([]string, 0, len(fields))
+	for _, field := range fields {
+		args = append(args, strings.ReplaceAll(field, "%s", wavPath))
+	}
+	if !strings.Contains(command, "%s") {
+		args = append(args, wavPath)
+	}
+	return args, nil
+}
+
+// commandTranscribeEnv hands a custom engine the recording format.
+func commandTranscribeEnv(language string) []string {
+	env := os.Environ()
+	if language != "" {
+		env = append(env, "PRIME_VOICE_LANGUAGE="+language)
+	}
+	return append(env, "PRIME_VOICE_SAMPLE_RATE=16000")
+}
+
+// engineError explains a failed engine run, keeping the tool's own complaint.
+func engineError(err error, stderr string) error {
+	if stderr != "" {
+		return fmt.Errorf("%w: %v: %s", ErrTranscribeFailed, err, stderr)
+	}
+	return fmt.Errorf("%w: %v", ErrTranscribeFailed, err)
 }

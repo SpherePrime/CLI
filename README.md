@@ -88,7 +88,7 @@ restart is needed to start using it.
 
 | Plugin | What it adds |
 | --- | --- |
-| `voice` | Microphone dictation with alt+v, on a resident local whisper.cpp server |
+| `voice` | Microphone dictation with alt+v, transcribed by Google Web Speech |
 
 Voice engine options (`option voice engine|model|language|base-url|api-key ...`)
 configure what the plugin runs. State lives in `plugins.json`. See

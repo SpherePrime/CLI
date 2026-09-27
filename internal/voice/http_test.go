@@ -2,6 +2,7 @@ package voice
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,6 +10,18 @@ import (
 
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
+
+// testAudio builds a two second recording for engine tests.
+func testAudio(t *testing.T) *Audio {
+	t.Helper()
+
+	pcm := make([]byte, SampleRate*bytesPerSample*2)
+	return &Audio{
+		WAV:      encodeWAV(pcm),
+		Duration: pcmDuration(pcm),
+		Recorder: "test",
+	}
+}
 
 // formOf parses an uploaded multipart body into plain fields plus the file.
 func formOf(t *testing.T, req *http.Request) (map[string]string, []byte, string) {
@@ -44,7 +57,7 @@ func formOf(t *testing.T, req *http.Request) (map[string]string, []byte, string)
 	return fields, file, fileName
 }
 
-func TestOpenAIHTTPIsTranscribed(t *testing.T) {
+func TestOpenAITranscriberIsTranscribed(t *testing.T) {
 	t.Parallel()
 
 	var got *http.Request
@@ -78,26 +91,7 @@ func TestOpenAIHTTPIsTranscribed(t *testing.T) {
 	require.Equal(t, audio.WAV, upload)
 }
 
-func TestWhisperServerShapeIsTranscribed(t *testing.T) {
-	t.Parallel()
-
-	var fields map[string]string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fields, _, _ = formOf(t, r)
-		// whisper.cpp has answered with "message" in some releases.
-		_, _ = w.Write([]byte(`{"message":"сделай коммит"}`))
-	}))
-	defer server.Close()
-
-	transcriber := newServerTranscriber(server.URL+"/inference", Settings{Language: "ru"})
-	text, err := transcriber.Transcribe(context.Background(), testAudio(t))
-	require.NoError(t, err)
-	require.Equal(t, "сделай коммит", text)
-	require.Equal(t, "ru", fields["language"])
-	require.NotContains(t, fields, "model", "the server loads its own model")
-}
-
-func TestHTTPTranscriberOmitsLanguageForAutoDetect(t *testing.T) {
+func TestOpenAITranscriberOmitsLanguageForAutoDetect(t *testing.T) {
 	t.Parallel()
 
 	var fields map[string]string
@@ -107,13 +101,13 @@ func TestHTTPTranscriberOmitsLanguageForAutoDetect(t *testing.T) {
 	}))
 	defer server.Close()
 
-	transcriber := newOpenAITranscriber(server.URL, Settings{APIKey: "k"})
+	transcriber := newOpenAITranscriber(server.URL+"/audio/transcriptions", Settings{APIKey: "k"})
 	_, err := transcriber.Transcribe(context.Background(), testAudio(t))
 	require.NoError(t, err)
 	require.NotContains(t, fields, "language")
 }
 
-func TestHTTPTranscriberReportsServerError(t *testing.T) {
+func TestOpenAITranscriberReportsServerError(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +116,7 @@ func TestHTTPTranscriberReportsServerError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	transcriber := newOpenAITranscriber(server.URL, Settings{APIKey: "k"})
+	transcriber := newOpenAITranscriber(server.URL+"/audio/transcriptions", Settings{APIKey: "k"})
 	_, err := transcriber.Transcribe(context.Background(), testAudio(t))
 	require.ErrorIs(t, err, ErrTranscribeFailed)
 	require.Contains(t, err.Error(), "invalid model")
@@ -149,31 +143,79 @@ func TestDecodeTranscriptionJSONAcceptsPlainText(t *testing.T) {
 	require.Contains(t, err.Error(), "boom")
 }
 
-// TestWhisperServerCachesDetectedLanguage pins the latency fix: the first
-// auto-detect answer is reused on later requests, so whisper.cpp skips its
-// per-request language pass. It touches process-global cache state, so it
-// runs without t.Parallel.
-func TestWhisperServerCachesDetectedLanguage(t *testing.T) {
-	clearDetectedLanguage()
-	t.Cleanup(clearDetectedLanguage)
-
-	var gotLanguages []string
+// newGoogleStubServer answers Web Speech requests with one transcript line
+// and reports the query values each request carried.
+func newGoogleStubServer(t *testing.T, transcript string, status int) (*httptest.Server, *map[string]string) {
+	t.Helper()
+	if status == 0 {
+		status = http.StatusOK
+	}
+	queries := map[string]string{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fields, _, _ := formOf(t, r)
-		gotLanguages = append(gotLanguages, fields["language"])
-		_, _ = w.Write([]byte(`{"text":"привет","language":"ru"}`))
+		queries["lang"] = r.URL.Query().Get("lang")
+		queries["key"] = r.URL.Query().Get("key")
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		require.NotEmpty(t, body, "the Web Speech endpoint expects raw PCM, not a multipart form")
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+			_, _ = w.Write([]byte(`{"error":{"code":3,"message":"api key invalid"}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"result":[{"alternative":[{"transcript":"`+transcript+`","confidence":0.9}]}]}`+"\n"))
+	}))
+	t.Cleanup(server.Close)
+	return server, &queries
+}
+
+// googleAt builds a googleTranscriber pointed at a test stub.
+func googleAt(settings Settings, server *httptest.Server) *googleTranscriber {
+	return &googleTranscriber{settings: settings, endpoint: server.URL}
+}
+
+func TestGoogleTranscriberParsesTranscript(t *testing.T) {
+	t.Parallel()
+
+	server, queries := newGoogleStubServer(t, "привет мир", 0)
+	transcriber := googleAt(Settings{Language: "ru"}, server)
+
+	text, err := transcriber.Transcribe(context.Background(), testAudio(t))
+	require.NoError(t, err)
+	require.Equal(t, "привет мир", text)
+	require.Equal(t, "ru", (*queries)["lang"])
+	require.Equal(t, googleChromiumKey, (*queries)["key"], "no personal key falls back to the chromium key")
+}
+
+func TestGoogleTranscriberUsesPersonalKey(t *testing.T) {
+	t.Parallel()
+
+	server, queries := newGoogleStubServer(t, "ok", 0)
+	transcriber := googleAt(Settings{APIKey: "personal"}, server)
+
+	_, err := transcriber.Transcribe(context.Background(), testAudio(t))
+	require.NoError(t, err)
+	require.Equal(t, "personal", (*queries)["key"])
+}
+
+func TestGoogleTranscriberRejectsHTTPError(t *testing.T) {
+	t.Parallel()
+
+	server, _ := newGoogleStubServer(t, "", http.StatusForbidden)
+	transcriber := googleAt(Settings{}, server)
+
+	_, err := transcriber.Transcribe(context.Background(), testAudio(t))
+	require.ErrorIs(t, err, ErrTranscribeFailed)
+}
+
+func TestGoogleTranscriberRejectsEmptyTranscript(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"result":[{"alternative":[]}]}`+"\n"))
 	}))
 	defer server.Close()
 
-	transcriber := newServerTranscriber(server.URL+"/inference", Settings{})
-	audio := testAudio(t)
-
-	_, err := transcriber.Transcribe(context.Background(), audio)
-	require.NoError(t, err)
-	_, err = transcriber.Transcribe(context.Background(), audio)
-	require.NoError(t, err)
-
-	require.Len(t, gotLanguages, 2)
-	require.Empty(t, gotLanguages[0], "the first pass lets the server detect")
-	require.Equal(t, "ru", gotLanguages[1], "the cached language skips re-detection")
+	transcriber := googleAt(Settings{}, server)
+	_, err := transcriber.Transcribe(context.Background(), testAudio(t))
+	require.ErrorIs(t, err, ErrTranscribeFailed)
 }

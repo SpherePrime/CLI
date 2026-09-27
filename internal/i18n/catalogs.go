@@ -197,13 +197,13 @@ func enStrings() map[string]string {
 		// not shift while recording.
 		"voice.preparing":         "● MIC…",
 		"voice.recording":         "● REC",
-		"voice.transcribing":      "● WHISPER",
-		"info.voice_transcribing": "Whisper is still transcribing the last recording.",
+		"voice.transcribing":      "● TEXT",
+		"info.voice_transcribing": "Google is still transcribing the last recording.",
 		"info.voice_canceled":     "Recording canceled",
 		"info.voice_disabled":     "Voice input is off. Turn it on with: option voice on",
-		"info.voice_needs_setup":  "Voice is missing components — run the /plugins menu to finish installing",
+		"info.voice_needs_setup":  "Voice is missing a microphone recorder — run the /plugins menu to finish installing",
 		"info.voice_too_short":    "Recording was too short to transcribe.",
-		"info.voice_empty":        "Whisper did not hear any speech.",
+		"info.voice_empty":        "No speech was heard in the recording.",
 		"info.voice_done":         "Dictated with %s.",
 
 		// Prime's own plugins, listed by the /plugins menu.
@@ -214,7 +214,7 @@ func enStrings() map[string]string {
 		"plugins.state.installing": "installing…",
 		"plugins.waiting":          "Please wait, installing components…",
 		"plugins.voice.title":      "Voice dictation",
-		"plugins.voice.desc":       "dictate into the prompt with alt+v (local Whisper)",
+		"plugins.voice.desc":       "dictate into the prompt with alt+v (Google Web Speech)",
 		"info.plugin_enabling":     "%s: installing components…",
 		"info.plugin_disabled":     "%s is off.",
 		"info.plugin_ready":        "%s is ready.",
@@ -437,13 +437,13 @@ func ruStrings() map[string]string {
 		// Voice dictation.
 		"voice.preparing":         "● МИК…",
 		"voice.recording":         "● ЗАПИСЬ",
-		"voice.transcribing":      "● WHISPER",
-		"info.voice_transcribing": "Whisper ещё распознаёт предыдущую запись.",
+		"voice.transcribing":      "● ТЕКСТ",
+		"info.voice_transcribing": "Google ещё распознаёт предыдущую запись.",
 		"info.voice_canceled":     "Запись отменена",
 		"info.voice_disabled":     "Голосовой ввод выключен. Включи командой: option voice on",
-		"info.voice_needs_setup":  "Голосу не хватает компонентов — докупи через меню /plugins",
+		"info.voice_needs_setup":  "Голосовой записи не хватает микрофона — докупи через меню /plugins",
 		"info.voice_too_short":    "Запись слишком короткая, чтобы распознавать.",
-		"info.voice_empty":        "Whisper не услышал речь.",
+		"info.voice_empty":        "Речь на записи не найдена.",
 		"info.voice_done":         "Распознано через %s.",
 
 		// Собственные плагины Prime в меню /plugins.
@@ -454,7 +454,7 @@ func ruStrings() map[string]string {
 		"plugins.state.installing": "установка…",
 		"plugins.waiting":          "Подождите, докачиваю компоненты…",
 		"plugins.voice.title":      "Голосовой ввод",
-		"plugins.voice.desc":       "диктовка в промпт по alt+v (локальный Whisper)",
+		"plugins.voice.desc":       "диктовка в промпт по alt+v (Google Web Speech)",
 		"info.plugin_enabling":     "%s: докачиваю компоненты…",
 		"info.plugin_disabled":     "%s выключен.",
 		"info.plugin_ready":        "%s готов.",

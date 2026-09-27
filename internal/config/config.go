@@ -355,30 +355,31 @@ func (c Completions) Limits() (depth, items int) {
 	return ptrValOr(c.MaxDepth, 0), ptrValOr(c.MaxItems, 0)
 }
 
-// VoiceOptions configures microphone dictation. Recording and transcription
-// are delegated to external tools, so every field is a hint about which tool
-// to use rather than a switch for built-in behavior. Prime's voice MCP server
-// reads the same options.
+// VoiceOptions configures microphone dictation. Recording is delegated to
+// external tools, so every field is a hint about which tool to use rather
+// than a switch for built-in behavior.
 type VoiceOptions struct {
 	Enabled *bool `json:"enabled,omitempty" jsonschema:"description=Enable voice dictation,default=true"`
-	// Engine pins a Whisper backend. Empty or auto lets Prime probe for the
-	// fastest one available.
-	Engine string `json:"engine,omitempty" jsonschema:"description=Whisper engine to use,enum=auto,enum=whispercpp,enum=openai-whisper,enum=whisper-ctranslate2,enum=server,enum=openai,enum=command,default=auto"`
-	// Model is a Whisper model name for the Python and CTranslate2 engines and
-	// for hosted APIs, or a ggml model file for whisper.cpp.
-	Model string `json:"model,omitempty" jsonschema:"description=Whisper model name or path to a ggml model file,example=base,example=/path/to/ggml-base.bin"`
-	// Language is an ISO 639-1 code. Empty lets Whisper detect the language.
-	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as an ISO 639-1 code, empty means auto-detect,example=ru,example=en"`
-	// BaseURL points at an OpenAI-compatible API root or a whisper.cpp server.
-	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of a Whisper HTTP endpoint,example=http://localhost:8000,example=https://api.openai.com/v1"`
-	// APIKey authorizes BaseURL and may be an environment variable reference.
+	// Engine pins a transcription backend. Empty or auto lets Prime probe:
+	// a configured OpenAI endpoint, then Google Web Speech.
+	Engine string `json:"engine,omitempty" jsonschema:"description=Transcription engine to use,enum=auto,enum=google,enum=openai,enum=command,default=auto"`
+	// Model is a hosted API model name, like "whisper-1" for OpenAI.
+	Model string `json:"model,omitempty" jsonschema:"description=Hosted transcription model name,example=whisper-1"`
+	// Language is a BCP-47 tag like ru-RU or en-US. Empty lets the engine
+	// detect the language.
+	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as a BCP-47 tag, empty means auto-detect,example=ru-RU,example=en-US"`
+	// BaseURL points at an OpenAI-compatible API root such as
+	// https://api.openai.com/v1.
+	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of an OpenAI-compatible transcription endpoint,example=https://api.openai.com/v1"`
+	// APIKey authorizes BaseURL, or with the google engine a personal Google
+	// Web Speech key. May be an environment variable reference.
 	APIKey string `json:"api_key,omitempty" jsonschema:"description=API key for options.voice.base_url, may reference a variable like $OPENAI_API_KEY"`
 	// RecordCommand overrides microphone capture. It either streams raw
 	// 16 kHz mono PCM on stdout or writes a file to a %s placeholder.
 	RecordCommand string `json:"record_command,omitempty" jsonschema:"description=Custom microphone recorder command streaming 16 kHz mono PCM to stdout, or writing to the %s placeholder"`
 	// TranscribeCommand overrides transcription, with %s replaced by the
 	// recorded WAV file and the transcript on stdout.
-	TranscribeCommand string `json:"transcribe_command,omitempty" jsonschema:"description=Custom Whisper transcription command reading the WAV file at the %s placeholder and printing text to stdout"`
+	TranscribeCommand string `json:"transcribe_command,omitempty" jsonschema:"description=Custom transcription command reading the WAV file at the %s placeholder and printing text to stdout"`
 	// MaxDuration bounds one recording in seconds.
 	MaxDuration int `json:"max_duration,omitempty" jsonschema:"description=Hard limit in seconds for a single recording,default=300,example=60,example=120"`
 }

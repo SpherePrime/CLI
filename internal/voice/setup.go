@@ -4,10 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"net/http"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -29,139 +26,58 @@ const (
 	RecorderManual
 )
 
-// RecorderSetup is the microphone half of a setup plan.
+// RecorderSetup is the microphone half of an install plan.
 type RecorderSetup struct {
 	Kind    RecorderKind
 	Command []string
 	Text    string
 }
 
-// SetupPlan is what the voice MCP server's setup tool would install, and what
-// it does when the user agrees. Nothing is downloaded or run until Apply is
-// called.
-type SetupPlan struct {
-	// Layout is where downloaded tools are placed.
-	Layout InstallLayout
-	// Engine carries the whisper.cpp archive to download, nil when a working
-	// engine already exists.
-	Engine *releaseAsset
-	// EngineTag is the release the engine archive comes from.
-	EngineTag string
-	// Model is the ggml model to download, empty when one is already found or
-	// no engine will exist after setup.
-	Model string
-	// ModelURL overrides where the model is downloaded from, which setup fills
-	// in from the public model repository and tests point at a local server.
-	ModelURL string
-	// Recorder is the microphone step, with Kind RecorderNone when capture
-	// already works.
-	Recorder RecorderSetup
-	// Notes explain decisions the user should know before approving.
-	Notes []string
+// SetupProgress is one structured update from an install run. Text carries the
+// human line; Done/Total carry byte counts when a step downloads data.
+type SetupProgress struct {
+	Phase string
+	Text  string
+	Done  int64
+	Total int64
 }
 
-// SetupOptions tunes a setup plan. Zero values mean the platform defaults.
-type SetupOptions struct {
-	// Model overrides the model name to download.
-	Model string
-	// ReleasesURL points at the GitHub release listing; tests serve their own.
-	ReleasesURL string
-	// Client is the HTTP client used for the release list and downloads.
-	Client *http.Client
-}
-
-// ReleasesURL is the endpoint holding the prebuilt Whisper binaries.
-func (o SetupOptions) releasesURL() string {
-	if o.ReleasesURL != "" {
-		return o.ReleasesURL
+// EnsureInstalled makes sure a microphone recorder is present on this machine.
+// With Google Web Speech as the default engine, nothing needs to be downloaded
+// for transcription, so install is only about the capture half. It finishes in
+// one step when the machine is already ready.
+func EnsureInstalled(ctx context.Context, settings Settings, emit func(SetupProgress)) error {
+	if emit == nil {
+		emit = func(SetupProgress) {}
 	}
-	return whisperCPPAPIURL
-}
-
-// client returns the HTTP client to use for setup traffic.
-func (o SetupOptions) client() *http.Client {
-	if o.Client != nil {
-		return o.Client
-	}
-	return &http.Client{Timeout: downloadTimeout}
-}
-
-// model returns the model name to install.
-func (o SetupOptions) model() string {
-	if strings.TrimSpace(o.Model) != "" {
-		return strings.TrimSpace(o.Model)
-	}
-	return DefaultSetupModel
-}
-
-// SetupPlan works out what this machine still needs for voice input.
-func (d *Detector) SetupPlan(ctx context.Context, options SetupOptions) (*SetupPlan, error) {
-	return planSetup(ctx, d.Settings(), d.prober, options)
-}
-
-// planSetup is the testable core of SetupPlan.
-func planSetup(ctx context.Context, settings Settings, p prober, options SetupOptions) (*SetupPlan, error) {
-	plan := &SetupPlan{Layout: p.layout}
-
-	recorders := newRecorders(ctx, settings, p)
-	if len(recorders) == 0 {
-		plan.Recorder = recorderSetup(ctx, p)
+	ready := func() {
+		emit(SetupProgress{Phase: "ready", Text: "Voice is ready", Done: 1, Total: 1})
 	}
 
-	engines := newTranscribers(ctx, settings, p)
-	if len(engines) > 0 {
-		plan.Notes = append(plan.Notes, "a Whisper engine is already available: "+engines[0].Name())
-		return plan, nil
+	detector := NewDetector(settings)
+	if _, err := detector.Plan(ctx); err == nil {
+		ready()
+		return nil
 	}
 
-	assetName, ok := platformAssetName()
-	if !ok {
-		plan.Notes = append(plan.Notes,
-			"no prebuilt Whisper binaries exist for "+runtime.GOOS+"/"+runtime.GOARCH+
-				"; install whisper.cpp or openai-whisper with your package manager, "+
-				"or point option voice base-url and api-key at a transcription endpoint")
-		return plan, nil
-	}
-
-	releases, err := releasesClient(ctx, options.client(), options.releasesURL())
-	if err != nil {
-		return nil, err
-	}
-	asset, tag, found := pickAsset(releases, assetName)
-	if !found {
-		return nil, fmt.Errorf("the newest whisper.cpp releases carry no %s archive", assetName)
-	}
-	plan.Engine = &asset
-	plan.EngineTag = tag
-
-	if _, ok := whisperModelFile(settings, p.layout); !ok {
-		name := options.model()
-		if !setupModelKnown(name) {
-			return nil, fmt.Errorf("unknown model %q, choose one of: %s",
-				name, strings.Join(modelNames(), ", "))
+	recorder := recorderSetup(ctx, detector.prober)
+	switch recorder.Kind {
+	case RecorderNone:
+		ready()
+		return nil
+	case RecorderManual:
+		return fmt.Errorf("%w: %s", ErrNoRecorder, recorder.Text)
+	case RecorderPip, RecorderWinget:
+		emit(SetupProgress{Phase: "recorder", Text: recorder.Text + "..."})
+		if err := runInstaller(ctx, recorder.Command, func(line string) {
+			emit(SetupProgress{Phase: "recorder", Text: line})
+		}); err != nil {
+			return fmt.Errorf("%s failed: %w", recorder.Text, err)
 		}
-		plan.Model = name
-		plan.ModelURL = modelURLFor(name)
 	}
-	if plan.Engine == nil && plan.Model == "" && plan.Recorder.Kind == RecorderNone {
-		plan.Notes = append(plan.Notes, "nothing to install: the voice MCP server is ready to dictate")
-	}
-	return plan, nil
-}
-
-// modelNames lists the downloadable model names.
-func modelNames() []string {
-	names := make([]string, 0, len(SetupModels))
-	for _, model := range SetupModels {
-		names = append(names, model.Name)
-	}
-	return names
-}
-
-// whisperModelFile looks for the model configured by name or path, including
-// the directory where setup downloads models.
-func whisperModelFile(settings Settings, layout InstallLayout) (string, bool) {
-	return ggmlModelFile(settings.Model, layout.modelSearchDirs())
+	detector.Invalidate()
+	ready()
+	return nil
 }
 
 // recorderSetup picks the least invasive way to get a working recorder on this
@@ -191,224 +107,6 @@ func recorderSetup(ctx context.Context, p prober) RecorderSetup {
 		Text: "install a recorder Prime can use: ffmpeg, sox, or Python with " +
 			"'pip install sounddevice' (Linux: apt install ffmpeg or sox)",
 	}
-}
-
-// Empty reports whether setup has nothing left to do.
-func (p *SetupPlan) Empty() bool {
-	return p == nil || (p.Engine == nil && p.Model == "" && p.Recorder.Kind == RecorderNone)
-}
-
-// NeedsApproval reports whether setup would download anything or run an
-// installer, which is what the confirmation prompt is about.
-func (p *SetupPlan) NeedsApproval() bool {
-	return p.Engine != nil || p.Model != "" || p.Recorder.Kind != RecorderNone
-}
-
-// Steps renders the plan as lines a person can read before approving.
-func (p *SetupPlan) Steps() []string {
-	var steps []string
-	if p.Recorder.Kind != RecorderNone {
-		steps = append(steps, "Microphone: "+p.Recorder.Text)
-	}
-	if p.Engine != nil {
-		steps = append(steps, fmt.Sprintf("Whisper engine: whisper.cpp %s (%s, %.1f MB) into %s",
-			p.EngineTag, p.Engine.Name, float64(p.Engine.Size)/(1<<20), p.Layout.Bin()))
-	}
-	if p.Model != "" {
-		steps = append(steps, fmt.Sprintf("Whisper model: %s (about %d MB) into %s",
-			p.Model, modelSizeMB(p.Model), p.Layout.Models()))
-	}
-	steps = append(steps, p.Notes...)
-	if len(steps) == 0 {
-		steps = append(steps, "nothing to do, voice input is already set up")
-	}
-	return steps
-}
-
-// TotalBytes is the download size the plan asks the user to accept.
-func (p *SetupPlan) TotalBytes() int64 {
-	var total int64
-	if p.Engine != nil {
-		total += p.Engine.Size
-	}
-	if p.Model != "" {
-		total += int64(modelSizeMB(p.Model)) << 20
-	}
-	return total
-}
-
-// SetupProgress is one structured update from Apply. Text carries the human
-// line; Done/Total carry byte counts when the step is a download, so a UI can
-// render a real progress bar instead of re-reading log lines.
-type SetupProgress struct {
-	Phase string // "engine", "model", or "recorder"
-	Text  string
-	Done  int64
-	Total int64
-}
-
-// Apply carries out the plan, forwarding readable lines to log.
-func (p *SetupPlan) Apply(ctx context.Context, log func(string)) error {
-	if log == nil {
-		log = func(string) {}
-	}
-	return p.ApplyProgress(ctx, func(pr SetupProgress) {
-		if pr.Text != "" {
-			log(pr.Text)
-		}
-	})
-}
-
-// ApplyProgress carries out the plan: engine binaries, then the model, then
-// the recorder, reporting structured progress to emit.
-func (p *SetupPlan) ApplyProgress(ctx context.Context, emit func(SetupProgress)) error {
-	if emit == nil {
-		emit = func(SetupProgress) {}
-	}
-	if err := p.installEngine(ctx, emit); err != nil {
-		return err
-	}
-	if err := p.installModel(ctx, emit); err != nil {
-		return err
-	}
-	return p.installRecorder(ctx, emit)
-}
-
-// EnsureInstalled downloads everything voice dictation still lacks on this
-// machine — engine, model, recorder — and reports progress. It finishes in
-// one step when the machine is already ready, so callers can run it every
-// time a voice feature switches on.
-func EnsureInstalled(ctx context.Context, settings Settings, emit func(SetupProgress)) error {
-	if EngineInstalled(settings) {
-		return nil
-	}
-	detector := NewDetector(settings)
-	plan, err := detector.SetupPlan(ctx, SetupOptions{})
-	if err != nil {
-		return err
-	}
-	if plan.Empty() {
-		return nil
-	}
-	if err := plan.ApplyProgress(ctx, emit); err != nil {
-		return err
-	}
-	detector.Invalidate()
-	return nil
-}
-
-// EngineInstalled is the cheap on-disk check for "already downloaded":
-// Prime's own directory holds both whisper binaries and the configured (or
-// any) ggml model. It never spawns probes, so a menu can decide instantly
-// whether enabling a feature needs a wait.
-func EngineInstalled(settings Settings) bool {
-	layout := DefaultLayout()
-	for _, binary := range []string{whisperCPPBinary, whisperServerBinary} {
-		if _, ok := layout.Binary(binary); !ok {
-			return false
-		}
-	}
-	_, ok := whisperModelFile(settings, layout)
-	return ok
-}
-
-// installEngine downloads and unpacks the whisper.cpp archive.
-func (p *SetupPlan) installEngine(ctx context.Context, emit func(SetupProgress)) error {
-	if p.Engine == nil {
-		return nil
-	}
-	say := func(text string) { emit(SetupProgress{Phase: "engine", Text: text}) }
-	if err := os.MkdirAll(p.Layout.Bin(), 0o755); err != nil {
-		return err
-	}
-
-	temp, err := os.CreateTemp("", "prime-voice-*"+filepath.Ext(p.Engine.Name))
-	if err != nil {
-		return err
-	}
-	archive := temp.Name()
-	_ = temp.Close()
-	defer func() { _ = os.Remove(archive) }()
-
-	say(fmt.Sprintf("Downloading %s (%.1f MB)...", p.Engine.Name, float64(p.Engine.Size)/(1<<20)))
-	client := &http.Client{Timeout: downloadTimeout}
-	if err := downloadFile(ctx, client, p.Engine.URL, archive, assetSHA256(*p.Engine),
-		func(done, total int64) {
-			emit(SetupProgress{
-				Phase: "engine",
-				Text:  fmt.Sprintf("  %s of %s", humanBytes(done), humanMB(total)),
-				Done:  done,
-				Total: total,
-			})
-		}); err != nil {
-		return err
-	}
-
-	say("Unpacking into " + p.Layout.Bin())
-	if _, err := extractArchive(archive, p.Layout.Bin()); err != nil {
-		return err
-	}
-	if _, ok := p.Layout.Binary(whisperCPPBinary); !ok {
-		return fmt.Errorf("whisper.cpp was unpacked but %s is missing from %s", whisperCPPBinary, p.Layout.Bin())
-	}
-	return nil
-}
-
-// installModel downloads the ggml model file next to the engine.
-func (p *SetupPlan) installModel(ctx context.Context, emit func(SetupProgress)) error {
-	if p.Model == "" {
-		return nil
-	}
-	say := func(text string) { emit(SetupProgress{Phase: "model", Text: text}) }
-	if err := os.MkdirAll(p.Layout.Models(), 0o755); err != nil {
-		return err
-	}
-	dest := filepath.Join(p.Layout.Models(), modelFileName(p.Model))
-	if info, err := os.Stat(dest); err == nil && info.Size() > 0 {
-		say("Model " + p.Model + " is already downloaded")
-		return nil
-	}
-
-	say(fmt.Sprintf("Downloading the %s model (about %d MB)... this is the slow part",
-		p.Model, modelSizeMB(p.Model)))
-	url := p.ModelURL
-	if url == "" {
-		url = modelURLFor(p.Model)
-	}
-	client := &http.Client{Timeout: downloadTimeout}
-	if err := downloadFile(ctx, client, url, dest, "",
-		func(done, total int64) {
-			emit(SetupProgress{
-				Phase: "model",
-				Text:  fmt.Sprintf("  %s downloaded", humanBytes(done)),
-				Done:  done,
-				Total: total,
-			})
-		}); err != nil {
-		return err
-	}
-	say("Model ready: " + dest)
-	return nil
-}
-
-// installRecorder runs the installer chosen by the plan, or explains what has
-// to be done by hand.
-func (p *SetupPlan) installRecorder(ctx context.Context, emit func(SetupProgress)) error {
-	say := func(text string) { emit(SetupProgress{Phase: "recorder", Text: text}) }
-	log := func(text string) { say(text) }
-	switch p.Recorder.Kind {
-	case RecorderNone:
-		return nil
-	case RecorderManual:
-		say(p.Recorder.Text)
-		return fmt.Errorf("voice input still needs a microphone recorder: %s", p.Recorder.Text)
-	case RecorderPip, RecorderWinget:
-		say(p.Recorder.Text + "...")
-		if err := runInstaller(ctx, p.Recorder.Command, log); err != nil {
-			return fmt.Errorf("%s failed: %w", p.Recorder.Text, err)
-		}
-	}
-	return nil
 }
 
 // runInstaller runs an installer command and forwards its output lines.
@@ -443,26 +141,4 @@ func runInstaller(ctx context.Context, command []string, log func(string)) error
 		return fmt.Errorf("installer timed out after 15 minutes")
 	}
 	return waitErr
-}
-
-// humanBytes renders a byte count for progress lines.
-func humanBytes(bytes int64) string {
-	switch {
-	case bytes >= 1<<30:
-		return fmt.Sprintf("%.1f GB", float64(bytes)/(1<<30))
-	case bytes >= 1<<20:
-		return fmt.Sprintf("%.1f MB", float64(bytes)/(1<<20))
-	case bytes >= 1<<10:
-		return fmt.Sprintf("%.0f KB", float64(bytes)/(1<<10))
-	default:
-		return fmt.Sprintf("%d B", bytes)
-	}
-}
-
-// humanMB renders a total that may be unknown, as reported by the server.
-func humanMB(bytes int64) string {
-	if bytes < 0 {
-		return "unknown size"
-	}
-	return humanBytes(bytes)
 }

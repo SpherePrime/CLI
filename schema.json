@@ -1104,37 +1104,32 @@
           "type": "string",
           "enum": [
             "auto",
-            "whispercpp",
-            "openai-whisper",
-            "whisper-ctranslate2",
-            "server",
+            "google",
             "openai",
             "command"
           ],
-          "description": "Whisper engine to use",
+          "description": "Transcription engine to use",
           "default": "auto"
         },
         "model": {
           "type": "string",
-          "description": "Whisper model name or path to a ggml model file",
+          "description": "Hosted transcription model name",
           "examples": [
-            "base",
-            "/path/to/ggml-base.bin"
+            "whisper-1"
           ]
         },
         "language": {
           "type": "string",
-          "description": "Language of dictation as an ISO 639-1 code",
+          "description": "Language of dictation as a BCP-47 tag",
           "examples": [
-            "ru",
-            "en"
+            "ru-RU",
+            "en-US"
           ]
         },
         "base_url": {
           "type": "string",
-          "description": "Base URL of a Whisper HTTP endpoint",
+          "description": "Base URL of an OpenAI-compatible transcription endpoint",
           "examples": [
-            "http://localhost:8000",
             "https://api.openai.com/v1"
           ]
         },
@@ -1148,7 +1143,7 @@
         },
         "transcribe_command": {
           "type": "string",
-          "description": "Custom Whisper transcription command reading the WAV file at the %s placeholder and printing text to stdout"
+          "description": "Custom transcription command reading the WAV file at the %s placeholder and printing text to stdout"
         },
         "max_duration": {
           "type": "integer",
