@@ -598,8 +598,9 @@ Usage:
 
 Available Keys:
   on|off                     enable or disable dictation (default on)
-  language string            BCP-47 tag like ru-RU or en-US; empty or auto
-                             lets the engine detect the language
+  language string            BCP-47 tag like ru-RU or en-US, or a
+                             comma-separated list to choose from in order;
+                             empty or auto lets the engine detect
   model string               hosted model name, for example whisper-1
   engine string              pin one backend: auto, google, openai, command
   base-url string            OpenAI-compatible API root, for example

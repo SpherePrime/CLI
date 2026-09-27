@@ -72,8 +72,10 @@ type Settings struct {
 	Engine string
 	// Model is a hosted API model name, like "whisper-1".
 	Model string
-	// Language is a BCP-47 tag ("ru-RU", "en-US"). Empty lets the engine
-	// detect the language.
+	// Language is a BCP-47 tag ("ru-RU", "en-US"), or a comma-separated list
+	// of tags to choose from in order ("ru-RU,en-US"). Empty lets the engine
+	// detect the language. Engines which take one code read a list as no code,
+	// which for them already means detect.
 	Language string
 	// BaseURL points at an OpenAI-compatible API root.
 	BaseURL string
