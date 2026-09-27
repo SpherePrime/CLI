@@ -77,6 +77,11 @@ type Settings struct {
 	// detect the language. Engines which take one code read a list as no code,
 	// which for them already means detect.
 	Language string
+	// InterfaceLanguage is the locale the interface is shown in. It never names
+	// the language to dictate in, and a configured Language overrules it, but
+	// with nothing configured it is the one signal Prime has about which
+	// language the user speaks, so it decides who is asked first.
+	InterfaceLanguage string
 	// BaseURL points at an OpenAI-compatible API root.
 	BaseURL string
 	// APIKey authorizes BaseURL, or with the google engine a personal Google

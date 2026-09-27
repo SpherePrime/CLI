@@ -23,31 +23,54 @@ const googleChromiumKey = "AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw"
 // authentication when client=chromium is set.
 const googleSpeechURL = "https://www.google.com/speech-api/v2/recognize"
 
-// defaultGoogleLanguages are the locales tried, in order, when
-// options.voice.language names no language of its own.
+// interfaceLanguages maps an interface locale onto the dictation tag that leads
+// the search for it, in the order the rest are tried. Only the locales Prime
+// ships belong here: an interface in any other language says nothing useful
+// about what the user speaks, so the default interface language leads instead.
+var interfaceLanguages = []struct{ locale, tag string }{
+	{"en", "en-us"},
+	{"ru", "ru-ru"},
+}
+
+// searchOrder lists the languages to try when the user named none, most likely
+// first.
 //
-// This route has no detect mode: it answers 400 "Missing parameter: lang" when
-// the tag is absent, and it answers 400 to "auto" while quietly serving English
-// anyway. So detection here means asking, and every request must name one
-// language. Two well-separated languages are enough to tell a match from a
-// foreign model: on Russian speech the Russian model answers Cyrillic at 0.86
-// while the English one answers Latin gibberish at 0.48, and on English speech
-// the English model answers 0.97 against the Russian model's 0.93 of Latin.
-//
-// Closely related languages are the known weak spot and the reason the list is
-// short: on Russian speech a German model returns 0.91 and a Ukrainian one
-// 0.94, both above the correct language, so a list mixing neighbours turns
-// confidence into a coin flip. Set options.voice.language to widen it.
-//
-// The tags are lowercased because that is the form every configured tag is
-// normalized into, and the endpoint serves both spellings alike.
-var defaultGoogleLanguages = []string{"ru-ru", "en-us"}
+// The interface language leads because it is the one signal about the user's
+// language Prime has, and the other locale it ships follows, so a user who
+// speaks the other one pays an extra request instead of getting a wrong
+// answer. Nothing here decides the language: the answer is picked by the
+// alphabet, this only decides who is asked first.
+func searchOrder(interfaceLanguage string) []string {
+	wanted := strings.ToLower(strings.TrimSpace(interfaceLanguage))
+	order := make([]string, 0, len(interfaceLanguages))
+	for _, candidate := range interfaceLanguages {
+		if candidate.locale == wanted {
+			order = append(order, candidate.tag)
+		}
+	}
+	if len(order) == 0 {
+		order = append(order, defaultInterfaceLanguage)
+	}
+	for _, candidate := range interfaceLanguages {
+		if candidate.tag != order[0] {
+			order = append(order, candidate.tag)
+		}
+	}
+	return order
+}
+
+// defaultInterfaceLanguage leads the search when the interface language is not
+// one Prime ships, matching the interface's own default.
+const defaultInterfaceLanguage = "en-us"
 
 // confidentEnough is the bar a transcript has to clear to end the search
 // without asking the remaining candidates, and it only applies once the
-// alphabet already agreed. Measured on the live endpoint, a wrong model on
-// foreign speech runs from 0.47 to 0.93, so confidence alone decides nothing.
-const confidentEnough = 0.6
+// alphabet already agreed. Measured on the live endpoint, the right language
+// answers 0.86 to 0.97 while a wrong one on the same audio answers 0.33 to
+// 0.48, so the bar sits above anything a wrong model has produced and below
+// what the right one does. Confidence on its own decides nothing: a wrong
+// model asked first is the reason this bar has to be high.
+const confidentEnough = 0.8
 
 // googleSTTClient is a shared HTTP client for Google Web Speech requests.
 var googleSTTClient = &http.Client{Timeout: 30 * time.Second}
@@ -79,16 +102,16 @@ func (t googleTranscriber) target() string {
 
 func (t googleTranscriber) Name() string { return "google-stt" }
 
-// candidates lists the languages to try, in order. A configured tag is a fixed
-// choice and costs one request; an unset option (or the "auto" that means the
-// same thing for engines which can detect) means a choice has to be made from
-// the answers, which costs a request per candidate until one is written in the
-// alphabet its own language uses.
+// candidates lists the languages to try, in order. A configured tag or list is
+// a decision and is followed as written; an unset option (or the "auto" that
+// means the same thing for engines which can detect) means a choice has to be
+// made from the answers, which costs a request per candidate until one is
+// written in the alphabet its own language uses.
 func (t googleTranscriber) candidates() []string {
 	if configured := languageCandidates(t.settings.Language); len(configured) > 0 {
 		return configured
 	}
-	return defaultGoogleLanguages
+	return searchOrder(t.settings.InterfaceLanguage)
 }
 
 // attempt is one candidate language's answer.

@@ -48,7 +48,14 @@ language in turn and keeps the answer written in the alphabet its own language
 uses, which is what tells a model that understood the speech from one that
 guessed, because a wrong model here is often the more confident of the two. A
 confident answer in the right alphabet ends the search, so the common case
-costs one request. Unset, or `auto`, searches `ru-RU` then `en-US`.
+costs one request.
+
+Unset, or `auto`, searches both locales Prime ships, leading with the interface
+language (`option language`): a Russian interface asks `ru-RU` first, an English
+one asks `en-US` first, and the other follows, so speaking the other language
+costs an extra request instead of a wrong answer. The interface locale only
+decides who is asked first, never the answer itself. A configured language
+replaces that order rather than joining it.
 
 The alphabet check is a heuristic, and closely related languages are its weak
 spot: on Russian speech a German model answers more confidently than the
