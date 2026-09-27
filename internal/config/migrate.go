@@ -108,6 +108,11 @@ func migrateGlobalFileToSections(path, destDir string) {
 		if key == schemaKey {
 			continue
 		}
+		// A key with no section of its own lives in this very file, so there is
+		// nowhere to copy it. Trimming it anyway would delete the value.
+		if sectionFileFor(key) == legacyConfigName() {
+			continue
+		}
 		copiable = append(copiable, key)
 	}
 	if len(copiable) == 0 {
