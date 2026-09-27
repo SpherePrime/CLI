@@ -139,7 +139,7 @@ func alsaRecorder(path string) Recorder {
 func sounddeviceRecorder(interpreter string) Recorder {
 	return processRecorder{
 		name: "python-sounddevice",
-		stop: stopInterrupt,
+		stop: stopStdinQ,
 		build: func(_ context.Context, _ string) ([]string, error) {
 			return []string{interpreter, "-u", "-c", sounddeviceScript}, nil
 		},
@@ -162,8 +162,13 @@ func staticBuilder(path string, flags ...string) captureBuilder {
 // PCM to stdout. The device is opened at its own rate and channel count
 // because many microphones refuse 16 kHz outright, so the script mixes down to
 // mono and resamples on its own.
+//
+// It stops on a line of "q" or on stdin closing, never on a signal: Windows has
+// no interrupt to deliver, so a signal-based stop could only ever kill the
+// process, and a killed recorder both loses the tail of the sentence and exits
+// nonzero, which reads as a capture failure.
 const sounddeviceScript = `
-import sys, time
+import sys, time, threading
 try:
     import numpy as np
     import sounddevice as sd
@@ -196,10 +201,22 @@ def callback(indata, frames, time_info, status):
     out.write(np.clip(mono, -32768.0, 32767.0).astype("<i2").tobytes())
     out.flush()
 
+stop = threading.Event()
+
+def wait_for_stop():
+    # A line means Prime asked to stop; end of input means it is already gone.
+    try:
+        sys.stdin.readline()
+    except Exception:
+        pass
+    stop.set()
+
+threading.Thread(target=wait_for_stop, daemon=True).start()
+
 try:
     with sd.InputStream(callback=callback, dtype="int16", channels=channels, samplerate=rate):
-        while True:
-            time.sleep(0.05)
+        while not stop.is_set():
+            time.sleep(0.02)
 except KeyboardInterrupt:
     pass
 except Exception as exc:

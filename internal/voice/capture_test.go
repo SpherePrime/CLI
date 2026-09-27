@@ -3,6 +3,7 @@ package voice
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"slices"
 	"strings"
@@ -118,6 +119,27 @@ func TestShellArgsSubstitutesOutputPath(t *testing.T) {
 	require.Equal(t, []string{"rec", "-q", "-r", "16000", "/tmp/capture.wav"}, args)
 	require.False(t, usesOutputPlaceholder("rec -t raw -"))
 	require.True(t, usesOutputPlaceholder(`rec -q "%s"`))
+}
+
+// A capture stopped before the recorder wrote anything has no useful exit
+// status to report: Prime canceled the process itself, so the message has to
+// name the real problem instead of leaking "context canceled".
+func TestEmptyCaptureHidesPrimesOwnCancel(t *testing.T) {
+	t.Parallel()
+
+	session := &Session{stderr: &tailBuffer{}, processErr: context.Canceled}
+	require.EqualError(t, session.emptyCaptureError(),
+		"microphone capture failed: no audio captured")
+
+	_, err := session.stderr.Write([]byte("microphone: no input devices\n"))
+	require.NoError(t, err)
+	require.EqualError(t, session.emptyCaptureError(),
+		"microphone capture failed: no audio captured: microphone: no input devices")
+
+	// A recorder that failed on its own still speaks for itself.
+	session.processErr = errors.New("exit status 4")
+	require.EqualError(t, session.emptyCaptureError(),
+		"microphone capture failed: exit status 4: microphone: no input devices")
 }
 
 func TestTailBufferKeepsOnlyTheTail(t *testing.T) {

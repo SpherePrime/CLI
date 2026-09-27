@@ -22,6 +22,12 @@ const googleChromiumKey = "AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw"
 // authentication when client=chromium is set.
 const googleSpeechURL = "https://www.google.com/speech-api/v2/recognize"
 
+// defaultGoogleLanguage is the locale asked for when options.voice.language
+// is unset. This route has no auto-detect: it answers 400 "Missing parameter:
+// lang" when the tag is absent, so a request must always name one language,
+// and en-US is the tag this endpoint serves best.
+const defaultGoogleLanguage = "en-US"
+
 // googleSTTClient is a shared HTTP client for Google Web Speech requests.
 var googleSTTClient = &http.Client{Timeout: 30 * time.Second}
 
@@ -52,6 +58,18 @@ func (t googleTranscriber) target() string {
 
 func (t googleTranscriber) Name() string { return "google-stt" }
 
+// language is the tag the request asks Google to recognize. The endpoint
+// treats a missing tag as a malformed request rather than detecting one, so
+// an unset option (or the "auto" that means the same thing for engines which
+// can detect) falls back to the default locale.
+func (t googleTranscriber) language() string {
+	tag := strings.TrimSpace(t.settings.Language)
+	if tag == "" || strings.EqualFold(tag, "auto") {
+		return defaultGoogleLanguage
+	}
+	return tag
+}
+
 // Transcribe uploads the raw PCM of the recording to the Web Speech endpoint
 // and returns the highest-confidence transcript it got back.
 func (t googleTranscriber) Transcribe(ctx context.Context, audio *Audio) (string, error) {
@@ -79,9 +97,7 @@ func (t googleTranscriber) Transcribe(ctx context.Context, audio *Audio) (string
 	params := url.Values{
 		"client":  {"chromium"},
 		"pfilter": {"0"},
-	}
-	if lang := strings.TrimSpace(t.settings.Language); lang != "" {
-		params.Set("lang", lang)
+		"lang":    {t.language()},
 	}
 	params.Set("key", key)
 
