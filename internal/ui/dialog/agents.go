@@ -1,13 +1,13 @@
 package dialog
 
 import (
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
 )
@@ -178,7 +178,7 @@ func (m *Agents) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	listHeight, listTotalHeight, _ := sizeDialogList(t, m.list, innerWidth, height)
 
 	rc := NewRenderContext(t, width)
-	rc.Title = m.com.L("cmd.agents_models")
+	rc.Title = m.com.L("cmd.agent_models")
 
 	listView := t.Dialog.List.Height(m.list.Height()).Render(m.list.Render())
 	scrollable := listView
@@ -300,16 +300,19 @@ func (i *AgentsItem) SetMatch(fm fuzzy.Match) {
 // modelInfo returns the model the agent currently runs on.
 func (i *AgentsItem) modelInfo() string {
 	cfg := i.com.Config()
-	model := cfg.GetModelForAgent(i.agent)
 
-	if i.agent.ModelOverride != nil {
+	if override := i.agent.ModelOverride; override != nil {
 		pinLabel := i.com.L("cmd.pinned")
-		if model != nil {
+		// The pinned model is looked up on its own: GetModelForAgent falls back
+		// to the agent's model type, which would print the default model name
+		// as if it were the pinned one.
+		if model := cfg.GetModel(override.Provider, override.Model); model != nil {
 			return model.Name + " (" + pinLabel + ")"
 		}
-		return i.agent.ModelOverride.Model + " (" + pinLabel + ")"
+		return override.Model + " (" + pinLabel + ")"
 	}
 
+	model := cfg.GetModelForAgent(i.agent)
 	if model != nil {
 		return model.Name
 	}
