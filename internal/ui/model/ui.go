@@ -4195,7 +4195,7 @@ func (m *UI) updateSize() {
 // on the current UI state and terminal dimensions.
 func (m *UI) generateLayout(w, h int) uiLayout {
 	// The screen area we're working with
-	area := image.Rect(0, 0, w, h)
+	area := image.Rect(0, 0, max(w, 0), max(h, 0))
 
 	// The help height
 	helpHeight := 1
@@ -4229,19 +4229,21 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 	// Add app margins
 	var appRect, helpRect image.Rectangle
 	layout.Vertical(
-		layout.Len(area.Dy()-helpHeight),
+		layout.Len(max(area.Dy()-helpHeight, 0)),
 		layout.Fill(1),
 	).Split(area).Assign(&appRect, &helpRect)
-	appRect.Min.Y += 1
-	appRect.Max.Y -= 1
-	helpRect.Min.Y -= 1
-	appRect.Min.X += 1
-	appRect.Max.X -= 1
+	appRect = insetTop(appRect, appMargin)
+	appRect = insetBottom(appRect, appMargin)
+	appRect = insetLeft(appRect, appMargin)
+	appRect = insetRight(appRect, appMargin)
+	// The status line reclaims the bottom app margin, only the rows the app
+	// area actually gave up.
+	helpRect.Min.Y = appRect.Max.Y
 
 	if slices.Contains([]uiState{uiOnboarding, uiInitialize, uiLanding}, m.state) {
 		// extra padding on left and right for these states
-		appRect.Min.X += 1
-		appRect.Max.X -= 1
+		appRect = insetLeft(appRect, appMargin)
+		appRect = insetRight(appRect, appMargin)
 	}
 
 	uiLayout := uiLayout{
@@ -4283,14 +4285,15 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 			layout.Len(landingHeaderHeight),
 			layout.Fill(1),
 		).Split(appRect).Assign(&headerRect, &mainRect)
+		editorHeight = fitLowerPane(editorHeight, mainRect.Dy())
 		var editorRect image.Rectangle
 		layout.Vertical(
 			layout.Len(mainRect.Dy()-editorHeight),
 			layout.Fill(1),
 		).Split(mainRect).Assign(&mainRect, &editorRect)
 		// Remove extra padding from editor (but keep it for header and main)
-		editorRect.Min.X -= 1
-		editorRect.Max.X += 1
+		editorRect.Min.X -= appMargin
+		editorRect.Max.X += appMargin
 		uiLayout.header = headerRect
 		uiLayout.main = mainRect
 		uiLayout.editor = editorRect
@@ -4312,26 +4315,26 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 				layout.Len(compactHeaderHeight),
 				layout.Fill(1),
 			).Split(appRect).Assign(&headerRect, &mainRect)
-			detailsHeight := min(sessionDetailsMaxHeight, area.Dy()-1) // One row for the header
+			detailsAvailable := max(area.Dy()-compactHeaderHeight, 0)
+			detailsHeight := min(sessionDetailsMaxHeight, detailsAvailable)
 			var sessionDetailsArea image.Rectangle
 			layout.Vertical(
 				layout.Len(detailsHeight),
 				layout.Fill(1),
 			).Split(appRect).Assign(&sessionDetailsArea, new(image.Rectangle))
-			uiLayout.sessionDetails = sessionDetailsArea
-			uiLayout.sessionDetails.Min.Y += compactHeaderHeight // adjust for header
+			uiLayout.sessionDetails = insetTop(sessionDetailsArea, compactHeaderHeight) // adjust for header
 			// Add one line gap between header and main content
-			mainRect.Min.Y += 1
+			mainRect = insetTop(mainRect, appMargin)
+			editorHeight = fitLowerPane(editorHeight, mainRect.Dy())
 			var editorRect image.Rectangle
 			layout.Vertical(
 				layout.Len(mainRect.Dy()-editorHeight),
 				layout.Fill(1),
 			).Split(mainRect).Assign(&mainRect, &editorRect)
-			mainRect.Max.X -= 1 // Add padding right
+			mainRect = insetRight(mainRect, appMargin) // Add padding right
 			uiLayout.header = headerRect
-			pillsHeight := m.pillsAreaHeight()
+			pillsHeight := fitLowerPane(m.pillsAreaHeight(), mainRect.Dy())
 			if pillsHeight > 0 {
-				pillsHeight = min(pillsHeight, mainRect.Dy())
 				var chatRect, pillsRect image.Rectangle
 				layout.Vertical(
 					layout.Len(mainRect.Dy()-pillsHeight),
@@ -4343,7 +4346,7 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 				uiLayout.main = mainRect
 			}
 			// Add bottom margin to main
-			uiLayout.main.Max.Y -= 1
+			uiLayout.main = insetBottom(uiLayout.main, appMargin)
 			uiLayout.editor = editorRect
 		} else {
 			// Layout
@@ -4355,23 +4358,24 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 			// ----------
 			// help
 
+			sideWidth := fitSidebarWidth(sidebarWidth, appRect.Dx())
 			var mainRect, sideRect image.Rectangle
 			layout.Horizontal(
-				layout.Len(appRect.Dx()-sidebarWidth),
+				layout.Len(appRect.Dx()-sideWidth),
 				layout.Fill(1),
 			).Split(appRect).Assign(&mainRect, &sideRect)
 			// Add padding left
-			sideRect.Min.X += 1
+			sideRect = insetLeft(sideRect, appMargin)
+			editorHeight = fitLowerPane(editorHeight, mainRect.Dy())
 			var editorRect image.Rectangle
 			layout.Vertical(
 				layout.Len(mainRect.Dy()-editorHeight),
 				layout.Fill(1),
 			).Split(mainRect).Assign(&mainRect, &editorRect)
-			mainRect.Max.X -= 1 // Add padding right
+			mainRect = insetRight(mainRect, appMargin) // Add padding right
 			uiLayout.sidebar = sideRect
-			pillsHeight := m.pillsAreaHeight()
+			pillsHeight := fitLowerPane(m.pillsAreaHeight(), mainRect.Dy())
 			if pillsHeight > 0 {
-				pillsHeight = min(pillsHeight, mainRect.Dy())
 				var chatRect, pillsRect image.Rectangle
 				layout.Vertical(
 					layout.Len(mainRect.Dy()-pillsHeight),
@@ -4383,12 +4387,12 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 				uiLayout.main = mainRect
 			}
 			// Add bottom margin to main
-			uiLayout.main.Max.Y -= 1
+			uiLayout.main = insetBottom(uiLayout.main, appMargin)
 			uiLayout.editor = editorRect
 		}
 	}
 
-	return uiLayout
+	return uiLayout.withinArea()
 }
 
 // uiLayout defines the positioning of UI elements.
@@ -5548,7 +5552,7 @@ func (m *UI) editorContentWidth() int {
 	if m.state == uiChat && !m.isCompact {
 		width -= 30 // sidebar column
 	}
-	return width
+	return max(width, minEditorContentWidth)
 }
 
 // collapsedInlineEditor returns the active inline editor when it should use
