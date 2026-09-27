@@ -197,6 +197,36 @@ func TestGoogleTranscriberUsesPersonalKey(t *testing.T) {
 	require.Equal(t, "personal", (*queries)["key"])
 }
 
+// The Web Speech route answers 400 "Missing parameter: lang" instead of
+// detecting a language, so every request has to name one.
+func TestGoogleTranscriberAlwaysSendsLanguage(t *testing.T) {
+	t.Parallel()
+
+	for name, settings := range map[string]Settings{
+		"unset":      {},
+		"auto":       {Language: "auto"},
+		"configured": {Language: "ru-RU"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			server, queries := newGoogleStubServer(t, "ok", 0)
+			transcriber := googleAt(settings, server)
+
+			_, err := transcriber.Transcribe(context.Background(), testAudio(t))
+			require.NoError(t, err)
+
+			lang := (*queries)["lang"]
+			require.NotEmpty(t, lang, "the endpoint rejects a request without a lang")
+			if settings.Language == "" || settings.Language == "auto" {
+				require.Equal(t, defaultGoogleLanguage, lang)
+			} else {
+				require.Equal(t, settings.Language, lang)
+			}
+		})
+	}
+}
+
 func TestGoogleTranscriberRejectsHTTPError(t *testing.T) {
 	t.Parallel()
 

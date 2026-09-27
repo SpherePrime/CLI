@@ -3,6 +3,7 @@ package voice
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -167,11 +168,19 @@ func (s *Session) cleanup() error {
 // usable input device.
 func (s *Session) emptyCaptureError() error {
 	tail := s.stderr.String()
+	reason := s.processErr
+	// Stopping the capture cancels the recorder, so a canceled exit says
+	// nothing about the recorder: "context canceled" is Prime's own doing,
+	// and reporting it hides the only hint that matters, which is what the
+	// recorder wrote to stderr before it went away.
+	if errors.Is(reason, context.Canceled) {
+		reason = nil
+	}
 	switch {
-	case s.processErr != nil && tail != "":
-		return fmt.Errorf("%w: %v: %s", ErrCaptureFailed, s.processErr, tail)
-	case s.processErr != nil:
-		return fmt.Errorf("%w: %v", ErrCaptureFailed, s.processErr)
+	case reason != nil && tail != "":
+		return fmt.Errorf("%w: %v: %s", ErrCaptureFailed, reason, tail)
+	case reason != nil:
+		return fmt.Errorf("%w: %v", ErrCaptureFailed, reason)
 	case tail != "":
 		return fmt.Errorf("%w: no audio captured: %s", ErrCaptureFailed, tail)
 	default:

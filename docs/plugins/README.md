@@ -40,10 +40,14 @@ The recording is a plain HTTPS POST, and the text comes back in a second or
 two. A personal Google API key is optional (see `option voice api-key`);
 without one the shared browser key is used and Google may throttle it.
 
+Google's endpoint has no language detection and rejects a request that names
+no language, so set `option voice language` to the language you dictate in;
+unset means `en-US`.
+
 Engine options (`primerc`):
 
 ```bash
-option voice language ru-RU     # BCP-47 tag; default: auto-detect
+option voice language ru-RU     # BCP-47 tag; default: en-US
 option voice engine auto        # auto, google, openai, command
 option voice base-url https://api.openai.com/v1   # OpenAI-compatible endpoint
 option voice api-key $OPENAI_API_KEY
