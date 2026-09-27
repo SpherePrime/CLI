@@ -228,7 +228,7 @@ func TestGoogleTranscriberAlwaysSendsLanguage(t *testing.T) {
 
 			candidates := languageCandidates(settings.Language)
 			if len(candidates) == 0 {
-				candidates = defaultGoogleLanguages
+				candidates = searchOrder("")
 			}
 			require.Contains(t, candidates, (*asked)[0])
 
@@ -246,8 +246,9 @@ func TestGoogleTranscriberAlwaysSendsLanguage(t *testing.T) {
 
 // A language list is a search order, not a coin toss: on Russian speech the
 // Russian model answers Cyrillic while the English one answers Latin gibberish
-// with less than half the confidence. Confidence alone would call that a tie,
-// so the alphabet is what picks the right one.
+// with little confidence. Confidence alone would call that a tie, so the
+// alphabet is what picks the right one, and the search has to reach the second
+// candidate to hear it.
 func TestGoogleTranscriberPicksLanguageByAlphabet(t *testing.T) {
 	t.Parallel()
 
@@ -256,16 +257,17 @@ func TestGoogleTranscriberPicksLanguageByAlphabet(t *testing.T) {
 		"ru-ru": {transcript: "привет мир это проверка", confidence: 0.86},
 		"en-us": {transcript: "previous mirror at the private adjective", confidence: 0.48},
 	}
-	server, _ := newGoogleLangServer(t, answers)
+	server, asked := newGoogleLangServer(t, answers)
 
 	text, err := googleAt(Settings{}, server).Transcribe(context.Background(), testAudio(t))
 	require.NoError(t, err)
 	require.Equal(t, "привет мир это проверка", text)
+	require.Equal(t, searchOrder(""), *asked, "the wrong model is asked first and has to be overruled")
 }
 
-// The other direction: the Russian model on English speech answers Latin at
-// 0.93, nearly the 0.97 of the right model, so only the alphabet tells them
-// apart and the search has to reach the second candidate.
+// The other direction, and the harder one: a Russian interface asks Russian
+// first, the Russian model on English speech answers Latin at 0.93 against the
+// 0.97 of the right model, and only the alphabet tells them apart.
 func TestGoogleTranscriberPicksLanguageByAlphabetOnEnglishAudio(t *testing.T) {
 	t.Parallel()
 
@@ -275,10 +277,11 @@ func TestGoogleTranscriberPicksLanguageByAlphabetOnEnglishAudio(t *testing.T) {
 	}
 	server, asked := newGoogleLangServer(t, answers)
 
-	text, err := googleAt(Settings{}, server).Transcribe(context.Background(), testAudio(t))
+	text, err := googleAt(Settings{InterfaceLanguage: "ru"}, server).
+		Transcribe(context.Background(), testAudio(t))
 	require.NoError(t, err)
 	require.Equal(t, "hello world this is a dictation test", text)
-	require.Equal(t, defaultGoogleLanguages, *asked, "the search must reach the second language")
+	require.Equal(t, searchOrder("ru"), *asked, "the search must reach the second language")
 }
 
 // A transcript already written in the language's own alphabet and confident
@@ -291,10 +294,30 @@ func TestGoogleTranscriberStopsAtConfidentMatch(t *testing.T) {
 		"en-us": {transcript: "hello world", confidence: 0.97},
 	})
 
-	text, err := googleAt(Settings{}, server).Transcribe(context.Background(), testAudio(t))
+	text, err := googleAt(Settings{InterfaceLanguage: "ru"}, server).
+		Transcribe(context.Background(), testAudio(t))
 	require.NoError(t, err)
 	require.Equal(t, "привет мир", text)
 	require.Equal(t, []string{"ru-ru"}, *asked, "a confident own-alphabet answer needs no second request")
+}
+
+// A wrong model answering its own alphabet is the case the confidence bar has to
+// survive, so a barely-confident guess does not end the search either.
+func TestGoogleTranscriberIgnoresUnconfidentGuess(t *testing.T) {
+	t.Parallel()
+
+	answers := map[string]googleAnswer{
+		"ru-ru": {transcript: "привет мир", confidence: 0.86},
+		// Written in the alphabet it was asked for, and as confident as a wrong
+		// model gets on foreign speech, so only the bar holds it back.
+		"en-us": {transcript: "previous mirror at the private adjective", confidence: 0.48},
+	}
+	server, asked := newGoogleLangServer(t, answers)
+
+	text, err := googleAt(Settings{}, server).Transcribe(context.Background(), testAudio(t))
+	require.NoError(t, err)
+	require.Equal(t, "привет мир", text)
+	require.Len(t, *asked, 2, "a barely-confident guess must not end the search")
 }
 
 // The configured list decides the order, so a user who speaks English first
@@ -343,7 +366,7 @@ func TestGoogleTranscriberSearchOverEmptyAnswers(t *testing.T) {
 	text, err := googleAt(Settings{}, server).Transcribe(context.Background(), testAudio(t))
 	require.NoError(t, err)
 	require.Empty(t, text)
-	require.Equal(t, defaultGoogleLanguages, *asked)
+	require.Equal(t, searchOrder(""), *asked)
 }
 
 // googleAnswer is one language's canned reply from the Web Speech stub.

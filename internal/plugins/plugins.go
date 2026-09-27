@@ -67,8 +67,15 @@ func Enabled(cfg *config.Config, name string) bool {
 // plugin into pipeline settings.
 func SettingsFor(cfg *config.Config, resolver voice.VariableResolver) voice.Settings {
 	var options *config.VoiceOptions
+	var interfaceLanguage string
 	if cfg != nil && cfg.Options != nil {
 		options = cfg.Options.Voice
+		interfaceLanguage = cfg.Options.Language
 	}
-	return voice.SettingsFrom(options, resolver)
+	settings := voice.SettingsFrom(options, resolver)
+	// The interface locale is not a dictation language, but with nothing
+	// configured it is the only signal about the user's language, so it decides
+	// which language the search asks first.
+	settings.InterfaceLanguage = interfaceLanguage
+	return settings
 }

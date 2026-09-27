@@ -1120,7 +1120,7 @@
         },
         "language": {
           "type": "string",
-          "description": "Language of dictation as a BCP-47 tag",
+          "description": "Language of dictation as a BCP-47 tag or a list of tags to try in order; empty or auto means the interface language decides which language is tried first",
           "examples": [
             "ru-RU",
             "en-US"

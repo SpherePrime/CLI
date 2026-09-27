@@ -104,6 +104,59 @@ func TestOnExpectedScript(t *testing.T) {
 	}
 }
 
+// The interface language only decides who is asked first, and the other locale
+// Prime ships follows so a mismatch costs a request instead of a wrong answer.
+func TestSearchOrderFollowsInterfaceLanguage(t *testing.T) {
+	t.Parallel()
+
+	for name, testCase := range map[string]struct {
+		interfaceLanguage string
+		want              []string
+	}{
+		"russian interface": {interfaceLanguage: "ru", want: []string{"ru-ru", "en-us"}},
+		"english interface": {interfaceLanguage: "en", want: []string{"en-us", "ru-ru"}},
+		"upper case":        {interfaceLanguage: "RU", want: []string{"ru-ru", "en-us"}},
+		"padded":            {interfaceLanguage: "  ru  ", want: []string{"ru-ru", "en-us"}},
+		// An interface locale Prime does not ship says nothing about dictation,
+		// so the interface's own default leads.
+		"unshipped locale": {interfaceLanguage: "de", want: []string{"en-us", "ru-ru"}},
+		"unset":            {interfaceLanguage: "", want: []string{"en-us", "ru-ru"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, testCase.want, searchOrder(testCase.interfaceLanguage))
+		})
+	}
+}
+
+// A configured language is a decision, so it replaces the order the interface
+// language would have produced rather than being added to it.
+func TestCandidatesOverruleInterfaceLanguage(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, []string{"de-de"},
+		googleTranscriber{settings: Settings{
+			Language:          "de-DE",
+			InterfaceLanguage: "ru",
+		}}.candidates())
+
+	require.Equal(t, []string{"de-de", "en-us"},
+		googleTranscriber{settings: Settings{
+			Language:          "de-DE,en-US",
+			InterfaceLanguage: "ru",
+		}}.candidates())
+
+	// "auto" and an unset option both mean the same thing: pick from the
+	// answers, which is when the interface language has a say.
+	for _, configured := range []string{"", "auto"} {
+		require.Equal(t, []string{"ru-ru", "en-us"},
+			googleTranscriber{settings: Settings{
+				Language:          configured,
+				InterfaceLanguage: "ru",
+			}}.candidates())
+	}
+}
+
 // A wrong model on this endpoint is often the more confident of the two, so the
 // alphabet leads and confidence only breaks the tie.
 func TestBetterPrefersAlphabetOverConfidence(t *testing.T) {

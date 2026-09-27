@@ -367,7 +367,9 @@ type VoiceOptions struct {
 	Model string `json:"model,omitempty" jsonschema:"description=Hosted transcription model name,example=whisper-1"`
 	// Language is a BCP-47 tag like ru-RU or en-US, or a comma-separated list
 	// to choose from. Empty or "auto" lets the engine detect the language.
-	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as a BCP-47 tag, or a comma-separated list to choose from in order; empty means detect,example=ru-RU,example=en-US,example=ru-RU,en-US"`
+	// The jsonschema description holds no comma: the reflector reads everything
+	// up to the first one as the description and the rest as examples.
+	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as a BCP-47 tag or a list of tags to try in order; empty or auto means the interface language decides which language is tried first,example=ru-RU,example=en-US"`
 	// BaseURL points at an OpenAI-compatible API root such as
 	// https://api.openai.com/v1.
 	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of an OpenAI-compatible transcription endpoint,example=https://api.openai.com/v1"`
