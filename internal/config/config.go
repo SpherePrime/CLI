@@ -365,9 +365,9 @@ type VoiceOptions struct {
 	Engine string `json:"engine,omitempty" jsonschema:"description=Transcription engine to use,enum=auto,enum=google,enum=openai,enum=command,default=auto"`
 	// Model is a hosted API model name, like "whisper-1" for OpenAI.
 	Model string `json:"model,omitempty" jsonschema:"description=Hosted transcription model name,example=whisper-1"`
-	// Language is a BCP-47 tag like ru-RU or en-US. Empty lets the engine
-	// detect the language.
-	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as a BCP-47 tag, empty means auto-detect,example=ru-RU,example=en-US"`
+	// Language is a BCP-47 tag like ru-RU or en-US, or a comma-separated list
+	// to choose from. Empty or "auto" lets the engine detect the language.
+	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as a BCP-47 tag, or a comma-separated list to choose from in order; empty means detect,example=ru-RU,example=en-US,example=ru-RU,en-US"`
 	// BaseURL points at an OpenAI-compatible API root such as
 	// https://api.openai.com/v1.
 	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of an OpenAI-compatible transcription endpoint,example=https://api.openai.com/v1"`

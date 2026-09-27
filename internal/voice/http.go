@@ -29,7 +29,9 @@ func newOpenAITranscriber(endpoint string, settings Settings) Transcriber {
 		endpoint: endpoint,
 		model:    settings.Model,
 		apiKey:   settings.resolveAPIKey(),
-		language: settings.Language,
+		// A list of languages is not a language code, and this API reads an
+		// absent code as "detect the language", which is what a list asks for.
+		language: soleLanguage(settings.Language),
 	}
 }
 

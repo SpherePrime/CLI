@@ -18,6 +18,7 @@ import (
 //
 //	option voice on
 //	option voice language ru
+//	option voice language ru-RU,en-US
 //	option voice model /models/ggml-small.bin
 //	option voice base-url http://localhost:8000
 //	option voice record-command "sox -t alsa default -t raw -r 16000 -b 16 -c 1 -"

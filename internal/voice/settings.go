@@ -48,12 +48,10 @@ func normalizedEngine(engine string) string {
 	return EngineAuto
 }
 
-// normalizedLanguage trims the language tag and treats "auto" as unset, which
-// keeps "let the engine detect" the single way to ask for detection.
+// normalizedLanguage trims the language setting and treats "auto" as unset,
+// which keeps "let the engine detect" the single way to ask for detection. A
+// comma-separated list keeps its order, because that order is the order an
+// engine which has to pick a language itself searches in.
 func normalizedLanguage(language string) string {
-	candidate := strings.ToLower(strings.TrimSpace(language))
-	if candidate == "auto" {
-		return ""
-	}
-	return candidate
+	return strings.Join(languageCandidates(language), ",")
 }
