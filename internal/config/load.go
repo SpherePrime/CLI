@@ -41,6 +41,9 @@ const defaultCatwalkURL = "https://catwalk.dwerty.local"
 func Load(workingDir, dataDir string, debug bool) (*ConfigStore, error) {
 	// Migrate deprecated disable_notifications before loading config.
 	migrateDisableNotifications()
+	// Hand dictation back its language choice when the configured one is not a
+	// language tag the endpoint can be asked about.
+	migrateVoiceLanguage()
 	// Move any pre-split single config files into the per-section layout.
 	migrateToSectionFiles()
 

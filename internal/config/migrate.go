@@ -11,6 +11,7 @@ import (
 
 	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
 	"github.com/SpherePrime/CLI/vendordeps/tidwall/sjson"
+	"github.com/SpherePrime/CLI/vendordeps/x/text/language"
 )
 
 // schemaKey is the editor-facing pointer kept in the catch-all file so every
@@ -53,6 +54,136 @@ func migrateToSectionFiles() {
 			continue
 		}
 		migrateLegacyToSections(src.path, src.dest)
+	}
+}
+
+// voiceLanguageAuto is the value that hands the language choice to the engine
+// rather than naming one.
+const voiceLanguageAuto = "auto"
+
+// supersededByDetection are the language codes people reach for that the Web
+// Speech endpoint obeys instead of refusing, while meaning something the user
+// never asked for: it reads "eng" as English and answers in English, so a value
+// like this pins dictation to a language the user may not even speak, which
+// from the outside looks exactly like a microphone that stopped working.
+//
+// Only the two languages the default search already covers are listed. A legacy
+// spelling of a language the search would not find, such as "ara" for Arabic,
+// is left alone: dropping it would replace a right answer with two wrong ones.
+var supersededByDetection = map[string]bool{
+	"eng": true,
+	"rus": true,
+}
+
+// usableLanguageTag reports whether a configured dictation language can be read
+// as a language tag, and can be trusted to name the language the user speaks.
+//
+// x/text is not enough on its own here: it reads "eng" as en and "en_US" as
+// en-US without complaint, and accepting either would pin dictation to English
+// for a user who wrote something else entirely. The shape of the tag is what
+// tells a tag apart from a name or from a separator the endpoint never sees, so
+// the primary subtag has to be letters, with x/text left to judge whether the
+// code is a real one.
+func usableLanguageTag(tag string) bool {
+	tag = strings.ToLower(strings.TrimSpace(tag))
+	if tag == "" || tag == voiceLanguageAuto {
+		return true // Unset and "auto" both mean "let the engine choose".
+	}
+	primary, _, _ := strings.Cut(tag, "-")
+	if len(primary) < 2 || len(primary) > 3 || !isAlphaSubtag(primary) {
+		return false
+	}
+	if supersededByDetection[primary] {
+		return false
+	}
+	_, err := language.Parse(tag)
+	return err == nil
+}
+
+// isAlphaSubtag reports whether subtag is two or three ASCII letters.
+func isAlphaSubtag(subtag string) bool {
+	for _, r := range subtag {
+		if r < 'a' || r > 'z' {
+			return false
+		}
+	}
+	return true
+}
+
+// migrateVoiceLanguage rewrites options.voice.language to "auto" when it holds
+// a value no language tag can express, so dictation picks a language instead of
+// being silently pinned to the wrong one.
+//
+// It runs before every load and is safe to repeat. The value it writes is one
+// usableLanguageTag accepts, so a second run leaves it alone, and a value the
+// user did mean is never touched: a deliberate language is not Prime's to undo,
+// which is why the rule is about unreadable values and not about every
+// configured language.
+func migrateVoiceLanguage() {
+	const key = "options.voice.language"
+	section := sectionPath(GlobalConfigDir(), key)
+
+	// The setting can sit in the catch-all file or, on an already split
+	// config, in options.json, so every global file has to be looked at.
+	var shadowing []string
+	var offending string
+	inSection := false
+	seen := make(map[string]bool)
+	for _, dir := range []string{GlobalConfigDir(), GlobalDataDir()} {
+		for _, path := range configFilesForDir(dir) {
+			if seen[path] {
+				continue
+			}
+			seen[path] = true
+
+			data, err := os.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			value := gjson.Get(string(data), key)
+			if !value.Exists() || usableLanguageTag(value.String()) {
+				continue
+			}
+			if offending == "" {
+				offending = value.String()
+			}
+			if path == section {
+				inSection = true
+				continue // rewritten in place below
+			}
+			shadowing = append(shadowing, path)
+		}
+	}
+	if !inSection && len(shadowing) == 0 {
+		return
+	}
+
+	slog.Info("Dictation language is not a language tag, falling back to detection",
+		"value", offending, "replacement", voiceLanguageAuto)
+
+	// The section file is what Prime writes, so the replacement goes there. A
+	// copy left in the catch-all file would shadow it, exactly the way a stale
+	// key shadows the section it belongs to, so those are cleared.
+	if data, err := os.ReadFile(section); err == nil {
+		updated, err := sjson.Set(string(data), key, voiceLanguageAuto)
+		if err == nil && updated != string(data) {
+			if err := atomicWriteFile(section, []byte(updated), 0o600); err != nil {
+				slog.Warn("Failed to migrate dictation language", "error", err)
+			}
+		}
+	}
+	for _, path := range shadowing {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		updated, err := sjson.Delete(string(data), key)
+		if err != nil || updated == string(data) {
+			continue
+		}
+		if err := atomicWriteFile(path, []byte(updated), 0o600); err != nil {
+			slog.Warn("Failed to write migrated config", "path", path, "error", err)
+		}
 	}
 }
 
