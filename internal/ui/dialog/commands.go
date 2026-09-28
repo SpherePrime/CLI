@@ -6,6 +6,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/commands"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/plugins"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
@@ -552,6 +553,12 @@ func (c *Commands) defaultCommands() []*CommandItem {
 
 	// Add a command for selecting the UI language via picker dialog.
 	commands = append(commands, NewCommandItem(c.com.Styles, "select_language", c.com.L("cmd.language"), "", ActionOpenDialog{DialogID: LanguageID}))
+
+	// Offer the dictation language picker only while the voice plugin is on:
+	// without it there is no microphone pipeline to configure.
+	if cfg != nil && cfg.IsPluginEnabled(plugins.VoiceName) {
+		commands = append(commands, NewCommandItem(c.com.Styles, "select_voice_language", c.com.L("cmd.voice_language"), "", ActionOpenDialog{DialogID: VoiceLanguageID}).WithAliases("voice", "dictation", "speech", "stt"))
+	}
 
 	smartToolsLabel := c.com.L("cmd.enable_smart_tools")
 	if cfg != nil && cfg.Options != nil && cfg.Options.SmartTools {

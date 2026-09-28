@@ -2191,6 +2191,20 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		}
 		m.dialog.CloseDialog(dialog.LanguageID)
 		m.applyLanguage()
+	case dialog.ActionSelectVoiceLanguage:
+		cfg := m.com.Config()
+		if cfg != nil && cfg.Options != nil {
+			if cfg.Options.Voice == nil {
+				cfg.Options.Voice = &config.VoiceOptions{}
+			}
+			cfg.Options.Voice.Language = msg.Tag
+			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.voice.language", msg.Tag); err != nil {
+				cmds = append(cmds, util.ReportError(err))
+			} else {
+				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(m.com.LSprintf("info.voice_language_set", msg.Label))))
+			}
+		}
+		m.dialog.CloseDialog(dialog.VoiceLanguageID)
 	case dialog.ActionNewSession:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
@@ -5261,6 +5275,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openLanguageDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.VoiceLanguageID:
+		if cmd := m.openVoiceLanguageDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.PluginsID:
 		if cmd := m.openPluginsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -5450,6 +5468,17 @@ func (m *UI) openLanguageDialog() tea.Cmd {
 
 	languageDialog := dialog.NewLanguage(m.com)
 	m.dialog.OpenDialog(languageDialog)
+	return nil
+}
+
+// openVoiceLanguageDialog opens the dictation language picker dialog.
+func (m *UI) openVoiceLanguageDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.VoiceLanguageID) {
+		m.dialog.BringToFront(dialog.VoiceLanguageID)
+		return nil
+	}
+
+	m.dialog.OpenDialog(dialog.NewVoiceLanguage(m.com))
 	return nil
 }
 

@@ -59,6 +59,10 @@ func enStrings() map[string]string {
 		"cmd.language":                 "Language",
 		"cmd.type_to_filter":           "Type to filter",
 		"lang.title":                   "Language",
+		"cmd.voice_language":           "Dictation Language",
+		"voice.language_auto":          "Auto (by interface language)",
+		"voice.language_ru_en":         "Russian → English (ru-RU,en-US)",
+		"voice.language_en_ru":         "English → Russian (en-US,ru-RU)",
 
 		// Chat input placeholders.
 		"input.ready": "Ready for instructions",
@@ -264,6 +268,7 @@ func enStrings() map[string]string {
 		"info.reconnect_failed":        "Can't restore the connection to the Prime server. Restart Prime to recover.",
 		"info.reconnected":             "Reconnected to the Prime server.",
 		"info.language_set":            "Language set to %s",
+		"info.voice_language_set":      "Dictation language set to %s",
 		"info.enabled":                 "enabled",
 		"info.disabled":                "disabled",
 		"info.systems_restarted":       "SKILLs, MCPs and LSPs restarted",
@@ -321,6 +326,10 @@ func ruStrings() map[string]string {
 		"cmd.language":                 "Язык",
 		"cmd.type_to_filter":           "Введите для поиска",
 		"lang.title":                   "Язык",
+		"cmd.voice_language":           "Язык диктовки",
+		"voice.language_auto":          "Авто (по языку интерфейса)",
+		"voice.language_ru_en":         "Русский → English (ru-RU,en-US)",
+		"voice.language_en_ru":         "English → Русский (en-US,ru-RU)",
 
 		// Chat input placeholders.
 		"input.ready": "Готов к командам",
@@ -505,6 +514,7 @@ func ruStrings() map[string]string {
 		"info.reconnect_failed":        "Не удалось восстановить соединение с сервером Prime. Перезапусти Prime.",
 		"info.reconnected":             "Соединение с сервером Prime восстановлено.",
 		"info.language_set":            "Язык: %s",
+		"info.voice_language_set":      "Язык диктовки: %s",
 		"info.enabled":                 "включено",
 		"info.disabled":                "выключено",
 		"info.systems_restarted":       "SKILLs, MCPs и LSPs перезапущены",
