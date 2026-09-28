@@ -990,6 +990,11 @@
           "description": "Enable terminal mouse capture for selection, clicks, and scrolling in the TUI. Disable to let the terminal emulator or tmux handle text selection and copy/paste",
           "default": true
         },
+        "shimmer": {
+          "type": "boolean",
+          "description": "Animate the iridescent shimmer on the wordmark, working indicator, and queue triangles. Disable for completely static colors",
+          "default": true
+        },
         "exit_banner": {
           "type": "string",
           "enum": [

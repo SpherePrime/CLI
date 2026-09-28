@@ -24,11 +24,7 @@ func ForegroundGrad(base lipgloss.Style, input string, bold bool, color1, color2
 		}
 		return []string{style.Render(input)}
 	}
-	var clusters []string
-	gr := uniseg.NewGraphemes(input)
-	for gr.Next() {
-		clusters = append(clusters, string(gr.Runes()))
-	}
+	clusters := Graphemes(input)
 
 	ramp := lipgloss.Blend1D(len(clusters), color1, color2)
 	for i, c := range ramp {
@@ -65,6 +61,53 @@ func ApplyBoldForegroundGrad(base lipgloss.Style, input string, color1, color2 c
 	clusters := ForegroundGrad(base, input, true, color1, color2)
 	for _, c := range clusters {
 		fmt.Fprint(&o, c)
+	}
+	return o.String()
+}
+
+// Graphemes splits input into grapheme clusters, one entry per rendered cell.
+func Graphemes(input string) []string {
+	if input == "" {
+		return nil
+	}
+	clusters := make([]string, 0, len(input))
+	gr := uniseg.NewGraphemes(input)
+	for gr.Next() {
+		clusters = append(clusters, gr.Str())
+	}
+	return clusters
+}
+
+// ForegroundCycle returns one rendered string per grapheme cluster of input,
+// each colored from a closed ramp starting at rampIndex and advancing step per
+// cell. Callers that need to trim or reorder cells (a gradient of icons that
+// may be truncated) use this; ApplyForegroundCycle joins it into one string.
+func ForegroundCycle(base lipgloss.Style, input string, ramp []color.Color, rampIndex, step int, bold bool) []string {
+	clusters := Graphemes(input)
+	if len(ramp) == 0 {
+		return clusters
+	}
+	for i, cluster := range clusters {
+		style := base.Foreground(ShimmerColor(ramp, rampIndex+i*step))
+		if bold {
+			style.Bold(true)
+		}
+		clusters[i] = style.Render(cluster)
+	}
+	return clusters
+}
+
+// ApplyForegroundCycle renders a string whose cells walk a closed color ramp,
+// starting at startIndex and advancing step per cell. Because the ramp loops,
+// moving startIndex makes the colors travel across the text instead of
+// repainting it in place.
+func ApplyForegroundCycle(base lipgloss.Style, input string, ramp []color.Color, startIndex, step int, bold bool) string {
+	if input == "" || len(ramp) == 0 {
+		return input
+	}
+	var o strings.Builder
+	for _, cluster := range ForegroundCycle(base, input, ramp, startIndex, step, bold) {
+		fmt.Fprint(&o, cluster)
 	}
 	return o.String()
 }

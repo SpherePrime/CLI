@@ -249,6 +249,7 @@ func NewAssistantMessageItem(sty *styles.Styles, message *message.Message) Messa
 		Size:        15,
 		GradColorA:  sty.WorkingGradFromColor,
 		GradColorB:  sty.WorkingGradToColor,
+		GradStops:   sty.Iridescence,
 		LabelColor:  sty.WorkingLabelColor,
 		CycleColors: true,
 		Suffix: func() string {

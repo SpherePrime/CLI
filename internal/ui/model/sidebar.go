@@ -10,7 +10,6 @@ import (
 	mcp "github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
-	"github.com/SpherePrime/CLI/internal/ui/logo"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/layout"
 )
@@ -79,11 +78,10 @@ func (m *UI) updateSidebarScrollState() {
 
 	title := t.Sidebar.SessionTitle.Width(contentWidth).MaxHeight(2).Render(m.session.Title)
 	cwd := common.PrettyPath(t, m.com.Workspace.WorkingDir(), contentWidth)
-	sidebarLogo := m.sidebarLogo
+	phase := m.shimmerStep()
+	sidebarLogo := m.compactSidebarLogo(phase)
 	if height < logoHeightBreakpoint {
-		sidebarLogo = lipgloss.JoinVertical(lipgloss.Left, logo.SmallRender(m.com.Styles, contentWidth, logo.Opts{
-			Hyper: m.com.IsHyper(),
-		}), "")
+		sidebarLogo = lipgloss.JoinVertical(lipgloss.Left, m.smallSidebarLogo(contentWidth, phase), "")
 	}
 
 	var logoRect, contentRect image.Rectangle

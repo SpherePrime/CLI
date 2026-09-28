@@ -206,6 +206,7 @@ func newBaseToolMessageItem(
 		Size:        15,
 		GradColorA:  sty.WorkingGradFromColor,
 		GradColorB:  sty.WorkingGradToColor,
+		GradStops:   sty.Iridescence,
 		LabelColor:  sty.WorkingLabelColor,
 		CycleColors: true,
 	})

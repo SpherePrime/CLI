@@ -339,8 +339,21 @@ type UI struct {
 	// skills
 	skillStates []*skills.SkillState
 
-	// sidebarLogo keeps a cached version of the sidebar sidebarLogo.
-	sidebarLogo string
+	// sidebarLogoWidth is the sidebar width the cached logo frames are built
+	// for; sidebarLogoFrames holds the compact logo per shimmer step.
+	sidebarLogoWidth  int
+	sidebarLogoFrames logo.Frames
+
+	// Shimmer state: the clock that walks the iridescent ramp across the
+	// wordmark, and the frame it is currently at. shimmerEnabled comes from
+	// the tui.shimmer option; stylesGen drops cached logo frames whenever the
+	// theme is rebuilt.
+	shimmerEnabled bool
+	shimmerFrame   int
+	shimmerRunning bool
+	shimmerArmedAt time.Time
+	shimmerGen     uint64
+	stylesGen      uint64
 
 	// Sidebar scroll state for virtual scrolling.
 	sidebarOffset           int  // current scroll offset in lines
@@ -566,6 +579,8 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	ui.isTransparent = opts.TUI.IsTransparent()
 	// enable mouse support (default on)
 	ui.mouseEnabled = opts.TUI.Mouse == nil || *opts.TUI.Mouse
+	// walk the iridescent ramp across the wordmark (default on)
+	ui.shimmerEnabled = opts.TUI.IsShimmer()
 
 	return ui
 }
@@ -612,6 +627,10 @@ func (m *UI) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 	cmds = append(cmds, m.checkPendingMCPAuth())
+	// Put the wordmark in motion before the first message arrives.
+	if cmd := m.ensureShimmerClock(); cmd != nil {
+		cmds = append(cmds, cmd)
+	}
 	return tea.Batch(cmds...)
 }
 
@@ -1361,6 +1380,10 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd := m.handleAnimTick(msg); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case shimmerTickMsg:
+		if cmd := m.handleShimmerTick(msg); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case scrollbarHideMsg:
 		if m.state == uiChat {
 			m.chat.HideScrollbar(msg.seq)
@@ -1592,6 +1615,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd := m.chat.EnsureAnimating(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	}
+	if cmd := m.ensureShimmerClock(); cmd != nil {
+		cmds = append(cmds, cmd)
 	}
 	if cmd := m.endFrameUpdate(); cmd != nil {
 		cmds = append(cmds, cmd)
@@ -3460,6 +3486,7 @@ func (m *UI) drawHeader(scr uv.Screen, area uv.Rectangle) {
 		area.Dx(),
 		m.lspErrorCount(),
 		m.hyperCredits,
+		m.shimmerStep(),
 	)
 }
 
@@ -4894,9 +4921,10 @@ func (m *UI) renderEditorView(width int) string {
 	}, "\n")
 }
 
-// cacheSidebarLogo renders and caches the sidebar logo at the specified width.
+// cacheSidebarLogo records the width the sidebar logo frames are built for. A
+// new width drops the cached frames on the next render.
 func (m *UI) cacheSidebarLogo(width int) {
-	m.sidebarLogo = renderLogo(m.com.Styles, true, m.com.IsHyper(), width)
+	m.sidebarLogoWidth = width
 }
 
 // applyThemeForProvider swaps the active theme to the one associated with
@@ -4927,6 +4955,7 @@ func (m *UI) applyTheme(s styles.Styles) {
 // that copies or pre-renders style-dependent values at construction time.
 func (m *UI) refreshStyles() {
 	t := m.com.Styles
+	m.stylesGen++
 	m.header.refresh()
 	if m.layout.sidebar.Dx() > 0 {
 		m.cacheSidebarLogo(m.layout.sidebar.Dx())
@@ -6187,14 +6216,46 @@ func (m *UI) disableDockerMCP() tea.Msg {
 }
 
 // renderLogo renders the Prime logo with the given styles and dimensions.
-func renderLogo(t *styles.Styles, compact, hyper bool, width int) string {
+// phase is the shimmer step the wordmark walks through: the spectrum is
+// sampled per cell from the theme's ramp, so consecutive phases make the colors
+// travel across the logo instead of sitting still.
+func renderLogo(t *styles.Styles, compact, hyper bool, width, phase int) string {
 	return logo.Render(t.Logo.GradCanvas, version.Version, compact, logo.Opts{
 		FieldColor:   t.Logo.FieldColor,
 		TitleColorA:  t.Logo.TitleColorA,
 		TitleColorB:  t.Logo.TitleColorB,
 		LabelColor:   t.Logo.LabelColor,
 		VersionColor: t.Logo.VersionColor,
+		Ramp:         t.IridescentRamp,
+		FieldRamp:    t.IridescentRampMuted,
+		Phase:        phase,
 		Width:        width,
 		Hyper:        hyper,
+	})
+}
+
+// compactSidebarLogo returns the narrow sidebar logo at a shimmer step,
+// rendering each step once and reusing it as the clock advances.
+func (m *UI) compactSidebarLogo(phase int) string {
+	key := fmt.Sprintf("%d|%d|%t", m.stylesGen, m.sidebarLogoWidth, m.com.IsHyper())
+	return m.sidebarLogoFrames.Frame(key, phase, func(p int) string {
+		return renderLogo(m.com.Styles, true, m.com.IsHyper(), m.sidebarLogoWidth, p)
+	})
+}
+
+// smallSidebarLogo returns the one-line wordmark used when the sidebar is too
+// short for the title art.
+func (m *UI) smallSidebarLogo(width, phase int) string {
+	t := m.com.Styles
+	return logo.SmallRender(t, width, logo.Opts{
+		FieldColor:   t.Logo.FieldColor,
+		TitleColorA:  t.Logo.TitleColorA,
+		TitleColorB:  t.Logo.TitleColorB,
+		LabelColor:   t.Logo.LabelColor,
+		VersionColor: t.Logo.VersionColor,
+		Ramp:         t.IridescentRamp,
+		FieldRamp:    t.IridescentRampMuted,
+		Phase:        phase,
+		Hyper:        m.com.IsHyper(),
 	})
 }

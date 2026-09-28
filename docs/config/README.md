@@ -564,6 +564,9 @@ Available Keys:
                                 selection, and scrolling in the TUI (default
                                 true); disable to let the terminal emulator
                                 or tmux handle text selection and copy/paste
+  shimmer bool                  animate the iridescent wordmark, working
+                                indicator, and queue triangles (default true);
+                                disable for completely static colors
   scrollbar string              control chat scrollbar visibility: default,
                                 always, or never
   exit-banner default|compact|none
@@ -579,6 +582,7 @@ option ui compact true
 option ui diff unified
 option ui transparent true
 option ui mouse false
+option ui shimmer false
 option ui scrollbar always
 option ui exit-banner compact
 option ui completions-max-depth 4

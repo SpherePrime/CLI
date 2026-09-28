@@ -44,14 +44,20 @@ func hasInProgressTodo(todos []session.Todo) bool {
 	return false
 }
 
-// queuePill renders the queue count pill with gradient triangles. Pills always
-// render with a border; focus within the expanded panel is conveyed by the list
-// shown below the pills, not by hiding a pill's border.
-func queuePill(queue int, t *styles.Styles) string {
+// queuePill renders the queue count pill with shimmering gradient triangles.
+// Pills always render with a border; focus within the expanded panel is
+// conveyed by the list shown below the pills, not by hiding a pill's border.
+func queuePill(queue int, t *styles.Styles, phase int) string {
 	if queue <= 0 {
 		return ""
 	}
-	triangles := styles.ForegroundGrad(t.Pills.QueueIconBase, "▶▶▶▶▶▶▶▶▶", false, t.Pills.QueueGradFromColor, t.Pills.QueueGradToColor)
+	const queueTriangles = "▶▶▶▶▶▶▶▶▶"
+	var triangles []string
+	if len(t.IridescentRamp) > 0 {
+		triangles = t.ShimmerCells(t.Pills.QueueIconBase, queueTriangles, phase, 0, false)
+	} else {
+		triangles = styles.ForegroundGrad(t.Pills.QueueIconBase, queueTriangles, false, t.Pills.QueueGradFromColor, t.Pills.QueueGradToColor)
+	}
 	if queue < len(triangles) {
 		triangles = triangles[:queue]
 	}
@@ -320,7 +326,7 @@ func (m *UI) renderPills() {
 		pills = append(pills, todoPill(m.session.Todos, inProgressIcon, m.pillsExpanded, t))
 	}
 	if hasQueue {
-		pills = append(pills, queuePill(m.promptQueue, t))
+		pills = append(pills, queuePill(m.promptQueue, t, m.shimmerStep()))
 	}
 
 	var expandedList string

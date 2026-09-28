@@ -104,6 +104,13 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.WorkingLabelColor = o.fgMostSubtle
 	s.WorkingTimerColor = o.fgMostSubtle
 
+	// The spectrum every shimmering surface walks through.
+	s.Iridescence = iridescentStops(o)
+	s.IridescentRamp = CyclicRamp(ShimmerRampSize, s.Iridescence)
+	// Large fields shimmer with the same spectrum held back toward the
+	// background, so hues stay recognisable without turning into a light show.
+	s.IridescentRampMuted = MutedRamp(s.IridescentRamp, brandOr(o.bgBase, colortone.Pepper), 0.45)
+
 	s.TextInput = textinput.Styles{
 		Focused: textinput.StyleState{
 			Text:        base,
