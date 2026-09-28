@@ -1,6 +1,7 @@
 package event
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -25,6 +26,15 @@ const (
 
 var (
 	client posthog.Client
+
+	// delivery turns telemetry off for the session once the ingestion endpoint
+	// proves it cannot be reached at all.
+	delivery = newDeliveryBreaker(func() error {
+		if client == nil {
+			return nil
+		}
+		return client.Close()
+	})
 
 	baseProps = posthog.NewProperties().
 			Set("GOOS", runtime.GOOS).
@@ -54,7 +64,8 @@ func SetContinueLastSession(continueLastSession bool) {
 func Init() {
 	c, err := posthog.NewWithConfig(key, posthog.Config{
 		Endpoint:        endpoint,
-		Logger:          logger{},
+		Logger:          newLogger(),
+		Callback:        delivery,
 		ShutdownTimeout: 500 * time.Millisecond,
 	})
 	if err != nil {
@@ -66,8 +77,14 @@ func Init() {
 
 func GetID() string { return distinctId }
 
+// telemetryOpen reports whether messages may still be handed to the client: it
+// must exist, and the delivery breaker must not have given up on the endpoint.
+func telemetryOpen() bool {
+	return client != nil && delivery.enabled()
+}
+
 func Alias(userID string) {
-	if client == nil || distinctId == fallbackId || distinctId == "" || userID == "" {
+	if !telemetryOpen() || distinctId == fallbackId || distinctId == "" || userID == "" {
 		return
 	}
 	if err := client.Enqueue(posthog.Alias{
@@ -82,7 +99,7 @@ func Alias(userID string) {
 
 // send logs an event to PostHog with the given event name and properties.
 func send(event string, props ...any) {
-	if client == nil {
+	if !telemetryOpen() {
 		return
 	}
 	err := client.Enqueue(posthog.Capture{
@@ -98,7 +115,7 @@ func send(event string, props ...any) {
 
 // Error logs an error event to PostHog with the error type and message.
 func Error(errToLog any, props ...any) {
-	if client == nil || distinctId == "" || errToLog == nil {
+	if !telemetryOpen() || distinctId == "" || errToLog == nil {
 		return
 	}
 
@@ -120,10 +137,10 @@ func Error(errToLog any, props ...any) {
 }
 
 func Flush() {
-	if client == nil {
+	if !telemetryOpen() {
 		return
 	}
-	if err := client.Close(); err != nil {
+	if err := client.Close(); err != nil && !errors.Is(err, posthog.ErrClosed) {
 		slog.Error("Failed to flush PostHog events", "error", err)
 	}
 }
