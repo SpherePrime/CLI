@@ -44,6 +44,19 @@ func swapBinary(exe string, data []byte) error {
 	return nil
 }
 
+// newPowershellCmd assembles a powershell.exe invocation for running a
+// script as a child of prime. It never passes the -WindowStyle switch:
+// PowerShell applies it via ShowWindow(GetConsoleWindow(), SW_HIDE), and a
+// console child inherits the caller's console - so -WindowStyle Hidden
+// literally hides the user's own terminal window, which is what used to
+// collapse the terminal after "prime update". Instead the child is created
+// with CREATE_NO_WINDOW, so it has no console window to style at all.
+func newPowershellCmd(script string) *exec.Cmd {
+	cmd := exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	return cmd
+}
+
 // hasRunningInstances reports whether at least one Prime process other than
 // the current one is running.
 func hasRunningInstances(selfExe string) bool {
@@ -51,7 +64,7 @@ func hasRunningInstances(selfExe string) bool {
 		`(Get-Process -Name "prime" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq '%s' }).Count`,
 		selfExe,
 	)
-	out, err := exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script).Output()
+	out, err := newPowershellCmd(script).Output()
 	if err != nil {
 		// If we can't check, assume instances exist to be safe.
 		return true
@@ -98,14 +111,14 @@ for ($i = 0; $i -lt 7200; $i++) {
   }
 }`
 
-	cmd := exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", replaceScript)
+	// Same no-window discipline as hasRunningInstances; additionally the
+	// helper is fully detached and runs in its own process group so it
+	// survives prime exiting.
+	cmd := newPowershellCmd(replaceScript)
 	cmd.Env = append(os.Environ(),
 		"PRIME_UPDATE_EXE="+exe,
 		"PRIME_UPDATE_NEW="+newBin,
 	)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		HideWindow:    true,
-		CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
-	}
+	cmd.SysProcAttr.CreationFlags |= 0x00000008 | 0x00000200 // DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
 	return cmd.Start()
 }
