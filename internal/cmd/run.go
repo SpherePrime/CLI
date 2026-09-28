@@ -225,6 +225,7 @@ func runNonInteractive(
 			Label:       "Generating",
 			GradColorA:  t.WorkingGradFromColor,
 			GradColorB:  t.WorkingGradToColor,
+			GradStops:   t.Iridescence,
 			CycleColors: true,
 		})
 		spinner.Start()

@@ -333,7 +333,14 @@ type TUIOptions struct {
 	Transparent *bool       `json:"transparent,omitempty" jsonschema:"description=Enable transparent background for the TUI interface,default=false"`
 	Scrollbar   string      `json:"scrollbar,omitempty" jsonschema:"description=Chat scrollbar visibility,enum=default,enum=always,enum=never,default=default"`
 	Mouse       *bool       `json:"mouse,omitempty" jsonschema:"description=Enable terminal mouse capture for selection\\, clicks\\, and scrolling in the TUI. Disable to let the terminal emulator or tmux handle text selection and copy/paste,default=true"`
+	Shimmer     *bool       `json:"shimmer,omitempty" jsonschema:"description=Animate the iridescent shimmer on the wordmark\\, working indicator\\, and queue triangles. Disable for completely static colors,default=true"`
 	ExitBanner  ExitBanner  `json:"exit_banner,omitempty" jsonschema:"description=Exit banner style after quitting Prime,enum=default,enum=compact,enum=none,default=default"`
+}
+
+// IsShimmer reports whether animated iridescent surfaces move. An unset
+// option means enabled, so the shimmering look works out of the box.
+func (t *TUIOptions) IsShimmer() bool {
+	return t == nil || t.Shimmer == nil || *t.Shimmer
 }
 
 // IsTransparent reports whether the TUI draws a transparent background. The

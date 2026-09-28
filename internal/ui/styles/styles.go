@@ -229,6 +229,20 @@ type Styles struct {
 		SmallGradToColor   color.Color    // Small "Prime" wordmark gradient end
 	}
 
+	// Iridescence is the closed color loop that animated surfaces walk
+	// through: the shimmering wordmark, the working indicator, the queue
+	// triangles. It is ordered by hue so one turn reads as a spectrum rather
+	// than a flicker.
+	Iridescence []color.Color
+
+	// IridescentRamp is Iridescence sampled into ShimmerRampSize entries for
+	// per-cell indexing.
+	IridescentRamp []color.Color
+
+	// IridescentRampMuted is the same spectrum held back toward the
+	// background, for the large fields where the full spectrum would shout.
+	IridescentRampMuted []color.Color
+
 	// Working indicator gradient (spinners/shimmers on assistant "thinking",
 	// tool-call pending, CLI generating, startup).
 	WorkingGradFromColor color.Color

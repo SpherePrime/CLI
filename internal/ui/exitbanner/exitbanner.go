@@ -60,6 +60,8 @@ func logoSection(contentWidth int) string {
 		TitleColorB:  t.Logo.TitleColorB,
 		LabelColor:   t.Logo.LabelColor,
 		VersionColor: t.Logo.VersionColor,
+		Ramp:         t.IridescentRamp,
+		FieldRamp:    t.IridescentRampMuted,
 		Hyper:        false,
 	})
 	// Wrap the greeting and the message together: wrapping only the message

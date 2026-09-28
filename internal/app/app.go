@@ -321,6 +321,7 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 			Label:       "Generating",
 			GradColorA:  t.WorkingGradFromColor,
 			GradColorB:  t.WorkingGradToColor,
+			GradStops:   t.Iridescence,
 			CycleColors: true,
 		})
 		spinner.Start()

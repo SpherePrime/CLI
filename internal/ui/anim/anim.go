@@ -81,8 +81,9 @@ var animCacheMap = csync.NewMap[string, *animCache]()
 // settingsHash creates a hash key for the settings to use for caching
 func settingsHash(opts Settings) string {
 	h := xxh3.New()
-	fmt.Fprintf(h, "%d-%s-%v-%v-%v-%t-%v",
-		opts.Size, opts.Label, opts.LabelColor, opts.GradColorA, opts.GradColorB, opts.CycleColors, opts.SuffixColor)
+	fmt.Fprintf(h, "%d-%s-%v-%v-%v-%t-%v-%v",
+		opts.Size, opts.Label, opts.LabelColor, opts.GradColorA, opts.GradColorB,
+		opts.CycleColors, opts.SuffixColor, opts.GradStops)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
@@ -102,6 +103,11 @@ type Settings struct {
 	GradColorA  color.Color
 	GradColorB  color.Color
 	CycleColors bool
+
+	// GradStops turns the two-color gradient into a closed spectrum the
+	// cycling characters walk through, so a busy spinner shimmers through
+	// every hue instead of sitting in one. Requires CycleColors.
+	GradStops []color.Color
 
 	// NoScramble disables the scrambled rune animation. The cycling
 	// character region is removed entirely so only the label and its
@@ -218,11 +224,31 @@ func New(opts Settings) *Anim {
 		// Pre-generate gradient.
 		var ramp []color.Color
 		numFrames := prerenderedFrames
+		cyclic := false
 		if opts.CycleColors {
-			ramp = makeGradientRamp(a.width*3, opts.GradColorA, opts.GradColorB, opts.GradColorA, opts.GradColorB)
-			numFrames = a.width * 2
+			// One full turn of the spectrum spans three spinner widths, so the
+			// glyphs in view are neighbours on the wheel rather than a rainbow.
+			numFrames = a.width * 3
+			if len(opts.GradStops) > 2 {
+				looped := make([]color.Color, 0, len(opts.GradStops)+1)
+				looped = append(looped, opts.GradStops...)
+				looped = append(looped, opts.GradStops[0])
+				ramp = makeGradientRamp(numFrames, looped...)
+			} else {
+				ramp = makeGradientRamp(numFrames, opts.GradColorA, opts.GradColorB, opts.GradColorA, opts.GradColorB)
+			}
+			cyclic = len(ramp) == numFrames
 		} else {
 			ramp = makeGradientRamp(a.width, opts.GradColorA, opts.GradColorB)
+		}
+		rampAt := func(i int) color.Color {
+			if cyclic {
+				return ramp[i%len(ramp)]
+			}
+			if i < 0 || i >= len(ramp) {
+				return nil
+			}
+			return ramp[i]
 		}
 
 		// Pre-render initial characters.
@@ -231,13 +257,12 @@ func New(opts Settings) *Anim {
 		for i := range a.initialFrames {
 			a.initialFrames[i] = make([]string, a.width+labelGapWidth+a.labelWidth)
 			for j := range a.initialFrames[i] {
-				if j+offset >= len(ramp) {
-					continue // skip if we run out of colors
-				}
-
 				var c color.Color
 				if j <= a.cyclingCharWidth {
-					c = ramp[j+offset]
+					if !cyclic && j+offset >= len(ramp) {
+						continue // skip if we run out of colors
+					}
+					c = rampAt(j + offset)
 				} else {
 					c = opts.LabelColor
 				}
@@ -265,7 +290,7 @@ func New(opts Settings) *Anim {
 		for i := range a.cyclingFrames {
 			a.cyclingFrames[i] = make([]string, a.width)
 			for j := range a.cyclingFrames[i] {
-				if j+offset >= len(ramp) {
+				if !cyclic && j+offset >= len(ramp) {
 					continue // skip if we run out of colors
 				}
 
@@ -273,7 +298,7 @@ func New(opts Settings) *Anim {
 				// in the render loop.
 				r := availableRunes[rng.IntN(len(availableRunes))]
 				a.cyclingFrames[i][j] = lipgloss.NewStyle().
-					Foreground(ramp[j+offset]).
+					Foreground(rampAt(j + offset)).
 					Render(string(r))
 			}
 			if opts.CycleColors {

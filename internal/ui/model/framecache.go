@@ -34,6 +34,10 @@ type frameGCMsg struct{}
 type frameKey struct {
 	width, height int
 	chat          RenderState
+	// shimmer is the wordmark's position in the iridescent ramp. Frames are
+	// only reusable at the step they were rendered at, so the step belongs in
+	// the key rather than in an invalidation on every shimmer tick.
+	shimmer int
 }
 
 type frameEntry struct {
@@ -228,9 +232,10 @@ func (m *UI) frameKeyNow() (frameKey, bool) {
 		return frameKey{}, false
 	}
 	return frameKey{
-		width:  m.width,
-		height: m.height,
-		chat:   m.chat.RenderState(),
+		width:   m.width,
+		height:  m.height,
+		chat:    m.chat.RenderState(),
+		shimmer: m.shimmerStep(),
 	}, true
 }
 

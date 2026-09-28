@@ -8,6 +8,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/fsext"
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/logo"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
@@ -23,13 +24,14 @@ const (
 )
 
 type header struct {
-	// cached logo and compact logo
-	logo        string
-	compactLogo string
+	// frames caches the wide logo per shimmer step; compactFrames caches the
+	// one-line wordmark used when the chat has focus in compact mode. Both are
+	// keyed on gen, which refresh bumps whenever the theme is rebuilt.
+	frames        logo.Frames
+	compactFrames logo.Frames
+	gen           uint64
 
-	com     *common.Common
-	width   int
-	compact bool
+	com *common.Common
 }
 
 // newHeader creates a new header model.
@@ -41,10 +43,14 @@ func newHeader(com *common.Common) *header {
 	return h
 }
 
-// refresh rebuilds cached logo strings using the current styles. Call
-// after the theme changes.
+// refresh marks every cached logo frame stale so the next draw rebuilds them
+// with the current styles. Call after the theme changes.
 func (h *header) refresh() {
-	t := h.com.Styles
+	h.gen++
+}
+
+// wordmark returns the one-line "Prime™ PRIME" row for the compact header.
+func (h *header) wordmark(t *styles.Styles, phase int) string {
 	isHyper := h.com.IsHyper()
 	label := "Prime™"
 	if !isHyper {
@@ -54,16 +60,17 @@ func (h *header) refresh() {
 	if isHyper {
 		name = "HYPERPRIME"
 	}
-	h.compactLogo = t.Header.Label.Render(label) + " " +
-		styles.ApplyBoldForegroundGrad(t.Header.LogoGradCanvas, name, t.Header.LogoGradFromColor, t.Header.LogoGradToColor) + " "
-	// Force drawHeader to re-render the wide logo on the next frame.
-	h.width = 0
-	h.logo = ""
+	painted := styles.ApplyBoldForegroundGrad(t.Header.LogoGradCanvas, name, t.Header.LogoGradFromColor, t.Header.LogoGradToColor)
+	if len(t.IridescentRamp) > 0 {
+		painted = t.ApplyShimmer(t.Header.LogoGradCanvas, name, phase, 0, false, true)
+	}
+	return t.Header.Label.Render(label) + " " + painted + " "
 }
 
 // drawHeader draws the header for the given session. lspErrorCount comes
 // from the UI's memoized LSP state: drawing runs on every frame and must not
 // probe the workspace (a synchronous HTTP round-trip in client/server mode).
+// phase is the shimmer step the wordmark walks through.
 func (h *header) drawHeader(
 	scr uv.Screen,
 	area uv.Rectangle,
@@ -73,17 +80,16 @@ func (h *header) drawHeader(
 	width int,
 	lspErrorCount int,
 	hyperCredits *int,
+	phase int,
 ) {
 	t := h.com.Styles
-	if width != h.width || compact != h.compact {
-		h.logo = renderLogo(h.com.Styles, compact, h.com.IsHyper(), width)
-	}
-
-	h.width = width
-	h.compact = compact
-
+	hyper := h.com.IsHyper()
 	if !compact || session == nil {
-		uv.NewStyledString(h.logo).Draw(scr, area)
+		key := fmt.Sprintf("wide|%d|%d|%t|%t", h.gen, width, compact, hyper)
+		block := h.frames.Frame(key, phase, func(p int) string {
+			return renderLogo(t, compact, hyper, width, p)
+		})
+		uv.NewStyledString(block).Draw(scr, area)
 		return
 	}
 
@@ -91,8 +97,13 @@ func (h *header) drawHeader(
 		return
 	}
 
+	compactKey := fmt.Sprintf("compact|%d|%t", h.gen, hyper)
+	wordmark := h.compactFrames.Frame(compactKey, phase, func(p int) string {
+		return h.wordmark(t, p)
+	})
+
 	var b strings.Builder
-	b.WriteString(h.compactLogo)
+	b.WriteString(wordmark)
 
 	availDetailWidth := width - leftPadding - rightPadding - lipgloss.Width(b.String()) - minHeaderDiags - diagToDetailsSpacing
 	details := renderHeaderDetails(
@@ -112,9 +123,9 @@ func (h *header) drawHeader(
 		diagToDetailsSpacing
 
 	if remainingWidth > 0 {
-		b.WriteString(t.Header.Diagonals.Render(
-			strings.Repeat(headerDiag, max(minHeaderDiags, remainingWidth)),
-		))
+		diagonals := strings.Repeat(headerDiag, max(minHeaderDiags, remainingWidth))
+		startCell := lipgloss.Width(b.String())
+		b.WriteString(h.shimmerDiagonals(t, diagonals, phase, startCell))
 		b.WriteString(" ")
 	}
 
@@ -124,6 +135,13 @@ func (h *header) drawHeader(
 		t.Header.Wrapper.Padding(0, rightPadding, 0, leftPadding).Render(b.String()),
 	)
 	view.Draw(scr, area)
+}
+
+// shimmerDiagonals paints the compact header's diagonal rule with the theme's
+// muted spectrum, continuing where the wordmark left off so the two read as
+// one strip.
+func (h *header) shimmerDiagonals(t *styles.Styles, diagonals string, phase, startCell int) string {
+	return t.ApplyShimmer(t.Header.Diagonals, diagonals, phase, startCell, true, false)
 }
 
 // renderHeaderDetails renders the details section of the header.
