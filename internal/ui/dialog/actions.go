@@ -84,6 +84,14 @@ type (
 	ActionSelectLanguage struct {
 		Locale string
 	}
+	// ActionSelectVoiceLanguage is sent when a dictation language is picked
+	// from the voice language dialog. Tag is the raw options.voice.language
+	// value ("auto", a BCP-47 tag, or a comma-separated list); Label is the
+	// human title shown back to the user.
+	ActionSelectVoiceLanguage struct {
+		Tag   string
+		Label string
+	}
 	ActionToggleTransparentBackground struct{}
 	ActionToggleMouseSupport          struct{}
 	ActionToggleSmartTools            struct{}
