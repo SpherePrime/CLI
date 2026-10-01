@@ -34,6 +34,10 @@ type Plugins struct {
 	list  *list.List
 	items []*PluginItem
 
+	// mouse gives the list full pointer support: click a plugin to
+	// toggle it, wheel to scroll.
+	mouse ListMouse
+
 	spinner  spinner.Model
 	install  string // plugin name being installed, empty when none
 	snapshot plugins.Snapshot
@@ -84,6 +88,9 @@ func NewPlugins(com *common.Common) (*Plugins, tea.Cmd) {
 
 	p.list = list.NewList()
 	p.list.Focus()
+	// A plugin row has a single action and states it in the row, so one
+	// click toggles it rather than needing a second click to confirm.
+	p.mouse.ActivateOnClick()
 
 	p.keyMap.Select = key.NewBinding(
 		key.WithKeys("enter", "ctrl+y"),
@@ -126,6 +133,8 @@ func (p *Plugins) HandleMsg(msg tea.Msg) Action {
 		}
 		p.refreshStates()
 		return ActionCmd{cmd}
+	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return p.mouse.HandleMsg(msg, p.list, p.toggle)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, p.keyMap.Close):
@@ -135,15 +144,7 @@ func (p *Plugins) HandleMsg(msg tea.Msg) Action {
 		case key.Matches(msg, p.keyMap.Next):
 			p.list.SelectNext()
 		case key.Matches(msg, p.keyMap.Select):
-			item, ok := p.list.SelectedItem().(*PluginItem)
-			if !ok {
-				break
-			}
-			if plugins.Running(item.name) != nil {
-				break // one toggle at a time; the install speaks for itself
-			}
-			p.install = item.name
-			return ActionTogglePlugin{Name: item.name}
+			return p.toggle(p.list.Selected())
 		}
 	}
 	return nil
@@ -252,15 +253,35 @@ func (p *Plugins) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	}
 
 	p.list.SetSize(innerWidth, max(0, height-heightOffset))
-	rc.AddPart(t.Dialog.List.Height(p.list.Height()).Render(p.list.Render()))
+	listView := t.Dialog.List.Height(p.list.Height()).Render(p.list.Render())
+	rc.AddPart(listView)
 
 	if p.install != "" {
 		rc.AddPart(p.progressView(tr, innerWidth))
 	}
 
 	rc.Help = renderDialogHelp(t, &p.help, p, innerWidth)
-	DrawCenterCursor(scr, area, rc.Render(), nil)
+	view := rc.Render()
+
+	// Record where the list painted so clicks can be hit-tested.
+	p.mouse.Painted(dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, p.list.Height()))
+
+	DrawCenterCursor(scr, area, view, nil)
 	return nil
+}
+
+// toggle enables or disables the plugin at idx. Shared by the enter key
+// and by a click on a row.
+func (p *Plugins) toggle(idx int) Action {
+	item, ok := p.list.ItemAt(idx).(*PluginItem)
+	if !ok || item == nil {
+		return nil
+	}
+	if plugins.Running(item.name) != nil {
+		return nil // one toggle at a time; the install speaks for itself
+	}
+	p.install = item.name
+	return ActionTogglePlugin{Name: item.name}
 }
 
 // progressView is the "please wait" block: spinner frame, human step, and a

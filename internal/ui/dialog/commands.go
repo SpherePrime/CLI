@@ -1,6 +1,7 @@
 package dialog
 
 import (
+	"image"
 	"os"
 	"strings"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // CommandsID is the identifier for the commands dialog.
@@ -67,7 +69,20 @@ type Commands struct {
 	input textinput.Model
 	list  *list.FilterableList
 
+	// mouse gives the palette full pointer support: click a command to
+	// select it, click it again to run it, drag the scrollbar, wheel to
+	// scroll, click the type tabs to switch lists, and click the filter
+	// field to type into it.
+	mouse ListMouse
+
 	windowWidth int
+
+	// tabRects holds the on-screen rectangle of each command-type tab,
+	// painted by Draw so clicks can switch lists.
+	tabRects map[CommandType]image.Rectangle
+
+	// inputArea is the on-screen rectangle of the filter field.
+	inputArea image.Rectangle
 
 	customCommands []commands.CustomCommand
 	mcpPrompts     []commands.MCPPrompt
@@ -249,8 +264,53 @@ func (c *Commands) HandleMsg(msg tea.Msg) Action {
 			}
 			return ActionCmd{cmd}
 		}
+	case common.CoalescedWheelMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return c.mouse.HandleMsg(msg, c.list, nil)
+	case tea.MouseClickMsg:
+		return c.handleMouseClick(msg)
 	}
 	return nil
+}
+
+// handleMouseClick routes a click to the type tabs, the filter field, or the
+// command list, in that order, and falls back to the shared list handling.
+func (c *Commands) handleMouseClick(msg tea.MouseClickMsg) Action {
+	if msg.Button != tea.MouseLeft {
+		c.mouse.HandleMsg(msg, c.list, nil)
+		return nil
+	}
+
+	point := image.Pt(msg.X, msg.Y)
+
+	// Type tabs sit on the title row, above everything else.
+	for tabType, rect := range c.tabRects {
+		if !point.In(rect) {
+			continue
+		}
+		if tabType != c.selected {
+			c.setCommandItems(tabType)
+			return nil
+		}
+		return nil
+	}
+
+	// Clicking the filter field focuses it and places the text cursor, the
+	// same as clicking a text box in any other program.
+	if !c.inputArea.Empty() && point.In(c.inputArea) {
+		clickInputField(&c.input, point.X-c.inputArea.Min.X)
+		return nil
+	}
+
+	return c.mouse.HandleMsg(msg, c.list, c.activateCommand)
+}
+
+// activateCommand runs the command the user activated by clicking.
+func (c *Commands) activateCommand(idx int) Action {
+	item, ok := c.list.ItemAt(idx).(*CommandItem)
+	if !ok || item == nil {
+		return nil
+	}
+	return item.Action()
 }
 
 func checkDockerMCPAvailabilityCmd() tea.Cmd {
@@ -272,31 +332,53 @@ func (c *Commands) Cursor() *tea.Cursor {
 	return InputCursor(c.com.Styles, c.input.Cursor())
 }
 
-// commandsRadioView generates the command type selector radio buttons.
-func commandsRadioView(sty *styles.Styles, selected CommandType, hasUserCmds bool, hasMCPPrompts bool) string {
-	if !hasUserCmds && !hasMCPPrompts {
-		return ""
+// commandTypeOrder returns the command type tabs to show, in display order.
+// The system list is always present; the user and MCP lists only when they
+// have something in them.
+func commandTypeOrder(hasUserCmds, hasMCPPrompts bool) []CommandType {
+	order := []CommandType{SystemCommands}
+	if hasUserCmds {
+		order = append(order, UserCommands)
 	}
+	if hasMCPPrompts {
+		order = append(order, MCPPrompts)
+	}
+	return order
+}
 
-	selectedFn := func(t CommandType) string {
+// commandsRadioView generates the command type selector radio buttons. It
+// also reports each tab's offset and width within the returned row so the
+// caller can hit-test clicks against them without duplicating the layout.
+func commandsRadioView(sty *styles.Styles, selected CommandType, hasUserCmds, hasMCPPrompts bool) (view string, spans map[CommandType][2]int) {
+	if !hasUserCmds && !hasMCPPrompts {
+		return "", nil
+	}
+	order := commandTypeOrder(hasUserCmds, hasMCPPrompts)
+
+	render := func(t CommandType) string {
 		if t == selected {
 			return sty.Radio.On.Padding(0, 1).Render() + sty.Radio.Label.Render(t.String())
 		}
 		return sty.Radio.Off.Padding(0, 1).Render() + sty.Radio.Label.Render(t.String())
 	}
 
-	parts := []string{
-		selectedFn(SystemCommands),
+	const gap = " "
+	gapWidth := lipgloss.Width(gap)
+	spans = make(map[CommandType][2]int, len(order))
+	parts := make([]string, 0, len(order))
+	x := 0
+	for i, t := range order {
+		part := render(t)
+		w := lipgloss.Width(part)
+		if i > 0 {
+			x += gapWidth
+		}
+		spans[t] = [2]int{x, w}
+		x += w
+		parts = append(parts, part)
 	}
 
-	if hasUserCmds {
-		parts = append(parts, selectedFn(UserCommands))
-	}
-	if hasMCPPrompts {
-		parts = append(parts, selectedFn(MCPPrompts))
-	}
-
-	return strings.Join(parts, " ")
+	return strings.Join(parts, gap), spans
 }
 
 // Draw implements [Dialog].
@@ -326,7 +408,8 @@ func (c *Commands) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	rc := NewRenderContext(t, width)
 	rc.Title = "Commands"
-	rc.TitleInfo = commandsRadioView(t, c.selected, len(c.customCommands) > 0, len(c.mcpPrompts) > 0)
+	radioView, tabSpans := commandsRadioView(t, c.selected, len(c.customCommands) > 0, len(c.mcpPrompts) > 0)
+	rc.TitleInfo = radioView
 	inputView := t.Dialog.InputPrompt.Render(c.input.View())
 	rc.AddPart(inputView)
 	listView := t.Dialog.List.Height(c.list.Height()).Render(c.list.Render())
@@ -340,8 +423,64 @@ func (c *Commands) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	view := rc.Render()
 
 	cur := c.Cursor()
+
+	// Record where the palette painted so clicks can be hit-tested: the
+	// list rows, the type tabs, and the filter field.
+	body := dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, c.list.Height())
+	c.mouse.Painted(body)
+	c.paintTabs(area, view, rc, tabSpans)
+	c.paintInputArea(area, view, rc, inputView)
+
 	DrawCenterCursor(scr, area, view, cur)
 	return cur
+}
+
+// paintInputArea records the on-screen rectangle of the filter field so a
+// click inside it places the text cursor instead of selecting a command.
+func (c *Commands) paintInputArea(area uv.Rectangle, view string, rc *RenderContext, inputView string) {
+	dialogArea := dialogRectCentered(area, view)
+	title := rc.TitleStyle
+	dialogStyle := rc.ViewStyle
+	prompt := c.input.Prompt
+
+	// The input row sits directly below the title block, at the dialog's
+	// content left edge.
+	x := dialogArea.Min.X +
+		dialogStyle.GetMarginLeft() + dialogStyle.GetBorderLeftSize() + dialogStyle.GetPaddingLeft()
+	y := dialogArea.Min.Y +
+		title.GetMarginTop() + title.GetBorderTopSize() + title.GetPaddingTop() +
+		title.GetVerticalFrameSize() -
+		title.GetMarginBottom() - title.GetBorderBottomSize() - title.GetPaddingBottom()
+
+	inputStyle := c.com.Styles.Dialog.InputPrompt
+	x += inputStyle.GetMarginLeft() + inputStyle.GetBorderLeftSize() + inputStyle.GetPaddingLeft() + lipgloss.Width(prompt)
+	y += inputStyle.GetMarginTop() + inputStyle.GetBorderTopSize() + inputStyle.GetPaddingTop()
+
+	width := max(0, c.input.Width())
+	c.inputArea = image.Rect(x, y, x+width, y+max(1, inputStyle.GetVerticalFrameSize()))
+}
+
+// paintTabs records the on-screen rectangle of each command-type tab, so a
+// click switches lists the same way tab does. The tabs ride in the title
+// line's info slot, so their origin is the title text's end.
+func (c *Commands) paintTabs(area uv.Rectangle, view string, rc *RenderContext, spans map[CommandType][2]int) {
+	c.tabRects = nil
+	if len(spans) == 0 {
+		return
+	}
+	dialogArea := dialogRectCentered(area, view)
+	title := rc.TitleStyle
+	originX := dialogArea.Min.X +
+		title.GetMarginLeft() + title.GetBorderLeftSize() + title.GetPaddingLeft() +
+		lipgloss.Width(rc.Title)
+	y := dialogArea.Min.Y +
+		title.GetMarginTop() + title.GetBorderTopSize() + title.GetPaddingTop()
+
+	rects := make(map[CommandType]image.Rectangle, len(spans))
+	for tabType, span := range spans {
+		rects[tabType] = image.Rect(originX+span[0], y, originX+span[0]+span[1], y+1)
+	}
+	c.tabRects = rects
 }
 
 // ShortHelp implements [help.KeyMap].

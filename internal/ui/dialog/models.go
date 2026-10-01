@@ -98,8 +98,9 @@ type Models struct {
 	input textinput.Model
 	help  help.Model
 
-	// scrollbarZone ties the painted list scrollbar to pointer drags.
-	scrollbarZone ScrollbarZone
+	// mouse gives the list full pointer support: click a row to select
+	// it, click it again to switch, drag the scrollbar, wheel to scroll.
+	mouse ListMouse
 }
 
 var _ Dialog = (*Models)(nil)
@@ -213,31 +214,7 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 			}
 			m.list.ScrollToSelected()
 		case key.Matches(msg, m.keyMap.Select, m.keyMap.Edit):
-			selectedItem := m.list.SelectedItem()
-			if selectedItem == nil {
-				break
-			}
-
-			modelItem, ok := selectedItem.(*ModelItem)
-			if !ok {
-				break
-			}
-
-			isEdit := key.Matches(msg, m.keyMap.Edit)
-
-			if m.agentID != "" {
-				return ActionSetAgentModel{
-					AgentID: m.agentID,
-					Model:   modelItem.SelectedModel(),
-				}
-			}
-
-			return ActionSelectModel{
-				Provider:       modelItem.prov,
-				Model:          modelItem.SelectedModel(),
-				ModelType:      modelItem.SelectedModelType(),
-				ReAuthenticate: isEdit,
-			}
+			return m.activateModel(m.list.Selected(), key.Matches(msg, m.keyMap.Edit))
 		case key.Matches(msg, m.keyMap.Tab):
 			if m.isOnboarding {
 				break
@@ -263,16 +240,34 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 			}
 			return ActionCmd{cmd}
 		}
-	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
-		m.scrollbarZone.HandleMsg(msg, m.scrollListTo)
+	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return m.mouse.HandleMsg(msg, m.list, func(idx int) Action { return m.activateModel(idx, false) })
 	}
 	return nil
 }
 
-// scrollListTo scrolls the model list so the scrollbar thumb lines up with the
-// pointer.
-func (m *Models) scrollListTo(offset int) {
-	m.list.ScrollBy(offset - m.list.Offset())
+// activateModel switches to the model at idx, or returns nil when there is
+// nothing to switch to. Shared by the enter key and by a click on a row.
+// isEdit is set when the user asked to re-authenticate rather than to switch.
+func (m *Models) activateModel(idx int, isEdit bool) Action {
+	modelItem, ok := m.list.ItemAt(idx).(*ModelItem)
+	if !ok || modelItem == nil {
+		return nil
+	}
+
+	if m.agentID != "" {
+		return ActionSetAgentModel{
+			AgentID: m.agentID,
+			Model:   modelItem.SelectedModel(),
+		}
+	}
+
+	return ActionSelectModel{
+		Provider:       modelItem.prov,
+		Model:          modelItem.SelectedModel(),
+		ModelType:      modelItem.SelectedModelType(),
+		ReAuthenticate: isEdit,
+	}
 }
 
 // Cursor returns the cursor for the dialog.
@@ -347,12 +342,14 @@ func (m *Models) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		// Onboarding dialogs render without the View frame, so only the body
 		// style insets apply.
 		body := dialogBodyRect(area, dialogRectBottomLeft(area, view), listView, rc.Help, lipgloss.Style{}, t.Dialog.List, innerWidth, listHeight)
-		m.scrollbarZone.Painted(body.Min, scrollable, listHeight, listTotalHeight, listHeight, m.list.Offset())
+		m.mouse.Painted(body)
+		m.mouse.PaintedJoin(body.Min, scrollable, listHeight, listTotalHeight, listHeight, m.list.Offset())
 		DrawOnboardingCursor(scr, area, view, cur)
 	} else {
 		view := rc.Render()
 		body := dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, listHeight)
-		m.scrollbarZone.Painted(body.Min, scrollable, listHeight, listTotalHeight, listHeight, m.list.Offset())
+		m.mouse.Painted(body)
+		m.mouse.PaintedJoin(body.Min, scrollable, listHeight, listTotalHeight, listHeight, m.list.Offset())
 		DrawCenterCursor(scr, area, view, cur)
 	}
 	return cur

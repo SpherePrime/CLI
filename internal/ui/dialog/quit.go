@@ -15,7 +15,11 @@ const QuitID = "quit"
 type Quit struct {
 	com        *common.Common
 	selectedNo bool // true if "No" button is selected
-	keyMap     struct {
+
+	// buttons makes the yes/no row clickable and tracks hover.
+	buttons confirmButtons
+
+	keyMap struct {
 		LeftRight,
 		EnterSpace,
 		Yes,
@@ -33,6 +37,7 @@ func NewQuit(com *common.Common) *Quit {
 	q := &Quit{
 		com:        com,
 		selectedNo: true,
+		buttons:    newConfirmButtons(com.Styles),
 	}
 	q.keyMap.LeftRight = key.NewBinding(
 		key.WithKeys("left", "right"),
@@ -88,6 +93,19 @@ func (q *Quit) HandleMsg(msg tea.Msg) Action {
 		case key.Matches(msg, q.keyMap.No, q.keyMap.Close):
 			return ActionClose{}
 		}
+	case tea.MouseClickMsg:
+		clicked := -1
+		if q.buttons.HandleMsg(msg, &clicked) {
+			// Clicking a button selects it and confirms in one press, the
+			// way clicking a button works everywhere else. A click that
+			// missed the row leaves the current choice alone.
+			if clicked == 0 {
+				return ActionQuit{}
+			}
+			return ActionClose{}
+		}
+	case tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		q.buttons.HandleMsg(msg, new(int))
 	}
 
 	return nil
@@ -106,7 +124,9 @@ func (q *Quit) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		{Text: q.com.L("btn.yep"), Selected: !q.selectedNo, Padding: 3},
 		{Text: q.com.L("btn.nope"), Selected: q.selectedNo, Padding: 3},
 	}
-	buttons := common.ButtonGroup(q.com.Styles, buttonOpts, " ")
+	buttons := q.buttons.View(buttonOpts, " ")
+	// Line 2 of the content block: the question, a blank, then the buttons.
+	const buttonLine = 2
 	content := baseStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Center,
@@ -125,6 +145,11 @@ func (q *Quit) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		frameStyle = frameStyle.Padding(1, 0)
 	}
 	view := frameStyle.Render(content)
+
+	// Record where the buttons landed so a click can name the one it hit.
+	q.buttons.Painted(
+		dialogFrameOriginOf(area, view, frameStyle), content, buttons, buttonLine, buttonOpts, " ")
+
 	DrawCenter(scr, area, view)
 	return nil
 }

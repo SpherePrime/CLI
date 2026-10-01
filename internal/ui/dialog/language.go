@@ -27,6 +27,10 @@ type Language struct {
 	list  *list.FilterableList
 	input textinput.Model
 
+	// mouse gives the list full pointer support: click a row to select
+	// it, click it again to apply, wheel to scroll.
+	mouse ListMouse
+
 	keyMap struct {
 		Select   key.Binding
 		Next     key.Binding
@@ -105,6 +109,8 @@ func (l *Language) ID() string {
 // HandleMsg implements [Dialog].
 func (l *Language) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
+	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return l.mouse.HandleMsg(msg, l.list, l.activate)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, l.keyMap.Close):
@@ -128,15 +134,7 @@ func (l *Language) HandleMsg(msg tea.Msg) Action {
 			l.list.SelectNext()
 			l.list.ScrollToSelected()
 		case key.Matches(msg, l.keyMap.Select):
-			selectedItem := l.list.SelectedItem()
-			if selectedItem == nil {
-				break
-			}
-			langItem, ok := selectedItem.(*LanguageItem)
-			if !ok {
-				break
-			}
-			return ActionSelectLanguage{Locale: langItem.locale}
+			return l.activate(l.list.Selected())
 		default:
 			prevValue := l.input.Value()
 			var cmd tea.Cmd
@@ -191,9 +189,22 @@ func (l *Language) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	view := rc.Render()
 
+	// Record where the list painted so clicks can be hit-tested.
+	l.mouse.Painted(dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, l.list.Height()))
+
 	cur := l.Cursor()
 	DrawCenterCursor(scr, area, view, cur)
 	return cur
+}
+
+// activate applies the language at idx. Shared by the enter key and by a
+// click on a row.
+func (l *Language) activate(idx int) Action {
+	item, ok := l.list.ItemAt(idx).(*LanguageItem)
+	if !ok || item == nil {
+		return nil
+	}
+	return ActionSelectLanguage{Locale: item.locale}
 }
 
 // ShortHelp implements [help.KeyMap].

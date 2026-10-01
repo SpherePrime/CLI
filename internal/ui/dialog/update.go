@@ -19,7 +19,11 @@ type Update struct {
 	selectedLater bool
 	current       string
 	latest        string
-	keyMap        struct {
+
+	// buttons makes the Update/Later row clickable and tracks hover.
+	buttons confirmButtons
+
+	keyMap struct {
 		LeftRight,
 		EnterSpace,
 		Accept,
@@ -38,6 +42,7 @@ func NewUpdate(com *common.Common, current, latest string) *Update {
 		selectedLater: true,
 		current:       current,
 		latest:        latest,
+		buttons:       newConfirmButtons(com.Styles),
 	}
 	u.keyMap.LeftRight = key.NewBinding(
 		key.WithKeys("left", "right"),
@@ -85,6 +90,18 @@ func (u *Update) HandleMsg(msg tea.Msg) Action {
 			}
 			return ActionClose{}
 		}
+	case tea.MouseClickMsg:
+		clicked := -1
+		if u.buttons.HandleMsg(msg, &clicked) {
+			// Clicking "Update" applies it, clicking "Later" closes, and a
+			// click that missed the row keeps the current choice.
+			if clicked == 0 {
+				return ActionApplyUpdate{Latest: u.latest}
+			}
+			return ActionClose{}
+		}
+	case tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		u.buttons.HandleMsg(msg, new(int))
 	}
 	return nil
 }
@@ -101,7 +118,9 @@ func (u *Update) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		{Text: "Update", Selected: !u.selectedLater, Padding: 3},
 		{Text: "Later", Selected: u.selectedLater, Padding: 3},
 	}
-	buttons := common.ButtonGroup(u.com.Styles, buttonOpts, " ")
+	buttons := u.buttons.View(buttonOpts, " ")
+	// Line 2 of the content block: the question, a blank, then the buttons.
+	const buttonLine = 2
 	content := baseStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Center,
@@ -119,6 +138,11 @@ func (u *Update) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		frameStyle = frameStyle.Padding(1, 0)
 	}
 	view := frameStyle.Render(content)
+
+	// Record where the buttons landed so a click can name the one it hit.
+	u.buttons.Painted(
+		dialogFrameOriginOf(area, view, frameStyle), content, buttons, buttonLine, buttonOpts, " ")
+
 	DrawCenter(scr, area, view)
 	return nil
 }

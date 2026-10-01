@@ -45,7 +45,7 @@ func TestBackgroundShell_Kill(t *testing.T) {
 
 	// Start a long-running background shell
 	bgManager := shell.GetBackgroundShellManager()
-	bgShell, err := bgManager.Start(ctx, workingDir, nil, "sleep 100", "")
+	bgShell, err := bgManager.Start(ctx, workingDir, nil, sleepCommand(100), "")
 	require.NoError(t, err)
 
 	// Kill it
@@ -109,7 +109,7 @@ func TestBackgroundShell_EmptyOutput(t *testing.T) {
 
 	// Start a background shell with no output
 	bgManager := shell.GetBackgroundShellManager()
-	bgShell, err := bgManager.Start(ctx, workingDir, nil, "sleep 0.1", "")
+	bgShell, err := bgManager.Start(ctx, workingDir, nil, sleepCommand(0.1), "")
 	require.NoError(t, err)
 	defer bgManager.Kill(bgShell.ID)
 
@@ -210,7 +210,7 @@ func TestBackgroundShell_ConcurrentAccess(t *testing.T) {
 
 	// Start a background shell
 	bgManager := shell.GetBackgroundShellManager()
-	bgShell, err := bgManager.Start(ctx, workingDir, nil, "for i in 1 2 3 4 5; do echo \"line $i\"; sleep 0.05; done", "")
+	bgShell, err := bgManager.Start(ctx, workingDir, nil, "for i in 1 2 3 4 5; do echo \"line $i\"; " + sleepCommand(0.05) + "; done", "")
 	require.NoError(t, err)
 	defer bgManager.Kill(bgShell.ID)
 
@@ -263,7 +263,7 @@ func TestBackgroundShell_List(t *testing.T) {
 	// Start multiple background shells
 	shells := make([]*shell.BackgroundShell, 3)
 	for i := range 3 {
-		bgShell, err := bgManager.Start(ctx, workingDir, nil, "sleep 1", "")
+		bgShell, err := bgManager.Start(ctx, workingDir, nil, sleepCommand(1), "")
 		require.NoError(t, err)
 		shells[i] = bgShell
 	}
@@ -313,7 +313,7 @@ func TestBackgroundShell_AutoBackground(t *testing.T) {
 	t.Run("long command stays in background", func(t *testing.T) {
 		t.Parallel()
 		bgManager := shell.GetBackgroundShellManager()
-		bgShell, err := bgManager.Start(ctx, workingDir, nil, "sleep 20 && echo '20 seconds completed'", "")
+		bgShell, err := bgManager.Start(ctx, workingDir, nil, sleepThenCommand(20, "echo '20 seconds completed'"), "")
 		require.NoError(t, err)
 		defer bgManager.Kill(bgShell.ID)
 

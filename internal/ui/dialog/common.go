@@ -107,6 +107,35 @@ func contentOriginFromBottom(
 	)
 }
 
+// dialogFrameOrigin returns the top-left cell of a dialog's content block:
+// the screen position where the content inside frame begins, given the
+// on-screen rectangle the whole view was drawn into. Dialogs that render one
+// lipgloss view and center it use this to place hit targets for controls
+// painted on a known line of the content.
+func dialogFrameOrigin(dialogArea image.Rectangle, frame lipgloss.Style) image.Point {
+	return image.Pt(
+		dialogArea.Min.X+frame.GetMarginLeft()+frame.GetBorderLeftSize()+frame.GetPaddingLeft(),
+		dialogArea.Min.Y+frame.GetMarginTop()+frame.GetBorderTopSize()+frame.GetPaddingTop(),
+	)
+}
+
+// centeredLineX returns the x offset of a horizontally centered row of
+// width rowWidth inside a content block of width contentWidth, matching how
+// lipgloss.JoinVertical with lipgloss.Center lays the row out.
+func centeredLineX(contentWidth, rowWidth int) int {
+	return max(0, (contentWidth-rowWidth)/2)
+}
+
+// lastPart returns the final rendered part, or "" when there are none. A
+// dialog that appends its list last uses it to recover the list view for
+// geometry that must be measured before Render.
+func lastPart(parts []string) string {
+	if len(parts) == 0 {
+		return ""
+	}
+	return parts[len(parts)-1]
+}
+
 // dialogRectCentered returns the on-screen rectangle of a dialog view drawn
 // with DrawCenter.
 func dialogRectCentered(screen uv.Rectangle, view string) image.Rectangle {
@@ -253,6 +282,29 @@ func shortHelpLine(h *help.Model, bindings []key.Binding, width int) string {
 		b.WriteString(seg)
 	}
 	return b.String()
+}
+
+// clickInputField places the cursor in a single-line input at the column the
+// pointer landed on, so clicking a filter field behaves like clicking a text
+// box. relX is measured from the first cell of the field's own text, i.e.
+// after the prompt. Wide runes are measured with their display width so a
+// click past them lands after, not inside.
+func clickInputField(input *textinput.Model, relX int) {
+	if relX < 0 {
+		relX = 0
+	}
+	value := []rune(input.Value())
+	used := 0
+	pos := len(value)
+	for i, r := range value {
+		w := lipgloss.Width(string(r))
+		if used+w > relX {
+			pos = i
+			break
+		}
+		used += w
+	}
+	input.SetCursor(pos)
 }
 
 // InputCursor adjusts the cursor position for an input field within a dialog.

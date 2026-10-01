@@ -28,8 +28,9 @@ type Agents struct {
 
 	agentIDs []string
 
-	scrollbarZone ScrollbarZone
-	mouseScrolled bool
+	// mouse gives the list full pointer support: click a row to select
+	// it, click it again to open, drag the scrollbar, wheel to scroll.
+	mouse ListMouse
 
 	keyMap struct {
 		Select   key.Binding
@@ -118,9 +119,8 @@ func (m *Agents) setAgentsItems() {
 // HandleMsg implements [Dialog].
 func (m *Agents) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
-	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
-		m.scrollbarZone.HandleMsg(msg, m.scrollListTo)
-		return nil
+	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return m.mouse.HandleMsg(msg, m.list, m.activate)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.Close):
@@ -144,15 +144,7 @@ func (m *Agents) HandleMsg(msg tea.Msg) Action {
 			m.list.SelectNext()
 			m.list.ScrollToSelected()
 		case key.Matches(msg, m.keyMap.Select):
-			selectedItem := m.list.SelectedItem()
-			if selectedItem == nil {
-				break
-			}
-			agentItem, ok := selectedItem.(*AgentsItem)
-			if !ok {
-				break
-			}
-			return ActionOpenAgentModel{AgentID: agentItem.agentID}
+			return m.activate(m.list.Selected())
 		case key.Matches(msg, m.keyMap.Clear):
 			selectedItem := m.list.SelectedItem()
 			if selectedItem == nil {
@@ -189,18 +181,22 @@ func (m *Agents) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	view := rc.Render()
 	body := dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, listHeight)
-	m.scrollbarZone.Painted(body.Min, scrollable, listHeight, listTotalHeight, listHeight, m.list.Offset())
+	m.mouse.Painted(body)
+	m.mouse.PaintedJoin(body.Min, scrollable, listHeight, listTotalHeight, listHeight, m.list.Offset())
 
 	DrawCenterCursor(scr, area, view, nil)
 
 	return nil
 }
 
-// scrollListTo scrolls the agents list so the scrollbar thumb lines up with
-// the pointer.
-func (m *Agents) scrollListTo(offset int) {
-	m.mouseScrolled = true
-	m.list.ScrollBy(offset - m.list.Offset())
+// activate opens the agent at idx. Shared by the enter key and by a
+// click on a row.
+func (m *Agents) activate(idx int) Action {
+	item, ok := m.list.ItemAt(idx).(*AgentsItem)
+	if !ok || item == nil {
+		return nil
+	}
+	return ActionOpenAgentModel{AgentID: item.agentID}
 }
 
 // ShortHelp implements [help.KeyMap].

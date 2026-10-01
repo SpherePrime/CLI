@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os/exec"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -503,7 +502,7 @@ func withLongStdioCheckTimeout(t *testing.T) {
 // and that the re-executed child's output surfaces in the joined error.
 func TestMaybeStdioErr_UnwrapsChannelTransport(t *testing.T) {
 	withLongStdioCheckTimeout(t)
-	cmd := exec.CommandContext(t.Context(), "sh", "-c", "echo 'startup failed: bad config'; exit 3")
+	cmd := newFailingChildCmd(t, "startup failed: bad config", false)
 	inner := &mcp.CommandTransport{Command: cmd}
 	wrapped := &channelTransport{inner: inner, name: "t", gate: newChannelGate()}
 
@@ -518,7 +517,7 @@ func TestMaybeStdioErr_UnwrapsChannelTransport(t *testing.T) {
 // decorators: it must peel the whole stack, not a fixed number of layers.
 func TestMaybeStdioErr_UnwrapsEveryWrapper(t *testing.T) {
 	withLongStdioCheckTimeout(t)
-	cmd := exec.CommandContext(t.Context(), "sh", "-c", "echo boom-diagnostic >&2; exit 3")
+	cmd := newFailingChildCmd(t, "boom-diagnostic", true)
 	var transport mcp.Transport = &mcp.CommandTransport{Command: cmd}
 	transport = &channelTransport{inner: transport, name: "t", gate: newChannelGate()}
 	transport = &testTransportWrapper{inner: transport}
@@ -535,7 +534,7 @@ func TestMaybeStdioErr_UnwrapsEveryWrapper(t *testing.T) {
 // command's failure instead of the child's real startup output.
 func TestStdioCheck_DoesNotDuplicateArgv0(t *testing.T) {
 	withLongStdioCheckTimeout(t)
-	cmd := exec.CommandContext(t.Context(), "sh", "-c", "echo 'real startup error'; exit 3")
+	cmd := newFailingChildCmd(t, "real startup error", false)
 
 	err := stdioCheck(cmd)
 	require.Error(t, err)
