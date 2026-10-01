@@ -92,6 +92,22 @@ func (c *eventCollector) reset() {
 	c.events = nil
 }
 
+// resetAfter waits until count events have been observed, then drops them.
+// Callers use it to discard the setup events a service emits (Create
+// publishes one) without guessing how long delivery takes.
+//
+// Sleeping a fixed few milliseconds instead is a race: the collector runs on
+// its own goroutine, so on a loaded machine the event can be appended after
+// the sleep and after the reset, and then leaks into the assertions that
+// follow.
+func (c *eventCollector) resetAfter(t *testing.T, count int) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		return len(c.snapshot()) >= count
+	}, 5*time.Second, time.Millisecond)
+	c.reset()
+}
+
 func TestUpdate_DebouncesTextDeltas(t *testing.T) {
 	t.Parallel()
 
@@ -107,9 +123,10 @@ func TestUpdate_DebouncesTextDeltas(t *testing.T) {
 		Role: Assistant,
 	})
 	require.NoError(t, err)
-	// Drop the CreatedEvent emitted by Create.
-	time.Sleep(5 * time.Millisecond)
-	collector.reset()
+	// Drop the CreatedEvent emitted by Create. Wait for the collector to
+	// actually receive it rather than sleeping a guessed interval, so a slow
+	// delivery cannot leak the event into the assertions below.
+	collector.resetAfter(t, 1)
 
 	// Push 5 deltas inside a single debounce window.
 	for i := 0; i < 5; i++ {
@@ -148,8 +165,7 @@ func TestUpdate_TerminalUpdatesFlushSynchronously(t *testing.T) {
 
 	msg, err := svc.Create(t.Context(), sessionID, CreateMessageParams{Role: Assistant})
 	require.NoError(t, err)
-	time.Sleep(5 * time.Millisecond)
-	collector.reset()
+	collector.resetAfter(t, 1)
 
 	// AddFinish makes the message terminal; Update must flush
 	// synchronously even with a 1-hour debounce.
