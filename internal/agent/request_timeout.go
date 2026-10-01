@@ -24,7 +24,7 @@ type requestTimeoutError struct {
 func (e *requestTimeoutError) Error() string {
 	msg := fmt.Sprintf("LLM request timed out after %s", e.timeout)
 	if e.idle {
-		msg = fmt.Sprintf("LLM stream received no data for %s", e.timeout)
+		msg = fmt.Sprintf("LLM stream received no data for %s (thinking before the first token counts as silence)", e.timeout)
 	}
 	if e.cause != nil {
 		return fmt.Sprintf("%s: %v", msg, e.cause)
@@ -36,10 +36,19 @@ func (e *requestTimeoutError) Unwrap() error { return e.cause }
 
 // userMessage explains the timeout in the UI, including how long the request
 // ran before giving up and how to change the limit.
+//
+// The idle wording matters: a model that reasons before emitting its first
+// token produces no stream parts while it thinks, so the request looks
+// frozen for the whole window even though nothing is wrong. Saying so stops
+// the timeout from reading as "the provider is broken".
 func (e *requestTimeoutError) userMessage() string {
 	hint := "Increase the limit with \"option request-timeout SECONDS\" or set it to 0 to disable the timeout."
 	if e.idle {
-		return fmt.Sprintf("The model stopped sending data for %s. %s", e.timeout, hint)
+		return fmt.Sprintf(
+			"No data arrived from the model for %s. A model that is thinking before its first "+
+				"token sends nothing during that time, so this usually means the request needed "+
+				"more than %s to start answering. %s",
+			e.timeout, e.timeout, hint)
 	}
 	return fmt.Sprintf("The model did not respond within %s. %s", e.timeout, hint)
 }

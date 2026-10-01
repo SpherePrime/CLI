@@ -203,6 +203,35 @@ func (d *Overlay) ReplaceDialog(id string, replacement Dialog) bool {
 	return false
 }
 
+// BackspaceAware is implemented by dialogs that own a text field. The overlay
+// uses it to decide whether a backspace press should delete a character (the
+// normal meaning) or mean "go back to the previous screen".
+//
+// A dialog that does not implement it always treats backspace as navigation,
+// which is what the dialogs with no text field want.
+type BackspaceAware interface {
+	// BackspaceDeletesText reports whether the dialog's text field currently
+	// consumes backspace, i.e. it has content to delete or a caret that is
+	// not at position zero.
+	BackspaceDeletesText() bool
+}
+
+// backspaceKey is the key that doubles as "go back" outside a text field.
+var backspaceKey = key.NewBinding(key.WithKeys("backspace"))
+
+// goBackOnBackspace reports whether msg is a backspace press that should pop
+// the front dialog instead of reaching a text field.
+func goBackOnBackspace(msg tea.Msg, dialog Dialog) bool {
+	press, ok := msg.(tea.KeyPressMsg)
+	if !ok || !key.Matches(press, backspaceKey) {
+		return false
+	}
+	if aware, ok := dialog.(BackspaceAware); ok {
+		return !aware.BackspaceDeletesText()
+	}
+	return true
+}
+
 // LocaleRefreshable is implemented by dialogs that cache translated strings
 // in fields set at construction time. applyLanguage calls RefreshLocale on
 // every open dialog implementing this interface so labels update without a
@@ -256,6 +285,15 @@ func (d *Overlay) Update(msg tea.Msg) tea.Msg {
 	idx := len(d.dialogs) - 1 // active dialog is the last one
 	dialog := d.dialogs[idx]
 	if dialog == nil {
+		return nil
+	}
+
+	// Backspace doubles as "go back", the same way esc closes a dialog, so a
+	// drill-down (command palette -> agent models) can be walked back out of
+	// without reaching for esc. Dialogs with a text field keep the editing
+	// meaning whenever the field still has something to delete.
+	if goBackOnBackspace(msg, dialog) {
+		d.CloseFrontDialog()
 		return nil
 	}
 

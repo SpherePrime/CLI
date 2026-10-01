@@ -163,10 +163,10 @@ func (m *ModelsConfig) applyFieldInput() {
 		prompt = "Max context: "
 		placeholder = "e.g. 200000"
 	case fieldPriceIn:
-		prompt = "Input $/1M: "
+		prompt = "Input /1M: "
 		placeholder = "price per 1M input tokens, 0 = use catalog"
 	case fieldPriceOut:
-		prompt = "Output $/1M: "
+		prompt = "Output /1M: "
 		placeholder = "price per 1M output tokens, 0 = use catalog"
 	}
 	m.input.Prompt = prompt
@@ -341,6 +341,12 @@ func (m *ModelsConfig) focusAndInputUpdate(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	return cmd
+}
+
+
+// BackspaceDeletesText implements [BackspaceAware].
+func (p *ModelsConfig) BackspaceDeletesText() bool {
+	return BackspaceDeletesText(p.input)
 }
 
 // Cursor returns the cursor for the dialog. The vertical offset is computed

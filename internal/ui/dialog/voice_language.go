@@ -169,6 +169,12 @@ func (v *VoiceLanguage) HandleMsg(msg tea.Msg) Action {
 	return nil
 }
 
+
+// BackspaceDeletesText implements [BackspaceAware].
+func (v *VoiceLanguage) BackspaceDeletesText() bool {
+	return BackspaceDeletesText(v.input)
+}
+
 // Cursor returns the cursor position relative to the dialog.
 func (v *VoiceLanguage) Cursor() *tea.Cursor {
 	return InputCursor(v.com.Styles, v.input.Cursor())

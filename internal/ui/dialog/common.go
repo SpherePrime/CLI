@@ -126,6 +126,13 @@ func centeredLineX(contentWidth, rowWidth int) int {
 	return max(0, (contentWidth-rowWidth)/2)
 }
 
+// BackspaceDeletesText reports whether the dialog's filter field currently
+// consumes backspace, so the overlay only reads backspace as "go back" when
+// there is nothing left to delete in it.
+func BackspaceDeletesText(input textinput.Model) bool {
+	return input.Value() != "" || input.Position() > 0
+}
+
 // lastPart returns the final rendered part, or "" when there are none. A
 // dialog that appends its list last uses it to recover the list view for
 // geometry that must be measured before Render.

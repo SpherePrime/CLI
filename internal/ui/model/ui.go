@@ -2675,6 +2675,49 @@ func (m *UI) openAgentModelDialog(agentID string) tea.Cmd {
 	return nil
 }
 
+// clearPinnedAgentModels drops every agent model_override that conflicts with
+// the model just selected globally, so agents follow the new choice instead
+// of staying pinned to the previous one.
+//
+// An override survives only when it names a different provider than the model
+// that was just selected: that is an explicit pin to another provider (for
+// example a cheaper local model for the task agent), which the user set on
+// purpose and which switching the main model should not silently discard.
+func (m *UI) clearPinnedAgentModels(modelType config.SelectedModelType, selected config.SelectedModel) []tea.Cmd {
+	cfg := m.com.Config()
+	if cfg == nil {
+		return nil
+	}
+
+	var cmds []tea.Cmd
+	for id, agent := range cfg.Agents {
+		override := agent.ModelOverride
+		if override == nil {
+			continue
+		}
+		if override.Provider != selected.Provider {
+			continue
+		}
+		if modelType == config.SelectedModelTypeLarge && override.Model == selected.Model {
+			// The pin already matches the new selection; nothing to undo.
+			continue
+		}
+
+		agent.ModelOverride = nil
+		cfg.Agents[id] = agent
+		if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "agents."+id, agent); err != nil {
+			cmds = append(cmds, util.ReportError(err))
+			continue
+		}
+		name := agent.Name
+		if name == "" {
+			name = id
+		}
+		cmds = append(cmds, util.ReportInfo(name+" agent now follows the selected model"))
+	}
+	return cmds
+}
+
 // handleSetAgentModel pins a concrete model to a subagent.
 func (m *UI) handleSetAgentModel(msg dialog.ActionSetAgentModel) tea.Cmd {
 	cfg := m.com.Config()
@@ -2813,6 +2856,12 @@ func (m *UI) handleSelectModel(msg dialog.ActionSelectModel) tea.Cmd {
 	if err := m.com.Workspace.UpdatePreferredModel(config.ScopeGlobal, msg.ModelType, msg.Model); err != nil {
 		cmds = append(cmds, util.ReportError(err))
 	} else {
+		// Picking a model here means "use this one". Agents that were
+		// previously pinned with a model_override would otherwise keep
+		// running on the old pin forever, so switching the model in the
+		// picker never reached them. Clear the pins and let them follow
+		// the global selection again.
+		cmds = append(cmds, m.clearPinnedAgentModels(msg.ModelType, msg.Model)...)
 		if msg.ModelType == config.SelectedModelTypeLarge {
 			// Swap the theme live based on the newly selected large
 			// model's provider. Skipped when the provider resolves to

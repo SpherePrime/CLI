@@ -163,6 +163,12 @@ func (r *Reasoning) HandleMsg(msg tea.Msg) Action {
 	return nil
 }
 
+
+// BackspaceDeletesText implements [BackspaceAware].
+func (r *Reasoning) BackspaceDeletesText() bool {
+	return BackspaceDeletesText(r.input)
+}
+
 // Cursor returns the cursor position relative to the dialog.
 func (r *Reasoning) Cursor() *tea.Cursor {
 	return InputCursor(r.com.Styles, r.input.Cursor())

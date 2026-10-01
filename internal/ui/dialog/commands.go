@@ -327,6 +327,12 @@ func (c *Commands) InitialCmd() tea.Cmd {
 	return checkDockerMCPAvailabilityCmd()
 }
 
+
+// BackspaceDeletesText implements [BackspaceAware].
+func (c *Commands) BackspaceDeletesText() bool {
+	return BackspaceDeletesText(c.input)
+}
+
 // Cursor returns the cursor position relative to the dialog.
 func (c *Commands) Cursor() *tea.Cursor {
 	return InputCursor(c.com.Styles, c.input.Cursor())
@@ -654,7 +660,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		}
 	}
 
-	// Add external editor command if $EDITOR is available.
+	// Add external editor command if EDITOR is available.
 	//
 	// TODO: Use [tea.EnvMsg] to get environment variable instead of os.Getenv;
 	// because os.Getenv does IO is breaks the TEA paradigm and is generally an

@@ -14,11 +14,11 @@ your code, and your LLM provider of choice into one workflow.
 - **Safe by default:** per-tool permission prompts, with allow/deny lists
 - **Plugins:** optional features Prime installs on demand — voice dictation
   with alt+v, downloaded automatically from the plugins menu
-- **Cross-platform:** macOS, Linux, Windows, and the BSDs
+- **Cross-platform:** Linux and Windows
 
 ## Install
 
-Linux / macOS / FreeBSD / OpenBSD / NetBSD:
+Linux / macOS:
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/SpherePrime/CLI/main/scripts/install.sh | sh
@@ -30,11 +30,15 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/SpherePrime/CLI/main/scripts/install.ps1 | iex
 ```
 
-Prebuilt binaries (`.tar.gz`, `.zip`, `.deb`, `.rpm`, `.apk`) for Linux, macOS,
-Windows, FreeBSD, OpenBSD and NetBSD:
+Prebuilt binaries (`.tar.gz`, `.zip`, `.deb`, `.rpm`, `.apk`) for Linux and
+Windows:
 [releases](https://github.com/SpherePrime/CLI/releases).
 
-Linux, macOS and the BSDs also ship `arm64` and, on Linux, `armv7`.
+> [!NOTE]
+> Release artifacts are currently built for Linux and Windows only. The code
+> itself compiles for macOS and the BSDs, and `prime update` plus the install
+> scripts already know their asset names, but no such artifacts are published
+> yet. Build from source on those platforms for now.
 
 With Go installed:
 

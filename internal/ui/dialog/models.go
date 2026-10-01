@@ -270,6 +270,12 @@ func (m *Models) activateModel(idx int, isEdit bool) Action {
 	}
 }
 
+
+// BackspaceDeletesText implements [BackspaceAware].
+func (m *Models) BackspaceDeletesText() bool {
+	return BackspaceDeletesText(m.input)
+}
+
 // Cursor returns the cursor for the dialog.
 func (m *Models) Cursor() *tea.Cursor {
 	return InputCursor(m.com.Styles, m.input.Cursor())

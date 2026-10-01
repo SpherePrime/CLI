@@ -29,10 +29,6 @@ builds:
     goos:
       - windows
       - linux
-      - darwin
-      - freebsd
-      - openbsd
-      - netbsd
     goarch:
       - amd64
       - arm64
@@ -41,19 +37,8 @@ builds:
     goarm:
       - "7"
     ignore:
-      # Windows on ARM32 is not a thing, and the 32-bit Unix ports are
-      # effectively dead; keep the matrix to what people actually run.
+      # Windows on ARM32 is not a thing.
       - goos: windows
-        goarch: arm
-      - goos: darwin
-        goarch: "386"
-      - goos: darwin
-        goarch: arm
-      - goos: freebsd
-        goarch: arm
-      - goos: openbsd
-        goarch: arm
-      - goos: netbsd
         goarch: arm
     ldflags:
       - -s -w -X github.com/SpherePrime/CLI/internal/version.Version={{.Version}}

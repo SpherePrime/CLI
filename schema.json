@@ -703,11 +703,11 @@
         },
         "request_timeout": {
           "type": "integer",
-          "description": "Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity, so slow but active streams are never killed. 0 disables it, negative values are invalid.",
-          "default": 60,
+          "description": "Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity, so slow but active streams are never killed. A model that reasons before its first token sends no stream parts while it thinks, so this also caps how long one silent thinking phase may last. 0 disables it, negative values are invalid.",
+          "default": 120,
           "examples": [
-            120,
             300,
+            600,
             0
           ]
         }
