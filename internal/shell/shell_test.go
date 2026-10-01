@@ -3,7 +3,6 @@ package shell
 import (
 	"context"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -25,16 +24,11 @@ func BenchmarkShellQuickCommands(b *testing.B) {
 }
 
 func TestTestTimeout(t *testing.T) {
-	// XXX(@dwertyfa288): This fails on Windows. Address once possible.
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping test on Windows")
-	}
-
 	ctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)
 	t.Cleanup(cancel)
 
 	shell := NewShell(&Options{WorkingDir: t.TempDir()})
-	_, _, err := shell.Exec(ctx, "sleep 10")
+	_, _, err := shell.Exec(ctx, sleepCommand(10))
 	if status := ExitCode(err); status == 0 {
 		t.Fatalf("Expected non-zero exit status, got %d", status)
 	}
@@ -51,7 +45,7 @@ func TestTestCancel(t *testing.T) {
 	cancel() // immediately cancel the context
 
 	shell := NewShell(&Options{WorkingDir: t.TempDir()})
-	_, _, err := shell.Exec(ctx, "sleep 10")
+	_, _, err := shell.Exec(ctx, sleepCommand(10))
 	if status := ExitCode(err); status == 0 {
 		t.Fatalf("Expected non-zero exit status, got %d", status)
 	}
