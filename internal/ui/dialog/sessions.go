@@ -289,6 +289,12 @@ func (s *Session) resetMouseClick() {
 	s.lastClickID = ""
 }
 
+
+// BackspaceDeletesText implements [BackspaceAware].
+func (s *Session) BackspaceDeletesText() bool {
+	return BackspaceDeletesText(s.input)
+}
+
 // Cursor returns the cursor position relative to the dialog.
 func (s *Session) Cursor() *tea.Cursor {
 	return InputCursor(s.com.Styles, s.input.Cursor())

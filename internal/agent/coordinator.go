@@ -60,6 +60,7 @@ import (
 var (
 	errCoderAgentNotConfigured         = errors.New("coder agent not configured")
 	errPlanAgentNotConfigured          = errors.New("plan agent not configured")
+	errTaskAgentNotConfigured          = errors.New("task agent not configured")
 	errMainAgentNotFound               = errors.New("main agent not found")
 	errModelProviderNotConfigured      = errors.New("model provider not configured")
 	errLargeModelNotSelected           = errors.New("large model not selected")
@@ -250,6 +251,26 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 		return nil, err
 	}
 	c.agents[config.AgentPlan] = planAgent
+
+	// The task agent is normally spawned on demand by the agent tool, which
+	// builds its own instance from the same config. Registering it here as
+	// well keeps c.agents consistent with the agent list the UI offers, so
+	// switching the main agent to "task" resolves instead of failing with
+	// errMainAgentNotFound.
+	//
+	// Registration is best-effort: unlike coder and plan, task has no
+	// dedicated model requirement, so failing to build it must not stop the
+	// app from starting. Without a registry entry it simply stays unavailable
+	// as a main agent and is still built on demand by the agent tool.
+	if taskCfg, ok := c.cfg.Config().Agents[config.AgentTask]; ok {
+		if taskSystemPrompt, perr := taskPrompt(prompt.WithWorkingDir(c.cfg.WorkingDir())); perr != nil {
+			slog.Warn("Task agent not registered as a main agent", "error", perr)
+		} else if taskAgent, berr := c.buildAgent(ctx, taskSystemPrompt, taskCfg, false); berr != nil {
+			slog.Warn("Task agent not registered as a main agent", "error", berr)
+		} else {
+			c.agents[config.AgentTask] = taskAgent
+		}
+	}
 
 	c.mainAgent = agent
 	c.mainAgentName = config.AgentCoder

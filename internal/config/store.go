@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -622,6 +623,60 @@ func (s *ConfigStore) SetTransparentBackground(scope Scope, enabled bool) error 
 		c.ensureTUI().Transparent = &enabled
 		return map[string]any{"options.tui.transparent": enabled}
 	})
+}
+
+// ErrProviderNotFound is returned when a provider id is not configured.
+var ErrProviderNotFound = errors.New("provider not found")
+
+// RemoveProvider deletes a provider from the given scope's config and drops
+// it from the in-memory state, along with every model that referenced it and
+// any agent pinned to one of those models. Leaving those behind would point
+// the selected models and agent overrides at a provider that no longer
+// exists, which surfaces later as a confusing "provider not configured"
+// error instead of the deletion the user asked for.
+func (s *ConfigStore) RemoveProvider(scope Scope, providerID string) error {
+	if providerID == "" {
+		return errors.New("provider id is required")
+	}
+
+	cfg := s.Config()
+	if cfg == nil || cfg.Providers == nil {
+		return ErrProviderNotFound
+	}
+	if _, ok := cfg.Providers.Get(providerID); !ok {
+		return fmt.Errorf("%w: %s", ErrProviderNotFound, providerID)
+	}
+
+	// Unpin agents first, while the override is still readable. A selected
+	// model on this provider is dropped rather than left as an empty entry:
+	// a null value would deserialize to a zero SelectedModel that still
+	// satisfies a "is it set" lookup.
+	for id, agent := range cfg.Agents {
+		ov := agent.ModelOverride
+		if ov == nil || ov.Provider != providerID {
+			continue
+		}
+		agent.ModelOverride = nil
+		cfg.Agents[id] = agent
+		if err := s.SetConfigField(scope, "agents."+id, agent); err != nil {
+			return err
+		}
+	}
+
+	for _, slot := range []SelectedModelType{SelectedModelTypeLarge, SelectedModelTypeSmall} {
+		if sel, ok := cfg.Models[slot]; ok && sel.Provider == providerID {
+			if err := s.RemoveConfigField(scope, "models."+string(slot)); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Also drop it from the recent-models list so it does not linger as a
+	// suggestion pointing at a provider that no longer exists.
+	if err := s.RemoveConfigField(scope, "providers."+providerID); err != nil {
+		return err
+	}
+	return s.autoReload(context.Background())
 }
 
 // SetProviderAPIKey sets the API key for a provider and persists it.

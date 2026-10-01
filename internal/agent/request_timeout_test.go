@@ -225,8 +225,12 @@ func TestRequestTimeoutErrorMessages(t *testing.T) {
 	require.Equal(t, "LLM request timed out after 1s: context deadline exceeded", err.Error())
 
 	idle := &requestTimeoutError{timeout: 2 * time.Second, idle: true}
-	require.Equal(t, "LLM stream received no data for 2s", idle.Error())
-	require.Contains(t, idle.userMessage(), "stopped sending data for 2s")
+	require.Contains(t, idle.Error(), "LLM stream received no data for 2s")
+	require.Contains(t, idle.Error(), "thinking before the first token")
+	// The user-facing text must say a silent thinking phase is the usual
+	// cause: without that the timeout reads as a broken provider.
+	require.Contains(t, idle.userMessage(), "No data arrived from the model for 2s")
+	require.Contains(t, idle.userMessage(), "thinking before its first token")
 	require.Contains(t, idle.userMessage(), "request-timeout")
 }
 

@@ -258,6 +258,12 @@ func (m *APIKeyInput) inputView() string {
 	return m.input.View()
 }
 
+
+// BackspaceDeletesText implements [BackspaceAware].
+func (m *APIKeyInput) BackspaceDeletesText() bool {
+	return BackspaceDeletesText(m.input)
+}
+
 // Cursor returns the cursor position relative to the dialog.
 func (m *APIKeyInput) Cursor() *tea.Cursor {
 	return InputCursor(m.com.Styles, m.input.Cursor())

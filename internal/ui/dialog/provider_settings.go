@@ -461,3 +461,8 @@ func (p *ProviderSettings) ShortHelp() []key.Binding {
 func (p *ProviderSettings) FullHelp() [][]key.Binding {
 	return [][]key.Binding{p.ShortHelp()}
 }
+
+// BackspaceDeletesText implements [BackspaceAware].
+func (p *ProviderSettings) BackspaceDeletesText() bool {
+	return BackspaceDeletesText(p.input)
+}

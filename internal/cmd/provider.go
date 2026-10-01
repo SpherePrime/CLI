@@ -219,6 +219,93 @@ func printProviderAddSuccess(id, name, baseURL string, modelCount, contextWindow
 	fmt.Printf("%s\n%s\n\n", header.Render(), detail.Render())
 }
 
+var providerDeleteCmd = &cobra.Command{
+	Use:   "delete [id]",
+	Short: "Remove a configured provider",
+	Long: `Remove a provider from the config.
+
+Anything that pointed at the deleted provider is cleaned up too: a selected
+large or small model on that provider is dropped, and any agent pinned to it
+is unpinned so it falls back to the global model selection. Without that,
+deleting a provider would leave the selection pointing at it and the next
+request would fail with a confusing "provider not configured" error.`,
+	Example: `# Delete a provider, asking for confirmation
+prime provider delete my-llm
+
+# Delete without the confirmation prompt
+prime provider delete my-llm --force`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id, _ := cmd.Flags().GetString("id")
+		if id == "" && len(args) > 0 {
+			id = args[0]
+		}
+		if id == "" {
+			return errors.New("provider ID is required (--id flag or argument)")
+		}
+
+		cwd, err := ResolveCwd(cmd)
+		if err != nil {
+			return err
+		}
+		dataDir, _ := cmd.Flags().GetString("data-dir")
+		debug, _ := cmd.Flags().GetBool("debug")
+		cfg, err := config.Init(cwd, dataDir, debug)
+		if err != nil {
+			return err
+		}
+
+		if _, ok := cfg.Config().Providers.Get(id); !ok {
+			return fmt.Errorf("provider %q is not configured", id)
+		}
+
+		force, _ := cmd.Flags().GetBool("force")
+		if !force {
+			confirmed, err := confirmProviderDelete(cmd, id, term.IsTerminal(os.Stdin.Fd()))
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				cmd.Println("Cancelled; nothing was removed.")
+				return nil
+			}
+		}
+
+		scope := config.ScopeGlobal
+		if workspace, _ := cmd.Flags().GetBool("workspace"); workspace {
+			scope = config.ScopeWorkspace
+		}
+
+		if err := cfg.RemoveProvider(scope, id); err != nil {
+			return err
+		}
+		cmd.Printf("Removed provider %q.\n", id)
+		return nil
+	},
+}
+
+// confirmProviderDelete asks before deleting. A non-interactive invocation
+// (no terminal, e.g. a script or CI) proceeds without asking, since there is
+// nobody to answer; pass --force to skip the prompt even on a terminal.
+func confirmProviderDelete(cmd *cobra.Command, id string, interactive bool) (bool, error) {
+	if !interactive {
+		return true, nil
+	}
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "Delete provider %q and unpin any agent using it? [y/N] ", id)
+	if err != nil {
+		return false, err
+	}
+	reader := bufio.NewReader(cmd.InOrStdin())
+	answer, err := reader.ReadString('\n')
+	if err != nil && answer == "" {
+		// EOF on the answer counts as "no" rather than an error, so a
+		// piped empty input never deletes anything by accident.
+		return false, nil
+	}
+	answer = strings.ToLower(strings.TrimSpace(answer))
+	return answer == "y" || answer == "yes", nil
+}
+
 func init() {
 	providerAddCmd.Flags().String("id", "", "Provider ID (key under providers; positional argument works too)")
 	providerAddCmd.Flags().String("name", "", "Display name for the provider (defaults to the ID)")
@@ -229,5 +316,10 @@ func init() {
 	providerAddCmd.Flags().Bool("discover", true, "Fetch the model list from the provider's /models endpoint")
 	providerAddCmd.Flags().Int("context-window", contextWindowOverride, "Context window in tokens assigned to every model")
 
+	providerDeleteCmd.Flags().String("id", "", "Provider ID to delete (positional argument works too)")
+	providerDeleteCmd.Flags().Bool("workspace", false, "Delete from the workspace config instead of the global config")
+	providerDeleteCmd.Flags().Bool("force", false, "Skip the confirmation prompt")
+
 	providerCmd.AddCommand(providerAddCmd)
+	providerCmd.AddCommand(providerDeleteCmd)
 }
