@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"runtime"
 	"testing"
 	"time"
 
@@ -251,10 +250,6 @@ func (m *timeoutOnlyModel) Stream(context.Context, fantasy.Call) (fantasy.Stream
 // exhausts its timeout: a "Request timed out" finish that names the elapsed
 // budget and how to change it, instead of a bare provider error.
 func TestRequestTimeoutRunFinishMessage(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows for now")
-	}
-
 	env := testEnv(t)
 	model := &timeoutOnlyModel{}
 	agent, err := coderAgent(vcr.NewRecorder(t), env, model, model)
@@ -285,6 +280,7 @@ func TestRequestTimeoutRunFinishMessage(t *testing.T) {
 	require.NotNil(t, finish, "the assistant message should carry a finish part")
 	require.Equal(t, message.FinishReasonError, finish.Reason)
 	require.Equal(t, "Request timed out", finish.Message)
-	require.Contains(t, finish.Details, "stopped sending data for 1s")
+	require.Contains(t, finish.Details, "No data arrived from the model for 1s")
+	require.Contains(t, finish.Details, "thinking before its first token")
 	require.Contains(t, finish.Details, "request-timeout")
 }
