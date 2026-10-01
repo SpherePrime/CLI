@@ -43,6 +43,10 @@ type Notifications struct {
 	list  *list.FilterableList
 	input textinput.Model
 
+	// mouse gives the list full pointer support: click a row to select
+	// it, click it again to apply, wheel to scroll.
+	mouse ListMouse
+
 	keyMap struct {
 		Select   key.Binding
 		Next     key.Binding
@@ -126,6 +130,8 @@ func (n *Notifications) RefreshLocale() {
 // HandleMsg implements [Dialog].
 func (n *Notifications) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
+	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return n.mouse.HandleMsg(msg, n.list, n.activate)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, n.keyMap.Close):
@@ -149,15 +155,7 @@ func (n *Notifications) HandleMsg(msg tea.Msg) Action {
 			n.list.SelectNext()
 			n.list.ScrollToSelected()
 		case key.Matches(msg, n.keyMap.Select):
-			selectedItem := n.list.SelectedItem()
-			if selectedItem == nil {
-				break
-			}
-			notifItem, ok := selectedItem.(*NotificationItem)
-			if !ok {
-				break
-			}
-			return ActionSelectNotificationStyle{Style: notifItem.style.ID}
+			return n.activate(n.list.Selected())
 		default:
 			prevValue := n.input.Value()
 			var cmd tea.Cmd
@@ -212,9 +210,22 @@ func (n *Notifications) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	view := rc.Render()
 
+	// Record where the list painted so clicks can be hit-tested.
+	n.mouse.Painted(dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, n.list.Height()))
+
 	cur := n.Cursor()
 	DrawCenterCursor(scr, area, view, cur)
 	return cur
+}
+
+// activate applies the notification style at idx. Shared by the enter key
+// and by a click on a row.
+func (n *Notifications) activate(idx int) Action {
+	item, ok := n.list.ItemAt(idx).(*NotificationItem)
+	if !ok || item == nil {
+		return nil
+	}
+	return ActionSelectNotificationStyle{Style: item.style.ID}
 }
 
 // ShortHelp implements [help.KeyMap].

@@ -29,6 +29,10 @@ builds:
     goos:
       - windows
       - linux
+      - darwin
+      - freebsd
+      - openbsd
+      - netbsd
     goarch:
       - amd64
       - arm64
@@ -37,13 +41,19 @@ builds:
     goarm:
       - "7"
     ignore:
-      - goos: android
-        goarch: amd64
-      - goos: android
-        goarch: arm
-      - goos: android
-        goarch: "386"
+      # Windows on ARM32 is not a thing, and the 32-bit Unix ports are
+      # effectively dead; keep the matrix to what people actually run.
       - goos: windows
+        goarch: arm
+      - goos: darwin
+        goarch: "386"
+      - goos: darwin
+        goarch: arm
+      - goos: freebsd
+        goarch: arm
+      - goos: openbsd
+        goarch: arm
+      - goos: netbsd
         goarch: arm
     ldflags:
       - -s -w -X github.com/SpherePrime/CLI/internal/version.Version={{.Version}}
@@ -84,13 +94,13 @@ nfpms:
     description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
     contents:
       - src: ./completions/prime.bash
-        dst: '{{ if eq .Format "termux.deb" }}/data/data/com.termux/files/usr{{ end }}/etc/bash_completion.d/prime'
+        dst: /etc/bash_completion.d/prime
       - src: ./completions/prime.fish
-        dst: '{{ if eq .Format "termux.deb" }}/data/data/com.termux/files{{ end }}/usr/share/fish/vendor_completions.d/prime.fish'
+        dst: /usr/share/fish/vendor_completions.d/prime.fish
       - src: ./completions/prime.zsh
-        dst: '{{ if eq .Format "termux.deb" }}/data/data/com.termux/files{{ end }}/usr/share/zsh/site-functions/_prime'
+        dst: /usr/share/zsh/site-functions/_prime
       - src: ./manpages/prime.1.gz
-        dst: '{{ if eq .Format "termux.deb" }}/data/data/com.termux/files{{ end }}/usr/share/man/man1/prime.1.gz'
+        dst: /usr/share/man/man1/prime.1.gz
 
 changelog:
   sort: asc

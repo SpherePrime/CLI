@@ -71,6 +71,10 @@ type bashDescriptionData struct {
 	ModelID         string
 	RgAvailable     bool
 	GhAvailable     bool
+	// Platform is the GOOS the agent is running on, so the tool description
+	// can tell the model which shell utilities actually exist here instead
+	// of leaving it to guess and collect 127s.
+	Platform string
 }
 
 var bannedCommands = []string{
@@ -156,6 +160,7 @@ func bashDescription(attribution *config.Attribution, modelID string) string {
 		ModelID:         modelID,
 		RgAvailable:     getRg() != "",
 		GhAvailable:     ghAvailable,
+		Platform:        runtime.GOOS,
 	}); err != nil {
 		// this should never happen.
 		panic("failed to execute bash description template: " + err.Error())

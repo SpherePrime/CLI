@@ -45,6 +45,10 @@ type VoiceLanguage struct {
 	list  *list.FilterableList
 	input textinput.Model
 
+	// mouse gives the list full pointer support: click a row to select
+	// it, click it again to apply, wheel to scroll.
+	mouse ListMouse
+
 	keyMap struct {
 		Select   key.Binding
 		Next     key.Binding
@@ -123,6 +127,8 @@ func (*VoiceLanguage) ID() string {
 // HandleMsg implements [Dialog].
 func (v *VoiceLanguage) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
+	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return v.mouse.HandleMsg(msg, v.list, v.activate)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, v.keyMap.Close):
@@ -146,15 +152,7 @@ func (v *VoiceLanguage) HandleMsg(msg tea.Msg) Action {
 			v.list.SelectNext()
 			v.list.ScrollToSelected()
 		case key.Matches(msg, v.keyMap.Select):
-			selectedItem := v.list.SelectedItem()
-			if selectedItem == nil {
-				break
-			}
-			langItem, ok := selectedItem.(*VoiceLanguageItem)
-			if !ok {
-				break
-			}
-			return ActionSelectVoiceLanguage{Tag: langItem.tag, Label: langItem.title}
+			return v.activate(v.list.Selected())
 		default:
 			prevValue := v.input.Value()
 			var cmd tea.Cmd
@@ -209,9 +207,22 @@ func (v *VoiceLanguage) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	view := rc.Render()
 
+	// Record where the list painted so clicks can be hit-tested.
+	v.mouse.Painted(dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, v.list.Height()))
+
 	cur := v.Cursor()
 	DrawCenterCursor(scr, area, view, cur)
 	return cur
+}
+
+// activate applies the dictation language at idx. Shared by the enter key
+// and by a click on a row.
+func (v *VoiceLanguage) activate(idx int) Action {
+	item, ok := v.list.ItemAt(idx).(*VoiceLanguageItem)
+	if !ok || item == nil {
+		return nil
+	}
+	return ActionSelectVoiceLanguage{Tag: item.tag, Label: item.title}
 }
 
 // ShortHelp implements [help.KeyMap].

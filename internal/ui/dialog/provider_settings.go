@@ -51,6 +51,10 @@ type ProviderSettings struct {
 	input textinput.Model
 	help  help.Model
 
+	// mouse gives the list full pointer support: click a row to select
+	// it, click it again to open, wheel to scroll.
+	mouse ListMouse
+
 	newModelID string
 
 	keyMap struct {
@@ -163,11 +167,11 @@ func (p *ProviderSettings) reloadModels() {
 // HandleMsg implements Dialog.
 func (p *ProviderSettings) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
-	case common.CoalescedWheelMsg:
-		if p.state == providerSettingsStateProviders || p.state == providerSettingsStateModels {
-			p.list.ScrollBy(int(msg.DeltaY))
+	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		if p.state != providerSettingsStateProviders && p.state != providerSettingsStateModels {
+			return nil
 		}
-		return nil
+		return p.mouse.HandleMsg(msg, p.list, p.activate)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, p.keyMap.Close):
@@ -181,15 +185,7 @@ func (p *ProviderSettings) HandleMsg(msg tea.Msg) Action {
 		switch p.state {
 		case providerSettingsStateProviders:
 			if key.Matches(msg, p.keyMap.Select) {
-				item, ok := p.list.SelectedItem().(ListItem)
-				if !ok {
-					return nil
-				}
-				if !p.openProvider(item.ID()) {
-					return ActionCmd{util.ReportError(
-						errors.New("provider is no longer configured"))}
-				}
-				return nil
+				return p.activate(p.list.Selected())
 			}
 			return p.filterInput(msg)
 
@@ -403,9 +399,39 @@ func (p *ProviderSettings) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	}
 
 	rc.Help = renderDialogHelp(t, &p.help, p, innerWidth)
-	DrawCenter(scr, area, rc.Render())
+	view := rc.Render()
+
+	// Record where the list painted so clicks can be hit-tested. Only the
+	// provider and model states render one.
+	if p.state == providerSettingsStateProviders || p.state == providerSettingsStateModels {
+		p.mouse.Painted(dialogBodyRect(area, dialogRectCentered(area, view), lastPart(rc.Parts), rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, p.list.Height()))
+	} else {
+		p.mouse.Clear()
+	}
+
+	DrawCenter(scr, area, view)
 	return p.Cursor()
 }
+
+// activate opens the provider or model the user picked at idx. Shared by the
+// enter key and by a click on a row.
+func (p *ProviderSettings) activate(idx int) Action {
+	item, ok := p.list.ItemAt(idx).(ListItem)
+	if !ok || item == nil {
+		return nil
+	}
+	if p.state != providerSettingsStateProviders {
+		// The model list has no single "open" action; its rows are toggled
+		// and removed from the keyboard.
+		return nil
+	}
+	if !p.openProvider(item.ID()) {
+		return ActionCmd{util.ReportError(
+			errors.New("provider is no longer configured"))}
+	}
+	return nil
+}
+
 func (p *ProviderSettings) title() string {
 	switch p.state {
 	case providerSettingsStateProviders:

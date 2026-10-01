@@ -3,7 +3,18 @@ $ErrorActionPreference = "Stop"
 $Repo = if ($env:PRIME_REPO) { $env:PRIME_REPO } else { "SpherePrime/CLI" }
 $BinDir = if ($env:PRIME_INSTALL_DIR) { $env:PRIME_INSTALL_DIR } else { "$env:LOCALAPPDATA\Programs\prime" }
 
-$Arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x86_64" }
+# Resolve the architecture from the OS itself. PROCESSOR_ARCHITEW6432 holds
+# the real architecture when an x64 PowerShell runs emulated on ARM64, so it
+# has to be checked first or ARM64 hosts silently get the x86_64 build.
+$Arch = if ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "ARM64") {
+  "arm64"
+} elseif ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "^(x86|AMD64)") {
+  "x86_64"
+} elseif ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "^(x86|ia32)") {
+  "i386"
+} else {
+  Write-Error "prime: cannot determine your CPU architecture, install the release archive manually"
+}
 
 $Api = "https://api.github.com/repos/$Repo/releases/latest"
 Write-Host "prime: querying latest release from $Repo"

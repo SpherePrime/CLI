@@ -30,10 +30,9 @@ type Reasoning struct {
 	list  *list.FilterableList
 	input textinput.Model
 
-	// scrollbarZone ties the painted list scrollbar to pointer drags; once
-	// the pointer scrolls the list, the selected item is left where it is.
-	scrollbarZone ScrollbarZone
-	mouseScrolled bool
+	// mouse gives the list full pointer support: click a row to select it,
+	// click it again to apply, drag the scrollbar, wheel to scroll.
+	mouse ListMouse
 
 	keyMap struct {
 		Select   key.Binding
@@ -122,9 +121,8 @@ func (r *Reasoning) RefreshLocale() {
 // HandleMsg implements [Dialog].
 func (r *Reasoning) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
-	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
-		r.scrollbarZone.HandleMsg(msg, r.scrollListTo)
-		return nil
+	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+		return r.mouse.HandleMsg(msg, r.list, r.activate)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, r.keyMap.Close):
@@ -148,15 +146,7 @@ func (r *Reasoning) HandleMsg(msg tea.Msg) Action {
 			r.list.SelectNext()
 			r.list.ScrollToSelected()
 		case key.Matches(msg, r.keyMap.Select):
-			selectedItem := r.list.SelectedItem()
-			if selectedItem == nil {
-				break
-			}
-			reasoningItem, ok := selectedItem.(*ReasoningItem)
-			if !ok {
-				break
-			}
-			return ActionSelectReasoningEffort{Effort: reasoningItem.effort}
+			return r.activate(r.list.Selected())
 		default:
 			prevValue := r.input.Value()
 			var cmd tea.Cmd
@@ -206,7 +196,7 @@ func (r *Reasoning) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	visibleCount := len(r.list.FilteredItems())
 	if r.list.Height() >= visibleCount {
 		r.list.ScrollToTop()
-	} else if !r.mouseScrolled {
+	} else if !r.mouse.Scrolled() {
 		r.list.ScrollToSelected()
 	}
 
@@ -219,18 +209,22 @@ func (r *Reasoning) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	view := rc.Render()
 
 	body := dialogBodyRect(area, dialogRectCentered(area, view), listView, rc.Help, rc.ViewStyle, t.Dialog.List, innerWidth, listHeight)
-	r.scrollbarZone.Painted(body.Min, scrollable, listHeight, listTotalHeight, listHeight, r.list.Offset())
+	r.mouse.Painted(body)
+	r.mouse.PaintedJoin(body.Min, scrollable, listHeight, listTotalHeight, listHeight, r.list.Offset())
 
 	cur := r.Cursor()
 	DrawCenterCursor(scr, area, view, cur)
 	return cur
 }
 
-// scrollListTo scrolls the reasoning list so the scrollbar thumb lines up with
-// the pointer.
-func (r *Reasoning) scrollListTo(offset int) {
-	r.mouseScrolled = true
-	r.list.ScrollBy(offset - r.list.Offset())
+// activate applies the reasoning effort at idx, or returns nil when there is
+// nothing to apply. Shared by the enter key and by a click on a row.
+func (r *Reasoning) activate(idx int) Action {
+	item, ok := r.list.ItemAt(idx).(*ReasoningItem)
+	if !ok || item == nil {
+		return nil
+	}
+	return ActionSelectReasoningEffort{Effort: item.effort}
 }
 
 // ShortHelp implements [help.KeyMap].

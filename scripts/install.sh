@@ -10,6 +10,9 @@ arch=$(uname -m)
 case "$os" in
   Linux) os="Linux" ;;
   Darwin) os="Darwin" ;;
+  FreeBSD) os="Freebsd" ;;
+  OpenBSD) os="Openbsd" ;;
+  NetBSD) os="Netbsd" ;;
   MINGW*|MSYS*|CYGWIN*) os="Windows" ;;
   *)
     echo "prime: unsupported OS: $os" >&2
@@ -20,7 +23,8 @@ esac
 case "$arch" in
   x86_64|amd64) arch="x86_64" ;;
   arm64|aarch64) arch="arm64" ;;
-  i386) arch="i386" ;;
+  armv7l|armv7|armhf|arm) arch="armv7" ;;
+  i386|i486|i586|i686) arch="i386" ;;
   *)
     echo "prime: unsupported architecture: $arch" >&2
     exit 1

@@ -18,7 +18,7 @@ your code, and your LLM provider of choice into one workflow.
 
 ## Install
 
-Linux / macOS:
+Linux / macOS / FreeBSD / OpenBSD / NetBSD:
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/SpherePrime/CLI/main/scripts/install.sh | sh
@@ -30,8 +30,11 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/SpherePrime/CLI/main/scripts/install.ps1 | iex
 ```
 
-Prebuilt binaries (`.tar.gz`, `.zip`, `.deb`, `.rpm`, `.apk`):
+Prebuilt binaries (`.tar.gz`, `.zip`, `.deb`, `.rpm`, `.apk`) for Linux, macOS,
+Windows, FreeBSD, OpenBSD and NetBSD:
 [releases](https://github.com/SpherePrime/CLI/releases).
+
+Linux, macOS and the BSDs also ship `arm64` and, on Linux, `armv7`.
 
 With Go installed:
 
@@ -50,6 +53,20 @@ Releases are cut by pushing a version tag:
 ```bash
 git tag v0.1.0 && git push origin v0.1.0
 ```
+
+### Shell tools on Windows
+
+The shell runs through a bundled Bash-compatible interpreter, so commands and
+scripting behave the same everywhere. On Windows a handful of coreutils are
+also provided in-process — `cat`, `chmod`, `cp`, `find`, `ls`, `mkdir`, `mv`,
+`rm`, `touch`, `xargs`, `base64`, `gzip`/`gunzip`/`gzcat`, `mktemp`, `shasum`
+and `tar`.
+
+Utilities outside that set (`sleep`, `head`, `tail`, `wc`, `grep`, `sed`,
+`awk`, `sort`, `uniq`, `seq`, `date`, …) are only present if you install them,
+for example by putting Git Bash or MSYS2 on `PATH`. Installing them is
+recommended; the agent is told which tools exist at runtime either way, and
+falls back to its own read/grep/glob tools.
 
 ## Getting started
 

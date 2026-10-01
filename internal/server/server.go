@@ -67,8 +67,8 @@ func ParseHostURL(host string) (*url.URL, error) {
 // returned by [socketDir] and is named prime-<uid>.sock, falling
 // back to prime.sock when the current uid cannot be determined. If
 // the composed path would exceed [maxUnixSocketPathLen] bytes (the
-// macOS sun_path limit), we fall back to /tmp/prime-<uid>.sock so
-// the socket remains bindable.
+// macOS sun_path limit), we fall back to the system temp directory
+// so the socket remains bindable.
 func DefaultHost() string {
 	sock := "prime.sock"
 	usr, err := user.Current()
@@ -80,7 +80,7 @@ func DefaultHost() string {
 	}
 	path := filepath.Join(socketDir(), sock)
 	if len(path) > maxUnixSocketPathLen {
-		path = filepath.Join("/tmp", sock)
+		path = filepath.Join(os.TempDir(), sock)
 	}
 	return "unix://" + path
 }

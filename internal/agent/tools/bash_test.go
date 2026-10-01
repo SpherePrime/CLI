@@ -68,7 +68,7 @@ func TestBashTool_CustomAutoBackgroundThreshold(t *testing.T) {
 
 	resp := runBashTool(t, tool, ctx, BashParams{
 		Description:         "custom threshold",
-		Command:             "sleep 1.5 && echo done",
+		Command:             sleepThenCommand(1.5, "echo done"),
 		AutoBackgroundAfter: 1,
 	})
 

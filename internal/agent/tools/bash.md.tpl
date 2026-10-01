@@ -3,7 +3,34 @@ Execute shell commands; long-running commands automatically move to background a
 <cross_platform>
 Uses mvdan/sh interpreter (Bash-compatible on all platforms including Windows).
 Use forward slashes for paths: "ls C:/foo/bar" not "ls C:\foo\bar".
-Common shell builtins and core utils available on Windows.
+Platform: {{ .Platform }}
+{{- if eq .Platform "windows" }}
+
+On Windows there is no POSIX toolchain by default. These are always available:
+cat, chmod, cp, find, ls, mkdir, mv, rm, touch, xargs, base64, gzcat, gzip,
+gunzip, mktemp, shasum, tar, plus the shell builtins (cd, echo, printf, pwd,
+read, test, for, while, case, and so on).
+
+These are NOT available unless the user has installed them (Git Bash / MSYS2 /
+Cygwin put them on PATH, which you cannot assume):
+sleep, head, tail, wc, grep, sed, awk, sort, uniq, seq, date, tee, tr, cut,
+diff, ps, env, which, stat, du, df.
+
+Prefer the dedicated tools over shell text utilities in all cases:
+- To read or trim output, do not pipe through head/tail/wc - use the view,
+  grep and glob tools, which work the same on every platform.
+- To wait or pause, do not run sleep - run the command that is expected to
+  finish, or start it with run_in_background=true and poll it with job_output.
+- To search file contents, use the grep tool. To find files, use glob.
+- To sort or deduplicate output, prefer having the program emit what you need
+  (for example "go test -json", or a flag on the tool itself) over sort|uniq.
+- Windows equivalents when a shell command is unavoidable: tasklist for ps,
+  where for which, hostname for uname, ver for uname -a, and ipconfig for
+  ifconfig.
+{{- else }}
+
+The system has a normal POSIX toolchain; the usual utilities are available.
+{{- end }}
 </cross_platform>
 
 <execution_steps>
@@ -21,6 +48,8 @@ Common shell builtins and core utils available on Windows.
 - Chain with ';' or '&&', avoid newlines except in quoted strings
 - Each command runs in independent shell (no state persistence between calls)
 - Prefer absolute paths over 'cd' (use 'cd' only if user explicitly requests)
+- Do NOT use 'sleep' to wait for something: run the command that is expected to
+  finish, or start it in the background and poll with job_output
 {{- if .RgAvailable }}
 - Ripgrep (`rg`) is available; prefer it over `grep` for faster, more intuitive searching
 {{- end }}
@@ -34,7 +63,7 @@ Common shell builtins and core utils available on Windows.
 - IMPORTANT: NEVER use `&` at the end of commands to run in background - use run_in_background parameter instead
 - Commands that should run in background:
   * Long-running servers (e.g., `npm start`, `python -m http.server`, `node server.js`)
-  * Watch/monitoring tasks (e.g., `npm run watch`, `tail -f logfile`)
+  * Watch/monitoring tasks (e.g., `npm run watch`)
   * Continuous processes that don't exit on their own
   * Any command expected to run indefinitely
 - Commands that should NOT run in background:
