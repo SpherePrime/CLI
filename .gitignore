@@ -28,7 +28,7 @@ credentials.key
 .DS_Store
 
 # Test artifacts
-tmp/
+dist/tmp/
 tests/fixtures/generated/
 screens/
 logs/
