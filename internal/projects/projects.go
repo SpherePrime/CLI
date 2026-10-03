@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -102,18 +103,44 @@ func Register(workingDir, dataDir string) error {
 		})
 	}
 
-	// Sort by last accessed (most recent first)
-	slices.SortFunc(list.Projects, func(a, b Project) int {
+	// Sort by last accessed (most recent first).
+	sortMostRecentFirst(list.Projects, workingDir)
+
+	return Save(list)
+}
+
+// sortMostRecentFirst orders projects by last accessed, newest first, and puts
+// mostRecent at the front even when timestamps tie.
+//
+// Two things make the tie the common case rather than the exotic one. The
+// system clock is coarse on Windows, so registering twice inside one tick
+// gives both projects the same LastAccessed; and time.Now().UTC() strips the
+// monotonic reading, so After and Before compare wall clocks that can repeat.
+// slices.SortFunc is not stable either, so without an explicit rule the
+// project the user just opened could sort behind an older one and the order
+// could change from run to run.
+//
+// Paths break the remaining ties to keep the sort reproducible; the project
+// that was just registered or opened is then moved to the front, which is
+// what "most recent" is supposed to mean.
+func sortMostRecentFirst(projects []Project, mostRecent string) {
+	slices.SortFunc(projects, func(a, b Project) int {
 		if a.LastAccessed.After(b.LastAccessed) {
 			return -1
 		}
 		if a.LastAccessed.Before(b.LastAccessed) {
 			return 1
 		}
-		return 0
+		return strings.Compare(a.Path, b.Path)
 	})
 
-	return Save(list)
+	if i := slices.IndexFunc(projects, func(p Project) bool { return p.Path == mostRecent }); i > 0 {
+		// Rotate the entry and everything above it down one slot. The slices
+		// package has no Move, and this keeps the relative order of the rest.
+		entry := projects[i]
+		copy(projects[1:i+1], projects[:i])
+		projects[0] = entry
+	}
 }
 
 // List returns all tracked projects sorted by last accessed.
