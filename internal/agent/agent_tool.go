@@ -4,12 +4,12 @@ import (
 	"context"
 	_ "embed"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 
-	"github.com/SpherePrime/CLI/internal/agent/prompt"
 	"github.com/SpherePrime/CLI/internal/agent/tools"
-	"github.com/SpherePrime/CLI/internal/config"
 )
 
 //go:embed templates/agent_tool.md
@@ -17,29 +17,29 @@ var agentToolDescription string
 
 type AgentParams struct {
 	Prompt string `json:"prompt" description:"The task for the agent to perform"`
+	Agent  string `json:"agent,omitempty" description:"Which configured agent to run. Omit to use the default search agent."`
 }
 
 const (
 	AgentToolName = "agent"
 )
 
-func (c *coordinator) agentTool(ctx context.Context) (fantasy.AgentTool, error) {
-	agentCfg, ok := c.cfg.Config().Agents[config.AgentTask]
-	if !ok {
-		return nil, errors.New("task agent not configured")
-	}
-	prompt, err := taskPrompt(prompt.WithWorkingDir(c.cfg.WorkingDir()))
-	if err != nil {
-		return nil, err
+// agentTool returns the sub-agent launcher. The agent it builds is resolved per
+// call from the requested name, so the model can send work to a different
+// configured agent — and therefore a different model — instead of every
+// sub-agent landing on the default one.
+func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
+	if _, ok := c.cfg.Config().Agents["task"]; !ok {
+		// The default sub-agent is still resolved lazily; only fail here when
+		// there is nothing to fall back to at all.
+		if len(c.SubAgentNames()) == 0 {
+			return nil, errors.New("no sub-agent configured")
+		}
 	}
 
-	agent, err := c.buildAgent(ctx, prompt, agentCfg, true)
-	if err != nil {
-		return nil, err
-	}
 	return fantasy.NewParallelAgentTool(
 		AgentToolName,
-		agentToolDescription,
+		c.agentToolDescription(),
 		func(ctx context.Context, params AgentParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
 			if params.Prompt == "" {
 				return fantasy.NewTextErrorResponse("prompt is required"), nil
@@ -55,14 +55,49 @@ func (c *coordinator) agentTool(ctx context.Context) (fantasy.AgentTool, error) 
 				return fantasy.ToolResponse{}, errors.New("agent message id missing from context")
 			}
 
+			agent, err := c.SubAgent(params.Agent)
+			if err != nil {
+				// Reported as a tool error rather than a transport error so the
+				// model can see the valid names and retry.
+				return fantasy.NewTextErrorResponse(
+					fmt.Sprintf("%v. Available agents: %s",
+						err, strings.Join(c.SubAgentNames(), ", "))), nil
+			}
+
+			title := "New Agent Session"
+			if params.Agent != "" {
+				title = "Agent Session: " + params.Agent
+			}
+
 			return c.runSubAgent(ctx, subAgentParams{
 				Agent:          agent,
 				SessionID:      sessionID,
 				AgentMessageID: agentMessageID,
 				ToolCallID:     call.ID,
 				Prompt:         params.Prompt,
-				SessionTitle:   "New Agent Session",
+				SessionTitle:   title,
 			})
 		},
 	), nil
+}
+
+// agentToolDescription is the static description plus the roster of agents the
+// model may target, each with the model it runs on. Without the roster the
+// model cannot choose, because only the names are guessable otherwise.
+func (c *coordinator) agentToolDescription() string {
+	names := c.SubAgentNames()
+	if len(names) == 0 {
+		return agentToolDescription
+	}
+
+	lines := make([]string, 0, len(names)+1)
+	for _, name := range names {
+		line := "- " + name
+		if model := c.SubAgentModel(name); model != "" {
+			line += " (model: " + model + ")"
+		}
+		lines = append(lines, line)
+	}
+
+	return agentToolDescription + "\n\nAvailable agents:\n" + strings.Join(lines, "\n")
 }
