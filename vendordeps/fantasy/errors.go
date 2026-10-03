@@ -185,20 +185,59 @@ func NewTransportError(err error) *ProviderError {
 	}
 }
 
-// TransientStreamErrorTypes are provider error "type" (or "code") values
-// that name a temporary server-side condition worth retrying. Mid-stream
-// SSE error events ride inside an already-successful 200 response, so the
-// HTTP status code cannot signal retryability; providers classify the
-// payload against this set and set ProviderError.TransientError.
+// PermanentStreamErrorTypes are provider error "type" (or "code") values
+// that name a condition a retry cannot fix: a malformed request, a bad key,
+// a model the account may not use, an oversized prompt. They are the only
+// mid-stream errors that must not be retried.
 //
-// This is the canonical list. Providers parse their SDK-specific error
-// shapes but defer the transient/permanent policy decision here.
-var TransientStreamErrorTypes = map[string]bool{
-	"server_error":     true,
-	"internal_error":   true,
-	"overloaded_error": true,
-	"api_error":        true,
-	"rate_limit_error": true,
+// This list is deliberately a deny-list. An earlier allow-list of "known
+// transient" types silently dropped every error it did not already know
+// about: a mid-stream "This model is currently unavailable" arrived with no
+// matching type, was classified permanent, and failed on the first attempt
+// despite the payload asking the caller to try again later.
+var PermanentStreamErrorTypes = map[string]bool{
+	// Malformed or unusable request.
+	"invalid_request_error": true,
+	"invalid_request":       true,
+	"invalid_api_key":       true,
+	"request_too_large":     true,
+	// Credentials and entitlements.
+	"authentication_error":      true,
+	"permission_error":          true,
+	"permission_denied":         true,
+	"account_error":             true,
+	"billing_error":             true,
+	"billing_hard_limit_reached": true,
+	"insufficient_quota":        true,
+	// The named resource does not exist or is not served here.
+	"not_found_error": true,
+	"model_not_found": true,
+	// The prompt does not fit. Retrying resends the same oversized prompt.
+	"context_length_exceeded": true,
+	"prompt_too_long":         true,
+	// Refused on content grounds. Retrying resends the same content.
+	"content_policy_violation": true,
+	"safety":                   true,
+}
+
+// IsTransientStreamError reports whether a mid-stream SSE error event naming
+// errType is worth retrying.
+//
+// Mid-stream error events ride inside an already-successful 200 response, so
+// no status code, response header, or transport signal survives to judge
+// them: ProviderError.StatusCode is 0, headers are absent, and the cause is
+// an application-level event rather than a broken connection. The server
+// accepted the request and then failed while producing the response, which
+// is transient unless the payload names a permanent condition. So the policy
+// is a deny-list — anything not known to be permanent retries.
+//
+// An empty errType means the provider sent no classification at all, which is
+// the same case as an unrecognized one and also retries.
+func IsTransientStreamError(errType string) bool {
+	if PermanentStreamErrorTypes[strings.ToLower(strings.TrimSpace(errType))] {
+		return false
+	}
+	return true
 }
 
 // WrapTransportError wraps a transient transport failure in a retryable
