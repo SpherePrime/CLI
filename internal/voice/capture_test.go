@@ -22,12 +22,16 @@ func TestCaptureHelper(t *testing.T) {
 		t.Skip("subprocess used by the capture tests")
 	}
 
+	// One chunk is 100ms of audio, so the sleep has to be 100ms too. Sleeping
+	// less pushed ten times the audio through the pipe for no benefit: the
+	// tests only assert that more than 100ms arrived, and a subprocess
+	// blasting 320KB/s is enough to look like a leak to a busy CI runner.
 	chunk := make([]byte, SampleRate*bytesPerSample/10)
 	for {
 		if _, err := os.Stdout.Write(chunk); err != nil {
 			return
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
