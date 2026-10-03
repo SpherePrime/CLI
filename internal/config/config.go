@@ -482,6 +482,7 @@ type Options struct {
 	AutoUpdate                bool          `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
 	SmartTools                bool          `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
 	RequestTimeout            *int          `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. A model that reasons before its first token sends no stream parts while it thinks\\, so this also caps how long one silent thinking phase may last. 0 disables it\\, negative values are invalid.,default=120,example=300,example=600,example=0"`
+	AutoContinue              bool          `json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
 }
 
 // DefaultRequestTimeout bounds each LLM API request when the user has not

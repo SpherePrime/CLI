@@ -258,6 +258,10 @@ type UI struct {
 	// isCanceling tracks whether the user has pressed escape once to cancel.
 	isCanceling bool
 
+	// autoContinueCount tracks consecutive auto-continue retries so a
+	// permanently-failing provider does not loop forever.
+	autoContinueCount int
+
 	// bangMode tracks whether the editor is in bang (!) shell mode.
 	bangMode     bool
 	bangWasEmpty bool // true when bang prompt became empty on last keystroke
@@ -830,6 +834,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd := m.handlePlanHandoff(msg.Payload); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+		if cmd := m.maybeAutoContinue(msg.Payload); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case busyStateMsg:
 		cmds = append(cmds, m.applyBusyState(msg)...)
 	case promptQueueMsg:
@@ -883,6 +890,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.promptQueue = 0
 		m.promptQueueItems = nil
 		m.promptQueueCheckedAt = time.Time{}
+		// The auto-continue budget belongs to the previous session's
+		// error streak; the new session starts clean.
+		m.autoContinueCount = 0
 		if cmd := m.dispatchBusyRefresh(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -2358,6 +2368,25 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			}
 			return util.NewInfoMsg(m.com.LSprintf("info.smart_tools_mode", status))
 		}))
+		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionToggleAutoContinue:
+		cfg := m.com.Config()
+		if cfg == nil {
+			cmds = append(cmds, util.ReportError(errors.New("configuration not found")))
+			break
+		}
+		newValue := cfg.Options == nil || !cfg.Options.AutoContinue
+		cmds = append(cmds, func() tea.Msg {
+			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.auto_continue", newValue); err != nil {
+				return util.ReportError(err)()
+			}
+
+			status := m.com.L("info.disabled")
+			if newValue {
+				status = m.com.L("info.enabled")
+			}
+			return util.NewInfoMsg(m.com.LSprintf("info.auto_continue", status))
+		})
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionQuit:
 		// A capture left running would keep the microphone busy after the
@@ -5073,6 +5102,13 @@ func (m *UI) sendMessageInternal(content string, hidden bool, attachments ...mes
 		return util.ReportError(err)
 	}
 
+	// A prompt typed by the user starts a fresh burst: any error streak
+	// from an earlier run no longer counts against the auto-continue
+	// budget.
+	if !hidden {
+		m.autoContinueCount = 0
+	}
+
 	// Start the turn timer.
 	common.StartTurn()
 
@@ -5698,6 +5734,38 @@ func (m *UI) handlePermissionNotification(notification permission.PermissionNoti
 			m.dialog.CloseDialog(dialog.PermissionsID)
 		}
 	}
+}
+
+// maxAutoContinues caps how many consecutive auto-continue retries are
+// sent for one failing burst before giving up and reporting the stop.
+const maxAutoContinues = 10
+
+// maybeAutoContinue resumes a run that stopped on a provider error when the
+// auto-continue option is on. A cancelled run and a normally-finished run
+// never trigger it; a healthy finish also resets the retry counter so the
+// next failing burst gets a fresh budget.
+func (m *UI) maybeAutoContinue(rc notify.RunComplete) tea.Cmd {
+	if m.session == nil || rc.SessionID != m.session.ID {
+		return nil
+	}
+	if rc.Cancelled {
+		m.autoContinueCount = 0
+		return nil
+	}
+	if rc.Error == "" {
+		// The agent finished on its own: any error streak is over.
+		m.autoContinueCount = 0
+		return nil
+	}
+	cfg := m.com.Config()
+	if cfg == nil || cfg.Options == nil || !cfg.Options.AutoContinue {
+		return nil
+	}
+	if m.autoContinueCount >= maxAutoContinues {
+		return util.CmdHandler(util.NewInfoMsg(m.com.LSprintf("info.auto_continue_stopped", m.autoContinueCount)))
+	}
+	m.autoContinueCount++
+	return m.sendMessageInternal(m.com.L("agent.auto_continue"), true)
 }
 
 // handlePlanHandoff checks whether a completed run in plan mode contained the

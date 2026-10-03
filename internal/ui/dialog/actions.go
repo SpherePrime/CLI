@@ -95,6 +95,7 @@ type (
 	ActionToggleTransparentBackground struct{}
 	ActionToggleMouseSupport          struct{}
 	ActionToggleSmartTools            struct{}
+	ActionToggleAutoContinue          struct{}
 	ActionInitializeProject           struct{}
 	ActionSummarize                   struct {
 		SessionID string
