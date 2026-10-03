@@ -44,6 +44,10 @@ builds:
       - -s -w -X github.com/SpherePrime/CLI/internal/version.Version={{.Version}}
     flags:
       - -trimpath
+      # Without this, a VCS checkout stamps a pseudo-version into the build
+      # info. internal/version no longer prefers it over the injected tag, but
+      # keeping VCS data out keeps the embedded build info clean as well.
+      - -buildvcs=false
 
 archives:
   - name_template: >-

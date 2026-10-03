@@ -23,12 +23,18 @@ var (
 // without -ldflags, in which case the version above is unset. As a workaround
 // we use the embedded build version that *is* set when using `go install` (and
 // is only set for `go install` and not for `go build`).
+//
+// The build-info value is only a fallback: it is ignored when the linker already
+// set Version. A VCS checkout makes `go build` stamp a pseudo-version into the
+// build info, which used to overwrite the injected release version and made
+// every published binary report v0.4.x-0.<date>-<sha> instead of its tag.
 func init() {
-	info, ok := debug.ReadBuildInfo()
-	if ok {
-		mainVersion := info.Main.Version
-		if mainVersion != "" && mainVersion != "(devel)" {
-			Version = strings.TrimSuffix(mainVersion, "+dirty")
+	if Version == "" || Version == "devel" {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			mainVersion := info.Main.Version
+			if mainVersion != "" && mainVersion != "(devel)" {
+				Version = strings.TrimSuffix(mainVersion, "+dirty")
+			}
 		}
 	}
 
