@@ -1800,6 +1800,15 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 			break
 		}
 		if err != nil {
+			if !titleFallbackWorthwhile(err) {
+				// The failure belongs to the provider or the account, not to
+				// this model. The other model shares the key and the rate
+				// limit, so stop instead of spending four more requests
+				// (fantasy already retried this one three times) and another
+				// half-minute of waiting to fail identically.
+				slog.Error("Error generating title with "+attempt.name+" model; not trying the next model", "err", err)
+				break
+			}
 			slog.Error("Error generating title with "+attempt.name+" model; trying next", "err", err)
 		} else {
 			slog.Error("Title generation hit token limit with " + attempt.name + " model; trying next")
@@ -1872,6 +1881,45 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 		return
 	}
 	titleSaved = true
+}
+
+// titleFallbackWorthwhile reports whether a title-generation failure on one
+// model is worth retrying on another.
+//
+// The fallback exists for model-specific problems: a model that is missing,
+// not served here, or too slow to finish a 40-token answer. Failures that
+// belong to the provider or the account are identical for every model behind
+// the same key, so a second attempt only repeats them — and each attempt is
+// already four requests, because fantasy retries transient errors three times
+// with a 5s/10s/20s backoff. Under a rate limit that is eight requests and
+// over a minute of waiting spent producing no title.
+func titleFallbackWorthwhile(err error) bool {
+	if err == nil {
+		return true
+	}
+
+	var providerErr *fantasy.ProviderError
+	if !errors.As(err, &providerErr) {
+		// Not a provider error at all: a transport failure or a canceled
+		// context. A different model gets a fresh connection, which is
+		// exactly what the fallback is for.
+		return true
+	}
+
+	// An oversized prompt fails the same way on every model.
+	if providerErr.IsContextTooLarge() {
+		return false
+	}
+
+	switch providerErr.StatusCode {
+	case http.StatusUnauthorized, // bad or expired key
+		http.StatusForbidden,    // key valid, model not entitled
+		http.StatusPaymentRequired,
+		http.StatusTooManyRequests: // the rate limit is per key, not per model
+		return false
+	}
+
+	return true
 }
 
 func (a *sessionAgent) openrouterCost(metadata fantasy.ProviderMetadata) *float64 {

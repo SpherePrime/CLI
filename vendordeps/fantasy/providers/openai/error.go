@@ -74,7 +74,11 @@ func toProviderErrFromStreamError(streamErr *ssestream.StreamError) *fantasy.Pro
 		Message:        cmp.Or(envelope.Error.Message, streamErr.Message),
 		Cause:          streamErr,
 		ResponseBody:   streamErr.Event.Data,
-		TransientError: fantasy.TransientStreamErrorTypes[errType],
+		// The event arrived inside a 200 response, so StatusCode stays 0 and
+		// cannot signal retryability. Retry unless the payload names a
+		// permanent condition: "This model is currently unavailable" and
+		// friends ask the caller to come back, and nothing else would.
+		TransientError: fantasy.IsTransientStreamError(errType),
 	}
 }
 

@@ -639,7 +639,7 @@ func (g *languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.
 			if err != nil {
 				yield(fantasy.StreamPart{
 					Type:  fantasy.StreamPartTypeError,
-					Error: toProviderErr(err),
+					Error: toStreamErr(err),
 				})
 				return
 			}
@@ -1068,7 +1068,7 @@ func (g *languageModel) streamObjectWithJSONMode(ctx context.Context, call fanta
 
 		for resp, err := range chat.SendMessageStream(ctx, depointerSlice(lastMessage.Parts)...) {
 			if err != nil {
-				streamErr = toProviderErr(err)
+				streamErr = toStreamErr(err)
 				yield(fantasy.ObjectStreamPart{
 					Type:  fantasy.ObjectStreamPartTypeError,
 					Error: streamErr,

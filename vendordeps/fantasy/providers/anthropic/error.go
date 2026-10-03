@@ -24,6 +24,12 @@ const awsCredentialErrorFragment = "failed to refresh cached credentials" //noli
 func toProviderErr(err error) error {
 	var apiErr *anthropic.Error
 	if errors.As(err, &apiErr) {
+		// TransientError is deliberately left unset here. A request-level
+		// failure keeps its real HTTP status, and ProviderError.IsRetryable()
+		// already reads that (408/409/429/5xx, and 529 for overloaded_error).
+		// Classifying by type as well would only add ways to get it wrong:
+		// it would let a 400 response retry, and drop nothing the status does
+		// not already cover.
 		providerErr := &fantasy.ProviderError{
 			Title:           cmp.Or(fantasy.ErrorTitleForStatusCode(apiErr.StatusCode), "provider request failed"),
 			Message:         apiErr.Error(),
@@ -33,7 +39,6 @@ func toProviderErr(err error) error {
 			RequestBody:     apiErr.DumpRequest(true),
 			ResponseHeaders: toHeaderMap(apiErr.Response.Header),
 			ResponseBody:    apiErr.DumpResponse(true),
-			TransientError:  fantasy.TransientStreamErrorTypes[string(apiErr.Type())],
 		}
 
 		parseContextTooLargeError(apiErr.Error(), providerErr)
@@ -74,8 +79,8 @@ type streamErrorEnvelope struct {
 }
 
 // wrapStreamError classifies a mid-stream SSE error event as a
-// ProviderError, marking it transient when the payload names a temporary
-// server-side condition. Returns nil if err is not a stream error event.
+// ProviderError, retrying it unless the payload names a permanent
+// condition. Returns nil if err is not a stream error event.
 func wrapStreamError(err error) *fantasy.ProviderError {
 	_, payload, ok := strings.Cut(err.Error(), streamErrorPrefix)
 	if !ok {
@@ -99,7 +104,7 @@ func wrapStreamError(err error) *fantasy.ProviderError {
 		Message:        cmp.Or(message, payload),
 		Cause:          err,
 		ResponseBody:   []byte(payload),
-		TransientError: fantasy.TransientStreamErrorTypes[errType],
+		TransientError: fantasy.IsTransientStreamError(errType),
 	}
 }
 
