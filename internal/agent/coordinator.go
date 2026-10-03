@@ -162,6 +162,12 @@ type coordinator struct {
 	mainAgentName string
 	agents        map[string]SessionAgent
 
+	// subAgents caches sub-agents built on demand by the agent tool, keyed by
+	// config agent name. Building one wires a provider and two models, which
+	// is far too expensive to redo on every call.
+	subAgentMu sync.Mutex
+	subAgents  map[string]SessionAgent
+
 	// Skills discovery results (session-start snapshot).
 	allSkills    []*skills.Skill // Pre-filter: all discovered after dedup.
 	activeSkills []*skills.Skill // Post-filter: active skills only.
@@ -214,6 +220,7 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 		notify:       opts.Notify,
 		runComplete:  opts.RunComplete,
 		agents:       make(map[string]SessionAgent),
+		subAgents:    make(map[string]SessionAgent),
 		allSkills:    allSkills,
 		activeSkills: activeSkills,
 		skillTracker: skillTracker,
@@ -1466,6 +1473,103 @@ func (c *coordinator) Cancel(sessionID string) {
 	c.currentAgent().Cancel(sessionID)
 }
 
+// subAgentPrompt builds the system prompt for a configured agent, so a
+// sub-agent runs the personality its config describes rather than always the
+// task prompt.
+func subAgentPrompt(id string, opts ...prompt.Option) (*prompt.Prompt, error) {
+	switch id {
+	case config.AgentPlan:
+		return planPrompt(opts...)
+	case config.AgentCoder:
+		return coderPrompt(opts...)
+	default:
+		return taskPrompt(opts...)
+	}
+}
+
+// SubAgent returns a sub-agent for the named configured agent, building and
+// caching it on first use. Building wires a provider and two models, so it is
+// far too expensive to redo per tool call.
+//
+// An empty name keeps the historical default (task). An unknown name is an
+// error the tool surfaces to the model, so it can retry with a listed agent.
+func (c *coordinator) SubAgent(name string) (SessionAgent, error) {
+	if name == "" {
+		name = config.AgentTask
+	}
+	cfg := c.cfg.Config()
+	agentCfg, ok := cfg.Agents[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown agent %q", name)
+	}
+
+	c.subAgentMu.Lock()
+	defer c.subAgentMu.Unlock()
+	if agent, ok := c.subAgents[name]; ok {
+		return agent, nil
+	}
+
+	prompt, err := subAgentPrompt(name, prompt.WithWorkingDir(c.cfg.WorkingDir()))
+	if err != nil {
+		return nil, err
+	}
+	agent, err := c.buildAgent(context.Background(), prompt, agentCfg, true)
+	if err != nil {
+		return nil, err
+	}
+	c.subAgents[name] = agent
+	return agent, nil
+}
+
+// SubAgentNames lists the configured agents the agent tool may target, in a
+// stable order, so the tool description can show the model what it can pick.
+func (c *coordinator) SubAgentNames() []string {
+	cfg := c.cfg.Config()
+	if cfg == nil {
+		return nil
+	}
+	names := make([]string, 0, len(cfg.Agents))
+	for _, id := range []string{config.AgentCoder, config.AgentTask, config.AgentPlan} {
+		if _, ok := cfg.Agents[id]; ok {
+			names = append(names, id)
+		}
+	}
+	return names
+}
+
+// SubAgentModel reports the model a sub-agent will run on, so the tool
+// description can name the model behind each agent.
+func (c *coordinator) SubAgentModel(name string) string {
+	cfg := c.cfg.Config()
+	if cfg == nil {
+		return ""
+	}
+	agentCfg, ok := cfg.Agents[name]
+	if !ok {
+		return ""
+	}
+	selected := cfg.Models[config.SelectedModelTypeLarge]
+	if agentCfg.ModelOverride != nil {
+		selected = *agentCfg.ModelOverride
+	}
+	if selected.Model == "" {
+		return ""
+	}
+	if m := cfg.GetModel(selected.Provider, selected.Model); m != nil && m.Name != "" {
+		return m.Name
+	}
+	return selected.Model
+}
+
+// ForgetSubAgents drops the cached sub-agents so the next tool call rebuilds
+// them. Used after a model or provider change, which the cached instances
+// were built against.
+func (c *coordinator) ForgetSubAgents() {
+	c.subAgentMu.Lock()
+	defer c.subAgentMu.Unlock()
+	clear(c.subAgents)
+}
+
 func (c *coordinator) CancelAll() {
 	c.currentAgent().CancelAll()
 }
@@ -1494,6 +1598,9 @@ func (c *coordinator) UpdateModels(ctx context.Context) error {
 	c.cfg.RefetchOpenAIChatGPTModels(ctx)
 
 	agent, name := c.activeAgent()
+	// Cached sub-agents were built against the old provider and models, so
+	// drop them and let the next agent tool call rebuild on the new ones.
+	c.ForgetSubAgents()
 	return c.updateAgentModels(ctx, agent, name)
 }
 
