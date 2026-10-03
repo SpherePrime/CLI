@@ -734,6 +734,15 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	}
 	commands = append(commands, NewCommandItem(c.com.Styles, "toggle_mouse", mouseLabel, "", ActionToggleMouseSupport{}))
 
+	// Add the auto-continue toggle: when enabled a run that stops on a
+	// provider error (timeout, rate limit, ...) is resumed with a hidden
+	// continuation prompt instead of waiting for the user to retry.
+	autoContinueLabel := c.com.L("cmd.enable_auto_continue")
+	if cfg != nil && cfg.Options != nil && cfg.Options.AutoContinue {
+		autoContinueLabel = c.com.L("cmd.disable_auto_continue")
+	}
+	commands = append(commands, NewCommandItem(c.com.Styles, "toggle_auto_continue", autoContinueLabel, "", ActionToggleAutoContinue{}).WithAliases("retry", "auto-continue", "continue"))
+
 	commands = append(
 		commands,
 		NewCommandItem(c.com.Styles, "quit", c.com.L("cmd.quit"), "ctrl+c", tea.QuitMsg{}).WithAliases("exit"),

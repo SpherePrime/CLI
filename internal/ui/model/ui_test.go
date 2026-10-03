@@ -216,6 +216,7 @@ func newPlanUI(t *testing.T, sessionID string) (*UI, *testWorkspace) {
 	sty := styles.ColorTonePantera()
 	cfg := &config.Config{
 		Providers: csync.NewMap[string, config.ProviderConfig](),
+		Options:   &config.Options{},
 	}
 	ws := &testWorkspace{cfg: cfg}
 	var sess *session.Session
@@ -433,6 +434,140 @@ func TestPlanHandoffCollapsedClickRestoresFocus(t *testing.T) {
 
 	require.True(t, isPlanHandoffInline(u))
 	require.Equal(t, uiFocusEditor, u.focus)
+}
+
+// runAutoContinueCmd executes the command returned by maybeAutoContinue to
+// completion: sendMessageInternal returns tea.Batch in normal paths, so the
+// nested cmds run to completion, AgentRun reaches the test workspace, and
+// the terminal agentRunSubmittedMsg is delivered back to the model.
+func runAutoContinueCmd(t *testing.T, u *UI, cmd tea.Cmd) {
+	t.Helper()
+	if cmd == nil {
+		return
+	}
+	msg := cmd()
+	switch m := msg.(type) {
+	case tea.BatchMsg:
+		for _, nested := range m {
+			if nested != nil {
+				nested()
+			}
+		}
+	case util.InfoMsg:
+		// Stopped-budget report: nothing to drive.
+	default:
+		_, _ = u.Update(msg)
+	}
+}
+
+func TestMaybeAutoContinue_SendsHiddenContinue(t *testing.T) {
+	t.Parallel()
+	u, ws := newPlanUI(t, "sess-1")
+	u.mode = uiInputModeCode
+	ws.cfg.Options.AutoContinue = true
+	ws.agentReady = true
+
+	cmd := u.maybeAutoContinue(notify.RunComplete{
+		SessionID: "sess-1",
+		Error:     "request timed out",
+	})
+	require.NotNil(t, cmd)
+	runAutoContinueCmd(t, u, cmd)
+
+	require.Len(t, ws.runPrompts, 1)
+	require.Contains(t, ws.runPrompts[0], "Continue")
+	require.Equal(t, []bool{true}, ws.runHidden, "the continuation must stay out of the chat")
+	require.Equal(t, 1, u.autoContinueCount)
+}
+
+func TestMaybeAutoContinue_SuccessRunResetsCounter(t *testing.T) {
+	t.Parallel()
+	u, ws := newPlanUI(t, "sess-1")
+	u.mode = uiInputModeCode
+	ws.cfg.Options.AutoContinue = true
+	ws.agentReady = true
+
+	u.maybeAutoContinue(notify.RunComplete{SessionID: "sess-1", Error: "boom"})
+	require.Equal(t, 1, u.autoContinueCount)
+
+	cmd := u.maybeAutoContinue(notify.RunComplete{SessionID: "sess-1"})
+	require.Nil(t, cmd)
+	require.Equal(t, 0, u.autoContinueCount, "a healthy finish must end the error streak")
+}
+
+func TestMaybeAutoContinue_CancelledRunNeverTriggers(t *testing.T) {
+	t.Parallel()
+	u, ws := newPlanUI(t, "sess-1")
+	u.mode = uiInputModeCode
+	ws.cfg.Options.AutoContinue = true
+	ws.agentReady = true
+
+	cmd := u.maybeAutoContinue(notify.RunComplete{
+		SessionID: "sess-1",
+		Cancelled: true,
+	})
+	require.Nil(t, cmd)
+	require.Empty(t, ws.runPrompts)
+}
+
+func TestMaybeAutoContinue_WithoutOptionDoesNotTrigger(t *testing.T) {
+	t.Parallel()
+	u, ws := newPlanUI(t, "sess-1")
+	u.mode = uiInputModeCode
+	ws.agentReady = true
+
+	cmd := u.maybeAutoContinue(notify.RunComplete{SessionID: "sess-1", Error: "boom"})
+	require.Nil(t, cmd)
+	require.Empty(t, ws.runPrompts)
+}
+
+func TestMaybeAutoContinue_OtherSessionNeverTriggers(t *testing.T) {
+	t.Parallel()
+	u, ws := newPlanUI(t, "sess-1")
+	u.mode = uiInputModeCode
+	ws.cfg.Options.AutoContinue = true
+	ws.agentReady = true
+
+	cmd := u.maybeAutoContinue(notify.RunComplete{SessionID: "OTHER", Error: "boom"})
+	require.Nil(t, cmd)
+	require.Empty(t, ws.runPrompts)
+	require.Equal(t, 0, u.autoContinueCount)
+}
+
+func TestMaybeAutoContinue_StopsAfterMaxAttempts(t *testing.T) {
+	t.Parallel()
+	u, ws := newPlanUI(t, "sess-1")
+	u.mode = uiInputModeCode
+	ws.cfg.Options.AutoContinue = true
+	ws.agentReady = true
+
+	u.autoContinueCount = maxAutoContinues
+	cmd := u.maybeAutoContinue(notify.RunComplete{SessionID: "sess-1", Error: "still broken"})
+	require.NotNil(t, cmd)
+
+	msg := cmd()
+	_, ok := msg.(util.InfoMsg)
+	require.True(t, ok, "past the budget the UI must report the stop instead of resending")
+	require.Empty(t, ws.runPrompts)
+}
+
+func TestMaybeAutoContinue_HiddenSendKeepsCounter(t *testing.T) {
+	t.Parallel()
+	u, ws := newPlanUI(t, "sess-1")
+	u.mode = uiInputModeCode
+	ws.agentReady = true
+
+	// Drive a hidden send: it must not reset a streak the option built up
+	// elsewhere; only user-typed prompts (hidden=false) start fresh.
+	u.autoContinueCount = 4
+	cmd := u.sendMessage("typed prompt")
+	runAutoContinueCmd(t, u, cmd)
+	require.Equal(t, 0, u.autoContinueCount, "a user prompt starts a fresh burst")
+
+	u.autoContinueCount = 4
+	hidden := u.sendMessageInternal("hidden note", true)
+	runAutoContinueCmd(t, u, hidden)
+	require.Equal(t, 4, u.autoContinueCount, "a hidden continuation must keep the streak")
 }
 
 func TestPlanHandoffRequestChangesAllowsChatTextSelection(t *testing.T) {

@@ -710,6 +710,11 @@
             600,
             0
           ]
+        },
+        "auto_continue": {
+          "type": "boolean",
+          "description": "Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.",
+          "default": false
         }
       },
       "additionalProperties": false,
