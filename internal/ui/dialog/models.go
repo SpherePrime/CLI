@@ -193,6 +193,18 @@ func (m *Models) ID() string {
 // HandleMsg implements Dialog.
 func (m *Models) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
+	case tea.PasteMsg:
+		// The filter field is the only text input here.
+		prevValue := m.input.Value()
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		if value := m.input.Value(); value != prevValue {
+			m.list.Focus()
+			m.list.SetFilter(value)
+			m.list.SelectFirst()
+			m.list.ScrollToTop()
+		}
+		return ActionCmd{cmd}
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.Close):

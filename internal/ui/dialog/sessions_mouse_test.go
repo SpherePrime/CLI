@@ -8,6 +8,8 @@ import (
 	"time"
 
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/csync"
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
@@ -31,6 +33,19 @@ func (w *sessionMouseWorkspace) Language() string {
 
 func (w *sessionMouseWorkspace) AgentIsReady() bool {
 	return false
+}
+
+// Config lets dialogs that read the configuration (the command palette, for
+// one) build against this stub instead of dereferencing the embedded nil
+// interface.
+func (w *sessionMouseWorkspace) Config() *config.Config {
+	return &config.Config{
+		Providers: csync.NewMap[string, config.ProviderConfig](),
+		Options: &config.Options{
+			TUI: &config.TUIOptions{},
+		},
+		Agents: map[string]config.Agent{},
+	}
 }
 
 func newSessionMouseDialog(t *testing.T, sessions []session.Session, selectedSessionID string) *Session {

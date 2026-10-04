@@ -232,6 +232,16 @@ func (s *Session) HandleMsg(msg tea.Msg) Action {
 				return ActionCmd{cmd}
 			}
 		}
+	case tea.PasteMsg:
+		// Renaming a session is real text entry, so it has to accept a paste
+		// as well as typing.
+		if s.sessionsMode == sessionsModeUpdating {
+			if item, ok := s.list.SelectedItem().(*SessionItem); ok && item != nil {
+				return ActionCmd{Cmd: item.HandleInput(msg)}
+			}
+			return nil
+		}
+		return filterPaste(&s.input, s.list, msg)
 	case common.CoalescedWheelMsg:
 		if image.Pt(msg.Mouse.X, msg.Mouse.Y).In(s.sessionListArea()) {
 			s.list.ScrollBy(int(msg.DeltaY))

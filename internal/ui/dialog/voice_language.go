@@ -129,6 +129,8 @@ func (v *VoiceLanguage) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
 	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
 		return v.mouse.HandleMsg(msg, v.list, v.activate)
+	case tea.PasteMsg:
+		return filterPaste(&v.input, v.list, msg)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, v.keyMap.Close):
