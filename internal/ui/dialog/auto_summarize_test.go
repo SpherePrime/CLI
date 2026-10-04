@@ -23,14 +23,19 @@ func rowValues(a *AutoSummarize) []string {
 
 // newAutoSummarizeTestDialog builds the form over a stub workspace so the
 // thresholds can be read back without touching the real config file.
-func newAutoSummarizeTestDialog(t *testing.T, opts *config.Options) *AutoSummarize {
+func newAutoSummarizeTestDialog(t *testing.T, opts *config.Options, locale ...string) *AutoSummarize {
 	t.Helper()
+
+	lang := i18n.En
+	if len(locale) > 0 {
+		lang = locale[0]
+	}
 
 	cfg := config.Config{
 		Providers: csync.NewMap[string, config.ProviderConfig](),
 		Options:   opts,
 	}
-	ws := &autoSummarizeTestWorkspace{cfg: cfg}
+	ws := &autoSummarizeTestWorkspace{cfg: cfg, locale: lang}
 	return NewAutoSummarize(&common.Common{
 		Workspace: ws,
 		Styles:    providerTestStyles(),
@@ -40,6 +45,7 @@ func newAutoSummarizeTestDialog(t *testing.T, opts *config.Options) *AutoSummari
 type autoSummarizeTestWorkspace struct {
 	workspace.Workspace
 	cfg         config.Config
+	locale      string
 	writtenKeys map[string]any
 }
 
@@ -47,7 +53,7 @@ func (w *autoSummarizeTestWorkspace) Config() *config.Config { return &w.cfg }
 
 // Language pins the catalog so the assertions do not depend on the developer's
 // configured UI language.
-func (w *autoSummarizeTestWorkspace) Language() string { return i18n.En }
+func (w *autoSummarizeTestWorkspace) Language() string { return w.locale }
 
 func (w *autoSummarizeTestWorkspace) SetConfigFields(scope config.Scope, kv map[string]any) error {
 	if w.writtenKeys == nil {

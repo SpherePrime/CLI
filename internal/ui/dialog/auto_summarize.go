@@ -15,9 +15,12 @@ import (
 
 const (
 	// AutoSummarizeID is the identifier for the auto-summarize thresholds dialog.
-	AutoSummarizeID              = "auto_summarize"
-	autoSummarizeDialogMaxWidth  = 66
-	autoSummarizeLabelColumn     = 24
+	AutoSummarizeID             = "auto_summarize"
+	autoSummarizeDialogMaxWidth = 72
+	// Wide enough for the longest label in either language. "Сжимать при
+	// заполнении" is 22 characters, and a label that wraps makes the row
+	// unreadable because the value ends up on the next line.
+	autoSummarizeLabelColumn     = 23
 	autoSummarizeWindowStep      = 1000
 	autoSummarizeMaxWindowTokens = 100_000_000
 )
@@ -359,12 +362,18 @@ func (a *AutoSummarize) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 			descStyle = t.Dialog.ListItem.InfoFocused
 		}
 
+		// The suffix has to be subtracted before the input width is decided.
+		// Leaving it out put the suffix past the dialog edge, and lipgloss
+		// wrapped it onto a line of its own, so a row read as three lines:
+		// label and value, then a bare "%", then the description.
 		label := truncateToWidth(row.title, autoSummarizeLabelColumn)
-		row.input.SetWidth(dialogInputTextWidth(t, row.input, innerWidth-autoSummarizeLabelColumn-len([]rune(row.suffix))))
+		suffix := " " + row.suffix
+		available := innerWidth - autoSummarizeLabelColumn - len([]rune(suffix))
+		row.input.SetWidth(dialogInputTextWidth(t, row.input, max(available, 4)))
 
 		rc.AddPart(labelStyle.Render(padRightTo(label, autoSummarizeLabelColumn)) +
 			valueStyle.Render(row.input.View()) +
-			t.Dialog.NormalItem.Render(" "+row.suffix))
+			t.Dialog.NormalItem.Render(suffix))
 		rc.AddPart(descStyle.Render(truncateToWidth(row.description, innerWidth)))
 	}
 
