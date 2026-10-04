@@ -56,7 +56,7 @@ func builtToolSet(t *testing.T, enabled bool) []fantasy.AgentTool {
 		},
 	}
 
-	agentCfg := coord.cfg.Config().Agents[config.AgentCoder]
+	agentCfg := coord.cfg.Config().Agents[config.AgentGeneral]
 	built, err := coord.buildTools(context.Background(), agentCfg, false)
 	require.NoError(t, err)
 	return built

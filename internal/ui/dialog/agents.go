@@ -52,7 +52,8 @@ func NewAgents(com *common.Common) *Agents {
 	m.help = help.New()
 	m.help.Styles = t.DialogHelpStyles()
 
-	m.agentIDs = []string{config.AgentCoder, config.AgentGeneral, config.AgentTask, config.AgentPlan}
+	// Main agent first, then the workers it delegates to.
+	m.agentIDs = []string{config.AgentGeneral, config.AgentCode, config.AgentTask, config.AgentPlan}
 
 	m.list = list.NewFilterableList()
 	m.list.Focus()
@@ -271,7 +272,7 @@ func (i *AgentsItem) Render(width int) string {
 	// therefore looked like it was configuring a delegate while it actually
 	// switched the session's own model. Say which one it is.
 	name := i.agent.Name
-	if i.agentID == config.AgentCoder {
+	if i.agentID == config.AgentGeneral {
 		name += " (" + i.com.L("cmd.main_agent") + ")"
 	}
 	return renderItem(styles, name, info, i.focused, width, i.cache, &i.m)

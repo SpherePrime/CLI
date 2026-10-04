@@ -57,13 +57,21 @@ const (
 )
 
 const (
-	AgentCoder string = "coder"
-	AgentPlan  string = "plan"
-	AgentTask  string = "task"
-	// AgentGeneral is the worker the main model delegates to when it wants a
-	// whole job handed over rather than a question answered: it can edit files
-	// and run commands, which AgentTask deliberately cannot.
+	// AgentGeneral is the agent this session runs on. It holds the
+	// conversation, talks to the user, and is what everything else is
+	// delegated to. Its model is the one the model picker changes.
 	AgentGeneral string = "general"
+
+	// The rest are workers. The model decides when to call one, hands it a
+	// self-contained job, and gets an answer back.
+	AgentCode string = "code" // edits and runs things
+	AgentTask string = "task" // reads only: search and investigation
+	AgentPlan string = "plan" // reads only: analysis and plans
+
+	// LegacyAgentCoder is what the main agent was called before it was
+	// renamed to general. Existing configs carry per-agent settings under
+	// this id and they have to follow the agent, not be dropped.
+	LegacyAgentCoder string = "coder"
 )
 
 type SelectedModel struct {
@@ -1257,8 +1265,12 @@ func resolveReadOnlyTools(tools []string) []string {
 func resolvePlanTools(tools []string) []string {
 	// The read-only LSP lookups mirror the task agent's tool set: planning
 	// needs symbol navigation just as much as research does.
+	//
+	// "agent" is deliberately absent. Delegation is one level deep: the main
+	// agent hands work out, workers do it and report back. Letting a worker
+	// delegate would let a plan spawn a worker that spawns a plan, with
+	// nothing in the config to bound the depth.
 	planTools := []string{
-		"agent",
 		"glob",
 		"grep",
 		"ls",
@@ -1289,20 +1301,35 @@ func filterSlice(data []string, mask []string, include bool) []string {
 func (c *Config) SetupAgents() {
 	allowedTools := resolveAllowedTools(allToolNames(), c.Options.DisabledTools)
 
+	// The main agent gets every tool, including the agent tool, because it is
+	// the one that decides to delegate.
 	agents := map[string]Agent{
-		AgentCoder: {
-			ID:           AgentCoder,
-			Name:         "Coder",
-			Description:  "An agent that helps with executing coding tasks.",
+		AgentGeneral: {
+			ID:           AgentGeneral,
+			Name:         "General",
+			Description:  "The agent this session runs on. Holds the conversation and delegates work to the other agents.",
 			Model:        SelectedModelTypeLarge,
 			ContextPaths: c.Options.ContextPaths,
 			AllowedTools: allowedTools,
 		},
 
+		AgentCode: {
+			ID:           AgentCode,
+			Name:         "Code",
+			Description:  "Carries out a coding task end to end: reads, edits and runs commands. Hand it a change rather than a question.",
+			Model:        SelectedModelTypeLarge,
+			ContextPaths: c.Options.ContextPaths,
+			// Full tools, minus "agent". A worker that could call a worker
+			// would let a delegation chain grow with nothing to bound it, and
+			// one level is what delegation is for: the main agent keeps the
+			// thread, the workers do the work.
+			AllowedTools: filterSlice(allowedTools, []string{"agent"}, false),
+		},
+
 		AgentTask: {
 			ID:           AgentTask,
 			Name:         "Task",
-			Description:  "An agent that helps with searching for context and finding implementation details.",
+			Description:  "Searches for context and finds implementation details. Cannot change anything.",
 			Model:        SelectedModelTypeLarge,
 			ContextPaths: c.Options.ContextPaths,
 			AllowedTools: resolveReadOnlyTools(allowedTools),
@@ -1310,23 +1337,10 @@ func (c *Config) SetupAgents() {
 			AllowedMCP: map[string][]string{},
 		},
 
-		AgentGeneral: {
-			ID:           AgentGeneral,
-			Name:         "General",
-			Description:  "A general purpose agent that carries out complete tasks end to end: it can read, edit and run commands, so hand it work rather than a question.",
-			Model:        SelectedModelTypeLarge,
-			ContextPaths: c.Options.ContextPaths,
-			// Full tools, minus "agent" on purpose. Giving the worker a way to
-			// call a worker would let a delegation chain grow without bound, and
-			// one level is what delegation is for: the main agent keeps the
-			// thread, the workers do the work.
-			AllowedTools: filterSlice(allowedTools, []string{"agent"}, false),
-		},
-
 		AgentPlan: {
 			ID:           AgentPlan,
 			Name:         "Plan",
-			Description:  "An agent that performs deep analysis and prepares implementation plans without modifying files.",
+			Description:  "Performs deep analysis and prepares implementation plans without modifying files.",
 			Model:        SelectedModelTypeLarge,
 			ContextPaths: c.Options.ContextPaths,
 			AllowedTools: resolvePlanTools(allowedTools),
@@ -1334,18 +1348,57 @@ func (c *Config) SetupAgents() {
 			AllowedMCP: map[string][]string{},
 		},
 	}
+
+	// Carry the user's own settings over from the ids those agents used to
+	// have, so a rename does not throw away a pinned model or a tool
+	// restriction somebody set deliberately.
+	//
+	// "general" needs care: for one release it named a full-tools *worker*,
+	// before the main agent was renamed to it. An existing config that still
+	// has "coder" is from before that rename, so its "general" entry meant
+	// the worker and belongs on "code". Without "coder" it is the new main
+	// agent and stays put.
 	overrides := map[string]*SelectedModel{}
-	for id, agent := range c.Agents {
-		if agent.ModelOverride != nil {
-			overrides[id] = agent.ModelOverride
+	copiedFrom := map[string]Agent{}
+	if legacy, ok := c.Agents[LegacyAgentCoder]; ok {
+		if override := legacy.ModelOverride; override != nil {
+			overrides[AgentGeneral] = override
+		}
+		copiedFrom[AgentGeneral] = legacy
+
+		if worker, ok := c.Agents[AgentGeneral]; ok {
+			if override := worker.ModelOverride; override != nil {
+				overrides[AgentCode] = override
+			}
+			copiedFrom[AgentCode] = worker
+		}
+	} else {
+		for id, agent := range c.Agents {
+			if agent.ModelOverride != nil {
+				overrides[id] = agent.ModelOverride
+			}
 		}
 	}
+
 	c.Agents = agents
 	for id, override := range overrides {
 		if agent, ok := c.Agents[id]; ok {
 			agent.ModelOverride = override
 			c.Agents[id] = agent
 		}
+	}
+	for id, from := range copiedFrom {
+		agent, ok := c.Agents[id]
+		if !ok {
+			continue
+		}
+		if from.Disabled {
+			agent.Disabled = true
+		}
+		if from.Model != "" {
+			agent.Model = from.Model
+		}
+		c.Agents[id] = agent
 	}
 }
 

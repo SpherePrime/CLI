@@ -53,16 +53,16 @@ func TestSubAgentNamesExcludeMainAgent(t *testing.T) {
 
 	names := c.SubAgentNames()
 	require.NotEmpty(t, names)
-	require.NotContains(t, names, config.AgentCoder,
+	require.NotContains(t, names, config.AgentGeneral,
 		"the main agent must not be offered as something to call")
 	require.Contains(t, names, config.AgentTask)
 	require.Contains(t, names, config.AgentPlan)
 
 	// Asking for the main agent by name has to be refused rather than
 	// quietly recursing.
-	_, err := c.SubAgent(config.AgentCoder)
+	_, err := c.SubAgent(config.AgentGeneral)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), config.AgentCoder)
+	require.Contains(t, err.Error(), config.AgentGeneral)
 }
 
 func TestSubAgentPromptAcceptsWorkingDir(t *testing.T) {
@@ -70,7 +70,7 @@ func TestSubAgentPromptAcceptsWorkingDir(t *testing.T) {
 
 	// subAgentPrompt must forward options through to the underlying builder,
 	// otherwise the sub-agent loses the caller's working directory.
-	for _, id := range []string{config.AgentCoder, config.AgentTask, config.AgentPlan} {
+	for _, id := range []string{config.AgentGeneral, config.AgentTask, config.AgentPlan} {
 		p, err := subAgentPrompt(id)
 		require.NoError(t, err, id)
 		require.NotNil(t, p, id)

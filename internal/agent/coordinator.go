@@ -227,7 +227,7 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 		interactive:  opts.Interactive,
 	}
 
-	agentCfg, ok := opts.Config.Config().Agents[config.AgentCoder]
+	agentCfg, ok := opts.Config.Config().Agents[config.AgentGeneral]
 	if !ok {
 		return nil, errCoderAgentNotConfigured
 	}
@@ -241,7 +241,7 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 	if err != nil {
 		return nil, err
 	}
-	c.agents[config.AgentCoder] = agent
+	c.agents[config.AgentGeneral] = agent
 
 	planCfg, ok := c.cfg.Config().Agents[config.AgentPlan]
 	if !ok {
@@ -280,7 +280,7 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 	}
 
 	c.mainAgent = agent
-	c.mainAgentName = config.AgentCoder
+	c.mainAgentName = config.AgentGeneral
 	return c, nil
 }
 
@@ -1485,10 +1485,8 @@ func subAgentPrompt(id string, opts ...prompt.Option) (*prompt.Prompt, error) {
 	switch id {
 	case config.AgentPlan:
 		return planPrompt(opts...)
-	case config.AgentGeneral:
-		return generalPrompt(opts...)
-	case config.AgentCoder:
-		return coderPrompt(opts...)
+	case config.AgentCode:
+		return codePrompt(opts...)
 	default:
 		return taskPrompt(opts...)
 	}
@@ -1508,7 +1506,7 @@ func (c *coordinator) SubAgent(name string) (SessionAgent, error) {
 	// here would hand the model a second coder on an empty context, and that
 	// copy could be asked for a third. The roster already omits it, but the
 	// model can still send the name, and a tool argument is not a suggestion.
-	if name == config.AgentCoder {
+	if name == config.AgentGeneral {
 		return nil, fmt.Errorf("agent %q is the main agent and cannot run as a sub-agent", name)
 	}
 	cfg := c.cfg.Config()
@@ -1549,7 +1547,7 @@ func (c *coordinator) SubAgentNames() []string {
 		return nil
 	}
 	names := make([]string, 0, len(cfg.Agents))
-	for _, id := range []string{config.AgentGeneral, config.AgentTask, config.AgentPlan} {
+	for _, id := range []string{config.AgentCode, config.AgentTask, config.AgentPlan} {
 		if _, ok := cfg.Agents[id]; ok {
 			names = append(names, id)
 		}
