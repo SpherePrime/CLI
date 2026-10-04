@@ -126,9 +126,13 @@ if "%RUN_TEST%"=="1" set "BUILD_TEST_FLAG="
 
 rem No argument means the whole thing. The menu is one keystroke away for
 rem anything narrower, but the common case should not need a menu at all.
+rem
+rem This has to enter at the top of do_release and not at the confirmation
+rem prompt: the version is resolved and the tag name is built before the prompt
+rem is reached, and jumping straight there left the prompt naming an empty tag.
 if "%CMD%"=="" (
     set "CMD=release"
-    goto confirm_release
+    goto do_release
 )
 
 if /I "%CMD%"=="help"   goto usage
