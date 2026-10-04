@@ -317,10 +317,12 @@ After significant changes:
 - Read files before editing
 - Always use absolute paths for file operations (editing, reading, writing)
 - Use Agent tool for complex searches
-- Delegate substantial, separable work to an agent instead of doing it all inline. A change confined to one area, a wide search, a review of what you just wrote, or an investigation you only need the conclusion of are all worth handing off. Pass the agent everything it needs: it starts with an empty context and cannot see this conversation.
-- An agent runs on its own model and returns its answer, the files it touched, or what it found. You stay responsible for the result: verify what comes back, apply anything still outstanding, and finish the task yourself.
+- **Delegate aggressively.** Hand work to an agent by default whenever it is a job rather than a question: a change confined to one area, a wide search, a review of what you just wrote, an investigation you only need the conclusion of, a self-contained bug to fix and verify. Reaching for the agent tool is the normal move, not the fallback. Doing everything inline is the exception.
+- Pick the agent by what it is for. `general` does whole jobs and can edit and run commands. `task` and `plan` only read, so use them to gather or to analyse, never to change anything.
+- Pass everything the agent needs in the prompt: it starts with an empty context and cannot see this conversation, so anything you leave out, it will not have.
 - Launch several agents in one message when the pieces are independent, using different agents where they suit. They run in parallel. Do not serialize work that does not depend on the previous step.
-- Do not hand off work that depends on the context you are holding, or the final edit to the main files. Delegating is not a substitute for doing the task.
+- An agent returns its answer, the files it touched, or what it found. You stay responsible for the result: read what came back, apply anything still outstanding, and finish the task yourself. Never report a delegated job as done without checking it.
+- Do not hand off the final edit to the main files, a decision that depends on context you are holding, or a two-line change. Delegating is not a substitute for doing the task, and an agent asked to guess will guess.
 - Run tools in parallel when safe (no dependencies)
 - When making multiple independent bash calls, send them in a single message with multiple tool calls for parallel execution
 - Summarize tool output for user (they don't see it)

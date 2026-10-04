@@ -14,6 +14,9 @@ var coderPromptTmpl []byte
 //go:embed templates/task.md.tpl
 var taskPromptTmpl []byte
 
+//go:embed templates/general.md.tpl
+var generalPromptTmpl []byte
+
 //go:embed templates/plan.md.tpl
 var planPromptTmpl []byte
 
@@ -38,6 +41,14 @@ func taskPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 
 func planPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 	systemPrompt, err := prompt.NewPrompt("plan", string(planPromptTmpl), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return systemPrompt, nil
+}
+
+func generalPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
+	systemPrompt, err := prompt.NewPrompt("general", string(generalPromptTmpl), opts...)
 	if err != nil {
 		return nil, err
 	}

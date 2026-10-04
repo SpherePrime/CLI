@@ -52,7 +52,7 @@ func NewAgents(com *common.Common) *Agents {
 	m.help = help.New()
 	m.help.Styles = t.DialogHelpStyles()
 
-	m.agentIDs = []string{config.AgentCoder, config.AgentTask, config.AgentPlan}
+	m.agentIDs = []string{config.AgentCoder, config.AgentGeneral, config.AgentTask, config.AgentPlan}
 
 	m.list = list.NewFilterableList()
 	m.list.Focus()

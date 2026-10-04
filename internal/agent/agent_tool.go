@@ -10,6 +10,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 
 	"github.com/SpherePrime/CLI/internal/agent/tools"
+	"github.com/SpherePrime/CLI/internal/config"
 )
 
 //go:embed templates/agent_tool.md
@@ -64,10 +65,14 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 						err, strings.Join(c.SubAgentNames(), ", "))), nil
 			}
 
-			title := "New Agent Session"
-			if params.Agent != "" {
-				title = "Agent Session: " + params.Agent
+			// Name the agent in the session title. The child session shows up
+			// in the session list, and a run of them all called "New Agent
+			// Session" gave no way to tell which was which afterwards.
+			name := params.Agent
+			if name == "" {
+				name = config.AgentTask
 			}
+			title := "Agent Session: " + name
 
 			return c.runSubAgent(ctx, subAgentParams{
 				Agent:          agent,
