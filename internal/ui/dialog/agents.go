@@ -266,7 +266,15 @@ func (i *AgentsItem) Render(width int) string {
 		InfoTextBlurred: i.t.Dialog.ListItem.InfoBlurred,
 		InfoTextFocused: i.t.Dialog.ListItem.InfoFocused,
 	}
-	return renderItem(styles, i.agent.Name, info, i.focused, width, i.cache, &i.m)
+	// Coder is the agent this session runs on, not a worker the model calls,
+	// and it was listed as if it were a third peer. Picking a model for it
+	// therefore looked like it was configuring a delegate while it actually
+	// switched the session's own model. Say which one it is.
+	name := i.agent.Name
+	if i.agentID == config.AgentCoder {
+		name += " (" + i.com.L("cmd.main_agent") + ")"
+	}
+	return renderItem(styles, name, info, i.focused, width, i.cache, &i.m)
 }
 
 // SetFocused implements list.Item.
