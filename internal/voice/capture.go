@@ -45,6 +45,14 @@ type Session struct {
 	// receiving from that channel is safe.
 	processErr error
 
+	// endedByPrime records that Prime stopped this capture rather than the
+	// recorder failing on its own. Stopping cancels the command context,
+	// which makes os/exec kill the recorder, so the exit status that comes
+	// back describes Prime's own action: "signal: killed" on Unix, a bare
+	// "exit status 1" on Windows. Reporting that as a capture failure blames
+	// the recorder for something it did not do.
+	endedByPrime bool
+
 	mu      sync.Mutex
 	stopped bool
 }
@@ -106,6 +114,9 @@ func (s *Session) markDone() bool {
 // end stops the capture process and waits for the pipe and the process to
 // wind down, so the caller can read everything the recorder wrote.
 func (s *Session) end() {
+	// Set before cancelling: cancelling the context is what makes the recorder
+	// exit, and the exit status it produces is not the recorder's own doing.
+	s.endedByPrime = true
 	s.cancel()
 	drained := false
 	for !drained {
@@ -169,11 +180,17 @@ func (s *Session) cleanup() error {
 func (s *Session) emptyCaptureError() error {
 	tail := s.stderr.String()
 	reason := s.processErr
-	// Stopping the capture cancels the recorder, so a canceled exit says
-	// nothing about the recorder: "context canceled" is Prime's own doing,
-	// and reporting it hides the only hint that matters, which is what the
-	// recorder wrote to stderr before it went away.
-	if errors.Is(reason, context.Canceled) {
+	// Stopping the capture cancels the recorder, so whatever exit status comes
+	// back describes Prime's own action rather than the recorder's health:
+	// "context canceled" from the context, "signal: killed" from os/exec
+	// killing the process, a bare "exit status 1" on Windows. Reporting any of
+	// those as a capture failure blames the recorder for something it did not
+	// do, and hides the only hint that matters, which is what the recorder
+	// wrote to stderr before it went away.
+	//
+	// A recorder that failed on its own still speaks for itself, because
+	// endedByPrime is only set once Prime has actually stopped the capture.
+	if s.endedByPrime || errors.Is(reason, context.Canceled) {
 		reason = nil
 	}
 	switch {

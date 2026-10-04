@@ -146,6 +146,40 @@ func TestEmptyCaptureHidesPrimesOwnCancel(t *testing.T) {
 		"microphone capture failed: exit status 4: microphone: no input devices")
 }
 
+// A capture Prime ended itself must not be reported as a recorder failure:
+// cancelling the command context makes os/exec kill the recorder, so the exit
+// status is "signal: killed" on Unix and a bare "exit status 1" on Windows.
+// Both used to surface as a microphone failure, which is why these capture
+// tests failed intermittently on CI runners under load.
+func TestEmptyCaptureHidesPrimesOwnKill(t *testing.T) {
+	t.Parallel()
+
+	session := &Session{stderr: &tailBuffer{}, processErr: errors.New("signal: killed"), endedByPrime: true}
+	require.EqualError(t, session.emptyCaptureError(),
+		"microphone capture failed: no audio captured")
+
+	// A recorder that complained before it was killed still gets to say so.
+	_, err := session.stderr.Write([]byte("microphone: device busy"))
+	require.NoError(t, err)
+	require.EqualError(t, session.emptyCaptureError(),
+		"microphone capture failed: no audio captured: microphone: device busy")
+
+	// The same status from a recorder that died on its own is still a failure.
+	session.endedByPrime = false
+	require.EqualError(t, session.emptyCaptureError(),
+		"microphone capture failed: signal: killed: microphone: device busy")
+}
+
+// A recorder that exits non-zero before Prime stops it is a real failure and
+// has to keep saying so.
+func TestEmptyCaptureKeepsGenuineRecorderFailure(t *testing.T) {
+	t.Parallel()
+
+	session := &Session{stderr: &tailBuffer{}, processErr: errors.New("exit status 4")}
+	require.EqualError(t, session.emptyCaptureError(),
+		"microphone capture failed: exit status 4")
+}
+
 func TestTailBufferKeepsOnlyTheTail(t *testing.T) {
 	t.Parallel()
 
