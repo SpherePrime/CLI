@@ -262,7 +262,7 @@ func (r *Reasoning) FullHelp() [][]key.Binding {
 
 func (r *Reasoning) setReasoningItems() error {
 	cfg := r.com.Config()
-	agentCfg, ok := cfg.Agents[config.AgentCoder]
+	agentCfg, ok := cfg.Agents[config.AgentGeneral]
 	if !ok {
 		return errors.New("agent configuration not found")
 	}

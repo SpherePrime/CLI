@@ -149,7 +149,7 @@ func (a *AutoSummarize) activeContextWindow() int64 {
 	if cfg == nil {
 		return 0
 	}
-	agentCfg, ok := cfg.Agents[config.AgentCoder]
+	agentCfg, ok := cfg.Agents[config.AgentGeneral]
 	if !ok {
 		return 0
 	}

@@ -51,7 +51,7 @@ func TestCurrentModelSupportsImages(t *testing.T) {
 		cfg := &config.Config{
 			Providers: csync.NewMap[string, config.ProviderConfig](),
 			Agents: map[string]config.Agent{
-				config.AgentCoder: {Model: config.SelectedModelTypeLarge},
+				config.AgentGeneral: {Model: config.SelectedModelTypeLarge},
 			},
 		}
 		ui := newTestUIWithConfig(t, cfg)
@@ -78,7 +78,7 @@ func TestCurrentModelSupportsImages(t *testing.T) {
 			},
 			Providers: providers,
 			Agents: map[string]config.Agent{
-				config.AgentCoder: {Model: config.SelectedModelTypeLarge},
+				config.AgentGeneral: {Model: config.SelectedModelTypeLarge},
 			},
 		}
 
@@ -643,7 +643,7 @@ func TestSetInputMode_SwitchesToCode(t *testing.T) {
 	}
 	applyModeSwitchMsg(u, u.setInputMode(uiInputModeCode))
 	require.Equal(t, uiInputModeCode, u.mode)
-	require.Equal(t, config.AgentCoder, ws.setMainCalledWith)
+	require.Equal(t, config.AgentGeneral, ws.setMainCalledWith)
 }
 
 func TestSetInputMode_SwitchesToPlan(t *testing.T) {
@@ -736,7 +736,7 @@ func TestPlanHandoffConfirm_ClearsPendingAndSwitchesMode(t *testing.T) {
 	require.Equal(t, uiInputModePlan, u.mode)
 	cmds := applyModeSwitchMsg(u, cmd)
 	require.Equal(t, uiInputModeCode, u.mode)
-	require.Equal(t, config.AgentCoder, ws.setMainCalledWith)
+	require.Equal(t, config.AgentGeneral, ws.setMainCalledWith)
 	require.Empty(t, u.planReadySessionID)
 
 	// The confirmed plan continues with a hidden implement prompt.
@@ -778,7 +778,7 @@ func TestResetPlanModeState(t *testing.T) {
 	require.NotNil(t, cmd)
 	applyModeSwitchMsg(u, cmd)
 	require.Equal(t, uiInputModeCode, u.mode)
-	require.Equal(t, config.AgentCoder, ws.setMainCalledWith)
+	require.Equal(t, config.AgentGeneral, ws.setMainCalledWith)
 	require.Empty(t, u.planReadySessionID)
 	require.Nil(t, u.activeInline)
 }
@@ -857,6 +857,6 @@ func TestSwitchPlanToYolo(t *testing.T) {
 		require.Equal(t, uiInputModeCode, u.mode, "activating YOLO leaves plan mode")
 		require.True(t, ws.yolo, "YOLO ends up enabled regardless of the carried state")
 		require.False(t, u.cycleYolo, "explicit activation must not be undone by the Shift+Tab cycle")
-		require.Equal(t, config.AgentCoder, ws.setMainCalledWith)
+		require.Equal(t, config.AgentGeneral, ws.setMainCalledWith)
 	}
 }

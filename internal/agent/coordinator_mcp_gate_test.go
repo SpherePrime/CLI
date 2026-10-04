@@ -49,13 +49,13 @@ func newGateTestCoordinator(t *testing.T, interactive bool) *coordinator {
 
 	p, err := coderPrompt(prompt.WithWorkingDir(env.workingDir))
 	require.NoError(t, err)
-	agentCfg := cfg.Config().Agents[config.AgentCoder]
+	agentCfg := cfg.Config().Agents[config.AgentGeneral]
 
 	agent, err := coord.buildAgent(context.Background(), p, agentCfg, false)
 	require.NoError(t, err)
 	coord.mainAgent = agent
-	coord.mainAgentName = config.AgentCoder
-	coord.agents[config.AgentCoder] = agent
+	coord.mainAgentName = config.AgentGeneral
+	coord.agents[config.AgentGeneral] = agent
 
 	return coord
 }

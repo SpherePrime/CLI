@@ -765,7 +765,7 @@ func (app *App) InitCoderAgentNonInteractive(ctx context.Context) error {
 }
 
 func (app *App) initCoderAgent(ctx context.Context, interactive bool) error {
-	coderAgentCfg := app.config.Config().Agents[config.AgentCoder]
+	coderAgentCfg := app.config.Config().Agents[config.AgentGeneral]
 	if coderAgentCfg.ID == "" {
 		return fmt.Errorf("coder agent configuration is missing")
 	}

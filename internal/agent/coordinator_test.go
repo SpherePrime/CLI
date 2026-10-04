@@ -797,9 +797,9 @@ func TestCoordinatorSetMainAgent(t *testing.T) {
 		plan := &mockSessionAgent{}
 		coord := &coordinator{
 			mainAgent:     coder,
-			mainAgentName: config.AgentCoder,
+			mainAgentName: config.AgentGeneral,
 			agents: map[string]SessionAgent{
-				config.AgentCoder: coder,
+				config.AgentGeneral: coder,
 				config.AgentPlan:  plan,
 			},
 		}
@@ -813,7 +813,7 @@ func TestCoordinatorSetMainAgent(t *testing.T) {
 	t.Run("returns error for unknown agent", func(t *testing.T) {
 		coord := &coordinator{
 			agents: map[string]SessionAgent{
-				config.AgentCoder: &mockSessionAgent{},
+				config.AgentGeneral: &mockSessionAgent{},
 			},
 		}
 

@@ -2298,7 +2298,7 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 				return util.ReportError(errors.New("configuration not found"))()
 			}
 
-			agentCfg, ok := cfg.Agents[config.AgentCoder]
+			agentCfg, ok := cfg.Agents[config.AgentGeneral]
 			if !ok {
 				return util.ReportError(errors.New("agent configuration not found"))()
 			}
@@ -2464,7 +2464,7 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			break
 		}
 
-		agentCfg, ok := cfg.Agents[config.AgentCoder]
+		agentCfg, ok := cfg.Agents[config.AgentGeneral]
 		if !ok {
 			cmds = append(cmds, util.ReportError(errors.New("agent configuration not found")))
 			break
@@ -4120,7 +4120,7 @@ func (m *UI) currentModelSupportsImages() bool {
 	if cfg == nil {
 		return false
 	}
-	agentCfg, ok := cfg.Agents[config.AgentCoder]
+	agentCfg, ok := cfg.Agents[config.AgentGeneral]
 	if !ok {
 		return false
 	}
@@ -4689,7 +4689,7 @@ const (
 func (m *UI) setInputMode(target uiInputMode) tea.Cmd {
 	agentID := config.AgentPlan
 	if target == uiInputModeCode {
-		agentID = config.AgentCoder
+		agentID = config.AgentGeneral
 	}
 
 	// YOLO is orthogonal to the input mode, so report it alongside the mode
@@ -5447,7 +5447,7 @@ func (m *UI) openModelsConfigDialog() tea.Cmd {
 		return nil
 	}
 
-	agentCfg, ok := m.com.Config().Agents[config.AgentCoder]
+	agentCfg, ok := m.com.Config().Agents[config.AgentGeneral]
 	if !ok {
 		return util.ReportError(errors.New("agent configuration not found"))
 	}
@@ -5914,7 +5914,7 @@ func (m *UI) handleReAuthenticate(providerID string) tea.Cmd {
 	if !ok {
 		return nil
 	}
-	agentCfg, ok := cfg.Agents[config.AgentCoder]
+	agentCfg, ok := cfg.Agents[config.AgentGeneral]
 	if !ok {
 		return nil
 	}

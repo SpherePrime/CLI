@@ -57,18 +57,18 @@ func loadAgentPinStore(t *testing.T) (*ConfigStore, string) {
 func TestAgentModelOverrideRoundTrip(t *testing.T) {
 	store, configPath := loadAgentPinStore(t)
 
-	agent, ok := store.Config().Agents[AgentCoder]
+	agent, ok := store.Config().Agents[AgentGeneral]
 	require.True(t, ok, "agents should be set up for a configured store")
 
 	agent.ModelOverride = &SelectedModel{Provider: "anthropic", Model: "claude-3"}
-	require.NoError(t, store.SetConfigField(ScopeGlobal, "agents."+AgentCoder, agent))
+	require.NoError(t, store.SetConfigField(ScopeGlobal, "agents."+AgentGeneral, agent))
 
-	stored := store.Config().Agents[AgentCoder]
+	stored := store.Config().Agents[AgentGeneral]
 	require.NotNil(t, stored.ModelOverride, "pin lost right after SetConfigField")
 
 	require.NoError(t, store.ReloadFromDisk(context.Background()))
 
-	reread := store.Config().Agents[AgentCoder]
+	reread := store.Config().Agents[AgentGeneral]
 	require.NotNil(t, reread.ModelOverride, "pin lost after reload from disk")
 	require.Equal(t, "anthropic", reread.ModelOverride.Provider)
 	require.Equal(t, "claude-3", reread.ModelOverride.Model)
