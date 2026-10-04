@@ -317,6 +317,10 @@ After significant changes:
 - Read files before editing
 - Always use absolute paths for file operations (editing, reading, writing)
 - Use Agent tool for complex searches
+- Delegate substantial, separable work to an agent instead of doing it all inline. A change confined to one area, a wide search, a review of what you just wrote, or an investigation you only need the conclusion of are all worth handing off. Pass the agent everything it needs: it starts with an empty context and cannot see this conversation.
+- An agent runs on its own model and returns its answer, the files it touched, or what it found. You stay responsible for the result: verify what comes back, apply anything still outstanding, and finish the task yourself.
+- Launch several agents in one message when the pieces are independent, using different agents where they suit. They run in parallel. Do not serialize work that does not depend on the previous step.
+- Do not hand off work that depends on the context you are holding, or the final edit to the main files. Delegating is not a substitute for doing the task.
 - Run tools in parallel when safe (no dependencies)
 - When making multiple independent bash calls, send them in a single message with multiple tool calls for parallel execution
 - Summarize tool output for user (they don't see it)

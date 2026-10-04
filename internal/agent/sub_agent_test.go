@@ -38,6 +38,28 @@ func TestSubAgentPromptCoversConfiguredAgents(t *testing.T) {
 	require.NotNil(t, def)
 }
 
+// The roster the agent tool shows must be the workers only. Coder is the
+// agent the session itself runs on, so listing it as a target let the model
+// spawn itself, and each of those calls could spawn another.
+func TestSubAgentNamesExcludeMainAgent(t *testing.T) {
+	t.Parallel()
+
+	c := newTestCoordinator(t, testEnv(t), "test", config.ProviderConfig{ID: "test"})
+
+	names := c.SubAgentNames()
+	require.NotEmpty(t, names)
+	require.NotContains(t, names, config.AgentCoder,
+		"the main agent must not be offered as something to call")
+	require.Contains(t, names, config.AgentTask)
+	require.Contains(t, names, config.AgentPlan)
+
+	// Asking for the main agent by name has to be refused rather than
+	// quietly recursing.
+	_, err := c.SubAgent(config.AgentCoder)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), config.AgentCoder)
+}
+
 func TestSubAgentPromptAcceptsWorkingDir(t *testing.T) {
 	t.Parallel()
 

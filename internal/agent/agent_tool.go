@@ -16,8 +16,8 @@ import (
 var agentToolDescription string
 
 type AgentParams struct {
-	Prompt string `json:"prompt" description:"The task for the agent to perform"`
-	Agent  string `json:"agent,omitempty" description:"Which configured agent to run. Omit to use the default search agent."`
+	Prompt string `json:"prompt" description:"What the agent has to accomplish, stated as a complete task with its own context and a concrete deliverable. It cannot see this conversation, so anything it needs must be in here."`
+	Agent  string `json:"agent,omitempty" description:"Which configured agent to run. Omit to use the default agent."`
 }
 
 const (

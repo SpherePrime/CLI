@@ -1498,6 +1498,13 @@ func (c *coordinator) SubAgent(name string) (SessionAgent, error) {
 	if name == "" {
 		name = config.AgentTask
 	}
+	// Refuse the main agent even when it is named explicitly. Building one
+	// here would hand the model a second coder on an empty context, and that
+	// copy could be asked for a third. The roster already omits it, but the
+	// model can still send the name, and a tool argument is not a suggestion.
+	if name == config.AgentCoder {
+		return nil, fmt.Errorf("agent %q is the main agent and cannot run as a sub-agent", name)
+	}
 	cfg := c.cfg.Config()
 	agentCfg, ok := cfg.Agents[name]
 	if !ok {
@@ -1524,13 +1531,19 @@ func (c *coordinator) SubAgent(name string) (SessionAgent, error) {
 
 // SubAgentNames lists the configured agents the agent tool may target, in a
 // stable order, so the tool description can show the model what it can pick.
+//
+// The main agent is deliberately absent. Coder is not a peer that the main
+// model calls, it is the main model, so offering it as a target let the model
+// spawn itself: each call would build another coder on a fresh context that
+// could do the same again, with nothing in the config to bound the depth. The
+// roster is the workers; coder owns them.
 func (c *coordinator) SubAgentNames() []string {
 	cfg := c.cfg.Config()
 	if cfg == nil {
 		return nil
 	}
 	names := make([]string, 0, len(cfg.Agents))
-	for _, id := range []string{config.AgentCoder, config.AgentTask, config.AgentPlan} {
+	for _, id := range []string{config.AgentTask, config.AgentPlan} {
 		if _, ok := cfg.Agents[id]; ok {
 			names = append(names, id)
 		}
