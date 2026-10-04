@@ -18,12 +18,14 @@ rem    scripts\build.bat --all --jobs 4  override the throttle (slower, cooler)
 rem    scripts\build.bat --ratio 0.25    use a quarter of the cores instead of half
 rem
 rem  Options: --all --os <name> --jobs <n> --ratio <f> --out <dir> --no-test
+rem           --version <x.y.z>   stamp the version into the binary
 rem ---------------------------------------------------------------------------
 
 set "TARGETS_MODE=current"
 set "JOBS="
 set "RATIO=0.5"
 set "OUT=dist"
+set "VERSION="
 set "RUN_TEST=1"
 set "CORES=%NUMBER_OF_PROCESSORS%"
 if "%CORES%"=="" set "CORES=2"
@@ -42,6 +44,7 @@ if /I "%~1"=="--os"      goto opt_os
 if /I "%~1"=="--jobs"    goto opt_jobs
 if /I "%~1"=="--ratio"  goto opt_ratio
 if /I "%~1"=="--out"     goto opt_out
+if /I "%~1"=="--version" goto opt_version
 if /I "%~1"=="-h"        goto usage
 if /I "%~1"=="--help"   goto usage
 echo Unknown option: %~1
@@ -83,6 +86,15 @@ goto parse
 shift
 if "%~1"=="" ( echo --out needs a directory & goto usage )
 set "OUT=%~1"
+shift
+goto parse
+
+:opt_version
+shift
+if "%~1"=="" ( echo --version needs x.y.z & goto usage )
+rem Accept either form, the linker wants a bare number.
+set "VERSION=%~1"
+set "VERSION=%VERSION:v=%"
 shift
 goto parse
 
@@ -147,8 +159,8 @@ if /I "%TARGETS_MODE%"=="all" (
 rem ---- build ----------------------------------------------------------------
 rem A multi-target build must not share one output path: each target would
 rem overwrite the last, leaving a binary for the wrong platform under a
-rem plausible name. A single native build keeps the plain name.
-set "MULTI=0"
+rem plausible name. A single native build keeps the plain name. MULTI was set
+rem by the mode blocks above; it must not be reset here.
 
 set "FAILED="
 for %%T in (%TARGETS%) do (
@@ -162,15 +174,28 @@ for %%T in (%TARGETS%) do (
     ) else (
         set "GOARM="
     )
+    rem Only Windows binaries carry the .exe suffix. Appending it to a Linux
+    rem build produced prime-linux-amd64.exe, which is neither executable on
+    rem Linux nor obviously wrong on Windows.
     if "!MULTI!"=="1" (
-        set "BIN=%OUT%\prime-!GOOS!-!GOARCH!.exe"
+        set "EXT="
+        if /I "!GOOS!"=="windows" set "EXT=.exe"
+        set "BIN=%OUT%\prime-!GOOS!-!GOARCH!!EXT!"
     ) else (
         set "BIN=%OUT%\prime.exe"
     )
     rem Delayed expansion is required here: the variables were just set
     rem inside this block, and %VAR% inside a block is frozen at parse time.
     echo  [build] !GOOS!/!GOARCH! -^> !BIN!
-    go build -trimpath -p %JOBS% -o "!BIN!" .
+    rem -buildvcs=false keeps the pseudo-version out of the embedded build
+    rem info. Without --version the binary keeps the "devel" default, which is
+    rem what a development build should say. A release build must pass it, or
+    rem the binary reports a commit hash instead of its own tag.
+    if defined VERSION (
+        go build -trimpath -buildvcs=false -p %JOBS% -ldflags "-s -w -X github.com/SpherePrime/CLI/internal/version.Version=%VERSION%" -o "!BIN!" .
+    ) else (
+        go build -trimpath -buildvcs=false -p %JOBS% -o "!BIN!" .
+    )
     if errorlevel 1 (
         set "FAILED=1"
         echo  [fail ] !GOOS!/!GOARCH!
@@ -205,6 +230,6 @@ endlocal
 exit /b 0
 
 :usage
-echo Usage: scripts\build.bat [--all ^| --os windows^|linux^|darwin] [--jobs n] [--ratio f] [--out dir] [--no-test]
+echo Usage: scripts\build.bat [--all ^| --os windows^|linux^|darwin] [--jobs n] [--ratio f] [--out dir] [--no-test] [--version x.y.z]
 endlocal
 exit /b 2
