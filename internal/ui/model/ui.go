@@ -240,6 +240,9 @@ type UI struct {
 	// modeSwitching is true while the async agent-model update kicked off
 	// by setInputMode is still in flight; sending is blocked meanwhile.
 	modeSwitching bool
+	// keyBindingProblems holds configured remaps that could not be applied,
+	// drained by reportKeyBindingProblems on the first Init.
+	keyBindingProblems []string
 
 	// cycleYolo is true while YOLO was enabled by the Shift+Tab input-mode
 	// cycle, which is the only case where the cycle may disable it again.
@@ -533,6 +536,8 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 		skillStates:         skills.GetLatestStates(),
 	}
 
+	ui.keyBindingProblems = ApplyKeyBindings(&ui.keyMap, cfgKeyBindings(com))
+
 	status := NewStatus(com, ui)
 
 	// Seed the active theme key from the large model provider so the
@@ -596,6 +601,9 @@ func (m *UI) Init() tea.Cmd {
 		if cmd := m.openModelsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	}
+	if cmd := m.reportKeyBindingProblems(); cmd != nil {
+		cmds = append(cmds, cmd)
 	}
 	// load the user commands async
 	cmds = append(cmds, m.loadCustomCommands())
@@ -2292,29 +2300,7 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		}
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleThinking:
-		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
-			cfg := m.com.Config()
-			if cfg == nil {
-				return util.ReportError(errors.New("configuration not found"))()
-			}
-
-			agentCfg, ok := cfg.Agents[config.AgentGeneral]
-			if !ok {
-				return util.ReportError(errors.New("agent configuration not found"))()
-			}
-
-			currentModel := cfg.Models[agentCfg.Model]
-			currentModel.Think = !currentModel.Think
-			if err := m.com.Workspace.UpdatePreferredModel(config.ScopeGlobal, agentCfg.Model, currentModel); err != nil {
-				return util.ReportError(err)()
-			}
-			m.com.Workspace.UpdateAgentModel(context.TODO())
-			status := m.com.L("info.disabled")
-			if currentModel.Think {
-				status = m.com.L("info.enabled")
-			}
-			return util.NewInfoMsg(m.com.LSprintf("info.thinking_mode", status))
-		}))
+		cmds = append(cmds, m.toggleThinking())
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleTransparentBackground:
 		cmds = append(cmds, func() tea.Msg {
@@ -3198,12 +3184,14 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 
 			case key.Matches(msg, m.keyMap.Editor.PasteImage):
-				if !m.currentModelSupportsImages() {
-					break
-				}
-				cmds = append(cmds, m.pasteImageFromClipboard)
+				// No model check here: ctrl+v now falls back to pasting text,
+				// which works whether or not the model reads images.
+				cmds = append(cmds, m.pasteFromClipboard)
 			case key.Matches(msg, m.keyMap.Editor.PasteText):
 				cmds = append(cmds, m.pasteTextFromClipboard)
+
+			case key.Matches(msg, m.keyMap.Chat.ToggleThinking):
+				cmds = append(cmds, m.toggleThinking())
 
 			case key.Matches(msg, m.keyMap.Editor.SendMessage):
 				if m.modeSwitching {
@@ -3794,11 +3782,44 @@ func (m *UI) applyProgressBar(v *tea.View) {
 	}
 }
 
+// cfgKeyBindings reads the user's key remaps out of the config, treating a
+// missing config as no remaps rather than an error: this runs while the UI is
+// being constructed, before anything has validated anything.
+func cfgKeyBindings(com *common.Common) map[string]string {
+	cfg := com.Config()
+	if cfg == nil || cfg.Options == nil {
+		return nil
+	}
+	return cfg.Options.KeyBindings
+}
+
+// applyKeyBindings reapplies the configured remaps. Needed because the keymap is
+// rebuilt whenever the language changes, and a remap that was dropped there would
+// silently work in one language and not the other.
+func (m *UI) applyKeyBindings() {
+	m.keyBindingProblems = ApplyKeyBindings(&m.keyMap, cfgKeyBindings(m.com))
+}
+
+// reportKeyBindingProblems surfaces anything wrong with the configured remaps.
+//
+// A remap that did not apply is worth saying out loud: the user pressed a key
+// expecting it to do something new and nothing happened at all, which reads as a
+// broken build rather than a typo in a config file.
+func (m *UI) reportKeyBindingProblems() tea.Cmd {
+	if len(m.keyBindingProblems) == 0 {
+		return nil
+	}
+	problems := slices.Clone(m.keyBindingProblems)
+	m.keyBindingProblems = nil
+	return func() tea.Msg { return util.NewInfoMsg(m.com.LSprintf("info.keybinding_problems", strings.Join(problems, "; "))) }
+}
+
 // applyLanguage rebuilds all locale-dependent UI state: keymap help
 // labels, status bar, and dialog content.
 func (m *UI) applyLanguage() {
 	tr := m.com.T()
 	m.keyMap = BuildKeyMap(tr)
+	m.applyKeyBindings()
 	for _, dlg := range m.dialog.Dialogs() {
 		if r, ok := dlg.(dialog.LocaleRefreshable); ok {
 			r.RefreshLocale()
@@ -5520,6 +5541,38 @@ func (m *UI) openNotificationsDialog() tea.Cmd {
 	return nil
 }
 
+// toggleThinking flips thinking mode on the main agent's current model.
+//
+// Shared by the command palette entry and the keybinding: thinking mode used
+// to be reachable only from the palette, so turning it on or off cost a slash
+// and a search every time, and the toggle nobody does often is the one you
+// want at your fingertips.
+func (m *UI) toggleThinking() tea.Cmd {
+	return m.updateAgentModelCmd(func() tea.Msg {
+		cfg := m.com.Config()
+		if cfg == nil {
+			return util.ReportError(errors.New("configuration not found"))()
+		}
+
+		agentCfg, ok := cfg.Agents[config.AgentGeneral]
+		if !ok {
+			return util.ReportError(errors.New("agent configuration not found"))()
+		}
+
+		currentModel := cfg.Models[agentCfg.Model]
+		currentModel.Think = !currentModel.Think
+		if err := m.com.Workspace.UpdatePreferredModel(config.ScopeGlobal, agentCfg.Model, currentModel); err != nil {
+			return util.ReportError(err)()
+		}
+		m.com.Workspace.UpdateAgentModel(context.TODO())
+		status := m.com.L("info.disabled")
+		if currentModel.Think {
+			status = m.com.L("info.enabled")
+		}
+		return util.NewInfoMsg(m.com.LSprintf("info.thinking_mode", status))
+	})
+}
+
 // saveAutoSummarizeThresholds writes the compaction thresholds to the global
 // config and applies them to the in-memory config.
 //
@@ -6149,9 +6202,34 @@ func (m *UI) pasteTextFromClipboard() tea.Msg {
 	return tea.PasteMsg{Content: string(textData)}
 }
 
+// pasteFromClipboard is what ctrl+v does: it works out what is actually on the
+// clipboard rather than assuming.
+//
+// It used to be image-only, with plain text on ctrl+shift+v. That is backwards
+// from what a paste key is expected to do. Pasting a command and getting
+// silence is the confusing case; pasting a screenshot is the rare one. So an
+// image is attached when there is one, and anything else lands in the composer
+// as text.
+//
+// ctrl+shift+v is still there for text specifically, and for terminals that
+// send a real bracketed paste on their own.
+func (m *UI) pasteFromClipboard() tea.Msg {
+	// The image path warns rather than returning nothing when the model cannot
+	// read images, so it is only worth trying when it can.
+	if m.currentModelSupportsImages() {
+		if msg := m.pasteImageFromClipboard(); msg != nil {
+			return msg
+		}
+	}
+	return m.pasteTextFromClipboard()
+}
+
 // pasteImageFromClipboard reads image data from the system clipboard and
 // creates an attachment. If no image data is found, it falls back to
 // interpreting clipboard text as a file path.
+//
+// It returns nil when the clipboard holds neither an image nor a path to one,
+// which is the caller's cue to fall back to pasting text.
 func (m *UI) pasteImageFromClipboard() tea.Msg {
 	if !m.currentModelSupportsImages() {
 		return util.NewWarnMsg(m.com.L("info.no_image_support"))

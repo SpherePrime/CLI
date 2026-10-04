@@ -744,6 +744,13 @@
           "type": "boolean",
           "description": "Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.",
           "default": false
+        },
+        "keybindings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "Remap a key to a different action by name, such as {\"chat.new_session\": \"ctrl+alt+n\"}. Several keys can be listed separated by a comma. An empty value unbinds the action. Run prime keys for the full list."
         }
       },
       "additionalProperties": false,
