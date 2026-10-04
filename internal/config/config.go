@@ -498,6 +498,15 @@ type Options struct {
 	AutoSummarizeLargePercent *int          `json:"auto_summarize_large_percent,omitempty" jsonschema:"description=Percentage of the context window that must be in use before summarizing automatically for models whose window reaches auto_summarize_large_window. A large window holds far more tokens so compacting later wastes less of it. 0 uses the default of 95.,minimum=0,maximum=100,default=95,example=95"`
 	AutoSummarizeLargeWindow  *int64        `json:"auto_summarize_large_window,omitempty" jsonschema:"description=Context window size in tokens from which auto_summarize_large_percent applies instead of auto_summarize_percent. 0 uses the default of 500000.,minimum=0,example=500000"`
 	AutoContinue              bool`json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
+	// KeyBindings remaps a key to a different action, by name. The actions are
+	// the keymap's own field paths: "chat.new_session", "editor.send_message",
+	// "app.quit". A value may list several keys separated by a comma, and an
+	// empty value unbinds the action so nothing triggers it.
+	//
+	// Names are checked against the keymap at startup rather than trusted, so
+	// a typo leaves the default binding in place instead of silently doing
+	// nothing. Run "prime keys" to print the current names and their bindings.
+	KeyBindings map[string]string `json:"keybindings,omitempty" jsonschema:"description=Remap a key to a different action by name\\, such as {\"chat.new_session\": \"ctrl+alt+n\"}. Several keys can be listed separated by a comma. An empty value unbinds the action. Run prime keys for the full list.,example=chat.new_session:ctrl+alt+n,example=editor.send_message:enter"`
 }
 
 // DefaultRequestTimeout bounds each LLM API request when the user has not

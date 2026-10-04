@@ -46,6 +46,7 @@ type KeyMap struct {
 		Cancel         key.Binding
 		Tab            key.Binding
 		Details        key.Binding
+		ToggleThinking key.Binding
 		TogglePills    key.Binding
 		PillLeft       key.Binding
 		PillRight      key.Binding
@@ -230,6 +231,12 @@ func BuildKeyMap(tr i18n.Translator) KeyMap {
 	km.Chat.Details = key.NewBinding(
 		key.WithKeys("ctrl+d"),
 		key.WithHelp("ctrl+d", tr.Label("key.toggle_details")),
+	)
+	// Thinking mode was reachable only from the command palette, which means
+	// toggling it cost a slash and a search on every use.
+	km.Chat.ToggleThinking = key.NewBinding(
+		key.WithKeys("ctrl+shift+t"),
+		key.WithHelp("ctrl+shift+t", tr.Label("key.toggle_thinking")),
 	)
 	km.Chat.TogglePills = key.NewBinding(
 		key.WithKeys("ctrl+t", "ctrl+space"),
