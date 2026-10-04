@@ -1481,6 +1481,8 @@ func subAgentPrompt(id string, opts ...prompt.Option) (*prompt.Prompt, error) {
 	switch id {
 	case config.AgentPlan:
 		return planPrompt(opts...)
+	case config.AgentGeneral:
+		return generalPrompt(opts...)
 	case config.AgentCoder:
 		return coderPrompt(opts...)
 	default:
@@ -1543,7 +1545,7 @@ func (c *coordinator) SubAgentNames() []string {
 		return nil
 	}
 	names := make([]string, 0, len(cfg.Agents))
-	for _, id := range []string{config.AgentTask, config.AgentPlan} {
+	for _, id := range []string{config.AgentGeneral, config.AgentTask, config.AgentPlan} {
 		if _, ok := cfg.Agents[id]; ok {
 			names = append(names, id)
 		}

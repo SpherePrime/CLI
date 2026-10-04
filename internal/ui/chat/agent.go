@@ -7,6 +7,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
 	"github.com/SpherePrime/CLI/internal/agent"
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
@@ -127,25 +128,36 @@ type AgentToolRenderContext struct {
 // RenderTool implements the [ToolRenderer] interface.
 func (r *AgentToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
 	cappedWidth := cappedMessageWidth(width)
-	if !opts.ToolCall.Finished && !opts.IsCanceled() && len(r.agent.nestedTools) == 0 {
-		return pendingTool(sty, "Agent", opts.Anim, opts.Compact)
-	}
 
 	var params agent.AgentParams
 	_ = json.Unmarshal([]byte(opts.ToolCall.Input), &params)
+
+	// Which agent is running is the entire point of showing this at all. The
+	// tool name is the same whichever one the model picked, so a tag that
+	// always read "Task" made a search agent and a worker that edits files
+	// look identical. An omitted name resolves to the default agent, so show
+	// that rather than nothing.
+	agentName := params.Agent
+	if agentName == "" {
+		agentName = config.AgentTask
+	}
+
+	if !opts.ToolCall.Finished && !opts.IsCanceled() && len(r.agent.nestedTools) == 0 {
+		return pendingTool(sty, agentName, opts.Anim, opts.Compact)
+	}
 
 	prompt := params.Prompt
 	if !opts.ExpandedContent {
 		prompt = strings.ReplaceAll(prompt, "\n", " ")
 	}
 
-	header := toolHeader(sty, opts.Status, "Agent", cappedWidth, opts)
+	header := toolHeader(sty, opts.Status, agentName, cappedWidth, opts)
 	if opts.Compact {
 		return header
 	}
 
-	// Build the task tag and prompt.
-	taskTag := sty.Tool.AgentTaskTag.Render("Task")
+	// Build the agent tag and prompt.
+	taskTag := sty.Tool.AgentTaskTag.Render(agentName)
 	taskTagWidth := lipgloss.Width(taskTag)
 
 	// Calculate remaining width for prompt.

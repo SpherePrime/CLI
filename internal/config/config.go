@@ -60,6 +60,10 @@ const (
 	AgentCoder string = "coder"
 	AgentPlan  string = "plan"
 	AgentTask  string = "task"
+	// AgentGeneral is the worker the main model delegates to when it wants a
+	// whole job handed over rather than a question answered: it can edit files
+	// and run commands, which AgentTask deliberately cannot.
+	AgentGeneral string = "general"
 )
 
 type SelectedModel struct {
@@ -1304,6 +1308,19 @@ func (c *Config) SetupAgents() {
 			AllowedTools: resolveReadOnlyTools(allowedTools),
 			// NO MCPs or LSPs by default
 			AllowedMCP: map[string][]string{},
+		},
+
+		AgentGeneral: {
+			ID:           AgentGeneral,
+			Name:         "General",
+			Description:  "A general purpose agent that carries out complete tasks end to end: it can read, edit and run commands, so hand it work rather than a question.",
+			Model:        SelectedModelTypeLarge,
+			ContextPaths: c.Options.ContextPaths,
+			// Full tools, minus "agent" on purpose. Giving the worker a way to
+			// call a worker would let a delegation chain grow without bound, and
+			// one level is what delegation is for: the main agent keeps the
+			// thread, the workers do the work.
+			AllowedTools: filterSlice(allowedTools, []string{"agent"}, false),
 		},
 
 		AgentPlan: {
