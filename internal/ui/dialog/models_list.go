@@ -231,7 +231,9 @@ func (f *ModelsList) VisibleItems() []list.Item {
 			}
 
 			match.MatchedIndexes = idxs
-			if slices.Contains(g.Items, item) {
+			if slices.ContainsFunc(g.Items, func(candidate ListItem) bool {
+				return candidate == item
+			}) {
 				if !visitedGroups[gi] {
 					// Add section header
 					items = append(items, &g)
