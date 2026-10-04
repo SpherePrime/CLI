@@ -105,13 +105,24 @@ if not defined JOBS (
     for /f %%i in ('powershell -NoProfile -Command "[int][math]::Max(1,[math]::Floor(%CORES% * %RATIO%))"') do set "JOBS=%%i"
 )
 
-rem Cap heap at half of physical RAM, in whole MB, so a wide build cannot
-rem push the machine into swap.
+rem Cap total heap across all concurrent compiler processes at half of physical
+rem RAM.
+rem
+rem GOMEMLIMIT is a per-process soft limit and every compiler inherits it from
+rem here, so setting it to the whole budget would let N jobs hold N times that
+rem between them. On a 16GB box with 14 jobs that is a 112GB ceiling, and the
+rem machine swaps long before any single process notices. The budget has to be
+rem divided by the job count, with a floor so a very wide build still has room
+rem to compile the large packages.
 if not defined GOMEMLIMIT (
-    for /f %%i in ('powershell -NoProfile -Command "[int]((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB * 0.5)"') do set "MEMLIMIT_MB=%%i"
-    rem Go's suffix set is B/KiB/MiB/GiB; "MB" is malformed and the runtime
-    rem aborts at startup.
-    if defined MEMLIMIT_MB set "GOMEMLIMIT=!MEMLIMIT_MB!MiB"
+    for /f %%i in ('powershell -NoProfile -Command "[int]((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB * 0.5)"') do set "MEM_BUDGET_MB=%%i"
+    if defined MEM_BUDGET_MB (
+        set /a PER_PROC_MB=MEM_BUDGET_MB / JOBS 2>nul
+        if !PER_PROC_MB! LSS 512 set "PER_PROC_MB=512"
+        rem Go's suffix set is B/KiB/MiB/GiB; "MB" is malformed and the runtime
+        rem aborts at startup.
+        set "GOMEMLIMIT=!PER_PROC_MB!MiB"
+    )
 )
 
 set "GOMAXPROCS=%JOBS%"
@@ -121,7 +132,7 @@ echo.
 echo  Prime build
 echo  ------------------------------------------------------------------
 echo   cores      : %CORES% logical, using %JOBS% (~%RATIO%% of the machine)
-echo   heap limit : %GOMEMLIMIT%
+echo   heap limit : %GOMEMLIMIT% per process, %MEM_BUDGET_MB%MB total across %JOBS% jobs
 echo   mode       : %TARGETS_MODE%
 echo   output     : %OUT%
 echo  ------------------------------------------------------------------

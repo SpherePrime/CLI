@@ -46,6 +46,8 @@ set "NOTES="
 set "RUN_TEST=0"
 set "DRY_RUN=0"
 set "SKIP_BUILD=0"
+set "UPLOAD_LOCAL=0"
+set "ASSUME_YES=0"
 
 set "ROOT=%~dp0.."
 pushd "%ROOT%" >nul 2>&1 || ( echo Cannot enter %ROOT% & exit /b 1 )
@@ -63,6 +65,7 @@ if /I "%~1"=="check"    ( set "CMD=check"    & shift & goto parse )
 if /I "%~1"=="release"  ( set "CMD=release"  & shift & goto parse )
 if /I "%~1"=="draft"    ( set "CMD=draft"    & shift & goto parse )
 if /I "%~1"=="clean"    ( set "CMD=clean"    & shift & goto parse )
+if /I "%~1"=="menu"     ( set "CMD=menu"     & shift & goto parse )
 if /I "%~1"=="help"     goto usage
 if /I "%~1"=="-h"       goto usage
 if /I "%~1"=="--help"   goto usage
@@ -72,6 +75,8 @@ if /I "%~1"=="--out"    goto opt_out
 if /I "%~1"=="--version" goto opt_version
 if /I "%~1"=="--notes"  goto opt_notes
 if /I "%~1"=="--test"   ( set "RUN_TEST=1"  & shift & goto parse )
+if /I "%~1"=="--upload-local" ( set "UPLOAD_LOCAL=1" & shift & goto parse )
+if /I "%~1"=="--yes"    ( set "ASSUME_YES=1" & shift & goto parse )
 if /I "%~1"=="--dry-run" ( set "DRY_RUN=1" & shift & goto parse )
 if /I "%~1"=="--skip-build" ( set "SKIP_BUILD=1" & shift & goto parse )
 echo Unknown option: %~1
@@ -119,7 +124,12 @@ rem suite takes minutes, so this script defaults to building only.
 set "BUILD_TEST_FLAG=--no-test"
 if "%RUN_TEST%"=="1" set "BUILD_TEST_FLAG="
 
-if "%CMD%"=="" goto menu
+rem No argument means the whole thing. The menu is one keystroke away for
+rem anything narrower, but the common case should not need a menu at all.
+if "%CMD%"=="" (
+    set "CMD=release"
+    goto confirm_release
+)
 
 if /I "%CMD%"=="help"   goto usage
 if /I "%CMD%"=="clean"  goto do_clean
@@ -129,6 +139,7 @@ if /I "%CMD%"=="all"    goto do_all
 if /I "%CMD%"=="check"  goto do_check
 if /I "%CMD%"=="release" goto do_release
 if /I "%CMD%"=="draft"  goto do_release
+if /I "%CMD%"=="menu"   goto menu
 goto usage
 
 rem ============================================================================
@@ -568,6 +579,23 @@ if "%TAG_EXISTS%"=="1" echo  tag        : already on the remote, will not be re-
 if "%DRY_RUN%"=="1" echo  DRY RUN - nothing will be pushed
 call :print_footer
 
+rem One keystroke to start is the point, but a tag that has been pushed cannot
+rem be taken back without deleting it on the remote, so the irreversible step
+rem gets one yes or no. --yes skips it for unattended runs.
+:confirm_release
+if "%DRY_RUN%"=="1" goto confirmed
+if "%ASSUME_YES%"=="1" goto confirmed
+echo  This will build every target, tag !TAG!, and publish a release.
+echo  Anything already committed is fine; uncommitted changes are not included.
+echo.
+choice /c Yn /n /t 20 /d N /m "  Publish? [Y/n] (20s) "
+if errorlevel 2 (
+    echo.
+    echo  Cancelled. Nothing was built, tagged, or published.
+    goto :eof
+)
+:confirmed
+
 if "%SKIP_BUILD%"=="0" (
     call :ensure_go || exit /b 1
     echo  Building Windows and Linux targets ...
@@ -581,8 +609,20 @@ if "%SKIP_BUILD%"=="0" (
 
 call :package || exit /b 1
 
+rem Notes are written before the dry-run exit so that --dry-run actually shows
+rem what would be published. A dry run that hides the release notes is only
+rem checking half of what it claims to check.
+if not defined NOTES (
+    set "NOTES=%OUT%\release-notes.md"
+    call :write_notes
+)
+
 if "%DRY_RUN%"=="1" (
     echo.
+    echo  Release notes that would be published ^(from %NOTES%^):
+    echo  ------------------------------------------------------------------
+    type "%NOTES%"
+    call :print_footer
     echo  Dry run complete. Nothing was tagged or uploaded.
     echo  Run without --dry-run to publish.
     goto :eof
@@ -703,34 +743,49 @@ if "%TAG_EXISTS%"=="0" (
     echo  Tag %TAG% is already on the remote.
 )
 
-if not defined NOTES (
-    set "NOTES=%OUT%\release-notes.md"
-    call :write_notes
-)
 
-set "GH_ARGS="
-if /I "%CMD%"=="draft" set "GH_ARGS=--draft"
-if "%DRY_RUN%"=="1" set "GH_ARGS=--draft"
+rem Two ways to get a release out, and they are not interchangeable.
+rem
+rem Default: push the tag and let the Release workflow build the release. That
+rem is the only path that produces the whole asset set, because goreleaser is
+rem what produces the .deb, .rpm, .apk and Arch packages, and it cannot run on
+rem Windows. The binaries come from the same commit with the same flags, so the
+rem local build's job is to prove the commit compiles before a tag exists on it.
+rem
+rem --upload-local: this script creates the release from the binaries it just
+rem built, which means shipping exactly what was tested locally. The cost is
+rem that the packages are absent, so the release is incomplete by construction.
+rem It also collides with the workflow the tag fires, which is why it is opt-in.
+if "%UPLOAD_LOCAL%"=="1" (
+    set "GH_ARGS="
+    if /I "%CMD%"=="draft" set "GH_ARGS=--draft"
 
-rem gh release create refuses to touch a release that already exists, and
-rem --clobber only replaces same-named assets. So an existing release gets an
-rem upload instead: that is what makes re-running after a partial failure
-rem finish the job rather than dead-end on the tag it already pushed.
-gh release view "%TAG%" >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo  Creating the release ...
-    gh release create "%TAG%" --target !SHA! --title "%TAG%" --notes-file "%NOTES%" !GH_ARGS! !ASSETS!
+    rem gh release create refuses to touch a release that already exists, and
+    rem --clobber only replaces same-named assets. So an existing release gets
+    rem an upload instead: that is what makes re-running after a partial
+    rem failure finish the job rather than dead-end on the tag it already
+    rem pushed.
+    gh release view "%TAG%" >nul 2>&1
+    if errorlevel 1 (
+        echo.
+        echo  Creating the release from the local binaries ...
+        gh release create "%TAG%" --target !SHA! --title "%TAG%" --notes-file "%NOTES%" !GH_ARGS! !ASSETS!
+    ) else (
+        echo.
+        echo  Release %TAG% exists, uploading the assets again ...
+        gh release upload "%TAG%" --clobber !ASSETS!
+        if not errorlevel 1 gh release edit "%TAG%" --notes-file "%NOTES%"
+    )
+    if errorlevel 1 (
+        echo.
+        echo ERROR: could not publish the release.
+        echo        The tag is pushed. Re-run this script to retry the upload.
+        exit /b 1
+    )
 ) else (
     echo.
-    echo  Release %TAG% exists, uploading the assets again ...
-    gh release upload "%TAG%" --clobber !ASSETS!
-    if not errorlevel 1 gh release edit "%TAG%" --notes-file "%NOTES%"
+    echo  Tag pushed. Handing the release to the Release workflow.
 )
-if errorlevel 1 (
-    echo.
-    echo ERROR: could not publish the release.
-    echo        The tag is pushed. Re-run this script to retry the upload.
     exit /b 1
 )
 
@@ -738,48 +793,66 @@ call :print_footer
 echo  Release: %TAG%
 for /f "usebackq delims=" %%u in (`gh release view "%TAG%" --json url --jq .url 2^>nul`) do echo           %%u
 echo.
-echo  Note: the tag also fires the Release workflow on GitHub, which builds the
-echo        .deb / .rpm / .apk / Arch packages this script does not produce.
-echo        Those appear on the same release a few minutes later.
+echo  The Release workflow is building the full asset set on GitHub: the
+echo  packages (.deb, .rpm, .apk, Arch) that cannot be produced from Windows,
+echo  plus completions and manpages. It takes about fifteen minutes.
+echo.
+echo  Watch it with:  gh run watch
 goto :eof
 
 rem ---------------------------------------------------------------------------
-rem  write_notes - default release notes when the caller supplied none
+rem ---------------------------------------------------------------------------
+rem  write_notes - build the release notes from the commits since the last tag.
+rem
+rem  Delegated to PowerShell on purpose. Doing this in batch means accumulating
+rem  subjects into a variable, and batch has no newline escape: "`n" is three
+rem  literal characters, so every section came out as one enormous line. Worse,
+rem a commit subject containing & | < > > would be parsed as a shell operator by
+rem  echo and silently corrupt the file. One PowerShell pass does the grouping,
+rem  the escaping and the writing.
 rem ---------------------------------------------------------------------------
 :write_notes
-> "%NOTES%" echo ## What's new
->>"%NOTES%" echo.
->>"%NOTES%" echo Commit `!SHA!` on `main`.
->>"%NOTES%" echo.
->>"%NOTES%" echo Download the archive for your platform and check it against
->>"%NOTES%" echo `checksums.txt`.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\notes.ps1" ^
+    -Repo "%ROOT%" -From "%LATEST_TAG%" -To "!SHA!" -Out "%NOTES%"
+if errorlevel 1 (
+    echo  WARNING: could not generate release notes, writing a placeholder.
+    > "%NOTES%" echo ## Changes
+    >>"%NOTES%" echo.
+    >>"%NOTES%" echo Commit `!SHA!`.
+)
+
 if exist "%ROOT%\RELEASE_NOTES.md" (
     >>"%NOTES%" echo.
     type "%ROOT%\RELEASE_NOTES.md" >> "%NOTES%"
 )
 exit /b 0
-
 rem ============================================================================
 :usage
 echo.
 echo Usage: scripts\release.bat [command] [options]
 echo.
-echo   build     build for this machine only
-echo   run       build for this machine and launch it
-echo   all       build every Windows and Linux target
-echo   check     show the last release and the proposed version
-echo   release   build, tag, and publish to GitHub
-echo   draft     build, tag, and leave a draft release
-echo   clean     delete the output directory
+echo   no command   the whole thing: build everything, tag, publish
+echo   menu         pick a single step from a list
+echo   build        build for this machine only
+echo   run          build for this machine and launch it
+echo   all          build every Windows and Linux target
+echo   check        show the last release and the proposed version
+echo   release      build, tag, and publish to GitHub
+echo   draft        build, tag, and leave a draft release
+echo   clean        delete the output directory
 echo.
-echo   --ratio ^<f^>        fraction of the machine to build with (default 0.5)
+echo   --ratio ^<f^>        fraction of the machine to build with (default 0.35)
 echo   --jobs ^<n^>         exact job count, overrides --ratio
 echo   --out ^<dir^>        output directory (default dist)
 echo   --version ^<x.y.z^>  use this version instead of last release + 1
 echo   --notes ^<file^>     release notes file
 echo   --test             run the test suite before packaging (slow)
+echo   --yes              skip the confirmation prompt
 echo   --dry-run          print what would happen, touch nothing remote
 echo   --skip-build       package what is already in the output directory
+echo   --upload-local     publish this script's binaries instead of letting the
+echo                      workflow build them. Ships exactly what was tested
+echo                      here, but without the .deb / .rpm / Arch packages.
 echo.
 popd
 endlocal

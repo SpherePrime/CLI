@@ -21,23 +21,7 @@ jobs:
       - name: Generate snapshot tag locally
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: echo "GORELEASER_CURRENT_TAG=v0.0.0-$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
-      - name: Check whether the release already exists
-        id: existing
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && '' || github.ref_name }}
-        run: |
-          # scripts\release.bat can publish first: it builds on the developer's
-          # machine, tags, and uploads its own archives. goreleaser then finds
-          # the release taken and fails the job. Skipping keeps both flows
-          # working, and makes re-running a failed release possible instead of
-          # failing again on the release that is already there.
-          if [ -n "$RELEASE_TAG" ] && gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Release $RELEASE_TAG already exists, skipping goreleaser."
-          fi
       - uses: goreleaser/goreleaser-action@v6
-        if: steps.existing.outputs.exists != 'true'
         with:
           version: "~> 2"
           distribution: goreleaser

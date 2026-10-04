@@ -9,24 +9,20 @@ sessions/
 /tools/
 run*.log
 dry_run.txt
-
 # Local chat/dev context
 CHATS.md
 AGENTS.md
-
 # Secret / local config overrides
 config.local.toml
 .env
 .env.local
 credentials.json
 credentials.key
-
 # Editor / OS
 .vscode/
 .idea/
 *.swp
 .DS_Store
-
 # Test artifacts
 tmp/
 dist/tmp/
@@ -40,11 +36,9 @@ prime
 CLI
 CLI.exe
 *.test
-
 # Stale dependency backups
 /.vendorbak*/
 vendordeps_old*/
-
 # TS / TUI
 node_modules/
 dist/
@@ -53,3 +47,6 @@ packages/tui/.bun/
 *.tsbuildinfo
 agent.md
 chat.md
+# release script logs
+release_run.log
+notes.log
