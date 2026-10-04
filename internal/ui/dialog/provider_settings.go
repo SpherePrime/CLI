@@ -172,6 +172,17 @@ func (p *ProviderSettings) HandleMsg(msg tea.Msg) Action {
 			return nil
 		}
 		return p.mouse.HandleMsg(msg, p.list, p.activate)
+	case tea.PasteMsg:
+		// Without this the paste falls through to the return below and is
+		// lost, which is why a model ID or context window could only be typed
+		// one character at a time.
+		switch p.state {
+		case providerSettingsStateModelID, providerSettingsStateModelContext:
+			return p.updateInput(msg)
+		case providerSettingsStateProviders:
+			return p.filterInput(msg)
+		}
+		return nil
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, p.keyMap.Close):

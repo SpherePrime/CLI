@@ -6,9 +6,31 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/clipboard"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
+
+// pasteKey is the manual paste shortcut.
+//
+// textinput maps ctrl+v to its own Paste command, but that command returns an
+// unexported message type. A dialog returns the command as an ActionCmd, the
+// message comes back through the overlay, and no dialog outside the textinput
+// package can type-switch on it, so it is discarded and the keypress does
+// nothing. Dialogs are exactly where ctrl+v is most useful, since they have no
+// other way to reach the system clipboard. Translating the press into a
+// tea.PasteMsg here puts it on the same path as a real bracketed paste, which
+// every input already handles.
+var pasteKey = key.NewBinding(key.WithKeys("ctrl+v"))
+
+// pasteFromClipboard reads text and re-emits it as a bracketed paste.
+func pasteFromClipboard() tea.Msg {
+	data, err := clipboard.Read(clipboard.FormatText)
+	if err != nil || len(data) == 0 {
+		return nil
+	}
+	return tea.PasteMsg{Content: string(data)}
+}
 
 // Dialog sizing constants.
 const (
@@ -295,6 +317,11 @@ func (d *Overlay) Update(msg tea.Msg) tea.Msg {
 	if goBackOnBackspace(msg, dialog) {
 		d.CloseFrontDialog()
 		return nil
+	}
+
+	// Handled here rather than by the dialog: see pasteKey.
+	if press, ok := msg.(tea.KeyPressMsg); ok && key.Matches(press, pasteKey) {
+		return ActionCmd{Cmd: pasteFromClipboard}
 	}
 
 	return dialog.HandleMsg(msg)

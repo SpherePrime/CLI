@@ -53,10 +53,7 @@ import (
 const (
 	DefaultSessionName = "Untitled Session"
 
-	// Constants for auto-summarization thresholds
-	largeContextWindowThreshold = 200_000
-	largeContextWindowBuffer    = 20_000
-	smallContextWindowRatio     = 0.2
+
 )
 
 var userAgent = fmt.Sprintf("Prime/%s (https://github.com/SpherePrime/CLI)", version.Version)
@@ -178,7 +175,11 @@ type sessionAgent struct {
 	sessions             session.Service
 	messages             message.Service
 	disableAutoSummarize bool
-	isYolo               bool
+	// autoSummarizePolicy is the resolved threshold set. A zero value means
+	// every window is treated as unknown and nothing is compacted, so it is
+	// filled from config rather than left at zero.
+	autoSummarizePolicy config.AutoSummarizePolicy
+	isYolo              bool
 	notify               pubsub.Publisher[notify.Notification]
 	runComplete          pubsub.Publisher[notify.RunComplete]
 
@@ -230,7 +231,11 @@ type SessionAgentOptions struct {
 	SystemPrompt         string
 	IsSubAgent           bool
 	DisableAutoSummarize bool
-	IsYolo               bool
+	// AutoSummarizePolicy decides how full the context window has to be
+	// before a turn is compacted. The zero value is not usable: call
+	// config.Options.GetAutoSummarizePolicy to resolve it.
+	AutoSummarizePolicy config.AutoSummarizePolicy
+	IsYolo              bool
 	Sessions             session.Service
 	Messages             message.Service
 	Tools                []fantasy.AgentTool
@@ -250,7 +255,10 @@ func NewSessionAgent(
 		sessions:             opts.Sessions,
 		messages:             opts.Messages,
 		disableAutoSummarize: opts.DisableAutoSummarize,
-		tools:                csync.NewSliceFrom(opts.Tools),
+		// An unresolved policy would silently disable compaction, so fall
+		// back to the defaults rather than trusting a zero value.
+		autoSummarizePolicy: cmp.Or(opts.AutoSummarizePolicy, config.DefaultAutoSummarizePolicy()),
+		tools:               csync.NewSliceFrom(opts.Tools),
 		isYolo:               opts.IsYolo,
 		notify:               opts.Notify,
 		runComplete:          opts.RunComplete,
@@ -1041,20 +1049,19 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		StopWhen: []fantasy.StopCondition{
 			func(_ []fantasy.StepResult) bool {
 				cw := int64(largeModel.CatwalkCfg.ContextWindow)
-				// If context window is unknown (0), skip auto-summarize
-				// to avoid immediately truncating custom/local models.
-				if cw == 0 {
+				// An unknown window means skip auto-summarize entirely, so
+				// custom and local models that never declared one are not
+				// truncated. SummarizeAt reports 0 for the same case.
+				percent := a.autoSummarizePolicy.SummarizeAt(cw)
+				if percent == 0 || a.disableAutoSummarize {
 					return false
 				}
 				tokens := currentSession.CompletionTokens + currentSession.PromptTokens
+				// Compact once the window is percent full, which is the same
+				// thing as leaving (100 - percent) of it free.
 				remaining := cw - tokens
-				var threshold int64
-				if cw > largeContextWindowThreshold {
-					threshold = largeContextWindowBuffer
-				} else {
-					threshold = int64(float64(cw) * smallContextWindowRatio)
-				}
-				if (remaining <= threshold) && !a.disableAutoSummarize {
+				limit := cw * int64(100-percent) / 100
+				if remaining <= limit {
 					shouldSummarize = true
 					return true
 				}

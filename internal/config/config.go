@@ -482,7 +482,10 @@ type Options struct {
 	AutoUpdate                bool          `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
 	SmartTools                bool          `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
 	RequestTimeout            *int          `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. A model that reasons before its first token sends no stream parts while it thinks\\, so this also caps how long one silent thinking phase may last. 0 disables it\\, negative values are invalid.,default=120,example=300,example=600,example=0"`
-	AutoContinue              bool          `json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
+	AutoSummarizePercent      *int          `json:"auto_summarize_percent,omitempty" jsonschema:"description=Percentage of the context window that must be in use before a conversation is summarized automatically. Higher values keep more of the conversation intact and compact less often. 0 uses the default of 85.,minimum=0,maximum=100,default=85,example=85,example=70"`
+	AutoSummarizeLargePercent *int          `json:"auto_summarize_large_percent,omitempty" jsonschema:"description=Percentage of the context window that must be in use before summarizing automatically for models whose window reaches auto_summarize_large_window. A large window holds far more tokens so compacting later wastes less of it. 0 uses the default of 95.,minimum=0,maximum=100,default=95,example=95"`
+	AutoSummarizeLargeWindow  *int64        `json:"auto_summarize_large_window,omitempty" jsonschema:"description=Context window size in tokens from which auto_summarize_large_percent applies instead of auto_summarize_percent. 0 uses the default of 500000.,minimum=0,example=500000"`
+	AutoContinue              bool`json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
 }
 
 // DefaultRequestTimeout bounds each LLM API request when the user has not
@@ -505,6 +508,83 @@ func (o *Options) GetRequestTimeout() time.Duration {
 		return 0
 	}
 	return time.Duration(*o.RequestTimeout) * time.Second
+}
+
+// Defaults for automatic summarization. Summarization runs once the context
+// window is this full, which is the number the user actually reasons about,
+// so the options are expressed as percentages rather than as a leftover token
+// buffer. The old scheme mixed the two: a fixed 20% for windows up to 200k
+// and a flat 20,000 tokens above it, which is 2% of a 1M window and made the
+// effective threshold jump ten points at the boundary.
+const (
+	DefaultAutoSummarizePercent      = 85
+	DefaultAutoSummarizeLargePercent = 95
+	DefaultAutoSummarizeLargeWindow  = 500_000
+)
+
+// AutoSummarizePolicy is the resolved set of thresholds that decides when a
+// conversation is compacted.
+type AutoSummarizePolicy struct {
+	// Percent is how full the window must be before compacting.
+	Percent int
+	// LargePercent applies instead of Percent once the window reaches
+	// LargeWindow.
+	LargePercent int
+	// LargeWindow is the window size where LargePercent takes over.
+	LargeWindow int64
+}
+
+// clampAutoSummarizePercent keeps a configured percentage inside a range that
+// still leaves the request room to run. Zero means "unset" and takes the
+// default, so it never survives the clamp.
+func clampAutoSummarizePercent(v *int, fallback int) int {
+	if v == nil || *v == 0 {
+		return fallback
+	}
+	// Below half the conversation would be compacted before it is really full,
+	// and at 100 there is nothing left for the request that triggered it.
+	return min(max(*v, 50), 99)
+}
+
+// DefaultAutoSummarizePolicy is the policy used when nothing is configured.
+// It exists as a function so a nil *Options and an unresolved zero value both
+// land on the same thresholds instead of disabling compaction.
+func DefaultAutoSummarizePolicy() AutoSummarizePolicy {
+	return (&Options{}).GetAutoSummarizePolicy()
+}
+
+// GetAutoSummarizePolicy returns the resolved automatic summarization
+// thresholds, substituting defaults for anything unset or out of range.
+func (o *Options) GetAutoSummarizePolicy() AutoSummarizePolicy {
+	policy := AutoSummarizePolicy{
+		Percent:      DefaultAutoSummarizePercent,
+		LargePercent: DefaultAutoSummarizeLargePercent,
+		LargeWindow:  DefaultAutoSummarizeLargeWindow,
+	}
+	if o == nil {
+		return policy
+	}
+	policy.Percent = clampAutoSummarizePercent(o.AutoSummarizePercent, policy.Percent)
+	policy.LargePercent = clampAutoSummarizePercent(o.AutoSummarizeLargePercent, policy.LargePercent)
+	if o.AutoSummarizeLargeWindow != nil && *o.AutoSummarizeLargeWindow > 0 {
+		policy.LargeWindow = *o.AutoSummarizeLargeWindow
+	}
+	return policy
+}
+
+// SummarizeAt returns how full a context window of cw tokens has to be before
+// automatic summarization runs. A window that is not large enough to reach
+// LargeWindow uses Percent. An unknown window (zero) returns 0, which callers
+// treat as "never compact automatically" so custom and local models without a
+// declared window are not truncated.
+func (p AutoSummarizePolicy) SummarizeAt(cw int64) int {
+	if cw <= 0 {
+		return 0
+	}
+	if p.LargeWindow > 0 && cw >= p.LargeWindow {
+		return p.LargePercent
+	}
+	return p.Percent
 }
 
 type MCPs map[string]MCPConfig

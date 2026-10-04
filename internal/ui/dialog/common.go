@@ -198,6 +198,25 @@ func dialogBodyRect(
 	).Intersect(dialogArea).Intersect(screen)
 }
 
+// filterPaste applies a bracketed paste to a dialog's filter field and
+// re-filters the list, doing exactly what the keystroke branch does.
+//
+// A paste is not a key press, so it never reaches the text field through the
+// KeyPressMsg branch. Every dialog with a filter therefore needs an explicit
+// tea.PasteMsg case, and one that lacks it silently drops the paste: the
+// switch falls through and the method returns nil.
+func filterPaste(input *textinput.Model, l *list.FilterableList, msg tea.Msg) Action {
+	prev := input.Value()
+	var cmd tea.Cmd
+	*input, cmd = input.Update(msg)
+	if value := input.Value(); value != prev {
+		l.SetFilter(value)
+		l.ScrollToTop()
+		l.SetSelected(0)
+	}
+	return ActionCmd{cmd}
+}
+
 // Maximum share of a list row width the secondary info column may take
 // before it is hidden entirely, so it never crowds out the item name.
 // Command shortcuts are small and non-essential, so they yield sooner

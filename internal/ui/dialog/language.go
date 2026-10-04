@@ -111,6 +111,8 @@ func (l *Language) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
 	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
 		return l.mouse.HandleMsg(msg, l.list, l.activate)
+	case tea.PasteMsg:
+		return filterPaste(&l.input, l.list, msg)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, l.keyMap.Close):

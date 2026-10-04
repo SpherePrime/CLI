@@ -711,6 +711,35 @@
             0
           ]
         },
+        "auto_summarize_percent": {
+          "type": "integer",
+          "maximum": 100,
+          "minimum": 0,
+          "description": "Percentage of the context window that must be in use before a conversation is summarized automatically. Higher values keep more of the conversation intact and compact less often. 0 uses the default of 85.",
+          "default": 85,
+          "examples": [
+            85,
+            70
+          ]
+        },
+        "auto_summarize_large_percent": {
+          "type": "integer",
+          "maximum": 100,
+          "minimum": 0,
+          "description": "Percentage of the context window that must be in use before summarizing automatically for models whose window reaches auto_summarize_large_window. A large window holds far more tokens so compacting later wastes less of it. 0 uses the default of 95.",
+          "default": 95,
+          "examples": [
+            95
+          ]
+        },
+        "auto_summarize_large_window": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Context window size in tokens from which auto_summarize_large_percent applies instead of auto_summarize_percent. 0 uses the default of 500000.",
+          "examples": [
+            500000
+          ]
+        },
         "auto_continue": {
           "type": "boolean",
           "description": "Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.",

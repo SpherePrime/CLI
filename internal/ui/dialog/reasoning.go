@@ -123,6 +123,8 @@ func (r *Reasoning) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
 	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
 		return r.mouse.HandleMsg(msg, r.list, r.activate)
+	case tea.PasteMsg:
+		return filterPaste(&r.input, r.list, msg)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, r.keyMap.Close):

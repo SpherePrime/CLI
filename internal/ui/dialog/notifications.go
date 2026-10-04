@@ -132,6 +132,8 @@ func (n *Notifications) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
 	case common.CoalescedWheelMsg, tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
 		return n.mouse.HandleMsg(msg, n.list, n.activate)
+	case tea.PasteMsg:
+		return filterPaste(&n.input, n.list, msg)
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, n.keyMap.Close):
