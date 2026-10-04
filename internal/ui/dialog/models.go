@@ -262,6 +262,14 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 // nothing to switch to. Shared by the enter key and by a click on a row.
 // isEdit is set when the user asked to re-authenticate rather than to switch.
 func (m *Models) activateModel(idx int, isEdit bool) Action {
+	// The "Default" row is not a model, it is the absence of a pin.
+	if _, ok := m.list.ItemAt(idx).(*agentDefaultItem); ok {
+		if m.agentID == "" {
+			return nil
+		}
+		return ActionClearAgentModel{AgentID: m.agentID}
+	}
+
 	modelItem, ok := m.list.ItemAt(idx).(*ModelItem)
 	if !ok || modelItem == nil {
 		return nil
@@ -584,6 +592,35 @@ func (m *Models) setProviderItems() error {
 
 		if len(recentGroup.Items) > 0 {
 			groups = append([]ModelGroup{recentGroup}, groups...)
+		}
+	}
+
+	// A worker's picker opens with "Default" at the top: follow whatever the
+	// main agent is running on. It is the setting most agents should be on, so
+	// it has to be a row you can see and go back to, not a hidden ctrl+x.
+	//
+	// The main agent gets it too, marked current. For it the row is a
+	// statement rather than a choice, which is the point: picking a model for
+	// it changes the session, and that should look different from pinning a
+	// worker.
+	if m.agentID != "" {
+		agent, ok := cfg.Agents[m.agentID]
+		isCurrent := ok && agent.ModelOverride == nil
+		defaultItem := NewAgentDefaultItem(
+			m.com.Styles,
+			m.com.L("cmd.agent_model_default_info"),
+			m.com.L("cmd.agent_model_default_state"),
+			isCurrent,
+		)
+		// The group carries the heading rather than the row. A group with an
+		// empty title still costs a list row and renders as a blank line, so
+		// the heading goes here and the row says what it means.
+		defaultGroup := NewModelGroup(m.com.Styles, m.com.L("cmd.agent_model_default"), false)
+		defaultGroup.AppendItems(defaultItem)
+		groups = append([]ModelGroup{defaultGroup}, groups...)
+
+		if isCurrent {
+			selectedItemID = DefaultAgentModelID
 		}
 	}
 

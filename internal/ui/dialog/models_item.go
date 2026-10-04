@@ -17,13 +17,13 @@ import (
 type ModelGroup struct {
 	*list.Versioned
 	Title      string
-	Items      []*ModelItem
+	Items      []ListItem
 	configured bool
 	t          *styles.Styles
 }
 
 // NewModelGroup creates a new ModelGroup.
-func NewModelGroup(t *styles.Styles, title string, configured bool, items ...*ModelItem) ModelGroup {
+func NewModelGroup(t *styles.Styles, title string, configured bool, items ...ListItem) ModelGroup {
 	return ModelGroup{
 		Versioned:  list.NewVersioned(),
 		Title:      title,
@@ -39,7 +39,7 @@ func (m *ModelGroup) Finished() bool {
 }
 
 // AppendItems appends [ModelItem]s to the group.
-func (m *ModelGroup) AppendItems(items ...*ModelItem) {
+func (m *ModelGroup) AppendItems(items ...ListItem) {
 	m.Items = append(m.Items, items...)
 }
 
@@ -50,6 +50,12 @@ func (m *ModelGroup) Render(width int) string {
 		configuredIcon := m.t.ToolCallSuccess.Render()
 		configuredText := m.t.Dialog.Models.ConfiguredText.Render("Configured")
 		configured = configuredIcon + " " + configuredText
+	}
+
+	// A group with no title is a grouping device, not a section: render nothing
+	// so its items come first with no blank heading above them.
+	if m.Title == "" && configured == "" {
+		return ""
 	}
 
 	title := " " + m.Title + " "
