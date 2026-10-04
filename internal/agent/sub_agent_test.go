@@ -45,6 +45,11 @@ func TestSubAgentNamesExcludeMainAgent(t *testing.T) {
 	t.Parallel()
 
 	c := newTestCoordinator(t, testEnv(t), "test", config.ProviderConfig{ID: "test"})
+	// config.Init does not populate the agent map on its own, and whether it
+	// ends up populated depends on whether the machine running the test has a
+	// global config to merge. Relying on that made this test pass on a
+	// developer's machine and fail on a fresh runner.
+	c.cfg.Config().SetupAgents()
 
 	names := c.SubAgentNames()
 	require.NotEmpty(t, names)
