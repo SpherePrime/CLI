@@ -1087,6 +1087,10 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool, age
 	requestTimeout := c.cfg.Config().Options.GetRequestTimeout()
 	largeModel = newRequestTimeoutModel(largeModel, requestTimeout)
 	smallModel = newRequestTimeoutModel(smallModel, requestTimeout)
+	// Strict OpenAI-compatible endpoints reject the "tool" message role;
+	// replay such calls once with tool results as user messages.
+	largeModel = newToolRoleCompatModel(largeModel)
+	smallModel = newToolRoleCompatModel(smallModel)
 
 	large := Model{
 		Model:      largeModel,
