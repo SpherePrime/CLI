@@ -389,15 +389,38 @@ func (a *AutoSummarize) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	return cur
 }
 
+// editedPolicy is the policy the fields currently describe, falling back to the
+// last valid value per field for anything half-typed or out of range.
+//
+// It has to be built from the fields rather than read back from the config: the
+// summary line says which threshold will actually apply, and reading the config
+// there made it describe the saved state while the user was editing a new one.
+// So changing 85 to 90 left the line claiming 85, which is the one number in the
+// dialog a user checks to see whether their edit took effect.
+func (a *AutoSummarize) editedPolicy() config.AutoSummarizePolicy {
+	policy := a.policy()
+	for _, row := range a.rows {
+		v := row.parsedOr(row.value)
+		switch row.key {
+		case "options.auto_summarize_percent":
+			policy.Percent = v
+		case "options.auto_summarize_large_percent":
+			policy.LargePercent = v
+		case "options.auto_summarize_large_window":
+			policy.LargeWindow = int64(v)
+		}
+	}
+	return policy
+}
+
 // summaryLine reports the threshold that will actually apply to the model in
 // use, so the two percentages are not just numbers in isolation.
 func (a *AutoSummarize) summaryLine() string {
 	cw := a.activeContextWindow()
-	policy := a.policy()
 	if cw <= 0 {
 		return a.com.L("cmd.auto_summarize_unknown_window")
 	}
-	return a.com.LSprintf("cmd.auto_summarize_summary", cw, policy.SummarizeAt(cw))
+	return a.com.LSprintf("cmd.auto_summarize_summary", cw, a.editedPolicy().SummarizeAt(cw))
 }
 
 // ShortHelp implements [help.KeyMap].
