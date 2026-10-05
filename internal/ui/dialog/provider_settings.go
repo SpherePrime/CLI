@@ -9,6 +9,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/internal/ui/util"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
@@ -34,6 +35,11 @@ const (
 	// providerSettingsStateModelContext captures the context window of a
 	// model to add. Providers that do not report one leave this empty.
 	providerSettingsStateModelContext
+	// providerSettingsStateDeleteConfirm asks before deleting the provider
+	// that is currently highlighted. Deletion is not undoable and it also
+	// unpins every agent that was using one of its models, so it goes through
+	// an explicit step rather than happening on the keystroke.
+	providerSettingsStateDeleteConfirm
 )
 
 // ProviderSettings lists configured providers and lets the user attach models
@@ -57,6 +63,12 @@ type ProviderSettings struct {
 
 	newModelID string
 
+	// deleteTarget is the provider awaiting confirmation. It is kept
+	// separately from the selection because the selection follows the cursor,
+	// and a confirmation that could be withdrawn by moving the cursor would be
+	// easy to confirm by accident.
+	deleteTarget string
+
 	keyMap struct {
 		Select   key.Binding
 		Next     key.Binding
@@ -64,6 +76,9 @@ type ProviderSettings struct {
 		Add      key.Binding
 		Remove   key.Binding
 		Toggle   key.Binding
+		Delete   key.Binding
+		Yes      key.Binding
+		No       key.Binding
 		Close    key.Binding
 	}
 }
@@ -73,6 +88,14 @@ var _ Dialog = (*ProviderSettings)(nil)
 // ActionProviderSettingsChanged reports that a provider's models changed and
 // the agents need to be rebuilt to pick the change up.
 type ActionProviderSettingsChanged struct {
+	ProviderID string
+}
+
+// ActionDeleteProvider asks the UI to delete a provider that the user
+// confirmed. The dialog never deletes on its own keystroke: confirmation is a
+// separate step, so by the time this is emitted the user has said yes to a
+// provider by name.
+type ActionDeleteProvider struct {
 	ProviderID string
 }
 
@@ -108,6 +131,12 @@ func NewProviderSettings(com *common.Common) *ProviderSettings {
 	p.keyMap.Add = key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "add model"))
 	p.keyMap.Remove = key.NewBinding(key.WithKeys("x", "ctrl+x"), key.WithHelp("x", "remove model"))
 	p.keyMap.Toggle = key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "toggle discovery"))
+	// Deleting a provider is the one thing here that cannot be undone, and it
+	// silently unpins any agent using one of its models, so it is on its own
+	// key rather than sharing the delete-model one.
+	p.keyMap.Delete = key.NewBinding(key.WithKeys("ctrl+backspace", "ctrl+delete"), key.WithHelp("ctrl+del", "delete provider"))
+	p.keyMap.Yes = key.NewBinding(key.WithKeys("y", "enter"), key.WithHelp("y", "delete it"))
+	p.keyMap.No = key.NewBinding(key.WithKeys("n", "esc"), key.WithHelp("n", "keep it"))
 	p.keyMap.Close = CloseKey
 
 	return p
@@ -184,6 +213,21 @@ func (p *ProviderSettings) HandleMsg(msg tea.Msg) Action {
 		}
 		return nil
 	case tea.KeyPressMsg:
+		// Checked before the generic handling because the confirmation
+		// claims esc for itself: reaching the shared close case would close the
+		// whole dialog, so pressing esc to back out of a deletion would instead
+		// throw away everything that was being configured.
+		if p.state == providerSettingsStateDeleteConfirm {
+			switch {
+			case key.Matches(msg, p.keyMap.Yes):
+				return p.confirmDelete()
+			case key.Matches(msg, p.keyMap.No):
+				p.cancelDelete()
+				return nil
+			}
+			return nil
+		}
+
 		switch {
 		case key.Matches(msg, p.keyMap.Close):
 			return p.handleClose()
@@ -195,6 +239,10 @@ func (p *ProviderSettings) HandleMsg(msg tea.Msg) Action {
 
 		switch p.state {
 		case providerSettingsStateProviders:
+			if key.Matches(msg, p.keyMap.Delete) {
+				p.startDelete()
+				return nil
+			}
 			if key.Matches(msg, p.keyMap.Select) {
 				return p.activate(p.list.Selected())
 			}
@@ -227,8 +275,91 @@ func (p *ProviderSettings) HandleMsg(msg tea.Msg) Action {
 	return nil
 }
 
+// renderDeleteConfirm draws the step that asks before deleting a provider.
+//
+// It names the consequences rather than just the provider, because deleting
+// also unpins every agent that was running one of its models. Finding that out
+// afterwards, when an agent silently stops using the model it was pinned to, is
+// much worse than being told before.
+func (p *ProviderSettings) renderDeleteConfirm(t *styles.Styles, width int) string {
+	cfg := p.com.Config()
+
+	var lines []string
+	lines = append(lines, t.Dialog.PrimaryText.Render(
+		p.com.LSprintf("dialog.delete_provider_confirm", p.deleteTarget)))
+
+	if cfg != nil {
+		var pinned []string
+		for id, agent := range cfg.Agents {
+			if ov := agent.ModelOverride; ov != nil && ov.Provider == p.deleteTarget {
+				name := id
+				if known, ok := cfg.Agents[id]; ok && known.Name != "" {
+					name = known.Name
+				}
+				pinned = append(pinned, name)
+			}
+		}
+		slices.Sort(pinned)
+		if len(pinned) > 0 {
+			lines = append(lines, "")
+			lines = append(lines, t.Dialog.SecondaryText.Render(
+				p.com.LSprintf("dialog.delete_provider_unpins", strings.Join(pinned, ", "))))
+		}
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// startDelete moves to the confirmation step for the highlighted provider.
+//
+// Deleting also unpins every agent pinned to one of that provider's models,
+// which is invisible from the list, so the confirmation names that rather than
+// just the provider.
+func (p *ProviderSettings) startDelete() {
+	if p.selectedProvider() == nil {
+		return
+	}
+	p.deleteTarget = p.selectedProvider().ID()
+	p.state = providerSettingsStateDeleteConfirm
+}
+
+// cancelDelete returns to the provider list without deleting.
+func (p *ProviderSettings) cancelDelete() {
+	p.deleteTarget = ""
+	p.state = providerSettingsStateProviders
+	p.reloadProviders()
+}
+
+// confirmDelete removes the provider and reports the agents it unpinned.
+func (p *ProviderSettings) confirmDelete() Action {
+	target := p.deleteTarget
+	p.deleteTarget = ""
+	p.state = providerSettingsStateProviders
+	p.reloadProviders()
+
+	if target == "" {
+		return nil
+	}
+	return ActionDeleteProvider{ProviderID: target}
+}
+
+// selectedProvider returns the highlighted provider row, if any.
+func (p *ProviderSettings) selectedProvider() *providerListItem {
+	item, ok := p.list.SelectedItem().(*providerListItem)
+	if !ok || item == nil {
+		return nil
+	}
+	return item
+}
+
 func (p *ProviderSettings) handleClose() Action {
 	switch p.state {
+	case providerSettingsStateDeleteConfirm:
+		// esc here means "no", not "close the dialog": the user was asked a
+		// yes/no question and answering it wrongly should not also discard the
+		// settings screen they came from.
+		p.cancelDelete()
+		return nil
 	case providerSettingsStateProviders:
 		return ActionClose{}
 	case providerSettingsStateModels:
@@ -396,6 +527,9 @@ func (p *ProviderSettings) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	case providerSettingsStateModelID, providerSettingsStateModelContext:
 		p.input.SetWidth(dialogInputTextWidth(t, p.input, innerWidth))
 		rc.AddPart(t.Dialog.InputPrompt.Render(p.input.View()))
+	case providerSettingsStateDeleteConfirm:
+		rc.AddPart(p.renderDeleteConfirm(t, innerWidth))
+		p.mouse.Clear()
 	case providerSettingsStateProviders:
 		p.input.SetWidth(dialogInputTextWidth(t, p.input, innerWidth))
 		rc.AddPart(t.Dialog.InputPrompt.Render(p.input.View()))
@@ -451,6 +585,8 @@ func (p *ProviderSettings) title() string {
 		return p.providerID
 	case providerSettingsStateModelID:
 		return p.com.L("provider_settings.add_model")
+	case providerSettingsStateDeleteConfirm:
+		return p.com.L("provider_settings.delete_title")
 	default:
 		return p.com.L("provider_settings.context_window")
 	}
@@ -460,9 +596,11 @@ func (p *ProviderSettings) title() string {
 func (p *ProviderSettings) ShortHelp() []key.Binding {
 	switch p.state {
 	case providerSettingsStateProviders:
-		return []key.Binding{p.keyMap.Select, p.keyMap.Close}
+		return []key.Binding{p.keyMap.Select, p.keyMap.Delete, p.keyMap.Close}
 	case providerSettingsStateModels:
 		return []key.Binding{p.keyMap.Add, p.keyMap.Remove, p.keyMap.Toggle, p.keyMap.Close}
+	case providerSettingsStateDeleteConfirm:
+		return []key.Binding{p.keyMap.Yes, p.keyMap.No}
 	default:
 		return []key.Binding{p.keyMap.Select, p.keyMap.Close}
 	}

@@ -2413,6 +2413,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			m.com.Workspace.UpdateAgentModel(context.TODO())
 			return util.NewInfoMsg(m.com.L("info.model_settings_saved"))
 		}))
+	case dialog.ActionDeleteProvider:
+		cmds = append(cmds, m.deleteProvider(msg.ProviderID))
+		m.dialog.CloseDialog(dialog.ProviderSettingsID)
 	case dialog.ActionProviderSettingsChanged:
 		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
 			m.com.Workspace.UpdateAgentModel(context.TODO())
@@ -5539,6 +5542,21 @@ func (m *UI) openNotificationsDialog() tea.Cmd {
 	notificationsDialog := dialog.NewNotifications(m.com)
 	m.dialog.OpenDialog(notificationsDialog)
 	return nil
+}
+
+// deleteProvider removes a provider the user confirmed in the dialog.
+//
+// The cleanup of selected models and agent pins happens inside the store, not
+// here: it has to be one operation, because a partial deletion leaves an agent
+// pinned to a model whose provider is gone, and that surfaces much later as an
+// unrelated-looking error rather than as the deletion that caused it.
+func (m *UI) deleteProvider(providerID string) tea.Cmd {
+	return m.updateAgentModelCmd(func() tea.Msg {
+		if err := m.com.Workspace.RemoveProvider(config.ScopeGlobal, providerID); err != nil {
+			return util.ReportError(fmt.Errorf("failed to delete provider: %w", err))()
+		}
+		return util.NewInfoMsg(m.com.LSprintf("info.provider_deleted", providerID))
+	})
 }
 
 // toggleThinking flips thinking mode on the main agent's current model.

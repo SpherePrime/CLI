@@ -731,35 +731,62 @@ call :print_header "Publish"
 where gh >nul 2>&1 || ( echo gh not found & exit /b 1 )
 gh auth status >nul 2>&1 || ( echo ERROR: gh is not authenticated. Run: gh auth login & exit /b 1 )
 
-if "%TAG_EXISTS%"=="0" (
-    rem The tag has to exist before the release can attach a target to it.
-    echo  Tagging %TAG% at !SHA! ...
-    git tag -a "%TAG%" -m "%TAG%" !SHA!
-    if errorlevel 1 ( echo ERROR: could not create the tag & exit /b 1 )
-
-    echo  Pushing the tag ...
-    git push origin "%TAG%"
-    if errorlevel 1 (
-        echo ERROR: could not push the tag. Delete it locally with: git tag -d %TAG%
-        exit /b 1
+if "%UPLOAD_LOCAL%"=="1" (
+    rem Local mode deliberately does NOT push the tag.
+    rem
+    rem A tag push is a "push" event, and the Release workflow is triggered by
+    rem exactly that: push, tags: v*. So pushing here would start a full CI
+    rem release build on GitHub, burning Actions minutes, right when the whole
+    reason for this mode is that the quota is gone or the release is urgent.
+    rem Two builds racing over the same tag is worse: goreleaser would clobber
+    rem the assets uploaded below.
+    rem
+    rem gh release create --target creates the tag through the API instead. An
+    rem API-created ref does not emit a push event, so the workflow stays quiet
+    rem and the release is entirely this machine's work.
+    rem
+    rem The local tag is still created so the working copy matches the release
+    rem and a later build stamps the right version, but it is never pushed.
+    if "%TAG_EXISTS%"=="0" (
+        echo  Tagging %TAG% locally, not pushing it ...
+        git tag -a "%TAG%" -m "%TAG%" !SHA!
+        if errorlevel 1 ( echo ERROR: could not create the tag & exit /b 1 )
+    ) else (
+        echo  Tag %TAG% is already on the remote.
     )
 ) else (
-    echo  Tag %TAG% is already on the remote.
+    if "%TAG_EXISTS%"=="0" (
+        rem The tag has to exist before the release can attach a target to it.
+        echo  Tagging %TAG% at !SHA! ...
+        git tag -a "%TAG%" -m "%TAG%" !SHA!
+        if errorlevel 1 ( echo ERROR: could not create the tag & exit /b 1 )
+
+        echo  Pushing the tag, which starts the Release workflow ...
+        git push origin "%TAG%"
+        if errorlevel 1 (
+            echo ERROR: could not push the tag. Delete it locally with: git tag -d %TAG%
+            exit /b 1
+        )
+    ) else (
+        echo  Tag %TAG% is already on the remote.
+    )
 )
 
 
-rem Two ways to get a release out, and they are not interchangeable.
+rem Two ways to get a release out. Pick with --upload-local.
 rem
-rem Default: push the tag and let the Release workflow build the release. That
-rem is the only path that produces the whole asset set, because goreleaser is
-rem what produces the .deb, .rpm, .apk and Arch packages, and it cannot run on
-rem Windows. The binaries come from the same commit with the same flags, so the
-rem local build's job is to prove the commit compiles before a tag exists on it.
+rem Default: push the tag and let the Release workflow build the release on
+rem GitHub. This is the only path that produces the whole asset set, because
+rem goreleaser is what produces the .deb, .rpm, .apk and Arch packages and it
+rem cannot run on Windows. Use it when Actions minutes are available.
 rem
-rem --upload-local: this script creates the release from the binaries it just
-rem built, which means shipping exactly what was tested locally. The cost is
-rem that the packages are absent, so the release is incomplete by construction.
-rem It also collides with the workflow the tag fires, which is why it is opt-in.
+rem --upload-local: nothing is built on GitHub at all. The tag is created
+rem through the API rather than pushed, so no workflow runs, no Actions minutes
+rem are spent, and what ships is exactly the binary built and tested on this
+rem machine. The cost is the packages: goreleaser cannot run here, so the
+rem release carries the zip and tar.gz archives and checksums but not
+rem .deb/.rpm/.apk. Use it when the quota is exhausted or a fix has to go out
+rem now.
 if "%UPLOAD_LOCAL%"=="1" (
     set "GH_ARGS="
     if /I "%CMD%"=="draft" set "GH_ARGS=--draft"
@@ -783,14 +810,26 @@ if "%UPLOAD_LOCAL%"=="1" (
     if errorlevel 1 (
         echo.
         echo ERROR: could not publish the release.
-        echo        The tag is pushed. Re-run this script to retry the upload.
+        echo        Re-run this script to retry the upload.
         exit /b 1
     )
+
+    call :print_footer
+    echo  Release: %TAG%
+    for /f "usebackq delims=" %%u in (`gh release view "%TAG%" --json url --jq .url 2^>nul`) do echo           %%u
+    echo.
+    echo  Published from this machine. No GitHub Actions ran and no minutes
+    echo  were spent: the tag was created through the API, which does not
+    echo  trigger the Release workflow.
+    echo.
+    echo  Shipped: the Windows and Linux archives plus checksums.
+    echo  Not shipped: .deb, .rpm, .apk and Arch packages. Those come from
+    echo  goreleaser, which cannot run on Windows. Publish without
+    echo  --upload-local to get them.
+    exit /b 0
 ) else (
     echo.
     echo  Tag pushed. Handing the release to the Release workflow.
-)
-    exit /b 1
 )
 
 call :print_footer
@@ -854,9 +893,18 @@ echo   --test             run the test suite before packaging (slow)
 echo   --yes              skip the confirmation prompt
 echo   --dry-run          print what would happen, touch nothing remote
 echo   --skip-build       package what is already in the output directory
-echo   --upload-local     publish this script's binaries instead of letting the
-echo                      workflow build them. Ships exactly what was tested
-echo                      here, but without the .deb / .rpm / Arch packages.
+echo   --upload-local     publish from this machine without GitHub Actions at all.
+echo                      The tag is created through the API rather than pushed,
+echo                      so no workflow runs and no Actions minutes are spent.
+echo                      Ships exactly what was built and tested here. The
+echo                      .deb / .rpm / .apk / Arch packages are absent, since
+echo                      goreleaser cannot run on Windows.
+echo.
+echo   Publishing, two ways:
+echo     default          push the tag, GitHub Actions builds the full set
+echo                      including packages. Needs Actions minutes.
+echo     --upload-local   build and upload here, no Actions. No packages.
+echo                      For when the quota is gone or a fix is urgent.
 echo.
 popd
 endlocal

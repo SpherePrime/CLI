@@ -430,6 +430,10 @@ func (w *AppWorkspace) RemoveConfigField(scope config.Scope, key string) error {
 	return w.store.RemoveConfigField(scope, key)
 }
 
+func (w *AppWorkspace) RemoveProvider(scope config.Scope, providerID string) error {
+	return w.store.RemoveProvider(scope, providerID)
+}
+
 func (w *AppWorkspace) ImportCopilot() (*oauth.Token, bool) {
 	return w.store.ImportCopilot()
 }
