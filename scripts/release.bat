@@ -8,6 +8,7 @@ rem  try it, build every Windows and Linux target, work out the next version
 rem  from the last published release, and put a release on GitHub.
 rem
 rem  Commands
+rem    sync      pull the newest sources from origin into this tree
 rem    build     build for this machine only (throttled, quick)
 rem    run       build for this machine and launch it so you can try it
 rem    all       build every Windows and Linux target
@@ -28,11 +29,15 @@ rem    --version <x.y.z>  use this version instead of last release + 1
 rem    --notes <file>   release notes file (default: auto summary)
 rem    --test           run the test suite before packaging (slow)
 rem    --dry-run        print what would happen, touch nothing remote
-rem    --skip-build     package what is already in the output directory
+rem    --skip-build     use whatever is already in the output directory:
+rem                     "release" packages it, "run" launches it with no
+rem                     compile - and so no Go toolchain needed
 rem
 rem  Example
 rem    scripts\release.bat
+rem    scripts\release.bat sync
 rem    scripts\release.bat run --ratio 0.25
+rem    scripts\release.bat run --skip-build
 rem    scripts\release.bat all --no-test
 rem    scripts\release.bat release --dry-run
 rem ============================================================================
@@ -58,6 +63,7 @@ rem a parenthesised block it is frozen at parse time, which silently shifts the
 rem following argument into the wrong variable.
 :parse
 if "%~1"=="" goto parsed
+if /I "%~1"=="sync"    ( set "CMD=sync"    & shift & goto parse )
 if /I "%~1"=="build"    ( set "CMD=build"    & shift & goto parse )
 if /I "%~1"=="run"      ( set "CMD=run"      & shift & goto parse )
 if /I "%~1"=="all"      ( set "CMD=all"      & shift & goto parse )
@@ -137,6 +143,7 @@ if "%CMD%"=="" (
 
 if /I "%CMD%"=="help"   goto usage
 if /I "%CMD%"=="clean"  goto do_clean
+if /I "%CMD%"=="sync"   goto do_sync
 if /I "%CMD%"=="build"  goto do_build
 if /I "%CMD%"=="run"    goto do_run
 if /I "%CMD%"=="all"    goto do_all
@@ -153,6 +160,7 @@ rem ============================================================================
 echo.
 echo  Prime release tool
 echo  ------------------------------------------------------------------
+echo   s  sync       pull the newest sources from origin
 echo   1  build      build for this machine
 echo   2  run        build for this machine and launch it
 echo   3  all        build every Windows and Linux target
@@ -162,7 +170,8 @@ echo   6  draft      build, tag, and leave a draft release
 echo   7  clean      delete %OUT%
 echo   q  quit
 echo  ------------------------------------------------------------------
-choice /c 1234567q /n /m "  Pick: "
+choice /c 1234567qs /n /m "  Pick: "
+if errorlevel 9 ( set "CMD=sync"   & goto do_sync )
 if errorlevel 8 goto :eof
 if errorlevel 7 ( set "CMD=clean"  & goto do_clean )
 if errorlevel 6 ( set "CMD=draft"  & goto do_release )
@@ -443,6 +452,120 @@ echo  Nothing left to remove.
 goto :eof
 
 rem ============================================================================
+rem  sync
+rem
+rem  Pull the newest sources from origin, because nothing else here does.
+rem
+rem  build.bat compiles whatever is in the working tree, and release.bat tags
+rem  whatever HEAD happens to point at, so a build made after someone else
+rem  pushed was stale by default. The only hint was the dirty-tree line in
+rem  "check", which says nothing at all about being behind the remote.
+rem
+rem  Two rules keep it from ever costing work:
+rem    - a dirty tree is never pulled, only reported on;
+rem    - the pull is --ff-only, so git either moves HEAD straight forward or
+rem      refuses outright. A branch that has diverged is left alone: working
+rem      out which side of the split wins is a person's decision, not a build
+rem      script's.
+rem
+rem  A failed fetch is a warning rather than an error. The point of the
+rem  command is to end up building the newest sources available, and with no
+rem  network the newest sources available are the ones already here - refusing
+rem  to build because the internet is down would be worse than saying so.
+rem ============================================================================
+:do_sync
+call :ensure_git || exit /b 1
+call :ensure_repo || exit /b 1
+call :print_header "Sync sources"
+
+set "DIRTY="
+for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
+
+echo  Fetching origin ...
+git fetch origin --prune >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo  WARNING: could not fetch from origin - offline, or no remote.
+    echo           Continuing with the sources that are already here.
+    goto sync_done
+)
+
+call :rel_branch
+if not defined BRANCH (
+    echo  HEAD is detached, so there is no branch to fast-forward to.
+    goto sync_done
+)
+
+git rev-parse --verify --quiet "origin/%BRANCH%" >nul 2>&1
+if errorlevel 1 (
+    echo  The remote has no "%BRANCH%" branch - nothing to fast-forward to.
+    goto sync_done
+)
+
+set "BEHIND="
+set "AHEAD="
+for /f "usebackq delims=" %%n in (`git rev-list --count HEAD..origin/%BRANCH%`) do set "BEHIND=%%n"
+for /f "usebackq delims=" %%n in (`git rev-list --count origin/%BRANCH%..HEAD`) do set "AHEAD=%%n"
+
+if not defined BEHIND (
+    echo  WARNING: could not read how far behind origin/%BRANCH% this is.
+    echo           Not pulling. Continuing with the sources that are here.
+    goto sync_done
+)
+
+if "%BEHIND%"=="0" (
+    echo  Already up to date with origin/%BRANCH%.
+    goto sync_done
+)
+
+echo  origin/%BRANCH% is ahead of this tree by %BEHIND% commit^(s^).
+
+if defined DIRTY (
+    echo.
+    echo  WARNING: the working tree has uncommitted changes - not pulling.
+    echo           Building HEAD as it stands, %BEHIND% commit^(s^) behind.
+    goto sync_done
+)
+
+if not "%AHEAD%"=="0" (
+    echo  This tree also holds %AHEAD% commit^(s^) the remote does not, so a
+    echo  fast-forward is impossible. Leaving it alone - compare them with
+    echo    git log --oneline --graph --all
+    goto sync_done
+)
+
+if "%DRY_RUN%"=="1" (
+    echo  Dry run - would fast-forward this tree to origin/%BRANCH%.
+    goto sync_done
+)
+
+echo  Fast-forwarding to origin/%BRANCH% ...
+git pull --ff-only origin "%BRANCH%"
+if errorlevel 1 (
+    echo.
+    echo  ERROR: the fast-forward was refused. Nothing was changed.
+    echo         Look at it with:  git status
+    exit /b 1
+)
+echo  Now at origin/%BRANCH%.
+
+:sync_done
+if defined DIRTY set "DIRTY="
+call :print_footer
+exit /b 0
+
+rem rel_branch leaves BRANCH holding the checked-out branch name, or empty
+rem when HEAD is detached. rev-parse --abbrev-ref reports the literal word
+rem "HEAD" for a detached checkout, and without dropping it here every git
+rem call above would be pointed at an "origin/HEAD" that means something else
+rem entirely.
+:rel_branch
+set "BRANCH="
+for /f "usebackq delims=" %%b in (`git rev-parse --abbrev-ref HEAD 2^>nul`) do set "BRANCH=%%b"
+if /I "%BRANCH%"=="HEAD" set "BRANCH="
+exit /b 0
+
+rem ============================================================================
 rem  build
 rem ============================================================================
 :do_build
@@ -456,18 +579,31 @@ goto :eof
 
 rem ============================================================================
 rem  run
+rem
+rem  Builds for this machine and starts the app. With --skip-build it starts
+rem  whatever is already in the output directory instead, which is also what
+rem  makes a Go toolchain unnecessary for this path.
 rem ============================================================================
 :do_run
+if "%SKIP_BUILD%"=="1" goto do_run_existing
 call :ensure_go || exit /b 1
 call :print_header "Build and run"
 echo  Building the native binary, then launching it.
+call :run_build "" %RATIO% || exit /b 1
+goto do_run_launch
+
+:do_run_existing
+call :print_header "Run the existing build"
+echo  mode   : no compile, launching whatever is already in %OUT%
+
+:do_run_launch
 echo  Close the app with ctrl+c to come back here.
 call :print_footer
-call :run_build "" %RATIO% || exit /b 1
 
 if not exist "%OUT%\prime.exe" (
     echo.
-    echo ERROR: %OUT%\prime.exe was not produced.
+    echo ERROR: %OUT%\prime.exe is not in %OUT%.
+    echo        Build it first:  scripts\release.bat build
     exit /b 1
 )
 
@@ -478,7 +614,17 @@ echo.
 echo  Starting %OUT%\prime.exe ...
 echo  Close it to come back here.
 echo.
-"%OUT%\prime.exe" %*
+rem Deliberately no arguments.
+rem
+rem %* used to be forwarded here, and it could not have worked: %* is the whole
+rem command line and shift does not change it, so it still held the "run" that
+rem selected this branch - which is prime's own subcommand for a non-interactive
+rem prompt, and sits waiting on stdin rather than opening the app. With a ratio
+rem option on the command line it did not even get that far: prime answered
+rem "Unknown flag: --ratio". prime's own flags are passed by the launcher at the
+rem repository root, Prime-Run.bat, which runs with delayed expansion off and so
+rem can carry a prompt containing "!" intact.
+"%OUT%\prime.exe"
 goto :eof
 
 rem ============================================================================
@@ -946,6 +1092,7 @@ echo Usage: scripts\release.bat [command] [options]
 echo.
 echo   no command   the whole thing: build everything, tag, publish
 echo   menu         pick a single step from a list
+echo   sync         pull the newest sources from origin into this tree
 echo   build        build for this machine only
 echo   run          build for this machine and launch it
 echo   all          build every Windows and Linux target
@@ -962,7 +1109,9 @@ echo   --notes ^<file^>     release notes file
 echo   --test             run the test suite before packaging (slow)
 echo   --yes              skip the confirmation prompt
 echo   --dry-run          print what would happen, touch nothing remote
-echo   --skip-build       package what is already in the output directory
+echo   --skip-build       release: package what is already in the output
+echo                      directory; run: launch it without compiling, and
+echo                      without needing the Go toolchain
 echo   --upload-local     publish from this machine without GitHub Actions at all.
 echo                      The tag is created through the API rather than pushed,
 echo                      so no workflow runs and no Actions minutes are spent.
