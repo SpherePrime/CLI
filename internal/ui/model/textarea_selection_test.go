@@ -3,9 +3,9 @@ package model
 import (
 	"testing"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/internal/ui/attachments"
 	"github.com/SpherePrime/CLI/internal/ui/dialog"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
@@ -70,10 +70,7 @@ func TestTextareaMouseSelection(t *testing.T) {
 	}
 	u.textarea.CursorStart()
 
-	// The textarea renders one row below the editor top (the attachments
-	// row is always reserved, even when empty). The default prompt
-	// ("┃ ") is 2 cells wide.
-	startX := u.layout.editor.Min.X + 2
+	startX := u.layout.editor.Min.X + 4
 	y := u.layout.editor.Min.Y + 1
 
 	_, _ = u.Update(tea.MouseClickMsg(tea.Mouse{X: startX, Y: y, Button: uv.MouseLeft}))

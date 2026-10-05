@@ -85,12 +85,10 @@ const sessionDetailsMaxHeight = 20
 // TextareaMaxHeight is the maximum height of the prompt textarea.
 const TextareaMaxHeight = 15
 
-// editorHeightMargin is the vertical margin added to the textarea height to
-// account for the attachments row (top) and bottom margin.
 const editorHeightMargin = 2
 
 // TextareaMinHeight is the minimum height of the prompt textarea.
-const TextareaMinHeight = 3
+const TextareaMinHeight = 2
 
 // uiFocusState represents the current focus state of the UI.
 type uiFocusState uint8
@@ -3633,7 +3631,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 				m.inlineCursor = m.activeInline.Draw(scr, layout.editor)
 			}
 		} else {
-			editor := uv.NewStyledString(m.renderEditorView(scr.Bounds().Dx()))
+			editor := uv.NewStyledString(m.renderEditorView(layout.editor.Dx()))
 			editor.Draw(scr, layout.editor)
 			m.inlineCursor = nil
 		}
@@ -3659,11 +3657,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 				m.inlineCursor = m.activeInline.Draw(scr, layout.editor)
 			}
 		} else {
-			editorWidth := scr.Bounds().Dx()
-			if !m.isCompact {
-				editorWidth -= layout.sidebar.Dx()
-			}
-			editor := uv.NewStyledString(m.renderEditorView(editorWidth))
+			editor := uv.NewStyledString(m.renderEditorView(layout.editor.Dx()))
 			editor.Draw(scr, layout.editor)
 			m.inlineCursor = nil
 		}
@@ -3692,7 +3686,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 			x = screenW - w
 		}
 		x = max(0, x)
-		y = max(0, y+1) // Offset for attachments row
+		y = max(0, y)
 
 		completionsView := uv.NewStyledString(m.completions.Render())
 		completionsView.Draw(scr, image.Rectangle{
@@ -3740,8 +3734,12 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 		if m.textarea.Focused() {
 			cur := m.textarea.Cursor()
-			cur.X++                            // Adjust for app margins
-			cur.Y += m.layout.editor.Min.Y + 1 // Offset for attachments row
+			origin := m.textareaOrigin()
+			cur.X += origin.X
+			cur.Y += origin.Y
+			if !image.Pt(cur.X, cur.Y).In(m.layout.editor) {
+				return nil
+			}
 			return cur
 		}
 	}
@@ -4265,15 +4263,11 @@ func (m *UI) updateTextarea(msg tea.Msg) tea.Cmd {
 func (m *UI) forwardMouseToTextarea(msg tea.MouseMsg) (bool, tea.Cmd) {
 	mouse := msg.Mouse()
 
-	// The textarea is rendered inside layout.editor below the attachments
-	// row. renderEditorView always reserves the first row for attachments
-	// (an empty line when there are none), so the textarea always starts
-	// one row below the editor top.
-	const attachmentsRow = 1
-	origin := image.Pt(m.layout.editor.Min.X, m.layout.editor.Min.Y+attachmentsRow)
+	origin := m.textareaOrigin()
 
 	// The textarea occupies its own height starting at the origin.
-	area := image.Rectangle{Min: origin, Max: origin.Add(image.Pt(m.layout.editor.Dx(), m.textarea.Height()))}
+	width := max(0, m.layout.editor.Dx()-m.editorPanelStyle().GetHorizontalFrameSize())
+	area := image.Rectangle{Min: origin, Max: origin.Add(image.Pt(width, m.textarea.Height()))}.Intersect(m.layout.editor)
 	if !image.Pt(mouse.X, mouse.Y).In(area) {
 		return false, nil
 	}
@@ -4331,7 +4325,7 @@ func (m *UI) updateSize() {
 
 	m.chat.SetSize(m.layout.main.Dx(), m.layout.main.Dy())
 	m.textarea.MaxHeight = TextareaMaxHeight
-	m.textarea.SetWidth(m.layout.editor.Dx())
+	m.textarea.SetWidth(max(1, m.layout.editor.Dx()-m.editorPanelStyle().GetHorizontalFrameSize()))
 	if resizable, ok := m.activeInline.(dialog.ResizableInlineEditor); ok {
 		resizable.SetWidth(m.layout.editor.Dx())
 	}
@@ -4356,7 +4350,7 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 	helpHeight := 1
 	// The editor height: textarea height + margin for attachments and bottom spacing.
 	// When an inline editor is active, use its height instead.
-	editorHeight := m.textarea.Height() + editorHeightMargin
+	editorHeight := m.textarea.Height() + editorHeightMargin + m.editorAttachmentsHeight(m.editorContentWidth())
 	if m.activeInline != nil {
 		// The editor content width depends only on terminal width
 		// and layout (not on editor height), so passing the current
@@ -4640,15 +4634,13 @@ func (m *UI) setEditorPrompt(yolo bool) {
 	m.textarea.SetPromptFunc(4, m.normalPromptFunc)
 }
 
-// normalPromptFunc returns the normal editor prompt style ("> " on the
-// first line, "::: " on subsequent lines).
 func (m *UI) normalPromptFunc(info textarea.PromptInfo) string {
 	t := m.com.Styles
 	if info.LineNumber == 0 {
 		if info.Focused {
 			return t.Editor.PromptNormalIconFocused.Render()
 		}
-		return "::: "
+		return t.Editor.PromptNormalIconBlurred.Render()
 	}
 	if info.Focused {
 		return t.Editor.PromptNormalFocused.Render()
@@ -4952,8 +4944,8 @@ func (m *UI) completionsPosition() image.Point {
 		}
 	}
 	return image.Point{
-		X: cur.X + m.layout.editor.Min.X,
-		Y: m.layout.editor.Min.Y + cur.Y,
+		X: cur.X + m.textareaOrigin().X,
+		Y: m.textareaOrigin().Y + cur.Y,
 	}
 }
 
@@ -4997,31 +4989,23 @@ func mimeOf(content []byte) string {
 }
 
 var readyPlaceholders = []string{
-	"Ready!",
-	"Ready...",
-	"Ready?",
-	"Ready for instructions",
+	"Write a message...",
 }
 
 var workingPlaceholders = []string{
-	"Working!",
-	"Working...",
-	"Brrrrr...",
-	"Prrrrrrrr...",
-	"Processing...",
-	"Thinking...",
+	"Working... Add a message to the queue",
 }
 
 func localizedReadyPlaceholders(tr i18n.Translator) []string {
 	if tr.Locale() == i18n.Ru {
-		return []string{"Готов!", "Готов...", "Готов?", "Готов к командам"}
+		return []string{"Напишите сообщение..."}
 	}
 	return readyPlaceholders
 }
 
 func localizedWorkingPlaceholders(tr i18n.Translator) []string {
 	if tr.Locale() == i18n.Ru {
-		return []string{"Работаю!", "Работаю...", "Скорее...", "Шуршу...", "Обработка...", "Думаю..."}
+		return []string{"Работаю... Добавьте сообщение в очередь"}
 	}
 	return workingPlaceholders
 }
@@ -5034,19 +5018,6 @@ func (m *UI) randomizePlaceholders() {
 	working := localizedWorkingPlaceholders(tr)
 	m.workingPlaceholder = working[rand.Intn(len(working))]
 	m.readyPlaceholder = ready[rand.Intn(len(ready))]
-}
-
-// renderEditorView renders the editor view with attachments if any.
-func (m *UI) renderEditorView(width int) string {
-	var attachmentsView string
-	if len(m.attachments.List()) > 0 {
-		attachmentsView = m.attachments.Render(width)
-	}
-	return strings.Join([]string{
-		attachmentsView,
-		m.textarea.View(),
-		"", // margin at bottom of editor
-	}, "\n")
 }
 
 // cacheSidebarLogo records the width the sidebar logo frames are built for. A
