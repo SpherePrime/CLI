@@ -71,10 +71,9 @@ func TestSessionStreamsPCMUntilStopped(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "helper", session.Recorder())
 
-	// Only long enough for the helper process to start and write its opening
-	// burst. The burst is immediate, so the audio is there as soon as the
-	// process is up; nothing has to accumulate over a sleep.
-	time.Sleep(300 * time.Millisecond)
+	// Wait for the audio rather than for a duration. Process start is not
+	// bounded, so a sleep here was a race the test did not control.
+	waitForAudio(t, session, helperBurstDuration())
 
 	audio, err := session.Stop()
 	require.NoError(t, err)
@@ -102,12 +101,44 @@ func helperBurstDuration() time.Duration {
 	return time.Duration(helperBurstChunks) * 100 * time.Millisecond
 }
 
+// waitForAudio blocks until the capture has received at least want of PCM.
+//
+// These tests used to sleep for a fixed time and hope the helper process had
+// started by then. Starting a process is not bounded: on a loaded Windows
+// runner it regularly took longer than the sleep, so Stop found an empty
+// recording and reported "no audio captured" for a recorder that was working
+// perfectly. The same happened on macOS, and both read as a capture bug rather
+// than as a test that had not waited long enough.
+//
+// The tests live in the same package as the capture, so they can watch the sink
+// file the copy goroutine writes and wait for the audio to actually arrive.
+// That makes them independent of how fast the machine starts processes, which is
+// the thing that was never under the test's control.
+func waitForAudio(t *testing.T, session *Session, want time.Duration) {
+	t.Helper()
+
+	// Two bytes per sample, matching bytesPerSample used by the helper.
+	wantBytes := int64(want) * int64(SampleRate) * int64(bytesPerSample) / int64(time.Second)
+
+	// Generous, because this only has to cover process start; the wait ends as
+	// soon as the audio lands, so a fast machine does not pay for the bound.
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) {
+		if info, err := os.Stat(session.sink.Name()); err == nil && info.Size() >= wantBytes {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	t.Fatalf("no audio after %s: wanted %s of PCM", want, want)
+}
+
 func TestSessionStopIsClaimedOnce(t *testing.T) {
 	t.Parallel()
 
 	session, err := helperRecorder().Start(context.Background())
 	require.NoError(t, err)
-	time.Sleep(200 * time.Millisecond)
+	waitForAudio(t, session, 100*time.Millisecond)
 
 	_, err = session.Stop()
 	require.NoError(t, err)
@@ -124,8 +155,8 @@ func TestSessionAbortDiscardsCapture(t *testing.T) {
 
 	session, err := helperRecorder().Start(context.Background())
 	require.NoError(t, err)
+	waitForAudio(t, session, 100*time.Millisecond)
 
-	time.Sleep(200 * time.Millisecond)
 	session.Abort()
 
 	_, err = session.Stop()
