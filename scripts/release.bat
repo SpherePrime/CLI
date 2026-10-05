@@ -53,6 +53,7 @@ set "DRY_RUN=0"
 set "SKIP_BUILD=0"
 set "UPLOAD_LOCAL=0"
 set "ASSUME_YES=0"
+set "STRICT_SYNC=0"
 
 set "ROOT=%~dp0.."
 pushd "%ROOT%" >nul 2>&1 || ( echo Cannot enter %ROOT% & exit /b 1 )
@@ -83,6 +84,7 @@ if /I "%~1"=="--notes"  goto opt_notes
 if /I "%~1"=="--test"   ( set "RUN_TEST=1"  & shift & goto parse )
 if /I "%~1"=="--upload-local" ( set "UPLOAD_LOCAL=1" & shift & goto parse )
 if /I "%~1"=="--yes"    ( set "ASSUME_YES=1" & shift & goto parse )
+if /I "%~1"=="--strict-sync" ( set "STRICT_SYNC=1" & shift & goto parse )
 if /I "%~1"=="--dry-run" ( set "DRY_RUN=1" & shift & goto parse )
 if /I "%~1"=="--skip-build" ( set "SKIP_BUILD=1" & shift & goto parse )
 echo Unknown option: %~1
@@ -124,6 +126,7 @@ shift
 goto parse
 
 :parsed
+if "%STRICT_SYNC%"=="1" set "CMD=sync"
 
 rem build.bat runs the suite unless told otherwise. CI already covers it and the
 rem suite takes minutes, so this script defaults to building only.
@@ -485,6 +488,10 @@ echo  Fetching origin ...
 git fetch origin --prune >nul 2>&1
 if errorlevel 1 (
     echo.
+    if "%STRICT_SYNC%"=="1" (
+        echo  ERROR: could not fetch from origin. Release stopped.
+        exit /b 1
+    )
     echo  WARNING: could not fetch from origin - offline, or no remote.
     echo           Continuing with the sources that are already here.
     goto sync_done
@@ -493,12 +500,14 @@ if errorlevel 1 (
 call :rel_branch
 if not defined BRANCH (
     echo  HEAD is detached, so there is no branch to fast-forward to.
+    if "%STRICT_SYNC%"=="1" exit /b 1
     goto sync_done
 )
 
 git rev-parse --verify --quiet "origin/%BRANCH%" >nul 2>&1
 if errorlevel 1 (
     echo  The remote has no "%BRANCH%" branch - nothing to fast-forward to.
+    if "%STRICT_SYNC%"=="1" exit /b 1
     goto sync_done
 )
 
@@ -507,7 +516,16 @@ set "AHEAD="
 for /f "usebackq delims=" %%n in (`git rev-list --count HEAD..origin/%BRANCH%`) do set "BEHIND=%%n"
 for /f "usebackq delims=" %%n in (`git rev-list --count origin/%BRANCH%..HEAD`) do set "AHEAD=%%n"
 
+if "%STRICT_SYNC%"=="1" if not defined AHEAD (
+    echo  ERROR: could not compare sources with origin/%BRANCH%.
+    exit /b 1
+)
+
 if not defined BEHIND (
+    if "%STRICT_SYNC%"=="1" (
+        echo  ERROR: could not compare sources with origin/%BRANCH%.
+        exit /b 1
+    )
     echo  WARNING: could not read how far behind origin/%BRANCH% this is.
     echo           Not pulling. Continuing with the sources that are here.
     goto sync_done
@@ -522,12 +540,20 @@ echo  origin/%BRANCH% is ahead of this tree by %BEHIND% commit^(s^).
 
 if defined DIRTY (
     echo.
+    if "%STRICT_SYNC%"=="1" (
+        echo  ERROR: commit or stash local changes before syncing the release.
+        exit /b 1
+    )
     echo  WARNING: the working tree has uncommitted changes - not pulling.
     echo           Building HEAD as it stands, %BEHIND% commit^(s^) behind.
     goto sync_done
 )
 
 if not "%AHEAD%"=="0" (
+    if "%STRICT_SYNC%"=="1" (
+        echo  ERROR: local and remote branches have diverged. Release stopped.
+        exit /b 1
+    )
     echo  This tree also holds %AHEAD% commit^(s^) the remote does not, so a
     echo  fast-forward is impossible. Leaving it alone - compare them with
     echo    git log --oneline --graph --all
