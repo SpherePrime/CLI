@@ -190,6 +190,13 @@ func (m *Models) ID() string {
 	return ModelsID
 }
 
+// AgentID reports which agent this picker is scoped to, empty for the global
+// one. Exposed so callers can tell a per-worker picker from the global picker
+// without reaching into the dialog's fields.
+func (m *Models) AgentID() string {
+	return m.agentID
+}
+
 // HandleMsg implements Dialog.
 func (m *Models) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {

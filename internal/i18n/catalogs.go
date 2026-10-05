@@ -28,7 +28,6 @@ func enStrings() map[string]string {
 		"cmd.main_agent":               "main",
 		"cmd.agent_model_default":      "Default",
 		"cmd.agent_model_default_info": "Follow the main agent",
-		"cmd.agent_model_default_pinned":  "clear %d pins",
 		"cmd.agent_model_default_state": "follows main",
 		"cmd.model_type_large":         "large",
 		"cmd.model_type_small":         "small",
@@ -267,7 +266,6 @@ func enStrings() map[string]string {
 		"info.notifications_set":    "Notifications set to: %s",
 		"info.auto_summarize_set":   "Auto summarize set to %d%%, large windows from %d tokens use %d%%.",
 		"info.thinking_mode":        "Thinking mode %s",
-		"info.agents_default_restored":     "Cleared %d agent pins; they follow the main model again",
 	"info.keybinding_problems":  "Keybinding problems: %s",
 		"info.transparent_bg":       "Transparent background %s",
 		"info.mouse_support":        "Mouse support %s",
@@ -326,7 +324,6 @@ func ruStrings() map[string]string {
 		"cmd.main_agent":               "основной",
 		"cmd.agent_model_default":      "По умолчанию",
 		"cmd.agent_model_default_info": "Как основной агент",
-		"cmd.agent_model_default_pinned":  "снять закреплений: %d",
 		"cmd.agent_model_default_state": "за основным",
 		"cmd.model_type_large":         "большая",
 		"cmd.model_type_small":         "малая",
@@ -541,7 +538,6 @@ func ruStrings() map[string]string {
 
 		// Info messages.
 		"info.notifications_set":       "Стиль уведомлений: %s",
-		"info.agents_default_restored":     "Снято закреплений: %d. Агенты снова на основной модели",
 		"info.thinking_mode":           "Режим размышлений %s",
 		"info.keybinding_problems":     "Проблемы с клавишами: %s",
 		"info.transparent_bg":          "Прозрачный фон %s",

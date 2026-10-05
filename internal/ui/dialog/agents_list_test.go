@@ -10,14 +10,15 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
+// agentsDialogWorkspace is a minimal workspace: the dialog only reads config.
 type agentsDialogWorkspace struct {
 	workspace.Workspace
 	cfg config.Config
 }
 
-func (w *agentsDialogWorkspace) Config() *config.Config     { return &w.cfg }
-func (w *agentsDialogWorkspace) Language() string           { return "en" }
-func (w *agentsDialogWorkspace) WorkingDir() string         { return "/tmp" }
+func (w *agentsDialogWorkspace) Config() *config.Config            { return &w.cfg }
+func (w *agentsDialogWorkspace) Language() string                  { return "en" }
+func (w *agentsDialogWorkspace) WorkingDir() string                { return "/tmp" }
 func (w *agentsDialogWorkspace) Resolver() config.VariableResolver { return nil }
 
 func newAgentsDialog(t *testing.T) (*Agents, *agentsDialogWorkspace) {
@@ -34,22 +35,16 @@ func newAgentsDialog(t *testing.T) (*Agents, *agentsDialogWorkspace) {
 	return NewAgents(&common.Common{Workspace: ws, Styles: providerTestStyles()}), ws
 }
 
-// The main agent is not configurable here. Its model comes from the model
-// picker, so an entry for it in this list was a second place to change the same
-// setting - and one that read as configuring a delegate while actually
-// switching the session's own model.
+// The main agent is not configurable in this list. Its model comes from the
+// model picker, so an entry here was a second place to change the same setting,
+// and one that read as configuring a delegate while actually switching the
+// session's own model.
 func TestAgentsDialogHidesTheMainAgent(t *testing.T) {
 	d, _ := newAgentsDialog(t)
 
 	for _, id := range d.agentIDs {
 		require.NotEqual(t, config.AgentGeneral, id,
 			"the main agent must not be listed as a configurable worker")
-	}
-
-	for i := range len(d.agentIDs) + 1 {
-		if item, ok := d.list.ItemAt(i).(*AgentsItem); ok {
-			require.NotEqual(t, config.AgentGeneral, item.agentID)
-		}
 	}
 
 	// Every worker that can be delegated to must still be reachable.
@@ -59,60 +54,71 @@ func TestAgentsDialogHidesTheMainAgent(t *testing.T) {
 	}
 }
 
-// Default has to be the first row: it is the setting most workers belong on, so
-// it cannot be something reached only by scrolling.
-func TestAgentsDialogOffersDefaultFirst(t *testing.T) {
+// The list holds exactly the workers: no Default row, and no gap left behind by
+// one. Picking the same choice from two places meant picking it here cleared
+// every worker rather than opening a picker, which read as enter doing nothing.
+func TestAgentsDialogHoldsOnlyWorkers(t *testing.T) {
 	d, _ := newAgentsDialog(t)
 
-	item, ok := d.list.ItemAt(0).(*AgentsDefaultItem)
-	require.True(t, ok, "the first row must be Default, got %T", d.list.ItemAt(0))
-	require.Equal(t, AgentsDefaultID, item.ID())
+	require.Equal(t, d.list.Len(), len(d.agentIDs),
+		"the list must contain the workers and nothing else")
+
+	for i := range d.list.Len() {
+		item, ok := d.list.ItemAt(i).(*AgentsItem)
+		require.True(t, ok, "row %d must be a worker, got %T", i, d.list.ItemAt(i))
+		require.NotEmpty(t, item.agent.Name)
+	}
 }
 
-// Picking it must clear every worker's pin, not open a model picker: it is the
-// absence of a pin, applied to all of them at once.
-func TestAgentsDialogDefaultClearsEveryWorker(t *testing.T) {
+// Selecting a worker opens that worker's model picker, and nothing else does.
+func TestAgentsDialogEveryRowOpensItsOwnPicker(t *testing.T) {
 	d, _ := newAgentsDialog(t)
 
-	action := d.activate(0)
-	require.IsType(t, ActionSetAllAgentsDefault{}, action)
-
-	ids := action.(ActionSetAllAgentsDefault).AgentIDs
-	require.ElementsMatch(t, []string{config.AgentCode, config.AgentTask, config.AgentPlan}, ids)
+	for i, want := range d.agentIDs {
+		action := d.activate(i)
+		require.IsType(t, ActionOpenAgentModel{}, action, "row %d", i)
+		require.Equal(t, want, action.(ActionOpenAgentModel).AgentID,
+			"row %d must open the picker for the worker on it", i)
+	}
 }
 
-// The row must not claim everything already follows the main model when some
-// worker is still pinned.
-func TestAgentsDialogDefaultReportsPinnedWorkers(t *testing.T) {
+// ctrl+x clears the highlighted worker's pin, and does nothing when there is no
+// pin to clear rather than reporting a change that did not happen.
+func TestAgentsDialogCtrlXClearsOnlyPinnedWorkers(t *testing.T) {
+	d, ws := newAgentsDialog(t)
+	d.list.SetSelected(0)
+
+	require.Nil(t, d.clearPin(), "nothing pinned means nothing to clear")
+
+	code := ws.cfg.Agents[config.AgentCode]
+	code.ModelOverride = &config.SelectedModel{Provider: "p", Model: "m"}
+	ws.cfg.Agents[config.AgentCode] = code
+	d.setAgentsItems()
+
+	action := d.clearPin()
+	require.IsType(t, ActionClearAgentModel{}, action)
+	require.Equal(t, config.AgentCode, action.(ActionClearAgentModel).AgentID)
+}
+
+// The row has to say what the worker actually runs on, so a pinned one is not
+// mistaken for a following one.
+func TestAgentsDialogRowShowsTheResolvedModel(t *testing.T) {
 	d, ws := newAgentsDialog(t)
 
-	item := d.list.ItemAt(0).(*AgentsDefaultItem)
-	// Nothing pinned: the row states the setting rather than offering an action.
-	require.Contains(t, item.Render(60), "Follow the main agent")
+	item, ok := d.list.ItemAt(0).(*AgentsItem)
+	require.True(t, ok)
 
-	for _, id := range []string{config.AgentCode, config.AgentPlan} {
-		agent := ws.cfg.Agents[id]
-		agent.ModelOverride = &config.SelectedModel{Provider: "p", Model: "m"}
-		ws.cfg.Agents[id] = agent
-	}
+	// Unpinned: the row shows the resolved model, with no pin marker.
+	require.NotContains(t, item.Render(70), d.com.L("cmd.pinned"))
 
-	require.Contains(t, item.Render(60), "2",
-		"the row must say how many workers are pinned")
-}
+	code := ws.cfg.Agents[config.AgentCode]
+	code.ModelOverride = &config.SelectedModel{Provider: "p", Model: "pinned-model"}
+	ws.cfg.Agents[config.AgentCode] = code
+	d.setAgentsItems()
 
-// ctrl+x on the Default row must do the same thing as picking it, or the same
-// intent would have two different results depending on the row.
-func TestAgentsDialogClearKeyOnDefaultRow(t *testing.T) {
-	d, _ := newAgentsDialog(t)
-
-	require.IsType(t, ActionSetAllAgentsDefault{}, d.clearPin())
-}
-
-// Selecting a worker still opens its model picker.
-func TestAgentsDialogWorkerOpensModelPicker(t *testing.T) {
-	d, _ := newAgentsDialog(t)
-
-	action := d.activate(1)
-	require.IsType(t, ActionOpenAgentModel{}, action)
-	require.Equal(t, config.AgentCode, action.(ActionOpenAgentModel).AgentID)
+	item, ok = d.list.ItemAt(0).(*AgentsItem)
+	require.True(t, ok)
+	rendered := item.Render(70)
+	require.Contains(t, rendered, "pinned-model")
+	require.Contains(t, rendered, d.com.L("cmd.pinned"))
 }
