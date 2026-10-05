@@ -303,9 +303,16 @@ git rev-parse --git-dir >nul 2>&1 || (
     echo ERROR: this directory is not a git repository.
     exit /b 1
 )
-git remote >nul 2>&1 || (
+rem git remote exits 0 for an empty list - it lists remotes, and an empty list
+rem is a successful listing - so the natural "|| error" form never fired and a
+rem repository with no remote at all passed this check and failed much later,
+rem when something actually tried to push. The check asks about origin by name
+rem because that is the remote every publish step below uses.
+git remote get-url origin >nul 2>&1 || (
     echo.
-    echo ERROR: this repository has no remote, so nothing could be published.
+    echo ERROR: this repository has no "origin" remote, so nothing could be
+    echo        published. Add one with:
+    echo          git remote add origin https://github.com/OWNER/REPO.git
     exit /b 1
 )
 exit /b 0
@@ -369,14 +376,23 @@ exit /b 1
 
 rem resolve_version sets VERSION to the explicit --version if given, otherwise
 rem last release + 1 patch.
-:
+rem
+rem A leading v is stripped so callers can pass either form, and only the first
+rem character is taken: deleting every v would turn 1.2.3-v2 into 1.2.3-2, a
+rem tag nobody asked for that matches nothing else in the scheme.
+rem
+rem The strip lives outside a parenthesized block on purpose. cmd reads a block
+rem in full before it evaluates "if defined", and expanding a substring of a
+rem variable that is not set yet is a syntax error - so the guard meant to make
+rem it safe does not protect the expansion written in the same block. Without
+rem this shape the whole script died with "command syntax is incorrect" on
+rem every run that did not pass --version.
 :resolve_version
-if defined VERSION (
-    rem strip a leading v so callers can pass either form
-    set "VERSION=%VERSION:v=%"
-    exit /b 0
-)
+if not defined VERSION goto resolve_version_auto
+if "%VERSION:~0,1%"=="v" set "VERSION=%VERSION:~1%"
+exit /b 0
 
+:resolve_version_auto
 set "LATEST_TAG="
 for /f "usebackq delims=" %%t in (`gh release list --limit 1 --json tagName --jq ".[0].tagName" 2^>nul`) do (
     if not defined LATEST_TAG set "LATEST_TAG=%%t"
@@ -508,6 +524,14 @@ rem ============================================================================
 call :print_header "Check"
 echo  repository : %ROOT%
 call :ensure_git || exit /b 1
+rem Reported before anything reads the repository. Without this the fields
+rem below were filled from commands that had all failed: git status printed
+rem "fatal: not a git repository" straight to the console, the tree was then
+rem called clean because the command had produced no output, and version
+rem resolution fell back to v0.0.0 and offered v0.0.1 as the next release.
+rem A check that answers questions nobody can use is worse than one that
+rem refuses to answer.
+call :ensure_repo || exit /b 1
 call :current_sha
 echo  HEAD       : !SHA!
 for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
