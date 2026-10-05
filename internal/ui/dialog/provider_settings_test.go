@@ -151,6 +151,10 @@ func (w *providerSettingsWorkspace) Config() *config.Config {
 	return &w.cfg
 }
 
+// Language is not optional: the embedded Workspace interface leaves it nil,
+// and common.Common.T calls it to pick a translator for every label.
+func (w *providerSettingsWorkspace) Language() string { return "en" }
+
 func (w *providerSettingsWorkspace) SetConfigField(scope config.Scope, key string, value any) error {
 	w.writtenKeys = append(w.writtenKeys, key)
 	return nil

@@ -608,6 +608,55 @@ func (w *ClientWorkspace) RemoveConfigField(scope config.Scope, key string) erro
 	return err
 }
 
+// RemoveProvider mirrors config.ConfigStore.RemoveProvider over the wire, since
+// the server exposes only per-field config calls.
+//
+// The order matters and matches the store: unpin agents while their overrides
+// are still readable, drop the selected models that pointed at this provider,
+// then the provider itself. Doing it in any other order would leave the pins
+// pointing at something already gone.
+func (w *ClientWorkspace) RemoveProvider(scope config.Scope, providerID string) error {
+	if providerID == "" {
+		return errors.New("provider id is required")
+	}
+
+	ctx := context.Background()
+	cfg := w.Config()
+	if cfg == nil || cfg.Providers == nil {
+		return config.ErrProviderNotFound
+	}
+	if _, ok := cfg.Providers.Get(providerID); !ok {
+		return fmt.Errorf("%w: %s", config.ErrProviderNotFound, providerID)
+	}
+
+	for id, agent := range cfg.Agents {
+		ov := agent.ModelOverride
+		if ov == nil || ov.Provider != providerID {
+			continue
+		}
+		agent.ModelOverride = nil
+		if err := w.client.SetConfigField(ctx, w.workspaceID(), scope, "agents."+id, agent); err != nil {
+			return err
+		}
+		w.refreshWorkspace()
+	}
+
+	for _, slot := range []config.SelectedModelType{config.SelectedModelTypeLarge, config.SelectedModelTypeSmall} {
+		if sel, ok := cfg.Models[slot]; ok && sel.Provider == providerID {
+			if err := w.client.RemoveConfigField(ctx, w.workspaceID(), scope, "models."+string(slot)); err != nil {
+				return err
+			}
+			w.refreshWorkspace()
+		}
+	}
+
+	if err := w.client.RemoveConfigField(ctx, w.workspaceID(), scope, "providers."+providerID); err != nil {
+		return err
+	}
+	w.refreshWorkspace()
+	return nil
+}
+
 func (w *ClientWorkspace) ImportCopilot() (*oauth.Token, bool) {
 	token, ok, err := w.client.ImportCopilot(context.Background(), w.workspaceID())
 	if err != nil {

@@ -216,6 +216,12 @@ type Workspace interface {
 	SetConfigField(scope config.Scope, key string, value any) error
 	SetConfigFields(scope config.Scope, kv map[string]any) error
 	RemoveConfigField(scope config.Scope, key string) error
+	// RemoveProvider deletes a provider and everything pointing at it: the
+	// selected models on it, and any agent pinned to one of its models. Going
+	// through RemoveConfigField alone would leave those behind, and they surface
+	// later as a "provider not configured" error instead of as the deletion the
+	// user asked for.
+	RemoveProvider(scope config.Scope, providerID string) error
 	ImportCopilot() (*oauth.Token, bool)
 	RefreshOAuthToken(ctx context.Context, scope config.Scope, providerID string) error
 
