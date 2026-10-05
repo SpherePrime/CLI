@@ -1,8 +1,6 @@
 package dialog
 
 import (
-	"slices"
-
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
@@ -63,8 +61,14 @@ func NewAgents(com *common.Common) *Agents {
 	// so an entry here would be a second place to change the same thing, and
 	// picking a "model for an agent" in it would switch the session's model
 	// while reading as configuring a delegate.
-	m.allIDs = []string{config.AgentCode, config.AgentTask, config.AgentPlan}
-	m.agentIDs = m.allIDs
+	//
+	// There is no Default row here either. Choosing what a worker runs on is
+	// one step: press a worker, and the picker that opens offers Default,
+	// meaning the model the main agent is using. A Default entry in this list
+	// put the same choice in a second place, where picking it cleared every
+	// worker instead of opening a picker, so pressing enter on it looked like
+	// nothing happened.
+	m.agentIDs = []string{config.AgentCode, config.AgentTask, config.AgentPlan}
 
 	m.list = list.NewFilterableList()
 	m.list.Focus()
@@ -105,20 +109,7 @@ func (m *Agents) ID() string {
 func (m *Agents) setAgentsItems() {
 	cfg := m.com.Config()
 
-	items := make([]list.FilterableItem, 0, len(m.agentIDs)+1)
-
-	// Default sits above the workers. It means "use the same model as the main
-	// agent", and it is the setting most workers should be on, so it has to be a
-	// row you can see and go back to rather than a hidden ctrl+x. Choosing it
-	// clears every worker's pin in one go.
-	defaultItem := &AgentsDefaultItem{
-		Versioned: list.NewVersioned(),
-		com:       m.com,
-		t:         m.com.Styles,
-		agentIDs:  m.allIDs,
-		cache:     make(map[int]string),
-	}
-	items = append(items, defaultItem)
+	items := make([]list.FilterableItem, 0, len(m.agentIDs))
 
 	for _, agentID := range m.agentIDs {
 		agent, ok := cfg.Agents[agentID]
@@ -207,31 +198,18 @@ func (m *Agents) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	return nil
 }
 
-// clearPin removes the pin from the highlighted agent, or clears every worker's
-// pin when the Default row is highlighted. ctrl+x on the Default row is the same
-// action as picking it, so the two cannot disagree.
+// clearPin removes the pin from the highlighted agent.
 func (m *Agents) clearPin() Action {
-	switch item := m.list.SelectedItem().(type) {
-	case *AgentsDefaultItem:
-		return ActionSetAllAgentsDefault{AgentIDs: slices.Clone(m.allIDs)}
-	case *AgentsItem:
-		if item.agent.ModelOverride == nil {
-			return nil
-		}
-		return ActionClearAgentModel{AgentID: item.agentID}
+	item, ok := m.list.SelectedItem().(*AgentsItem)
+	if !ok || item == nil || item.agent.ModelOverride == nil {
+		return nil
 	}
-	return nil
+	return ActionClearAgentModel{AgentID: item.agentID}
 }
 
 // activate opens the agent at idx. Shared by the enter key and by a
 // click on a row.
 func (m *Agents) activate(idx int) Action {
-	if _, ok := m.list.ItemAt(idx).(*AgentsDefaultItem); ok {
-		// Not a model and not an agent to open: it is the absence of a pin,
-		// applied to every worker at once.
-		return ActionSetAllAgentsDefault{AgentIDs: slices.Clone(m.allIDs)}
-	}
-
 	item, ok := m.list.ItemAt(idx).(*AgentsItem)
 	if !ok || item == nil {
 		return nil
@@ -263,86 +241,6 @@ func (m *Agents) FullHelp() [][]key.Binding {
 		rows = append(rows, slice[i:end])
 	}
 	return rows
-}
-
-// AgentsDefaultID is the row identifier for the Default entry.
-const AgentsDefaultID = "__default__"
-
-// ActionSetAllAgentsDefault clears the pinned model on every listed worker, so
-// they all follow the main agent's model again.
-type ActionSetAllAgentsDefault struct {
-	AgentIDs []string
-}
-
-// AgentsDefaultItem is the Default row at the top of the agent list.
-type AgentsDefaultItem struct {
-	*list.Versioned
-
-	com      *common.Common
-	t        *styles.Styles
-	agentIDs []string
-
-	m       fuzzy.Match
-	cache   map[int]string
-	focused bool
-}
-
-var _ ListItem = (*AgentsDefaultItem)(nil)
-
-func (i *AgentsDefaultItem) Finished() bool { return true }
-
-func (i *AgentsDefaultItem) ID() string { return AgentsDefaultID }
-
-// Filter implements list.FilterableItem.
-func (i *AgentsDefaultItem) Filter() string { return i.com.L("cmd.agent_model_default") }
-
-func (i *AgentsDefaultItem) Render(width int) string {
-	info := i.com.L("cmd.agent_model_default_info")
-
-	cfg := i.com.Config()
-	if cfg != nil {
-		var pinned int
-		for _, id := range i.agentIDs {
-			if cfg.Agents[id].ModelOverride != nil {
-				pinned++
-			}
-		}
-		if pinned > 0 {
-			// Say how many are pinned, otherwise the row claims everything
-			// already follows the main agent when it does not.
-			info = i.com.LSprintf("cmd.agent_model_default_pinned", pinned)
-		}
-	}
-
-	st := ListItemStyles{
-		ItemBlurred:     i.t.Dialog.NormalItem,
-		ItemFocused:     i.t.Dialog.SelectedItem,
-		InfoTextBlurred: i.t.Dialog.ListItem.InfoBlurred,
-		InfoTextFocused: i.t.Dialog.ListItem.InfoFocused,
-	}
-	return renderItem(st, i.com.L("cmd.agent_model_default"), info, i.focused, width, i.cache, &i.m)
-}
-
-func (i *AgentsDefaultItem) SetFocused(focused bool) {
-	if i.focused == focused {
-		return
-	}
-	i.cache = nil
-	i.focused = focused
-	if i.Versioned != nil {
-		i.Bump()
-	}
-}
-
-func (i *AgentsDefaultItem) SetMatch(fm fuzzy.Match) {
-	if sameFuzzyMatch(i.m, fm) {
-		return
-	}
-	i.cache = nil
-	i.m = fm
-	if i.Versioned != nil {
-		i.Bump()
-	}
 }
 
 // AgentsItem is a single agent entry in the Agents dialog.
