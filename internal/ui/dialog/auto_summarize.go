@@ -11,6 +11,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 const (
@@ -362,18 +363,23 @@ func (a *AutoSummarize) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 			descStyle = t.Dialog.ListItem.InfoFocused
 		}
 
-		// The suffix has to be subtracted before the input width is decided.
-		// Leaving it out put the suffix past the dialog edge, and lipgloss
-		// wrapped it onto a line of its own, so a row read as three lines:
-		// label and value, then a bare "%", then the description.
-		label := truncateToWidth(row.title, autoSummarizeLabelColumn)
-		suffix := " " + row.suffix
-		available := innerWidth - autoSummarizeLabelColumn - len([]rune(suffix))
+		// Budget the value against the width the label and suffix actually
+		// take once styled, not against their raw lengths.
+		//
+		// The styles carry two cells of horizontal padding each, so measuring
+		// the strings gave 68 cells for a 70 cell row: it looked like it fit,
+		// and the styled result came out at 72. That overflow is what wrapped
+		// the suffix onto a line of its own, leaving a bare "%" stranded
+		// between the value and its description. Measuring the rendered parts
+		// cannot drift when a theme changes the padding.
+		label := padRightTo(truncateToWidth(row.title, autoSummarizeLabelColumn), autoSummarizeLabelColumn)
+		labelRendered := labelStyle.Render(label)
+		suffixRendered := t.Dialog.NormalItem.Render(" " + row.suffix)
+
+		available := innerWidth - lipgloss.Width(labelRendered) - lipgloss.Width(suffixRendered)
 		row.input.SetWidth(dialogInputTextWidth(t, row.input, max(available, 4)))
 
-		rc.AddPart(labelStyle.Render(padRightTo(label, autoSummarizeLabelColumn)) +
-			valueStyle.Render(row.input.View()) +
-			t.Dialog.NormalItem.Render(suffix))
+		rc.AddPart(labelRendered + valueStyle.Render(row.input.View()) + suffixRendered)
 		rc.AddPart(descStyle.Render(truncateToWidth(row.description, innerWidth)))
 	}
 
