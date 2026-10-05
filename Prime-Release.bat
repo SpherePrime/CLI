@@ -20,9 +20,13 @@ rem ============================================================================
 
 setlocal
 cd /d "%~dp0"
+call "%~dp0scripts\release.bat" sync --strict-sync %*
+set "EXITCODE=%errorlevel%"
+if not "%EXITCODE%"=="0" goto finished
 call "%~dp0scripts\release.bat" release %*
 set "EXITCODE=%errorlevel%"
 
+:finished
 echo.
 if "%EXITCODE%"=="0" (
     echo  Done.
