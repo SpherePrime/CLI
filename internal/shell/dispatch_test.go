@@ -305,20 +305,43 @@ func TestDispatch_DirectoryNotFile(t *testing.T) {
 	}
 }
 
-// TestDispatch_BashShebang runs a #!/bin/bash script via os/exec. Skipped
-// if bash isn't available (rare in CI, but keep the test robust).
-func TestDispatch_BashShebang(t *testing.T) {
+// requireBash skips the test unless bash actually runs.
+//
+// LookPath on its own is not enough. On Windows it finds
+// C:\Windows\System32\bash.exe, the WSL launcher, on any machine that has WSL
+// installed but no distribution behind it. That file exists, so LookPath
+// succeeds, and then every invocation dies with "execvpe(/bin/bash) failed:
+// No such file or directory". A test trusting LookPath therefore fails on a
+// machine with no usable bash instead of skipping, and reports the missing
+// interpreter as a dispatch bug. Running something trivial first tells the two
+// apart: the launcher is on PATH, bash is not.
+func requireBash(t *testing.T) {
+	t.Helper()
+
 	bash, err := exec.LookPath("bash")
 	if err != nil {
 		t.Skipf("bash not in PATH: %v", err)
 	}
-	_ = bash
+
+	var stderr bytes.Buffer
+	cmd := exec.Command(bash, "-c", "exit 0")
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		t.Skipf("bash is on PATH but does not run: %v (%s)",
+			err, strings.TrimSpace(stderr.String()))
+	}
+}
+
+// TestDispatch_BashShebang runs a #!/bin/bash script via os/exec. Skipped
+// if bash isn't available (rare in CI, but keep the test robust).
+func TestDispatch_BashShebang(t *testing.T) {
+	requireBash(t)
 
 	dir := t.TempDir()
 	script := writeScript(t, dir, "bash-echo.sh", "#!/usr/bin/env bash\necho bashout\n")
 
 	var stdout, stderr bytes.Buffer
-	err = Run(t.Context(), RunOptions{
+	err := Run(t.Context(), RunOptions{
 		Command: script,
 		Cwd:     dir,
 		Stdout:  &stdout,
@@ -335,9 +358,8 @@ func TestDispatch_BashShebang(t *testing.T) {
 // TestDispatch_ShebangPassesExitCode maps interpreter exit codes through to
 // interp.ExitStatus so the caller can inspect them with ExitCode.
 func TestDispatch_ShebangPassesExitCode(t *testing.T) {
-	if _, err := exec.LookPath("bash"); err != nil {
-		t.Skipf("bash not in PATH: %v", err)
-	}
+	requireBash(t)
+
 	dir := t.TempDir()
 	script := writeScript(t, dir, "fail.sh", "#!/usr/bin/env bash\nexit 5\n")
 
