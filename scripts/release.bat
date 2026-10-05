@@ -280,6 +280,36 @@ call :install_tool "GoLang.Go" "golang" "The Go toolchain"
 where go >nul 2>&1 || ( echo. & echo ERROR: Go is still not on PATH. & exit /b 1 )
 exit /b 0
 
+rem ensure_git makes git available, installing it if needed.
+rem
+rem Every path here tags, pushes and inspects the repository, so a machine
+rem without git produced "not recognized as an internal or external command"
+rem from somewhere deep in the flow rather than anything saying which tool was
+rem missing. It is checked before the first git call, not before the first
+rem failure.
+:ensure_git
+where git >nul 2>&1 && exit /b 0
+call :refresh_path
+where git >nul 2>&1 && exit /b 0
+call :install_tool "Git.Git" "git" "Git"
+where git >nul 2>&1 || ( echo. & echo ERROR: Git is still not on PATH. & exit /b 1 )
+exit /b 0
+
+rem ensure_repo checks this is a git working copy with a remote, because
+rem everything downstream either tags HEAD or pushes to one.
+:ensure_repo
+git rev-parse --git-dir >nul 2>&1 || (
+    echo.
+    echo ERROR: this directory is not a git repository.
+    exit /b 1
+)
+git remote >nul 2>&1 || (
+    echo.
+    echo ERROR: this repository has no remote, so nothing could be published.
+    exit /b 1
+)
+exit /b 0
+
 rem ensure_gh makes the GitHub CLI available, installing it if needed.
 :ensure_gh
 where gh >nul 2>&1 && exit /b 0
@@ -311,17 +341,30 @@ if errorlevel 1 (
 )
 exit /b 0
 
-rem ensure_tar checks the archiver the Linux packages are built with. It ships
-rem with Windows 10 1803 and later, so a miss here is rare and not something
-rem winget can usefully fix.
+rem ensure_tar checks the archiver the Linux packages are built with.
+rem
+rem bsdtar ships with Windows 10 1803 and later, so a miss is rare. It is also
+rem not something winget or chocolatey can install: it is an operating system
+rem feature, not a package. So this checks, and if it is missing it says which
+rem feature to re-enable rather than pretending the script can fix it.
+rem
+rem There used to be a 7-Zip fallback here for the trimmed-image case. It was
+rem removed on purpose: the second implementation of tar.gz creation could not
+rem be exercised on the machine that wrote it, and an archive producer that has
+rem never run is worse than a clear error - it either fails at the worst moment
+rem or produces something subtly different from what was tested.
 :ensure_tar
 where tar >nul 2>&1 && exit /b 0
 call :refresh_path
 where tar >nul 2>&1 && exit /b 0
 echo.
-echo ERROR: tar ^(bsdtar^) was not found. It ships with Windows 10 1803 and
-echo        later. Windows features can be removed, so update Windows or
-echo        re-enable the feature that provides it.
+echo ERROR: tar ^(bsdtar^) was not found. The Linux packages are built with it.
+echo        It ships with Windows 10 1803 and later as an operating system
+echo        feature, which no package manager installs.
+echo.
+echo        Re-enable it with, as administrator:
+echo          DISM /Online /Enable-Feature /FeatureName:RemoteSigned /All /NoRestart
+echo        or turn on the equivalent Windows feature.
 exit /b 1
 
 rem resolve_version sets VERSION to the explicit --version if given, otherwise
@@ -464,6 +507,7 @@ rem ============================================================================
 :do_check
 call :print_header "Check"
 echo  repository : %ROOT%
+call :ensure_git || exit /b 1
 call :current_sha
 echo  HEAD       : !SHA!
 for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
@@ -524,6 +568,8 @@ rem ============================================================================
 rem  release / draft
 rem ============================================================================
 :do_release
+call :ensure_git || exit /b 1
+call :ensure_repo || exit /b 1
 call :ensure_go  || exit /b 1
 call :ensure_gh  || exit /b 1
 call :ensure_tar || exit /b 1
