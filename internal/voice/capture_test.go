@@ -17,21 +17,39 @@ import (
 // microphone: an endless stream of silent PCM on stdout until it is killed.
 const helperMarker = "-test.count=987654321"
 
+// helperBurstChunks is how many chunks the helper writes before it starts
+// throttling.
+//
+// One chunk is 100ms of audio and the tests wait out minSpeechDuration, so the
+// first few chunks go out back to back. Without this the helper's only output
+// arrived one chunk per 100ms starting from process spawn, which made the
+// tests a race against process startup: on a loaded macOS runner the spawn
+// alone could eat most of the wait, and the capture came back shorter than the
+// minimum the code under test is specified to keep. A short burst costs
+// nothing and removes the dependency on how fast the runner is.
+const helperBurstChunks = 4
+
 func TestCaptureHelper(t *testing.T) {
 	if !slices.Contains(os.Args, helperMarker) {
 		t.Skip("subprocess used by the capture tests")
 	}
 
-	// One chunk is 100ms of audio, so the sleep has to be 100ms too. Sleeping
-	// less pushed ten times the audio through the pipe for no benefit: the
-	// tests only assert that more than 100ms arrived, and a subprocess
-	// blasting 320KB/s is enough to look like a leak to a busy CI runner.
 	chunk := make([]byte, SampleRate*bytesPerSample/10)
-	for {
+	for range helperBurstChunks {
 		if _, err := os.Stdout.Write(chunk); err != nil {
 			return
 		}
+	}
+
+	// After the burst, one chunk is 100ms of audio, so the sleep has to be
+	// 100ms too. Sleeping less pushed ten times the audio through the pipe for
+	// no benefit, and a subprocess blasting 320KB/s is enough to look like a
+	// leak to a busy CI runner.
+	for {
 		time.Sleep(100 * time.Millisecond)
+		if _, err := os.Stdout.Write(chunk); err != nil {
+			return
+		}
 	}
 }
 
@@ -53,12 +71,18 @@ func TestSessionStreamsPCMUntilStopped(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "helper", session.Recorder())
 
-	time.Sleep(400 * time.Millisecond)
+	// The helper bursts its first chunks out immediately, so this wait is only
+	// there to give the pipe time to drain, not to accumulate audio.
+	time.Sleep(200 * time.Millisecond)
 
 	audio, err := session.Stop()
 	require.NoError(t, err)
+	// Asserted against minSpeechDuration rather than a hand-picked number: the
+	// test failed here on macOS because it waited a fixed 400ms and hoped for
+	// 300ms of audio, which a slow process start could eat.
+	require.True(t, audio.WorthTranscribing(),
+		"captured %s, need at least %s", audio.Duration, minSpeechDuration)
 	require.Greater(t, audio.Duration, 100*time.Millisecond)
-	require.True(t, audio.WorthTranscribing())
 	require.Equal(t, "helper", audio.Recorder)
 	require.Equal(t, "RIFF", string(audio.WAV[:4]))
 }
