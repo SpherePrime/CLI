@@ -1,8 +1,6 @@
 package dialog
 
 import (
-	"fmt"
-	"slices"
 	"sort"
 	"strings"
 
@@ -60,6 +58,21 @@ func (f *ModelsList) SetFilter(q string) {
 	f.SetItems(f.VisibleItems()...)
 }
 
+// selectableRow reports whether the cursor may rest on this row.
+//
+// The picker interleaves the rows it can act on - model entries and a worker's
+// Default entry - with headings and spacers that only separate them. This read
+// "is a *ModelItem", written when that was the only actionable row there was,
+// so the Default entry added later was skipped by every arrow key: painted on
+// screen, named in the help text, and unreachable without reaching for the
+// mouse. Testing for the rows the picker can act on, rather than for one kind
+// of them, is what lets the next kind work without anyone remembering to come
+// back here.
+func selectableRow(item list.Item) bool {
+	_, ok := item.(ListItem)
+	return ok
+}
+
 // SetSelected sets the selected item index. It overrides the base method to
 // skip non-model items.
 func (f *ModelsList) SetSelected(index int) {
@@ -71,7 +84,7 @@ func (f *ModelsList) SetSelected(index int) {
 	f.List.SetSelected(index)
 	for {
 		selectedItem := f.SelectedItem()
-		if _, ok := selectedItem.(*ModelItem); ok {
+		if selectableRow(selectedItem) {
 			return
 		}
 		f.List.SetSelected(index + 1)
@@ -92,19 +105,19 @@ func (f *ModelsList) SetSelectedItem(itemID string) {
 	// keyboard navigation uses, so we stay in sync with the flat
 	// list layout.
 	for ok := f.SelectFirst(); ok; ok = f.SelectNext() {
-		if mi, is := f.SelectedItem().(*ModelItem); is && mi.ID() == itemID {
+		if item, is := f.SelectedItem().(ListItem); is && item.ID() == itemID {
 			return
 		}
 	}
 }
 
-// SelectNext selects the next model item, skipping any non-focusable items
-// like group headers and spacers.
+// SelectNext selects the next selectable item, skipping any non-focusable
+// items like group headers and spacers.
 func (f *ModelsList) SelectNext() (v bool) {
 	v = f.List.SelectNext()
 	for v {
 		selectedItem := f.SelectedItem()
-		if _, ok := selectedItem.(*ModelItem); ok {
+		if selectableRow(selectedItem) {
 			return v
 		}
 		v = f.List.SelectNext()
@@ -112,13 +125,13 @@ func (f *ModelsList) SelectNext() (v bool) {
 	return v
 }
 
-// SelectPrev selects the previous model item, skipping any non-focusable items
-// like group headers and spacers.
+// SelectPrev selects the previous selectable item, skipping any non-focusable
+// items like group headers and spacers.
 func (f *ModelsList) SelectPrev() (v bool) {
 	v = f.List.SelectPrev()
 	for v {
 		selectedItem := f.SelectedItem()
-		if _, ok := selectedItem.(*ModelItem); ok {
+		if selectableRow(selectedItem) {
 			return v
 		}
 		v = f.List.SelectPrev()
@@ -126,13 +139,11 @@ func (f *ModelsList) SelectPrev() (v bool) {
 	return v
 }
 
-// SelectFirst selects the first model item in the list.
+// SelectFirst selects the first selectable item in the list.
 func (f *ModelsList) SelectFirst() (v bool) {
 	v = f.List.SelectFirst()
 	for v {
-		selectedItem := f.SelectedItem()
-		_, ok := selectedItem.(*ModelItem)
-		if ok {
+		if selectableRow(f.SelectedItem()) {
 			return v
 		}
 		v = f.List.SelectNext()
@@ -140,12 +151,11 @@ func (f *ModelsList) SelectFirst() (v bool) {
 	return v
 }
 
-// SelectLast selects the last model item in the list.
+// SelectLast selects the last selectable item in the list.
 func (f *ModelsList) SelectLast() (v bool) {
 	v = f.List.SelectLast()
 	for v {
-		selectedItem := f.SelectedItem()
-		if _, ok := selectedItem.(*ModelItem); ok {
+		if selectableRow(f.SelectedItem()) {
 			return v
 		}
 		v = f.List.SelectPrev()
@@ -190,26 +200,25 @@ func (f *ModelsList) VisibleItems() []list.Item {
 		return items
 	}
 
-	filterableItems := make([]list.FilterableItem, 0, f.Len())
-	for _, g := range f.groups {
-		for _, item := range g.Items {
-			filterableItems = append(filterableItems, item)
-		}
-	}
-
 	items := []list.Item{}
 	visitedGroups := map[int]bool{}
 
-	// Reconstruct groups with matched items
-	// Find which group this item belongs to
+	// Reconstruct groups with matched items.
+	//
+	// Matching runs one group at a time against that group's own rows. It
+	// used to run against every row in the list while labelling them all
+	// with the current group's title, then discard the rows that belonged
+	// somewhere else - and it reached for the row's concrete type to do it.
+	// The picker holds more than one kind of row (the worker's Default entry
+	// among them), so typing a character into the filter panicked on the
+	// first assertion and took the whole program down with it.
 	for gi, g := range f.groups {
 		addedCount := 0
 		name := strings.ToLower(g.Title) + " "
 
-		names := make([]string, len(filterableItems))
-		for i, item := range filterableItems {
-			ms := item.(*ModelItem)
-			names[i] = fmt.Sprintf("%s%s", name, ms.Filter())
+		names := make([]string, len(g.Items))
+		for i, item := range g.Items {
+			names[i] = name + item.Filter()
 		}
 
 		matches := fuzzy.Find(query, names)
@@ -220,7 +229,7 @@ func (f *ModelsList) VisibleItems() []list.Item {
 		})
 
 		for _, match := range matches {
-			item := filterableItems[match.Index].(*ModelItem)
+			item := g.Items[match.Index]
 			idxs := []int{}
 			for _, idx := range match.MatchedIndexes {
 				// Adjusts removing provider name highlights
@@ -231,19 +240,15 @@ func (f *ModelsList) VisibleItems() []list.Item {
 			}
 
 			match.MatchedIndexes = idxs
-			if slices.ContainsFunc(g.Items, func(candidate ListItem) bool {
-				return candidate == item
-			}) {
-				if !visitedGroups[gi] {
-					// Add section header
-					items = append(items, &g)
-					visitedGroups[gi] = true
-				}
-				// Add the matched item
-				item.SetMatch(match)
-				items = append(items, item)
-				addedCount++
+			if !visitedGroups[gi] {
+				// Add section header
+				items = append(items, &g)
+				visitedGroups[gi] = true
 			}
+			// Add the matched item
+			item.SetMatch(match)
+			items = append(items, item)
+			addedCount++
 		}
 		if addedCount > 0 {
 			// Add a space separator after each provider section

@@ -2732,6 +2732,9 @@ func (m *UI) handleSetAgentModel(msg dialog.ActionSetAgentModel) tea.Cmd {
 	// both did: the first worker took, and everything after it appeared not to
 	// work at all.
 	m.dialog.CloseDialog(dialog.ModelsID)
+	// Staying open is only half of it: the list holds the rows it built when
+	// it opened, so without this the row just pinned keeps reading as it was.
+	m.refreshAgentsDialog()
 
 	agentName := agent.Name
 	cmd := m.updateAgentModelCmd(func() tea.Msg {
@@ -2742,6 +2745,20 @@ func (m *UI) handleSetAgentModel(msg dialog.ActionSetAgentModel) tea.Cmd {
 	})
 
 	return cmd
+}
+
+// refreshAgentsDialog rebuilds the worker list if it is open.
+//
+// The list survives a pin by design so several workers can be configured in
+// one visit, and it builds its rows once at open time. Anything that writes an
+// agent therefore has to hand the change back to it, or the user reads the
+// row they just set as still unset.
+func (m *UI) refreshAgentsDialog() {
+	agents, ok := m.dialog.Dialog(dialog.AgentsID).(*dialog.Agents)
+	if !ok {
+		return
+	}
+	agents.Refresh()
 }
 
 // handleClearAgentModel removes a pinned model from a subagent.
@@ -2766,6 +2783,14 @@ func (m *UI) handleClearAgentModel(msg dialog.ActionClearAgentModel) tea.Cmd {
 	// The agent list stays open for the same reason as after pinning: clearing
 	// one pin is one step in configuring several workers, and closing here made
 	// Default usable exactly once per session.
+	//
+	// The picker does close. Choosing Default is a decision like any other, and
+	// leaving the model list up over the rows underneath makes it look like
+	// nothing was pressed - which is how "clear the pin" read as "the model
+	// change does not work".
+	m.dialog.CloseDialog(dialog.ModelsID)
+	m.refreshAgentsDialog()
+
 	agentName := agent.Name
 	cmd := m.updateAgentModelCmd(func() tea.Msg {
 		if err := m.com.Workspace.UpdateAgentModel(context.TODO()); err != nil {
@@ -2862,6 +2887,10 @@ func (m *UI) handleSelectModel(msg dialog.ActionSelectModel) tea.Cmd {
 			// the already-active theme, which avoids a full markdown
 			// re-render of the transcript on every selection.
 			m.applyThemeForProvider(providerID)
+			// Unpinned workers show the model the session runs on, so the
+			// worker list has to be handed this too - it keeps the rows it
+			// built when it opened.
+			m.refreshAgentsDialog()
 		}
 		if _, ok := cfg.Models[config.SelectedModelTypeSmall]; !ok {
 			// Ensure small model is set is unset.
@@ -2870,24 +2899,29 @@ func (m *UI) handleSelectModel(msg dialog.ActionSelectModel) tea.Cmd {
 				cmds = append(cmds, util.ReportError(err))
 			}
 		}
+
+		// Rebuild the agent and announce the change only for a write that
+		// actually landed. This used to sit outside the branch, so a rejected
+		// change still told the user the model had changed - which, from the
+		// chair in front of the terminal, is indistinguishable from one that
+		// worked.
+		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
+			if err := m.com.Workspace.UpdateAgentModel(context.TODO()); err != nil {
+				return util.ReportError(err)
+			}
+
+			var (
+				modelType = stringext.Capitalize(string(msg.ModelType))
+				modelName = msg.Model.Model
+			)
+			if catwalkModel := cfg.GetModel(msg.Model.Provider, msg.Model.Model); catwalkModel != nil && catwalkModel.Name != "" {
+				modelName = catwalkModel.Name
+			}
+			modelMsg := fmt.Sprintf("%s model changed to %s", modelType, modelName)
+
+			return util.NewInfoMsg(modelMsg)
+		}))
 	}
-
-	cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
-		if err := m.com.Workspace.UpdateAgentModel(context.TODO()); err != nil {
-			return util.ReportError(err)
-		}
-
-		var (
-			modelType = stringext.Capitalize(string(msg.ModelType))
-			modelName = msg.Model.Model
-		)
-		if catwalkModel := cfg.GetModel(msg.Model.Provider, msg.Model.Model); catwalkModel != nil && catwalkModel.Name != "" {
-			modelName = catwalkModel.Name
-		}
-		modelMsg := fmt.Sprintf("%s model changed to %s", modelType, modelName)
-
-		return util.NewInfoMsg(modelMsg)
-	}))
 
 	m.dialog.CloseDialog(dialog.APIKeyInputID)
 	m.dialog.CloseDialog(dialog.OAuthID)
@@ -3818,7 +3852,9 @@ func (m *UI) reportKeyBindingProblems() tea.Cmd {
 	}
 	problems := slices.Clone(m.keyBindingProblems)
 	m.keyBindingProblems = nil
-	return func() tea.Msg { return util.NewInfoMsg(m.com.LSprintf("info.keybinding_problems", strings.Join(problems, "; "))) }
+	return func() tea.Msg {
+		return util.NewInfoMsg(m.com.LSprintf("info.keybinding_problems", strings.Join(problems, "; ")))
+	}
 }
 
 // applyLanguage rebuilds all locale-dependent UI state: keymap help
@@ -5605,8 +5641,8 @@ func (m *UI) toggleThinking() tea.Cmd {
 func (m *UI) saveAutoSummarizeThresholds(msg dialog.ActionSetAutoSummarizeThresholds) error {
 	if err := m.com.Workspace.SetConfigFields(config.ScopeGlobal, map[string]any{
 		"options.auto_summarize_percent":       msg.Percent,
-		"options.auto_summarize_large_percent":  msg.LargePercent,
-		"options.auto_summarize_large_window":   msg.LargeWindow,
+		"options.auto_summarize_large_percent": msg.LargePercent,
+		"options.auto_summarize_large_window":  msg.LargeWindow,
 	}); err != nil {
 		return err
 	}
