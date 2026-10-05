@@ -10,6 +10,7 @@ rem  CLI, and a signed-in gh.
 rem
 rem  For anything narrower, open a terminal here and use scripts\release.bat:
 rem    menu              pick a single step
+rem    sync              pull the newest sources from origin
 rem    build             this machine only
 rem    run               build and launch it
 rem    all               every target, no publishing
@@ -30,5 +31,8 @@ if "%EXITCODE%"=="0" (
 )
 echo.
 pause
-endlocal
-exit /b %EXITCODE%
+rem One line, not two: %EXITCODE% is expanded while the variable still exists,
+rem and endlocal would take it along. Split across two lines the expansion came
+rem after the scope was popped, yielded nothing, and the script reported success
+rem whatever the release had done.
+endlocal & exit /b %EXITCODE%
