@@ -29,8 +29,8 @@ type Agents struct {
 	// allIDs is every worker the dialog can configure, used to render the
 	// Default entry. agentIDs is the list minus general, since the main
 	// agent is configured from the model picker instead.
-	allIDs    []string
-	agentIDs  []string
+	allIDs   []string
+	agentIDs []string
 
 	// mouse gives the list full pointer support: click a row to select
 	// it, click it again to open, drag the scrollbar, wheel to scroll.
@@ -126,11 +126,33 @@ func (m *Agents) setAgentsItems() {
 		}
 		items = append(items, item)
 	}
+	// The row under the cursor has to be the same row after a rebuild, or
+	// pinning the second worker throws the selection back to the first and
+	// the next keypress configures the wrong agent. A list that has not been
+	// given anything yet reports no selection at all, so both ends clamp:
+	// an out-of-range index here made the first keypress land on no row and
+	// opening a worker's picker silently do nothing.
+	selected := m.list.Selected()
 	m.list.SetItems(items...)
-	if len(items) > 0 {
-		m.list.SetSelected(0)
-		m.list.ScrollToSelected()
+	if len(items) == 0 {
+		return
 	}
+	if selected < 0 || selected >= len(items) {
+		selected = 0
+	}
+	m.list.SetSelected(selected)
+	m.list.ScrollToSelected()
+}
+
+// Refresh re-reads the workers from config.
+//
+// The rows are a snapshot taken when the dialog opens, and the dialog stays
+// open across a pin on purpose, so nothing that writes an agent would ever
+// repaint it: the pin landed, the row under it still read as unpinned, and
+// from the chair in front of the terminal that is indistinguishable from the
+// change not having been made at all.
+func (m *Agents) Refresh() {
+	m.setAgentsItems()
 }
 
 // HandleMsg implements [Dialog].
@@ -320,15 +342,24 @@ func (i *AgentsItem) modelInfo() string {
 		// The pinned model is looked up on its own: GetModelForAgent falls back
 		// to the agent's model type, which would print the default model name
 		// as if it were the pinned one.
-		if model := cfg.GetModel(override.Provider, override.Model); model != nil {
+		//
+		// A catalog entry may carry no name - a model configured by hand
+		// usually does - and printing the empty name produced a row that said
+		// "(pinned)" with nothing pinned to it, which is the same as not
+		// showing the choice at all. The id is what the toast falls back to
+		// for the same reason.
+		if model := cfg.GetModel(override.Provider, override.Model); model != nil && model.Name != "" {
 			return model.Name + " (" + pinLabel + ")"
 		}
 		return override.Model + " (" + pinLabel + ")"
 	}
 
 	model := cfg.GetModelForAgent(i.agent)
-	if model != nil {
+	if model != nil && model.Name != "" {
 		return model.Name
+	}
+	if model != nil {
+		return model.ID
 	}
 	return string(i.agent.Model)
 }

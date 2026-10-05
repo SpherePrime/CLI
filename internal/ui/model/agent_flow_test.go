@@ -1,12 +1,15 @@
 package model
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/csync"
 	"github.com/SpherePrime/CLI/internal/lsp"
+	"github.com/SpherePrime/CLI/internal/ui/attachments"
 	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/completions"
 	"github.com/SpherePrime/CLI/internal/ui/dialog"
 	"github.com/SpherePrime/CLI/internal/workspace"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
@@ -18,6 +21,9 @@ import (
 type agentFlowWorkspace struct {
 	testWorkspace
 	written []string
+	// failPreferredModel makes the next preferred-model write fail, so tests
+	// can see what the UI does when the store rejects a change.
+	failPreferredModel bool
 }
 
 func (w *agentFlowWorkspace) SetConfigField(scope config.Scope, key string, value any) error {
@@ -33,6 +39,9 @@ func (w *agentFlowWorkspace) SetConfigField(scope config.Scope, key string, valu
 // only changed a local copy would look like it worked while the next read
 // showed the old value - exactly the bug this kind of stub is meant to catch.
 func (w *agentFlowWorkspace) UpdatePreferredModel(scope config.Scope, modelType config.SelectedModelType, model config.SelectedModel) error {
+	if w.failPreferredModel {
+		return errors.New("preferred model write rejected")
+	}
 	w.written = append(w.written, "preferred_model")
 	if w.cfg != nil {
 		w.cfg.Models[modelType] = model
@@ -49,6 +58,18 @@ func (w *agentFlowWorkspace) LSPGetStates() map[string]workspace.LSPClientInfo {
 
 func (w *agentFlowWorkspace) LSPGetDiagnosticCounts(name string) lsp.DiagnosticCounts {
 	return lsp.DiagnosticCounts{}
+}
+
+// Selecting a large model fills in the small slot when it is unset, which asks
+// the workspace for the provider's default. The harness provider has none
+// configured, and the application answers exactly that case by falling back to
+// the large model, so the stub does the same instead of leaving the embedded
+// nil interface to panic.
+func (w *agentFlowWorkspace) GetDefaultSmallModel(providerID string) config.SelectedModel {
+	if w.cfg == nil {
+		return config.SelectedModel{}
+	}
+	return w.cfg.Models[config.SelectedModelTypeLarge]
 }
 
 func newAgentFlowUI(t *testing.T) (*UI, *agentFlowWorkspace) {
@@ -82,6 +103,29 @@ func newAgentFlowUI(t *testing.T) (*UI, *agentFlowWorkspace) {
 	u := newTestUI()
 	u.com = common.DefaultCommon(ws)
 	u.dialog = dialog.NewOverlay()
+	// Selecting a model re-themes the app, which walks every component that
+	// caches styles at construction. The minimal UI above builds none of them,
+	// so a harness that stops here panics on the very first selection - which
+	// is a test that cannot see the feature at all rather than one that covers
+	// it. Build them the way New does.
+	u.keyMap = DefaultKeyMap()
+	u.header = newHeader(u.com)
+	u.completions = completions.New(
+		u.com.Styles.Completions.Normal,
+		u.com.Styles.Completions.Focused,
+		u.com.Styles.Completions.Match,
+	)
+	u.attachments = attachments.New(
+		attachments.NewRenderer(
+			u.com.Styles.Attachments.Normal,
+			u.com.Styles.Attachments.Deleting,
+			u.com.Styles.Attachments.Image,
+			u.com.Styles.Attachments.Text,
+			u.com.Styles.Attachments.Skill,
+			u.com.Styles.Attachments.Remove,
+		),
+		attachments.Keymap{},
+	)
 	return u, ws
 }
 
