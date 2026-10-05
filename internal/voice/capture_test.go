@@ -71,20 +71,35 @@ func TestSessionStreamsPCMUntilStopped(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "helper", session.Recorder())
 
-	// The helper bursts its first chunks out immediately, so this wait is only
-	// there to give the pipe time to drain, not to accumulate audio.
-	time.Sleep(200 * time.Millisecond)
+	// Only long enough for the helper process to start and write its opening
+	// burst. The burst is immediate, so the audio is there as soon as the
+	// process is up; nothing has to accumulate over a sleep.
+	time.Sleep(300 * time.Millisecond)
 
 	audio, err := session.Stop()
 	require.NoError(t, err)
-	// Asserted against minSpeechDuration rather than a hand-picked number: the
-	// test failed here on macOS because it waited a fixed 400ms and hoped for
-	// 300ms of audio, which a slow process start could eat.
+
+	// The whole burst must survive. This is the guarantee, not a reproduction:
+	// end() used to pick waitDone about half the time, so the copy could still
+	// be writing when Stop read the sink file. Reproducing that needs the copy
+	// to be slowed down on purpose, which would mean a test-only delay inside
+	// the capture path, so the race is fixed by reading rather than by failing
+	// here first. Comparing against the burst rather than against
+	// minSpeechDuration still makes this a truncation check rather than a race
+	// with process startup.
+	require.GreaterOrEqual(t, audio.Duration, helperBurstDuration(),
+		"the opening burst was truncated: got %s, the helper wrote %s before it started throttling",
+		audio.Duration, helperBurstDuration())
+
 	require.True(t, audio.WorthTranscribing(),
 		"captured %s, need at least %s", audio.Duration, minSpeechDuration)
-	require.Greater(t, audio.Duration, 100*time.Millisecond)
 	require.Equal(t, "helper", audio.Recorder)
 	require.Equal(t, "RIFF", string(audio.WAV[:4]))
+}
+
+// helperBurstDuration is how much audio the helper emits before it throttles.
+func helperBurstDuration() time.Duration {
+	return time.Duration(helperBurstChunks) * 100 * time.Millisecond
 }
 
 func TestSessionStopIsClaimedOnce(t *testing.T) {

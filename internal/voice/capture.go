@@ -118,12 +118,25 @@ func (s *Session) end() {
 	// exit, and the exit status it produces is not the recorder's own doing.
 	s.endedByPrime = true
 	s.cancel()
+
+	// The loop gives up on a copy that a lingering grandchild is holding open:
+	// it closes the read end and kills the recorder, then tries again.
+	//
+	// It must not also give up just because the recorder has exited. select
+	// picks a ready case at random, and a process that has just exited makes
+	// waitDone ready at the same moment copyDone is, so roughly half the time
+	// this loop returned without waiting for the copy at all. Stop then read
+	// the sink file while the copy was still writing it, and the recording came
+	// back short by whatever had not landed yet - audio silently truncated at
+	// the end, and on a loaded machine more of it than on an idle one.
 	drained := false
 	for !drained {
 		select {
 		case <-s.copyDone:
 			drained = true
 		case <-s.waitDone:
+			// The recorder is gone. The copy finishes on its own now that the
+			// write end is closed; it is awaited below rather than assumed.
 			drained = true
 		case <-time.After(stopGracePeriod):
 			// Closing the read end unblocks a copy that a lingering
@@ -135,6 +148,11 @@ func (s *Session) end() {
 			_ = s.cmd.Process.Kill()
 		}
 	}
+
+	// The copy is what puts the audio in the file Stop is about to read, so it
+	// is not optional. Once the loop has run, it either has finished or the
+	// pipe has been closed and the process killed, both of which make it finish.
+	<-s.copyDone
 	<-s.waitDone
 }
 
