@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
@@ -183,7 +184,40 @@ func runCmds(m *UI, cmd tea.Cmd) {
 	case busyStateMsg, promptQueueMsg, agentRunSubmittedMsg, lspStatesMsg, agentModelChangedMsg:
 		_, next := m.Update(msg)
 		runCmds(m, next)
+	default:
+		// tea.Sequence hands its commands back as a message whose type is
+		// unexported, so no case can name it; the shape is all there is to
+		// go on. Without this branch anything built with updateAgentModelCmd
+		// - thinking mode, model selection, reasoning - ran no commands at
+		// all when driven from a test, and the assertions around it checked
+		// nothing while claiming to.
+		if cmds, ok := sequenceMsgOf(msg); ok {
+			for _, c := range cmds {
+				runCmds(m, c)
+			}
+		}
 	}
+}
+
+// sequenceMsgOf reports whether msg is the message tea.Sequence produces and
+// returns the commands it carries.
+//
+// tea.BatchMsg is a []tea.Cmd as well, but the type switch above has already
+// taken it by name, so only the unexported sequence type reaches here.
+func sequenceMsgOf(msg tea.Msg) ([]tea.Cmd, bool) {
+	v := reflect.ValueOf(msg)
+	if !v.IsValid() || v.Kind() != reflect.Slice || v.Type().Elem() != reflect.TypeOf(tea.Cmd(nil)) {
+		return nil, false
+	}
+	cmds := make([]tea.Cmd, v.Len())
+	for i := range cmds {
+		cmd, ok := v.Index(i).Interface().(tea.Cmd)
+		if !ok {
+			return nil, false
+		}
+		cmds[i] = cmd
+	}
+	return cmds, true
 }
 
 // plainMsg is an arbitrary tea.Msg standing in for keystroke/mouse/tick

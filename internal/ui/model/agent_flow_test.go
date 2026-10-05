@@ -5,10 +5,12 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/dialog"
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/internal/workspace"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
@@ -27,6 +29,28 @@ func (w *agentFlowWorkspace) SetConfigField(scope config.Scope, key string, valu
 	return nil
 }
 
+// UpdatePreferredModel mirrors the store the same way, because a toggle that
+// only changed a local copy would look like it worked while the next read
+// showed the old value - exactly the bug this kind of stub is meant to catch.
+func (w *agentFlowWorkspace) UpdatePreferredModel(scope config.Scope, modelType config.SelectedModelType, model config.SelectedModel) error {
+	w.written = append(w.written, "preferred_model")
+	if w.cfg != nil {
+		w.cfg.Models[modelType] = model
+	}
+	return nil
+}
+
+// The model-change refresh reaches for the language servers on its way out.
+// The embedded interface is nil, so an unimplemented method is a panic rather
+// than a zero value - these stubs say "no servers" instead.
+func (w *agentFlowWorkspace) LSPGetStates() map[string]workspace.LSPClientInfo {
+	return nil
+}
+
+func (w *agentFlowWorkspace) LSPGetDiagnosticCounts(name string) lsp.DiagnosticCounts {
+	return lsp.DiagnosticCounts{}
+}
+
 func newAgentFlowUI(t *testing.T) (*UI, *agentFlowWorkspace) {
 	t.Helper()
 
@@ -36,6 +60,11 @@ func newAgentFlowUI(t *testing.T) (*UI, *agentFlowWorkspace) {
 		Providers: csync.NewMap[string, config.ProviderConfig](),
 	}
 	cfg.SetupAgents()
+	// The real loader calls this on every config it reads from disk, so a
+	// harness that skips it builds a config the application can never have -
+	// and the command palette dereferences Options.TUI, which comes back nil
+	// and panics on the first open.
+	cfg.NormalizeOptions()
 	cfg.Providers.Set("acme", config.ProviderConfig{
 		ID:             "acme",
 		UserConfigured: true,
