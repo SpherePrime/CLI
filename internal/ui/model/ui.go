@@ -2437,6 +2437,8 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		cmds = append(cmds, m.handleSetAgentModel(msg))
 	case dialog.ActionClearAgentModel:
 		cmds = append(cmds, m.handleClearAgentModel(msg))
+	case dialog.ActionSetAllAgentsDefault:
+		cmds = append(cmds, m.handleSetAllAgentsDefault(msg))
 	case dialog.ActionOpenAgentModel:
 		if cmd := m.openAgentModelDialog(msg.AgentID); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -2727,8 +2729,11 @@ func (m *UI) handleSetAgentModel(msg dialog.ActionSetAgentModel) tea.Cmd {
 		return util.ReportError(err)
 	}
 
+	// Only the model picker closes. The agent list stays open so the next
+	// worker can be set without reopening the dialog, which is what closing
+	// both did: the first worker took, and everything after it appeared not to
+	// work at all.
 	m.dialog.CloseDialog(dialog.ModelsID)
-	m.dialog.CloseDialog(dialog.AgentsID)
 
 	agentName := agent.Name
 	cmd := m.updateAgentModelCmd(func() tea.Msg {
@@ -2760,8 +2765,9 @@ func (m *UI) handleClearAgentModel(msg dialog.ActionClearAgentModel) tea.Cmd {
 		return util.ReportError(err)
 	}
 
-	m.dialog.CloseDialog(dialog.AgentsID)
-
+	// The agent list stays open for the same reason as after pinning: clearing
+	// one pin is one step in configuring several workers, and closing here made
+	// Default usable exactly once per session.
 	agentName := agent.Name
 	cmd := m.updateAgentModelCmd(func() tea.Msg {
 		if err := m.com.Workspace.UpdateAgentModel(context.TODO()); err != nil {
@@ -2771,6 +2777,42 @@ func (m *UI) handleClearAgentModel(msg dialog.ActionClearAgentModel) tea.Cmd {
 	})
 
 	return cmd
+}
+
+// handleSetAllAgentsDefault unpins every listed worker in one step, so they all
+// follow the main agent's model again.
+func (m *UI) handleSetAllAgentsDefault(msg dialog.ActionSetAllAgentsDefault) tea.Cmd {
+	cfg := m.com.Config()
+	if cfg == nil {
+		return util.ReportError(errors.New("configuration not found"))
+	}
+
+	changed := 0
+	for _, id := range msg.AgentIDs {
+		agent, ok := cfg.Agents[id]
+		if !ok || agent.ModelOverride == nil {
+			continue
+		}
+		agent.ModelOverride = nil
+		cfg.Agents[id] = agent
+		if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "agents."+id, agent); err != nil {
+			return util.ReportError(err)
+		}
+		changed++
+	}
+
+	// Nothing pinned is not an error and not worth a message: the state the
+	// user asked for is the state they already had.
+	if changed == 0 {
+		return nil
+	}
+
+	return m.updateAgentModelCmd(func() tea.Msg {
+		if err := m.com.Workspace.UpdateAgentModel(context.TODO()); err != nil {
+			return util.ReportError(err)
+		}
+		return util.NewInfoMsg(m.com.LSprintf("info.agents_default_restored", changed))
+	})
 }
 
 func (m *UI) handleSelectModel(msg dialog.ActionSelectModel) tea.Cmd {

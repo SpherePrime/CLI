@@ -9,6 +9,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/workspace"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
@@ -25,6 +26,14 @@ func rowValues(a *AutoSummarize) []string {
 // thresholds can be read back without touching the real config file.
 func newAutoSummarizeTestDialog(t *testing.T, opts *config.Options, locale ...string) *AutoSummarize {
 	t.Helper()
+	return newAutoSummarizeTestDialogWithWindow(t, opts, 0, locale...)
+}
+
+// newAutoSummarizeTestDialogWithWindow also configures the main agent's model
+// with a context window, so the summary line has something to report. Without
+// one it says the model declares no window, which is a different code path.
+func newAutoSummarizeTestDialogWithWindow(t *testing.T, opts *config.Options, window int64, locale ...string) *AutoSummarize {
+	t.Helper()
 
 	lang := i18n.En
 	if len(locale) > 0 {
@@ -35,6 +44,23 @@ func newAutoSummarizeTestDialog(t *testing.T, opts *config.Options, locale ...st
 		Providers: csync.NewMap[string, config.ProviderConfig](),
 		Options:   opts,
 	}
+
+	if window > 0 {
+		cfg.Agents = map[string]config.Agent{}
+		cfg.SetupAgents()
+		general := cfg.Agents[config.AgentGeneral]
+		general.Model = config.SelectedModelTypeLarge
+		cfg.Agents[config.AgentGeneral] = general
+
+		cfg.Models = map[config.SelectedModelType]config.SelectedModel{
+			config.SelectedModelTypeLarge: {Provider: "p", Model: "m"},
+		}
+		cfg.Providers.Set("p", config.ProviderConfig{
+			ID:     "p",
+			Models: []catwalk.Model{{ID: "m", ContextWindow: window}},
+		})
+	}
+
 	ws := &autoSummarizeTestWorkspace{cfg: cfg, locale: lang}
 	return NewAutoSummarize(&common.Common{
 		Workspace: ws,
