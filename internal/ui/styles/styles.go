@@ -151,9 +151,10 @@ type Styles struct {
 
 	// Editor
 	Editor struct {
-		Textarea textarea.Styles
+		Textarea     textarea.Styles
+		PanelFocused lipgloss.Style
+		PanelBlurred lipgloss.Style
 
-		// Normal mode prompt ("> " icon on the first line, "::: " after).
 		PromptNormalIconFocused lipgloss.Style
 		PromptNormalIconBlurred lipgloss.Style
 		PromptNormalFocused     lipgloss.Style
