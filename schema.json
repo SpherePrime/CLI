@@ -517,6 +517,12 @@
           "examples": [
             6.0
           ]
+        },
+        "auto_summarize_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Override the auto-summarize threshold for this model: percentage of the context window in use before the conversation is summarized. 0 or absent uses the global default."
         }
       },
       "additionalProperties": false,
@@ -596,6 +602,13 @@
           "type": "boolean",
           "description": "Disable automatic conversation summarization",
           "default": false
+        },
+        "auto_summarize_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings.auto_summarize_percent. 0 is not accepted; use the default 85 instead.",
+          "default": 85
         },
         "data_directory": {
           "type": "string",
@@ -711,33 +724,15 @@
             0
           ]
         },
-        "auto_summarize_percent": {
-          "type": "integer",
-          "maximum": 100,
-          "minimum": 0,
-          "description": "Percentage of the context window that must be in use before a conversation is summarized automatically. Higher values keep more of the conversation intact and compact less often. 0 uses the default of 85.",
-          "default": 85,
-          "examples": [
-            85,
-            70
-          ]
-        },
-        "auto_summarize_large_percent": {
-          "type": "integer",
-          "maximum": 100,
-          "minimum": 0,
-          "description": "Percentage of the context window that must be in use before summarizing automatically for models whose window reaches auto_summarize_large_window. A large window holds far more tokens so compacting later wastes less of it. 0 uses the default of 95.",
-          "default": 95,
-          "examples": [
-            95
-          ]
-        },
-        "auto_summarize_large_window": {
+        "max_parallel_tools": {
           "type": "integer",
           "minimum": 0,
-          "description": "Context window size in tokens from which auto_summarize_large_percent applies instead of auto_summarize_percent. 0 uses the default of 500000.",
+          "description": "How many parallel tool calls, and sub-agents launched in one message, may run at the same time. There is no upper bound: set it as high as you need to fan out agents without waiting between messages. 0 uses the default of 5.",
+          "default": 5,
           "examples": [
-            500000
+            50,
+            200,
+            1000
           ]
         },
         "auto_continue": {
@@ -949,6 +944,12 @@
           "examples": [
             6.0
           ]
+        },
+        "auto_summarize_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Override the auto-summarize threshold for this model: percentage of the context window in use before the conversation is summarized. 0 or absent uses the global default."
         },
         "temperature": {
           "type": "number",

@@ -2194,17 +2194,6 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		}
 		m.dialog.CloseDialog(dialog.NotificationsID)
 
-	case dialog.ActionSetAutoSummarizeThresholds:
-		if err := m.saveAutoSummarizeThresholds(msg); err != nil {
-			// The dialog stays open so the offending field can be corrected
-			// instead of losing what was typed.
-			cmds = append(cmds, util.ReportError(err))
-			break
-		}
-		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(m.com.LSprintf(
-			"info.auto_summarize_set", msg.Percent, msg.LargeWindow, msg.LargePercent))))
-		m.dialog.CloseDialog(dialog.AutoSummarizeID)
-
 	case dialog.ActionShowError:
 		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(msg.Message)))
 
@@ -5363,10 +5352,6 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openNotificationsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-	case dialog.AutoSummarizeID:
-		if cmd := m.openAutoSummarizeDialog(); cmd != nil {
-			cmds = append(cmds, cmd)
-		}
 	case dialog.LanguageID:
 		if cmd := m.openLanguageDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -5600,41 +5585,6 @@ func (m *UI) toggleThinking() tea.Cmd {
 		}
 		return util.NewInfoMsg(m.com.LSprintf("info.thinking_mode", status))
 	})
-}
-
-// saveAutoSummarizeThresholds writes the compaction thresholds to the global
-// config and applies them to the in-memory config.
-//
-// All three fields go out as one batch so a failure part way through cannot
-// leave the file with, say, a large percentage and no window to apply it
-// from. The in-memory values are only updated after the write succeeds, so
-// the UI never shows a threshold that was not persisted.
-func (m *UI) saveAutoSummarizeThresholds(msg dialog.ActionSetAutoSummarizeThresholds) error {
-	if err := m.com.Workspace.SetConfigFields(config.ScopeGlobal, map[string]any{
-		"options.auto_summarize_percent":       msg.Percent,
-		"options.auto_summarize_large_percent": msg.LargePercent,
-		"options.auto_summarize_large_window":  msg.LargeWindow,
-	}); err != nil {
-		return err
-	}
-
-	if cfg := m.com.Config(); cfg != nil && cfg.Options != nil {
-		cfg.Options.AutoSummarizePercent = &msg.Percent
-		cfg.Options.AutoSummarizeLargePercent = &msg.LargePercent
-		cfg.Options.AutoSummarizeLargeWindow = &msg.LargeWindow
-	}
-	return nil
-}
-
-// openAutoSummarizeDialog opens the auto-summarize thresholds form.
-func (m *UI) openAutoSummarizeDialog() tea.Cmd {
-	if m.dialog.ContainsDialog(dialog.AutoSummarizeID) {
-		m.dialog.BringToFront(dialog.AutoSummarizeID)
-		return nil
-	}
-
-	m.dialog.OpenDialog(dialog.NewAutoSummarize(m.com))
-	return nil
 }
 
 // openLanguageDialog opens the language picker dialog.

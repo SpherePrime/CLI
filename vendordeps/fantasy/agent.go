@@ -24,6 +24,10 @@ type StepResult struct {
 	Messages []Message
 }
 
+// defaultMaxParallelTools bounds how many parallel tool calls a step may run
+// at once when the caller does not override it.
+const defaultMaxParallelTools = 5
+
 // stepExecutionResult encapsulates the result of executing a step with stream processing.
 type stepExecutionResult struct {
 	StepResult     StepResult
@@ -151,6 +155,7 @@ type agentSettings struct {
 	tools                   []AgentTool
 	toolChoice              *ToolChoice
 	maxRetries              *int
+	maxParallelTools        int
 
 	model LanguageModel
 
@@ -381,7 +386,8 @@ type agent struct {
 // NewAgent creates a new agent with the given language model and options.
 func NewAgent(model LanguageModel, opts ...AgentOption) Agent {
 	settings := agentSettings{
-		model: model,
+		model:              model,
+		maxParallelTools:   defaultMaxParallelTools,
 	}
 	for _, o := range opts {
 		o(&settings)
@@ -1409,6 +1415,17 @@ func WithMaxRetries(maxRetries int) AgentOption {
 	}
 }
 
+// WithMaxParallelTools sets how many parallel tool calls a step may run at
+// once. The built-in default is 5; raise it to fan out more sub-agents in a
+// single message.
+func WithMaxParallelTools(n int) AgentOption {
+	return func(s *agentSettings) {
+		if n > 0 {
+			s.maxParallelTools = n
+		}
+	}
+}
+
 // WithOnRetry sets the retry callback for the agent.
 func WithOnRetry(callback OnRetryCallback) AgentOption {
 	return func(s *agentSettings) {
@@ -1677,7 +1694,11 @@ func (a *agent) processStepStream(ctx context.Context, stream StreamResponse, op
 	var toolExecutionErr error
 
 	// Semaphores for controlling parallelism.
-	parallelSem := make(chan struct{}, 5)
+	parallelLimit := a.settings.maxParallelTools
+	if parallelLimit <= 0 {
+		parallelLimit = defaultMaxParallelTools
+	}
+	parallelSem := make(chan struct{}, parallelLimit)
 	var sequentialMu sync.Mutex
 
 	// Single coordinator goroutine that dispatches tools.

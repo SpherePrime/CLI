@@ -26,15 +26,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/bedrock"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/google"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openrouter"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/vercel"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
 	"github.com/SpherePrime/CLI/internal/agent/tools"
@@ -46,14 +37,21 @@ import (
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/internal/stringext"
 	"github.com/SpherePrime/CLI/internal/version"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/bedrock"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/google"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openrouter"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/vercel"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 const (
 	DefaultSessionName = "Untitled Session"
-
-
 )
 
 var userAgent = fmt.Sprintf("Prime/%s (https://github.com/SpherePrime/CLI)", version.Version)
@@ -175,13 +173,16 @@ type sessionAgent struct {
 	sessions             session.Service
 	messages             message.Service
 	disableAutoSummarize bool
-	// autoSummarizePolicy is the resolved threshold set. A zero value means
-	// every window is treated as unknown and nothing is compacted, so it is
-	// filled from config rather than left at zero.
-	autoSummarizePolicy config.AutoSummarizePolicy
-	isYolo              bool
+	// autoSummarizePercent is the global default threshold: how full the
+	// context window must be before a turn is compacted. A per-model override
+	// (ModelCfg.AutoSummarizePercent) takes precedence over it.
+	autoSummarizePercent int
+	isYolo               bool
 	notify               pubsub.Publisher[notify.Notification]
 	runComplete          pubsub.Publisher[notify.RunComplete]
+	// maxParallelTools bounds concurrent parallel tool calls within one
+	// step. Zero takes the fantasy default.
+	maxParallelTools int
 
 	messageQueue   *csync.Map[string, []SessionAgentCall]
 	activeRequests *csync.Map[string, *activeCancel]
@@ -231,16 +232,21 @@ type SessionAgentOptions struct {
 	SystemPrompt         string
 	IsSubAgent           bool
 	DisableAutoSummarize bool
-	// AutoSummarizePolicy decides how full the context window has to be
-	// before a turn is compacted. The zero value is not usable: call
-	// config.Options.GetAutoSummarizePolicy to resolve it.
-	AutoSummarizePolicy config.AutoSummarizePolicy
-	IsYolo              bool
+	// AutoSummarizePercent is the global default: how full the context window
+	// has to be before a turn is compacted. The zero value is not usable:
+	// call config.Options.GetAutoSummarizePercent to resolve it. A per-model
+	// override (Model.AutoSummarizePercent) takes precedence.
+	AutoSummarizePercent int
+	IsYolo               bool
 	Sessions             session.Service
 	Messages             message.Service
 	Tools                []fantasy.AgentTool
 	Notify               pubsub.Publisher[notify.Notification]
 	RunComplete          pubsub.Publisher[notify.RunComplete]
+	// MaxParallelTools bounds how many parallel tool calls - and with it
+	// sub-agents launched in one message - run at once. Zero takes the
+	// config default.
+	MaxParallelTools int
 }
 
 func NewSessionAgent(
@@ -255,13 +261,14 @@ func NewSessionAgent(
 		sessions:             opts.Sessions,
 		messages:             opts.Messages,
 		disableAutoSummarize: opts.DisableAutoSummarize,
-		// An unresolved policy would silently disable compaction, so fall
-		// back to the defaults rather than trusting a zero value.
-		autoSummarizePolicy: cmp.Or(opts.AutoSummarizePolicy, config.DefaultAutoSummarizePolicy()),
-		tools:               csync.NewSliceFrom(opts.Tools),
+		// An unset threshold would silently disable compaction, so fall
+		// back to the global default rather than trusting a zero value.
+		autoSummarizePercent: cmp.Or(opts.AutoSummarizePercent, (&config.Options{}).GetAutoSummarizePercent()),
+		tools:                csync.NewSliceFrom(opts.Tools),
 		isYolo:               opts.IsYolo,
 		notify:               opts.Notify,
 		runComplete:          opts.RunComplete,
+		maxParallelTools:     opts.MaxParallelTools,
 		messageQueue:         csync.NewMap[string, []SessionAgentCall](),
 		activeRequests:       csync.NewMap[string, *activeCancel](),
 		dispatchMu:           csync.NewMap[string, *sync.Mutex](),
@@ -697,6 +704,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		fantasy.WithTools(agentTools...),
 		fantasy.WithUserAgent(userAgent),
 		fantasy.WithRepairToolCall(repairToolCall),
+		fantasy.WithMaxParallelTools(a.maxParallelTools),
 	)
 
 	sessionLock := sync.Mutex{}
@@ -1051,10 +1059,15 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				cw := int64(largeModel.CatwalkCfg.ContextWindow)
 				// An unknown window means skip auto-summarize entirely, so
 				// custom and local models that never declared one are not
-				// truncated. SummarizeAt reports 0 for the same case.
-				percent := a.autoSummarizePolicy.SummarizeAt(cw)
-				if percent == 0 || a.disableAutoSummarize {
+				// truncated.
+				if cw <= 0 || a.disableAutoSummarize {
 					return false
+				}
+				// The per-model override recorded in the model settings
+				// dialog wins over the global default.
+				percent := a.autoSummarizePercent
+				if largeModel.ModelCfg.AutoSummarizePercent > 0 {
+					percent = largeModel.ModelCfg.AutoSummarizePercent
 				}
 				tokens := currentSession.CompletionTokens + currentSession.PromptTokens
 				// Compact once the window is percent full, which is the same
@@ -1920,7 +1933,7 @@ func titleFallbackWorthwhile(err error) bool {
 
 	switch providerErr.StatusCode {
 	case http.StatusUnauthorized, // bad or expired key
-		http.StatusForbidden,    // key valid, model not entitled
+		http.StatusForbidden, // key valid, model not entitled
 		http.StatusPaymentRequired,
 		http.StatusTooManyRequests: // the rate limit is per key, not per model
 		return false

@@ -101,6 +101,11 @@ type SelectedModel struct {
 	PriceIn  float64 `json:"price_in,omitempty" jsonschema:"description=Price per 1M input tokens in USD,example=1.5"`
 	PriceOut float64 `json:"price_out,omitempty" jsonschema:"description=Price per 1M output tokens in USD,example=6.0"`
 
+	// AutoSummarizePercent overrides the global auto-summarize threshold for
+	// this model only, so each model can compact at the fill level that fits
+	// its own window. 0 means "use the global default".
+	AutoSummarizePercent int `json:"auto_summarize_percent,omitempty" jsonschema:"description=Override the auto-summarize threshold for this model: percentage of the context window in use before compacting. 0 or absent uses the global default,minimum=1,maximum=100,example=90"`
+
 	Temperature      *float64 `json:"temperature,omitempty" jsonschema:"description=Sampling temperature,minimum=0,maximum=1,example=0.7"`
 	TopP             *float64 `json:"top_p,omitempty" jsonschema:"description=Top-p (nucleus) sampling parameter,minimum=0,maximum=1,example=0.9"`
 	TopK             *int64   `json:"top_k,omitempty" jsonschema:"description=Top-k sampling parameter"`
@@ -119,11 +124,14 @@ type ModelSettings struct {
 	ContextWindow int64   `json:"context_window,omitempty" jsonschema:"description=Override the model's maximum context window in tokens,example=200000"`
 	PriceIn       float64 `json:"price_in,omitempty" jsonschema:"description=Price per 1M input tokens in USD,example=1.5"`
 	PriceOut      float64 `json:"price_out,omitempty" jsonschema:"description=Price per 1M output tokens in USD,example=6.0"`
+	// AutoSummarizePercent overrides the global auto_summarize_percent for
+	// this model only. 0 means "use the global default".
+	AutoSummarizePercent int `json:"auto_summarize_percent,omitempty" jsonschema:"description=Override the auto-summarize threshold for this model: percentage of the context window that must be in use before the conversation is summarized automatically. 0 or absent uses the global default,minimum=1,maximum=100,example=90"`
 }
 
 // Empty reports whether the entry carries no overrides.
 func (s ModelSettings) Empty() bool {
-	return s.ContextWindow <= 0 && s.PriceIn <= 0 && s.PriceOut <= 0
+	return s.ContextWindow <= 0 && s.PriceIn <= 0 && s.PriceOut <= 0 && s.AutoSummarizePercent <= 0
 }
 
 // modelSettingsKey identifies the settings entry for a provider and model.
@@ -494,10 +502,12 @@ type Options struct {
 	AutoUpdate                bool          `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
 	SmartTools                bool          `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
 	RequestTimeout            *int          `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. A model that reasons before its first token sends no stream parts while it thinks\\, so this also caps how long one silent thinking phase may last. 0 disables it\\, negative values are invalid.,default=120,example=300,example=600,example=0"`
-	AutoSummarizePercent      *int          `json:"auto_summarize_percent,omitempty" jsonschema:"description=Percentage of the context window that must be in use before a conversation is summarized automatically. Higher values keep more of the conversation intact and compact less often. 0 uses the default of 85.,minimum=0,maximum=100,default=85,example=85,example=70"`
-	AutoSummarizeLargePercent *int          `json:"auto_summarize_large_percent,omitempty" jsonschema:"description=Percentage of the context window that must be in use before summarizing automatically for models whose window reaches auto_summarize_large_window. A large window holds far more tokens so compacting later wastes less of it. 0 uses the default of 95.,minimum=0,maximum=100,default=95,example=95"`
-	AutoSummarizeLargeWindow  *int64        `json:"auto_summarize_large_window,omitempty" jsonschema:"description=Context window size in tokens from which auto_summarize_large_percent applies instead of auto_summarize_percent. 0 uses the default of 500000.,minimum=0,example=500000"`
-	AutoContinue              bool`json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
+	AutoSummarizePercent      *int          `json:"auto_summarize_percent,omitempty" jsonschema:"description=Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings. 0 uses the default of 85.,minimum=0,maximum=100,default=85,example=85,example=70"`
+	// MaxParallelTools bounds how many parallel tool calls - and with it how
+	// many sub-agents launched in one message - may run at the same time.
+	// There is no upper bound; 0 uses the default of 5.
+	MaxParallelTools *int `json:"max_parallel_tools,omitempty" jsonschema:"description=How many parallel tool calls\\, and sub-agents launched in one message\\, may run at the same time. There is no upper bound: set it as high as you need to fan out agents without waiting between messages. 0 uses the default of 5.,minimum=0,default=5,example=50,example=200,example=1000"`
+	AutoContinue     bool `json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
 	// KeyBindings remaps a key to a different action, by name. The actions are
 	// the keymap's own field paths: "chat.new_session", "editor.send_message",
 	// "app.quit". A value may list several keys separated by a comma, and an
@@ -538,74 +548,69 @@ func (o *Options) GetRequestTimeout() time.Duration {
 // and a flat 20,000 tokens above it, which is 2% of a 1M window and made the
 // effective threshold jump ten points at the boundary.
 const (
-	DefaultAutoSummarizePercent      = 85
-	DefaultAutoSummarizeLargePercent = 95
-	DefaultAutoSummarizeLargeWindow  = 500_000
+	// DefaultAutoSummarizePercent is how full the context window must be
+	// before a conversation is compacted, when neither the global option nor
+	// a per-model override says otherwise.
+	DefaultAutoSummarizePercent = 85
+	// DefaultMaxParallelTools is how many parallel tool calls - and with it
+	// sub-agents launched in one message - run at once when unset.
+	DefaultMaxParallelTools = 5
 )
-
-// AutoSummarizePolicy is the resolved set of thresholds that decides when a
-// conversation is compacted.
-type AutoSummarizePolicy struct {
-	// Percent is how full the window must be before compacting.
-	Percent int
-	// LargePercent applies instead of Percent once the window reaches
-	// LargeWindow.
-	LargePercent int
-	// LargeWindow is the window size where LargePercent takes over.
-	LargeWindow int64
-}
 
 // clampAutoSummarizePercent keeps a configured percentage inside a range that
 // still leaves the request room to run. Zero means "unset" and takes the
-// default, so it never survives the clamp.
-func clampAutoSummarizePercent(v *int, fallback int) int {
-	if v == nil || *v == 0 {
+// fallback, so it never survives the clamp.
+func clampAutoSummarizePercent(v int, fallback int) int {
+	if v <= 0 {
 		return fallback
 	}
-	// Below half the conversation would be compacted before it is really full,
-	// and at 100 there is nothing left for the request that triggered it.
-	return min(max(*v, 50), 99)
+	return min(v, 100)
 }
 
-// DefaultAutoSummarizePolicy is the policy used when nothing is configured.
-// It exists as a function so a nil *Options and an unresolved zero value both
-// land on the same thresholds instead of disabling compaction.
-func DefaultAutoSummarizePolicy() AutoSummarizePolicy {
-	return (&Options{}).GetAutoSummarizePolicy()
-}
-
-// GetAutoSummarizePolicy returns the resolved automatic summarization
-// thresholds, substituting defaults for anything unset or out of range.
-func (o *Options) GetAutoSummarizePolicy() AutoSummarizePolicy {
-	policy := AutoSummarizePolicy{
-		Percent:      DefaultAutoSummarizePercent,
-		LargePercent: DefaultAutoSummarizeLargePercent,
-		LargeWindow:  DefaultAutoSummarizeLargeWindow,
+// GetMaxParallelTools returns how many parallel tool calls may run at once.
+// There is no upper bound: a positive configured value is honored verbatim,
+// so a nil receiver, an unset value, zero, and a negative value all resolve
+// to the default, matching the "0 uses the default" rule in the field's own
+// doc.
+func (o *Options) GetMaxParallelTools() int {
+	if o == nil || o.MaxParallelTools == nil || *o.MaxParallelTools <= 0 {
+		return DefaultMaxParallelTools
 	}
+	return *o.MaxParallelTools
+}
+
+// GetAutoSummarizePercent returns the global default threshold: how full the
+// context window must be before a conversation is compacted, substituting the
+// default for anything unset or out of range. Per-model overrides do not take
+// effect here; see [Config.AutoSummarizePercentFor].
+func (o *Options) GetAutoSummarizePercent() int {
+	fallback := DefaultAutoSummarizePercent
 	if o == nil {
-		return policy
+		return fallback
 	}
-	policy.Percent = clampAutoSummarizePercent(o.AutoSummarizePercent, policy.Percent)
-	policy.LargePercent = clampAutoSummarizePercent(o.AutoSummarizeLargePercent, policy.LargePercent)
-	if o.AutoSummarizeLargeWindow != nil && *o.AutoSummarizeLargeWindow > 0 {
-		policy.LargeWindow = *o.AutoSummarizeLargeWindow
+	var configured int
+	if o.AutoSummarizePercent != nil {
+		configured = *o.AutoSummarizePercent
 	}
-	return policy
+	return clampAutoSummarizePercent(configured, fallback)
 }
 
-// SummarizeAt returns how full a context window of cw tokens has to be before
-// automatic summarization runs. A window that is not large enough to reach
-// LargeWindow uses Percent. An unknown window (zero) returns 0, which callers
-// treat as "never compact automatically" so custom and local models without a
-// declared window are not truncated.
-func (p AutoSummarizePolicy) SummarizeAt(cw int64) int {
-	if cw <= 0 {
-		return 0
+// AutoSummarizePercentFor resolves the auto-summarize threshold that applies
+// to one model: the per-model override recorded by the model settings dialog
+// wins, and zero or missing falls back to the global default. Callers treat a
+// zero return as "never compact automatically", which only happens when the
+// model declares no context window, so custom and local models are not
+// truncated.
+func (c *Config) AutoSummarizePercentFor(provider, model string) int {
+	fallback := c.Options.GetAutoSummarizePercent()
+	if c == nil {
+		return fallback
 	}
-	if p.LargeWindow > 0 && cw >= p.LargeWindow {
-		return p.LargePercent
+	settings, ok := c.ModelSettingsFor(provider, model)
+	if !ok {
+		return fallback
 	}
-	return p.Percent
+	return clampAutoSummarizePercent(settings.AutoSummarizePercent, fallback)
 }
 
 type MCPs map[string]MCPConfig
@@ -1085,6 +1090,11 @@ func (c *Config) rememberModelSettings(model SelectedModel) SelectedModel {
 	} else {
 		model.PriceOut = settings.PriceOut
 	}
+	if model.AutoSummarizePercent > 0 {
+		settings.AutoSummarizePercent = model.AutoSummarizePercent
+	} else {
+		model.AutoSummarizePercent = settings.AutoSummarizePercent
+	}
 
 	if settings.Empty() {
 		delete(c.ModelSettings, key)
@@ -1112,6 +1122,10 @@ func (c *Config) applyModelSettings(model *SelectedModel) bool {
 	}
 	if model.PriceOut <= 0 && settings.PriceOut > 0 {
 		model.PriceOut = settings.PriceOut
+		changed = true
+	}
+	if model.AutoSummarizePercent <= 0 && settings.AutoSummarizePercent > 0 {
+		model.AutoSummarizePercent = settings.AutoSummarizePercent
 		changed = true
 	}
 	return changed
@@ -1223,6 +1237,7 @@ const maxRecentModelsPerType = 5
 func allToolNames() []string {
 	return []string{
 		"agent",
+		"agent_jobs",
 		"bash",
 		"prime_info",
 		"prime_logs",
@@ -1328,11 +1343,12 @@ func (c *Config) SetupAgents() {
 			Description:  "Carries out a coding task end to end: reads, edits and runs commands. Hand it a change rather than a question.",
 			Model:        SelectedModelTypeLarge,
 			ContextPaths: c.Options.ContextPaths,
-			// Full tools, minus "agent". A worker that could call a worker
-			// would let a delegation chain grow with nothing to bound it, and
-			// one level is what delegation is for: the main agent keeps the
-			// thread, the workers do the work.
-			AllowedTools: filterSlice(allowedTools, []string{"agent"}, false),
+			// Full tools, minus "agent" (and its companion "agent_jobs"). A worker
+			// that could call a worker would let a delegation chain grow with
+			// nothing to bound it, and one level is what delegation is for: the
+			// main agent keeps the thread, the workers do the work. agent_jobs is
+			// only useful to whoever can start the jobs, so it goes with agent.
+			AllowedTools: filterSlice(allowedTools, []string{"agent", "agent_jobs"}, false),
 		},
 
 		AgentTask: {

@@ -3,10 +3,10 @@ package dialog
 import (
 	"testing"
 
-	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
@@ -112,7 +112,8 @@ func TestCommandsAcceptsPasteIntoFilter(t *testing.T) {
 func TestOverlayRoutesCtrlVToClipboard(t *testing.T) {
 	t.Parallel()
 
-	input := newAutoSummarizeTestDialog(t, &config.Options{})
+	input := newBackspaceTestDialog("front")
+	input.input = textinput.New()
 	overlay := NewOverlay(input)
 
 	action := overlay.Update(tea.KeyPressMsg{Code: 'v', Mod: tea.ModCtrl})
@@ -122,7 +123,7 @@ func TestOverlayRoutesCtrlVToClipboard(t *testing.T) {
 	require.True(t, ok, "expected ActionCmd, got %T", action)
 	require.NotNil(t, actionCmd.Cmd, "the clipboard read has to be runnable")
 
-	// Nothing was pasted yet, so the field still holds its seeded value: the
-	// overlay must not have consumed the keypress as text.
-	require.Equal(t, "85", input.rows[0].input.Value())
+	// The field is empty and ctrl+v must not have been forwarded to the
+	// dialog's HandleMsg — it is intercepted by the overlay as a paste key.
+	require.Equal(t, "", input.input.Value())
 }

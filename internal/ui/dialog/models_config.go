@@ -5,15 +5,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/util"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/spinner"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/internal/config"
-	"github.com/SpherePrime/CLI/internal/ui/common"
-	"github.com/SpherePrime/CLI/internal/ui/util"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
@@ -29,6 +29,7 @@ const (
 	fieldContextWindow modelConfigField = iota
 	fieldPriceIn
 	fieldPriceOut
+	fieldAutoSummarizePercent
 )
 
 // modelConfigState is the current step of the settings form.
@@ -50,7 +51,7 @@ type ModelsConfig struct {
 
 	state    modelConfigState
 	editing  modelConfigField
-	fields   [3]string
+	fields   [4]string
 	input    textinput.Model
 	spinner  spinner.Model
 	help     help.Model
@@ -148,9 +149,16 @@ func (m *ModelsConfig) loadFields() {
 	if priceOut <= 0 {
 		priceOut = m.catalog.CostPer1MOut
 	}
+	// The percent shown is the effective one: the model's own override when
+	// set, otherwise the global default the model would actually compact at.
+	percent := m.selected.AutoSummarizePercent
+	if percent <= 0 {
+		percent = m.com.Config().Options.GetAutoSummarizePercent()
+	}
 	m.fields[fieldContextWindow] = strconv.FormatInt(cw, 10)
 	m.fields[fieldPriceIn] = strconv.FormatFloat(priceIn, 'f', -1, 64)
 	m.fields[fieldPriceOut] = strconv.FormatFloat(priceOut, 'f', -1, 64)
+	m.fields[fieldAutoSummarizePercent] = strconv.Itoa(percent)
 }
 
 // applyFieldInput updates the active input's prompt and placeholder. The
@@ -168,6 +176,9 @@ func (m *ModelsConfig) applyFieldInput() {
 	case fieldPriceOut:
 		prompt = "Output /1M: "
 		placeholder = "price per 1M output tokens, 0 = use catalog"
+	case fieldAutoSummarizePercent:
+		prompt = "Compact at: "
+		placeholder = "% of the context window, 0 = use the global default"
 	}
 	m.input.Prompt = prompt
 	m.input.Placeholder = placeholder
@@ -206,6 +217,7 @@ func (m *ModelsConfig) HandleMsg(msg tea.Msg) Action {
 		m.selected.ContextWindow = msg.contextWindow
 		m.selected.PriceIn = msg.priceIn
 		m.selected.PriceOut = msg.priceOut
+		m.selected.AutoSummarizePercent = msg.autoSummarizePercent
 		return ActionModelConfigSaved{ModelType: m.modelType.Config()}
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -303,6 +315,17 @@ func (m *ModelsConfig) save() Action {
 		m.setFieldValue()
 		return nil
 	}
+	// 0 means "no override, use the global default", so it is stored as zero
+	// and left to fall through; a set value is capped so the window is not
+	// compacted before the request that triggers it can even run.
+	percent, err := strconv.Atoi(m.fields[fieldAutoSummarizePercent])
+	if err != nil || percent < 0 || percent > 100 {
+		m.errorMsg = "Compact threshold must be 0 (default) or 1-100"
+		m.editing = fieldAutoSummarizePercent
+		m.applyFieldInput()
+		m.setFieldValue()
+		return nil
+	}
 
 	m.state = modelConfigStateSaving
 	return ActionCmd{func() tea.Msg {
@@ -310,23 +333,26 @@ func (m *ModelsConfig) save() Action {
 		updated.ContextWindow = cw
 		updated.PriceIn = priceIn
 		updated.PriceOut = priceOut
+		updated.AutoSummarizePercent = percent
 
 		err := m.com.Workspace.UpdatePreferredModel(config.ScopeGlobal, m.modelType.Config(), updated)
 		return modelsConfigSavedMsg{
-			contextWindow: cw,
-			priceIn:       priceIn,
-			priceOut:      priceOut,
-			err:           err,
+			contextWindow:        cw,
+			priceIn:              priceIn,
+			priceOut:             priceOut,
+			autoSummarizePercent: percent,
+			err:                  err,
 		}
 	}}
 }
 
 // modelsConfigSavedMsg reports the outcome of a config write.
 type modelsConfigSavedMsg struct {
-	contextWindow int64
-	priceIn       float64
-	priceOut      float64
-	err           error
+	contextWindow        int64
+	priceIn              float64
+	priceOut             float64
+	autoSummarizePercent int
+	err                  error
 }
 
 // focusAndInputUpdate ensures the shared input is focused before routing a
@@ -342,7 +368,6 @@ func (m *ModelsConfig) focusAndInputUpdate(msg tea.Msg) tea.Cmd {
 	m.input, cmd = m.input.Update(msg)
 	return cmd
 }
-
 
 // BackspaceDeletesText implements [BackspaceAware].
 func (p *ModelsConfig) BackspaceDeletesText() bool {

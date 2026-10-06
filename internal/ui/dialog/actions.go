@@ -105,15 +105,6 @@ type (
 	ActionSelectReasoningEffort struct {
 		Effort string
 	}
-	// ActionSetAutoSummarizeThresholds carries the validated compaction
-	// thresholds out of the auto-summarize dialog. All three are sent as one
-	// action because they only make sense together: the large percentage
-	// means nothing without the window it applies from.
-	ActionSetAutoSummarizeThresholds struct {
-		Percent      int
-		LargePercent int
-		LargeWindow  int64
-	}
 	// ActionShowError surfaces a validation failure inside a dialog without
 	// closing it, so the user can correct the field they were editing.
 	ActionShowError struct {
