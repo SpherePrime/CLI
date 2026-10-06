@@ -19,6 +19,11 @@ var agentToolDescription string
 type AgentParams struct {
 	Prompt string `json:"prompt" description:"What the agent has to accomplish, stated as a complete task with its own context and a concrete deliverable. It cannot see this conversation, so anything it needs must be in here."`
 	Agent  string `json:"agent,omitempty" description:"Which configured agent to run. Omit to use the default agent."`
+	// Background starts the agent without waiting for it: the call returns
+	// immediately with a job id and the agent keeps running while the caller
+	// does other work. Poll it with the agent_jobs tool. Use it to launch
+	// many agents at once instead of waiting on each in turn.
+	Background bool `json:"background,omitempty" description:"Return immediately with a job id and let the agent keep running; check it later with agent_jobs. Omit to wait for the result now."`
 }
 
 const (
@@ -74,14 +79,31 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 			}
 			title := "Agent Session: " + name
 
-			return c.runSubAgent(ctx, subAgentParams{
+			sp := subAgentParams{
 				Agent:          agent,
 				SessionID:      sessionID,
 				AgentMessageID: agentMessageID,
 				ToolCallID:     call.ID,
 				Prompt:         params.Prompt,
 				SessionTitle:   title,
-			})
+			}
+
+			// Background mode returns as soon as the sub-session exists; the
+			// job keeps running and is read back through agent_jobs. This is
+			// how a message can fan out dozens of agents at once: each call
+			// claims only the session-creation instant, not the whole run.
+			if params.Background {
+				job, err := c.startAgentJob(ctx, sp, name)
+				if err != nil {
+					return fantasy.NewTextErrorResponse(
+						fmt.Sprintf("could not start background agent: %s", err)), nil
+				}
+				return fantasy.NewTextResponse(fmt.Sprintf(
+					"Background agent started: job %s (agent %s). Keep working; check it later with agent_jobs(op=get, job_id=%s) or agent_jobs(op=list).",
+					job.id, name, job.id)), nil
+			}
+
+			return c.runSubAgent(ctx, sp)
 		},
 	), nil
 }

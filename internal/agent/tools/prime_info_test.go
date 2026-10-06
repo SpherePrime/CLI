@@ -196,16 +196,14 @@ func TestPrimeInfo_Options(t *testing.T) {
 	cfg := config.NewTestStore(&config.Config{
 		Providers: csync.NewMap[string, config.ProviderConfig](),
 		Options: &config.Options{
-			DataDirectory:        "/Users/user/project/.prime",
-			Debug:                true,
-			DisableAutoSummarize: true,
+			DataDirectory: "/Users/user/project/.prime",
+			Debug:         true,
 		},
 	})
 
 	output := buildPrimeInfo(cfg, nil, nil, nil, nil)
 	require.Contains(t, output, "[options]")
 	require.Contains(t, output, "auto_lsp = true")
-	require.Contains(t, output, "auto_summarize = false")
 	require.Contains(t, output, "data_directory = /Users/user/project/.prime")
 	require.Contains(t, output, "debug = true")
 }
@@ -251,24 +249,6 @@ func TestPrimeInfo_TUIOptionsUnpinnedCompletionsOmitted(t *testing.T) {
 	require.Contains(t, output, "transparent = false")
 	require.NotContains(t, output, "completions_max_depth")
 	require.NotContains(t, output, "completions_max_items")
-}
-
-func TestPrimeInfo_AutoSummarizeInversion(t *testing.T) {
-	t.Parallel()
-
-	cfgFalse := config.NewTestStore(&config.Config{
-		Providers: csync.NewMap[string, config.ProviderConfig](),
-		Options:   &config.Options{DisableAutoSummarize: true},
-	})
-	outputFalse := buildPrimeInfo(cfgFalse, nil, nil, nil, nil)
-	require.Contains(t, outputFalse, "auto_summarize = false")
-
-	cfgTrue := config.NewTestStore(&config.Config{
-		Providers: csync.NewMap[string, config.ProviderConfig](),
-		Options:   &config.Options{DisableAutoSummarize: false},
-	})
-	outputTrue := buildPrimeInfo(cfgTrue, nil, nil, nil, nil)
-	require.Contains(t, outputTrue, "auto_summarize = true")
 }
 
 func TestPrimeInfo_NoSecrets(t *testing.T) {

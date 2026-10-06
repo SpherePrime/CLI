@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/discover"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/bedrock"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openaicompat"
-	"github.com/SpherePrime/CLI/internal/config"
-	"github.com/SpherePrime/CLI/internal/discover"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
@@ -57,9 +57,10 @@ func newTestCoordinator(t *testing.T, env fakeEnv, providerID string, providerCf
 	require.NoError(t, err)
 	cfg.Config().Providers.Set(providerID, providerCfg)
 	return &coordinator{
-		cfg:      cfg,
-		sessions: env.sessions,
-		messages: env.messages,
+		cfg:       cfg,
+		sessions:  env.sessions,
+		messages:  env.messages,
+		agentJobs: make(map[string]*agentJob),
 	}
 }
 
@@ -800,7 +801,7 @@ func TestCoordinatorSetMainAgent(t *testing.T) {
 			mainAgentName: config.AgentGeneral,
 			agents: map[string]SessionAgent{
 				config.AgentGeneral: coder,
-				config.AgentPlan:  plan,
+				config.AgentPlan:    plan,
 			},
 		}
 

@@ -18,8 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
 	"github.com/SpherePrime/CLI/internal/agent/prompt"
@@ -42,6 +40,8 @@ import (
 	"github.com/SpherePrime/CLI/internal/question"
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/internal/skills"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/x/sync/errgroup"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
@@ -168,6 +168,13 @@ type coordinator struct {
 	subAgentMu sync.Mutex
 	subAgents  map[string]SessionAgent
 
+	// agentJobs tracks sub-agents started with the agent tool's background
+	// mode, keyed by job id. The registry is the only record of an
+	// in-flight background run, so it must outlive the step that started it.
+	jobMu       sync.Mutex
+	agentJobs   map[string]*agentJob
+	agentJobSeq int64
+
 	// Skills discovery results (session-start snapshot).
 	allSkills    []*skills.Skill // Pre-filter: all discovered after dedup.
 	activeSkills []*skills.Skill // Post-filter: active skills only.
@@ -221,6 +228,7 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 		runComplete:  opts.RunComplete,
 		agents:       make(map[string]SessionAgent),
 		subAgents:    make(map[string]SessionAgent),
+		agentJobs:    make(map[string]*agentJob),
 		allSkills:    allSkills,
 		activeSkills: activeSkills,
 		skillTracker: skillTracker,
@@ -789,13 +797,14 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 		SystemPrompt:         "",
 		IsSubAgent:           isSubAgent,
 		DisableAutoSummarize: c.cfg.Config().Options.DisableAutoSummarize,
-		AutoSummarizePolicy:  c.cfg.Config().Options.GetAutoSummarizePolicy(),
+		AutoSummarizePercent: c.cfg.Config().Options.GetAutoSummarizePercent(),
 		IsYolo:               c.permissions.SkipRequests(),
 		Sessions:             c.sessions,
 		Messages:             c.messages,
 		Tools:                nil,
 		Notify:               c.notify,
 		RunComplete:          c.runComplete,
+		MaxParallelTools:     c.cfg.Config().Options.GetMaxParallelTools(),
 	})
 
 	// The readiness goroutines below perform one-time setup — building the
@@ -839,6 +848,10 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 			return nil, err
 		}
 		allTools = append(allTools, agentTool)
+		// agent_jobs is the read side of the agent tool's background mode.
+		// It is only useful when the agent can actually start agents, so
+		// ship it in the same gate rather than as a separate option.
+		allTools = append(allTools, c.agentJobsTool())
 	}
 
 	if slices.Contains(agent.AllowedTools, tools.AgenticFetchToolName) {
@@ -1876,31 +1889,10 @@ func (c *coordinator) runSubAgent(ctx context.Context, params subAgentParams) (f
 		return fantasy.ToolResponse{}, errModelProviderNotConfigured
 	}
 
-	// Run the agent
-	run := func() (*fantasy.AgentResult, error) {
-		return params.Agent.Run(ctx, SessionAgentCall{
-			SessionID:        session.ID,
-			Prompt:           params.Prompt,
-			MaxOutputTokens:  maxTokens,
-			ProviderOptions:  getProviderOptions(model, providerCfg),
-			Temperature:      model.ModelCfg.Temperature,
-			TopP:             model.ModelCfg.TopP,
-			TopK:             callTopK(providerCfg, model.ModelCfg.TopK),
-			FrequencyPenalty: model.ModelCfg.FrequencyPenalty,
-			PresencePenalty:  model.ModelCfg.PresencePenalty,
-			NonInteractive:   true,
-			OnAuthRefresh:    c.makeAuthRefreshCallback(providerCfg),
-		})
-	}
-	result, err := run()
-	// Notify only if still unauthorized after retry. AWS SSO is handled
-	// transparently inside OnAuthRefresh, so it needs no post-run notice.
-	if err != nil && isUnauthorized(err) && c.notify != nil && model.ModelCfg.Provider == hyper.Name {
-		c.notify.Publish(pubsub.CreatedEvent, notify.Notification{
-			Type:       notify.TypeReAuthenticate,
-			ProviderID: model.ModelCfg.Provider,
-		})
-	}
+	// Run the agent. invokeSubAgent is the shared core of the synchronous
+	// and background paths: it runs the agent and surfaces a re-auth
+	// notice when one is needed.
+	result, err := c.invokeSubAgent(ctx, params, session.ID, model, maxTokens, providerCfg)
 	if err != nil {
 		return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to generate response: %s", err)), nil
 	}

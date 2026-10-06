@@ -613,7 +613,6 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "model_settings", c.com.L("cmd.model_settings"), "", ActionOpenDialog{ModelsConfigID}),
 		NewCommandItem(c.com.Styles, "provider_settings", c.com.L("cmd.provider_settings"), "", ActionOpenDialog{ProviderSettingsID}).WithAliases("providers", "provider"),
 		NewCommandItem(c.com.Styles, "status", c.com.L("cmd.status"), "", ActionOpenDialog{StatusID}),
-		NewCommandItem(c.com.Styles, "auto_summarize", c.com.L("cmd.auto_summarize"), "", ActionOpenDialog{AutoSummarizeID}).WithAliases("compaction", "context"),
 		NewCommandItem(c.com.Styles, "plugins", c.com.L("cmd.plugins"), "", ActionOpenDialog{DialogID: PluginsID}).WithAliases("plugin"),
 		NewCommandItem(c.com.Styles, "restart_systems", c.com.L("cmd.restart_systems"), "", ActionRestartSystems{}).WithAliases("restart", "reload"),
 	}

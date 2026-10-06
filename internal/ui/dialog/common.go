@@ -6,15 +6,15 @@ import (
 	"image/color"
 	"strings"
 
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
-	"github.com/SpherePrime/CLI/internal/ui/common"
-	"github.com/SpherePrime/CLI/internal/ui/list"
-	"github.com/SpherePrime/CLI/internal/ui/styles"
 )
 
 // dialogInputTextWidth returns the text-area width for a dialog input so
@@ -493,4 +493,33 @@ func (rc *RenderContext) Render() string {
 		return content
 	}
 	return dialogStyle.Render(content)
+}
+
+// lineOf reports the 0-based line the part at index i occupies in the content
+// Render produces, mirroring how Render joins the title, the parts and the
+// gaps.
+//
+// A caller that has to place something at a known part - the caret of a field
+// that sits a fixed number of parts into the form - cannot count lines itself:
+// a wrapped description makes one part two lines, and the gaps are inserted
+// only where Render inserts them. Getting either wrong puts the caret a line
+// off with nothing to show for it but a caret on the wrong row.
+func (rc *RenderContext) lineOf(i int) int {
+	line := 0
+	if rc.Title != "" {
+		line++
+		if rc.Gap > 0 {
+			line += rc.Gap
+		}
+	}
+	for j, p := range rc.Parts {
+		if j == i {
+			return line
+		}
+		line += 1 + strings.Count(p, "\n")
+		if rc.Gap > 0 && j < len(rc.Parts)-1 {
+			line += rc.Gap
+		}
+	}
+	return line
 }
