@@ -344,6 +344,7 @@ type LSPConfig struct {
 }
 
 type TUIOptions struct {
+	Design      string `json:"design,omitempty" jsonschema:"description=Interface layout and panel design,enum=classic,enum=minimal,enum=cards,enum=focus,enum=dashboard,enum=terminal,enum=studio,enum=neon,default=classic"`
 	CompactMode bool   `json:"compact_mode,omitempty" jsonschema:"description=Enable compact mode for the TUI interface,default=false"`
 	DiffMode    string `json:"diff_mode,omitempty" jsonschema:"description=Diff mode for the TUI interface,enum=unified,enum=split"`
 	// Here we can add themes later or any TUI related options
@@ -355,6 +356,7 @@ type TUIOptions struct {
 	Mouse       *bool       `json:"mouse,omitempty" jsonschema:"description=Enable terminal mouse capture for selection\\, clicks\\, and scrolling in the TUI. Disable to let the terminal emulator or tmux handle text selection and copy/paste,default=true"`
 	Shimmer     *bool       `json:"shimmer,omitempty" jsonschema:"description=Animate the iridescent shimmer on the wordmark\\, working indicator\\, and queue triangles. Disable for completely static colors,default=true"`
 	ExitBanner  ExitBanner  `json:"exit_banner,omitempty" jsonschema:"description=Exit banner style after quitting Prime,enum=default,enum=compact,enum=none,default=default"`
+	Theme       string      `json:"theme,omitempty" jsonschema:"description=UI color theme,enum=auto,enum=default,enum=hyper,enum=charcoal,enum=rose,enum=stardust,enum=forest,enum=dracula,enum=nord,enum=tokyo,enum=catppuccin,enum=gruvbox,enum=solarized,enum=ocean,enum=cyberpunk,enum=sunset"`
 }
 
 // IsShimmer reports whether animated iridescent surfaces move. An unset

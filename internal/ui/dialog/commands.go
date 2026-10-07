@@ -329,7 +329,6 @@ func (c *Commands) InitialCmd() tea.Cmd {
 	return checkDockerMCPAvailabilityCmd()
 }
 
-
 // BackspaceDeletesText implements [BackspaceAware].
 func (c *Commands) BackspaceDeletesText() bool {
 	return BackspaceDeletesText(c.input)
@@ -699,6 +698,10 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	commands = append(commands, NewCommandItem(c.com.Styles, "select_notifications", notificationLabel, "", ActionOpenDialog{DialogID: NotificationsID}))
 
 	// Add a command for selecting the UI language via picker dialog.
+	commands = append(commands,
+		NewCommandItem(c.com.Styles, "select_theme", c.com.L("cmd.theme"), "", ActionOpenDialog{DialogID: ThemesID}).WithAliases("theme", "colors", "palette"),
+		NewCommandItem(c.com.Styles, "select_design", c.com.L("cmd.design"), "", ActionOpenDialog{DialogID: DesignsID}).WithAliases("design", "layout", "style"),
+	)
 	commands = append(commands, NewCommandItem(c.com.Styles, "select_language", c.com.L("cmd.language"), "", ActionOpenDialog{DialogID: LanguageID}))
 
 	// Offer the dictation language picker only while the voice plugin is on:

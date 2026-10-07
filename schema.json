@@ -1005,6 +1005,21 @@
     },
     "TUIOptions": {
       "properties": {
+        "design": {
+          "type": "string",
+          "enum": [
+            "classic",
+            "minimal",
+            "cards",
+            "focus",
+            "dashboard",
+            "terminal",
+            "studio",
+            "neon"
+          ],
+          "description": "Interface layout and panel design",
+          "default": "classic"
+        },
         "compact_mode": {
           "type": "boolean",
           "description": "Enable compact mode for the TUI interface",
@@ -1056,6 +1071,28 @@
           ],
           "description": "Exit banner style after quitting Prime",
           "default": "default"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "default",
+            "hyper",
+            "charcoal",
+            "rose",
+            "stardust",
+            "forest",
+            "dracula",
+            "nord",
+            "tokyo",
+            "catppuccin",
+            "gruvbox",
+            "solarized",
+            "ocean",
+            "cyberpunk",
+            "sunset"
+          ],
+          "description": "UI color theme"
         }
       },
       "additionalProperties": false,

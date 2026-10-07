@@ -4,13 +4,13 @@ import (
 	"encoding/xml"
 	"strings"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/ui/attachments"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // skillInvocation represents the XML structure for a loaded skill.
@@ -55,12 +55,12 @@ func (m *UserMessageItem) Finished() bool {
 
 // RawRender implements [MessageItem].
 func (m *UserMessageItem) RawRender(width int) string {
-	cappedWidth := cappedMessageWidth(width)
+	cappedWidth := designMessageWidth(m.sty, width)
 
 	content, height, ok := m.getCachedRender(cappedWidth)
 	// cache hit
 	if ok {
-		return m.renderHighlighted(content, cappedWidth, height)
+		return m.renderHighlighted(rawMessageLines(m.sty, content, width), cappedWidth, height+messageFrameHeight(m.sty, width))
 	}
 
 	msgContent := strings.TrimSpace(m.message.Content().Text)
@@ -70,7 +70,7 @@ func (m *UserMessageItem) RawRender(width int) string {
 		content = m.renderSkillInvocation(msgContent, cappedWidth)
 		height = lipgloss.Height(content)
 		m.setCachedRender(content, cappedWidth, height)
-		return m.renderHighlighted(content, cappedWidth, height)
+		return m.renderHighlighted(rawMessageLines(m.sty, content, width), cappedWidth, height+messageFrameHeight(m.sty, width))
 	}
 
 	renderer := common.UserMarkdownRenderer(m.sty, cappedWidth)
@@ -97,7 +97,7 @@ func (m *UserMessageItem) RawRender(width int) string {
 
 	height = lipgloss.Height(content)
 	m.setCachedRender(content, cappedWidth, height)
-	return m.renderHighlighted(content, cappedWidth, height)
+	return m.renderHighlighted(rawMessageLines(m.sty, content, width), cappedWidth, height+messageFrameHeight(m.sty, width))
 }
 
 // renderSkillInvocation renders a loaded_skill XML as a special UI element.
@@ -132,6 +132,7 @@ func (m *UserMessageItem) Render(width int) string {
 	if m.focused {
 		key = 1
 	}
+	key = designCacheKey(m.sty, key)
 	if useCache {
 		if cached, ok := m.getCachedPrefixedRender(width, key); ok {
 			return cached
@@ -143,11 +144,7 @@ func (m *UserMessageItem) Render(width int) string {
 	} else {
 		prefix = m.sty.Messages.UserBlurred.Render()
 	}
-	lines := strings.Split(m.RawRender(width), "\n")
-	for i, line := range lines {
-		lines[i] = prefix + line
-	}
-	out := strings.Join(lines, "\n")
+	out := renderMessageLines(m.sty, m.RawRender(width), prefix, width, "YOU")
 	if useCache {
 		m.setCachedPrefixedRender(out, width, key)
 	}

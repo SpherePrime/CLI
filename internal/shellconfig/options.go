@@ -3,6 +3,7 @@ package shellconfig
 import (
 	"context"
 	"fmt"
+	"github.com/SpherePrime/CLI/internal/appearance"
 	"io"
 	"log/slog"
 	"strconv"
@@ -229,7 +230,7 @@ var optionSpecs = map[string]optionSpec{
 // that live under options.tui rather than as top-level options.
 func optionUI(options map[string]any, args []string, stderr io.Writer) error {
 	if len(args) != 4 {
-		return usage(stderr, "usage: option ui <compact|diff|transparent|mouse|shimmer|scrollbar|completions-max-depth|completions-max-items|exit-banner> <value>")
+		return usage(stderr, "usage: option ui <compact|diff|transparent|mouse|shimmer|scrollbar|completions-max-depth|completions-max-items|exit-banner|theme|design> <value>")
 	}
 
 	key := args[2]
@@ -237,6 +238,16 @@ func optionUI(options map[string]any, args []string, stderr io.Writer) error {
 	ui := childMap(options, "tui")
 
 	switch key {
+	case "theme":
+		if !appearance.ValidTheme(value) {
+			return usage(stderr, fmt.Sprintf("unknown theme %q", value))
+		}
+		ui["theme"] = value
+	case "design":
+		if !appearance.ValidDesign(value) {
+			return usage(stderr, fmt.Sprintf("unknown design %q", value))
+		}
+		ui["design"] = value
 	case "compact", "transparent", "mouse", "shimmer":
 		parsed, err := parseBool(value)
 		if err != nil {

@@ -16,6 +16,16 @@ your code, and your LLM provider of choice into one workflow.
   with alt+v, downloaded automatically from the plugins menu
 - **Cross-platform:** Linux and Windows
 
+## Appearance
+
+Open the command palette with `Ctrl+P` and choose **Interface design** or
+**Color theme**. Eight designs change the layout, input panel, message frames
+and colors. Fifteen palettes can be selected independently. Settings persist
+across restarts and updates. **Automatic** follows the selected provider.
+
+Shell configuration also supports `option ui design cards` and
+`option ui theme nord`.
+
 ## Install
 
 Linux / macOS:

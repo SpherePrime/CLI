@@ -541,7 +541,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	// Seed the active theme key from the large model provider so the
 	// first model selection can correctly skip a redundant theme swap.
 	if cfg := com.Config(); cfg != nil {
-		ui.themeKey = styles.ThemeKeyForProvider(cfg.Models[config.SelectedModelTypeLarge].Provider)
+		ui.themeKey = styles.ResolveDesignThemeKey(configuredThemeName(cfg), cfg.Models[config.SelectedModelTypeLarge].Provider, configuredDesignName(cfg))
 	}
 
 	// Seed the yolo cache once at construction; afterwards it is kept
@@ -871,7 +871,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 	case loadSessionMsg:
-		if m.forceCompactMode {
+		if m.forceCompactMode || m.designHidesSidebar() {
 			m.isCompact = true
 		}
 		// Plan mode is scoped to the session it was enabled in: switching
@@ -2197,6 +2197,10 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	case dialog.ActionShowError:
 		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(msg.Message)))
 
+	case dialog.ActionSelectAppearance:
+		if err := m.selectAppearance(msg); err != nil {
+			cmds = append(cmds, util.ReportError(err))
+		}
 	case dialog.ActionSelectLanguage:
 		cfg := m.com.Config()
 		if cfg != nil && cfg.Options != nil {
@@ -3557,6 +3561,10 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 
 // drawHeader draws the header section of the UI.
 func (m *UI) drawHeader(scr uv.Screen, area uv.Rectangle) {
+	if m.customDesign() {
+		m.drawDesignHeader(scr, area)
+		return
+	}
 	m.header.drawHeader(
 		scr,
 		area,
@@ -3592,6 +3600,9 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	// Clear the screen first
 	screen.Clear(scr)
+	if !m.isTransparent && area.Dx() > 0 && area.Dy() > 0 {
+		uv.NewStyledString(m.com.Styles.Canvas.Width(area.Dx()).Height(area.Dy()).Render("")).Draw(scr, area)
+	}
 
 	switch m.state {
 	case uiOnboarding:
@@ -3626,10 +3637,14 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		}
 
 	case uiChat:
-		if m.isCompact {
+		if layout.header.Dy() > 0 {
 			m.drawHeader(scr, layout.header)
-		} else {
+		}
+		if layout.sidebar.Dx() > 0 && layout.sidebar.Dy() > 0 {
 			m.drawSidebar(scr, layout.sidebar)
+		}
+		if layout.inspector.Dx() > 0 && layout.inspector.Dy() > 0 {
+			m.drawDesignInspector(scr, layout.inspector)
 		}
 
 		m.chat.Draw(scr, layout.main)
@@ -4197,7 +4212,7 @@ func (m *UI) toggleCompactMode() tea.Cmd {
 func (m *UI) updateLayoutAndSize() {
 	// Determine if we should be in compact mode
 	if m.state == uiChat {
-		if m.forceCompactMode {
+		if m.forceCompactMode || m.designHidesSidebar() {
 			m.isCompact = true
 		} else if m.width < compactModeWidthBreakpoint || m.height < compactModeHeightBreakpoint {
 			m.isCompact = true
@@ -4212,6 +4227,10 @@ func (m *UI) updateLayoutAndSize() {
 		previousInlineHeight = m.activeInline.Height(m.editorContentWidth())
 	}
 	m.layout = m.generateLayout(m.width, m.height)
+	if m.focus == uiFocusSidebar && (m.isCompact || m.layout.sidebar.Empty()) {
+		m.focus = uiFocusMain
+		m.chat.Focus()
+	}
 	prevHeight := m.textarea.Height()
 	m.updateSize()
 
@@ -4334,18 +4353,21 @@ func (m *UI) updateSize() {
 func (m *UI) generateLayout(w, h int) uiLayout {
 	// The screen area we're working with
 	area := image.Rect(0, 0, max(w, 0), max(h, 0))
+	if m.state == uiChat {
+		m.isCompact = m.forceCompactMode || m.designHidesSidebar() || w < compactModeWidthBreakpoint || h < compactModeHeightBreakpoint
+	}
 
 	// The help height
 	helpHeight := 1
 	// The editor height: textarea height + margin for attachments and bottom spacing.
 	// When an inline editor is active, use its height instead.
-	editorHeight := m.textarea.Height() + editorHeightMargin + m.editorAttachmentsHeight(m.editorContentWidth())
+	editorHeight := m.textarea.Height() + m.editorPanelStyleForWidth(m.editorContentWidthFor(w, h)).GetVerticalFrameSize() + m.editorChromeHeight(m.editorContentWidthFor(w, h)) + m.editorAttachmentsHeight(m.editorContentWidthFor(w, h))
 	if m.activeInline != nil {
 		// The editor content width depends only on terminal width
 		// and layout (not on editor height), so passing the current
 		// frame's width to Height() keeps layout in sync with the
 		// width Draw will use, preventing flicker during fast resize.
-		editorWidth := m.editorContentWidth()
+		editorWidth := m.editorContentWidthFor(w, h)
 		if collapsed, ok := m.collapsedInlineEditor(); ok {
 			editorHeight = collapsed.CollapsedHeight() + 1
 		} else {
@@ -4353,7 +4375,7 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 		}
 	}
 	// The sidebar width
-	sidebarWidth := 32
+	sidebarWidth := m.designSidebarWidth()
 	// The header height
 	const landingHeaderHeight = 4
 
@@ -4362,6 +4384,10 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 		for _, row := range helpKeyMap.FullHelp() {
 			helpHeight = max(helpHeight, len(row))
 		}
+	}
+
+	if m.state == uiChat && m.customDesign() {
+		return m.generateDesignLayout(w, h, editorHeight, helpHeight)
 	}
 
 	// Add app margins
@@ -4530,11 +4556,12 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 		}
 	}
 
-	return uiLayout.withinArea()
+	return m.applyDesignLayout(uiLayout).withinArea()
 }
 
 // uiLayout defines the positioning of UI elements.
 type uiLayout struct {
+	inspector uv.Rectangle
 	// area is the overall available area.
 	area uv.Rectangle
 
@@ -5022,12 +5049,14 @@ func (m *UI) cacheSidebarLogo(width int) {
 // invalidating the markdown renderer cache and re-rendering the entire
 // transcript for no visible change.
 func (m *UI) applyThemeForProvider(providerID string) {
-	key := styles.ThemeKeyForProvider(providerID)
+	cfg := m.com.Config()
+	name := configuredThemeName(cfg)
+	key := styles.ResolveDesignThemeKey(name, providerID, configuredDesignName(cfg))
 	if key == m.themeKey {
 		return
 	}
 	m.themeKey = key
-	m.applyTheme(styles.ThemeForProvider(providerID))
+	m.applyTheme(styles.ResolveTheme(name, providerID, configuredDesignName(cfg)))
 }
 
 // applyTheme replaces the active styles with the given theme, drops the
@@ -5117,7 +5146,7 @@ func (m *UI) sendMessageInternal(content string, hidden bool, attachments ...mes
 		if err != nil {
 			return util.ReportError(err)
 		}
-		if m.forceCompactMode {
+		if m.forceCompactMode || m.designHidesSidebar() {
 			m.isCompact = true
 		}
 		if newSession.ID != "" {
@@ -5184,7 +5213,7 @@ func (m *UI) runShellCommandInternal(command string, isFirstMessage bool) tea.Cm
 		if err != nil {
 			return util.ReportError(err)
 		}
-		if m.forceCompactMode {
+		if m.forceCompactMode || m.designHidesSidebar() {
 			m.isCompact = true
 		}
 		if newSession.ID != "" {
@@ -5352,6 +5381,9 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openNotificationsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.ThemesID, dialog.DesignsID:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		m.dialog.OpenDialog(dialog.NewAppearance(m.com, id))
 	case dialog.LanguageID:
 		if cmd := m.openLanguageDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -5733,12 +5765,25 @@ func (m *UI) handleQuestionNotification(_ question.Notification) {
 // before the editor's height is known. This is the single source
 // of truth for the inline editor width used by both layout sizing
 // and Height() queries.
-func (m *UI) editorContentWidth() int {
-	width := m.width - 2 // appRect horizontal margins
-	if m.state == uiChat && !m.isCompact {
-		width -= 30 // sidebar column
+func (m *UI) editorContentWidth() int { return m.editorContentWidthFor(m.width, m.height) }
+func (m *UI) editorContentWidthFor(width, height int) int {
+	if m.state == uiChat && m.customDesign() {
+		center, _, _ := m.designColumns(width, height)
+		return max(center.Dx(), minEditorContentWidth)
 	}
-	return max(width, minEditorContentWidth)
+	area := image.Rect(0, 0, max(width, 0), max(height, 0))
+	app := insetRight(insetLeft(area, appMargin), appMargin)
+	available := app.Dx()
+	if m.state == uiChat {
+		compact := m.forceCompactMode || m.designHidesSidebar() || width < compactModeWidthBreakpoint || height < compactModeHeightBreakpoint
+		if !compact {
+			available -= fitSidebarWidth(m.designSidebarWidth(), available)
+		}
+		if m.com.Styles.Design == "focus" {
+			available = min(available, 100)
+		}
+	}
+	return max(available, minEditorContentWidth)
 }
 
 // collapsedInlineEditor returns the active inline editor when it should use

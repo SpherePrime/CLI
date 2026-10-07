@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"image"
 	"strings"
 
@@ -9,7 +10,10 @@ import (
 )
 
 func (m *UI) editorPanelStyle() lipgloss.Style {
-	if width := m.layout.editor.Dx(); width > 0 && width < 9 {
+	return m.editorPanelStyleForWidth(m.layout.editor.Dx())
+}
+func (m *UI) editorPanelStyleForWidth(width int) lipgloss.Style {
+	if width > 0 && width < 9 {
 		return lipgloss.NewStyle()
 	}
 	sty := m.com.Styles.Editor
@@ -47,7 +51,7 @@ func (m *UI) textareaOrigin() image.Point {
 	panel := m.editorPanelStyle()
 	return m.layout.editor.Min.Add(image.Pt(
 		panel.GetBorderLeftSize()+panel.GetPaddingLeft(),
-		panel.GetBorderTopSize()+m.editorAttachmentsHeight(m.layout.editor.Dx()),
+		panel.GetBorderTopSize()+panel.GetPaddingTop()+m.editorCaptionHeight(m.layout.editor.Dx())+m.editorAttachmentsHeight(m.layout.editor.Dx()),
 	))
 }
 
@@ -56,7 +60,16 @@ func (m *UI) renderEditorView(width int) string {
 		return ""
 	}
 	panel := m.editorPanelStyle()
-	view := panel.Width(width).Render(m.textarea.View())
+	caption, footer := m.editorChromeParts(width)
+	body := []string{}
+	if caption != "" {
+		body = append(body, m.com.Styles.Header.Label.Bold(true).Render(caption))
+	}
+	body = append(body, m.textarea.View())
+	if footer != "" {
+		body = append(body, m.com.Styles.Header.WorkingDir.Render(footer))
+	}
+	view := styles.WithBackground(panel.Width(width).Render(strings.Join(body, "\n")), panel.GetBackground())
 	if attachmentsView := m.editorAttachmentsView(width); attachmentsView != "" {
 		view = attachmentsView + "\n" + view
 	}

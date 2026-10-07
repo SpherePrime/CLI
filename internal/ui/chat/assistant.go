@@ -7,14 +7,14 @@ import (
 	"hash/fnv"
 	"strings"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/ui/anim"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // assistantMessageTruncateFormat is the text shown when an assistant message is
@@ -183,6 +183,7 @@ type AssistantMessageItem struct {
 	anim              *anim.Anim
 	thinkingViewMode  thinkingViewMode
 	thinkingBoxHeight int // Tracks the rendered thinking box height for click detection.
+	contentTop        int
 
 	// planAgent marks this item as plan-agent output. While the plan
 	// streams (the message is not finished) and the plan-start marker
@@ -287,7 +288,8 @@ func (a *AssistantMessageItem) ID() string {
 
 // RawRender implements [MessageItem].
 func (a *AssistantMessageItem) RawRender(width int) string {
-	cappedWidth := cappedMessageWidth(width)
+	a.contentTop = messageFrameHeight(a.sty, width) / 2
+	cappedWidth := designMessageWidth(a.sty, width)
 
 	var spinner string
 	if a.isSpinning() {
@@ -295,19 +297,20 @@ func (a *AssistantMessageItem) RawRender(width int) string {
 	}
 
 	content, height := a.renderMessageContent(cappedWidth)
-	highlightedContent := a.renderHighlighted(content, cappedWidth, height)
 	if spinner != "" {
-		if highlightedContent != "" {
-			highlightedContent += "\n\n"
+		if content != "" {
+			content += "\n\n"
 		}
-		return highlightedContent + spinner
+		content += spinner
+		height = lipgloss.Height(content)
 	}
 
-	return highlightedContent
+	return a.renderHighlighted(rawMessageLines(a.sty, content, width), cappedWidth, height+messageFrameHeight(a.sty, width))
 }
 
 // Render implements MessageItem.
 func (a *AssistantMessageItem) Render(width int) string {
+	a.contentTop = messageFrameHeight(a.sty, width) / 2
 	// XXX: Here, we're manually applying the focused/blurred styles because
 	// using lipgloss.Render can degrade performance for long messages due to
 	// it's wrapping logic.
@@ -323,8 +326,8 @@ func (a *AssistantMessageItem) Render(width int) string {
 	// suffix changes every animation frame) or while a highlight
 	// range is active (selection drag).
 	useCache := !a.isSpinning() && !a.isHighlighted()
-	cappedWidth := cappedMessageWidth(width)
-	key := a.prefixCacheKey(cappedWidth)
+	cappedWidth := designMessageWidth(a.sty, width)
+	key := designCacheKey(a.sty, a.prefixCacheKey(cappedWidth))
 	if useCache {
 		if cached, ok := a.getCachedPrefixedRender(width, key); ok {
 			return cached
@@ -333,15 +336,11 @@ func (a *AssistantMessageItem) Render(width int) string {
 	focused := a.sty.Messages.AssistantFocused.Render()
 	blurred := a.sty.Messages.AssistantBlurred.Render()
 	rendered := a.RawRender(width)
-	lines := strings.Split(rendered, "\n")
-	for i, line := range lines {
-		if a.focused {
-			lines[i] = focused + line
-		} else {
-			lines[i] = blurred + line
-		}
+	prefix := blurred
+	if a.focused {
+		prefix = focused
 	}
-	out := strings.Join(lines, "\n")
+	out := renderMessageLines(a.sty, rendered, prefix, width, "RESPONSE")
 	if useCache {
 		a.setCachedPrefixedRender(out, width, key)
 	}
@@ -928,7 +927,7 @@ func (a *AssistantMessageItem) HandleMouseClick(btn ansi.MouseButton, x, y int) 
 	}
 	// Only the thinking box is clickable; other regions of the assistant
 	// message should not trigger expansion.
-	return a.thinkingBoxHeight > 0 && y < a.thinkingBoxHeight
+	return a.thinkingBoxHeight > 0 && y >= a.contentTop && y-a.contentTop < a.thinkingBoxHeight
 }
 
 // HandleKeyEvent implements KeyEventHandler.
