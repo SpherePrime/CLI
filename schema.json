@@ -1015,7 +1015,11 @@
             "dashboard",
             "terminal",
             "studio",
-            "neon"
+            "neon",
+            "opencode",
+            "paper",
+            "blueprint",
+            "ember"
           ],
           "description": "Interface layout and panel design",
           "default": "classic"
@@ -1090,7 +1094,10 @@
             "solarized",
             "ocean",
             "cyberpunk",
-            "sunset"
+            "sunset",
+            "graphite",
+            "paper",
+            "cobalt"
           ],
           "description": "UI color theme"
         }

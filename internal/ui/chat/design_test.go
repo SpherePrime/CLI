@@ -41,7 +41,7 @@ func TestCardsFrameToolCalls(t *testing.T) {
 }
 
 func TestDesignFullFrameAndCopy(t *testing.T) {
-	for _, design := range []string{"cards", "dashboard", "studio", "neon"} {
+	for _, design := range []string{"cards", "dashboard", "studio", "neon", "blueprint"} {
 		t.Run(design, func(t *testing.T) {
 			sty := styles.ApplyDesign(styles.ColorTonePantera(), design)
 			sty.Design = design
@@ -64,6 +64,22 @@ func TestDesignFullFrameAndCopy(t *testing.T) {
 	}
 }
 
+func TestAdditionalDesignPrefixesAndCopy(t *testing.T) {
+	for _, test := range []struct{ design, prefix string }{{"opencode", "┃ "}, {"paper", "› "}, {"ember", "▌ "}} {
+		t.Run(test.design, func(t *testing.T) {
+			sty := styles.ColorTonePantera()
+			sty.Design = test.design
+			item := newTestUserItem(t, "Hello world")
+			item.sty = &sty
+			require.True(t, strings.HasPrefix(ansi.Strip(item.Render(30)), test.prefix))
+			item.SetHighlight(0, 2, 0, 7)
+			startLine, startCol, endLine, endCol := item.Highlight()
+			selected := list.HighlightContent(item.RawRender(30), image.Rect(0, 0, 30, 1), startLine, startCol, endLine, endCol)
+			require.Equal(t, "Hello", strings.TrimSpace(selected))
+		})
+	}
+}
+
 func TestDesignSwitchChangesCachedMessages(t *testing.T) {
 	sty := styles.ApplyDesign(styles.ColorTonePantera(), "cards")
 	item := newTestUserItem(t, "Hello world")
@@ -76,6 +92,11 @@ func TestDesignSwitchChangesCachedMessages(t *testing.T) {
 	sty.Design = "minimal"
 	rendered = ansi.Strip(item.Render(30))
 	require.True(t, strings.HasPrefix(rendered, "  "))
+	sty = styles.ApplyDesign(sty, "blueprint")
+	sty.Design = "blueprint"
+	rendered = ansi.Strip(item.Render(30))
+	require.Contains(t, rendered, "YOU")
+	require.Contains(t, rendered, "┌")
 }
 
 func TestDesignFrameHeaderDoesNotToggleThinking(t *testing.T) {

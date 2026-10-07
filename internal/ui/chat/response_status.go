@@ -17,6 +17,14 @@ func responseWorkingLabel(design, state string) string {
 		return "ACTIVITY · " + state
 	case "neon":
 		return "LIVE · " + state
+	case "blueprint":
+		return "BUILD / " + state
+	case "opencode":
+		return "TASK · " + state
+	case "paper":
+		return state
+	case "ember":
+		return "ACTIVE · " + state
 	default:
 		return state
 	}
@@ -38,6 +46,12 @@ func renderResponseFooter(sty *styles.Styles, content, prefix string, width int,
 	}
 	if sty.Design == "minimal" || sty.Design == "focus" {
 		return ansi.Truncate("✓ "+content, width, "")
+	}
+	if sty.Design == "opencode" || sty.Design == "ember" {
+		return renderMessageLines(sty, title+" · "+content, prefix, width, title)
+	}
+	if sty.Design == "paper" {
+		return ansi.Truncate("· "+content, width, "")
 	}
 	return renderMessageLines(sty, content, prefix, width, title)
 }

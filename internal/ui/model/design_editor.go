@@ -7,6 +7,9 @@ func (m *UI) editorChromeParts(width int) (caption, footer string) {
 		return "", ""
 	}
 	switch m.com.Styles.Design {
+	case "opencode", "paper", "blueprint", "ember":
+		caption = m.com.L("editor.design.compose")
+		footer = m.com.L("editor.design.actions")
 	case "cards":
 		caption = m.com.L("editor.design.new_message")
 		footer = m.com.L("editor.design.actions")
@@ -19,7 +22,7 @@ func (m *UI) editorChromeParts(width int) (caption, footer string) {
 		caption = m.com.L("editor.design.transmit")
 		footer = m.com.L("editor.design.actions")
 	}
-	if caption != "" && (m.com.Styles.Design == "dashboard" || m.com.Styles.Design == "studio" || m.com.Styles.Design == "neon") {
+	if caption != "" && (m.com.Styles.Design == "dashboard" || m.com.Styles.Design == "studio" || m.com.Styles.Design == "neon" || m.com.Styles.Design == "opencode" || m.com.Styles.Design == "blueprint" || m.com.Styles.Design == "ember") {
 		mode := "CODE"
 		if m.mode == uiInputModePlan {
 			mode = "PLAN"

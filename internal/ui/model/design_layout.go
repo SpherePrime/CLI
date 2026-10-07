@@ -72,19 +72,12 @@ func (m *UI) generateDesignLayout(width, height, editorHeight, helpHeight int) u
 	}
 	editorHeight = fitLowerPane(editorHeight, center.Dy())
 	chatArea := center
-	if spec.InputTop {
-		l.editor = image.Rect(center.Min.X, center.Min.Y, center.Max.X, center.Min.Y+editorHeight)
-		chatArea.Min.Y = l.editor.Max.Y
-		if chatArea.Dy() > 2 {
-			chatArea.Min.Y++
-		}
-	} else {
-		l.editor = image.Rect(center.Min.X, center.Max.Y-editorHeight, center.Max.X, center.Max.Y)
-		chatArea.Max.Y = l.editor.Min.Y
-		if chatArea.Dy() > 2 {
-			chatArea.Max.Y--
-		}
+	l.editor = image.Rect(center.Min.X, center.Max.Y-editorHeight, center.Max.X, center.Max.Y)
+	chatArea.Max.Y = l.editor.Min.Y
+	if chatArea.Dy() > 2 {
+		chatArea.Max.Y--
 	}
+
 	if spec.Sidebar == "bottom" && !m.forceCompactMode && width >= 80 && height >= 26 {
 		dockHeight := fitLowerPane(4, chatArea.Dy())
 		l.sidebar = image.Rect(chatArea.Min.X, chatArea.Max.Y-dockHeight, chatArea.Max.X, chatArea.Max.Y)

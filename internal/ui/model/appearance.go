@@ -70,7 +70,7 @@ func (m *UI) selectAppearance(action dialog.ActionSelectAppearance) error {
 }
 
 func (m *UI) designHidesSidebar() bool {
-	return m.com.Styles.Design == "focus" || m.com.Styles.Design == "minimal"
+	return m.customDesign() && appearance.DesignSpec(m.com.Styles.Design).Sidebar == ""
 }
 func (m *UI) designSidebarWidth() int {
 	switch m.com.Styles.Design {

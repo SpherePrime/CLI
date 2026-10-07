@@ -16,13 +16,13 @@ import (
 )
 
 func TestDesignScreensKeepEditorAndMessagesVisible(t *testing.T) {
-	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "neon"} {
+	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "neon", "opencode", "paper", "blueprint", "ember"} {
 		t.Run(design, func(t *testing.T) {
 			u, _ := newAppearanceFlowUI(t)
 			u.width, u.height = 160, 44
 			u.status = NewStatus(u.com, u)
 			u.session = &session.Session{ID: "preview", Title: "CLI interface designs"}
-			*u.com.Styles = styles.ResolveTheme("", "acme", design)
+			u.applyTheme(styles.ResolveTheme("", "acme", design))
 			u.setEditorPrompt(false)
 			u.textarea.SetValue("Improve the command palette and verify the result.")
 			user := &message.Message{ID: "user-preview", Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "Add interface designs and a theme picker."}}}

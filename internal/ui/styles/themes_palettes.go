@@ -5,6 +5,9 @@ import "github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 type themePalette struct{ background, surface, elevated, foreground, muted, primary, secondary, accent string }
 
 var namedPalettes = map[string]themePalette{
+	"graphite":   {"#151515", "#222222", "#383838", "#E8E3DC", "#AAA39A", "#E5A45E", "#D2CCC3", "#7AB8A1"},
+	"paper":      {"#F4F1EA", "#E8E3D8", "#D4CCBD", "#282E38", "#555B65", "#365E8D", "#8B4C5D", "#8D612C"},
+	"cobalt":     {"#0B1525", "#13233A", "#254666", "#D9ECFF", "#91AEC7", "#63B3FF", "#7DE0D5", "#E9B75D"},
 	"hyper":      {"#100D16", "#211829", "#3B2A46", "#F5ECFA", "#B9A5C4", "#E879F9", "#A78BFA", "#F472B6"},
 	"dracula":    {"#282A36", "#303241", "#44475A", "#F8F8F2", "#A5A7C4", "#BD93F9", "#FF79C6", "#50FA7B"},
 	"nord":       {"#2E3440", "#343C49", "#434C5E", "#ECEFF4", "#A7B4C8", "#88C0D0", "#81A1C1", "#A3BE8C"},
@@ -20,14 +23,26 @@ var namedPalettes = map[string]themePalette{
 func namedPaletteTheme(name string) Styles {
 	p := namedPalettes[name]
 	c := lipgloss.Color
-	return pantheraBase(quickStyleOpts{
+	errorColor, warningColor, successColor := "#FF8095", "#FCD34D", "#4ADE80"
+	if name == "paper" {
+		errorColor, warningColor, successColor = "#AE2942", "#805E17", "#20643C"
+	}
+	infoMuted, successMuted := p.elevated, p.elevated
+	if name == "paper" {
+		infoMuted, successMuted = p.muted, successColor
+	}
+	theme := pantheraBase(quickStyleOpts{
 		primary: c(p.primary), secondary: c(p.secondary), accent: c(p.accent), keyword: c(p.secondary),
 		fgBase: c(p.foreground), fgMoreSubtle: c(p.muted), fgSubtle: c(p.muted), fgMostSubtle: c(p.muted), onPrimary: c(p.background),
 		bgBase: c(p.background), bgLeastVisible: c(p.surface), bgLessVisible: c(p.surface), bgMostVisible: c(p.elevated), separator: c(p.elevated),
-		destructive: c("#F87171"), error: c("#FF8095"), warningSubtle: c("#FDE68A"), warning: c("#FCD34D"), attention: c(p.accent), busy: c(p.secondary),
-		info: c(p.primary), infoMoreSubtle: c(p.secondary), infoMostSubtle: c(p.elevated), success: c("#86EFAC"), successMoreSubtle: c("#4ADE80"), successMostSubtle: c(p.elevated),
+		destructive: c(errorColor), error: c(errorColor), warningSubtle: c(warningColor), warning: c(warningColor), attention: c(p.accent), busy: c(p.secondary),
+		info: c(p.primary), infoMoreSubtle: c(p.secondary), infoMostSubtle: c(infoMuted), success: c(successColor), successMoreSubtle: c(successColor), successMostSubtle: c(successMuted),
 		yolo: c(p.accent), plan: c(p.primary), planMoreSubtle: c(p.secondary),
 		ansiBlack: c(p.background), ansiRed: c("#F87171"), ansiGreen: c("#86EFAC"), ansiYellow: c("#FCD34D"), ansiBlue: c(p.primary), ansiMagenta: c(p.secondary), ansiCyan: c(p.accent), ansiWhite: c(p.foreground),
 		ansiBrightBlack: c(p.muted), ansiBrightRed: c("#FDA4AF"), ansiBrightGreen: c("#BBF7D0"), ansiBrightYellow: c("#FEF08A"), ansiBrightBlue: c(p.primary), ansiBrightMagenta: c(p.secondary), ansiBrightCyan: c(p.accent), ansiBrightWhite: c("#FFFFFF"),
 	})
+	if name == "paper" {
+		return applyPaperTheme(theme)
+	}
+	return theme
 }

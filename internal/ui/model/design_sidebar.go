@@ -12,6 +12,9 @@ import (
 func (m *UI) updateDesignSidebarScrollState() {
 	area := m.layout.sidebar
 	if area.Dx() <= 0 || area.Dy() <= 0 || m.session == nil {
+		m.sidebarScrollable = false
+		m.sidebarMaxOffsetVal = 0
+		m.sidebarOffset = 0
 		m.sidebarScrollbarTrack = common.ScrollbarTrack{}
 		return
 	}
