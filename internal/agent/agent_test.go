@@ -1,10 +1,10 @@
 package agent
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log/slog"
-	"strings"
 	"testing"
 	"time"
 
@@ -750,41 +750,75 @@ func TestProviderRetryLogFields(t *testing.T) {
 	})
 }
 
-func TestTruncateMessagesForContext_NoTruncationNeeded(t *testing.T) {
-	msgs := []fantasy.Message{
-		fantasy.NewUserMessage("hello"),
-		{Role: fantasy.MessageRoleAssistant, Content: []fantasy.MessagePart{fantasy.TextPart{Text: "world"}}},
+func TestWriteSessionContextSummary_CreatesFileWithKeyPoints(t *testing.T) {
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+	sessionID := "test-session"
+
+	msgs := []message.Message{
+		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "user prompt one"}}},
+		{Role: message.Assistant, Parts: []message.ContentPart{message.TextContent{Text: "assistant response one"}}},
+		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "user prompt two"}}},
 	}
-	result := truncateMessagesForContext(msgs, 10000, 1000)
-	require.Equal(t, msgs, result)
+	aiMsgs := []fantasy.Message{
+		fantasy.NewUserMessage("test"),
+	}
+
+	summary, err := writeSessionContextSummary(ctx, tmpDir, sessionID, msgs, aiMsgs)
+	require.NoError(t, err)
+	require.NotEmpty(t, summary)
+	require.Contains(t, summary, "# Conversation Context Summary")
+	require.Contains(t, summary, "user prompt one")
+	require.Contains(t, summary, "assistant response one")
+	require.Contains(t, summary, "user prompt two")
 }
 
-func TestTruncateMessagesForContext_TruncatesOldMessages(t *testing.T) {
-	longText := strings.Repeat("a", 4000)
-	msgs := []fantasy.Message{
-		fantasy.NewUserMessage(longText),
-		{Role: fantasy.MessageRoleAssistant, Content: []fantasy.MessagePart{fantasy.TextPart{Text: "response1"}}},
-		fantasy.NewUserMessage("final question"),
-	}
-	result := truncateMessagesForContext(msgs, 1000, 400)
-	require.Less(t, len(result), len(msgs))
-	lastMsg := result[len(result)-1]
-	require.Equal(t, "final question", lastMsg.Content[0].(fantasy.TextPart).Text)
-}
+func TestBuildSummaryMessagesFromContextFile_ReturnsSingleMessage(t *testing.T) {
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+	sessionID := "test-session-2"
 
-func TestTruncateMessagesForContext_PreservesLastMessage(t *testing.T) {
-	longText := strings.Repeat("a", 1000)
-	msgs := []fantasy.Message{
-		fantasy.NewUserMessage(longText),
-		fantasy.NewUserMessage("final"),
+	msgs := []message.Message{
+		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "hello world"}}},
 	}
-	result := truncateMessagesForContext(msgs, 200, 50)
+	aiMsgs := []fantasy.Message{
+		fantasy.NewUserMessage("original prompt"),
+	}
+
+	result := buildSummaryMessagesFromContextFile(ctx, sessionID, tmpDir, aiMsgs, msgs)
 	require.Len(t, result, 1)
-	require.Equal(t, "final", result[0].Content[0].(fantasy.TextPart).Text)
+	text, ok := fantasy.AsMessagePart[fantasy.TextPart](result[0].Content[0])
+	require.True(t, ok)
+	require.Contains(t, text.Text, "hello world")
+	require.Contains(t, text.Text, "# Conversation Context Summary")
 }
 
-func TestTruncateMessagesForContext_EmptyOrZeroContextWindow(t *testing.T) {
-	msgs := []fantasy.Message{fantasy.NewUserMessage("hello")}
-	require.Equal(t, msgs, truncateMessagesForContext(msgs, 0, 1000))
-	require.Equal(t, []fantasy.Message(nil), truncateMessagesForContext(nil, 10000, 1000))
+func TestBuildSummaryMessagesFromContextFile_FallbackOnNoDataDir(t *testing.T) {
+	ctx := context.Background()
+	sessionID := "test-session-3"
+
+	aiMsgs := []fantasy.Message{
+		fantasy.NewUserMessage("original prompt"),
+	}
+	msgs := []message.Message{
+		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "hello"}}},
+	}
+
+	result := buildSummaryMessagesFromContextFile(ctx, sessionID, "", aiMsgs, msgs)
+	require.Equal(t, aiMsgs, result)
+}
+
+func TestWriteSessionContextSummary_SanitizesSessionID(t *testing.T) {
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+	sessionID := "session/with/bad:chars"
+
+	msgs := []message.Message{
+		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "prompt"}}},
+	}
+	aiMsgs := []fantasy.Message{}
+
+	summary, err := writeSessionContextSummary(ctx, tmpDir, sessionID, msgs, aiMsgs)
+	require.NoError(t, err)
+	require.NotEmpty(t, summary)
 }

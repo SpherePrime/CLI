@@ -805,6 +805,7 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 		Notify:               c.notify,
 		RunComplete:          c.runComplete,
 		MaxParallelTools:     c.cfg.Config().Options.GetMaxParallelTools(),
+		DataDir:              c.cfg.Config().Options.DataDirectory,
 	})
 
 	// The readiness goroutines below perform one-time setup — building the
