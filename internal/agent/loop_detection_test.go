@@ -48,6 +48,19 @@ func makeEmptyStep() fantasy.StepResult {
 }
 
 func TestHasRepeatedToolCalls(t *testing.T) {
+	t.Run("alternating empty searches", func(t *testing.T) {
+		var steps []fantasy.StepResult
+		for i := range 10 {
+			pattern := "tools"
+			if i%2 == 0 {
+				pattern = "tools_supported|supports_tools"
+			}
+			steps = append(steps, makeToolStep("grep", fmt.Sprintf(`{"pattern":%q}`, pattern), "No files found"))
+		}
+		if !hasRepeatedToolCalls(steps, 10, 5) {
+			t.Fatal("alternating empty searches must be detected")
+		}
+	})
 	t.Run("no steps", func(t *testing.T) {
 		result := hasRepeatedToolCalls(nil, 10, 5)
 		if result {
