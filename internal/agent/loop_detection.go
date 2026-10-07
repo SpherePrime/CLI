@@ -17,6 +17,9 @@ const (
 // at recent steps. It examines the last windowSize steps and returns true if
 // any tool-call signature appears more than maxRepeats times.
 func hasRepeatedToolCalls(steps []fantasy.StepResult, windowSize, maxRepeats int) bool {
+	if hasRepeatedEmptySearches(steps) {
+		return true
+	}
 	if len(steps) < windowSize {
 		return false
 	}
@@ -25,6 +28,9 @@ func hasRepeatedToolCalls(steps []fantasy.StepResult, windowSize, maxRepeats int
 	counts := make(map[string]int)
 
 	for _, step := range window {
+		if _, empty := emptySearchSignature(step.Content); empty {
+			continue
+		}
 		sig := getToolInteractionSignature(step.Content)
 		if sig == "" {
 			continue
