@@ -1379,6 +1379,19 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 
 	aiMsgs, _ := a.preparePrompt(msgs, largeModel.CatwalkCfg.SupportsImages)
 
+	// Truncate the prompt to fit within the model's context window.
+	// Auto-summarize fires when the context is already percent% full, so
+	// the full history would overflow the summarize request itself and the
+	// provider rejects it with a stream error. Leave headroom for the
+	// summary output.
+	if cw := int64(largeModel.CatwalkCfg.ContextWindow); cw > 0 {
+		maxOutput := largeModel.CatwalkCfg.DefaultMaxTokens
+		if maxOutput <= 0 {
+			maxOutput = 4096
+		}
+		aiMsgs = truncateMessagesForContext(aiMsgs, cw, maxOutput)
+	}
+
 	genCtx, cancel := context.WithCancel(ctx)
 	ac := &activeCancel{cancel: cancel}
 	a.activeRequests.Set(sessionID, ac)
@@ -1655,6 +1668,29 @@ If not, please feel free to ignore. Again do not mention this message to the use
 	}
 
 	return history, files
+}
+
+// truncateMessagesForContext drops the oldest messages from the front of the
+// history slice until the estimated token count fits within contextWindow minus
+// maxOutputTokens (which reserves room for the model's response). It preserves
+// at least the last message so the model always has something to summarize;
+// callers rely on the summary prompt to guide truncation.
+func truncateMessagesForContext(messages []fantasy.Message, contextWindow, maxOutputTokens int64) []fantasy.Message {
+	if len(messages) == 0 || contextWindow <= 0 {
+		return messages
+	}
+	budget := contextWindow - maxOutputTokens
+	if budget <= 0 {
+		return messages
+	}
+	for len(messages) > 1 {
+		tokens := estimateMessageTokens(messages)
+		if tokens <= budget {
+			break
+		}
+		messages = messages[1:]
+	}
+	return messages
 }
 
 // filterFileParts removes fantasy.FilePart entries from a slice of message

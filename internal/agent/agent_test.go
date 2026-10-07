@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -747,4 +748,43 @@ func TestProviderRetryLogFields(t *testing.T) {
 			"status_code", 503,
 		}, fields)
 	})
+}
+
+func TestTruncateMessagesForContext_NoTruncationNeeded(t *testing.T) {
+	msgs := []fantasy.Message{
+		fantasy.NewUserMessage("hello"),
+		{Role: fantasy.MessageRoleAssistant, Content: []fantasy.MessagePart{fantasy.TextPart{Text: "world"}}},
+	}
+	result := truncateMessagesForContext(msgs, 10000, 1000)
+	require.Equal(t, msgs, result)
+}
+
+func TestTruncateMessagesForContext_TruncatesOldMessages(t *testing.T) {
+	longText := strings.Repeat("a", 4000)
+	msgs := []fantasy.Message{
+		fantasy.NewUserMessage(longText),
+		{Role: fantasy.MessageRoleAssistant, Content: []fantasy.MessagePart{fantasy.TextPart{Text: "response1"}}},
+		fantasy.NewUserMessage("final question"),
+	}
+	result := truncateMessagesForContext(msgs, 1000, 400)
+	require.Less(t, len(result), len(msgs))
+	lastMsg := result[len(result)-1]
+	require.Equal(t, "final question", lastMsg.Content[0].(fantasy.TextPart).Text)
+}
+
+func TestTruncateMessagesForContext_PreservesLastMessage(t *testing.T) {
+	longText := strings.Repeat("a", 1000)
+	msgs := []fantasy.Message{
+		fantasy.NewUserMessage(longText),
+		fantasy.NewUserMessage("final"),
+	}
+	result := truncateMessagesForContext(msgs, 200, 50)
+	require.Len(t, result, 1)
+	require.Equal(t, "final", result[0].Content[0].(fantasy.TextPart).Text)
+}
+
+func TestTruncateMessagesForContext_EmptyOrZeroContextWindow(t *testing.T) {
+	msgs := []fantasy.Message{fantasy.NewUserMessage("hello")}
+	require.Equal(t, msgs, truncateMessagesForContext(msgs, 0, 1000))
+	require.Equal(t, []fantasy.Message(nil), truncateMessagesForContext(nil, 10000, 1000))
 }
