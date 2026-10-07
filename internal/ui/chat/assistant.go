@@ -247,7 +247,8 @@ func NewAssistantMessageItem(sty *styles.Styles, message *message.Message) Messa
 
 	a.anim = anim.New(anim.Settings{
 		ID:          a.ID(),
-		Size:        15,
+		Size:        0,
+		NoScramble:  true,
 		GradColorA:  sty.WorkingGradFromColor,
 		GradColorB:  sty.WorkingGradToColor,
 		GradStops:   sty.Iridescence,
@@ -767,11 +768,13 @@ func (a *AssistantMessageItem) renderMarkdown(content string, width int) string 
 }
 
 func (a *AssistantMessageItem) renderSpinning() string {
+	label := "Working"
 	if a.message.IsThinking() {
-		a.anim.SetLabel("Thinking")
+		label = "Thinking"
 	} else if a.message.IsSummaryMessage {
-		a.anim.SetLabel("Summarizing")
+		label = "Summarizing"
 	}
+	a.anim.SetLabel(responseWorkingLabel(a.sty.Design, label))
 	return a.anim.Render()
 }
 

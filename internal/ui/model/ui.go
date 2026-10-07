@@ -3598,11 +3598,11 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		m.updateSidebarScrollState()
 	}
 
+	if !m.isTransparent {
+		scr = backgroundScreen{Screen: scr, background: m.com.Styles.Background}
+	}
 	// Clear the screen first
 	screen.Clear(scr)
-	if !m.isTransparent && area.Dx() > 0 && area.Dy() > 0 {
-		uv.NewStyledString(m.com.Styles.Canvas.Width(area.Dx()).Height(area.Dy()).Render("")).Draw(scr, area)
-	}
 
 	switch m.state {
 	case uiOnboarding:
@@ -3772,9 +3772,6 @@ func mouseMode(enabled, inlineActive bool) tea.MouseMode {
 func (m *UI) View() tea.View {
 	var v tea.View
 	v.AltScreen = true
-	if !m.isTransparent {
-		v.BackgroundColor = m.com.Styles.Background
-	}
 	v.MouseMode = mouseMode(m.mouseEnabled, m.activeInline != nil)
 	v.ReportFocus = m.caps.ReportFocusEvents
 	if m.session != nil && m.session.Title != "" && m.session.Title != "Untitled Session" {
