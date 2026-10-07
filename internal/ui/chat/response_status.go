@@ -5,31 +5,6 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
-func responseWorkingLabel(design, state string) string {
-	switch design {
-	case "cards":
-		return "IN PROGRESS · " + state
-	case "dashboard":
-		return "STATUS / " + state
-	case "terminal":
-		return "RUN · " + state
-	case "studio":
-		return "ACTIVITY · " + state
-	case "neon":
-		return "LIVE · " + state
-	case "blueprint":
-		return "BUILD / " + state
-	case "opencode":
-		return "TASK · " + state
-	case "paper":
-		return state
-	case "ember":
-		return "ACTIVE · " + state
-	default:
-		return state
-	}
-}
-
 func renderResponseFooter(sty *styles.Styles, content, prefix string, width int, final bool) string {
 	if width <= 0 {
 		return ""
