@@ -14,6 +14,7 @@ func Themes() []Preset {
 		{"gruvbox", "Gruvbox", "Earth / copper"}, {"solarized", "Solarized", "Teal / sand"},
 		{"ocean", "Ocean", "Deep blue / aqua"}, {"cyberpunk", "Cyberpunk", "Electric pink / yellow"},
 		{"sunset", "Sunset", "Coral / warm purple"},
+		{"graphite", "Graphite", "Neutral black / amber"}, {"paper", "Paper", "Warm white / ink"}, {"cobalt", "Cobalt", "Navy / electric blue"},
 	}
 }
 func Designs() []Preset {

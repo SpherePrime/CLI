@@ -15,9 +15,10 @@ import (
 )
 
 func TestResponseStatusRemainsReadableAcrossDesigns(t *testing.T) {
-	for _, design := range []string{"classic", "minimal", "cards", "dashboard", "terminal", "studio", "focus", "neon"} {
+	for _, design := range []string{"classic", "minimal", "cards", "dashboard", "terminal", "studio", "focus", "neon", "opencode", "paper", "blueprint", "ember"} {
 		t.Run(design, func(t *testing.T) {
 			sty := styles.ApplyDesign(styles.ColorTonePantera(), design)
+			sty.Design = design
 			item := NewAssistantMessageItem(&sty, &message.Message{ID: "running", Role: message.Assistant}).(*AssistantMessageItem)
 			for range 30 {
 				status := ansi.Strip(item.renderSpinning())
@@ -51,10 +52,30 @@ func TestResponseStatusUsesCurrentState(t *testing.T) {
 	require.Contains(t, ansi.Strip(item.renderSpinning()), "Working")
 }
 
+func TestAdditionalDesignResponseStatus(t *testing.T) {
+	for _, test := range []struct{ design, working, footer string }{
+		{"opencode", "TASK · Working", "│ DONE · "},
+		{"paper", "Working", "· "},
+		{"blueprint", "BUILD / Working", "┌ DONE "},
+		{"ember", "ACTIVE · Working", "▌ DONE · "},
+	} {
+		t.Run(test.design, func(t *testing.T) {
+			sty := styles.ApplyDesign(styles.ColorTonePantera(), test.design)
+			sty.Design = test.design
+			item := NewAssistantMessageItem(&sty, &message.Message{ID: "running", Role: message.Assistant}).(*AssistantMessageItem)
+			require.True(t, strings.HasPrefix(ansi.Strip(item.renderSpinning()), test.working))
+			cfg := &config.Config{Providers: csync.NewMap[string, config.ProviderConfig]()}
+			info := NewAssistantInfoItem(&sty, finishedAssistantMessage("finished", "Done"), cfg, time.Unix(0, 0)).(*AssistantInfoItem)
+			require.True(t, strings.HasPrefix(ansi.Strip(info.Render(80)), test.footer))
+		})
+	}
+}
+
 func TestResponseFooterFollowsDesignAndWidth(t *testing.T) {
-	for _, design := range []string{"classic", "minimal", "cards", "dashboard", "terminal", "studio", "focus", "neon"} {
+	for _, design := range []string{"classic", "minimal", "cards", "dashboard", "terminal", "studio", "focus", "neon", "opencode", "paper", "blueprint", "ember"} {
 		t.Run(design, func(t *testing.T) {
 			sty := styles.ApplyDesign(styles.ColorTonePantera(), design)
+			sty.Design = design
 			msg := finishedAssistantMessage("finished", "Done")
 			cfg := &config.Config{Providers: csync.NewMap[string, config.ProviderConfig]()}
 			item := NewAssistantInfoItem(&sty, msg, cfg, time.Unix(0, 0)).(*AssistantInfoItem)

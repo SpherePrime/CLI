@@ -9,7 +9,7 @@ import (
 )
 
 func messageFramed(sty *styles.Styles, width int) bool {
-	return width >= 8 && (sty.Design == "cards" || sty.Design == "dashboard" || sty.Design == "studio" || sty.Design == "neon")
+	return width >= 8 && (sty.Design == "cards" || sty.Design == "dashboard" || sty.Design == "studio" || sty.Design == "neon" || sty.Design == "blueprint")
 }
 
 func rawMessageLines(sty *styles.Styles, content string, width int) string {
@@ -47,6 +47,9 @@ func renderMessageLines(sty *styles.Styles, content, prefix string, width int, t
 	border := sty.MessageFrame.GetBorderStyle()
 	if border.Top == "" {
 		border = lipgloss.RoundedBorder()
+		if sty.Design == "blueprint" {
+			border = lipgloss.NormalBorder()
+		}
 	}
 	frameColor := lipgloss.NewStyle().Foreground(sty.MessageFrame.GetBorderLeftForeground()).Background(sty.MessageFrame.GetBackground())
 	background := lipgloss.NewStyle().Background(sty.MessageFrame.GetBackground())
@@ -65,6 +68,24 @@ func renderMessageLines(sty *styles.Styles, content, prefix string, width int, t
 		}
 	} else if sty.Design == "minimal" || sty.Design == "focus" {
 		prefix = "  "
+	} else if sty.Design == "opencode" {
+		prefix = "│ "
+		if title == "YOU" {
+			prefix = "┃ "
+		} else if title == "TOOL" {
+			prefix = "┆ "
+		}
+		prefix = lipgloss.NewStyle().Foreground(sty.Header.Label.GetForeground()).Render(prefix)
+	} else if sty.Design == "paper" {
+		prefix = "  "
+		if title == "YOU" {
+			prefix = "› "
+		} else if title == "TOOL" {
+			prefix = "· "
+		}
+		prefix = lipgloss.NewStyle().Foreground(sty.Header.Label.GetForeground()).Render(prefix)
+	} else if sty.Design == "ember" {
+		prefix = lipgloss.NewStyle().Foreground(sty.Header.Label.GetForeground()).Render("▌ ")
 	}
 	for i, line := range lines {
 		if framed {

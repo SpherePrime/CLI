@@ -10,7 +10,7 @@ import (
 )
 
 func TestDesignEditorsHaveDistinctChromeAndAccurateCursor(t *testing.T) {
-	cases := []struct{ design, caption string }{{"minimal", ">"}, {"cards", "NEW MESSAGE"}, {"focus", "MESSAGE"}, {"dashboard", "COMPOSE"}, {"terminal", "$"}, {"studio", "COMPOSE"}, {"neon", "TRANSMIT"}}
+	cases := []struct{ design, caption string }{{"minimal", ">"}, {"cards", "NEW MESSAGE"}, {"focus", "MESSAGE"}, {"dashboard", "COMPOSE"}, {"terminal", "$"}, {"studio", "COMPOSE"}, {"neon", "TRANSMIT"}, {"opencode", "COMPOSE"}, {"paper", "COMPOSE"}, {"blueprint", "COMPOSE"}, {"ember", "COMPOSE"}}
 	for _, tc := range cases {
 		t.Run(tc.design, func(t *testing.T) {
 			u := newSelectionTestUI()

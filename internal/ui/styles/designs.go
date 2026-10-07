@@ -52,6 +52,8 @@ func ApplyDesign(s Styles, name string) Styles {
 	case "studio":
 		panel = panel.Border(lipgloss.NormalBorder(), true, false, false, false).Padding(0, 2)
 		s.DesignSidebar = s.DesignSidebar.Border(lipgloss.NormalBorder(), false, true, false, false)
+	case "opencode", "paper", "blueprint", "ember":
+		s, panel, border = applyAdditionalDesign(s, panel, border, primary, accent, surface, foreground)
 	case "neon":
 		border = lipgloss.ThickBorder()
 		panel = panel.Border(border).BorderForeground(accent).Padding(1, 2)
@@ -62,7 +64,7 @@ func ApplyDesign(s Styles, name string) Styles {
 	}
 	s.Editor.PanelFocused = panel
 	s.Editor.PanelBlurred = panel.BorderForeground(s.Header.WorkingDir.GetForeground())
-	if s.Design == "cards" || s.Design == "dashboard" || s.Design == "studio" || s.Design == "neon" {
+	if s.Design == "cards" || s.Design == "dashboard" || s.Design == "studio" || s.Design == "neon" || s.Design == "blueprint" {
 		s.MessageFrame = lipgloss.NewStyle().Border(border).BorderForeground(primary).Background(surface).Foreground(foreground).Padding(0, 1)
 		s.Messages.PlanBox = s.Messages.PlanBox.Border(border).Padding(1, 2)
 		s.Messages.ThinkingBox = s.Messages.ThinkingBox.Border(border).BorderForeground(accent).Padding(0, 1)

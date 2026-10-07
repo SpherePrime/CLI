@@ -8,7 +8,7 @@ import (
 )
 
 func TestDesignDrawKeepsBackgroundOnEveryCell(t *testing.T) {
-	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "neon"} {
+	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "neon", "opencode", "paper", "blueprint", "ember"} {
 		t.Run(design, func(t *testing.T) {
 			u, _ := newAppearanceFlowUI(t)
 			u.width, u.height = 160, 44

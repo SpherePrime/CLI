@@ -42,6 +42,14 @@ func (m *UI) drawDesignHeader(scr uv.Screen, area uv.Rectangle) {
 	}
 	var lines []string
 	switch spec.Key {
+	case "opencode":
+		lines = []string{"PRIME / " + title + "    ·    " + m.designModelLabel(), path}
+	case "paper":
+		lines = []string{"P R I M E  /  P A P E R", title + "    ·    " + m.designModelLabel()}
+	case "blueprint":
+		lines = []string{"PRIME  [ WORKSPACE ]  /  BLUEPRINT", title + "    ·    " + m.designModelLabel()}
+	case "ember":
+		lines = []string{"P R I M E  /  E M B E R", title + "    ·    " + m.designModelLabel()}
 	case "minimal":
 		lines = []string{"PRIME  /  " + title + "    ·    " + m.designModelLabel()}
 	case "focus":

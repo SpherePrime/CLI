@@ -26,7 +26,7 @@ func TestDesignChangesLayout(t *testing.T) {
 }
 
 func TestDesignEditorWidthMatchesActualLayout(t *testing.T) {
-	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "neon"} {
+	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "neon", "opencode", "paper", "blueprint", "ember"} {
 		for _, width := range []int{20, 80, 140, 180} {
 			u := layoutTestUI(false, "hello")
 			u.width = width
@@ -58,7 +58,7 @@ func TestCompleteDesignPresetsChangePaletteAndPlacement(t *testing.T) {
 }
 
 func TestDesignLayoutFitsSmallWindows(t *testing.T) {
-	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "neon"} {
+	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "neon", "opencode", "paper", "blueprint", "ember"} {
 		for _, width := range []int{1, 2, 20, 80, 120, 160} {
 			for _, height := range []int{1, 2, 6, 12, 26, 44} {
 				u := layoutTestUI(false, "hello")
