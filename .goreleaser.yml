@@ -28,7 +28,6 @@ builds:
       - GOEXPERIMENT=greenteagc
     goos:
       - windows
-      - linux
     goarch:
       - amd64
       - arm64
@@ -40,6 +39,15 @@ builds:
       # Windows on ARM32 is not a thing.
       - goos: windows
         goarch: arm
+    # - goos:
+    #   - linux
+    # goarch:
+    #   - amd64
+    #   - arm64
+    #   - "386"
+    #   - arm
+    # goarm:
+    #   - "7"
     ldflags:
       - -s -w -X github.com/SpherePrime/CLI/internal/version.Version={{.Version}}
     flags:
@@ -49,47 +57,65 @@ builds:
       # keeping VCS data out keeps the embedded build info clean as well.
       - -buildvcs=false
 
-archives:
-  - name_template: >-
-      prime_
-      {{- .Version }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- with .Arm}}v{{ . }}{{ end }}
-    wrap_in_directory: true
-    files:
-      - README*
-      - manpages/*
-      - completions/*
-    format_overrides:
-      - goos: windows
-        formats: [zip]
+# archives:
+#   - name_template: >-
+#       prime_
+#       {{- .Version }}_
+#       {{- title .Os }}_
+#       {{- if eq .Arch "amd64" }}x86_64
+#       {{- else if eq .Arch "386" }}i386
+#       {{- else }}{{ .Arch }}{{ end }}
+#       {{- with .Arm}}v{{ . }}{{ end }}
+#     wrap_in_directory: true
+#     files:
+#       - README*
+#       - manpages/*
+#       - completions/*
+#     format_overrides:
+#       - goos: windows
+#         formats: [zip]
 
 checksum:
   name_template: "checksums.txt"
 
-nfpms:
-  - formats:
-      - apk
-      - deb
-      - rpm
-      - archlinux
-    file_name_template: "{{ .ConventionalFileName }}"
-    maintainer: "dwertyfa288"
-    vendor: "dwertyfa288"
-    homepage: "https://github.com/SpherePrime/CLI"
-    description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
-    contents:
-      - src: ./completions/prime.bash
-        dst: /etc/bash_completion.d/prime
-      - src: ./completions/prime.fish
-        dst: /usr/share/fish/vendor_completions.d/prime.fish
-      - src: ./completions/prime.zsh
-        dst: /usr/share/zsh/site-functions/_prime
-      - src: ./manpages/prime.1.gz
-        dst: /usr/share/man/man1/prime.1.gz
+# nfpms:
+#   - formats:
+#       - apk
+#       - deb
+#       - rpm
+#       - archlinux
+#     file_name_template: "{{ .ConventionalFileName }}"
+#     maintainer: "dwertyfa288"
+#     vendor: "dwertyfa288"
+#     homepage: "https://github.com/SpherePrime/CLI"
+#     description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
+#     contents:
+#       - src: ./completions/prime.bash
+#         dst: /etc/bash_completion.d/prime
+#       - src: ./completions/prime.fish
+#         dst: /usr/share/fish/vendor_completions.d/prime.fish
+#       - src: ./completions/prime.zsh
+#         dst: /usr/share/zsh/site-functions/_prime
+#       - src: ./manpages/prime.1.gz
+#         dst: /usr/share/man/man1/prime.1.gz
+
+# archives:
+#   - name_template: >-
+#       prime_
+#       {{- .Version }}_
+#       {{- title .Os }}_
+#       {{- if eq .Arch "amd64" }}x86_64
+#       {{- else if eq .Arch "386" }}i386
+#       {{- else }}{{ .Arch }}{{ end }}
+#       {{- with .Arm}}v{{ . }}{{ end }}
+#     wrap_in_directory: true
+#     files:
+#       - README*
+#       - manpages/*
+#       - completions/*
+#     format_overrides:
+#       - goos: windows
+#         formats: [zip]
 
 changelog:
   sort: asc
