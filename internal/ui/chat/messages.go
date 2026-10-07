@@ -6,14 +6,15 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/ui/attachments"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // MessageLeftPaddingTotal is the total width that is taken up by the border +
@@ -292,6 +293,7 @@ type AssistantInfoItem struct {
 	sty                 *styles.Styles
 	cfg                 *config.Config
 	lastUserMessageTime time.Time
+	cachedDesign        string
 }
 
 // NewAssistantInfoItem creates a new AssistantInfoItem.
@@ -321,14 +323,21 @@ func (a *AssistantInfoItem) ID() string {
 
 // RawRender implements MessageItem.
 func (a *AssistantInfoItem) RawRender(width int) string {
-	innerWidth := max(0, width-MessageLeftPaddingTotal)
+	if a.cachedDesign != a.sty.Design {
+		a.clearCache()
+		a.cachedDesign = a.sty.Design
+	}
+	if width <= 0 {
+		return ""
+	}
+	innerWidth := designMessageWidth(a.sty, width)
 	content, _, ok := a.getCachedRender(innerWidth)
 	if !ok {
 		content = a.renderContent(innerWidth)
 		height := lipgloss.Height(content)
 		a.setCachedRender(content, innerWidth, height)
 	}
-	return content
+	return rawMessageLines(a.sty, content, width)
 }
 
 // Render implements MessageItem.
@@ -336,16 +345,15 @@ func (a *AssistantInfoItem) Render(width int) string {
 	// AssistantInfoItem uses a single, state-independent prefix; key 0
 	// is sufficient. The cache is invalidated whenever the underlying
 	// cachedMessageItem render is cleared.
-	if cached, ok := a.getCachedPrefixedRender(width, 0); ok {
+	key := designCacheKey(a.sty, 0)
+	if cached, ok := a.getCachedPrefixedRender(width, key); ok {
 		return cached
 	}
 	prefix := a.sty.Messages.SectionHeader.Render()
-	lines := strings.Split(a.RawRender(width), "\n")
-	for i, line := range lines {
-		lines[i] = prefix + line
-	}
-	out := strings.Join(lines, "\n")
-	a.setCachedPrefixedRender(out, width, 0)
+	finish := a.message.FinishPart()
+	final := finish != nil && finish.Reason == message.FinishReasonEndTurn
+	out := renderResponseFooter(a.sty, a.RawRender(width), prefix, width, final)
+	a.setCachedPrefixedRender(out, width, key)
 	return out
 }
 
@@ -374,9 +382,9 @@ func (a *AssistantInfoItem) renderContent(width int) string {
 	savings := prismSavingsSuffix(a.sty, a.message)
 	if !isFinalTurn {
 		if savings != "" {
-			return fmt.Sprintf("%s %s %s", icon, modelFormatted, savings)
+			return ansi.Truncate(fmt.Sprintf("%s %s %s", icon, modelFormatted, savings), width, "")
 		}
-		return fmt.Sprintf("%s %s", icon, modelFormatted)
+		return ansi.Truncate(fmt.Sprintf("%s %s", icon, modelFormatted), width, "")
 	}
 	providerName := a.message.Provider
 	if providerConfig, ok := a.cfg.Providers.Get(a.message.Provider); ok {
@@ -389,7 +397,10 @@ func (a *AssistantInfoItem) renderContent(width int) string {
 	if savings != "" {
 		assistant = fmt.Sprintf("%s %s", assistant, savings)
 	}
-	return common.Section(a.sty, assistant, width)
+	if a.sty.Design == "classic" || a.sty.Design == "" {
+		return common.Section(a.sty, ansi.Truncate(assistant, width, ""), width)
+	}
+	return ansi.Truncate(assistant, width, "")
 }
 
 // cappedMessageWidth returns the maximum width for message content for readability.

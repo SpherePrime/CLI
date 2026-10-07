@@ -26,10 +26,10 @@ func TestDesignScreensKeepEditorAndMessagesVisible(t *testing.T) {
 			u.setEditorPrompt(false)
 			u.textarea.SetValue("Improve the command palette and verify the result.")
 			user := &message.Message{ID: "user-preview", Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "Add interface designs and a theme picker."}}}
-			reply := &message.Message{ID: "reply-preview", Role: message.Assistant, Parts: []message.ContentPart{message.TextContent{Text: "The command palette now contains interface designs and color themes. Selection is saved between sessions."}, message.Finish{Reason: message.FinishReasonEndTurn, Time: time.Now().Unix()}}}
+			reply := &message.Message{ID: "reply-preview", Role: message.Assistant, Model: "fast", Provider: "acme", Parts: []message.ContentPart{message.TextContent{Text: "The command palette now contains interface designs and color themes. Selection is saved between sessions."}, message.Finish{Reason: message.FinishReasonEndTurn, Time: time.Now().Unix()}}}
 			call := message.ToolCall{ID: "grep-preview", Name: "grep", Finished: true, Input: `{"pattern":"theme", "path":"internal/ui"}`}
 			result := &message.ToolResult{ToolCallID: call.ID, Content: "internal/ui/styles/theme_catalog.go:14: ThemeForName"}
-			u.chat.SetMessages(chat.NewUserMessageItem(u.com.Styles, user, nil), chat.NewGrepToolMessageItem(u.com.Styles, call, result, false), chat.NewAssistantMessageItem(u.com.Styles, reply))
+			u.chat.SetMessages(chat.NewUserMessageItem(u.com.Styles, user, nil), chat.NewGrepToolMessageItem(u.com.Styles, call, result, false), chat.NewAssistantMessageItem(u.com.Styles, reply), chat.NewAssistantInfoItem(u.com.Styles, reply, u.com.Config(), time.Now().Add(-3*time.Second)), chat.NewAssistantMessageItem(u.com.Styles, &message.Message{ID: "working-preview", Role: message.Assistant}))
 			u.updateLayoutAndSize()
 			scr := uv.NewScreenBuffer(u.width, u.height)
 			u.Draw(scr, uv.Rect(0, 0, u.width, u.height))

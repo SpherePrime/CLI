@@ -49,7 +49,7 @@ func TestCompleteDesignPresetsChangePaletteAndPlacement(t *testing.T) {
 			require.Positive(t, l.header.Dy())
 			switch tc.design {
 			case "cards", "terminal":
-				require.Less(t, l.editor.Max.Y, l.main.Max.Y)
+				require.GreaterOrEqual(t, l.editor.Min.Y, l.main.Max.Y)
 			case "neon":
 				require.GreaterOrEqual(t, l.sidebar.Min.Y, l.main.Max.Y)
 			}
