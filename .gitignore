@@ -12,6 +12,7 @@ dry_run.txt
 # Local chat/dev context
 CHATS.md
 AGENTS.md
+internal/agent/summaries/
 # Secret / local config overrides
 config.local.toml
 .env

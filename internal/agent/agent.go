@@ -19,6 +19,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -172,6 +173,7 @@ type sessionAgent struct {
 	isSubAgent           bool
 	sessions             session.Service
 	messages             message.Service
+	dataDir              string
 	disableAutoSummarize bool
 	// autoSummarizePercent is the global default threshold: how full the
 	// context window must be before a turn is compacted. A per-model override
@@ -247,6 +249,10 @@ type SessionAgentOptions struct {
 	// sub-agents launched in one message - run at once. Zero takes the
 	// config default.
 	MaxParallelTools int
+
+	// DataDir is the directory for per-session data files. Used for
+	// writing context summary files before summarization.
+	DataDir string
 }
 
 func NewSessionAgent(
@@ -260,6 +266,7 @@ func NewSessionAgent(
 		isSubAgent:           opts.IsSubAgent,
 		sessions:             opts.Sessions,
 		messages:             opts.Messages,
+		dataDir:              opts.DataDir,
 		disableAutoSummarize: opts.DisableAutoSummarize,
 		// An unset threshold would silently disable compaction, so fall
 		// back to the global default rather than trusting a zero value.
@@ -1379,18 +1386,7 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 
 	aiMsgs, _ := a.preparePrompt(msgs, largeModel.CatwalkCfg.SupportsImages)
 
-	// Truncate the prompt to fit within the model's context window.
-	// Auto-summarize fires when the context is already percent% full, so
-	// the full history would overflow the summarize request itself and the
-	// provider rejects it with a stream error. Leave headroom for the
-	// summary output.
-	if cw := int64(largeModel.CatwalkCfg.ContextWindow); cw > 0 {
-		maxOutput := largeModel.CatwalkCfg.DefaultMaxTokens
-		if maxOutput <= 0 {
-			maxOutput = 4096
-		}
-		aiMsgs = truncateMessagesForContext(aiMsgs, cw, maxOutput)
-	}
+	summaryMsgs := buildSummaryMessagesFromContextFile(ctx, sessionID, a.dataDir, aiMsgs, msgs)
 
 	genCtx, cancel := context.WithCancel(ctx)
 	ac := &activeCancel{cancel: cancel}
@@ -1422,7 +1418,7 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 
 	resp, err := agent.Stream(genCtx, fantasy.AgentStreamCall{
 		Prompt:          summaryPromptText,
-		Messages:        aiMsgs,
+		Messages:        summaryMsgs,
 		Headers:         sessionHeaders(sessionID),
 		ProviderOptions: opts,
 		OnAuthRefresh:   onAuthRefresh,
@@ -1670,27 +1666,71 @@ If not, please feel free to ignore. Again do not mention this message to the use
 	return history, files
 }
 
-// truncateMessagesForContext drops the oldest messages from the front of the
-// history slice until the estimated token count fits within contextWindow minus
-// maxOutputTokens (which reserves room for the model's response). It preserves
-// at least the last message so the model always has something to summarize;
-// callers rely on the summary prompt to guide truncation.
-func truncateMessagesForContext(messages []fantasy.Message, contextWindow, maxOutputTokens int64) []fantasy.Message {
-	if len(messages) == 0 || contextWindow <= 0 {
-		return messages
+func writeSessionContextSummary(ctx context.Context, dataDir, sessionID string, msgs []message.Message, aiMsgs []fantasy.Message) (string, error) {
+	summaryDir := filepath.Join(dataDir, "summaries")
+	if err := os.MkdirAll(summaryDir, 0o755); err != nil {
+		return "", err
 	}
-	budget := contextWindow - maxOutputTokens
-	if budget <= 0 {
-		return messages
+
+	f, err := os.CreateTemp(summaryDir, "context-summary-*.md")
+	if err != nil {
+		return "", err
 	}
-	for len(messages) > 1 {
-		tokens := estimateMessageTokens(messages)
-		if tokens <= budget {
-			break
+	defer f.Close()
+
+	var sb strings.Builder
+	sb.WriteString("# Conversation Context Summary\n\n")
+
+	sb.WriteString("## Task and Current State\n\n")
+	sb.WriteString("This summary captures the key points of the conversation to preserve context.\n")
+	sb.WriteString("Read all of this before continuing work.\n\n")
+
+	sb.WriteString("## Key Conversation Points\n\n")
+	for _, m := range msgs {
+		if len(m.Parts) == 0 {
+			continue
 		}
-		messages = messages[1:]
+		roleLabel := string(m.Role)
+		content := m.Content().Text
+		if content == "" {
+			continue
+		}
+		for _, tc := range m.ToolCalls() {
+			sb.WriteString(fmt.Sprintf("- **%s (tool call)**: %s\n  Input: %s\n\n", roleLabel, tc.Name, tc.Input))
+		}
+		for _, tr := range m.ToolResults() {
+			sb.WriteString(fmt.Sprintf("- **%s (tool result)**: %s\n  Output: %s\n\n", roleLabel, tr.Name, tr.Content))
+		}
+		sb.WriteString(fmt.Sprintf("- **%s**: %s\n\n", roleLabel, content))
 	}
-	return messages
+
+	sb.WriteString("\n## Task Details\n\n")
+	sb.WriteString("Continue working on the task described above. Use the `todos` tool to track progress.\n")
+
+	if err := os.WriteFile(f.Name(), []byte(sb.String()), 0o644); err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(f.Name())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func buildSummaryMessagesFromContextFile(ctx context.Context, sessionID, dataDir string, aiMsgs []fantasy.Message, rawMsgs []message.Message) []fantasy.Message {
+	if dataDir == "" {
+		return aiMsgs
+	}
+	contextSummary, err := writeSessionContextSummary(ctx, dataDir, sessionID, rawMsgs, aiMsgs)
+	if err != nil {
+		slog.Warn("Failed to write context summary file, falling back to full history", "error", err)
+		return aiMsgs
+	}
+
+	return []fantasy.Message{
+		fantasy.NewUserMessage(contextSummary),
+	}
 }
 
 // filterFileParts removes fantasy.FilePart entries from a slice of message
