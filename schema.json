@@ -520,9 +520,12 @@
         },
         "auto_summarize_percent": {
           "type": "integer",
-          "minimum": 1,
           "maximum": 100,
-          "description": "Override the auto-summarize threshold for this model: percentage of the context window in use before the conversation is summarized. 0 or absent uses the global default."
+          "minimum": 1,
+          "description": "Override the auto-summarize threshold for this model: percentage of the context window that must be in use before the conversation is summarized automatically. 0 or absent uses the global default",
+          "examples": [
+            90
+          ]
         }
       },
       "additionalProperties": false,
@@ -602,13 +605,6 @@
           "type": "boolean",
           "description": "Disable automatic conversation summarization",
           "default": false
-        },
-        "auto_summarize_percent": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100,
-          "description": "Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings.auto_summarize_percent. 0 is not accepted; use the default 85 instead.",
-          "default": 85
         },
         "data_directory": {
           "type": "string",
@@ -722,6 +718,17 @@
             300,
             600,
             0
+          ]
+        },
+        "auto_summarize_percent": {
+          "type": "integer",
+          "maximum": 100,
+          "minimum": 0,
+          "description": "Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings. 0 uses the default of 85.",
+          "default": 85,
+          "examples": [
+            85,
+            70
           ]
         },
         "max_parallel_tools": {
@@ -947,9 +954,12 @@
         },
         "auto_summarize_percent": {
           "type": "integer",
-          "minimum": 1,
           "maximum": 100,
-          "description": "Override the auto-summarize threshold for this model: percentage of the context window in use before the conversation is summarized. 0 or absent uses the global default."
+          "minimum": 1,
+          "description": "Override the auto-summarize threshold for this model: percentage of the context window in use before compacting. 0 or absent uses the global default",
+          "examples": [
+            90
+          ]
         },
         "temperature": {
           "type": "number",
