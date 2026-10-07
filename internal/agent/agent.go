@@ -1059,6 +1059,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				return sessionErr
 			}
 			currentSession = updatedSession
+			if a.dataDir != "" {
+				if stepErr := appendStepToContextSummary(a.dataDir, call.SessionID, stepResult.Messages); stepErr != nil {
+					slog.Warn("Failed to append step to context summary file", "error", stepErr, "session_id", call.SessionID)
+				}
+			}
 			return a.messages.Update(genCtx, *currentAssistant)
 		},
 		StopWhen: []fantasy.StopCondition{
@@ -1386,9 +1391,15 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 
 	aiMsgs, _ := a.preparePrompt(msgs, largeModel.CatwalkCfg.SupportsImages)
 
-	summaryMsgs := buildSummaryMessagesFromContextFile(ctx, sessionID, a.dataDir, aiMsgs, msgs)
+	appendTodosToContextSummary(a.dataDir, sessionID, currentSession.Todos)
+	summaryMsgs := readSessionContextSummaryMessages(a.dataDir, sessionID, aiMsgs)
 
 	genCtx, cancel := context.WithCancel(ctx)
+	defer func() {
+		if a.dataDir != "" {
+			deleteSessionContextSummary(a.dataDir, sessionID)
+		}
+	}()
 	ac := &activeCancel{cancel: cancel}
 	a.activeRequests.Set(sessionID, ac)
 	defer a.activeRequests.CompareAndDelete(sessionID, ac)
@@ -1666,70 +1677,135 @@ If not, please feel free to ignore. Again do not mention this message to the use
 	return history, files
 }
 
-func writeSessionContextSummary(ctx context.Context, dataDir, sessionID string, msgs []message.Message, aiMsgs []fantasy.Message) (string, error) {
+const maxContextSummaryBytes = 256 << 10
+
+func sanitizeSessionIDForFile(sessionID string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			return r
+		}
+		return '_'
+	}, sessionID)
+}
+
+func contextSummaryFilePath(dataDir, sessionID string) string {
+	safeID := sanitizeSessionIDForFile(sessionID)
+	return filepath.Join(dataDir, "summaries", safeID+".md")
+}
+
+func appendStepToContextSummary(dataDir, sessionID string, msgs []fantasy.Message) error {
+	if dataDir == "" || len(msgs) == 0 {
+		return nil
+	}
 	summaryDir := filepath.Join(dataDir, "summaries")
 	if err := os.MkdirAll(summaryDir, 0o755); err != nil {
-		return "", err
+		return err
 	}
+	filePath := contextSummaryFilePath(dataDir, sessionID)
 
-	f, err := os.CreateTemp(summaryDir, "context-summary-*.md")
-	if err != nil {
-		return "", err
+	existing, err := os.ReadFile(filePath)
+	if err != nil && !os.IsNotExist(err) {
+		return err
 	}
-	defer f.Close()
 
 	var sb strings.Builder
-	sb.WriteString("# Conversation Context Summary\n\n")
+	if len(existing) == 0 {
+		sb.WriteString("# Conversation Context Summary\n\n")
+		sb.WriteString("## Key Conversation Points\n\n")
+	}
 
-	sb.WriteString("## Task and Current State\n\n")
-	sb.WriteString("This summary captures the key points of the conversation to preserve context.\n")
-	sb.WriteString("Read all of this before continuing work.\n\n")
-
-	sb.WriteString("## Key Conversation Points\n\n")
 	for _, m := range msgs {
-		if len(m.Parts) == 0 {
-			continue
-		}
 		roleLabel := string(m.Role)
-		content := m.Content().Text
-		if content == "" {
-			continue
+		for _, part := range m.Content {
+			if p, ok := fantasy.AsMessagePart[fantasy.TextPart](part); ok && p.Text != "" {
+				sb.WriteString(fmt.Sprintf("- **%s**: %s\n\n", roleLabel, truncateString(p.Text, maxContextSummaryBytes/4)))
+				continue
+			}
+			if p, ok := fantasy.AsMessagePart[fantasy.ToolCallPart](part); ok {
+				sb.WriteString(fmt.Sprintf("- **%s (tool call)**: %s\n  Input: %s\n\n", roleLabel, p.ToolName, truncateString(p.Input, maxContextSummaryBytes/8)))
+				continue
+			}
+			if p, ok := fantasy.AsMessagePart[fantasy.ToolResultPart](part); ok {
+				outputText := fmt.Sprintf("%v", p.Output)
+				if textOut, ok2 := fantasy.AsToolResultOutputType[fantasy.ToolResultOutputContentText](p.Output); ok2 {
+					outputText = textOut.Text
+				}
+				sb.WriteString(fmt.Sprintf("- **%s (tool result)**: %s\n  Output: %s\n\n", roleLabel, p.ToolCallID, truncateString(outputText, maxContextSummaryBytes/8)))
+			}
 		}
-		for _, tc := range m.ToolCalls() {
-			sb.WriteString(fmt.Sprintf("- **%s (tool call)**: %s\n  Input: %s\n\n", roleLabel, tc.Name, tc.Input))
-		}
-		for _, tr := range m.ToolResults() {
-			sb.WriteString(fmt.Sprintf("- **%s (tool result)**: %s\n  Output: %s\n\n", roleLabel, tr.Name, tr.Content))
-		}
-		sb.WriteString(fmt.Sprintf("- **%s**: %s\n\n", roleLabel, content))
 	}
 
-	sb.WriteString("\n## Task Details\n\n")
-	sb.WriteString("Continue working on the task described above. Use the `todos` tool to track progress.\n")
-
-	if err := os.WriteFile(f.Name(), []byte(sb.String()), 0o644); err != nil {
-		return "", err
+	data := append(existing, []byte(sb.String())...)
+	if len(data) > maxContextSummaryBytes {
+		data = data[len(data)-maxContextSummaryBytes:]
 	}
 
-	data, err := os.ReadFile(f.Name())
+	return os.WriteFile(filePath, data, 0o644)
+}
+
+func truncateString(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	return s[:maxBytes] + "...(truncated)"
+}
+
+func readSessionContextSummary(dataDir, sessionID string) (string, error) {
+	if dataDir == "" {
+		return "", fmt.Errorf("dataDir is empty")
+	}
+	filePath := contextSummaryFilePath(dataDir, sessionID)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func buildSummaryMessagesFromContextFile(ctx context.Context, sessionID, dataDir string, aiMsgs []fantasy.Message, rawMsgs []message.Message) []fantasy.Message {
-	if dataDir == "" {
-		return aiMsgs
+func readSessionContextSummaryMessages(dataDir, sessionID string, fallback []fantasy.Message) []fantasy.Message {
+	summary, err := readSessionContextSummary(dataDir, sessionID)
+	if err != nil || summary == "" {
+		return fallback
 	}
-	contextSummary, err := writeSessionContextSummary(ctx, dataDir, sessionID, rawMsgs, aiMsgs)
-	if err != nil {
-		slog.Warn("Failed to write context summary file, falling back to full history", "error", err)
-		return aiMsgs
-	}
-
 	return []fantasy.Message{
-		fantasy.NewUserMessage(contextSummary),
+		fantasy.NewUserMessage(summary),
+	}
+}
+
+func deleteSessionContextSummary(dataDir, sessionID string) {
+	if dataDir == "" {
+		return
+	}
+	filePath := contextSummaryFilePath(dataDir, sessionID)
+	os.Remove(filePath)
+}
+
+func appendTodosToContextSummary(dataDir, sessionID string, todos []session.Todo) {
+	if dataDir == "" || len(todos) == 0 {
+		return
+	}
+	summaryDir := filepath.Join(dataDir, "summaries")
+	if err := os.MkdirAll(summaryDir, 0o755); err != nil {
+		slog.Warn("Failed to create summaries dir for todos", "error", err)
+		return
+	}
+	filePath := contextSummaryFilePath(dataDir, sessionID)
+
+	var sb strings.Builder
+	sb.WriteString("\n## Current Todo List at Context Compaction\n\n")
+	for _, t := range todos {
+		fmt.Fprintf(&sb, "- [%s] %s\n", t.Status, t.Content)
+	}
+	sb.WriteString("\nRecreate this todo list with the `todos` tool in the new context and continue from these statuses.\n")
+
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		slog.Warn("Failed to append todos to context summary", "error", err)
+		return
+	}
+	defer f.Close()
+	if _, err := f.WriteString(sb.String()); err != nil {
+		slog.Warn("Failed to append todos to context summary", "error", err)
 	}
 }
 
