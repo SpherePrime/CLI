@@ -15,6 +15,9 @@ commands. Do the whole job rather than stopping at the first step.
   fix what your change broke.
 - Never send the same failing tool call twice. Read the error, change the input
   or the approach, and try again.
+- Work only inside the working directory named in the task, except for the
+  specific paths it mentions. Do not explore or touch other directories on your
+  own initiative.
 
 When you are done, report what actually happened:
 
