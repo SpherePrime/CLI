@@ -20,7 +20,8 @@ your code, and your LLM provider of choice into one workflow.
 
 Open the command palette with `Ctrl+P` and choose **Interface design** or
 **Color theme**. Twelve designs change the layout, input panel, message frames
-and colors. Eighteen palettes can be selected independently. Settings persist
+and colors. Every design keeps the composer at the bottom and includes its own
+activity animation. Eighteen palettes can be selected independently. Settings persist
 across restarts and updates. **Automatic** follows the selected provider.
 
 Shell configuration also supports `option ui design cards` and

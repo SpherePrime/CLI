@@ -184,6 +184,7 @@ type AssistantMessageItem struct {
 	thinkingViewMode  thinkingViewMode
 	thinkingBoxHeight int // Tracks the rendered thinking box height for click detection.
 	contentTop        int
+	responseFrame     uint64
 
 	// planAgent marks this item as plan-agent output. While the plan
 	// streams (the message is not finished) and the plan-start marker
@@ -279,6 +280,7 @@ func (a *AssistantMessageItem) Advance() bool {
 	// would serve the previously rendered frame indefinitely and
 	// the spinner would appear frozen.
 	a.Bump()
+	a.responseFrame++
 	return true
 }
 
@@ -289,12 +291,15 @@ func (a *AssistantMessageItem) ID() string {
 
 // RawRender implements [MessageItem].
 func (a *AssistantMessageItem) RawRender(width int) string {
+	if width <= 0 {
+		return ""
+	}
 	a.contentTop = messageFrameHeight(a.sty, width) / 2
 	cappedWidth := designMessageWidth(a.sty, width)
 
 	var spinner string
 	if a.isSpinning() {
-		spinner = a.renderSpinning()
+		spinner = ansi.Truncate(a.renderSpinning(), min(width, cappedWidth), "")
 	}
 
 	content, height := a.renderMessageContent(cappedWidth)
@@ -774,8 +779,7 @@ func (a *AssistantMessageItem) renderSpinning() string {
 	} else if a.message.IsSummaryMessage {
 		label = "Summarizing"
 	}
-	a.anim.SetLabel(responseWorkingLabel(a.sty.Design, label))
-	return a.anim.Render()
+	return renderResponseAnimation(a.sty, label, a.responseFrame, maxTextWidth, common.Elapsed())
 }
 
 // renderError renders an error or provider-refusal banner.

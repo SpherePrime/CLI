@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -23,7 +22,9 @@ func TestResponseStatusRemainsReadableAcrossDesigns(t *testing.T) {
 			for range 30 {
 				status := ansi.Strip(item.renderSpinning())
 				require.Contains(t, status, "Working")
-				require.Regexp(t, "^"+regexp.QuoteMeta(responseWorkingLabel(design, "Working"))+`[.0-9hms ]*$`, status)
+				for _, cell := range []rune(status)[:10] {
+					require.Contains(t, "●·▁▂▃▄▅▆▇█▰▱░▒▓╱╲│─[]>-┃✎•▧▣˙✧✦ ", string(cell))
+				}
 				item.Advance()
 			}
 		})
@@ -54,10 +55,10 @@ func TestResponseStatusUsesCurrentState(t *testing.T) {
 
 func TestAdditionalDesignResponseStatus(t *testing.T) {
 	for _, test := range []struct{ design, working, footer string }{
-		{"opencode", "TASK · Working", "│ DONE · "},
-		{"paper", "Working", "· "},
-		{"blueprint", "BUILD / Working", "┌ DONE "},
-		{"ember", "ACTIVE · Working", "▌ DONE · "},
+		{"opencode", "┃┃││││││││", "│ DONE · "},
+		{"paper", "✎ •·······", "· "},
+		{"blueprint", "▣▧▧▧▧▧▧▧▧▧", "┌ DONE "},
+		{"ember", "˙·✧✦✧·˙·✧·", "▌ DONE · "},
 	} {
 		t.Run(test.design, func(t *testing.T) {
 			sty := styles.ApplyDesign(styles.ColorTonePantera(), test.design)
