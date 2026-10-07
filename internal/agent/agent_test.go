@@ -1,10 +1,10 @@
 package agent
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"log/slog"
+	"os"
 	"testing"
 	"time"
 
@@ -750,75 +750,103 @@ func TestProviderRetryLogFields(t *testing.T) {
 	})
 }
 
-func TestWriteSessionContextSummary_CreatesFileWithKeyPoints(t *testing.T) {
+func TestAppendStepToContextSummary_CreatesFileWithKeyPoints(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
 	sessionID := "test-session"
 
-	msgs := []message.Message{
-		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "user prompt one"}}},
-		{Role: message.Assistant, Parts: []message.ContentPart{message.TextContent{Text: "assistant response one"}}},
-		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "user prompt two"}}},
-	}
-	aiMsgs := []fantasy.Message{
-		fantasy.NewUserMessage("test"),
+	msgs := []fantasy.Message{
+		fantasy.NewUserMessage("user prompt one"),
+		{Role: fantasy.MessageRoleAssistant, Content: []fantasy.MessagePart{
+			fantasy.TextPart{Text: "assistant response one"},
+			fantasy.ToolCallPart{ToolCallID: "call-1", ToolName: "edit", Input: `{"file":"auth.go"}`},
+		}},
 	}
 
-	summary, err := writeSessionContextSummary(ctx, tmpDir, sessionID, msgs, aiMsgs)
+	err := appendStepToContextSummary(tmpDir, sessionID, msgs)
 	require.NoError(t, err)
-	require.NotEmpty(t, summary)
+
+	filePath := contextSummaryFilePath(tmpDir, sessionID)
+	data, err := os.ReadFile(filePath)
+	require.NoError(t, err)
+	summary := string(data)
 	require.Contains(t, summary, "# Conversation Context Summary")
 	require.Contains(t, summary, "user prompt one")
 	require.Contains(t, summary, "assistant response one")
-	require.Contains(t, summary, "user prompt two")
+	require.Contains(t, summary, "tool call")
+
+	err = appendStepToContextSummary(tmpDir, sessionID, []fantasy.Message{
+		fantasy.NewUserMessage("user prompt two"),
+	})
+	require.NoError(t, err)
+	data, err = os.ReadFile(filePath)
+	require.NoError(t, err)
+	require.Contains(t, string(data), "user prompt one")
+	require.Contains(t, string(data), "user prompt two")
 }
 
-func TestBuildSummaryMessagesFromContextFile_ReturnsSingleMessage(t *testing.T) {
+func TestReadSessionContextSummaryMessages_ReturnsSingleMessage(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
 	sessionID := "test-session-2"
 
-	msgs := []message.Message{
-		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "hello world"}}},
-	}
-	aiMsgs := []fantasy.Message{
-		fantasy.NewUserMessage("original prompt"),
-	}
+	require.NoError(t, appendStepToContextSummary(tmpDir, sessionID, []fantasy.Message{
+		fantasy.NewUserMessage("hello world"),
+	}))
 
-	result := buildSummaryMessagesFromContextFile(ctx, sessionID, tmpDir, aiMsgs, msgs)
+	result := readSessionContextSummaryMessages(tmpDir, sessionID, nil)
 	require.Len(t, result, 1)
+	require.Equal(t, fantasy.MessageRoleUser, result[0].Role)
 	text, ok := fantasy.AsMessagePart[fantasy.TextPart](result[0].Content[0])
 	require.True(t, ok)
 	require.Contains(t, text.Text, "hello world")
 	require.Contains(t, text.Text, "# Conversation Context Summary")
 }
 
-func TestBuildSummaryMessagesFromContextFile_FallbackOnNoDataDir(t *testing.T) {
-	ctx := context.Background()
-	sessionID := "test-session-3"
-
+func TestReadSessionContextSummaryMessages_FallbackOnMissingFile(t *testing.T) {
 	aiMsgs := []fantasy.Message{
 		fantasy.NewUserMessage("original prompt"),
 	}
-	msgs := []message.Message{
-		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "hello"}}},
-	}
 
-	result := buildSummaryMessagesFromContextFile(ctx, sessionID, "", aiMsgs, msgs)
+	result := readSessionContextSummaryMessages(t.TempDir(), "test-session-3", aiMsgs)
 	require.Equal(t, aiMsgs, result)
 }
 
-func TestWriteSessionContextSummary_SanitizesSessionID(t *testing.T) {
+func TestDeleteSessionContextSummary_RemovesFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
 	sessionID := "session/with/bad:chars"
 
-	msgs := []message.Message{
-		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "prompt"}}},
-	}
-	aiMsgs := []fantasy.Message{}
-
-	summary, err := writeSessionContextSummary(ctx, tmpDir, sessionID, msgs, aiMsgs)
+	require.NoError(t, appendStepToContextSummary(tmpDir, sessionID, []fantasy.Message{
+		fantasy.NewUserMessage("prompt"),
+	}))
+	filePath := contextSummaryFilePath(tmpDir, sessionID)
+	_, err := os.Stat(filePath)
 	require.NoError(t, err)
-	require.NotEmpty(t, summary)
+
+	deleteSessionContextSummary(tmpDir, sessionID)
+	_, err = os.Stat(filePath)
+	require.True(t, os.IsNotExist(err))
+}
+
+func TestSanitizeSessionIDForFile(t *testing.T) {
+	require.Equal(t, "session_with_bad_chars", sanitizeSessionIDForFile("session/with/bad:chars"))
+	require.Equal(t, "abc-DEF_123", sanitizeSessionIDForFile("abc-DEF_123"))
+}
+
+func TestAppendTodosToContextSummary(t *testing.T) {
+	tmpDir := t.TempDir()
+	sessionID := "test-session-todos"
+	require.NoError(t, appendStepToContextSummary(tmpDir, sessionID, []fantasy.Message{
+		fantasy.NewUserMessage("key point"),
+	}))
+
+	appendTodosToContextSummary(tmpDir, sessionID, []session.Todo{
+		{Status: session.TodoStatusCompleted, Content: "Fix login bug"},
+		{Status: session.TodoStatusPending, Content: "Add tests"},
+	})
+
+	data, err := os.ReadFile(contextSummaryFilePath(tmpDir, sessionID))
+	require.NoError(t, err)
+	content := string(data)
+	require.Contains(t, content, "[completed] Fix login bug")
+	require.Contains(t, content, "[pending] Add tests")
+	require.Contains(t, content, "Recreate this todo list")
 }
