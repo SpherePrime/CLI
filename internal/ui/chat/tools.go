@@ -7,9 +7,6 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
 	"github.com/SpherePrime/CLI/internal/agent"
 	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/diff"
@@ -21,7 +18,10 @@ import (
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2/tree"
 )
 
 // responseContextHeight limits the number of lines displayed in tool output.
@@ -333,9 +333,13 @@ func (t *baseToolMessageItem) Advance() bool {
 
 // RawRender implements [MessageItem].
 func (t *baseToolMessageItem) RawRender(width int) string {
-	toolItemWidth := width - MessageLeftPaddingTotal
+	originalWidth := width
+	if !t.isCompact && messageFramed(t.sty, width) {
+		width--
+	}
+	toolItemWidth := max(1, width-MessageLeftPaddingTotal)
 	if t.hasCappedWidth {
-		toolItemWidth = cappedMessageWidth(width)
+		toolItemWidth = max(1, cappedMessageWidth(width))
 	}
 
 	content, height, ok := t.getCachedRender(toolItemWidth)
@@ -363,6 +367,10 @@ func (t *baseToolMessageItem) RawRender(width int) string {
 		t.setCachedRender(content, toolItemWidth, height)
 	}
 
+	if !t.isCompact {
+		content = rawMessageLines(t.sty, content, originalWidth)
+		height += messageFrameHeight(t.sty, originalWidth)
+	}
 	return t.renderHighlighted(content, toolItemWidth, height)
 }
 
@@ -381,6 +389,7 @@ func (t *baseToolMessageItem) Render(width int) string {
 	default:
 		key = 0
 	}
+	key = designCacheKey(t.sty, key)
 	if useCache {
 		if cached, ok := t.getCachedPrefixedRender(width, key); ok {
 			return cached
@@ -394,11 +403,17 @@ func (t *baseToolMessageItem) Render(width int) string {
 	} else {
 		prefix = t.sty.Messages.ToolCallBlurred.Render()
 	}
-	lines := strings.Split(t.RawRender(width), "\n")
-	for i, ln := range lines {
-		lines[i] = prefix + ln
+	content := t.RawRender(width)
+	out := ""
+	if t.isCompact {
+		lines := strings.Split(content, "\n")
+		for i, line := range lines {
+			lines[i] = prefix + line
+		}
+		out = strings.Join(lines, "\n")
+	} else {
+		out = renderMessageLines(t.sty, content, prefix, width, "TOOL")
 	}
-	out := strings.Join(lines, "\n")
 	if useCache {
 		t.setCachedPrefixedRender(out, width, key)
 	}

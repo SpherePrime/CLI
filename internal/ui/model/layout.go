@@ -94,6 +94,7 @@ func (l uiLayout) withinArea() uiLayout {
 		&l.pills,
 		&l.editor,
 		&l.sidebar,
+		&l.inspector,
 		&l.status,
 		&l.sessionDetails,
 	} {

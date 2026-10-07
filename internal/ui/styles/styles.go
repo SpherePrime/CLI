@@ -82,6 +82,12 @@ const (
 )
 
 type Styles struct {
+	Canvas          lipgloss.Style
+	DesignHeader    lipgloss.Style
+	DesignSidebar   lipgloss.Style
+	DesignInspector lipgloss.Style
+	Design          string
+	MessageFrame    lipgloss.Style
 	// ANSI holds the 16 standard ANSI colors (0-7 normal, 8-15 bright)
 	// used to remap legible colors onto raw terminal output, such as the
 	// output of bang-mode shell commands. Terminal programs emit the

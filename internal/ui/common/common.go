@@ -8,13 +8,13 @@ import (
 	"slices"
 	"strings"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/internal/clipboard"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/internal/ui/util"
 	"github.com/SpherePrime/CLI/internal/workspace"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
@@ -145,7 +145,13 @@ func (c *Common) Config() *config.Config {
 // workspace has a large model selected, the theme is chosen based on its
 // provider; otherwise the default theme is used.
 func DefaultCommon(ws workspace.Workspace) *Common {
-	s := styles.ThemeForProvider(largeModelProviderID(ws))
+	theme, design := "", ""
+	if ws != nil {
+		if cfg := ws.Config(); cfg != nil && cfg.Options != nil && cfg.Options.TUI != nil {
+			theme, design = cfg.Options.TUI.Theme, cfg.Options.TUI.Design
+		}
+	}
+	s := styles.ResolveTheme(theme, largeModelProviderID(ws), design)
 	return &Common{
 		Workspace: ws,
 		Styles:    &s,

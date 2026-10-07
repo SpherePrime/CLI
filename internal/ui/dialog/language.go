@@ -22,6 +22,7 @@ const (
 
 // Language represents a dialog for selecting the UI language.
 type Language struct {
+	titleKey string
 	com   *common.Common
 	help  help.Model
 	list  *list.FilterableList
@@ -64,7 +65,7 @@ var (
 
 // NewLanguage creates a new language picker dialog.
 func NewLanguage(com *common.Common) *Language {
-	l := &Language{com: com}
+	l := &Language{com: com, titleKey: "cmd.language"}
 
 	h := help.New()
 	h.Styles = com.Styles.DialogHelpStyles()
@@ -180,7 +181,7 @@ func (l *Language) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 	tr := l.translator()
 	rc := NewRenderContext(t, width)
-	rc.Title = tr.Label("cmd.language")
+	rc.Title = tr.Label(l.titleKey)
 	inputView := t.Dialog.InputPrompt.Render(l.input.View())
 	rc.AddPart(inputView)
 

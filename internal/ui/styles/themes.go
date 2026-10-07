@@ -119,5 +119,5 @@ func ColorTonePantera() Styles {
 
 // HyperprimeObsidiana returns the Hyperprime dark theme.
 func HyperprimeObsidiana() Styles {
-	return ColorTonePantera()
+	return namedPaletteTheme("hyper")
 }

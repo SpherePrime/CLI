@@ -15,6 +15,7 @@ func layoutAreas(l uiLayout) map[string]image.Rectangle {
 		"pills":          l.pills,
 		"editor":         l.editor,
 		"sidebar":        l.sidebar,
+		"inspector":      l.inspector,
 		"status":         l.status,
 		"sessionDetails": l.sessionDetails,
 	}

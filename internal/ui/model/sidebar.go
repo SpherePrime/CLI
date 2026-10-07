@@ -6,12 +6,12 @@ import (
 	"image"
 	"strings"
 
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	mcp "github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet/layout"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // modelInfo renders the current model information including reasoning
@@ -63,6 +63,10 @@ func (m *UI) modelInfo(width int) string {
 // state (scrollability, max offset, clamp) before drawing. This keeps all
 // state mutation in the update path rather than in the draw function.
 func (m *UI) updateSidebarScrollState() {
+	if m.customDesign() {
+		m.updateDesignSidebarScrollState()
+		return
+	}
 	if m.session == nil || m.isCompact {
 		m.sidebarScrollbarTrack = common.ScrollbarTrack{}
 		return
@@ -173,6 +177,10 @@ func (m *UI) sidebarScrollbarShown() bool {
 // virtual-scrolling content area with an auto-hiding scrollbar. While the
 // sidebar is focused, the scrollbar stays visible.
 func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
+	if m.customDesign() {
+		m.drawDesignSidebar(scr, area)
+		return
+	}
 	if m.session == nil {
 		return
 	}
