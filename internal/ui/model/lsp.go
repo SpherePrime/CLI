@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/internal/workspace"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // lspStatesTTL bounds how long the memoized LSP state may go without a
@@ -164,25 +164,25 @@ func lspList(t *styles.Styles, lsps []LSPInfo, width, maxItems int) string {
 		var diagnostics string
 		switch l.State {
 		case lsp.StateUnstarted:
-			icon = t.Resource.OfflineIcon.String()
+			icon = resourceStateBadge(t, "WAIT")
 			description = t.Resource.StatusText.Render("unstarted")
 		case lsp.StateStopped:
-			icon = t.Resource.OfflineIcon.String()
+			icon = resourceStateBadge(t, "WAIT")
 			description = t.Resource.StatusText.Render("stopped")
 		case lsp.StateStarting:
-			icon = t.Resource.BusyIcon.String()
+			icon = resourceStateBadge(t, "WAIT")
 			description = t.Resource.StatusText.Render("starting...")
 		case lsp.StateReady:
-			icon = t.Resource.OnlineIcon.String()
+			icon = resourceStateBadge(t, "ON")
 			diagnostics = lspDiagnostics(t, l.Diagnostics)
 		case lsp.StateError:
-			icon = t.Resource.ErrorIcon.String()
+			icon = resourceStateBadge(t, "ERR")
 			description = t.Resource.StatusText.Render("error")
 			if l.Error != nil {
 				description = t.Resource.StatusText.Render(fmt.Sprintf("error: %s", l.Error.Error()))
 			}
 		case lsp.StateDisabled:
-			icon = t.Resource.DisabledIcon.String()
+			icon = resourceStateBadge(t, "OFF")
 			description = t.Resource.StatusText.Render("disabled")
 		default:
 			continue

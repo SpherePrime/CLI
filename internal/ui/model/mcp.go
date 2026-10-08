@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // mcpInfo renders the MCP status section showing active MCP clients and their
@@ -17,9 +17,15 @@ func (m *UI) mcpInfo(width, maxItems int, isSection bool) string {
 	var mcps []mcp.ClientInfo
 	t := m.com.Styles
 
-	for _, mcp := range m.com.Config().MCP.Sorted() {
-		if state, ok := m.mcpStates[mcp.Name]; ok {
+	for _, server := range m.com.Config().MCP.Sorted() {
+		if state, ok := m.mcpStates[server.Name]; ok {
 			mcps = append(mcps, state)
+		} else {
+			state := mcp.StateStarting
+			if server.MCP.Disabled {
+				state = mcp.StateDisabled
+			}
+			mcps = append(mcps, mcp.ClientInfo{Name: server.Name, State: state})
 		}
 	}
 
@@ -71,25 +77,25 @@ func mcpList(t *styles.Styles, mcps []mcp.ClientInfo, width, maxItems int) strin
 
 		switch m.State {
 		case mcp.StateStarting:
-			icon = t.Resource.BusyIcon.String()
+			icon = resourceStateBadge(t, "WAIT")
 			description = t.Resource.StatusText.Render("starting...")
 		case mcp.StateConnected:
-			icon = t.Resource.OnlineIcon.String()
+			icon = resourceStateBadge(t, "ON")
 			extraContent = mcpCounts(t, m.Counts)
 		case mcp.StateError:
-			icon = t.Resource.ErrorIcon.String()
+			icon = resourceStateBadge(t, "ERR")
 			description = t.Resource.StatusText.Render("error")
 			if m.Error != nil {
 				description = t.Resource.StatusText.Render(fmt.Sprintf("error: %s", m.Error.Error()))
 			}
 		case mcp.StateNeedsAuth:
-			icon = t.Resource.NeedsAuthIcon.String()
+			icon = resourceStateBadge(t, "AUTH")
 			description = t.Resource.StatusText.Render("needs authentication")
 		case mcp.StateDisabled:
-			icon = t.Resource.DisabledIcon.String()
+			icon = resourceStateBadge(t, "OFF")
 			description = t.Resource.StatusText.Render("disabled")
 		default:
-			icon = t.Resource.OfflineIcon.String()
+			icon = resourceStateBadge(t, "OFF")
 		}
 
 		renderedMcps = append(renderedMcps, common.Status(t, common.StatusOpts{

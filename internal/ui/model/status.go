@@ -6,6 +6,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/util"
+	"github.com/SpherePrime/CLI/internal/workspace"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
@@ -29,8 +30,10 @@ type Status struct {
 	msg      util.InfoMsg
 
 	// inputMode and yolo drive the mode badge shown before the help hints.
-	inputMode uiInputMode
-	yolo      bool
+	inputMode       uiInputMode
+	yolo            bool
+	selectedModel   *workspace.AgentModel
+	resourceSummary string
 
 	// voiceBadge is the microphone indicator shown next to the mode badge,
 	// empty while dictation is idle.
@@ -63,6 +66,10 @@ func (s *Status) SetMode(mode uiInputMode, yolo bool) {
 	s.yolo = yolo
 }
 
+func (s *Status) SetResourceSummary(summary string) {
+	s.resourceSummary = summary
+}
+
 // SetVoiceBadge sets the microphone indicator shown before the help hints. An
 // empty badge hides it.
 func (s *Status) SetVoiceBadge(badge string) {
@@ -74,26 +81,26 @@ func (s *Status) VoiceBadge() string {
 	return s.voiceBadge
 }
 
-// modeBadge renders the badges shown before the help hints. The coding mode
-// badge is empty in default mode, and the microphone indicator is appended so
-// recording stays visible in every mode.
 func (s *Status) modeBadge() string {
+	return s.modeBadgeWidth(1000)
+}
+
+func (s *Status) modeBadgeWidth(width int) string {
 	t := s.com.Styles
-	// Mirror the editor prompt precedence: planning wins over YOLO, which
-	// can be carried into plan mode.
-	var badge string
-	switch {
-	case s.inputMode == uiInputModePlan:
-		badge = t.Status.ModeBadgePlan.String()
-	case s.yolo:
-		badge = t.Status.ModeBadgeYolo.String()
+	voice := ""
+	if s.voiceBadge != "" {
+		voice = t.Status.ModeBadgeVoice.Render(s.voiceBadge)
 	}
+	available := width
+	if voice != "" {
+		available -= lipgloss.Width(voice) + 1
+	}
+	badge := s.renderModeStates(max(0, available))
 	if s.voiceBadge == "" {
 		return badge
 	}
-	voice := t.Status.ModeBadgeVoice.Render(s.voiceBadge)
 	if badge == "" {
-		return voice
+		return ansi.Truncate(voice, max(0, width), "")
 	}
 	return badge + " " + voice
 }
@@ -122,10 +129,15 @@ func (s *Status) SetHideHelp(hideHelp bool) {
 
 // Draw draws the status bar onto the screen.
 func (s *Status) Draw(scr uv.Screen, area uv.Rectangle) {
+	if !s.hideHelp && s.resourceSummary != "" && area.Dy() > 1 {
+		line := ansi.Truncate(s.resourceSummary, max(0, area.Dx()), "")
+		uv.NewStyledString(line).Draw(scr, uv.Rect(area.Min.X, area.Min.Y, area.Max.X, area.Min.Y+1))
+		area.Min.Y++
+	}
 	if !s.hideHelp {
 		helpStyle := s.com.Styles.Status.Help
 		helpWidth := area.Dx() - helpStyle.GetPaddingLeft() - helpStyle.GetPaddingRight()
-		badge := s.modeBadge()
+		badge := s.modeBadgeWidth(max(0, area.Dx()-badgeLeftInset))
 		if badge != "" {
 			// Shrink the hints so the badge does not push them past the
 			// status area.

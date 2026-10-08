@@ -58,7 +58,7 @@ func TestSkillStatusItemsIncludesBuiltinSkills(t *testing.T) {
 	require.True(t, hasBuiltin)
 }
 
-func TestSkillStatusItemsExcludesDisabledSkills(t *testing.T) {
+func TestSkillStatusItemsShowsDisabledSkills(t *testing.T) {
 	t.Parallel()
 
 	st := uistyles.ColorTonePantera()
@@ -74,8 +74,13 @@ func TestSkillStatusItemsExcludesDisabledSkills(t *testing.T) {
 
 	items := ui.skillStatusItems()
 
+	found := map[string]bool{}
 	for _, item := range items {
-		require.NotEqual(t, "go-doc", item.name)
-		require.NotEqual(t, "prime-config", item.name)
+		if item.name == "go-doc" || item.name == "prime-config" {
+			require.Contains(t, item.icon, "[OFF]")
+			found[item.name] = true
+		}
 	}
+	require.True(t, found["go-doc"])
+	require.True(t, found["prime-config"])
 }

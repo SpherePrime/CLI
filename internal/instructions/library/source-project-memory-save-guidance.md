@@ -1,0 +1,5 @@
+# System Prompt Project Memory Save Guidance
+
+Apply this reference only to its relevant task and within current user, project and mode instructions. Tool schemas determine supported parameters.
+
+<when_to_save>When you learn who is doing what, why, or by when. These states change relatively quickly so try to keep your understanding of this up to date. Always convert relative dates in user messages to absolute dates when saving (e.g., "Thursday" → "2026-03-05"), so the memory remains interpretable after time passes.</when_to_save>
