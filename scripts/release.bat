@@ -1265,9 +1265,10 @@ set "MISSING_COUNT=0"
 for %%T in (!TARGETS!) do (
     for /f "tokens=1,2 delims=/" %%P in ("%%T") do (
         set "WANT="
+        set "FOUND=0"
         call :asset_name %%T
-        findstr /i /c:"!WANT!" "%ASSET_LIST%" >nul 2>&1
-        if errorlevel 1 set /a MISSING_COUNT+=1
+        findstr /i /c:"!WANT!" "%ASSET_LIST%" >nul 2>&1 && set "FOUND=1"
+        if not "!FOUND!"=="1" set /a MISSING_COUNT+=1
     )
 )
 if "!MISSING_COUNT!"=="0" goto verify_report
@@ -1290,10 +1291,13 @@ echo  ------------------------------------------------------------------
 set "MISSING_COUNT=0"
 for %%T in (!TARGETS!) do (
     for /f "tokens=1,2 delims=/" %%P in ("%%T") do (
+        rem call resets errorlevel, so capture the findstr result into a
+        rem flag before the next command can clobber it.
         set "WANT="
+        set "FOUND=0"
         call :asset_name %%T
-        findstr /i /c:"!WANT!" "%ASSET_LIST%" >nul 2>&1
-        if not errorlevel 1 (
+        findstr /i /c:"!WANT!" "%ASSET_LIST%" >nul 2>&1 && set "FOUND=1"
+        if "!FOUND!"=="1" (
             echo   [ok]      !WANT!
         ) else (
             echo   [MISSING] !WANT!
