@@ -14,14 +14,18 @@ rem    scripts\build.bat --all           every release target
 rem    scripts\build.bat --os windows    windows/amd64, windows/arm64
 rem    scripts\build.bat --os linux      linux/amd64, linux/arm64
 rem    scripts\build.bat --os darwin     darwin/amd64, darwin/arm64
+rem    scripts\build.bat --target windows/amd64   one exact os/arch
+rem    scripts\build.bat --target linux/arm64     one exact os/arch
 rem    scripts\build.bat --all --jobs 4  override the throttle (slower, cooler)
 rem    scripts\build.bat --ratio 0.25    use a quarter of the cores instead of half
 rem
-rem  Options: --all --os <name> --jobs <n> --ratio <f> --out <dir> --no-test
-rem           --version <x.y.z>   stamp the version into the binary
+rem  Options: --all --os <name> --target <os/arch> --jobs <n> --ratio <f>
+rem           --out <dir> --no-test --version <x.y.z>
+rem           --target stamps the version into the binary only when given
 rem ---------------------------------------------------------------------------
 
 set "TARGETS_MODE=current"
+set "TARGET_LIST="
 set "JOBS="
 set "RATIO=0.5"
 set "OUT=dist"
@@ -41,6 +45,7 @@ if "%~1"=="" goto parsed
 if /I "%~1"=="--all"     goto opt_all
 if /I "%~1"=="--no-test" goto opt_notest
 if /I "%~1"=="--os"      goto opt_os
+if /I "%~1"=="--target"  goto opt_target
 if /I "%~1"=="--jobs"    goto opt_jobs
 if /I "%~1"=="--ratio"  goto opt_ratio
 if /I "%~1"=="--out"     goto opt_out
@@ -61,10 +66,38 @@ shift
 goto parse
 
 :opt_os
-set "TARGETS_MODE=os"
 shift
 if "%~1"=="" ( echo --os needs a name & goto usage )
 set "OS=%~1"
+rem A value with a slash is a single target, e.g. "--os windows/amd64".
+if /I "%OS%"=="windows/amd64"  ( set "TARGETS_MODE=target" & set "TARGET_LIST=%OS%" & shift & goto parse )
+if /I "%OS%"=="windows/arm64"  ( set "TARGETS_MODE=target" & set "TARGET_LIST=%OS%" & shift & goto parse )
+if /I "%OS%"=="linux/amd64"    ( set "TARGETS_MODE=target" & set "TARGET_LIST=%OS%" & shift & goto parse )
+if /I "%OS%"=="linux/arm64"    ( set "TARGETS_MODE=target" & set "TARGET_LIST=%OS%" & shift & goto parse )
+set "TARGETS_MODE=os"
+shift
+goto parse
+
+rem A single os/arch pair; repeat the flag to build several. The list is
+rem space-separated, so each value is one token and no re-parsing is needed.
+rem Only the four arches the release ships are accepted: building an arch
+rem that is not on the release set produces a binary nothing would download.
+:opt_target
+set "TARGETS_MODE=target"
+shift
+if "%~1"=="" ( echo --target needs os/arch & goto usage )
+if /I "%~1"=="windows/amd64" goto target_add
+if /I "%~1"=="windows/arm64" goto target_add
+if /I "%~1"=="linux/amd64"   goto target_add
+if /I "%~1"=="linux/arm64"   goto target_add
+echo Unsupported --target: %~1
+goto usage
+:target_add
+if not defined TARGET_LIST (
+    set "TARGET_LIST=%~1"
+) else (
+    set "TARGET_LIST=%TARGET_LIST% %~1"
+)
 shift
 goto parse
 
@@ -166,6 +199,13 @@ if /I "%TARGETS_MODE%"=="all" (
     set "TARGETS=windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 freebsd/amd64 freebsd/arm64 openbsd/amd64 openbsd/arm64 netbsd/amd64 netbsd/arm64"
     set "MULTI=1"
     echo  All release targets. This takes a while.
+    echo.
+)
+if /I "%TARGETS_MODE%"=="target" (
+    set "TARGETS=%TARGET_LIST%"
+    set "MULTI=1"
+    if not defined TARGETS ( echo No --target given & goto usage )
+    echo  Explicit targets: %TARGET_LIST%
     echo.
 )
 
