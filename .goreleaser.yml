@@ -28,17 +28,14 @@ builds:
       - GOEXPERIMENT=greenteagc
     goos:
       - windows
+      - linux
     goarch:
       - amd64
       - arm64
-      - "386"
-      - arm
-    goarm:
-      - "7"
-    ignore:
-      # Windows on ARM32 is not a thing.
-      - goos: windows
-        goarch: arm
+    # The release ships four assets: Windows and Linux, each amd64 and
+    # arm64. macOS and the BSDs are not built, and 32-bit (386) and armv7
+    # builds are out - that is the whole set of devices the install
+    # scripts and "prime update" can reach.
     ldflags:
       - -s -w -X github.com/SpherePrime/CLI/internal/version.Version={{.Version}}
     flags:

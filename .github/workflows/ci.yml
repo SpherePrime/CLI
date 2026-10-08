@@ -44,13 +44,12 @@ jobs:
       - name: Build release matrix
         run: |
           set -eu
+          # The set the release actually ships: four assets, Windows and
+          # Linux, each amd64 and arm64. 32-bit (386) and ARMv7 boxes are
+          # out of scope, so only the 64-bit builds need to keep compiling.
           for target in \
-            linux/amd64 linux/arm64 linux/386 linux/arm \
-            windows/amd64 windows/arm64 windows/386 \
-            darwin/amd64 darwin/arm64 \
-            freebsd/amd64 freebsd/arm64 \
-            openbsd/amd64 openbsd/arm64 \
-            netbsd/amd64 netbsd/arm64
+            linux/amd64 linux/arm64 \
+            windows/amd64 windows/arm64
           do
             goos=${target%/*}
             goarch=${target#*/}

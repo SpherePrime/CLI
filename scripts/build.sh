@@ -85,8 +85,8 @@ current)
 	;;
 os)
 	case "$OS" in
-	windows) TARGETS="windows/amd64 windows/arm64 windows/386" ;;
-	linux)   TARGETS="linux/amd64 linux/arm64 linux/386 linux/arm" ;;
+	windows) TARGETS="windows/amd64 windows/arm64" ;;
+	linux)   TARGETS="linux/amd64 linux/arm64" ;;
 	darwin)  TARGETS="darwin/amd64 darwin/arm64" ;;
 	*)       echo "Unsupported --os: $OS"; exit 2 ;;
 	esac
@@ -94,8 +94,8 @@ os)
 	echo
 	;;
 all)
-	TARGETS="windows/amd64 windows/arm64 windows/386 \
-linux/amd64 linux/arm64 linux/386 linux/arm \
+	TARGETS="windows/amd64 windows/arm64 \
+linux/amd64 linux/arm64 \
 darwin/amd64 darwin/arm64 \
 freebsd/amd64 freebsd/arm64 \
 openbsd/amd64 openbsd/arm64 \
