@@ -64,5 +64,5 @@ func (m *UI) resourceSummary() string {
 		}
 		groups = append(groups, []string{"MCP", "LSP", "Skills"}[index]+" "+strings.Join(parts, " "))
 	}
-	return strings.Join(groups, " · ")
+	return m.com.Styles.Resource.RowTitleBase.Render(strings.Join(groups, " · "))
 }
