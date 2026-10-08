@@ -11,8 +11,8 @@ rem
 rem  Usage:
 rem    scripts\build.bat                 current OS only (fast default)
 rem    scripts\build.bat --all           every release target
-rem    scripts\build.bat --os windows    windows/amd64, windows/arm64, windows/386
-rem    scripts\build.bat --os linux      linux/amd64, linux/arm64, linux/386, linux/arm
+rem    scripts\build.bat --os windows    windows/amd64, windows/arm64
+rem    scripts\build.bat --os linux      linux/amd64, linux/arm64
 rem    scripts\build.bat --os darwin     darwin/amd64, darwin/arm64
 rem    scripts\build.bat --all --jobs 4  override the throttle (slower, cooler)
 rem    scripts\build.bat --ratio 0.25    use a quarter of the cores instead of half
@@ -152,8 +152,10 @@ if /I "%TARGETS_MODE%"=="current" (
     echo.
 )
 if /I "%TARGETS_MODE%"=="os" (
-    if /I "%OS%"=="windows" set "TARGETS=windows/amd64 windows/arm64 windows/386"
-    if /I "%OS%"=="linux"   set "TARGETS=linux/amd64 linux/arm64 linux/386 linux/arm"
+    rem The same set the release ships: one binary per real device class,
+    rem not every CPU Go can cross-compile for.
+    if /I "%OS%"=="windows" set "TARGETS=windows/amd64 windows/arm64"
+    if /I "%OS%"=="linux"   set "TARGETS=linux/amd64 linux/arm64"
     if /I "%OS%"=="darwin"  set "TARGETS=darwin/amd64 darwin/arm64"
     if not defined TARGETS ( echo Unsupported --os: %OS% & goto usage )
     set "MULTI=1"
@@ -161,7 +163,7 @@ if /I "%TARGETS_MODE%"=="os" (
     echo.
 )
 if /I "%TARGETS_MODE%"=="all" (
-    set "TARGETS=windows/amd64 windows/arm64 windows/386 linux/amd64 linux/arm64 linux/386 linux/arm darwin/amd64 darwin/arm64 freebsd/amd64 freebsd/arm64 openbsd/amd64 openbsd/arm64 netbsd/amd64 netbsd/arm64"
+    set "TARGETS=windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 freebsd/amd64 freebsd/arm64 openbsd/amd64 openbsd/arm64 netbsd/amd64 netbsd/arm64"
     set "MULTI=1"
     echo  All release targets. This takes a while.
     echo.

@@ -31,6 +31,8 @@ case "$arch" in
     ;;
 esac
 
+# Releases ship one binary per device class: amd64 and arm64. 32-bit
+# and ARMv7 boxes cannot run either, and they are not supported.
 if command -v curl >/dev/null 2>&1; then
   api=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest")
 elif command -v wget >/dev/null 2>&1; then

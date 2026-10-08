@@ -10,10 +10,10 @@ $Arch = if ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "ARM
   "arm64"
 } elseif ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "^(x86|AMD64)") {
   "x86_64"
-} elseif ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "^(x86|ia32)") {
-  "i386"
 } else {
-  Write-Error "prime: cannot determine your CPU architecture, install the release archive manually"
+  # 32-bit Windows: no i386 build is shipped, and x86_64 binaries cannot
+  # run on it either.
+  Write-Error "prime: 32-bit Windows is not supported, no build is shipped for it"
 }
 
 $Api = "https://api.github.com/repos/$Repo/releases/latest"

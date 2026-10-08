@@ -86,16 +86,20 @@ func pickAsset(release *Release) (*Asset, error) {
 	if err != nil {
 		return nil, err
 	}
+	version := strings.TrimPrefix(release.TagName, "v")
+	want := assetName(version, osToken, archToken)
+	if a := findAsset(release.Assets, want); a != nil {
+		return a, nil
+	}
+	return nil, fmt.Errorf("release %s has no asset for %s_%s (32-bit and ARMv7 builds are not shipped)", release.TagName, osToken, archToken)
+}
+
+func assetName(version, osToken, archToken string) string {
 	ext := "tar.gz"
 	if runtime.GOOS == "windows" {
 		ext = "zip"
 	}
-	version := strings.TrimPrefix(release.TagName, "v")
-	want := fmt.Sprintf("prime_%s_%s_%s.%s", version, osToken, archToken, ext)
-	if a := findAsset(release.Assets, want); a != nil {
-		return a, nil
-	}
-	return nil, fmt.Errorf("release %s has no asset %s", release.TagName, want)
+	return fmt.Sprintf("prime_%s_%s_%s.%s", version, osToken, archToken, ext)
 }
 
 func findAsset(assets []Asset, name string) *Asset {

@@ -32,6 +32,10 @@ rem    --dry-run        print what would happen, touch nothing remote
 rem    --skip-build     use whatever is already in the output directory:
 rem                     "release" packages it, "run" launches it with no
 rem                     compile - and so no Go toolchain needed
+rem    --targets <os>   which platforms to build and ship: windows, linux,
+rem                     or all (default all, i.e. both). "release" builds and
+rem                     packages only what is selected; "all" builds only
+rem                     what is selected
 rem
 rem  Example
 rem    scripts\release.bat
@@ -54,6 +58,9 @@ set "SKIP_BUILD=0"
 set "UPLOAD_LOCAL=0"
 set "ASSUME_YES=0"
 set "STRICT_SYNC=0"
+rem Every platform the release ships by default. "all" ships both; pass
+rem --targets to ship fewer without touching anything else.
+set "TARGETS=windows linux"
 
 set "ROOT=%~dp0.."
 pushd "%ROOT%" >nul 2>&1 || ( echo Cannot enter %ROOT% & exit /b 1 )
@@ -87,6 +94,7 @@ if /I "%~1"=="--yes"    ( set "ASSUME_YES=1" & shift & goto parse )
 if /I "%~1"=="--strict-sync" ( set "STRICT_SYNC=1" & shift & goto parse )
 if /I "%~1"=="--dry-run" ( set "DRY_RUN=1" & shift & goto parse )
 if /I "%~1"=="--skip-build" ( set "SKIP_BUILD=1" & shift & goto parse )
+if /I "%~1"=="--targets" goto opt_targets
 echo Unknown option: %~1
 goto usage
 
@@ -116,6 +124,33 @@ shift
 if "%~1"=="" ( echo --version needs x.y.z & goto usage )
 set "VERSION=%~1"
 shift
+goto parse
+
+:opt_targets
+rem A name list follows: "release --targets linux" ships Linux only. The
+rem list stops at the next flag, so "release --targets linux --dry-run"
+rem parses as two options, not as a targets value of "dry-run".
+rem
+rem The one shift here drops "--targets" itself; the loop below processes
+rem %1 before shifting it away, so the first value is not lost. A second
+rem shift here would drop that value silently.
+rem
+rem %~1 cannot carry a substring spec itself ("%~1:~0,1" is not valid), so
+rem the current argument is copied into a plain variable before the first-
+rem character test.
+set "TARGETS="
+shift
+:targets_loop
+set "ARG=%~1"
+if "!ARG!"=="" goto targets_done
+if "!ARG:~0,1!"=="-" goto targets_done
+if /I "!ARG!"=="windows" ( set "TARGETS=!TARGETS! windows" & shift & goto targets_loop )
+if /I "!ARG!"=="linux"   ( set "TARGETS=!TARGETS! linux"   & shift & goto targets_loop )
+if /I "!ARG!"=="all"     ( set "TARGETS=!TARGETS! windows linux" & shift & goto targets_loop )
+echo Unsupported --targets value: !ARG!
+goto usage
+:targets_done
+if not defined TARGETS ( echo --targets needs at least one platform & goto usage )
 goto parse
 
 :opt_notes
@@ -640,16 +675,15 @@ echo.
 echo  Starting %OUT%\prime.exe ...
 echo  Close it to come back here.
 echo.
-rem Deliberately no arguments.
+rem Deliberately no arguments of its own.
 rem
 rem %* used to be forwarded here, and it could not have worked: %* is the whole
 rem command line and shift does not change it, so it still held the "run" that
 rem selected this branch - which is prime's own subcommand for a non-interactive
 rem prompt, and sits waiting on stdin rather than opening the app. With a ratio
 rem option on the command line it did not even get that far: prime answered
-rem "Unknown flag: --ratio". prime's own flags are passed by the launcher at the
-rem repository root, Prime-Run.bat, which runs with delayed expansion off and so
-rem can carry a prompt containing "!" intact.
+rem "Unknown flag: --ratio". Flags for prime itself are passed through the
+rem root launcher, Prime.bat: "Prime.bat build -- --continue".
 "%OUT%\prime.exe"
 goto :eof
 
@@ -662,9 +696,18 @@ call :print_header "Build every Windows and Linux target"
 echo  output : %OUT%
 echo  This is several full compiles of a large program.
 call :print_footer
-call :run_build "--os windows" %RATIO% || exit /b 1
-call :run_build "--os linux"   %RATIO% || exit /b 1
+for %%T in (%TARGETS%) do call :build_one "--os %%T" || ( echo Build failed & exit /b 1 )
 goto :eof
+
+rem ---------------------------------------------------------------------------
+rem  build_one <build.bat-extra-args>
+rem
+rem  A throttled build.bat run for one platform group, e.g. "--os linux".
+rem  The throttle comes from build.bat so it stays in one place.
+rem ---------------------------------------------------------------------------
+:build_one
+call :run_build "%~1" %RATIO%
+exit /b %errorlevel%
 
 rem ---------------------------------------------------------------------------
 rem  run_build <build.bat-extra-args> <ratio>
@@ -844,10 +887,9 @@ if errorlevel 2 (
 
 if "%SKIP_BUILD%"=="0" (
     call :ensure_go || exit /b 1
-    echo  Building Windows and Linux targets ...
+    echo  Building the selected targets: %TARGETS%
     echo.
-    call :run_build "--os windows" %RATIO% || ( echo Build failed & exit /b 1 )
-    call :run_build "--os linux"   %RATIO% || ( echo Build failed & exit /b 1 )
+    for %%T in (%TARGETS%) do call :build_one "--os %%T" || ( echo Build failed & exit /b 1 )
 ) else (
     echo  Skipping the build, packaging whatever is in %OUT%.
     echo.
@@ -878,24 +920,50 @@ call :publish || exit /b 1
 goto :eof
 
 rem ---------------------------------------------------------------------------
-rem  package - zip the Windows binaries, tar.gz the Linux ones, checksum them
+rem  package - zip every platform binary and checksum the archives
 rem ---------------------------------------------------------------------------
 :package
 set "STAGE=%OUT%\stage"
 set "PKG=%OUT%\packages"
+
+rem A narrower --targets must not pick up binaries of a platform that was
+rem built earlier and is no longer selected: wipe the binary groups that are
+rem out of scope before the loops below walk them.
+for %%P in (windows linux) do (
+    set "IN=0"
+    for %%T in (%TARGETS%) do if /I "%%P"=="%%T" set "IN=1"
+    if "!IN!"=="0" del /q "%OUT%\prime-%%P-*" >nul 2>&1
+)
+
+rem Binaries the old wide target lists used to build: 32-bit and ARMv7. A
+rem release is the slim four-asset set, so leftovers from an earlier wide
+rem build must not ride along into the packages.
+del /q "%OUT%\prime-windows-386.exe" >nul 2>&1
+del /q "%OUT%\prime-linux-386"       >nul 2>&1
+del /q "%OUT%\prime-linux-arm"       >nul 2>&1
 
 if exist "%STAGE%" rd /s /q "%STAGE%"
 if exist "%PKG%"   rd /s /q "%PKG%"
 mkdir "%STAGE%" >nul 2>&1
 mkdir "%PKG%"   >nul 2>&1
 
+rem Package only the platforms the caller selected.
 set "ASSETS="
 set "MISSING="
 set "COUNT=0"
 
+set "PKG_WINDOWS=0"
+set "PKG_LINUX=0"
+for %%T in (%TARGETS%) do if /I "%%T"=="windows" set "PKG_WINDOWS=1"
+for %%T in (%TARGETS%) do if /I "%%T"=="linux"   set "PKG_LINUX=1"
+
+if "%PKG_WINDOWS%"=="1" goto package_windows
+goto package_linux
+
 rem Windows: the archive holds prime.exe, not the build's platform-stamped name.
 rem That is the name a user expects after unzipping, and it is what the
 rem install scripts look for.
+:package_windows
 for %%F in ("%OUT%\prime-windows-*.exe") do (
     if not "%%~zF"=="0" (
         set "ARC=%%~nF"
@@ -912,6 +980,8 @@ for %%F in ("%OUT%\prime-windows-*.exe") do (
     )
 )
 
+:package_linux
+if "%PKG_LINUX%"=="0" goto package_done
 rem Linux: a static binary called prime inside a .tar.gz, which is what the
 rem install scripts and the Arch package expect to unpack.
 for %%F in ("%OUT%\prime-linux-*") do (
@@ -928,6 +998,8 @@ for %%F in ("%OUT%\prime-linux-*") do (
         set /a COUNT+=1
     )
 )
+
+:package_done
 
 if "!COUNT!"=="0" (
     echo.
@@ -1138,6 +1210,8 @@ echo   --dry-run          print what would happen, touch nothing remote
 echo   --skip-build       release: package what is already in the output
 echo                      directory; run: launch it without compiling, and
 echo                      without needing the Go toolchain
+echo   --targets ^<os^>     ship fewer platforms, e.g. "release --targets linux"
+echo                      or "all --targets windows". Default: windows linux
 echo   --upload-local     publish from this machine without GitHub Actions at all.
 echo                      The tag is created through the API rather than pushed,
 echo                      so no workflow runs and no Actions minutes are spent.
