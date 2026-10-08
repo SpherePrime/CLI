@@ -27,7 +27,7 @@ func namedPaletteTheme(name string) Styles {
 	if name == "paper" {
 		errorColor, warningColor, successColor = "#AE2942", "#805E17", "#20643C"
 	}
-	infoMuted, successMuted := p.elevated, p.elevated
+	infoMuted, successMuted := p.elevated, successColor
 	if name == "paper" {
 		infoMuted, successMuted = p.muted, successColor
 	}
