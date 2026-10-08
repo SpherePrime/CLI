@@ -56,13 +56,13 @@ func (m *UI) resourceSummary() string {
 		parts := []string{}
 		for _, state := range []string{"ON", "OFF", "WAIT", "ERR", "AUTH"} {
 			if counts[state] > 0 {
-				parts = append(parts, resourceStateBadge(m.com.Styles, state)+fmt.Sprint(counts[state]))
+				parts = append(parts, resourceStateBadge(m.com.Styles, state)+m.com.Styles.Resource.RowTitleBase.Render(fmt.Sprint(counts[state])))
 			}
 		}
 		if len(parts) == 0 {
 			parts = append(parts, resourceStateBadge(m.com.Styles, "OFF"))
 		}
-		groups = append(groups, []string{"MCP", "LSP", "Skills"}[index]+" "+strings.Join(parts, " "))
+		groups = append(groups, m.com.Styles.Resource.RowTitleBase.Render([]string{"MCP", "LSP", "Skills"}[index])+" "+strings.Join(parts, " "))
 	}
-	return m.com.Styles.Resource.RowTitleBase.Render(strings.Join(groups, " · "))
+	return strings.Join(groups, m.com.Styles.Resource.RowTitleBase.Render(" · "))
 }
