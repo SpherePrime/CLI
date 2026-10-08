@@ -37,9 +37,7 @@ func (m *UI) updateDesignSidebarScrollState() {
 	if cfg != nil {
 		body = append(body, m.mcpInfo(width, mcpCount(cfg.MCP.Sorted(), m.mcpStates), true))
 	}
-	if m.com.Styles.Design != "studio" {
-		body = append(body, m.skillsInfo(width, len(m.skillStatusItems()), true))
-	}
+	body = append(body, m.skillsInfo(width, len(m.skillStatusItems()), true))
 	m.sidebarContent = strings.Join(body, "\n\n")
 	m.sidebarTotalLines = strings.Count(m.sidebarContent, "\n") + 1
 	m.sidebarContentWidth = width

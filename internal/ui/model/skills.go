@@ -7,10 +7,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/skills"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 type skillStatusItem struct {
@@ -60,7 +60,7 @@ func (m *UI) skillStatusItems() []skillStatusItem {
 
 	disabledSet := make(map[string]bool)
 	if m.com != nil && m.com.Workspace != nil {
-		if cfg := m.com.Config(); cfg != nil {
+		if cfg := m.com.Config(); cfg != nil && cfg.Options != nil {
 			for _, name := range cfg.Options.DisabledSkills {
 				disabledSet[name] = true
 			}
@@ -76,16 +76,16 @@ func (m *UI) skillStatusItems() []skillStatusItem {
 		if name == "" {
 			name = filepath.Base(filepath.Dir(state.Path))
 		}
-		if disabledSet[name] {
-			continue
-		}
 		if _, exists := stateNames[name]; exists {
 			continue
 		}
 		stateNames[name] = struct{}{}
-		icon := t.Resource.OnlineIcon.String()
+		icon := resourceStateBadge(t, "ON")
 		if state.State == skills.StateError {
-			icon = t.Resource.ErrorIcon.String()
+			icon = resourceStateBadge(t, "ERR")
+		}
+		if disabledSet[name] {
+			icon = resourceStateBadge(t, "OFF")
 		}
 		items = append(items, skillStatusItem{
 			icon:  icon,
@@ -102,16 +102,29 @@ func (m *UI) skillStatusItems() []skillStatusItem {
 		if _, ok := stateNames[skill.Name]; ok {
 			continue
 		}
+		icon := resourceStateBadge(t, "ON")
 		if disabledSet[skill.Name] {
-			continue
+			icon = resourceStateBadge(t, "OFF")
 		}
 		items = append(items, skillStatusItem{
-			icon:  t.Resource.OnlineIcon.String(),
+			icon:  icon,
 			name:  skill.Name,
 			title: t.Resource.Name.Render(skill.Name),
 		})
 	}
 
+	for name := range disabledSet {
+		found := false
+		for _, item := range items {
+			if item.name == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			items = append(items, skillStatusItem{icon: resourceStateBadge(t, "OFF"), name: name, title: t.Resource.Name.Render(name)})
+		}
+	}
 	slices.SortStableFunc(items, func(a, b skillStatusItem) int {
 		return strings.Compare(a.name, b.name)
 	})

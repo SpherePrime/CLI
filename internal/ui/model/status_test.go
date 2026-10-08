@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/internal/ui/attachments"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
@@ -38,8 +38,8 @@ func TestStatusDrawExpandedHelpRowsAlignWithBadge(t *testing.T) {
 	st.SetMode(uiInputModePlan, false)
 
 	lines := drawStatusLines(t, st, 100, 6)
-	require.True(t, strings.HasPrefix(lines[0], strings.Repeat(" ", badgeLeftInset)+" "+"PLAN MODE"),
-		"the badge row must start with the badge inset and its padding: %q", lines[0])
+	require.True(t, strings.HasPrefix(lines[0], strings.Repeat(" ", badgeLeftInset)+"Thinking OFF"))
+	require.Contains(t, lines[0], "Plan ON")
 
 	// Every subsequent help row must start at the same column as the hints
 	// on the badge row: badge inset + badge width + separator + help padding.
@@ -54,7 +54,7 @@ func TestStatusDrawExpandedHelpRowsAlignWithBadge(t *testing.T) {
 	}
 }
 
-func TestStatusDrawExpandedHelpRowsAlignWithoutBadge(t *testing.T) {
+func TestStatusDrawExpandedHelpRowsAlignWithDisabledModes(t *testing.T) {
 	t.Parallel()
 
 	u := newPrismTestUI()
@@ -66,8 +66,10 @@ func TestStatusDrawExpandedHelpRowsAlignWithoutBadge(t *testing.T) {
 	st.SetMode(uiInputModeCode, false)
 
 	lines := drawStatusLines(t, st, 100, 6)
-	wantCol := u.com.Styles.Status.Help.GetPaddingLeft()
-	for i, line := range lines {
+	require.Contains(t, lines[0], "Plan OFF")
+	require.Contains(t, lines[0], "YOLO OFF")
+	wantCol := badgeLeftInset + lipgloss.Width(st.modeBadge()) + 1 + u.com.Styles.Status.Help.GetPaddingLeft()
+	for i, line := range lines[1:] {
 		if strings.TrimSpace(line) == "" {
 			break
 		}

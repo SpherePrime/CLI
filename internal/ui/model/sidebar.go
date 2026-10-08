@@ -248,13 +248,6 @@ func fileChangeCount(files []SessionFile) int {
 	return count
 }
 
-// mcpCount returns the number of MCP servers that have a state entry.
 func mcpCount(mcpCfgs []config.MCP, states map[string]mcp.ClientInfo) int {
-	count := 0
-	for _, cfg := range mcpCfgs {
-		if _, ok := states[cfg.Name]; ok {
-			count++
-		}
-	}
-	return count
+	return len(mcpCfgs)
 }
