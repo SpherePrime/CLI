@@ -23,6 +23,9 @@ var planPromptTmpl []byte
 //go:embed templates/initialize.md.tpl
 var initializePromptTmpl []byte
 
+//go:embed templates/instructions.md.tpl
+var instructionRoutingTmpl []byte
+
 func coderPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 	systemPrompt, err := prompt.NewPrompt("coder", string(coderPromptTmpl), opts...)
 	if err != nil {
@@ -32,7 +35,7 @@ func coderPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 }
 
 func taskPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
-	systemPrompt, err := prompt.NewPrompt("task", string(taskPromptTmpl), opts...)
+	systemPrompt, err := prompt.NewPrompt("task", string(taskPromptTmpl)+string(instructionRoutingTmpl), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +43,7 @@ func taskPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 }
 
 func planPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
-	systemPrompt, err := prompt.NewPrompt("plan", string(planPromptTmpl), opts...)
+	systemPrompt, err := prompt.NewPrompt("plan", string(planPromptTmpl)+string(instructionRoutingTmpl), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +51,7 @@ func planPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 }
 
 func codePrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
-	systemPrompt, err := prompt.NewPrompt("code", string(codePromptTmpl), opts...)
+	systemPrompt, err := prompt.NewPrompt("code", string(codePromptTmpl)+string(instructionRoutingTmpl), opts...)
 	if err != nil {
 		return nil, err
 	}

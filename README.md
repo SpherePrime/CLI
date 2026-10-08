@@ -27,6 +27,16 @@ across restarts and updates. **Automatic** follows the selected provider.
 Shell configuration also supports `option ui design cards` and
 `option ui theme nord`.
 
+## Task instructions
+
+Prime uses a short core prompt and a bundled instruction library adapted from
+[Piebald's prompt collection](https://github.com/Piebald-AI/claude-code-system-prompts).
+The agent finds relevant workflows with `search_instructions` and reads selected
+modules with `read_instruction`, including further modules as the task changes.
+Instruction bodies are loaded on demand, never attached as one complete set.
+The library works offline and updates with Prime. Project instructions and mode
+restrictions take priority.
+
 ## Install
 
 Linux / macOS:

@@ -31,6 +31,9 @@ func renderCoderPrompt(t *testing.T, smartTools bool) string {
 
 	cfg, err := config.Init(env.workingDir, "", false)
 	require.NoError(t, err)
+	cfg.Config().Options.GlobalContextPaths = nil
+	cfg.Config().Options.ContextPaths = nil
+	cfg.Config().Options.SkillsPaths = nil
 	cfg.SetupAgents()
 
 	p, err := coderPrompt(prompt.WithWorkingDir(env.workingDir))
@@ -66,24 +69,21 @@ func TestCoderPromptCarriesOperatingGuidance(t *testing.T) {
 			got := renderCoderPrompt(t, smartTools)
 
 			for _, section := range []string{
-				"<when_stuck>",
-				"<mcp_usage>",
-				"<code_comprehension>",
+				"<task_instructions>",
+				"<operating_rules>",
+				"<env>",
 			} {
 				require.Contains(t, got, section,
 					"%s is missing with smartTools=%v", section, smartTools)
 			}
 
-			// Delegation has to be the default move, not a fallback the model
-			// reaches for only when a search fails.
-			require.Contains(t, got, "Delegate aggressively")
-			require.Contains(t, got, "general")
-
-			// Anti-looping has to state the concrete rule, not just be careful.
+			require.Contains(t, got, "search_instructions")
+			require.Contains(t, got, "read_instruction")
 			require.Contains(t, got, "Never send the same failing call twice")
-
-			// Identity: a coding agent, stated before anything else.
-			require.Contains(t, got, "AI coding agent")
+			require.Contains(t, got, "coding agent")
+			require.Contains(t, got, "User and project instructions")
+			require.Less(t, len(got), 9000)
+			require.NotContains(t, got, "<whitespace_and_exact_matching>")
 		})
 	}
 }
