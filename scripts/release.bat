@@ -14,7 +14,8 @@ rem    run       build for this machine and launch it so you can try it
 rem    all       build every Windows and Linux target
 rem    check     show the last release, the version that would be used, and
 rem               the working tree state. Changes nothing.
-rem    release   build everything, tag, and publish to GitHub
+rem    release   pick platforms in a sub-menu, auto-commit, build, tag,
+rem               publish to GitHub, and verify the assets
 rem    draft     same as release but leaves a draft for review
 rem    clean     delete the output directory
 rem    help      this text
@@ -32,10 +33,15 @@ rem    --dry-run        print what would happen, touch nothing remote
 rem    --skip-build     use whatever is already in the output directory:
 rem                     "release" packages it, "run" launches it with no
 rem                     compile - and so no Go toolchain needed
-rem    --targets <os>   which platforms to build and ship: windows, linux,
-rem                     or all (default all, i.e. both). "release" builds and
-rem                     packages only what is selected; "all" builds only
-rem                     what is selected
+rem    --upload-local   publish from this machine without GitHub Actions
+rem    --yes            skip the confirmation prompt
+rem    --no-auto-commit do not commit the tree before the release build
+rem    --no-verify      skip the post-publish asset check
+rem    --targets <tok>... which platforms to build and ship. A platform name
+rem                     (windows, linux, all) or exact arches
+rem                     (windows/amd64, linux/arm64). Skips the pick menu.
+rem                     With no --targets, a pick menu is shown before the
+rem                     release starts.
 rem
 rem  Example
 rem    scripts\release.bat
@@ -58,9 +64,21 @@ set "SKIP_BUILD=0"
 set "UPLOAD_LOCAL=0"
 set "ASSUME_YES=0"
 set "STRICT_SYNC=0"
-rem Every platform the release ships by default. "all" ships both; pass
-rem --targets to ship fewer without touching anything else.
-set "TARGETS=windows linux"
+rem Commit the working tree before the release build. Default on; a generic
+rem message so the same script is safe for whoever runs it. --no-auto-commit
+rem turns it off. Skipped when the tree is already clean or in --dry-run.
+set "AUTO_COMMIT=1"
+rem Check that the published release carries every selected asset, and say so
+rem plainly if one is missing. --no-verify turns it off.
+set "VERIFY=1"
+rem The targets the release ships. Always a list of os/arch tokens, e.g.
+rem "windows/amd64 windows/arm64 linux/amd64 linux/arm64". Platform names are
+rem expanded to their arches in the parser, so the build, package and verify
+rem steps all work off one representation. Default ships the four-asset set.
+set "TARGETS=windows/amd64 windows/arm64 linux/amd64 linux/arm64"
+rem 1 when --targets came from the command line: the interactive pick menu
+rem stays out of the way when the caller already decided.
+set "TARGETS_SET=0"
 
 set "ROOT=%~dp0.."
 pushd "%ROOT%" >nul 2>&1 || ( echo Cannot enter %ROOT% & exit /b 1 )
@@ -94,6 +112,8 @@ if /I "%~1"=="--yes"    ( set "ASSUME_YES=1" & shift & goto parse )
 if /I "%~1"=="--strict-sync" ( set "STRICT_SYNC=1" & shift & goto parse )
 if /I "%~1"=="--dry-run" ( set "DRY_RUN=1" & shift & goto parse )
 if /I "%~1"=="--skip-build" ( set "SKIP_BUILD=1" & shift & goto parse )
+if /I "%~1"=="--no-auto-commit" ( set "AUTO_COMMIT=0" & shift & goto parse )
+if /I "%~1"=="--no-verify" ( set "VERIFY=0" & shift & goto parse )
 if /I "%~1"=="--targets" goto opt_targets
 echo Unknown option: %~1
 goto usage
@@ -127,30 +147,37 @@ shift
 goto parse
 
 :opt_targets
-rem A name list follows: "release --targets linux" ships Linux only. The
-rem list stops at the next flag, so "release --targets linux --dry-run"
-rem parses as two options, not as a targets value of "dry-run".
+rem A token list follows: "release --targets linux" ships the whole Linux
+rem set, "release --targets linux/arm64 windows/amd64" ships exactly two
+rem arches. A platform name expands to its arches so the build, package and
+rem verify steps share one representation. The list stops at the next flag,
+rem so "release --targets linux --dry-run" parses as two options.
 rem
-rem The one shift here drops "--targets" itself; the loop below processes
-rem %1 before shifting it away, so the first value is not lost. A second
-rem shift here would drop that value silently.
-rem
-rem %~1 cannot carry a substring spec itself ("%~1:~0,1" is not valid), so
-rem the current argument is copied into a plain variable before the first-
-rem character test.
+rem The one shift here drops "--targets" itself; the loop processes %1
+rem before shifting it away, so the first value is not lost. %~1 cannot
+rem carry a substring spec itself ("%~1:~0,1" is not valid), so the current
+rem argument is copied into a plain variable before the first-character test.
 set "TARGETS="
 shift
 :targets_loop
 set "ARG=%~1"
 if "!ARG!"=="" goto targets_done
 if "!ARG:~0,1!"=="-" goto targets_done
-if /I "!ARG!"=="windows" ( set "TARGETS=!TARGETS! windows" & shift & goto targets_loop )
-if /I "!ARG!"=="linux"   ( set "TARGETS=!TARGETS! linux"   & shift & goto targets_loop )
-if /I "!ARG!"=="all"     ( set "TARGETS=!TARGETS! windows linux" & shift & goto targets_loop )
-echo Unsupported --targets value: !ARG!
+rem Platform names expand to their full arch sets.
+if /I "!ARG!"=="windows" ( set "TARGETS=!TARGETS! windows/amd64 windows/arm64" & shift & goto targets_loop )
+if /I "!ARG!"=="linux"   ( set "TARGETS=!TARGETS! linux/amd64 linux/arm64"   & shift & goto targets_loop )
+if /I "!ARG!"=="all"     ( set "TARGETS=windows/amd64 windows/arm64 linux/amd64 linux/arm64" & shift & goto targets_loop )
+rem A single os/arch token is validated against the four the release ships,
+rem then taken through unchanged.
+if /I "!ARG!"=="windows/amd64"  ( set "TARGETS=!TARGETS! windows/amd64"  & shift & goto targets_loop )
+if /I "!ARG!"=="windows/arm64"  ( set "TARGETS=!TARGETS! windows/arm64"  & shift & goto targets_loop )
+if /I "!ARG!"=="linux/amd64"    ( set "TARGETS=!TARGETS! linux/amd64"    & shift & goto targets_loop )
+if /I "!ARG!"=="linux/arm64"    ( set "TARGETS=!TARGETS! linux/arm64"    & shift & goto targets_loop )
+echo Unsupported --targets value: !ARG! ^(use windows, linux, all, or os/arch^)
 goto usage
 :targets_done
 if not defined TARGETS ( echo --targets needs at least one platform & goto usage )
+set "TARGETS_SET=1"
 goto parse
 
 :opt_notes
@@ -696,13 +723,13 @@ call :print_header "Build every Windows and Linux target"
 echo  output : %OUT%
 echo  This is several full compiles of a large program.
 call :print_footer
-for %%T in (%TARGETS%) do call :build_one "--os %%T" || ( echo Build failed & exit /b 1 )
+for %%T in (!TARGETS!) do call :build_one "--target %%T" || ( echo Build failed & exit /b 1 )
 goto :eof
 
 rem ---------------------------------------------------------------------------
 rem  build_one <build.bat-extra-args>
 rem
-rem  A throttled build.bat run for one platform group, e.g. "--os linux".
+rem  A throttled build.bat run for one target, e.g. "--target linux/amd64".
 rem  The throttle comes from build.bat so it stays in one place.
 rem ---------------------------------------------------------------------------
 :build_one
@@ -819,12 +846,14 @@ if not defined SHA ( echo ERROR: not a git repository with a HEAD & exit /b 1 )
 
 for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
 if defined DIRTY (
-    echo.
-    echo WARNING: the working tree has uncommitted changes.
-    echo          A release is built from HEAD, so they will not be included.
-    echo.
+  echo.
+  echo NOTE: the working tree has uncommitted changes.
+  echo       They will be auto-committed after confirmation unless
+  echo       --no-auto-commit was given.
+  echo.
 )
-if defined DIRTY set "DIRTY="
+
+call :pick_targets || exit /b 1
 
 call :resolve_version
 set "TAG=v%VERSION%"
@@ -872,10 +901,10 @@ rem One keystroke to start is the point, but a tag that has been pushed cannot
 rem be taken back without deleting it on the remote, so the irreversible step
 rem gets one yes or no. --yes skips it for unattended runs.
 :confirm_release
-if "%DRY_RUN%"=="1" goto confirmed
-if "%ASSUME_YES%"=="1" goto confirmed
-echo  This will build every target, tag !TAG!, and publish a release.
-echo  Anything already committed is fine; uncommitted changes are not included.
+if "!DRY_RUN!"=="1" goto confirmed
+if "!ASSUME_YES!"=="1" goto confirmed
+echo  This will build the selected targets, tag !TAG!, and publish a release.
+echo  Uncommitted changes are auto-committed before the build.
 echo.
 choice /c Yn /n /t 20 /d N /m "  Publish? [Y/n] (20s) "
 if errorlevel 2 (
@@ -885,11 +914,37 @@ if errorlevel 2 (
 )
 :confirmed
 
+rem The tree is committed only after the user confirmed the publish: a
+rem cancelled release leaves the working tree exactly as it was found.
+rem Tracked changes are staged; untracked files are the owner's decision.
+rem The generic author is a fallback for machines without a git identity -
+rem machines with one keep their own.
+if defined DIRTY if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
+    echo  Committing local changes ...
+    git add -u
+    git config user.name >nul 2>&1
+    if errorlevel 1 (
+        git -c user.name="Prime Release" -c user.email="release@prime.local" ^
+            commit -m "Auto commit: prepare release"
+    ) else (
+        git commit -m "Auto commit: prepare release"
+    )
+    if errorlevel 1 (
+        echo.
+        echo ERROR: could not commit the local changes. Resolve them and re-run.
+        exit /b 1
+    )
+    call :current_sha
+    echo  Committed !SHA!. The release is built from this commit.
+    echo.
+)
+if defined DIRTY set "DIRTY="
+
 if "%SKIP_BUILD%"=="0" (
     call :ensure_go || exit /b 1
-    echo  Building the selected targets: %TARGETS%
+    echo  Building the selected targets: !TARGETS!
     echo.
-    for %%T in (%TARGETS%) do call :build_one "--os %%T" || ( echo Build failed & exit /b 1 )
+    for %%T in (!TARGETS!) do call :build_one "--target %%T" || ( echo Build failed & exit /b 1 )
 ) else (
     echo  Skipping the build, packaging whatever is in %OUT%.
     echo.
@@ -917,21 +972,32 @@ if "%DRY_RUN%"=="1" (
 )
 
 call :publish || exit /b 1
+
+rem The publish step itself says what happened; the asset check then proves
+rem the release page actually carries what was selected, and names anything
+rem that is absent.
+if "!VERIFY!"=="1" call :verify_assets
 goto :eof
 
 rem ---------------------------------------------------------------------------
-rem  package - zip every platform binary and checksum the archives
+rem  package - one archive per selected target, then checksums
+rem
+rem  Archive names follow the Release workflow's naming
+rem  (prime_<ver>_<OS>_<arch>.<ext>): local uploads and goreleaser assets
+rem  are interchangeable, and the install scripts look for exactly this.
 rem ---------------------------------------------------------------------------
 :package
 set "STAGE=%OUT%\stage"
 set "PKG=%OUT%\packages"
+set "VERSION_BARE=%VERSION%"
+set "VERSION_BARE=%VERSION_BARE:v=%"
 
 rem A narrower --targets must not pick up binaries of a platform that was
 rem built earlier and is no longer selected: wipe the binary groups that are
 rem out of scope before the loops below walk them.
 for %%P in (windows linux) do (
     set "IN=0"
-    for %%T in (%TARGETS%) do if /I "%%P"=="%%T" set "IN=1"
+    for %%T in (%TARGETS%) do for /f "tokens=1 delims=/" %%Q in ("%%T") do if /I "%%Q"=="%%P" set "IN=1"
     if "!IN!"=="0" del /q "%OUT%\prime-%%P-*" >nul 2>&1
 )
 
@@ -947,59 +1013,14 @@ if exist "%PKG%"   rd /s /q "%PKG%"
 mkdir "%STAGE%" >nul 2>&1
 mkdir "%PKG%"   >nul 2>&1
 
-rem Package only the platforms the caller selected.
 set "ASSETS="
 set "MISSING="
 set "COUNT=0"
 
-set "PKG_WINDOWS=0"
-set "PKG_LINUX=0"
-for %%T in (%TARGETS%) do if /I "%%T"=="windows" set "PKG_WINDOWS=1"
-for %%T in (%TARGETS%) do if /I "%%T"=="linux"   set "PKG_LINUX=1"
-
-if "%PKG_WINDOWS%"=="1" goto package_windows
-goto package_linux
-
-rem Windows: the archive holds prime.exe, not the build's platform-stamped name.
-rem That is the name a user expects after unzipping, and it is what the
-rem install scripts look for.
-:package_windows
-for %%F in ("%OUT%\prime-windows-*.exe") do (
-    if not "%%~zF"=="0" (
-        set "ARC=%%~nF"
-        del /q "%STAGE%\prime.exe" >nul 2>&1
-        copy /y "%%~fF" "%STAGE%\prime.exe" >nul
-        call :add_readme "%STAGE%"
-        powershell -NoProfile -Command "Compress-Archive -Path '%STAGE%\prime.exe' -DestinationPath '%PKG%\!ARC!.zip' -Force" >nul 2>&1
-        if not exist "%PKG%\!ARC!.zip" (
-            echo  ERROR: could not zip !ARC!
-            exit /b 1
-        )
-        set "ASSETS=!ASSETS! %PKG%\!ARC!.zip"
-        set /a COUNT+=1
-    )
+for %%T in (!TARGETS!) do (
+    call :package_one %%T
+    if errorlevel 1 exit /b 1
 )
-
-:package_linux
-if "%PKG_LINUX%"=="0" goto package_done
-rem Linux: a static binary called prime inside a .tar.gz, which is what the
-rem install scripts and the Arch package expect to unpack.
-for %%F in ("%OUT%\prime-linux-*") do (
-    if not "%%~zF"=="0" (
-        set "ARC=%%~nF"
-        del /q "%STAGE%\prime" >nul 2>&1
-        copy /y "%%~fF" "%STAGE%\prime" >nul
-        tar -czf "%PKG%\!ARC!.tar.gz" -C "%STAGE%" prime >nul 2>&1
-        if not exist "%PKG%\!ARC!.tar.gz" (
-            echo  ERROR: could not create the archive for !ARC!
-            exit /b 1
-        )
-        set "ASSETS=!ASSETS! %PKG%\!ARC!.tar.gz"
-        set /a COUNT+=1
-    )
-)
-
-:package_done
 
 if "!COUNT!"=="0" (
     echo.
@@ -1012,11 +1033,17 @@ echo.
 echo  Checksums ...
 rem The checksum file lives next to the archives so it is uploaded by bare
 rem name and sits alongside them on the release page.
+rem
+rem .NET SHA256 is computed through PowerShell because it is present on every
+rem machine, even ones where the Get-FileHash cmdlet has been stripped. A
+rem certutil fallback covers a box with no PowerShell at all: certutil is an
+rem operating system binary, and its one space-free output line is the hash.
 del /q "%PKG%\checksums.txt" >nul 2>&1
 for %%A in ("%PKG%\*.zip" "%PKG%\*.tar.gz") do (
-    for /f "usebackq delims=" %%h in (`powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath '%%~fA').Hash.ToLower()"`) do (
+    for /f "usebackq delims=" %%h in (`powershell -NoProfile -Command "$b=[System.IO.File]::ReadAllBytes('%%~fA');$s=[System.Security.Cryptography.SHA256]::Create();($s.ComputeHash($b)|ForEach-Object{($_.ToString('x'))}) -join ''"`) do (
         >>"%PKG%\checksums.txt" echo %%h  %%~nxA
     )
+    if not exist "%PKG%\checksums.txt" for /f "tokens=*" %%h in ('certutil -hashfile "%%~fA" SHA256 2^>nul ^| findstr /v " "') do >>"%PKG%\checksums.txt" echo %%h  %%~nxA
 )
 set "ASSETS=!ASSETS! %PKG%\checksums.txt"
 
@@ -1032,8 +1059,287 @@ for %%A in ("%PKG%\*") do (
 call :print_footer
 exit /b 0
 
+rem ---------------------------------------------------------------------------
+rem  package_one <os/arch> - archive one target's binary
+rem
+rem  The archive is named the way the Release workflow's goreleaser names it,
+rem  so an --upload-local release and a CI release carry identical asset sets.
+rem  A failure here aborts the whole release: half-packed archives would ship
+rem  a release some install script 404s on.
+rem ---------------------------------------------------------------------------
+:package_one
+set "OS_L="
+set "ARC_L="
+for /f "tokens=1,2 delims=/" %%P in ("%~1") do (
+    set "OS_L=%%P"
+    set "ARC_L=%%Q"
+)
+if not defined OS_L (
+    echo  ERROR: cannot parse target %~1
+    exit /b 1
+)
+
+rem goreleaser naming: capitalized OS, x86_64 for amd64, zip on Windows,
+rem tar.gz on Linux.
+set "OS_UP="
+set "ARC_UP=!ARC_L!"
+set "EXT=tar.gz"
+if /I "!ARC_L!"=="amd64" set "ARC_UP=x86_64"
+if /I "!OS_L!"=="windows" (
+    set "OS_UP=Windows"
+    set "EXT=zip"
+) else (
+    set "OS_UP=Linux"
+)
+set "NAME=prime_%VERSION_BARE%_!OS_UP!_!ARC_UP!.!EXT!"
+set "BIN=%OUT%\prime-!OS_L!-!ARC_L!"
+if /I "!OS_L!"=="windows" set "BIN=!BIN!.exe"
+if not exist "!BIN!" (
+    echo  ERROR: !BIN! is not in %OUT%.
+    echo         Build the targets first, or drop --skip-build.
+    exit /b 1
+)
+
+rem The archive holds the plain name prime(.exe) plus the README, which is
+rem what the install scripts and the Arch package expect to unpack.
+del /q "%STAGE%\prime" >nul 2>&1
+del /q "%STAGE%\prime.exe" >nul 2>&1
+
+if /I "!OS_L!"=="windows" (
+    copy /y "!BIN!" "%STAGE%\prime.exe" >nul
+    call :add_readme "%STAGE%"
+    call :make_zip "%STAGE%" "%PKG%\!NAME!" || exit /b 1
+) else (
+    copy /y "!BIN!" "%STAGE%\prime" >nul
+    tar -czf "%PKG%\!NAME!" -C "%STAGE%" prime >nul 2>&1
+)
+if not exist "%PKG%\!NAME!" (
+    echo  ERROR: could not create the archive for !NAME!
+    exit /b 1
+)
+set "ASSETS=!ASSETS! %PKG%\!NAME!"
+set /a COUNT+=1
+exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem  make_zip <stagedir> <out.zip> - zip every file in the stage directory
+rem
+rem  PowerShell's Compress-Archive is the primary producer because it is the
+rem  reference zip layout; but the Archive module is an operating system
+rem  feature and stripped images load it not at all, so bsdtar stands by.
+rem  create_zip_by_extension is its universal mode: .zip out, zip in.
+rem ---------------------------------------------------------------------------
+:make_zip
+set "STG=%~1"
+set "ZOUT=%~2"
+if exist "!ZOUT!" del /q "!ZOUT!" >nul 2>&1
+powershell -NoProfile -Command "Compress-Archive -Path '!STG!\*' -DestinationPath '!ZOUT!' -Force" >nul 2>&1
+if not exist "!ZOUT!" (
+    rem bsdtar's auto-format mode names the archive by extension, so a .zip
+    rem in produces a .zip out. The quoted * globs inside the stage directory,
+    rem which may hold the README as well as the binary.
+    tar -a -cf "!ZOUT!" -C "!STG!" "*" 2>nul
+)
+if not exist "!ZOUT!" exit /b 1
+exit /b 0
+
 :add_readme
 if exist "%ROOT%\README.md" if not exist "%~1\README.md" copy /y "%ROOT%\README.md" "%~1\" >nul
+exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem  pick_targets - the interactive target sub-menu.
+rem
+rem  Shown only when the caller did not pin the set on the command line
+rem  (TARGETS_SET stays 0). The pick writes back to TARGETS, the same variable
+rem  the build, package and verify steps all read, so one representation flows
+rem  through every later step. q cancels out of the whole release.
+rem ---------------------------------------------------------------------------
+:pick_targets
+if "!TARGETS_SET!"=="1" goto pick_targets_done
+echo.
+echo  Which targets ship in this release?
+echo  ------------------------------------------------------------------
+echo   1  All        Windows + Linux, amd64 + arm64
+echo   2  Windows    Windows only (amd64 + arm64)
+echo   3  Linux      Linux only (amd64 + arm64)
+echo   4  Selective  tick the exact arches
+echo   q  Cancel     stop the release, build nothing
+echo  ------------------------------------------------------------------
+set "PICK="
+choice /c 1234q /n /m "  Pick: "
+if errorlevel 5 goto pick_cancel
+if errorlevel 4 goto pick_selective
+if errorlevel 3 set "TARGETS=linux/amd64 linux/arm64" & set "TARGETS_SET=1" & goto pick_targets_done
+if errorlevel 2 set "TARGETS=windows/amd64 windows/arm64" & set "TARGETS_SET=1" & goto pick_targets_done
+if errorlevel 1 set "TARGETS=windows/amd64 windows/arm64 linux/amd64 linux/arm64" & set "TARGETS_SET=1" & goto pick_targets_done
+
+:pick_selective
+set "SEL_WAMD="
+set "SEL_WARM="
+set "SEL_LAMD="
+set "SEL_LARM="
+echo.
+echo  Tick the arches to ship. An unticked arch ships nothing.
+:selective_loop
+echo.
+echo   [!SEL_WAMD!]  1  windows/amd64
+echo   [!SEL_WARM!]  2  windows/arm64
+echo   [!SEL_LAMD!]  3  linux/amd64
+echo   [!SEL_LARM!]  4  linux/arm64
+echo.
+rem choice /c 1234d maps: 1 -^> el 1, 2 -^> el 2, 3 -^> el 3, 4 -^> el 4, d -^> el 5.
+rem Every toggle jumps to a label on its own: an if inside a parenthesized
+rem block freezes its delayed references at parse time, so the toggle would
+rem clear the variable it just set.
+choice /c 1234d /n /m "  Toggle an arch, d to finish: "
+if errorlevel 5 goto selective_finish
+if errorlevel 4 goto sel_toggle_larm
+if errorlevel 3 goto sel_toggle_lamd
+if errorlevel 2 goto sel_toggle_warm
+goto sel_toggle_wamd
+
+:sel_toggle_wamd
+if "!SEL_WAMD!"=="" ( set "SEL_WAMD=1" ) else ( set "SEL_WAMD=" )
+goto selective_loop
+:sel_toggle_warm
+if "!SEL_WARM!"=="" ( set "SEL_WARM=1" ) else ( set "SEL_WARM=" )
+goto selective_loop
+:sel_toggle_lamd
+if "!SEL_LAMD!"=="" ( set "SEL_LAMD=1" ) else ( set "SEL_LAMD=" )
+goto selective_loop
+:sel_toggle_larm
+if "!SEL_LARM!"=="" ( set "SEL_LARM=1" ) else ( set "SEL_LARM=" )
+goto selective_loop
+
+:selective_finish
+set "TARGETS="
+if defined SEL_WAMD set "TARGETS=!TARGETS! windows/amd64"
+if defined SEL_WARM set "TARGETS=!TARGETS! windows/arm64"
+if defined SEL_LAMD set "TARGETS=!TARGETS! linux/amd64"
+if defined SEL_LARM set "TARGETS=!TARGETS! linux/arm64"
+if not defined TARGETS (
+    echo.
+    echo  No arch ticked - nothing to ship.
+    goto pick_cancel
+)
+set "TARGETS_SET=1"
+goto pick_targets_done
+
+:pick_cancel
+echo.
+echo  Release cancelled. Nothing was built, tagged, or published.
+exit /b 1
+
+:pick_targets_done
+exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem  verify_assets - prove the published release carries every selected asset.
+rem
+rem  The default publish path hands the build to the Release workflow, so the
+rem  assets are not on the page when the tag is pushed: goreleaser takes about
+rem  fifteen minutes. This reads the asset list back and polls it while the
+rem  workflow runs, then names anything still absent, so a build that quietly
+rem  skipped an arch does not ship a release whose install script 404s. A
+rem  missing asset is reported, not fatal.
+rem ---------------------------------------------------------------------------
+:verify_assets
+set "VERSION_BARE=%VERSION%"
+set "VERSION_BARE=%VERSION_BARE:v=%"
+rem Upload-local assets are on the page the moment :publish returns, so no
+rem polling there. The CI path gives the workflow up to 40 x 30s = 20 minutes.
+if "!UPLOAD_LOCAL!"=="0" set "POLL=40" else set "POLL=0"
+echo.
+echo  Verifying the assets on %TAG% ...
+:verify_wait
+call :verify_fetch
+set "MISSING_COUNT=0"
+for %%T in (!TARGETS!) do (
+    for /f "tokens=1,2 delims=/" %%P in ("%%T") do (
+        set "WANT="
+        call :asset_name %%T
+        findstr /i /c:"!WANT!" "%ASSET_LIST%" >nul 2>&1
+        if errorlevel 1 set /a MISSING_COUNT+=1
+    )
+)
+if "!MISSING_COUNT!"=="0" goto verify_report
+if "!POLL!"=="0" goto verify_report
+set /a POLL-=1
+echo  !MISSING_COUNT! asset^(s^) not on the page yet - the workflow is still building.
+echo  Checking again in 30 seconds ^(!POLL! checks left^)...
+timeout /t 30 /nobreak >nul
+goto verify_wait
+
+:verify_report
+call :verify_fetch
+if not exist "%ASSET_LIST%" (
+    echo  WARNING: could not read the asset list for %TAG%.
+    echo          Check it by hand:  gh release view %TAG%
+    del /q "%ASSET_LIST%" >nul 2>&1
+    exit /b 0
+)
+echo  ------------------------------------------------------------------
+set "MISSING_COUNT=0"
+for %%T in (!TARGETS!) do (
+    for /f "tokens=1,2 delims=/" %%P in ("%%T") do (
+        set "WANT="
+        call :asset_name %%T
+        findstr /i /c:"!WANT!" "%ASSET_LIST%" >nul 2>&1
+        if not errorlevel 1 (
+            echo   [ok]      !WANT!
+        ) else (
+            echo   [MISSING] !WANT!
+            set /a MISSING_COUNT+=1
+        )
+    )
+)
+del /q "%ASSET_LIST%" >nul 2>&1
+echo  ------------------------------------------------------------------
+if "!MISSING_COUNT!"=="0" (
+    echo  All selected assets are present on %TAG%.
+) else (
+    echo  !MISSING_COUNT! asset^(s^) still not on the release page.
+    echo  Check the workflow:  gh run list --workflow Release
+    echo  then the release:    gh release view %TAG%
+)
+exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem  asset_name <os/arch> - leave WANT holding the release asset name for that
+rem  target. Mirrors the naming the install scripts and "prime update" look
+rem  for: capitalized OS, x86_64 for amd64, zip on Windows, tar.gz on Linux.
+rem  A subroutine so the inner for block stays flat: setting several
+rem  variables off one token and reading them back only works at statement
+rem  level with delayed expansion, and the per-arch mapping is reusable.
+rem ---------------------------------------------------------------------------
+:asset_name
+set "OS_UP="
+set "ARC_UP="
+set "EXT=tar.gz"
+set "WANT="
+for /f "tokens=1,2 delims=/" %%P in ("%~1") do (
+    set "ARC_UP=%%Q"
+    if /I "%%P"=="windows" (
+        set "OS_UP=Windows"
+        set "EXT=zip"
+    ) else (
+        set "OS_UP=Linux"
+    )
+)
+if /I "!ARC_UP!"=="amd64" set "ARC_UP=x86_64"
+set "WANT=prime_!VERSION_BARE!_!OS_UP!_!ARC_UP!.!EXT!"
+exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem  verify_fetch - read the asset names of the release into %ASSET_LIST%.
+rem  An empty or missing file reads as "nothing uploaded yet", which is the
+rem  expected state while the Release workflow is running.
+rem ---------------------------------------------------------------------------
+:verify_fetch
+set "ASSET_LIST=%OUT%\assets.txt"
+del /q "%ASSET_LIST%" >nul 2>&1
+gh release view "%TAG%" --json assets --jq ".assets[].name" 2^>nul > "%ASSET_LIST%"
 exit /b 0
 
 rem ---------------------------------------------------------------------------
@@ -1090,16 +1396,16 @@ if "%UPLOAD_LOCAL%"=="1" (
 rem Two ways to get a release out. Pick with --upload-local.
 rem
 rem Default: push the tag and let the Release workflow build the release on
-rem GitHub. This is the only path that produces the whole asset set, because
-rem goreleaser is what produces the .deb, .rpm, .apk and Arch packages and it
-rem cannot run on Windows. Use it when Actions minutes are available.
+rem GitHub. goreleaser adds the completions and manpages into each archive
+rem and stamps the checksums, which is what a full publish carries. Use it
+rem when Actions minutes are available.
 rem
 rem --upload-local: nothing is built on GitHub at all. The tag is created
-rem through the API rather than pushed, so no workflow runs, no Actions minutes
-rem are spent, and what ships is exactly the binary built and tested on this
-rem machine. The cost is the packages: goreleaser cannot run here, so the
-rem release carries the zip and tar.gz archives and checksums but not
-rem .deb/.rpm/.apk. Use it when the quota is exhausted or a fix has to go out
+rem through the API rather than pushed, so no workflow runs, no Actions
+rem minutes are spent, and what ships is exactly the binary built and tested
+rem on this machine. The cost: the release carries the zip and tar.gz archives
+rem plus checksums, without the completions and manpages that goreleaser
+rem bundles in. Use it when the quota is exhausted or a fix has to go out
 rem now.
 if "%UPLOAD_LOCAL%"=="1" (
     set "GH_ARGS="
@@ -1136,10 +1442,10 @@ if "%UPLOAD_LOCAL%"=="1" (
     echo  were spent: the tag was created through the API, which does not
     echo  trigger the Release workflow.
     echo.
-    echo  Shipped: the Windows and Linux archives plus checksums.
-    echo  Not shipped: .deb, .rpm, .apk and Arch packages. Those come from
-    echo  goreleaser, which cannot run on Windows. Publish without
-    echo  --upload-local to get them.
+    echo  Shipped: the selected archives plus checksums.
+    echo  The Release workflow would also add the completions and manpages
+    echo  inside each archive. Publish without --upload-local for the
+    echo  full CI set.
     exit /b 0
 ) else (
     echo.
@@ -1150,9 +1456,9 @@ call :print_footer
 echo  Release: %TAG%
 for /f "usebackq delims=" %%u in (`gh release view "%TAG%" --json url --jq .url 2^>nul`) do echo           %%u
 echo.
-echo  The Release workflow is building the full asset set on GitHub: the
-echo  packages (.deb, .rpm, .apk, Arch) that cannot be produced from Windows,
-echo  plus completions and manpages. It takes about fifteen minutes.
+echo  The Release workflow builds the selected archive set on GitHub - the
+echo  four-asset trim of Windows and Linux, amd64 and arm64 - plus the
+echo  completions and manpages bundled into each archive. About fifteen minutes.
 echo.
 echo  Watch it with:  gh run watch
 goto :eof
@@ -1195,8 +1501,9 @@ echo   build        build for this machine only
 echo   run          build for this machine and launch it
 echo   all          build every Windows and Linux target
 echo   check        show the last release and the proposed version
-echo   release      build, tag, and publish to GitHub
-echo   draft        build, tag, and leave a draft release
+echo   release      pick targets, build, auto-commit, tag, publish to
+echo                GitHub, then verify the assets landed
+echo   draft        same as release but leaves a draft for review
 echo   clean        delete the output directory
 echo.
 echo   --ratio ^<f^>        fraction of the machine to build with (default 0.35)
@@ -1210,19 +1517,22 @@ echo   --dry-run          print what would happen, touch nothing remote
 echo   --skip-build       release: package what is already in the output
 echo                      directory; run: launch it without compiling, and
 echo                      without needing the Go toolchain
-echo   --targets ^<os^>     ship fewer platforms, e.g. "release --targets linux"
-echo                      or "all --targets windows". Default: windows linux
-echo   --upload-local     publish from this machine without GitHub Actions at all.
-echo                      The tag is created through the API rather than pushed,
-echo                      so no workflow runs and no Actions minutes are spent.
-echo                      Ships exactly what was built and tested here. The
-echo                      .deb / .rpm / .apk / Arch packages are absent, since
-echo                      goreleaser cannot run on Windows.
+echo   --no-auto-commit   do not commit the tree before the release build
+echo   --no-verify        skip the post-publish asset check
+echo   --targets ^<tok^>... ship a chosen set: a platform name (windows, linux,
+echo                      all) or exact arches (windows/amd64, linux/arm64).
+echo                      Skips the target pick menu, which is otherwise
+echo                      shown before a release starts.
+echo   --upload-local   publish from this machine without GitHub Actions at all.
+echo                    The tag is created through the API rather than pushed,
+echo                    so no workflow runs and no Actions minutes are spent.
+echo                    Ships the archives and checksums built here, without
+echo                    the completions and manpages the CI build bundles in.
 echo.
 echo   Publishing, two ways:
-echo     default          push the tag, GitHub Actions builds the full set
-echo                      including packages. Needs Actions minutes.
-echo     --upload-local   build and upload here, no Actions. No packages.
+echo     default          push the tag, GitHub Actions builds the archive set
+echo                      with completions and manpages. Needs Actions minutes.
+echo     --upload-local   build and upload here, no Actions. No CI extras.
 echo                      For when the quota is gone or a fix is urgent.
 echo.
 popd

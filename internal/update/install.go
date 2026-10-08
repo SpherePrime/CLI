@@ -99,6 +99,9 @@ func assetName(version, osToken, archToken string) string {
 	if runtime.GOOS == "windows" {
 		ext = "zip"
 	}
+	// GitHub asset names use the bare version, never a leading "v":
+	// prime_0.4.46_Linux_x86_64.tar.gz. The tag carries the "v"; the
+	// assets do not, so the caller strips it before building the name.
 	return fmt.Sprintf("prime_%s_%s_%s.%s", version, osToken, archToken, ext)
 }
 

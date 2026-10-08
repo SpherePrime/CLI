@@ -22,9 +22,11 @@ JOBS=""
 RATIO=0.5
 OUT=dist
 RUN_TEST=1
+TARGET_LIST=""
 
 usage() {
-	echo "Usage: scripts/build.sh [--all | --os windows|linux|darwin] [--jobs n] [--ratio f] [--out dir] [--no-test]"
+	echo "Usage: scripts/build.sh [--all | --os windows|linux|darwin | --target os/arch ...] [--jobs n] [--ratio f] [--out dir] [--no-test] [--version x.y.z]"
+	echo "  --target accepts the release arches: windows/amd64 windows/arm64 linux/amd64 linux/arm64"
 	exit 2
 }
 
@@ -33,6 +35,15 @@ while [ $# -gt 0 ]; do
 	--all)     MODE=all; shift ;;
 	--no-test) RUN_TEST=0; shift ;;
 	--os)      MODE=os; OS="${2:-}"; shift 2 ;;
+	--target)
+		case "${2:-}" in
+			windows/amd64|windows/arm64|linux/amd64|linux/arm64)
+				MODE=target
+				if [ -z "$TARGET_LIST" ]; then TARGET_LIST="$2"; else TARGET_LIST="$TARGET_LIST $2"; fi
+				;;
+			*) echo "Unsupported --target: ${2:-}"; exit 2 ;;
+		esac
+		shift 2 ;;
 	--jobs)    JOBS="${2:-}"; shift 2 ;;
 	--ratio)   RATIO="${2:-}"; shift 2 ;;
 	--out)     OUT="${2:-}"; shift 2 ;;
@@ -101,6 +112,11 @@ freebsd/amd64 freebsd/arm64 \
 openbsd/amd64 openbsd/arm64 \
 netbsd/amd64 netbsd/arm64"
 	echo " Building all release targets. This takes a while."
+	echo
+	;;
+target)
+	TARGETS="$TARGET_LIST"
+	echo " Building explicit targets: $TARGETS"
 	echo
 	;;
 esac
