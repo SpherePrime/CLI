@@ -54,6 +54,10 @@ type Session struct {
 	MessageCount     int64
 	PromptTokens     int64
 	CompletionTokens int64
+	// ContextTokens holds an estimate of the full request context that the
+	// next API call would send (history + system prompt + tool schemas).
+	// It is in-memory only, like EstimatedUsage.
+	ContextTokens    int64
 	EstimatedUsage   bool
 	SummaryMessageID string
 	Cost             float64
@@ -91,6 +95,12 @@ type service struct {
 	// SQLite and incorrectly clear the UI "~" marker.
 	estimatedUsageMu sync.RWMutex
 	estimatedUsage   map[string]bool
+
+	// Context tokens stay in memory as well: they are an estimate that is
+	// rebuilt from the message list on save, and there is no column for
+	// them in SQLite.
+	contextTokensMu    sync.RWMutex
+	contextTokens      map[string]int64
 }
 
 func (s *service) Create(ctx context.Context, title string) (Session, error) {
@@ -214,8 +224,17 @@ func (s *service) Save(ctx context.Context, session Session) (Session, error) {
 	}
 	estimatedUsage := session.EstimatedUsage
 	s.setEstimatedUsageState(session.ID, estimatedUsage)
+	s.contextTokensMu.Lock()
+	contextTokens := session.ContextTokens
+	if contextTokens > 0 {
+		s.contextTokens[session.ID] = contextTokens
+	} else {
+		delete(s.contextTokens, session.ID)
+	}
+	s.contextTokensMu.Unlock()
 	session = s.fromDBItem(dbSession)
 	session.EstimatedUsage = estimatedUsage
+	session.ContextTokens = contextTokens
 	s.Publish(pubsub.UpdatedEvent, session)
 	return session, nil
 }
@@ -277,6 +296,9 @@ func (s *service) applyEstimatedUsageState(session *Session) {
 	s.estimatedUsageMu.RLock()
 	session.EstimatedUsage = s.estimatedUsage[session.ID]
 	s.estimatedUsageMu.RUnlock()
+	s.contextTokensMu.RLock()
+	session.ContextTokens = s.contextTokens[session.ID]
+	s.contextTokensMu.RUnlock()
 }
 
 func (s *service) setEstimatedUsageState(sessionID string, estimatedUsage bool) {
@@ -293,6 +315,9 @@ func (s *service) clearEstimatedUsageState(sessionID string) {
 	s.estimatedUsageMu.Lock()
 	delete(s.estimatedUsage, sessionID)
 	s.estimatedUsageMu.Unlock()
+	s.contextTokensMu.Lock()
+	delete(s.contextTokens, sessionID)
+	s.contextTokensMu.Unlock()
 }
 
 func (s *service) fromDBItem(item db.Session) Session {
@@ -344,6 +369,7 @@ func NewService(q *db.Queries, conn *sql.DB) Service {
 		db:             conn,
 		q:              q,
 		estimatedUsage: make(map[string]bool),
+		contextTokens:  make(map[string]int64),
 	}
 }
 
