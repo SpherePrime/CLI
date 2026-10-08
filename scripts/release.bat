@@ -848,8 +848,12 @@ for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
 if defined DIRTY (
   echo.
   echo NOTE: the working tree has uncommitted changes.
-  echo       They will be auto-committed after confirmation unless
-  echo       --no-auto-commit was given.
+  if "!DRY_RUN!"=="1" (
+      echo       A dry run never commits: nothing below will change the tree.
+  ) else (
+      echo       They will be auto-committed after confirmation unless
+      echo       --no-auto-commit was given.
+  )
   echo.
 )
 
@@ -1136,9 +1140,12 @@ if exist "!ZOUT!" del /q "!ZOUT!" >nul 2>&1
 powershell -NoProfile -Command "Compress-Archive -Path '!STG!\*' -DestinationPath '!ZOUT!' -Force" >nul 2>&1
 if not exist "!ZOUT!" (
     rem bsdtar's auto-format mode names the archive by extension, so a .zip
-    rem in produces a .zip out. The quoted * globs inside the stage directory,
-    rem which may hold the README as well as the binary.
-    tar -a -cf "!ZOUT!" -C "!STG!" "*" 2>nul
+    rem in produces a .zip out. bsdtar does no wildcarding, so the members
+    rem are listed explicitly; the stage holds the binary and, when the repo
+    rem root has one, the README.
+    set "MEMBERS=prime.exe"
+    if exist "!STG!\README.md" set "MEMBERS=!MEMBERS! README.md"
+    tar -a -cf "!ZOUT!" -C "!STG!" !MEMBERS! 2>nul
 )
 if not exist "!ZOUT!" exit /b 1
 exit /b 0
