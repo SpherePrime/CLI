@@ -1,0 +1,1872 @@
+[
+  {
+    "id": "coding",
+    "title": "Implementing code changes",
+    "description": "Implement requested behavior in existing project patterns.",
+    "category": "engineering",
+    "keywords": [
+      "coding",
+      "implementation",
+      "feature",
+      "код",
+      "разработка",
+      "реализация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-software-engineering-focus.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-no-unnecessary-additions.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-no-compatibility-hacks.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-prefer-editing-existing-files.md"
+  },
+  {
+    "id": "debugging",
+    "title": "Debugging failures",
+    "description": "Diagnose and reproduce the failure before choosing a fix.",
+    "category": "engineering",
+    "keywords": [
+      "debugging",
+      "debug",
+      "bug",
+      "failure",
+      "отладка",
+      "ошибка",
+      "исправить ошибку",
+      "баг",
+      "не работает"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-debugging.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-stuck-background-daemon-diagnostics.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-troubleshooting-confirmation-policy.md"
+  },
+  {
+    "id": "exploration",
+    "title": "Exploring a repository",
+    "description": "Locate and explain existing code with precise file references.",
+    "category": "exploration",
+    "keywords": [
+      "explore",
+      "search",
+      "architecture",
+      "repository",
+      "найти",
+      "поиск",
+      "исследование",
+      "архитектура"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-explore.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-read-only-search-agent.md"
+  },
+  {
+    "id": "planning",
+    "title": "Planning implementation",
+    "description": "Turn requirements into verifiable implementation steps.",
+    "category": "planning",
+    "keywords": [
+      "plan",
+      "design",
+      "tradeoff",
+      "план",
+      "планирование",
+      "проектирование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-plan-mode-enhanced.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-reminder-plan-mode-phase-2-design.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-exploratory-questions-analyze-before-implementing.md"
+  },
+  {
+    "id": "code-review",
+    "title": "Reviewing correctness",
+    "description": "Review the requested diff and verify actionable failure scenarios.",
+    "category": "review",
+    "keywords": [
+      "review",
+      "diff",
+      "regression",
+      "ревью",
+      "проверка кода",
+      "регрессия"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-phase-0-gather-the-diff.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-phase-2-verify-3-state.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-phase-3-sweep-for-gaps.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-code-review-part-10-reportfindings-output-format.md"
+  },
+  {
+    "id": "review-removed-behavior",
+    "title": "Reviewing removed behavior",
+    "description": "Check guarantees deleted or replaced code enforced.",
+    "category": "review",
+    "keywords": [
+      "review",
+      "deleted",
+      "invariant",
+      "guard",
+      "удаление",
+      "инвариант",
+      "защита"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-b-removed-behavior-auditor.md"
+  },
+  {
+    "id": "review-contracts",
+    "title": "Reviewing cross-file contracts",
+    "description": "Trace changed APIs through callers, callees and wrappers.",
+    "category": "review",
+    "keywords": [
+      "review",
+      "caller",
+      "contract",
+      "wrapper",
+      "proxy",
+      "контракт",
+      "вызов",
+      "обертка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-c-cross-file-tracer.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-e-wrapper-proxy-correctness.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-d-language-pitfall-specialist.md"
+  },
+  {
+    "id": "security-review",
+    "title": "Reviewing security boundaries",
+    "description": "Find concrete exploitable vulnerabilities introduced by changes.",
+    "category": "security",
+    "keywords": [
+      "security",
+      "vulnerability",
+      "injection",
+      "auth",
+      "безопасность",
+      "уязвимость",
+      "инъекция",
+      "авторизация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-security-review-slash-command.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-security.md"
+  },
+  {
+    "id": "simplification",
+    "title": "Simplifying changed code",
+    "description": "Improve changed code through justified reuse and simplification.",
+    "category": "engineering",
+    "keywords": [
+      "simplify",
+      "refactor",
+      "reuse",
+      "cleanup",
+      "рефакторинг",
+      "упростить",
+      "упрощение"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-simplify-slash-command.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-no-unnecessary-error-handling.md"
+  },
+  {
+    "id": "performance",
+    "title": "Reviewing efficiency",
+    "description": "Identify measured or demonstrable wasted work.",
+    "category": "engineering",
+    "keywords": [
+      "performance",
+      "efficiency",
+      "memory leak",
+      "slow",
+      "производительность",
+      "оптимизация",
+      "медленно"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-efficiency-dimension.md"
+  },
+  {
+    "id": "project-conventions",
+    "title": "Applying project instructions",
+    "description": "Apply project rules governing changed files.",
+    "category": "engineering",
+    "keywords": [
+      "conventions",
+      "instructions",
+      "agents",
+      "правила",
+      "инструкции",
+      "соглашения"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-conventions-dimension.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-reminder-nested-instruction-file-contents.md"
+  },
+  {
+    "id": "git-commits",
+    "title": "Creating Git commits safely",
+    "description": "Create focused commits from inspected verified changes.",
+    "category": "git",
+    "keywords": [
+      "git",
+      "commit",
+      "stage",
+      "коммит",
+      "гит",
+      "синхронизация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-quick-git-commit.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-git-avoid-destructive-ops.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-git-never-skip-hooks.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-git-prefer-new-commits.md"
+  },
+  {
+    "id": "pull-requests",
+    "title": "Preparing pull requests",
+    "description": "Describe the complete branch change and verified behavior.",
+    "category": "git",
+    "keywords": [
+      "git",
+      "pull request",
+      "pr",
+      "пул реквест",
+      "запрос слияния"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-pull-request-creation.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-quick-pr-creation.md"
+  },
+  {
+    "id": "git-worktrees",
+    "title": "Isolating worktrees and stashes",
+    "description": "Preserve other work in isolated Git checkouts.",
+    "category": "git",
+    "keywords": [
+      "git",
+      "worktree",
+      "stash",
+      "isolation",
+      "ворктри",
+      "изоляция",
+      "стэш"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-shared-git-stash-safety.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-reminder-workflow-isolated-worktree.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-background-worktree-isolation-guidance.md"
+  },
+  {
+    "id": "verification",
+    "title": "Verifying completion",
+    "description": "Support completion with fresh observed evidence.",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-reporting-outcomes.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-action-safety-and-truthful-reporting.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-verify-cli-changes-example-for-verify-skill.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-verify-server-api-changes-example-for-verify-skill.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-run-library-sdk-example.md"
+  },
+  {
+    "id": "frontend",
+    "title": "Designing and checking frontend UI",
+    "description": "Build responsive interfaces and exercise actual behavior.",
+    "category": "frontend",
+    "keywords": [
+      "frontend",
+      "ui",
+      "ux",
+      "browser",
+      "responsive",
+      "интерфейс",
+      "дизайн",
+      "верстка",
+      "фронтенд"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-frontend-browser-verification.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-artifact-design-fallback-requirements.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-artifact-responsive-page-contract.md"
+  },
+  {
+    "id": "documentation",
+    "title": "Writing documentation and reports",
+    "description": "Write reader-focused documentation grounded in actual behavior.",
+    "category": "documentation",
+    "keywords": [
+      "documentation",
+      "readme",
+      "report",
+      "docs",
+      "документация",
+      "отчет",
+      "документ"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-artifact-document.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-artifact-report.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-writing-for-the-user.md"
+  },
+  {
+    "id": "memory",
+    "title": "Maintaining durable project memory",
+    "description": "Save durable facts and recall relevant memory.",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-memory-instructions.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-project-memory-body-structure.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-feedback-memory-body-structure.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-memory-persistence-scope.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-plan-vs-memory-guidance.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-determine-which-memory-files-to-attach.md"
+  },
+  {
+    "id": "context-continuation",
+    "title": "Continuing after compaction",
+    "description": "Preserve actionable state for efficient continuation.",
+    "category": "memory",
+    "keywords": [
+      "compaction",
+      "summary",
+      "continuation",
+      "handoff",
+      "сжатие",
+      "продолжение",
+      "сводка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-context-compaction-summary.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-partial-compaction-instructions.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-reminder-session-continuation.md"
+  },
+  {
+    "id": "collaboration",
+    "title": "Delegating independent work",
+    "description": "Delegate independent sizeable work when permitted and useful.",
+    "category": "collaboration",
+    "keywords": [
+      "agent",
+      "delegate",
+      "parallel",
+      "collaboration",
+      "агент",
+      "делегирование",
+      "параллельно"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-subagent-delegation-restraint.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-writing-subagent-prompts.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-coordinator-worker-instructions.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-tool-usage-subagent-guidance.md"
+  },
+  {
+    "id": "tool-discovery",
+    "title": "Discovering tools and skills",
+    "description": "Discover actual capabilities before calling them.",
+    "category": "tools",
+    "keywords": [
+      "tools",
+      "skills",
+      "mcp",
+      "discovery",
+      "инструмент",
+      "скилл",
+      "навык"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-toolsearch-opening.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-toolsearch-second-part.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-searchskills.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-invoke-skill.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-listmcpresourcestool.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-readmcpresourcedirtool-prompt.md"
+  },
+  {
+    "id": "file-tools",
+    "title": "Searching and editing files",
+    "description": "Inspect existing content and use narrow file operations.",
+    "category": "tools",
+    "keywords": [
+      "files",
+      "edit",
+      "grep",
+      "glob",
+      "read",
+      "файл",
+      "редактирование",
+      "читать",
+      "поиск файлов"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-glob.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-grep.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-readfile.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-edit.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-edit-minimal-old-string-guidance.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-write-read-existing-file-first.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-reminder-read-truncation-retry-guidance.md"
+  },
+  {
+    "id": "code-intelligence",
+    "title": "Using language-server tools",
+    "description": "Use semantic navigation and refactoring when configured.",
+    "category": "tools",
+    "keywords": [
+      "lsp",
+      "definition",
+      "references",
+      "symbols",
+      "rename",
+      "символ",
+      "ссылки",
+      "определение",
+      "переименование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-lsp.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-reminder-new-diagnostics-detected.md"
+  },
+  {
+    "id": "shell",
+    "title": "Running shell commands",
+    "description": "Run commands in the actual shell and working directory.",
+    "category": "tools",
+    "keywords": [
+      "bash",
+      "shell",
+      "command",
+      "terminal",
+      "терминал",
+      "команда",
+      "оболочка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-overview.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-quote-file-paths.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-maintain-cwd.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-prefer-dedicated-tools.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-parallel-tool-call-note-part-of-tool-usage-policy.md"
+  },
+  {
+    "id": "windows-shell",
+    "title": "Using PowerShell on Windows",
+    "description": "Use PowerShell only through an explicitly launched PowerShell executable; Prime bash remains Bash-compatible.",
+    "category": "tools",
+    "keywords": [
+      "powershell",
+      "windows",
+      "виндовс",
+      "пауэршелл"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-powershell.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-powershell-edition-for-7.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-powershell-edition-for-5-1.md"
+  },
+  {
+    "id": "background-jobs",
+    "title": "Managing long-running jobs",
+    "description": "Track owned long-running processes with supported lifecycle tools.",
+    "category": "tools",
+    "keywords": [
+      "background",
+      "job",
+      "server",
+      "process",
+      "фон",
+      "процесс",
+      "сервер",
+      "задача"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-background-job-agent-instructions.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-parameter-bash-run-in-background-guidance.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-sleep-no-polling-background-tasks.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-reminder-still-running-tool-call.md"
+  },
+  {
+    "id": "web-research",
+    "title": "Researching web sources",
+    "description": "Answer source-dependent questions from fetched evidence.",
+    "category": "research",
+    "keywords": [
+      "web",
+      "research",
+      "fetch",
+      "sources",
+      "internet",
+      "веб",
+      "интернет",
+      "источники",
+      "исследовать"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-web-reading-specialist.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-webfetch.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-websearch.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-reminder-web-fetch-untrusted-content-reporting-guidance.md"
+  },
+  {
+    "id": "data-tables",
+    "title": "Preparing structured data tables",
+    "description": "Represent data with accurate types and predictable table behavior.",
+    "category": "data",
+    "keywords": [
+      "data",
+      "csv",
+      "table",
+      "sort",
+      "filter",
+      "данные",
+      "таблица",
+      "сортировка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-artifact-data-table.md"
+  },
+  {
+    "id": "visualization",
+    "title": "Choosing data visualizations",
+    "description": "Choose the form from the data question before styling.",
+    "category": "data",
+    "keywords": [
+      "visualization",
+      "chart",
+      "graph",
+      "dashboard",
+      "визуализация",
+      "график",
+      "диаграмма"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-choosing-a-form.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-data-visualization-description.md"
+  },
+  {
+    "id": "visualization-interaction",
+    "title": "Making charts legible and interactive",
+    "description": "Make visual encodings legible and interactions meaningful.",
+    "category": "data",
+    "keywords": [
+      "chart",
+      "interaction",
+      "legend",
+      "accessibility",
+      "график",
+      "легенда",
+      "доступность"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-interaction.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-marks-and-anatomy.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-components.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-anti-patterns.md"
+  },
+  {
+    "id": "diagrams",
+    "title": "Explaining mechanisms with diagrams",
+    "description": "Draw the mechanism the reader needs to understand.",
+    "category": "documentation",
+    "keywords": [
+      "diagram",
+      "svg",
+      "architecture",
+      "flow",
+      "схема",
+      "диаграмма",
+      "поток"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-artifact-diagramming.md"
+  },
+  {
+    "id": "communication",
+    "title": "Reporting concise outcomes",
+    "description": "Lead with concrete results and supporting evidence.",
+    "category": "communication",
+    "keywords": [
+      "communication",
+      "report",
+      "answer",
+      "language",
+      "ответ",
+      "общение",
+      "язык",
+      "результат"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-outcome-first-communication-style.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-communication-style.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-respond-in-configured-language.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-tone-and-style-code-references.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-reporting-outcomes.md"
+  },
+  {
+    "id": "source-doing-tasks-software-engineering-focus",
+    "title": "System Prompt Doing Tasks Software Engineering Focus",
+    "description": "Users primarily request software engineering tasks; interpret instructions in that context",
+    "category": "engineering",
+    "keywords": [
+      "coding",
+      "implementation",
+      "feature",
+      "код",
+      "разработка",
+      "реализация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-software-engineering-focus.md"
+  },
+  {
+    "id": "source-doing-tasks-no-unnecessary-additions",
+    "title": "System Prompt Doing Tasks No Unnecessary Additions",
+    "description": "Do not add features, refactor, or improve beyond what was asked",
+    "category": "engineering",
+    "keywords": [
+      "coding",
+      "implementation",
+      "feature",
+      "код",
+      "разработка",
+      "реализация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-no-unnecessary-additions.md"
+  },
+  {
+    "id": "source-doing-tasks-no-compatibility-hacks",
+    "title": "System Prompt Doing Tasks No Compatibility Hacks",
+    "description": "Delete unused code completely rather than adding compatibility shims",
+    "category": "engineering",
+    "keywords": [
+      "coding",
+      "implementation",
+      "feature",
+      "код",
+      "разработка",
+      "реализация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-no-compatibility-hacks.md"
+  },
+  {
+    "id": "source-prefer-editing-existing-files",
+    "title": "System Prompt Prefer Editing Existing Files",
+    "description": "Instructs Prime to prefer editing existing files instead of creating new ones",
+    "category": "engineering",
+    "keywords": [
+      "coding",
+      "implementation",
+      "feature",
+      "код",
+      "разработка",
+      "реализация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-prefer-editing-existing-files.md"
+  },
+  {
+    "id": "source-troubleshooting-confirmation-policy",
+    "title": "System Prompt Troubleshooting Confirmation Policy",
+    "description": "Requires explaining fixes and confirming before destructive or installation-changing troubleshooting commands",
+    "category": "engineering",
+    "keywords": [
+      "debugging",
+      "debug",
+      "bug",
+      "failure",
+      "отладка",
+      "ошибка",
+      "исправить ошибку",
+      "баг",
+      "не работает"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-troubleshooting-confirmation-policy.md"
+  },
+  {
+    "id": "source-explore",
+    "title": "Agent Prompt Explore",
+    "description": "System prompt for the Explore subagent",
+    "category": "exploration",
+    "keywords": [
+      "explore",
+      "search",
+      "architecture",
+      "repository",
+      "найти",
+      "поиск",
+      "исследование",
+      "архитектура"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-explore.md"
+  },
+  {
+    "id": "source-read-only-search-agent",
+    "title": "Agent Prompt Read Only Search Agent",
+    "description": "Defines a read-only search agent for broad fan-out code searches that returns conclusions instead of file dumps",
+    "category": "exploration",
+    "keywords": [
+      "explore",
+      "search",
+      "architecture",
+      "repository",
+      "найти",
+      "поиск",
+      "исследование",
+      "архитектура"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-read-only-search-agent.md"
+  },
+  {
+    "id": "source-plan-mode-enhanced",
+    "title": "Agent Prompt Plan Mode Enhanced",
+    "description": "Enhanced prompt for the Plan subagent",
+    "category": "planning",
+    "keywords": [
+      "plan",
+      "design",
+      "tradeoff",
+      "план",
+      "планирование",
+      "проектирование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-plan-mode-enhanced.md"
+  },
+  {
+    "id": "source-exploratory-questions-analyze-before-implementing",
+    "title": "System Prompt Exploratory Questions Analyze Before Implementing",
+    "description": "Instructs Prime to respond to open-ended questions with analysis, options, and tradeoffs instead of jumping to implementation, waiting for user agreement before writing code",
+    "category": "planning",
+    "keywords": [
+      "plan",
+      "design",
+      "tradeoff",
+      "план",
+      "планирование",
+      "проектирование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-exploratory-questions-analyze-before-implementing.md"
+  },
+  {
+    "id": "source-code-review-phase-0-gather-the-diff",
+    "title": "Skill Code Review Phase 0 Gather The Diff",
+    "description": "Opening step of the code-review skill: assemble the unified diff to review with git diff",
+    "category": "review",
+    "keywords": [
+      "review",
+      "diff",
+      "regression",
+      "ревью",
+      "проверка кода",
+      "регрессия"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-phase-0-gather-the-diff.md"
+  },
+  {
+    "id": "source-code-review-phase-2-verify-3-state",
+    "title": "Skill Code Review Phase 2 Verify 3 State",
+    "description": "Precision-tier verification step: run one verifier per candidate finding, each voting CONFIRMED, PLAUSIBLE, or REFUTED",
+    "category": "review",
+    "keywords": [
+      "review",
+      "diff",
+      "regression",
+      "ревью",
+      "проверка кода",
+      "регрессия"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-phase-2-verify-3-state.md"
+  },
+  {
+    "id": "source-code-review-angle-b-removed-behavior-auditor",
+    "title": "Skill Code Review Angle B Removed Behavior Auditor",
+    "description": "Code-review finder angle that, for each deleted or rewritten line, names the behavior it guaranteed and confirms the new code still guarantees it",
+    "category": "review",
+    "keywords": [
+      "review",
+      "deleted",
+      "invariant",
+      "guard",
+      "удаление",
+      "инвариант",
+      "защита"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-b-removed-behavior-auditor.md"
+  },
+  {
+    "id": "source-code-review-angle-c-cross-file-tracer",
+    "title": "Skill Code Review Angle C Cross File Tracer",
+    "description": "Code-review finder angle that follows each changed function out to its callers, checking the diff hasn't broken a call-site contract",
+    "category": "review",
+    "keywords": [
+      "review",
+      "caller",
+      "contract",
+      "wrapper",
+      "proxy",
+      "контракт",
+      "вызов",
+      "обертка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-c-cross-file-tracer.md"
+  },
+  {
+    "id": "source-code-review-angle-e-wrapper-proxy-correctness",
+    "title": "Skill Code Review Angle E Wrapper Proxy Correctness",
+    "description": "Code-review finder angle for wrapping types (caches, proxies, decorators), checking every method forwards faithfully to the wrapped object",
+    "category": "review",
+    "keywords": [
+      "review",
+      "caller",
+      "contract",
+      "wrapper",
+      "proxy",
+      "контракт",
+      "вызов",
+      "обертка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-e-wrapper-proxy-correctness.md"
+  },
+  {
+    "id": "source-code-review-angle-d-language-pitfall-specialist",
+    "title": "Skill Code Review Angle D Language Pitfall Specialist",
+    "description": "Code-review finder angle that hunts for the well-known traps of the diff's language or framework",
+    "category": "review",
+    "keywords": [
+      "review",
+      "caller",
+      "contract",
+      "wrapper",
+      "proxy",
+      "контракт",
+      "вызов",
+      "обертка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-d-language-pitfall-specialist.md"
+  },
+  {
+    "id": "source-doing-tasks-security",
+    "title": "System Prompt Doing Tasks Security",
+    "description": "Avoid introducing security vulnerabilities like injection, XSS, etc",
+    "category": "security",
+    "keywords": [
+      "security",
+      "vulnerability",
+      "injection",
+      "auth",
+      "безопасность",
+      "уязвимость",
+      "инъекция",
+      "авторизация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-security.md"
+  },
+  {
+    "id": "source-doing-tasks-no-unnecessary-error-handling",
+    "title": "System Prompt Doing Tasks No Unnecessary Error Handling",
+    "description": "Do not add error handling for impossible scenarios; only validate at boundaries",
+    "category": "engineering",
+    "keywords": [
+      "simplify",
+      "refactor",
+      "reuse",
+      "cleanup",
+      "рефакторинг",
+      "упростить",
+      "упрощение"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-no-unnecessary-error-handling.md"
+  },
+  {
+    "id": "source-code-review-efficiency-dimension",
+    "title": "Skill Code Review Efficiency Dimension",
+    "description": "Code-review pass that surfaces wasted effort the diff adds — duplicate computation or I/O, avoidable serialization, large scopes held by closures — and points to the cheaper option",
+    "category": "engineering",
+    "keywords": [
+      "performance",
+      "efficiency",
+      "memory leak",
+      "slow",
+      "производительность",
+      "оптимизация",
+      "медленно"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-efficiency-dimension.md"
+  },
+  {
+    "id": "source-code-review-conventions-dimension",
+    "title": "Skill Code Review Conventions Dimension",
+    "description": "Code-review dimension: flag diff lines that break a rule stated in an applicable CLAUDE.md (user, repo-root, or ancestor-directory), quoting the exact rule and offending line, and emit nothing when no CLAUDE.md governs the change",
+    "category": "engineering",
+    "keywords": [
+      "conventions",
+      "instructions",
+      "agents",
+      "правила",
+      "инструкции",
+      "соглашения"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-conventions-dimension.md"
+  },
+  {
+    "id": "source-bash-git-avoid-destructive-ops",
+    "title": "Tool Description Bash Git Avoid Destructive Ops",
+    "description": "Bash tool git instruction: consider safer alternatives to destructive operations",
+    "category": "git",
+    "keywords": [
+      "git",
+      "commit",
+      "stage",
+      "коммит",
+      "гит",
+      "синхронизация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-git-avoid-destructive-ops.md"
+  },
+  {
+    "id": "source-bash-git-never-skip-hooks",
+    "title": "Tool Description Bash Git Never Skip Hooks",
+    "description": "Bash tool git instruction: never skip hooks or bypass signing unless user requests it",
+    "category": "git",
+    "keywords": [
+      "git",
+      "commit",
+      "stage",
+      "коммит",
+      "гит",
+      "синхронизация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-git-never-skip-hooks.md"
+  },
+  {
+    "id": "source-bash-git-prefer-new-commits",
+    "title": "Tool Description Bash Git Prefer New Commits",
+    "description": "Bash tool git instruction: prefer new commits over amending",
+    "category": "git",
+    "keywords": [
+      "git",
+      "commit",
+      "stage",
+      "коммит",
+      "гит",
+      "синхронизация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-git-prefer-new-commits.md"
+  },
+  {
+    "id": "source-shared-git-stash-safety",
+    "title": "System Prompt Shared Git Stash Safety",
+    "description": "Warns that git stash is shared across worktrees and sessions, preferring WIP commits or uniquely tagged stash entries",
+    "category": "git",
+    "keywords": [
+      "git",
+      "worktree",
+      "stash",
+      "isolation",
+      "ворктри",
+      "изоляция",
+      "стэш"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-shared-git-stash-safety.md"
+  },
+  {
+    "id": "source-reporting-outcomes",
+    "title": "System Prompt Reporting Outcomes",
+    "description": "Requires reports to distinguish observed outcomes from intentions, lead with failures or incomplete work, and avoid overstating unverified completion",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-reporting-outcomes.md"
+  },
+  {
+    "id": "source-action-safety-and-truthful-reporting",
+    "title": "System Prompt Action Safety And Truthful Reporting",
+    "description": "Requires confirmation for irreversible or outward-facing actions, checking targets before destructive edits, and truthful reporting of outcomes",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-action-safety-and-truthful-reporting.md"
+  },
+  {
+    "id": "source-verify-cli-changes-example-for-verify-skill",
+    "title": "Skill Verify Cli Changes Example For Verify Skill",
+    "description": "Example workflow for verifying a CLI change, as part of the Verify skill",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-verify-cli-changes-example-for-verify-skill.md"
+  },
+  {
+    "id": "source-verify-server-api-changes-example-for-verify-skill",
+    "title": "Skill Verify Server Api Changes Example For Verify Skill",
+    "description": "Example workflow for verifying a server/API change, as part of the Verify skill",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-verify-server-api-changes-example-for-verify-skill.md"
+  },
+  {
+    "id": "source-run-library-sdk-example",
+    "title": "Skill Run Library Sdk Example",
+    "description": "Example file for the Run app skill showing how to document building, testing, and smoke-checking a library or SDK at its public package boundary",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-run-library-sdk-example.md"
+  },
+  {
+    "id": "source-frontend-browser-verification",
+    "title": "System Prompt Frontend Browser Verification",
+    "description": "Requires Prime to start the dev server and verify UI or frontend changes in a browser before reporting completion",
+    "category": "frontend",
+    "keywords": [
+      "frontend",
+      "ui",
+      "ux",
+      "browser",
+      "responsive",
+      "интерфейс",
+      "дизайн",
+      "верстка",
+      "фронтенд"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-frontend-browser-verification.md"
+  },
+  {
+    "id": "source-artifact-responsive-page-contract",
+    "title": "Tool Description Artifact Responsive Page Contract",
+    "description": "Requires Artifact pages to fit phone widths with preserved side gutters, wrapping layouts, bounded media, and horizontal scrolling confined to oversized tables, diagrams, and code blocks",
+    "category": "frontend",
+    "keywords": [
+      "frontend",
+      "ui",
+      "ux",
+      "browser",
+      "responsive",
+      "интерфейс",
+      "дизайн",
+      "верстка",
+      "фронтенд"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-artifact-responsive-page-contract.md"
+  },
+  {
+    "id": "source-writing-for-the-user",
+    "title": "System Prompt Writing For The User",
+    "description": "Defines concise, standalone user-facing final-message rules covering sentence structure, formatting, code and numbers, terminology, and stopping once the answer is complete",
+    "category": "documentation",
+    "keywords": [
+      "documentation",
+      "readme",
+      "report",
+      "docs",
+      "документация",
+      "отчет",
+      "документ"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-writing-for-the-user.md"
+  },
+  {
+    "id": "source-project-memory-body-structure",
+    "title": "System Prompt Project Memory Body Structure",
+    "description": "Defines the body structure for project memories, including the fact or decision, why, and how to apply it",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-project-memory-body-structure.md"
+  },
+  {
+    "id": "source-feedback-memory-body-structure",
+    "title": "System Prompt Feedback Memory Body Structure",
+    "description": "Defines the body structure for feedback memories, including the rule, why, and how to apply it",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-feedback-memory-body-structure.md"
+  },
+  {
+    "id": "source-memory-persistence-scope",
+    "title": "System Prompt Memory Persistence Scope",
+    "description": "Explains that memory is for information useful in future conversations, not only within the current conversation",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-memory-persistence-scope.md"
+  },
+  {
+    "id": "source-plan-vs-memory-guidance",
+    "title": "System Prompt Plan Vs Memory Guidance",
+    "description": "Explains when to use or update a plan instead of saving information to memory",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-plan-vs-memory-guidance.md"
+  },
+  {
+    "id": "source-determine-which-memory-files-to-attach",
+    "title": "Agent Prompt Determine Which Memory Files To Attach",
+    "description": "Agent for determining which memory files to attach for the main agent",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-determine-which-memory-files-to-attach.md"
+  },
+  {
+    "id": "source-context-compaction-summary",
+    "title": "System Prompt Context Compaction Summary",
+    "description": "Prompt used for context compaction summary (for the SDK)",
+    "category": "memory",
+    "keywords": [
+      "compaction",
+      "summary",
+      "continuation",
+      "handoff",
+      "сжатие",
+      "продолжение",
+      "сводка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-context-compaction-summary.md"
+  },
+  {
+    "id": "source-subagent-delegation-restraint",
+    "title": "System Prompt Subagent Delegation Restraint",
+    "description": "Guides Prime to delegate work only when it is genuinely independent, large enough to justify a fresh context, or naturally parallel, while avoiding excessive or redundant subagents and not redoing delegated work",
+    "category": "collaboration",
+    "keywords": [
+      "agent",
+      "delegate",
+      "parallel",
+      "collaboration",
+      "агент",
+      "делегирование",
+      "параллельно"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-subagent-delegation-restraint.md"
+  },
+  {
+    "id": "source-writing-subagent-prompts",
+    "title": "System Prompt Writing Subagent Prompts",
+    "description": "Guidelines for writing effective prompts when delegating tasks to subagents, covering context-inheriting vs fresh subagent scenarios",
+    "category": "collaboration",
+    "keywords": [
+      "agent",
+      "delegate",
+      "parallel",
+      "collaboration",
+      "агент",
+      "делегирование",
+      "параллельно"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-writing-subagent-prompts.md"
+  },
+  {
+    "id": "source-tool-usage-subagent-guidance",
+    "title": "System Prompt Tool Usage Subagent Guidance",
+    "description": "Guidance on when and how to use subagents effectively",
+    "category": "collaboration",
+    "keywords": [
+      "agent",
+      "delegate",
+      "parallel",
+      "collaboration",
+      "агент",
+      "делегирование",
+      "параллельно"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-tool-usage-subagent-guidance.md"
+  },
+  {
+    "id": "source-toolsearch-opening",
+    "title": "Tool Description Search Tools Opening",
+    "description": "Introduces ToolSearch as the schema loader for deferred tools announced by name in system reminders",
+    "category": "tools",
+    "keywords": [
+      "tools",
+      "skills",
+      "mcp",
+      "discovery",
+      "инструмент",
+      "скилл",
+      "навык"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-toolsearch-opening.md"
+  },
+  {
+    "id": "source-listmcpresourcestool",
+    "title": "Tool Description Listmcpresourcestool",
+    "description": "Tool description for listing available MCP resources from all configured servers or a specific server",
+    "category": "tools",
+    "keywords": [
+      "tools",
+      "skills",
+      "mcp",
+      "discovery",
+      "инструмент",
+      "скилл",
+      "навык"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-listmcpresourcestool.md"
+  },
+  {
+    "id": "source-glob",
+    "title": "Tool Description Glob",
+    "description": "Tool description for file pattern matching and searching by name",
+    "category": "tools",
+    "keywords": [
+      "files",
+      "edit",
+      "grep",
+      "glob",
+      "read",
+      "файл",
+      "редактирование",
+      "читать",
+      "поиск файлов"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-glob.md"
+  },
+  {
+    "id": "source-edit",
+    "title": "Tool Description Edit",
+    "description": "Tool for performing exact string replacements in files",
+    "category": "tools",
+    "keywords": [
+      "files",
+      "edit",
+      "grep",
+      "glob",
+      "read",
+      "файл",
+      "редактирование",
+      "читать",
+      "поиск файлов"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-edit.md"
+  },
+  {
+    "id": "source-edit-minimal-old-string-guidance",
+    "title": "Tool Description Edit Minimal Old String Guidance",
+    "description": "Additional Edit guidance to keep old_string minimal and unique or use replace_all",
+    "category": "tools",
+    "keywords": [
+      "files",
+      "edit",
+      "grep",
+      "glob",
+      "read",
+      "файл",
+      "редактирование",
+      "читать",
+      "поиск файлов"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-edit-minimal-old-string-guidance.md"
+  },
+  {
+    "id": "source-write-read-existing-file-first",
+    "title": "Tool Description Write Read Existing File First",
+    "description": "Tool description for Write in environments where existing files must be read before overwrite",
+    "category": "tools",
+    "keywords": [
+      "files",
+      "edit",
+      "grep",
+      "glob",
+      "read",
+      "файл",
+      "редактирование",
+      "читать",
+      "поиск файлов"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-write-read-existing-file-first.md"
+  },
+  {
+    "id": "source-bash-overview",
+    "title": "Tool Description Bash Overview",
+    "description": "Opening line of the Bash tool description",
+    "category": "tools",
+    "keywords": [
+      "bash",
+      "shell",
+      "command",
+      "terminal",
+      "терминал",
+      "команда",
+      "оболочка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-overview.md"
+  },
+  {
+    "id": "source-bash-quote-file-paths",
+    "title": "Tool Description Bash Quote File Paths",
+    "description": "Bash tool instruction: quote file paths containing spaces",
+    "category": "tools",
+    "keywords": [
+      "bash",
+      "shell",
+      "command",
+      "terminal",
+      "терминал",
+      "команда",
+      "оболочка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-quote-file-paths.md"
+  },
+  {
+    "id": "source-bash-maintain-cwd",
+    "title": "Tool Description Bash Maintain Cwd",
+    "description": "Bash tool instruction: use absolute paths and avoid cd",
+    "category": "tools",
+    "keywords": [
+      "bash",
+      "shell",
+      "command",
+      "terminal",
+      "терминал",
+      "команда",
+      "оболочка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-maintain-cwd.md"
+  },
+  {
+    "id": "source-parallel-tool-call-note-part-of-tool-usage-policy",
+    "title": "System Prompt Parallel Tool Call Note Part Of Tool Usage Policy",
+    "description": "System prompt telling Prime to use parallel tool calls",
+    "category": "tools",
+    "keywords": [
+      "bash",
+      "shell",
+      "command",
+      "terminal",
+      "терминал",
+      "команда",
+      "оболочка"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-parallel-tool-call-note-part-of-tool-usage-policy.md"
+  },
+  {
+    "id": "source-powershell-edition-for-7",
+    "title": "System Prompt Powershell Edition For 7",
+    "description": "Describes PowerShell 7+ shell syntax support, including pipeline chain operators, ternary, null-coalescing, and UTF-8 defaults",
+    "category": "tools",
+    "keywords": [
+      "powershell",
+      "windows",
+      "виндовс",
+      "пауэршелл"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-powershell-edition-for-7.md"
+  },
+  {
+    "id": "source-powershell-edition-for-5-1",
+    "title": "System Prompt Powershell Edition For 5 1",
+    "description": "System prompt for providing information about Windows PowerShell 5.1",
+    "category": "tools",
+    "keywords": [
+      "powershell",
+      "windows",
+      "виндовс",
+      "пауэршелл"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-powershell-edition-for-5-1.md"
+  },
+  {
+    "id": "source-bash-sleep-no-polling-background-tasks",
+    "title": "Tool Description Bash Sleep No Polling Background Tasks",
+    "description": "Bash tool instruction: do not poll background tasks, wait for notification",
+    "category": "tools",
+    "keywords": [
+      "background",
+      "job",
+      "server",
+      "process",
+      "фон",
+      "процесс",
+      "сервер",
+      "задача"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-bash-sleep-no-polling-background-tasks.md"
+  },
+  {
+    "id": "source-data-data-visualization-choosing-a-form",
+    "title": "Data Data Visualization Choosing A Form",
+    "description": "Reference guidance for choosing the appropriate chart, stat tile, or non-chart form based on the data's job",
+    "category": "data",
+    "keywords": [
+      "visualization",
+      "chart",
+      "graph",
+      "dashboard",
+      "визуализация",
+      "график",
+      "диаграмма"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-choosing-a-form.md"
+  },
+  {
+    "id": "source-data-visualization-description",
+    "title": "Skill Data Visualization Description",
+    "description": "Trigger description for the Data Visualization skill covering charts, graphs, dashboards, palettes, stat tiles, and related visualization requests",
+    "category": "data",
+    "keywords": [
+      "visualization",
+      "chart",
+      "graph",
+      "dashboard",
+      "визуализация",
+      "график",
+      "диаграмма"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-data-visualization-description.md"
+  },
+  {
+    "id": "source-data-data-visualization-interaction",
+    "title": "Data Data Visualization Interaction",
+    "description": "Reference guidance for chart hover layers, tooltips, filters, linked highlighting, and interaction behavior",
+    "category": "data",
+    "keywords": [
+      "chart",
+      "interaction",
+      "legend",
+      "accessibility",
+      "график",
+      "легенда",
+      "доступность"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-interaction.md"
+  },
+  {
+    "id": "source-data-data-visualization-marks-and-anatomy",
+    "title": "Data Data Visualization Marks And Anatomy",
+    "description": "Reference specifications for chart marks, spacing, labels, axes, legends, and stat-tile anatomy",
+    "category": "data",
+    "keywords": [
+      "chart",
+      "interaction",
+      "legend",
+      "accessibility",
+      "график",
+      "легенда",
+      "доступность"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-marks-and-anatomy.md"
+  },
+  {
+    "id": "source-data-data-visualization-components",
+    "title": "Data Data Visualization Components",
+    "description": "Reference specification for the HTML/SVG pieces, layers, and system parameters that make up a data visualization",
+    "category": "data",
+    "keywords": [
+      "chart",
+      "interaction",
+      "legend",
+      "accessibility",
+      "график",
+      "легенда",
+      "доступность"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-components.md"
+  },
+  {
+    "id": "source-data-data-visualization-anti-patterns",
+    "title": "Data Data Visualization Anti Patterns",
+    "description": "Reference list of chart and dashboard anti-patterns to check against before shipping a data visualization",
+    "category": "data",
+    "keywords": [
+      "chart",
+      "interaction",
+      "legend",
+      "accessibility",
+      "график",
+      "легенда",
+      "доступность"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/data-data-visualization-anti-patterns.md"
+  },
+  {
+    "id": "source-artifact-diagramming",
+    "title": "Skill Artifact Diagramming",
+    "description": "Provides Artifact diagramming guidance, including when diagrams add value and how to build legible theme-aware inline SVG",
+    "category": "documentation",
+    "keywords": [
+      "diagram",
+      "svg",
+      "architecture",
+      "flow",
+      "схема",
+      "диаграмма",
+      "поток"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-artifact-diagramming.md"
+  },
+  {
+    "id": "source-communication-style",
+    "title": "System Prompt Communication Style",
+    "description": "Instructs Prime to give brief, user-facing updates at key moments during tool use, write concise end-of-turn summaries, match response format to task complexity, and avoid comments and planning documents in code",
+    "category": "communication",
+    "keywords": [
+      "communication",
+      "report",
+      "answer",
+      "language",
+      "ответ",
+      "общение",
+      "язык",
+      "результат"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-communication-style.md"
+  },
+  {
+    "id": "source-tone-and-style-code-references",
+    "title": "System Prompt Tone And Style Code References",
+    "description": "Instruction to include file_path:line_number when referencing code",
+    "category": "communication",
+    "keywords": [
+      "communication",
+      "report",
+      "answer",
+      "language",
+      "ответ",
+      "общение",
+      "язык",
+      "результат"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-tone-and-style-code-references.md"
+  },
+  {
+    "id": "source-delivering-work-at-full-scope",
+    "title": "System Prompt Delivering Work At Full Scope",
+    "description": "Instructs Prime to complete ordinary requested work at full scope under reasonable assumptions, continue past non-blocking concerns, and preserve necessary refusal and risky-action confirmation boundaries",
+    "category": "planning",
+    "keywords": [
+      "plan",
+      "design",
+      "tradeoff",
+      "план",
+      "планирование",
+      "проектирование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-delivering-work-at-full-scope.md"
+  },
+  {
+    "id": "source-executing-actions-with-care",
+    "title": "System Prompt Executing Actions With Care",
+    "description": "Instructions for executing actions carefully",
+    "category": "planning",
+    "keywords": [
+      "plan",
+      "design",
+      "tradeoff",
+      "план",
+      "планирование",
+      "проектирование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-executing-actions-with-care.md"
+  },
+  {
+    "id": "source-doing-tasks-ambitious-tasks",
+    "title": "System Prompt Doing Tasks Ambitious Tasks",
+    "description": "Allow users to complete ambitious tasks; defer to user judgement on scope",
+    "category": "planning",
+    "keywords": [
+      "plan",
+      "design",
+      "tradeoff",
+      "план",
+      "планирование",
+      "проектирование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-ambitious-tasks.md"
+  },
+  {
+    "id": "source-askuserquestion-decision-guidance",
+    "title": "Tool Description Question Decision Guidance",
+    "description": "Additional guidance for using AskUserQuestion only when the user's answer changes what the agent should do next",
+    "category": "planning",
+    "keywords": [
+      "plan",
+      "design",
+      "tradeoff",
+      "план",
+      "планирование",
+      "проектирование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-askuserquestion-decision-guidance.md"
+  },
+  {
+    "id": "source-todowrite",
+    "title": "Tool Description Todos",
+    "description": "Tool description for creating and managing task lists",
+    "category": "planning",
+    "keywords": [
+      "plan",
+      "design",
+      "tradeoff",
+      "план",
+      "планирование",
+      "проектирование"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-todowrite.md"
+  },
+  {
+    "id": "source-code-review-correctness-finder-angles",
+    "title": "Skill Code Review Correctness Finder Angles",
+    "description": "Shared /code-review finder-angle block covering line-by-line diff scanning, removed-behavior auditing, and cross-file tracing",
+    "category": "review",
+    "keywords": [
+      "review",
+      "diff",
+      "regression",
+      "ревью",
+      "проверка кода",
+      "регрессия"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-correctness-finder-angles.md"
+  },
+  {
+    "id": "source-act-when-ready",
+    "title": "System Prompt Act When Ready",
+    "description": "Instructs the agent to act once it has enough information and give recommendations instead of exhaustive surveys",
+    "category": "engineering",
+    "keywords": [
+      "coding",
+      "implementation",
+      "feature",
+      "код",
+      "разработка",
+      "реализация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-act-when-ready.md"
+  },
+  {
+    "id": "source-comment-what-and-task-context-avoidance",
+    "title": "System Prompt Comment What And Task Context Avoidance",
+    "description": "Instructs Prime not to write comments that explain what code does or reference transient task context",
+    "category": "engineering",
+    "keywords": [
+      "coding",
+      "implementation",
+      "feature",
+      "код",
+      "разработка",
+      "реализация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-comment-what-and-task-context-avoidance.md"
+  },
+  {
+    "id": "source-comment-why-only-guidance",
+    "title": "System Prompt Comment Why Only Guidance",
+    "description": "Instructs Prime to write code comments only when the reason is non-obvious and useful to future readers",
+    "category": "engineering",
+    "keywords": [
+      "coding",
+      "implementation",
+      "feature",
+      "код",
+      "разработка",
+      "реализация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-comment-why-only-guidance.md"
+  },
+  {
+    "id": "source-correction-restraint",
+    "title": "System Prompt Correction Restraint",
+    "description": "Instructs Prime to correct only consequential errors plainly, avoid unnecessary self-criticism or re-auditing, and evaluate other agents’ corrections before adopting them",
+    "category": "communication",
+    "keywords": [
+      "communication",
+      "report",
+      "answer",
+      "language",
+      "ответ",
+      "общение",
+      "язык",
+      "результат"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-correction-restraint.md"
+  },
+  {
+    "id": "source-feedback-memory-save-guidance",
+    "title": "System Prompt Feedback Memory Save Guidance",
+    "description": "Explains when to save feedback memories from user corrections or confirmed non-obvious approaches",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-feedback-memory-save-guidance.md"
+  },
+  {
+    "id": "source-project-memory-save-guidance",
+    "title": "System Prompt Project Memory Save Guidance",
+    "description": "Explains when to save project memories about who is doing what, why, or by when, including absolute date handling",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-project-memory-save-guidance.md"
+  },
+  {
+    "id": "source-git-status",
+    "title": "System Prompt Git Status",
+    "description": "System prompt for displaying the current git status at the start of the conversation",
+    "category": "git",
+    "keywords": [
+      "git",
+      "commit",
+      "stage",
+      "коммит",
+      "гит",
+      "синхронизация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-git-status.md"
+  },
+  {
+    "id": "source-powershell-git-guidance",
+    "title": "Tool Description Powershell Git Guidance",
+    "description": "PowerShell tool guidance to prefer new commits, consider safer alternatives to destructive git operations, and never bypass hooks or signing without an explicit user request",
+    "category": "tools",
+    "keywords": [
+      "powershell",
+      "windows",
+      "виндовс",
+      "пауэршелл"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/tool-description-powershell-git-guidance.md"
+  },
+  {
+    "id": "source-run-cli-tool-example",
+    "title": "Skill Run Cli Tool Example",
+    "description": "Example file for the Run app skill showing how to document building, invoking, and testing a CLI tool",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-run-cli-tool-example.md"
+  },
+  {
+    "id": "source-run-web-server-api-example",
+    "title": "Skill Run Web Server Api Example",
+    "description": "Example file for the Run app skill showing how to document a server or API lifecycle with background launch, readiness checks, curl verification, and shutdown",
+    "category": "tools",
+    "keywords": [
+      "background",
+      "job",
+      "server",
+      "process",
+      "фон",
+      "процесс",
+      "сервер",
+      "задача"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-run-web-server-api-example.md"
+  },
+  {
+    "id": "source-run-tui-interactive-terminal-app-example",
+    "title": "Skill Run Tui Interactive Terminal App Example",
+    "description": "Example file for the Run app skill showing how to drive an interactive terminal app with tmux, readiness polling, pane capture, key references, and cleanup",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-run-tui-interactive-terminal-app-example.md"
+  },
+  {
+    "id": "source-run-app",
+    "title": "Skill Run App",
+    "description": "Skill for launching and driving the current project's app through its real runtime surface using project-specific run skills or fallback patterns",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-run-app.md"
+  },
+  {
+    "id": "source-code-review-phase-3-sweep-for-gaps",
+    "title": "Skill Code Review Phase 3 Sweep For Gaps",
+    "description": "Final code-review sweep: a clean-slate reviewer re-reads the diff to catch defects the earlier passes missed",
+    "category": "review",
+    "keywords": [
+      "review",
+      "diff",
+      "regression",
+      "ревью",
+      "проверка кода",
+      "регрессия"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-phase-3-sweep-for-gaps.md"
+  },
+  {
+    "id": "source-code-review-inline-gap-sweep-phase",
+    "title": "Agent Prompt Code Review Inline Gap Sweep Phase",
+    "description": "Adds a final same-context sweep for defects missed by an inline code review when subagents are unavailable",
+    "category": "review",
+    "keywords": [
+      "review",
+      "diff",
+      "regression",
+      "ревью",
+      "проверка кода",
+      "регрессия"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-code-review-inline-gap-sweep-phase.md"
+  },
+  {
+    "id": "source-user-memory-usage-guidance",
+    "title": "System Prompt User Memory Usage Guidance",
+    "description": "Explains when to use user memories to tailor responses to the user's profile or perspective",
+    "category": "memory",
+    "keywords": [
+      "memory",
+      "context",
+      "remember",
+      "память",
+      "запомнить",
+      "контекст"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-user-memory-usage-guidance.md"
+  },
+  {
+    "id": "source-run-skill-template",
+    "title": "Skill Run Skill Template",
+    "description": "Template file for the Run skill generator showing the frontmatter and section structure for a project-specific run skill",
+    "category": "verification",
+    "keywords": [
+      "verify",
+      "test",
+      "build",
+      "validation",
+      "тест",
+      "проверка",
+      "сборка",
+      "валидация"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-run-skill-template.md"
+  },
+  {
+    "id": "source-doctor-prompt-audit-configuration-scope",
+    "title": "Skill Doctor Prompt Audit Configuration Scope",
+    "description": "Audit applicable instruction text as data, exclude secrets and flag global changes without overreaching project scope.",
+    "category": "engineering",
+    "keywords": [
+      "conventions",
+      "instructions",
+      "agents",
+      "правила",
+      "инструкции",
+      "соглашения"
+    ],
+    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-doctor-prompt-audit-configuration-scope.md"
+  }
+]

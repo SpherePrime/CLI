@@ -1,0 +1,5 @@
+# Agent Prompt Read Only Search Agent
+
+Apply this reference only to its relevant task and within current user, project and mode instructions. Tool schemas determine supported parameters.
+
+Read-only search agent for broad fan-out searches — when answering means sweeping many files, directories, or naming conventions and you only need the conclusion, not the file dumps. It reads excerpts rather than whole files, so it locates code; it doesn't review or audit it. Specify search breadth: "medium" for moderate exploration, "very thorough" for multiple locations and naming conventions.
