@@ -1268,6 +1268,8 @@ func allToolNames() []string {
 		"write",
 		"list_mcp_resources",
 		"read_mcp_resource",
+		"search_instructions",
+		"read_instruction",
 		"search_skills",
 		"search_mcp",
 		"search_tools",
@@ -1283,7 +1285,7 @@ func resolveAllowedTools(allTools []string, disabledTools []string) []string {
 }
 
 func resolveReadOnlyTools(tools []string) []string {
-	readOnlyTools := []string{"glob", "grep", "ls", "lsp_call_hierarchy", "lsp_definition", "lsp_symbols", "sourcegraph", "view"}
+	readOnlyTools := []string{"search_instructions", "read_instruction", "glob", "grep", "ls", "lsp_call_hierarchy", "lsp_definition", "lsp_symbols", "sourcegraph", "view"}
 	// filter to only include tools that are in allowedtools (include mode)
 	return filterSlice(tools, readOnlyTools, true)
 }
@@ -1297,6 +1299,8 @@ func resolvePlanTools(tools []string) []string {
 	// delegate would let a plan spawn a worker that spawns a plan, with
 	// nothing in the config to bound the depth.
 	planTools := []string{
+		"search_instructions",
+		"read_instruction",
 		"glob",
 		"grep",
 		"ls",

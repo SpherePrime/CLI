@@ -884,6 +884,8 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.DataDirectory, c.cfg.Config().Options.Attribution, modelID),
 		tools.NewPrimeInfoTool(c.cfg, c.lspManager, c.allSkills, c.activeSkills, c.skillTracker),
 		tools.NewPrimeLogsTool(logFile),
+		tools.NewSearchInstructionsTool(),
+		tools.NewReadInstructionTool(),
 		tools.NewJobOutputTool(c.cfg.Config().Options.DataDirectory),
 		tools.NewJobKillTool(),
 		tools.NewDownloadTool(c.permissions, c.cfg.WorkingDir(), nil),
@@ -979,7 +981,13 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 // mode. Each one scans a catalog built from what the agent could actually call
 // right now, so a search hit is always a tool the model can use next.
 func (c *coordinator) appendSmartSearchTools(allTools []fantasy.AgentTool, agent config.Agent) []fantasy.AgentTool {
-	toolEntries := tools.SmartSearchEntriesFromTools(allTools)
+	availableTools := make([]fantasy.AgentTool, 0, len(allTools))
+	for _, tool := range allTools {
+		if slices.Contains(agent.AllowedTools, tool.Info().Name) {
+			availableTools = append(availableTools, tool)
+		}
+	}
+	toolEntries := tools.SmartSearchEntriesFromTools(availableTools)
 
 	var mcpEntries []tools.SmartSearchEntry
 	for _, tool := range tools.GetMCPTools(c.permissions, c.cfg, c.cfg.WorkingDir()) {
