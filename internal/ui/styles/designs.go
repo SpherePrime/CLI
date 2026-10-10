@@ -22,6 +22,7 @@ func ApplyDesign(s Styles, name string) Styles {
 	case "classic":
 		s.Editor.PanelFocused = s.Editor.PanelFocused.Background(s.Background)
 		s.Editor.PanelBlurred = s.Editor.PanelBlurred.Background(s.Background)
+		s.DesignHeader = s.DesignHeader.Border(border).BorderForeground(primary)
 		return s
 	case "minimal":
 		panel = lipgloss.NewStyle().Foreground(foreground).Background(s.Background).Padding(0, 0)
@@ -69,5 +70,6 @@ func ApplyDesign(s Styles, name string) Styles {
 		s.Messages.PlanBox = s.Messages.PlanBox.Border(border).Padding(1, 2)
 		s.Messages.ThinkingBox = s.Messages.ThinkingBox.Border(border).BorderForeground(accent).Padding(0, 1)
 	}
+	s.DesignHeader = s.DesignHeader.Border(border).BorderForeground(primary)
 	return s
 }
