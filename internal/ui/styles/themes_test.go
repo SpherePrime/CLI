@@ -26,3 +26,16 @@ func TestThemeNameFallbackAndAliases(t *testing.T) {
 	require.Equal(t, "default", ThemeKey("panthera"))
 	require.Equal(t, "nord", ThemeKey(" Nord "))
 }
+
+func TestEveryDesignFramesTheHeader(t *testing.T) {
+	for _, design := range []string{"classic", "minimal", "cards", "focus", "dashboard", "terminal", "studio", "opencode", "paper", "blueprint", "ember", "neon"} {
+		t.Run(design, func(t *testing.T) {
+			style := ApplyDesign(ColorTonePantera(), design).DesignHeader
+			_, top, right, bottom, left := style.GetBorder()
+			require.True(t, top)
+			require.True(t, right)
+			require.True(t, bottom)
+			require.True(t, left)
+		})
+	}
+}
