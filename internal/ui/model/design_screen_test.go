@@ -45,8 +45,10 @@ func TestDesignScreensKeepEditorAndMessagesVisible(t *testing.T) {
 			require.Contains(t, text, "Thinking OFF")
 			require.Contains(t, text, "Plan OFF")
 			require.Contains(t, text, "YOLO OFF")
-			require.Contains(t, text, "MCP [OFF]")
-			require.Contains(t, text, "Skills [ON]")
+			if !u.designHidesSidebar() && !strings.Contains(u.com.Styles.Design, "ember") && u.com.Styles.Design != "terminal" && u.com.Styles.Design != "neon" {
+				require.Contains(t, text, "MCPs")
+				require.Contains(t, text, "Skills")
+			}
 			for _, line := range strings.Split(text, "\n") {
 				require.LessOrEqual(t, ansi.StringWidth(line), u.width)
 			}

@@ -193,11 +193,6 @@ func (m *UI) handleFileEvent(file history.File) tea.Cmd {
 func (m *UI) filesInfo(cwd string, width, maxItems int, isSection bool) string {
 	t := m.com.Styles
 
-	title := t.Files.SectionTitle.Render(m.com.L("sidebar.modified_files"))
-	if isSection {
-		title = common.Section(t, m.com.L("sidebar.modified_files"), width)
-	}
-	list := t.Files.EmptyMessage.Render(m.com.L("sidebar.none"))
 	var filesWithChanges []SessionFile
 	for _, f := range m.sessionFiles {
 		if f.Additions == 0 && f.Deletions == 0 {
@@ -205,6 +200,12 @@ func (m *UI) filesInfo(cwd string, width, maxItems int, isSection bool) string {
 		}
 		filesWithChanges = append(filesWithChanges, f)
 	}
+
+	title := t.Files.SectionTitle.Render(m.com.L("sidebar.modified_files"))
+	if isSection {
+		title = common.Section(t, m.com.L("sidebar.modified_files"), width, t.Files.EmptyMessage.Render(fmt.Sprintf("(%d)", len(filesWithChanges))))
+	}
+	list := t.Files.EmptyMessage.Render(m.com.L("sidebar.none"))
 	if len(filesWithChanges) > 0 {
 		list = fileList(t, m.com, cwd, filesWithChanges, width, maxItems)
 	}

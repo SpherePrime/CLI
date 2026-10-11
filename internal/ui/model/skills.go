@@ -38,12 +38,12 @@ func cachedBuiltinSkills() []*skills.Skill {
 func (m *UI) skillsInfo(width, maxItems int, isSection bool) string {
 	t := m.com.Styles
 
+	items := m.skillStatusItems()
+
 	title := t.Resource.Heading.Render("Skills")
 	if isSection {
-		title = common.Section(t, title, width)
+		title = common.Section(t, title, width, t.Resource.CapabilityCount.Render(fmt.Sprintf("(%d)", len(items))))
 	}
-
-	items := m.skillStatusItems()
 	if len(items) == 0 {
 		list := t.Resource.AdditionalText.Render("None")
 		return lipgloss.NewStyle().Width(width).Render(fmt.Sprintf("%s\n\n%s", title, list))
