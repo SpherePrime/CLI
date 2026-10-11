@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/SpherePrime/CLI/internal/appearance"
 	"github.com/SpherePrime/CLI/internal/ui/dialog"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
@@ -21,6 +22,18 @@ func TestDesignChangesLayout(t *testing.T) {
 			case "dashboard":
 				require.Less(t, l.sidebar.Max.X, l.main.Min.X)
 			}
+		})
+	}
+}
+
+func TestDesignHeaderReservesFrameHeight(t *testing.T) {
+	for _, design := range []string{"cards", "dashboard", "studio", "neon", "blueprint"} {
+		t.Run(design, func(t *testing.T) {
+			u := layoutTestUI(false, "hello")
+			*u.com.Styles = styles.ApplyDesign(*u.com.Styles, design)
+			spec := appearance.DesignSpec(design)
+			layout := u.generateDesignLayout(120, 40, 4, 1)
+			require.Equal(t, spec.HeaderHeight+u.com.Styles.DesignHeader.GetVerticalFrameSize(), layout.header.Dy())
 		})
 	}
 }

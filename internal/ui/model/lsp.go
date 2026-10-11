@@ -122,7 +122,7 @@ func (m *UI) lspInfo(width, maxItems int, isSection bool) string {
 
 	title := t.Resource.Heading.Render("LSPs")
 	if isSection {
-		title = common.Section(t, title, width)
+		title = common.Section(t, title, width, t.Resource.CapabilityCount.Render(fmt.Sprintf("(%d)", len(lsps))))
 	}
 	list := t.Resource.AdditionalText.Render("None")
 	if len(lsps) > 0 {

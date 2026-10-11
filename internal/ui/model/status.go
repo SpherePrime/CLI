@@ -33,7 +33,6 @@ type Status struct {
 	inputMode       uiInputMode
 	yolo            bool
 	selectedModel   *workspace.AgentModel
-	resourceSummary string
 
 	// voiceBadge is the microphone indicator shown next to the mode badge,
 	// empty while dictation is idle.
@@ -64,10 +63,6 @@ func (s *Status) ClearInfoMsg() {
 func (s *Status) SetMode(mode uiInputMode, yolo bool) {
 	s.inputMode = mode
 	s.yolo = yolo
-}
-
-func (s *Status) SetResourceSummary(summary string) {
-	s.resourceSummary = summary
 }
 
 // SetVoiceBadge sets the microphone indicator shown before the help hints. An
@@ -129,11 +124,6 @@ func (s *Status) SetHideHelp(hideHelp bool) {
 
 // Draw draws the status bar onto the screen.
 func (s *Status) Draw(scr uv.Screen, area uv.Rectangle) {
-	if !s.hideHelp && s.resourceSummary != "" && area.Dy() > 1 {
-		line := ansi.Truncate(s.resourceSummary, max(0, area.Dx()), "")
-		uv.NewStyledString(line).Draw(scr, uv.Rect(area.Min.X, area.Min.Y, area.Max.X, area.Min.Y+1))
-		area.Min.Y++
-	}
 	if !s.hideHelp {
 		helpStyle := s.com.Styles.Status.Help
 		helpWidth := area.Dx() - helpStyle.GetPaddingLeft() - helpStyle.GetPaddingRight()

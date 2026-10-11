@@ -3678,7 +3678,6 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	m.status.SetHideHelp(isOnboarding)
 	m.status.SetMode(m.mode, m.yoloModeCached())
 	m.status.SetModel(m.selectedLargeModel())
-	m.status.SetResourceSummary(m.resourceSummary())
 	m.status.Draw(scr, layout.status)
 
 	// Draw completions popup if open

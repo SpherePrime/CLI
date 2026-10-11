@@ -46,7 +46,8 @@ func (m *UI) generateDesignLayout(width, height, editorHeight, helpHeight int) u
 	app := insetRight(insetLeft(image.Rect(0, 0, area.Max.X, l.status.Min.Y), appMargin), appMargin)
 	app = insetTop(app, appMargin)
 	spec := appearance.DesignSpec(m.com.Styles.Design)
-	headerHeight := min(spec.HeaderHeight, max(0, app.Dy()-1))
+	headerHeight := spec.HeaderHeight + m.com.Styles.DesignHeader.GetVerticalFrameSize()
+	headerHeight = min(headerHeight, max(0, app.Dy()-1))
 	l.header = image.Rect(app.Min.X, app.Min.Y, app.Max.X, app.Min.Y+headerHeight)
 	body := app
 	body.Min.Y = l.header.Max.Y

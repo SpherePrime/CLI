@@ -143,15 +143,11 @@ func TestStatusResourceSummaryPreservesModeStates(t *testing.T) {
 	u := newPrismTestUI()
 	u.attachments = attachments.New(nil, attachments.Keymap{})
 	u.status.helpKm = u
-	u.status.SetResourceSummary("MCP ON:1 OFF:2 · LSP WAIT:1 · Skills ON:3")
 	u.status.SetMode(uiInputModePlan, false)
 	lines := drawStatusLines(t, u.status, 100, 2)
-	require.Contains(t, lines[0], "MCP ON:1 OFF:2")
-	require.Contains(t, lines[0], "LSP WAIT:1")
-	require.Contains(t, lines[0], "Skills ON:3")
-	require.Contains(t, lines[1], "Thinking OFF")
-	require.Contains(t, lines[1], "Plan ON")
-	require.Contains(t, lines[1], "YOLO OFF")
+	require.Contains(t, lines[0], "Thinking OFF")
+	require.Contains(t, lines[0], "Plan ON")
+	require.Contains(t, lines[0], "YOLO OFF")
 	u.status.SetHideHelp(true)
 	require.Empty(t, strings.TrimSpace(strings.Join(drawStatusLines(t, u.status, 100, 2), "")))
 }
