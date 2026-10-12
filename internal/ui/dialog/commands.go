@@ -330,8 +330,11 @@ func (c *Commands) InitialCmd() tea.Cmd {
 }
 
 // BackspaceDeletesText implements [BackspaceAware].
+//
+// The commands dialog always keeps backspace bound to text deletion so the
+// filter can be cleared without closing the dialog — only Esc (Close) exits.
 func (c *Commands) BackspaceDeletesText() bool {
-	return BackspaceDeletesText(c.input)
+	return true
 }
 
 // Cursor returns the cursor position relative to the dialog.
