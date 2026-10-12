@@ -356,7 +356,7 @@ func ruStrings() map[string]string {
 		"cmd.disable_background_color":  "Выключить цвет фона",
 		"cmd.enable_mouse":              "Включить мышь",
 		"cmd.disable_mouse":             "Выключить мышь",
-		"cmd.select_reasoning_effort":   "Уровень рассуждений",
+		"cmd.select_reasoning_effort":   "Уровень размышления",
 		"cmd.enable_thinking_mode":      "Включить размышления",
 		"cmd.disable_thinking_mode":     "Выключить размышления",
 		"cmd.thinking_suffix":           "режим размышлений",
