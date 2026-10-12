@@ -1054,6 +1054,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				return getSessionErr
 			}
 			usage, estimated := fallbackStepUsage(stepMessages, stepResult)
+			updatedSession.ContextTokens = estimateMessageTokens(stepMessages)
 			a.updateSessionUsage(largeModel, &updatedSession, usage, a.openrouterCost(stepResult.ProviderMetadata), estimated)
 			extractHyperCredits(stepResult.ProviderMetadata)
 			_, sessionErr := a.sessions.Save(ctx, updatedSession)
@@ -1083,12 +1084,13 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				if largeModel.ModelCfg.AutoSummarizePercent > 0 {
 					percent = largeModel.ModelCfg.AutoSummarizePercent
 				}
-				tokens := currentSession.CompletionTokens + currentSession.PromptTokens
-				// Compact once the window is percent full, which is the same
-				// thing as leaving (100 - percent) of it free.
-				remaining := cw - tokens
-				limit := cw * int64(100-percent) / 100
-				if remaining <= limit {
+				tokens := currentSession.ContextTokens
+				if tokens <= 0 {
+					tokens = currentSession.CompletionTokens + currentSession.PromptTokens
+				}
+				// Compact once the measured request context reaches the configured
+				// threshold, leaving (100 - percent) of the window free.
+				if shouldAutoSummarize(cw, percent, tokens) {
 					shouldSummarize = true
 					return true
 				}
@@ -1506,6 +1508,7 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 	currentSession.SummaryMessageID = summaryMessage.ID
 	currentSession.CompletionTokens = summaryCompletionTokens(usage, summaryMessage)
 	currentSession.PromptTokens = 0
+	currentSession.ContextTokens = approxTokenCount(summaryPromptText) + estimateMessageTokens(summaryMsgs)
 	currentSession.EstimatedUsage = usageIsZero(usage)
 	_, err = a.sessions.Save(genCtx, currentSession)
 	if err != nil {
