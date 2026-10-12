@@ -3,14 +3,14 @@ package dialog
 import (
 	"errors"
 
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
-	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
+	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
 )
@@ -165,7 +165,6 @@ func (r *Reasoning) HandleMsg(msg tea.Msg) Action {
 	return nil
 }
 
-
 // BackspaceDeletesText implements [BackspaceAware].
 func (r *Reasoning) BackspaceDeletesText() bool {
 	return BackspaceDeletesText(r.input)
@@ -197,7 +196,7 @@ func (r *Reasoning) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	listHeight, listTotalHeight, _ := sizeDialogList(t, r.list, innerWidth, height)
 
 	rc := NewRenderContext(t, width)
-	rc.Title = "Select Reasoning Effort"
+	rc.Title = r.com.L("cmd.select_reasoning_effort")
 	inputView := t.Dialog.InputPrompt.Render(r.input.View())
 	rc.AddPart(inputView)
 

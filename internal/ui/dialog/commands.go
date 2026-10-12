@@ -643,9 +643,20 @@ func (c *Commands) defaultCommands() []*CommandItem {
 
 			// OpenAI models: reasoning effort dialog
 			if len(model.ReasoningLevels) > 0 {
-				commands = append(commands, NewCommandItem(c.com.Styles, "select_reasoning_effort", c.com.L("cmd.select_reasoning_effort"), "", ActionOpenDialog{
+				effort := selectedModel.ReasoningEffort
+				if effort == "" {
+					effort = model.DefaultReasoningEffort
+				}
+				if effort == "" {
+					effort = model.ReasoningLevels[0]
+				}
+				label := c.com.L("cmd.select_reasoning_effort")
+				if effort != "" {
+					label += " · " + common.FormatReasoningEffort(effort)
+				}
+				commands = append(commands, NewCommandItem(c.com.Styles, "select_reasoning_effort", label, "", ActionOpenDialog{
 					DialogID: ReasoningID,
-				}))
+				}).WithAliases("thinking", "reasoning", "размышления", "рассуждения"))
 			}
 		}
 	}
