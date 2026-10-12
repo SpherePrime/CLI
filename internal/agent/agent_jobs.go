@@ -28,11 +28,12 @@ const agentJobsWaitCap = 2 * time.Minute
 // The coordinator registry is the only record of it: the job outlives the
 // step that started it and is polled through the agent_jobs tool.
 type agentJob struct {
-	id        string
-	agent     string
-	sessionID string
-	prompt    string
-	startedAt time.Time
+	id              string
+	agent           string
+	sessionID       string
+	parentSessionID string
+	prompt          string
+	startedAt       time.Time
 
 	mu     sync.Mutex
 	status string // "running", "done", "error", "canceled"
@@ -136,14 +137,15 @@ func (c *coordinator) startAgentJob(ctx context.Context, params subAgentParams, 
 	c.jobMu.Lock()
 	c.agentJobSeq++
 	job := &agentJob{
-		id:        fmt.Sprintf("aj-%d", c.agentJobSeq),
-		agent:     agentName,
-		sessionID: session.ID,
-		prompt:    params.Prompt,
-		startedAt: time.Now(),
-		status:    "running",
-		cancel:    cancel,
-		done:      make(chan struct{}),
+		id:              fmt.Sprintf("aj-%d", c.agentJobSeq),
+		agent:           agentName,
+		sessionID:       session.ID,
+		parentSessionID: params.SessionID,
+		prompt:          params.Prompt,
+		startedAt:       time.Now(),
+		status:          "running",
+		cancel:          cancel,
+		done:            make(chan struct{}),
 	}
 	c.agentJobs[job.id] = job
 	c.jobMu.Unlock()

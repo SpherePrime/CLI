@@ -1498,6 +1498,10 @@ func (c *coordinator) BeginAccepted(sessionID string) *AcceptedRun {
 
 func (c *coordinator) Cancel(sessionID string) {
 	c.currentAgent().Cancel(sessionID)
+	for _, agent := range c.cachedSubAgents() {
+		agent.Cancel(sessionID)
+	}
+	c.cancelBackgroundAgents(sessionID)
 }
 
 // subAgentPrompt builds the system prompt for a configured agent, so a
@@ -1612,6 +1616,10 @@ func (c *coordinator) ForgetSubAgents() {
 
 func (c *coordinator) CancelAll() {
 	c.currentAgent().CancelAll()
+	for _, agent := range c.cachedSubAgents() {
+		agent.CancelAll()
+	}
+	c.cancelBackgroundAgents("")
 }
 
 func (c *coordinator) ClearQueue(sessionID string) {
@@ -1619,11 +1627,27 @@ func (c *coordinator) ClearQueue(sessionID string) {
 }
 
 func (c *coordinator) IsBusy() bool {
-	return c.currentAgent().IsBusy()
+	if c.currentAgent().IsBusy() || c.backgroundAgentsBusy("") {
+		return true
+	}
+	for _, agent := range c.cachedSubAgents() {
+		if agent.IsBusy() {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *coordinator) IsSessionBusy(sessionID string) bool {
-	return c.currentAgent().IsSessionBusy(sessionID)
+	if c.currentAgent().IsSessionBusy(sessionID) || c.backgroundAgentsBusy(sessionID) {
+		return true
+	}
+	for _, agent := range c.cachedSubAgents() {
+		if agent.IsSessionBusy(sessionID) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *coordinator) Model() Model {
