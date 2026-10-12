@@ -6,6 +6,15 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
+func shouldAutoSummarize(contextWindow int64, thresholdPercent int, contextTokens int64) bool {
+	if contextWindow <= 0 || thresholdPercent <= 0 || contextTokens <= 0 {
+		return false
+	}
+	remaining := contextWindow - contextTokens
+	limit := contextWindow * int64(100-thresholdPercent) / 100
+	return remaining <= limit
+}
+
 func usageIsZero(usage fantasy.Usage) bool {
 	return usage.InputTokens == 0 &&
 		usage.OutputTokens == 0 &&

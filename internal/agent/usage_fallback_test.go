@@ -199,6 +199,30 @@ func TestFallbackStepUsageReturnsZeroWithoutContent(t *testing.T) {
 	require.True(t, usageIsZero(usage))
 }
 
+func TestShouldAutoSummarizeUsesConfiguredThreshold(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		window       int64
+		percent      int
+		contextTokens int64
+		want         bool
+	}{
+		{name: "below threshold", window: 1000, percent: 85, contextTokens: 849},
+		{name: "at threshold", window: 1000, percent: 85, contextTokens: 850, want: true},
+		{name: "over threshold", window: 1000, percent: 70, contextTokens: 701, want: true},
+		{name: "unknown window", window: 0, percent: 85, contextTokens: 900},
+		{name: "unknown context", window: 1000, percent: 85, contextTokens: 0},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, shouldAutoSummarize(tc.window, tc.percent, tc.contextTokens))
+		})
+	}
+}
+
 func TestUpdateSessionUsageSkipsEstimatedCost(t *testing.T) {
 	t.Parallel()
 
