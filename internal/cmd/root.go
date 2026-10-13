@@ -69,6 +69,7 @@ func init() {
 		runCmd,
 		dirsCmd,
 		projectsCmd,
+		projectCmd,
 		updateProvidersCmd,
 		logsCmd,
 		logoutCmd,

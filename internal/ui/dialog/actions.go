@@ -97,7 +97,13 @@ type (
 	ActionToggleSmartTools            struct{}
 	ActionToggleAutoContinue          struct{}
 	ActionInitializeProject           struct{}
-	ActionSummarize                   struct {
+	ActionSwitchProject               struct {
+		Path string
+	}
+	ActionDeleteProject struct {
+		Path string
+	}
+	ActionSummarize struct {
 		SessionID string
 	}
 	// ActionSelectReasoningEffort is a message indicating a reasoning effort

@@ -143,9 +143,29 @@ prime provider add my-llm --base-url https://host/v1 --api-key sk-...`,
 			models = discovered
 		}
 
-		// Every model gets the configured context window.
+		// Enrich models with provider-specific metadata before applying the
+		// fallback context window. Enrichers may discover the real context
+		// length and vision capability from native provider endpoints.
+		if len(models) > 0 {
+			providerType := providerType
+			if enricher := discover.GetEnricher(providerType); enricher != nil {
+				enrichCtx, enrichCancel := context.WithTimeout(cmd.Context(), providerAddDiscoveryTimeout)
+				enriched, enrichErr := enricher.EnrichModels(enrichCtx, discover.Config{
+					ID:             id,
+					BaseURL:        baseURL,
+					APIKey:         apiKey,
+					ExistingModels: models,
+				}, cfg.Resolver(), models)
+				if enrichErr == nil {
+					models = enriched
+				}
+				enrichCancel()
+			}
+		}
 		for i := range models {
-			models[i].ContextWindow = int64(contextWindow)
+			if models[i].ContextWindow <= 0 {
+				models[i].ContextWindow = int64(contextWindow)
+			}
 		}
 
 		if name == "" {

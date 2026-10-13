@@ -96,6 +96,29 @@ func TestRegisterUpdatesExisting(t *testing.T) {
 	}
 }
 
+func TestFindByNumberAndPath(t *testing.T) {
+	t.Setenv("PRIME_GLOBAL_DATA", filepath.Join(t.TempDir(), "prime"))
+	path := filepath.Join(t.TempDir(), "project")
+	if err := Register(path, filepath.Join(path, ".prime")); err != nil {
+		t.Fatal(err)
+	}
+
+	byNumber, err := Find("1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if byNumber.Path != path {
+		t.Fatalf("expected %q, got %q", path, byNumber.Path)
+	}
+	byPath, err := Find(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if byPath.Path != path {
+		t.Fatalf("expected %q, got %q", path, byPath.Path)
+	}
+}
+
 func TestLoadEmptyFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)

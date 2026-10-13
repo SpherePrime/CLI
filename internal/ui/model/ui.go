@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -36,6 +37,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/projects"
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/internal/question"
 	"github.com/SpherePrime/CLI/internal/session"
@@ -2412,6 +2414,14 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			m.com.Workspace.UpdateAgentModel(context.TODO())
 			return util.NewInfoMsg(m.com.LSprintf("info.provider_models_updated", msg.ProviderID))
 		}))
+	case dialog.ActionDeleteProject:
+		if err := projects.Remove(msg.Path); err != nil {
+			cmds = append(cmds, util.ReportError(err))
+		}
+	case dialog.ActionSwitchProject:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		m.dialog.CloseDialog(dialog.ProjectsID)
+		cmds = append(cmds, m.openProject(msg.Path))
 	case dialog.ActionInitializeProject:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
@@ -4592,6 +4602,36 @@ type uiLayout struct {
 	sessionDetails uv.Rectangle
 }
 
+func (m *UI) openProject(path string) tea.Cmd {
+	path, err := filepath.Abs(filepath.Clean(path))
+	if err != nil {
+		return util.ReportError(err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return util.ReportError(fmt.Errorf("project directory is not available: %s: %w", path, err))
+	}
+	if !info.IsDir() {
+		return util.ReportError(fmt.Errorf("project path is not a directory: %s", path))
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		return util.ReportError(err)
+	}
+	cmd := exec.Command(executable, "--cwd", path)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
+	return tea.ExecProcess(cmd, func(err error) tea.Msg {
+		if err != nil {
+			return util.ReportError(err)
+		}
+		return nil
+	})
+}
+
 func (m *UI) openEditor(value string) tea.Cmd {
 	tmpfile, err := os.CreateTemp("", "msg_*.md")
 	if err != nil {
@@ -5359,6 +5399,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openSessionsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.ProjectsID:
+		if cmd := m.openProjectsDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.ModelsID:
 		if cmd := m.openModelsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -5689,6 +5733,19 @@ func (m *UI) openSessionsDialog() tea.Cmd {
 	}
 
 	m.dialog.OpenDialog(dialog)
+	return nil
+}
+
+func (m *UI) openProjectsDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.ProjectsID) {
+		m.dialog.BringToFront(dialog.ProjectsID)
+		return nil
+	}
+	dlg, err := dialog.NewProjects(m.com)
+	if err != nil {
+		return util.ReportError(err)
+	}
+	m.dialog.OpenDialog(dlg)
 	return nil
 }
 

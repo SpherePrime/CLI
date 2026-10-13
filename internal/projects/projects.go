@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -150,4 +151,83 @@ func List() ([]Project, error) {
 		return nil, err
 	}
 	return list.Projects, nil
+}
+
+// Find resolves a tracked project by its path or one-based list index.
+func Find(selector string) (Project, error) {
+	list, err := Load()
+	if err != nil {
+		return Project{}, err
+	}
+	selector = strings.TrimSpace(selector)
+	if selector == "" {
+		return Project{}, os.ErrInvalid
+	}
+	if index, err := strconv.Atoi(selector); err == nil {
+		if index < 1 || index > len(list.Projects) {
+			return Project{}, os.ErrNotExist
+		}
+		return list.Projects[index-1], nil
+	}
+	path, err := filepath.Abs(selector)
+	if err != nil {
+		return Project{}, err
+	}
+	for _, project := range list.Projects {
+		projectPath, absErr := filepath.Abs(project.Path)
+		if project.Path == selector || absErr == nil && projectPath == path {
+			return project, nil
+		}
+	}
+	return Project{}, os.ErrNotExist
+}
+
+// Prune removes tracked projects whose directories no longer exist.
+func Prune() error {
+	list, err := Load()
+	if err != nil {
+		return err
+	}
+
+	kept := make([]Project, 0, len(list.Projects))
+	for _, project := range list.Projects {
+		info, err := os.Stat(project.Path)
+		if err == nil && info.IsDir() {
+			kept = append(kept, project)
+			continue
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	if len(kept) == len(list.Projects) {
+		return nil
+	}
+	list.Projects = kept
+	return Save(list)
+}
+
+// Remove deletes a project from the tracked list without touching its directory.
+func Remove(path string) error {
+	list, err := Load()
+	if err != nil {
+		return err
+	}
+	kept := list.Projects[:0]
+	for _, project := range list.Projects {
+		if project.Path != path {
+			kept = append(kept, project)
+		}
+	}
+	list.Projects = kept
+	return Save(list)
+}
+
+// Touch marks a tracked project as the most recently used project.
+func Touch(path string) error {
+	project, err := Find(path)
+	if err != nil {
+		return err
+	}
+	return Register(project.Path, project.DataDir)
 }
