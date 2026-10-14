@@ -34,15 +34,19 @@ func TestThinkingModeReflectsEffectiveReasoning(t *testing.T) {
 		unavailable bool
 	}{
 		{"missing model", nil, false, "", true},
-		{"unsupported", &workspace.AgentModel{ModelCfg: config.SelectedModel{Think: true, ReasoningEffort: "high"}}, false, "", true},
+		{"unsupported", &workspace.AgentModel{ModelCfg: config.SelectedModel{Think: true, ReasoningEffort: "high"}}, true, "Medium", false},
 		{"toggle off", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true}}, false, "", false},
-		{"toggle on", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true}, ModelCfg: config.SelectedModel{Think: true}}, true, "", false},
-		{"selected effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}}, ModelCfg: config.SelectedModel{ReasoningEffort: "high"}}, true, "high", false},
-		{"unsupported effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true}, ModelCfg: config.SelectedModel{ReasoningEffort: "medium"}}, false, "", false},
-		{"default effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}, DefaultReasoningEffort: "high"}}, true, "high", false},
-		{"first effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}}}, true, "medium", false},
-		{"invalid selection", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}, DefaultReasoningEffort: "medium"}, ModelCfg: config.SelectedModel{ReasoningEffort: "invalid"}}, true, "medium", false},
+		{"toggle on", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true}, ModelCfg: config.SelectedModel{Think: true}}, true, "Medium", false},
+		{"selected effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}}, ModelCfg: config.SelectedModel{ReasoningEffort: "high"}}, true, "High", false},
+		{"unsupported effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true}, ModelCfg: config.SelectedModel{ReasoningEffort: "medium"}}, true, "Medium", false},
+		{"default effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}, DefaultReasoningEffort: "high"}}, true, "High", false},
+		{"first effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}}}, true, "Medium", false},
+		{"invalid selection", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}, DefaultReasoningEffort: "medium"}, ModelCfg: config.SelectedModel{ReasoningEffort: "invalid"}}, true, "Medium", false},
 		{"none effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"none", "high"}}, ModelCfg: config.SelectedModel{ReasoningEffort: "none"}}, false, "", false},
+		{"reasoning mode low", &workspace.AgentModel{ModelCfg: config.SelectedModel{ReasoningMode: "low"}}, true, "Low", false},
+		{"reasoning mode high", &workspace.AgentModel{ModelCfg: config.SelectedModel{ReasoningMode: "high"}}, true, "High", false},
+		{"reasoning mode xhigh", &workspace.AgentModel{ModelCfg: config.SelectedModel{ReasoningMode: "xhigh"}}, true, "X-High", false},
+		{"reasoning mode max", &workspace.AgentModel{ModelCfg: config.SelectedModel{ReasoningMode: "max"}}, true, "Max", false},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -71,12 +75,13 @@ func TestModeStatesUpdateWithoutRestart(t *testing.T) {
 	u.status.SetMode(uiInputModePlan, true)
 	updated := ansi.Strip(u.status.modeBadge())
 	require.Contains(t, updated, "Thinking ON")
+	require.Contains(t, updated, "Thinking ON(Medium)")
 	require.Contains(t, updated, "Plan ON")
 	require.Contains(t, updated, "YOLO ON")
 	selected.ModelCfg.Think = false
 	selected.CatwalkCfg.ReasoningLevels = []string{"none", "high"}
 	selected.ModelCfg.ReasoningEffort = "high"
-	require.Contains(t, ansi.Strip(u.status.modeBadge()), "Thinking ON(high)")
+	require.Contains(t, ansi.Strip(u.status.modeBadge()), "Thinking ON(High)")
 	u.status.SetModel(nil)
 	u.status.SetMode(uiInputModeCode, false)
 	updated = ansi.Strip(u.status.modeBadge())
@@ -100,7 +105,7 @@ func TestModeStatesDrawAcrossEveryDesignAndWidth(t *testing.T) {
 				require.LessOrEqual(t, ansi.StringWidth(u.status.modeBadgeWidth(width)), width)
 			}
 			line := strings.Join(drawStatusLines(t, u.status, 100, 1), "\n")
-			require.Contains(t, line, "Thinking ON(high)")
+			require.Contains(t, line, "Thinking ON(High)")
 			require.Contains(t, line, "Plan ON")
 			require.Contains(t, line, "YOLO ON")
 			selected.CatwalkCfg.ReasoningLevels = []string{"none", "high"}
@@ -131,6 +136,7 @@ func TestModeStatesTranslateAndPreserveVoice(t *testing.T) {
 	status.SetVoiceBadge("REC")
 	badge := ansi.Strip(status.modeBadge())
 	require.Contains(t, badge, "Размышления ВКЛ")
+	require.Contains(t, badge, "Medium") // FormatReasoningMode uses canonical names
 	require.Contains(t, badge, "План ВКЛ")
 	require.Contains(t, badge, "YOLO ВЫКЛ")
 	require.Contains(t, badge, "REC")

@@ -624,40 +624,28 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		commands = append(commands, NewCommandItem(c.com.Styles, "summarize", c.com.L("cmd.summarize_session"), "", ActionSummarize{SessionID: c.sessionID}))
 	}
 
-	// Add reasoning toggle for models that support it
+	// Add reasoning mode dialog for all models.
+	// Unlike the old approach which showed different UI for CanReason==true
+	// vs CanReason==false models, we now always show a unified dialog
+	// where users can select from real reasoning levels (off, low, medium,
+	// high, xhigh, max) — similar to Claude Code's effort levels.
 	cfg := c.com.Config()
 	if agentCfg, ok := cfg.Agents[config.AgentGeneral]; ok {
 		providerCfg := cfg.GetProviderForModel(agentCfg.Model)
 		model := cfg.GetModelByType(agentCfg.Model)
-		if providerCfg != nil && model != nil && model.CanReason {
+		if providerCfg != nil && model != nil {
 			selectedModel := cfg.Models[agentCfg.Model]
 
-			// Anthropic models: thinking toggle
-			if model.CanReason && len(model.ReasoningLevels) == 0 {
-				status := c.com.L("cmd.enable_thinking_mode")
-				if selectedModel.Think {
-					status = c.com.L("cmd.disable_thinking_mode")
-				}
-				commands = append(commands, NewCommandItem(c.com.Styles, "toggle_thinking", status+" "+c.com.L("cmd.thinking_suffix"), "", ActionToggleThinking{}))
+			// Always show the reasoning mode dialog — it works for any model,
+			// including custom providers that aren't marked CanReason=true.
+			currentMode := selectedModel.EffectiveReasoningMode()
+			label := c.com.L("cmd.select_reasoning_effort")
+			if currentMode != config.ReasoningModeOff {
+				label += " · " + config.FormatReasoningMode(currentMode)
 			}
-
-			// OpenAI models: reasoning effort dialog
-			if len(model.ReasoningLevels) > 0 {
-				effort := selectedModel.ReasoningEffort
-				if effort == "" {
-					effort = model.DefaultReasoningEffort
-				}
-				if effort == "" {
-					effort = model.ReasoningLevels[0]
-				}
-				label := c.com.L("cmd.select_reasoning_effort")
-				if effort != "" {
-					label += " · " + common.FormatReasoningEffort(effort)
-				}
-				commands = append(commands, NewCommandItem(c.com.Styles, "select_reasoning_effort", label, "", ActionOpenDialog{
-					DialogID: ReasoningID,
-				}).WithAliases("thinking", "reasoning", "размышления", "рассуждения"))
-			}
+			commands = append(commands, NewCommandItem(c.com.Styles, "select_reasoning_effort", label, "", ActionOpenDialog{
+				DialogID: ReasoningID,
+			}).WithAliases("thinking", "reasoning", "размышления", "рассуждения"))
 		}
 	}
 	// Only show toggle compact mode command if window width is larger than compact breakpoint (120)

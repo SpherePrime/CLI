@@ -22,7 +22,10 @@ var modelsCmd = &cobra.Command{
 prime models
 
 # Search models
-prime models gpt5`,
+prime models gpt5
+
+# Show which models support reasoning
+prime models --reasoning`,
 	Args: cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := ResolveCwd(cmd)
@@ -39,10 +42,16 @@ prime models gpt5`,
 		}
 
 		term := strings.ToLower(strings.Join(args, " "))
+		showReasoning, _ := cmd.Flags().GetBool("reasoning")
 
+		type modelEntry struct {
+			id         string
+			reasons    bool
+			levels     []string
+		}
 		type providerEntry struct {
 			name       string
-			models     []string
+			models     []modelEntry
 			configured bool
 		}
 
@@ -81,10 +90,16 @@ prime models gpt5`,
 						continue
 					}
 				}
-				entry.models = append(entry.models, model.ID)
+				entry.models = append(entry.models, modelEntry{
+					id:      model.ID,
+					reasons: model.CanReason,
+					levels:  model.ReasoningLevels,
+				})
 			}
 			if len(entry.models) > 0 {
-				slices.Sort(entry.models)
+				slices.SortFunc(entry.models, func(a, b modelEntry) int {
+					return strings.Compare(a.id, b.id)
+				})
 				entries[providerID] = entry
 			}
 		}
@@ -112,10 +127,16 @@ prime models gpt5`,
 						continue
 					}
 				}
-				entry.models = append(entry.models, model.ID)
+				entry.models = append(entry.models, modelEntry{
+					id:      model.ID,
+					reasons: model.CanReason,
+					levels:  model.ReasoningLevels,
+				})
 			}
 			if len(entry.models) > 0 {
-				slices.Sort(entry.models)
+				slices.SortFunc(entry.models, func(a, b modelEntry) int {
+					return strings.Compare(a.id, b.id)
+				})
 				entries[providerID] = entry
 			}
 		}
@@ -136,8 +157,16 @@ prime models gpt5`,
 		if !isatty.IsTerminal(os.Stdout.Fd()) {
 			for _, providerID := range providerIDs {
 				entry := entries[providerID]
-				for _, modelID := range entry.models {
-					fmt.Println(providerID + "/" + modelID)
+				for _, model := range entry.models {
+					if showReasoning {
+						reasoning := "false"
+						if model.reasons {
+							reasoning = "true"
+						}
+						fmt.Printf("%s/%s\t%s\n", providerID, model.id, reasoning)
+					} else {
+						fmt.Println(providerID + "/" + model.id)
+					}
 				}
 			}
 			return nil
@@ -151,8 +180,18 @@ prime models gpt5`,
 				label += " (not configured)"
 			}
 			providerNode := tree.Root(label)
-			for _, modelID := range entry.models {
-				providerNode.Child(modelID)
+			for _, model := range entry.models {
+				modelLabel := model.id
+				if showReasoning && model.reasons {
+					modelLabel += " [reasoning"
+					if len(model.levels) > 0 {
+						modelLabel += ": " + strings.Join(model.levels, ",")
+					}
+					modelLabel += "]"
+				} else if showReasoning && !model.reasons {
+					modelLabel += " [no reasoning]"
+				}
+				providerNode.Child(modelLabel)
 			}
 			t.Child(providerNode)
 		}
@@ -164,4 +203,5 @@ prime models gpt5`,
 
 func init() {
 	rootCmd.AddCommand(modelsCmd)
+	modelsCmd.Flags().BoolP("reasoning", "r", false, "Show reasoning support for each model")
 }

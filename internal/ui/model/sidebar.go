@@ -1,9 +1,9 @@
 package model
 
 import (
-	"cmp"
 	"fmt"
 	"image"
+	"slices"
 	"strings"
 
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
@@ -33,16 +33,18 @@ func (m *UI) modelInfo(width int) (string, bool) {
 			// Only check reasoning if model can reason
 			if model.CatwalkCfg.CanReason {
 				hasReasoning = true
-				if len(model.CatwalkCfg.ReasoningLevels) == 0 {
-					if model.ModelCfg.Think {
-						reasoningInfo = "Thinking On"
+				// Use the unified reasoning mode for display
+				mode := model.ModelCfg.EffectiveReasoningMode()
+				if mode == config.ReasoningModeOff && model.CatwalkCfg.CanReason && len(model.CatwalkCfg.ReasoningLevels) > 0 {
+					// Fall back to catalog default
+					defaultEffort := model.CatwalkCfg.DefaultReasoningEffort
+					if defaultEffort != "" && slices.Contains(model.CatwalkCfg.ReasoningLevels, defaultEffort) {
+						mode = config.NormalizeReasoningMode(defaultEffort)
 					} else {
-						reasoningInfo = "Thinking Off"
+						mode = config.NormalizeReasoningMode(model.CatwalkCfg.ReasoningLevels[0])
 					}
-				} else {
-					reasoningEffort := cmp.Or(model.ModelCfg.ReasoningEffort, model.CatwalkCfg.DefaultReasoningEffort)
-					reasoningInfo = fmt.Sprintf("Reasoning %s", common.FormatReasoningEffort(reasoningEffort))
 				}
+				reasoningInfo = fmt.Sprintf("Reasoning %s", config.FormatReasoningMode(mode))
 			}
 		}
 	}
@@ -239,14 +241,8 @@ func (m *UI) handleSidebarModelInfoClick(x, y int) tea.Cmd {
 		return nil
 	}
 
-	// Open the reasoning dialog or toggle thinking, depending on the model.
-	model := m.selectedLargeModel()
-	if model != nil && len(model.CatwalkCfg.ReasoningLevels) > 0 {
-		// OpenAI-style: open the reasoning effort selector.
-		return m.openReasoningDialog()
-	}
-	// Anthropic-style: toggle thinking mode directly.
-	return m.toggleThinking()
+	// Always open the reasoning mode dialog — it shows all modes for any model.
+	return m.openReasoningDialog()
 }
 
 // countModelInfoLines counts how many lines the modelInfo block spans in
