@@ -15,6 +15,8 @@ func (m *UI) updateDesignSidebarScrollState() {
 		m.sidebarScrollable = false
 		m.sidebarMaxOffsetVal = 0
 		m.sidebarOffset = 0
+		m.sidebarModelInfoRow = -1
+		m.sidebarReasoningClickable = false
 		m.sidebarScrollbarTrack = common.ScrollbarTrack{}
 		return
 	}
@@ -27,10 +29,13 @@ func (m *UI) updateDesignSidebarScrollState() {
 	width := max(1, area.Dx()-style.GetHorizontalFrameSize()-1)
 	height := max(0, area.Dy()-style.GetVerticalFrameSize()-2)
 	cfg := m.com.Config()
+	modelInfoStr, hasReasoning := m.modelInfo(width)
+	m.sidebarReasoningClickable = hasReasoning
+
 	body := []string{
 		m.com.Styles.Sidebar.SessionTitle.Width(width).Render(m.designSessionTitle()),
 		common.PrettyPath(m.com.Styles, m.com.Workspace.WorkingDir(), width),
-		m.modelInfo(width),
+		modelInfoStr,
 		m.filesInfo(m.com.Workspace.WorkingDir(), width, fileChangeCount(m.sessionFiles), true),
 		m.lspInfo(width, len(m.lspStates), true),
 	}
@@ -40,6 +45,12 @@ func (m *UI) updateDesignSidebarScrollState() {
 	body = append(body, m.skillsInfo(width, len(m.skillStatusItems()), true))
 	m.sidebarContent = strings.Join(body, "\n\n")
 	m.sidebarTotalLines = strings.Count(m.sidebarContent, "\n") + 1
+	// Record the row index of the modelInfoStr section for click hit-testing.
+	if m.sidebarReasoningClickable {
+		m.sidebarModelInfoRow = m.findModelInfoRow(modelInfoStr)
+	} else {
+		m.sidebarModelInfoRow = -1
+	}
 	m.sidebarContentWidth = width
 	m.sidebarContentHeight = height
 	m.sidebarScrollable = m.sidebarTotalLines > height
@@ -85,7 +96,7 @@ func (m *UI) drawDesignInspector(scr uv.Screen, area uv.Rectangle) {
 	style := m.com.Styles.DesignInspector
 	width := max(1, area.Dx()-style.GetHorizontalFrameSize())
 	heading := m.com.Styles.Header.Label.Bold(true).Render("INSPECTOR")
-	sections := []string{heading, "MODEL", m.modelInfo(width), "TASKS", fmt.Sprintf("%d items", m.designTaskCount()), "FILES", m.filesInfo(m.com.Workspace.WorkingDir(), width, fileChangeCount(m.sessionFiles), true), "SHORTCUTS", "ctrl+p  commands\nctrl+l  model\nctrl+s  sessions"}
+	sections := []string{heading, "MODEL", m.modelInfoStr(width), "TASKS", fmt.Sprintf("%d items", m.designTaskCount()), "FILES", m.filesInfo(m.com.Workspace.WorkingDir(), width, fileChangeCount(m.sessionFiles), true), "SHORTCUTS", "ctrl+p  commands\nctrl+l  model\nctrl+s  sessions"}
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
 	uv.NewStyledString(designPanelView(style, content, area)).Draw(scr, area)
 }

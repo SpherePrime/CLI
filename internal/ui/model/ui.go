@@ -372,8 +372,18 @@ type UI struct {
 	sidebarTotalLines       int    // total lines in sidebarContent
 	sidebarContentHeight    int    // available height for sidebar content
 	sidebarContentWidth     int    // available width for sidebar content
-	sidebarContentTop       int    // first screen row of the scrollable content
+	sidebarContentTop       int  // first screen row of the scrollable content
 	sidebarDrawLogo         string // logo to render (may differ from sidebarLogo for short heights)
+
+	// sidebarModelInfoRow is the index (in sidebarContent) of the row
+	// rendering the model info block. Clicking it opens the reasoning
+	// effort / thinking toggle. -1 when not present or not clickable.
+	sidebarModelInfoRow int
+
+	// sidebarReasoningClickable is true when the current model in the
+	// sidebar supports reasoning and clicking it should open the
+	// reasoning-effort / thinking toggle.
+	sidebarReasoningClickable bool
 
 	// Sidebar scrollbar pointer state: where the thumb was painted and the
 	// drag currently holding it.
@@ -519,6 +529,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	ui := &UI{
 		com:                 com,
 		dialog:              dialog.NewOverlay(),
+		sidebarModelInfoRow: -1,
 		keyMap:              keyMap,
 		textarea:            ta,
 		chat:                ch,
@@ -888,6 +899,8 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setState(uiChat, m.focus)
 		m.session = msg.session
 		m.sidebarOffset = 0
+		m.sidebarModelInfoRow = -1
+		m.sidebarReasoningClickable = false
 		m.sessionFiles = msg.files
 		// Session switch: the memoized busy state and queued prompts
 		// belong to the previous session. Drop them and re-fetch
@@ -1216,6 +1229,15 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, cmd)
 				}
 				return m, tea.Batch(cmds...)
+			}
+
+			// Click on the model info row (reasoning/thinking) in the
+			// sidebar opens the reasoning-effort dialog or toggles thinking.
+			if msg.Button == uv.MouseLeft {
+				if cmd := m.handleSidebarModelInfoClick(msg.X, msg.Y); cmd != nil {
+					cmds = append(cmds, cmd)
+					return m, tea.Batch(cmds...)
+				}
 			}
 
 			x, y := msg.X, msg.Y
@@ -6127,6 +6149,8 @@ func (m *UI) newSession() tea.Cmd {
 	planCmd := m.resetPlanModeState()
 	m.session = nil
 	m.sidebarOffset = 0
+	m.sidebarModelInfoRow = -1
+	m.sidebarReasoningClickable = false
 	m.sessionFiles = nil
 	m.sessionFileReads = nil
 	m.setState(uiLanding, uiFocusEditor)
@@ -6427,7 +6451,7 @@ func (m *UI) drawSessionDetails(scr uv.Screen, area uv.Rectangle) {
 	blocks := []string{
 		title,
 		"",
-		m.modelInfo(width),
+		m.modelInfoStr(width),
 		"",
 	}
 
