@@ -1,6 +1,8 @@
 package dialog
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/SpherePrime/CLI/internal/projects"
@@ -12,6 +14,8 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // ProjectsID identifies the project selector dialog.
@@ -23,6 +27,7 @@ const (
 	projectsModeNormal projectsMode = iota
 	projectsModeDeleting
 	projectsModePath
+	projectsModeConfirm
 )
 
 // Projects is a selector for recently used project directories.
@@ -33,6 +38,9 @@ type Projects struct {
 	input textinput.Model
 	items []*projectItem
 	mode  projectsMode
+	// pendingPath holds the path typed in projectsModePath while the
+	// dialog asks whether to open it anyway.
+	pendingPath string
 }
 
 var _ Dialog = (*Projects)(nil)
@@ -63,6 +71,7 @@ func NewProjects(com *common.Common) (*Projects, error) {
 	p.input.SetVirtualCursor(false)
 	p.input.SetStyles(com.Styles.TextInput)
 	p.input.Focus()
+	p.input.Placeholder = com.L("cmd.type_to_filter")
 	return p, nil
 }
 
@@ -89,6 +98,17 @@ func (p *Projects) HandleMsg(msg tea.Msg) Action {
 			}
 			return nil
 		}
+		if p.mode == projectsModeConfirm {
+			switch msg.String() {
+			case "y", "enter":
+				path := p.pendingPath
+				p.mode = projectsModeNormal
+				return ActionSwitchProject{Path: path}
+			case "n", "esc":
+				p.mode = projectsModePath
+			}
+			return nil
+		}
 		if p.mode == projectsModePath {
 			switch msg.String() {
 			case "esc":
@@ -97,6 +117,17 @@ func (p *Projects) HandleMsg(msg tea.Msg) Action {
 			case "enter":
 				path := strings.TrimSpace(p.input.Value())
 				if path == "" {
+					return nil
+				}
+				abs, err := filepath.Abs(filepath.Clean(path))
+				if err == nil {
+					path = abs
+				}
+				if info, statErr := os.Stat(path); statErr != nil || !info.IsDir() {
+					// Not a usable directory: ask whether to open it
+					// anyway instead of silently doing nothing.
+					p.pendingPath = path
+					p.mode = projectsModeConfirm
 					return nil
 				}
 				return ActionSwitchProject{Path: path}
@@ -117,6 +148,7 @@ func (p *Projects) HandleMsg(msg tea.Msg) Action {
 		case "ctrl+n", "ctrl+o":
 			p.mode = projectsModePath
 			p.input.SetValue("")
+			p.input.Placeholder = p.com.L("projects.path_placeholder")
 			return nil
 		case "enter":
 			if item := p.selected(); item != nil {
@@ -155,23 +187,46 @@ func (p *Projects) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	height := max(0, min(defaultDialogHeight, area.Dy()-t.Dialog.View.GetVerticalBorderSize()))
 	innerWidth := width - t.Dialog.View.GetHorizontalFrameSize()
 	listHeight, listTotalHeight, _ := sizeDialogList(t, p.list, innerWidth, height)
-	var rc = NewRenderContext(t, width)
-	rc.Title = "Projects"
-	if p.mode == projectsModeDeleting {
-		rc.AddPart("Delete this project from the list? (y/n)")
-	} else if p.mode == projectsModePath {
+	rc := NewRenderContext(t, width)
+	rc.Title = p.com.L("projects.title")
+	switch p.mode {
+	case projectsModeDeleting:
+		rc.AddPart(p.com.L("projects.delete_confirm"))
+	case projectsModeConfirm:
+		rc.AddPart(p.com.L("projects.open_missing_confirm"))
+		rc.AddPart(t.Dialog.SecondaryText.Render(ansiTruncateMiddle(p.pendingPath, innerWidth)))
+	case projectsModePath:
 		p.input.SetWidth(dialogInputTextWidth(t, p.input, innerWidth))
 		rc.AddPart(t.Dialog.InputPrompt.Render(p.input.View()))
-	} else {
+	default:
 		p.input.SetWidth(dialogInputTextWidth(t, p.input, innerWidth))
 		rc.AddPart(t.Dialog.InputPrompt.Render(p.input.View()))
+		bodyView := t.Dialog.List.Height(p.list.Height()).Render(p.list.Render())
+		rc.AddPart(joinScrollbar(t, bodyView, listHeight, listTotalHeight, listHeight, p.list.Offset()))
 	}
-	bodyView := t.Dialog.List.Height(p.list.Height()).Render(p.list.Render())
-	rc.AddPart(joinScrollbar(t, bodyView, listHeight, listTotalHeight, listHeight, p.list.Offset()))
 	rc.Help = renderDialogHelp(t, &p.help, p, innerWidth)
 	view := rc.Render()
 	DrawCenterCursor(scr, area, view, p.Cursor())
 	return p.Cursor()
+}
+
+// ansiTruncateMiddle keeps both ends of a long path visible by cutting the
+// middle, so the drive or home prefix and the folder name survive.
+func ansiTruncateMiddle(s string, maxWidth int) string {
+	const ellipsis = "…"
+	if maxWidth <= 0 {
+		return ""
+	}
+	if lipgloss.Width(s) <= maxWidth {
+		return s
+	}
+	if maxWidth <= lipgloss.Width(ellipsis) {
+		return ansi.Truncate(s, maxWidth, "")
+	}
+	half := (maxWidth - lipgloss.Width(ellipsis)) / 2
+	head := ansi.Truncate(s, half, "")
+	tail := ansi.TruncateLeft(s, lipgloss.Width(s)-half, "")
+	return head + ellipsis + tail
 }
 
 // BackspaceDeletesText implements BackspaceAware.
@@ -223,6 +278,9 @@ func removeProject(path string) error {
 func (p *Projects) ShortHelp() []key.Binding {
 	if p.mode == projectsModeDeleting {
 		return []key.Binding{key.NewBinding(key.WithKeys("y", "enter"), key.WithHelp("y", "delete")), key.NewBinding(key.WithKeys("n", "esc"), key.WithHelp("n", "cancel"))}
+	}
+	if p.mode == projectsModeConfirm {
+		return []key.Binding{key.NewBinding(key.WithKeys("y", "enter"), key.WithHelp("y", "open")), key.NewBinding(key.WithKeys("n", "esc"), key.WithHelp("n", "cancel"))}
 	}
 	if p.mode == projectsModePath {
 		return []key.Binding{key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "open")), CloseKey}
