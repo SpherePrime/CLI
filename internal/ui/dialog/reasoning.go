@@ -43,6 +43,10 @@ type Reasoning struct {
 	}
 }
 
+// reasoningOffID is the virtual effort value used for the "Off" row that
+// disables reasoning. It maps to an empty ReasoningEffort in the model config.
+const reasoningOffID = "none"
+
 // ReasoningItem represents a reasoning effort list item.
 type ReasoningItem struct {
 	*list.Versioned
@@ -50,6 +54,7 @@ type ReasoningItem struct {
 	title     string
 	isCurrent bool
 	t         *styles.Styles
+	com       *common.Common
 	m         fuzzy.Match
 	cache     map[int]string
 	focused   bool
@@ -231,7 +236,12 @@ func (r *Reasoning) activate(idx int) Action {
 	if !ok || item == nil {
 		return nil
 	}
-	return ActionSelectReasoningEffort{Effort: item.effort}
+	// "Off" maps to an empty effort so reasoning is disabled.
+	effort := item.effort
+	if effort == reasoningOffID {
+		effort = ""
+	}
+	return ActionSelectReasoningEffort{Effort: effort}
 }
 
 // ShortHelp implements [help.KeyMap].
@@ -281,18 +291,29 @@ func (r *Reasoning) setReasoningItems() error {
 		currentEffort = model.DefaultReasoningEffort
 	}
 
-	items := make([]list.FilterableItem, 0, len(model.ReasoningLevels))
+	// Build the item list with an "Off" entry prepended so the user can
+	// explicitly disable reasoning. The "Off" entry uses reasoningOffID
+	// ("none") as its effort; when selected we store an empty effort so
+	// the model's thinking is fully disabled.
+	levels := append([]string{reasoningOffID}, model.ReasoningLevels...)
+
+	items := make([]list.FilterableItem, 0, len(levels))
 	selectedIndex := 0
-	for i, effort := range model.ReasoningLevels {
+	for i, effort := range levels {
+		title := r.com.L("reasoning.off")
+		if effort != reasoningOffID {
+			title = common.FormatReasoningEffort(effort)
+		}
 		item := &ReasoningItem{
 			Versioned: list.NewVersioned(),
 			effort:    effort,
-			title:     common.FormatReasoningEffort(effort),
-			isCurrent: effort == currentEffort,
+			title:     title,
+			isCurrent: effort == currentEffort || (currentEffort == "" && effort == reasoningOffID),
 			t:         r.com.Styles,
+			com:       r.com,
 		}
 		items = append(items, item)
-		if effort == currentEffort {
+		if item.isCurrent {
 			selectedIndex = i
 		}
 	}
@@ -305,11 +326,17 @@ func (r *Reasoning) setReasoningItems() error {
 
 // Filter returns the filter value for the reasoning item.
 func (r *ReasoningItem) Filter() string {
+	if r.effort == reasoningOffID {
+		return r.com.L("reasoning.off")
+	}
 	return r.title
 }
 
 // ID returns the unique identifier for the reasoning effort.
 func (r *ReasoningItem) ID() string {
+	if r.effort == reasoningOffID {
+		return "off"
+	}
 	return r.effort
 }
 
