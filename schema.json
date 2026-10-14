@@ -727,11 +727,11 @@
           "type": "integer",
           "maximum": 100,
           "minimum": 0,
-          "description": "Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings. 0 uses the default of 85.",
-          "default": 85,
+          "description": "Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings. 0 uses the default of 70.",
+          "default": 70,
           "examples": [
-            85,
-            70
+            70,
+            85
           ]
         },
         "max_parallel_tools": {

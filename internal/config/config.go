@@ -235,6 +235,8 @@ func (c *ProviderConfig) ToProvider() catwalk.Provider {
 			ReasoningLevels:        model.ReasoningLevels,
 			DefaultReasoningEffort: model.DefaultReasoningEffort,
 			SupportsImages:         model.SupportsImages,
+			TokenCounting:          model.TokenCounting,
+			Options:                model.Options,
 		}
 	}
 
@@ -504,7 +506,7 @@ type Options struct {
 	AutoUpdate                bool          `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
 	SmartTools                bool          `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
 	RequestTimeout            *int          `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. A model that reasons before its first token sends no stream parts while it thinks\\, so this also caps how long one silent thinking phase may last. 0 disables it\\, negative values are invalid.,default=120,example=300,example=600,example=0"`
-	AutoSummarizePercent      *int          `json:"auto_summarize_percent,omitempty" jsonschema:"description=Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings. 0 uses the default of 85.,minimum=0,maximum=100,default=85,example=85,example=70"`
+	AutoSummarizePercent      *int          `json:"auto_summarize_percent,omitempty" jsonschema:"description=Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings. 0 uses the default of 70.,minimum=0,maximum=100,default=70,example=70,example=85"`
 	// MaxParallelTools bounds how many parallel tool calls - and with it how
 	// many sub-agents launched in one message - may run at the same time.
 	// There is no upper bound; 0 uses the default of 5.
@@ -553,7 +555,7 @@ const (
 	// DefaultAutoSummarizePercent is how full the context window must be
 	// before a conversation is compacted, when neither the global option nor
 	// a per-model override says otherwise.
-	DefaultAutoSummarizePercent = 85
+	DefaultAutoSummarizePercent = 70
 	// DefaultMaxParallelTools is how many parallel tool calls - and with it
 	// sub-agents launched in one message - run at once when unset.
 	DefaultMaxParallelTools = 5
