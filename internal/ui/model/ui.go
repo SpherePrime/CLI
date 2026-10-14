@@ -2492,6 +2492,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 
 		cmds = append(cmds, m.updateAgentModelCmd(func() tea.Msg {
 			m.com.Workspace.UpdateAgentModel(context.TODO())
+			if msg.Effort == "" {
+				return util.NewInfoMsg(m.com.L("info.reasoning_disabled"))
+			}
 			return util.NewInfoMsg(m.com.LSprintf("info.reasoning_effort", msg.Effort))
 		}))
 		m.dialog.CloseDialog(dialog.ReasoningID)

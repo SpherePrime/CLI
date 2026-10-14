@@ -5,6 +5,7 @@ import (
 
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/internal/session"
+	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
@@ -187,6 +188,7 @@ func TestReasoningItem_MutatorsBumpVersion(t *testing.T) {
 		effort:    "medium",
 		title:     "Medium",
 		t:         &sty,
+		com:       &common.Common{Styles: &sty},
 	}
 
 	requireBump(t, "SetFocused[true]", item, func() {
