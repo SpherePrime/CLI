@@ -736,6 +736,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "toggle_help", c.com.L("cmd.toggle_help"), "ctrl+g", ActionToggleHelp{}),
 		NewCommandItem(c.com.Styles, "init", c.com.L("cmd.initialize_project"), "", ActionInitializeProject{}),
 		NewCommandItem(c.com.Styles, "projects", "Projects", "", ActionOpenDialog{DialogID: ProjectsID}).WithAliases("project", "projects", "cd"),
+		NewCommandItem(c.com.Styles, "go_to_project", c.com.L("cmd.go_to_project"), "", ActionOpenDialog{DialogID: GoToProjectID}).WithAliases("go to project", "open folder", "cd path"),
 	)
 	commands = append(commands, NewCommandItem(c.com.Styles, "add_provider", c.com.L("cmd.add_provider"), "", ActionOpenDialog{DialogID: ProvidersID}))
 

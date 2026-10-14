@@ -2421,6 +2421,7 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	case dialog.ActionSwitchProject:
 		m.dialog.CloseDialog(dialog.CommandsID)
 		m.dialog.CloseDialog(dialog.ProjectsID)
+		m.dialog.CloseDialog(dialog.GoToProjectID)
 		cmds = append(cmds, m.openProject(msg.Path))
 	case dialog.ActionInitializeProject:
 		if m.isAgentBusy() {
@@ -5403,6 +5404,9 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openProjectsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.GoToProjectID:
+		m.dialog.CloseDialog(dialog.CommandsID)
+		m.dialog.OpenDialog(dialog.NewGoToProject(m.com))
 	case dialog.ModelsID:
 		if cmd := m.openModelsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
