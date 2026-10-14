@@ -4603,6 +4603,18 @@ type uiLayout struct {
 	sessionDetails uv.Rectangle
 }
 
+// projectExecArgs builds the argument list for re-launching Prime into the
+// given project directory, carrying the runtime "yolo" mode across so a
+// toggle is not silently dropped when jumping between projects. Extracted
+// so the argument selection can be unit tested without exec'ing a process.
+func projectExecArgs(path string, yolo bool) []string {
+	args := []string{"--cwd", path}
+	if yolo {
+		args = append(args, "--yolo")
+	}
+	return args
+}
+
 func (m *UI) openProject(path string) tea.Cmd {
 	path, err := filepath.Abs(filepath.Clean(path))
 	if err != nil {
@@ -4620,7 +4632,7 @@ func (m *UI) openProject(path string) tea.Cmd {
 	if err != nil {
 		return util.ReportError(err)
 	}
-	cmd := exec.Command(executable, "--cwd", path)
+	cmd := exec.Command(executable, projectExecArgs(path, m.com.Workspace.PermissionSkipRequests())...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
