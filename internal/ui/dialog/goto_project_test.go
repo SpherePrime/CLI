@@ -54,7 +54,8 @@ func TestProjectsMissingPathAsksForConfirmation(t *testing.T) {
 
 	p := newTestProjects(t)
 	p.mode = projectsModePath
-	p.input.SetValue("Z:/definitely/not/here")
+	missing := "definitely/not/here"
+	p.input.SetValue(missing)
 
 	action := p.HandleMsg(pressKey("enter"))
 	require.Equal(t, projectsModeConfirm, p.mode, "a missing folder must ask before opening")
@@ -69,7 +70,8 @@ func TestProjectsMissingPathAsksForConfirmation(t *testing.T) {
 	p.mode = projectsModeConfirm
 	action = p.HandleMsg(pressKey("y"))
 	require.IsType(t, ActionSwitchProject{}, action)
-	require.Equal(t, filepath.Clean("Z:/definitely/not/here"), action.(ActionSwitchProject).Path)
+	expected, _ := filepath.Abs(filepath.Clean("definitely/not/here"))
+	require.Equal(t, expected, action.(ActionSwitchProject).Path)
 }
 
 func TestGoToProjectSubmitsTypedPath(t *testing.T) {
