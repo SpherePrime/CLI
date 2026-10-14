@@ -2484,7 +2484,10 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		}
 
 		currentModel := cfg.Models[agentCfg.Model]
-		currentModel.ReasoningEffort = msg.Effort
+		currentModel.ReasoningMode = msg.Effort
+		// Keep backward compat: clear legacy fields
+		currentModel.ReasoningEffort = ""
+		currentModel.Think = false
 		if err := m.com.Workspace.UpdatePreferredModel(config.ScopeGlobal, agentCfg.Model, currentModel); err != nil {
 			cmds = append(cmds, util.ReportError(err))
 			break
@@ -2495,7 +2498,7 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			if msg.Effort == "" {
 				return util.NewInfoMsg(m.com.L("info.reasoning_disabled"))
 			}
-			return util.NewInfoMsg(m.com.LSprintf("info.reasoning_effort", msg.Effort))
+			return util.NewInfoMsg(m.com.LSprintf("info.reasoning_mode_set", config.FormatReasoningMode(msg.Effort)))
 		}))
 		m.dialog.CloseDialog(dialog.ReasoningID)
 	case dialog.ActionPermissionResponse:
@@ -5674,12 +5677,15 @@ func (m *UI) deleteProvider(providerID string) tea.Cmd {
 	})
 }
 
-// toggleThinking flips thinking mode on the main agent's current model.
+// toggleThinking toggles reasoning mode on the main agent's current model.
 //
 // Shared by the command palette entry and the keybinding: thinking mode used
 // to be reachable only from the palette, so turning it on or off cost a slash
 // and a search every time, and the toggle nobody does often is the one you
 // want at your fingertips.
+//
+// When toggled ON, it sets reasoning mode to "medium" (the middle level).
+// When toggled OFF, it sets reasoning mode to "off".
 func (m *UI) toggleThinking() tea.Cmd {
 	return m.updateAgentModelCmd(func() tea.Msg {
 		cfg := m.com.Config()
@@ -5693,16 +5699,26 @@ func (m *UI) toggleThinking() tea.Cmd {
 		}
 
 		currentModel := cfg.Models[agentCfg.Model]
-		currentModel.Think = !currentModel.Think
+		if currentModel.IsReasoningEnabled() {
+			// Reasoning is on, turn it off
+			currentModel.ReasoningMode = config.ReasoningModeOff
+			currentModel.ReasoningEffort = ""
+			currentModel.Think = false
+		} else {
+			// Reasoning is off, turn it on at medium
+			currentModel.ReasoningMode = config.ReasoningModeMedium
+			currentModel.ReasoningEffort = ""
+			currentModel.Think = false
+		}
 		if err := m.com.Workspace.UpdatePreferredModel(config.ScopeGlobal, agentCfg.Model, currentModel); err != nil {
 			return util.ReportError(err)()
 		}
 		m.com.Workspace.UpdateAgentModel(context.TODO())
-		status := m.com.L("info.disabled")
-		if currentModel.Think {
-			status = m.com.L("info.enabled")
+		mode := currentModel.EffectiveReasoningMode()
+		if mode == config.ReasoningModeOff {
+			return util.NewInfoMsg(m.com.L("info.reasoning_disabled"))
 		}
-		return util.NewInfoMsg(m.com.LSprintf("info.thinking_mode", status))
+		return util.NewInfoMsg(m.com.LSprintf("info.reasoning_mode_set", config.FormatReasoningMode(mode)))
 	})
 }
 

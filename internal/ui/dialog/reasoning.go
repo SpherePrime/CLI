@@ -229,7 +229,7 @@ func (r *Reasoning) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	return cur
 }
 
-// activate applies the reasoning effort at idx, or returns nil when there is
+// activate applies the reasoning mode at idx, or returns nil when there is
 // nothing to apply. Shared by the enter key and by a click on a row.
 func (r *Reasoning) activate(idx int) Action {
 	item, ok := r.list.ItemAt(idx).(*ReasoningItem)
@@ -237,11 +237,11 @@ func (r *Reasoning) activate(idx int) Action {
 		return nil
 	}
 	// "Off" maps to an empty effort so reasoning is disabled.
-	effort := item.effort
-	if effort == reasoningOffID {
-		effort = ""
+	mode := item.effort
+	if mode == reasoningOffID {
+		mode = ""
 	}
-	return ActionSelectReasoningEffort{Effort: effort}
+	return ActionSelectReasoningEffort{Effort: mode}
 }
 
 // ShortHelp implements [help.KeyMap].
@@ -277,38 +277,23 @@ func (r *Reasoning) setReasoningItems() error {
 	}
 
 	selectedModel := cfg.Models[agentCfg.Model]
-	model := cfg.GetModelByType(agentCfg.Model)
-	if model == nil {
-		return errors.New("model configuration not found")
-	}
 
-	if len(model.ReasoningLevels) == 0 {
-		return errors.New("no reasoning levels available")
-	}
+	// Use the unified reasoning mode system — shows all modes for any model,
+	// not just those marked CanReason=true in the catalog.
+	currentMode := selectedModel.EffectiveReasoningMode()
 
-	currentEffort := selectedModel.ReasoningEffort
-	if currentEffort == "" {
-		currentEffort = model.DefaultReasoningEffort
-	}
-
-	// Build the item list with an "Off" entry prepended so the user can
-	// explicitly disable reasoning. The "Off" entry uses reasoningOffID
-	// ("none") as its effort; when selected we store an empty effort so
-	// the model's thinking is fully disabled.
-	levels := append([]string{reasoningOffID}, model.ReasoningLevels...)
+	// Build the item list: Off followed by all reasoning levels.
+	levels := append([]string{config.ReasoningModeOff}, config.AllReasoningModes()...)
 
 	items := make([]list.FilterableItem, 0, len(levels))
 	selectedIndex := 0
-	for i, effort := range levels {
-		title := r.com.L("reasoning.off")
-		if effort != reasoningOffID {
-			title = common.FormatReasoningEffort(effort)
-		}
+	for i, mode := range levels {
+		title := r.com.L("reasoning." + mode)
 		item := &ReasoningItem{
 			Versioned: list.NewVersioned(),
-			effort:    effort,
+			effort:    mode,
 			title:     title,
-			isCurrent: effort == currentEffort || (currentEffort == "" && effort == reasoningOffID),
+			isCurrent: mode == currentMode,
 			t:         r.com.Styles,
 			com:       r.com,
 		}

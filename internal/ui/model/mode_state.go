@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/workspace"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
@@ -18,25 +19,35 @@ type visibleModeState struct {
 
 func thinkingModeState(model *workspace.AgentModel) visibleModeState {
 	state := visibleModeState{key: "thinking"}
-	if model == nil || !model.CatwalkCfg.CanReason {
+	if model == nil {
 		state.unavailable = true
 		return state
 	}
-	effort := model.ModelCfg.ReasoningEffort
-	levels := model.CatwalkCfg.ReasoningLevels
-	if effort == "" || !slices.Contains(levels, effort) {
-		effort = model.CatwalkCfg.DefaultReasoningEffort
-		if effort == "" || !slices.Contains(levels, effort) {
-			effort = ""
-			if len(levels) > 0 {
-				effort = levels[0]
-			}
+
+	// Use the unified reasoning mode that honors both the new
+	// ReasoningMode field and the legacy Think/ReasoningEffort fields.
+	// This shows the current reasoning level (low/medium/high/xhigh/max)
+	// in the status bar for any model, not just those marked CanReason=true.
+	mode := model.ModelCfg.EffectiveReasoningMode()
+
+	// If user hasn't explicitly set a mode, fall back to catalog defaults
+	if mode == config.ReasoningModeOff && model.CatwalkCfg.CanReason && len(model.CatwalkCfg.ReasoningLevels) > 0 {
+		// Check default effort
+		defaultEffort := model.CatwalkCfg.DefaultReasoningEffort
+		if defaultEffort != "" && slices.Contains(model.CatwalkCfg.ReasoningLevels, defaultEffort) {
+			mode = config.NormalizeReasoningMode(defaultEffort)
+		} else if len(model.CatwalkCfg.ReasoningLevels) > 0 {
+			mode = config.NormalizeReasoningMode(model.CatwalkCfg.ReasoningLevels[0])
 		}
 	}
-	state.enabled = model.ModelCfg.Think || effort != "" && effort != "none" && effort != "off"
-	if state.enabled && effort != "none" && effort != "off" {
-		state.detail = effort
+
+	if mode == config.ReasoningModeOff {
+		state.enabled = false
+		return state
 	}
+
+	state.enabled = true
+	state.detail = config.FormatReasoningMode(mode)
 	return state
 }
 

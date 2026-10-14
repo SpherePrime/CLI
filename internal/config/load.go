@@ -246,28 +246,102 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			if config.APIKey != "" {
 				p.APIKey = config.APIKey
 			}
-			if len(config.Models) > 0 {
+			if len(config.Models) > 0 || len(p.Models) > 0 {
+				// Build a map of catwalk models for fast lookup.
+				catwalkModels := map[string]catwalk.Model{}
+				for _, model := range p.Models {
+					if model.Name == "" {
+						model.Name = model.ID
+					}
+					catwalkModels[model.ID] = model
+				}
+
 				models := []catwalk.Model{}
 				seen := make(map[string]bool)
 
+				// Process user-configured models first, merging in
+				// catwalk metadata where missing.
 				for _, model := range config.Models {
 					if seen[model.ID] {
 						continue
 					}
 					seen[model.ID] = true
 					if model.Name == "" {
-						model.Name = model.ID
+						if cm, ok := catwalkModels[model.ID]; ok && cm.Name != "" {
+							model.Name = cm.Name
+						} else {
+							model.Name = model.ID
+						}
+					}
+					// Merge catwalk model info: if the user's model
+					// doesn't specify reasoning settings, inherit them
+					// from catwalk. User-specified values take priority.
+					if cm, ok := catwalkModels[model.ID]; ok {
+						// Inherit non-reasoning fields from catwalk if user left them zero-value
+						if model.ContextWindow == 0 {
+							model.ContextWindow = cm.ContextWindow
+						}
+						if model.DefaultMaxTokens == 0 {
+							model.DefaultMaxTokens = cm.DefaultMaxTokens
+						}
+						if model.CostPer1MIn == 0 {
+							model.CostPer1MIn = cm.CostPer1MIn
+						}
+						if model.CostPer1MOut == 0 {
+							model.CostPer1MOut = cm.CostPer1MOut
+						}
+						if model.CostPer1MInCached == 0 {
+							model.CostPer1MInCached = cm.CostPer1MInCached
+						}
+						if model.CostPer1MOutCached == 0 {
+							model.CostPer1MOutCached = cm.CostPer1MOutCached
+						}
+						if !model.SupportsImages {
+							model.SupportsImages = cm.SupportsImages
+						}
+						if model.TokenCounting == "" {
+							model.TokenCounting = cm.TokenCounting
+						}
+						// Inherit Options from catwalk if user didn't set them
+						if model.Options.Temperature == nil {
+							model.Options.Temperature = cm.Options.Temperature
+						}
+						if model.Options.TopP == nil {
+							model.Options.TopP = cm.Options.TopP
+						}
+						if model.Options.TopK == nil {
+							model.Options.TopK = cm.Options.TopK
+						}
+						if model.Options.FrequencyPenalty == nil {
+							model.Options.FrequencyPenalty = cm.Options.FrequencyPenalty
+						}
+						if model.Options.PresencePenalty == nil {
+							model.Options.PresencePenalty = cm.Options.PresencePenalty
+						}
+
+						// Reasoning settings: user values take priority over catwalk
+						if model.DefaultReasoningEffort == "" {
+							model.DefaultReasoningEffort = cm.DefaultReasoningEffort
+						}
+						if !model.CanReason && len(model.ReasoningLevels) == 0 {
+							// If user didn't set CanReason or ReasoningLevels, inherit from catwalk
+							model.CanReason = cm.CanReason
+							model.ReasoningLevels = cm.ReasoningLevels
+						}
+
+						// Merge provider options
+						if len(cm.Options.ProviderOptions) > 0 && model.Options.ProviderOptions == nil {
+							model.Options.ProviderOptions = cm.Options.ProviderOptions
+						}
 					}
 					models = append(models, model)
 				}
+				// Add catwalk models that the user didn't configure.
 				for _, model := range p.Models {
 					if seen[model.ID] {
 						continue
 					}
 					seen[model.ID] = true
-					if model.Name == "" {
-						model.Name = model.ID
-					}
 					models = append(models, model)
 				}
 

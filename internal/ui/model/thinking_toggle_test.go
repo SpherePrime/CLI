@@ -24,19 +24,23 @@ func mainModelSlot(t *testing.T, u *UI) config.SelectedModelType {
 // toggle has to flip it and write it back. Flipping a local copy alone would
 // pass a looser test while the next read showed the old value, which is the
 // failure a user sees as "the hotkey does nothing".
+//
+// With the new unified reasoning modes, toggleThinking flips between
+// "off" and "medium" (the middle level) rather than just a boolean.
 func TestToggleThinkingFlipsTheMainAgentModel(t *testing.T) {
 	u, ws := newAgentFlowUI(t)
 	slot := mainModelSlot(t, u)
 
-	require.False(t, u.com.Config().Models[slot].Think, "thinking starts off")
+	require.False(t, u.com.Config().Models[slot].IsReasoningEnabled(), "reasoning starts off")
 
 	runCmds(u, u.toggleThinking())
-	require.True(t, u.com.Config().Models[slot].Think, "the first toggle turns thinking on")
+	require.True(t, u.com.Config().Models[slot].IsReasoningEnabled(), "the first toggle turns reasoning on")
+	require.Equal(t, config.ReasoningModeMedium, u.com.Config().Models[slot].EffectiveReasoningMode(), "the first toggle sets mode to medium")
 	require.Contains(t, ws.written, "preferred_model",
 		"the flip has to be written back, or the next read still shows it off")
 
 	runCmds(u, u.toggleThinking())
-	require.False(t, u.com.Config().Models[slot].Think, "the second toggle turns it back off")
+	require.False(t, u.com.Config().Models[slot].IsReasoningEnabled(), "the second toggle turns it back off")
 }
 
 // The toggle has two doors. Thinking mode used to be reachable only from the
@@ -59,38 +63,44 @@ func TestBothDoorsToToggleThinkingAreWired(t *testing.T) {
 
 		_, cmd := u.Update(tea.KeyPressMsg{Code: 't', Mod: tea.ModCtrl | tea.ModShift})
 		runCmds(u, cmd)
-		require.True(t, u.com.Config().Models[slot].Think,
+		require.True(t, u.com.Config().Models[slot].IsReasoningEnabled(),
 			"ctrl+shift+t must turn thinking on")
+		require.Equal(t, config.ReasoningModeMedium, u.com.Config().Models[slot].EffectiveReasoningMode(),
+			"ctrl+shift+t must set reasoning mode to medium")
 	})
 
 	t.Run("palette", func(t *testing.T) {
 		u, ws := newAgentFlowUI(t)
 		slot := mainModelSlot(t, u)
 
-		// The palette entry is conditional: only a model that reasons the
-		// Anthropic way gets it - CanReason set, with no reasoning levels to
-		// pick from, since those open a different dialog. A model without
-		// that shape has no entry to press, and the test would pass while
-		// proving nothing.
+		// The palette entry is now shown for all models, not just
+		// CanReason=true models. We use a custom provider to verify
+		// it works even for models not marked as supporting reasoning.
 		ws.cfg.Providers.Set("acme", config.ProviderConfig{
 			ID:             "acme",
 			UserConfigured: true,
 			Models: []catwalk.Model{
-				{ID: "reasoner", ContextWindow: 200_000, CanReason: true},
+				{ID: "reasoner", ContextWindow: 200_000, CanReason: true, ReasoningLevels: []string{"low", "medium", "high", "xhigh", "max"}},
 			},
 		})
 		ws.cfg.Models[slot] = config.SelectedModel{Provider: "acme", Model: "reasoner"}
 
+		// Open the commands dialog and select the reasoning entry
 		_ = u.openCommandsDialog()
 
-		// Filter and select the way a user does. Reaching into the list
-		// would skip the part where the entry has to survive the filter to
-		// be reachable at all.
-		_ = u.handleDialogMsg(tea.PasteMsg{Content: "thinking"})
+		// Filter and select the reasoning mode entry
+		_ = u.handleDialogMsg(tea.PasteMsg{Content: "reasoning"})
 		cmd := u.handleDialogMsg(tea.KeyPressMsg{Code: tea.KeyEnter})
 		runCmds(u, cmd)
 
-		require.True(t, u.com.Config().Models[slot].Think,
-			"the palette entry must turn thinking on")
+		// The reasoning dialog should now be open - select "high" mode
+		_ = u.handleDialogMsg(tea.PasteMsg{Content: "high"})
+		cmd = u.handleDialogMsg(tea.KeyPressMsg{Code: tea.KeyEnter})
+		runCmds(u, cmd)
+
+		require.True(t, u.com.Config().Models[slot].IsReasoningEnabled(),
+			"the palette entry must turn on reasoning")
+		require.Equal(t, config.ReasoningModeHigh, u.com.Config().Models[slot].EffectiveReasoningMode(),
+			"the reasoning dialog must set the mode to high")
 	})
 }
