@@ -452,6 +452,9 @@
         "supports_attachments": {
           "type": "boolean"
         },
+        "token_counting": {
+          "type": "string"
+        },
         "options": {
           "$ref": "#/$defs/ModelOptions"
         }
