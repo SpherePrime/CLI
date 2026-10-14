@@ -92,7 +92,7 @@ type SelectedModel struct {
 	// high, xhigh, max). When set, it takes precedence over the legacy Think
 	// and ReasoningEffort fields. This provides fine-grained control over
 	// reasoning depth similar to Claude Code's effort levels.
-	ReasoningMode string `json:"reasoning_mode,omitempty" jsonschema:"description=Unified reasoning control mode: off, low, medium, high, xhigh, max,enum=off,enum=low,enum=medium,enum=high,enum=xhigh,enum=max"`
+	ReasoningMode string `json:"reasoning_mode,omitempty" jsonschema:"description=Unified reasoning control mode: off/low/medium/high/xhigh/max"`
 
 	// Overrides the default model configuration.
 	MaxTokens int64 `json:"max_tokens,omitempty" jsonschema:"description=Maximum number of tokens for model responses,maximum=200000,example=4096"`
