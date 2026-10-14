@@ -20,7 +20,7 @@ func TestDiscoverModels(t *testing.T) {
 		_, _ = w.Write([]byte(`{
 			"object": "list",
 			"data": [
-				{"id": "model-a", "object": "model", "owned_by": "org", "context_window": 128000, "default_max_tokens": 4096, "supports_vision": true, "cost_per_1m_in": 1.5, "cost_per_1m_out": 4.5},
+				{"id": "model-a", "object": "model", "owned_by": "org", "context_window": 128000, "default_max_tokens": 4096, "supports_vision": true, "cost_per_1m_in": 1.5, "cost_per_1m_out": 4.5, "token_counting": "native"},
 				{"id": "model-b", "object": "model", "owned_by": "org"}
 			]
 		}`))
@@ -42,6 +42,7 @@ func TestDiscoverModels(t *testing.T) {
 	require.True(t, models[0].SupportsImages)
 	require.Equal(t, 1.5, models[0].CostPer1MIn)
 	require.Equal(t, 4.5, models[0].CostPer1MOut)
+	require.Equal(t, "native", models[0].TokenCounting)
 	require.Equal(t, "model-b", models[1].ID)
 }
 

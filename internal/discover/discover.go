@@ -143,6 +143,7 @@ type modelsResponse struct {
 		Vision              bool    `json:"vision"`
 		CostPer1MIn         float64 `json:"cost_per_1m_in"`
 		CostPer1MOut        float64 `json:"cost_per_1m_out"`
+		TokenCounting       string  `json:"token_counting"`
 	} `json:"data"`
 }
 
@@ -194,6 +195,7 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 			SupportsImages:   e.SupportsAttachments || e.SupportsVision || e.Vision,
 			CostPer1MIn:      e.CostPer1MIn,
 			CostPer1MOut:     e.CostPer1MOut,
+			TokenCounting:    e.TokenCounting,
 		})
 	}
 
