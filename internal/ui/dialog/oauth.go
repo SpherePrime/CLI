@@ -124,6 +124,17 @@ func (m *OAuth) ID() string {
 	return OAuthID
 }
 
+// CloseCleanup implements [CloseCleanup]. Cancelling the in-flight
+// authorization (the device-flow poller or the browser loopback listener) is
+// exactly what esc does here; the close-all path just reaches the same
+// cleanup without going through the dialog's own key handling.
+func (m *OAuth) CloseCleanup() tea.Cmd {
+	if m.oAuthProvider == nil {
+		return nil
+	}
+	return m.oAuthProvider.stopPolling
+}
+
 // HandleMsg handles messages and state transitions.
 func (m *OAuth) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {

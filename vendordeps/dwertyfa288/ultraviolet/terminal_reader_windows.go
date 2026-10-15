@@ -102,8 +102,42 @@ func (d *TerminalReader) serializeWin32InputRecords(records []xwindows.InputReco
 					d.utf16Half[kd] = true
 					d.utf16Buf[kd][0] = kevent.Char
 				} else if kevent.KeyDown {
-					// Just a regular key press character encoded in VT.
-					buf.WriteRune(kevent.Char)
+					// A plain, unmodified keystroke is a single rune that VT input
+					// mode hands us ready to write. But when a shift/ctrl/alt is held
+					// on a special key, that rune is indistinguishable from the
+					// unmodified one: shift+enter arrives as the same byte as enter,
+					// so the modifier is lost and the press reads as the wrong key.
+					//
+					// For those, fall back to the Win32 input mode escape (the same
+					// encoding the non-VT branch above uses). It carries the control
+					// key state, so the modifier survives the trip. Printable keys
+					// keep the fast rune path - their shifted form is already
+					// carried in the rune itself, and re-encoding them through the
+					// Win32 escape would drop the shift on symbols (shift+1 -> "1").
+					cks := kevent.ControlKeyState
+					const realModifiers = xwindows.SHIFT_PRESSED |
+						xwindows.LEFT_CTRL_PRESSED | xwindows.RIGHT_CTRL_PRESSED |
+						xwindows.LEFT_ALT_PRESSED | xwindows.RIGHT_ALT_PRESSED
+					// Non-printable characters (control codes and space) keep
+					// the same Char regardless of the modifier held, so a
+					// modifier on them is exactly the case the rune path drops.
+					// Printable keys are different: shift changes the rune itself
+					// (a -> A, 1 -> !), so the modifier is already carried and
+					// the fast rune path is safe.
+					isNonPrintable := kevent.Char <= 32 || kevent.Char == 127
+					if cks&realModifiers != 0 && isNonPrintable {
+						fmt.Fprintf(buf,
+							"\x1b[%d;%d;%d;%d;%d;%d_",
+							kevent.VirtualKeyCode,
+							kevent.VirtualScanCode,
+							kevent.Char,
+							kd,
+							cks,
+							kevent.RepeatCount)
+					} else {
+						// Just a regular key press character encoded in VT.
+						buf.WriteRune(kevent.Char)
+					}
 				}
 			} else {
 				// We encode the key to Win32 Input Mode if it is a known key.

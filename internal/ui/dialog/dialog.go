@@ -71,6 +71,20 @@ type LoadingDialog interface {
 	StopLoading()
 }
 
+// CloseCleanup is implemented by a dialog that must run cleanup when it is
+// closed, even when the close happens from outside the dialog's own esc
+// handling (for example, a close-all that unwinds the whole stack at once).
+//
+// Without it, draining the stack would abandon in-flight work — an OAuth
+// poller, an MCP auth context — and leave a goroutine or a loopback listener
+// running after the user has moved on. The overlay collects these when it
+// closes every dialog and the model runs them before it restores focus.
+type CloseCleanup interface {
+	// CloseCleanup returns the command to run when this dialog is closed.
+	// Return nil when there is nothing in flight to cancel.
+	CloseCleanup() tea.Cmd
+}
+
 // Grace period constants for dialogs that open asynchronously and may
 // receive in-flight keystrokes from a previously focused component.
 const (
@@ -185,6 +199,33 @@ func (d *Overlay) CloseFrontDialog() {
 		return
 	}
 	d.removeDialog(len(d.dialogs) - 1)
+}
+
+// CloseAllDialogs empties the whole stack at once and returns the cleanup
+// commands of any dialog that holds in-flight work. It is the "return to
+// chat" primitive: a single keystroke that unwinds a nested stack of
+// dialogs (command palette on top of the model picker on top of the agent
+// list) and lands the user back at the editor, instead of having to press
+// esc once per level.
+//
+// The back-to-front order matters: the front dialog is the one the user sees
+// and the one that most often owns live work, so its cleanup runs last,
+// closest to the point the dialogs vanish.
+func (d *Overlay) CloseAllDialogs() []tea.Cmd {
+	var cleans []tea.Cmd
+	for i := len(d.dialogs) - 1; i >= 0; i-- {
+		if c, ok := d.dialogs[i].(CloseCleanup); ok {
+			if cmd := c.CloseCleanup(); cmd != nil {
+				cleans = append(cleans, cmd)
+			}
+		}
+	}
+	if len(d.dialogs) > 0 {
+		d.dialogs = nil
+	}
+	d.graceOpenedAt = time.Time{}
+	d.graceLastInputAt = time.Time{}
+	return cleans
 }
 
 // reopenGraceWindow is how long after closing a dialog we consider
@@ -387,11 +428,20 @@ func DrawOnboardingCursor(scr uv.Screen, area uv.Rectangle, view string, cur *te
 	uv.NewStyledString(view).Draw(scr, bottomLeft)
 }
 
-// Draw renders the overlay and its dialogs.
+// Draw renders the front dialog. Every dialog centers itself in the same area,
+// so painting the whole stack would smear one dialog's content into another's.
+// Dialogs beneath the front (e.g. a command palette left open under a
+// drill-down) stay in the stack and receive input only via the overlay's
+// routing, but their pixels come from the layer beneath — the main UI —
+// instead of this overlay.
 func (d *Overlay) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
-	var cur *tea.Cursor
-	for _, dialog := range d.dialogs {
-		cur = dialog.Draw(scr, area)
+	return d.DrawLast(scr, area)
+}
+
+// DrawLast renders the front dialog only.
+func (d *Overlay) DrawLast(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
+	if len(d.dialogs) == 0 {
+		return nil
 	}
-	return cur
+	return d.dialogs[len(d.dialogs)-1].Draw(scr, area)
 }

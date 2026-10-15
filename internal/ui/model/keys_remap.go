@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/SpherePrime/CLI/internal/i18n"
+	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 )
 
@@ -210,6 +212,29 @@ func dedupe(in []string) []string {
 			out = append(out, s)
 		}
 	}
+	return out
+}
+
+// KeybindingInfos returns every binding with its default keys and help label,
+// translated with tr, sorted by name. The defaults come from a freshly built
+// keymap, not from one with the user's remaps applied, so a value that just
+// matches the default can be dropped from the config rather than stored
+// pointlessly. This is the data the keybindings dialog lists: the dialog lives
+// in a package that must not import the model, so it receives these entries as
+// a plain slice rather than the keymap itself.
+func KeybindingInfos(tr i18n.Translator) []common.KeyInfo {
+	km := BuildKeyMap(tr)
+
+	var out []common.KeyInfo
+	walkBindings(reflect.ValueOf(&km).Elem(), "", func(name string, binding *key.Binding) {
+		out = append(out, common.KeyInfo{
+			Name:        name,
+			Default:     strings.Join(binding.Keys(), ", "),
+			Description: binding.Help().Desc,
+		})
+	})
+
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
 }
 

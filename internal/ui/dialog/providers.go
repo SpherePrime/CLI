@@ -62,6 +62,7 @@ type Providers struct {
 		Submit key.Binding
 		Add    key.Binding
 		Remove key.Binding
+		Back   key.Binding
 		Close  key.Binding
 	}
 
@@ -112,6 +113,10 @@ func NewProviders(com *common.Common) *Providers {
 	m.keyMap.Remove = key.NewBinding(
 		key.WithKeys("ctrl+x"),
 		key.WithHelp("ctrl+x", "remove model"),
+	)
+	m.keyMap.Back = key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "back"),
 	)
 	m.keyMap.Close = CloseKey
 
@@ -168,7 +173,7 @@ func (m *Providers) HandleMsg(msg tea.Msg) Action {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.Close):
-			return ActionClose{}
+			return m.handleClose()
 		case m.state == providersStateDiscovering:
 			// Ignore keys while the discovery request is in flight.
 		case key.Matches(msg, m.keyMap.Submit):
@@ -273,6 +278,38 @@ func (m *Providers) buildModelInput() textinput.Model {
 	input.Placeholder = "model ID, e.g. llama-3-70b"
 	input.SetStyles(m.com.Styles.TextInput)
 	return input
+}
+
+// handleClose is the back step for the form: esc moves one level up instead of
+// closing the whole dialog, so a user who is three fields in does not lose
+// everything they typed to get out of a single sub-step. Only the root field
+// closes, mirroring how the provider settings dialog walks its states.
+func (m *Providers) handleClose() Action {
+	switch m.state {
+	case providersStateBaseURL:
+		m.state = providersStateID
+		m.idInput.Focus()
+	case providersStateAPIKey:
+		m.state = providersStateBaseURL
+		m.urlInput.Focus()
+	case providersStateModels, providersStateError:
+		// These sit past the API key; the discovery has already finished, so
+		// stepping back lands on that field with no pending work behind it.
+		m.state = providersStateAPIKey
+		m.keyInput.Focus()
+	case providersStateDiscovering:
+		// The fetch is still in flight. Stepping back would keep the dialog
+		// alive, so the result that lands moments later would silently
+		// persist the provider — a surprise save. Closing instead means the
+		// late result is routed to a dialog that is gone and dropped, so the
+		// in-flight fetch is abandoned cleanly.
+		return ActionClose{}
+	default:
+		// providersStateID is the root of the form; there is nothing to step
+		// back to, so esc closes the dialog.
+		return ActionClose{}
+	}
+	return nil
 }
 
 // advance moves to the next form step when the current value is valid.
@@ -438,16 +475,26 @@ func (m *Providers) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 
 // ShortHelp implements [help.KeyMap].
 func (m *Providers) ShortHelp() []key.Binding {
-	if m.state == providersStateModels {
-		return []key.Binding{m.keyMap.Submit, m.keyMap.Add, m.keyMap.Remove, m.keyMap.Close}
+	back := m.keyMap.Close
+	if m.state != providersStateID {
+		// Sub-states: esc steps back a level rather than closing, so the
+		// hint says "back". The root field still closes.
+		back = m.keyMap.Back
 	}
-	return []key.Binding{m.keyMap.Submit, m.keyMap.Close}
+	if m.state == providersStateModels {
+		return []key.Binding{m.keyMap.Submit, m.keyMap.Add, m.keyMap.Remove, back}
+	}
+	return []key.Binding{m.keyMap.Submit, back}
 }
 
 // FullHelp implements [help.KeyMap].
 func (m *Providers) FullHelp() [][]key.Binding {
-	if m.state == providersStateModels {
-		return [][]key.Binding{{m.keyMap.Submit, m.keyMap.Add, m.keyMap.Remove, m.keyMap.Close}}
+	back := m.keyMap.Close
+	if m.state != providersStateID {
+		back = m.keyMap.Back
 	}
-	return [][]key.Binding{{m.keyMap.Submit, m.keyMap.Close}}
+	if m.state == providersStateModels {
+		return [][]key.Binding{{m.keyMap.Submit, m.keyMap.Add, m.keyMap.Remove, back}}
+	}
+	return [][]key.Binding{{m.keyMap.Submit, back}}
 }
