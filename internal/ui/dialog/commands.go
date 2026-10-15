@@ -614,6 +614,8 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "agent_models", c.com.L("cmd.agent_models"), "", ActionOpenDialog{AgentsID}).WithAliases("subagents", "agents"),
 		NewCommandItem(c.com.Styles, "model_settings", c.com.L("cmd.model_settings"), "", ActionOpenDialog{ModelsConfigID}),
 		NewCommandItem(c.com.Styles, "provider_settings", c.com.L("cmd.provider_settings"), "", ActionOpenDialog{ProviderSettingsID}).WithAliases("providers", "provider"),
+		NewCommandItem(c.com.Styles, "key_bindings", c.com.L("cmd.key_bindings"), "", ActionOpenDialog{KeybindingsID}).WithAliases("keys", "remap", "bindings", "hotkeys", "клавиши"),
+		NewCommandItem(c.com.Styles, "close_all", c.com.L("cmd.close_all"), "ctrl+q", ActionCloseAll{}).WithAliases("return to chat", "close dialogs", "escape all"),
 		NewCommandItem(c.com.Styles, "status", c.com.L("cmd.status"), "", ActionOpenDialog{StatusID}),
 		NewCommandItem(c.com.Styles, "plugins", c.com.L("cmd.plugins"), "", ActionOpenDialog{DialogID: PluginsID}).WithAliases("plugin"),
 		NewCommandItem(c.com.Styles, "restart_systems", c.com.L("cmd.restart_systems"), "", ActionRestartSystems{}).WithAliases("restart", "reload"),

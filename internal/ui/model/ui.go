@@ -2165,6 +2165,13 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		if m.focus == uiFocusEditor {
 			cmds = append(cmds, m.textarea.Focus())
 		}
+	case dialog.ActionCloseAll:
+		// Exit the entire stack in one action and drop focus back on the
+		// editor. Reaches here from the command palette; the global key
+		// path calls the same method directly before the dialog routing.
+		if cmd := m.closeAllDialogs(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.ActionSelectAuthMethod:
 		m.dialog.CloseDialog(dialog.AuthMethodID)
 		if cmd := m.openAuthenticationDialogWithMethod(msg.Provider, msg.Model, msg.ModelType, msg.UseOAuth); cmd != nil {
@@ -2185,9 +2192,11 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		m.dialog.CloseDialog(dialog.SessionsID)
 		cmds = append(cmds, m.loadSession(msg.Session.ID))
 
-	// Open dialog message.
+	// Open dialog message. The palette stays open beneath the target so
+	// closing the sub-dialog returns to it instead of jumping straight to
+	// the chat; only actions that finish (toggle, select, close) pop the
+	// palette.
 	case dialog.ActionOpenDialog:
-		m.dialog.CloseDialog(dialog.CommandsID)
 		if cmd := m.openDialog(msg.DialogID); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -2252,6 +2261,25 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			}
 		}
 		m.dialog.CloseDialog(dialog.VoiceLanguageID)
+	case dialog.ActionSaveKeybindings:
+		// Write the whole deviation set at once; nil clears the field so a
+		// user who returned every action to its default does not leave a
+		// stale empty object behind.
+		if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.keybindings", msg.Bindings); err != nil {
+			cmds = append(cmds, util.ReportError(err))
+			break
+		}
+		// The config auto-reloaded, so the live keymap still has the old
+		// bindings. Rebuild it and report anything the remap got wrong,
+		// then refresh the dialog's rows so the keys the user just set are
+		// the ones shown under the cursor.
+		m.applyKeyBindings()
+		if cmd := m.reportKeyBindingProblems(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		if kb, ok := m.dialog.Dialog(dialog.KeybindingsID).(*dialog.Keybindings); ok {
+			kb.Refresh()
+		}
 	case dialog.ActionNewSession:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
@@ -3135,6 +3163,16 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 
+		return tea.Batch(cmds...)
+	}
+
+	// Close-all must win over the front dialog, which would otherwise
+	// swallow the key in its own handle: it is the "get me out of every
+	// dialog" escape hatch and has to work no matter how deep the stack is.
+	if m.dialog.HasDialogs() && key.Matches(msg, m.keyMap.CloseAll) {
+		if cmd := m.closeAllDialogs(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 		return tea.Batch(cmds...)
 	}
 
@@ -5445,7 +5483,6 @@ func (m *UI) openDialog(id string) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.GoToProjectID:
-		m.dialog.CloseDialog(dialog.CommandsID)
 		m.dialog.OpenDialog(dialog.NewGoToProject(m.com))
 	case dialog.ModelsID:
 		if cmd := m.openModelsDialog(); cmd != nil {
@@ -5472,7 +5509,6 @@ func (m *UI) openDialog(id string) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.ThemesID, dialog.DesignsID:
-		m.dialog.CloseDialog(dialog.CommandsID)
 		m.dialog.OpenDialog(dialog.NewAppearance(m.com, id))
 	case dialog.LanguageID:
 		if cmd := m.openLanguageDialog(); cmd != nil {
@@ -5494,6 +5530,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openProviderSettingsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.KeybindingsID:
+		if cmd := m.openKeybindingsDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.FilePickerID:
 		if cmd := m.openFilesDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -5509,6 +5549,38 @@ func (m *UI) openDialog(id string) tea.Cmd {
 	default:
 		// Unknown dialog
 		break
+	}
+	return tea.Batch(cmds...)
+}
+
+// closeAllDialogs closes the entire dialog stack and returns focus to the
+// chat editor. It runs every dialog's cleanup so that abandoned in-flight
+// work (an OAuth poller, an MCP auth context, a pending permission) is
+// cancelled or answered rather than left running behind the scenes.
+func (m *UI) closeAllDialogs() tea.Cmd {
+	if !m.dialog.HasDialogs() {
+		return nil
+	}
+
+	// A pending permission must be answered, not abandoned: leaving it
+	// unanswered would hang the agent on a prompt nobody can see anymore.
+	// Denying is the safe default, matching what esc does in the dialog.
+	if perm, ok := m.dialog.Dialog(dialog.PermissionsID).(*dialog.Permissions); ok {
+		m.com.Workspace.PermissionDeny(perm.Request())
+	}
+
+	if m.dialog.ContainsDialog(dialog.FilePickerID) {
+		fimage.ResetCache()
+	}
+
+	cleanup := m.dialog.CloseAllDialogs()
+
+	m.focus = uiFocusEditor
+	cmds := make([]tea.Cmd, 0, len(cleanup)+1)
+	cmds = append(cmds, m.textarea.Focus())
+	cmds = append(cmds, cleanup...)
+	if len(cmds) == 1 {
+		return cmds[0]
 	}
 	return tea.Batch(cmds...)
 }
@@ -5766,6 +5838,27 @@ func (m *UI) openProviderSettingsDialog() tea.Cmd {
 	}
 
 	m.dialog.OpenDialog(dialog.NewProviderSettings(m.com))
+	return nil
+}
+
+// openKeybindingsDialog opens the keybinding remap dialog. It is built with
+// the default bindings and the user's current remaps: the dialog can render
+// "current effective key" per action without the model layer having to
+// translate between a remap and a keymap, and without importing the model
+// (which would be a cycle, since the model already imports the dialog).
+func (m *UI) openKeybindingsDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.KeybindingsID) {
+		m.dialog.BringToFront(dialog.KeybindingsID)
+		return nil
+	}
+
+	infos := KeybindingInfos(m.com.T())
+	var current map[string]string
+	if cfg := m.com.Config(); cfg != nil && cfg.Options != nil {
+		current = cfg.Options.KeyBindings
+	}
+
+	m.dialog.OpenDialog(dialog.NewKeybindings(m.com, infos, current))
 	return nil
 }
 

@@ -93,6 +93,11 @@ type KeyMap struct {
 	// installed. The binding is always present so installing the plugin needs
 	// no keymap rebuild; only the help hint is gated.
 	Voice key.Binding
+	// CloseAll empties the whole dialog stack and returns focus to the chat
+	// editor. It works no matter which dialog is open, so a nested stack
+	// (command palette on the model picker on the agent list) can be exited
+	// in one press instead of unwinding one level at a time.
+	CloseAll key.Binding
 }
 
 // DefaultKeyMap builds a keymap with the default locale. The help labels
@@ -145,6 +150,10 @@ func BuildKeyMap(tr i18n.Translator) KeyMap {
 		key.WithKeys("alt+v", "ctrl+shift+space"),
 		key.WithHelp("alt+v", tr.Label("key.voice")),
 	)
+	km.CloseAll = key.NewBinding(
+		key.WithKeys("ctrl+q"),
+		key.WithHelp("ctrl+q", tr.Label("key.close_all")),
+	)
 
 	km.Editor.SendMessage = key.NewBinding(
 		key.WithKeys("enter"),
@@ -195,9 +204,13 @@ func BuildKeyMap(tr i18n.Translator) KeyMap {
 	)
 	km.Editor.HistoryPrev = key.NewBinding(
 		key.WithKeys("up"),
+		// No visible hint (the arrows already do this implicitly), but the
+		// friendly label still feeds the keybindings dialog's row titles.
+		key.WithHelp("", tr.Label("key.history_prev")),
 	)
 	km.Editor.HistoryNext = key.NewBinding(
 		key.WithKeys("down"),
+		key.WithHelp("", tr.Label("key.history_next")),
 	)
 	km.Editor.CopySelection = key.NewBinding(
 		key.WithKeys("ctrl+shift+c"),
@@ -301,6 +314,7 @@ func BuildKeyMap(tr i18n.Translator) KeyMap {
 	)
 	km.Chat.EndFollow = key.NewBinding(
 		key.WithKeys("ctrl+end"),
+		key.WithHelp("ctrl+end", tr.Label("key.end_follow")),
 	)
 	km.Chat.Copy = key.NewBinding(
 		key.WithKeys("c", "y", "C", "Y"),

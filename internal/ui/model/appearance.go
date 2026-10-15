@@ -64,7 +64,6 @@ func (m *UI) selectAppearance(action dialog.ActionSelectAppearance) error {
 	m.themeKey = styles.ResolveDesignThemeKey(cfg.Options.TUI.Theme, provider, cfg.Options.TUI.Design)
 	m.applyTheme(styles.ResolveTheme(cfg.Options.TUI.Theme, provider, cfg.Options.TUI.Design))
 	m.dialog.CloseDialog(action.Kind)
-	m.dialog.CloseDialog(dialog.CommandsID)
 	m.updateLayoutAndSize()
 	return nil
 }

@@ -23,6 +23,13 @@ import (
 // ActionClose is a message to close the current dialog.
 type ActionClose struct{}
 
+// ActionCloseAll closes every open dialog at once and returns focus to the
+// chat editor. It is the "return to chat" escape hatch for a user who has
+// nested several dialogs (command palette on top of the model picker on top
+// of the agent list) and wants to get out of all of them in one keystroke
+// instead of unwinding each level with esc.
+type ActionCloseAll struct{}
+
 // ActionApplyUpdate is a message to install an available Prime update.
 type ActionApplyUpdate struct {
 	Latest string
@@ -66,6 +73,14 @@ type ActionSetAgentModel struct {
 // follows its large/small model type again.
 type ActionClearAgentModel struct {
 	AgentID string
+}
+
+// ActionSaveKeybindings asks the UI to persist a set of key remaps. Bindings
+// is the complete deviation set (name to key string, empty meaning unbound);
+// when it is nil the user returned everything to the defaults and the
+// options.keybindings field should be cleared rather than written empty.
+type ActionSaveKeybindings struct {
+	Bindings map[string]string
 }
 
 // Messages for commands

@@ -233,6 +233,13 @@ func (p *Permissions) ToolCallID() string {
 	return p.permission.ToolCallID
 }
 
+// Request returns the pending permission request this dialog is asking about.
+// The close-all path uses it to answer the request (denying it) rather than
+// abandon it and hang the agent on an unanswered prompt.
+func (p *Permissions) Request() permission.PermissionRequest {
+	return p.permission
+}
+
 // HandleMsg implements [Dialog].
 func (p *Permissions) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {

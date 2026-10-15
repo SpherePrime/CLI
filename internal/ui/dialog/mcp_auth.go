@@ -95,6 +95,19 @@ func (m *MCPAuth) ID() string {
 	return MCPAuthID
 }
 
+// CloseCleanup implements [CloseCleanup]. Abandoning the flow cancels any
+// in-progress authorization so a close-all does not leave the context (and
+// whatever it is waiting on) running behind the scenes.
+func (m *MCPAuth) CloseCleanup() tea.Cmd {
+	if m.cancelAuth == nil {
+		return nil
+	}
+	return func() tea.Msg {
+		m.CancelAuth()
+		return nil
+	}
+}
+
 // CancelAuth cancels any in-progress authentication.
 func (m *MCPAuth) CancelAuth() {
 	if m.cancelAuth != nil {
