@@ -88,7 +88,7 @@ func runModelReasoning(cmd *cobra.Command, args []string) error {
 		mode = config.ReasoningModeOff
 	}
 	if mode == "" && effort != "" {
-		mode = config.NormalizeReasoningMode(effort)
+		mode = effort
 	}
 	if mode == "" && thinkFlagSet && think {
 		mode = config.ReasoningModeMedium
@@ -229,12 +229,6 @@ func setModelReasoning(cmd *cobra.Command, cfg *config.ConfigStore, identifier, 
 		return err
 	}
 
-	mode = config.NormalizeReasoningMode(mode)
-	if mode == "" {
-		// Empty mode means off
-		mode = config.ReasoningModeOff
-	}
-
 	providerCfg, ok := cfg.Config().Providers.Get(providerID)
 	if !ok {
 		return fmt.Errorf("provider %q not found in configuration", providerID)
@@ -244,14 +238,13 @@ func setModelReasoning(cmd *cobra.Command, cfg *config.ConfigStore, identifier, 
 	found := false
 	for i := range providerCfg.Models {
 		if providerCfg.Models[i].ID == modelID {
+			mode, err = config.NormalizeModelReasoningMode(providerCfg.Models[i], mode)
+			if err != nil {
+				return err
+			}
 			found = true
 			// Set the reasoning mode on the model's default config
 			providerCfg.Models[i].DefaultReasoningEffort = mode
-			if mode == config.ReasoningModeOff {
-				providerCfg.Models[i].CanReason = false
-			} else {
-				providerCfg.Models[i].CanReason = true
-			}
 			cmd.Printf("Set reasoning mode to %s for %s/%s\n",
 				config.FormatReasoningMode(mode), providerID, modelID)
 			break
