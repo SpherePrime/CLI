@@ -716,8 +716,17 @@ func (c *controllerV1) handlePostWorkspaceQuestionsAnswer(w http.ResponseWriter,
 // batch for a workspace.
 func (c *controllerV1) handlePostWorkspaceQuestionsCancel(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	var request struct {
+		BatchRequestID string `json:"batch_request_id"`
+	}
+	if r.Body != nil && r.ContentLength != 0 {
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			jsonError(w, 400, "invalid cancel request")
+			return
+		}
+	}
 
-	cancelled, err := c.backend.CancelQuestion(id)
+	cancelled, err := c.backend.CancelQuestion(id, request.BatchRequestID)
 	if err != nil {
 		c.handleError(w, r, err)
 		return
@@ -768,6 +777,12 @@ func (c *controllerV1) handleError(w http.ResponseWriter, r *http.Request, err e
 	switch {
 	case errors.Is(err, backend.ErrWorkspaceNotFound):
 		status = http.StatusNotFound
+	case errors.Is(err, backend.ErrRunNotFound):
+		status = http.StatusNotFound
+	case errors.Is(err, backend.ErrPluginNotFound):
+		status = http.StatusNotFound
+	case errors.Is(err, backend.ErrRunConflict):
+		status = http.StatusConflict
 	case errors.Is(err, backend.ErrLSPClientNotFound):
 		status = http.StatusNotFound
 	case errors.Is(err, backend.ErrAgentNotInitialized):

@@ -19,6 +19,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/csync"
 	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/internal/plugins"
 	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/skills"
 	"github.com/SpherePrime/CLI/internal/ui/util"
@@ -194,9 +195,14 @@ type Workspace struct {
 	// closing is set by Shutdown so no new runs are accepted once
 	// teardown has begun. runWG tracks dispatched agent goroutines
 	// so Shutdown can wait for them to return before app cleanup.
-	runMu   sync.Mutex
-	closing bool
-	runWG   sync.WaitGroup
+	runMu         sync.Mutex
+	closing       bool
+	runWG         sync.WaitGroup
+	runs          map[string]registeredRun
+	pluginMu      sync.Mutex
+	pluginTasks   map[string]*plugins.Task
+	pluginDesired map[string]bool
+	pluginErrors  sync.Map
 
 	// clientsMu guards clients. It is held only briefly (no IO).
 	clientsMu sync.Mutex
@@ -244,6 +250,11 @@ func (w *Workspace) Shutdown() {
 	w.runMu.Lock()
 	w.closing = true
 	w.runMu.Unlock()
+	w.pluginMu.Lock()
+	for _, task := range w.pluginTasks {
+		task.Cancel()
+	}
+	w.pluginMu.Unlock()
 
 	if w.cancel != nil {
 		w.cancel()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"time"
 
 	"github.com/SpherePrime/CLI/internal/agent"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
@@ -46,16 +47,41 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		return err
 	}
 
-	accept := ws.AgentCoordinator.BeginAccepted(msg.SessionID)
-
 	ws.runMu.Lock()
 	if ws.closing {
 		ws.runMu.Unlock()
-		accept.Close()
 		return ErrWorkspaceClosing
 	}
+	if msg.RunID != "" {
+		fingerprint := requestFingerprint(msg)
+		if previous, ok := ws.runs[msg.RunID]; ok {
+			ws.runMu.Unlock()
+			if previous.fingerprint != fingerprint {
+				return ErrRunConflict
+			}
+			return nil
+		}
+		if ws.runs == nil {
+			ws.runs = make(map[string]registeredRun)
+		}
+		ws.runs[msg.RunID] = registeredRun{fingerprint: fingerprint, record: proto.RunRecord{RunID: msg.RunID, SessionID: msg.SessionID, Status: "running", AcceptedAt: time.Now().UTC()}}
+	}
+	accept := ws.AgentCoordinator.BeginAccepted(msg.SessionID)
 	ws.runWG.Add(1)
 	ws.runMu.Unlock()
+	if msg.RunID != "" && ws.RunCompletions() != nil {
+		watchCtx, stop := context.WithCancel(ws.ctx)
+		completions := ws.RunCompletions().Subscribe(watchCtx)
+		go func() {
+			defer stop()
+			for event := range completions {
+				if event.Payload.RunID == msg.RunID {
+					ws.finishRun(event.Payload)
+					return
+				}
+			}
+		}()
+	}
 
 	go b.runAgent(ws, msg, accept)
 	return nil
