@@ -1,17 +1,19 @@
 package backend
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
 	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/runregistry"
+	"log/slog"
 	"sort"
 	"time"
 )
 
-var ErrRunConflict = errors.New("run_id already belongs to a different request")
-var ErrRunNotFound = errors.New("run not found")
+var ErrRunConflict = runregistry.ErrConflict
+var ErrRunNotFound = runregistry.ErrNotFound
 
 type registeredRun struct {
 	record      proto.RunRecord
@@ -22,6 +24,11 @@ func (b *Backend) GetRun(workspaceID, runID string) (proto.RunRecord, error) {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
 		return proto.RunRecord{}, err
+	}
+	if ws.runStore != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return ws.runStore.Get(ctx, runID)
 	}
 	ws.runMu.Lock()
 	defer ws.runMu.Unlock()
@@ -36,6 +43,11 @@ func (b *Backend) ListRuns(workspaceID string) ([]proto.RunRecord, error) {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
 		return nil, err
+	}
+	if ws.runStore != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return ws.runStore.List(ctx)
 	}
 	ws.runMu.Lock()
 	defer ws.runMu.Unlock()
@@ -71,5 +83,13 @@ func (ws *Workspace) finishRun(completion notify.RunComplete) {
 	run.record.Error = completion.Error
 	run.record.MessageID = completion.MessageID
 	run.record.Text = completion.Text
+	if ws.runStore != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		err := ws.runStore.Finish(ctx, run.record)
+		cancel()
+		if err != nil {
+			slog.Error("Failed to persist run completion", "run_id", completion.RunID, "error", err)
+		}
+	}
 	ws.runs[completion.RunID] = run
 }

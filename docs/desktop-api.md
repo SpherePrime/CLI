@@ -11,16 +11,18 @@ The existing `/v1` API remains compatible. Desktop clients should inspect `GET /
 | `GET /v1/workspaces/{id}/models/capabilities` | Configured enabled providers' model capabilities and unified reasoning modes |
 | `POST /v1/workspaces/{id}/config/reasoning` | `{scope: 0, model_type: "large", mode: "high"}`; scope 0 is global, 1 is workspace |
 | `GET /v1/workspaces/{id}/commands` | Existing custom command DTOs (`ID`, `Name`, `Content`, `Arguments`, `Skill`) |
-| `GET /v1/workspaces/{id}/jobs` | Background shell jobs in this workspace, with the last 64 KiB of each output stream |
+| `GET /v1/workspaces/{id}/jobs` | Background shell jobs with originating `session_id`; optional `?session_id=...` filtering, with the last 64 KiB of each output stream |
 | `GET /v1/workspaces/{id}/plugins` | Available first-party plugins and persisted enabled state |
 | `GET /v1/workspaces/{id}/plugins/tasks` | Retained installation progress and errors |
 | `POST /v1/workspaces/{id}/plugins/{name}/enable` | 202; install asynchronously, persist enabled state after successful installation |
 | `POST /v1/workspaces/{id}/plugins/{name}/disable` | Cancel installation and persist disabled state |
 | `POST /v1/workspaces/{id}/voice/transcribe` | `{mime_type: "audio/wav", audio_base64: "..."}` to `{text: "..."}` |
 
-Send messages through the existing agent endpoint with a unique `run_id`. Repeating the same request with the same ID returns 202 without executing it again. A changed request with an existing ID returns 409. The registry survives event disconnections and retains terminal results for the workspace lifetime; it is not durable across workspace removal or process restart. Run states are `running`, `completed`, `failed`, and `cancelled`; `running` includes an accepted queued request. Existing requests without `run_id` retain their previous behavior.
+Send messages through the existing agent endpoint with a unique `run_id`. Repeating the same request with the same ID returns 202 without executing it again. A changed request with an existing ID returns 409. Acceptance is committed to the existing `prime.db` before dispatch and before the 202 response. The registry survives event disconnections, workspace removal, and process restart; `run_registry_persistence` is `sqlite`. Canonical project path and run ID form the storage key, including when projects share a data directory. Run states are `running`, `completed`, `failed`, `cancelled`, and `interrupted`; `running` includes an accepted queued request. Existing requests without `run_id` retain their previous behavior.
 
-There is no event replay journal. Reconnect by opening SSE before loading sessions, messages, resources, pending requests, and run snapshots. Do not repeat side effects under a new run ID when acceptance is uncertain.
+When a new server process opens the project, old unfinished records become `interrupted`. Normal workspace teardown also marks any remaining unfinished records `interrupted`. Retrying an interrupted run with its original ID only returns its known acceptance; it never executes the action again. The user must explicitly start a new task to repeat the work. Terminal results are persisted from the authoritative completion broker; if termination occurs before that write commits, recovery conservatively records interruption. Registry records are retained without automatic pruning. Storage remains subject to the existing database directory lock and SQLite WAL durability policy.
+
+There is no event replay journal, event sequence watermark, or atomic combined snapshot. Service writes and event publication remain separate operations, so snapshot consistency is eventual. Reconnect by opening SSE before loading sessions, messages, resources, pending requests, and run snapshots, buffering live updates and reconciling records by ID. Do not repeat side effects under a new run ID when acceptance is uncertain.
 
 Question answers use the existing `batch_request_id`. Question cancellation also accepts optional `{batch_request_id: "..."}`; supplying it prevents a delayed response from affecting a newer question. Exactly one concurrent answer or cancellation resolves a pending question.
 
@@ -28,4 +30,6 @@ Voice uploads require an enabled voice plugin and 16 kHz mono 16-bit PCM WAV, be
 
 The Windows named pipe grants access to the current Windows user SID. Authentication between separate Windows users has not been exercised in a second-user integration environment.
 
-Deferred: durable run history and SSE replay, agent-task job snapshots beyond existing child sessions, additional MCP channel snapshots, and typed SDK wrappers for plugin mutations and voice uploads. Existing config endpoints continue to provide the rest of Prime's settings.
+Background shell ownership records the originating project and session independently from the command's working directory. This keeps commands launched in another directory visible in their originating project and allows filtering two concurrent chats correctly. Existing jobs without session ownership have an empty `session_id` and are omitted by a session-specific query.
+
+Deferred: atomic snapshot and SSE replay, agent-task job snapshots beyond existing child sessions, additional MCP channel snapshots, and typed SDK wrappers for plugin mutations and voice uploads. Existing config endpoints continue to provide the rest of Prime's settings.

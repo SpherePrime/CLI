@@ -53,6 +53,13 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		return ErrWorkspaceClosing
 	}
 	if msg.RunID != "" {
+		if ws.runStore != nil {
+			accepted, err := ws.runStore.Accept(ws.ctx, msg)
+			if err != nil || !accepted {
+				ws.runMu.Unlock()
+				return err
+			}
+		}
 		fingerprint := requestFingerprint(msg)
 		if previous, ok := ws.runs[msg.RunID]; ok {
 			ws.runMu.Unlock()

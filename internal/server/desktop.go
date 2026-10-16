@@ -7,11 +7,14 @@ import (
 	"github.com/SpherePrime/CLI/internal/question"
 	"github.com/SpherePrime/CLI/internal/shell"
 	"net/http"
+	"path/filepath"
+	"runtime"
 	"sort"
+	"strings"
 )
 
 func (c *controllerV1) handleGetCapabilities(w http.ResponseWriter, r *http.Request) {
-	jsonEncode(w, proto.DesktopCapabilities{ProtocolVersion: 1, RunRegistry: true, RunRegistryPersistence: "workspace_lifetime", PendingRequests: true, ModelCapabilities: true, Plugins: true, VoiceUpload: true})
+	jsonEncode(w, proto.DesktopCapabilities{ProtocolVersion: 1, RunRegistry: true, RunRegistryPersistence: "sqlite", PendingRequests: true, ModelCapabilities: true, Plugins: true, VoiceUpload: true})
 }
 
 func (c *controllerV1) handleGetPending(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +92,10 @@ func (c *controllerV1) handleGetJobs(w http.ResponseWriter, r *http.Request) {
 	manager := shell.GetBackgroundShellManager()
 	for _, id := range manager.List() {
 		job, ok := manager.Get(id)
-		if !ok || job.WorkingDir != ws.Path {
+		if !ok || !sameProjectPath(job.WorkspacePath, ws.Path) {
+			continue
+		}
+		if sessionID := r.URL.Query().Get("session_id"); sessionID != "" && job.SessionID != sessionID {
 			continue
 		}
 		stdout, stderr, done, jobErr := job.GetOutput()
@@ -103,7 +109,24 @@ func (c *controllerV1) handleGetJobs(w http.ResponseWriter, r *http.Request) {
 		if len(stderr) > 65536 {
 			stderr = stderr[len(stderr)-65536:]
 		}
-		jobs = append(jobs, proto.BackgroundJob{ID: id, Command: job.Command, Description: job.Description, Done: done, Stdout: stdout, Stderr: stderr, Error: errorText})
+		jobs = append(jobs, proto.BackgroundJob{SessionID: job.SessionID, ID: id, Command: job.Command, Description: job.Description, Done: done, Stdout: stdout, Stderr: stderr, Error: errorText})
 	}
 	jsonEncode(w, jobs)
+}
+
+func sameProjectPath(left, right string) bool {
+	normalize := func(path string) string {
+		if absolute, err := filepath.Abs(path); err == nil {
+			path = absolute
+		}
+		if resolved, err := filepath.EvalSymlinks(path); err == nil {
+			path = resolved
+		}
+		return filepath.Clean(path)
+	}
+	left, right = normalize(left), normalize(right)
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(left, right)
+	}
+	return left == right
 }

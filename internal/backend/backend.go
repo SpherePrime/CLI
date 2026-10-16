@@ -21,6 +21,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/db"
 	"github.com/SpherePrime/CLI/internal/plugins"
 	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/runregistry"
 	"github.com/SpherePrime/CLI/internal/skills"
 	"github.com/SpherePrime/CLI/internal/ui/util"
 	"github.com/SpherePrime/CLI/internal/version"
@@ -89,6 +90,7 @@ type ShutdownFunc func()
 // while calling [registerClient] so that a workspace cannot be torn
 // down beneath it.
 type Backend struct {
+	processID  string
 	workspaces *csync.Map[string, *Workspace]
 	// pathIndex maps a resolved absolute workspace path to its
 	// workspace ID. Reads and writes are serialised via mu so
@@ -199,6 +201,7 @@ type Workspace struct {
 	closing       bool
 	runWG         sync.WaitGroup
 	runs          map[string]registeredRun
+	runStore      *runregistry.Store
 	pluginMu      sync.Mutex
 	pluginTasks   map[string]*plugins.Task
 	pluginDesired map[string]bool
@@ -263,6 +266,13 @@ func (w *Workspace) Shutdown() {
 		w.AgentCoordinator.CancelAll()
 	}
 	w.runWG.Wait()
+	if w.runStore != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		if err := w.runStore.Interrupt(ctx); err != nil {
+			slog.Error("Failed to persist interrupted runs", "error", err)
+		}
+		cancel()
+	}
 	if w.App != nil {
 		w.App.Shutdown()
 	}
@@ -271,6 +281,7 @@ func (w *Workspace) Shutdown() {
 // New creates a new [Backend].
 func New(ctx context.Context, cfg *config.ConfigStore, shutdownFn ShutdownFunc) *Backend {
 	return &Backend{
+		processID:   uuid.NewString(),
 		workspaces:  csync.NewMap[string, *Workspace](),
 		pathIndex:   make(map[string]string),
 		retired:     make(map[string]struct{}),
@@ -439,6 +450,11 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 	if err != nil {
 		return nil, proto.Workspace{}, fmt.Errorf("failed to connect to database: %w", err)
 	}
+	runStore, err := runregistry.New(b.ctx, conn, key, b.processID, id)
+	if err != nil {
+		db.Release(cfg.Config().Options.DataDirectory)
+		return nil, proto.Workspace{}, fmt.Errorf("failed to recover run registry: %w", err)
+	}
 
 	// Discover skills once per workspace, before app.New. The backend
 	// hosts multiple workspaces concurrently, so the manager is
@@ -459,6 +475,7 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 
 	wsCtx, wsCancel := context.WithCancel(b.ctx)
 	ws := &Workspace{
+		runStore:     runStore,
 		App:          appWorkspace,
 		ID:           id,
 		Path:         args.Path,

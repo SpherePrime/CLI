@@ -45,18 +45,20 @@ func (sb *syncBuffer) String() string {
 
 // BackgroundShell represents a shell running in the background.
 type BackgroundShell struct {
-	ID          string
-	Command     string
-	Description string
-	Shell       *Shell
-	WorkingDir  string
-	ctx         context.Context
-	cancel      context.CancelFunc
-	stdout      *syncBuffer
-	stderr      *syncBuffer
-	done        chan struct{}
-	exitErr     error
-	completedAt atomic.Int64 // Unix timestamp when job completed (0 if still running)
+	SessionID     string
+	WorkspacePath string
+	ID            string
+	Command       string
+	Description   string
+	Shell         *Shell
+	WorkingDir    string
+	ctx           context.Context
+	cancel        context.CancelFunc
+	stdout        *syncBuffer
+	stderr        *syncBuffer
+	done          chan struct{}
+	exitErr       error
+	completedAt   atomic.Int64 // Unix timestamp when job completed (0 if still running)
 }
 
 // BackgroundShellManager manages background shell instances.
@@ -86,7 +88,7 @@ func GetBackgroundShellManager() *BackgroundShellManager {
 }
 
 // Start creates and starts a new background shell with the given command.
-func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, blockFuncs []BlockFunc, command string, description string) (*BackgroundShell, error) {
+func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, blockFuncs []BlockFunc, command string, description string, ownership ...BackgroundOwnership) (*BackgroundShell, error) {
 	// Check job limit
 	if m.shells.Len() >= MaxBackgroundJobs {
 		return nil, fmt.Errorf("maximum number of background jobs (%d) reached. Please terminate or wait for some jobs to complete", MaxBackgroundJobs)
@@ -112,6 +114,13 @@ func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, b
 		stdout:      &syncBuffer{},
 		stderr:      &syncBuffer{},
 		done:        make(chan struct{}),
+	}
+	bgShell.WorkspacePath = workingDir
+	if len(ownership) > 0 {
+		bgShell.SessionID = ownership[0].SessionID
+		if ownership[0].WorkspacePath != "" {
+			bgShell.WorkspacePath = ownership[0].WorkspacePath
+		}
 	}
 
 	m.shells.Set(id, bgShell)

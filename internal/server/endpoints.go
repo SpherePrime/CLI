@@ -22,7 +22,7 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 		apigen.Get("/v1/workspaces/{id}/runs").Summary("Workspace run registry").Tags("agent").PathParam("id", "Workspace ID").Responds([]proto.RunRecord{}).Fails(404).Handle(c.handleGetRuns),
 		apigen.Get("/v1/workspaces/{id}/runs/{run_id}").Summary("Find accepted run").Tags("agent").PathParam("id", "Workspace ID").PathParam("run_id", "Run ID").Responds(proto.RunRecord{}).Fails(404).Handle(c.handleGetRun),
 		apigen.Get("/v1/workspaces/{id}/models/capabilities").Summary("Configured model capabilities").Tags("config").PathParam("id", "Workspace ID").Responds([]proto.ModelCapabilities{}).Fails(404).Handle(c.handleGetModelCapabilities),
-		apigen.Get("/v1/workspaces/{id}/jobs").Summary("Workspace background shell jobs").Tags("agent").PathParam("id", "Workspace ID").Responds([]proto.BackgroundJob{}).Fails(404).Handle(c.handleGetJobs),
+		apigen.Get("/v1/workspaces/{id}/jobs").Summary("Workspace background shell jobs").Tags("agent").PathParam("id", "Workspace ID").QueryParam("session_id", "Filter by originating session").Responds([]proto.BackgroundJob{}).Fails(404).Handle(c.handleGetJobs),
 		apigen.Get("/v1/health").
 			Summary("Health check").
 			Tags("system").
