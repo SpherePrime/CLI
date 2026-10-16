@@ -3,8 +3,10 @@ package backend
 import (
 	"context"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/db"
 	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/runregistry"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 	"sync"
 	"testing"
@@ -29,6 +31,53 @@ func TestRunIDPreventsDuplicateDispatch(t *testing.T) {
 	require.Equal(t, "running", run.Status)
 	msg.Prompt = "different"
 	require.ErrorIs(t, b.SendMessage(ws.ID, msg), ErrRunConflict)
+}
+
+func TestDurableRunRetryAfterRestartNeverDispatchesAgain(t *testing.T) {
+	dir := t.TempDir()
+	connection, err := db.Connect(context.Background(), dir)
+	require.NoError(t, err)
+	b, _ := newTestBackend(t)
+	coordinator := newBlockingCoordinator()
+	ws := insertAgentWorkspace(t, b, coordinator)
+	ws.runStore, err = runregistry.New(context.Background(), connection, "project", "previous-process", ws.ID)
+	require.NoError(t, err)
+	msg := proto.AgentMessage{SessionID: "session", RunID: "durable", Prompt: "work"}
+	require.NoError(t, b.SendMessage(ws.ID, msg))
+	<-coordinator.entered
+	close(coordinator.release)
+	ws.runWG.Wait()
+	require.NoError(t, db.Release(dir))
+	connection, err = db.Connect(context.Background(), dir)
+	require.NoError(t, err)
+	t.Cleanup(func() { db.Release(dir) })
+	restarted, _ := newTestBackend(t)
+	nextCoordinator := newBlockingCoordinator()
+	defer close(nextCoordinator.release)
+	nextWS := insertAgentWorkspace(t, restarted, nextCoordinator)
+	nextWS.runStore, err = runregistry.New(context.Background(), connection, "project", "next-process", nextWS.ID)
+	require.NoError(t, err)
+	require.NoError(t, restarted.SendMessage(nextWS.ID, msg))
+	require.EqualValues(t, 0, nextCoordinator.runCount.Load())
+	record, err := restarted.GetRun(nextWS.ID, "durable")
+	require.NoError(t, err)
+	require.Equal(t, "interrupted", record.Status)
+}
+
+func TestDurableAcceptanceFailureDoesNotDispatch(t *testing.T) {
+	dir := t.TempDir()
+	connection, err := db.Connect(context.Background(), dir)
+	require.NoError(t, err)
+	b, _ := newTestBackend(t)
+	coordinator := newBlockingCoordinator()
+	defer close(coordinator.release)
+	ws := insertAgentWorkspace(t, b, coordinator)
+	ws.runStore, err = runregistry.New(context.Background(), connection, "project", "process", ws.ID)
+	require.NoError(t, err)
+	require.NoError(t, db.Release(dir))
+	require.Error(t, b.SendMessage(ws.ID, proto.AgentMessage{SessionID: "s", RunID: "not-durable", Prompt: "work"}))
+	require.Zero(t, coordinator.runCount.Load())
+	require.Empty(t, ws.runs)
 }
 
 func TestRunRegistryRetainsAuthoritativeTerminalResult(t *testing.T) {

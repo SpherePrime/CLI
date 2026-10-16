@@ -42,6 +42,7 @@ type ModelCapabilities struct {
 }
 
 type BackgroundJob struct {
+	SessionID   string `json:"session_id"`
 	ID          string `json:"id"`
 	Command     string `json:"command"`
 	Description string `json:"description"`
