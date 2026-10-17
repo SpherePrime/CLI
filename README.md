@@ -1,0 +1,37 @@
+# Prime Desktop
+
+Windows desktop workspace for [Prime CLI](https://github.com/SpherePrime/CLI), with projects, persistent chats, streaming tool activity, approvals, model settings, files, diffs, MCP/LSP/Skills and optional voice input.
+
+The bundled CLI runs privately through a Windows named pipe. No separate Go, Node.js or Prime installation is needed to run the packaged app. External tools such as Git, language servers and MCP runtimes remain optional dependencies of those features.
+
+## Run from source
+
+Use Node.js 24 and Go matching the sibling CLI repository's `go.mod`.
+
+```powershell
+npm ci
+node scripts/acquire-runtime.mjs
+npm run dev
+```
+
+## Verify and package
+
+```powershell
+npm run typecheck
+npm run test:unit
+npm run test:integration
+npm run build
+npm run test:e2e
+npm run runtime:verify
+npm run dist:win
+```
+
+The installer and unpacked application are written to `release/`. Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
+
+## Data and updates
+
+Prime owns session history and provider configuration. Desktop keeps window preferences and drafts in its Electron user data folder. Provider secrets are not returned to the renderer. Closing the window during an active run keeps the app in the tray; use its Exit action to stop and quit.
+
+Runtime restarts mark unfinished runs as interrupted; they are never automatically repeated. Event reconnection reloads persistent history and pending requests rather than assuming server event replay.
+
+This local build is unsigned. Automatic updates require a configured release feed. See [release status](docs/release-checklist.md) for verification coverage and remaining release requirements.

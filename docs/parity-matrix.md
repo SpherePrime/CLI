@@ -1,0 +1,38 @@
+# Prime Desktop functional coverage
+
+Source: CLI revision recorded in `runtime/manifest.json`; reviewed against workspace interface, API endpoints, command menu and config schema.
+
+| CLI capability | Desktop location | Current evidence |
+|---|---|---|
+| Projects and context | Folder picker, recent projects; backend context discovery | Real Electron project-open test, Cyrillic path |
+| Session create/list/history | Sidebar and conversation | Real CLI session and renderer-reload test |
+| Rename/delete/pin | Session action menu | Implemented; pin is a Desktop preference |
+| Streaming messages and tools | Conversation and tool details | Real provider fixture and real write tool test |
+| Permission prompts | Inline approval cards | Real write approval creates a file after Allow |
+| Structured questions | Inline single/multi/free text/yes-no form | Provider fixture question scenario |
+| Queue and cancel | Composer queue and Stop | API integration; isolated backend cancellation tests |
+| Plan and normal agent | Composer mode selector | Existing backend main-agent API; uses general/plan |
+| YOLO | Persistent composer permission indicator | Existing skip-permissions API |
+| Model/provider/reasoning | Model picker and Settings | Go capability/reasoning tests; settings use backend config scopes |
+| Local/custom endpoints | Provider form | Local fixture provider tested |
+| Large/small model | Model picker tabs | Existing model_type API |
+| Session tokens/cost/todos | Status bar and task panel | Backend values, never estimated by UI |
+| Summarization | /compact and command palette | Existing summarize API |
+| Direct shell | Composer prefix ! | Existing shell API, HTTP cancellation and main activity tracking |
+| Custom commands | Slash suggestions and palette | Typed argument form, literal placeholder substitution and skill preparation |
+| Attachments | Native file picker | Main stores chosen files and serializes real proto.Attachments |
+| File tree/preview | Inspector Files | Boundary and junction tests; 2 MiB preview limit |
+| Session/Git diffs | Inspector Changes | Read-only comparison; full worktree status discovery tracked separately |
+| MCP states/auth/resources/prompts | Inspector Resources, command preparation and advanced settings | Argument form and real backend prompt fetch; scoped opt-in channel delivery; Docker toggles |
+| LSP diagnostics/start/stop | Inspector Resources | Existing LSP API |
+| Skills catalog/read | Inspector Resources | Existing catalog/read API |
+| Background shells | Inspector Tasks | Session-filtered backend jobs API |
+| Plugins install/toggle/progress | Plugins dialog | Go plugin installation concurrency tests |
+| Voice input | Alt+V / microphone button | WAV conversion + real backend transcription HTTP fixture; hardware check pending |
+| Theme and keyboard | Settings and shortcuts | Real Electron dark/light test and manual layout inspection |
+| Close/tray | Main process lifecycle | Run activity regression tests; clean-VM lifecycle acceptance pending |
+| Durable run deduplication | Bundled backend | SQLite reopen/no-redispatch tests |
+| Local installer | Windows NSIS package | Packaged EXE passed full Electron/provider/tool/question scenario |
+| CLI update | Separate external installation | Desktop never replaces a user's external CLI |
+
+This table records actual scope, not a claim that every CLI menu item has a dedicated graphical control. All core settings are writable through the advanced configuration form; unsupported release scenarios are listed explicitly in the release checklist.

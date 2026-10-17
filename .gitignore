@@ -1,0 +1,12 @@
+node_modules/
+dist/
+out/
+release/
+runtime/*.exe
+.superpowers/
+CHATS.md
+.env*
+playwright-report/
+test-results/
+*.log
+cli-source/

@@ -1,0 +1,25 @@
+appId: com.sphereprime.desktop
+productName: Prime Desktop
+directories:
+  output: release
+files:
+  - out/**/*
+extraResources:
+  - from: build/icon.png
+    to: icon.png
+  - from: runtime
+    to: runtime
+    filter:
+      - prime.exe
+      - manifest.json
+win:
+  target: nsis
+  executableName: PrimeDesktop
+  icon: build/icon.ico
+  signAndEditExecutable: true
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  deleteAppDataOnUninstall: false
