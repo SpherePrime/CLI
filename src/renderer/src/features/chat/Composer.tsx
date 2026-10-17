@@ -1,3 +1,5 @@
+import { ModelPicker } from '../models/ModelPicker'
+import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { CommandRunner } from './CommandRunner'
 import { useEffect, useRef, useState } from 'react'
@@ -16,15 +18,11 @@ import {
 import type { Workspace } from '../../app/useWorkspace'
 import { useVoice } from '../plugins/useVoice'
 
-export function Composer({
-  workspace: w,
-  onModels
-}: {
-  workspace: Workspace
-  onModels: () => void
-}) {
+export function Composer({ workspace: w }: { workspace: Workspace }) {
   const { t, locale } = useI18n()
   const [text, setText] = useState('')
+  const [modelsOpen, setModelsOpen] = useState(false)
+  const modelAnchor = useRef<HTMLButtonElement>(null)
   const [attachments, setAttachments] = useState<any[]>([])
   const [sending, setSending] = useState(false)
   const [mode, setMode] = useState('general')
@@ -42,7 +40,7 @@ export function Composer({
       window.removeEventListener('prime:draft', draft)
     }
   }, [])
-  const key = `${w.project?.path || ''}:${w.session?.id || 'new'}`
+  const key = `${!w.project || w.project.kind === 'chat' ? 'chat' : w.project.path}:${w.session?.id || 'new'}`
   const draftKey = useRef(key)
   const latest = useRef(text)
   latest.current = text
@@ -63,7 +61,7 @@ export function Composer({
   }, [key])
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (w.project) void w.savePreferences({ drafts: { [key]: text } })
+      void w.savePreferences({ drafts: { [key]: text } })
     }, 600)
     return () => clearTimeout(timer)
   }, [text, key])
@@ -128,31 +126,7 @@ export function Composer({
   }, [w.busy, w.session?.id, recording])
   async function change(value: string) {
     setText(value)
-    if (value.startsWith('/') && !value.includes(' ')) {
-      const builtIn = [
-        { label: '/compact', description: t('Сжать контекст'), action: 'compact' },
-        { label: '/plan', description: t('Режим планирования'), action: 'plan' },
-        { label: '/code', description: t('Режим работы'), action: 'general' }
-      ]
-      try {
-        const lists = await Promise.all([
-          w.call('commands').catch(() => []),
-          w.call('mcpPrompts').catch(() => [])
-        ])
-        const custom = lists.flat()
-        const items = Array.isArray(custom)
-          ? custom.map((item: any) => ({
-              label: '/' + (item.Name || item.name || item.title || item.id),
-              description: item.description,
-              prompt: item.Content || item.prompt || item.content,
-              command: item
-            }))
-          : []
-        setSuggestions([...builtIn, ...items].filter((item) => item.label.startsWith(value)))
-      } catch {
-        setSuggestions(builtIn.filter((item) => item.label.startsWith(value)))
-      }
-    } else if (/@[^\s]*$/.test(value) && w.project) {
+    if (/@[^\s]*$/.test(value) && w.project && w.project.kind !== 'chat') {
       const query = value.split('@').pop()!.toLowerCase()
       const files = await window.prime.files(w.project.id).catch(() => [])
       setSuggestions(
@@ -167,9 +141,25 @@ export function Composer({
       )
     } else setSuggestions([])
   }
+  useEffect(() => {
+    const open = () => setModelsOpen((value) => !value)
+    window.addEventListener('prime:models', open)
+    return () => window.removeEventListener('prime:models', open)
+  }, [])
   const selectedModel = w.config?.models?.large
   return (
     <div className="composer-area">
+      {modelsOpen && (
+        <ModelPicker
+          workspace={w}
+          anchor={modelAnchor}
+          close={() => setModelsOpen(false)}
+          setup={() => {
+            setModelsOpen(false)
+            window.dispatchEvent(new Event('prime:providers'))
+          }}
+        />
+      )}
       {command && (
         <CommandRunner
           command={command}
@@ -231,14 +221,10 @@ export function Composer({
           value={text}
           onChange={(event) => void change(event.target.value)}
           placeholder={
-            recording
-              ? t('Запись голоса… Alt+V, чтобы остановить')
-              : w.project
-                ? t('Опишите задачу…  @ файлы, / команды')
-                : t('Откройте проект, чтобы начать')
+            recording ? t('Запись голоса… Alt+V, чтобы остановить') : t('Напишите сообщение…')
           }
           aria-label={t('Сообщение Prime')}
-          disabled={!w.project || w.loading || sending}
+          disabled={w.loading || sending}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault()
@@ -252,16 +238,7 @@ export function Composer({
               <button
                 key={item.label}
                 onClick={async () => {
-                  if (item.action === 'compact') {
-                    await w.call('summarize', { sessionId: w.session?.id }).catch(w.errorHandler)
-                    setText('')
-                  } else if (item.action) {
-                    await w.call('mode', { mode: item.action }).catch(w.errorHandler)
-                    setMode(item.action)
-                    setText('')
-                  } else if (item.file) setText(text.replace(/@[^\s]*$/, `@${item.file} `))
-                  else if (item.command) setCommand(item.command)
-                  else setText(item.prompt || item.label + ' ')
+                  if (item.file) setText(text.replace(/@[^\s]*$/, `@${item.file} `))
                   setSuggestions([])
                 }}
               >
@@ -275,7 +252,6 @@ export function Composer({
           <div className="composer-options">
             <button
               className="icon"
-              disabled={!w.project}
               title={t('Прикрепить файлы')}
               aria-label={t('Прикрепить файлы')}
               onClick={() =>
@@ -297,24 +273,30 @@ export function Composer({
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
             <span className="toolbar-divider" />
-            <select
-              aria-label={t('Режим агента')}
+            <Select
+              label={t('Режим агента')}
               value={mode}
               disabled={w.busy || !w.project}
-              onChange={async (event) => {
-                const value = event.target.value
-                try {
-                  await w.call('mode', { mode: value })
-                  setMode(value)
-                } catch (error) {
-                  w.errorHandler(error)
-                }
+              options={[
+                { value: 'general', label: t('Работа') },
+                { value: 'plan', label: t('План') }
+              ]}
+              onChange={(value) => {
+                void w
+                  .call('mode', { mode: value })
+                  .then(() => setMode(value))
+                  .catch(w.errorHandler)
               }}
+            />
+            <button
+              ref={modelAnchor}
+              className="model-trigger"
+              aria-label={t('Выбрать модель')}
+              aria-haspopup="listbox"
+              aria-expanded={modelsOpen}
+              onClick={() => setModelsOpen(!modelsOpen)}
+              disabled={!w.project}
             >
-              <option value="general">{t('Работа')}</option>
-              <option value="plan">{t('План')}</option>
-            </select>
-            <button className="model-trigger" onClick={onModels} disabled={!w.project}>
               <Sparkles size={13} />
               <span>{selectedModel?.model || w.agent?.model?.name || t('Выбрать модель')}</span>
               <ChevronDown size={12} />

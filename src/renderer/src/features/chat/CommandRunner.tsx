@@ -46,7 +46,7 @@ export function CommandRunner({
                 : ''
               prompt = `${command.name}\n\n${decoded}`
             }
-            if (!prompt.trim()) throw new Error(t('Команда вернула пустой запрос'))
+            if (!prompt.trim()) throw new Error(t('Шаблон вернул пустой запрос'))
             onReady(prompt)
             close()
           } catch (error: any) {
@@ -76,7 +76,7 @@ export function CommandRunner({
           <p className="muted">{t('Запрос будет подготовлен в поле ввода перед отправкой.')}</p>
         )}
         <details>
-          <summary>{t('Шаблон команды')}</summary>
+          <summary>{t('Текст шаблона')}</summary>
           <pre className="config-preview">
             {command.content ||
               (command.promptId ? t('MCP-шаблон загружается с сервера') : command.name)}

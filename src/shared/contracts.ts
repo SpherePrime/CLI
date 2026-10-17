@@ -19,6 +19,7 @@ export type Message = {
   updated_at?: number
 }
 export type Project = {
+  kind?: 'chat' | 'project'
   id: string
   path: string
   clientId: string
@@ -101,6 +102,7 @@ export interface DesktopApi {
   changes(workspaceId: string): Promise<{ path: string; status: string; originalPath?: string }[]>
   info(): Promise<Json>
   projects(): Promise<Project[]>
+  openChat(): Promise<Project>
   openProject(path?: string): Promise<Project | null>
   closeProject(id: string): Promise<void>
   call(workspaceId: string, operation: Operation, args?: Json): Promise<Json>

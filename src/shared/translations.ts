@@ -289,3 +289,71 @@ Object.assign(english, {
   'Продолжить работу': 'Keep working',
   'Остановить и выйти': 'Stop and quit'
 })
+
+Object.assign(english, {
+  'Личные чаты': 'Personal chats',
+  'С чего начнём?': 'What shall we work on?',
+  'Выберите модель и начните разговор.': 'Choose a model and start a conversation.',
+  'Папку можно подключить, когда понадобятся файлы проекта.':
+    'Open a folder whenever you need project files.',
+  'Свернуть окно': 'Minimize window',
+  'Восстановить окно': 'Restore window',
+  'Развернуть окно': 'Maximize window',
+  'Закрыть окно': 'Close window',
+  'Действия чата': 'Chat actions',
+  Действия: 'Actions',
+  'Напишите сообщение…': 'Write a message…',
+  Основная: 'Primary',
+  Быстрая: 'Fast',
+  Модели: 'Models',
+  'Модели не найдены': 'No models found',
+  'Чат без проекта': 'Chat without a project',
+  'У каждой модели должен быть уникальный ID': 'Each model must have a unique ID',
+  'Проверьте контекст и лимит ответа у каждой модели':
+    'Check the context and response limit for each model',
+  'Настройки провайдера сохранены': 'Provider settings saved',
+  'Провайдеры и модели': 'Providers and models',
+  'Ваши подключения Prime доступны во всех чатах.':
+    'Your Prime connections are available across chats.',
+  'Добавить провайдера': 'Add provider',
+  'Моделей: {count}': 'Models: {count}',
+  'Добавьте подключение к сервису или локальному серверу.':
+    'Add a connection to a service or local server.',
+  'Настройка подключения': 'Connection settings',
+  'Тип подключения': 'Connection type',
+  'Свой сервер / другой провайдер': 'Custom server / another provider',
+  'Ollama · локальные модели': 'Ollama · local models',
+  'ID провайдера': 'Provider ID',
+  'Оставьте пустым, чтобы сохранить текущий ключ': 'Leave blank to keep the current key',
+  'Получать каталог моделей от провайдера': 'Discover models from this provider',
+  'Модели провайдера': 'Provider models',
+  'Добавить модель': 'Add model',
+  'Новая модель': 'New model',
+  'Название модели': 'Model name',
+  'Лимит ответа': 'Response limit',
+  'Удалить модель': 'Remove model',
+  'Сохраняем…': 'Saving…',
+  'Сохранить изменения': 'Save changes',
+  'Ctrl+N — новый чат · Ctrl+L — модели': 'Ctrl+N — new chat · Ctrl+L — models'
+})
+
+Object.assign(english, {
+  'ВАШИ ИДЕИ. ВАШ PRIME.': 'YOUR IDEAS. YOUR PRIME.',
+  'Обсудить идею': 'Explore an idea',
+  'Найти направление и решение': 'Find direction and a solution',
+  'Помоги продумать идею: ': 'Help me explore this idea: ',
+  'Разобраться в вопросе': 'Understand a topic',
+  'Понятно объяснить сложное': 'Make a complex topic clear',
+  'Помоги разобраться в следующем вопросе: ': 'Help me understand the following topic: ',
+  'Составить план': 'Make a plan',
+  'От замысла к конкретным шагам': 'Turn an idea into clear steps',
+  'Помоги составить план для следующей задачи: ': 'Help me plan the following task: '
+})
+
+Object.assign(english, {
+  'Шаблон вернул пустой запрос': 'The template returned an empty prompt',
+  'Текст шаблона': 'Template text',
+  Настроено: 'Configured',
+  Отключено: 'Disabled',
+  Подключено: 'Connected'
+})

@@ -19,13 +19,11 @@ import type { Workspace } from '../../app/useWorkspace'
 export function Sidebar({
   workspace: w,
   onSettings,
-  onPlugins,
-  onPalette
+  onPlugins
 }: {
   workspace: Workspace
   onSettings: () => void
   onPlugins: () => void
-  onPalette: () => void
 }) {
   const { t } = useI18n()
   const [search, setSearch] = useState('')
@@ -64,10 +62,13 @@ export function Sidebar({
           <FolderOpen size={16} /> {t('Открыть проект')}
         </button>
       </div>
-      <button className="search-launch" onClick={onPalette}>
-        <Search size={15} />
-        <span>{t('Поиск и команды')}</span>
-        <kbd>Ctrl P</kbd>
+      <button
+        className="personal-chats"
+        onClick={() => void w.openChat()}
+        disabled={w.info.runtime !== 'ready'}
+      >
+        <MessageSquare size={16} />
+        {t('Чат без проекта')}
       </button>
       <div className="sidebar-scroll">
         <div className="section-caption">
@@ -89,17 +90,21 @@ export function Sidebar({
               >
                 <ChevronDown size={14} />
                 <FolderOpen size={15} />
-                <span title={project.path}>{project.path.split(/[\\/]/).pop()}</span>
+                <span title={project.kind === 'chat' ? t('Личные чаты') : project.path}>
+                  {project.kind === 'chat' ? t('Личные чаты') : project.path.split(/[\\/]/).pop()}
+                </span>
                 <span className={`dot ${project.connection === 'ready' ? 'green' : 'amber'}`} />
               </button>
-              <button
-                className="icon small"
-                title={t('Закрыть проект')}
-                aria-label={t('Закрыть проект {value0}', { value0: project.path })}
-                onClick={() => void w.closeProject(project.id)}
-              >
-                <X size={12} />
-              </button>
+              {project.kind !== 'chat' && (
+                <button
+                  className="icon small"
+                  title={t('Закрыть проект')}
+                  aria-label={t('Закрыть проект {value0}', { value0: project.path })}
+                  onClick={() => void w.closeProject(project.id)}
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
             {w.project?.id === project.id && (
               <>

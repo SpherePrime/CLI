@@ -1,3 +1,4 @@
+import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { useState } from 'react'
 import { ShieldQuestion, CircleHelp, Check, X } from 'lucide-react'
@@ -124,14 +125,22 @@ function Question({ request, workspace: w }: { request: any; workspace: Workspac
             </label>
           ))}
           {question.type === 'yes_no' && (
-            <select
-              aria-label={question.question}
-              onChange={(event) => update(question.id, { yes: event.target.value === 'yes' })}
-            >
-              <option value="">{t('Выберите ответ')}</option>
-              <option value="yes">{t('Да')}</option>
-              <option value="no">{t('Нет')}</option>
-            </select>
+            <Select
+              label={question.question}
+              value={
+                answers[question.id]?.yes === undefined
+                  ? ''
+                  : answers[question.id].yes
+                    ? 'yes'
+                    : 'no'
+              }
+              onChange={(value) => update(question.id, { yes: value === 'yes' })}
+              options={[
+                { value: '', label: t('Выберите ответ') },
+                { value: 'yes', label: t('Да') },
+                { value: 'no', label: t('Нет') }
+              ]}
+            />
           )}
           <input
             placeholder={t('Свой ответ или дополнение')}

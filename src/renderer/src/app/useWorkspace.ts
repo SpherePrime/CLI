@@ -170,6 +170,7 @@ export function useWorkspace() {
         const restored = await window.prime.openProject(saved.activeProject)
         if (restored) opened = [restored]
       }
+      if (!opened.length) opened = [await window.prime.openChat()]
       setProjects(opened)
       if (opened.length && !current.current.project) {
         const restored = opened.find((item) => item.path === saved.activeProject) || opened[0]
@@ -186,7 +187,10 @@ export function useWorkspace() {
           setSession(selected)
         }
         const status = await window.prime.call(restored.id, 'agent')
-        if (!status?.is_ready) await window.prime.call(restored.id, 'init').catch(errorHandler)
+        if (!status?.is_ready)
+          await window.prime
+            .call(restored.id, 'init')
+            .catch(restored.kind === 'chat' ? () => {} : errorHandler)
         await refresh()
       }
     }
@@ -392,6 +396,22 @@ export function useWorkspace() {
     await call('currentSession', { sessionId: selected.id }).catch(errorHandler)
     await refresh()
   }
+  async function openChat() {
+    try {
+      const opened = await window.prime.openChat()
+      setProjects(await window.prime.projects())
+      await selectProject(opened)
+      const existing: Session[] = await window.prime.call(opened.id, 'sessions')
+      const saved = await window.prime.preferences()
+      const selected =
+        existing.find(
+          (item) => item.id === (opened.currentSessionId || saved.activeSessions?.[opened.path])
+        ) || [...existing].sort((a, b) => (b.updated_at || 0) - (a.updated_at || 0))[0]
+      if (selected) await selectSession(selected)
+    } catch (error) {
+      errorHandler(error)
+    }
+  }
   async function createSession() {
     try {
       const created = await call('createSession', {
@@ -494,6 +514,7 @@ export function useWorkspace() {
     setBusy,
     call,
     refresh,
+    openChat,
     openProject,
     selectProject,
     closeProject,

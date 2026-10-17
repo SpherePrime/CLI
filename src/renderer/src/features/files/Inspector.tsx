@@ -1,3 +1,4 @@
+import { Select } from '../../components/Select'
 import { useEffect, useState } from 'react'
 import {
   ChevronDown,
@@ -89,7 +90,15 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
     {
       label: 'MCP',
       key: 'mcp',
-      entries: Object.entries(w.resources.mcp || {}).map(([name, item]: [string, any]) => ({
+      entries: Object.entries({
+        ...Object.fromEntries(
+          Object.entries(w.config.mcp || {}).map(([name, item]: [string, any]) => [
+            name,
+            { disabled: item.disabled, state: item.disabled ? 'disabled' : 'configured' }
+          ])
+        ),
+        ...w.resources.mcp
+      }).map(([name, item]: [string, any]) => ({
         ...item,
         name
       }))
@@ -97,10 +106,12 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
     {
       label: 'LSP',
       key: 'lsp',
-      entries: Object.entries(w.resources.lsp || {}).map(([name, item]: [string, any]) => ({
-        ...item,
-        name
-      }))
+      entries: Object.entries({ ...w.config.lsp, ...w.resources.lsp }).map(
+        ([name, item]: [string, any]) => ({
+          ...item,
+          name
+        })
+      )
     },
     {
       label: 'Skills',
@@ -184,14 +195,15 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
                 ? t('Все изменения проекта относительно Git HEAD.')
                 : t('Изменения файлов в истории текущего чата. Файлы уже записаны на диск.')}
             </p>
-            <select
-              aria-label={t('Источник сравнения')}
+            <Select
+              label={t('Источник сравнения')}
               value={source}
-              onChange={(event) => setSource(event.target.value as 'session' | 'git')}
-            >
-              <option value="session">{t('История сессии')}</option>
-              <option value="git">{t('Сравнить с Git HEAD')}</option>
-            </select>
+              onChange={(value) => setSource(value as 'session' | 'git')}
+              options={[
+                { value: 'session', label: t('История сессии') },
+                { value: 'git', label: t('Сравнить с Git HEAD') }
+              ]}
+            />
             <button className="quiet" onClick={() => setTreeKey((key) => key + 1)}>
               <RefreshCw size={13} />
               {t('Обновить')}
@@ -262,7 +274,17 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
                       <small>
                         {item.error
                           ? t('Ошибка')
-                          : item.state ||
+                          : (item.state
+                              ? t(
+                                  item.state === 'disabled'
+                                    ? 'Отключено'
+                                    : item.state === 'configured'
+                                      ? 'Настроено'
+                                      : item.state === 'connected'
+                                        ? 'Подключено'
+                                        : item.state
+                                )
+                              : '') ||
                             item.source ||
                             item.description?.slice(0, 70) ||
                             t('Доступно')}

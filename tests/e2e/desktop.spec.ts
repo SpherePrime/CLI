@@ -32,7 +32,19 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
               name: 'Desktop Fixture',
               context_window: 128000,
               default_max_tokens: 8192
-            }
+            },
+            {
+              id: 'secondary-fixture',
+              name: 'Secondary Fixture',
+              context_window: 131072,
+              default_max_tokens: 4096
+            },
+            ...Array.from({ length: 20 }, (_, index) => ({
+              id: 'extra-' + index,
+              name: 'Extra Model ' + index,
+              context_window: 64000,
+              default_max_tokens: 8192
+            }))
           ]
         }
       },
@@ -40,6 +52,12 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
         large: { provider: 'fixture', model: 'desktop-fixture' },
         small: { provider: 'fixture', model: 'desktop-fixture' }
       }
+    })
+  )
+  await writeFile(
+    join(project, 'config', 'mcp.json'),
+    JSON.stringify({
+      mcp: { 'Global Fixture MCP': { type: 'stdio', command: 'fixture-disabled', disabled: true } }
     })
   )
   await writeFile(join(project, 'hello.txt'), 'Desktop fixture')
@@ -66,21 +84,45 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     XDG_DATA_HOME: join(project, 'xdg-data')
   }
   delete env.ELECTRON_RUN_AS_NODE
-  const desktop = await electron.launch({
-    executablePath: process.env.PRIME_DESKTOP_PACKAGED_EXE,
-    args: process.env.PRIME_DESKTOP_PACKAGED_EXE
-      ? [`--user-data-dir=${join(project, 'electron-profile')}`]
-      : [resolve('out/main/index.js'), `--user-data-dir=${join(project, 'electron-profile')}`],
-    env
-  })
+  const launch = () =>
+    electron.launch({
+      executablePath: process.env.PRIME_DESKTOP_PACKAGED_EXE,
+      args: process.env.PRIME_DESKTOP_PACKAGED_EXE
+        ? [`--user-data-dir=${join(project, 'electron-profile')}`]
+        : [resolve('out/main/index.js'), `--user-data-dir=${join(project, 'electron-profile')}`],
+      env
+    })
+  let desktop = await launch()
   const errors: string[] = []
-  const page = await desktop.firstWindow()
+  let page = await desktop.firstWindow()
   page.on('pageerror', (error) => errors.push(error.message))
   try {
-    await expect(page.getByRole('heading', { name: 'От идеи к работающему коду.' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'С чего начнём?' })).toBeVisible()
     await expect
       .poll(() => page.evaluate(() => window.prime.info()), { timeout: 30000 })
       .toMatchObject({ runtime: 'ready' })
+    await expect(page.getByRole('textbox', { name: 'Сообщение Prime' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Поиск и команды' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Ресурсы', exact: true }).click()
+    await expect(page.getByText('Global Fixture MCP', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Файлы', exact: true }).click()
+    await page.getByRole('button', { name: 'Выбрать модель', exact: true }).click()
+    await expect(page.getByRole('listbox', { name: 'Модели' })).toBeVisible()
+    expect(
+      await page
+        .getByRole('listbox', { name: 'Модели' })
+        .evaluate((element) => element.scrollHeight > element.clientHeight)
+    ).toBe(true)
+    await page.screenshot({ path: 'test-results/model-picker.png' })
+    await page.getByRole('option', { name: /Desktop Fixture/ }).click()
+    await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill('Свободный чат без папки')
+    await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
+    await expect(page.locator('.message.assistant .markdown')).toContainText(
+      'Соединение работает.',
+      { timeout: 20000 }
+    )
+    await page.reload()
+    await expect(page.locator('.message.user')).toContainText('Свободный чат без папки')
     const opened = await page.evaluate((project) => window.prime.openProject(project), project)
     expect(opened?.path).toBe(project)
     const session = await page.evaluate(
@@ -161,28 +203,84 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
       { timeout: 15000 }
     )
     await page.getByRole('button', { name: 'Изменения', exact: true }).click()
-    await page.getByRole('combobox', { name: 'Источник сравнения' }).selectOption('git')
+    await page.getByRole('combobox', { name: 'Источник сравнения' }).click()
+    await page.screenshot({ path: 'test-results/compare-picker.png' })
+    await page.getByRole('option', { name: 'Сравнить с Git HEAD' }).click()
     await page.getByRole('button', { name: 'created-by-tool.txt', exact: false }).click()
     await expect(page.locator('.diff-preview')).toContainText('+Tool execution verified')
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click()
     await page.getByRole('button', { name: 'Файлы', exact: true }).click()
     await page.getByRole('button', { name: 'Настройки', exact: false }).first().click()
     await expect(page.getByRole('heading', { name: 'Настройки', exact: true })).toBeVisible()
+    const settingsBounds = await page.locator('.settings-modal').boundingBox()
+    expect(settingsBounds!.width).toBeGreaterThan(1000)
+    expect(settingsBounds!.height).toBeGreaterThan(700)
+    await page.getByRole('combobox', { name: 'Язык интерфейса' }).click()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('heading', { name: 'Настройки', exact: true })).toBeVisible()
+    await expect(page.locator('.prime-popover')).toHaveCount(0)
+    await page.screenshot({ path: 'test-results/settings-appearance.png' })
+    await page.getByRole('button', { name: 'Провайдеры', exact: true }).click()
+    await page.getByRole('button', { name: 'Изменить', exact: true }).click()
+    await page.getByRole('tab', { name: 'Secondary Fixture', exact: false }).click()
+    await expect(page.getByLabel('Контекст', { exact: true })).toHaveValue('131072')
+    await page.getByLabel('Контекст', { exact: true }).fill('262144')
+    await page.getByRole('button', { name: 'Сохранить изменения', exact: true }).click()
+    await expect(page.getByRole('status')).toContainText('Настройки провайдера сохранены')
+    const edited = await page.evaluate((id) => window.prime.call(id!, 'config'), opened?.id)
+    expect(edited.providers.fixture.models).toHaveLength(22)
+    expect(
+      edited.providers.fixture.models.find((item: any) => item.id === 'secondary-fixture')
+    ).toMatchObject({ context_window: 262144, default_max_tokens: 4096 })
+    expect(
+      edited.providers.fixture.models.find((item: any) => item.id === 'desktop-fixture')
+    ).toMatchObject({ context_window: 128000, default_max_tokens: 8192 })
+    await page.screenshot({ path: 'test-results/settings-providers.png' })
+    await page.getByRole('button', { name: 'Интерфейс', exact: true }).click()
     await page.getByRole('button', { name: 'Светлая', exact: false }).click()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
     await page.getByRole('button', { name: 'Тёмная', exact: false }).click()
-    await page.getByLabel('Язык интерфейса').selectOption('en')
+    await page.getByRole('combobox', { name: 'Язык интерфейса' }).click()
+    await page.getByRole('option', { name: 'Английский', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
     await page.getByRole('button', { name: 'Close', exact: true }).click()
     await page.reload()
     await expect(page.getByRole('textbox', { name: 'Message Prime' })).toBeVisible()
     await page.getByRole('button', { name: 'Settings', exact: false }).first().click()
-    await page.getByLabel('Interface language').selectOption('ru')
+    await page.getByRole('combobox', { name: 'Interface language' }).click()
+    await page.getByRole('option', { name: 'Russian', exact: true }).click()
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click()
     await page.screenshot({ path: 'test-results/prime-desktop.png' })
     expect(errors).toEqual([])
-    await page.evaluate((id) => window.prime.closeProject(id!), opened?.id)
+    await page.evaluate(async (id) => {
+      const personal = (await window.prime.projects()).find((item) => item.kind === 'chat')!
+      const original = personal.currentSessionId!
+      await window.prime.call(personal.id, 'createSession', { title: 'Newer personal chat' })
+      await window.prime.call(personal.id, 'currentSession', { sessionId: original })
+      const project = (await window.prime.projects()).find((item) => item.id === id)!
+      await window.prime.call(project.id, 'currentSession', { sessionId: project.currentSessionId })
+    }, opened?.id)
+    await desktop.close()
+    desktop = await launch()
+    page = await desktop.firstWindow()
+    await expect(page.getByRole('textbox', { name: 'Сообщение Prime' })).toBeEnabled({
+      timeout: 20000
+    })
+    await page.getByRole('button', { name: 'Чат без проекта', exact: true }).click()
+    await expect(
+      page.locator('.message.user').getByText('Свободный чат без папки', { exact: true })
+    ).toBeVisible({ timeout: 15000 })
+    const before = provider.prompts.length
+    await page
+      .getByRole('textbox', { name: 'Сообщение Prime' })
+      .fill('Возврат к личному чату после перезапуска')
+    await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
+    await expect.poll(() => provider.prompts.length).toBeGreaterThan(before)
+    await expect(page.getByRole('button', { name: 'Остановить задачу', exact: true })).toHaveCount(
+      0,
+      { timeout: 15000 }
+    )
   } finally {
     await desktop.close()
     await provider.close()

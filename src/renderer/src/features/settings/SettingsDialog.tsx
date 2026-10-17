@@ -1,3 +1,5 @@
+import { ProviderSettings } from './ProviderSettings'
+import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { useState } from 'react'
@@ -25,19 +27,11 @@ export function SettingsDialog({
 }) {
   const { t, language } = useI18n()
   const [tab, setTab] = useState(initial)
-  const [providerId, setProviderId] = useState('custom')
-  const [name, setName] = useState('')
-  const [baseUrl, setBaseUrl] = useState('https://api.deepseek.com/v1')
-  const [type, setType] = useState('openai-compat')
-  const [key, setKey] = useState('')
-  const [model, setModel] = useState('deepseek-chat')
-  const [contextWindow, setContextWindow] = useState(64000)
   const [status, setStatus] = useState('')
   const [saving, setSaving] = useState(false)
   const [field, setField] = useState('options.language')
   const [value, setValue] = useState('"ru"')
   const [scope, setScope] = useState(0)
-  const [removing, setRemoving] = useState('')
   const [channels, setChannels] = useState(
     w.preferences.projectChannels?.[w.project?.path || '']?.join(', ') || ''
   )
@@ -47,53 +41,8 @@ export function SettingsDialog({
     { id: 'advanced', label: t('Настройки Prime'), icon: SlidersHorizontal },
     { id: 'about', label: t('О приложении'), icon: Info }
   ]
-  async function saveProvider() {
-    setSaving(true)
-    setStatus('')
-    try {
-      if (!/^[a-z0-9_-]+$/i.test(providerId))
-        throw new Error(t('ID провайдера: латиница, цифры, _ и -'))
-      const url = new URL(baseUrl)
-      if (!['http:', 'https:'].includes(url.protocol))
-        throw new Error(t('Нужен HTTP/HTTPS адрес API'))
-      const existing = w.config.providers?.[providerId]
-      const previousModels: any[] = existing?.models || []
-      const editedModel = model
-        ? {
-            ...previousModels.find((item) => item.id === model),
-            id: model,
-            name: model,
-            context_window: contextWindow,
-            default_max_tokens:
-              previousModels.find((item) => item.id === model)?.default_max_tokens || 8192
-          }
-        : null
-      const entry = {
-        id: providerId,
-        name: name || providerId,
-        base_url: baseUrl,
-        type,
-        discover_models: true,
-        models: editedModel
-          ? [...previousModels.filter((item) => item.id !== model), editedModel]
-          : previousModels
-      }
-      for (const [field, value] of Object.entries(entry))
-        await w.call('configSet', { key: `providers.${providerId}.${field}`, value, scope })
-      if (key) await w.call('providerKey', { providerId, key, scope })
-      if (model) await w.call('model', { scope, model: { provider: providerId, model } })
-      await w.call('init')
-      setKey('')
-      setStatus(t('Провайдер сохранён, агент готов к работе'))
-      await w.refresh()
-    } catch (error: any) {
-      setStatus(error.message)
-    } finally {
-      setSaving(false)
-    }
-  }
   return (
-    <Modal title={t('Настройки')} close={close} wide>
+    <Modal title={t('Настройки')} close={close} wide className="settings-modal">
       <div className="settings-layout">
         <nav>
           {tabs.map((item) => (
@@ -117,15 +66,17 @@ export function SettingsDialog({
               <p className="muted">{t('Оформление приложения сохраняется на этом устройстве.')}</p>
               <label className="form-label">
                 {t('Язык интерфейса')}
-                <select
+                <Select
+                  label={t('Язык интерфейса')}
                   value={language}
-                  onChange={(event) =>
-                    void w.savePreferences({ language: event.target.value as 'ru' | 'en' })
-                  }
-                >
-                  <option value="ru">{t('Русский')}</option>
-                  <option value="en">{t('Английский')}</option>
-                </select>
+                  onChange={(value) => {
+                    void w.savePreferences({ language: value as 'ru' | 'en' })
+                  }}
+                  options={[
+                    { value: 'ru', label: t('Русский') },
+                    { value: 'en', label: t('Английский') }
+                  ]}
+                />
               </label>
               <label className="form-label">{t('Цветовая тема')}</label>
               <div className="theme-options">
@@ -150,7 +101,7 @@ export function SettingsDialog({
               <div className="settings-note">
                 <strong>{t('Клавиатура')}</strong>
                 <p>
-                  {t('Ctrl+N — новый чат · Ctrl+P — команды · Ctrl+L — модели')}
+                  {t('Ctrl+N — новый чат · Ctrl+L — модели')}
                   <br />
                   {t('Shift+Enter — новая строка · двойной Esc — остановить задачу')}
                   <br />
@@ -159,158 +110,7 @@ export function SettingsDialog({
               </div>
             </>
           )}
-          {tab === 'providers' && (
-            <>
-              <h3>{t('Подключение к модели')}</h3>
-              <p className="muted">
-                {t(
-                  'Используются настройки и провайдеры Prime. Ключ хранится в конфигурации backend.'
-                )}
-              </p>
-              <div className="provider-presets">
-                {[
-                  {
-                    id: 'deepseek',
-                    name: 'DeepSeek',
-                    url: 'https://api.deepseek.com/v1',
-                    model: 'deepseek-chat'
-                  },
-                  {
-                    id: 'openai',
-                    name: 'OpenAI',
-                    url: 'https://api.openai.com/v1',
-                    model: 'gpt-4.1'
-                  },
-                  { id: 'ollama', name: 'Ollama', url: 'http://localhost:11434/v1', model: '' }
-                ].map((preset) => (
-                  <button
-                    key={preset.id}
-                    onClick={() => {
-                      setProviderId(preset.id)
-                      setName(preset.name)
-                      setBaseUrl(preset.url)
-                      setModel(preset.model)
-                      setType(preset.id === 'ollama' ? 'ollama' : 'openai-compat')
-                    }}
-                  >
-                    {preset.name}
-                  </button>
-                ))}
-              </div>
-              <div className="form-grid">
-                <label className="form-label">
-                  ID
-                  <input
-                    value={providerId}
-                    onChange={(event) => setProviderId(event.target.value)}
-                  />
-                </label>
-                <label className="form-label">
-                  {t('Название')}
-                  <input value={name} onChange={(event) => setName(event.target.value)} />
-                </label>
-              </div>
-              <label className="form-label">
-                {t('Адрес API')}
-                <input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} />
-              </label>
-              <label className="form-label">
-                {t('Формат API')}
-                <select value={type} onChange={(event) => setType(event.target.value)}>
-                  <option value="openai-compat">{t('Совместимый с OpenAI')}</option>
-                  <option value="openai">OpenAI</option>
-                  <option value="anthropic">Anthropic</option>
-                  <option value="ollama">Ollama</option>
-                </select>
-              </label>
-              <label className="form-label">
-                {t('API ключ')}
-                <input
-                  type="password"
-                  autoComplete="off"
-                  value={key}
-                  onChange={(event) => setKey(event.target.value)}
-                  placeholder={t('Не требуется для локального сервера')}
-                />
-              </label>
-              <div className="form-grid">
-                <label className="form-label">
-                  {t('ID модели')}
-                  <input value={model} onChange={(event) => setModel(event.target.value)} />
-                </label>
-                <label className="form-label">
-                  {t('Контекст')}
-                  <input
-                    type="number"
-                    min={1024}
-                    value={contextWindow}
-                    onChange={(event) => setContextWindow(Number(event.target.value))}
-                  />
-                </label>
-              </div>
-              <button
-                className="primary"
-                disabled={saving || !w.project}
-                onClick={() => void saveProvider()}
-              >
-                {saving ? t('Подключаем…') : t('Сохранить и подключить')}
-              </button>
-              <h4>{t('Настроенные провайдеры')}</h4>
-              {Object.entries(w.config.providers || {}).map(([id, provider]: [string, any]) => (
-                <div key={id} className="configured-provider">
-                  <span>
-                    {provider.name || id}
-                    <small>{provider.base_url}</small>
-                  </span>
-                  <button
-                    className="quiet"
-                    onClick={() => {
-                      setProviderId(id)
-                      setName(provider.name || id)
-                      setBaseUrl(provider.base_url || '')
-                      setType(provider.type || 'openai-compat')
-                      setModel(provider.models?.[0]?.id || '')
-                    }}
-                  >
-                    {t('Изменить')}
-                  </button>
-                  {removing === id ? (
-                    <button
-                      className="danger"
-                      onClick={() =>
-                        void w
-                          .call('configRemove', { key: `providers.${id}`, scope })
-                          .then(w.refresh)
-                          .then(() => setRemoving(''))
-                          .catch(w.errorHandler)
-                      }
-                    >
-                      {t('Подтвердить')}
-                    </button>
-                  ) : (
-                    <button className="quiet" onClick={() => setRemoving(id)}>
-                      {t('Удалить')}
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                className="quiet"
-                disabled={!w.project}
-                onClick={() =>
-                  void w
-                    .call('importCopilot')
-                    .then(() => {
-                      setStatus(t('Учётные данные Copilot импортированы'))
-                      return w.refresh()
-                    })
-                    .catch((error) => setStatus(error.message))
-                }
-              >
-                {t('Импортировать авторизацию Copilot')}
-              </button>
-            </>
-          )}
+          {tab === 'providers' && <ProviderSettings workspace={w} scope={scope} />}
           {tab === 'advanced' && (
             <>
               <h3>{t('Конфигурация Prime')}</h3>
@@ -319,10 +119,15 @@ export function SettingsDialog({
               </p>
               <label className="form-label">
                 {t('Область')}
-                <select value={scope} onChange={(event) => setScope(Number(event.target.value))}>
-                  <option value={0}>{t('Глобально')}</option>
-                  <option value={1}>{t('Этот проект')}</option>
-                </select>
+                <Select
+                  label={t('Область')}
+                  value={String(scope)}
+                  onChange={(value) => setScope(Number(value))}
+                  options={[
+                    { value: '0', label: t('Глобально') },
+                    { value: '1', label: t('Этот проект') }
+                  ]}
+                />
               </label>
               <label className="form-label">
                 {t('Ключ')}

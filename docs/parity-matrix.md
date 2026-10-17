@@ -4,6 +4,7 @@ Source: CLI revision recorded in `runtime/manifest.json`; reviewed against works
 
 | CLI capability | Desktop location | Current evidence |
 |---|---|---|
+| Personal chats before project selection | Sidebar and composer | Real backend message, global MCP fixture and reload before folder open |
 | Projects and context | Folder picker, recent projects; backend context discovery | Real Electron project-open test, Cyrillic path |
 | Session create/list/history | Sidebar and conversation | Real CLI session and renderer-reload test |
 | Rename/delete/pin | Session action menu | Implemented; pin is a Desktop preference |
@@ -13,13 +14,13 @@ Source: CLI revision recorded in `runtime/manifest.json`; reviewed against works
 | Queue and cancel | Composer queue and Stop | API integration; isolated backend cancellation tests |
 | Plan and normal agent | Composer mode selector | Existing backend main-agent API; uses general/plan |
 | YOLO | Persistent composer permission indicator | Existing skip-permissions API |
-| Model/provider/reasoning | Model picker and Settings | Go capability/reasoning tests; settings use backend config scopes |
+| Model/provider/reasoning | Anchored model list and provider/model editor | Go capability/reasoning tests; settings use backend config scopes |
 | Local/custom endpoints | Provider form | Local fixture provider tested |
 | Large/small model | Model picker tabs | Existing model_type API |
 | Session tokens/cost/todos | Status bar and task panel | Backend values, never estimated by UI |
-| Summarization | /compact and command palette | Existing summarize API |
+| Summarization | Chat actions → Summarize context | Existing summarize API |
 | Direct shell | Composer prefix ! | Existing shell API, HTTP cancellation and main activity tracking |
-| Custom commands | Slash suggestions and palette | Typed argument form, literal placeholder substitution and skill preparation |
+| Custom commands | Chat actions → Prompt templates | GUI prompt templates under Chat actions; typed argument form and literal substitution |
 | Attachments | Native file picker | Main stores chosen files and serializes real proto.Attachments |
 | File tree/preview | Inspector Files | Boundary and junction tests; root ignore rules; 2 MiB preview limit |
 | Session/Git diffs | Inspector Changes | Full worktree status; renamed/deleted/untracked diff integration tests |

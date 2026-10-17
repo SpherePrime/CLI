@@ -19,6 +19,16 @@
 
 - Permission-start notifications never resolve or hide an outstanding approval. A hook-level Electron regression covers start → request → snapshot → explicit resolution; the final packaged full scenario passed twice consecutively.
 
+## Version 0.2.0 interface acceptance
+
+- Returning to personal chats after a remembered project and full process restart restores the persisted selected conversation; a subsequent real provider prompt passes.
+- No folder required: the packaged CLI starts with Desktop, creates its private persistent chat workspace, loads global split configuration and connects resource events. Real Electron acceptance sends a message and restores it after reload before opening any project.
+- Global MCP fixture in a separate mcp.json is visible in Resources before selecting a folder. Configured services remain visible even before connection status arrives. Existing user configuration is read by Prime rather than copied or reset.
+- Model picker is anchored to the composer, searches and scrolls a 22-model catalog; the command palette and slash-command navigation are removed. Normal buttons expose chat actions and prompt templates.
+- All dropdowns use themed listboxes with keyboard support, including controls inside native modal dialogs. Escape closes only the list and leaves Settings open. Numeric fields hide browser spinners.
+- Provider editor shows every configured model and preserves its full metadata while editing context/response limits. A real backend test edits the second model and verifies all 22 entries and the unchanged first model.
+- Settings use a larger responsive panel with readable fields; window chrome uses the SpherePrime titlebar and Windows overlay controls, including native drag/snap and controls available while a modal is open.
+
 ## Public release requirements
 
 - No public Desktop repository or update-feed destination has been assigned. The updater reports an unavailable feed; no release was published.

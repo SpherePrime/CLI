@@ -6,13 +6,14 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  nativeTheme,
   Notification,
   session,
   shell,
   Tray
 } from 'electron'
 import { join, basename, extname } from 'node:path'
-import { readFile, stat } from 'node:fs/promises'
+import { mkdir, readFile, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { RuntimeSupervisor } from './runtime/supervisor'
@@ -75,6 +76,7 @@ async function recoverBackend(): Promise<void> {
       for (const project of previous) {
         try {
           const recovered = await recoveredService.open(project.path, project.channels)
+          recovered.kind = project.kind
           if (project.currentSessionId)
             await recoveredService.call(recovered.id, 'currentSession', {
               sessionId: project.currentSessionId
@@ -174,6 +176,14 @@ function registerIpc(): void {
     packaged: app.isPackaged,
     update: updateStatus
   }))
+  handle('openChat', async () => {
+    const path = join(app.getPath('userData'), 'Chats')
+    await mkdir(path, { recursive: true })
+    const workspace = await requirePrime().open(path)
+    workspace.kind = 'chat'
+    await settings.update({ activeProject: workspace.path })
+    return workspace
+  })
   handle('projects', () => [...requirePrime().projects.values()])
   handle('openProject', async (path?: string) => {
     if (
@@ -296,6 +306,7 @@ function registerIpc(): void {
       .parse(patch)
     const updated = await settings.update(valid)
     if (valid.language) refreshTrayMenu()
+    if (valid.theme) syncTitlebar()
     return updated
   })
   handle('openExternal', (url: string) =>
@@ -336,6 +347,15 @@ function registerIpc(): void {
     }
   })
 }
+function syncTitlebar(): void {
+  const theme = settings.get().theme
+  const dark = theme === 'system' ? nativeTheme.shouldUseDarkColors : theme !== 'light'
+  window?.setTitleBarOverlay({
+    color: dark ? '#131313' : '#efede7',
+    symbolColor: dark ? '#f1efe9' : '#17110d',
+    height: 40
+  })
+}
 function createWindow(): void {
   window = new BrowserWindow({
     width: 1440,
@@ -347,6 +367,8 @@ function createWindow(): void {
       ? join(process.resourcesPath, 'icon.png')
       : join(import.meta.dirname, '../../build/icon.png'),
     title: 'Prime Desktop',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#131313', symbolColor: '#f1efe9', height: 40 },
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
@@ -355,6 +377,7 @@ function createWindow(): void {
       sandbox: true
     }
   })
+  syncTitlebar()
   window.webContents.setWindowOpenHandler(({ url }) => {
     try {
       void shell.openExternal(validateExternalUrl(url))
@@ -389,6 +412,7 @@ else {
     )
     registerIpc()
     createWindow()
+    nativeTheme.on('updated', syncTitlebar)
     const image = nativeImage
       .createFromPath(
         app.isPackaged
