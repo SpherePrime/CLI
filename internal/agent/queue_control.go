@@ -26,7 +26,8 @@ func (a *sessionAgent) QueueEntries(sessionID string) []QueuedPrompt {
 	mu := a.sessionMu(sessionID)
 	mu.Lock()
 	defer mu.Unlock()
-	calls, _ := a.messageQueue.Get(sessionID)
+	stored, _ := a.messageQueue.Get(sessionID)
+	calls := append([]SessionAgentCall(nil), stored...)
 	entries := make([]QueuedPrompt, len(calls))
 	for i := range calls {
 		if calls[i].queueID == "" {
