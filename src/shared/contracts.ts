@@ -98,6 +98,7 @@ export type Operation =
   | 'importCopilot'
   | 'refreshOAuth'
 export interface DesktopApi {
+  changes(workspaceId: string): Promise<{ path: string; status: string; originalPath?: string }[]>
   info(): Promise<Json>
   projects(): Promise<Project[]>
   openProject(path?: string): Promise<Project | null>

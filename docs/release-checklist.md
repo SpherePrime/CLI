@@ -13,6 +13,11 @@
 - The same full Electron scenario passed against `release/win-unpacked/PrimeDesktop.exe`, using its packaged assets and bundled runtime rather than development files.
 - Structured custom-command arguments and MCP prompt preparation, explicit channel opt-in and workspace-scoped channel display are implemented.
 - SQLite migration backup and newer-schema rejection passed Go tests. These do not substitute for a full installer upgrade test on a separate VM.
+- Git worktree discovery covers modified, deleted, renamed and untracked files; integration checks verify HEAD comparisons without modifying workspace content. Files honor root .gitignore and .primeignore rules.
+- English/Russian renderer and native tray/dialog/notification labels share a translation catalog. The persisted language switch passed real Electron reload acceptance. Provider content and backend diagnostics retain their original language.
+- A real Electron component test scrolled 1,000 variable-height messages, verified fewer than 40 mounted message elements, retained the beginning while a new answer arrived and jumped back to the newest answer.
+
+- Permission-start notifications never resolve or hide an outstanding approval. A hook-level Electron regression covers start → request → snapshot → explicit resolution; the final packaged full scenario passed twice consecutively.
 
 ## Public release requirements
 
@@ -20,7 +25,6 @@
 - The local Windows installer is not digitally signed. Production signing needs a certificate and release secrets.
 - Clean-VM installation/upgrade/downgrade, physical microphone, sleep/wake and multi-process external-CLI database access need separate acceptance evidence.
 - Backend event replay remains unsupported. Recovery uses current persistent message/session snapshots plus buffered live events and pending-request snapshots. No replay guarantee is advertised by capabilities.
-- Remaining functional acceptance includes complete Git worktree-status discovery, English interface localization and long-history virtualization/performance checks. Current history remains available through the older-message control.
 - Existing-data upgrade/downgrade behavior needs installer-level acceptance before automatic deployment over established user installations.
 
 The application is a functional local build. These remaining items prevent calling it a completed production release matching every criterion in the original comprehensive plan.

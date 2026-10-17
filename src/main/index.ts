@@ -1,3 +1,4 @@
+import { translate } from '../shared/localization'
 import {
   app,
   BrowserWindow,
@@ -19,6 +20,7 @@ import { PrimeService } from './prime/service'
 import { SettingsStore } from './settings/store'
 import { listFiles, readProjectFile, fileDiff } from './files/browser'
 import { resolveProjectPath } from './files/paths'
+import { gitChanges } from './files/git'
 import { validateExternalUrl } from './ipc/security'
 import type { Operation } from '../shared/contracts'
 
@@ -32,6 +34,7 @@ let settings: SettingsStore
 let runtimeError = ''
 let updateStatus: any = { state: 'idle' }
 let recovering = false
+const t = (source: string) => translate(settings?.get().language, source)
 const restarts: number[] = []
 const attachmentStore = new Map<string, any>()
 const projectId = z.string().uuid()
@@ -48,7 +51,7 @@ const emit = (event: any) => {
   if (event.type === 'run_complete' && window && !window.isFocused()) {
     new Notification({
       title: 'Prime Desktop',
-      body: event.payload?.data?.error ? 'Задача завершилась с ошибкой' : 'Задача завершена'
+      body: event.payload?.data?.error ? t('Задача завершилась с ошибкой') : t('Задача завершена')
     })
       .on('click', () => {
         window?.show()
@@ -91,7 +94,7 @@ async function recoverBackend(): Promise<void> {
         status: 'failed',
         error:
           runtimeError ||
-          'Не удалось восстановить Prime после трёх попыток. Перезапустите приложение.'
+          t('Не удалось восстановить Prime после трёх попыток. Перезапустите приложение.')
       }
     })
   } finally {
@@ -99,7 +102,7 @@ async function recoverBackend(): Promise<void> {
   }
 }
 function requirePrime(): PrimeService {
-  if (!prime) throw new Error(runtimeError || 'Prime ещё запускается')
+  if (!prime) throw new Error(runtimeError || t('Prime ещё запускается'))
   return prime
 }
 function handle(name: string, handler: (...args: any[]) => any): void {
@@ -109,7 +112,7 @@ function handle(name: string, handler: (...args: any[]) => any): void {
       event.sender !== window.webContents ||
       event.senderFrame !== window.webContents.mainFrame
     )
-      throw new Error('Недопустимый источник запроса')
+      throw new Error(t('Недопустимый источник запроса'))
     return handler(...args)
   })
 }
@@ -130,7 +133,39 @@ async function startRuntime(notify = true): Promise<void> {
     emit({ type: 'runtime', payload: { status: 'failed', error: runtimeError } })
   }
 }
+function refreshTrayMenu(): void {
+  tray?.setContextMenu(
+    Menu.buildFromTemplate([
+      {
+        label: t('Открыть Prime'),
+        click: () => {
+          window?.show()
+          window?.focus()
+        }
+      },
+      { type: 'separator' },
+      {
+        label: t('Выйти'),
+        click: async () => {
+          if (prime?.isBusy()) {
+            const { response } = await dialog.showMessageBox(window!, {
+              type: 'question',
+              message: t('Остановить задачи и выйти?'),
+              buttons: [t('Продолжить работу'), t('Остановить и выйти')],
+              defaultId: 0,
+              cancelId: 0
+            })
+            if (response !== 1) return
+          }
+          quitting = true
+          app.quit()
+        }
+      }
+    ])
+  )
+}
 function registerIpc(): void {
+  handle('changes', (id: string) => gitChanges(requirePrime().root(projectId.parse(id))))
   handle('info', () => ({
     version: app.getVersion(),
     runtime: runtime?.status || 'starting',
@@ -146,11 +181,11 @@ function registerIpc(): void {
       !settings.get().recent.includes(path) &&
       path !== process.env.PRIME_DESKTOP_TEST_PROJECT
     )
-      throw new Error('Папку нужно выбрать через диалог')
+      throw new Error(t('Папку нужно выбрать через диалог'))
     if (!path) {
       const result = await dialog.showOpenDialog(window!, {
         properties: ['openDirectory'],
-        title: 'Открыть проект'
+        title: t('Открыть проект')
       })
       if (result.canceled) return null
       path = result.filePaths[0]
@@ -167,7 +202,7 @@ function registerIpc(): void {
     return project
   })
   handle('closeProject', async (id: string) => {
-    if (requirePrime().isBusy()) throw new Error('Сначала завершите активные задачи')
+    if (requirePrime().isBusy()) throw new Error(t('Сначала завершите активные задачи'))
     await requirePrime().close(projectId.parse(id))
     await settings.update({ activeProject: '' })
   })
@@ -180,7 +215,7 @@ function registerIpc(): void {
       Array.isArray(args) ||
       JSON.stringify(args).length > 30 * 1024 * 1024
     )
-      throw new Error('Некорректные параметры запроса')
+      throw new Error(t('Некорректные параметры запроса'))
     if (operation === 'send') {
       z.string().uuid().parse(args.runId)
       z.string()
@@ -189,7 +224,7 @@ function registerIpc(): void {
         .parse(args.prompt)
       args.attachments = (args.attachmentIds || []).map((key: string) => {
         const attachment = attachmentStore.get(key)
-        if (!attachment) throw new Error('Вложение больше недоступно')
+        if (!attachment) throw new Error(t('Вложение больше недоступно'))
         return attachment
       })
     }
@@ -232,7 +267,7 @@ function registerIpc(): void {
     }
     for (const path of result.filePaths) {
       const info = await stat(path)
-      if (info.size > 20 * 1024 * 1024) throw new Error('Вложение больше 20 MiB')
+      if (info.size > 20 * 1024 * 1024) throw new Error(t('Вложение больше 20 MiB'))
       const id = randomUUID()
       attachmentStore.set(id, {
         file_path: path,
@@ -259,7 +294,9 @@ function registerIpc(): void {
           .optional()
       })
       .parse(patch)
-    return settings.update(valid)
+    const updated = await settings.update(valid)
+    if (valid.language) refreshTrayMenu()
+    return updated
   })
   handle('openExternal', (url: string) =>
     shell.openExternal(validateExternalUrl(z.string().max(8192).parse(url)))
@@ -271,9 +308,9 @@ function registerIpc(): void {
   })
   handle('update', async (action: string) => {
     if (!app.isPackaged)
-      return { state: 'unavailable', message: 'Обновления доступны в установленном приложении' }
+      return { state: 'unavailable', message: t('Обновления доступны в установленном приложении') }
     if (action === 'install' && requirePrime().isBusy())
-      throw new Error('Сначала завершите активные задачи')
+      throw new Error(t('Сначала завершите активные задачи'))
     try {
       const { autoUpdater } = await import('electron-updater')
       if (action === 'install') {
@@ -292,7 +329,10 @@ function registerIpc(): void {
       }
       return updateStatus
     } catch {
-      return { state: 'unavailable', message: 'Канал обновлений ещё не настроен для этой сборки' }
+      return {
+        state: 'unavailable',
+        message: t('Канал обновлений ещё не настроен для этой сборки')
+      }
     }
   })
 }
@@ -328,7 +368,7 @@ function createWindow(): void {
       window?.hide()
       new Notification({
         title: 'Prime Desktop',
-        body: 'Задачи продолжают работать. Приложение доступно в трее.'
+        body: t('Задачи продолжают работать. Приложение доступно в трее.')
       }).show()
     }
   })
@@ -359,35 +399,7 @@ else {
     tray = new Tray(image)
     tray.setToolTip('Prime Desktop')
     tray.on('double-click', () => window?.show())
-    tray.setContextMenu(
-      Menu.buildFromTemplate([
-        {
-          label: 'Открыть Prime',
-          click: () => {
-            window?.show()
-            window?.focus()
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Выйти',
-          click: async () => {
-            if (prime?.isBusy()) {
-              const { response } = await dialog.showMessageBox(window!, {
-                type: 'question',
-                message: 'Остановить задачи и выйти?',
-                buttons: ['Продолжить работу', 'Остановить и выйти'],
-                defaultId: 0,
-                cancelId: 0
-              })
-              if (response !== 1) return
-            }
-            quitting = true
-            app.quit()
-          }
-        }
-      ])
-    )
+    refreshTrayMenu()
     await startRuntime()
   })
   app.on('window-all-closed', () => {

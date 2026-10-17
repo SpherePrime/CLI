@@ -6,9 +6,9 @@
 
 **Architecture:** React общается с Electron main через узкий preload. Main запускает встроенный `prime.exe server`, использует HTTP/SSE через named pipe и управляет жизненным циклом. Существующая Go-логика Prime остаётся единственным источником поведения агента и его данных.
 
-**Tech Stack:** Electron, React, TypeScript strict, Vite, Radix, Lucide, Zustand, TanStack Query, Zod, react-markdown, Monaco, Vitest, Testing Library, Playwright Electron, electron-builder/electron-updater; Go существующего CLI.
+**Tech Stack (реализация):** Electron, React, TypeScript strict, Vite, Lucide, React state/context, TanStack Virtual, Zod, react-markdown, read-only diff previews, Vitest, Playwright Electron, electron-builder/electron-updater; Go существующего CLI.
 
-**Spec:** `../specs/2026-10-17-prime-desktop-design.md`. Читать оба документа. Проектное предложение; реализация в этом запросе не выполнялась.
+**Spec:** `../specs/2026-10-17-prime-desktop-design.md`. Читать оба документа. Исходный план; фактический статус реализации приведён ниже и в release checklist.
 
 ## Global Constraints
 
@@ -19,6 +19,10 @@
 - Не добавлять атрибуцию моделей в код, документацию, коммиты и PR. README писать кратко на английском.
 - Следовать действующим AGENTS.md каждого репозитория; пользовательские изменения не перезаписывать. Перед реализацией получить remote state и сравнить его с текущим checkout.
 - Это единый объём поставки: завершение отдельной задачи не означает готовность приложения к релизу.
+
+## Статус реализации на 17 октября 2026
+
+Локальное Windows-приложение и NSIS-пакет реализованы. Фактическое покрытие и доказательства проверок: [матрица функций](../../parity-matrix.md) и [проверки выпуска](../../release-checklist.md). Исходные пункты ниже сохранены как проектный объём; неподтверждённые VM/hardware и внешние условия публикации перечислены отдельно в release checklist. Дизайн обновлён по sphereprime.ru: [бренд](../../brand.md).
 
 ## 1. Границы репозиториев и структура
 

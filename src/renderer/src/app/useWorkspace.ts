@@ -100,7 +100,7 @@ export function useWorkspace() {
             ...pendingPermissions.filter((item) => item.id !== event.data.id),
             event.data
           ]
-        if (event.type === 'permission_notification')
+        if (event.type === 'permission_notification' && (event.data.granted || event.data.denied))
           pendingPermissions = pendingPermissions.filter(
             (item) => item.tool_call_id !== event.data.tool_call_id
           )
@@ -288,7 +288,7 @@ export function useWorkspace() {
       }
       if (event.type === 'permission_request')
         setPermissions((items) => [...items.filter((item) => item.id !== payload.id), payload])
-      if (event.type === 'permission_notification') {
+      if (event.type === 'permission_notification' && (payload.granted || payload.denied)) {
         resolvedPermissions.current.add(`${event.workspaceId}:${payload.tool_call_id}`)
         setPermissions((items) =>
           items.filter((item) => item.tool_call_id !== payload.tool_call_id)

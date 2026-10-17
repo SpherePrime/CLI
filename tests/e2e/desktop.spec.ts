@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { test, expect, _electron as electron } from '@playwright/test'
 import { mkdtemp, writeFile, mkdir, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -42,6 +43,15 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     })
   )
   await writeFile(join(project, 'hello.txt'), 'Desktop fixture')
+  await writeFile(
+    join(project, '.gitignore'),
+    'config/\ncache/\nglobal-data/\nelectron-profile/\nxdg-*/\n.prime/\n'
+  )
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: project, windowsHide: true })
+  git('init')
+  git('config', 'core.autocrlf', 'false')
+  git('add', '.')
+  git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-m', 'fixture')
   const env: Record<string, string> = {
     ...Object.fromEntries(
       Object.entries(process.env).filter(
@@ -150,11 +160,25 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
       0,
       { timeout: 15000 }
     )
+    await page.getByRole('button', { name: 'Изменения', exact: true }).click()
+    await page.getByRole('combobox', { name: 'Источник сравнения' }).selectOption('git')
+    await page.getByRole('button', { name: 'created-by-tool.txt', exact: false }).click()
+    await expect(page.locator('.diff-preview')).toContainText('+Tool execution verified')
+    await page.getByRole('button', { name: 'Закрыть', exact: true }).click()
+    await page.getByRole('button', { name: 'Файлы', exact: true }).click()
     await page.getByRole('button', { name: 'Настройки', exact: false }).first().click()
     await expect(page.getByRole('heading', { name: 'Настройки', exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Светлая', exact: false }).click()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
     await page.getByRole('button', { name: 'Тёмная', exact: false }).click()
+    await page.getByLabel('Язык интерфейса').selectOption('en')
+    await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
+    await page.reload()
+    await expect(page.getByRole('textbox', { name: 'Message Prime' })).toBeVisible()
+    await page.getByRole('button', { name: 'Settings', exact: false }).first().click()
+    await page.getByLabel('Interface language').selectOption('ru')
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click()
     await page.screenshot({ path: 'test-results/prime-desktop.png' })
     expect(errors).toEqual([])

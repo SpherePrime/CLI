@@ -1,19 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
-import { english } from './catalog'
 
-export type Language = 'ru' | 'en'
-export type TranslationValues = Record<string, string | number>
-
-export function translate(
-  language: Language | undefined,
-  source: string,
-  values: TranslationValues = {}
-) {
-  const text = language === 'en' ? (english[source] ?? source) : source
-  return text.replace(/\{(\w+)\}/g, (placeholder, key: string) =>
-    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : placeholder
-  )
-}
+import { translate, type Language, type TranslationValues } from '../../../shared/localization'
+export { translate } from '../../../shared/localization'
+export type { Language, TranslationValues } from '../../../shared/localization'
 
 function createI18n(language: Language) {
   return {

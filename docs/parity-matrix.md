@@ -21,14 +21,16 @@ Source: CLI revision recorded in `runtime/manifest.json`; reviewed against works
 | Direct shell | Composer prefix ! | Existing shell API, HTTP cancellation and main activity tracking |
 | Custom commands | Slash suggestions and palette | Typed argument form, literal placeholder substitution and skill preparation |
 | Attachments | Native file picker | Main stores chosen files and serializes real proto.Attachments |
-| File tree/preview | Inspector Files | Boundary and junction tests; 2 MiB preview limit |
-| Session/Git diffs | Inspector Changes | Read-only comparison; full worktree status discovery tracked separately |
+| File tree/preview | Inspector Files | Boundary and junction tests; root ignore rules; 2 MiB preview limit |
+| Session/Git diffs | Inspector Changes | Full worktree status; renamed/deleted/untracked diff integration tests |
 | MCP states/auth/resources/prompts | Inspector Resources, command preparation and advanced settings | Argument form and real backend prompt fetch; scoped opt-in channel delivery; Docker toggles |
 | LSP diagnostics/start/stop | Inspector Resources | Existing LSP API |
 | Skills catalog/read | Inspector Resources | Existing catalog/read API |
 | Background shells | Inspector Tasks | Session-filtered backend jobs API |
 | Plugins install/toggle/progress | Plugins dialog | Go plugin installation concurrency tests |
 | Voice input | Alt+V / microphone button | WAV conversion + real backend transcription HTTP fixture; hardware check pending |
+| Language | RU/EN preferences and native menus | Persisted language/reload Electron test; backend/provider content retains its language |
+| Long conversations | Virtual message list | Real Electron test with 1,000 variable-height messages and fewer than 40 mounted rows |
 | Theme and keyboard | Settings and shortcuts | Real Electron dark/light test and manual layout inspection |
 | Close/tray | Main process lifecycle | Run activity regression tests; clean-VM lifecycle acceptance pending |
 | Durable run deduplication | Bundled backend | SQLite reopen/no-redispatch tests |

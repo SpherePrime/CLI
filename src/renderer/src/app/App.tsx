@@ -281,7 +281,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             )}
           </section>
         ) : (
-          <MessageList messages={w.messages} busy={w.busy} />
+          <MessageList key={w.session?.id || 'new'} messages={w.messages} busy={w.busy} />
         )}
         <Approvals workspace={w} />
         <Composer workspace={w} onModels={() => setModal('models')} />

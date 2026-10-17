@@ -1,17 +1,27 @@
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
+import ignore from 'ignore'
 import { createTwoFilesPatch } from 'diff'
 import { resolveProjectPath } from './paths'
-const run = promisify(execFile)
+import { gitFileDiff } from './git'
 export async function listFiles(root: string, path = ''): Promise<any[]> {
   const absolute = await resolveProjectPath(root, path)
   const entries = await readdir(absolute, { withFileTypes: true })
+  const rules = ignore()
+  for (const filename of ['.gitignore', '.primeignore']) {
+    try {
+      rules.add(await readFile(await resolveProjectPath(root, filename), 'utf8'))
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') throw error
+    }
+  }
   return entries
     .filter(
       (entry) =>
-        !['.git', 'node_modules', '.superpowers', '.env', '.env.local'].includes(entry.name)
+        !['.git', 'node_modules', '.superpowers', '.env', '.env.local'].includes(entry.name) &&
+        !rules.ignores(
+          join(path, entry.name).replaceAll('\\', '/') + (entry.isDirectory() ? '/' : '')
+        )
     )
     .map((entry) => ({
       name: entry.name,
@@ -46,36 +56,21 @@ export async function fileDiff(
   source: 'session' | 'git',
   history: any[]
 ): Promise<any> {
+  if (source === 'git') return gitFileDiff(root, path)
   let after = ''
   try {
     after = (await readProjectFile(root, path)).content || ''
   } catch (error: any) {
     if (error.code !== 'ENOENT') throw error
   }
-  let before = ''
-  if (source === 'git') {
-    try {
-      before = (
-        await run('git', ['show', `HEAD:${path.replaceAll('\\', '/')}`], {
-          cwd: root,
-          windowsHide: true,
-          maxBuffer: 4 * 1024 * 1024
-        })
-      ).stdout
-    } catch (error: any) {
-      if (!error.stderr?.includes('exists on disk') && !error.stderr?.includes('does not exist'))
-        throw new Error('Git-сравнение недоступно: проверьте репозиторий и установленный Git')
-    }
-  } else {
-    const files = history
-      .filter(
-        (file) =>
-          file.path === path ||
-          file.path?.replaceAll('\\', '/').endsWith('/' + path.replaceAll('\\', '/'))
-      )
-      .sort((a, b) => a.version - b.version)
-    if (!files.length) throw new Error('Для файла нет версии в истории этой сессии')
-    before = files[0].content
-  }
+  const files = history
+    .filter(
+      (file) =>
+        file.path === path ||
+        file.path?.replaceAll('\\', '/').endsWith('/' + path.replaceAll('\\', '/'))
+    )
+    .sort((a, b) => a.version - b.version)
+  if (!files.length) throw new Error('Для файла нет версии в истории этой сессии')
+  const before = files[0].content
   return { path, source, before, after, patch: createTwoFilesPatch(path, path, before, after) }
 }

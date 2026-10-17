@@ -18,16 +18,41 @@ import {
 } from 'lucide-react'
 import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
+import { useI18n } from '../../i18n'
 
 export function Inspector({ workspace: w, close }: { workspace: Workspace; close: () => void }) {
+  const { t } = useI18n()
   const [tab, setTab] = useState('files')
   const [preview, setPreview] = useState<any>(null)
   const [detail, setDetail] = useState<any>(null)
   const [history, setHistory] = useState<any[]>([])
+  const [changes, setChanges] = useState<{ path: string; status: string }[]>([])
+  const [gitError, setGitError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
   const [source, setSource] = useState<'session' | 'git'>('session')
   const [error, setError] = useState('')
   const [treeKey, setTreeKey] = useState(0)
+  useEffect(() => {
+    let current = true
+    setChanges([])
+    setGitError('')
+    if (w.project && tab === 'changes' && source === 'git') {
+      void window.prime
+        .changes(w.project.id)
+        .then((items) => {
+          if (current) setChanges(items)
+        })
+        .catch((error) => {
+          if (current) setGitError(error.message)
+        })
+    }
+    return () => {
+      current = false
+    }
+  }, [w.project?.id, w.busy, tab, source, treeKey])
+  useEffect(() => {
+    setTreeKey((key) => key + 1)
+  }, [w.busy])
   useEffect(() => {
     setHistory([])
     setJobs([])
@@ -54,7 +79,7 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
       const relative = path.startsWith(w.project!.path)
         ? path.slice(w.project!.path.length).replace(/^[\\/]/, '')
         : path
-      setPreview(await window.prime.diff(w.project!.id, w.session!.id, relative, source))
+      setPreview(await window.prime.diff(w.project!.id, w.session?.id || '', relative, source))
       setError('')
     } catch (error: any) {
       setError(error.message)
@@ -86,17 +111,22 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
   return (
     <aside className="inspector">
       <div className="inspector-header">
-        <strong>Рабочая область</strong>
-        <button className="icon" title="Скрыть панель" aria-label="Скрыть панель" onClick={close}>
+        <strong>{t('Рабочая область')}</strong>
+        <button
+          className="icon"
+          title={t('Скрыть панель')}
+          aria-label={t('Скрыть панель')}
+          onClick={close}
+        >
           <PanelRightClose size={16} />
         </button>
       </div>
       <div className="inspector-tabs">
         {[
-          { id: 'files', icon: Files, title: 'Файлы' },
-          { id: 'changes', icon: FileDiff, title: 'Изменения' },
-          { id: 'resources', icon: Boxes, title: 'Ресурсы' },
-          { id: 'tasks', icon: ListTodo, title: 'Задачи' }
+          { id: 'files', icon: Files, title: t('Файлы') },
+          { id: 'changes', icon: FileDiff, title: t('Изменения') },
+          { id: 'resources', icon: Boxes, title: t('Ресурсы') },
+          { id: 'tasks', icon: ListTodo, title: t('Задачи') }
         ].map((item) => (
           <button
             key={item.id}
@@ -115,18 +145,18 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
           <div className="panel-error">
             {error}
             <button className="quiet" onClick={() => setError('')}>
-              Закрыть
+              {t('Закрыть')}
             </button>
           </div>
         )}
         {tab === 'files' && (
           <>
             <div className="panel-title">
-              <span>{w.project?.path.split(/[\\/]/).pop() || 'ПРОЕКТ'}</span>
+              <span>{w.project?.path.split(/[\\/]/).pop() || t('ПРОЕКТ')}</span>
               <button
                 className="icon small"
-                title="Обновить дерево"
-                aria-label="Обновить дерево"
+                title={t('Обновить дерево')}
+                aria-label={t('Обновить дерево')}
                 onClick={() => setTreeKey((key) => key + 1)}
               >
                 <RefreshCw size={13} />
@@ -142,7 +172,7 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
             ) : (
               <div className="panel-empty">
                 <FolderOpen size={28} />
-                <p>Файлы выбранного проекта</p>
+                <p>{t('Файлы выбранного проекта')}</p>
               </div>
             )}
           </>
@@ -150,26 +180,39 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
         {tab === 'changes' && (
           <>
             <p className="panel-help">
-              Изменения файлов в истории текущего чата. Файлы уже записаны на диск.
+              {source === 'git'
+                ? t('Все изменения проекта относительно Git HEAD.')
+                : t('Изменения файлов в истории текущего чата. Файлы уже записаны на диск.')}
             </p>
             <select
-              aria-label="Источник сравнения"
+              aria-label={t('Источник сравнения')}
               value={source}
               onChange={(event) => setSource(event.target.value as 'session' | 'git')}
             >
-              <option value="session">История сессии</option>
-              <option value="git">Сравнить с Git HEAD</option>
+              <option value="session">{t('История сессии')}</option>
+              <option value="git">{t('Сравнить с Git HEAD')}</option>
             </select>
-            {[...new Set(history.map((item) => item.path))].map((path) => (
+            <button className="quiet" onClick={() => setTreeKey((key) => key + 1)}>
+              <RefreshCw size={13} />
+              {t('Обновить')}
+            </button>
+            {gitError && source === 'git' && <p className="error-text">{gitError}</p>}
+            {(source === 'git'
+              ? changes.map((item) => item.path)
+              : [...new Set(history.map((item) => item.path))]
+            ).map((path) => (
               <button className="tree-file" key={path} onClick={() => void diffFile(path)}>
                 <FileDiff size={14} />
-                <span>{path.split(/[\\/]/).pop()}</span>
+                <span title={path}>{path}</span>
+                {source === 'git' && (
+                  <small>{changes.find((item) => item.path === path)?.status}</small>
+                )}
               </button>
             ))}
-            {!history.length && (
+            {!(source === 'git' ? changes : history).length && !gitError && (
               <div className="panel-empty">
                 <FileDiff size={28} />
-                <p>Изменения появятся после редактирования файлов</p>
+                <p>{t('Изменения появятся после редактирования файлов')}</p>
               </div>
             )}
           </>
@@ -181,7 +224,7 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
               disabled={!w.project}
               onClick={() => void w.call('restart').then(w.refresh).catch(w.errorHandler)}
             >
-              <RotateCw size={14} /> Перезапустить системы
+              <RotateCw size={14} /> {t('Перезапустить системы')}
             </button>
             <div className="button-row">
               <button
@@ -189,14 +232,14 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
                 disabled={!w.project}
                 onClick={() => void w.call('dockerEnable').then(w.refresh).catch(w.errorHandler)}
               >
-                Docker MCP: вкл.
+                {t('Docker MCP: вкл.')}
               </button>
               <button
                 className="quiet"
                 disabled={!w.project}
                 onClick={() => void w.call('dockerDisable').then(w.refresh).catch(w.errorHandler)}
               >
-                выкл.
+                {t('выкл.')}
               </button>
             </div>
             {resources.map((group) => (
@@ -218,22 +261,23 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
                       <strong>{item.name || item.label || item.id || item.Name}</strong>
                       <small>
                         {item.error
-                          ? 'Ошибка'
+                          ? t('Ошибка')
                           : item.state ||
                             item.source ||
                             item.description?.slice(0, 70) ||
-                            'Доступно'}
+                            t('Доступно')}
                       </small>
                     </span>
                     <ChevronRight size={13} />
                   </button>
                 ))}
-                {!group.entries.length && <p className="panel-help">Не настроено</p>}
+                {!group.entries.length && <p className="panel-help">{t('Не настроено')}</p>}
               </section>
             ))}
             <section className="resource-group">
               <h4>
-                MCP-каналы<span>{w.resources.channels?.length || 0}</span>
+                {t('MCP-каналы')}
+                <span>{w.resources.channels?.length || 0}</span>
               </h4>
               {(w.resources.channels || []).map((message: any) => (
                 <details key={message.id} className="job">
@@ -249,19 +293,21 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
                       )
                     }
                   >
-                    Подготовить запрос в чате
+                    {t('Подготовить запрос в чате')}
                   </button>
                 </details>
               ))}
               {!w.resources.channels?.length && (
-                <p className="panel-help">Каналы включаются для проекта в настройках Prime.</p>
+                <p className="panel-help">
+                  {t('Каналы включаются для проекта в настройках Prime.')}
+                </p>
               )}
             </section>
           </>
         )}
         {tab === 'tasks' && (
           <>
-            <h4>План задачи</h4>
+            <h4>{t('План задачи')}</h4>
             {w.session?.todos?.map((todo: any, index) => (
               <div className={`todo-item ${todo.status}`} key={index}>
                 <span>
@@ -271,9 +317,11 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
               </div>
             ))}
             {!w.session?.todos?.length && (
-              <p className="panel-help">Агент покажет здесь план, когда создаст список задач.</p>
+              <p className="panel-help">
+                {t('Агент покажет здесь план, когда создаст список задач.')}
+              </p>
             )}
-            <h4>Фоновые команды</h4>
+            <h4>{t('Фоновые команды')}</h4>
             {jobs.map((job) => (
               <details className="job" key={job.id}>
                 <summary>
@@ -287,7 +335,7 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
                 </pre>
               </details>
             ))}
-            {!jobs.length && <p className="panel-help">Нет фоновых команд в этой сессии</p>}
+            {!jobs.length && <p className="panel-help">{t('Нет фоновых команд в этой сессии')}</p>}
             {w.sessions
               .filter((item) => item.parent_session_id === w.session?.id)
               .map((item) => (
@@ -306,7 +354,7 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
       {w.project && (
         <div className="inspector-footer">
           <button onClick={() => void window.prime.reveal(w.project!.id)}>
-            <FolderOpen size={13} /> Открыть в проводнике
+            <FolderOpen size={13} /> {t('Открыть в проводнике')}
             <ArrowUpRight size={12} />
           </button>
         </div>
@@ -341,7 +389,7 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
             className="quiet"
             onClick={() => void window.prime.reveal(w.project!.id, preview.path)}
           >
-            Показать файл в проводнике
+            {t('Показать файл в проводнике')}
           </button>
         </Modal>
       )}
@@ -420,6 +468,7 @@ function ResourceDetails({
   detail: any
   close: () => void
 }) {
+  const { t } = useI18n()
   const [output, setOutput] = useState('')
   const [status, setStatus] = useState('')
   const [uri, setUri] = useState('')
@@ -441,7 +490,7 @@ function ResourceDetails({
         {detail.kind === 'mcp' && (
           <>
             <button onClick={() => void run('mcpRefresh', { name: detail.name })}>
-              Обновить инструменты
+              {t('Обновить инструменты')}
             </button>
             <button
               onClick={async () => {
@@ -459,7 +508,7 @@ function ResourceDetails({
                 }, 600)
                 try {
                   await auth
-                  setStatus('Авторизация завершена')
+                  setStatus(t('Авторизация завершена'))
                 } catch (error: any) {
                   setStatus(error.message)
                 } finally {
@@ -467,30 +516,30 @@ function ResourceDetails({
                 }
               }}
             >
-              Авторизация
+              {t('Авторизация')}
             </button>
             <label className="form-label">
-              URI ресурса
+              {t('URI ресурса')}
               <input value={uri} onChange={(event) => setUri(event.target.value)} />
             </label>
             <button
               disabled={!uri}
               onClick={() => void run('mcpResource', { name: detail.name, uri })}
             >
-              Прочитать ресурс
+              {t('Прочитать ресурс')}
             </button>
-            <button onClick={() => void run('mcpPrompts', {})}>Шаблоны запросов</button>
+            <button onClick={() => void run('mcpPrompts', {})}>{t('Шаблоны запросов')}</button>
           </>
         )}
         {detail.kind === 'lsp' && (
           <>
             <button onClick={() => void run('diagnostics', { name: detail.name })}>
-              Диагностика
+              {t('Диагностика')}
             </button>
             <button onClick={() => void run('lspStart', { path: w.project?.path })}>
-              Запустить
+              {t('Запустить')}
             </button>
-            <button onClick={() => void run('lspStop', {})}>Остановить LSP</button>
+            <button onClick={() => void run('lspStop', {})}>{t('Остановить LSP')}</button>
           </>
         )}
         {detail.kind === 'skills' && (
@@ -504,7 +553,7 @@ function ResourceDetails({
                 .catch((error) => setStatus(error.message))
             }
           >
-            Открыть инструкции
+            {t('Открыть инструкции')}
           </button>
         )}
       </div>
