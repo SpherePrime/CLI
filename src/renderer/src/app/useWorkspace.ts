@@ -4,6 +4,7 @@ import type {
   Message,
   Operation,
   Preferences,
+  QueuedPrompt,
   Project,
   Session
 } from '../../../shared/contracts'
@@ -32,7 +33,7 @@ export function useWorkspace() {
   const [questions, setQuestions] = useState<Json[]>([])
   const [config, setConfig] = useState<Json>({})
   const [agent, setAgent] = useState<Json>({})
-  const [queue, setQueue] = useState<string[]>([])
+  const [queue, setQueue] = useState<QueuedPrompt[]>([])
   const [resources, setResources] = useState<Json>({ mcp: {}, lsp: {}, skills: [] })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -67,31 +68,18 @@ export function useWorkspace() {
     if (!id) throw new Error(translate(language.current, 'Сначала откройте проект'))
     return window.prime.call(id, operation, args)
   }, [])
-  const refresh = useCallback(async () => {
-    const { project, session } = current.current
+  const pendingFetches = useRef(new Map<string, Promise<void>>())
+  const refreshPending = useCallback(async () => {
+    const { project } = current.current
     if (!project) return
+    const existing = pendingFetches.current.get(project.id)
+    if (existing) return existing
     const requestSnapshotSequence = requestSequence.current
-    const results = await Promise.allSettled([
-      window.prime.call(project.id, 'sessions'),
-      window.prime.call(project.id, 'config'),
-      window.prime.call(project.id, 'agent'),
-      window.prime.call(project.id, 'pending'),
-      window.prime.call(project.id, 'mcp'),
-      window.prime.call(project.id, 'lsp'),
-      window.prime.call(project.id, 'skills'),
-      window.prime.call(project.id, 'channelMessages')
-    ])
-    if (current.current.project?.id !== project.id) return
-    const get = (index: number) =>
-      results[index].status === 'fulfilled'
-        ? (results[index] as PromiseFulfilledResult<Json>).value
-        : undefined
-    if (get(0)) setSessions(get(0))
-    if (get(1)) setConfig(get(1))
-    if (get(2)) setAgent(get(2))
-    if (get(3)) {
-      let pendingPermissions: any[] = get(3).permissions || []
-      const q = get(3).questions || get(3).question
+    const request = (async () => {
+      const snapshot = await window.prime.call(project.id, 'pending')
+      if (current.current.project?.id !== project.id) return
+      let pendingPermissions: any[] = snapshot.permissions || []
+      const q = snapshot.questions || snapshot.question
       let pendingQuestions: any[] = Array.isArray(q) ? q : q ? [q] : []
       for (const event of requestEvents.current) {
         if (event.sequence <= requestSnapshotSequence || event.workspaceId !== project.id) continue
@@ -122,7 +110,55 @@ export function useWorkspace() {
           (item) => !resolvedQuestions.current.has(`${project.id}:${item.id}`)
         )
       )
+    })()
+    pendingFetches.current.set(project.id, request)
+    try {
+      await request
+    } finally {
+      pendingFetches.current.delete(project.id)
     }
+  }, [])
+  const queueFetches = useRef(new Map<string, Promise<void>>())
+  const refreshQueue = useCallback(async () => {
+    const { project, session } = current.current
+    if (!project || !session) return
+    const key = `${project.id}:${session.id}`
+    const existing = queueFetches.current.get(key)
+    if (existing) return existing
+    const request = (async () => {
+      const entries = await window.prime.call(project.id, 'queue', { sessionId: session.id })
+      if (current.current.project?.id === project.id && current.current.session?.id === session.id)
+        setQueue(Array.isArray(entries) ? entries : [])
+    })()
+    queueFetches.current.set(key, request)
+    try {
+      await request
+    } finally {
+      queueFetches.current.delete(key)
+    }
+  }, [])
+  const refresh = useCallback(async () => {
+    const { project, session } = current.current
+    if (!project) return
+    const results = await Promise.allSettled([
+      window.prime.call(project.id, 'sessions'),
+      window.prime.call(project.id, 'config'),
+      window.prime.call(project.id, 'agent'),
+      refreshPending(),
+      window.prime.call(project.id, 'mcp'),
+      window.prime.call(project.id, 'lsp'),
+      window.prime.call(project.id, 'skills'),
+      window.prime.call(project.id, 'channelMessages'),
+      refreshQueue()
+    ])
+    if (current.current.project?.id !== project.id) return
+    const get = (index: number) =>
+      results[index].status === 'fulfilled'
+        ? (results[index] as PromiseFulfilledResult<Json>).value
+        : undefined
+    if (get(0)) setSessions(get(0))
+    if (get(1)) setConfig(get(1))
+    if (get(2)) setAgent(get(2))
     setResources({
       mcp: get(4) || {},
       lsp: get(5) || {},
@@ -131,10 +167,9 @@ export function useWorkspace() {
     })
     if (session) {
       const snapshotSequence = messageSequence.current
-      const [msgs, active, queued] = await Promise.allSettled([
+      const [msgs, active] = await Promise.allSettled([
         window.prime.call(project.id, 'messages', { sessionId: session.id }),
-        window.prime.call(project.id, 'sessions'),
-        window.prime.call(project.id, 'queue', { sessionId: session.id })
+        window.prime.call(project.id, 'sessions')
       ])
       if (current.current.session?.id !== session.id) return
       if (msgs.status === 'fulfilled') {
@@ -158,10 +193,8 @@ export function useWorkspace() {
           setBusy(Boolean(selected.is_busy))
         }
       }
-      if (queued.status === 'fulfilled')
-        setQueue(Array.isArray(queued.value) ? queued.value : queued.value?.prompts || [])
     }
-  }, [])
+  }, [refreshPending, refreshQueue])
   useEffect(() => {
     async function restore() {
       const saved = await window.prime.preferences()
@@ -292,6 +325,8 @@ export function useWorkspace() {
       }
       if (event.type === 'permission_request')
         setPermissions((items) => [...items.filter((item) => item.id !== payload.id), payload])
+      if (event.type === 'permission_notification' && !payload.granted && !payload.denied)
+        void refreshPending().catch(() => {})
       if (event.type === 'permission_notification' && (payload.granted || payload.denied)) {
         resolvedPermissions.current.add(`${event.workspaceId}:${payload.tool_call_id}`)
         setPermissions((items) =>
@@ -316,7 +351,18 @@ export function useWorkspace() {
         void refresh()
     })
     return unsubscribe
-  }, [refresh, errorHandler])
+  }, [refresh, refreshPending, errorHandler])
+  const hasPending = permissions.length > 0 || questions.length > 0
+  useEffect(() => {
+    if (!project || (!busy && !hasPending)) return
+    const sync = () => {
+      void refreshPending().catch(() => {})
+      void refreshQueue().catch(() => {})
+    }
+    sync()
+    const timer = setInterval(sync, 1000)
+    return () => clearInterval(timer)
+  }, [project?.id, session?.id, busy, hasPending, refreshPending, refreshQueue])
   useEffect(() => {
     document.documentElement.dataset.theme =
       preferences.theme === 'system'
@@ -343,6 +389,7 @@ export function useWorkspace() {
       setPermissions([])
       setQuestions([])
       setBusy(false)
+      setQueue([])
       setProjects(await window.prime.projects())
       setPreferences(await window.prime.preferences())
       await refresh()
@@ -364,6 +411,7 @@ export function useWorkspace() {
     setSession(null)
     setMessages([])
     setBusy(false)
+    setQueue([])
     await refresh()
   }
   async function closeProject(id: string) {
@@ -497,6 +545,7 @@ export function useWorkspace() {
     agent,
     resources,
     queue,
+    refreshQueue,
     error,
     setError,
     errorHandler,

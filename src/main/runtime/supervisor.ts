@@ -80,7 +80,8 @@ export class RuntimeSupervisor {
         if (
           capabilities.protocol_version !== 1 ||
           !capabilities.pending_requests ||
-          !capabilities.run_registry
+          !capabilities.run_registry ||
+          !capabilities.queue_control
         ) {
           this.process.kill()
           this.status = 'failed'

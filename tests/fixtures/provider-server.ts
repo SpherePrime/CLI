@@ -44,6 +44,12 @@ export async function startProvider() {
       const lastUser = body.messages?.[lastUserIndex]
       const userText =
         typeof lastUser?.content === 'string' ? lastUser.content : JSON.stringify(lastUser?.content)
+      if (userText?.includes('HOLD_FIXTURE')) {
+        response.write(
+          `data: ${JSON.stringify({ id: 'fixture-hold', object: 'chat.completion.chunk', model: 'desktop-fixture', choices: [{ index: 0, delta: { reasoning_content: 'Waiting for the next instruction. '.repeat(20) }, finish_reason: null }] })}\n\n`
+        )
+        return
+      }
       if (
         userText?.includes('QUESTION_FIXTURE') &&
         !body.messages.slice(lastUserIndex + 1).some((message: any) => message.role === 'tool')

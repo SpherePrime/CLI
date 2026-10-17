@@ -1,4 +1,5 @@
 export type Json = any
+export type QueuedPrompt = { id: string; prompt: string; attachments: number }
 export type Session = {
   id: string
   title: string
@@ -55,6 +56,7 @@ export type Operation =
   | 'mode'
   | 'queue'
   | 'clearQueue'
+  | 'runQueuedNow'
   | 'summarize'
   | 'shell'
   | 'permission'

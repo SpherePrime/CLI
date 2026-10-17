@@ -55,7 +55,15 @@ function ToolCard({ part }: { part: Message['parts'][number] }) {
     </details>
   )
 }
-export function MessageList({ messages, busy }: { messages: Message[]; busy: boolean }) {
+export function MessageList({
+  messages,
+  busy,
+  waiting = false
+}: {
+  messages: Message[]
+  busy: boolean
+  waiting?: boolean
+}) {
   const viewport = useRef<HTMLDivElement>(null)
   const { t, locale } = useI18n()
   const [following, setFollowing] = useState(true)
@@ -70,6 +78,8 @@ export function MessageList({ messages, busy }: { messages: Message[]; busy: boo
   })
   useLayoutEffect(() => {
     if (following && visible.length) virtualizer.scrollToIndex(visible.length - 1, { align: 'end' })
+    const view = viewport.current
+    if (view && view.scrollHeight - view.scrollTop - view.clientHeight < 160) setFollowing(true)
   }, [messages, following, virtualizer.getTotalSize()])
   return (
     <div
@@ -210,11 +220,11 @@ export function MessageList({ messages, busy }: { messages: Message[]; busy: boo
             )
           })}
         </div>
-        {busy && (
+        {(busy || waiting) && (
           <div className="working">
             <span className="working-spark">✦</span>
             <span>
-              {t('Prime работает')}
+              {waiting ? t('Ожидается подтверждение') : t('Prime работает')}
               <span className="ellipsis">…</span>
             </span>
           </div>

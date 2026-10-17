@@ -34,6 +34,18 @@ test('virtualizes a thousand variable-height messages and preserves both ends of
     await page.getByRole('button', { name: 'Новые сообщения' }).click()
     await expect(page.getByText('Newest streamed answer')).toBeVisible()
     expect(await page.locator('.message').count()).toBeLessThan(40)
+    await page.getByRole('button', { name: 'Reasoning fixture', exact: true }).click()
+    await page.getByText('Размышления', { exact: true }).click()
+    await expect(page.locator('.reasoning')).toHaveAttribute('open', '')
+    await page.locator('.conversation').evaluate((element) => {
+      element.scrollTop = element.scrollHeight
+    })
+    await page.getByText('Размышления', { exact: true }).click()
+    await expect(page.locator('.reasoning')).not.toHaveAttribute('open', '')
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    )
+    await expect(page.getByRole('button', { name: 'Новые сообщения' })).toHaveCount(0)
   } finally {
     await desktop.close()
     await server.close()
@@ -64,6 +76,14 @@ test('keeps an unresolved approval after a permission-start notification and sna
     await expect(page.getByRole('heading', { name: 'Разрешить действие?' })).toBeVisible()
     await page.getByRole('button', { name: 'Resolve permission', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Разрешить действие?' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Lost request with slow resources' }).click()
+    await expect(page.getByText('Recovered without waiting for resources')).toBeVisible({
+      timeout: 1800
+    })
+    await page.getByRole('button', { name: 'Cancel without resolution event' }).click()
+    await expect(page.getByRole('heading', { name: 'Разрешить действие?' })).toHaveCount(0, {
+      timeout: 1800
+    })
   } finally {
     await desktop.close()
     await server.close()

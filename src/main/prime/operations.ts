@@ -24,7 +24,8 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     ],
     cancel: () => ['POST', `agent/sessions/${sid}/cancel`],
     mode: () => ['POST', 'agent/main', { agent_id: args.mode }],
-    queue: () => ['GET', `agent/sessions/${sid}/prompts/list`],
+    queue: () => ['GET', `agent/sessions/${sid}/prompts/entries`],
+    runQueuedNow: () => ['POST', `agent/sessions/${sid}/prompts/run-now`, { id: args.id }],
     clearQueue: () => ['POST', `agent/sessions/${sid}/prompts/clear`],
     summarize: () => ['POST', `agent/sessions/${sid}/summarize`],
     shell: () => [

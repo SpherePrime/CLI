@@ -306,7 +306,15 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               </div>
             </section>
           ) : (
-            <MessageList key={w.session?.id || 'new'} messages={w.messages} busy={w.busy} />
+            <MessageList
+              key={w.session?.id || 'new'}
+              messages={w.messages}
+              busy={w.busy}
+              waiting={
+                w.permissions.some((item) => item.session_id === w.session?.id) ||
+                w.questions.some((item) => item.session_id === w.session?.id)
+              }
+            />
           )}
           <Approvals workspace={w} />
           <Composer workspace={w} />

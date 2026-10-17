@@ -1,4 +1,6 @@
 import { PermissionMenu } from './PermissionMenu'
+import { QueuePanel } from './QueuePanel'
+import { ReasoningControl } from '../models/ReasoningControl'
 import { ModelPicker } from '../models/ModelPicker'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
@@ -20,7 +22,7 @@ import type { Workspace } from '../../app/useWorkspace'
 import { useVoice } from '../plugins/useVoice'
 
 export function Composer({ workspace: w }: { workspace: Workspace }) {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const [text, setText] = useState('')
   const [modelsOpen, setModelsOpen] = useState(false)
   const modelAnchor = useRef<HTMLButtonElement>(null)
@@ -169,27 +171,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           onReady={setText}
         />
       )}
-      {w.queue.length > 0 && (
-        <details className="queue">
-          <summary>
-            <ListOrdered size={14} /> {t('В очереди:')} {w.queue.length.toLocaleString(locale)}
-          </summary>
-          {w.queue.map((prompt, i) => (
-            <p key={i}>{typeof prompt === 'string' ? prompt : JSON.stringify(prompt)}</p>
-          ))}
-          <button
-            className="quiet"
-            onClick={() =>
-              void w
-                .call('clearQueue', { sessionId: w.session?.id })
-                .then(w.refresh)
-                .catch(w.errorHandler)
-            }
-          >
-            {t('Очистить очередь')}
-          </button>
-        </details>
-      )}
+      <QueuePanel key={key} workspace={w} />
       {w.session?.todos?.length ? (
         <div className="todo-progress">
           {w.session.todos.filter((todo) => todo.status === 'completed').length} /{' '}
@@ -314,6 +296,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               <span>{selectedModel?.model || w.agent?.model?.name || t('Выбрать модель')}</span>
               <ChevronDown size={12} />
             </button>
+            <ReasoningControl workspace={w} />
           </div>
           {w.busy && (!text.trim() || sending) ? (
             <button

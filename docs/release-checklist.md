@@ -47,6 +47,14 @@
 - Open files use the order: chat list, chat, workspace files, editor. Hidden sidebar/workspace variants retain the editor at the right edge.
 - Chat deletion uses a centered native modal with the chat title, initial focus on Cancel, Escape cancellation and duplicate-submit protection. Errors remain inside the dialog.
 
+## Version 0.3.2 chat controls
+
+- Recomputes the bottom position after reasoning blocks change height. Electron regression collapses a long reasoning block without leaving a false new-message indicator.
+- Queue cards use stable IDs and offer Send Now. A real bundled-CLI scenario interrupts a held provider response and verifies the selected second entry runs before the first. Agent tests cover preserved attachments, identical prompt text, stale IDs and early-cancellation fallback.
+- Pending approvals update independently from slow resource snapshots, with a one-second recovery poll during active runs. A lost-event regression stalls MCP loading and checks the permission still appears within 1.8 seconds. Active requests display a waiting-for-approval status.
+- The composer exposes the main model's supported reasoning modes beside the model selector. A real CLI test saves High, verifies the configuration and returns it to Off.
+- The pinned runtime advertises queue control; Desktop rejects runtimes without that capability. Existing string queue endpoints and legacy in-process folding remain compatible.
+
 ## Public release requirements
 
 - No public Desktop repository or update-feed destination has been assigned. The updater reports an unavailable feed; no release was published.

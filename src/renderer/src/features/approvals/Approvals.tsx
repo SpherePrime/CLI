@@ -5,7 +5,7 @@ import { ShieldQuestion, CircleHelp, Check, X } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 export function Approvals({ workspace: w }: { workspace: Workspace }) {
   return (
-    <div className="approvals">
+    <div className="approvals" aria-live="polite">
       {w.permissions
         .filter((permission) => permission.session_id === w.session?.id)
         .map((permission) => (

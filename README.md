@@ -26,13 +26,15 @@ npm run runtime:verify
 npm run dist:win
 ```
 
-The installer and unpacked application are written to `release/` (the 0.3.0 delivery is under `release/0.3.0/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
+The installer and unpacked application are written to `release/` (the 0.3.2 delivery is under `release/0.3.2/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
 
 ## File editing
 
 Open files from the inspector into editor tabs beside the chat. Monaco provides local syntax highlighting, line numbers, undo/redo and Ctrl+S. Saving checks the last-read revision before replacing a file; external changes require reloading. Unsaved tabs prompt before closing. Manual saves update the workspace and Git diff; CLI session history continues to describe agent tool edits. Editor code and workers are bundled locally and load only when needed.
 
 ## Data and updates
+
+Queued messages appear above the composer. Send Now interrupts the current turn and runs the selected queued request, retaining its attachments and the other Desktop requests. Reasoning levels are available beside models that support them. Pending approvals update independently from resource loading and are recovered every second during active runs.
 
 Prime owns session history and provider configuration. Desktop keeps window preferences and drafts in its Electron user data folder. Provider secrets are not returned to the renderer. Closing the window during an active run keeps the app in the tray; use its Exit action to stop and quit.
 

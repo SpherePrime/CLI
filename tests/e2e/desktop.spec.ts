@@ -33,6 +33,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
             {
               id: 'desktop-fixture',
               name: 'Desktop Fixture',
+              can_reason: true,
               context_window: 128000,
               default_max_tokens: 8192
             },
@@ -121,6 +122,18 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     ).toBe(true)
     await page.screenshot({ path: 'test-results/model-picker.png' })
     await page.getByRole('option', { name: /Desktop Fixture/ }).click()
+    const reasoning = page.getByRole('combobox', { name: 'Уровень размышлений', exact: true })
+    await reasoning.click()
+    await page.getByRole('option', { name: 'Высокий', exact: true }).click()
+    await expect(reasoning).toContainText('Высокий')
+    const reasoningConfig = await page.evaluate(async () => {
+      const project = (await window.prime.projects()).find((item) => item.kind === 'chat')!
+      return window.prime.call(project.id, 'config')
+    })
+    expect(reasoningConfig.models.large.reasoning_mode).toBe('high')
+    await reasoning.click()
+    await page.getByRole('option', { name: 'Выключены', exact: true }).click()
+    await expect(reasoning).toContainText('Выключены')
     await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill('Свободный чат без папки')
     await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
     await expect(page.locator('.message.assistant .markdown')).toContainText(
@@ -217,6 +230,33 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await deletion.getByRole('button', { name: 'Удалить', exact: true }).click()
     await expect(deletion).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Проверка сессии', exact: true })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Новый чат', exact: false }).first().click()
+    await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill('HOLD_FIXTURE')
+    await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
+    await expect(page.getByText('Размышления', { exact: true })).toBeVisible()
+    for (const prompt of ['QUEUED_FIRST', 'QUEUED_SECOND']) {
+      await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill(prompt)
+      await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
+      await expect(page.locator('.queue-prompt p').filter({ hasText: prompt })).toBeVisible({
+        timeout: 15000
+      })
+    }
+    await page.screenshot({ path: 'test-results/prompt-queue.png' })
+    await page
+      .locator('.prompt-queue li')
+      .filter({ hasText: 'QUEUED_SECOND' })
+      .getByRole('button', { name: 'Отправить сейчас' })
+      .click()
+    await expect(page.locator('.message.user')).toContainText(
+      ['HOLD_FIXTURE', 'QUEUED_SECOND', 'QUEUED_FIRST'],
+      { timeout: 20000 }
+    )
+    await expect(page.locator('.prompt-queue')).toHaveCount(0, { timeout: 20000 })
+    await expect(page.getByRole('button', { name: 'Остановить задачу', exact: true })).toHaveCount(
+      0,
+      { timeout: 20000 }
+    )
+    await page.getByRole('button', { name: 'Новый чат', exact: false }).first().click()
     await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill('Проверка связи через CLI')
     await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
     await expect(

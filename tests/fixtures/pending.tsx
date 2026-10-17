@@ -5,6 +5,7 @@ import { Approvals } from '../../src/renderer/src/features/approvals/Approvals'
 import '../../src/renderer/src/styles/global.css'
 const listeners = new Set<(event: any) => void>()
 let permissions: any[] = []
+let stallResources = false
 const project = { id: 'workspace', path: 'C:/fixture', connection: 'ready' }
 const session = { id: 'session', title: 'Fixture' }
 const preferences = { theme: 'dark', language: 'ru', recent: [], pinned: [], drafts: {} }
@@ -17,6 +18,7 @@ window.prime = {
     return () => listeners.delete(listener)
   },
   call: async (_id: string, operation: string) => {
+    if (operation === 'mcp' && stallResources) return new Promise(() => {})
     if (operation === 'sessions') return [session]
     if (operation === 'agent') return { is_ready: true }
     if (operation === 'pending') return { permissions: [...permissions] }
@@ -59,6 +61,37 @@ function Pending() {
         Resolve permission
       </button>
       <Approvals workspace={w} />
+      <button
+        onClick={() => {
+          permissions = []
+          w.setBusy(false)
+        }}
+      >
+        Cancel without resolution event
+      </button>
+      <button
+        onClick={() => {
+          stallResources = true
+          permissions = [
+            {
+              id: 'lost',
+              session_id: session.id,
+              tool_call_id: 'lost-tool',
+              tool_name: 'write',
+              description: 'Recovered without waiting for resources'
+            }
+          ]
+          w.setBusy(true)
+          emit('permission_notification', {
+            tool_call_id: 'lost-tool',
+            granted: false,
+            denied: false
+          })
+          void w.refresh()
+        }}
+      >
+        Lost request with slow resources
+      </button>
     </>
   )
 }

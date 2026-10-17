@@ -1149,6 +1149,109 @@ input[type='number'] {
     display: none;
   }
 }
+.prompt-queue {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.prompt-queue > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.prompt-queue > header strong {
+  font-weight: 500;
+  color: var(--text);
+}
+.prompt-queue > header button {
+  margin-left: auto;
+}
+.queue-count {
+  border-radius: 5px;
+  background: var(--raised);
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.prompt-queue ol {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px 4px;
+  max-height: 210px;
+  overflow: auto;
+}
+.prompt-queue li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.queue-index {
+  color: var(--muted);
+  font-size: 11px;
+  min-width: 16px;
+  padding-top: 4px;
+}
+.queue-prompt {
+  flex: 1;
+  min-width: 0;
+}
+.queue-prompt p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.queue-prompt small {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 6px;
+  color: var(--muted);
+}
+.queue-send-now {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  font-size: 11px;
+  flex-shrink: 0;
+  background: var(--raised);
+}
+.queue-error {
+  margin: 0;
+  padding: 10px 14px;
+  color: #ef8a80;
+  font-size: 12px;
+}
+.reasoning-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+.reasoning-control .prime-select {
+  padding-left: 3px;
+}
+@media (max-width: 1300px) {
+  .has-editor .queue-send-now {
+    width: 28px;
+    padding: 6px;
+  }
+  .has-editor .queue-send-now span {
+    display: none;
+  }
+}
 .modal.delete-chat-modal {
   width: 460px;
   margin: auto;

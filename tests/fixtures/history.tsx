@@ -26,6 +26,26 @@ function History() {
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <button
         onClick={() =>
+          setMessages([
+            {
+              id: 'reasoning',
+              session_id: 'fixture',
+              role: 'assistant',
+              parts: [
+                {
+                  type: 'reasoning',
+                  data: { thinking: 'Thinking about this request.\n'.repeat(180) }
+                },
+                { type: 'text', data: { text: 'Reasoning answer' } }
+              ]
+            }
+          ])
+        }
+      >
+        Reasoning fixture
+      </button>
+      <button
+        onClick={() =>
           setMessages((items) => [
             ...items,
             {
