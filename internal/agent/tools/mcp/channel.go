@@ -10,8 +10,10 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/SpherePrime/CLI/vendordeps/modelcontextprotocol/go-sdk/mcp"
 )
@@ -180,16 +182,23 @@ func channelEnabled(enabled []string, name string) bool {
 // represent ordered inbound messages (chat, alerts) rather than disposable UI
 // updates, so a stalled subscriber must not permanently lose them the way
 // lossy Publish would. Malformed payloads are dropped (fail closed).
-func publishChannelMessage(ctx context.Context, name string, raw json.RawMessage) {
+func publishChannelMessage(ctx context.Context, name string, raw json.RawMessage, workspacePath ...string) {
 	p, ok := parseChannelParams(raw)
 	if !ok {
 		slog.Warn("Dropping malformed channel notification", "server", name)
 		return
 	}
+	owner := ""
+	if len(workspacePath) > 0 {
+		owner = canonicalChannelWorkspace(workspacePath[0])
+	}
 	broker.PublishMustDeliver(ctx, pubsub.CreatedEvent, Event{
-		Type:           EventChannelMessage,
-		Name:           name,
-		ChannelMessage: renderChannel(name, p),
+		Type:              EventChannelMessage,
+		Name:              name,
+		ChannelMessage:    renderChannel(name, p),
+		WorkspacePath:     owner,
+		ChannelID:         uuid.NewString(),
+		ChannelReceivedAt: time.Now().UTC(),
 	})
 }
 
@@ -279,9 +288,10 @@ func (g *channelGate) accept(raw json.RawMessage) json.RawMessage {
 // methods before any client-side handler or middleware runs, so the only place
 // to observe a custom notification is the transport's own connection.
 type channelTransport struct {
-	inner mcp.Transport
-	name  string
-	gate  *channelGate
+	workspacePath string
+	inner         mcp.Transport
+	name          string
+	gate          *channelGate
 }
 
 // Connect implements mcp.Transport.
@@ -293,12 +303,13 @@ func (t *channelTransport) Connect(ctx context.Context) (mcp.Connection, error) 
 	if err != nil {
 		return nil, err
 	}
-	return &channelConn{Connection: conn, name: t.name, gate: t.gate}, nil
+	return &channelConn{Connection: conn, name: t.name, gate: t.gate, workspacePath: t.workspacePath}, nil
 }
 
 // channelConn wraps an mcp.Connection and filters channel notifications out of
 // the stream the SDK sees, dispatching them to the channel handler instead.
 type channelConn struct {
+	workspacePath string
 	mcp.Connection
 	name string
 	gate *channelGate
@@ -320,7 +331,7 @@ func (c *channelConn) Read(ctx context.Context) (jsonrpc.Message, error) {
 			return msg, nil
 		}
 		if raw := c.gate.accept(req.Params); raw != nil {
-			publishChannelMessage(ctx, c.name, raw)
+			publishChannelMessage(ctx, c.name, raw, c.workspacePath)
 		}
 	}
 }

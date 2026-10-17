@@ -30,6 +30,10 @@ Voice uploads require an enabled voice plugin and 16 kHz mono 16-bit PCM WAV, be
 
 The Windows named pipe grants access to the current Windows user SID. Authentication between separate Windows users has not been exercised in a second-user integration environment.
 
+Workspace creation opts into MCP channels with `channels: ["serverName"]`. Only explicitly enabled servers advertising the channel capability can deliver messages. SSE uses an outer `mcp_channel_message` envelope whose payload is an event `{type, payload: {id, name, workspace_path, content, received_at}}`. The workspace path is canonicalized and delivery is limited to that workspace. Content is the escaped rendered channel element. Events have no session association and never start an agent automatically. Channel delivery has no replay or snapshot endpoint.
+
+Before upgrading an existing SQLite schema, Prime saves a consistent `VACUUM INTO` backup as `prime-before-migration-<old>-to-<new>-*.db` in its data directory and validates it before running Goose. The backup includes committed WAL contents and remains available after migration. A database with a newer schema is rejected before migration; backup or validation failure also prevents migration.
+
 Background shell ownership records the originating project and session independently from the command's working directory. This keeps commands launched in another directory visible in their originating project and allows filtering two concurrent chats correctly. Existing jobs without session ownership have an empty `session_id` and are omitted by a session-specific query.
 
 Deferred: atomic snapshot and SSE replay, agent-task job snapshots beyond existing child sessions, additional MCP channel snapshots, and typed SDK wrappers for plugin mutations and voice uploads. Existing config endpoints continue to provide the rest of Prime's settings.

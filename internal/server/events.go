@@ -38,11 +38,20 @@ func wrapEvent(ev any) *pubsub.Payload {
 			},
 		})
 	case pubsub.Event[mcp.Event]:
+		if e.Payload.Type == mcp.EventChannelMessage && e.Payload.WorkspacePath != "" {
+			return envelope(pubsub.PayloadTypeMCPChannelMessage, pubsub.Event[proto.MCPChannelMessage]{
+				Type: e.Type,
+				Payload: proto.MCPChannelMessage{
+					ID:            e.Payload.ChannelID,
+					Name:          e.Payload.Name,
+					WorkspacePath: e.Payload.WorkspacePath,
+					Content:       e.Payload.ChannelMessage,
+					ReceivedAt:    e.Payload.ChannelReceivedAt,
+				},
+			})
+		}
 		pt := mcpEventTypeToProto(e.Payload.Type)
 		if pt == "" {
-			// Unsupported MCP event type (e.g. EventChannelMessage, which
-			// has no proto representation until session delivery is wired
-			// up). Drop it instead of fabricating a state_changed event.
 			slog.Debug("Dropping unsupported MCP event type for SSE", "type", e.Payload.Type)
 			return nil
 		}
