@@ -14,7 +14,7 @@ import {
   MoreHorizontal,
   SquareTerminal
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
 export function Sidebar({
   workspace: w,
@@ -27,6 +27,11 @@ export function Sidebar({
 }) {
   const { t } = useI18n()
   const [search, setSearch] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  useEffect(() => {
+    setSearch('')
+    setSearchOpen(false)
+  }, [w.project?.id])
   const [menu, setMenu] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [title, setTitle] = useState('')
@@ -108,13 +113,49 @@ export function Sidebar({
             </div>
             {w.project?.id === project.id && (
               <>
-                <input
-                  aria-label={t('Поиск чатов')}
-                  className="session-search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder={t('Найти чат…')}
-                />
+                <div className="chat-list-heading">
+                  <span>{t('Чаты')}</span>
+                  <button
+                    className="icon small"
+                    aria-label={t('Найти чат')}
+                    title={t('Найти чат')}
+                    aria-expanded={searchOpen}
+                    onClick={() => {
+                      setSearchOpen(!searchOpen)
+                      setSearch('')
+                    }}
+                  >
+                    <Search size={14} />
+                  </button>
+                </div>
+                {searchOpen && (
+                  <div className="chat-search-box">
+                    <Search size={14} />
+                    <input
+                      autoFocus
+                      aria-label={t('Поиск чатов')}
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      placeholder={t('Название чата…')}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                          setSearchOpen(false)
+                          setSearch('')
+                        }
+                      }}
+                    />
+                    <button
+                      className="icon small"
+                      aria-label={t('Закрыть поиск')}
+                      onClick={() => {
+                        setSearchOpen(false)
+                        setSearch('')
+                      }}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
                 {sessions.map((session) => (
                   <div
                     key={session.id}

@@ -34,6 +34,14 @@
 - Animated original SpherePrime mark and indeterminate progress are shown only during initial backend/chat readiness. There is no minimum display timer, and errors remain accessible.
 - Real Electron acceptance checks the active animation, reduced-motion CSS and immediate dismissal on readiness; unit coverage verifies ready/failure do not render an overlay.
 
+## Version 0.3.0 editor and interface acceptance
+
+- Files open into a resizable editor pane beside the chat. Monaco and its workers are bundled locally; the editor is loaded on demand. Real Electron acceptance edits TypeScript with syntax colors, checks a blob worker, cancels a dirty tab close and saves to disk with Ctrl+S.
+- Writes validate project boundaries and revisions, preserve UTF-8 BOM and refuse external changes. A temporary sibling is renamed into place only after the final revision check; saves in this application are serialized per path. This optimistic check does not provide a cross-process filesystem lock.
+- Editor model cleanup is owned locally. A real Electron regression covers discard of inactive A while B has identical text, then reopening A; a delayed save regression verifies newer edits remain unsaved and the tab stays open.
+- Dirty files prompt before window reload/exit; tab closing has Save, Discard and Cancel. Image and comparison tabs remain readonly.
+- Chat search is revealed by a magnifier and clears when dismissed or switching project. Permission mode is an explicit described menu inside the composer toolbar. The Shift+Enter caption and project-opening loading banner are removed; the initial startup intro remains.
+
 ## Public release requirements
 
 - No public Desktop repository or update-feed destination has been assigned. The updater reports an unavailable feed; no release was published.

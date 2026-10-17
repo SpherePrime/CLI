@@ -22,8 +22,8 @@ Source: CLI revision recorded in `runtime/manifest.json`; reviewed against works
 | Direct shell | Composer prefix ! | Existing shell API, HTTP cancellation and main activity tracking |
 | Custom commands | Chat actions → Prompt templates | GUI prompt templates under Chat actions; typed argument form and literal substitution |
 | Attachments | Native file picker | Main stores chosen files and serializes real proto.Attachments |
-| File tree/preview | Inspector Files | Boundary and junction tests; root ignore rules; 2 MiB preview limit |
-| Session/Git diffs | Inspector Changes | Full worktree status; renamed/deleted/untracked diff integration tests |
+| File tree and editing | Inspector Files → editor pane | Local Monaco, tabs, TS highlighting, Ctrl+S, unsaved-close guard; revision conflict and path boundary integration tests; 2 MiB limit |
+| Session/Git diffs | Inspector Changes → readonly Monaco comparison | Full worktree status; renamed/deleted/untracked diff integration tests |
 | MCP states/auth/resources/prompts | Inspector Resources, command preparation and advanced settings | Argument form and real backend prompt fetch; scoped opt-in channel delivery; Docker toggles |
 | LSP diagnostics/start/stop | Inspector Resources | Existing LSP API |
 | Skills catalog/read | Inspector Resources | Existing catalog/read API |

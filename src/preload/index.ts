@@ -9,6 +9,9 @@ const api: DesktopApi = {
   closeProject: (id) => ipcRenderer.invoke('prime:closeProject', id),
   call: (id, operation, args) => ipcRenderer.invoke('prime:call', id, operation, args),
   files: (id, path) => ipcRenderer.invoke('prime:files', id, path),
+  saveFile: (id, path, content, revision) =>
+    ipcRenderer.invoke('prime:saveFile', id, path, content, revision),
+  editorDirty: (dirty) => ipcRenderer.invoke('prime:editorDirty', dirty),
   readFile: (id, path) => ipcRenderer.invoke('prime:readFile', id, path),
   diff: (id, session, path, source) => ipcRenderer.invoke('prime:diff', id, session, path, source),
   attachments: () => ipcRenderer.invoke('prime:attachments'),

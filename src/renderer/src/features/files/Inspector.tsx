@@ -21,10 +21,17 @@ import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 
-export function Inspector({ workspace: w, close }: { workspace: Workspace; close: () => void }) {
+export function Inspector({
+  workspace: w,
+  close,
+  openDocument
+}: {
+  workspace: Workspace
+  close: () => void
+  openDocument: (workspaceId: string, path: string, diff?: any) => Promise<void>
+}) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
-  const [preview, setPreview] = useState<any>(null)
   const [detail, setDetail] = useState<any>(null)
   const [history, setHistory] = useState<any[]>([])
   const [changes, setChanges] = useState<{ path: string; status: string }[]>([])
@@ -55,6 +62,11 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
     setTreeKey((key) => key + 1)
   }, [w.busy])
   useEffect(() => {
+    const refresh = () => setTreeKey((key) => key + 1)
+    window.addEventListener('prime:file-saved', refresh)
+    return () => window.removeEventListener('prime:file-saved', refresh)
+  }, [])
+  useEffect(() => {
     setHistory([])
     setJobs([])
     if (!w.project || !w.session) return
@@ -69,7 +81,7 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
   }, [w.project?.id, w.session?.id, w.busy])
   async function openFile(path: string) {
     try {
-      setPreview(await window.prime.readFile(w.project!.id, path))
+      await openDocument(w.project!.id, path)
       setError('')
     } catch (error: any) {
       setError(error.message)
@@ -80,7 +92,11 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
       const relative = path.startsWith(w.project!.path)
         ? path.slice(w.project!.path.length).replace(/^[\\/]/, '')
         : path
-      setPreview(await window.prime.diff(w.project!.id, w.session?.id || '', relative, source))
+      await openDocument(
+        w.project!.id,
+        relative,
+        await window.prime.diff(w.project!.id, w.session?.id || '', relative, source)
+      )
       setError('')
     } catch (error: any) {
       setError(error.message)
@@ -380,40 +396,6 @@ export function Inspector({ workspace: w, close }: { workspace: Workspace; close
             <ArrowUpRight size={12} />
           </button>
         </div>
-      )}
-      {preview && (
-        <Modal title={preview.name || preview.path} close={() => setPreview(null)} wide>
-          {preview.image ? (
-            <img className="file-image" src={preview.image} alt={preview.name} />
-          ) : (
-            <pre className={`file-preview ${preview.patch ? 'diff-preview' : ''}`}>
-              {preview.patch
-                ? preview.patch.split('\n').map((line: string, index: number) => (
-                    <div
-                      key={index}
-                      className={
-                        line.startsWith('+')
-                          ? 'addition'
-                          : line.startsWith('-')
-                            ? 'deletion'
-                            : line.startsWith('@@')
-                              ? 'hunk'
-                              : ''
-                      }
-                    >
-                      {line || ' '}
-                    </div>
-                  ))
-                : preview.content}
-            </pre>
-          )}
-          <button
-            className="quiet"
-            onClick={() => void window.prime.reveal(w.project!.id, preview.path)}
-          >
-            {t('Показать файл в проводнике')}
-          </button>
-        </Modal>
       )}
       {detail && <ResourceDetails workspace={w} detail={detail} close={() => setDetail(null)} />}
     </aside>

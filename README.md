@@ -1,6 +1,6 @@
 # Prime Desktop
 
-Windows desktop workspace for [Prime CLI](https://github.com/SpherePrime/CLI), with projects, persistent chats, streaming tool activity, approvals, model settings, files, diffs, MCP/LSP/Skills and optional voice input.
+Windows desktop workspace for [Prime CLI](https://github.com/SpherePrime/CLI), with projects, persistent chats, streaming tool activity, approvals, model settings, Monaco file editing, diffs, MCP/LSP/Skills and optional voice input.
 
 The bundled CLI starts with the desktop app and runs privately through a Windows named pipe. Chat, models and global MCP/Skills settings are available before opening a project; personal chats use a persistent app-managed workspace. No separate Go, Node.js or Prime installation is needed to run the packaged app. External tools such as Git, language servers and MCP runtimes remain optional dependencies of those features.
 
@@ -26,7 +26,11 @@ npm run runtime:verify
 npm run dist:win
 ```
 
-The installer and unpacked application are written to `release/` (the 0.2.1 delivery is under `release/0.2.1/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
+The installer and unpacked application are written to `release/` (the 0.3.0 delivery is under `release/0.3.0/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
+
+## File editing
+
+Open files from the inspector into editor tabs beside the chat. Monaco provides local syntax highlighting, line numbers, undo/redo and Ctrl+S. Saving checks the last-read revision before replacing a file; external changes require reloading. Unsaved tabs prompt before closing. Manual saves update the workspace and Git diff; CLI session history continues to describe agent tool edits. Editor code and workers are bundled locally and load only when needed.
 
 ## Data and updates
 

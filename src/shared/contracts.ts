@@ -107,6 +107,13 @@ export interface DesktopApi {
   closeProject(id: string): Promise<void>
   call(workspaceId: string, operation: Operation, args?: Json): Promise<Json>
   files(workspaceId: string, path?: string): Promise<Json[]>
+  saveFile(
+    workspaceId: string,
+    path: string,
+    content: string,
+    revision: string
+  ): Promise<{ revision: string }>
+  editorDirty(dirty: boolean): Promise<void>
   readFile(workspaceId: string, path: string): Promise<Json>
   diff(
     workspaceId: string,

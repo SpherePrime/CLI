@@ -357,3 +357,35 @@ Object.assign(english, {
   Отключено: 'Disabled',
   Подключено: 'Connected'
 })
+
+Object.assign(english, {
+  'Ширина редактора': 'Editor width',
+  'Открываем редактор…': 'Opening editor…',
+  'Режим доступа': 'Access mode',
+  'Полный доступ': 'Full access',
+  'С подтверждением': 'Ask for approval',
+  'Доступ инструментов': 'Tool access',
+  'Запрашивать разрешение на защищённые действия.': 'Ask before protected actions.',
+  'Выполнять действия без дополнительных подтверждений.':
+    'Run actions without additional approval.',
+  'Редактор файлов': 'File editor',
+  'Открытые файлы': 'Open files',
+  'Закрыть файл {name}': 'Close file {name}',
+  'Перечитать файл': 'Reload file',
+  'Код файла': 'File code',
+  'Только чтение': 'Read only',
+  'Не сохранено': 'Unsaved',
+  'Сохранить изменения файла?': 'Save file changes?',
+  'Не сохранять': 'Discard changes',
+  'Перечитать файл с диска?': 'Reload file from disk?',
+  'Несохранённые изменения этой вкладки будут заменены содержимым файла.':
+    'Unsaved changes in this tab will be replaced with the file on disk.',
+  Перечитать: 'Reload',
+  Чаты: 'Chats',
+  'Найти чат': 'Find a chat',
+  'Название чата…': 'Chat title…',
+  'Закрыть поиск': 'Close search',
+  'Есть несохранённые изменения в файлах': 'Files have unsaved changes',
+  'Продолжить редактирование': 'Keep editing',
+  'Закрыть без сохранения': 'Close without saving'
+})

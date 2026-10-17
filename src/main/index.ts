@@ -1,3 +1,4 @@
+import { saveProjectFile } from './files/writer'
 import { translate } from '../shared/localization'
 import {
   app,
@@ -35,6 +36,7 @@ let settings: SettingsStore
 let runtimeError = ''
 let updateStatus: any = { state: 'idle' }
 let recovering = false
+let editorDirty = false
 const t = (source: string) => translate(settings?.get().language, source)
 const restarts: number[] = []
 const attachmentStore = new Map<string, any>()
@@ -166,7 +168,37 @@ function refreshTrayMenu(): void {
     ])
   )
 }
+function confirmEditorDiscard(): boolean {
+  if (!editorDirty) return true
+  const result = dialog.showMessageBoxSync(window!, {
+    type: 'question',
+    message: t('Есть несохранённые изменения в файлах'),
+    buttons: [t('Продолжить редактирование'), t('Закрыть без сохранения')],
+    defaultId: 0,
+    cancelId: 0
+  })
+  if (result !== 1) return false
+  editorDirty = false
+  return true
+}
 function registerIpc(): void {
+  handle('editorDirty', (dirty: boolean) => {
+    editorDirty = z.boolean().parse(dirty)
+  })
+  handle('saveFile', (id: string, path: string, content: string, revision: string) =>
+    saveProjectFile(
+      requirePrime().root(projectId.parse(id)),
+      z.string().max(4096).parse(path),
+      z
+        .string()
+        .max(2 * 1024 * 1024)
+        .parse(content),
+      z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .parse(revision)
+    )
+  )
   handle('changes', (id: string) => gitChanges(requirePrime().root(projectId.parse(id))))
   handle('info', () => ({
     version: app.getVersion(),
@@ -378,6 +410,9 @@ function createWindow(): void {
     }
   })
   syncTitlebar()
+  window.webContents.on('will-prevent-unload', (event) => {
+    if (confirmEditorDiscard()) event.preventDefault()
+  })
   window.webContents.setWindowOpenHandler(({ url }) => {
     try {
       void shell.openExternal(validateExternalUrl(url))
@@ -432,6 +467,10 @@ else {
   app.on('before-quit', (event) => {
     if (cleanupDone) return
     event.preventDefault()
+    if (!confirmEditorDiscard()) {
+      quitting = false
+      return
+    }
     quitting = true
     void (async () => {
       await prime?.dispose()

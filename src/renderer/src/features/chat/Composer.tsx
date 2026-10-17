@@ -1,3 +1,4 @@
+import { PermissionMenu } from './PermissionMenu'
 import { ModelPicker } from '../models/ModelPicker'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
@@ -273,6 +274,18 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
             <span className="toolbar-divider" />
+            <PermissionMenu
+              skip={skip}
+              disabled={!w.project}
+              onChange={async (value) => {
+                try {
+                  await w.call('skip', { skip: value })
+                  setSkip(value)
+                } catch (error) {
+                  w.errorHandler(error)
+                }
+              }}
+            />
             <Select
               label={t('Режим агента')}
               value={mode}
@@ -321,27 +334,6 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             </button>
           )}
         </div>
-      </div>
-      <div className="composer-meta">
-        <button
-          onClick={async () => {
-            try {
-              await w.call('skip', { skip: !skip })
-              setSkip(!skip)
-            } catch (error) {
-              w.errorHandler(error)
-            }
-          }}
-          disabled={!w.project}
-        >
-          <ShieldCheck size={12} />
-          {skip ? t('YOLO · без подтверждений') : t('С подтверждением действий')}
-          <ChevronDown size={10} />
-        </button>
-        <span>
-          {t('Shift Enter — новая строка')}
-          {selectedModel?.reasoning_mode ? ` · ${selectedModel.reasoning_mode}` : ''}
-        </span>
       </div>
     </div>
   )

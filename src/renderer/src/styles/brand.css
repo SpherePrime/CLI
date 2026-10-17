@@ -875,3 +875,295 @@ input[type='number'] {
     opacity: 0.6;
   }
 }
+.app-shell.has-editor {
+  grid-template-columns:
+    var(--sidebar-width) 1px minmax(300px, 1fr) 1px minmax(360px, var(--editor-fraction))
+    1px var(--inspector-width);
+}
+.app-shell.has-editor.hide-sidebar {
+  grid-template-columns: minmax(300px, 1fr) 1px minmax(360px, var(--editor-fraction)) 1px var(
+      --inspector-width
+    );
+}
+.app-shell.has-editor.hide-inspector {
+  grid-template-columns: var(--sidebar-width) 1px minmax(300px, 1fr) 1px minmax(
+      360px,
+      var(--editor-fraction)
+    );
+}
+.app-shell.has-editor.hide-sidebar.hide-inspector {
+  grid-template-columns: minmax(300px, 1fr) 1px minmax(360px, var(--editor-fraction));
+}
+.file-editor {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+.editor-tabs {
+  height: 44px;
+  display: flex;
+  overflow: auto;
+  background: var(--sidebar);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.editor-tab {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--border);
+  border-top: 2px solid transparent;
+  max-width: 240px;
+  flex-shrink: 0;
+}
+.editor-tab.active {
+  background: var(--bg);
+  border-top-color: var(--accent-strong);
+}
+.editor-tab > button:first-child {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  min-width: 0;
+  padding: 10px 8px 10px 13px;
+  font-size: 12px;
+}
+.editor-tab > button:first-child svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.editor-tab > button:first-child span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-tab > button:first-child small {
+  font-size: 9px;
+  color: var(--muted);
+}
+.editor-tab .icon {
+  margin: 0 5px 0 0;
+  flex-shrink: 0;
+}
+.unsaved-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--text);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.editor-toolbar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.editor-toolbar > span {
+  flex: 1;
+  font-size: 11px;
+  color: var(--secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-save {
+  padding: 5px 8px;
+  font-size: 11px;
+  border-color: transparent;
+  background: transparent;
+}
+.editor-surface {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.editor-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 10px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+.editor-image {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 20px;
+}
+.editor-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.editor-loading {
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 12px;
+}
+.file-editor .monaco-editor textarea {
+  border-radius: 0;
+  padding: 0;
+}
+.file-editor .monaco-editor .inputarea {
+  min-height: 0;
+}
+.has-editor .composer-options {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.has-editor .composer-toolbar {
+  align-items: flex-end;
+  gap: 8px;
+}
+.has-editor .composer-area {
+  padding: 14px 18px 18px;
+}
+.has-editor .conversation-inner {
+  padding: 24px 20px;
+}
+.has-editor .welcome {
+  padding: 24px 20px;
+}
+.has-editor .starter-grid {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.has-editor .starter-grid button {
+  padding: 12px;
+}
+.permission-trigger {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-height: 28px;
+  padding: 5px 7px;
+  font-size: 11px;
+  color: var(--secondary);
+}
+.permission-trigger.unrestricted {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.permission-menu > strong {
+  display: block;
+  font-size: 12px;
+  padding: 10px 11px;
+  color: var(--secondary);
+}
+.permission-menu > button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 12px 10px;
+  gap: 11px;
+}
+.permission-menu > button[aria-checked='true'] {
+  background: var(--accent-bg);
+}
+.permission-menu > button > span:nth-child(2) {
+  flex: 1;
+}
+.permission-menu b {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.permission-menu small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.permission-choice-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.chat-list-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px 3px 28px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.chat-search-box {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 6px 10px 9px 26px;
+  padding: 3px 6px 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.chat-search-box:focus-within {
+  border-color: var(--accent);
+}
+.chat-search-box input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 7px 0;
+  font-size: 12px;
+}
+.chat-search-box svg {
+  flex-shrink: 0;
+}
+@media (max-width: 1500px) {
+  .has-editor .permission-trigger > span {
+    display: none;
+  }
+  .app-shell.has-editor {
+    --inspector-width: 260px;
+    --sidebar-width: 220px;
+  }
+}
+@media (max-width: 1100px) {
+  .app-shell.has-editor {
+    grid-template-columns: minmax(280px, 1fr) 1px minmax(360px, var(--editor-fraction));
+  }
+  .has-editor > .sidebar,
+  .has-editor > .left-resizer,
+  .has-editor > .inspector,
+  .has-editor > .right-resizer {
+    display: none;
+  }
+}
+.code-editor-host {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.has-editor .welcome h1 {
+  font-size: 25px;
+  line-height: 1.25;
+}
+.has-editor .starter-grid {
+  display: none;
+}
+.has-editor .welcome .welcome-wordmark .prime-logo {
+  width: 40px;
+  height: 40px;
+}
+.has-editor .welcome > p {
+  font-size: 12px;
+}

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import ignore from 'ignore'
@@ -48,7 +49,13 @@ export async function readProjectFile(root: string, path: string): Promise<any> 
   if (mime)
     return { path, name: basename(path), image: `data:${mime};base64,${buffer.toString('base64')}` }
   if (buffer.includes(0)) throw new Error('Бинарный файл — откройте его во внешнем приложении')
-  return { path, name: basename(path), content: buffer.toString('utf8') }
+  const content = new TextDecoder('utf-8', { fatal: true }).decode(buffer)
+  return {
+    path,
+    name: basename(path),
+    content,
+    revision: createHash('sha256').update(buffer).digest('hex')
+  }
 }
 export async function fileDiff(
   root: string,

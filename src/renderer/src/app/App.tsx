@@ -1,8 +1,9 @@
+import { useDocuments } from '../features/files/useDocuments'
 import { StartupScreen } from '../components/StartupScreen'
 import { Titlebar } from '../components/Titlebar'
 import { I18nProvider, useI18n } from '../i18n'
 import { PrimeLogo } from '../components/PrimeLogo'
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import {
   ArrowUpRight,
   Code2,
@@ -30,6 +31,8 @@ import { SettingsDialog } from '../features/settings/SettingsDialog'
 import { PluginManager } from '../features/plugins/PluginManager'
 import { ChatActions } from '../features/chat/ChatActions'
 
+const FileEditor = lazy(() => import('../features/files/FileEditor'))
+
 export function App() {
   const w = useWorkspace()
   const [started, setStarted] = useState(false)
@@ -47,6 +50,8 @@ export function App() {
 
 function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const { t, locale } = useI18n()
+  const documents = useDocuments(w.errorHandler)
+  const [editorFraction, setEditorFraction] = useState(1.2)
   const [modal, setModal] = useState('')
   const [sidebar, setSidebar] = useState(true)
   const [inspector, setInspector] = useState(true)
@@ -119,10 +124,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       <Titlebar />
       <div
         ref={shell}
-        className={`app-shell ${sidebar ? '' : 'hide-sidebar'} ${inspector ? '' : 'hide-inspector'}`}
+        className={`app-shell ${sidebar ? '' : 'hide-sidebar'} ${inspector ? '' : 'hide-inspector'} ${documents.documents.length ? 'has-editor' : ''}`}
         style={
           {
             '--sidebar-width': widths.sidebar + 'px',
+            '--editor-fraction': `${editorFraction}fr`,
             '--inspector-width': widths.inspector + 'px',
             zoom
           } as React.CSSProperties
@@ -205,12 +211,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               >
                 <X size={14} />
               </button>
-            </div>
-          )}
-          {w.loading && (
-            <div className="loading-banner">
-              <LoaderCircle size={15} className="spin" />{' '}
-              {t('Открываем проект и подключаем Prime…')}
             </div>
           )}
           {isEmpty ? (
@@ -330,6 +330,40 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             </span>
           </footer>
         </main>
+        {documents.documents.length > 0 && (
+          <>
+            <div
+              className="resizer editor-divider"
+              role="separator"
+              aria-label={t('Ширина редактора')}
+              onPointerDown={(event) => {
+                event.preventDefault()
+                const start = event.clientX
+                const editorWidth =
+                  shell.current!.querySelector<HTMLElement>('.file-editor')!.offsetWidth
+                const available =
+                  editorWidth +
+                  shell.current!.querySelector<HTMLElement>('.main-workspace')!.offsetWidth
+                const move = (event: PointerEvent) => {
+                  const width = Math.max(
+                    360,
+                    Math.min(available - 300, editorWidth - (event.clientX - start))
+                  )
+                  setEditorFraction(width / (available - width))
+                }
+                const stop = () => {
+                  window.removeEventListener('pointermove', move)
+                  window.removeEventListener('pointerup', stop)
+                }
+                window.addEventListener('pointermove', move)
+                window.addEventListener('pointerup', stop)
+              }}
+            />
+            <Suspense fallback={<div className="editor-loading">{t('Открываем редактор…')}</div>}>
+              <FileEditor state={documents} theme={w.preferences.theme} />
+            </Suspense>
+          </>
+        )}
         {inspector && (
           <>
             <div
@@ -349,7 +383,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                   }))
               }}
             />
-            <Inspector workspace={w} close={() => setInspector(false)} />
+            <Inspector
+              workspace={w}
+              close={() => setInspector(false)}
+              openDocument={documents.open}
+            />
           </>
         )}
         {(modal === 'settings' || modal === 'providers') && (

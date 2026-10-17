@@ -6,6 +6,9 @@ import { join, resolve } from 'node:path'
 import { startProvider } from '../fixtures/provider-server'
 
 test('opens the real Electron desktop and creates persistent Prime sessions', async () => {
+  test.setTimeout(120000)
+  const editedSource =
+    "export interface AppSettings {\n  name: string\n  autoSave: boolean\n}\n\nexport function createSettings(\n  name: string\n): AppSettings {\n  return { name, autoSave: false }\n}\n\nexport const settings = createSettings(\n  'Prime Desktop'\n)\n"
   const project = await mkdtemp(join(tmpdir(), 'prime-desktop-проект-'))
   const provider = await startProvider()
   await mkdir(join(project, 'config'))
@@ -61,6 +64,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     })
   )
   await writeFile(join(project, 'hello.txt'), 'Desktop fixture')
+  await writeFile(join(project, 'editor-example.ts'), 'export const answer: number = 42\n')
   await writeFile(
     join(project, '.gitignore'),
     'config/\ncache/\nglobal-data/\nelectron-profile/\nxdg-*/\n.prime/\n'
@@ -95,6 +99,8 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
   let desktop = await launch()
   const errors: string[] = []
   let page = await desktop.firstWindow()
+  const workers: string[] = []
+  page.on('worker', (worker) => workers.push(worker.url()))
   page.on('pageerror', (error) => errors.push(error.message))
   try {
     await expect(page.getByRole('heading', { name: 'С чего начнём?' })).toBeVisible()
@@ -147,6 +153,51 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await expect(page.getByRole('textbox', { name: 'Сообщение Prime' })).toBeEnabled({
       timeout: 20000
     })
+    await expect(page.getByText('Shift Enter — новая строка', { exact: true })).toHaveCount(0)
+    await expect(page.locator('.loading-banner')).toHaveCount(0)
+    await expect(page.getByRole('textbox', { name: 'Поиск чатов' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Найти чат', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Поиск чатов' }).fill('Проверка сессии')
+    await expect(page.getByRole('button', { name: 'Проверка сессии', exact: true })).toBeVisible()
+    await page.screenshot({ path: 'test-results/chat-search.png' })
+    await page.getByRole('button', { name: 'Закрыть поиск', exact: true }).click()
+    await page.getByRole('button', { name: 'Режим доступа', exact: true }).click()
+    await page.getByRole('menuitemradio', { name: /Полный доступ/ }).click()
+    await expect
+      .poll(() => page.evaluate((id) => window.prime.call(id!, 'getSkip'), opened?.id))
+      .toMatchObject({ skip: true })
+    await page.getByRole('button', { name: 'Режим доступа', exact: true }).click()
+    await page.screenshot({ path: 'test-results/permissions-menu.png' })
+    await page.getByRole('menuitemradio', { name: /С подтверждением/ }).click()
+    await page.getByRole('button', { name: 'editor-example.ts', exact: true }).click()
+    const code = page.getByRole('textbox', { name: 'Код файла', exact: true })
+    await expect(code).toBeAttached({ timeout: 30000 })
+    await expect(page.locator('.file-editor .monaco-editor-background').first()).toHaveCSS(
+      'background-color',
+      'rgb(16, 16, 16)'
+    )
+    await code.press('ControlOrMeta+A')
+    await desktop.evaluate(({ clipboard }, text) => clipboard.writeText(text), editedSource)
+    await code.press('ControlOrMeta+V')
+    await page.getByRole('button', { name: 'Закрыть файл editor-example.ts', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Сохранить изменения файла?' })).toBeVisible()
+    await page.getByRole('button', { name: 'Отмена', exact: true }).click()
+    await code.press('ControlOrMeta+s')
+    await expect
+      .poll(async () =>
+        (await readFile(join(project, 'editor-example.ts'), 'utf8')).replaceAll('\r\n', '\n')
+      )
+      .toBe(editedSource)
+    await expect
+      .poll(() =>
+        page
+          .locator('.file-editor .view-lines span[class^=mtk]')
+          .evaluateAll((items) => new Set(items.map((item) => item.className)).size)
+      )
+      .toBeGreaterThan(1)
+    await expect.poll(() => workers.some((url) => url.startsWith('blob:'))).toBe(true)
+    await page.screenshot({ path: 'test-results/file-editor.png' })
+    await page.getByRole('button', { name: 'Закрыть файл editor-example.ts', exact: true }).click()
     await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill('Проверка связи через CLI')
     await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
     await expect(
@@ -207,8 +258,13 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await page.screenshot({ path: 'test-results/compare-picker.png' })
     await page.getByRole('option', { name: 'Сравнить с Git HEAD' }).click()
     await page.getByRole('button', { name: 'created-by-tool.txt', exact: false }).click()
-    await expect(page.locator('.diff-preview')).toContainText('+Tool execution verified')
-    await page.getByRole('button', { name: 'Закрыть', exact: true }).click()
+    await expect(page.locator('.file-editor .monaco-diff-editor')).toContainText(
+      'Tool execution verified',
+      { timeout: 20000 }
+    )
+    await page
+      .getByRole('button', { name: 'Закрыть файл created-by-tool.txt', exact: true })
+      .click()
     await page.getByRole('button', { name: 'Файлы', exact: true }).click()
     await page.getByRole('button', { name: 'Настройки', exact: false }).first().click()
     await expect(page.getByRole('heading', { name: 'Настройки', exact: true })).toBeVisible()
