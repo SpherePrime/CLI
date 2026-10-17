@@ -1149,6 +1149,35 @@ input[type='number'] {
     display: none;
   }
 }
+.tool-section {
+  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+}
+.tool-section h4 {
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.tool-card .tool-section pre {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tool-description {
+  padding: 10px 14px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.tool-exit {
+  display: block;
+  padding: 0 14px 12px;
+  color: var(--muted);
+}
 .prompt-queue {
   border: 1px solid var(--border);
   border-radius: 12px;

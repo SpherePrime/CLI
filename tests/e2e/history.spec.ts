@@ -4,10 +4,11 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 
 test('virtualizes a thousand variable-height messages and preserves both ends of history', async () => {
+  test.setTimeout(90000)
   const server = await createServer({
     configFile: false,
     plugins: [react()],
-    server: { host: '127.0.0.1', port: 0 }
+    server: { host: '127.0.0.1', port: 0, watch: { ignored: ['**/out/**', '**/release/**'] } }
   })
   await server.listen()
   const url = server.resolvedUrls!.local[0] + 'tests/fixtures/history.html'
@@ -34,6 +35,63 @@ test('virtualizes a thousand variable-height messages and preserves both ends of
     await page.getByRole('button', { name: 'Новые сообщения' }).click()
     await expect(page.getByText('Newest streamed answer')).toBeVisible()
     expect(await page.locator('.message').count()).toBeLessThan(40)
+    const view = page.locator('.conversation')
+    await page.getByRole('button', { name: 'Start stream', exact: true }).click()
+    await view.hover()
+    async function wheel(delta: number) {
+      const received = view.evaluate(
+        (element) =>
+          new Promise<number>((resolve) => {
+            element.addEventListener(
+              'wheel',
+              () => {
+                const offset = element.scrollTop
+                requestAnimationFrame(() => resolve(offset))
+              },
+              { once: true }
+            )
+          })
+      )
+      await page.mouse.wheel(0, delta)
+      const offset = await received
+      await view.evaluate((element, delta) => {
+        element.scrollTop += delta
+      }, delta)
+      return offset
+    }
+    const beforeWheel = await wheel(-60)
+    const readingPosition = await view.evaluate((element) => element.scrollTop)
+    const tickBeforeWheel = Number(await page.getByTestId('stream-ticks').textContent())
+    await expect
+      .poll(async () => Number(await page.getByTestId('stream-ticks').textContent()))
+      .toBeGreaterThan(tickBeforeWheel + 10)
+    expect(await view.evaluate((element) => element.scrollTop)).toBeLessThanOrEqual(
+      readingPosition + 2
+    )
+    await wheel(-1500)
+    await expect
+      .poll(() => view.evaluate((element) => element.scrollTop))
+      .toBeLessThan(beforeWheel - 500)
+    const firstVisibleIndex = () =>
+      view.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        const row = [...element.querySelectorAll<HTMLElement>('[data-index]')].find((row) => {
+          const box = row.getBoundingClientRect()
+          return box.bottom > bounds.top + 1 && box.top < bounds.bottom
+        })
+        return Number(row?.dataset.index)
+      })
+    let middle = NaN
+    await expect.poll(async () => (middle = await firstVisibleIndex())).toBeGreaterThanOrEqual(0)
+    await wheel(500)
+    await expect.poll(firstVisibleIndex).toBeGreaterThan(middle)
+    await page.getByRole('button', { name: 'Новые сообщения' }).click()
+    await expect
+      .poll(() =>
+        view.evaluate((element) => element.scrollHeight - element.scrollTop - element.clientHeight)
+      )
+      .toBeLessThan(3)
+    await page.getByRole('button', { name: 'Stop stream', exact: true }).click()
     await page.getByRole('button', { name: 'Reasoning fixture', exact: true }).click()
     await page.getByText('Размышления', { exact: true }).click()
     await expect(page.locator('.reasoning')).toHaveAttribute('open', '')
@@ -46,6 +104,19 @@ test('virtualizes a thousand variable-height messages and preserves both ends of
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
     )
     await expect(page.getByRole('button', { name: 'Новые сообщения' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Tools fixture', exact: true }).click()
+    await expect(page.locator('.tool-card')).toHaveCount(1)
+    await expect(page.locator('.tool-card summary')).toContainText('Выполняется')
+    await page.getByRole('button', { name: 'Finish tool', exact: true }).click()
+    await expect(page.locator('.tool-card')).toHaveCount(1)
+    await expect(page.locator('.message.tool')).toHaveCount(0)
+    await expect(page.locator('.tool-card summary')).toContainText('Готово')
+    await page.locator('.tool-card summary').click()
+    await expect(page.locator('.tool-section pre').first()).toHaveText('printf "Hello, Prime!\\n"')
+    await expect(page.locator('.tool-output pre')).toContainText('Hello, Prime!')
+    await page
+      .locator('.conversation-panel')
+      .screenshot({ path: 'test-results/tool-card-component.png' })
   } finally {
     await desktop.close()
     await server.close()
@@ -56,7 +127,7 @@ test('keeps an unresolved approval after a permission-start notification and sna
   const server = await createServer({
     configFile: false,
     plugins: [react()],
-    server: { host: '127.0.0.1', port: 0 }
+    server: { host: '127.0.0.1', port: 0, watch: { ignored: ['**/out/**', '**/release/**'] } }
   })
   await server.listen()
   const env: Record<string, string> = {

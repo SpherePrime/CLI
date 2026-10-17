@@ -857,12 +857,20 @@ kbd {
   color: var(--muted);
   margin-left: 10px;
 }
+.conversation-panel {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
 .conversation {
   flex: 1;
   overflow: auto;
   min-height: 0;
   position: relative;
   scroll-behavior: smooth;
+  overflow-anchor: none;
 }
 .conversation-inner {
   max-width: 860px;
@@ -1053,7 +1061,7 @@ kbd {
   animation: pulse 1.6s infinite;
 }
 .jump-bottom {
-  position: sticky;
+  position: absolute;
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);

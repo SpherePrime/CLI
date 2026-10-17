@@ -55,6 +55,11 @@
 - The composer exposes the main model's supported reasoning modes beside the model selector. A real CLI test saves High, verifies the configuration and returns it to Off.
 - The pinned runtime advertises queue control; Desktop rejects runtimes without that capability. Existing string queue endpoints and legacy in-process folding remain compatible.
 
+## Version 0.3.3 tool output and scrolling
+
+- Tool calls and results are joined by call ID within user turns. One card shows the command or parameters and its output; unmatched output stays visible. Stored messages are unchanged. A finished argument stream alone does not mark tool execution complete.
+- Manual wheel, touch, scrollbar and keyboard input cancel the virtualizer's pending auto-scroll. The return button is outside the scrolling content and targets the browser's actual end, including padding. Long-history coverage exercises reading during streaming, moving down and returning to the end.
+
 ## Public release requirements
 
 - No public Desktop repository or update-feed destination has been assigned. The updater reports an unavailable feed; no release was published.
