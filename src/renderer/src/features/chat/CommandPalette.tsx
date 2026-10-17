@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { useEffect, useState } from 'react'
 import {
   FolderOpen,
@@ -27,6 +28,7 @@ export function CommandPalette({
   plugins: () => void
   inspector: () => void
 }) {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [custom, setCustom] = useState<any[]>([])
   useEffect(() => {
@@ -36,34 +38,34 @@ export function CommandPalette({
         .catch(() => {})
   }, [w.project?.id])
   const actions = [
-    { name: 'Новый чат', key: 'Ctrl N', icon: Plus, action: () => void w.createSession() },
-    { name: 'Открыть проект', key: '', icon: FolderOpen, action: () => void w.openProject() },
-    { name: 'Выбрать модель', key: 'Ctrl L', icon: Sparkles, action: models },
-    { name: 'Настройки', key: '', icon: Settings, action: settings },
-    { name: 'Плагины', key: '', icon: Puzzle, action: plugins },
-    { name: 'Рабочая область', key: '', icon: PanelRight, action: inspector },
+    { name: t('Новый чат'), key: 'Ctrl N', icon: Plus, action: () => void w.createSession() },
+    { name: t('Открыть проект'), key: '', icon: FolderOpen, action: () => void w.openProject() },
+    { name: t('Выбрать модель'), key: 'Ctrl L', icon: Sparkles, action: models },
+    { name: t('Настройки'), key: '', icon: Settings, action: settings },
+    { name: t('Плагины'), key: '', icon: Puzzle, action: plugins },
+    { name: t('Рабочая область'), key: '', icon: PanelRight, action: inspector },
     {
-      name: 'Сжать контекст',
+      name: t('Сжать контекст'),
       key: '',
       icon: ListRestart,
       action: () => void w.call('summarize', { sessionId: w.session?.id }).catch(w.errorHandler)
     },
     ...custom.map((command) => ({
       name: command.Name || command.name || command.title || command.id,
-      key: 'Команда проекта',
+      key: t('Команда проекта'),
       icon: Terminal,
       action: () => window.dispatchEvent(new CustomEvent('prime:command', { detail: command }))
     }))
   ].filter((action) => action.name.toLowerCase().includes(query.toLowerCase()))
   return (
-    <Modal title="Поиск и команды" close={close}>
+    <Modal title={t('Поиск и команды')} close={close}>
       <label className="search-field">
         <Search size={17} />
         <input
           autoFocus
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Введите название действия…"
+          placeholder={t('Введите название действия…')}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && actions[0]) {
               close()
@@ -99,7 +101,7 @@ export function CommandPalette({
             >
               <Search size={15} />
               <span>{session.title}</span>
-              <small>Чат</small>
+              <small>{t('Чат')}</small>
             </button>
           ))}
       </div>

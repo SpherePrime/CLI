@@ -1,3 +1,4 @@
+import { I18nProvider, useI18n } from '../i18n'
 import { PrimeLogo } from '../components/PrimeLogo'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -17,7 +18,7 @@ import {
   LoaderCircle,
   ChevronRight
 } from 'lucide-react'
-import { useWorkspace } from './useWorkspace'
+import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
 import { MessageList } from '../features/chat/MessageList'
 import { Composer } from '../features/chat/Composer'
@@ -30,6 +31,15 @@ import { CommandPalette } from '../features/chat/CommandPalette'
 
 export function App() {
   const w = useWorkspace()
+  return (
+    <I18nProvider language={w.preferences.language}>
+      <WorkspaceView workspace={w} />
+    </I18nProvider>
+  )
+}
+
+function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
+  const { t, locale } = useI18n()
   const [modal, setModal] = useState('')
   const [sidebar, setSidebar] = useState(true)
   const [inspector, setInspector] = useState(true)
@@ -117,7 +127,7 @@ export function App() {
           <div
             className="resizer left-resizer"
             role="separator"
-            aria-label="Ширина панели проектов"
+            aria-label={t('Ширина панели проектов')}
             tabIndex={0}
             onPointerDown={(event) => resize('sidebar', event)}
             onKeyDown={(event) => {
@@ -137,16 +147,16 @@ export function App() {
         <header className="workspace-header">
           <button
             className="icon"
-            title={sidebar ? 'Скрыть проекты' : 'Показать проекты'}
-            aria-label="Панель проектов"
+            title={sidebar ? t('Скрыть проекты') : t('Показать проекты')}
+            aria-label={t('Панель проектов')}
             onClick={() => setSidebar((value) => !value)}
           >
             {sidebar ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
           </button>
           <div className="breadcrumbs">
-            <span>{projectName || 'Рабочее пространство'}</span>
+            <span>{projectName || t('Рабочее пространство')}</span>
             <ChevronRight size={13} />
-            <strong>{w.session?.title || 'Новый чат'}</strong>
+            <strong>{w.session?.title || t('Новый чат')}</strong>
           </div>
           <div className="header-actions">
             <span
@@ -154,15 +164,15 @@ export function App() {
             >
               <span className={`dot ${w.info.runtime === 'ready' ? 'green' : 'amber'}`} />
               {w.project?.connection === 'reconnecting'
-                ? 'Переподключение'
+                ? t('Переподключение')
                 : w.info.runtime === 'ready'
-                  ? 'Локальный runtime'
-                  : 'Запускаем Prime'}
+                  ? t('Локальный runtime')
+                  : t('Запускаем Prime')}
             </span>
             <button
               className="icon"
-              aria-label="Поиск и команды"
-              title="Поиск и команды · Ctrl P"
+              aria-label={t('Поиск и команды')}
+              title={t('Поиск и команды · Ctrl P')}
               onClick={() => setModal('palette')}
             >
               <Search size={17} />
@@ -170,8 +180,8 @@ export function App() {
             {!inspector && (
               <button
                 className="icon"
-                aria-label="Показать рабочую область"
-                title="Рабочая область"
+                aria-label={t('Показать рабочую область')}
+                title={t('Рабочая область')}
                 onClick={() => setInspector(true)}
               >
                 <PanelRightOpen size={17} />
@@ -183,10 +193,10 @@ export function App() {
           <div className="error-banner" role="alert">
             <AlertCircle size={16} />
             <span>{w.error || w.info.error}</span>
-            <button onClick={() => setModal('providers')}>Настройки</button>
+            <button onClick={() => setModal('providers')}>{t('Настройки')}</button>
             <button
               className="icon small"
-              aria-label="Скрыть ошибку"
+              aria-label={t('Скрыть ошибку')}
               onClick={() => w.setError('')}
             >
               <X size={14} />
@@ -195,7 +205,7 @@ export function App() {
         )}
         {w.loading && (
           <div className="loading-banner">
-            <LoaderCircle size={15} className="spin" /> Открываем проект и подключаем Prime…
+            <LoaderCircle size={15} className="spin" /> {t('Открываем проект и подключаем Prime…')}
           </div>
         )}
         {isEmpty ? (
@@ -203,19 +213,19 @@ export function App() {
             <div className="welcome-wordmark">
               <PrimeLogo />
             </div>
-            <div className="eyebrow">ВАШ ПРОЕКТ. ВАШИ ИНСТРУМЕНТЫ.</div>
-            <h1>{w.project ? 'Что сделаем в проекте?' : 'От идеи к работающему коду.'}</h1>
+            <div className="eyebrow">{t('ВАШ ПРОЕКТ. ВАШИ ИНСТРУМЕНТЫ.')}</div>
+            <h1>{w.project ? t('Что сделаем в проекте?') : t('От идеи к работающему коду.')}</h1>
             <p>
               {w.project ? (
                 <>
-                  Prime работает в <strong>{projectName}</strong>.<br />
-                  Опишите задачу — контекст и инструменты уже рядом.
+                  {t('Prime работает в')} <strong>{projectName}</strong>.<br />
+                  {t('Опишите задачу — контекст и инструменты уже рядом.')}
                 </>
               ) : (
                 <>
-                  Привычный Prime в отдельном рабочем пространстве.
+                  {t('Привычный Prime в отдельном рабочем пространстве.')}
                   <br />
-                  Откройте проект, чтобы начать.
+                  {t('Откройте проект, чтобы начать.')}
                 </>
               )}
             </p>
@@ -225,28 +235,31 @@ export function App() {
                 disabled={w.loading || w.info.runtime !== 'ready'}
                 onClick={() => void w.openProject()}
               >
-                <FolderOpen size={16} /> Открыть проект <ArrowUpRight size={15} />
+                <FolderOpen size={16} /> {t('Открыть проект')}
+                <ArrowUpRight size={15} />
               </button>
             )}
             <div className="starter-grid">
               {[
                 {
                   icon: FileSearch,
-                  title: 'Разобраться в проекте',
-                  description: 'Архитектура, файлы и связи',
-                  prompt: 'Изучи проект и объясни его архитектуру и основные точки входа.'
+                  title: t('Разобраться в проекте'),
+                  description: t('Архитектура, файлы и связи'),
+                  prompt: t('Изучи проект и объясни его архитектуру и основные точки входа.')
                 },
                 {
                   icon: Code2,
-                  title: 'Внести изменения',
-                  description: 'От задачи к готовому решению',
-                  prompt: 'Изучи проект и помоги реализовать следующую задачу: '
+                  title: t('Внести изменения'),
+                  description: t('От задачи к готовому решению'),
+                  prompt: t('Изучи проект и помоги реализовать следующую задачу: ')
                 },
                 {
                   icon: Terminal,
-                  title: 'Найти проблему',
-                  description: 'Ошибки, причины и проверки',
-                  prompt: 'Проверь проект на ошибки и предложи конкретные исправления с проверками.'
+                  title: t('Найти проблему'),
+                  description: t('Ошибки, причины и проверки'),
+                  prompt: t(
+                    'Проверь проект на ошибки и предложи конкретные исправления с проверками.'
+                  )
                 }
               ].map((item) => (
                 <button
@@ -263,7 +276,7 @@ export function App() {
             </div>
             {!w.project && w.info.runtime === 'starting' && (
               <div className="startup-status">
-                <LoaderCircle size={13} className="spin" /> Подготавливаем встроенный Prime
+                <LoaderCircle size={13} className="spin" /> {t('Подготавливаем встроенный Prime')}
               </div>
             )}
           </section>
@@ -275,12 +288,18 @@ export function App() {
         <footer className="workspace-statusbar">
           <span>
             <GitBranch size={12} />
-            {projectName || 'Проект не выбран'}
+            {projectName || t('Проект не выбран')}
           </span>
           <span>
             {w.session
-              ? `${(w.session.prompt_tokens || 0).toLocaleString()} токенов · $${(w.session.cost || 0).toFixed(4)}`
-              : 'Всё необходимое — в одном пространстве'}
+              ? t('{value0} токенов · ${value1}', {
+                  value0: (w.session.prompt_tokens || 0).toLocaleString(locale),
+                  value1: (w.session.cost || 0).toLocaleString(locale, {
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4
+                  })
+                })
+              : t('Всё необходимое — в одном пространстве')}
             <span className="status-separator" />
             Prime Desktop
           </span>
@@ -291,7 +310,7 @@ export function App() {
           <div
             className="resizer right-resizer"
             role="separator"
-            aria-label="Ширина рабочей области"
+            aria-label={t('Ширина рабочей области')}
             tabIndex={0}
             onPointerDown={(event) => resize('inspector', event)}
             onKeyDown={(event) => {

@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { useEffect, useState } from 'react'
 import { Check, Search, Sparkles, Server, Plus } from 'lucide-react'
 import { Modal } from '../../components/Modal'
@@ -11,6 +12,7 @@ export function ModelDialog({
   close: () => void
   setup: () => void
 }) {
+  const { t } = useI18n()
   const [models, setModels] = useState<any[]>([])
   const [query, setQuery] = useState('')
   const [saving, setSaving] = useState(false)
@@ -31,13 +33,13 @@ export function ModelDialog({
   )
   const modes = capability?.reasoning_modes || capability?.reasoning_levels || []
   return (
-    <Modal title="Модели и глубина рассуждений" close={close}>
+    <Modal title={t('Модели и глубина рассуждений')} close={close}>
       <div className="segmented">
         <button className={kind === 'large' ? 'active' : ''} onClick={() => setKind('large')}>
-          Основная модель
+          {t('Основная модель')}
         </button>
         <button className={kind === 'small' ? 'active' : ''} onClick={() => setKind('small')}>
-          Быстрая модель
+          {t('Быстрая модель')}
         </button>
       </div>
       <label className="search-field">
@@ -46,13 +48,13 @@ export function ModelDialog({
           autoFocus
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Найти модель или провайдера"
+          placeholder={t('Найти модель или провайдера')}
         />
       </label>
       {error && <p className="error-text">{error}</p>}
       <div className="model-list">
         {loading ? (
-          <p className="muted">Загружаем каталог моделей…</p>
+          <p className="muted">{t('Загружаем каталог моделей…')}</p>
         ) : (
           models
             .filter((model) =>
@@ -87,8 +89,8 @@ export function ModelDialog({
                 <span>
                   <strong>{model.name || model.model_id}</strong>
                   <small>
-                    {model.provider_id} · {Math.round((model.context_window || 0) / 1000)}k контекст{' '}
-                    {model.can_reason ? '· reasoning' : ''}
+                    {model.provider_id} · {Math.round((model.context_window || 0) / 1000)}
+                    {t('k контекст')} {model.can_reason ? t('· рассуждения') : ''}
                   </small>
                 </span>
                 {selected?.model === model.model_id && selected?.provider === model.provider_id && (
@@ -98,12 +100,12 @@ export function ModelDialog({
             ))
         )}
         {!loading && !models.length && (
-          <div className="empty-small">Подключите провайдера, чтобы увидеть модели</div>
+          <div className="empty-small">{t('Подключите провайдера, чтобы увидеть модели')}</div>
         )}
       </div>
       {capability?.can_reason && modes.length > 0 && (
         <label className="form-label">
-          Глубина рассуждений
+          {t('Глубина рассуждений')}
           <select
             value={reasoning}
             onChange={async (event) => {
@@ -127,7 +129,7 @@ export function ModelDialog({
         </label>
       )}
       <button className="quiet full-width" onClick={setup}>
-        <Plus size={15} /> Подключить провайдера
+        <Plus size={15} /> {t('Подключить провайдера')}
       </button>
     </Modal>
   )

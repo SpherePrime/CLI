@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { useEffect, useRef, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
 function wav(samples: Float32Array): string {
@@ -28,6 +29,7 @@ function wav(samples: Float32Array): string {
   return btoa(binary)
 }
 export function useVoice(workspace: Workspace, onText: (text: string) => void) {
+  const { t } = useI18n()
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const recorder = useRef<MediaRecorder | null>(null)
@@ -55,7 +57,7 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
       const plugins = await workspace.call('plugins')
       const list = Array.isArray(plugins) ? plugins : plugins?.plugins || []
       const voice = list.find((plugin: any) => plugin.name === 'voice')
-      if (!voice?.enabled) throw new Error('Включите плагин Voice в разделе «Плагины»')
+      if (!voice?.enabled) throw new Error(t('Включите плагин Voice в разделе «Плагины»'))
       const media = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, sampleRate: 16000 }
       })

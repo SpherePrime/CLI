@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import {
   ChevronDown,
@@ -26,6 +27,7 @@ export function Sidebar({
   onPlugins: () => void
   onPalette: () => void
 }) {
+  const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [menu, setMenu] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
@@ -51,27 +53,28 @@ export function Sidebar({
       </div>
       <div className="sidebar-actions">
         <button className="new-chat" disabled={!w.project} onClick={() => void w.createSession()}>
-          <Plus size={17} /> Новый чат <kbd>Ctrl N</kbd>
+          <Plus size={17} /> {t('Новый чат')}
+          <kbd>Ctrl N</kbd>
         </button>
         <button
           className="quiet"
           onClick={() => void w.openProject()}
           disabled={w.loading || w.info.runtime !== 'ready'}
         >
-          <FolderOpen size={16} /> Открыть проект
+          <FolderOpen size={16} /> {t('Открыть проект')}
         </button>
       </div>
       <button className="search-launch" onClick={onPalette}>
         <Search size={15} />
-        <span>Поиск и команды</span>
+        <span>{t('Поиск и команды')}</span>
         <kbd>Ctrl P</kbd>
       </button>
       <div className="sidebar-scroll">
         <div className="section-caption">
-          РАБОЧИЕ ПРОСТРАНСТВА{' '}
+          {t('РАБОЧИЕ ПРОСТРАНСТВА')}{' '}
           <button
             className="icon small"
-            aria-label="Добавить проект"
+            aria-label={t('Добавить проект')}
             onClick={() => void w.openProject()}
           >
             <Plus size={14} />
@@ -91,8 +94,8 @@ export function Sidebar({
               </button>
               <button
                 className="icon small"
-                title="Закрыть проект"
-                aria-label={`Закрыть проект ${project.path}`}
+                title={t('Закрыть проект')}
+                aria-label={t('Закрыть проект {value0}', { value0: project.path })}
                 onClick={() => void w.closeProject(project.id)}
               >
                 <X size={12} />
@@ -101,11 +104,11 @@ export function Sidebar({
             {w.project?.id === project.id && (
               <>
                 <input
-                  aria-label="Поиск чатов"
+                  aria-label={t('Поиск чатов')}
                   className="session-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Найти чат…"
+                  placeholder={t('Найти чат…')}
                 />
                 {sessions.map((session) => (
                   <div
@@ -143,14 +146,14 @@ export function Sidebar({
                         onClick={() => void w.selectSession(session)}
                       >
                         <MessageSquare size={14} />
-                        <span>{session.title || 'Новый чат'}</span>
+                        <span>{session.title || t('Новый чат')}</span>
                         {session.is_busy && <span className="dot pulse" />}
                         {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
                       </button>
                     )}
                     <button
                       className="icon small row-menu"
-                      aria-label={`Действия: ${session.title}`}
+                      aria-label={t('Действия: {value0}', { value0: session.title })}
                       onClick={() => setMenu(menu === session.id ? null : session.id)}
                     >
                       <MoreHorizontal size={15} />
@@ -164,7 +167,7 @@ export function Sidebar({
                             setMenu(null)
                           }}
                         >
-                          Переименовать
+                          {t('Переименовать')}
                         </button>
                         <button
                           onClick={() => {
@@ -176,7 +179,7 @@ export function Sidebar({
                             setMenu(null)
                           }}
                         >
-                          Закрепить / открепить
+                          {t('Закрепить / открепить')}
                         </button>
                         <button
                           className="danger"
@@ -185,24 +188,26 @@ export function Sidebar({
                             setMenu(null)
                           }}
                         >
-                          Удалить чат
+                          {t('Удалить чат')}
                         </button>
                       </div>
                     )}
                   </div>
                 ))}
-                {!sessions.length && <p className="sidebar-empty">Здесь появятся ваши чаты</p>}
+                {!sessions.length && (
+                  <p className="sidebar-empty">{t('Здесь появятся ваши чаты')}</p>
+                )}
               </>
             )}
           </div>
         ))}
         {!w.projects.length && (
-          <div className="sidebar-empty">Откройте папку, чтобы начать работу с проектом</div>
+          <div className="sidebar-empty">{t('Откройте папку, чтобы начать работу с проектом')}</div>
         )}
         {w.preferences.recent.filter((path) => !w.projects.some((project) => project.path === path))
           .length > 0 && (
           <>
-            <div className="section-caption recent-caption">НЕДАВНИЕ</div>
+            <div className="section-caption recent-caption">{t('НЕДАВНИЕ')}</div>
             {w.preferences.recent
               .filter((path) => !w.projects.some((project) => project.path === path))
               .slice(0, 6)
@@ -222,10 +227,11 @@ export function Sidebar({
       </div>
       <footer className="sidebar-footer">
         <button onClick={onPlugins}>
-          <Puzzle size={16} /> Плагины
+          <Puzzle size={16} /> {t('Плагины')}
         </button>
         <button onClick={onSettings}>
-          <Settings2 size={16} /> Настройки <span className="footer-shortcut">⌘</span>
+          <Settings2 size={16} /> {t('Настройки')}
+          <span className="footer-shortcut">⌘</span>
         </button>
         <div className="runtime-badge">
           <SquareTerminal size={13} />
@@ -235,9 +241,9 @@ export function Sidebar({
       </footer>
       {deleting && (
         <div className="confirm-inline">
-          <strong>Удалить чат и его историю?</strong>
+          <strong>{t('Удалить чат и его историю?')}</strong>
           <div>
-            <button onClick={() => setDeleting(null)}>Отмена</button>
+            <button onClick={() => setDeleting(null)}>{t('Отмена')}</button>
             <button
               className="danger"
               onClick={async () => {
@@ -250,7 +256,7 @@ export function Sidebar({
                 }
               }}
             >
-              Удалить
+              {t('Удалить')}
             </button>
           </div>
         </div>

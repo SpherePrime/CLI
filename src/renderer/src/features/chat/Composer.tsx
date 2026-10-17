@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { CommandRunner } from './CommandRunner'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -22,6 +23,7 @@ export function Composer({
   workspace: Workspace
   onModels: () => void
 }) {
+  const { t, locale } = useI18n()
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<any[]>([])
   const [sending, setSending] = useState(false)
@@ -128,9 +130,9 @@ export function Composer({
     setText(value)
     if (value.startsWith('/') && !value.includes(' ')) {
       const builtIn = [
-        { label: '/compact', description: 'Сжать контекст', action: 'compact' },
-        { label: '/plan', description: 'Режим планирования', action: 'plan' },
-        { label: '/code', description: 'Режим работы', action: 'general' }
+        { label: '/compact', description: t('Сжать контекст'), action: 'compact' },
+        { label: '/plan', description: t('Режим планирования'), action: 'plan' },
+        { label: '/code', description: t('Режим работы'), action: 'general' }
       ]
       try {
         const lists = await Promise.all([
@@ -159,7 +161,7 @@ export function Composer({
           .slice(0, 8)
           .map((file) => ({
             label: '@' + file.path,
-            description: file.directory ? 'Папка' : 'Файл',
+            description: file.directory ? t('Папка') : t('Файл'),
             file: file.path
           }))
       )
@@ -179,7 +181,7 @@ export function Composer({
       {w.queue.length > 0 && (
         <details className="queue">
           <summary>
-            <ListOrdered size={14} /> В очереди: {w.queue.length}
+            <ListOrdered size={14} /> {t('В очереди:')} {w.queue.length.toLocaleString(locale)}
           </summary>
           {w.queue.map((prompt, i) => (
             <p key={i}>{typeof prompt === 'string' ? prompt : JSON.stringify(prompt)}</p>
@@ -193,14 +195,14 @@ export function Composer({
                 .catch(w.errorHandler)
             }
           >
-            Очистить очередь
+            {t('Очистить очередь')}
           </button>
         </details>
       )}
       {w.session?.todos?.length ? (
         <div className="todo-progress">
           {w.session.todos.filter((todo) => todo.status === 'completed').length} /{' '}
-          {w.session.todos.length} задач выполнено{' '}
+          {w.session.todos.length} {t('задач выполнено')}{' '}
           <span>{w.session.todos.find((todo) => todo.status === 'in_progress')?.active_form}</span>
         </div>
       ) : null}
@@ -213,7 +215,7 @@ export function Composer({
                 {item.name}
                 <button
                   className="icon small"
-                  aria-label="Удалить вложение"
+                  aria-label={t('Удалить вложение')}
                   onClick={() =>
                     setAttachments((items) => items.filter((file) => file.id !== item.id))
                   }
@@ -230,12 +232,12 @@ export function Composer({
           onChange={(event) => void change(event.target.value)}
           placeholder={
             recording
-              ? 'Запись голоса… Alt+V, чтобы остановить'
+              ? t('Запись голоса… Alt+V, чтобы остановить')
               : w.project
-                ? 'Опишите задачу…  @ файлы, / команды'
-                : 'Откройте проект, чтобы начать'
+                ? t('Опишите задачу…  @ файлы, / команды')
+                : t('Откройте проект, чтобы начать')
           }
-          aria-label="Сообщение Prime"
+          aria-label={t('Сообщение Prime')}
           disabled={!w.project || w.loading || sending}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -274,8 +276,8 @@ export function Composer({
             <button
               className="icon"
               disabled={!w.project}
-              title="Прикрепить файлы"
-              aria-label="Прикрепить файлы"
+              title={t('Прикрепить файлы')}
+              aria-label={t('Прикрепить файлы')}
               onClick={() =>
                 void window.prime
                   .attachments()
@@ -288,15 +290,15 @@ export function Composer({
             <button
               className={`icon ${recording ? 'danger' : ''}`}
               disabled={!w.project || transcribing}
-              aria-label={recording ? 'Остановить запись' : 'Голосовой ввод'}
-              title="Голосовой ввод · Alt V"
+              aria-label={recording ? t('Остановить запись') : t('Голосовой ввод')}
+              title={t('Голосовой ввод · Alt V')}
               onClick={() => void toggleVoice()}
             >
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
             <span className="toolbar-divider" />
             <select
-              aria-label="Режим агента"
+              aria-label={t('Режим агента')}
               value={mode}
               disabled={w.busy || !w.project}
               onChange={async (event) => {
@@ -309,12 +311,12 @@ export function Composer({
                 }
               }}
             >
-              <option value="general">Работа</option>
-              <option value="plan">План</option>
+              <option value="general">{t('Работа')}</option>
+              <option value="plan">{t('План')}</option>
             </select>
             <button className="model-trigger" onClick={onModels} disabled={!w.project}>
               <Sparkles size={13} />
-              <span>{selectedModel?.model || w.agent?.model?.name || 'Выбрать модель'}</span>
+              <span>{selectedModel?.model || w.agent?.model?.name || t('Выбрать модель')}</span>
               <ChevronDown size={12} />
             </button>
           </div>
@@ -322,14 +324,14 @@ export function Composer({
             <button
               className="send stop"
               onClick={() => void stop()}
-              aria-label="Остановить задачу"
+              aria-label={t('Остановить задачу')}
             >
               <Square size={14} fill="currentColor" />
             </button>
           ) : (
             <button
               className="send"
-              aria-label="Отправить сообщение"
+              aria-label={t('Отправить сообщение')}
               disabled={!text.trim() || sending || w.project?.connection !== 'ready'}
               onClick={() => void submit()}
             >
@@ -351,11 +353,11 @@ export function Composer({
           disabled={!w.project}
         >
           <ShieldCheck size={12} />
-          {skip ? 'YOLO · без подтверждений' : 'С подтверждением действий'}
+          {skip ? t('YOLO · без подтверждений') : t('С подтверждением действий')}
           <ChevronDown size={10} />
         </button>
         <span>
-          Shift Enter — новая строка
+          {t('Shift Enter — новая строка')}
           {selectedModel?.reasoning_mode ? ` · ${selectedModel.reasoning_mode}` : ''}
         </span>
       </div>

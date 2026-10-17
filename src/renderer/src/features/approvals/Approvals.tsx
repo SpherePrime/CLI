@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { useState } from 'react'
 import { ShieldQuestion, CircleHelp, Check, X } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
@@ -18,6 +19,7 @@ export function Approvals({ workspace: w }: { workspace: Workspace }) {
   )
 }
 function Permission({ permission, workspace: w }: { permission: any; workspace: Workspace }) {
+  const { t } = useI18n()
   const [pending, setPending] = useState(false)
   const [done, setDone] = useState(false)
   async function respond(action: string) {
@@ -35,29 +37,32 @@ function Permission({ permission, workspace: w }: { permission: any; workspace: 
   return (
     <section className="approval-card">
       <h3>
-        <ShieldQuestion size={18} /> Разрешить действие?
+        <ShieldQuestion size={18} /> {t('Разрешить действие?')}
       </h3>
       <p>{permission.description || permission.tool_name}</p>
       {permission.path && <code>{permission.path}</code>}
       <details>
-        <summary>Параметры · {permission.tool_name}</summary>
+        <summary>
+          {t('Параметры ·')} {permission.tool_name}
+        </summary>
         <pre>{JSON.stringify(permission.params, null, 2)}</pre>
       </details>
       <div className="approval-actions">
         <button disabled={pending} onClick={() => void respond('deny')}>
-          <X size={14} /> Запретить
+          <X size={14} /> {t('Запретить')}
         </button>
         <button disabled={pending} onClick={() => void respond('allow_session')}>
-          На сессию
+          {t('На сессию')}
         </button>
         <button className="primary" disabled={pending} onClick={() => void respond('allow')}>
-          <Check size={14} /> Разрешить
+          <Check size={14} /> {t('Разрешить')}
         </button>
       </div>
     </section>
   )
 }
 function Question({ request, workspace: w }: { request: any; workspace: Workspace }) {
+  const { t } = useI18n()
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [pending, setPending] = useState(false)
   const [done, setDone] = useState(false)
@@ -88,7 +93,7 @@ function Question({ request, workspace: w }: { request: any; workspace: Workspac
     >
       <h3>
         <CircleHelp size={18} />
-        {request.confirm_title || 'Уточнение задачи'}
+        {request.confirm_title || t('Уточнение задачи')}
       </h3>
       {request.questions.map((question: any) => (
         <fieldset key={question.id}>
@@ -123,14 +128,14 @@ function Question({ request, workspace: w }: { request: any; workspace: Workspac
               aria-label={question.question}
               onChange={(event) => update(question.id, { yes: event.target.value === 'yes' })}
             >
-              <option value="">Выберите ответ</option>
-              <option value="yes">Да</option>
-              <option value="no">Нет</option>
+              <option value="">{t('Выберите ответ')}</option>
+              <option value="yes">{t('Да')}</option>
+              <option value="no">{t('Нет')}</option>
             </select>
           )}
           <input
-            placeholder="Свой ответ или дополнение"
-            aria-label={`Ответ: ${question.question}`}
+            placeholder={t('Свой ответ или дополнение')}
+            aria-label={t('Ответ: {value0}', { value0: question.question })}
             value={answers[question.id]?.fill_in_text || ''}
             onChange={(event) => update(question.id, { fill_in_text: event.target.value })}
           />
@@ -147,10 +152,10 @@ function Question({ request, workspace: w }: { request: any; workspace: Workspac
               .catch(w.errorHandler)
           }
         >
-          Отменить
+          {t('Отменить')}
         </button>
         <button className="primary" disabled={pending}>
-          Ответить
+          {t('Ответить')}
         </button>
       </div>
     </form>

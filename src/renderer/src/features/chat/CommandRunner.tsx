@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { useState } from 'react'
 import { normalizeCommand, renderCommand } from '../../../../shared/commands'
 import { Modal } from '../../components/Modal'
@@ -13,6 +14,7 @@ export function CommandRunner({
   close: () => void
   onReady: (prompt: string) => void
 }) {
+  const { t } = useI18n()
   const command = normalizeCommand(raw)
   const [args, setArgs] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
@@ -44,7 +46,7 @@ export function CommandRunner({
                 : ''
               prompt = `${command.name}\n\n${decoded}`
             }
-            if (!prompt.trim()) throw new Error('Команда вернула пустой запрос')
+            if (!prompt.trim()) throw new Error(t('Команда вернула пустой запрос'))
             onReady(prompt)
             close()
           } catch (error: any) {
@@ -71,22 +73,22 @@ export function CommandRunner({
             </label>
           ))
         ) : (
-          <p className="muted">Запрос будет подготовлен в поле ввода перед отправкой.</p>
+          <p className="muted">{t('Запрос будет подготовлен в поле ввода перед отправкой.')}</p>
         )}
         <details>
-          <summary>Шаблон команды</summary>
+          <summary>{t('Шаблон команды')}</summary>
           <pre className="config-preview">
             {command.content ||
-              (command.promptId ? 'MCP-шаблон загружается с сервера' : command.name)}
+              (command.promptId ? t('MCP-шаблон загружается с сервера') : command.name)}
           </pre>
         </details>
         {error && <p className="error-text">{error}</p>}
         <div className="approval-actions">
           <button type="button" onClick={close}>
-            Отмена
+            {t('Отмена')}
           </button>
           <button className="primary" disabled={loading}>
-            {loading ? 'Загружаем…' : 'Подготовить запрос'}
+            {loading ? t('Загружаем…') : t('Подготовить запрос')}
           </button>
         </div>
       </form>

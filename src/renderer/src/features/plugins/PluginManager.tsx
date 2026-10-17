@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { useEffect, useState } from 'react'
 import { Mic, Puzzle, RefreshCw, Check, LoaderCircle } from 'lucide-react'
 import { Modal } from '../../components/Modal'
@@ -9,6 +10,7 @@ export function PluginManager({
   workspace: Workspace
   close: () => void
 }) {
+  const { t } = useI18n()
   const [plugins, setPlugins] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,13 +33,13 @@ export function PluginManager({
     return () => clearInterval(timer)
   }, [w.project?.id])
   return (
-    <Modal title="Плагины Prime" close={close}>
+    <Modal title={t('Плагины Prime')} close={close}>
       <p className="muted">
-        Дополнительные возможности встроенного CLI. Плагины устанавливаются по вашему выбору.
+        {t('Дополнительные возможности встроенного CLI. Плагины устанавливаются по вашему выбору.')}
       </p>
-      {!w.project && <p className="empty-small">Сначала откройте проект</p>}
+      {!w.project && <p className="empty-small">{t('Сначала откройте проект')}</p>}
       {error && <p className="error-text">{error}</p>}
-      {loading && <p className="muted">Загружаем плагины…</p>}
+      {loading && <p className="muted">{t('Загружаем плагины…')}</p>}
       {plugins.map((plugin) => (
         <div className="plugin-card" key={plugin.name}>
           <span className="plugin-icon">
@@ -45,8 +47,10 @@ export function PluginManager({
           </span>
           <div>
             <h3>{plugin.title || plugin.name}</h3>
-            <p>{plugin.description || 'Дополнительная возможность Prime'}</p>
-            {plugin.name === 'voice' && <small>Alt+V · запись и распознавание в поле ввода</small>}
+            <p>{plugin.description || t('Дополнительная возможность Prime')}</p>
+            {plugin.name === 'voice' && (
+              <small>{t('Alt+V · запись и распознавание в поле ввода')}</small>
+            )}
           </div>
           <button
             className={plugin.enabled ? 'quiet' : 'primary'}
@@ -72,9 +76,9 @@ export function PluginManager({
             {working === plugin.name ? (
               <LoaderCircle size={14} className="spin" />
             ) : plugin.enabled ? (
-              'Выключить'
+              t('Выключить')
             ) : (
-              'Включить'
+              t('Включить')
             )}
           </button>
         </div>

@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { useState } from 'react'
 import {
@@ -22,6 +23,7 @@ export function SettingsDialog({
   close: () => void
   initial?: string
 }) {
+  const { t, language } = useI18n()
   const [tab, setTab] = useState(initial)
   const [providerId, setProviderId] = useState('custom')
   const [name, setName] = useState('')
@@ -40,19 +42,20 @@ export function SettingsDialog({
     w.preferences.projectChannels?.[w.project?.path || '']?.join(', ') || ''
   )
   const tabs = [
-    { id: 'appearance', label: 'Интерфейс', icon: Monitor },
-    { id: 'providers', label: 'Провайдеры', icon: Server },
-    { id: 'advanced', label: 'Настройки Prime', icon: SlidersHorizontal },
-    { id: 'about', label: 'О приложении', icon: Info }
+    { id: 'appearance', label: t('Интерфейс'), icon: Monitor },
+    { id: 'providers', label: t('Провайдеры'), icon: Server },
+    { id: 'advanced', label: t('Настройки Prime'), icon: SlidersHorizontal },
+    { id: 'about', label: t('О приложении'), icon: Info }
   ]
   async function saveProvider() {
     setSaving(true)
     setStatus('')
     try {
       if (!/^[a-z0-9_-]+$/i.test(providerId))
-        throw new Error('ID провайдера: латиница, цифры, _ и -')
+        throw new Error(t('ID провайдера: латиница, цифры, _ и -'))
       const url = new URL(baseUrl)
-      if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Нужен HTTP/HTTPS адрес API')
+      if (!['http:', 'https:'].includes(url.protocol))
+        throw new Error(t('Нужен HTTP/HTTPS адрес API'))
       const existing = w.config.providers?.[providerId]
       const previousModels: any[] = existing?.models || []
       const editedModel = model
@@ -81,7 +84,7 @@ export function SettingsDialog({
       if (model) await w.call('model', { scope, model: { provider: providerId, model } })
       await w.call('init')
       setKey('')
-      setStatus('Провайдер сохранён, агент готов к работе')
+      setStatus(t('Провайдер сохранён, агент готов к работе'))
       await w.refresh()
     } catch (error: any) {
       setStatus(error.message)
@@ -90,7 +93,7 @@ export function SettingsDialog({
     }
   }
   return (
-    <Modal title="Настройки" close={close} wide>
+    <Modal title={t('Настройки')} close={close} wide>
       <div className="settings-layout">
         <nav>
           {tabs.map((item) => (
@@ -110,15 +113,27 @@ export function SettingsDialog({
         <div className="settings-body">
           {tab === 'appearance' && (
             <>
-              <h3>Ваше рабочее пространство</h3>
-              <p className="muted">Оформление приложения сохраняется на этом устройстве.</p>
-              <label className="form-label">Цветовая тема</label>
+              <h3>{t('Ваше рабочее пространство')}</h3>
+              <p className="muted">{t('Оформление приложения сохраняется на этом устройстве.')}</p>
+              <label className="form-label">
+                {t('Язык интерфейса')}
+                <select
+                  value={language}
+                  onChange={(event) =>
+                    void w.savePreferences({ language: event.target.value as 'ru' | 'en' })
+                  }
+                >
+                  <option value="ru">{t('Русский')}</option>
+                  <option value="en">{t('Английский')}</option>
+                </select>
+              </label>
+              <label className="form-label">{t('Цветовая тема')}</label>
               <div className="theme-options">
                 {(
                   [
-                    { id: 'dark', label: 'Тёмная', icon: Moon },
-                    { id: 'light', label: 'Светлая', icon: Sun },
-                    { id: 'system', label: 'Системная', icon: Monitor }
+                    { id: 'dark', label: t('Тёмная'), icon: Moon },
+                    { id: 'light', label: t('Светлая'), icon: Sun },
+                    { id: 'system', label: t('Системная'), icon: Monitor }
                   ] as const
                 ).map((theme) => (
                   <button
@@ -133,22 +148,24 @@ export function SettingsDialog({
                 ))}
               </div>
               <div className="settings-note">
-                <strong>Клавиатура</strong>
+                <strong>{t('Клавиатура')}</strong>
                 <p>
-                  Ctrl+N — новый чат · Ctrl+P — команды · Ctrl+L — модели
+                  {t('Ctrl+N — новый чат · Ctrl+P — команды · Ctrl+L — модели')}
                   <br />
-                  Shift+Enter — новая строка · двойной Esc — остановить задачу
+                  {t('Shift+Enter — новая строка · двойной Esc — остановить задачу')}
                   <br />
-                  Alt+V — голосовой ввод
+                  {t('Alt+V — голосовой ввод')}
                 </p>
               </div>
             </>
           )}
           {tab === 'providers' && (
             <>
-              <h3>Подключение к модели</h3>
+              <h3>{t('Подключение к модели')}</h3>
               <p className="muted">
-                Используются настройки и провайдеры Prime. Ключ хранится в конфигурации backend.
+                {t(
+                  'Используются настройки и провайдеры Prime. Ключ хранится в конфигурации backend.'
+                )}
               </p>
               <div className="provider-presets">
                 {[
@@ -189,40 +206,40 @@ export function SettingsDialog({
                   />
                 </label>
                 <label className="form-label">
-                  Название
+                  {t('Название')}
                   <input value={name} onChange={(event) => setName(event.target.value)} />
                 </label>
               </div>
               <label className="form-label">
-                Адрес API
+                {t('Адрес API')}
                 <input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} />
               </label>
               <label className="form-label">
-                Формат API
+                {t('Формат API')}
                 <select value={type} onChange={(event) => setType(event.target.value)}>
-                  <option value="openai-compat">OpenAI compatible</option>
+                  <option value="openai-compat">{t('Совместимый с OpenAI')}</option>
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
                   <option value="ollama">Ollama</option>
                 </select>
               </label>
               <label className="form-label">
-                API ключ
+                {t('API ключ')}
                 <input
                   type="password"
                   autoComplete="off"
                   value={key}
                   onChange={(event) => setKey(event.target.value)}
-                  placeholder="Не требуется для локального сервера"
+                  placeholder={t('Не требуется для локального сервера')}
                 />
               </label>
               <div className="form-grid">
                 <label className="form-label">
-                  ID модели
+                  {t('ID модели')}
                   <input value={model} onChange={(event) => setModel(event.target.value)} />
                 </label>
                 <label className="form-label">
-                  Контекст
+                  {t('Контекст')}
                   <input
                     type="number"
                     min={1024}
@@ -236,9 +253,9 @@ export function SettingsDialog({
                 disabled={saving || !w.project}
                 onClick={() => void saveProvider()}
               >
-                {saving ? 'Подключаем…' : 'Сохранить и подключить'}
+                {saving ? t('Подключаем…') : t('Сохранить и подключить')}
               </button>
-              <h4>Настроенные провайдеры</h4>
+              <h4>{t('Настроенные провайдеры')}</h4>
               {Object.entries(w.config.providers || {}).map(([id, provider]: [string, any]) => (
                 <div key={id} className="configured-provider">
                   <span>
@@ -255,7 +272,7 @@ export function SettingsDialog({
                       setModel(provider.models?.[0]?.id || '')
                     }}
                   >
-                    Изменить
+                    {t('Изменить')}
                   </button>
                   {removing === id ? (
                     <button
@@ -268,11 +285,11 @@ export function SettingsDialog({
                           .catch(w.errorHandler)
                       }
                     >
-                      Подтвердить
+                      {t('Подтвердить')}
                     </button>
                   ) : (
                     <button className="quiet" onClick={() => setRemoving(id)}>
-                      Удалить
+                      {t('Удалить')}
                     </button>
                   )}
                 </div>
@@ -284,31 +301,31 @@ export function SettingsDialog({
                   void w
                     .call('importCopilot')
                     .then(() => {
-                      setStatus('Учётные данные Copilot импортированы')
+                      setStatus(t('Учётные данные Copilot импортированы'))
                       return w.refresh()
                     })
                     .catch((error) => setStatus(error.message))
                 }
               >
-                Импортировать авторизацию Copilot
+                {t('Импортировать авторизацию Copilot')}
               </button>
             </>
           )}
           {tab === 'advanced' && (
             <>
-              <h3>Конфигурация Prime</h3>
+              <h3>{t('Конфигурация Prime')}</h3>
               <p className="muted">
-                Изменения проходят через конфигурационный слой CLI. Значение задаётся в JSON.
+                {t('Изменения проходят через конфигурационный слой CLI. Значение задаётся в JSON.')}
               </p>
               <label className="form-label">
-                Область
+                {t('Область')}
                 <select value={scope} onChange={(event) => setScope(Number(event.target.value))}>
-                  <option value={0}>Глобально</option>
-                  <option value={1}>Этот проект</option>
+                  <option value={0}>{t('Глобально')}</option>
+                  <option value={1}>{t('Этот проект')}</option>
                 </select>
               </label>
               <label className="form-label">
-                Ключ
+                {t('Ключ')}
                 <input
                   value={field}
                   onChange={(event) => setField(event.target.value)}
@@ -329,7 +346,7 @@ export function SettingsDialog({
                 </datalist>
               </label>
               <label className="form-label">
-                Значение
+                {t('Значение')}
                 <textarea
                   rows={6}
                   value={value}
@@ -344,13 +361,13 @@ export function SettingsDialog({
                     try {
                       await w.call('configSet', { key: field, value: JSON.parse(value), scope })
                       await w.refresh()
-                      setStatus('Сохранено')
+                      setStatus(t('Сохранено'))
                     } catch (error: any) {
                       setStatus(error.message)
                     }
                   }}
                 >
-                  Сохранить
+                  {t('Сохранить')}
                 </button>
                 <button
                   disabled={!w.project}
@@ -358,24 +375,25 @@ export function SettingsDialog({
                     void w
                       .call('configRemove', { key: field, scope })
                       .then(w.refresh)
-                      .then(() => setStatus('Значение удалено'))
+                      .then(() => setStatus(t('Значение удалено')))
                       .catch((error) => setStatus(error.message))
                   }
                 >
-                  Сбросить поле
+                  {t('Сбросить поле')}
                 </button>
               </div>
               <label className="form-label">
-                MCP-каналы этого проекта
+                {t('MCP-каналы этого проекта')}
                 <input
                   value={channels}
                   onChange={(event) => setChannels(event.target.value)}
-                  placeholder="Имена серверов через запятую"
+                  placeholder={t('Имена серверов через запятую')}
                 />
               </label>
               <p className="muted">
-                Выбранные серверы смогут доставлять сообщения в рабочую область. Агент не
-                запускается автоматически.
+                {t(
+                  'Выбранные серверы смогут доставлять сообщения в рабочую область. Агент не запускается автоматически.'
+                )}
               </p>
               <button
                 disabled={!w.project}
@@ -391,14 +409,16 @@ export function SettingsDialog({
                     }
                   })
                   setStatus(
-                    'Каналы сохранены. Закройте проект в боковой панели и откройте его снова, чтобы применить выбор.'
+                    t(
+                      'Каналы сохранены. Закройте проект в боковой панели и откройте его снова, чтобы применить выбор.'
+                    )
                   )
                 }}
               >
-                Сохранить выбор каналов
+                {t('Сохранить выбор каналов')}
               </button>
               <details>
-                <summary>Текущая конфигурация без ключей</summary>
+                <summary>{t('Текущая конфигурация без ключей')}</summary>
                 <pre className="config-preview">{JSON.stringify(w.config, null, 2)}</pre>
               </details>
             </>
@@ -409,15 +429,24 @@ export function SettingsDialog({
                 <PrimeLogo />
               </div>
               <h3>Prime Desktop</h3>
-              <p className="muted">Локальное рабочее пространство для Prime.</p>
+              <p className="muted">{t('Локальное рабочее пространство для Prime.')}</p>
               <dl className="info-list">
-                <dt>Приложение</dt>
+                <dt>{t('Приложение')}</dt>
                 <dd>{w.info.version || '0.1.0'}</dd>
                 <dt>Prime CLI</dt>
-                <dd>{w.info.runtimeVersion?.version || 'Запуск…'}</dd>
-                <dt>Runtime</dt>
-                <dd>{w.info.runtime}</dd>
-                <dt>Соединение</dt>
+                <dd>{w.info.runtimeVersion?.version || t('Запуск…')}</dd>
+                <dt>{t('Среда выполнения')}</dt>
+                <dd>
+                  {(
+                    {
+                      ready: t('Готов'),
+                      starting: t('Запуск…'),
+                      error: t('Ошибка'),
+                      stopped: t('Остановлен')
+                    } as Record<string, string>
+                  )[w.info.runtime] || w.info.runtime}
+                </dd>
+                <dt>{t('Соединение')}</dt>
                 <dd>Windows named pipe</dd>
               </dl>
               <button
@@ -426,16 +455,17 @@ export function SettingsDialog({
                   setStatus(
                     result.message ||
                       (result.state === 'current'
-                        ? 'Установлена актуальная версия'
-                        : `Обновление: ${result.version || result.state}`)
+                        ? t('Установлена актуальная версия')
+                        : t('Обновление: {value0}', { value0: result.version || result.state }))
                   )
                 }}
               >
-                <Download size={15} /> Проверить обновления
+                <Download size={15} /> {t('Проверить обновления')}
               </button>
               <p className="muted small-text">
-                Локальная сборка. Публичный канал обновлений и цифровая подпись настраиваются при
-                публикации.
+                {t(
+                  'Локальная сборка. Публичный канал обновлений и цифровая подпись настраиваются при публикации.'
+                )}
               </p>
               {w.info.error && <pre>{w.info.error}</pre>}
             </>

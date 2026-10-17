@@ -8,6 +8,7 @@ import type {
   Session
 } from '../../../shared/contracts'
 import { applyMessage } from '../../../shared/messages'
+import { translate } from '../i18n'
 
 export function useWorkspace() {
   const [info, setInfo] = useState<Json>({ runtime: 'starting' })
@@ -21,6 +22,8 @@ export function useWorkspace() {
     inspectorWidth: 350
   })
   const [projects, setProjects] = useState<Project[]>([])
+  const language = useRef(preferences.language)
+  language.current = preferences.language
   const [project, setProject] = useState<Project | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
   const [session, setSession] = useState<Session | null>(null)
@@ -61,7 +64,7 @@ export function useWorkspace() {
   )
   const call = useCallback(async (operation: Operation, args?: Json) => {
     const id = current.current.project?.id
-    if (!id) throw new Error('Сначала откройте проект')
+    if (!id) throw new Error(translate(language.current, 'Сначала откройте проект'))
     return window.prime.call(id, operation, args)
   }, [])
   const refresh = useCallback(async () => {
@@ -206,7 +209,10 @@ export function useWorkspace() {
           setProject(restored)
           setBusy(false)
           setError(
-            'Prime был перезапущен. Незавершённые задачи остановлены; повторный запуск выполняется вручную.'
+            translate(
+              language.current,
+              'Prime был перезапущен. Незавершённые задачи остановлены; повторный запуск выполняется вручную.'
+            )
           )
           void refresh()
         }
@@ -276,7 +282,8 @@ export function useWorkspace() {
         void refresh()
       }
       if (event.type === 'agent_event') {
-        if (payload?.type === 'error') setError(payload.error || 'Ошибка агента')
+        if (payload?.type === 'error')
+          setError(payload.error || translate(language.current, 'Ошибка агента'))
         void refresh()
       }
       if (event.type === 'permission_request')
@@ -387,7 +394,9 @@ export function useWorkspace() {
   }
   async function createSession() {
     try {
-      const created = await call('createSession', { title: 'Новый чат' })
+      const created = await call('createSession', {
+        title: translate(language.current, 'Новый чат')
+      })
       setSessions((items) => [created, ...items])
       await selectSession(created)
       return created as Session
