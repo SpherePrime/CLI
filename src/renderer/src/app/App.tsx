@@ -1,3 +1,4 @@
+import { StartupScreen } from '../components/StartupScreen'
 import { Titlebar } from '../components/Titlebar'
 import { I18nProvider, useI18n } from '../i18n'
 import { PrimeLogo } from '../components/PrimeLogo'
@@ -31,9 +32,15 @@ import { ChatActions } from '../features/chat/ChatActions'
 
 export function App() {
   const w = useWorkspace()
+  const [started, setStarted] = useState(false)
+  const failed = Boolean(w.error || w.info.error || w.info.runtime === 'failed')
+  useEffect(() => {
+    if (w.project || failed) setStarted(true)
+  }, [w.project?.id, failed])
   return (
     <I18nProvider language={w.preferences.language}>
       <WorkspaceView workspace={w} />
+      <StartupScreen ready={started || Boolean(w.project)} failed={failed} />
     </I18nProvider>
   )
 }
@@ -297,11 +304,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                   </button>
                 ))}
               </div>
-              {!w.project && w.info.runtime === 'starting' && (
-                <div className="startup-status">
-                  <LoaderCircle size={13} className="spin" /> {t('Подготавливаем встроенный Prime')}
-                </div>
-              )}
             </section>
           ) : (
             <MessageList key={w.session?.id || 'new'} messages={w.messages} busy={w.busy} />

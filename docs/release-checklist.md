@@ -29,6 +29,11 @@
 - Provider editor shows every configured model and preserves its full metadata while editing context/response limits. A real backend test edits the second model and verifies all 22 entries and the unchanged first model.
 - Settings use a larger responsive panel with readable fields; window chrome uses the SpherePrime titlebar and Windows overlay controls, including native drag/snap and controls available while a modal is open.
 
+## Version 0.2.1 startup intro
+
+- Animated original SpherePrime mark and indeterminate progress are shown only during initial backend/chat readiness. There is no minimum display timer, and errors remain accessible.
+- Real Electron acceptance checks the active animation, reduced-motion CSS and immediate dismissal on readiness; unit coverage verifies ready/failure do not render an overlay.
+
 ## Public release requirements
 
 - No public Desktop repository or update-feed destination has been assigned. The updater reports an unavailable feed; no release was published.
