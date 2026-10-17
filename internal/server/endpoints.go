@@ -390,6 +390,20 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(404, 500).
 			Handle(c.handleGetWorkspaceAgentSessionPromptList),
 
+		apigen.Get("/v1/workspaces/{id}/agent/sessions/{sid}/prompts/entries").
+			Summary("List queue entries with stable identifiers").
+			Tags("agent").
+			PathParam("id", "Workspace ID").
+			PathParam("sid", "Session ID").
+			Handle(c.handleQueueEntries),
+
+		apigen.Post("/v1/workspaces/{id}/agent/sessions/{sid}/prompts/run-now").
+			Summary("Interrupt the active turn and run a selected queued prompt").
+			Tags("agent").
+			PathParam("id", "Workspace ID").
+			PathParam("sid", "Session ID").
+			Handle(c.handleRunQueuedNow),
+
 		apigen.Post("/v1/workspaces/{id}/agent/sessions/{sid}/prompts/clear").
 			Summary("Clear prompt queue").
 			Tags("agent").
