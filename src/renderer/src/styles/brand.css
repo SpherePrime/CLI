@@ -877,12 +877,13 @@ input[type='number'] {
 }
 .app-shell.has-editor {
   grid-template-columns:
-    var(--sidebar-width) 1px minmax(300px, 1fr) 1px minmax(360px, var(--editor-fraction))
-    1px var(--inspector-width);
+    var(--sidebar-width) 1px minmax(300px, 1fr) 1px var(--inspector-width)
+    1px minmax(360px, var(--editor-fraction));
 }
 .app-shell.has-editor.hide-sidebar {
-  grid-template-columns: minmax(300px, 1fr) 1px minmax(360px, var(--editor-fraction)) 1px var(
-      --inspector-width
+  grid-template-columns: minmax(300px, 1fr) 1px var(--inspector-width) 1px minmax(
+      360px,
+      var(--editor-fraction)
     );
 }
 .app-shell.has-editor.hide-inspector {
@@ -1147,6 +1148,49 @@ input[type='number'] {
   .has-editor > .right-resizer {
     display: none;
   }
+}
+.modal.delete-chat-modal {
+  width: 460px;
+  margin: auto;
+}
+.delete-chat-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.delete-chat-name svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.delete-chat-name strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.delete-chat-modal p {
+  line-height: 1.6;
+  margin: 16px 0 24px;
+}
+.delete-chat-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.delete-chat-actions button {
+  min-width: 96px;
+  min-height: 38px;
+}
+.delete-chat-submit {
+  background: #bb3d32;
+  border-color: #bb3d32;
+  color: #fff;
+}
+.delete-chat-submit:hover:not(:disabled) {
+  background: #ce493d;
+  border-color: #ce493d;
 }
 .code-editor-host {
   width: 100%;

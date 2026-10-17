@@ -330,6 +330,32 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             </span>
           </footer>
         </main>
+        {inspector && (
+          <>
+            <div
+              className="resizer right-resizer"
+              role="separator"
+              aria-label={t('Ширина рабочей области')}
+              tabIndex={0}
+              onPointerDown={(event) => resize('inspector', event)}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+                  setWidths((value) => ({
+                    ...value,
+                    inspector: Math.max(
+                      280,
+                      Math.min(650, value.inspector + (event.key === 'ArrowLeft' ? 10 : -10))
+                    )
+                  }))
+              }}
+            />
+            <Inspector
+              workspace={w}
+              close={() => setInspector(false)}
+              openDocument={documents.open}
+            />
+          </>
+        )}
         {documents.documents.length > 0 && (
           <>
             <div
@@ -362,32 +388,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             <Suspense fallback={<div className="editor-loading">{t('Открываем редактор…')}</div>}>
               <FileEditor state={documents} theme={w.preferences.theme} />
             </Suspense>
-          </>
-        )}
-        {inspector && (
-          <>
-            <div
-              className="resizer right-resizer"
-              role="separator"
-              aria-label={t('Ширина рабочей области')}
-              tabIndex={0}
-              onPointerDown={(event) => resize('inspector', event)}
-              onKeyDown={(event) => {
-                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-                  setWidths((value) => ({
-                    ...value,
-                    inspector: Math.max(
-                      280,
-                      Math.min(650, value.inspector + (event.key === 'ArrowLeft' ? 10 : -10))
-                    )
-                  }))
-              }}
-            />
-            <Inspector
-              workspace={w}
-              close={() => setInspector(false)}
-              openDocument={documents.open}
-            />
           </>
         )}
         {(modal === 'settings' || modal === 'providers') && (

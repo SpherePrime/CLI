@@ -184,6 +184,9 @@ export const english: Record<string, string> = {
   Переименовать: 'Rename',
   'Закрепить / открепить': 'Pin / unpin',
   'Удалить чат': 'Delete chat',
+  'Чат и его сообщения будут удалены. Отменить это действие нельзя.':
+    'The chat and its messages will be deleted. This cannot be undone.',
+  'Удаление…': 'Deleting…',
   'Здесь появятся ваши чаты': 'Your chats will appear here',
   'Откройте папку, чтобы начать работу с проектом': 'Open a folder to start working on a project',
   НЕДАВНИЕ: 'RECENT',

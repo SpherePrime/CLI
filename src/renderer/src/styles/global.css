@@ -488,24 +488,6 @@ kbd {
   justify-content: flex-start;
   font-size: 12px;
 }
-.confirm-inline {
-  position: absolute;
-  bottom: 120px;
-  left: 10px;
-  right: 10px;
-  z-index: 10;
-  padding: 16px;
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 12px;
-  box-shadow: 0 8px 30px #0004;
-}
-.confirm-inline > div {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
 .main-workspace {
   display: flex;
   flex-direction: column;

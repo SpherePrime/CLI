@@ -1,5 +1,6 @@
 import { useI18n } from '../../i18n'
 import { PrimeLogo } from '../../components/PrimeLogo'
+import { Modal } from '../../components/Modal'
 import {
   ChevronDown,
   FolderOpen,
@@ -14,7 +15,7 @@ import {
   MoreHorizontal,
   SquareTerminal
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
 export function Sidebar({
   workspace: w,
@@ -36,6 +37,13 @@ export function Sidebar({
   const [renaming, setRenaming] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const cancelDelete = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    setDeleting(null)
+    setDeleteError('')
+  }, [w.project?.id])
   const sessions = w.sessions
     .filter(
       (session) =>
@@ -231,6 +239,7 @@ export function Sidebar({
                           className="danger"
                           onClick={() => {
                             setDeleting(session.id)
+                            setDeleteError('')
                             setMenu(null)
                           }}
                         >
@@ -286,26 +295,53 @@ export function Sidebar({
         </div>
       </footer>
       {deleting && (
-        <div className="confirm-inline">
-          <strong>{t('Удалить чат и его историю?')}</strong>
-          <div>
-            <button onClick={() => setDeleting(null)}>{t('Отмена')}</button>
+        <Modal
+          title={t('Удалить чат и его историю?')}
+          className="delete-chat-modal"
+          initialFocus={cancelDelete}
+          close={() => {
+            if (!deleteBusy) setDeleting(null)
+          }}
+        >
+          <div className="delete-chat-name">
+            <MessageSquare size={18} />
+            <strong>
+              {w.sessions.find((session) => session.id === deleting)?.title || t('Новый чат')}
+            </strong>
+          </div>
+          <p className="muted">
+            {t('Чат и его сообщения будут удалены. Отменить это действие нельзя.')}
+          </p>
+          {deleteError && (
+            <p role="alert" className="danger">
+              {deleteError}
+            </p>
+          )}
+          <div className="delete-chat-actions">
+            <button ref={cancelDelete} disabled={deleteBusy} onClick={() => setDeleting(null)}>
+              {t('Отмена')}
+            </button>
             <button
-              className="danger"
+              className="delete-chat-submit"
+              disabled={deleteBusy}
               onClick={async () => {
+                if (deleteBusy) return
+                setDeleteBusy(true)
+                setDeleteError('')
                 try {
                   await w.deleteSession(deleting)
                   setDeleting(null)
-                  await w.refresh()
                 } catch (error) {
-                  w.errorHandler(error)
+                  setDeleteError(error instanceof Error ? error.message : String(error))
+                } finally {
+                  setDeleteBusy(false)
                 }
               }}
             >
-              {t('Удалить')}
+              {deleteBusy ? t('Удаление…') : t('Удалить')}
             </button>
           </div>
-        </div>
+        </Modal>
       )}
     </aside>
   )

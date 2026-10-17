@@ -42,6 +42,11 @@
 - Dirty files prompt before window reload/exit; tab closing has Save, Discard and Cancel. Image and comparison tabs remain readonly.
 - Chat search is revealed by a magnifier and clears when dismissed or switching project. Permission mode is an explicit described menu inside the composer toolbar. The Shift+Enter caption and project-opening loading banner are removed; the initial startup intro remains.
 
+## Version 0.3.1 pane layout
+
+- Open files use the order: chat list, chat, workspace files, editor. Hidden sidebar/workspace variants retain the editor at the right edge.
+- Chat deletion uses a centered native modal with the chat title, initial focus on Cancel, Escape cancellation and duplicate-submit protection. Errors remain inside the dialog.
+
 ## Public release requirements
 
 - No public Desktop repository or update-feed destination has been assigned. The updater reports an unavailable feed; no release was published.
