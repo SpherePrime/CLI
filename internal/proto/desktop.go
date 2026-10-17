@@ -8,6 +8,7 @@ type PendingRequests struct {
 }
 
 type DesktopCapabilities struct {
+	QueueControl           bool   `json:"queue_control"`
 	ProtocolVersion        int    `json:"protocol_version"`
 	RunRegistry            bool   `json:"run_registry"`
 	RunRegistryPersistence string `json:"run_registry_persistence"`
@@ -16,6 +17,12 @@ type DesktopCapabilities struct {
 	ModelCapabilities      bool   `json:"model_capabilities"`
 	Plugins                bool   `json:"plugins"`
 	VoiceUpload            bool   `json:"voice_upload"`
+}
+
+type QueueEntry struct {
+	ID          string `json:"id"`
+	Prompt      string `json:"prompt"`
+	Attachments int    `json:"attachments"`
 }
 
 type RunRecord struct {

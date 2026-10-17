@@ -14,7 +14,7 @@ import (
 )
 
 func (c *controllerV1) handleGetCapabilities(w http.ResponseWriter, r *http.Request) {
-	jsonEncode(w, proto.DesktopCapabilities{ProtocolVersion: 1, RunRegistry: true, RunRegistryPersistence: "sqlite", PendingRequests: true, ModelCapabilities: true, Plugins: true, VoiceUpload: true})
+	jsonEncode(w, proto.DesktopCapabilities{ProtocolVersion: 1, RunRegistry: true, RunRegistryPersistence: "sqlite", PendingRequests: true, ModelCapabilities: true, Plugins: true, VoiceUpload: true, QueueControl: true})
 }
 
 func (c *controllerV1) handleGetPending(w http.ResponseWriter, r *http.Request) {
