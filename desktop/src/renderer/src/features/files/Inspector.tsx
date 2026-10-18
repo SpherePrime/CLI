@@ -18,12 +18,14 @@ import {
   Files,
   ListTodo,
   Play,
-  Trash2
+  Trash2,
+  Globe
 } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 import { FileContextMenu, type MenuItem } from './FileContextMenu'
 import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
+import { BrowserTab } from '../browser/BrowserTab'
 
 type Entry = { path: string; name: string; directory: boolean }
 
@@ -37,11 +39,13 @@ function parentFolder(entry: Entry | null) {
 export function Inspector({
   workspace: w,
   close,
-  openDocument
+  openDocument,
+  browserRequest = 0
 }: {
   workspace: Workspace
   close: () => void
   openDocument: (workspaceId: string, path: string, diff?: any) => Promise<void>
+  browserRequest?: number
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
@@ -57,6 +61,9 @@ export function Inspector({
   const [creating, setCreating] = useState<{ kind: 'file' | 'folder'; parent: string } | null>(null)
   const [removing, setRemoving] = useState<Entry | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
+  useEffect(() => {
+    if (browserRequest) setTab('browser')
+  }, [browserRequest])
   useEffect(() => setOpened([]), [w.project?.id])
   useEffect(() => {
     let current = true
@@ -206,7 +213,8 @@ export function Inspector({
         {[
           { id: 'files', icon: Files, title: t('Файлы') },
           { id: 'changes', icon: FileDiff, title: t('Изменения') },
-          { id: 'tasks', icon: ListTodo, title: t('Задачи') }
+          { id: 'tasks', icon: ListTodo, title: t('Задачи') },
+          { id: 'browser', icon: Globe, title: t('Браузер') }
         ].map((item) => (
           <button
             key={item.id}
@@ -220,7 +228,8 @@ export function Inspector({
           </button>
         ))}
       </div>
-      <div className="inspector-content">
+      {tab === 'browser' && <BrowserTab />}
+      <div className="inspector-content" hidden={tab === 'browser'}>
         {error && (
           <div className="panel-error">
             {error}
@@ -377,7 +386,7 @@ export function Inspector({
           }}
         />
       )}
-      {w.project && (
+      {w.project && tab !== 'browser' && (
         <div className="inspector-footer">
           <button onClick={() => void window.prime.reveal(w.project!.id)}>
             <FolderOpen size={13} /> {t('Открыть в проводнике')}

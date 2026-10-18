@@ -1,4 +1,11 @@
 export type Json = any
+export type BrowserState = {
+  url: string
+  title: string
+  loading: boolean
+  canGoBack: boolean
+  canGoForward: boolean
+}
 export type QueuedPrompt = { id: string; prompt: string; attachments: number }
 export type Session = {
   id: string
@@ -131,6 +138,12 @@ export interface DesktopApi {
   createEntry(workspaceId: string, path: string, kind: 'file' | 'folder'): Promise<{ path: string }>
   trashEntry(workspaceId: string, path: string): Promise<void>
   openWith(workspaceId: string, path: string, target: 'default' | 'vscode'): Promise<void>
+  browserShow(bounds: { x: number; y: number; width: number; height: number }): Promise<void>
+  browserHide(): Promise<void>
+  browserState(): Promise<BrowserState>
+  browserNavigate(url: string): Promise<BrowserState>
+  browserCommand(command: 'back' | 'forward' | 'reload'): Promise<BrowserState>
+  browserOpenExternal(): Promise<void>
   update(action: 'check' | 'install'): Promise<Json>
   onEvent(listener: (event: DesktopEvent) => void): () => void
 }

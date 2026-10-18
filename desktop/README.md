@@ -28,6 +28,10 @@ npm run dist:win
 
 The installer and unpacked application are written to `release/<version>/`. The bundled CLI is built from the repository root; `runtime/manifest.json` records its exact revision and checksum. Stable GitHub releases include `PrimeSetup-<version>.exe` and Desktop update files.
 
+## Built-in browser
+
+The Workspace panel has a Browser tab. Prime uses the same browser through its `browser` tools: it opens pages and local files, reads them, clicks, types and takes screenshots. The page runs in an isolated session without access to Prime Desktop.
+
 ## File editing
 
 Open files from the inspector into editor tabs beside the chat. Monaco provides local syntax highlighting, line numbers, undo/redo and Ctrl+S. Saving checks the last-read revision before replacing a file; external changes require reloading. Unsaved tabs prompt before closing. Manual saves update the workspace and Git diff; CLI session history continues to describe agent tool edits. Editor code and workers are bundled locally and load only when needed.

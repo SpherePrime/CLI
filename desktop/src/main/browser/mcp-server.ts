@@ -1,0 +1,114 @@
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import { randomBytes, timingSafeEqual } from 'node:crypto'
+import type { BrowserPanel } from './panel'
+import { browserTools } from './tools'
+
+const maxBody = 1024 * 1024
+const protocolVersion = '2025-03-26'
+
+export type BrowserMcpServer = { url: string; token: string; close: () => Promise<void> }
+
+function readBody(request: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let size = 0
+    const chunks: Buffer[] = []
+    request.on('data', (chunk: Buffer) => {
+      size += chunk.length
+      if (size > maxBody) {
+        reject(new Error('request too large'))
+        request.destroy()
+        return
+      }
+      chunks.push(chunk)
+    })
+    request.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    request.on('error', reject)
+  })
+}
+
+function authorized(request: IncomingMessage, token: string) {
+  const header = Buffer.from(String(request.headers.authorization || ''))
+  const expected = Buffer.from(`Bearer ${token}`)
+  return header.length === expected.length && timingSafeEqual(header, expected)
+}
+
+function send(response: ServerResponse, status: number, body?: unknown) {
+  response.writeHead(status, body === undefined ? {} : { 'Content-Type': 'application/json' })
+  response.end(body === undefined ? undefined : JSON.stringify(body))
+}
+
+async function handle(panel: BrowserPanel, message: any) {
+  const { id, method, params } = message
+  const reply = (result: unknown) => ({ jsonrpc: '2.0', id, result })
+  const fail = (code: number, text: string) => ({
+    jsonrpc: '2.0',
+    id,
+    error: { code, message: text }
+  })
+  if (method === 'initialize')
+    return reply({
+      protocolVersion: params?.protocolVersion || protocolVersion,
+      capabilities: { tools: { listChanged: false } },
+      serverInfo: { name: 'prime-desktop-browser', version: '1.0.0' },
+      instructions:
+        'Built-in browser of Prime Desktop, visible to the user in the Workspace panel. Use these tools instead of other browser automation servers.'
+    })
+  if (method === 'ping') return reply({})
+  if (method === 'tools/list')
+    return reply({
+      tools: browserTools.map(({ name, description, inputSchema }) => ({
+        name,
+        description,
+        inputSchema
+      }))
+    })
+  if (method === 'tools/call') {
+    const tool = browserTools.find((item) => item.name === params?.name)
+    if (!tool) return fail(-32602, `Unknown tool ${params?.name}`)
+    try {
+      return reply({ content: await tool.run(panel, params?.arguments || {}) })
+    } catch (error: any) {
+      return reply({
+        content: [{ type: 'text', text: error?.message || String(error) }],
+        isError: true
+      })
+    }
+  }
+  return fail(-32601, `Method ${method} not found`)
+}
+
+export async function startBrowserMcpServer(panel: BrowserPanel): Promise<BrowserMcpServer> {
+  const token = randomBytes(32).toString('hex')
+  const server: Server = createServer(async (request, response) => {
+    if (!request.url?.startsWith('/mcp')) return send(response, 404)
+    if (!authorized(request, token)) return send(response, 401)
+    if (request.method === 'DELETE') return send(response, 200)
+    if (request.method !== 'POST') return send(response, 405)
+    try {
+      const payload = JSON.parse(await readBody(request))
+      const messages = Array.isArray(payload) ? payload : [payload]
+      const replies = []
+      for (const message of messages)
+        if (message?.id !== undefined && message?.method) replies.push(await handle(panel, message))
+      if (!replies.length) return send(response, 202)
+      send(response, 200, Array.isArray(payload) ? replies : replies[0])
+    } catch (error: any) {
+      send(response, 400, {
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32700, message: error?.message || 'parse error' }
+      })
+    }
+  })
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => resolve())
+  })
+  const address = server.address()
+  const port = typeof address === 'object' && address ? address.port : 0
+  return {
+    url: `http://127.0.0.1:${port}/mcp`,
+    token,
+    close: () => new Promise((resolve) => server.close(() => resolve()))
+  }
+}
