@@ -1436,14 +1436,11 @@ input[type='number'] {
   flex: 1;
 }
 .skill-instructions {
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
-  padding: 18px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  max-height: 400px;
+  max-height: min(70vh, 720px);
   overflow: auto;
+  font-size: 13px;
+  line-height: 1.65;
 }
 .settings-modal .settings-layout > nav {
   overflow-y: auto;
