@@ -52,13 +52,10 @@ export async function gitFileDiff(root: string, path: string): Promise<any> {
   )
   let before = ''
   if (change?.status !== '??' && !change?.status.includes('A')) {
-    const repositoryRoot = (
-      await run('git', ['rev-parse', '--show-toplevel'], options)
-    ).stdout.trim()
     const original = change?.originalPath || path
-    const objectPath = relative(repositoryRoot, resolve(root, original)).replaceAll('\\', '/')
+    const objectPath = relative(root, resolve(root, original)).replaceAll('\\', '/')
     try {
-      before = (await run('git', ['show', `HEAD:${objectPath}`], options)).stdout
+      before = (await run('git', ['show', `HEAD:./${objectPath}`], options)).stdout
     } catch (error: any) {
       if (
         !/does not exist|exists on disk|invalid object name|bad revision/i.test(error.stderr || '')
