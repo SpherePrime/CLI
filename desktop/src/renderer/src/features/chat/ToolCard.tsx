@@ -1,4 +1,5 @@
-import { Check, ChevronDown, FileCode2, Terminal, Wrench, X } from 'lucide-react'
+import { Check, ChevronDown, Terminal, X } from 'lucide-react'
+import { toolTitle } from './toolTitle'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
 
@@ -23,19 +24,25 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
   const completed = isShell || result !== undefined
   const failed = Boolean(result?.is_error || (isShell && data.exit_code))
   const output = isShell ? data.output : result?.content
+  const title = isShell
+    ? { icon: Terminal, label: t('Команда'), detail: String(data.command || '') }
+    : toolTitle(String(data.name || ''), input, t)
+  const Icon = title.icon
   return (
     <details className={`tool-card ${failed ? 'tool-error' : ''}`}>
       <summary>
         <span className="tool-icon">
-          {isShell || /bash|shell/i.test(data.name) ? (
-            <Terminal size={15} />
-          ) : /edit|write|read|view/i.test(data.name) ? (
-            <FileCode2 size={15} />
-          ) : (
-            <Wrench size={15} />
+          <Icon size={15} />
+        </span>
+        <span className="tool-title" title={data.name}>
+          <span>{title.label}</span>
+          {title.detail && (
+            <>
+              {' '}
+              <code>{title.detail}</code>
+            </>
           )}
         </span>
-        <span>{isShell ? t('Команда') : data.name || t('Инструмент')}</span>
         <small>{failed ? t('Ошибка') : completed ? t('Готово') : t('Выполняется')}</small>
         {completed ? (
           failed ? (

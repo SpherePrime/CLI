@@ -2,6 +2,7 @@ import { PermissionMenu } from './PermissionMenu'
 import { QueuePanel } from './QueuePanel'
 import { ModelControl } from '../models/ModelControl'
 import { VoiceWave } from './VoiceWave'
+import { TodoPanel } from './TodoPanel'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { CommandRunner } from './CommandRunner'
@@ -168,13 +169,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         />
       )}
       <QueuePanel key={key} workspace={w} />
-      {w.session?.todos?.length ? (
-        <div className="todo-progress">
-          {w.session.todos.filter((todo) => todo.status === 'completed').length} /{' '}
-          {w.session.todos.length} {t('задач выполнено')}{' '}
-          <span>{w.session.todos.find((todo) => todo.status === 'in_progress')?.active_form}</span>
-        </div>
-      ) : null}
+      {w.session?.todos?.length ? <TodoPanel todos={w.session.todos} /> : null}
       <div className={`composer ${recording ? 'recording' : ''}`}>
         {attachments.length > 0 && (
           <div className="attachment-chips">

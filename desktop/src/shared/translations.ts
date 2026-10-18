@@ -277,6 +277,18 @@ export const english: Record<string, string> = {
   'Вложения: {count}': 'Attachments: {count}',
   'Уровень размышлений': 'Reasoning level',
   'Модель и уровень размышлений': 'Model and reasoning level',
+  'Все задачи выполнены': 'All tasks done',
+  'План готов': 'Plan ready',
+  Чтение: 'Read',
+  Запись: 'Write',
+  Правка: 'Edit',
+  'Список файлов': 'List files',
+  'Поиск файлов': 'Find files',
+  'Поиск в коде': 'Search code',
+  'Поиск в интернете': 'Web search',
+  Загрузка: 'Fetch',
+  Подзадача: 'Subtask',
+  'План задач': 'Task plan',
   'Добавьте хотя бы одну модель или включите автопоиск моделей':
     'Add at least one model or turn on model discovery',
   'Провайдер сохранён, но Prime не смог его загрузить. Проверьте адрес API и тип.':
