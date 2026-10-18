@@ -64,3 +64,35 @@ it('isolates reused tool IDs between user turns and reconciles early result even
   expect(displayed.find((m) => m.id === 'a1')!.parts[0].data.result.content).toBe('old')
   expect(displayed.find((m) => m.id === 'a2')!.parts[0].data.result.content).toBe('new')
 })
+
+it('hides internal instruction and todo tools and steps left empty by them', () => {
+  const displayed = consolidateToolMessages([
+    { id: 'u', session_id: 's', role: 'user', parts: [{ type: 'text', data: { text: 'go' } }] },
+    {
+      id: 'a1',
+      session_id: 's',
+      role: 'assistant',
+      parts: [
+        { type: 'tool_call', data: { id: 'c1', name: 'read_instruction', input: '{}' } },
+        { type: 'finish', data: { reason: 'tool_use' } }
+      ]
+    },
+    {
+      id: 't1',
+      session_id: 's',
+      role: 'tool',
+      parts: [{ type: 'tool_result', data: { tool_call_id: 'c1', name: 'read_instruction' } }]
+    },
+    {
+      id: 'a2',
+      session_id: 's',
+      role: 'assistant',
+      parts: [
+        { type: 'tool_call', data: { id: 'c2', name: 'todos', input: '{}' } },
+        { type: 'tool_call', data: { id: 'c3', name: 'ls', input: '{}' } }
+      ]
+    }
+  ])
+  expect(displayed.map((message) => message.id)).toEqual(['u', 'a2'])
+  expect(displayed[1].parts.map((part) => part.data.name)).toEqual(['ls'])
+})

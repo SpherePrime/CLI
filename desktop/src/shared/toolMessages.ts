@@ -1,6 +1,28 @@
 import type { Message } from './contracts'
 
+export const hiddenToolNames = new Set(['search_instructions', 'read_instruction', 'todos'])
+
+function hiddenPart(part: Message['parts'][number]) {
+  return (
+    (part.type === 'tool_call' || part.type === 'tool_result') &&
+    hiddenToolNames.has(String(part.data?.name || ''))
+  )
+}
+
+function visiblePart(part: Message['parts'][number]) {
+  if (part.type === 'finish') return ['error', 'canceled'].includes(part.data?.reason)
+  if (part.type === 'text') return Boolean(part.data?.text) && !part.data?.hidden
+  if (part.type === 'reasoning') return Boolean(part.data?.thinking)
+  return true
+}
+
 export function consolidateToolMessages(messages: Message[]): Message[] {
+  return mergeToolResults(messages)
+    .map((message) => ({ ...message, parts: message.parts.filter((part) => !hiddenPart(part)) }))
+    .filter((message) => message.role === 'user' || message.parts.some(visiblePart))
+}
+
+function mergeToolResults(messages: Message[]): Message[] {
   let turn = ''
   const rows = messages
     .filter((message) => message.role !== 'system')

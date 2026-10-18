@@ -1,0 +1,138 @@
+.todo-panel {
+  margin: 0 0 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  animation: rise-in var(--slow) var(--ease-out);
+}
+.todo-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+}
+.todo-panel-head:hover:not(:disabled) {
+  background: var(--hover);
+}
+.todo-panel-head:active:not(:disabled) {
+  transform: none;
+}
+.todo-panel-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.todo-panel.finished .todo-panel-count {
+  background: #84bc9e1f;
+  color: var(--green);
+}
+.todo-panel-headline {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.todo-panel-chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform var(--medium) var(--ease-out);
+}
+.todo-panel.open .todo-panel-chevron {
+  transform: rotate(180deg);
+}
+.todo-panel-bar {
+  height: 2px;
+  background: var(--raised);
+}
+.todo-panel-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-strong), #ffb088);
+  transition: width 0.6s var(--ease-out);
+}
+.todo-panel.finished .todo-panel-bar span {
+  background: var(--green);
+}
+.todo-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  margin: 0;
+  padding: 8px 10px 10px;
+  overflow: auto;
+  list-style: none;
+  animation: fade-in var(--medium) ease;
+}
+.todo-panel-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 5px 4px;
+  border-radius: 6px;
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.todo-panel-list li svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--muted);
+}
+.todo-panel-list li.in_progress {
+  background: var(--hover);
+  color: var(--text);
+}
+.todo-panel-list li.in_progress svg {
+  color: var(--accent-strong);
+}
+.todo-panel-list li.completed {
+  color: var(--muted);
+}
+.todo-panel-list li.completed span {
+  text-decoration: line-through;
+  text-decoration-color: #ffffff30;
+}
+.todo-panel-list li.completed svg {
+  color: var(--green);
+}
+
+.tool-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+.tool-title > span {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+.tool-title code {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

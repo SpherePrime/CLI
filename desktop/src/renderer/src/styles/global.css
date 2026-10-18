@@ -1005,6 +1005,10 @@ kbd {
 }
 .tool-card summary > span:nth-child(2) {
   flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
