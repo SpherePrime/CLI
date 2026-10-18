@@ -192,7 +192,10 @@ type Event struct {
 	Counts Counts
 	// ChannelMessage is set only for EventChannelMessage: the fully rendered
 	// and escaped <channel>...</channel> element to inject into the session.
-	ChannelMessage string
+	ChannelMessage    string
+	WorkspacePath     string
+	ChannelID         string
+	ChannelReceivedAt time.Time
 }
 
 // Counts number of available tools, prompts, etc.
@@ -227,13 +230,6 @@ type ClientInfo struct {
 }
 
 // SubscribeEvents returns a channel for MCP events.
-//
-// Channel message events (EventChannelMessage) are excluded: they carry no
-// workspace or session identity, and the MCP broker is process-global. Without
-// this filter, every workspace that calls SubscribeEvents would receive every
-// other workspace's channel events — a cross-workspace injection path. Channel
-// delivery requires workspace-scoped routing, which is deferred to a later PR;
-// until then, channel events must not flow through the shared event fan-out.
 func SubscribeEvents(ctx context.Context) <-chan pubsub.Event[Event] {
 	raw := broker.Subscribe(ctx)
 	filtered := make(chan pubsub.Event[Event], 64)
@@ -959,7 +955,11 @@ func createSession(ctx context.Context, cfg *config.ConfigStore, name string, m 
 	// capability AND was opted in via --channels; otherwise it is closed
 	// (buffer discarded). This prevents early notifications from being lost.
 	channelGate := newChannelGate()
-	transport = &channelTransport{inner: transport, name: name, gate: channelGate}
+	workspacePath := ""
+	if cfg != nil {
+		workspacePath = canonicalChannelWorkspace(cfg.WorkingDir())
+	}
+	transport = &channelTransport{inner: transport, name: name, gate: channelGate, workspacePath: workspacePath}
 
 	// When the server is marked Sessionless, the tools/prompts/resources
 	// list-changed handlers are omitted. The go-sdk opens a SEP-2575
@@ -1024,7 +1024,7 @@ func createSession(ctx context.Context, cfg *config.ConfigStore, name string, m 
 	if channelOptIn && hasChannelCapability(session.InitializeResult()) {
 		buffered := channelGate.resolve(true)
 		for _, raw := range buffered {
-			publishChannelMessage(mcpCtx, name, raw)
+			publishChannelMessage(mcpCtx, name, raw, workspacePath)
 		}
 		slog.Info("MCP channel enabled", "name", name, "buffered", len(buffered))
 	} else {

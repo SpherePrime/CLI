@@ -15,11 +15,11 @@ import (
 
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 
-	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/fsext"
 	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/internal/shell"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 type BashParams struct {
@@ -257,7 +257,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 				bgManager := shell.GetBackgroundShellManager()
 				bgManager.Cleanup()
 				// Use background context so it continues after tool returns
-				bgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description)
+				bgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description, shell.BackgroundOwnership{WorkspacePath: workingDir, SessionID: sessionID})
 				if err != nil {
 					return fantasy.ToolResponse{}, fmt.Errorf("error starting background shell: %w", err)
 				}
@@ -312,7 +312,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 			// Start with detached context so it can survive if moved to background
 			bgManager := shell.GetBackgroundShellManager()
 			bgManager.Cleanup()
-			bgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description)
+			bgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description, shell.BackgroundOwnership{WorkspacePath: workingDir, SessionID: sessionID})
 			if err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("error starting shell: %w", err)
 			}

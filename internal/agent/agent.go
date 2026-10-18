@@ -70,6 +70,7 @@ var (
 )
 
 type SessionAgentCall struct {
+	queueID   string
 	SessionID string
 	// RunID, when non-empty, is the caller-supplied correlator that
 	// gets echoed back on the notify.RunComplete event emitted for
@@ -161,6 +162,7 @@ type Model struct {
 // the explicit Del and the function return.
 type activeCancel struct {
 	cancel context.CancelFunc
+	done   chan struct{}
 }
 
 type sessionAgent struct {
@@ -665,7 +667,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	// is not lost.
 	runCtx := context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
 	genCtx, cancel = context.WithCancel(runCtx)
-	ac := &activeCancel{cancel: cancel}
+	ac := &activeCancel{cancel: cancel, done: make(chan struct{})}
+	defer close(ac.done)
 	a.activeRequests.Set(call.SessionID, ac)
 	if call.Accepted != nil {
 		call.Accepted.Close()
@@ -1369,7 +1372,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			complete.MessageID = currentAssistant.ID
 			complete.Text = currentAssistant.Content().String()
 		}
-		if ctx.Err() != nil {
+		if ctx.Err() != nil || errors.Is(err, context.Canceled) {
 			complete.Cancelled = true
 		}
 		a.publishRunComplete(ctx, call, complete)
@@ -1410,7 +1413,8 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 			deleteSessionContextSummary(a.dataDir, sessionID)
 		}
 	}()
-	ac := &activeCancel{cancel: cancel}
+	ac := &activeCancel{cancel: cancel, done: make(chan struct{})}
+	defer close(ac.done)
 	a.activeRequests.Set(sessionID, ac)
 	defer a.activeRequests.CompareAndDelete(sessionID, ac)
 	defer cancel()

@@ -15,9 +15,6 @@ import (
 	"sync"
 	"time"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/internal/agent"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
@@ -43,8 +40,11 @@ import (
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/internal/update"
 	"github.com/SpherePrime/CLI/internal/version"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 // UpdateAvailableMsg is sent when a new version is available.
@@ -683,6 +683,9 @@ func (app *App) setupEvents() {
 	app.subscribe(ctx, "agent-notifications", app.agentNotifications.Subscribe)
 	app.subscribeMustDeliver(ctx, "run-completions", app.runCompletions.Subscribe)
 	app.subscribe(ctx, "mcp", mcp.SubscribeEvents)
+	app.subscribeMustDeliver(ctx, "mcp-channels", func(ctx context.Context) <-chan pubsub.Event[mcp.Event] {
+		return mcp.SubscribeChannelEvents(ctx, app.config.WorkingDir(), app.config.Overrides().EnabledChannels)
+	})
 	app.subscribe(ctx, "lsp", SubscribeLSPEvents)
 	if app.Skills != nil {
 		app.subscribe(ctx, "skills", app.Skills.SubscribeEvents)

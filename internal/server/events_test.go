@@ -209,13 +209,6 @@ func TestUpdateAvailableMsgToProto_RoundTrip(t *testing.T) {
 	require.False(t, decoded.Payload.IsDevelopment)
 }
 
-// TestMCPChannelMessageNotWrappedAsStateChange verifies that an
-// EventChannelMessage — which has no proto representation until session
-// delivery is wired up in a later PR — is NOT wrapped as a spurious
-// state_changed MCP event by the SSE event pipeline. Before the fix,
-// mcpEventTypeToProto's default branch mapped every unknown event type to
-// MCPEventStateChanged, so a channel notification looked like a state
-// change to every SSE client.
 func TestMCPChannelMessageNotWrappedAsStateChange(t *testing.T) {
 	t.Parallel()
 
@@ -229,7 +222,7 @@ func TestMCPChannelMessageNotWrappedAsStateChange(t *testing.T) {
 	}
 
 	env := wrapEvent(src)
-	require.Nil(t, env, "EventChannelMessage must not be wrapped as an SSE event (no proto representation yet)")
+	require.Nil(t, env, "channel messages without workspace ownership must be dropped")
 }
 
 // TestMCPUnknownEventTypeNotMappedToStateChange verifies that any

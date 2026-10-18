@@ -162,6 +162,15 @@ func Connect(ctx context.Context, dataDir string, opts ...ConnectOption) (*sql.D
 		return nil, fmt.Errorf("failed to initialize goose: %w", err)
 	}
 
+	backupPath, err := prepareMigrationBackup(ctx, conn, dataDir)
+	if err != nil {
+		conn.Close()
+		releaseLock()
+		return nil, fmt.Errorf("prepare database migration: %w", err)
+	}
+	if backupPath != "" {
+		slog.Info("Created database backup before migration", "path", backupPath)
+	}
 	if err := goose.Up(conn, "migrations"); err != nil {
 		conn.Close()
 		releaseLock()

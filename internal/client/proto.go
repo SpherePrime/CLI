@@ -183,6 +183,13 @@ func (c *Client) SubscribeEvents(ctx context.Context, id string) (<-chan any, er
 				if !sendEvent(ctx, events, e) {
 					return
 				}
+			case pubsub.PayloadTypeMCPChannelMessage:
+				var e pubsub.Event[proto.MCPChannelMessage]
+				if err := json.Unmarshal(p.Payload, &e); err == nil {
+					if !sendEvent(ctx, events, e) {
+						return
+					}
+				}
 			case pubsub.PayloadTypePermissionRequest:
 				var e pubsub.Event[proto.PermissionRequest]
 				_ = json.Unmarshal(p.Payload, &e)
