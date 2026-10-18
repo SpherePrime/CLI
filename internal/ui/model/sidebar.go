@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"image"
-	"slices"
 	"strings"
 
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
@@ -34,16 +33,7 @@ func (m *UI) modelInfo(width int) (string, bool) {
 			if model.CatwalkCfg.CanReason {
 				hasReasoning = true
 				// Use the unified reasoning mode for display
-				mode := model.ModelCfg.EffectiveReasoningMode()
-				if mode == config.ReasoningModeOff && model.CatwalkCfg.CanReason && len(model.CatwalkCfg.ReasoningLevels) > 0 {
-					// Fall back to catalog default
-					defaultEffort := model.CatwalkCfg.DefaultReasoningEffort
-					if defaultEffort != "" && slices.Contains(model.CatwalkCfg.ReasoningLevels, defaultEffort) {
-						mode = config.NormalizeReasoningMode(defaultEffort)
-					} else {
-						mode = config.NormalizeReasoningMode(model.CatwalkCfg.ReasoningLevels[0])
-					}
-				}
+				mode := model.ModelCfg.ResolveReasoningMode(model.CatwalkCfg)
 				reasoningInfo = fmt.Sprintf("Reasoning %s", config.FormatReasoningMode(mode))
 			}
 		}
