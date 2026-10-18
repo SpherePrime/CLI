@@ -2,6 +2,7 @@ package agent
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
@@ -203,22 +204,26 @@ func TestShouldAutoSummarizeUsesConfiguredThreshold(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
-		window       int64
-		percent      int
+		name          string
+		window        int64
+		percent       int
 		contextTokens int64
-		want         bool
+		reserved      int64
+		want          bool
 	}{
 		{name: "below threshold", window: 1000, percent: 85, contextTokens: 849},
 		{name: "at threshold", window: 1000, percent: 85, contextTokens: 850, want: true},
 		{name: "over threshold", window: 1000, percent: 70, contextTokens: 701, want: true},
 		{name: "unknown window", window: 0, percent: 85, contextTokens: 900},
 		{name: "unknown context", window: 1000, percent: 85, contextTokens: 0},
+		{name: "output reserve lowers limit", window: 1000, percent: 90, contextTokens: 750, reserved: 250, want: true},
+		{name: "output reserve below limit", window: 1000, percent: 90, contextTokens: 749, reserved: 250},
+		{name: "output reserve capped at half window", window: 1000, percent: 90, contextTokens: 499, reserved: 900},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, shouldAutoSummarize(tc.window, tc.percent, tc.contextTokens))
+			require.Equal(t, tc.want, shouldAutoSummarize(tc.window, tc.percent, tc.contextTokens, tc.reserved))
 		})
 	}
 }
@@ -360,4 +365,34 @@ func TestUpdateSessionUsageAddsProviderCost(t *testing.T) {
 	require.Equal(t, int64(1000), currentSession.PromptTokens)
 	require.Equal(t, int64(2000), currentSession.CompletionTokens)
 	require.False(t, currentSession.EstimatedUsage)
+}
+
+func TestContextTokensFromUsageIncludesCacheAndOutput(t *testing.T) {
+	t.Parallel()
+
+	usage := fantasy.Usage{InputTokens: 100, CacheReadTokens: 2000, CacheCreationTokens: 300, OutputTokens: 50}
+
+	require.Equal(t, int64(2400), promptTokensFromUsage(usage))
+	require.Equal(t, int64(2450), contextTokensFromUsage(usage))
+}
+
+func TestUpdateSessionUsageCountsCacheCreation(t *testing.T) {
+	t.Parallel()
+
+	agent := &sessionAgent{}
+	currentSession := &session.Session{ID: "session-id"}
+	usage := fantasy.Usage{InputTokens: 10, CacheReadTokens: 1000, CacheCreationTokens: 500, OutputTokens: 40}
+
+	agent.updateSessionUsage(Model{}, currentSession, usage, nil, false)
+
+	require.Equal(t, int64(1510), currentSession.PromptTokens)
+	require.Equal(t, int64(40), currentSession.CompletionTokens)
+}
+
+func TestIsContextOverflowError(t *testing.T) {
+	t.Parallel()
+
+	require.False(t, isContextOverflowError(nil))
+	require.False(t, isContextOverflowError(&fantasy.ProviderError{StatusCode: 400}))
+	require.True(t, isContextOverflowError(fmt.Errorf("wrapped: %w", &fantasy.ProviderError{ContextTooLargeErr: true})))
 }

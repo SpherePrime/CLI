@@ -811,6 +811,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	a.eventPromptSent(call.SessionID)
 
 	var stepMessages []fantasy.Message
+	var stepToolTokens int64
 	var shouldSummarize bool
 	searchRecovery := emptySearchRecovery{}
 	sanitizedToolCalls := make(map[string]bool)
@@ -886,6 +887,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 
 			sessionLock.Lock()
 			stepMessages = cloneFantasyMessages(prepared.Messages)
+			stepToolTokens = estimateToolDefinitionTokens(prepared.Tools)
 			sessionLock.Unlock()
 
 			var assistantMsg message.Message
@@ -1054,7 +1056,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				return getSessionErr
 			}
 			usage, estimated := fallbackStepUsage(stepMessages, stepResult)
-			updatedSession.ContextTokens = estimateMessageTokens(stepMessages)
+			if estimated {
+				usage.InputTokens += stepToolTokens
+				usage.TotalTokens += stepToolTokens
+			}
+			updatedSession.ContextTokens = contextTokensFromUsage(usage)
 			a.updateSessionUsage(largeModel, &updatedSession, usage, a.openrouterCost(stepResult.ProviderMetadata), estimated)
 			extractHyperCredits(stepResult.ProviderMetadata)
 			_, sessionErr := a.sessions.Save(ctx, updatedSession)
@@ -1090,7 +1096,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				}
 				// Compact once the measured request context reaches the configured
 				// threshold, leaving (100 - percent) of the window free.
-				if shouldAutoSummarize(cw, percent, tokens) {
+				if shouldAutoSummarize(cw, percent, tokens, call.MaxOutputTokens) {
 					shouldSummarize = true
 					return true
 				}
@@ -1508,7 +1514,7 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 	currentSession.SummaryMessageID = summaryMessage.ID
 	currentSession.CompletionTokens = summaryCompletionTokens(usage, summaryMessage)
 	currentSession.PromptTokens = 0
-	currentSession.ContextTokens = approxTokenCount(summaryPromptText) + estimateMessageTokens(summaryMsgs)
+	currentSession.ContextTokens = currentSession.CompletionTokens
 	currentSession.EstimatedUsage = usageIsZero(usage)
 	_, err = a.sessions.Save(genCtx, currentSession)
 	if err != nil {
@@ -2047,12 +2053,9 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 		cost = 0
 	}
 
-	promptTokens := resp.TotalUsage.InputTokens + resp.TotalUsage.CacheCreationTokens
-	completionTokens := resp.TotalUsage.OutputTokens
-
 	// Atomically update only title and usage fields to avoid overriding other
 	// concurrent session updates.
-	saveErr := a.sessions.UpdateTitleAndUsage(ctx, sessionID, title, promptTokens, completionTokens, cost)
+	saveErr := a.sessions.UpdateTitleAndUsage(ctx, sessionID, title, 0, 0, cost)
 	if saveErr != nil {
 		slog.Error("Failed to save session title and usage", "error", saveErr)
 		return
@@ -2213,7 +2216,7 @@ func updateSessionTokenCounters(session *session.Session, usage fantasy.Usage) {
 	if usage.OutputTokens != 0 {
 		session.CompletionTokens = usage.OutputTokens
 	}
-	if promptTokens := usage.InputTokens + usage.CacheReadTokens; promptTokens != 0 {
+	if promptTokens := promptTokensFromUsage(usage); promptTokens != 0 {
 		session.PromptTokens = promptTokens
 	}
 }
