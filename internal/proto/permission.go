@@ -137,8 +137,12 @@ func unmarshalToolParams(toolName string, raw json.RawMessage) (any, error) {
 		}
 		return params, nil
 	default:
-		// For unknown tools, keep the raw JSON as-is.
-		var generic map[string]any
+		// For unknown tools, keep the raw JSON as-is. MCP tools send their
+		// input as a JSON string, so any JSON value is accepted.
+		if len(raw) == 0 {
+			return nil, nil
+		}
+		var generic any
 		if err := json.Unmarshal(raw, &generic); err != nil {
 			return nil, err
 		}
