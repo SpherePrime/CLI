@@ -21,6 +21,12 @@ const api: DesktopApi = {
   createEntry: (id, path, kind) => ipcRenderer.invoke('prime:createEntry', id, path, kind),
   trashEntry: (id, path) => ipcRenderer.invoke('prime:trashEntry', id, path),
   openWith: (id, path, target) => ipcRenderer.invoke('prime:openWith', id, path, target),
+  browserShow: (bounds) => ipcRenderer.invoke('prime:browserShow', bounds),
+  browserHide: () => ipcRenderer.invoke('prime:browserHide'),
+  browserState: () => ipcRenderer.invoke('prime:browserState'),
+  browserNavigate: (url) => ipcRenderer.invoke('prime:browserNavigate', url),
+  browserCommand: (command) => ipcRenderer.invoke('prime:browserCommand', command),
+  browserOpenExternal: () => ipcRenderer.invoke('prime:browserOpenExternal'),
   update: (action) => ipcRenderer.invoke('prime:update', action),
   onEvent: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, value: any) => listener(value)

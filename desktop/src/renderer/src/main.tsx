@@ -16,6 +16,7 @@ import './styles/brand.css'
 import './styles/composer.css'
 import './styles/files.css'
 import './styles/tasks.css'
+import './styles/browser.css'
 import './styles/motion.css'
 
 createRoot(document.getElementById('root')!).render(

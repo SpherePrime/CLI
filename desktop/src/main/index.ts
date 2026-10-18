@@ -27,6 +27,8 @@ import { listFiles, readProjectFile, fileDiff } from './files/browser'
 import { resolveProjectPath } from './files/paths'
 import { gitChanges } from './files/git'
 import { createProjectEntry, editorUrl, removableProjectEntry } from './files/entries'
+import { BrowserPanel } from './browser/panel'
+import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
 import { validateExternalUrl } from './ipc/security'
 import type { Operation } from '../shared/contracts'
 
@@ -46,6 +48,7 @@ const t = (source: string) => translate(settings?.get().language, source)
 const restarts: number[] = []
 const attachmentStore = new Map<string, any>()
 const projectId = z.string().uuid()
+let browserMcp: BrowserMcpServer | undefined
 const emit = (event: any) => {
   if (window && !window.isDestroyed()) window.webContents.send('prime:event', event)
   if (
@@ -68,6 +71,7 @@ const emit = (event: any) => {
       .show()
   }
 }
+const browserPanel = new BrowserPanel(() => window, emit)
 async function recoverBackend(): Promise<void> {
   recovering = true
   const previous = [...(prime?.projects.values() || [])]
@@ -374,6 +378,25 @@ function registerIpc(): void {
     const failure = await shell.openPath(await resolveProjectPath(root, relative))
     if (failure) throw new Error(failure)
   })
+  const bounds = z.object({
+    x: z.number().finite(),
+    y: z.number().finite(),
+    width: z.number().finite().min(0),
+    height: z.number().finite().min(0)
+  })
+  handle('browserShow', (value: unknown) => browserPanel.show(bounds.parse(value)))
+  handle('browserHide', () => browserPanel.hide())
+  handle('browserState', () => browserPanel.state())
+  handle('browserNavigate', (url: string) => browserPanel.navigate(z.string().max(8192).parse(url)))
+  handle('browserCommand', (command: string) => {
+    const action = z.enum(['back', 'forward', 'reload']).parse(command)
+    browserPanel[action]()
+    return browserPanel.state()
+  })
+  handle('browserOpenExternal', () => {
+    const url = browserPanel.state().url
+    if (url) void shell.openExternal(validateExternalUrl(url))
+  })
   handle('reveal', async (id: string, path = '') => {
     const resolved = await resolveProjectPath(requirePrime().root(projectId.parse(id)), path)
     if (path) shell.showItemInFolder(resolved)
@@ -484,6 +507,13 @@ else {
     tray.setToolTip('Prime Desktop')
     tray.on('double-click', () => window?.show())
     refreshTrayMenu()
+    try {
+      browserMcp = await startBrowserMcpServer(browserPanel)
+      process.env.PRIME_DESKTOP_BROWSER_URL = browserMcp.url
+      process.env.PRIME_DESKTOP_BROWSER_TOKEN = browserMcp.token
+    } catch (error) {
+      console.error('Built-in browser tools are unavailable', error)
+    }
     await startRuntime()
   })
   app.on('window-all-closed', () => {
@@ -500,6 +530,8 @@ else {
     void (async () => {
       await prime?.dispose()
       await runtime?.stop()
+      await browserMcp?.close()
+      browserPanel.destroy()
       tray?.destroy()
       cleanupDone = true
       app.quit()

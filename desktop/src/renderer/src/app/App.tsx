@@ -62,6 +62,17 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [modal, setModal] = useState('')
   const [sidebar, setSidebar] = useState(true)
   const [inspector, setInspector] = useState(true)
+  const [browserRequest, setBrowserRequest] = useState(0)
+  useEffect(
+    () =>
+      window.prime.onEvent((event) => {
+        if (event.type === 'browser' && event.payload?.action === 'activate') {
+          setInspector(true)
+          setBrowserRequest(Date.now())
+        }
+      }),
+    []
+  )
   const [widths, setWidths] = useState({ sidebar: 256, inspector: 334 })
   const [zoom, setZoom] = useState(1)
   const shell = useRef<HTMLDivElement>(null)
@@ -368,6 +379,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               workspace={w}
               close={() => setInspector(false)}
               openDocument={documents.open}
+              browserRequest={browserRequest}
             />
           </>
         )}
