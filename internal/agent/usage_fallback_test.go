@@ -208,7 +208,6 @@ func TestShouldAutoSummarizeUsesConfiguredThreshold(t *testing.T) {
 		window        int64
 		percent       int
 		contextTokens int64
-		reserved      int64
 		want          bool
 	}{
 		{name: "below threshold", window: 1000, percent: 85, contextTokens: 849},
@@ -216,14 +215,11 @@ func TestShouldAutoSummarizeUsesConfiguredThreshold(t *testing.T) {
 		{name: "over threshold", window: 1000, percent: 70, contextTokens: 701, want: true},
 		{name: "unknown window", window: 0, percent: 85, contextTokens: 900},
 		{name: "unknown context", window: 1000, percent: 85, contextTokens: 0},
-		{name: "output reserve lowers limit", window: 1000, percent: 90, contextTokens: 750, reserved: 250, want: true},
-		{name: "output reserve below limit", window: 1000, percent: 90, contextTokens: 749, reserved: 250},
-		{name: "output reserve capped at half window", window: 1000, percent: 90, contextTokens: 499, reserved: 900},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, shouldAutoSummarize(tc.window, tc.percent, tc.contextTokens, tc.reserved))
+			require.Equal(t, tc.want, shouldAutoSummarize(tc.window, tc.percent, tc.contextTokens))
 		})
 	}
 }
