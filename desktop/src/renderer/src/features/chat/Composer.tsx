@@ -1,31 +1,18 @@
 import { PermissionMenu } from './PermissionMenu'
 import { QueuePanel } from './QueuePanel'
-import { ReasoningControl } from '../models/ReasoningControl'
-import { ModelPicker } from '../models/ModelPicker'
+import { ModelControl } from '../models/ModelControl'
+import { VoiceWave } from './VoiceWave'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { CommandRunner } from './CommandRunner'
 import { useEffect, useRef, useState } from 'react'
-import {
-  ArrowUp,
-  ChevronDown,
-  Mic,
-  Paperclip,
-  ShieldCheck,
-  Square,
-  X,
-  ListOrdered,
-  Sparkles,
-  LoaderCircle
-} from 'lucide-react'
+import { ArrowUp, Mic, Paperclip, Square, X, LoaderCircle } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useVoice } from '../plugins/useVoice'
 
 export function Composer({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
   const [text, setText] = useState('')
-  const [modelsOpen, setModelsOpen] = useState(false)
-  const modelAnchor = useRef<HTMLButtonElement>(null)
   const [attachments, setAttachments] = useState<any[]>([])
   const [sending, setSending] = useState(false)
   const [mode, setMode] = useState('general')
@@ -50,7 +37,10 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const {
     recording,
     transcribing,
-    toggle: toggleVoice
+    analyser,
+    toggle: toggleVoice,
+    finish: finishVoice,
+    cancel: cancelVoice
   } = useVoice(w, (transcript) => setText((value) => [value, transcript].filter(Boolean).join(' ')))
   useEffect(() => {
     if (draftKey.current !== key) {
@@ -82,13 +72,23 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     }
   }, [text])
   async function submit() {
-    if (!text.trim() || sending) return
+    if (sending) return
+    let message = text
+    if (recording) {
+      setSending(true)
+      const spoken = await finishVoice()
+      message = [text, spoken].filter((part) => part.trim()).join(' ')
+      setText(message)
+      latest.current = message
+      setSending(false)
+    }
+    if (!message.trim()) return
     const submittedKey = key
-    const submittedText = text
+    const submittedText = message
     setSending(true)
     if (
       await w.send(
-        text,
+        message,
         attachments.map((item) => item.id)
       )
     ) {
@@ -144,25 +144,9 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       )
     } else setSuggestions([])
   }
-  useEffect(() => {
-    const open = () => setModelsOpen((value) => !value)
-    window.addEventListener('prime:models', open)
-    return () => window.removeEventListener('prime:models', open)
-  }, [])
-  const selectedModel = w.config?.models?.large
+  const voiceActive = recording || (transcribing && sending)
   return (
     <div className="composer-area">
-      {modelsOpen && (
-        <ModelPicker
-          workspace={w}
-          anchor={modelAnchor}
-          close={() => setModelsOpen(false)}
-          setup={() => {
-            setModelsOpen(false)
-            window.dispatchEvent(new Event('prime:providers'))
-          }}
-        />
-      )}
       {command && (
         <CommandRunner
           command={command}
@@ -199,7 +183,15 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             ))}
           </div>
         )}
+        {voiceActive && (
+          <VoiceWave
+            analyser={analyser}
+            transcribing={transcribing}
+            onCancel={() => void cancelVoice()}
+          />
+        )}
         <textarea
+          hidden={voiceActive}
           ref={textarea}
           value={text}
           onChange={(event) => void change(event.target.value)}
@@ -274,22 +266,9 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
                   .catch(w.errorHandler)
               }}
             />
-            <button
-              ref={modelAnchor}
-              className="model-trigger"
-              aria-label={t('Выбрать модель')}
-              aria-haspopup="listbox"
-              aria-expanded={modelsOpen}
-              onClick={() => setModelsOpen(!modelsOpen)}
-              disabled={!w.project}
-            >
-              <Sparkles size={13} />
-              <span>{selectedModel?.model || w.agent?.model?.name || t('Выбрать модель')}</span>
-              <ChevronDown size={12} />
-            </button>
-            <ReasoningControl workspace={w} />
           </div>
           <div className="composer-actions">
+            <ModelControl workspace={w} />
             <button
               className={`icon ${recording ? 'danger' : ''}`}
               disabled={!w.project || transcribing}
@@ -299,7 +278,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             >
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
-            {w.busy && (!text.trim() || sending) ? (
+            {w.busy && !recording && (!text.trim() || sending) ? (
               <button
                 className="send stop"
                 onClick={() => void stop()}
@@ -311,7 +290,9 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               <button
                 className="send"
                 aria-label={t('Отправить сообщение')}
-                disabled={!text.trim() || sending || w.project?.connection !== 'ready'}
+                disabled={
+                  (!text.trim() && !recording) || sending || w.project?.connection !== 'ready'
+                }
                 onClick={() => void submit()}
               >
                 {sending ? <LoaderCircle size={17} className="spin" /> : <ArrowUp size={18} />}
