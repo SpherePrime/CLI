@@ -28,3 +28,49 @@ jobs:
           args: release --clean ${{ github.event_name == 'workflow_dispatch' && '--snapshot' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  desktop:
+    if: ${{ github.event_name == 'push' && !contains(github.ref_name, '-') }}
+    needs: release
+    env:
+      PRIME_RELEASE_TAG: ${{ github.ref_name }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Set release version
+        run: |
+          $releaseVersion = $env:PRIME_RELEASE_TAG.TrimStart('v')
+          if ($releaseVersion -notmatch '^\d+\.\d+\.\d+$') { throw 'Desktop releases require a stable semantic version' }
+          "PRIME_RELEASE_VERSION=$releaseVersion" >> $env:GITHUB_ENV
+      - run: npm ci
+      - name: Build bundled Prime
+        run: node scripts/acquire-runtime.mjs
+        env:
+          PRIME_CLI_SOURCE: ${{ github.workspace }}
+      - run: npm version $env:PRIME_RELEASE_VERSION --allow-same-version --no-git-tag-version
+      - run: npm run test:unit
+      - run: npm run build
+      - name: Package Windows Desktop
+        run: npx electron-builder --win nsis --x64 --publish never --config.directories.output=release/$env:PRIME_RELEASE_VERSION
+      - name: Package custom installer
+        run: npm run dist:installer
+      - name: Attach Desktop update assets
+        run: |
+          $assets = Get-ChildItem -LiteralPath "release/$env:PRIME_RELEASE_VERSION" -File | Where-Object { $_.Extension -in '.exe', '.blockmap', '.yml' } | ForEach-Object { $_.FullName }
+          if (!(Test-Path -LiteralPath "release/$env:PRIME_RELEASE_VERSION/latest.yml")) { throw 'Missing Desktop update metadata' }
+          gh release upload $env:PRIME_RELEASE_TAG @assets --repo SpherePrime/CLI --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

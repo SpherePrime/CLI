@@ -1,0 +1,42 @@
+name: Desktop CI
+on:
+  push:
+  pull_request:
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: runtime
+        shell: pwsh
+        run: |
+          $manifest = Get-Content runtime/manifest.json | ConvertFrom-Json
+          "commit=$($manifest.commit)" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          repository: SpherePrime/CLI
+          ref: ${{ steps.runtime.outputs.commit }}
+          path: cli-source
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli-source/go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: node node_modules/electron/install.js
+      - run: node scripts/acquire-runtime.mjs
+        env:
+          PRIME_CLI_SOURCE: ${{ github.workspace }}/cli-source
+      - run: npm run runtime:verify
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run test:integration
+      - run: npm run build
+      - run: npm run test:e2e
+      - run: npx electron-builder --win nsis --x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prime-desktop-windows-x64
+          path: release/*.exe
