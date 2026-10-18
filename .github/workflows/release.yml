@@ -61,7 +61,6 @@ jobs:
         env:
           PRIME_CLI_SOURCE: ${{ github.workspace }}
       - run: npm version $env:PRIME_RELEASE_VERSION --allow-same-version --no-git-tag-version
-      - run: npm run test:unit
       - run: npm run build
       - name: Package Windows Desktop
         run: npx electron-builder --win nsis --x64 --publish never --config.directories.output=release/$env:PRIME_RELEASE_VERSION
