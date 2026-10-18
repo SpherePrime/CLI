@@ -640,7 +640,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 
 			// Always show the reasoning mode dialog — it works for any model,
 			// including custom providers that aren't marked CanReason=true.
-			currentMode := selectedModel.EffectiveReasoningMode()
+			currentMode := selectedModel.ResolveReasoningMode(*model)
 			label := c.com.L("cmd.select_reasoning_effort")
 			if currentMode != config.ReasoningModeOff {
 				label += " · " + config.FormatReasoningMode(currentMode)

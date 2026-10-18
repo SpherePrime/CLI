@@ -278,9 +278,10 @@ func (r *Reasoning) setReasoningItems() error {
 
 	selectedModel := cfg.Models[agentCfg.Model]
 
-	// Use the unified reasoning mode system — shows all modes for any model,
-	// not just those marked CanReason=true in the catalog.
 	currentMode := selectedModel.EffectiveReasoningMode()
+	if catalogModel := cfg.GetModelByType(agentCfg.Model); catalogModel != nil {
+		currentMode = selectedModel.ResolveReasoningMode(*catalogModel)
+	}
 
 	// Build the item list: Off followed by all reasoning levels.
 	levels := append([]string{config.ReasoningModeOff}, config.AllReasoningModes()...)

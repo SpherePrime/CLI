@@ -458,29 +458,8 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	return result, originalErr
 }
 
-// effectiveReasoningMode returns the unified reasoning mode to apply for
-// provider calls. It uses the new ReasoningMode field when set, falling back
-// to the legacy Think/ReasoningEffort fields for backward compatibility.
-//
-// Resolution order:
-//  1. Explicit ReasoningMode field (takes precedence)
-//  2. Think=true → medium (legacy thinking toggle maps to medium)
-//  3. ReasoningEffort set → map to appropriate mode
-//  4. If CanReason is true and model has ReasoningLevels, use default/first
-//  5. Otherwise → off
 func effectiveReasoningMode(model Model) string {
-	mode := model.ModelCfg.EffectiveReasoningMode()
-	if mode != config.ReasoningModeOff {
-		return mode
-	}
-	// Fall back to catalog default for models that support reasoning
-	if model.CatwalkCfg.CanReason && len(model.CatwalkCfg.ReasoningLevels) > 0 {
-		if effort := model.CatwalkCfg.DefaultReasoningEffort; effort != "" && slices.Contains(model.CatwalkCfg.ReasoningLevels, effort) {
-			return config.NormalizeReasoningMode(effort)
-		}
-		return config.NormalizeReasoningMode(model.CatwalkCfg.ReasoningLevels[0])
-	}
-	return config.ReasoningModeOff
+	return model.ModelCfg.ResolveReasoningMode(model.CatwalkCfg)
 }
 
 // mapModeToProviderEffort converts a unified reasoning mode to the
@@ -585,16 +564,16 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 
 	reasoningMode := effectiveReasoningMode(model)
 	shouldSetEffort := thinkingEnabled(reasoningMode)
-	// For most providers we preserve the full range of modes (low/medium/high/xhigh/max).
-	// For OpenAI compatibility, we use a separate mapping since OpenAI only
-	// supports low/medium/high.
-	openAIEffort := mapModeToOpenAIEffort(reasoningMode)
+	providerEffort := providerReasoningEffort(model, reasoningMode)
+	openAIEffort := openAIReasoningEffort(model, reasoningMode)
 
 	switch providerCfg.Type {
 	case openai.Name, azure.Name:
 		_, hasReasoningEffort := mergedOptions["reasoning_effort"]
 		if !hasReasoningEffort && shouldSetEffort {
 			mergedOptions["reasoning_effort"] = openAIEffort
+		} else if offEffort := config.ReasoningOffLevel(model.CatwalkCfg.ReasoningLevels); !hasReasoningEffort && offEffort != "" {
+			mergedOptions["reasoning_effort"] = offEffort
 		}
 		if openai.IsResponsesModel(model.CatwalkCfg.ID) {
 			if openai.IsResponsesReasoningModel(model.CatwalkCfg.ID) {
@@ -623,7 +602,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		case string(catwalk.InferenceProviderAlibabaSingapore), string(catwalk.InferenceProviderAlibabaUS):
 			switch {
 			case !hasEffort && shouldSetEffort:
-				extraBody["reasoning_effort"] = mapModeToProviderEffort(reasoningMode)
+				extraBody["reasoning_effort"] = providerEffort
 			case !hasThink && thinkingEnabled(reasoningMode):
 				extraBody["thinking"] = map[string]any{"type": "enabled"}
 			case !hasThink:
@@ -632,11 +611,11 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 			mergedOptions["extra_body"] = extraBody
 
 		default:
-			switch {
-			case !hasEffort && shouldSetEffort:
-				mergedOptions["effort"] = mapModeToProviderEffort(reasoningMode)
-			case !hasThink && thinkingEnabled(reasoningMode):
-				mergedOptions["thinking"] = map[string]any{"budget_tokens": 2000}
+			if !hasThink && shouldSetEffort {
+				mergedOptions["thinking"] = map[string]any{"budget_tokens": anthropicThinkingBudget(model, reasoningMode)}
+			}
+			if !hasEffort && shouldSetEffort && anthropicSupportsEffort(model) {
+				mergedOptions["effort"] = providerEffort
 			}
 		}
 
@@ -650,7 +629,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		if !hasReasoning && shouldSetEffort {
 			mergedOptions["reasoning"] = map[string]any{
 				"enabled": true,
-				"effort":  mapModeToProviderEffort(reasoningMode),
+				"effort":  providerEffort,
 			}
 		}
 		parsed, err := openrouter.ParseOptions(mergedOptions)
@@ -663,7 +642,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		if !hasReasoning && shouldSetEffort {
 			mergedOptions["reasoning"] = map[string]any{
 				"enabled": true,
-				"effort":  mapModeToProviderEffort(reasoningMode),
+				"effort":  providerEffort,
 			}
 		}
 		parsed, err := vercel.ParseOptions(mergedOptions)
@@ -673,18 +652,8 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 
 	case google.Name:
 		_, hasReasoning := mergedOptions["thinking_config"]
-		if !hasReasoning {
-			if strings.HasPrefix(model.CatwalkCfg.ID, "gemini-2") {
-				mergedOptions["thinking_config"] = map[string]any{
-					"thinking_budget":  2000,
-					"include_thoughts": true,
-				}
-			} else {
-				mergedOptions["thinking_config"] = map[string]any{
-					"thinking_level":   mapModeToProviderEffort(reasoningMode),
-					"include_thoughts": true,
-				}
-			}
+		if !hasReasoning && (model.CatwalkCfg.CanReason || model.ModelCfg.HasExplicitReasoningMode()) {
+			mergedOptions["thinking_config"] = googleThinkingConfig(model, reasoningMode)
 		}
 		parsed, err := google.ParseOptions(mergedOptions)
 		if err == nil {
@@ -698,7 +667,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		if !hasReasoningEffort && shouldSetEffort {
 			switch providerCfg.ID {
 			case string(catwalk.InferenceProviderIoNet):
-				extraBody["reasoning"] = map[string]string{"effort": mapModeToProviderEffort(reasoningMode)}
+				extraBody["reasoning"] = map[string]string{"effort": providerEffort}
 			case string(catwalk.InferenceProviderOpenCodeGo), string(catwalk.InferenceProviderOpenCodeZen):
 				// MiniMax models use the "thinking" parameter instead of
 				// "reasoning_effort". Other models on these providers still
@@ -721,7 +690,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		case string(catwalk.InferenceProviderIoNet):
 			if _, ok := extraBody["reasoning"]; !ok {
 				if thinkingEnabled(reasoningMode) {
-					extraBody["reasoning"] = map[string]string{"effort": mapModeToProviderEffort(reasoningMode)}
+					extraBody["reasoning"] = map[string]string{"effort": providerEffort}
 				} else {
 					extraBody["reasoning"] = map[string]string{"effort": "none"}
 				}

@@ -396,11 +396,19 @@ func (a languageModel) prepareParams(call fantasy.Call) (
 		params.OutputConfig = anthropic.OutputConfigParam{
 			Effort: anthropic.OutputConfigEffort(effort),
 		}
-		adaptive := anthropic.ThinkingConfigAdaptiveParam{}
-		if display, ok := thinkingDisplay(providerOptions, a.modelID); ok {
-			setThinkingDisplay(&adaptive, display)
+		if !lacksAdaptiveThinking(a.modelID) {
+			adaptive := anthropic.ThinkingConfigAdaptiveParam{}
+			if display, ok := thinkingDisplay(providerOptions, a.modelID); ok {
+				setThinkingDisplay(&adaptive, display)
+			}
+			params.Thinking.OfAdaptive = &adaptive
+		} else if providerOptions.Thinking != nil && providerOptions.Thinking.BudgetTokens > 0 {
+			params.Thinking = anthropic.ThinkingConfigParamOfEnabled(providerOptions.Thinking.BudgetTokens)
+			if display, ok := thinkingDisplay(providerOptions, a.modelID); ok {
+				setThinkingDisplay(params.Thinking.OfEnabled, display)
+			}
+			warnings = append(warnings, clearThinkingSamplingParams(params, call)...)
 		}
-		params.Thinking.OfAdaptive = &adaptive
 	case providerOptions.Thinking != nil:
 		if providerOptions.Thinking.BudgetTokens == 0 {
 			return nil, nil, nil, nil, &fantasy.Error{Title: "no budget", Message: "thinking requires budget"}
@@ -417,30 +425,7 @@ func (a languageModel) prepareParams(call fantasy.Call) (
 				setThinkingDisplay(params.Thinking.OfEnabled, display)
 			}
 		}
-		if call.Temperature != nil {
-			params.Temperature = param.Opt[float64]{}
-			warnings = append(warnings, fantasy.CallWarning{
-				Type:    fantasy.CallWarningTypeUnsupportedSetting,
-				Setting: "temperature",
-				Details: "temperature is not supported when thinking is enabled",
-			})
-		}
-		if call.TopP != nil {
-			params.TopP = param.Opt[float64]{}
-			warnings = append(warnings, fantasy.CallWarning{
-				Type:    fantasy.CallWarningTypeUnsupportedSetting,
-				Setting: "TopP",
-				Details: "TopP is not supported when thinking is enabled",
-			})
-		}
-		if call.TopK != nil {
-			params.TopK = param.Opt[int64]{}
-			warnings = append(warnings, fantasy.CallWarning{
-				Type:    fantasy.CallWarningTypeUnsupportedSetting,
-				Setting: "TopK",
-				Details: "TopK is not supported when thinking is enabled",
-			})
-		}
+		warnings = append(warnings, clearThinkingSamplingParams(params, call)...)
 	case defaultsToAdaptiveThinking(a.modelID):
 		adaptive := anthropic.ThinkingConfigAdaptiveParam{}
 		if display, ok := thinkingDisplay(providerOptions, a.modelID); ok {
@@ -1718,4 +1703,67 @@ func (a languageModel) StreamObject(ctx context.Context, call fantasy.ObjectCall
 	default:
 		return object.StreamWithTool(ctx, a, call)
 	}
+}
+
+func clearThinkingSamplingParams(params *anthropic.MessageNewParams, call fantasy.Call) []fantasy.CallWarning {
+	var warnings []fantasy.CallWarning
+	if call.Temperature != nil {
+		params.Temperature = param.Opt[float64]{}
+		warnings = append(warnings, fantasy.CallWarning{
+			Type:    fantasy.CallWarningTypeUnsupportedSetting,
+			Setting: "temperature",
+			Details: "temperature is not supported when thinking is enabled",
+		})
+	}
+	if call.TopP != nil {
+		params.TopP = param.Opt[float64]{}
+		warnings = append(warnings, fantasy.CallWarning{
+			Type:    fantasy.CallWarningTypeUnsupportedSetting,
+			Setting: "TopP",
+			Details: "TopP is not supported when thinking is enabled",
+		})
+	}
+	if call.TopK != nil {
+		params.TopK = param.Opt[int64]{}
+		warnings = append(warnings, fantasy.CallWarning{
+			Type:    fantasy.CallWarningTypeUnsupportedSetting,
+			Setting: "TopK",
+			Details: "TopK is not supported when thinking is enabled",
+		})
+	}
+	return warnings
+}
+
+func lacksAdaptiveThinking(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if strings.Contains(model, "claude-3") {
+		return true
+	}
+	for _, family := range []string{"claude-haiku-4", "claude-opus-4", "claude-sonnet-4"} {
+		_, suffix, ok := strings.Cut(model, family)
+		if !ok {
+			continue
+		}
+		if family == "claude-haiku-4" {
+			return true
+		}
+		if suffix == "" || (suffix[0] != '-' && suffix[0] != '.') {
+			return true
+		}
+		suffix = suffix[1:]
+		versionEnd := 0
+		for versionEnd < len(suffix) && suffix[versionEnd] >= '0' && suffix[versionEnd] <= '9' {
+			versionEnd++
+		}
+		if versionEnd == 0 || versionEnd > 2 {
+			return true
+		}
+		minor, err := strconv.Atoi(suffix[:versionEnd])
+		return err != nil || minor < 6
+	}
+	return false
+}
+
+func SupportsAdaptiveThinking(model string) bool {
+	return strings.Contains(strings.ToLower(model), "claude") && !lacksAdaptiveThinking(model)
 }
