@@ -81,6 +81,17 @@ func (b *Backend) UpdatePreferredModel(workspaceID string, scope config.Scope, m
 	if err != nil {
 		return err
 	}
+	if model.ReasoningMode != "" {
+		catalogModel := ws.Cfg.Config().GetModel(model.Provider, model.Model)
+		if catalogModel == nil {
+			return fmt.Errorf("model %q not found", model.Model)
+		}
+		normalized, err := config.NormalizeModelReasoningMode(*catalogModel, model.ReasoningMode)
+		if err != nil {
+			return err
+		}
+		model.ReasoningMode = normalized
+	}
 	if err := ws.Cfg.UpdatePreferredModel(scope, modelType, model); err != nil {
 		return err
 	}

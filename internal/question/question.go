@@ -198,6 +198,9 @@ type questionService struct {
 	pending            chan []Answer
 	cancelled          chan struct{}
 	pendingID          string
+	pendingRequest     *Request
+	askMu              sync.Mutex
+	resolved           bool
 }
 
 // NewService creates a new question service.
@@ -221,6 +224,8 @@ func (s *questionService) SubscribeNotifications(ctx context.Context) <-chan pub
 
 // Ask publishes a request and blocks until the user answers.
 func (s *questionService) Ask(ctx context.Context, req Request) ([]Answer, error) {
+	s.askMu.Lock()
+	defer s.askMu.Unlock()
 	if req.ID == "" {
 		req.ID = uuid.New().String()
 	}
@@ -248,6 +253,9 @@ func (s *questionService) Ask(ctx context.Context, req Request) ([]Answer, error
 	s.pending = make(chan []Answer, 1)
 	s.cancelled = make(chan struct{})
 	s.pendingID = req.ID
+	s.pendingRequest = &req
+	s.resolved = false
+	answerCh, cancelCh := s.pending, s.cancelled
 	s.mu.Unlock()
 
 	defer func() {
@@ -255,6 +263,7 @@ func (s *questionService) Ask(ctx context.Context, req Request) ([]Answer, error
 		s.pending = nil
 		s.cancelled = nil
 		s.pendingID = ""
+		s.pendingRequest = nil
 		s.mu.Unlock()
 	}()
 
@@ -263,9 +272,9 @@ func (s *questionService) Ask(ctx context.Context, req Request) ([]Answer, error
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case <-s.cancelled:
+	case <-cancelCh:
 		return nil, ErrCancelled
-	case answers := <-s.pending:
+	case answers := <-answerCh:
 		return answers, nil
 	}
 }
@@ -273,45 +282,11 @@ func (s *questionService) Ask(ctx context.Context, req Request) ([]Answer, error
 // Answer resolves the pending question. Returns false if no
 // question is pending (already answered or cancelled).
 func (s *questionService) Answer(answers []Answer) bool {
-	s.mu.Lock()
-	batchID := s.pendingID
-	ch := s.pending
-	s.mu.Unlock()
-
-	if ch == nil {
-		return false
-	}
-	ch <- answers
-
-	// Publish a notification so non-answering clients can dismiss
-	// their open question forms.
-	if batchID != "" {
-		s.notificationBroker.Publish(pubsub.CreatedEvent, Notification{
-			BatchID: batchID,
-		})
-	}
-	return true
+	return s.AnswerID("", answers)
 }
 
 // Cancel cancels the pending question. Returns false if no
 // question is pending.
 func (s *questionService) Cancel() bool {
-	s.mu.Lock()
-	batchID := s.pendingID
-	cancelCh := s.cancelled
-	s.mu.Unlock()
-
-	if cancelCh == nil {
-		return false
-	}
-	close(cancelCh)
-
-	// Publish a notification so non-answering clients can dismiss
-	// their open question forms.
-	if batchID != "" {
-		s.notificationBroker.Publish(pubsub.CreatedEvent, Notification{
-			BatchID: batchID,
-		})
-	}
-	return true
+	return s.CancelID("")
 }

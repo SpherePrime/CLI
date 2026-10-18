@@ -47,6 +47,8 @@ type Task struct {
 
 var activeTasks sync.Map // plugin name -> *Task
 
+var installMu sync.Mutex
+
 // installDeadline bounds one plugin install. Downloads of a few hundred MB
 // plus an installer run fit well inside it.
 const installDeadline = 30 * time.Minute
@@ -55,6 +57,8 @@ const installDeadline = 30 * time.Minute
 // When an install for the plugin is already running, that task is returned
 // unchanged.
 func InstallAsync(plugin Plugin, settings voice.Settings) *Task {
+	installMu.Lock()
+	defer installMu.Unlock()
 	if running := Running(plugin.Name); running != nil {
 		return running
 	}

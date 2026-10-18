@@ -10,6 +10,19 @@ import (
 // /v1/docs/. Add or change an endpoint here, never by hand elsewhere.
 func (c *controllerV1) endpoints() []apigen.Endpoint {
 	return []apigen.Endpoint{
+		apigen.Get("/v1/workspaces/{id}/plugins").Summary("List Prime plugins").Tags("plugins").PathParam("id", "Workspace ID").Responds([]proto.PluginInfo{}).Fails(404).Handle(c.handleGetPlugins),
+		apigen.Get("/v1/workspaces/{id}/plugins/tasks").Summary("Plugin install progress").Tags("plugins").PathParam("id", "Workspace ID").Responds([]proto.PluginTask{}).Fails(404).Handle(c.handleGetPluginTasks),
+		apigen.Post("/v1/workspaces/{id}/plugins/{name}/enable").Summary("Install and enable plugin").Tags("plugins").PathParam("id", "Workspace ID").PathParam("name", "Plugin name").Status(202).Fails(404).Handle(c.handleEnablePlugin),
+		apigen.Post("/v1/workspaces/{id}/plugins/{name}/disable").Summary("Disable plugin").Tags("plugins").PathParam("id", "Workspace ID").PathParam("name", "Plugin name").Fails(404).Handle(c.handleDisablePlugin),
+		apigen.Get("/v1/workspaces/{id}/commands").Summary("List custom commands").Tags("commands").PathParam("id", "Workspace ID").Fails(404).Handle(c.handleGetCommands),
+		apigen.Post("/v1/workspaces/{id}/voice/transcribe").Summary("Transcribe PCM WAV upload").Tags("plugins").PathParam("id", "Workspace ID").Accepts(proto.VoiceUpload{}).Responds(proto.VoiceTranscript{}).Fails(400, 404, 409, 502).Handle(c.handleVoiceTranscribe),
+		apigen.Post("/v1/workspaces/{id}/config/reasoning").Summary("Set selected model reasoning mode").Tags("config").PathParam("id", "Workspace ID").Fails(400, 404).Handle(c.handlePostReasoning),
+		apigen.Get("/v1/capabilities").Summary("Desktop protocol capabilities").Tags("system").Responds(proto.DesktopCapabilities{}).Handle(c.handleGetCapabilities),
+		apigen.Get("/v1/workspaces/{id}/pending").Summary("Pending permissions and question").Tags("desktop").PathParam("id", "Workspace ID").Fails(404).Handle(c.handleGetPending),
+		apigen.Get("/v1/workspaces/{id}/runs").Summary("Workspace run registry").Tags("agent").PathParam("id", "Workspace ID").Responds([]proto.RunRecord{}).Fails(404).Handle(c.handleGetRuns),
+		apigen.Get("/v1/workspaces/{id}/runs/{run_id}").Summary("Find accepted run").Tags("agent").PathParam("id", "Workspace ID").PathParam("run_id", "Run ID").Responds(proto.RunRecord{}).Fails(404).Handle(c.handleGetRun),
+		apigen.Get("/v1/workspaces/{id}/models/capabilities").Summary("Configured model capabilities").Tags("config").PathParam("id", "Workspace ID").Responds([]proto.ModelCapabilities{}).Fails(404).Handle(c.handleGetModelCapabilities),
+		apigen.Get("/v1/workspaces/{id}/jobs").Summary("Workspace background shell jobs").Tags("agent").PathParam("id", "Workspace ID").QueryParam("session_id", "Filter by originating session").Responds([]proto.BackgroundJob{}).Fails(404).Handle(c.handleGetJobs),
 		apigen.Get("/v1/health").
 			Summary("Health check").
 			Tags("system").
@@ -376,6 +389,20 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Responds([]string{}).
 			Fails(404, 500).
 			Handle(c.handleGetWorkspaceAgentSessionPromptList),
+
+		apigen.Get("/v1/workspaces/{id}/agent/sessions/{sid}/prompts/entries").
+			Summary("List queue entries with stable identifiers").
+			Tags("agent").
+			PathParam("id", "Workspace ID").
+			PathParam("sid", "Session ID").
+			Handle(c.handleQueueEntries),
+
+		apigen.Post("/v1/workspaces/{id}/agent/sessions/{sid}/prompts/run-now").
+			Summary("Interrupt the active turn and run a selected queued prompt").
+			Tags("agent").
+			PathParam("id", "Workspace ID").
+			PathParam("sid", "Session ID").
+			Handle(c.handleRunQueuedNow),
 
 		apigen.Post("/v1/workspaces/{id}/agent/sessions/{sid}/prompts/clear").
 			Summary("Clear prompt queue").

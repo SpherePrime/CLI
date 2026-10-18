@@ -38,7 +38,8 @@ func TestChannelEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	sub := broker.Subscribe(ctx)
+	workspacePath := canonicalChannelWorkspace(t.TempDir())
+	sub := SubscribeChannelEvents(ctx, workspacePath, []string{"chan"})
 
 	serverT, clientT := mcp.NewInMemoryTransports()
 
@@ -72,7 +73,7 @@ func TestChannelEndToEnd(t *testing.T) {
 
 	gate := newChannelGate()
 	client := mcp.NewClient(&mcp.Implementation{Name: "prime", Version: "test"}, nil)
-	session, err := client.Connect(ctx, &channelTransport{inner: clientT, name: "chan", gate: gate}, nil)
+	session, err := client.Connect(ctx, &channelTransport{inner: clientT, name: "chan", gate: gate, workspacePath: workspacePath}, nil)
 	if err != nil {
 		t.Fatalf("client connect: %v", err)
 	}
@@ -85,7 +86,7 @@ func TestChannelEndToEnd(t *testing.T) {
 	if channelEnabled([]string{"chan"}, "chan") && hasChannelCapability(session.InitializeResult()) {
 		buffered := gate.resolve(true)
 		for _, raw := range buffered {
-			publishChannelMessage(ctx, "chan", raw)
+			publishChannelMessage(ctx, "chan", raw, workspacePath)
 		}
 	} else {
 		gate.resolve(false)

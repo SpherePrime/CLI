@@ -4,7 +4,9 @@
 package server
 
 import (
+	"fmt"
 	"net"
+	"os/user"
 
 	"github.com/SpherePrime/CLI/vendordeps/Microsoft/go-winio"
 )
@@ -17,10 +19,15 @@ import (
 func listen(network, address string) (net.Listener, bool, error) {
 	switch network {
 	case "npipe":
+		current, err := user.Current()
+		if err != nil {
+			return nil, false, fmt.Errorf("resolve named pipe owner: %w", err)
+		}
 		cfg := &winio.PipeConfig{
-			MessageMode:      true,
-			InputBufferSize:  65536,
-			OutputBufferSize: 65536,
+			SecurityDescriptor: "D:P(A;;GA;;;" + current.Uid + ")",
+			MessageMode:        true,
+			InputBufferSize:    65536,
+			OutputBufferSize:   65536,
 		}
 		ln, err := winio.ListenPipe(address, cfg)
 		if err != nil {
