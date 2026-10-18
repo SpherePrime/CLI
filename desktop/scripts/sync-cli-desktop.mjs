@@ -50,4 +50,10 @@ for (const file of files) {
   await copyFile(resolve(source, file), target(file))
 }
 await writeFile(manifest, JSON.stringify(files.sort(), null, 2) + '\n')
+try {
+  const ignored = execFileSync('git', ['check-ignore', '--stdin'], { cwd: cli, input: files.map(file => `desktop/${file}`).join('\n'), encoding: 'utf8' }).trim()
+  if (ignored) throw new Error(`Required Desktop sources are ignored by the CLI repository:\n${ignored}`)
+} catch (error) {
+  if (error.status !== 1) throw error
+}
 process.stdout.write(`Synced ${files.length} Desktop source files to ${destination}\n`)

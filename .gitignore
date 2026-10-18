@@ -56,3 +56,5 @@ CHATS.md
 
 !desktop/build/
 !desktop/build/**
+!desktop/src/main/prime/
+!desktop/src/main/prime/**
