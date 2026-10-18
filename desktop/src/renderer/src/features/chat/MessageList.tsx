@@ -192,10 +192,9 @@ export function MessageList({
                         )
                           return (
                             <div key={index} className="finish-note">
-                              {part.data.message ||
-                                (part.data.reason === 'canceled'
-                                  ? t('Задача остановлена')
-                                  : t('Ошибка выполнения'))}
+                              {part.data.reason === 'canceled'
+                                ? t('Задача остановлена')
+                                : part.data.message || t('Ошибка выполнения')}
                             </div>
                           )
                         if (part.type === 'image_url')

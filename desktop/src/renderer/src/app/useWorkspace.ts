@@ -319,12 +319,13 @@ export function useWorkspace() {
       if (event.type === 'run_complete') {
         if (payload.session_id === current.current.session?.id) {
           setBusy(false)
-          if (payload.error) setError(payload.error)
+          if (payload.error && !payload.cancelled && !/context canceled/i.test(payload.error))
+            setError(payload.error)
         }
         void refresh()
       }
       if (event.type === 'agent_event') {
-        if (payload?.type === 'error')
+        if (payload?.type === 'error' && !/context canceled/i.test(payload.error || ''))
           setError(payload.error || translate(language.current, 'Ошибка агента'))
         void refresh()
       }
