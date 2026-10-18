@@ -93,6 +93,10 @@ for example by putting Git Bash or MSYS2 on `PATH`. Installing them is
 recommended; the agent is told which tools exist at runtime either way, and
 falls back to its own read/grep/glob tools.
 
+## Desktop
+
+Prime Desktop lives in [`desktop/`](desktop/README.md). Stable releases include `PrimeSetup-<version>.exe`. Run it from sources with `Prime.bat desktop`, or build the setup with `Prime.bat setup`.
+
 ## Getting started
 
 Run `prime` in a project directory:
