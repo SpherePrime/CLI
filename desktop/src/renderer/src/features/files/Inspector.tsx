@@ -1,21 +1,38 @@
 import { Select } from '../../components/Select'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type MouseEvent } from 'react'
 import {
   ChevronDown,
   ChevronRight,
+  Code2,
+  Copy,
+  ExternalLink,
   File,
+  FilePlus,
   Folder,
   FolderOpen,
+  FolderPlus,
   RefreshCw,
   PanelRightClose,
   ArrowUpRight,
   FileDiff,
   Files,
   ListTodo,
-  Play
+  Play,
+  Trash2
 } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
+import { FileContextMenu, type MenuItem } from './FileContextMenu'
+import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
+
+type Entry = { path: string; name: string; directory: boolean }
+
+function parentFolder(entry: Entry | null) {
+  if (!entry) return ''
+  if (entry.directory) return entry.path
+  const index = Math.max(entry.path.lastIndexOf('/'), entry.path.lastIndexOf('\\'))
+  return index > 0 ? entry.path.slice(0, index) : ''
+}
 
 export function Inspector({
   workspace: w,
@@ -35,6 +52,12 @@ export function Inspector({
   const [source, setSource] = useState<'session' | 'git'>('session')
   const [error, setError] = useState('')
   const [treeKey, setTreeKey] = useState(0)
+  const [opened, setOpened] = useState<string[]>([])
+  const [menu, setMenu] = useState<{ x: number; y: number; entry: Entry | null } | null>(null)
+  const [creating, setCreating] = useState<{ kind: 'file' | 'folder'; parent: string } | null>(null)
+  const [removing, setRemoving] = useState<Entry | null>(null)
+  const closeMenu = useCallback(() => setMenu(null), [])
+  useEffect(() => setOpened([]), [w.project?.id])
   useEffect(() => {
     let current = true
     setChanges([])
@@ -81,6 +104,75 @@ export function Inspector({
     } catch (error: any) {
       setError(error.message)
     }
+  }
+  const toggleFolder = (path: string) =>
+    setOpened((items) =>
+      items.includes(path) ? items.filter((item) => item !== path) : [...items, path]
+    )
+  const showMenu = (event: MouseEvent, entry: Entry | null) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setMenu({ x: event.clientX, y: event.clientY, entry })
+  }
+  const attempt = (action: () => Promise<unknown>) =>
+    void action().catch((reason) => setError(reason?.message || String(reason)))
+  function menuItems(entry: Entry | null): MenuItem[] {
+    const id = w.project!.id
+    const target = entry?.path || ''
+    const parent = parentFolder(entry)
+    const absolute = [w.project!.path, target.replaceAll('/', '\\')].filter(Boolean).join('\\')
+    const items: MenuItem[] = []
+    if (entry && !entry.directory)
+      items.push({
+        label: t('Открыть'),
+        icon: <File size={14} />,
+        action: () => void openFile(entry.path)
+      })
+    items.push({
+      label: t('Открыть в VS Code'),
+      icon: <Code2 size={14} />,
+      action: () => attempt(() => window.prime.openWith(id, target, 'vscode'))
+    })
+    if (entry && !entry.directory)
+      items.push({
+        label: t('Открыть программой по умолчанию'),
+        icon: <ExternalLink size={14} />,
+        action: () => attempt(() => window.prime.openWith(id, target, 'default'))
+      })
+    items.push(
+      {
+        label: t('Показать в проводнике'),
+        icon: <FolderOpen size={14} />,
+        action: () => attempt(() => window.prime.reveal(id, target))
+      },
+      {
+        label: t('Копировать путь'),
+        icon: <Copy size={14} />,
+        action: () => attempt(() => navigator.clipboard.writeText(absolute))
+      },
+      { separator: true },
+      {
+        label: t('Новый файл'),
+        icon: <FilePlus size={14} />,
+        action: () => setCreating({ kind: 'file', parent })
+      },
+      {
+        label: t('Новая папка'),
+        icon: <FolderPlus size={14} />,
+        action: () => setCreating({ kind: 'folder', parent })
+      }
+    )
+    if (entry)
+      items.push(
+        { separator: true },
+        {
+          label: t('Удалить'),
+          icon: <Trash2 size={14} />,
+          danger: true,
+          action: () => setRemoving(entry)
+        }
+      )
+    return items
   }
   async function diffFile(path: string) {
     try {
@@ -151,12 +243,17 @@ export function Inspector({
               </button>
             </div>
             {w.project ? (
-              <Tree
-                key={`${w.project.id}:${treeKey}`}
-                workspaceId={w.project.id}
-                onFile={openFile}
-                onError={setError}
-              />
+              <div className="file-tree-area" onContextMenu={(event) => showMenu(event, null)}>
+                <Tree
+                  key={`${w.project.id}:${treeKey}`}
+                  workspaceId={w.project.id}
+                  opened={opened}
+                  onToggle={toggleFolder}
+                  onFile={openFile}
+                  onMenu={showMenu}
+                  onError={setError}
+                />
+              </div>
             ) : (
               <div className="panel-empty">
                 <FolderOpen size={28} />
@@ -252,6 +349,34 @@ export function Inspector({
           </>
         )}
       </div>
+      {menu && w.project && (
+        <FileContextMenu x={menu.x} y={menu.y} items={menuItems(menu.entry)} close={closeMenu} />
+      )}
+      {creating && w.project && (
+        <EntryNameDialog
+          kind={creating.kind}
+          parent={creating.parent}
+          close={() => setCreating(null)}
+          create={async (path) => {
+            await window.prime.createEntry(w.project!.id, path, creating.kind)
+            const parent = creating.parent
+            if (parent) setOpened((items) => (items.includes(parent) ? items : [...items, parent]))
+            setTreeKey((key) => key + 1)
+            if (creating.kind === 'file') void openFile(path)
+          }}
+        />
+      )}
+      {removing && w.project && (
+        <EntryDeleteDialog
+          path={removing.path}
+          directory={removing.directory}
+          close={() => setRemoving(null)}
+          remove={async () => {
+            await window.prime.trashEntry(w.project!.id, removing.path)
+            setTreeKey((key) => key + 1)
+          }}
+        />
+      )}
       {w.project && (
         <div className="inspector-footer">
           <button onClick={() => void window.prime.reveal(w.project!.id)}>
@@ -266,20 +391,25 @@ export function Inspector({
 function Tree({
   workspaceId,
   path = '',
+  opened,
+  onToggle,
   onFile,
+  onMenu,
   onError
 }: {
   workspaceId: string
   path?: string
+  opened: string[]
+  onToggle: (path: string) => void
   onFile: (path: string) => void
+  onMenu: (event: MouseEvent, entry: Entry) => void
   onError: (error: string) => void
 }) {
-  const [entries, setEntries] = useState<any[]>([])
-  const [opened, setOpened] = useState<string[]>([])
+  const [entries, setEntries] = useState<Entry[]>([])
   useEffect(() => {
     void window.prime
       .files(workspaceId, path)
-      .then(setEntries)
+      .then((items) => setEntries(items as Entry[]))
       .catch((error) => onError(error.message))
   }, [workspaceId, path])
   return (
@@ -288,15 +418,8 @@ function Tree({
         <div key={entry.path}>
           <button
             className="tree-file"
-            onClick={() =>
-              entry.directory
-                ? setOpened((items) =>
-                    items.includes(entry.path)
-                      ? items.filter((item) => item !== entry.path)
-                      : [...items, entry.path]
-                  )
-                : onFile(entry.path)
-            }
+            onClick={() => (entry.directory ? onToggle(entry.path) : onFile(entry.path))}
+            onContextMenu={(event) => onMenu(event, entry)}
           >
             {entry.directory ? (
               <>
@@ -317,7 +440,15 @@ function Tree({
           </button>
           {entry.directory && opened.includes(entry.path) && (
             <div className="tree-children">
-              <Tree workspaceId={workspaceId} path={entry.path} onFile={onFile} onError={onError} />
+              <Tree
+                workspaceId={workspaceId}
+                path={entry.path}
+                opened={opened}
+                onToggle={onToggle}
+                onFile={onFile}
+                onMenu={onMenu}
+                onError={onError}
+              />
             </div>
           )}
         </div>

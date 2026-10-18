@@ -18,6 +18,9 @@ const api: DesktopApi = {
   preferences: (patch) => ipcRenderer.invoke('prime:preferences', patch),
   openExternal: (url) => ipcRenderer.invoke('prime:openExternal', url),
   reveal: (id, path) => ipcRenderer.invoke('prime:reveal', id, path),
+  createEntry: (id, path, kind) => ipcRenderer.invoke('prime:createEntry', id, path, kind),
+  trashEntry: (id, path) => ipcRenderer.invoke('prime:trashEntry', id, path),
+  openWith: (id, path, target) => ipcRenderer.invoke('prime:openWith', id, path, target),
   update: (action) => ipcRenderer.invoke('prime:update', action),
   onEvent: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, value: any) => listener(value)
