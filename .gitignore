@@ -53,3 +53,6 @@ release_run.log
 notes.log
 paste_*.txt
 CHATS.md
+
+!desktop/build/
+!desktop/build/**
