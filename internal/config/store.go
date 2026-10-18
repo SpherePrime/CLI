@@ -776,6 +776,8 @@ func (s *ConfigStore) SetProviderAPIKey(scope Scope, providerID string, apiKey a
 				Models:       foundProvider.Models,
 			}
 			setKeyOrToken()
+		} else if s.HasConfigField(scope, fmt.Sprintf("providers.%s", providerID)) {
+			return fmt.Errorf("provider %s is saved but could not be loaded: it has no models or its API endpoint is unreachable", providerID)
 		} else {
 			return fmt.Errorf("provider with ID %s not found in known providers", providerID)
 		}

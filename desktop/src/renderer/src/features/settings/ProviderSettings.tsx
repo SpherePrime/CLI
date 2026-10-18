@@ -92,7 +92,10 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
         )
       )
         throw new Error(t('Проверьте контекст и лимит ответа у каждой модели'))
+      if (!discover && !models.length)
+        throw new Error(t('Добавьте хотя бы одну модель или включите автопоиск моделей'))
       for (const [field, value] of Object.entries({
+        ...(key ? { api_key: key } : {}),
         id: providerId,
         name: name || providerId,
         base_url: baseUrl,
@@ -101,9 +104,18 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
         models
       }))
         await w.call('configSet', { key: `providers.${providerId}.${field}`, value, scope })
-      if (key) await w.call('providerKey', { providerId, key, scope })
       setKey('')
       await w.refresh()
+      const loaded = await w.call('models').catch(() => [])
+      const list = Array.isArray(loaded) ? loaded : loaded?.models || []
+      if (!list.some((item: any) => item.provider_id === providerId))
+        throw new Error(
+          models.length
+            ? t('Провайдер сохранён, но Prime не смог его загрузить. Проверьте адрес API и тип.')
+            : t(
+                'Провайдер сохранён, но модели не найдены: сервер не отдал список моделей по этому адресу. Добавьте модели вручную или проверьте адрес API.'
+              )
+        )
       setStatus(t('Настройки провайдера сохранены'))
     } catch (error: any) {
       setStatus(error.message)

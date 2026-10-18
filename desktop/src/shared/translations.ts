@@ -277,6 +277,12 @@ export const english: Record<string, string> = {
   'Вложения: {count}': 'Attachments: {count}',
   'Уровень размышлений': 'Reasoning level',
   'Модель и уровень размышлений': 'Model and reasoning level',
+  'Добавьте хотя бы одну модель или включите автопоиск моделей':
+    'Add at least one model or turn on model discovery',
+  'Провайдер сохранён, но Prime не смог его загрузить. Проверьте адрес API и тип.':
+    'The provider was saved, but Prime could not load it. Check the API address and type.',
+  'Провайдер сохранён, но модели не найдены: сервер не отдал список моделей по этому адресу. Добавьте модели вручную или проверьте адрес API.':
+    'The provider was saved, but no models were found: the server did not return a model list at this address. Add models manually or check the API address.',
   'Системный промпт': 'System prompt',
   'Инструкции MCP': 'MCP instructions',
   Инструменты: 'Tools',
