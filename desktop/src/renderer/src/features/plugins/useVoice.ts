@@ -32,11 +32,21 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
   const { t } = useI18n()
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
   const recorder = useRef<MediaRecorder | null>(null)
   const stream = useRef<MediaStream | null>(null)
+  const meter = useRef<AudioContext | null>(null)
+  const discard = useRef(false)
+  const pending = useRef<((text: string) => void) | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const callback = useRef(onText)
   callback.current = onText
+  const release = () => {
+    stream.current?.getTracks().forEach((track) => track.stop())
+    void meter.current?.close().catch(() => {})
+    meter.current = null
+    setAnalyser(null)
+  }
   useEffect(
     () => () => {
       clearTimeout(timer.current)
@@ -44,15 +54,19 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
         recorder.current.onstop = null
         recorder.current.stop()
       }
-      stream.current?.getTracks().forEach((track) => track.stop())
+      release()
     },
     []
   )
-  async function toggle() {
-    if (recording) {
-      recorder.current?.stop()
-      return
-    }
+  function stopRecording(cancel = false) {
+    return new Promise<string>((resolve) => {
+      if (recorder.current?.state !== 'recording') return resolve('')
+      discard.current = cancel
+      pending.current = resolve
+      recorder.current.stop()
+    })
+  }
+  async function start() {
     try {
       const plugins = await workspace.call('plugins')
       const list = Array.isArray(plugins) ? plugins : plugins?.plugins || []
@@ -62,18 +76,32 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
         audio: { channelCount: 1, sampleRate: 16000 }
       })
       stream.current = media
+      const level = new AudioContext()
+      const node = level.createAnalyser()
+      node.fftSize = 256
+      level.createMediaStreamSource(media).connect(node)
+      meter.current = level
+      setAnalyser(node)
       const instance = new MediaRecorder(media)
       recorder.current = instance
       const chunks: Blob[] = []
+      discard.current = false
       instance.ondataavailable = (event) => {
         if (event.data.size) chunks.push(event.data)
       }
       instance.onstop = async () => {
         clearTimeout(timer.current)
         setRecording(false)
-        media.getTracks().forEach((track) => track.stop())
+        release()
+        const resolve = pending.current
+        pending.current = null
+        if (discard.current) {
+          resolve?.('')
+          return
+        }
         setTranscribing(true)
         let context: AudioContext | undefined
+        let text = ''
         try {
           context = new AudioContext({ sampleRate: 16000 })
           const decoded = await context.decodeAudioData(
@@ -89,20 +117,35 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
             audio_base64: wav(rendered.getChannelData(0)),
             mime_type: 'audio/wav'
           })
-          if (result.text) callback.current(result.text)
+          text = result?.text || ''
         } catch (error) {
           workspace.errorHandler(error)
         } finally {
           await context?.close()
           setTranscribing(false)
         }
+        if (resolve) resolve(text)
+        else if (text) callback.current(text)
       }
       instance.start()
       setRecording(true)
       timer.current = setTimeout(() => instance.state === 'recording' && instance.stop(), 120000)
     } catch (error) {
+      release()
       workspace.errorHandler(error)
     }
   }
-  return { recording, transcribing, toggle }
+  async function toggle() {
+    if (!recording) return start()
+    const text = await stopRecording()
+    if (text) callback.current(text)
+  }
+  return {
+    recording,
+    transcribing,
+    analyser,
+    toggle,
+    finish: () => stopRecording(),
+    cancel: () => stopRecording(true)
+  }
 }

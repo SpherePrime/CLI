@@ -197,7 +197,12 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await expect(
       page.locator('.composer-actions').getByRole('button', { name: 'Голосовой ввод', exact: true })
     ).toBeVisible()
-    await page.getByRole('button', { name: 'Выбрать модель', exact: true }).click()
+    const modelControl = page.getByRole('button', {
+      name: 'Модель и уровень размышлений',
+      exact: true
+    })
+    await modelControl.click()
+    await page.locator('.reasoning-popover-model').click()
     await expect(page.getByRole('listbox', { name: 'Модели' })).toBeVisible()
     expect(
       await page
@@ -206,18 +211,23 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     ).toBe(true)
     await page.screenshot({ path: 'test-results/model-picker.png' })
     await page.getByRole('option', { name: /Desktop Fixture/ }).click()
-    const reasoning = page.getByRole('combobox', { name: 'Уровень размышлений', exact: true })
-    await reasoning.click()
-    await page.getByRole('option', { name: 'Высокий', exact: true }).click()
-    await expect(reasoning).toContainText('Высокий')
+    await modelControl.click()
+    const reasoning = page.getByRole('slider', { name: 'Уровень размышлений', exact: true })
+    const track = (await reasoning.boundingBox())!
+    await page.mouse.click(track.x + 14 + ((track.width - 28) * 3) / 5, track.y + track.height / 2)
+    await expect(modelControl).toContainText('Высокий')
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: 'test-results/reasoning-popover.png' })
     const reasoningConfig = await page.evaluate(async () => {
       const project = (await window.prime.projects()).find((item) => item.kind === 'chat')!
       return window.prime.call(project.id, 'config')
     })
     expect(reasoningConfig.models.large.reasoning_mode).toBe('high')
-    await reasoning.click()
-    await page.getByRole('option', { name: 'Выключены', exact: true }).click()
-    await expect(reasoning).toContainText('Выключены')
+    await expect(reasoning).toBeEnabled()
+    await reasoning.focus()
+    await page.keyboard.press('Home')
+    await expect(modelControl).toContainText('Выключены')
+    await page.keyboard.press('Escape')
     await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill('Свободный чат без папки')
     await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
     await expect(page.locator('.message.assistant .markdown')).toContainText(
