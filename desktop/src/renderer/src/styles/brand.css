@@ -1270,7 +1270,15 @@ input[type='number'] {
   color: var(--muted);
 }
 .reasoning-control .prime-select {
-  padding-left: 3px;
+  width: auto;
+  min-height: 30px;
+  padding: 4px 3px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 400;
 }
 @media (max-width: 1300px) {
   .has-editor .queue-send-now {
