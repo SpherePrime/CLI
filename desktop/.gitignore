@@ -13,3 +13,4 @@ test-results/
 cli-source/
 installer/out/
 installer/payload/
+.playwright-mcp/
