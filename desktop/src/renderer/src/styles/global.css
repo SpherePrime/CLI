@@ -82,6 +82,9 @@ summary:focus-visible,
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+.conversation:focus-visible {
+  outline: none;
+}
 input,
 textarea,
 select {
@@ -300,7 +303,7 @@ kbd {
   margin-left: auto;
 }
 .sidebar-actions {
-  padding: 0 15px 14px;
+  padding: 14px 15px;
   display: flex;
   flex-direction: column;
   gap: 7px;

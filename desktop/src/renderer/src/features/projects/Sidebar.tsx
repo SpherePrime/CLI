@@ -1,5 +1,4 @@
 import { useI18n } from '../../i18n'
-import { PrimeLogo } from '../../components/PrimeLogo'
 import { Modal } from '../../components/Modal'
 import {
   ChevronDown,
@@ -55,12 +54,6 @@ export function Sidebar({
     )
   return (
     <aside className="sidebar">
-      <div className="brand">
-        <PrimeLogo />
-        <strong>
-          Prime<span className="brand-word-muted">Desktop</span>
-        </strong>
-      </div>
       <div className="sidebar-actions">
         <button className="new-chat" disabled={!w.project} onClick={() => void w.createSession()}>
           <Plus size={17} /> {t('Новый чат')}
