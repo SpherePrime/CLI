@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { ContextMeter } from './ContextMeter'
+import { ContextPopover } from './ContextPopover'
 import { ModelPicker } from './ModelPicker'
 import { ReasoningPopover } from './ReasoningPopover'
 import { currentReasoningMode, reasoningLabel } from './reasoning'
@@ -10,7 +11,8 @@ import { findCapability, useModelCapabilities } from './useModelCapabilities'
 export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
   const anchor = useRef<HTMLButtonElement>(null)
-  const [open, setOpen] = useState<'reasoning' | 'models' | null>(null)
+  const contextAnchor = useRef<HTMLButtonElement>(null)
+  const [open, setOpen] = useState<'reasoning' | 'models' | 'context' | null>(null)
   const [saving, setSaving] = useState(false)
   const { models } = useModelCapabilities(w)
   const selected = w.config?.models?.large
@@ -36,16 +38,32 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   return (
     <>
       {contextUsed > 0 && contextWindow > 0 && (
-        <ContextMeter used={contextUsed} window={contextWindow} />
+        <ContextMeter
+          ref={contextAnchor}
+          used={contextUsed}
+          window={contextWindow}
+          expanded={open === 'context'}
+          onClick={() => setOpen((value) => (value === 'context' ? null : 'context'))}
+        />
+      )}
+      {open === 'context' && (
+        <ContextPopover
+          workspace={w}
+          anchor={contextAnchor}
+          close={() => setOpen(null)}
+          fallbackWindow={contextWindow}
+        />
       )}
       <button
         ref={anchor}
         className="model-control"
         aria-label={t('Модель и уровень размышлений')}
         aria-haspopup="dialog"
-        aria-expanded={open !== null}
+        aria-expanded={open === 'reasoning' || open === 'models'}
         disabled={!w.project}
-        onClick={() => setOpen((value) => (value ? null : 'reasoning'))}
+        onClick={() =>
+          setOpen((value) => (value === 'reasoning' || value === 'models' ? null : 'reasoning'))
+        }
       >
         <span className="model-control-name">{modelName}</span>
         <span className="model-control-level">{reasoningLabel(mode, t)}</span>

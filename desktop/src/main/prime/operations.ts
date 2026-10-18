@@ -10,6 +10,7 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     deleteSession: () => ['DELETE', `sessions/${sid}`],
     messages: () => ['GET', `sessions/${sid}/messages`],
     history: () => ['GET', `sessions/${sid}/history`],
+    context: () => ['GET', `sessions/${sid}/context`],
     agent: () => ['GET', 'agent'],
     init: () => ['POST', 'agent/init', { interactive: true }],
     send: () => [

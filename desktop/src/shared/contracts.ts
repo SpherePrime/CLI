@@ -49,6 +49,7 @@ export type Operation =
   | 'deleteSession'
   | 'messages'
   | 'history'
+  | 'context'
   | 'agent'
   | 'init'
   | 'send'
