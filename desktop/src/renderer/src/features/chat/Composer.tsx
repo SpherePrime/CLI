@@ -34,6 +34,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const draftKey = useRef(key)
   const latest = useRef(text)
   latest.current = text
+  const submitting = useRef(false)
   const {
     recording,
     transcribing,
@@ -51,7 +52,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         !w.preferences.drafts[key] &&
         !w.messages.length &&
         Date.now() / 1000 - (w.session?.updated_at || 0) < 5
-      if (justCreated && draft) return
+      if (justCreated && draft && !submitting.current) return
       void w.savePreferences({ drafts: { [previous]: draft } })
       setText(w.preferences.drafts[key] || '')
       setAttachments([])
@@ -78,13 +79,19 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   }, [text])
   async function submit() {
     if (sending) return
+    submitting.current = true
+    try {
+      await deliver()
+    } finally {
+      submitting.current = false
+    }
+  }
+  async function deliver() {
     let message = text
     if (recording) {
       setSending(true)
       const spoken = await finishVoice()
       message = [text, spoken].filter((part) => part.trim()).join(' ')
-      setText(message)
-      latest.current = message
       setSending(false)
     }
     if (!message.trim()) return
@@ -98,7 +105,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       )
     ) {
       await w.savePreferences({ drafts: { [submittedKey]: '' } })
-      if (draftKey.current === submittedKey && latest.current === submittedText) {
+      if (draftKey.current === submittedKey && submittedText.startsWith(latest.current)) {
         setText('')
         setAttachments([])
         setSuggestions([])
