@@ -28,7 +28,6 @@ type Manager struct {
 	clients     *csync.Map[string, *Client]
 	unavailable *csync.Map[string, time.Time]
 	cfg         *config.ConfigStore
-	manager     *powernapconfig.Manager
 	callback    func(name string, client *Client)
 	now         func() time.Time
 	lookPath    func(string) (string, error)
@@ -36,36 +35,10 @@ type Manager struct {
 
 // NewManager creates a new LSP manager service.
 func NewManager(cfg *config.ConfigStore) *Manager {
-	manager := powernapconfig.NewManager()
-	manager.LoadDefaults()
-
-	// Merge user-configured LSPs into the manager.
-	for name, clientConfig := range cfg.Config().LSP {
-		if clientConfig.Disabled {
-			slog.Debug("LSP disabled by user config", "name", name)
-			manager.RemoveServer(name)
-			continue
-		}
-
-		// HACK: the user might have the command name in their config instead
-		// of the actual name. Find and use the correct name.
-		actualName := resolveServerName(manager, name)
-		manager.AddServer(actualName, &powernapconfig.ServerConfig{
-			Command:     clientConfig.Command,
-			Args:        clientConfig.Args,
-			Environment: clientConfig.Env,
-			FileTypes:   clientConfig.FileTypes,
-			RootMarkers: clientConfig.RootMarkers,
-			InitOptions: clientConfig.InitOptions,
-			Settings:    clientConfig.Options,
-		})
-	}
-
 	return &Manager{
 		clients:     csync.NewMap[string, *Client](),
 		unavailable: csync.NewMap[string, time.Time](),
 		cfg:         cfg,
-		manager:     manager,
 		callback:    func(string, *Client) {}, // default no-op callback
 		now:         time.Now,
 		lookPath:    exec.LookPath,
@@ -87,7 +60,7 @@ func (s *Manager) SetCallback(cb func(name string, client *Client)) {
 // starting them. Servers start on demand via Start().
 func (s *Manager) TrackConfigured(ctx context.Context) {
 	var wg sync.WaitGroup
-	servers := s.manager.GetServers()
+	servers := s.configuredServers()
 	for name := range servers {
 		if !s.isUserConfigured(name) {
 			continue
@@ -110,7 +83,7 @@ func (s *Manager) Start(ctx context.Context, path string) {
 	}
 
 	var wg sync.WaitGroup
-	for name, server := range s.manager.GetServers() {
+	for name, server := range s.configuredServers() {
 		wg.Go(func() {
 			s.startServer(name, path, server)
 		})
