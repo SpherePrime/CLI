@@ -82,6 +82,10 @@
   touch-action: none;
   outline: none;
 }
+.reasoning-slider:focus,
+.reasoning-slider:focus-visible {
+  outline: none;
+}
 .reasoning-slider:focus-visible {
   box-shadow: 0 0 0 2px var(--accent-bg);
 }
@@ -189,4 +193,37 @@
 .model-picker-group > button[aria-selected='true'] {
   background: var(--accent-bg);
   color: var(--accent);
+}
+
+.context-meter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: help;
+}
+.context-meter svg {
+  transform: rotate(-90deg);
+}
+.context-meter circle {
+  fill: none;
+  stroke-width: 2.4;
+}
+.context-meter-track {
+  stroke: var(--border);
+}
+.context-meter-value {
+  stroke: var(--green);
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    stroke 0.3s ease;
+}
+.context-meter.medium .context-meter-value {
+  stroke: var(--amber);
+}
+.context-meter.high .context-meter-value {
+  stroke: var(--red);
 }

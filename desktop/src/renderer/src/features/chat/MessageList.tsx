@@ -3,8 +3,10 @@ import { useI18n } from '../../i18n'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { ToolCard } from './ToolCard'
 import { consolidateToolMessages } from '../../../../shared/toolMessages'
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronDown, Copy, FileCode2, ArrowDown, Sparkles } from 'lucide-react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Check, Copy, FileCode2, ArrowDown } from 'lucide-react'
+import { ReasoningBlock } from './ReasoningBlock'
+import { clock, useElapsedSeconds } from './elapsed'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Message } from '../../../../shared/contracts'
@@ -26,6 +28,10 @@ export function MessageList({
   const leavingBottom = useRef(false)
   const [copied, setCopied] = useState('')
   const visible = useMemo(() => consolidateToolMessages(messages), [messages])
+  const [busySince, setBusySince] = useState<number | null>(null)
+  useEffect(() => setBusySince(busy ? Date.now() : null), [busy])
+  const working = useElapsedSeconds(busySince)
+  const mountedAt = useRef(Date.now())
   const virtualizer = useVirtualizer({
     count: visible.length,
     getScrollElement: () => viewport.current,
@@ -93,6 +99,12 @@ export function MessageList({
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
             {virtualizer.getVirtualItems().map((row) => {
               const message = visible[row.index]
+              const previous = visible[row.index - 1]
+              const continued =
+                message.role !== 'user' && previous !== undefined && previous.role !== 'user'
+              const fresh =
+                (message.created_at || 0) * 1000 > Math.max(mountedAt.current, Date.now() - 4000)
+              const last = row.index === visible.length - 1
               return (
                 <div
                   key={message.id}
@@ -107,31 +119,36 @@ export function MessageList({
                     transform: `translateY(${row.start}px)`
                   }}
                 >
-                  <article className={`message ${message.role}`} key={message.id}>
-                    <div className="message-author">
-                      {message.role === 'user' ? (
-                        <span className="user-avatar">{t('Вы').slice(0, 1)}</span>
-                      ) : (
-                        <span className="prime-avatar">
-                          <PrimeLogo />
-                        </span>
-                      )}
-                      <strong>
-                        {message.role === 'user'
-                          ? t('Вы')
-                          : message.role === 'tool'
-                            ? t('Инструмент')
-                            : 'Prime'}
-                      </strong>
-                      {message.created_at && (
-                        <time>
-                          {new Date(message.created_at * 1000).toLocaleTimeString(locale, {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </time>
-                      )}
-                    </div>
+                  <article
+                    className={`message ${message.role} ${continued ? 'continued' : ''} ${fresh ? 'fresh' : ''}`}
+                    key={message.id}
+                  >
+                    {!continued && (
+                      <div className="message-author">
+                        {message.role === 'user' ? (
+                          <span className="user-avatar">{t('Вы').slice(0, 1)}</span>
+                        ) : (
+                          <span className="prime-avatar">
+                            <PrimeLogo />
+                          </span>
+                        )}
+                        <strong>
+                          {message.role === 'user'
+                            ? t('Вы')
+                            : message.role === 'tool'
+                              ? t('Инструмент')
+                              : 'Prime'}
+                        </strong>
+                        {message.created_at && (
+                          <time>
+                            {new Date(message.created_at * 1000).toLocaleTimeString(locale, {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </time>
+                        )}
+                      </div>
+                    )}
                     <div className="message-body">
                       {(message.parts || []).map((part, index) => {
                         if (part.type === 'text' && !part.data.hidden)
@@ -159,12 +176,13 @@ export function MessageList({
                           )
                         if (part.type === 'reasoning' && part.data.thinking)
                           return (
-                            <details className="reasoning" key={index}>
-                              <summary>
-                                <Sparkles size={14} /> {t('Размышления')} <ChevronDown size={13} />
-                              </summary>
-                              <div>{part.data.thinking}</div>
-                            </details>
+                            <ReasoningBlock
+                              key={index}
+                              thinking={part.data.thinking}
+                              startedAt={part.data.started_at}
+                              finishedAt={part.data.finished_at}
+                              live={busy && last && !part.data.finished_at}
+                            />
                           )
                         if (['tool_call', 'tool_result', 'shell_command'].includes(part.type))
                           return <ToolCard key={index} part={part} />
@@ -219,12 +237,16 @@ export function MessageList({
             })}
           </div>
           {(busy || waiting) && (
-            <div className="working">
-              <span className="working-spark">✦</span>
-              <span>
-                {waiting ? t('Ожидается подтверждение') : t('Prime работает')}
-                <span className="ellipsis">…</span>
+            <div className="working" role="status">
+              <span className="working-orb" aria-hidden="true">
+                <span />
+                <span />
+                <span />
               </span>
+              <span className="working-label">
+                {waiting ? t('Ожидается подтверждение') : t('Prime работает')}
+              </span>
+              {busy && !waiting && <span className="working-time">{clock(working)}</span>}
             </div>
           )}
         </div>

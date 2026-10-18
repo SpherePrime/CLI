@@ -1,10 +1,15 @@
 import { execFileSync } from 'node:child_process'
-import { test, expect, _electron as electron } from '@playwright/test'
+import { test, expect, _electron as electron, type Locator } from '@playwright/test'
 import { realpathSync } from 'node:fs'
 import { mkdtemp, writeFile, mkdir, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { startProvider } from '../fixtures/provider-server'
+
+const settled = (locator: Locator) =>
+  locator.evaluate((element) =>
+    Promise.all(element.getAnimations().map((animation) => animation.finished))
+  )
 
 test('opens the real Electron desktop and creates persistent Prime sessions', async () => {
   test.setTimeout(120000)
@@ -343,6 +348,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await expect(deletion).toBeVisible()
     await expect(deletion.getByText('Проверка сессии', { exact: true })).toBeVisible()
     await expect(deletion.getByRole('button', { name: 'Отмена', exact: true })).toBeFocused()
+    await settled(deletion)
     const box = await deletion.boundingBox()
     const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }))
     expect(Math.abs(box!.x + box!.width / 2 - viewport.width / 2)).toBeLessThan(2)
@@ -359,7 +365,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await page.getByRole('button', { name: 'Новый чат', exact: false }).first().click()
     await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill('HOLD_FIXTURE')
     await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
-    await expect(page.getByText('Размышления', { exact: true })).toBeVisible()
+    await expect(page.locator('.reasoning').last()).toBeVisible()
     for (const prompt of ['QUEUED_FIRST', 'QUEUED_SECOND']) {
       await page.getByRole('textbox', { name: 'Сообщение Prime' }).fill(prompt)
       await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
@@ -460,6 +466,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await page.getByRole('button', { name: 'Файлы', exact: true }).click()
     await page.getByRole('button', { name: 'Настройки', exact: false }).first().click()
     await expect(page.getByRole('heading', { name: 'Настройки', exact: true })).toBeVisible()
+    await settled(page.locator('.settings-modal'))
     const settingsBounds = await page.locator('.settings-modal').boundingBox()
     const viewportWidth = await page.evaluate(() => window.innerWidth)
     expect(settingsBounds!.width).toBeGreaterThanOrEqual(Math.min(1280, viewportWidth - 80) - 1)

@@ -6,13 +6,15 @@ export function Popover({
   close,
   children,
   width = 360,
-  label
+  label,
+  align = 'start'
 }: {
   anchor: RefObject<HTMLElement | null>
   close: () => void
   children: ReactNode
   width?: number
   label?: string
+  align?: 'start' | 'end'
 }) {
   const panel = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ left: 0, top: 0, maxHeight: 400 })
@@ -25,8 +27,9 @@ export function Popover({
         panel.current?.scrollHeight || 400,
         above ? rect.top - 20 : window.innerHeight - rect.bottom - 20
       )
+      const preferred = align === 'end' ? rect.right - width : rect.left
       setPosition({
-        left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
+        left: Math.max(12, Math.min(preferred, window.innerWidth - width - 12)),
         top: above ? Math.max(12, rect.top - height - 8) : rect.bottom + 8,
         maxHeight: above ? rect.top - 20 : window.innerHeight - rect.bottom - 20
       })
@@ -39,7 +42,7 @@ export function Popover({
       observer.disconnect()
       window.removeEventListener('resize', place)
     }
-  }, [anchor, width])
+  }, [anchor, width, align])
   useEffect(() => {
     const pointer = (event: PointerEvent) => {
       if ((event.target as Element).closest?.('.prime-popover')) return
