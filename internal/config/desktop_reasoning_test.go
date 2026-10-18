@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"testing"
+
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 func TestDesktopReasoningValidation(t *testing.T) {
@@ -15,7 +16,10 @@ func TestDesktopReasoningValidation(t *testing.T) {
 	if _, err := NormalizeModelReasoningMode(model, "typo"); err == nil {
 		t.Fatal("invalid reasoning silently accepted")
 	}
-	if _, err := NormalizeModelReasoningMode(catwalk.Model{}, "high"); err == nil {
-		t.Fatal("unsupported reasoning accepted")
+	if mode, err := NormalizeModelReasoningMode(catwalk.Model{}, "high"); err != nil || mode != ReasoningModeHigh {
+		t.Fatalf("custom model reasoning rejected: %q %v", mode, err)
+	}
+	if mode, err := NormalizeModelReasoningMode(model, ReasoningModeDefault); err != nil || mode != "" {
+		t.Fatalf("default reasoning mode not cleared: %q %v", mode, err)
 	}
 }

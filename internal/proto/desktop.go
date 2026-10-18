@@ -37,15 +37,17 @@ type RunRecord struct {
 }
 
 type ModelCapabilities struct {
-	ProviderID          string   `json:"provider_id"`
-	ModelID             string   `json:"model_id"`
-	Name                string   `json:"name"`
-	CanReason           bool     `json:"can_reason"`
-	ReasoningModes      []string `json:"reasoning_modes"`
-	ReasoningLevels     []string `json:"reasoning_levels"`
-	SupportsAttachments bool     `json:"supports_attachments"`
-	ContextWindow       int64    `json:"context_window"`
-	DefaultMaxTokens    int64    `json:"default_max_tokens"`
+	ProviderID           string   `json:"provider_id"`
+	ProviderName         string   `json:"provider_name"`
+	ModelID              string   `json:"model_id"`
+	Name                 string   `json:"name"`
+	CanReason            bool     `json:"can_reason"`
+	ReasoningModes       []string `json:"reasoning_modes"`
+	ReasoningLevels      []string `json:"reasoning_levels"`
+	DefaultReasoningMode string   `json:"default_reasoning_mode"`
+	SupportsAttachments  bool     `json:"supports_attachments"`
+	ContextWindow        int64    `json:"context_window"`
+	DefaultMaxTokens     int64    `json:"default_max_tokens"`
 }
 
 type BackgroundJob struct {
