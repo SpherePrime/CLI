@@ -434,6 +434,27 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	}
 	beforeLoaded := c.skillTracker.LoadedNames()
 	result, originalErr := run()
+	if isContextOverflowError(originalErr) && !c.cfg.Config().Options.DisableAutoSummarize {
+		if summarizeErr := agent.Summarize(ctx, sessionID, mergedOptions, c.makeAuthRefreshCallback(providerCfg)); summarizeErr != nil {
+			slog.Warn("Failed to summarize after context overflow", "error", summarizeErr, "session_id", sessionID)
+		} else {
+			result, originalErr = agent.Run(ctx, SessionAgentCall{
+				SessionID:         sessionID,
+				RunID:             runID,
+				Prompt:            contextOverflowContinuation(prompt),
+				HiddenUserMessage: true,
+				MaxOutputTokens:   maxTokens,
+				ProviderOptions:   mergedOptions,
+				Temperature:       temp,
+				TopP:              topP,
+				TopK:              callTopK(providerCfg, topK),
+				FrequencyPenalty:  freqPenalty,
+				PresencePenalty:   presPenalty,
+				OnComplete:        onComplete,
+				OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
+			})
+		}
+	}
 	logTurnSkillUsage(sessionID, prompt, c.activeSkills, c.skillTracker, beforeLoaded)
 
 	// Notify only if still unauthorized after retry — a successful

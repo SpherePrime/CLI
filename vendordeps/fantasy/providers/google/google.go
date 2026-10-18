@@ -251,6 +251,7 @@ func (g languageModel) prepareParams(call fantasy.Call) (*genai.GenerateContentC
 		}
 
 		if providerOptions.ThinkingConfig.ThinkingBudget != nil &&
+			*providerOptions.ThinkingConfig.ThinkingBudget > 0 &&
 			*providerOptions.ThinkingConfig.ThinkingBudget < 128 {
 			warnings = append(warnings, fantasy.CallWarning{
 				Type:    fantasy.CallWarningTypeOther,
@@ -848,14 +849,7 @@ func (g *languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.
 			// we need to make sure that there is actual tokendata
 			if resp.UsageMetadata != nil && resp.UsageMetadata.TotalTokenCount != 0 {
 				currentUsage := mapUsage(resp.UsageMetadata)
-				// if first usage chunk
-				if usage == nil {
-					usage = &currentUsage
-				} else {
-					usage.OutputTokens += currentUsage.OutputTokens
-					usage.ReasoningTokens += currentUsage.ReasoningTokens
-					usage.CacheReadTokens += currentUsage.CacheReadTokens
-				}
+				usage = &currentUsage
 			}
 
 			if len(resp.Candidates) > 0 && resp.Candidates[0].FinishReason != "" {
@@ -1126,13 +1120,7 @@ func (g *languageModel) streamObjectWithJSONMode(ctx context.Context, call fanta
 			// we need to make sure that there is actual tokendata
 			if resp.UsageMetadata != nil && resp.UsageMetadata.TotalTokenCount != 0 {
 				currentUsage := mapUsage(resp.UsageMetadata)
-				if usage == nil {
-					usage = &currentUsage
-				} else {
-					usage.OutputTokens += currentUsage.OutputTokens
-					usage.ReasoningTokens += currentUsage.ReasoningTokens
-					usage.CacheReadTokens += currentUsage.CacheReadTokens
-				}
+				usage = &currentUsage
 			}
 
 			if len(resp.Candidates) > 0 && resp.Candidates[0].FinishReason != "" {
@@ -1478,7 +1466,7 @@ func mapFinishReason(reason genai.FinishReason) fantasy.FinishReason {
 
 func mapUsage(usage *genai.GenerateContentResponseUsageMetadata) fantasy.Usage {
 	return fantasy.Usage{
-		InputTokens:         int64(usage.PromptTokenCount),
+		InputTokens:         max(int64(usage.PromptTokenCount)-int64(usage.CachedContentTokenCount), 0),
 		OutputTokens:        int64(usage.CandidatesTokenCount),
 		TotalTokens:         int64(usage.TotalTokenCount),
 		ReasoningTokens:     int64(usage.ThoughtsTokenCount),
