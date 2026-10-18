@@ -1,0 +1,518 @@
+:root {
+  font-family: Inter, 'Segoe UI', sans-serif;
+  color: #efeee9;
+  background: #101010;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #ff9467;
+  outline-offset: 4px;
+}
+.setup-shell {
+  height: 100vh;
+  min-height: 650px;
+  border: 1px solid #2c2b29;
+  overflow: hidden;
+  background: #141413;
+  border-radius: 12px;
+}
+.setup-titlebar {
+  height: 65px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 0 26px;
+  border-bottom: 1px solid #292825;
+  -webkit-app-region: drag;
+}
+.setup-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.setup-wordmark .prime-logo {
+  width: 27px;
+  height: 27px;
+}
+.setup-wordmark-separator {
+  margin: 0 10px;
+  color: #4a4741;
+  font-weight: 400;
+}
+.setup-wordmark-detail {
+  font-size: 14px;
+  color: #aaa59b;
+  font-weight: 400;
+}
+.setup-window-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  -webkit-app-region: no-drag;
+}
+.setup-window-actions > span {
+  font-size: 11px;
+  color: #77736d;
+}
+.setup-window-actions button {
+  background: transparent;
+  border: 0;
+  color: #99958b;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+}
+.setup-window-actions button:hover:not(:disabled) {
+  background: #2a2724;
+  color: #efeee9;
+}
+.setup-layout {
+  display: grid;
+  grid-template-columns: 37% 1fr;
+  height: calc(100% - 65px);
+}
+.setup-story {
+  position: relative;
+  overflow: hidden;
+  padding: 39px 32px;
+  background: radial-gradient(ellipse at 36% 66%, #4b2a1a77, transparent 66%), #181614;
+  border-right: 1px solid #292825;
+}
+.setup-kicker {
+  font-size: 8px;
+  font-weight: 500;
+  color: #b68a6e;
+  letter-spacing: 1.6px;
+}
+.setup-story h1 {
+  position: relative;
+  z-index: 1;
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.17;
+  letter-spacing: -1.8px;
+  margin: 23px 0 18px;
+}
+.setup-story h1 span {
+  color: #ff9467;
+}
+.setup-story > p {
+  font-size: 12px;
+  color: #aaa197;
+  line-height: 1.8;
+  margin: 0;
+}
+.setup-constellation {
+  position: relative;
+  width: 270px;
+  height: 234px;
+  margin: 27px auto 0;
+}
+.setup-orbit {
+  position: absolute;
+  width: 224px;
+  height: 224px;
+  border: 1px solid #84583e40;
+  border-radius: 50%;
+  left: 23px;
+  top: 6px;
+}
+.setup-orbit.inner {
+  width: 150px;
+  height: 150px;
+  top: 43px;
+  left: 60px;
+  border-color: #84583e30;
+}
+.setup-core {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  left: 95px;
+  top: 78px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #492c1e, #281e18);
+  border: 1px solid #8a593650;
+  box-shadow: 0 0 80px #f6743015;
+}
+.setup-core .prime-logo {
+  width: 43px;
+  height: 43px;
+}
+.setup-node {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: #b8957e;
+  background: #24201c;
+  border: 1px solid #67513d66;
+}
+.node-chat {
+  top: 7px;
+  left: 78px;
+  transform: rotate(-8deg);
+}
+.node-code {
+  right: 2px;
+  top: 122px;
+  transform: rotate(9deg);
+}
+.node-tools {
+  left: 20px;
+  bottom: 3px;
+  transform: rotate(-6deg);
+}
+.setup-signature {
+  position: absolute;
+  bottom: 27px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #7f7469;
+  font-size: 9px;
+  letter-spacing: 1.7px;
+}
+.setup-signature-mark {
+  width: 17px;
+  height: 1px;
+  background: #9c7256;
+}
+.setup-content {
+  padding: 39px 43px 24px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.setup-stage-label {
+  font-size: 9px;
+  color: #a19487;
+  letter-spacing: 1.3px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.setup-stage-label > span {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ff9467;
+}
+.setup-content h2 {
+  font-size: 29px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.9px;
+  margin: 18px 0 13px;
+  white-space: pre-line;
+}
+.setup-description {
+  font-size: 12px;
+  color: #939087;
+  line-height: 1.65;
+  margin: 0 0 23px;
+  max-width: 410px;
+}
+.setup-bundle {
+  display: grid;
+  gap: 13px;
+  padding: 16px;
+  background: #1b1b19;
+  border: 1px solid #2b2b27;
+  border-radius: 13px;
+}
+.setup-bundle > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.setup-bundle > div > span:nth-child(2) {
+  flex: 1;
+}
+.setup-bundle > div > svg {
+  color: #91a48a;
+}
+.setup-bundle-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #34332d;
+  border-radius: 9px;
+  color: #b9b2a6;
+  background: #23231f;
+}
+.setup-bundle strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.setup-bundle small {
+  display: block;
+  font-size: 10px;
+  color: #817e74;
+  margin-top: 5px;
+}
+.setup-folder-label {
+  display: flex;
+  justify-content: space-between;
+  margin: 22px 0 9px;
+  font-size: 11px;
+  color: #b0aa9f;
+}
+.setup-folder-label > span {
+  color: #706e67;
+  font-size: 10px;
+}
+.setup-folder {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px 9px 13px;
+  border-radius: 11px;
+  border: 1px solid #34332e;
+  background: #111210;
+  color: #8f897c;
+}
+.setup-folder:focus-within {
+  border-color: #b2714f;
+}
+.setup-folder > svg {
+  flex: 0 0 auto;
+}
+.setup-folder input {
+  background: transparent;
+  border: 0;
+  color: #b8b2a6;
+  outline: none;
+  min-width: 0;
+  width: 100%;
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+.setup-folder input:focus-visible {
+  outline: none;
+}
+.setup-folder button {
+  border: 1px solid #3e3830;
+  color: #d8baa2;
+  font-size: 10px;
+  border-radius: 7px;
+  padding: 7px 10px;
+  background: #29231e;
+}
+.setup-folder button:hover {
+  border-color: #8d6245;
+  background: #352a22;
+}
+.setup-content-footer {
+  margin-top: auto;
+  padding-top: 19px;
+}
+.setup-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 47px;
+  border-radius: 11px;
+  border: 1px solid #ff9a6f;
+  background: linear-gradient(115deg, #ff9769, #ff7844);
+  color: #27170f;
+  font-weight: 600;
+  font-size: 12px;
+  box-shadow: 0 8px 24px #ff78440c;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.setup-primary:hover:not(:disabled) {
+  background: linear-gradient(115deg, #ffad87, #ff8f61);
+  transform: translateY(-1px);
+}
+.setup-footer-note {
+  display: block;
+  text-align: center;
+  margin-top: 12px;
+  font-size: 9px;
+  color: #716e65;
+}
+.setup-error {
+  color: #eeb09e;
+  font-size: 11px;
+  line-height: 1.5;
+  background: #41281d;
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin: 13px 0 0;
+}
+.setup-installing {
+  margin: 21px 0;
+}
+.setup-running-line {
+  height: 5px;
+  border-radius: 10px;
+  background: #302922;
+  overflow: hidden;
+}
+.setup-running-line > span {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, #ff9467, #ffad87);
+  border-radius: inherit;
+  animation: setup-travel 2s ease-in-out infinite;
+}
+.setup-steps {
+  display: grid;
+  gap: 23px;
+  margin: 32px 0;
+}
+.setup-steps > div {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  color: #625f57;
+  font-size: 12px;
+}
+.setup-steps strong {
+  font-weight: 400;
+}
+.setup-steps > div > span {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  background: #1c1c19;
+  border: 1px solid #302f29;
+  border-radius: 50%;
+}
+.setup-steps i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #706e64;
+}
+.setup-steps .current {
+  color: #efc1a4;
+}
+.setup-steps .current > span {
+  border-color: #764c32;
+  background: #35261a;
+}
+.setup-steps .done {
+  color: #a1b29a;
+}
+.setup-installing > p {
+  font-size: 10px;
+  color: #79756c;
+}
+.setup-working {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  min-height: 47px;
+  border-radius: 11px;
+  border: 1px solid #3e3024;
+  background: #241e17;
+  color: #ba9e84;
+  font-size: 11px;
+}
+.setup-working-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d18d5f;
+  animation: setup-breathe 2s ease-in-out infinite;
+}
+.setup-complete {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 31px 0;
+  padding: 26px;
+  border: 1px solid #394030;
+  border-radius: 15px;
+  background: linear-gradient(110deg, #252c20, #1b2018);
+}
+.setup-complete > span {
+  color: #aac396;
+}
+.setup-complete strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.setup-complete p {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #8e9d83;
+}
+.setup-spin {
+  animation: setup-spin 1.4s linear infinite;
+}
+@keyframes setup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes setup-travel {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+@keyframes setup-breathe {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .setup-running-line > span {
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+
+.setup-wordmark .prime-logo,
+.setup-core .prime-logo {
+  color: #ff8c60;
+}

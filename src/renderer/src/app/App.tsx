@@ -1,5 +1,6 @@
 import { useDocuments } from '../features/files/useDocuments'
 import { StartupScreen } from '../components/StartupScreen'
+import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
 import { I18nProvider, useI18n } from '../i18n'
 import { PrimeLogo } from '../components/PrimeLogo'
@@ -44,6 +45,12 @@ export function App() {
     <I18nProvider language={w.preferences.language}>
       <WorkspaceView workspace={w} />
       <StartupScreen ready={started || Boolean(w.project)} failed={failed} />
+      <UpdateScreen
+        ready={
+          Boolean(w.project) && w.project?.connection === 'ready' && w.info.runtime === 'ready'
+        }
+        busy={w.busy}
+      />
     </I18nProvider>
   )
 }

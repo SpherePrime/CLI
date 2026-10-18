@@ -126,7 +126,7 @@ export function SettingsDialog({
               <dl className="info-list">
                 <dt>{t('Приложение')}</dt>
                 <dd>{w.info.version || '0.1.0'}</dd>
-                <dt>Prime CLI</dt>
+                <dt>{t('Компоненты приложения')}</dt>
                 <dd>{w.info.runtimeVersion?.version || t('Запуск…')}</dd>
                 <dt>{t('Среда выполнения')}</dt>
                 <dd>
@@ -156,9 +156,7 @@ export function SettingsDialog({
                 <Download size={15} /> {t('Проверить обновления')}
               </button>
               <p className="muted small-text">
-                {t(
-                  'Локальная сборка. Публичный канал обновлений и цифровая подпись настраиваются при публикации.'
-                )}
+                {t('Обновления Prime Desktop загружаются из GitHub Releases.')}
               </p>
               {w.info.error && <pre>{w.info.error}</pre>}
             </>

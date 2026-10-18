@@ -1,3 +1,6 @@
+import { UpdateController } from './updates/controller'
+import { discoverDesktopRelease } from './updates/github'
+import type { UpdateStatus } from '../shared/updates'
 import { saveProjectFile } from './files/writer'
 import { translate } from '../shared/localization'
 import {
@@ -34,7 +37,8 @@ let runtime: RuntimeSupervisor
 let prime: PrimeService | undefined
 let settings: SettingsStore
 let runtimeError = ''
-let updateStatus: any = { state: 'idle' }
+let updateStatus: UpdateStatus = { state: 'idle' }
+let updateController: Promise<UpdateController> | undefined
 let recovering = false
 let editorDirty = false
 const t = (source: string) => translate(settings?.get().language, source)
@@ -350,33 +354,28 @@ function registerIpc(): void {
     else await shell.openPath(resolved)
   })
   handle('update', async (action: string) => {
+    z.enum(['check', 'install']).parse(action)
     if (!app.isPackaged)
       return { state: 'unavailable', message: t('Обновления доступны в установленном приложении') }
-    if (action === 'install' && requirePrime().isBusy())
-      throw new Error(t('Сначала завершите активные задачи'))
-    try {
-      const { autoUpdater } = await import('electron-updater')
-      if (action === 'install') {
-        quitting = true
-        autoUpdater.quitAndInstall()
-        return { state: 'installing' }
-      }
-      autoUpdater.on('update-downloaded', () => {
-        updateStatus = { state: 'downloaded' }
-        emit({ type: 'update', payload: updateStatus })
-      })
-      const result = await autoUpdater.checkForUpdates()
-      updateStatus = {
-        state: result?.isUpdateAvailable ? 'available' : 'current',
-        version: result?.updateInfo.version
-      }
-      return updateStatus
-    } catch {
-      return {
-        state: 'unavailable',
-        message: t('Канал обновлений ещё не настроен для этой сборки')
-      }
-    }
+    updateController ||= (async () => {
+      const { autoUpdater } = (await import('electron-updater')).default
+      autoUpdater.allowDowngrade = false
+      autoUpdater.allowPrerelease = false
+      return new UpdateController(
+        autoUpdater,
+        () => discoverDesktopRelease(app.getVersion()),
+        (status) => {
+          updateStatus = status
+          emit({ type: 'update', payload: status })
+        },
+        async () => {
+          if (prime?.isBusy()) throw new Error(t('Сначала завершите активные задачи'))
+          if (editorDirty) throw new Error(t('Сохраните изменения в файлах перед перезапуском'))
+        }
+      )
+    })()
+    const controller = await updateController
+    return action === 'install' ? controller.install() : controller.check()
   })
 }
 function syncTitlebar(): void {

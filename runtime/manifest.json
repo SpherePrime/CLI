@@ -1,8 +1,8 @@
 {
-  "version": "development",
-  "commit": "9ac41eca99e2f61abf943d13eb56c4774e46313f",
+  "version": "0.4.51",
+  "commit": "a102158b07845c97e682a14a97addc489257132e",
   "platform": "win32",
   "arch": "x64",
   "protocolVersion": 1,
-  "sha256": "540f2d18f1e8caf6201d9a50612fdcb3570d08b630ba4475cb3b91194439b3af"
+  "sha256": "32137349941e140b89c9b4d0a09c3545954459e210ae6508878a33a65c374784"
 }

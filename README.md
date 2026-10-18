@@ -26,7 +26,7 @@ npm run runtime:verify
 npm run dist:win
 ```
 
-The installer and unpacked application are written to `release/` (the 0.3.4 delivery is under `release/0.3.4/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
+The installer and unpacked application are written to `release/` (the current delivery is under `release/0.4.51/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
 
 ## File editing
 
@@ -40,4 +40,13 @@ Prime owns session history and provider configuration. Desktop keeps window pref
 
 Runtime restarts mark unfinished runs as interrupted; they are never automatically repeated. Event reconnection reloads persistent history and pending requests rather than assuming server event replay.
 
-This local build is unsigned. Automatic updates require a configured release feed. Desktop and its CLI ship as one versioned package; runtime hashes, protocol and required capabilities are checked on startup. Updating a separate external CLI does not replace the bundled runtime. See [release status](docs/release-checklist.md) for verification coverage and remaining release requirements.
+Updates are discovered in stable SpherePrime/CLI GitHub Releases after startup. Desktop release assets are required; incomplete or CLI-only releases are skipped. Downloads are automatic and checksum verified. Restart is explicit, with active-work and unsaved-file guards. Desktop and its runtime ship as one versioned package. See [release status](docs/release-checklist.md) for verification coverage and remaining release requirements.
+
+
+## Release and installer
+
+`PrimeSetup-<version>.exe` is the complete custom installer. It contains the full offline application payload, uses a frameless interface and verifies installed runtime files before reporting success. The separate `PrimeDesktop-Update-<version>.exe` and `latest.yml` assets are used for automatic updates.
+
+Build the main app and NSIS update payload first, then run `npm run dist:installer`. The payload must be in `release/<version>/`. The custom installer appears in the same directory.
+
+Desktop release source is mirrored into `SpherePrime/CLI/desktop` with `node scripts/sync-cli-desktop.mjs`. Commit that source with the CLI release changes. The CLI release workflow builds Windows Desktop after the CLI release, assigns the stable tag version, and attaches both installers, the update blockmap and `latest.yml`. No tag is created by the sync script.

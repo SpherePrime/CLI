@@ -70,9 +70,17 @@
 - Voice input sits immediately beside Send/Stop, and the runtime version badge was removed from the sidebar. Version details remain in About.
 - Unit coverage verifies OAuth boolean visibility and secret redaction. The real Electron acceptance verifies global MCP editing without losing environment/header secrets, a dotted MCP name, LSP creation, skill registration/toggling and the Prime language selector.
 
+## Version 0.4.51 release updates and custom installer
+
+- Stable complete Desktop releases are discovered after workspace readiness. The update controller deduplicates checks, automatically downloads a pinned release, forwards real progress, and offers Restart after download without a Later action.
+- A real Electron updater fixture rejects a corrupted SHA-512 download and then accepts intact bytes. Controller tests exercise deduplication, guarded restart and download errors. The fixture never executes an installer.
+- The custom frameless installer has its own controls and folder selector. Installation runs a SHA-256 verified silent payload and verifies application/runtime files before reporting completion. The visible UI only describes Prime Desktop.
+- Windows command-line integration verifies the exact unquoted NSIS directory argument with spaces and Cyrillic text. A running Desktop blocks manual installation; the payload waits for a clean application exit without force-killing processes.
+- The release workflow builds Desktop from the same CLI tag, including its runtime, and publishes the custom installer plus updater assets. Installer UI acceptance uses isolated fixtures and does not install into the user's profile.
+
 ## Public release requirements
 
-- No public Desktop repository or update-feed destination has been assigned. The updater reports an unavailable feed; no release was published.
+- The stable update source is SpherePrime/CLI GitHub Releases. Publishing requires a stable tag containing the Desktop release job and source; no public release was created during local verification.
 - The local Windows installer is not digitally signed. Production signing needs a certificate and release secrets.
 - Clean-VM installation/upgrade/downgrade, physical microphone, sleep/wake and multi-process external-CLI database access need separate acceptance evidence.
 - Backend event replay remains unsupported. Recovery uses current persistent message/session snapshots plus buffered live events and pending-request snapshots. No replay guarantee is advertised by capabilities.

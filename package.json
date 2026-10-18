@@ -1,6 +1,6 @@
 {
   "name": "prime-desktop",
-  "version": "0.3.4",
+  "version": "0.4.51",
   "description": "Desktop workspace for Prime",
   "private": true,
   "author": "SpherePrime",
@@ -16,7 +16,8 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "dist:win": "npm run build && electron-builder --win nsis --x64",
-    "runtime:verify": "node scripts/verify-runtime.mjs"
+    "runtime:verify": "node scripts/verify-runtime.mjs",
+    "dist:installer": "node scripts/package-installer.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.2.8",

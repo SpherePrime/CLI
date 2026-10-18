@@ -1270,7 +1270,15 @@ input[type='number'] {
   color: var(--muted);
 }
 .reasoning-control .prime-select {
-  padding-left: 3px;
+  width: auto;
+  min-height: 30px;
+  padding: 4px 3px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 400;
 }
 @media (max-width: 1300px) {
   .has-editor .queue-send-now {
@@ -1454,4 +1462,198 @@ input[type='number'] {
 .integration-tools summary {
   cursor: pointer;
   color: var(--secondary);
+}
+
+.update-screen {
+  position: fixed;
+  inset: 40px 0 0;
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: radial-gradient(ellipse at center, #101010aa, #101010e8);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+.update-card {
+  width: min(100%, 520px);
+  padding: 36px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 24px 100px #0007;
+  pointer-events: auto;
+  animation: update-arrive 0.45s ease-out both;
+}
+.update-art {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 24px;
+}
+.update-logo {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: var(--accent-bg);
+  box-shadow: 0 0 70px #ff6a3524;
+  animation: update-breathe 2.5s ease-in-out infinite;
+}
+.update-logo .prime-logo {
+  width: 42px;
+  height: 42px;
+}
+.update-ring {
+  position: absolute;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  inset: 4px;
+}
+.update-ring-one {
+  border-top-color: var(--accent-strong);
+  border-right-color: var(--accent);
+  animation: update-orbit 3.5s linear infinite;
+}
+.update-ring-two {
+  inset: 20px;
+  border-bottom-color: var(--accent);
+  animation: update-orbit 5s linear infinite reverse;
+}
+.update-phase {
+  position: absolute;
+  right: 28px;
+  bottom: 27px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--bg);
+  background: var(--accent);
+  border: 4px solid var(--surface);
+  box-sizing: content-box;
+}
+.update-phase.complete {
+  background: var(--green);
+}
+.update-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.update-copy h2 {
+  font-size: 25px;
+  line-height: 1.2;
+  margin: 12px 0;
+  font-weight: 600;
+}
+.update-copy p {
+  color: var(--secondary);
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+.update-progress {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--border);
+  overflow: hidden;
+}
+.update-progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-strong), var(--accent));
+  border-radius: inherit;
+  position: relative;
+  transition: width 0.35s ease;
+}
+.update-progress > span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, #fff6, transparent);
+  animation: update-sweep 1.5s ease-in-out infinite;
+}
+.update-transfer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.update-transfer strong {
+  color: var(--text);
+  font-weight: 500;
+}
+.update-restart {
+  width: 100%;
+  justify-content: center;
+  min-height: 44px;
+}
+.update-compact {
+  inset: auto 24px 24px auto;
+  display: block;
+  padding: 0;
+  background: none;
+  backdrop-filter: none;
+  max-width: calc(100vw - 48px);
+}
+.update-compact .update-card {
+  width: 410px;
+  max-width: 100%;
+  padding: 24px;
+}
+.update-compact .update-art {
+  display: none;
+}
+.update-compact .update-copy h2 {
+  font-size: 21px;
+}
+.update-compact .update-copy p {
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+@keyframes update-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes update-breathe {
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 80px #ff6a3540;
+  }
+}
+@keyframes update-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes update-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .update-card,
+  .update-logo,
+  .update-ring,
+  .update-progress > span::after {
+    animation: none;
+  }
+  .update-progress > span {
+    transition: none;
+  }
 }

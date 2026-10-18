@@ -1,4 +1,30 @@
 export const english: Record<string, string> = {
+  'Готовим новую версию Prime Desktop.': 'Preparing a new version of Prime Desktop.',
+  'Компоненты приложения': 'App components',
+  'Обновления Prime Desktop загружаются из GitHub Releases.':
+    'Prime Desktop updates are downloaded from GitHub Releases.',
+
+  'Сохраните изменения в файлах перед перезапуском': 'Save file changes before restarting',
+  'Обновление Prime Desktop': 'Prime Desktop update',
+  'Необходимо перезапустить приложение': 'Restart required',
+  'Не удалось загрузить обновление': 'Could not download the update',
+  'Перезапускаем Prime': 'Restarting Prime',
+  'Доступна новая версия': 'A new version is available',
+  'Загружаем обновление': 'Downloading update',
+  'Новая версия загружена. Перезапустите Prime, чтобы установить её.':
+    'The new version is downloaded. Restart Prime to install it.',
+  'Проверьте соединение и повторите загрузку.': 'Check your connection and try again.',
+  'Устанавливаем новую версию и открываем приложение снова.':
+    'Installing the new version and reopening the app.',
+  'Обновляем приложение и встроенный Prime вместе.': 'Updating the app and bundled Prime together.',
+  'Загрузка обновления': 'Update download',
+  'Подготавливаем загрузку…': 'Preparing download\u2026',
+  Перезапустить: 'Restart',
+  'Дождитесь завершения текущей задачи.': 'Wait for the current task to finish.',
+  'Повторить загрузку': 'Retry download',
+  'Обновления загружаются из GitHub Releases SpherePrime/CLI. Приложение и встроенный Prime обновляются вместе.':
+    'Updates are downloaded from SpherePrime/CLI GitHub Releases. The app and bundled Prime update together.',
+
   'Инструменты и диагностика': 'Tools and diagnostics',
   'Docker MCP': 'Docker MCP',
   'Сохранение…': 'Saving…',

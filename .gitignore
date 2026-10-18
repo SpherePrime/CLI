@@ -10,3 +10,5 @@ playwright-report/
 test-results/
 *.log
 cli-source/
+installer/out/
+installer/payload/

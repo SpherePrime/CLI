@@ -1,5 +1,10 @@
 appId: com.sphereprime.desktop
 productName: Prime Desktop
+publish:
+  provider: github
+  owner: SpherePrime
+  repo: CLI
+  releaseType: release
 directories:
   output: release
 files:
@@ -18,8 +23,10 @@ win:
   icon: build/icon.ico
   signAndEditExecutable: true
 nsis:
-  oneClick: false
+  include: build/installer-safety.nsh
+  oneClick: true
   perMachine: false
-  allowToChangeInstallationDirectory: true
+  artifactName: PrimeDesktop-Update-${version}.${ext}
+  installerIcon: build/icon.ico
   createDesktopShortcut: true
   deleteAppDataOnUninstall: false
