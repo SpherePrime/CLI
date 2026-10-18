@@ -177,6 +177,15 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(404, 500).
 			Handle(c.handleGetWorkspaceSessionHistory),
 
+		apigen.Get("/v1/workspaces/{id}/sessions/{sid}/context").
+			Summary("Get session context usage breakdown").
+			Tags("sessions").
+			PathParam("id", "Workspace ID").
+			PathParam("sid", "Session ID").
+			Responds(proto.ContextBreakdown{}).
+			Fails(404, 500).
+			Handle(c.handleGetWorkspaceSessionContext),
+
 		apigen.Get("/v1/workspaces/{id}/sessions/{sid}/messages").
 			Summary("Get session messages").
 			Tags("sessions").

@@ -650,6 +650,15 @@ func (c *controllerV1) handlePostWorkspaceAgentSessionShell(w http.ResponseWrite
 	jsonEncode(w, resp)
 }
 
+func (c *controllerV1) handleGetWorkspaceSessionContext(w http.ResponseWriter, r *http.Request) {
+	breakdown, err := c.backend.GetContextBreakdown(r.Context(), r.PathValue("id"), r.PathValue("sid"))
+	if err != nil {
+		c.handleError(w, r, err)
+		return
+	}
+	jsonEncode(w, breakdown)
+}
+
 // handleGetWorkspaceAgentSessionPromptList returns the list of queued prompts.
 func (c *controllerV1) handleGetWorkspaceAgentSessionPromptList(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
