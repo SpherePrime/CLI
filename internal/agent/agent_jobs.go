@@ -114,11 +114,6 @@ func (c *coordinator) startAgentJob(ctx context.Context, params subAgentParams, 
 
 	// Get model configuration
 	model := params.Agent.Model()
-	maxTokens := model.CatwalkCfg.DefaultMaxTokens
-	if model.ModelCfg.MaxTokens != 0 {
-		maxTokens = model.ModelCfg.MaxTokens
-	}
-
 	providerCfg, ok := c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
 	if !ok {
 		// The session already exists, so undo it before reporting the
@@ -128,6 +123,7 @@ func (c *coordinator) startAgentJob(ctx context.Context, params subAgentParams, 
 		}
 		return nil, errModelProviderNotConfigured
 	}
+	maxTokens := callMaxOutputTokens(model, providerCfg.Type)
 
 	// Detached from the caller: background jobs survive the step that
 	// started them, like background shells, and are stopped only via

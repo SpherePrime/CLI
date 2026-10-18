@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	anthropicDefaultMaxTokens  = 4096
+	anthropicDefaultMaxTokens  = 32000
 	anthropicMinThinkingBudget = 1024
 	geminiFlashMaxBudget       = 24576
 	geminiMinBudget            = 128
