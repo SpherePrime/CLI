@@ -926,6 +926,10 @@
           "type": "boolean",
           "description": "Enable thinking mode for Anthropic models that support reasoning"
         },
+        "reasoning_mode": {
+          "type": "string",
+          "description": "Unified reasoning control mode: off/low/medium/high/xhigh/max"
+        },
         "max_tokens": {
           "type": "integer",
           "maximum": 200000,
