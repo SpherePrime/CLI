@@ -2025,6 +2025,35 @@ func TestConfig_configureSelectedModels(t *testing.T) {
 		require.Contains(t, string(data), `"provider":"ghost"`)
 		require.Contains(t, string(data), `"model":"missing"`)
 	})
+	t.Run("keeps the selected reasoning mode", func(t *testing.T) {
+		knownProviders := []catwalk.Provider{
+			{
+				ID:                  "openai",
+				APIKey:              "abc",
+				DefaultLargeModelID: "large-model",
+				DefaultSmallModelID: "small-model",
+				Models: []catwalk.Model{
+					{ID: "large-model", DefaultMaxTokens: 1000, CanReason: true},
+					{ID: "small-model", DefaultMaxTokens: 500},
+				},
+			},
+		}
+		cfg := &Config{
+			Models: map[SelectedModelType]SelectedModel{
+				SelectedModelTypeLarge: {Provider: "openai", Model: "large-model", ReasoningMode: ReasoningModeHigh},
+				SelectedModelTypeSmall: {Provider: "openai", Model: "small-model", ReasoningMode: ReasoningModeOff},
+			},
+		}
+		cfg.setDefaults(t.TempDir(), "")
+		env := env.NewFromMap(map[string]string{})
+		resolver := NewShellVariableResolver(env)
+		require.NoError(t, cfg.configureProviders(context.Background(), &ConfigStore{config: cfg}, env, resolver, knownProviders))
+
+		resolved, err := resolveSelectedModels(cfg, knownProviders)
+		require.NoError(t, err)
+		require.Equal(t, ReasoningModeHigh, resolved.Large.ReasoningMode)
+		require.Equal(t, ReasoningModeOff, resolved.Small.ReasoningMode)
+	})
 	t.Run("should override defaults", func(t *testing.T) {
 		knownProviders := []catwalk.Provider{
 			{

@@ -939,6 +939,7 @@ func resolveSelectedModels(cfg *Config, knownProviders []catwalk.Provider) (reso
 				large.ReasoningEffort = model.DefaultReasoningEffort
 			}
 			large.Think = largeModelSelected.Think
+			large.ReasoningMode = largeModelSelected.ReasoningMode
 			if largeModelSelected.Temperature != nil {
 				large.Temperature = largeModelSelected.Temperature
 			}
@@ -1011,6 +1012,7 @@ func resolveSelectedModels(cfg *Config, knownProviders []catwalk.Provider) (reso
 				small.ProviderOptions = maps.Clone(smallModelSelected.ProviderOptions)
 			}
 			small.Think = smallModelSelected.Think
+			small.ReasoningMode = smallModelSelected.ReasoningMode
 		}
 	}
 
