@@ -199,8 +199,13 @@ export function useWorkspace() {
     async function restore() {
       const saved = await window.prime.preferences()
       let opened = await window.prime.projects()
-      if (!opened.length && saved.activeProject && saved.recent.includes(saved.activeProject)) {
-        const restored = await window.prime.openProject(saved.activeProject)
+      const lastProject = saved.activeProject
+        ? saved.recent.includes(saved.activeProject)
+          ? saved.activeProject
+          : ''
+        : saved.recent[0]
+      if (!opened.length && lastProject) {
+        const restored = await window.prime.openProject(lastProject).catch(() => null)
         if (restored) opened = [restored]
       }
       if (!opened.length) opened = [await window.prime.openChat()]

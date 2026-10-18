@@ -100,16 +100,18 @@ export function Sidebar({
                 </span>
                 <span className={`dot ${project.connection === 'ready' ? 'green' : 'amber'}`} />
               </button>
-              {project.kind !== 'chat' && (
-                <button
-                  className="icon small"
-                  title={t('Закрыть проект')}
-                  aria-label={t('Закрыть проект {value0}', { value0: project.path })}
-                  onClick={() => void w.closeProject(project.id)}
-                >
-                  <X size={12} />
-                </button>
-              )}
+              <button
+                className="icon small"
+                title={project.kind === 'chat' ? t('Закрыть личные чаты') : t('Закрыть проект')}
+                aria-label={
+                  project.kind === 'chat'
+                    ? t('Закрыть личные чаты')
+                    : t('Закрыть проект {value0}', { value0: project.path })
+                }
+                onClick={() => void w.closeProject(project.id)}
+              >
+                <X size={12} />
+              </button>
             </div>
             {w.project?.id === project.id && (
               <>
