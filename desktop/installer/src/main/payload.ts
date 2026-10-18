@@ -34,6 +34,17 @@ async function ensureDesktopClosed() {
       'Закройте Prime Desktop перед установкой, чтобы сохранить ваши задачи и изменения.'
     )
 }
+async function stopLeftoverRuntime(directory: string) {
+  const script = `$root = [IO.Path]::GetFullPath($env:PRIME_INSTALL_DIR).TrimEnd('\\') + '\\'
+Get-CimInstance Win32_Process -Filter "Name='prime.exe'" |
+  Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($root, [StringComparison]::OrdinalIgnoreCase) } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`
+  await promisify(execFile)(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
+    { windowsHide: true, env: { ...process.env, PRIME_INSTALL_DIR: directory } }
+  ).catch(() => {})
+}
 export async function readPayload(root: string): Promise<Payload> {
   const value = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'))
   if (
@@ -57,6 +68,7 @@ export function payloadOperations(root: string, payload: Payload) {
     },
     async launch(directory: string) {
       await ensureDesktopClosed()
+      await stopLeftoverRuntime(directory)
       return new Promise<void>((resolve, reject) => {
         const command = installerCommand(join(root, 'PrimeDesktopSetup.exe'), directory)
         const child = spawn(command.binary, command.args, command.options)

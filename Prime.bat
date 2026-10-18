@@ -313,27 +313,53 @@ goto finish
 
 :do_setup
 call :header "Prime Desktop setup"
+tasklist /FI "IMAGENAME eq PrimeDesktop.exe" /NH 2>nul | find /I "PrimeDesktop.exe" >nul
+if not errorlevel 1 (
+    echo  Prime Desktop is running. Close it ^(also from the tray^) and run setup again:
+    echo  the installer cannot replace files of a running app.
+    set "EXITCODE=1"
+    goto finish
+)
 call :desktop_prepare
-if not "%EXITCODE%"=="0" goto finish
+if not "%EXITCODE%"=="0" goto setup_prepare_failed
 pushd desktop
 set "DESKTOP_VERSION="
 for /f "usebackq delims=" %%v in (`node -p "require('./package.json').version"`) do set "DESKTOP_VERSION=%%v"
+set "SETUP_FILE=release\%DESKTOP_VERSION%\PrimeSetup-%DESKTOP_VERSION%.exe"
+if exist "%SETUP_FILE%" del /f /q "%SETUP_FILE%" >nul 2>&1
+if exist "%SETUP_FILE%" (
+    echo  %SETUP_FILE% is in use. Close the running installer and try again.
+    goto setup_failed
+)
+if exist "release\%DESKTOP_VERSION%\PrimeDesktop-Update-%DESKTOP_VERSION%.exe" del /f /q "release\%DESKTOP_VERSION%\PrimeDesktop-Update-%DESKTOP_VERSION%.exe" >nul 2>&1
 call npm run build
 if errorlevel 1 goto setup_failed
 call npx electron-builder --win nsis --x64 --publish never --config.directories.output=release/%DESKTOP_VERSION%
 if errorlevel 1 goto setup_failed
 call npm run dist:installer
 if errorlevel 1 goto setup_failed
+if not exist "%SETUP_FILE%" goto setup_failed
 popd
 echo.
-echo  Setup: desktop\release\%DESKTOP_VERSION%\PrimeSetup-%DESKTOP_VERSION%.exe
+echo  Setup: desktop\%SETUP_FILE%
 set "EXITCODE=0"
+choice /c YN /n /t 30 /d N /m "  Install it now? [Y/N] (30s, default N) "
+if errorlevel 2 goto finish
+start "" "%~dp0desktop\%SETUP_FILE%"
+goto finish
+
+:setup_prepare_failed
+echo.
+echo  Setup was not built: the bundled CLI could not be prepared.
+echo  If Prime Desktop runs from sources ^(menu 4^), close it: it locks desktop\runtime\prime.exe.
 goto finish
 
 :setup_failed
 set "EXITCODE=%errorlevel%"
 if "%EXITCODE%"=="0" set "EXITCODE=1"
 popd
+echo.
+echo  Setup was not built. The messages above show why; no old installer was left behind.
 goto finish
 
 :desktop_prepare
