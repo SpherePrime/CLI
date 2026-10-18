@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
+import { ContextMeter } from './ContextMeter'
 import { ModelPicker } from './ModelPicker'
 import { ReasoningPopover } from './ReasoningPopover'
 import { currentReasoningMode, reasoningLabel } from './reasoning'
@@ -17,6 +18,8 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const mode = currentReasoningMode(selected, capability)
   const modelName =
     capability?.name || selected?.model || w.agent?.model?.name || t('Выбрать модель')
+  const contextUsed = (w.session?.prompt_tokens || 0) + (w.session?.completion_tokens || 0)
+  const contextWindow = capability?.context_window || 0
   useEffect(() => {
     const toggle = () => setOpen((value) => (value === 'models' ? null : 'models'))
     window.addEventListener('prime:models', toggle)
@@ -32,6 +35,9 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   }
   return (
     <>
+      {contextUsed > 0 && contextWindow > 0 && (
+        <ContextMeter used={contextUsed} window={contextWindow} />
+      )}
       <button
         ref={anchor}
         className="model-control"

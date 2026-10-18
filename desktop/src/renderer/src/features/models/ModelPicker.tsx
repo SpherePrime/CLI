@@ -40,7 +40,7 @@ export function ModelPicker({
     groups.set(model.provider_id, group)
   }
   return (
-    <Popover anchor={anchor} close={close} width={390} label={t('Выбрать модель')}>
+    <Popover anchor={anchor} close={close} width={390} align="end" label={t('Выбрать модель')}>
       <div className="model-picker-heading">
         <strong>{t('Выбрать модель')}</strong>
         <div className="segmented">

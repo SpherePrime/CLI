@@ -1,0 +1,320 @@
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --fast: 120ms;
+  --medium: 200ms;
+  --slow: 320ms;
+}
+
+button {
+  transition:
+    background var(--fast) ease,
+    border-color var(--fast) ease,
+    color var(--fast) ease,
+    box-shadow var(--fast) ease,
+    transform var(--fast) var(--ease-out),
+    opacity var(--fast) ease;
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.send:not(:disabled):hover {
+  box-shadow: 0 4px 16px #ff6a3540;
+}
+.send:not(:disabled):active {
+  transform: scale(0.92);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes orb {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.55);
+    opacity: 0.35;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes status-fade {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.prime-popover,
+.file-context-menu,
+.select-options {
+  animation: pop-in var(--medium) var(--ease-out);
+  transform-origin: bottom center;
+}
+dialog.modal[open] {
+  animation: dialog-in var(--slow) var(--ease-out);
+}
+dialog.modal[open]::backdrop {
+  animation: fade-in var(--medium) ease;
+  backdrop-filter: blur(3px);
+}
+
+.composer {
+  transition:
+    border-color var(--medium) ease,
+    box-shadow var(--medium) ease;
+}
+.composer:focus-within {
+  box-shadow:
+    0 0 0 3px #ff6a3514,
+    0 10px 30px #0003;
+}
+.composer.recording {
+  box-shadow: 0 0 0 3px #ed8b8b1f;
+}
+
+.message.fresh {
+  animation: rise-in var(--slow) var(--ease-out);
+}
+.message.continued {
+  margin-top: -18px;
+}
+.message:not(.user) .message-body > .markdown + .tool-card,
+.message:not(.user) .message-body > .tool-card + .markdown {
+  margin-top: 12px;
+}
+.copy-message {
+  transition: opacity var(--medium) ease;
+}
+
+.reasoning {
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+.reasoning summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  list-style: none;
+  user-select: none;
+  transition:
+    background var(--fast) ease,
+    color var(--fast) ease;
+}
+.reasoning summary::-webkit-details-marker {
+  display: none;
+}
+.reasoning summary:hover {
+  background: var(--hover);
+  color: var(--secondary);
+}
+.reasoning-chevron {
+  transition: transform var(--medium) var(--ease-out);
+}
+.reasoning[open] .reasoning-chevron {
+  transform: rotate(180deg);
+}
+.reasoning.live .reasoning-label {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    var(--muted) 35%,
+    var(--text) 50%,
+    var(--muted) 65%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2.2s linear infinite;
+}
+.reasoning.live summary svg:first-child {
+  color: var(--accent-strong);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.reasoning .reasoning-text {
+  max-height: 360px;
+  overflow: auto;
+  margin: 10px 0 4px;
+  padding: 4px 14px;
+  border-left: 2px solid var(--border);
+  white-space: pre-wrap;
+  line-height: 1.7;
+  font-size: 11.5px;
+  animation: fade-in var(--medium) ease;
+}
+
+.working {
+  gap: 10px;
+  padding: 6px 0 6px 31px;
+  animation: fade-in var(--medium) ease;
+}
+.working-orb {
+  display: inline-flex;
+  gap: 4px;
+}
+.working-orb span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-strong);
+  animation: orb 1.2s ease-in-out infinite;
+}
+.working-orb span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.working-orb span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.working-time {
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.jump-bottom {
+  animation: pop-in var(--medium) var(--ease-out);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+.tool-card {
+  transition: border-color var(--medium) ease;
+}
+.tool-card:hover {
+  border-color: #3a414e;
+}
+.tool-card[open] > summary + * {
+  animation: fade-in var(--medium) ease;
+}
+
+.sidebar button,
+.tree-file {
+  transition:
+    background var(--fast) ease,
+    color var(--fast) ease;
+}
+.inspector-tabs button.active {
+  transition: color var(--medium) ease;
+}
+
+.settings-status.success {
+  color: var(--green);
+  background: #84bc9e14;
+  border: 1px solid #84bc9e33;
+  animation: status-fade 3s ease forwards;
+}
+
+.setting-toggle input[type='checkbox'] {
+  appearance: none;
+  position: relative;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--raised);
+  cursor: pointer;
+  transition:
+    background var(--medium) ease,
+    border-color var(--medium) ease;
+}
+.setting-toggle input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--secondary);
+  transition:
+    transform var(--medium) var(--ease-spring),
+    background var(--medium) ease;
+}
+.setting-toggle input[type='checkbox']:checked {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+.setting-toggle input[type='checkbox']:checked::after {
+  transform: translateX(16px);
+  background: #fff;
+}
+.setting-toggle input[type='checkbox']:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.model-control-level,
+.model-control-name {
+  transition: color var(--fast) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message.fresh,
+  .prime-popover,
+  .file-context-menu,
+  .select-options,
+  dialog.modal[open],
+  .reasoning.live .reasoning-label,
+  .working-orb span {
+    animation: none !important;
+  }
+  .reasoning.live .reasoning-label {
+    color: var(--secondary);
+    background: none;
+  }
+}

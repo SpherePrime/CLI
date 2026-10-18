@@ -40,7 +40,7 @@ export function ReasoningPopover({
     if (value !== mode) onChange(value)
   }
   return (
-    <Popover anchor={anchor} close={close} width={300} label={t('Уровень размышлений')}>
+    <Popover anchor={anchor} close={close} width={300} align="end" label={t('Уровень размышлений')}>
       <div className="reasoning-popover">
         <div className="reasoning-popover-head">
           <button
@@ -90,10 +90,12 @@ export function ReasoningPopover({
             setPreview(pick(event.clientX))
           }}
           onPointerUp={(event) => {
-            if (disabled) return
+            if (disabled || !event.currentTarget.hasPointerCapture(event.pointerId)) return
             event.currentTarget.releasePointerCapture(event.pointerId)
             commit(pick(event.clientX))
           }}
+          onPointerCancel={() => setPreview(null)}
+          onLostPointerCapture={() => setPreview(null)}
           onKeyDown={(event) => {
             if (disabled) return
             const step = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 }[event.key]

@@ -162,7 +162,10 @@ export function SettingsDialog({
             </>
           )}
           {status && (
-            <p className="settings-status" role="status">
+            <p
+              className={`settings-status ${status === t('Сохранено') ? 'success' : ''}`}
+              role="status"
+            >
               {status}
             </p>
           )}

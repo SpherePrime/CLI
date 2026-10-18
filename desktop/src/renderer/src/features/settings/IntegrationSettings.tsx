@@ -663,7 +663,10 @@ export function IntegrationSettings({
         </section>
       )}
       {status && (
-        <p role="status" className="settings-status">
+        <p
+          role="status"
+          className={`settings-status ${status === t('Сохранено') ? 'success' : ''}`}
+        >
           {status}
         </p>
       )}
