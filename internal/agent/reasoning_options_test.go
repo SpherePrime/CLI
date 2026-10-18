@@ -198,3 +198,19 @@ func TestCustomProviderReasoningOptions(t *testing.T) {
 		require.Nil(t, parsed.ThinkingConfig)
 	})
 }
+
+func TestCallMaxOutputTokens(t *testing.T) {
+	t.Parallel()
+
+	known := Model{CatwalkCfg: catwalk.Model{DefaultMaxTokens: 128000}}
+	require.Equal(t, int64(128000), callMaxOutputTokens(known, openai.Name))
+	require.Equal(t, int64(128000), callMaxOutputTokens(known, anthropic.Name))
+
+	userSet := Model{CatwalkCfg: catwalk.Model{DefaultMaxTokens: 128000}, ModelCfg: config.SelectedModel{MaxTokens: 200000}}
+	require.Equal(t, int64(200000), callMaxOutputTokens(userSet, openai.Name))
+
+	custom := Model{CatwalkCfg: catwalk.Model{ID: "custom"}}
+	require.Zero(t, callMaxOutputTokens(custom, openai.Name))
+	require.Zero(t, callMaxOutputTokens(custom, "openai-compat"))
+	require.Equal(t, int64(anthropicDefaultMaxTokens), callMaxOutputTokens(custom, anthropic.Name))
+}
