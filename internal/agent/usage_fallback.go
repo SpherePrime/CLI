@@ -1,18 +1,41 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
-func shouldAutoSummarize(contextWindow int64, thresholdPercent int, contextTokens int64) bool {
+func shouldAutoSummarize(contextWindow int64, thresholdPercent int, contextTokens int64, reservedOutputTokens int64) bool {
 	if contextWindow <= 0 || thresholdPercent <= 0 || contextTokens <= 0 {
 		return false
 	}
-	remaining := contextWindow - contextTokens
-	limit := contextWindow * int64(100-thresholdPercent) / 100
-	return remaining <= limit
+	limit := contextWindow * int64(thresholdPercent) / 100
+	if reservedOutputTokens > 0 {
+		limit = min(limit, contextWindow-min(reservedOutputTokens, contextWindow/2))
+	}
+	return contextTokens >= limit
+}
+
+func promptTokensFromUsage(usage fantasy.Usage) int64 {
+	return usage.InputTokens + usage.CacheReadTokens + usage.CacheCreationTokens
+}
+
+func contextTokensFromUsage(usage fantasy.Usage) int64 {
+	return promptTokensFromUsage(usage) + usage.OutputTokens
+}
+
+func estimateToolDefinitionTokens(tools []fantasy.AgentTool) int64 {
+	var tokens int64
+	for _, tool := range tools {
+		info := tool.Info()
+		tokens += approxTokenCount(info.Name) + approxTokenCount(info.Description)
+		if schema, err := json.Marshal(info.Parameters); err == nil {
+			tokens += approxTokenCount(string(schema))
+		}
+	}
+	return tokens
 }
 
 func usageIsZero(usage fantasy.Usage) bool {
