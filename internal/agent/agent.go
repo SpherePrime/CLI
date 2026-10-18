@@ -1096,7 +1096,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				}
 				// Compact once the measured request context reaches the configured
 				// threshold, leaving (100 - percent) of the window free.
-				if shouldAutoSummarize(cw, percent, tokens, call.MaxOutputTokens) {
+				if shouldAutoSummarize(cw, percent, tokens) {
 					shouldSummarize = true
 					return true
 				}

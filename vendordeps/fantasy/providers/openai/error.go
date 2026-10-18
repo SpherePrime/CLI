@@ -37,6 +37,7 @@ func toProviderErr(err error) error {
 		}
 
 		parseContextTooLargeError(message, providerErr)
+		markContextOverflow(apiErr.Code, apiErr.Type, message, providerErr)
 
 		return providerErr
 	}
@@ -69,7 +70,7 @@ func toProviderErrFromStreamError(streamErr *ssestream.StreamError) *fantasy.Pro
 
 	errType := cmp.Or(envelope.Error.Type, envelope.Error.Code)
 
-	return &fantasy.ProviderError{
+	providerErr := &fantasy.ProviderError{
 		Title:          "stream error",
 		Message:        cmp.Or(envelope.Error.Message, streamErr.Message),
 		Cause:          streamErr,
@@ -80,6 +81,8 @@ func toProviderErrFromStreamError(streamErr *ssestream.StreamError) *fantasy.Pro
 		// friends ask the caller to come back, and nothing else would.
 		TransientError: fantasy.IsTransientStreamError(errType),
 	}
+	markContextOverflow(envelope.Error.Code, envelope.Error.Type, providerErr.Message, providerErr)
+	return providerErr
 }
 
 func parseContextTooLargeError(message string, providerErr *fantasy.ProviderError) {
