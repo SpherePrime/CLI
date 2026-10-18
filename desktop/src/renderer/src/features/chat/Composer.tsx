@@ -47,6 +47,11 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       const previous = draftKey.current
       const draft = latest.current
       draftKey.current = key
+      const justCreated =
+        !w.preferences.drafts[key] &&
+        !w.messages.length &&
+        Date.now() / 1000 - (w.session?.updated_at || 0) < 5
+      if (justCreated && draft) return
       void w.savePreferences({ drafts: { [previous]: draft } })
       setText(w.preferences.drafts[key] || '')
       setAttachments([])
