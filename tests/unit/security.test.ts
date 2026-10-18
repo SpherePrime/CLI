@@ -20,3 +20,16 @@ it('encodes session identifiers and refuses arbitrary routes', () => {
   )
   expect(() => operationRoute('anything' as never)).toThrow()
 })
+it('preserves the MCP OAuth switch while hiding OAuth credentials', () => {
+  expect(
+    redact({
+      mcp: {
+        server: {
+          oauth: true,
+          oauth_client_secret: 'secret',
+          oauth_token: { access_token: 'secret' }
+        }
+      }
+    })
+  ).toEqual({ mcp: { server: { oauth: true } } })
+})

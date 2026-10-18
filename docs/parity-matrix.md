@@ -24,9 +24,9 @@ Source: CLI revision recorded in `runtime/manifest.json`; reviewed against works
 | Attachments | Native file picker | Main stores chosen files and serializes real proto.Attachments |
 | File tree and editing | Inspector Files → editor pane | Local Monaco, tabs, TS highlighting, Ctrl+S, unsaved-close guard; revision conflict and path boundary integration tests; 2 MiB limit |
 | Session/Git diffs | Inspector Changes → readonly Monaco comparison | Full worktree status; renamed/deleted/untracked diff integration tests |
-| MCP states/auth/resources/prompts | Inspector Resources, command preparation and advanced settings | Argument form and real backend prompt fetch; scoped opt-in channel delivery; Docker toggles |
-| LSP diagnostics/start/stop | Inspector Resources | Existing LSP API |
-| Skills catalog/read | Inspector Resources | Existing catalog/read API |
+| MCP states/auth/resources/prompts | Settings → MCP, Chat actions → Prompt templates | Argument form and real backend prompt fetch; scoped opt-in channel delivery; Docker toggles |
+| LSP configuration/diagnostics/start/stop | Settings → LSP | Add/edit server forms, scoped persistence and existing LSP API |
+| Skills catalog/read/configuration | Settings → Skills | Register skill folders, refresh discovery, enable/disable and read instructions |
 | Background shells | Inspector Tasks | Session-filtered backend jobs API |
 | Plugins install/toggle/progress | Plugins dialog | Go plugin installation concurrency tests |
 | Voice input | Alt+V / microphone button | WAV conversion + real backend transcription HTTP fixture; hardware check pending |
@@ -38,4 +38,4 @@ Source: CLI revision recorded in `runtime/manifest.json`; reviewed against works
 | Local installer | Windows NSIS package | Packaged EXE passed full Electron/provider/tool/question scenario |
 | CLI update | Separate external installation | Desktop never replaces a user's external CLI |
 
-This table records actual scope, not a claim that every CLI menu item has a dedicated graphical control. All core settings are writable through the advanced configuration form; unsupported release scenarios are listed explicitly in the release checklist.
+This table records actual scope, not a claim that every CLI menu item has a dedicated graphical control. Agent preferences use labeled selectors and switches; integration settings have dedicated forms; unsupported release scenarios are listed explicitly in the release checklist.

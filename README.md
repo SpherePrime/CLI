@@ -26,7 +26,7 @@ npm run runtime:verify
 npm run dist:win
 ```
 
-The installer and unpacked application are written to `release/` (the 0.3.3 delivery is under `release/0.3.3/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
+The installer and unpacked application are written to `release/` (the 0.3.4 delivery is under `release/0.3.4/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
 
 ## File editing
 

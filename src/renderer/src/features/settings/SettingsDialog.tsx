@@ -1,3 +1,5 @@
+import { PrimeSettings } from './PrimeSettings'
+import { IntegrationSettings } from './IntegrationSettings'
 import { ProviderSettings } from './ProviderSettings'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
@@ -5,7 +7,9 @@ import { PrimeLogo } from '../../components/PrimeLogo'
 import { useState } from 'react'
 import {
   Check,
-  KeyRound,
+  Boxes,
+  Code2,
+  BookOpen,
   Monitor,
   Server,
   SlidersHorizontal,
@@ -28,16 +32,13 @@ export function SettingsDialog({
   const { t, language } = useI18n()
   const [tab, setTab] = useState(initial)
   const [status, setStatus] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [field, setField] = useState('options.language')
-  const [value, setValue] = useState('"ru"')
-  const [scope, setScope] = useState(0)
-  const [channels, setChannels] = useState(
-    w.preferences.projectChannels?.[w.project?.path || '']?.join(', ') || ''
-  )
+  const [scope] = useState(0)
   const tabs = [
     { id: 'appearance', label: t('Интерфейс'), icon: Monitor },
     { id: 'providers', label: t('Провайдеры'), icon: Server },
+    { id: 'mcp', label: 'MCP', icon: Boxes },
+    { id: 'lsp', label: 'LSP', icon: Code2 },
+    { id: 'skills', label: 'Skills', icon: BookOpen },
     { id: 'advanced', label: t('Настройки Prime'), icon: SlidersHorizontal },
     { id: 'about', label: t('О приложении'), icon: Info }
   ]
@@ -111,122 +112,9 @@ export function SettingsDialog({
             </>
           )}
           {tab === 'providers' && <ProviderSettings workspace={w} scope={scope} />}
-          {tab === 'advanced' && (
-            <>
-              <h3>{t('Конфигурация Prime')}</h3>
-              <p className="muted">
-                {t('Изменения проходят через конфигурационный слой CLI. Значение задаётся в JSON.')}
-              </p>
-              <label className="form-label">
-                {t('Область')}
-                <Select
-                  label={t('Область')}
-                  value={String(scope)}
-                  onChange={(value) => setScope(Number(value))}
-                  options={[
-                    { value: '0', label: t('Глобально') },
-                    { value: '1', label: t('Этот проект') }
-                  ]}
-                />
-              </label>
-              <label className="form-label">
-                {t('Ключ')}
-                <input
-                  value={field}
-                  onChange={(event) => setField(event.target.value)}
-                  list="config-keys"
-                />
-                <datalist id="config-keys">
-                  {[
-                    'options.language',
-                    'options.notifications',
-                    'options.auto_summarize',
-                    'permissions.allowed_tools',
-                    'mcp',
-                    'lsp',
-                    'skills'
-                  ].map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </datalist>
-              </label>
-              <label className="form-label">
-                {t('Значение')}
-                <textarea
-                  rows={6}
-                  value={value}
-                  onChange={(event) => setValue(event.target.value)}
-                />
-              </label>
-              <div className="button-row">
-                <button
-                  className="primary"
-                  disabled={!w.project}
-                  onClick={async () => {
-                    try {
-                      await w.call('configSet', { key: field, value: JSON.parse(value), scope })
-                      await w.refresh()
-                      setStatus(t('Сохранено'))
-                    } catch (error: any) {
-                      setStatus(error.message)
-                    }
-                  }}
-                >
-                  {t('Сохранить')}
-                </button>
-                <button
-                  disabled={!w.project}
-                  onClick={() =>
-                    void w
-                      .call('configRemove', { key: field, scope })
-                      .then(w.refresh)
-                      .then(() => setStatus(t('Значение удалено')))
-                      .catch((error) => setStatus(error.message))
-                  }
-                >
-                  {t('Сбросить поле')}
-                </button>
-              </div>
-              <label className="form-label">
-                {t('MCP-каналы этого проекта')}
-                <input
-                  value={channels}
-                  onChange={(event) => setChannels(event.target.value)}
-                  placeholder={t('Имена серверов через запятую')}
-                />
-              </label>
-              <p className="muted">
-                {t(
-                  'Выбранные серверы смогут доставлять сообщения в рабочую область. Агент не запускается автоматически.'
-                )}
-              </p>
-              <button
-                disabled={!w.project}
-                onClick={async () => {
-                  if (!w.project) return
-                  await w.savePreferences({
-                    projectChannels: {
-                      ...w.preferences.projectChannels,
-                      [w.project.path]: channels
-                        .split(',')
-                        .map((value) => value.trim())
-                        .filter(Boolean)
-                    }
-                  })
-                  setStatus(
-                    t(
-                      'Каналы сохранены. Закройте проект в боковой панели и откройте его снова, чтобы применить выбор.'
-                    )
-                  )
-                }}
-              >
-                {t('Сохранить выбор каналов')}
-              </button>
-              <details>
-                <summary>{t('Текущая конфигурация без ключей')}</summary>
-                <pre className="config-preview">{JSON.stringify(w.config, null, 2)}</pre>
-              </details>
-            </>
+          {tab === 'advanced' && <PrimeSettings workspace={w} />}
+          {(['mcp', 'lsp', 'skills'] as const).map(
+            (kind) => tab === kind && <IntegrationSettings key={kind} kind={kind} workspace={w} />
           )}
           {tab === 'about' && (
             <>

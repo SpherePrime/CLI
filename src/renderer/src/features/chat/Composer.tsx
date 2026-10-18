@@ -246,15 +246,6 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             >
               <Paperclip size={17} />
             </button>
-            <button
-              className={`icon ${recording ? 'danger' : ''}`}
-              disabled={!w.project || transcribing}
-              aria-label={recording ? t('Остановить запись') : t('Голосовой ввод')}
-              title={t('Голосовой ввод · Alt V')}
-              onClick={() => void toggleVoice()}
-            >
-              {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
-            </button>
             <span className="toolbar-divider" />
             <PermissionMenu
               skip={skip}
@@ -298,24 +289,35 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             </button>
             <ReasoningControl workspace={w} />
           </div>
-          {w.busy && (!text.trim() || sending) ? (
+          <div className="composer-actions">
             <button
-              className="send stop"
-              onClick={() => void stop()}
-              aria-label={t('Остановить задачу')}
+              className={`icon ${recording ? 'danger' : ''}`}
+              disabled={!w.project || transcribing}
+              aria-label={recording ? t('Остановить запись') : t('Голосовой ввод')}
+              title={t('Голосовой ввод · Alt V')}
+              onClick={() => void toggleVoice()}
             >
-              <Square size={14} fill="currentColor" />
+              {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
-          ) : (
-            <button
-              className="send"
-              aria-label={t('Отправить сообщение')}
-              disabled={!text.trim() || sending || w.project?.connection !== 'ready'}
-              onClick={() => void submit()}
-            >
-              {sending ? <LoaderCircle size={17} className="spin" /> : <ArrowUp size={18} />}
-            </button>
-          )}
+            {w.busy && (!text.trim() || sending) ? (
+              <button
+                className="send stop"
+                onClick={() => void stop()}
+                aria-label={t('Остановить задачу')}
+              >
+                <Square size={14} fill="currentColor" />
+              </button>
+            ) : (
+              <button
+                className="send"
+                aria-label={t('Отправить сообщение')}
+                disabled={!text.trim() || sending || w.project?.connection !== 'ready'}
+                onClick={() => void submit()}
+              >
+                {sending ? <LoaderCircle size={17} className="spin" /> : <ArrowUp size={18} />}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

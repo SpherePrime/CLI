@@ -60,6 +60,16 @@
 - Tool calls and results are joined by call ID within user turns. One card shows the command or parameters and its output; unmatched output stays visible. Stored messages are unchanged. A finished argument stream alone does not mark tool execution complete.
 - Manual wheel, touch, scrollbar and keyboard input cancel the virtualizer's pending auto-scroll. The return button is outside the scrolling content and targets the browser's actual end, including padding. Long-history coverage exercises reading during streaming, moving down and returning to the end.
 
+## Version 0.3.4 integration settings
+
+- MCP, LSP and Skills have separate Settings sections, available in the personal workspace before selecting a project. Inspector retains Files, Changes and Tasks.
+- Server forms support scoped addition/editing, enable/disable and removal; existing secret fields are preserved through field-level writes. OAuth authorization, resources, prompt templates, diagnostics and channel controls remain available.
+- The bundled CLI rebuilds its LSP catalog from current settings for start/discovery. Desktop stops existing language clients after edits or removal; catalog regressions cover adding, changing and disabling servers after manager creation.
+- Skills supports additional folders, immediate discovery refresh, instruction viewing and reversible enable/disable controls.
+- Prime options use language/notification selectors, switches and a context-compaction threshold. The generic key/JSON editor was removed.
+- Voice input sits immediately beside Send/Stop, and the runtime version badge was removed from the sidebar. Version details remain in About.
+- Unit coverage verifies OAuth boolean visibility and secret redaction. The real Electron acceptance verifies global MCP editing without losing environment/header secrets, a dotted MCP name, LSP creation, skill registration/toggling and the Prime language selector.
+
 ## Public release requirements
 
 - No public Desktop repository or update-feed destination has been assigned. The updater reports an unavailable feed; no release was published.

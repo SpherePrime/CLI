@@ -61,7 +61,15 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
   await writeFile(
     join(project, 'config', 'mcp.json'),
     JSON.stringify({
-      mcp: { 'Global Fixture MCP': { type: 'stdio', command: 'fixture-disabled', disabled: true } }
+      mcp: {
+        'Global Fixture MCP': {
+          type: 'stdio',
+          command: 'fixture-disabled',
+          disabled: true,
+          env: { KEEP_SECRET: 'keep-me' },
+          headers: { Authorization: 'keep-header' }
+        }
+      }
     })
   )
   await writeFile(join(project, 'hello.txt'), 'Desktop fixture')
@@ -110,9 +118,84 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
       .toMatchObject({ runtime: 'ready' })
     await expect(page.getByRole('textbox', { name: 'Сообщение Prime' })).toBeEnabled()
     await expect(page.getByRole('button', { name: 'Поиск и команды' })).toHaveCount(0)
-    await page.getByRole('button', { name: 'Ресурсы', exact: true }).click()
-    await expect(page.getByText('Global Fixture MCP', { exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Файлы', exact: true }).click()
+    await page.getByRole('button', { name: 'Настройки', exact: false }).first().click()
+    await page.getByRole('button', { name: 'MCP', exact: true }).click()
+    await page.screenshot({ path: 'test-results/settings-mcp.png' })
+    await expect(
+      page.locator('.integration-card').getByText('Global Fixture MCP', { exact: true })
+    ).toBeVisible()
+    await page
+      .locator('.integration-card')
+      .filter({ hasText: 'Global Fixture MCP' })
+      .getByRole('button', { name: 'Изменить', exact: true })
+      .click()
+    await page.getByRole('spinbutton', { name: 'Тайм-аут, секунд', exact: true }).fill('42')
+    await page.getByRole('button', { name: 'Сохранить', exact: true }).click()
+    await expect(page.getByRole('status')).toContainText('Сохранено')
+    const storedMcp = JSON.parse(await readFile(join(project, 'config', 'mcp.json'), 'utf8'))
+    expect(storedMcp.mcp['Global Fixture MCP']).toMatchObject({
+      timeout: 42,
+      env: { KEEP_SECRET: 'keep-me' },
+      headers: { Authorization: 'keep-header' }
+    })
+    await page.getByRole('button', { name: 'Добавить сервер', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Название', exact: true }).fill('Fixture.MCP')
+    await page
+      .getByRole('textbox', { name: 'Команда запуска', exact: true })
+      .fill('fixture-disabled')
+    await page.getByRole('checkbox', { name: 'Включено', exact: true }).uncheck()
+    await page.getByRole('button', { name: 'Сохранить', exact: true }).click()
+    await expect(
+      page.locator('.integration-card').getByText('Fixture.MCP', { exact: true })
+    ).toBeVisible()
+    expect(
+      JSON.parse(await readFile(join(project, 'config', 'mcp.json'), 'utf8')).mcp['Fixture.MCP']
+        .disabled
+    ).toBe(true)
+    await page.getByRole('button', { name: 'LSP', exact: true }).click()
+    await page.getByRole('button', { name: 'Добавить сервер', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Название', exact: true }).fill('Fixture LSP')
+    await page.getByRole('textbox', { name: 'Команда запуска', exact: true }).fill('fixture-lsp')
+    await page.getByRole('checkbox', { name: 'Включено', exact: true }).uncheck()
+    await page.getByRole('button', { name: 'Сохранить', exact: true }).click()
+    await expect(page.getByText('Fixture LSP', { exact: true })).toBeVisible()
+    await mkdir(join(project, 'fixture-skills', 'desktop-skill'), { recursive: true })
+    await writeFile(
+      join(project, 'fixture-skills', 'desktop-skill', 'SKILL.md'),
+      '---\nname: desktop-skill\ndescription: Desktop integration fixture\n---\nUse this skill for desktop tests.\n'
+    )
+    await page.getByRole('button', { name: 'Skills', exact: true }).click()
+    await page
+      .getByRole('textbox', { name: 'Путь к папке', exact: true })
+      .fill(join(project, 'fixture-skills'))
+    await page.getByRole('button', { name: 'Добавить папку', exact: true }).click()
+    await expect(
+      page.locator('.integration-card').filter({ hasText: 'desktop-skill' })
+    ).toBeVisible()
+    await page
+      .locator('.integration-card')
+      .filter({ hasText: 'desktop-skill' })
+      .getByRole('button', { name: 'Отключить', exact: true })
+      .click()
+    await expect(
+      page
+        .locator('.integration-card')
+        .filter({ hasText: 'desktop-skill' })
+        .getByRole('button', { name: 'Включить', exact: true })
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Настройки Prime', exact: true }).click()
+    await expect(page.getByRole('combobox', { name: 'Язык Prime', exact: true })).toBeVisible()
+    await page.getByRole('combobox', { name: 'Язык Prime', exact: true }).click()
+    await page.getByRole('option', { name: 'Русский', exact: true }).click()
+    await expect(page.getByRole('status')).toContainText('Сохранено')
+    await expect(page.getByRole('textbox', { name: 'Ключ', exact: true })).toHaveCount(0)
+    await page.screenshot({ path: 'test-results/settings-prime.png' })
+    await page.getByRole('button', { name: 'Закрыть', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Ресурсы', exact: true })).toHaveCount(0)
+    await expect(page.locator('.runtime-badge')).toHaveCount(0)
+    await expect(
+      page.locator('.composer-actions').getByRole('button', { name: 'Голосовой ввод', exact: true })
+    ).toBeVisible()
     await page.getByRole('button', { name: 'Выбрать модель', exact: true }).click()
     await expect(page.getByRole('listbox', { name: 'Модели' })).toBeVisible()
     expect(

@@ -1343,3 +1343,115 @@ input[type='number'] {
 .has-editor .welcome > p {
   font-size: 12px;
 }
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.settings-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.setting-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-toggle input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+.integration-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.integration-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.integration-card,
+.integration-editor {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  min-width: 0;
+}
+.integration-card strong,
+.integration-card p,
+.integration-path span {
+  overflow-wrap: anywhere;
+}
+.integration-card p {
+  margin: 7px 0;
+}
+.integration-card .button-row {
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.integration-editor {
+  margin-top: 20px;
+}
+.integration-editor details {
+  margin: 18px 0;
+}
+.integration-editor summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.integration-secret {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 1fr 1fr 32px;
+  gap: 8px;
+  margin: 12px 0;
+}
+.integration-path,
+.integration-confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+.integration-path span {
+  flex: 1;
+}
+.skill-instructions {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 18px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 400px;
+  overflow: auto;
+}
+.settings-modal .settings-layout > nav {
+  overflow-y: auto;
+}
+@media (max-width: 1000px) {
+  .integration-secret {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.integration-tools {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.integration-tools summary {
+  cursor: pointer;
+  color: var(--secondary);
+}

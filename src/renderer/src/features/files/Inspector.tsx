@@ -11,13 +11,9 @@ import {
   ArrowUpRight,
   FileDiff,
   Files,
-  Boxes,
   ListTodo,
-  Play,
-  Shield,
-  RotateCw
+  Play
 } from 'lucide-react'
-import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 
@@ -32,7 +28,6 @@ export function Inspector({
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
-  const [detail, setDetail] = useState<any>(null)
   const [history, setHistory] = useState<any[]>([])
   const [changes, setChanges] = useState<{ path: string; status: string }[]>([])
   const [gitError, setGitError] = useState('')
@@ -102,39 +97,6 @@ export function Inspector({
       setError(error.message)
     }
   }
-  const resources: { label: string; key: string; entries: any[] }[] = [
-    {
-      label: 'MCP',
-      key: 'mcp',
-      entries: Object.entries({
-        ...Object.fromEntries(
-          Object.entries(w.config.mcp || {}).map(([name, item]: [string, any]) => [
-            name,
-            { disabled: item.disabled, state: item.disabled ? 'disabled' : 'configured' }
-          ])
-        ),
-        ...w.resources.mcp
-      }).map(([name, item]: [string, any]) => ({
-        ...item,
-        name
-      }))
-    },
-    {
-      label: 'LSP',
-      key: 'lsp',
-      entries: Object.entries({ ...w.config.lsp, ...w.resources.lsp }).map(
-        ([name, item]: [string, any]) => ({
-          ...item,
-          name
-        })
-      )
-    },
-    {
-      label: 'Skills',
-      key: 'skills',
-      entries: Array.isArray(w.resources.skills) ? w.resources.skills : []
-    }
-  ]
   return (
     <aside className="inspector">
       <div className="inspector-header">
@@ -152,7 +114,6 @@ export function Inspector({
         {[
           { id: 'files', icon: Files, title: t('Файлы') },
           { id: 'changes', icon: FileDiff, title: t('Изменения') },
-          { id: 'resources', icon: Boxes, title: t('Ресурсы') },
           { id: 'tasks', icon: ListTodo, title: t('Задачи') }
         ].map((item) => (
           <button
@@ -245,104 +206,6 @@ export function Inspector({
             )}
           </>
         )}
-        {tab === 'resources' && (
-          <>
-            <button
-              className="quiet full-width"
-              disabled={!w.project}
-              onClick={() => void w.call('restart').then(w.refresh).catch(w.errorHandler)}
-            >
-              <RotateCw size={14} /> {t('Перезапустить системы')}
-            </button>
-            <div className="button-row">
-              <button
-                className="quiet"
-                disabled={!w.project}
-                onClick={() => void w.call('dockerEnable').then(w.refresh).catch(w.errorHandler)}
-              >
-                {t('Docker MCP: вкл.')}
-              </button>
-              <button
-                className="quiet"
-                disabled={!w.project}
-                onClick={() => void w.call('dockerDisable').then(w.refresh).catch(w.errorHandler)}
-              >
-                {t('выкл.')}
-              </button>
-            </div>
-            {resources.map((group) => (
-              <section className="resource-group" key={group.key}>
-                <h4>
-                  {group.label}
-                  <span>{group.entries.length}</span>
-                </h4>
-                {group.entries.map((item: any, index) => (
-                  <button
-                    key={item.id || item.name || index}
-                    className="resource-item"
-                    onClick={() => setDetail({ ...item, kind: group.key })}
-                  >
-                    <span
-                      className={`dot ${item.error ? 'red' : item.state === 'connected' || group.key === 'skills' ? 'green' : 'amber'}`}
-                    />
-                    <span>
-                      <strong>{item.name || item.label || item.id || item.Name}</strong>
-                      <small>
-                        {item.error
-                          ? t('Ошибка')
-                          : (item.state
-                              ? t(
-                                  item.state === 'disabled'
-                                    ? 'Отключено'
-                                    : item.state === 'configured'
-                                      ? 'Настроено'
-                                      : item.state === 'connected'
-                                        ? 'Подключено'
-                                        : item.state
-                                )
-                              : '') ||
-                            item.source ||
-                            item.description?.slice(0, 70) ||
-                            t('Доступно')}
-                      </small>
-                    </span>
-                    <ChevronRight size={13} />
-                  </button>
-                ))}
-                {!group.entries.length && <p className="panel-help">{t('Не настроено')}</p>}
-              </section>
-            ))}
-            <section className="resource-group">
-              <h4>
-                {t('MCP-каналы')}
-                <span>{w.resources.channels?.length || 0}</span>
-              </h4>
-              {(w.resources.channels || []).map((message: any) => (
-                <details key={message.id} className="job">
-                  <summary>
-                    {message.name} · {new Date(message.received_at).toLocaleTimeString()}
-                  </summary>
-                  <pre>{message.content}</pre>
-                  <button
-                    className="quiet"
-                    onClick={() =>
-                      window.dispatchEvent(
-                        new CustomEvent('prime:draft', { detail: message.content })
-                      )
-                    }
-                  >
-                    {t('Подготовить запрос в чате')}
-                  </button>
-                </details>
-              ))}
-              {!w.resources.channels?.length && (
-                <p className="panel-help">
-                  {t('Каналы включаются для проекта в настройках Prime.')}
-                </p>
-              )}
-            </section>
-          </>
-        )}
         {tab === 'tasks' && (
           <>
             <h4>{t('План задачи')}</h4>
@@ -397,7 +260,6 @@ export function Inspector({
           </button>
         </div>
       )}
-      {detail && <ResourceDetails workspace={w} detail={detail} close={() => setDetail(null)} />}
     </aside>
   )
 }
@@ -461,108 +323,5 @@ function Tree({
         </div>
       ))}
     </div>
-  )
-}
-function ResourceDetails({
-  workspace: w,
-  detail,
-  close
-}: {
-  workspace: Workspace
-  detail: any
-  close: () => void
-}) {
-  const { t } = useI18n()
-  const [output, setOutput] = useState('')
-  const [status, setStatus] = useState('')
-  const [uri, setUri] = useState('')
-  async function run(operation: any, args: any) {
-    try {
-      setOutput(JSON.stringify(await w.call(operation, args), null, 2))
-      await w.refresh()
-    } catch (error: any) {
-      setStatus(error.message)
-    }
-  }
-  return (
-    <Modal
-      title={`${detail.kind.toUpperCase()} · ${detail.name || detail.id || detail.Name}`}
-      close={close}
-    >
-      <pre className="config-preview">{JSON.stringify(detail, null, 2)}</pre>
-      <div className="button-row">
-        {detail.kind === 'mcp' && (
-          <>
-            <button onClick={() => void run('mcpRefresh', { name: detail.name })}>
-              {t('Обновить инструменты')}
-            </button>
-            <button
-              onClick={async () => {
-                const auth = w.call('mcpAuth', { name: detail.name })
-                const timer = setInterval(() => {
-                  void w
-                    .call('mcpAuthUrl', { name: detail.name })
-                    .then((value) => {
-                      if (value.auth_url) {
-                        clearInterval(timer)
-                        return window.prime.openExternal(value.auth_url)
-                      }
-                    })
-                    .catch(() => clearInterval(timer))
-                }, 600)
-                try {
-                  await auth
-                  setStatus(t('Авторизация завершена'))
-                } catch (error: any) {
-                  setStatus(error.message)
-                } finally {
-                  clearInterval(timer)
-                }
-              }}
-            >
-              {t('Авторизация')}
-            </button>
-            <label className="form-label">
-              {t('URI ресурса')}
-              <input value={uri} onChange={(event) => setUri(event.target.value)} />
-            </label>
-            <button
-              disabled={!uri}
-              onClick={() => void run('mcpResource', { name: detail.name, uri })}
-            >
-              {t('Прочитать ресурс')}
-            </button>
-            <button onClick={() => void run('mcpPrompts', {})}>{t('Шаблоны запросов')}</button>
-          </>
-        )}
-        {detail.kind === 'lsp' && (
-          <>
-            <button onClick={() => void run('diagnostics', { name: detail.name })}>
-              {t('Диагностика')}
-            </button>
-            <button onClick={() => void run('lspStart', { path: w.project?.path })}>
-              {t('Запустить')}
-            </button>
-            <button onClick={() => void run('lspStop', {})}>{t('Остановить LSP')}</button>
-          </>
-        )}
-        {detail.kind === 'skills' && (
-          <button
-            onClick={() =>
-              void w
-                .call('readSkill', { id: detail.id || detail.name })
-                .then((result) =>
-                  setOutput(result.content ? atob(result.content) : JSON.stringify(result, null, 2))
-                )
-                .catch((error) => setStatus(error.message))
-            }
-          >
-            {t('Открыть инструкции')}
-          </button>
-        )}
-      </div>
-      {status && <p className="error-text">{status}</p>}
-      {output && <pre className="config-preview">{output}</pre>}
-    </Modal>
   )
 }

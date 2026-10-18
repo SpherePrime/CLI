@@ -12,8 +12,7 @@ import {
   Command,
   X,
   Pin,
-  MoreHorizontal,
-  SquareTerminal
+  MoreHorizontal
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
@@ -288,11 +287,6 @@ export function Sidebar({
           <Settings2 size={16} /> {t('Настройки')}
           <span className="footer-shortcut">⌘</span>
         </button>
-        <div className="runtime-badge">
-          <SquareTerminal size={13} />
-          <span>Prime {w.info.runtimeVersion?.version || 'runtime'}</span>
-          <span className={`dot ${w.info.runtime === 'ready' ? 'green' : 'amber'}`} />
-        </div>
       </footer>
       {deleting && (
         <Modal

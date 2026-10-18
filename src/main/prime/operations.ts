@@ -108,8 +108,9 @@ export function redact(value: any): any {
   return Object.fromEntries(
     Object.entries(value)
       .filter(
-        ([key]) =>
-          !/^(api_?key|access_token|refresh_token|id_token|secret|authorization|headers|env|oauth)$/i.test(
+        ([key, item]) =>
+          (key === 'oauth' && typeof item === 'boolean') ||
+          !/^(api_?key|access_token|refresh_token|id_token|secret|authorization|headers|env|oauth|oauth_token|oauth_client_secret)$/i.test(
             key
           )
       )
