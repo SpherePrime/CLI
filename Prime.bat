@@ -9,7 +9,10 @@ rem    run         build (or not) and launch the app. Arguments after "--"
 rem                 go to prime itself:  Prime.bat build -- --continue
 rem    release     tag the commit and publish a GitHub release. A sub-menu
 rem                 picks which platforms ship; the build runs and the
-rem                 release is published in one go.
+rem                 release is published in one go. Stable tags also ship
+rem                 the Prime Desktop setup, built by the Release workflow.
+rem    desktop     run Prime Desktop from desktop\ with a CLI built from here
+rem    setup       build the Prime Desktop setup locally into desktop\release
 rem    help        this text
 rem
 rem  Delayed expansion is off for the whole file, on purpose. The release
@@ -32,6 +35,8 @@ rem    Prime.bat build -- --continue   everything after -- goes to prime
 rem    Prime.bat release               pick platforms, tag, publish
 rem    Prime.bat release --targets linux
 rem    Prime.bat release --dry-run     print the plan, publish nothing
+rem    Prime.bat desktop               run Prime Desktop from sources
+rem    Prime.bat setup                 build PrimeSetup-<version>.exe locally
 rem ============================================================================
 
 cd /d "%~dp0"
@@ -56,9 +61,13 @@ if "%~1"=="" goto parsed
 if /I "%~1"=="run"       ( set "MODE=run"   & shift & goto parse )
 if /I "%~1"=="build"     ( set "MODE=build" & shift & goto parse )
 if /I "%~1"=="release"   ( set "MODE=release" & shift & goto parse )
+if /I "%~1"=="desktop"   ( set "MODE=desktop" & shift & goto parse )
+if /I "%~1"=="setup"     ( set "MODE=setup" & shift & goto parse )
 if /I "%~1"=="1"         ( set "MODE=run"   & shift & goto parse )
 if /I "%~1"=="2"         ( set "MODE=build" & shift & goto parse )
 if /I "%~1"=="3"         ( set "MODE=release" & shift & goto parse )
+if /I "%~1"=="4"         ( set "MODE=desktop" & shift & goto parse )
+if /I "%~1"=="5"         ( set "MODE=setup" & shift & goto parse )
 if /I "%~1"=="--no-sync" ( set "SYNC=0" & shift & goto parse )
 rem build.bat understands these; thread them through.
 if /I "%~1"=="--ratio"   goto opt_ratio
@@ -171,6 +180,8 @@ goto prime_loop
 if not defined MODE goto menu
 if /I "%MODE%"=="run"     goto do_run
 if /I "%MODE%"=="release" goto do_release
+if /I "%MODE%"=="desktop" goto do_desktop
+if /I "%MODE%"=="setup"   goto do_setup
 goto do_build
 
 rem ============================================================================
@@ -183,19 +194,23 @@ echo  ------------------------------------------------------------------
 echo   1  run        launch the build already in dist ^(no compile^)
 echo   2  build      pull from git, build for this machine, then launch
 echo   3  release    pick platforms, tag this commit, publish to GitHub
+echo   4  desktop    run Prime Desktop from sources
+echo   5  setup      build the Prime Desktop setup locally
 echo   h  help       print this text
 echo   q  quit
 echo  ------------------------------------------------------------------
-choice /c 123hq /n /m "  Pick: "
-if errorlevel 5 goto quit
-if errorlevel 4 goto menu_help
+choice /c 12345hq /n /m "  Pick: "
+if errorlevel 7 goto quit
+if errorlevel 6 goto menu_help
+if errorlevel 5 ( set "MODE=setup"   & goto parsed )
+if errorlevel 4 ( set "MODE=desktop" & goto parsed )
 if errorlevel 3 ( set "MODE=release" & goto parsed )
 if errorlevel 2 ( set "MODE=build"   & goto parsed )
 if errorlevel 1 ( set "MODE=run"     & goto parsed )
 goto quit
 
-rem The choice errorlevels count down: with 5 choices, q is 5, h is 4, 3 is
-rem release, 2 is build, 1 is run.
+rem The choice errorlevels count down: with 7 choices, q is 7, h is 6, then
+rem setup, desktop, release, build and run.
 :menu_help
 call :usage
 pause
@@ -281,6 +296,83 @@ set "EXITCODE=%errorlevel%"
 goto finish
 
 rem ============================================================================
+rem  desktop / setup - Prime Desktop from desktop\, bundling a CLI built from
+rem  this checkout. Node.js 24 and Go are required.
+rem ============================================================================
+:do_desktop
+call :header "Prime Desktop"
+call :desktop_prepare
+if not "%EXITCODE%"=="0" goto finish
+echo  Starting Prime Desktop from sources. Close it to come back here.
+echo.
+pushd desktop
+call npm run dev
+set "EXITCODE=%errorlevel%"
+popd
+goto finish
+
+:do_setup
+call :header "Prime Desktop setup"
+call :desktop_prepare
+if not "%EXITCODE%"=="0" goto finish
+pushd desktop
+set "DESKTOP_VERSION="
+for /f "usebackq delims=" %%v in (`node -p "require('./package.json').version"`) do set "DESKTOP_VERSION=%%v"
+call npm run build
+if errorlevel 1 goto setup_failed
+call npx electron-builder --win nsis --x64 --publish never --config.directories.output=release/%DESKTOP_VERSION%
+if errorlevel 1 goto setup_failed
+call npm run dist:installer
+if errorlevel 1 goto setup_failed
+popd
+echo.
+echo  Setup: desktop\release\%DESKTOP_VERSION%\PrimeSetup-%DESKTOP_VERSION%.exe
+set "EXITCODE=0"
+goto finish
+
+:setup_failed
+set "EXITCODE=%errorlevel%"
+if "%EXITCODE%"=="0" set "EXITCODE=1"
+popd
+goto finish
+
+:desktop_prepare
+set "EXITCODE=0"
+if not exist "desktop\package.json" (
+    echo  desktop\package.json not found.
+    set "EXITCODE=1"
+    exit /b 1
+)
+where node >nul 2>&1 || goto desktop_no_node
+where go >nul 2>&1 || goto desktop_no_go
+pushd desktop
+if not exist "node_modules" (
+    echo  Installing Desktop dependencies ...
+    call npm ci
+    if errorlevel 1 goto desktop_prepare_failed
+)
+echo  Building the bundled CLI runtime ...
+node scripts\acquire-runtime.mjs
+if errorlevel 1 goto desktop_prepare_failed
+popd
+exit /b 0
+
+:desktop_prepare_failed
+popd
+set "EXITCODE=1"
+exit /b 1
+
+:desktop_no_node
+echo  Node.js 24 is required: https://nodejs.org
+set "EXITCODE=1"
+exit /b 1
+
+:desktop_no_go
+echo  Go is required to build the bundled CLI. Run "Prime.bat build" once to install it.
+set "EXITCODE=1"
+exit /b 1
+
+rem ============================================================================
 rem  Launch - the single place prime is started, so both modes pass arguments
 rem  the same way.
 rem ============================================================================
@@ -321,13 +413,16 @@ rem  it is quiet enough to pipe.
 rem ---------------------------------------------------------------------------
 :usage
 echo.
-echo Usage: Prime.bat [run^|build^|release] [options] [-- prime-args]
+echo Usage: Prime.bat [run^|build^|release^|desktop^|setup] [options] [-- prime-args]
 echo.
 echo   no mode   show a menu
 echo   run       launch the build already in dist - no compile, no Go needed
 echo   build     pull from git, compile for this machine, then launch
-echo   release   pick platforms in a menu, tag HEAD, publish a GitHub release
-echo   1 2 3     the three choices, as they appear in the menu
+echo   release   pick platforms in a menu, tag HEAD, publish a GitHub release;
+echo             stable tags also ship PrimeSetup-^<version^>.exe for Desktop
+echo   desktop   run Prime Desktop from desktop\ ^(Node.js 24 and Go^)
+echo   setup     build PrimeSetup-^<version^>.exe into desktop\release
+echo   1-5       the choices, as they appear in the menu
 echo   help      print this text
 echo.
 echo Options:

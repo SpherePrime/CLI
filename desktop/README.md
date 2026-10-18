@@ -6,7 +6,7 @@ The bundled CLI starts with the desktop app and runs privately through a Windows
 
 ## Run from source
 
-Use Node.js 24 and Go matching the sibling CLI repository's `go.mod`.
+Use Node.js 24 and Go matching the repository root `go.mod`. From the repository root, `Prime.bat desktop` runs the app and `Prime.bat setup` builds the setup.
 
 ```powershell
 npm ci
@@ -26,7 +26,7 @@ npm run runtime:verify
 npm run dist:win
 ```
 
-The installer and unpacked application are written to `release/` (the current delivery is under `release/0.4.51/`). Source builds require the CLI repository beside this repository. `runtime/manifest.json` records its exact revision and checksum.
+The installer and unpacked application are written to `release/<version>/`. The bundled CLI is built from the repository root; `runtime/manifest.json` records its exact revision and checksum. Stable GitHub releases include `PrimeSetup-<version>.exe` and Desktop update files.
 
 ## File editing
 
@@ -49,4 +49,4 @@ Updates are discovered in stable SpherePrime/CLI GitHub Releases after startup. 
 
 Build the main app and NSIS update payload first, then run `npm run dist:installer`. The payload must be in `release/<version>/`. The custom installer appears in the same directory.
 
-Desktop release source is mirrored into `SpherePrime/CLI/desktop` with `node scripts/sync-cli-desktop.mjs`. Commit that source with the CLI release changes. The CLI release workflow builds Windows Desktop after the CLI release, assigns the stable tag version, and attaches both installers, the update blockmap and `latest.yml`. No tag is created by the sync script.
+The CLI release workflow builds Windows Desktop after the CLI release, assigns the stable tag version, and attaches both installers, the update blockmap and `latest.yml`.

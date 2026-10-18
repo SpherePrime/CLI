@@ -9,14 +9,17 @@ const parent = resolve(root, '..')
 const cli =
   process.env.PRIME_CLI_SOURCE ||
   (existsSync(join(parent, 'go.mod')) ? parent : join(parent, 'CLI'))
-const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: cli, encoding: 'utf8' }).trim()
-if (execFileSync('git', ['status', '--porcelain'], { cwd: cli, encoding: 'utf8' }).trim())
-  throw new Error('Commit CLI changes before building a pinned runtime')
-await mkdir(new URL('../runtime/', import.meta.url), { recursive: true })
-const binary = fileURLToPath(new URL('../runtime/prime.exe', import.meta.url))
+const headCommit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: cli, encoding: 'utf8' }).trim()
 const releaseVersion = process.env.PRIME_RELEASE_VERSION
 if (releaseVersion && !/^\d+\.\d+\.\d+$/.test(releaseVersion))
   throw new Error('Invalid release version')
+const dirty = Boolean(
+  execFileSync('git', ['status', '--porcelain'], { cwd: cli, encoding: 'utf8' }).trim()
+)
+if (dirty && releaseVersion) throw new Error('Commit CLI changes before building a pinned runtime')
+const commit = dirty ? `${headCommit}-dirty` : headCommit
+await mkdir(new URL('../runtime/', import.meta.url), { recursive: true })
+const binary = fileURLToPath(new URL('../runtime/prime.exe', import.meta.url))
 execFileSync(
   'go',
   [

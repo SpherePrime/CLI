@@ -1255,8 +1255,14 @@ rem ---------------------------------------------------------------------------
 set "VERSION_BARE=%VERSION%"
 set "VERSION_BARE=%VERSION_BARE:v=%"
 rem Upload-local assets are on the page the moment :publish returns, so no
-rem polling there. The CI path gives the workflow up to 40 x 30s = 20 minutes.
-if "!UPLOAD_LOCAL!"=="0" set "POLL=40" else set "POLL=0"
+rem polling there. The CI path gives the workflow up to 60 x 30s = 30 minutes:
+rem the Desktop job starts only after the CLI release job has finished.
+set "POLL=0"
+if "!UPLOAD_LOCAL!"=="0" set "POLL=60"
+rem Stable tags built by the Release workflow also carry the Desktop setup
+rem and its auto-update files. Local uploads and pre-releases do not.
+set "DESKTOP_ASSETS="
+if "!UPLOAD_LOCAL!"=="0" if "!VERSION_BARE!"=="!VERSION_BARE:-=!" set "DESKTOP_ASSETS=PrimeSetup-!VERSION_BARE!.exe PrimeDesktop-Update-!VERSION_BARE!.exe latest.yml"
 echo.
 echo  Verifying the assets on %TAG% ...
 :verify_wait
@@ -1270,6 +1276,11 @@ for %%T in (!TARGETS!) do (
         findstr /i /c:"!WANT!" "%ASSET_LIST%" >nul 2>&1 && set "FOUND=1"
         if not "!FOUND!"=="1" set /a MISSING_COUNT+=1
     )
+)
+for %%D in (!DESKTOP_ASSETS!) do (
+    set "FOUND=0"
+    findstr /i /x /c:"%%D" "%ASSET_LIST%" >nul 2>&1 && set "FOUND=1"
+    if not "!FOUND!"=="1" set /a MISSING_COUNT+=1
 )
 if "!MISSING_COUNT!"=="0" goto verify_report
 if "!POLL!"=="0" goto verify_report
@@ -1303,6 +1314,16 @@ for %%T in (!TARGETS!) do (
             echo   [MISSING] !WANT!
             set /a MISSING_COUNT+=1
         )
+    )
+)
+for %%D in (!DESKTOP_ASSETS!) do (
+    set "FOUND=0"
+    findstr /i /x /c:"%%D" "%ASSET_LIST%" >nul 2>&1 && set "FOUND=1"
+    if "!FOUND!"=="1" (
+        echo   [ok]      %%D
+    ) else (
+        echo   [MISSING] %%D
+        set /a MISSING_COUNT+=1
     )
 )
 del /q "%ASSET_LIST%" >nul 2>&1
