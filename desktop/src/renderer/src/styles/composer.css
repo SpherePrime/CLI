@@ -199,12 +199,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  gap: 5px;
   height: 28px;
-  padding: 0;
+  padding: 0 8px 0 6px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 999px;
   background: transparent;
+}
+.context-meter-percent {
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+.context-meter.medium .context-meter-percent {
+  color: var(--amber);
+}
+.context-meter.high .context-meter-percent {
+  color: var(--red);
 }
 .context-meter:hover:not(:disabled),
 .context-meter[aria-expanded='true'] {

@@ -52,7 +52,10 @@ export function ContextPopover({
     void w
       .call('context', { sessionId })
       .then((result) => {
-        if (current) setData(result)
+        if (current)
+          setData(
+            result && Array.isArray(result.categories) ? result : { ...result, categories: [] }
+          )
       })
       .catch((reason) => {
         if (current) setError(reason?.message || String(reason))
