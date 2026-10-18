@@ -60,3 +60,18 @@ type BackgroundJob struct {
 	Stderr      string `json:"stderr"`
 	Error       string `json:"error,omitempty"`
 }
+
+type ContextCategory struct {
+	Key    string `json:"key"`
+	Tokens int64  `json:"tokens"`
+	Items  int    `json:"items"`
+}
+
+type ContextBreakdown struct {
+	Categories           []ContextCategory `json:"categories"`
+	EstimatedTotal       int64             `json:"estimated_total"`
+	ReportedTotal        int64             `json:"reported_total"`
+	ContextWindow        int64             `json:"context_window"`
+	AutoSummarizePercent int               `json:"auto_summarize_percent"`
+	EstimatedUsage       bool              `json:"estimated_usage"`
+}
