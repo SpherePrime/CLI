@@ -26,6 +26,7 @@ import { SettingsStore } from './settings/store'
 import { listFiles, readProjectFile, fileDiff } from './files/browser'
 import { resolveProjectPath } from './files/paths'
 import { gitChanges } from './files/git'
+import { createProjectEntry, editorUrl, removableProjectEntry } from './files/entries'
 import { validateExternalUrl } from './ipc/security'
 import type { Operation } from '../shared/contracts'
 
@@ -348,6 +349,30 @@ function registerIpc(): void {
   handle('openExternal', (url: string) =>
     shell.openExternal(validateExternalUrl(z.string().max(8192).parse(url)))
   )
+  handle('createEntry', (id: string, path: string, kind: string) =>
+    createProjectEntry(
+      requirePrime().root(projectId.parse(id)),
+      z.string().min(1).max(4096).parse(path),
+      z.enum(['file', 'folder']).parse(kind)
+    )
+  )
+  handle('trashEntry', async (id: string, path: string) => {
+    const absolute = await removableProjectEntry(
+      requirePrime().root(projectId.parse(id)),
+      z.string().min(1).max(4096).parse(path)
+    )
+    await shell.trashItem(absolute)
+  })
+  handle('openWith', async (id: string, path: string, target: string) => {
+    const root = requirePrime().root(projectId.parse(id))
+    const relative = z.string().max(4096).parse(path)
+    if (z.enum(['default', 'vscode']).parse(target) === 'vscode') {
+      await shell.openExternal(await editorUrl(root, relative))
+      return
+    }
+    const failure = await shell.openPath(await resolveProjectPath(root, relative))
+    if (failure) throw new Error(failure)
+  })
   handle('reveal', async (id: string, path = '') => {
     const resolved = await resolveProjectPath(requirePrime().root(projectId.parse(id)), path)
     if (path) shell.showItemInFolder(resolved)

@@ -305,6 +305,38 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await expect.poll(() => workers.some((url) => url.startsWith('blob:'))).toBe(true)
     await page.screenshot({ path: 'test-results/file-editor.png' })
     await page.getByRole('button', { name: 'Закрыть файл editor-example.ts', exact: true }).click()
+    await page.locator('.file-tree-area').click({ button: 'right', position: { x: 40, y: 140 } })
+    await page.getByRole('menuitem', { name: 'Новый файл', exact: true }).click()
+    const createDialog = page.getByRole('dialog', { name: 'Новый файл' })
+    await createDialog.getByRole('textbox').fill('created-from-menu.txt')
+    await createDialog.getByRole('button', { name: 'Создать', exact: true }).click()
+    await expect(createDialog).toHaveCount(0)
+    const createdEntry = page
+      .locator('.file-tree')
+      .getByRole('button', { name: 'created-from-menu.txt', exact: true })
+    await expect(createdEntry).toBeVisible()
+    await page
+      .getByRole('button', { name: 'Закрыть файл created-from-menu.txt', exact: true })
+      .click()
+    await createdEntry.click({ button: 'right' })
+    await expect(
+      page.getByRole('menuitem', { name: 'Открыть в VS Code', exact: true })
+    ).toBeVisible()
+    await page.screenshot({ path: 'test-results/file-menu.png' })
+    await page.getByRole('menuitem', { name: 'Удалить', exact: true }).click()
+    await page
+      .getByRole('dialog', { name: 'Удалить файл?' })
+      .getByRole('button', { name: 'Удалить', exact: true })
+      .click()
+    await expect(createdEntry).toHaveCount(0)
+    await expect
+      .poll(() =>
+        readFile(join(project, 'created-from-menu.txt')).then(
+          () => true,
+          () => false
+        )
+      )
+      .toBe(false)
     await page.getByRole('button', { name: 'Действия: Проверка сессии', exact: true }).click()
     await page.getByRole('button', { name: 'Удалить чат', exact: true }).click()
     const deletion = page.getByRole('dialog', { name: 'Удалить чат и его историю?' })

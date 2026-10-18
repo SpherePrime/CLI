@@ -127,6 +127,9 @@ export interface DesktopApi {
   preferences(patch?: Partial<Preferences>): Promise<Preferences>
   openExternal(url: string): Promise<void>
   reveal(workspaceId: string, path?: string): Promise<void>
+  createEntry(workspaceId: string, path: string, kind: 'file' | 'folder'): Promise<{ path: string }>
+  trashEntry(workspaceId: string, path: string): Promise<void>
+  openWith(workspaceId: string, path: string, target: 'default' | 'vscode'): Promise<void>
   update(action: 'check' | 'install'): Promise<Json>
   onEvent(listener: (event: DesktopEvent) => void): () => void
 }
