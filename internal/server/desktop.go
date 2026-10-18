@@ -69,11 +69,20 @@ func (c *controllerV1) handleGetModelCapabilities(w http.ResponseWriter, r *http
 			continue
 		}
 		for _, model := range provider.Models {
-			modes := []string{config.ReasoningModeOff}
-			if model.CanReason {
-				modes = append(modes, config.AllReasoningModes()...)
-			}
-			models = append(models, proto.ModelCapabilities{ProviderID: providerID, ModelID: model.ID, Name: model.Name, CanReason: model.CanReason, ReasoningModes: modes, ReasoningLevels: model.ReasoningLevels, SupportsAttachments: model.SupportsImages, ContextWindow: model.ContextWindow, DefaultMaxTokens: model.DefaultMaxTokens})
+			modes := append([]string{config.ReasoningModeOff}, config.AllReasoningModes()...)
+			models = append(models, proto.ModelCapabilities{
+				ProviderID:           providerID,
+				ProviderName:         provider.Name,
+				ModelID:              model.ID,
+				Name:                 model.Name,
+				CanReason:            model.CanReason,
+				ReasoningModes:       modes,
+				ReasoningLevels:      model.ReasoningLevels,
+				DefaultReasoningMode: config.SelectedModel{}.ResolveReasoningMode(model),
+				SupportsAttachments:  model.SupportsImages,
+				ContextWindow:        model.ContextWindow,
+				DefaultMaxTokens:     model.DefaultMaxTokens,
+			})
 		}
 	}
 	sort.Slice(models, func(i, j int) bool {
