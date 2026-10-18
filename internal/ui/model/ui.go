@@ -5771,7 +5771,11 @@ func (m *UI) toggleThinking() tea.Cmd {
 		}
 
 		currentModel := cfg.Models[agentCfg.Model]
-		if currentModel.IsReasoningEnabled() {
+		reasoningEnabled := currentModel.IsReasoningEnabled()
+		if catalogModel := cfg.GetModelByType(agentCfg.Model); catalogModel != nil {
+			reasoningEnabled = currentModel.ResolveReasoningMode(*catalogModel) != config.ReasoningModeOff
+		}
+		if reasoningEnabled {
 			// Reasoning is on, turn it off
 			currentModel.ReasoningMode = config.ReasoningModeOff
 			currentModel.ReasoningEffort = ""
