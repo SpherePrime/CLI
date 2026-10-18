@@ -4,6 +4,7 @@ import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { IntegrationTools } from './IntegrationTools'
+import { SkillInstructions } from './SkillInstructions'
 
 const segment = (value: string) => value.replace(/[\\.:*?#[\]]/g, '\\$&')
 
@@ -23,7 +24,7 @@ export function IntegrationSettings({
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState('')
   const [removing, setRemoving] = useState('')
-  const [skillContent, setSkillContent] = useState('')
+  const [skillContent, setSkillContent] = useState<{ name: string; content: string } | null>(null)
   const [path, setPath] = useState('')
   const authTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   useEffect(() => () => clearInterval(authTimer.current), [])
@@ -47,7 +48,7 @@ export function IntegrationSettings({
         }))
   const paths: string[] = w.config.options?.skills_paths || []
   useEffect(() => {
-    setSkillContent('')
+    setSkillContent(null)
   }, [kind])
   async function run(action: () => Promise<unknown>) {
     setSaving(true)
@@ -168,6 +169,13 @@ export function IntegrationSettings({
   const disabledSkills: string[] = w.config.options?.disabled_skills || []
   return (
     <div className="integration-settings">
+      {skillContent && (
+        <SkillInstructions
+          name={skillContent.name}
+          content={skillContent.content}
+          close={() => setSkillContent(null)}
+        />
+      )}
       <div className="integration-heading">
         <div>
           <h3>{kind === 'skills' ? 'Skills' : kind.toUpperCase()}</h3>
@@ -482,15 +490,16 @@ export function IntegrationSettings({
                       onClick={() =>
                         void run(async () => {
                           const result = await w.call('readSkill', { id: item.id || id })
-                          setSkillContent(
-                            result.content
+                          setSkillContent({
+                            name: item.name || id,
+                            content: result.content
                               ? new TextDecoder().decode(
                                   Uint8Array.from(atob(result.content), (char) =>
                                     char.charCodeAt(0)
                                   )
                                 )
                               : ''
-                          )
+                          })
                         })
                       }
                     >
@@ -581,7 +590,6 @@ export function IntegrationSettings({
               {t('Добавить папку')}
             </button>
           </form>
-          {skillContent && <pre className="skill-instructions">{skillContent}</pre>}
         </section>
       )}
       {kind === 'mcp' && !editing && (
