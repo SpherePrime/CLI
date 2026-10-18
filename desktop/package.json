@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "dist:win": "npm run build && electron-builder --win nsis --x64",
     "runtime:verify": "node scripts/verify-runtime.mjs",
-    "dist:installer": "node scripts/package-installer.mjs"
+    "dist:installer": "node scripts/package-installer.mjs",
+    "preview:shot": "node tests/fixtures/preview-shot.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.2.8",

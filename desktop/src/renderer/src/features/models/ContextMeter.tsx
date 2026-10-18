@@ -44,6 +44,7 @@ export const ContextMeter = forwardRef<
           strokeDashoffset={circumference * (1 - ratio)}
         />
       </svg>
+      <span className="context-meter-percent">{percent}%</span>
     </button>
   )
 })

@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Terminal, X } from 'lucide-react'
+import { Check, ChevronDown, LoaderCircle, Terminal, X } from 'lucide-react'
 import { toolTitle } from './toolTitle'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
@@ -43,17 +43,20 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
             </>
           )}
         </span>
-        <small>{failed ? t('Ошибка') : completed ? t('Готово') : t('Выполняется')}</small>
-        {completed ? (
-          failed ? (
-            <X size={14} />
+        {failed && <small>{t('Ошибка')}</small>}
+        <span
+          className={`tool-status ${failed ? 'failed' : completed ? 'done' : 'running'}`}
+          title={failed ? t('Ошибка') : completed ? t('Готово') : t('Выполняется')}
+        >
+          {failed ? (
+            <X size={13} strokeWidth={2.5} />
+          ) : completed ? (
+            <Check size={13} strokeWidth={2.5} />
           ) : (
-            <Check size={14} />
-          )
-        ) : (
-          <span className="dot pulse" />
-        )}
-        <ChevronDown size={13} />
+            <LoaderCircle size={13} className="spin" />
+          )}
+        </span>
+        <ChevronDown size={13} className="tool-chevron" />
       </summary>
       {description && <p className="tool-description">{description}</p>}
       {!standalone && (
