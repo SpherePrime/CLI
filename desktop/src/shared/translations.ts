@@ -255,6 +255,7 @@ export const english: Record<string, string> = {
   'РАБОЧИЕ ПРОСТРАНСТВА': 'WORKSPACES',
   'Добавить проект': 'Add project',
   'Закрыть проект': 'Close project',
+  'Закрыть личные чаты': 'Close personal chats',
   'Закрыть проект {value0}': 'Close project {value0}',
   'Поиск чатов': 'Search chats',
   'Найти чат…': 'Find a chat…',

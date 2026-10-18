@@ -251,7 +251,8 @@ function registerIpc(): void {
   handle('closeProject', async (id: string) => {
     if (requirePrime().isBusy()) throw new Error(t('Сначала завершите активные задачи'))
     await requirePrime().close(projectId.parse(id))
-    await settings.update({ activeProject: '' })
+    const remaining = [...requirePrime().projects.values()]
+    await settings.update({ activeProject: remaining[0]?.path || '' })
   })
   handle('call', async (id: string, operation: Operation, args: any = {}) => {
     projectId.parse(id)
