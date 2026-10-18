@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { test, expect, _electron as electron } from '@playwright/test'
+import { realpathSync } from 'node:fs'
 import { mkdtemp, writeFile, mkdir, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -9,7 +10,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
   test.setTimeout(120000)
   const editedSource =
     "export interface AppSettings {\n  name: string\n  autoSave: boolean\n}\n\nexport function createSettings(\n  name: string\n): AppSettings {\n  return { name, autoSave: false }\n}\n\nexport const settings = createSettings(\n  'Prime Desktop'\n)\n"
-  const project = await mkdtemp(join(tmpdir(), 'prime-desktop-проект-'))
+  const project = realpathSync.native(await mkdtemp(join(tmpdir(), 'prime-desktop-проект-')))
   const provider = await startProvider()
   await mkdir(join(project, 'config'))
   await writeFile(
