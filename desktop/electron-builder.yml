@@ -5,12 +5,14 @@ publish:
   owner: SpherePrime
   repo: CLI
   releaseType: release
+npmRebuild: false
 directories:
   output: release
 files:
   - out/**/*
   - '!node_modules/onnxruntime-node/bin/napi-v6/{darwin,linux}/**'
   - '!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**'
+  - '!node_modules/cpu-features/**'
 asarUnpack:
   - node_modules/node-pty/**
   - node_modules/koffi/**
