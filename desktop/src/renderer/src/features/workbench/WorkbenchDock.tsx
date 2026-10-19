@@ -1,5 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Clock3, Maximize2, Minimize2, TerminalSquare, X } from 'lucide-react'
+import { Clock3, Maximize2, Minimize2, TerminalSquare, Users, X } from 'lucide-react'
+import { TeamPanel } from '../teams/TeamPanel'
+import type { TeamRequest } from '../../../../shared/teams'
 import { TerminalPanel } from '../terminal/TerminalPanel'
 import type { Workspace } from '../../app/useWorkspace'
 import type { TerminalRequest } from '../../../../shared/terminal'
@@ -9,7 +11,7 @@ import { AutomationPanel } from '../automations/AutomationPanel'
 import type { AutomationRequest } from '../../../../shared/automations'
 import { openWorkbenchRun } from './openRun'
 
-export type WorkbenchView = 'terminal' | 'automations'
+export type WorkbenchView = 'terminal' | 'automations' | 'teams'
 
 export function WorkbenchDock({
   workspace: w,
@@ -69,6 +71,10 @@ export function WorkbenchDock({
   )
   const automation = useCallback(
     (request: AutomationRequest) => window.prime.automation(workspaceId, request),
+    [workspaceId]
+  )
+  const team = useCallback(
+    (request: TeamRequest) => window.prime.team(workspaceId, request),
     [workspaceId]
   )
   return (
@@ -132,6 +138,17 @@ export function WorkbenchDock({
             <Clock3 size={14} />
             {t('Автоматизации')}
           </button>
+          <button
+            role="tab"
+            aria-selected={view === 'teams'}
+            onClick={() => {
+              setView('teams')
+              setExpanded(true)
+            }}
+          >
+            <Users size={14} />
+            {t('Команды')}
+          </button>
         </nav>
         <div>
           <div className="workbench-terminal-actions" ref={setHeaderHost} />
@@ -171,6 +188,17 @@ export function WorkbenchDock({
             subscribe={window.prime.onEvent}
             onError={w.errorHandler}
             onOpenRun={(run) => {
+              void openWorkbenchRun(w, run).then(close).catch(w.errorHandler)
+            }}
+          />
+        )}
+        {w.project && view === 'teams' && (
+          <TeamPanel
+            root={w.project.path}
+            api={team}
+            subscribe={window.prime.onEvent}
+            onError={w.errorHandler}
+            onOpenChat={(run) => {
               void openWorkbenchRun(w, run).then(close).catch(w.errorHandler)
             }}
           />

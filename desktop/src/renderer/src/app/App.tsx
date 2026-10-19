@@ -23,7 +23,8 @@ import {
   Puzzle,
   TerminalSquare,
   Clock3,
-  Server
+  Server,
+  Users
 } from 'lucide-react'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
@@ -208,6 +209,17 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       disabled: !w.project,
       run: () => {
         setWorkbenchView('terminal')
+        setWorkbench(true)
+      }
+    },
+    {
+      id: 'teams',
+      label: t('Команды агентов'),
+      icon: Users,
+      disabled: !w.project,
+      run: () => {
+        setWorkbenchView('teams')
+        setWorkbenchExpanded(true)
         setWorkbench(true)
       }
     },
