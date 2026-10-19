@@ -5,6 +5,7 @@ import type {
   AutomationTrigger
 } from '../../../../shared/automations'
 import { useI18n } from '../../i18n'
+import { Select } from '../../components/Select'
 
 type Props = {
   rule?: AutomationRule
@@ -77,16 +78,18 @@ export function AutomationEditor({ rule, busy, onSave, onCancel }: Props) {
       <div className="automation-form-grid">
         <label>
           {t('Триггер')}
-          <select
+          <Select
+            label={t('Триггер')}
             value={type}
-            onChange={(event) => setType(event.target.value as AutomationTrigger['type'])}
-          >
-            <option value="interval">{t('Интервал')}</option>
-            <option value="daily">{t('Ежедневно')}</option>
-            <option value="weekly">{t('Еженедельно')}</option>
-            <option value="filesChanged">{t('Изменение файлов')}</option>
-            <option value="runFailed">{t('Ошибка запуска')}</option>
-          </select>
+            onChange={(value) => setType(value as AutomationTrigger['type'])}
+            options={[
+              { value: 'interval', label: t('Интервал') },
+              { value: 'daily', label: t('Ежедневно') },
+              { value: 'weekly', label: t('Еженедельно') },
+              { value: 'filesChanged', label: t('Изменение файлов') },
+              { value: 'runFailed', label: t('Ошибка запуска') }
+            ]}
+          />
         </label>
         {(type === 'interval' || type === 'filesChanged' || type === 'runFailed') && (
           <label>

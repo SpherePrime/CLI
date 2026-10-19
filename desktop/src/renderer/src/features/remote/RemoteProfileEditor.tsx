@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FolderKey, X } from 'lucide-react'
 import type { RemoteProfileInput } from '../../../../shared/remote'
 import { useI18n } from '../../i18n'
+import { Select } from '../../components/Select'
 type Props = {
   initial?: RemoteProfileInput
   busy: boolean
@@ -73,14 +74,16 @@ export function RemoteProfileEditor({ initial, busy, onSave, onClose, chooseKey 
       {field('root', 'Папка проекта', '/home/developer/project')}
       <label>
         {t('Аутентификация')}
-        <select
+        <Select
+          label={t('Аутентификация')}
           value={value.auth}
-          onChange={(event) => update({ auth: event.target.value as RemoteProfileInput['auth'] })}
-        >
-          <option value="agent">{t('SSH-агент')}</option>
-          <option value="key">{t('Файл ключа')}</option>
-          <option value="password">{t('Пароль')}</option>
-        </select>
+          onChange={(auth) => update({ auth: auth as RemoteProfileInput['auth'] })}
+          options={[
+            { value: 'agent', label: t('SSH-агент') },
+            { value: 'key', label: t('Файл ключа') },
+            { value: 'password', label: t('Пароль') }
+          ]}
+        />
       </label>
       {value.auth === 'key' && (
         <div className="remote-key-field">
@@ -101,15 +104,15 @@ export function RemoteProfileEditor({ initial, busy, onSave, onClose, chooseKey 
       )}
       <label>
         {t('Prime на сервере')}
-        <select
+        <Select
+          label={t('Prime на сервере')}
           value={value.runtime}
-          onChange={(event) =>
-            update({ runtime: event.target.value as RemoteProfileInput['runtime'] })
-          }
-        >
-          <option value="bundled">{t('Установить автоматически')}</option>
-          <option value="existing">{t('Использовать установленный')}</option>
-        </select>
+          onChange={(runtime) => update({ runtime: runtime as RemoteProfileInput['runtime'] })}
+          options={[
+            { value: 'bundled', label: t('Установить автоматически') },
+            { value: 'existing', label: t('Использовать установленный') }
+          ]}
+        />
       </label>
       {value.runtime === 'existing' && field('runtimePath', 'Путь к Prime', '/usr/local/bin/prime')}
       <p className="remote-hint">
