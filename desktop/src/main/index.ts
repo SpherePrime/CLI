@@ -1,7 +1,6 @@
 import { UpdateController } from './updates/controller'
 import { discoverDesktopRelease } from './updates/github'
 import type { UpdateStatus } from '../shared/updates'
-import { saveProjectFile } from './files/writer'
 import { translate } from '../shared/localization'
 import {
   app,
@@ -23,10 +22,13 @@ import { z } from 'zod'
 import { RuntimeSupervisor } from './runtime/supervisor'
 import { PrimeService } from './prime/service'
 import { SettingsStore } from './settings/store'
-import { listFiles, readProjectFile, fileDiff } from './files/browser'
 import { resolveProjectPath } from './files/paths'
-import { gitChanges } from './files/git'
-import { createProjectEntry, editorUrl, removableProjectEntry } from './files/entries'
+import { projectFiles } from './workbench/projectFiles'
+import { WorkspaceRouter } from './workbench/workspaceRouter'
+import { RemoteWorkspaces } from './remote/workspaces'
+import { remoteFingerprint } from './remote/fingerprint'
+import { remoteRequest } from './remote/ipc'
+import { isRemoteWorkspace } from '../shared/remoteWorkspace'
 import { BrowserPanel } from './browser/panel'
 import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
 import { validateExternalUrl } from './ipc/security'
@@ -48,6 +50,7 @@ let automations: AutomationManager | undefined
 const projectChanges = new ProjectChanges()
 let runtime: RuntimeSupervisor
 let prime: PrimeService | undefined
+let remotes: RemoteWorkspaces | undefined
 let settings: SettingsStore
 let runtimeError = ''
 let updateStatus: UpdateStatus = { state: 'idle' }
@@ -68,7 +71,7 @@ const emit = (event: any) => {
     !event.payload.data.cancelled &&
     !/context canceled/i.test(event.payload.data.error)
   ) {
-    const root = prime?.projects.get(event.workspaceId)?.path
+    const root = router()?.projects.get(event.workspaceId)?.path
     if (root)
       void automations
         ?.event({ root, type: 'runFailed', sourceRunId: event.payload.data.run_id })
@@ -100,6 +103,7 @@ const terminals = new TerminalManager({ emit })
 const hasBackgroundWork = () =>
   Boolean(
     prime?.isBusy() ||
+    remotes?.isBusy() ||
     terminals.list().some((item) => item.status === 'running') ||
     automations?.counts().activeCount
   )
@@ -149,9 +153,29 @@ async function recoverBackend(): Promise<void> {
     recovering = false
   }
 }
-function requirePrime(): PrimeService {
-  if (!prime) throw new Error(runtimeError || t('Prime ещё запускается'))
-  return prime
+function router(): WorkspaceRouter | undefined {
+  return prime && new WorkspaceRouter(prime, () => remotes?.backends() ?? [])
+}
+function requirePrime(): WorkspaceRouter {
+  const current = router()
+  if (!current) throw new Error(runtimeError || t('Prime ещё запускается'))
+  return current
+}
+function workspacePath(id: string): string {
+  const project = requirePrime().projects.get(projectId.parse(id))
+  if (!project) throw new Error(t('Проект не открыт'))
+  return project.path
+}
+function files(id: string) {
+  const parsed = projectId.parse(id)
+  return projectFiles(
+    { root: requirePrime().root(parsed), remote: remotes?.byWorkspace(parsed)?.connection },
+    t
+  )
+}
+function localOnly(id: string) {
+  if (remotes?.byWorkspace(projectId.parse(id)))
+    throw new Error(t('Действие недоступно для удалённого проекта'))
 }
 function handle(name: string, handler: (...args: any[]) => any): void {
   ipcMain.handle(`prime:${name}`, async (event, ...args) => {
@@ -227,19 +251,44 @@ function confirmEditorDiscard(): boolean {
 }
 function registerIpc(): void {
   handle('automation', (id: string, request: unknown) => {
-    const root = requirePrime().root(projectId.parse(id))
+    const root = workspacePath(id)
     if (!automations) throw new Error(t('Планировщик ещё загружается'))
     return automationOperation(automations, root, request)
   })
   handle('terminal', (id: string, request: unknown) =>
-    terminalOperation(terminals, projectId.parse(id), requirePrime().root(id), request)
+    terminalOperation(
+      terminals,
+      projectId.parse(id),
+      requirePrime().root(id),
+      request,
+      remotes?.byWorkspace(id)?.connection
+    )
   )
+  handle('remote', (request: unknown) => {
+    if (!remotes) throw new Error(t('Prime ещё запускается'))
+    return remoteRequest(remotes.manager, request)
+  })
+  handle('remoteKey', async () => {
+    const result = await dialog.showOpenDialog(window!, {
+      properties: ['openFile', 'showHiddenFiles'],
+      title: t('Приватный ключ SSH'),
+      defaultPath: join(app.getPath('home'), '.ssh')
+    })
+    return result.canceled ? undefined : result.filePaths[0]
+  })
+  handle('openRemote', async (profileId: string) => {
+    if (!remotes) throw new Error(t('Prime ещё запускается'))
+    const remote = await remotes.project(z.string().uuid().parse(profileId))
+    const project = requirePrime().projects.get(remote.id)
+    if (!project) throw new Error(t('Сервер отключён.'))
+    await settings.update({ activeProject: project.path })
+    return project
+  })
   handle('editorDirty', (dirty: boolean) => {
     editorDirty = z.boolean().parse(dirty)
   })
   handle('saveFile', (id: string, path: string, content: string, revision: string) =>
-    saveProjectFile(
-      requirePrime().root(projectId.parse(id)),
+    files(id).save(
       z.string().max(4096).parse(path),
       z
         .string()
@@ -251,7 +300,7 @@ function registerIpc(): void {
         .parse(revision)
     )
   )
-  handle('changes', (id: string) => gitChanges(requirePrime().root(projectId.parse(id))))
+  handle('changes', (id: string) => files(id).changes())
   handle('info', () => ({
     version: app.getVersion(),
     runtime: runtime?.status || 'starting',
@@ -302,7 +351,9 @@ function registerIpc(): void {
     if (terminals.list(id).some((item) => item.status === 'running'))
       throw new Error(t('Сначала закройте терминалы проекта'))
     await Promise.all(terminals.list(id).map((item) => terminals.close(item.id, id)))
-    await requirePrime().close(projectId.parse(id))
+    const remote = remotes?.byWorkspace(projectId.parse(id))
+    if (remote) await remotes!.manager.disconnect(remote.profile.id)
+    else await requirePrime().close(id)
     const remaining = [...requirePrime().projects.values()]
     await settings.update({ activeProject: remaining[0]?.path || '' })
   })
@@ -331,25 +382,23 @@ function registerIpc(): void {
     const result = await requirePrime().call(id, operation, args)
     if (operation === 'currentSession')
       await settings.update({
-        activeProject: requirePrime().root(id),
+        activeProject: workspacePath(id),
         activeSessions: {
           ...settings.get().activeSessions,
-          [requirePrime().root(id)]: args.sessionId
+          [workspacePath(id)]: args.sessionId
         }
       })
     return result
   })
-  handle('files', (id: string, path = '') =>
-    listFiles(requirePrime().root(projectId.parse(id)), z.string().max(4096).parse(path))
-  )
+  handle('files', (id: string, path = '') => files(id).list(z.string().max(4096).parse(path)))
   handle('readFile', (id: string, path: string) =>
-    readProjectFile(requirePrime().root(projectId.parse(id)), z.string().max(4096).parse(path))
+    files(id).read(z.string().max(4096).parse(path))
   )
   handle('diff', async (id: string, sessionId: string, path: string, source: 'session' | 'git') => {
     const history =
       source === 'session' ? await requirePrime().call(id, 'history', { sessionId }) : []
     z.enum(['session', 'git']).parse(source)
-    return fileDiff(requirePrime().root(projectId.parse(id)), path, source, history || [])
+    return files(id).diff(z.string().max(4096).parse(path), source, history || [])
   })
   handle('attachments', async () => {
     const result = await dialog.showOpenDialog(window!, {
@@ -430,26 +479,24 @@ function registerIpc(): void {
     shell.openExternal(validateExternalUrl(z.string().max(8192).parse(url)))
   )
   handle('createEntry', (id: string, path: string, kind: string) =>
-    createProjectEntry(
-      requirePrime().root(projectId.parse(id)),
+    files(id).create(
       z.string().min(1).max(4096).parse(path),
       z.enum(['file', 'folder']).parse(kind)
     )
   )
-  handle('trashEntry', async (id: string, path: string) => {
-    const absolute = await removableProjectEntry(
-      requirePrime().root(projectId.parse(id)),
-      z.string().min(1).max(4096).parse(path)
+  handle('trashEntry', (id: string, path: string) =>
+    files(id).remove(z.string().min(1).max(4096).parse(path), (absolute) =>
+      shell.trashItem(absolute)
     )
-    await shell.trashItem(absolute)
-  })
+  )
   handle('openWith', async (id: string, path: string, target: string) => {
-    const root = requirePrime().root(projectId.parse(id))
     const relative = z.string().max(4096).parse(path)
     if (z.enum(['default', 'vscode']).parse(target) === 'vscode') {
-      await shell.openExternal(await editorUrl(root, relative))
+      await shell.openExternal(await files(id).editorUrl(relative))
       return
     }
+    localOnly(id)
+    const root = requirePrime().root(id)
     const failure = await shell.openPath(await resolveProjectPath(root, relative))
     if (failure) throw new Error(failure)
   })
@@ -473,6 +520,7 @@ function registerIpc(): void {
     if (url) void shell.openExternal(validateExternalUrl(url))
   })
   handle('reveal', async (id: string, path = '') => {
+    localOnly(id)
     const resolved = await resolveProjectPath(requirePrime().root(projectId.parse(id)), path)
     if (path) shell.showItemInFolder(resolved)
     else await shell.openPath(resolved)
@@ -605,6 +653,23 @@ else {
     } catch (error) {
       console.error('Built-in browser tools are unavailable', error)
     }
+    remotes = new RemoteWorkspaces({
+      path: join(app.getPath('userData'), 'remote-profiles.json'),
+      runtimeDir: app.isPackaged
+        ? join(process.resourcesPath, 'runtime')
+        : join(import.meta.dirname, '../../runtime'),
+      emit,
+      channels: (key) => settings.get().projectChannels?.[key] || [],
+      startBrowser: (resolveWorkspace) =>
+        startBrowserMcpServer(browserPanel, {
+          tools: () => workbenchTerminalTools(terminals),
+          resolveWorkspace
+        }),
+      onDetached: async (workspaceId) => {
+        await terminals.closeWorkspace(workspaceId)
+      }
+    })
+    await remotes.manager.load()
     await startRuntime()
     automations = new AutomationManager({
       path: join(app.getPath('userData'), 'automations.json'),
@@ -612,7 +677,12 @@ else {
       adapter: createAgentAdapter({
         service: requirePrime,
         channels: (root) => settings.get().projectChannels?.[root] || [],
-        filesFingerprint: (root) => projectChanges.fingerprint(root),
+        filesFingerprint: (root) => {
+          if (!isRemoteWorkspace(root)) return projectChanges.fingerprint(root)
+          const remote = remotes?.backends().find((entry) => entry.key === root)
+          if (!remote) return Promise.reject(new Error(t('Сервер отключён.')))
+          return remoteFingerprint(remote.connection)
+        },
         onProject: () => emit({ type: 'projectsChanged', payload: {} })
       })
     })
@@ -636,6 +706,7 @@ else {
       await automations?.dispose()
       projectChanges.dispose()
       await terminals.dispose()
+      await remotes?.shutdown()
       await prime?.dispose()
       await runtime?.stop()
       await browserMcp?.close()

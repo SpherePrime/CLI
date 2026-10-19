@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { runtimeTargets } from './runtime-targets.mjs'
 const root = fileURLToPath(new URL('..', import.meta.url))
 const parent = resolve(root, '..')
 const cli =
@@ -18,40 +19,48 @@ const dirty = Boolean(
 )
 if (dirty && releaseVersion) throw new Error('Commit CLI changes before building a pinned runtime')
 const commit = dirty ? `${headCommit}-dirty` : headCommit
-await mkdir(new URL('../runtime/', import.meta.url), { recursive: true })
-const binary = fileURLToPath(new URL('../runtime/prime.exe', import.meta.url))
-execFileSync(
-  'go',
-  [
-    'build',
-    '-trimpath',
-    '-buildvcs=false',
-    ...(releaseVersion
-      ? [
-          '-ldflags',
-          `-s -w -X github.com/SpherePrime/CLI/internal/version.Version=${releaseVersion}`
-        ]
-      : []),
-    '-o',
-    binary,
-    '.'
-  ],
-  { cwd: cli, stdio: 'inherit', env: { ...process.env, CGO_ENABLED: '0' } }
-)
-const bytes = await readFile(binary)
-await writeFile(
-  new URL('../runtime/manifest.json', import.meta.url),
-  JSON.stringify(
+const runtimeRoot = fileURLToPath(new URL('../runtime/', import.meta.url))
+for (const target of runtimeTargets) {
+  const directory = join(runtimeRoot, target.directory)
+  await mkdir(directory, { recursive: true })
+  const binary = join(directory, target.binary)
+  execFileSync(
+    'go',
+    [
+      'build',
+      '-trimpath',
+      '-buildvcs=false',
+      ...(releaseVersion
+        ? [
+            '-ldflags',
+            `-s -w -X github.com/SpherePrime/CLI/internal/version.Version=${releaseVersion}`
+          ]
+        : []),
+      '-o',
+      binary,
+      '.'
+    ],
     {
-      version: releaseVersion || 'development',
-      commit,
-      platform: 'win32',
-      arch: 'x64',
-      protocolVersion: 1,
-      sha256: createHash('sha256').update(bytes).digest('hex')
-    },
-    null,
-    2
+      cwd: cli,
+      stdio: 'inherit',
+      env: { ...process.env, CGO_ENABLED: '0', GOOS: target.goos, GOARCH: target.goarch }
+    }
   )
-)
-console.log(`Runtime built from ${commit} in ${root}`)
+  const bytes = await readFile(binary)
+  await writeFile(
+    join(directory, 'manifest.json'),
+    JSON.stringify(
+      {
+        version: releaseVersion || 'development',
+        commit,
+        platform: target.platform,
+        arch: target.arch,
+        protocolVersion: 1,
+        sha256: createHash('sha256').update(bytes).digest('hex')
+      },
+      null,
+      2
+    )
+  )
+  console.log(`Runtime ${target.platform}-${target.arch} built from ${commit} in ${root}`)
+}

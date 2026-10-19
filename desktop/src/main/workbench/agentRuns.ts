@@ -1,6 +1,7 @@
 import type { AgentAdapter } from '../automations/manager'
 import type { PrimeService } from '../prime/service'
 import type { Project } from '../../shared/contracts'
+import { isRemoteWorkspace } from '../../shared/remoteWorkspace'
 
 type Options = {
   service: () => Pick<PrimeService, 'projects' | 'open' | 'call'>
@@ -10,7 +11,7 @@ type Options = {
 }
 
 const projectKey = (root: string) =>
-  process.platform === 'win32' ? root.replaceAll('\\', '/').toLowerCase() : root
+  process.platform === 'win32' && !isRemoteWorkspace(root) ? root.replaceAll('\\', '/').toLowerCase() : root
 
 export function createAgentAdapter(options: Options): AgentAdapter {
   const project = async (root: string) => {

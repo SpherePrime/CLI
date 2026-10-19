@@ -27,6 +27,7 @@ export type Message = {
   updated_at?: number
 }
 export type Project = {
+  remote?: { profileId: string; name: string; host: string; port: number; user: string; root: string }
   kind?: 'chat' | 'project'
   id: string
   path: string
@@ -127,6 +128,9 @@ export interface DesktopApi {
   projects(): Promise<Project[]>
   openChat(): Promise<Project>
   openProject(path?: string): Promise<Project | null>
+  openRemote(profileId: string): Promise<Project>
+  remote(request: import('./remote').RemoteRequest): Promise<import('./remote').RemoteSnapshot>
+  remoteKey(): Promise<string | undefined>
   closeProject(id: string): Promise<void>
   call(workspaceId: string, operation: Operation, args?: Json): Promise<Json>
   files(workspaceId: string, path?: string): Promise<Json[]>

@@ -1,11 +1,12 @@
 import type { Workspace } from '../../app/useWorkspace'
 import type { Session } from '../../../../shared/contracts'
+import { isRemoteWorkspace } from '../../../../shared/remoteWorkspace'
 
 export async function openWorkbenchRun(
   workspace: Workspace,
   run: { root: string; sessionId: string }
 ) {
-  const key = (root: string) => root.replaceAll('\\', '/').toLowerCase()
+  const key = (root: string) => isRemoteWorkspace(root) ? root : root.replaceAll('\\', '/').toLowerCase()
   const projects = await window.prime.projects()
   const project = projects.find((item) => key(item.path) === key(run.root))
   if (!project) throw new Error('Проект задачи недоступен')

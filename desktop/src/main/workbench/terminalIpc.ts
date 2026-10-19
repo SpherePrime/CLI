@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { TerminalManager } from '../terminal/manager'
+import type { RemoteConnection } from '../remote/connection'
 
 const terminalRequest = z.discriminatedUnion('action', [
   z.object({ action: z.literal('list') }),
@@ -35,14 +36,17 @@ export function terminalOperation(
   manager: TerminalManager,
   workspaceId: string,
   root: string,
-  input: unknown
+  input: unknown,
+  remote?: RemoteConnection
 ) {
   const request = terminalRequest.parse(input)
   switch (request.action) {
     case 'list':
       return manager.list(workspaceId)
     case 'create':
-      return manager.create(workspaceId, root, request.options)
+      return remote
+        ? manager.createRemote(workspaceId, remote, request.options)
+        : manager.create(workspaceId, root, request.options)
     case 'read':
       return manager.read(request.id, workspaceId)
     case 'write':

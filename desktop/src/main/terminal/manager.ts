@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { realpathSync, statSync } from 'node:fs'
 import { basename } from 'node:path'
-import { spawn, type IDisposable, type IPty } from 'node-pty'
+import { spawn, type IDisposable } from 'node-pty'
 import type { DesktopEvent } from '../../shared/contracts'
 import type {
   TerminalEvent,
@@ -11,17 +11,17 @@ import type {
   TerminalSnapshot
 } from '../../shared/terminal'
 import { TerminalOutput } from './output'
-import { releaseTerminalResources, terminateTerminal } from './process'
-import { createWindowsJob, type TerminalJob } from './windowsJob'
+import { localTerminalHandle, type TerminalHandle } from './handle'
+import { remoteTerminalHandle } from './remote'
+import type { RemoteConnection } from '../remote/connection'
 
 type Session = {
   terminal: TerminalSnapshot
-  process: IPty
+  process: TerminalHandle
   output: TerminalOutput
   subscriptions: IDisposable[]
   closing?: Promise<void>
   cleanup?: Promise<void>
-  job?: TerminalJob
 }
 
 type ManagerOptions = {
@@ -80,22 +80,48 @@ export class TerminalManager {
       useConpty: true,
       useConptyDll: true
     })
-    let job: TerminalJob | undefined
-    try {
-      job = createWindowsJob(processHandle.pid)
-    } catch (error) {
-      void terminateTerminal(processHandle).catch(() => {})
-      throw error
-    }
+    return this.attach(workspaceId, directory, shell, size, options.title, localTerminalHandle(processHandle))
+  }
+
+  async createRemote(
+    workspaceId: string,
+    connection: RemoteConnection,
+    options: TerminalOptions = {}
+  ): Promise<TerminalSnapshot> {
+    if (this.disposed) throw new Error('Terminal manager is disposed')
+    if (this.sessions.size >= this.maxSessions)
+      throw new Error(`Terminal session limit reached (${this.maxSessions})`)
+    const size = dimensions(options.cols, options.rows)
+    const handle = await remoteTerminalHandle(connection, size.cols, size.rows)
+    return this.attach(
+      workspaceId,
+      connection.root,
+      `ssh://${connection.profile.user}@${connection.profile.host}`,
+      size,
+      options.title ?? connection.profile.name,
+      handle
+    )
+  }
+
+  closeWorkspace(workspaceId: string): Promise<void[]> {
+    return Promise.all(this.list(workspaceId).map((terminal) => this.close(terminal.id)))
+  }
+
+  private attach(
+    workspaceId: string,
+    directory: string,
+    shell: string,
+    size: { cols: number; rows: number },
+    title: string | undefined,
+    processHandle: TerminalHandle
+  ): TerminalSnapshot {
     const terminal: TerminalSnapshot = {
       id: randomUUID(),
       workspaceId,
       cwd: directory,
       shell,
       title:
-        typeof options.title === 'string' && options.title.trim()
-          ? options.title.trim().slice(0, 120)
-          : basename(shell),
+        typeof title === 'string' && title.trim() ? title.trim().slice(0, 120) : basename(shell),
       pid: processHandle.pid,
       ...size,
       owner: 'user',
@@ -106,7 +132,6 @@ export class TerminalManager {
     const session: Session = {
       terminal,
       process: processHandle,
-      job,
       output: new TerminalOutput(this.options.maxOutputBytes),
       subscriptions: []
     }
@@ -256,11 +281,9 @@ export class TerminalManager {
 
   private async cleanup(session: Session, wasRunning: boolean) {
     try {
-      await session.job?.close()
-    } finally {
       this.release(session)
-      if (wasRunning) await terminateTerminal(session.process)
-      else await releaseTerminalResources(session.process)
+    } finally {
+      await session.process.stop(wasRunning)
     }
   }
 }

@@ -1,8 +1,35 @@
 import http from 'node:http'
 import { SseDecoder } from './sse'
+import type { Duplex } from 'node:stream'
+
+export type TransportConnector = (callback: (error: Error | null, stream?: Duplex) => void) => void
+
+function socketLike(stream: Duplex): Duplex {
+  const socket = stream as Duplex & Record<string, any>
+  let timer: NodeJS.Timeout | undefined
+  socket.setTimeout ??= (timeout: number, listener?: () => void) => {
+    if (listener) socket.once('timeout', listener)
+    if (timer) clearTimeout(timer)
+    timer = timeout > 0 ? setTimeout(() => socket.emit('timeout'), timeout) : undefined
+    return socket
+  }
+  socket.setNoDelay ??= () => socket
+  socket.setKeepAlive ??= () => socket
+  socket.ref ??= () => socket
+  socket.unref ??= () => socket
+  socket.once('close', () => timer && clearTimeout(timer))
+  return socket
+}
 
 export class PrimeTransport {
-  constructor(readonly socketPath: string) {}
+  constructor(readonly socketPath: string, private readonly connector?: TransportConnector) {}
+  private connectionOptions(): http.RequestOptions {
+    if (!this.connector) return { socketPath: this.socketPath }
+    return { createConnection: (_options, callback) => {
+      this.connector!((error, stream) => callback?.(error, stream ? socketLike(stream) : stream!))
+      return undefined
+    } }
+  }
   request<T = any>(
     method: string,
     path: string,
@@ -14,7 +41,7 @@ export class PrimeTransport {
       const encoded = body === undefined ? undefined : JSON.stringify(body)
       const request = http.request(
         {
-          socketPath: this.socketPath,
+          ...this.connectionOptions(),
           path,
           method,
           signal,
@@ -82,7 +109,7 @@ export class PrimeTransport {
         timer = setTimeout(connect, Math.min(5000, 250 * 2 ** retry++))
       }
       active = http.get(
-        { socketPath: this.socketPath, path, headers: { Accept: 'text/event-stream' } },
+        { ...this.connectionOptions(), path, headers: { Accept: 'text/event-stream' } },
         (response) => {
           if (response.statusCode !== 200) {
             response.resume()

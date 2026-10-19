@@ -1,3 +1,4 @@
+import { projectRoot } from '../projects/projectName'
 import { useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
 import type { Operation } from '../../../../shared/contracts'
@@ -50,7 +51,7 @@ export function IntegrationTools({
             </button>
             <button
               disabled={busy || w.busy}
-              onClick={() => void run('lspStart', { path: w.project?.path })}
+              onClick={() => void run('lspStart', { path: w.project && projectRoot(w.project) })}
             >
               {t('Запустить')}
             </button>

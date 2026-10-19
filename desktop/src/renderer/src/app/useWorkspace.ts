@@ -256,7 +256,25 @@ export function useWorkspace() {
         return
       }
       if (event.type === 'projectsChanged') {
-        void window.prime.projects().then(setProjects).catch(errorHandler)
+        void window.prime
+          .projects()
+          .then((opened) => {
+            setProjects(opened)
+            const active = current.current.project
+            if (!active || opened.some((item) => item.id === active.id)) return
+            const next = opened[0]
+            current.current = { project: next ?? null, session: null }
+            setProject(next ?? null)
+            setSession(null)
+            setMessages([])
+            setSessions([])
+            setBusy(false)
+            setPermissions([])
+            setQuestions([])
+            setQueue([])
+            if (next) void refresh().catch(() => {})
+          })
+          .catch(errorHandler)
         return
       }
       if (event.type === 'terminal' && typeof event.payload?.activeCount === 'number') {
@@ -409,10 +427,16 @@ export function useWorkspace() {
     return () => clearInterval(timer)
   }, [project?.id, refresh])
   async function openProject(path?: string) {
+    await openWorkspace(() => window.prime.openProject(path))
+  }
+  async function openRemote(profileId: string) {
+    await openWorkspace(() => window.prime.openRemote(profileId))
+  }
+  async function openWorkspace(open: () => Promise<Project | null>) {
     setLoading(true)
     setError('')
     try {
-      const opened = await window.prime.openProject(path)
+      const opened = await open()
       if (!opened) return
       current.current = { project: opened, session: null }
       setProject(opened)
@@ -616,6 +640,7 @@ export function useWorkspace() {
     refresh,
     openChat,
     openProject,
+    openRemote,
     selectProject,
     closeProject,
     selectSession,
