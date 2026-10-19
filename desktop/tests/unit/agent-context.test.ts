@@ -50,17 +50,22 @@ describe('agent working context', () => {
     ).toBe('!git status')
   })
 
-  it('fails before sending if a context file cannot be read', async () => {
+  it('keeps the conversation usable when an agent-managed source disappears', async () => {
     const context = {
       ...emptyAgentContext(),
       enabled: true,
-      sources: [{ id: 'file:missing.ts', kind: 'file' as const, path: 'missing.ts' }]
+      sources: [
+        { id: 'file:missing.ts', kind: 'file' as const, path: 'missing.ts' },
+        { id: 'file:existing.ts', kind: 'file' as const, path: 'existing.ts' }
+      ]
     }
-    await expect(
-      buildAgentPrompt('Start', context, async () => {
-        throw new Error('File missing')
-      })
-    ).rejects.toThrow('missing.ts')
+    const prompt = await buildAgentPrompt('Continue', context, async (path) => {
+      if (path === 'missing.ts') throw new Error('File missing')
+      return { content: 'current project content' }
+    })
+    expect(prompt).toContain('Continue')
+    expect(prompt).toContain('Source: missing.ts (unavailable; update the working context sources)')
+    expect(prompt).toContain('current project content')
   })
 
   it('preserves unsaved selection snapshots, deduplicates sources and limits payload size', async () => {

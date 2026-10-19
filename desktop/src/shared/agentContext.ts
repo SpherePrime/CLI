@@ -45,8 +45,9 @@ export async function buildAgentPrompt(
         const file = await read(source.path)
         if (file.image || typeof file.content !== 'string') throw new Error('Text file required')
         content = file.content
-      } catch (error) {
-        throw new Error(`${source.path}: ${error instanceof Error ? error.message : error}`)
+      } catch {
+        sections.push(`Source: ${source.path} (unavailable; update the working context sources)`)
+        continue
       }
     }
     const location =
