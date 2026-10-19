@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { Popover } from './Popover'
 
@@ -17,6 +17,11 @@ export function Select({
 }) {
   const anchor = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
+  const listId = useId()
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((item) => item.value === value)
+  )
   function choose(next: string) {
     onChange(next)
     setOpen(false)
@@ -31,6 +36,7 @@ export function Select({
         role="combobox"
         aria-label={label}
         aria-expanded={open}
+        aria-controls={open ? listId : undefined}
         aria-haspopup="listbox"
         disabled={disabled}
         onClick={() => setOpen(!open)}
@@ -52,6 +58,7 @@ export function Select({
         >
           <div
             className="select-options"
+            id={listId}
             role="listbox"
             aria-label={label}
             onKeyDown={(event) => {
@@ -72,12 +79,13 @@ export function Select({
               }
             }}
           >
-            {options.map((item) => (
+            {options.map((item, index) => (
               <button
+                type="button"
                 key={item.value}
                 role="option"
                 aria-selected={item.value === value}
-                autoFocus={item.value === value}
+                autoFocus={index === selectedIndex}
                 onClick={() => choose(item.value)}
               >
                 <span>{item.label}</span>

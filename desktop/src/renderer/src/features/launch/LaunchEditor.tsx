@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import { useState, type RefObject } from 'react'
 import type { LaunchConfig, LaunchConfigInput } from '../../../../shared/launch'
 import { useI18n } from '../../i18n'
 
 export function LaunchEditor({
   config,
   busy,
+  inputRef,
   onSave,
   onCancel
 }: {
   config?: LaunchConfig
   busy: boolean
+  inputRef?: RefObject<HTMLInputElement | null>
   onSave(input: LaunchConfigInput): void
   onCancel(): void
 }) {
@@ -25,9 +27,21 @@ export function LaunchEditor({
         onSave({ id: config?.id, name, command, ...(url.trim() ? { url } : {}) })
       }}
     >
+      <p className="launch-editor-description">
+        {t(
+          'Сохраните команду запуска для этого проекта. Prime покажет её вывод и адрес приложения.'
+        )}
+      </p>
       <label>
         {t('Название')}
-        <input required maxLength={80} value={name} onChange={(event) => setName(event.target.value)} />
+        <input
+          ref={inputRef}
+          required
+          maxLength={80}
+          placeholder={t('Например, Dev server')}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
       </label>
       <label>
         {t('Команда')}
@@ -47,6 +61,7 @@ export function LaunchEditor({
           value={url}
           onChange={(event) => setUrl(event.target.value)}
         />
+        <small>{t('Оставьте пустым, чтобы определить адрес из вывода команды.')}</small>
       </label>
       <div className="automation-actions">
         <button type="button" onClick={onCancel}>

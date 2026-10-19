@@ -4,6 +4,39 @@
   min-height: 0;
   flex: 1;
 }
+.launch-editor-modal {
+  width: min(560px, calc(100vw - 32px));
+}
+.launch-editor-modal .launch-editor {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  gap: 16px;
+}
+.launch-editor-description {
+  margin: 0 0 4px;
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.launch-editor label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+.launch-editor label small {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.launch-editor .automation-actions {
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+.launch-output > .empty-state {
+  min-height: 200px;
+}
 .launch-list {
   border-right: 1px solid var(--border);
   padding: 10px;

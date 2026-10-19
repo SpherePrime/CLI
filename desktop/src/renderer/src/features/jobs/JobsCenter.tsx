@@ -1,14 +1,32 @@
 import { EmptyState } from '../../components/EmptyState'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppWindow, ArrowUpRight, Bot, Clock3, MessageCircleQuestion, Rocket, ShieldAlert, Square, TerminalSquare, Users } from 'lucide-react'
+import {
+  AppWindow,
+  ArrowUpRight,
+  Bot,
+  Clock3,
+  MessageCircleQuestion,
+  Rocket,
+  ShieldAlert,
+  Square,
+  TerminalSquare,
+  Users
+} from 'lucide-react'
 import { Modal } from '../../components/Modal'
+import { Select } from '../../components/Select'
 import type { Workspace } from '../../app/useWorkspace'
 import { activeJobStatuses, type Job, type JobKind } from '../../../../shared/jobs'
 import type { Session } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
 import '../../styles/jobs.css'
 
-const icons: Record<JobKind, typeof Bot> = { agent: Bot, automation: Clock3, team: Users, terminal: TerminalSquare, app: Rocket }
+const icons: Record<JobKind, typeof Bot> = {
+  agent: Bot,
+  automation: Clock3,
+  team: Users,
+  terminal: TerminalSquare,
+  app: Rocket
+}
 const kindLabels: Record<JobKind, string> = {
   agent: 'Агент',
   automation: 'Автоматизация',
@@ -35,7 +53,15 @@ function duration(job: Job, now: number) {
   return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`
 }
 
-export function JobsCenter({ workspace: w, close, openTools }: { workspace: Workspace; close(): void; openTools(view: 'terminal' | 'launch'): void }) {
+export function JobsCenter({
+  workspace: w,
+  close,
+  openTools
+}: {
+  workspace: Workspace
+  close(): void
+  openTools(view: 'terminal' | 'launch'): void
+}) {
   const { t } = useI18n()
   const [jobs, setJobs] = useState<Job[]>([])
   const [filter, setFilter] = useState<Filter>('active')
@@ -75,7 +101,9 @@ export function JobsCenter({ workspace: w, close, openTools }: { workspace: Work
     failed: jobs.filter((job) => job.status === 'failed' || job.status === 'interrupted').length
   }
   const open = async (job: Job) => {
-    const project = w.projects.find((item) => item.id === job.workspaceId) ?? w.projects.find((item) => item.path === job.projectKey)
+    const project =
+      w.projects.find((item) => item.id === job.workspaceId) ??
+      w.projects.find((item) => item.path === job.projectKey)
     if (!project) {
       w.errorHandler(new Error(t('Проект задачи закрыт')))
       return
@@ -86,7 +114,8 @@ export function JobsCenter({ workspace: w, close, openTools }: { workspace: Work
       const sessions: Session[] = await window.prime.call(project.id, 'sessions')
       const session = sessions.find((item) => item.id === job.sessionId)
       if (session) await w.selectSession(session)
-    } else if (job.kind === 'terminal' || job.kind === 'app') openTools(job.kind === 'app' ? 'launch' : 'terminal')
+    } else if (job.kind === 'terminal' || job.kind === 'app')
+      openTools(job.kind === 'app' ? 'launch' : 'terminal')
   }
   const stop = async (job: Job) => {
     setBusy(job.id)
@@ -116,14 +145,18 @@ export function JobsCenter({ workspace: w, close, openTools }: { workspace: Work
             </button>
           ))}
         </div>
-        <select aria-label={t('Тип задачи')} value={kind} onChange={(event) => setKind(event.target.value as JobKind | 'all')}>
-          <option value="all">{t('Все типы')}</option>
-          {(Object.keys(kindLabels) as JobKind[]).map((item) => (
-            <option key={item} value={item}>
-              {t(kindLabels[item])}
-            </option>
-          ))}
-        </select>
+        <Select
+          label={t('Тип задачи')}
+          value={kind}
+          onChange={(value) => setKind(value as JobKind | 'all')}
+          options={[
+            { value: 'all', label: t('Все типы') },
+            ...(Object.keys(kindLabels) as JobKind[]).map((item) => ({
+              value: item,
+              label: t(kindLabels[item])
+            }))
+          ]}
+        />
       </div>
       <ul className="jobs-list">
         {visible.map((job) => {
@@ -141,7 +174,11 @@ export function JobsCenter({ workspace: w, close, openTools }: { workspace: Work
                 </span>
                 {job.attention && (
                   <span className="job-attention">
-                    {job.attention === 'permission' ? <ShieldAlert size={12} /> : <MessageCircleQuestion size={12} />}
+                    {job.attention === 'permission' ? (
+                      <ShieldAlert size={12} />
+                    ) : (
+                      <MessageCircleQuestion size={12} />
+                    )}
                     {t(job.attention === 'permission' ? 'Нужно разрешение' : 'Агент задал вопрос')}
                   </span>
                 )}
@@ -150,7 +187,12 @@ export function JobsCenter({ workspace: w, close, openTools }: { workspace: Work
               <span className="job-status">{t(statusLabels[job.status])}</span>
               <span className="job-time">{duration(job, now)}</span>
               <div className="job-actions">
-                <button className="icon small" aria-label={t('Открыть {value0}', { value0: job.title })} title={t('Открыть')} onClick={() => void open(job)}>
+                <button
+                  className="icon small"
+                  aria-label={t('Открыть {value0}', { value0: job.title })}
+                  title={t('Открыть')}
+                  onClick={() => void open(job)}
+                >
                   <ArrowUpRight size={14} />
                 </button>
                 {job.stoppable && (
@@ -173,7 +215,9 @@ export function JobsCenter({ workspace: w, close, openTools }: { workspace: Work
             <EmptyState
               icon={AppWindow}
               title={t(filter === 'active' ? 'Сейчас ничего не выполняется' : 'Здесь пока пусто')}
-              text={t('Здесь появятся агенты, автоматизации, команды, терминалы и приложения всех проектов.')}
+              text={t(
+                'Здесь появятся агенты, автоматизации, команды, терминалы и приложения всех проектов.'
+              )}
             />
           </li>
         )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { GithubStatus } from '../../../../shared/github'
 import { useI18n } from '../../i18n'
+import { Select } from '../../components/Select'
 
 export function CreatePull({
   status,
@@ -51,31 +52,42 @@ export function CreatePull({
       <div className="github-create-branches">
         <label>
           {t('Ветка')}
-          <select value={head} onChange={(event) => setHead(event.target.value)} required>
-            {branches.map((branch) => (
-              <option key={branch}>{branch}</option>
-            ))}
-          </select>
+          <Select
+            label={t('Ветка')}
+            value={head}
+            onChange={setHead}
+            options={branches.map((branch) => ({ value: branch, label: branch }))}
+          />
         </label>
         <label>
           {t('В ветку')}
-          <select value={base} onChange={(event) => setBase(event.target.value)} required>
-            {branches.map((branch) => (
-              <option key={branch}>{branch}</option>
-            ))}
-          </select>
+          <Select
+            label={t('В ветку')}
+            value={base}
+            onChange={setBase}
+            options={branches.map((branch) => ({ value: branch, label: branch }))}
+          />
         </label>
       </div>
       <label>
         {t('Заголовок')}
-        <input required maxLength={256} value={title} onChange={(event) => setTitle(event.target.value)} />
+        <input
+          required
+          maxLength={256}
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+        />
       </label>
       <label>
         {t('Описание')}
         <textarea rows={4} value={body} onChange={(event) => setBody(event.target.value)} />
       </label>
       <label className="github-checkbox">
-        <input type="checkbox" checked={draft} onChange={(event) => setDraft(event.target.checked)} />
+        <input
+          type="checkbox"
+          checked={draft}
+          onChange={(event) => setDraft(event.target.checked)}
+        />
         {t('Черновик')}
       </label>
       {confirm && (
@@ -90,7 +102,11 @@ export function CreatePull({
         <button type="button" onClick={onCancel}>
           {t('Отмена')}
         </button>
-        <button className="automation-primary" type="submit" disabled={busy || !head || head === base || !title.trim()}>
+        <button
+          className="automation-primary"
+          type="submit"
+          disabled={busy || !head || head === base || !title.trim()}
+        >
           {t(confirm ? 'Подтвердить и опубликовать' : 'Создать pull request')}
         </button>
       </div>
