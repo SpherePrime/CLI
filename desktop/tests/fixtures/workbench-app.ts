@@ -31,6 +31,7 @@ export async function launchWorkbench() {
             {
               id: 'desktop-fixture',
               name: 'Desktop Fixture',
+              supports_attachments: true,
               context_window: 128000,
               default_max_tokens: 8192
             }

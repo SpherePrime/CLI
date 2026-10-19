@@ -1,14 +1,24 @@
 import type { SpeechAudio } from '../../../../shared/speech'
 
-type Options = { voice: string; speed: number; onState(speaking: boolean): void; onError(error: unknown): void }
+type Options = {
+  voice: string
+  speed: number
+  onState(speaking: boolean): void
+  onError(error: unknown): void
+}
 
 export class Speaker {
   private context = new AudioContext()
+  readonly analyser = this.context.createAnalyser()
   private source?: AudioBufferSourceNode
   private generation = 0
   private active = false
 
-  constructor(private options: Options) {}
+  constructor(private options: Options) {
+    this.analyser.fftSize = 256
+    this.analyser.smoothingTimeConstant = 0.72
+    this.analyser.connect(this.context.destination)
+  }
 
   update(options: Partial<Pick<Options, 'voice' | 'speed'>>) {
     Object.assign(this.options, options)
@@ -37,7 +47,7 @@ export class Speaker {
       if (generation !== this.generation) return resolve()
       const source = this.context.createBufferSource()
       source.buffer = buffer
-      source.connect(this.context.destination)
+      source.connect(this.analyser)
       source.onended = () => resolve()
       this.source = source
       source.start()
@@ -84,6 +94,7 @@ export class Speaker {
 
   async dispose() {
     this.stop()
+    this.analyser.disconnect()
     await this.context.close().catch(() => {})
   }
 }

@@ -1,16 +1,17 @@
+import { MessageAttachment } from './MessageAttachment'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useI18n } from '../../i18n'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { ToolCard } from './ToolCard'
 import { consolidateToolMessages } from '../../../../shared/toolMessages'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Check, Copy, FileCode2, ArrowDown } from 'lucide-react'
+import { Check, Copy, ArrowDown } from 'lucide-react'
 import { ReasoningBlock } from './ReasoningBlock'
 import { clock, useElapsedSeconds } from './elapsed'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Message } from '../../../../shared/contracts'
-import { textContent } from '../../../../shared/messages'
+import { textContent, visibleMessageText } from '../../../../shared/messages'
 import { findMessages } from '../../../../shared/workspaceTools'
 import { ConversationSearch } from './ConversationSearch'
 
@@ -212,7 +213,7 @@ export function MessageList({
                                   )
                                 }}
                               >
-                                {part.data.text || ''}
+                                {visibleMessageText(part.data.text || '', message.role)}
                               </Markdown>
                             </div>
                           )
@@ -251,11 +252,7 @@ export function MessageList({
                             </div>
                           )
                         if (part.type === 'binary')
-                          return (
-                            <div key={index} className="attachment-note">
-                              <FileCode2 size={14} /> {t('Вложение ·')} {part.data.mime_type}
-                            </div>
-                          )
+                          return <MessageAttachment key={index} data={part.data} />
                         return null
                       })}
                     </div>

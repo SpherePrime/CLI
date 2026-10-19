@@ -492,6 +492,7 @@ kbd {
   font-size: 12px;
 }
 .main-workspace {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;

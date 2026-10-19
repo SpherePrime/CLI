@@ -25,13 +25,25 @@ export class Listener {
   private segmentMs = 0
   private floor = 0.006
   private muted = false
+  private generation = 0
 
   constructor(private options: Options) {}
 
   async start() {
-    this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    const generation = ++this.generation
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
     })
+    if (generation !== this.generation) {
+      stream.getTracks().forEach((track) => track.stop())
+      return
+    }
+    this.stream = stream
     this.context = new AudioContext()
     this.source = this.context.createMediaStreamSource(this.stream)
     this.analyser = this.context.createAnalyser()
@@ -100,6 +112,7 @@ export class Listener {
   }
 
   async stop() {
+    this.generation++
     this.processor?.disconnect()
     this.source?.disconnect()
     this.analyser?.disconnect()

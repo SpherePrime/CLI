@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { CodeEditor, modelUri } from './CodeEditor'
 import { useRef } from 'react'
-import { X, Save, FileCode2, RefreshCw, Target } from 'lucide-react'
+import { X, Save, FileCode2, RefreshCw } from 'lucide-react'
 import { Modal } from '../../components/Modal'
 import { useI18n } from '../../i18n'
 import { monaco, languageFor } from './monaco'
 import type { Documents } from './useDocuments'
-import { addAgentSource } from '../context/useAgentContext'
 
 export default function FileEditor({
   state,
@@ -22,12 +21,6 @@ export default function FileEditor({
   const [closing, setClosing] = useState('')
   const [reloading, setReloading] = useState(false)
   const [position, setPosition] = useState({ line: 1, column: 1 })
-  const [selection, setSelection] = useState<{
-    content: string
-    startLine: number
-    endLine: number
-  } | null>(null)
-  useEffect(() => setSelection(null), [state.active])
   const [editorTheme, setEditorTheme] = useState('prime-dark')
   const document = state.documents.find((item) => item.id === state.active)
   useEffect(() => {
@@ -99,28 +92,6 @@ export default function FileEditor({
       </div>
       <div className="editor-toolbar">
         <span title={document.path}>{document.path}</span>
-        {!document.image && (
-          <button
-            className="icon"
-            title={t('В контекст агента')}
-            aria-label={t('В контекст агента')}
-            onClick={() => {
-              const excerpt = selection || {
-                content: document.content,
-                startLine: 1,
-                endLine: document.content.split('\n').length
-              }
-              addAgentSource(document.workspaceId, {
-                id: `selection:${document.path}:${excerpt.startLine}:${excerpt.endLine}`,
-                kind: 'selection',
-                path: document.path,
-                ...excerpt
-              })
-            }}
-          >
-            <Target size={15} />
-          </button>
-        )}
         {!readOnly && (
           <>
             <button
@@ -158,7 +129,6 @@ export default function FileEditor({
             label={t('Код файла')}
             onChange={(value) => state.edit(document.id, value)}
             onPosition={setPosition}
-            onSelection={setSelection}
           />
         )}
       </div>

@@ -3,7 +3,6 @@ import { QueuePanel } from './QueuePanel'
 import { ModelControl } from '../models/ModelControl'
 import { VoiceWave } from './VoiceWave'
 import { TodoPanel } from './TodoPanel'
-import { ContextControl } from '../context/ContextControl'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { CommandRunner } from './CommandRunner'
@@ -12,14 +11,24 @@ import { ArrowUp, Mic, Paperclip, Square, X, LoaderCircle } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useVoice } from '../plugins/useVoice'
 import { useConversation } from '../voice/useConversation'
-import { ConversationBar } from '../voice/ConversationBar'
+import { ConversationCall, ConversationCallPill } from '../voice/ConversationCall'
+import { createPortal } from 'react-dom'
+import { clipboardImages, imageUploads } from './pasteImages'
 import { AudioLines } from 'lucide-react'
+import '../../styles/attachments.css'
 
 export function Composer({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<any[]>([])
+  const inFlightAttachments = useRef<string[]>([])
+  const attachmentRef = useRef(attachments)
+  attachmentRef.current = attachments
   const [sending, setSending] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [callOpen, setCallOpen] = useState(false)
+  const [callHost, setCallHost] = useState<Element | null>(null)
+  const composerRoot = useRef<HTMLDivElement>(null)
   const [mode, setMode] = useState('general')
   const [skip, setSkip] = useState(false)
   const [suggestions, setSuggestions] = useState<any[]>([])
@@ -37,6 +46,24 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   }, [])
   const key = `${!w.project || w.project.kind === 'chat' ? 'chat' : w.project.path}:${w.session?.id || 'new'}`
   const conversation = useConversation(w)
+  useEffect(() => {
+    setCallHost(composerRoot.current?.closest('.main-workspace') || null)
+  }, [])
+  useEffect(() => {
+    if (conversation.state === 'off') setCallOpen(false)
+  }, [conversation.state])
+  useEffect(() => {
+    if (!callHost || !callOpen || conversation.state === 'off') return
+    const hidden = [...callHost.children].filter(
+      (element) => !element.classList.contains('voice-call')
+    )
+    const previous = hidden.map((element) => element.hasAttribute('inert'))
+    hidden.forEach((element) => element.setAttribute('inert', ''))
+    return () =>
+      hidden.forEach((element, index) => {
+        if (!previous[index]) element.removeAttribute('inert')
+      })
+  }, [callHost, callOpen, conversation.state === 'off'])
   const draftKey = useRef(key)
   const latest = useRef(text)
   latest.current = text
@@ -61,6 +88,13 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       if (justCreated && draft && !submitting.current) return
       void w.savePreferences({ drafts: { [previous]: draft } })
       setText(w.preferences.drafts[key] || '')
+      void window.prime
+        .releaseAttachments(
+          attachmentRef.current
+            .map((item) => item.id)
+            .filter((id) => !inFlightAttachments.current.includes(id))
+        )
+        .catch(w.errorHandler)
       setAttachments([])
     }
   }, [key])
@@ -84,24 +118,35 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     }
   }, [text])
   async function submit() {
-    if (sending) return
+    if (sending || importing || submitting.current) return
     submitting.current = true
+    inFlightAttachments.current = attachments.map((item) => item.id)
     try {
       await deliver()
+    } catch (error) {
+      w.errorHandler(error)
     } finally {
       submitting.current = false
+      const orphaned = inFlightAttachments.current.filter(
+        (id) => draftKey.current !== key || !attachmentRef.current.some((item) => item.id === id)
+      )
+      inFlightAttachments.current = []
+      if (orphaned.length) void window.prime.releaseAttachments(orphaned).catch(w.errorHandler)
+      setSending(false)
     }
   }
   async function deliver() {
+    const submittedKey = key
     let message = text
     if (recording) {
       setSending(true)
       const spoken = await finishVoice()
       message = [text, spoken].filter((part) => part.trim()).join(' ')
       setSending(false)
+      if (draftKey.current !== submittedKey) return
     }
+    if (!message.trim() && attachments.length) message = t('Посмотри на изображение.')
     if (!message.trim()) return
-    const submittedKey = key
     const submittedText = message
     setSending(true)
     if (
@@ -110,6 +155,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         attachments.map((item) => item.id)
       )
     ) {
+      void window.prime.releaseAttachments(attachments.map((item) => item.id)).catch(w.errorHandler)
       await w.savePreferences({ drafts: { [submittedKey]: '' } })
       if (draftKey.current === submittedKey && submittedText.startsWith(latest.current)) {
         setText('')
@@ -118,6 +164,36 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       }
     }
     setSending(false)
+  }
+  async function attach() {
+    const targetKey = key
+    setImporting(true)
+    try {
+      const added = await window.prime.attachments()
+      if (draftKey.current === targetKey) setAttachments((items) => [...items, ...added])
+      else await window.prime.releaseAttachments(added.map((item) => item.id))
+    } catch (error) {
+      w.errorHandler(error)
+    } finally {
+      setImporting(false)
+    }
+  }
+  async function paste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const images = clipboardImages(event.clipboardData)
+    if (!images.length) return
+    event.preventDefault()
+    if (importing || sending) return
+    const targetKey = key
+    setImporting(true)
+    try {
+      const added = await window.prime.importImages(await imageUploads(images))
+      if (draftKey.current === targetKey) setAttachments((items) => [...items, ...added])
+      else await window.prime.releaseAttachments(added.map((item) => item.id))
+    } catch (error) {
+      w.errorHandler(error)
+    } finally {
+      setImporting(false)
+    }
   }
   async function stop() {
     if (!w.activeSessionId) return
@@ -137,14 +213,14 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         if (Date.now() - lastEscape < 600) void stop()
         lastEscape = Date.now()
       }
-      if (event.altKey && event.code === 'KeyV') {
+      if (event.altKey && event.code === 'KeyV' && conversation.state === 'off') {
         event.preventDefault()
         void toggleVoice()
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [w.busy, w.session?.id, recording])
+  }, [w.busy, w.session?.id, recording, conversation.state])
   async function change(value: string) {
     setText(value)
     if (/@[^\s]*$/.test(value) && w.project && w.project.kind !== 'chat') {
@@ -164,7 +240,14 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   }
   const voiceActive = recording || (transcribing && sending)
   return (
-    <div className="composer-area">
+    <div className="composer-area" ref={composerRoot}>
+      {callHost &&
+        callOpen &&
+        conversation.state !== 'off' &&
+        createPortal(
+          <ConversationCall conversation={conversation} onOpenChat={() => setCallOpen(false)} />,
+          callHost
+        )}
       {command && (
         <CommandRunner
           command={command}
@@ -175,26 +258,42 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       )}
       <QueuePanel key={key} workspace={w} />
       {w.session?.todos?.length ? <TodoPanel todos={w.session.todos} /> : null}
-      <ContextControl workspace={w} />
-      {conversation.state !== 'off' && <ConversationBar conversation={conversation} />}
+      {conversation.state !== 'off' && !callOpen && (
+        <ConversationCallPill
+          conversation={conversation}
+          onReturnToCall={() => setCallOpen(true)}
+        />
+      )}
       <div className={`composer ${recording ? 'recording' : ''}`}>
         {attachments.length > 0 && (
           <div className="attachment-chips">
             {attachments.map((item) => (
-              <span key={item.id}>
-                <Paperclip size={12} />
+              <span key={item.id} className={item.preview ? 'attachment-image' : ''}>
+                {item.preview ? (
+                  <img src={item.preview} alt={item.name} />
+                ) : (
+                  <Paperclip size={12} />
+                )}
                 {item.name}
                 <button
                   className="icon small"
                   aria-label={t('Удалить вложение')}
-                  onClick={() =>
+                  disabled={sending || importing}
+                  onClick={() => {
                     setAttachments((items) => items.filter((file) => file.id !== item.id))
-                  }
+                    void window.prime.releaseAttachments([item.id]).catch(w.errorHandler)
+                  }}
                 >
                   <X size={12} />
                 </button>
               </span>
             ))}
+          </div>
+        )}
+        {importing && (
+          <div className="attachment-import" role="status">
+            <LoaderCircle size={14} className="spin" />
+            {t('Добавление изображения…')}
           </div>
         )}
         {voiceActive && (
@@ -209,6 +308,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           ref={textarea}
           value={text}
           onChange={(event) => void change(event.target.value)}
+          onPaste={(event) => void paste(event)}
           placeholder={
             recording ? t('Запись голоса… Alt+V, чтобы остановить') : t('Напишите сообщение…')
           }
@@ -243,12 +343,8 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               className="icon"
               title={t('Прикрепить файлы')}
               aria-label={t('Прикрепить файлы')}
-              onClick={() =>
-                void window.prime
-                  .attachments()
-                  .then((files) => setAttachments((items) => [...items, ...files]))
-                  .catch(w.errorHandler)
-              }
+              disabled={sending || importing}
+              onClick={() => void attach()}
             >
               <Paperclip size={17} />
             </button>
@@ -286,23 +382,28 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             <button
               className={`icon ${conversation.state !== 'off' ? 'active' : ''}`}
               disabled={!w.project || recording}
-              aria-label={conversation.state !== 'off' ? t('Завершить разговор') : t('Голосовой разговор')}
+              aria-label={
+                conversation.state !== 'off' ? t('Вернуться к разговору') : t('Голосовой разговор')
+              }
               aria-pressed={conversation.state !== 'off'}
               title={t('Голосовой разговор')}
-              onClick={() => void (conversation.state === 'off' ? conversation.start() : conversation.stop())}
+              onClick={() => {
+                setCallOpen(true)
+                if (conversation.state === 'off') void conversation.start()
+              }}
             >
               <AudioLines size={17} />
             </button>
             <button
               className={`icon ${recording ? 'danger' : ''}`}
-              disabled={!w.project || transcribing}
+              disabled={!w.project || transcribing || conversation.state !== 'off'}
               aria-label={recording ? t('Остановить запись') : t('Голосовой ввод')}
               title={t('Голосовой ввод · Alt V')}
               onClick={() => void toggleVoice()}
             >
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
-            {w.busy && !recording && (!text.trim() || sending) ? (
+            {w.busy && !recording && ((!text.trim() && !attachments.length) || sending) ? (
               <button
                 className="send stop"
                 onClick={() => void stop()}
@@ -315,7 +416,10 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
                 className="send"
                 aria-label={t('Отправить сообщение')}
                 disabled={
-                  (!text.trim() && !recording) || sending || w.project?.connection !== 'ready'
+                  (!text.trim() && !recording && !attachments.length) ||
+                  sending ||
+                  importing ||
+                  w.project?.connection !== 'ready'
                 }
                 onClick={() => void submit()}
               >
