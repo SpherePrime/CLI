@@ -706,6 +706,12 @@ function registerIpc(): void {
   })
   handle('browserShow', (value: unknown) => browserPanel.show(bounds.parse(value)))
   handle('browserHide', () => browserPanel.hide())
+  handle('browserTab', (action: string, id?: string, url?: string) => {
+    const command = z.enum(['new', 'select', 'close']).parse(action)
+    if (command === 'new') return browserPanel.newTab(url ? z.string().max(8192).parse(url) : undefined)
+    const tab = z.string().uuid().parse(id)
+    return command === 'select' ? browserPanel.selectTab(tab) : browserPanel.closeTab(tab)
+  })
   handle('browserState', () => browserPanel.state())
   handle('browserNavigate', (url: string) => browserPanel.navigate(z.string().max(8192).parse(url)))
   handle('browserCommand', (command: string) => {

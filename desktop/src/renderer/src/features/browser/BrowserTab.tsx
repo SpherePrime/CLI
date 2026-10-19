@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Crosshair, ExternalLink, Globe, RotateCw, X } from 'lucide-react'
 import type { BrowserState, PickedElementResult } from '../../../../shared/contracts'
 import { ElementPick } from './ElementPick'
+import { BrowserTabs } from './BrowserTabs'
 import { useI18n } from '../../i18n'
 
 const overlaySelector =
@@ -119,6 +120,13 @@ export function BrowserTab({
     void window.prime.browserCommand(name).then(setState)
   return (
     <div className="browser-tab">
+      <BrowserTabs
+        state={state}
+        onChange={(next) => {
+          setState(next)
+          setError('')
+        }}
+      />
       <div className="browser-toolbar">
         <button
           className="icon small"

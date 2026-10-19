@@ -40,6 +40,7 @@ const api: DesktopApi = {
   openWith: (id, path, target) => ipcRenderer.invoke('prime:openWith', id, path, target),
   browserShow: (bounds) => ipcRenderer.invoke('prime:browserShow', bounds),
   browserHide: () => ipcRenderer.invoke('prime:browserHide'),
+  browserTab: (action, id, url) => ipcRenderer.invoke('prime:browserTab', action, id, url),
   browserState: () => ipcRenderer.invoke('prime:browserState'),
   browserNavigate: (url) => ipcRenderer.invoke('prime:browserNavigate', url),
   browserCommand: (command) => ipcRenderer.invoke('prime:browserCommand', command),

@@ -5,6 +5,8 @@ export type BrowserState = {
   loading: boolean
   canGoBack: boolean
   canGoForward: boolean
+  activeTab?: string
+  tabs?: { id: string; url: string; title: string; loading: boolean }[]
 }
 export type BrowserLog = {
   level: 'error' | 'warning' | 'info'
@@ -199,6 +201,7 @@ export interface DesktopApi {
   openWith(workspaceId: string, path: string, target: 'default' | 'vscode'): Promise<void>
   browserShow(bounds: { x: number; y: number; width: number; height: number }): Promise<void>
   browserHide(): Promise<void>
+  browserTab(action: 'new' | 'select' | 'close', id?: string, url?: string): Promise<BrowserState>
   browserState(): Promise<BrowserState>
   browserNavigate(url: string): Promise<BrowserState>
   browserCommand(command: 'back' | 'forward' | 'reload'): Promise<BrowserState>
