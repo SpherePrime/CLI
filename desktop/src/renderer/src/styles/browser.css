@@ -86,3 +86,77 @@
   font-size: 12px;
   line-height: 1.6;
 }
+
+.browser-toolbar .icon.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.browser-pick-hint {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.element-pick {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  animation: element-pick-in 160ms ease;
+}
+.element-pick-heading {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+.element-pick-heading img {
+  max-width: 96px;
+  max-height: 64px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  object-fit: contain;
+  background: #fff;
+}
+.element-pick-heading > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+}
+.element-pick-heading code,
+.element-pick-heading span {
+  color: var(--secondary);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.element-pick textarea {
+  resize: vertical;
+  font: inherit;
+  font-size: 12px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+.element-pick button[type='submit'] {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@keyframes element-pick-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+[data-motion='reduced'] .element-pick {
+  animation: none;
+}

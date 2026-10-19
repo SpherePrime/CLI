@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, ExternalLink, Globe, RotateCw, X } from 'lucide-react'
-import type { BrowserState } from '../../../../shared/contracts'
+import { ArrowLeft, ArrowRight, Crosshair, ExternalLink, Globe, RotateCw, X } from 'lucide-react'
+import type { BrowserState, PickedElementResult } from '../../../../shared/contracts'
+import { ElementPick } from './ElementPick'
 import { useI18n } from '../../i18n'
 
 const overlaySelector =
@@ -14,8 +15,38 @@ const emptyState: BrowserState = {
   canGoForward: false
 }
 
-export function BrowserTab() {
+export function BrowserTab({
+  onSend
+}: {
+  onSend?(prompt: string, attachmentIds: string[]): Promise<unknown>
+}) {
   const { t } = useI18n()
+  const [picking, setPicking] = useState(false)
+  const [picked, setPicked] = useState<PickedElementResult | null>(null)
+  useEffect(() => {
+    if (!picking) return
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') void window.prime.browserPickCancel()
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [picking])
+  useEffect(() => () => void window.prime.browserPickCancel(), [])
+  const pick = async () => {
+    if (picking) {
+      await window.prime.browserPickCancel()
+      return
+    }
+    setPicked(null)
+    setPicking(true)
+    try {
+      setPicked(await window.prime.browserPick())
+    } catch (reason) {
+      setError(String((reason as Error)?.message || reason).replace(/^.*Error: /, ''))
+    } finally {
+      setPicking(false)
+    }
+  }
   const viewport = useRef<HTMLDivElement>(null)
   const [state, setState] = useState<BrowserState>(emptyState)
   const [address, setAddress] = useState('')
@@ -139,6 +170,18 @@ export function BrowserTab() {
             onChange={(event) => setAddress(event.target.value)}
           />
         </form>
+        {onSend && (
+          <button
+            className={`icon small ${picking ? 'active' : ''}`}
+            aria-label={t('Выбрать элемент')}
+            aria-pressed={picking}
+            title={t('Выбрать элемент')}
+            disabled={!/^(https?|file):/.test(state.url)}
+            onClick={() => void pick()}
+          >
+            <Crosshair size={14} />
+          </button>
+        )}
         <button
           className="icon small"
           aria-label={t('Открыть во внешнем браузере')}
@@ -150,6 +193,14 @@ export function BrowserTab() {
         </button>
       </div>
       {error && <p className="browser-error">{error}</p>}
+      {picking && (
+        <p className="browser-pick-hint" role="status">
+          {t('Наведите на элемент и нажмите. Esc — отмена.')}
+        </p>
+      )}
+      {picked && onSend && (
+        <ElementPick result={picked} onSend={onSend} onClose={() => setPicked(null)} />
+      )}
       <div ref={viewport} className="browser-viewport">
         {!state.url && (
           <div className="browser-empty">

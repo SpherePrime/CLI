@@ -886,3 +886,12 @@ Object.assign(english, {
   'Команда запуска не найдена': 'Run command not found',
   'Слишком много команд запуска': 'Too many run commands'
 })
+
+Object.assign(english, {
+  'Выбрать элемент': 'Pick element',
+  'Наведите на элемент и нажмите. Esc — отмена.': 'Hover an element and click. Esc cancels.',
+  'Снимок элемента': 'Element snapshot',
+  'Замечание к элементу': 'Note about the element',
+  'Например: переделай эту кнопку': 'For example: redesign this button',
+  'Отправить в чат': 'Send to chat'
+})
