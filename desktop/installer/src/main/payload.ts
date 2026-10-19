@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { spawn, execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { join } from 'node:path'
+import { downloadSpeechModel } from '../../../src/main/speech/assets'
 
 export type Payload = {
   version: string
@@ -85,6 +86,9 @@ export function payloadOperations(root: string, payload: Payload) {
               )
         )
       })
+    },
+    async prepareVoice(progress: (percent: number) => void) {
+      await downloadSpeechModel(progress)
     },
     async verifyInstall(directory: string) {
       if (!(await stat(join(directory, 'PrimeDesktop.exe'))).isFile())

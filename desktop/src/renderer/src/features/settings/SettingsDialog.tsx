@@ -16,8 +16,10 @@ import {
   Info,
   Sun,
   Moon,
-  Download
+  Download,
+  AudioLines
 } from 'lucide-react'
+import { VoiceSettings } from './VoiceSettings'
 import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
 export function SettingsDialog({
@@ -36,6 +38,7 @@ export function SettingsDialog({
   const tabs = [
     { id: 'appearance', label: t('Интерфейс'), icon: Monitor },
     { id: 'providers', label: t('Провайдеры'), icon: Server },
+    { id: 'voice', label: t('Голос'), icon: AudioLines },
     { id: 'mcp', label: 'MCP', icon: Boxes },
     { id: 'lsp', label: 'LSP', icon: Code2 },
     { id: 'skills', label: 'Skills', icon: BookOpen },
@@ -61,6 +64,7 @@ export function SettingsDialog({
           ))}
         </nav>
         <div className="settings-body">
+          {tab === 'voice' && <VoiceSettings workspace={w} />}
           {tab === 'appearance' && (
             <>
               <h3>{t('Ваше рабочее пространство')}</h3>

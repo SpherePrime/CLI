@@ -69,6 +69,9 @@ export type Preferences = {
   density?: 'comfortable' | 'compact'
   reduceMotion?: boolean
   sidebarVisible?: boolean
+  speechVoice?: string
+  speechSpeed?: number
+  speechAutoSend?: boolean
   inspectorVisible?: boolean
   agentContexts?: Record<string, import('./agentContext').AgentContext>
   activeProject?: string
@@ -145,6 +148,7 @@ export interface DesktopApi {
     request: import('./launch').LaunchRequest
   ): Promise<import('./launch').LaunchResponse>
   browserLogs(clear?: boolean): Promise<BrowserLog[]>
+  speech(request: import('./speech').SpeechRequest): Promise<any>
   browserPick(): Promise<PickedElementResult | null>
   browserPickCancel(): Promise<void>
   team(

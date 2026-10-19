@@ -1,0 +1,89 @@
+.conversation-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  animation: conversation-in 200ms ease;
+}
+.conversation-bar canvas {
+  width: 168px;
+  height: 34px;
+  flex-shrink: 0;
+}
+.conversation-bar.is-speaking {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+.conversation-bar.is-hearing {
+  border-color: color-mix(in srgb, var(--green) 55%, var(--border));
+}
+.conversation-status {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.conversation-status strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.conversation-status span {
+  color: var(--secondary);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conversation-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.conversation-actions .icon.active {
+  color: var(--red);
+}
+.conversation-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--red) 40%, var(--border));
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.composer-actions .icon.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+@keyframes conversation-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+[data-motion='reduced'] .conversation-bar {
+  animation: none;
+}
+@media (max-width: 640px) {
+  .conversation-bar canvas {
+    width: 96px;
+  }
+}
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+.settings-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

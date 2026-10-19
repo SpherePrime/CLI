@@ -9,10 +9,14 @@ directories:
   output: release
 files:
   - out/**/*
+  - '!node_modules/onnxruntime-node/bin/napi-v6/{darwin,linux}/**'
+  - '!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**'
 asarUnpack:
   - node_modules/node-pty/**
   - node_modules/koffi/**
   - node_modules/@koromix/**
+  - node_modules/onnxruntime-node/**
+  - node_modules/onnxruntime-common/**
 extraResources:
   - from: build/icon.png
     to: icon.png
@@ -35,3 +39,4 @@ nsis:
   installerIcon: build/icon.ico
   createDesktopShortcut: true
   deleteAppDataOnUninstall: false
+
