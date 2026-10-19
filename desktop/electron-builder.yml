@@ -21,6 +21,7 @@ extraResources:
     filter:
       - prime.exe
       - manifest.json
+      - remotes/**/*
 win:
   target: nsis
   executableName: PrimeDesktop

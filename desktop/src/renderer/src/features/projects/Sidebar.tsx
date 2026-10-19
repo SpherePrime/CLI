@@ -12,7 +12,8 @@ import {
   X,
   Pin,
   MoreHorizontal,
-  TerminalSquare
+  TerminalSquare,
+  Server
 } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { groupSessions } from '../../../../shared/workspaceTools'
@@ -22,12 +23,14 @@ export function Sidebar({
   onSettings,
   onPlugins,
   onCommands,
+  onRemote,
   onWorkbench
 }: {
   workspace: Workspace
   onSettings: () => void
   onPlugins: () => void
   onCommands: () => void
+  onRemote: () => void
   onWorkbench: () => void
 }) {
   const { t } = useI18n()
@@ -87,13 +90,24 @@ export function Sidebar({
       <div className="sidebar-scroll">
         <div className="section-caption">
           {t('РАБОЧИЕ ПРОСТРАНСТВА')}{' '}
-          <button
-            className="icon small"
-            aria-label={t('Добавить проект')}
-            onClick={() => void w.openProject()}
-          >
-            <Plus size={14} />
-          </button>
+          <span className="section-caption-actions">
+            <button
+              className="icon small"
+              aria-label={t('SSH-серверы')}
+              title={t('SSH-серверы')}
+              onClick={onRemote}
+              disabled={w.info.runtime !== 'ready'}
+            >
+              <Server size={14} />
+            </button>
+            <button
+              className="icon small"
+              aria-label={t('Добавить проект')}
+              onClick={() => void w.openProject()}
+            >
+              <Plus size={14} />
+            </button>
+          </span>
         </div>
         {w.projects.map((project) => (
           <div key={project.id} className="project-group">
@@ -103,9 +117,21 @@ export function Sidebar({
                 onClick={() => void w.selectProject(project)}
               >
                 <ChevronDown size={14} />
-                <FolderOpen size={15} />
-                <span title={project.kind === 'chat' ? t('Личные чаты') : project.path}>
-                  {project.kind === 'chat' ? t('Личные чаты') : project.path.split(/[\\/]/).pop()}
+                {project.remote ? <Server size={15} /> : <FolderOpen size={15} />}
+                <span
+                  title={
+                    project.kind === 'chat'
+                      ? t('Личные чаты')
+                      : project.remote
+                        ? `${project.remote.user}@${project.remote.host}:${project.remote.root}`
+                        : project.path
+                  }
+                >
+                  {project.kind === 'chat'
+                    ? t('Личные чаты')
+                    : project.remote
+                      ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
+                      : project.path.split(/[\\/]/).pop()}
                 </span>
                 <span className={`dot ${project.connection === 'ready' ? 'green' : 'amber'}`} />
               </button>

@@ -1,3 +1,4 @@
+import { projectName } from './projectName'
 import {
   ArrowUpRight,
   Code2,
@@ -21,7 +22,7 @@ export function Welcome({
 }) {
   const { t } = useI18n()
   const hasFolder = Boolean(w.project && w.project.kind !== 'chat')
-  const projectName = w.project?.path.split(/[\\/]/).pop()
+  const projectTitle = projectName(w.project)
   const starters = hasFolder
     ? [
         {
@@ -96,7 +97,7 @@ export function Welcome({
         <p>
           {hasFolder ? (
             <>
-              {t('Проект')} <strong>{projectName}</strong> {t('готов к работе.')}
+              {t('Проект')} <strong>{projectTitle}</strong> {t('готов к работе.')}
               <br />
               {t('Начните с задачи — инструменты уже рядом.')}
             </>

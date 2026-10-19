@@ -4,6 +4,7 @@ out/
 release/
 runtime/*.exe
 runtime/manifest.json
+runtime/remotes/
 .superpowers/
 CHATS.md
 .env*

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { realpath } from 'node:fs/promises'
+import { isRemoteWorkspace, remoteWorkspaceIdentity } from '../../shared/remoteWorkspace'
 import { resolve } from 'node:path'
 import type { DesktopEvent } from '../../shared/contracts'
 import type {
@@ -63,6 +64,10 @@ export class AutomationManager {
     return result
   }
   private async canonical(root: string) {
+    if (isRemoteWorkspace(root)) {
+      if (!remoteWorkspaceIdentity(root)) throw new Error('automation.invalidRoot')
+      return root
+    }
     const resolved = resolve(root)
     const identity = process.platform === 'win32' ? resolved.toLowerCase() : resolved
     try {

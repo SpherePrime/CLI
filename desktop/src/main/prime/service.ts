@@ -5,6 +5,8 @@ import { PrimeTransport } from './transport'
 import { operationRoute, redact } from './operations'
 import { ActivityTracker } from './activity'
 
+type ProjectEnvironment = { resolveRoot?: (path: string) => Promise<string>; caseSensitive?: boolean }
+
 export class PrimeService {
   projects = new Map<string, Project>()
   private subscriptions = new Map<string, () => void>()
@@ -15,14 +17,15 @@ export class PrimeService {
   private initializing = new Map<string, Promise<any>>()
   constructor(
     private transport: PrimeTransport,
-    private emit: (event: DesktopEvent) => void
+    private emit: (event: DesktopEvent) => void,
+    private environment: ProjectEnvironment = {}
   ) {}
   isBusy(): boolean {
     return this.activity.isBusy() || this.shells.size > 0 || this.initializing.size > 0
   }
   async open(path: string, channels: string[] = []): Promise<Project> {
-    const canonical = await realpath(path)
-    const key = process.platform === 'win32' ? canonical.toLowerCase() : canonical
+    const canonical = await (this.environment.resolveRoot ? this.environment.resolveRoot(path) : realpath(path))
+    const key = this.pathKey(canonical)
     const pending = this.opening.get(key)
     if (pending) return pending
     const operation = this.openCanonical(canonical, channels)
@@ -34,9 +37,9 @@ export class PrimeService {
     }
   }
   private async openCanonical(canonical: string, channels: string[]): Promise<Project> {
-    if (!(await stat(canonical)).isDirectory()) throw new Error('Выберите папку проекта')
+    if (!this.environment.resolveRoot && !(await stat(canonical)).isDirectory()) throw new Error('Выберите папку проекта')
     const existing = [...this.projects.values()].find(
-      (project) => project.path.toLowerCase() === canonical.toLowerCase()
+      (project) => this.pathKey(project.path) === this.pathKey(canonical)
     )
     if (existing) return existing
     const clientId = randomUUID()
@@ -157,6 +160,19 @@ export class PrimeService {
     const project = this.projects.get(id)
     if (!project) throw new Error('Проект не открыт')
     return project.path
+  }
+  private pathKey(path: string) { return (this.environment.caseSensitive ?? process.platform !== 'win32') ? path : path.toLowerCase() }
+  detach(): void {
+    for (const project of this.projects.values()) this.emit({ workspaceId: project.id, type: 'connection', payload: 'disconnected' })
+    for (const unsubscribe of this.subscriptions.values()) unsubscribe()
+    for (const controller of this.shells.values()) controller.abort()
+    this.subscriptions.clear()
+    this.shells.clear()
+    this.projects.clear()
+    this.channels.clear()
+    this.opening.clear()
+    this.initializing.clear()
+    this.activity = new ActivityTracker()
   }
   private async initialize(id: string, args: any): Promise<any> {
     const pending = this.initializing.get(id)

@@ -1,3 +1,4 @@
+import { projectName as projectLabel } from '../features/projects/projectName'
 import { useDocuments } from '../features/files/useDocuments'
 import { StartupScreen } from '../components/StartupScreen'
 import { UpdateScreen } from '../features/updates/UpdateScreen'
@@ -21,7 +22,8 @@ import {
   SunMoon,
   Puzzle,
   TerminalSquare,
-  Clock3
+  Clock3,
+  Server
 } from 'lucide-react'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
@@ -36,6 +38,7 @@ import { Welcome } from '../features/projects/Welcome'
 import { CommandPalette, type QuickAction } from '../features/navigation/CommandPalette'
 import { downloadConversation } from '../features/chat/exportConversation'
 import { WorkbenchDock, type WorkbenchView } from '../features/workbench/WorkbenchDock'
+import { RemoteDialog } from '../features/remote/RemoteDialog'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -194,7 +197,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     window.addEventListener('pointerup', stop)
   }
   const projectName =
-    w.project?.kind === 'chat' ? t('Личные чаты') : w.project?.path.split(/[\\/]/).pop()
+    w.project?.kind === 'chat' ? t('Личные чаты') : projectLabel(w.project)
   const isEmpty = !w.messages.length && !w.busy
   const quickActions: QuickAction[] = [
     {
@@ -237,6 +240,13 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       run: () => {
         void w.openProject()
       }
+    },
+    {
+      id: 'remote',
+      label: t('SSH-серверы'),
+      icon: Server,
+      disabled: w.info.runtime !== 'ready',
+      run: () => setModal('remote')
     },
     {
       id: 'models',
@@ -324,6 +334,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               onSettings={() => setModal('settings')}
               onPlugins={() => setModal('plugins')}
               onCommands={() => setModal('commands')}
+              onRemote={() => setModal('remote')}
               onWorkbench={() => setWorkbench(true)}
             />
             <div
@@ -572,6 +583,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           />
         )}
         {modal === 'plugins' && <PluginManager workspace={w} close={() => setModal('')} />}
+        {modal === 'remote' && <RemoteDialog workspace={w} close={() => setModal('')} />}
       </div>
     </>
   )

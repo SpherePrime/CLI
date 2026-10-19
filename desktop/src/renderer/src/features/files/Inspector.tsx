@@ -1,3 +1,4 @@
+import { projectName, projectRoot } from '../projects/projectName'
 import { Select } from '../../components/Select'
 import { useCallback, useEffect, useState, type MouseEvent } from 'react'
 import {
@@ -129,7 +130,10 @@ export function Inspector({
     const id = w.project!.id
     const target = entry?.path || ''
     const parent = parentFolder(entry)
-    const absolute = [w.project!.path, target.replaceAll('/', '\\')].filter(Boolean).join('\\')
+    const remote = w.project!.remote
+    const absolute = remote
+      ? [remote.root.replace(/\/$/, ''), target].filter(Boolean).join('/')
+      : [w.project!.path, target.replaceAll('/', '\\')].filter(Boolean).join('\\')
     const items: MenuItem[] = []
     if (entry && !entry.directory)
       items.push(
@@ -155,18 +159,19 @@ export function Inspector({
       icon: <Code2 size={14} />,
       action: () => attempt(() => window.prime.openWith(id, target, 'vscode'))
     })
-    if (entry && !entry.directory)
+    if (entry && !entry.directory && !remote)
       items.push({
         label: t('Открыть программой по умолчанию'),
         icon: <ExternalLink size={14} />,
         action: () => attempt(() => window.prime.openWith(id, target, 'default'))
       })
-    items.push(
-      {
+    if (!remote)
+      items.push({
         label: t('Показать в проводнике'),
         icon: <FolderOpen size={14} />,
         action: () => attempt(() => window.prime.reveal(id, target))
-      },
+      })
+    items.push(
       {
         label: t('Копировать путь'),
         icon: <Copy size={14} />,
@@ -198,8 +203,9 @@ export function Inspector({
   }
   async function diffFile(path: string) {
     try {
-      const relative = path.startsWith(w.project!.path)
-        ? path.slice(w.project!.path.length).replace(/^[\\/]/, '')
+      const root = projectRoot(w.project!)
+      const relative = path.startsWith(root)
+        ? path.slice(root.length).replace(/^[\\/]/, '')
         : path
       await openDocument(
         w.project!.id,
@@ -256,7 +262,7 @@ export function Inspector({
         {tab === 'files' && (
           <>
             <div className="panel-title">
-              <span>{w.project?.path.split(/[\\/]/).pop() || t('ПРОЕКТ')}</span>
+              <span>{projectName(w.project) || t('ПРОЕКТ')}</span>
               <button
                 className="icon small"
                 title={t('Обновить дерево')}
@@ -394,6 +400,7 @@ export function Inspector({
         <EntryDeleteDialog
           path={removing.path}
           directory={removing.directory}
+          permanent={Boolean(w.project.remote)}
           close={() => setRemoving(null)}
           remove={async () => {
             await window.prime.trashEntry(w.project!.id, removing.path)
@@ -401,7 +408,7 @@ export function Inspector({
           }}
         />
       )}
-      {w.project && tab !== 'browser' && (
+      {w.project && !w.project.remote && tab !== 'browser' && (
         <div className="inspector-footer">
           <button onClick={() => void window.prime.reveal(w.project!.id)}>
             <FolderOpen size={13} /> {t('Открыть в проводнике')}

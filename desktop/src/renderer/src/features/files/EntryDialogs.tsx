@@ -65,11 +65,13 @@ export function EntryNameDialog({
 export function EntryDeleteDialog({
   path,
   directory,
+  permanent = false,
   close,
   remove
 }: {
   path: string
   directory: boolean
+  permanent?: boolean
   close: () => void
   remove: () => Promise<void>
 }) {
@@ -79,7 +81,11 @@ export function EntryDeleteDialog({
   return (
     <Modal title={directory ? t('Удалить папку?') : t('Удалить файл?')} close={close}>
       <div className="entry-dialog">
-        <p>{t('{path} будет перемещён в корзину.', { path })}</p>
+        <p>
+          {permanent
+            ? t('{path} будет удалён на сервере без возможности восстановления.', { path })
+            : t('{path} будет перемещён в корзину.', { path })}
+        </p>
         {error && <p className="error-text">{error}</p>}
         <div className="approval-actions">
           <button className="quiet" onClick={close}>
