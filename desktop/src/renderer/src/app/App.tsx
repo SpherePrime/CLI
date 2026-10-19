@@ -19,7 +19,8 @@ import {
   Plus,
   Download,
   SunMoon,
-  Puzzle
+  Puzzle,
+  TerminalSquare
 } from 'lucide-react'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
@@ -33,6 +34,7 @@ import { ChatActions } from '../features/chat/ChatActions'
 import { Welcome } from '../features/projects/Welcome'
 import { CommandPalette, type QuickAction } from '../features/navigation/CommandPalette'
 import { downloadConversation } from '../features/chat/exportConversation'
+import { WorkbenchDock } from '../features/workbench/WorkbenchDock'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -52,6 +54,7 @@ export function App() {
           Boolean(w.project) && w.project?.connection === 'ready' && w.info.runtime === 'ready'
         }
         busy={w.busy}
+        terminals={w.info.terminalCount || 0}
       />
     </I18nProvider>
   )
@@ -66,6 +69,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [inspector, setInspector] = useState(true)
   const [focusMode, setFocusMode] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [workbench, setWorkbench] = useState(false)
+  const [workbenchExpanded, setWorkbenchExpanded] = useState(false)
   const showSidebar = sidebar && !focusMode
   const showInspector = inspector && !focusMode
   const showEditor = documents.documents.length > 0 && !focusMode
@@ -116,6 +121,10 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         return
       }
       if (dialogOpen || event.defaultPrevented) return
+      if (event.ctrlKey && event.code === 'Backquote' && w.project) {
+        event.preventDefault()
+        setWorkbench((value) => !value)
+      }
       if (event.ctrlKey && event.shiftKey && event.code === 'KeyF') {
         event.preventDefault()
         setFocusMode((value) => !value)
@@ -185,6 +194,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     w.project?.kind === 'chat' ? t('Личные чаты') : w.project?.path.split(/[\\/]/).pop()
   const isEmpty = !w.messages.length && !w.busy
   const quickActions: QuickAction[] = [
+    {
+      id: 'terminal',
+      label: t('Терминал проекта'),
+      icon: TerminalSquare,
+      shortcut: 'Ctrl `',
+      disabled: !w.project,
+      run: () => setWorkbench(true)
+    },
     {
       id: 'new',
       label: t('Новый чат'),
@@ -290,6 +307,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               onSettings={() => setModal('settings')}
               onPlugins={() => setModal('plugins')}
               onCommands={() => setModal('commands')}
+              onWorkbench={() => setWorkbench(true)}
             />
             <div
               className="resizer left-resizer"
@@ -310,7 +328,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             />
           </>
         )}
-        <main className="main-workspace">
+        <main className="main-workspace" data-workbench-expanded={workbench && workbenchExpanded}>
           <header className="workspace-header">
             <button
               className="icon"
@@ -368,6 +386,16 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 </button>
               )}
               <ChatActions workspace={w} />
+              <button
+                className={`icon ${workbench ? 'active-control' : ''}`}
+                title={t('Терминал проекта') + ' · Ctrl `'}
+                aria-label={t('Терминал проекта')}
+                aria-expanded={workbench}
+                disabled={!w.project}
+                onClick={() => setWorkbench((value) => !value)}
+              >
+                <TerminalSquare size={17} />
+              </button>
               {!showInspector && (
                 <button
                   className="icon"
@@ -415,6 +443,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           )}
           <Approvals workspace={w} />
           <Composer workspace={w} />
+          {workbench && (
+            <WorkbenchDock
+              workspace={w}
+              expanded={workbenchExpanded}
+              setExpanded={setWorkbenchExpanded}
+              close={() => setWorkbench(false)}
+            />
+          )}
           <footer className="workspace-statusbar">
             <span>
               <GitBranch size={12} />

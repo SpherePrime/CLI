@@ -688,7 +688,7 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 	if c.MCP == nil {
 		c.MCP = make(map[string]MCPConfig)
 	}
-	c.addDesktopBrowserMCP()
+	c.addDesktopBrowserMCP(workingDir)
 	// Drop orphaned OAuth token entries left behind when a user removes
 	// an MCP from prime.json. See MCPConfig.isOrphanedToken.
 	for name, m := range c.MCP {

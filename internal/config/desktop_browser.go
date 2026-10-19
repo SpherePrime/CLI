@@ -1,6 +1,10 @@
 package config
 
-import "os"
+import (
+	"encoding/base64"
+	"os"
+	"strconv"
+)
 
 const (
 	DesktopBrowserMCPName = "browser"
@@ -8,20 +12,31 @@ const (
 	desktopBrowserKeyEnv  = "PRIME_DESKTOP_BROWSER_TOKEN"
 )
 
-func (c *Config) addDesktopBrowserMCP() {
+func (c *Config) addDesktopBrowserMCP(workingDir string) {
 	url := os.Getenv(desktopBrowserURLEnv)
 	token := os.Getenv(desktopBrowserKeyEnv)
 	if url == "" || token == "" {
 		return
 	}
-	if _, exists := c.MCP[DesktopBrowserMCPName]; exists {
-		return
+	name := DesktopBrowserMCPName
+	for suffix := 1; ; suffix++ {
+		existing, exists := c.MCP[name]
+		if !exists || existing.URL == url && existing.Headers["Authorization"] == "Bearer "+token {
+			break
+		}
+		name = "prime-desktop"
+		if suffix > 1 {
+			name += "-" + strconv.Itoa(suffix)
+		}
 	}
 	sessionless := true
-	c.MCP[DesktopBrowserMCPName] = MCPConfig{
-		Type:        MCPHttp,
-		URL:         url,
-		Headers:     map[string]string{"Authorization": "Bearer " + token},
+	c.MCP[name] = MCPConfig{
+		Type: MCPHttp,
+		URL:  url,
+		Headers: map[string]string{
+			"Authorization":     "Bearer " + token,
+			"X-Prime-Workspace": base64.RawURLEncoding.EncodeToString([]byte(workingDir)),
+		},
 		Sessionless: &sessionless,
 		Timeout:     120,
 	}

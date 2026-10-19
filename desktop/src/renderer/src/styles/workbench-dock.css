@@ -1,0 +1,81 @@
+.workbench-dock {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  animation: fade-in 160ms ease;
+}
+.workbench-dock.expanded {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+.workbench-divider {
+  position: absolute;
+  z-index: 4;
+  inset: -3px 0 auto;
+  height: 6px;
+  cursor: ns-resize;
+  background: transparent;
+}
+.workbench-divider:hover {
+  background: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.workbench-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px 6px 16px;
+  min-height: 37px;
+  border-bottom: 1px solid var(--border);
+  background: var(--sidebar);
+}
+.workbench-navigation > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+}
+.workbench-navigation > div {
+  display: flex;
+  gap: 5px;
+}
+.workbench-content {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.workbench-terminal-actions .terminal-header {
+  min-height: 24px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+}
+.workbench-terminal-actions .terminal-heading {
+  display: none;
+}
+.workbench-terminal-actions .terminal-new {
+  min-height: 24px;
+  padding: 3px 8px;
+  font-size: 11px;
+  border-color: transparent;
+  background: var(--raised);
+}
+.workbench-dock .terminal-empty {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  justify-content: flex-start;
+}
+.main-workspace[data-workbench-expanded='true'] > .welcome,
+.main-workspace[data-workbench-expanded='true'] > .conversation-panel,
+.main-workspace[data-workbench-expanded='true'] > .composer-area {
+  display: none;
+}

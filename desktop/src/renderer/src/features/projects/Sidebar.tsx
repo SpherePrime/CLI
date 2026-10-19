@@ -11,7 +11,8 @@ import {
   Command,
   X,
   Pin,
-  MoreHorizontal
+  MoreHorizontal,
+  TerminalSquare
 } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { groupSessions } from '../../../../shared/workspaceTools'
@@ -20,12 +21,14 @@ export function Sidebar({
   workspace: w,
   onSettings,
   onPlugins,
-  onCommands
+  onCommands,
+  onWorkbench
 }: {
   workspace: Workspace
   onSettings: () => void
   onPlugins: () => void
   onCommands: () => void
+  onWorkbench: () => void
 }) {
   const { t } = useI18n()
   const [search, setSearch] = useState('')
@@ -291,6 +294,11 @@ export function Sidebar({
         )}
       </div>
       <footer className="sidebar-footer">
+        <button onClick={onWorkbench} disabled={!w.project}>
+          <TerminalSquare size={16} />
+          {t('Инструменты проекта')}
+          <kbd className="footer-shortcut">Ctrl `</kbd>
+        </button>
         <button onClick={onPlugins}>
           <Puzzle size={16} /> {t('Плагины')}
         </button>

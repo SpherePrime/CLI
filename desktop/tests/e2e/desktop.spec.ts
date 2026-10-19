@@ -431,7 +431,9 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
       0,
       { timeout: 15000 }
     )
-    const toolCard = page.locator('.tool-card').filter({ hasText: 'write' })
+    const toolCard = page
+      .locator('.tool-card')
+      .filter({ has: page.locator('.tool-title[title="write"]') })
     await expect(toolCard).toHaveCount(1)
     await expect(page.locator('.message.tool')).toHaveCount(0)
     await toolCard.locator('summary').click()

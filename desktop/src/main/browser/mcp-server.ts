@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import type { BrowserPanel } from './panel'
 import { browserTools } from './tools'
+import type { WorkbenchTool, WorkbenchToolContext } from '../workbench/tools'
 
 const maxBody = 1024 * 1024
 const protocolVersion = '2025-03-26'
@@ -37,7 +38,17 @@ function send(response: ServerResponse, status: number, body?: unknown) {
   response.end(body === undefined ? undefined : JSON.stringify(body))
 }
 
-async function handle(panel: BrowserPanel, message: any) {
+type ServerOptions = {
+  tools?: () => WorkbenchTool[]
+  resolveWorkspace?: (path: string) => string | undefined
+}
+
+async function handle(
+  panel: BrowserPanel,
+  message: any,
+  options: ServerOptions,
+  context: WorkbenchToolContext
+) {
   const { id, method, params } = message
   const reply = (result: unknown) => ({ jsonrpc: '2.0', id, result })
   const fail = (code: number, text: string) => ({
@@ -54,9 +65,10 @@ async function handle(panel: BrowserPanel, message: any) {
         'Built-in browser of Prime Desktop, visible to the user in the Workspace panel. Use these tools instead of other browser automation servers.'
     })
   if (method === 'ping') return reply({})
+  const extraTools = context.workspaceId ? options.tools?.() || [] : []
   if (method === 'tools/list')
     return reply({
-      tools: browserTools.map(({ name, description, inputSchema }) => ({
+      tools: [...browserTools, ...extraTools].map(({ name, description, inputSchema }) => ({
         name,
         description,
         inputSchema
@@ -64,9 +76,14 @@ async function handle(panel: BrowserPanel, message: any) {
     })
   if (method === 'tools/call') {
     const tool = browserTools.find((item) => item.name === params?.name)
-    if (!tool) return fail(-32602, `Unknown tool ${params?.name}`)
+    const extraTool = extraTools.find((item) => item.name === params?.name)
+    if (!tool && !extraTool) return fail(-32602, `Unknown tool ${params?.name}`)
     try {
-      return reply({ content: await tool.run(panel, params?.arguments || {}) })
+      return reply({
+        content: tool
+          ? await tool.run(panel, params?.arguments || {})
+          : await extraTool!.run(params?.arguments || {}, context)
+      })
     } catch (error: any) {
       return reply({
         content: [{ type: 'text', text: error?.message || String(error) }],
@@ -77,7 +94,10 @@ async function handle(panel: BrowserPanel, message: any) {
   return fail(-32601, `Method ${method} not found`)
 }
 
-export async function startBrowserMcpServer(panel: BrowserPanel): Promise<BrowserMcpServer> {
+export async function startBrowserMcpServer(
+  panel: BrowserPanel,
+  options: ServerOptions = {}
+): Promise<BrowserMcpServer> {
   const token = randomBytes(32).toString('hex')
   const server: Server = createServer(async (request, response) => {
     if (!request.url?.startsWith('/mcp')) return send(response, 404)
@@ -85,11 +105,18 @@ export async function startBrowserMcpServer(panel: BrowserPanel): Promise<Browse
     if (request.method === 'DELETE') return send(response, 200)
     if (request.method !== 'POST') return send(response, 405)
     try {
+      const encodedRoot = request.headers['x-prime-workspace']
+      const root =
+        typeof encodedRoot === 'string' && /^[A-Za-z0-9_-]+$/.test(encodedRoot)
+          ? Buffer.from(encodedRoot, 'base64url').toString('utf8')
+          : ''
+      const context = { workspaceId: root ? options.resolveWorkspace?.(root) : undefined }
       const payload = JSON.parse(await readBody(request))
       const messages = Array.isArray(payload) ? payload : [payload]
       const replies = []
       for (const message of messages)
-        if (message?.id !== undefined && message?.method) replies.push(await handle(panel, message))
+        if (message?.id !== undefined && message?.method)
+          replies.push(await handle(panel, message, options, context))
       if (!replies.length) return send(response, 202)
       send(response, 200, Array.isArray(payload) ? replies : replies[0])
     } catch (error: any) {
