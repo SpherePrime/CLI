@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { DesktopApi } from '../shared/contracts'
 const api: DesktopApi = {
+  importImages: images => ipcRenderer.invoke('prime:importImages', images),
+  releaseAttachments: ids => ipcRenderer.invoke('prime:releaseAttachments', ids),
   automation: (id, request) => ipcRenderer.invoke('prime:automation', id, request),
   team: (id, request) => ipcRenderer.invoke('prime:team', id, request),
   launch: (id, request) => ipcRenderer.invoke('prime:launch', id, request),

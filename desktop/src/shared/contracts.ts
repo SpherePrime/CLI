@@ -188,6 +188,8 @@ export interface DesktopApi {
     source: 'session' | 'git'
   ): Promise<Json>
   attachments(): Promise<Json[]>
+  importImages(images: import('./attachments').ImageUpload[]): Promise<import('./attachments').Attachment[]>
+  releaseAttachments(ids: string[]): Promise<void>
   preferences(patch?: Partial<Preferences>): Promise<Preferences>
   openExternal(url: string): Promise<void>
   reveal(workspaceId: string, path?: string): Promise<void>

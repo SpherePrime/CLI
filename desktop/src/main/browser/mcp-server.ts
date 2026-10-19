@@ -62,7 +62,7 @@ async function handle(
       capabilities: { tools: { listChanged: false } },
       serverInfo: { name: 'prime-desktop-browser', version: '1.0.0' },
       instructions:
-        'Built-in browser of Prime Desktop, visible to the user in the Workspace panel. Use these tools instead of other browser automation servers.'
+        'Prime Desktop project tools and built-in browser. Use desktop_capabilities to discover project automation, app launch, terminal, team, working context and GitHub tools. Maintain working context automatically as the task evolves. Use automation_save for requested schedules; new rules default enabled. Use terminal_create for a new agent-controlled project terminal. Existing user terminals require explicit handover. Browser navigation, DOM snapshots/evaluation, input and screenshots use the visible built-in browser. Use window_list and window_request_access to request a specific window, then wait for an explicit view/control grant. window_action may act only on the approved window and chat. Tools are bound to the current project; do not supply workspace IDs or roots. Create agent teams only when the user explicitly asks for delegation.'
     })
   if (method === 'ping') return reply({})
   const extraTools = context.workspaceId ? options.tools?.() || [] : []
