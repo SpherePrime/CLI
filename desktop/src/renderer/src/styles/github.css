@@ -1,0 +1,186 @@
+.github-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+}
+.github-list {
+  border-right: 1px solid var(--border);
+  overflow: auto;
+  padding: 8px;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+.github-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.github-panel .github-tabs button {
+  flex: 1;
+  background: transparent;
+  border-color: transparent;
+  color: var(--secondary);
+}
+.github-panel .github-tabs button[aria-selected='true'] {
+  background: var(--raised);
+  border-color: var(--border);
+  color: var(--text);
+}
+.github-tabs span {
+  color: var(--muted);
+}
+.github-panel .github-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+  text-align: left;
+  gap: 2px 8px;
+  padding: 8px;
+  background: transparent;
+  border-color: transparent;
+}
+.github-panel .github-item.selected {
+  background: var(--raised);
+  border-color: var(--border);
+}
+.github-number {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.github-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.github-item small {
+  grid-column: 2;
+  color: var(--secondary);
+}
+.github-detail {
+  overflow: auto;
+  padding: 14px;
+  min-width: 0;
+}
+.github-card {
+  display: grid;
+  gap: 10px;
+}
+.github-card header {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.github-card h3 {
+  font-size: 14px;
+  margin: 0;
+}
+.github-card h4 {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.github-card h4 span,
+.github-meta {
+  color: var(--secondary);
+  margin: 0;
+}
+.github-body,
+.github-diff {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  max-height: 260px;
+  overflow: auto;
+}
+.github-diff {
+  white-space: pre;
+  max-height: 360px;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+.github-checks,
+.github-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.github-checks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.github-check-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.github-checks .is-pass .github-check-dot {
+  background: var(--green);
+}
+.github-checks .is-fail .github-check-dot {
+  background: var(--red);
+}
+.github-checks .is-pending .github-check-dot {
+  background: var(--amber);
+}
+.github-files li {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+}
+.github-files code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.github-files .added {
+  color: var(--green);
+}
+.github-files .removed {
+  color: var(--red);
+}
+.github-notice {
+  margin: 0 0 10px;
+  color: var(--green);
+  overflow-wrap: anywhere;
+}
+.github-confirm {
+  color: var(--amber);
+  margin: 0;
+}
+.github-create-branches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.github-checkbox {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+}
+.github-empty {
+  margin: auto;
+}
+@media (max-width: 760px) {
+  .github-layout {
+    grid-template-columns: 1fr;
+  }
+  .github-list {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    max-height: 200px;
+  }
+}

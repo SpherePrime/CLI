@@ -149,6 +149,7 @@ export interface DesktopApi {
   ): Promise<import('./launch').LaunchResponse>
   browserLogs(clear?: boolean): Promise<BrowserLog[]>
   speech(request: import('./speech').SpeechRequest): Promise<any>
+  github(workspaceId: string, request: import('./github').GithubRequest): Promise<any>
   browserPick(): Promise<PickedElementResult | null>
   browserPickCancel(): Promise<void>
   team(
