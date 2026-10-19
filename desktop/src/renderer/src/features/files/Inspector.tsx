@@ -249,7 +249,7 @@ export function Inspector({
           </button>
         ))}
       </div>
-      {tab === 'browser' && <BrowserTab />}
+      {tab === 'browser' && <BrowserTab onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)} />}
       <div className="inspector-content" hidden={tab === 'browser'}>
         {error && (
           <div className="panel-error">

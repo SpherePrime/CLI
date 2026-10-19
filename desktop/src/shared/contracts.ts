@@ -14,6 +14,19 @@ export type BrowserLog = {
   url: string
   time: number
 }
+export type PickedElementResult = {
+  element: {
+    selector: string
+    tag: string
+    text: string
+    html: string
+    url: string
+    rect: { x: number; y: number; width: number; height: number }
+    styles: Record<string, string>
+  }
+  attachmentId?: string
+  image?: string
+}
 export type QueuedPrompt = { id: string; prompt: string; attachments: number }
 export type Session = {
   id: string
@@ -132,6 +145,8 @@ export interface DesktopApi {
     request: import('./launch').LaunchRequest
   ): Promise<import('./launch').LaunchResponse>
   browserLogs(clear?: boolean): Promise<BrowserLog[]>
+  browserPick(): Promise<PickedElementResult | null>
+  browserPickCancel(): Promise<void>
   team(
     workspaceId: string,
     request: import('./teams').TeamRequest
