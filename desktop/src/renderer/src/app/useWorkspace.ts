@@ -244,6 +244,10 @@ export function useWorkspace() {
       .catch(errorHandler)
     void window.prime.preferences().then(setPreferences).catch(errorHandler)
     const unsubscribe = window.prime.onEvent((event) => {
+      if (event.type === 'terminal' && typeof event.payload?.activeCount === 'number') {
+        setInfo((current: Json) => ({ ...current, terminalCount: event.payload.activeCount }))
+        return
+      }
       if (event.type === 'recovered') {
         const opened: Project[] = event.payload
         const restored =

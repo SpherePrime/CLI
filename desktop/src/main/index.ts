@@ -31,6 +31,9 @@ import { BrowserPanel } from './browser/panel'
 import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
 import { validateExternalUrl } from './ipc/security'
 import type { Operation } from '../shared/contracts'
+import { TerminalManager } from './terminal/manager'
+import { terminalOperation } from './workbench/terminalIpc'
+import { workbenchTerminalTools } from './workbench/tools'
 
 let window: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -50,6 +53,8 @@ const attachmentStore = new Map<string, any>()
 const projectId = z.string().uuid()
 let browserMcp: BrowserMcpServer | undefined
 const emit = (event: any) => {
+  if (event.type === 'terminal')
+    event.payload.activeCount = terminals.list().filter((item) => item.status === 'running').length
   if (window && !window.isDestroyed()) window.webContents.send('prime:event', event)
   if (
     event.type === 'runtime' &&
@@ -72,6 +77,9 @@ const emit = (event: any) => {
   }
 }
 const browserPanel = new BrowserPanel(() => window, emit)
+const terminals = new TerminalManager({ emit })
+const hasBackgroundWork = () =>
+  Boolean(prime?.isBusy() || terminals.list().some((item) => item.status === 'running'))
 async function recoverBackend(): Promise<void> {
   recovering = true
   const previous = [...(prime?.projects.values() || [])]
@@ -87,6 +95,7 @@ async function recoverBackend(): Promise<void> {
       for (const project of previous) {
         try {
           const recovered = await recoveredService.open(project.path, project.channels)
+          terminals.rebindWorkspace(project.id, recovered.id)
           recovered.kind = project.kind
           if (project.currentSessionId)
             await recoveredService.call(recovered.id, 'currentSession', {
@@ -160,7 +169,7 @@ function refreshTrayMenu(): void {
       {
         label: t('Выйти'),
         click: async () => {
-          if (prime?.isBusy()) {
+          if (hasBackgroundWork()) {
             const { response } = await dialog.showMessageBox(window!, {
               type: 'question',
               message: t('Остановить задачи и выйти?'),
@@ -191,6 +200,9 @@ function confirmEditorDiscard(): boolean {
   return true
 }
 function registerIpc(): void {
+  handle('terminal', (id: string, request: unknown) =>
+    terminalOperation(terminals, projectId.parse(id), requirePrime().root(id), request)
+  )
   handle('editorDirty', (dirty: boolean) => {
     editorDirty = z.boolean().parse(dirty)
   })
@@ -212,6 +224,7 @@ function registerIpc(): void {
   handle('info', () => ({
     version: app.getVersion(),
     runtime: runtime?.status || 'starting',
+    terminalCount: terminals.list().filter((item) => item.status === 'running').length,
     runtimeVersion: runtime?.version,
     error: runtimeError,
     packaged: app.isPackaged,
@@ -254,6 +267,9 @@ function registerIpc(): void {
   })
   handle('closeProject', async (id: string) => {
     if (requirePrime().isBusy()) throw new Error(t('Сначала завершите активные задачи'))
+    if (terminals.list(id).some((item) => item.status === 'running'))
+      throw new Error(t('Сначала закройте терминалы проекта'))
+    await Promise.all(terminals.list(id).map((item) => terminals.close(item.id, id)))
     await requirePrime().close(projectId.parse(id))
     const remaining = [...requirePrime().projects.values()]
     await settings.update({ activeProject: remaining[0]?.path || '' })
@@ -445,7 +461,7 @@ function registerIpc(): void {
           emit({ type: 'update', payload: status })
         },
         async () => {
-          if (prime?.isBusy()) throw new Error(t('Сначала завершите активные задачи'))
+          if (hasBackgroundWork()) throw new Error(t('Сначала завершите активные задачи'))
           if (editorDirty) throw new Error(t('Сохраните изменения в файлах перед перезапуском'))
         }
       )
@@ -496,7 +512,7 @@ function createWindow(): void {
   })
   window.webContents.on('will-navigate', (event) => event.preventDefault())
   window.on('close', (event) => {
-    if (!quitting && prime?.isBusy()) {
+    if (!quitting && hasBackgroundWork()) {
       event.preventDefault()
       window?.hide()
       new Notification({
@@ -535,7 +551,15 @@ else {
     tray.on('double-click', () => window?.show())
     refreshTrayMenu()
     try {
-      browserMcp = await startBrowserMcpServer(browserPanel)
+      browserMcp = await startBrowserMcpServer(browserPanel, {
+        tools: () => workbenchTerminalTools(terminals),
+        resolveWorkspace: (root) =>
+          [...(prime?.projects.values() || [])].find(
+            (project) =>
+              project.path.replaceAll('\\', '/').toLowerCase() ===
+              root.replaceAll('\\', '/').toLowerCase()
+          )?.id
+      })
       process.env.PRIME_DESKTOP_BROWSER_URL = browserMcp.url
       process.env.PRIME_DESKTOP_BROWSER_TOKEN = browserMcp.token
     } catch (error) {
@@ -544,7 +568,7 @@ else {
     await startRuntime()
   })
   app.on('window-all-closed', () => {
-    if (!prime?.isBusy()) app.quit()
+    if (!hasBackgroundWork()) app.quit()
   })
   app.on('before-quit', (event) => {
     if (cleanupDone) return
@@ -555,6 +579,7 @@ else {
     }
     quitting = true
     void (async () => {
+      await terminals.dispose()
       await prime?.dispose()
       await runtime?.stop()
       await browserMcp?.close()

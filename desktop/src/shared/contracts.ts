@@ -114,6 +114,10 @@ export type Operation =
   | 'importCopilot'
   | 'refreshOAuth'
 export interface DesktopApi {
+  terminal(
+    workspaceId: string,
+    request: import('./terminal').TerminalRequest
+  ): Promise<import('./terminal').TerminalResponse>
   changes(workspaceId: string): Promise<{ path: string; status: string; originalPath?: string }[]>
   info(): Promise<Json>
   projects(): Promise<Project[]>

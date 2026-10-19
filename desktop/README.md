@@ -36,6 +36,10 @@ The Workspace panel has a Browser tab. Prime uses the same browser through its `
 
 Open files from the inspector into editor tabs beside the chat. Monaco provides local syntax highlighting, line numbers, undo/redo and Ctrl+S. Saving checks the last-read revision before replacing a file; external changes require reloading. Unsaved tabs prompt before closing. Manual saves update the workspace and Git diff; CLI session history continues to describe agent tool edits. Editor code and workers are bundled locally and load only when needed.
 
+## Terminal
+
+Open Project Tools or press Ctrl+` for project-scoped PowerShell tabs. Resize or expand the panel, copy output, and explicitly hand input control to the agent. Terminals keep running when hidden or while switching projects. Closing a tab stops its process tree; quitting stops every terminal. Active terminals block update restart. Native terminal dependencies ship with the application.
+
 ## Data and updates
 
 Queued messages appear above the composer. Send Now interrupts the current turn and runs the selected queued request, retaining its attachments and the other Desktop requests. Reasoning levels are available beside models that support them. Pending approvals update independently from resource loading and are recovered every second during active runs.

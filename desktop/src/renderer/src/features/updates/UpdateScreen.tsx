@@ -4,7 +4,15 @@ import type { UpdateStatus } from '../../../../shared/updates'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { useI18n } from '../../i18n'
 
-export function UpdateScreen({ ready, busy }: { ready: boolean; busy: boolean }) {
+export function UpdateScreen({
+  ready,
+  busy,
+  terminals = 0
+}: {
+  ready: boolean
+  busy: boolean
+  terminals?: number
+}) {
   const { t } = useI18n()
   const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
   const [error, setError] = useState('')
@@ -126,7 +134,7 @@ export function UpdateScreen({ ready, busy }: { ready: boolean; busy: boolean })
         {downloaded && (
           <button
             className="primary update-restart"
-            disabled={busy}
+            disabled={busy || terminals > 0}
             onClick={() => {
               setError('')
               void window.prime.update('install').catch((error) => setError(error.message))
@@ -136,7 +144,13 @@ export function UpdateScreen({ ready, busy }: { ready: boolean; busy: boolean })
             {t('Перезапустить')}
           </button>
         )}
-        {downloaded && busy && <p className="muted">{t('Дождитесь завершения текущей задачи.')}</p>}
+        {downloaded && (busy || terminals > 0) && (
+          <p className="muted">
+            {terminals > 0
+              ? t('Закройте терминалы перед перезапуском.')
+              : t('Дождитесь завершения текущей задачи.')}
+          </p>
+        )}
         {failed && (
           <button
             className="primary"
