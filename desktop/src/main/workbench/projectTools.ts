@@ -64,7 +64,6 @@ export function createProjectTools(options: ProjectToolOptions): WorkbenchTool[]
       )
         throw new Error('Automation not found in this project')
       const result = await manager.save(automationRoot(target), input)
-      options.reveal?.(target.workspaceId, 'automations')
       return result
     }
   )
@@ -185,7 +184,6 @@ export function createProjectTools(options: ProjectToolOptions): WorkbenchTool[]
     teamCreate,
     async (input, target) => {
       const result = await ready(options.teams()).handle(target.key, { action: 'create', input })
-      options.reveal?.(target.workspaceId, 'teams')
       return result
     }
   )

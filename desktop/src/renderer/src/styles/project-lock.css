@@ -1,0 +1,41 @@
+.project-lock-banner {
+  position: fixed;
+  left: 50%;
+  top: 108px;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 12px 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--border));
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+  color: var(--text);
+  animation: project-lock-in 200ms ease;
+}
+.project-lock-banner > svg {
+  color: var(--amber);
+  flex-shrink: 0;
+}
+.project-lock-banner div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+}
+.project-lock-banner span {
+  color: var(--secondary);
+  overflow-wrap: anywhere;
+}
+@keyframes project-lock-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+[data-motion='reduced'] .project-lock-banner {
+  animation: none;
+}

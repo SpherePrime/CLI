@@ -1025,3 +1025,49 @@ Object.assign(english, {
   'Сейчас ничего не выполняется': 'Nothing is running right now',
   'Здесь пока пусто': 'Nothing here yet'
 })
+
+Object.assign(english, {
+  'Контекст задачи': 'Task context',
+  'Открывает страницу': 'Opens a page',
+  'Читает страницу': 'Reads the page',
+  'Снимок страницы': 'Page screenshot',
+  'Нажимает на странице': 'Clicks on the page',
+  'Вводит текст': 'Types text',
+  'Нажимает клавишу': 'Presses a key',
+  'Прокручивает страницу': 'Scrolls the page',
+  'Выполняет скрипт': 'Runs a script',
+  'Список терминалов': 'Terminal list',
+  'Читает вывод': 'Reads output',
+  'Вводит команду': 'Types a command',
+  'Меняет размер': 'Resizes',
+  'Открывает терминал': 'Opens a terminal',
+  'Закрывает терминал': 'Closes the terminal',
+  'Возвращает управление': 'Returns control',
+  'Список автоматизаций': 'Automation list',
+  'Создаёт автоматизацию': 'Creates an automation',
+  'Изменяет автоматизацию': 'Updates an automation',
+  'Приостанавливает автоматизацию': 'Pauses an automation',
+  'Останавливает запуск': 'Stops a run',
+  'Открывает автоматизацию': 'Opens an automation',
+  'Список групп': 'Team list',
+  'Создаёт группу агентов': 'Creates an agent team',
+  'Останавливает группу': 'Stops a team',
+  'Открывает группу': 'Opens a team',
+  'Команды запуска': 'Run commands',
+  'Сохраняет команду запуска': 'Saves a run command',
+  'Читает логи приложения': 'Reads app logs',
+  'Список окон': 'Window list',
+  'Запрашивает доступ к окну': 'Requests window access',
+  'Смотрит окно': 'Views a window',
+  'Действие в окне': 'Window action',
+  'Читает контекст': 'Reads context',
+  'Обновляет контекст': 'Updates context',
+  'Возможности приложения': 'App capabilities'
+})
+
+Object.assign(english, {
+  'Проект открыт в Prime CLI': 'Project is open in Prime CLI',
+  'Закройте CLI в папке {value0} — Desktop откроет проект и его чаты автоматически.': 'Close the CLI in {value0} — Desktop will open the project and its chats automatically.',
+  'Отменить открытие': 'Cancel opening',
+  'Проект открыт в Prime CLI. Закройте CLI в этой папке и откройте проект снова.': 'The project is open in Prime CLI. Close the CLI in this folder and open the project again.'
+})
