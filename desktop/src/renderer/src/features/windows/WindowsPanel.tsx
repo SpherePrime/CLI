@@ -1,3 +1,4 @@
+import { EmptyState } from '../../components/EmptyState'
 import { useCallback, useEffect, useState } from 'react'
 import { AppWindow, Eye, EyeOff, RefreshCw, ShieldCheck } from 'lucide-react'
 import type { WindowInfo, WindowState } from '../../../../shared/computer'
@@ -82,7 +83,14 @@ export function WindowsPanel({ workspaceId, sessionId, sessionTitle, onError }: 
           {!windows.length && <p className="launch-placeholder">{t('Окна не найдены')}</p>}
         </aside>
         <section className="windows-detail">
-          {!selected && <p className="launch-placeholder">{t('Выберите окно, чтобы посмотреть снимок')}</p>}
+          {!selected && (
+            <EmptyState
+              compact
+              icon={AppWindow}
+              title={t('Выберите окно, чтобы посмотреть снимок')}
+              text={t('Агент получит только снимки этого окна во время работы в выбранном чате. Нажатия и ввод текста недоступны.')}
+            />
+          )}
           {selected && (
             <>
               <div className="windows-preview">

@@ -140,7 +140,7 @@
 .remote-panel .primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent-text, #171717);
+  color: var(--on-accent);
 }
 .remote-panel .icon-button {
   width: 34px;
@@ -308,14 +308,15 @@
   }
 }
 
-:root[data-theme='light'] .remote-panel .primary {
-  color: #fff;
-}
+
 
 .section-caption-actions {
   display: inline-flex;
   align-items: center;
   gap: 2px;
+}
+.modal.remote-dialog .remote-header > div:nth-child(2) h3 {
+  display: none;
 }
 .modal.remote-dialog .remote-panel {
   padding: 0;

@@ -1,3 +1,4 @@
+import { EmptyState } from '../../components/EmptyState'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppWindow, ArrowUpRight, Bot, Clock3, MessageCircleQuestion, Rocket, ShieldAlert, Square, TerminalSquare, Users } from 'lucide-react'
 import { Modal } from '../../components/Modal'
@@ -169,8 +170,11 @@ export function JobsCenter({ workspace: w, close, openTools }: { workspace: Work
         })}
         {!visible.length && (
           <li className="jobs-empty">
-            <AppWindow size={26} />
-            {t('Здесь появятся агенты, автоматизации, команды, терминалы и приложения всех проектов.')}
+            <EmptyState
+              icon={AppWindow}
+              title={t(filter === 'active' ? 'Сейчас ничего не выполняется' : 'Здесь пока пусто')}
+              text={t('Здесь появятся агенты, автоматизации, команды, терминалы и приложения всех проектов.')}
+            />
           </li>
         )}
       </ul>

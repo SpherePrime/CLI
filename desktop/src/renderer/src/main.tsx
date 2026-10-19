@@ -22,6 +22,7 @@ import './styles/welcome.css'
 import './styles/navigation.css'
 import './styles/workbench.css'
 import './styles/context.css'
+import './styles/polish.css'
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

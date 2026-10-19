@@ -1002,3 +1002,8 @@ Object.assign(english, {
   'Здесь появятся агенты, автоматизации, команды, терминалы и приложения всех проектов.': 'Agents, automations, teams, terminals and apps of all projects appear here.',
   'Неизвестная задача': 'Unknown task'
 })
+
+Object.assign(english, {
+  'Сейчас ничего не выполняется': 'Nothing is running right now',
+  'Здесь пока пусто': 'Nothing here yet'
+})

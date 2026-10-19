@@ -1,3 +1,4 @@
+import { EmptyState } from '../../components/EmptyState'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Globe, Pencil, Play, Plus, RotateCw, Rocket, Send, Square, Trash2 } from 'lucide-react'
 import type { BrowserLog, DesktopEvent } from '../../../../shared/contracts'
@@ -102,12 +103,22 @@ function LaunchWorkspace({ root, api, terminal, subscribe, theme, onError, onDia
           <h2>{t('Запуск приложений')}</h2>
         </div>
         <div className="automation-actions">
-          <button className="automation-primary" onClick={() => setEditor('new')} disabled={busy}>
-            <Plus size={15} />
-            {t('Новая команда')}
-          </button>
+          {snapshot.configs.length > 0 && (
+            <button className="automation-primary" onClick={() => setEditor('new')} disabled={busy}>
+              <Plus size={15} />
+              {t('Новая команда')}
+            </button>
+          )}
         </div>
       </header>
+      {!snapshot.configs.length && !editor ? (
+        <EmptyState
+          icon={Rocket}
+          title={t('Команды запуска проекта')}
+          text={t('Например: npm run dev. Адрес приложения откроется во встроенном браузере.')}
+          action={{ label: t('Новая команда'), icon: Plus, onClick: () => setEditor('new') }}
+        />
+      ) : (
       <div className="launch-layout">
         <aside className="launch-list">
           {editor && (
@@ -120,13 +131,7 @@ function LaunchWorkspace({ root, api, terminal, subscribe, theme, onError, onDia
               }}
             />
           )}
-          {!snapshot.configs.length && !editor && (
-            <div className="automation-empty">
-              <Rocket size={26} />
-              <h3>{t('Команды запуска проекта')}</h3>
-              <p>{t('Например: npm run dev. Адрес приложения откроется во встроенном браузере.')}</p>
-            </div>
-          )}
+
           {snapshot.configs.map((config) => {
             const item = snapshot.processes.find((entry) => entry.configId === config.id)
             return (
@@ -268,6 +273,7 @@ function LaunchWorkspace({ root, api, terminal, subscribe, theme, onError, onDia
           </section>
         )}
       </div>
+      )}
     </div>
   )
 }
