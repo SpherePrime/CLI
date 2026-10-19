@@ -118,7 +118,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
   page.on('worker', (worker) => workers.push(worker.url()))
   page.on('pageerror', (error) => errors.push(error.message))
   try {
-    await expect(page.getByRole('heading', { name: 'С чего начнём?' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Меньше рутины/ })).toBeVisible()
     await expect
       .poll(() => page.evaluate(() => window.prime.info()), { timeout: 30000 })
       .toMatchObject({ runtime: 'ready' })
@@ -259,7 +259,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
       })) as typeof dialog.showOpenDialog
     }, project)
     await page.getByRole('button', { name: 'Открыть проект', exact: true }).first().click()
-    await expect(page.getByRole('heading', { name: 'Что сделаем в проекте?' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Большие идеи/ })).toBeVisible({
       timeout: 20000
     })
     await expect(page.getByRole('textbox', { name: 'Сообщение Prime' })).toBeEnabled({

@@ -1,0 +1,89 @@
+.context-control {
+  margin: 0 0 8px 3px;
+  padding: 5px 8px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--secondary);
+  font-size: 11px;
+  gap: 7px;
+}
+.context-control.enabled {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.context-control small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.context-dialog {
+  width: min(760px, calc(100vw - 48px));
+}
+.context-fields {
+  display: grid;
+  gap: 14px;
+}
+.context-fields label {
+  display: grid;
+  gap: 7px;
+  color: var(--secondary);
+  font-size: 12px;
+}
+.context-fields textarea {
+  width: 100%;
+  line-height: 1.6;
+}
+.context-source-heading {
+  display: flex;
+  justify-content: space-between;
+  margin: 22px 0 8px;
+  font-size: 12px;
+}
+.context-source-heading > span {
+  color: var(--muted);
+}
+.context-sources {
+  display: grid;
+  gap: 5px;
+}
+.context-sources > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.context-sources > div > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.context-sources small {
+  color: var(--muted);
+}
+.context-path,
+.context-dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.context-path input {
+  flex: 1;
+  min-width: 0;
+}
+.context-dialog-actions {
+  justify-content: space-between;
+}
+.context-preview {
+  max-height: 260px;
+  overflow: auto;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--secondary);
+  background: var(--bg);
+  font-size: 11px;
+}

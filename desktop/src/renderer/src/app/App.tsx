@@ -3,24 +3,23 @@ import { StartupScreen } from '../components/StartupScreen'
 import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
 import { I18nProvider, useI18n } from '../i18n'
-import { PrimeLogo } from '../components/PrimeLogo'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import {
-  ArrowUpRight,
-  Code2,
-  FileSearch,
-  FolderOpen,
   GitBranch,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightOpen,
   Search,
-  Sparkles,
-  Terminal,
   X,
   AlertCircle,
-  LoaderCircle,
-  ChevronRight
+  ChevronRight,
+  Command,
+  Focus,
+  Settings2,
+  Plus,
+  Download,
+  SunMoon,
+  Puzzle
 } from 'lucide-react'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
@@ -31,6 +30,9 @@ import { Inspector } from '../features/files/Inspector'
 import { SettingsDialog } from '../features/settings/SettingsDialog'
 import { PluginManager } from '../features/plugins/PluginManager'
 import { ChatActions } from '../features/chat/ChatActions'
+import { Welcome } from '../features/projects/Welcome'
+import { CommandPalette, type QuickAction } from '../features/navigation/CommandPalette'
+import { downloadConversation } from '../features/chat/exportConversation'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -62,12 +64,33 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [modal, setModal] = useState('')
   const [sidebar, setSidebar] = useState(true)
   const [inspector, setInspector] = useState(true)
+  const [focusMode, setFocusMode] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const showSidebar = sidebar && !focusMode
+  const showInspector = inspector && !focusMode
+  const showEditor = documents.documents.length > 0 && !focusMode
+  useEffect(() => {
+    setSidebar(w.preferences.sidebarVisible !== false)
+    setInspector(w.preferences.inspectorVisible !== false)
+  }, [w.preferences.sidebarVisible, w.preferences.inspectorVisible])
+  useEffect(() => setSearchOpen(false), [w.session?.id])
+  function toggleSidebar() {
+    const next = !sidebar
+    setSidebar(next)
+    void w.savePreferences({ sidebarVisible: next }).catch(w.errorHandler)
+  }
+  function toggleInspector() {
+    const next = !inspector
+    setInspector(next)
+    void w.savePreferences({ inspectorVisible: next }).catch(w.errorHandler)
+  }
   const [browserRequest, setBrowserRequest] = useState(0)
   useEffect(
     () =>
       window.prime.onEvent((event) => {
         if (event.type === 'browser' && event.payload?.action === 'activate') {
           setInspector(true)
+          setFocusMode(false)
           setBrowserRequest(Date.now())
         }
       }),
@@ -86,6 +109,31 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   }, [w.preferences.sidebarWidth, w.preferences.inspectorWidth])
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      const dialogOpen = Boolean(document.querySelector('dialog[open]'))
+      if (event.ctrlKey && event.code === 'KeyK') {
+        event.preventDefault()
+        if (!dialogOpen) setModal('commands')
+        return
+      }
+      if (dialogOpen || event.defaultPrevented) return
+      if (event.ctrlKey && event.shiftKey && event.code === 'KeyF') {
+        event.preventDefault()
+        setFocusMode((value) => !value)
+      }
+      if (
+        event.ctrlKey &&
+        !event.shiftKey &&
+        event.code === 'KeyF' &&
+        w.messages.length &&
+        !(event.target as HTMLElement).closest('.file-editor, .terminal-panel')
+      ) {
+        event.preventDefault()
+        setSearchOpen(true)
+      }
+      if (event.ctrlKey && event.code === 'Comma') {
+        event.preventDefault()
+        setModal('settings')
+      }
       if (event.ctrlKey && event.code === 'KeyL') {
         event.preventDefault()
         window.dispatchEvent(new Event('prime:models'))
@@ -105,7 +153,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [w.project?.id])
+  }, [w.project?.id, w.messages.length])
   function resize(which: 'sidebar' | 'inspector', event: React.PointerEvent<HTMLDivElement>) {
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -135,14 +183,97 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   }
   const projectName =
     w.project?.kind === 'chat' ? t('Личные чаты') : w.project?.path.split(/[\\/]/).pop()
-  const hasFolder = Boolean(w.project && w.project.kind !== 'chat')
   const isEmpty = !w.messages.length && !w.busy
+  const quickActions: QuickAction[] = [
+    {
+      id: 'new',
+      label: t('Новый чат'),
+      icon: Plus,
+      shortcut: 'Ctrl N',
+      disabled: !w.project,
+      run: () => {
+        void w.createSession()
+      }
+    },
+    {
+      id: 'open',
+      label: t('Открыть проект'),
+      icon: PanelRightOpen,
+      disabled: w.info.runtime !== 'ready',
+      run: () => {
+        void w.openProject()
+      }
+    },
+    {
+      id: 'models',
+      label: t('Выбрать модель'),
+      icon: Command,
+      shortcut: 'Ctrl L',
+      run: () => {
+        window.dispatchEvent(new Event('prime:models'))
+      }
+    },
+    {
+      id: 'find',
+      label: t('Поиск в чате'),
+      icon: Search,
+      shortcut: 'Ctrl F',
+      disabled: !w.messages.length,
+      run: () => setSearchOpen(true)
+    },
+    {
+      id: 'focus',
+      label: focusMode ? t('Выйти из фокуса') : t('Режим фокуса'),
+      icon: Focus,
+      shortcut: 'Ctrl Shift F',
+      run: () => setFocusMode((value) => !value)
+    },
+    {
+      id: 'sidebar',
+      label: sidebar ? t('Скрыть проекты') : t('Показать проекты'),
+      icon: PanelLeftOpen,
+      run: toggleSidebar
+    },
+    {
+      id: 'inspector',
+      label: inspector ? t('Скрыть рабочую область') : t('Показать рабочую область'),
+      icon: PanelRightOpen,
+      run: toggleInspector
+    },
+    {
+      id: 'theme',
+      label: t('Переключить тему'),
+      icon: SunMoon,
+      run: () => {
+        void w
+          .savePreferences({
+            theme: document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
+          })
+          .catch(w.errorHandler)
+      }
+    },
+    {
+      id: 'export',
+      label: t('Экспорт в Markdown'),
+      icon: Download,
+      disabled: !w.messages.length,
+      run: () => downloadConversation(w.session?.title || t('Новый чат'), w.messages, t('Вы'))
+    },
+    { id: 'plugins', label: t('Плагины'), icon: Puzzle, run: () => setModal('plugins') },
+    {
+      id: 'settings',
+      label: t('Настройки'),
+      icon: Settings2,
+      shortcut: 'Ctrl ,',
+      run: () => setModal('settings')
+    }
+  ]
   return (
     <>
       <Titlebar />
       <div
         ref={shell}
-        className={`app-shell ${sidebar ? '' : 'hide-sidebar'} ${inspector ? '' : 'hide-inspector'} ${documents.documents.length ? 'has-editor' : ''}`}
+        className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''}`}
         style={
           {
             '--sidebar-width': widths.sidebar + 'px',
@@ -152,12 +283,13 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           } as React.CSSProperties
         }
       >
-        {sidebar && (
+        {showSidebar && (
           <>
             <Sidebar
               workspace={w}
               onSettings={() => setModal('settings')}
               onPlugins={() => setModal('plugins')}
+              onCommands={() => setModal('commands')}
             />
             <div
               className="resizer left-resizer"
@@ -182,11 +314,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           <header className="workspace-header">
             <button
               className="icon"
-              title={sidebar ? t('Скрыть проекты') : t('Показать проекты')}
+              title={showSidebar ? t('Скрыть проекты') : t('Показать проекты')}
               aria-label={t('Панель проектов')}
-              onClick={() => setSidebar((value) => !value)}
+              onClick={() => {
+                if (focusMode) setFocusMode(false)
+                else toggleSidebar()
+              }}
             >
-              {sidebar ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+              {showSidebar ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
             </button>
             <div className="breadcrumbs">
               <span>{projectName || t('Рабочее пространство')}</span>
@@ -201,16 +336,48 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 {w.project?.connection === 'reconnecting'
                   ? t('Переподключение')
                   : w.info.runtime === 'ready'
-                    ? t('Локальный runtime')
+                    ? t('Готов к работе')
                     : t('Запускаем Prime')}
               </span>
+              <button
+                className="icon"
+                title={t('Быстрые действия') + ' · Ctrl K'}
+                aria-label={t('Быстрые действия')}
+                onClick={() => setModal('commands')}
+              >
+                <Command size={17} />
+              </button>
+              <button
+                className={`icon ${focusMode ? 'active-control' : ''}`}
+                title={t('Режим фокуса') + ' · Ctrl Shift F'}
+                aria-label={focusMode ? t('Выйти из фокуса') : t('Режим фокуса')}
+                aria-pressed={focusMode}
+                onClick={() => setFocusMode((value) => !value)}
+              >
+                <Focus size={17} />
+              </button>
+              {w.messages.length > 0 && (
+                <button
+                  className={`icon ${searchOpen ? 'active-control' : ''}`}
+                  title={t('Поиск в чате') + ' · Ctrl F'}
+                  aria-label={t('Поиск в чате')}
+                  aria-expanded={searchOpen}
+                  onClick={() => setSearchOpen((value) => !value)}
+                >
+                  <Search size={17} />
+                </button>
+              )}
               <ChatActions workspace={w} />
-              {!inspector && (
+              {!showInspector && (
                 <button
                   className="icon"
                   aria-label={t('Показать рабочую область')}
                   title={t('Рабочая область')}
-                  onClick={() => setInspector(true)}
+                  onClick={() => {
+                    setFocusMode(false)
+                    setInspector(true)
+                    void w.savePreferences({ inspectorVisible: true }).catch(w.errorHandler)
+                  }}
                 >
                   <PanelRightOpen size={17} />
                 </button>
@@ -232,102 +399,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             </div>
           )}
           {isEmpty ? (
-            <section className="welcome">
-              <div className="welcome-wordmark">
-                <PrimeLogo />
-              </div>
-              <div className="eyebrow">
-                {hasFolder ? t('ВАШ ПРОЕКТ. ВАШИ ИНСТРУМЕНТЫ.') : t('ВАШИ ИДЕИ. ВАШ PRIME.')}
-              </div>
-              <h1>{hasFolder ? t('Что сделаем в проекте?') : t('С чего начнём?')}</h1>
-              <p>
-                {hasFolder ? (
-                  <>
-                    {t('Prime работает в')} <strong>{projectName}</strong>.<br />
-                    {t('Опишите задачу — контекст и инструменты уже рядом.')}
-                  </>
-                ) : (
-                  <>
-                    {t('Выберите модель и начните разговор.')}
-                    <br />
-                    {t('Папку можно подключить, когда понадобятся файлы проекта.')}
-                  </>
-                )}
-              </p>
-              {!hasFolder && (
-                <button
-                  className="primary open-project"
-                  disabled={w.loading || w.info.runtime !== 'ready'}
-                  onClick={() => void w.openProject()}
-                >
-                  <FolderOpen size={16} /> {t('Открыть проект')}
-                  <ArrowUpRight size={15} />
-                </button>
-              )}
-              <div className="starter-grid">
-                {(hasFolder
-                  ? [
-                      {
-                        icon: FileSearch,
-                        title: t('Разобраться в проекте'),
-                        description: t('Архитектура, файлы и связи'),
-                        prompt: t('Изучи проект и объясни его архитектуру и основные точки входа.')
-                      },
-                      {
-                        icon: Code2,
-                        title: t('Внести изменения'),
-                        description: t('От задачи к готовому решению'),
-                        prompt: t('Изучи проект и помоги реализовать следующую задачу: ')
-                      },
-                      {
-                        icon: Terminal,
-                        title: t('Найти проблему'),
-                        description: t('Ошибки, причины и проверки'),
-                        prompt: t(
-                          'Проверь проект на ошибки и предложи конкретные исправления с проверками.'
-                        )
-                      }
-                    ]
-                  : [
-                      {
-                        icon: Sparkles,
-                        title: t('Обсудить идею'),
-                        description: t('Найти направление и решение'),
-                        prompt: t('Помоги продумать идею: ')
-                      },
-                      {
-                        icon: FileSearch,
-                        title: t('Разобраться в вопросе'),
-                        description: t('Понятно объяснить сложное'),
-                        prompt: t('Помоги разобраться в следующем вопросе: ')
-                      },
-                      {
-                        icon: Code2,
-                        title: t('Составить план'),
-                        description: t('От замысла к конкретным шагам'),
-                        prompt: t('Помоги составить план для следующей задачи: ')
-                      }
-                    ]
-                ).map((item) => (
-                  <button
-                    key={item.title}
-                    onClick={() =>
-                      window.dispatchEvent(new CustomEvent('prime:draft', { detail: item.prompt }))
-                    }
-                  >
-                    <item.icon size={19} />
-                    <strong>{item.title}</strong>
-                    <span>{item.description}</span>
-                    <ArrowUpRight className="starter-arrow" size={13} />
-                  </button>
-                ))}
-              </div>
-            </section>
+            <Welcome workspace={w} openCommands={() => setModal('commands')} />
           ) : (
             <MessageList
               key={w.session?.id || 'new'}
               messages={w.messages}
               busy={w.busy}
+              searchOpen={searchOpen}
+              closeSearch={() => setSearchOpen(false)}
               waiting={
                 w.permissions.some((item) => item.session_id === w.session?.id) ||
                 w.questions.some((item) => item.session_id === w.session?.id)
@@ -356,7 +435,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             </span>
           </footer>
         </main>
-        {inspector && (
+        {showInspector && (
           <>
             <div
               className="resizer right-resizer"
@@ -377,7 +456,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             />
             <Inspector
               workspace={w}
-              close={() => setInspector(false)}
+              close={toggleInspector}
               openDocument={documents.open}
               browserRequest={browserRequest}
             />
@@ -413,9 +492,19 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               }}
             />
             <Suspense fallback={<div className="editor-loading">{t('Открываем редактор…')}</div>}>
-              <FileEditor state={documents} theme={w.preferences.theme} />
+              <FileEditor state={documents} theme={w.preferences.theme} enabled={!focusMode} />
             </Suspense>
           </>
+        )}
+        {modal === 'commands' && (
+          <CommandPalette
+            actions={quickActions}
+            sessions={w.sessions}
+            selectSession={(session) => {
+              void w.selectSession(session).catch(w.errorHandler)
+            }}
+            close={() => setModal('')}
+          />
         )}
         {(modal === 'settings' || modal === 'providers') && (
           <SettingsDialog

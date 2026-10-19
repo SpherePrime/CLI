@@ -337,6 +337,33 @@ function registerIpc(): void {
       .object({
         theme: z.enum(['dark', 'light', 'system']).optional(),
         language: z.enum(['ru', 'en']).optional(),
+        density: z.enum(['comfortable', 'compact']).optional(),
+        reduceMotion: z.boolean().optional(),
+        sidebarVisible: z.boolean().optional(),
+        inspectorVisible: z.boolean().optional(),
+        agentContexts: z
+          .record(
+            z.string().max(4096),
+            z.object({
+              enabled: z.boolean(),
+              goal: z.string().max(4000),
+              constraints: z.string().max(4000),
+              criteria: z.string().max(4000),
+              sources: z
+                .array(
+                  z.object({
+                    id: z.string().max(8192),
+                    kind: z.enum(['file', 'selection']),
+                    path: z.string().min(1).max(4096),
+                    content: z.string().max(12000).optional(),
+                    startLine: z.number().int().positive().optional(),
+                    endLine: z.number().int().positive().optional()
+                  })
+                )
+                .max(8)
+            })
+          )
+          .optional(),
         pinned: z.array(z.string()).max(500).optional(),
         drafts: z.record(z.string(), z.string().max(200000)).optional(),
         sidebarWidth: z.number().min(200).max(500).optional(),

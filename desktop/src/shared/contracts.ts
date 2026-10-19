@@ -44,6 +44,11 @@ export type Preferences = {
   drafts: Record<string, string>
   sidebarWidth: number
   inspectorWidth: number
+  density?: 'comfortable' | 'compact'
+  reduceMotion?: boolean
+  sidebarVisible?: boolean
+  inspectorVisible?: boolean
+  agentContexts?: Record<string, import('./agentContext').AgentContext>
   activeProject?: string
   activeSessions?: Record<string, string>
   projectChannels?: Record<string, string[]>

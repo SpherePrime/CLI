@@ -24,7 +24,12 @@ export class SettingsStore {
     return structuredClone(this.value)
   }
   async update(patch: Partial<Preferences>): Promise<Preferences> {
-    this.value = { ...this.value, ...patch, drafts: { ...this.value.drafts, ...patch.drafts } }
+    this.value = {
+      ...this.value,
+      ...patch,
+      drafts: { ...this.value.drafts, ...patch.drafts },
+      agentContexts: { ...this.value.agentContexts, ...patch.agentContexts }
+    }
     const content = JSON.stringify({ version: 1, preferences: this.value }, null, 2)
     const persist = this.writes
       .catch(() => {})

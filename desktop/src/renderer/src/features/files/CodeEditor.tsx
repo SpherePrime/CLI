@@ -12,7 +12,8 @@ export function CodeEditor({
   theme,
   onChange,
   onPosition,
-  label
+  label,
+  onSelection
 }: {
   workspaceId: string
   path: string
@@ -23,6 +24,7 @@ export function CodeEditor({
   onChange: (value: string) => void
   onPosition: (position: { line: number; column: number }) => void
   label: string
+  onSelection?: (selection: { content: string; startLine: number; endLine: number } | null) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const instance = useRef<
@@ -30,8 +32,10 @@ export function CodeEditor({
   >(null)
   const changes = useRef(onChange)
   const positions = useRef(onPosition)
+  const selections = useRef(onSelection)
   changes.current = onChange
   positions.current = onPosition
+  selections.current = onSelection
   useLayoutEffect(() => {
     const options = {
       theme,
@@ -72,11 +76,23 @@ export function CodeEditor({
     const position = editor.onDidChangeCursorPosition((event) =>
       positions.current({ line: event.position.lineNumber, column: event.position.column })
     )
+    const selection = editor.onDidChangeCursorSelection((event) =>
+      selections.current?.(
+        event.selection.isEmpty()
+          ? null
+          : {
+              content: model.getValueInRange(event.selection),
+              startLine: event.selection.startLineNumber,
+              endLine: event.selection.endLineNumber
+            }
+      )
+    )
     editor.focus()
     return () => {
       instance.current = null
       change.dispose()
       position.dispose()
+      selection.dispose()
       editor.setModel(null)
       editor.dispose()
     }

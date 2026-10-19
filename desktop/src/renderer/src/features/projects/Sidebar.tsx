@@ -13,16 +13,19 @@ import {
   Pin,
   MoreHorizontal
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { groupSessions } from '../../../../shared/workspaceTools'
 import type { Workspace } from '../../app/useWorkspace'
 export function Sidebar({
   workspace: w,
   onSettings,
-  onPlugins
+  onPlugins,
+  onCommands
 }: {
   workspace: Workspace
   onSettings: () => void
   onPlugins: () => void
+  onCommands: () => void
 }) {
   const { t } = useI18n()
   const [search, setSearch] = useState('')
@@ -42,16 +45,14 @@ export function Sidebar({
     setDeleting(null)
     setDeleteError('')
   }, [w.project?.id])
-  const sessions = w.sessions
-    .filter(
-      (session) =>
-        !session.parent_session_id && session.title.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort(
-      (a, b) =>
-        Number(w.preferences.pinned.includes(b.id)) - Number(w.preferences.pinned.includes(a.id)) ||
-        (b.updated_at || 0) - (a.updated_at || 0)
-    )
+  const groups = groupSessions(w.sessions, w.preferences.pinned, search)
+  const groupLabels = {
+    pinned: t('Закреплённые'),
+    today: t('Сегодня'),
+    yesterday: t('Вчера'),
+    week: t('Последние 7 дней'),
+    older: t('Ранее')
+  }
   return (
     <aside className="sidebar">
       <div className="sidebar-actions">
@@ -74,6 +75,11 @@ export function Sidebar({
       >
         <MessageSquare size={16} />
         {t('Чат без проекта')}
+      </button>
+      <button className="sidebar-command" onClick={onCommands}>
+        <Command size={15} />
+        <span>{t('Быстрые действия')}</span>
+        <kbd>Ctrl K</kbd>
       </button>
       <div className="sidebar-scroll">
         <div className="section-caption">
@@ -158,93 +164,103 @@ export function Sidebar({
                     </button>
                   </div>
                 )}
-                {sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className={`session-row ${session.id === w.session?.id ? 'active' : ''}`}
-                  >
-                    {renaming === session.id ? (
-                      <form
-                        onSubmit={async (event) => {
-                          event.preventDefault()
-                          try {
-                            await w.call('renameSession', {
-                              sessionId: session.id,
-                              session: { ...session, title }
-                            })
-                            setRenaming(null)
-                            await w.refresh()
-                          } catch (error) {
-                            w.errorHandler(error)
-                          }
-                        }}
+                {groups.map((group) => (
+                  <Fragment key={group.id}>
+                    <div className="chat-group-label">
+                      <span>{groupLabels[group.id]}</span>
+                      <span>{group.sessions.length}</span>
+                    </div>
+                    {group.sessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className={`session-row ${session.id === w.session?.id ? 'active' : ''}`}
                       >
-                        <input
-                          autoFocus
-                          value={title}
-                          onChange={(event) => setTitle(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Escape') setRenaming(null)
-                          }}
-                        />
-                      </form>
-                    ) : (
-                      <button
-                        className="session-link"
-                        onClick={() => void w.selectSession(session)}
-                      >
-                        <MessageSquare size={14} />
-                        <span>{session.title || t('Новый чат')}</span>
-                        {session.is_busy && <span className="dot pulse" />}
-                        {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
-                      </button>
-                    )}
-                    <button
-                      className="icon small row-menu"
-                      aria-label={t('Действия: {value0}', { value0: session.title })}
-                      onClick={() => setMenu(menu === session.id ? null : session.id)}
-                    >
-                      <MoreHorizontal size={15} />
-                    </button>
-                    {menu === session.id && (
-                      <div className="context-menu">
+                        {renaming === session.id ? (
+                          <form
+                            onSubmit={async (event) => {
+                              event.preventDefault()
+                              try {
+                                await w.call('renameSession', {
+                                  sessionId: session.id,
+                                  session: { ...session, title }
+                                })
+                                setRenaming(null)
+                                await w.refresh()
+                              } catch (error) {
+                                w.errorHandler(error)
+                              }
+                            }}
+                          >
+                            <input
+                              autoFocus
+                              value={title}
+                              onChange={(event) => setTitle(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Escape') setRenaming(null)
+                              }}
+                            />
+                          </form>
+                        ) : (
+                          <button
+                            className="session-link"
+                            onClick={() => void w.selectSession(session)}
+                          >
+                            <MessageSquare size={14} />
+                            <span>{session.title || t('Новый чат')}</span>
+                            {session.is_busy && <span className="dot pulse" />}
+                            {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
+                          </button>
+                        )}
                         <button
-                          onClick={() => {
-                            setTitle(session.title)
-                            setRenaming(session.id)
-                            setMenu(null)
-                          }}
+                          className="icon small row-menu"
+                          aria-label={t('Действия: {value0}', { value0: session.title })}
+                          onClick={() => setMenu(menu === session.id ? null : session.id)}
                         >
-                          {t('Переименовать')}
+                          <MoreHorizontal size={15} />
                         </button>
-                        <button
-                          onClick={() => {
-                            void w.savePreferences({
-                              pinned: w.preferences.pinned.includes(session.id)
-                                ? w.preferences.pinned.filter((id) => id !== session.id)
-                                : [...w.preferences.pinned, session.id]
-                            })
-                            setMenu(null)
-                          }}
-                        >
-                          {t('Закрепить / открепить')}
-                        </button>
-                        <button
-                          className="danger"
-                          onClick={() => {
-                            setDeleting(session.id)
-                            setDeleteError('')
-                            setMenu(null)
-                          }}
-                        >
-                          {t('Удалить чат')}
-                        </button>
+                        {menu === session.id && (
+                          <div className="context-menu">
+                            <button
+                              onClick={() => {
+                                setTitle(session.title)
+                                setRenaming(session.id)
+                                setMenu(null)
+                              }}
+                            >
+                              {t('Переименовать')}
+                            </button>
+                            <button
+                              onClick={() => {
+                                void w.savePreferences({
+                                  pinned: w.preferences.pinned.includes(session.id)
+                                    ? w.preferences.pinned.filter((id) => id !== session.id)
+                                    : [...w.preferences.pinned, session.id]
+                                })
+                                setMenu(null)
+                              }}
+                            >
+                              {t('Закрепить / открепить')}
+                            </button>
+                            <button
+                              className="danger"
+                              onClick={() => {
+                                setDeleting(session.id)
+                                setDeleteError('')
+                                setMenu(null)
+                              }}
+                            >
+                              {t('Удалить чат')}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    ))}
+                  </Fragment>
                 ))}
-                {!sessions.length && (
-                  <p className="sidebar-empty">{t('Здесь появятся ваши чаты')}</p>
+                {!groups.length && (
+                  <p className="sidebar-empty">
+                    {search ? t('Ничего не найдено') : t('Здесь появятся ваши чаты')}
+                  </p>
                 )}
               </>
             )}
@@ -280,7 +296,7 @@ export function Sidebar({
         </button>
         <button onClick={onSettings}>
           <Settings2 size={16} /> {t('Настройки')}
-          <span className="footer-shortcut">⌘</span>
+          <kbd className="footer-shortcut">Ctrl ,</kbd>
         </button>
       </footer>
       {deleting && (

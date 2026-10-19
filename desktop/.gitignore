@@ -14,3 +14,4 @@ cli-source/
 installer/out/
 installer/payload/
 .playwright-mcp/
+/nebula-check.png

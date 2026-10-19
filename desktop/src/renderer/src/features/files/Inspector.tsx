@@ -19,13 +19,15 @@ import {
   ListTodo,
   Play,
   Trash2,
-  Globe
+  Globe,
+  Target
 } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 import { FileContextMenu, type MenuItem } from './FileContextMenu'
 import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
 import { BrowserTab } from '../browser/BrowserTab'
+import { addAgentSource } from '../context/useAgentContext'
 
 type Entry = { path: string; name: string; directory: boolean }
 
@@ -130,11 +132,24 @@ export function Inspector({
     const absolute = [w.project!.path, target.replaceAll('/', '\\')].filter(Boolean).join('\\')
     const items: MenuItem[] = []
     if (entry && !entry.directory)
-      items.push({
-        label: t('Открыть'),
-        icon: <File size={14} />,
-        action: () => void openFile(entry.path)
-      })
+      items.push(
+        {
+          label: t('Открыть'),
+          icon: <File size={14} />,
+          action: () => void openFile(entry.path)
+        },
+        {
+          label: t('В контекст агента'),
+          icon: <Target size={14} />,
+          action: () =>
+            attempt(async () => {
+              const file = await window.prime.readFile(id, entry.path)
+              if (file.image || typeof file.content !== 'string')
+                throw new Error(t('Выберите текстовый файл'))
+              addAgentSource(id, { id: `file:${entry.path}`, kind: 'file', path: entry.path })
+            })
+        }
+      )
     items.push({
       label: t('Открыть в VS Code'),
       icon: <Code2 size={14} />,

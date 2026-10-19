@@ -100,8 +100,60 @@ export function SettingsDialog({
                 ))}
               </div>
               <div className="settings-note">
+                <strong>{t('Плотность интерфейса')}</strong>
+                <div
+                  className="density-options"
+                  role="group"
+                  aria-label={t('Плотность интерфейса')}
+                >
+                  {(
+                    [
+                      { id: 'comfortable', label: t('Просторная') },
+                      { id: 'compact', label: t('Компактная') }
+                    ] as const
+                  ).map((option) => (
+                    <button
+                      key={option.id}
+                      aria-pressed={(w.preferences.density || 'comfortable') === option.id}
+                      onClick={() =>
+                        void w.savePreferences({ density: option.id }).catch(w.errorHandler)
+                      }
+                    >
+                      <span className={`density-preview ${option.id}`} aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                      {option.label}
+                      {(w.preferences.density || 'comfortable') === option.id && (
+                        <Check size={14} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <label className="setting-toggle motion-setting">
+                  <span>
+                    <strong>{t('Меньше анимаций')}</strong>
+                    <small>{t('Спокойные переходы без движения и пульсации')}</small>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={w.preferences.reduceMotion || false}
+                    onChange={(event) =>
+                      void w
+                        .savePreferences({ reduceMotion: event.target.checked })
+                        .catch(w.errorHandler)
+                    }
+                  />
+                </label>
+              </div>
+              <div className="settings-note">
                 <strong>{t('Клавиатура')}</strong>
                 <p>
+                  {t('Ctrl+K — быстрые действия · Ctrl+F — поиск в чате')}
+                  <br />
+                  {t('Ctrl+Shift+F — режим фокуса · Ctrl+, — настройки')}
+                  <br />
                   {t('Ctrl+N — новый чат · Ctrl+L — модели')}
                   <br />
                   {t('Shift+Enter — новая строка · двойной Esc — остановить задачу')}
