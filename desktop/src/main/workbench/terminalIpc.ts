@@ -22,6 +22,7 @@ const terminalRequest = z.discriminatedUnion('action', [
     id: z.string().uuid(),
     data: z.string().max(1024 * 1024)
   }),
+  z.object({ action: z.literal('report'), id: z.string().uuid(), data: z.string().max(256) }),
   z.object({
     action: z.literal('resize'),
     id: z.string().uuid(),
@@ -51,6 +52,8 @@ export function terminalOperation(
       return manager.read(request.id, workspaceId)
     case 'write':
       return manager.write(request.id, request.data, 'user', workspaceId)
+    case 'report':
+      return manager.report(request.id, request.data, workspaceId)
     case 'resize':
       return manager.resize(request.id, request.cols, request.rows, workspaceId)
     case 'close':

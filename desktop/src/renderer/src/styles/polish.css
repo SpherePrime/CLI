@@ -72,3 +72,14 @@ progress {
   box-sizing: border-box;
   overflow-wrap: anywhere;
 }
+
+.main-workspace:has(> .workbench-dock) > .welcome {
+  flex: 1 1 0;
+  min-height: 0;
+  padding-block: 0;
+  overflow: hidden;
+}
+
+.app-shell {
+  grid-template-rows: minmax(0, 1fr);
+}

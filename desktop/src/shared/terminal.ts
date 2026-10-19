@@ -44,6 +44,7 @@ export type TerminalRequest =
   | { action: 'create'; options?: TerminalOptions }
   | { action: 'read'; id: string }
   | { action: 'write'; id: string; data: string }
+  | { action: 'report'; id: string; data: string }
   | { action: 'resize'; id: string; cols: number; rows: number }
   | { action: 'close'; id: string }
   | { action: 'owner'; id: string; owner: TerminalOwner }

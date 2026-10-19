@@ -50,9 +50,10 @@ export function WorkbenchDock({
       setAvailableHeight(
         Math.max(
           0,
-          parent.clientHeight -
+          ((element.closest('.app-shell') as HTMLElement | null)?.clientHeight ??
+            parent.clientHeight) -
             fixed().reduce((sum, item) => sum + item.getBoundingClientRect().height, 0) -
-            40
+            56
         )
       )
     const observer = new ResizeObserver(measure)

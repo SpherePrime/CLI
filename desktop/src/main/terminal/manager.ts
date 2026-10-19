@@ -1,3 +1,8 @@
+import {
+  isTerminalReport,
+  primaryDeviceAttributesQuery,
+  primaryDeviceAttributesReply
+} from '../../shared/terminalReports'
 import { randomUUID } from 'node:crypto'
 import { realpathSync, statSync } from 'node:fs'
 import { basename } from 'node:path'
@@ -139,6 +144,8 @@ export class TerminalManager {
     session.subscriptions.push(
       processHandle.onData((data) => {
         if (terminal.status !== 'running') return
+        const queries = data.match(primaryDeviceAttributesQuery)?.length ?? 0
+        if (queries) processHandle.write(primaryDeviceAttributesReply.repeat(queries))
         session.output.append(data)
         this.emit(session, { action: 'data', id: terminal.id, data, sequence: ++terminal.sequence })
       })
@@ -191,6 +198,12 @@ export class TerminalManager {
       throw new Error('Terminal input is too large')
     session.process.write(data)
     return { ...session.terminal }
+  }
+
+  report(id: string, data: string, workspaceId?: string): void {
+    const session = this.running(id, workspaceId)
+    if (!isTerminalReport(data)) throw new Error('Invalid terminal report')
+    session.process.write(data)
   }
 
   resize(id: string, cols: number, rows: number, workspaceId?: string): TerminalSnapshot {
