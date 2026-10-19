@@ -26,6 +26,7 @@ import { SettingsStore } from './settings/store'
 import { resolveProjectPath } from './files/paths'
 import { projectFiles } from './workbench/projectFiles'
 import { WorkspaceRouter } from './workbench/workspaceRouter'
+import { isProjectLocked, openWhenUnlocked } from './prime/projectLock'
 import { RemoteWorkspaces } from './remote/workspaces'
 import { remoteFingerprint } from './remote/fingerprint'
 import { remoteRequest } from './remote/ipc'
@@ -65,6 +66,7 @@ const projectChanges = new ProjectChanges()
 let runtime: RuntimeSupervisor
 let prime: PrimeService | undefined
 let remotes: RemoteWorkspaces | undefined
+let projectWait: AbortController | undefined
 let settings: SettingsStore
 let runtimeError = ''
 let updateStatus: UpdateStatus = { state: 'idle' }
@@ -509,7 +511,26 @@ function registerIpc(): void {
       if (result.canceled) return null
       path = result.filePaths[0]
     }
-    const project = await requirePrime().open(path, settings.get().projectChannels?.[path] || [])
+    const target = path
+    projectWait?.abort()
+    const wait = new AbortController()
+    projectWait = wait
+    let project
+    try {
+      project = await openWhenUnlocked({
+        open: () => requirePrime().open(target, settings.get().projectChannels?.[target] || []),
+        signal: wait.signal,
+        onWait: () => emit({ workspaceId: '', type: 'projectLock', payload: { path: target, waiting: true } }),
+        onDone: () => emit({ workspaceId: '', type: 'projectLock', payload: { path: target, waiting: false } })
+      })
+    } catch (error) {
+      if ((error as { cancelled?: boolean }).cancelled) return null
+      if (isProjectLocked(error))
+        throw new Error(t('Проект открыт в Prime CLI. Закройте CLI в этой папке и откройте проект снова.'))
+      throw error
+    } finally {
+      if (projectWait === wait) projectWait = undefined
+    }
     const preferences = settings.get()
     await settings.update({
       activeProject: project.path,
@@ -520,6 +541,7 @@ function registerIpc(): void {
     })
     return project
   })
+  handle('cancelProjectWait', () => projectWait?.abort())
   handle('closeProject', async (id: string) => {
     if (requirePrime().isBusy()) throw new Error(t('Сначала завершите активные задачи'))
     if (terminals.list(id).some((item) => item.status === 'running'))
@@ -797,8 +819,9 @@ else {
   app.whenReady().then(async () => {
     settings = new SettingsStore(join(app.getPath('userData'), 'preferences.json'))
     await settings.load()
-    session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) =>
-      callback(permission === 'media')
+    const allowedPermissions = new Set(['media', 'clipboard-sanitized-write'])
+    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) =>
+      callback(allowedPermissions.has(permission) && webContents === window?.webContents)
     )
     registerIpc()
     globalShortcut.register('Control+Alt+Escape', () => windowViewer.revokeAll())

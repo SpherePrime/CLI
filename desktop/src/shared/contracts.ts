@@ -167,6 +167,7 @@ export interface DesktopApi {
   projects(): Promise<Project[]>
   openChat(): Promise<Project>
   openProject(path?: string): Promise<Project | null>
+  cancelProjectWait(): Promise<void>
   openRemote(profileId: string): Promise<Project>
   remote(request: import('./remote').RemoteRequest): Promise<import('./remote').RemoteSnapshot>
   remoteKey(): Promise<string | undefined>

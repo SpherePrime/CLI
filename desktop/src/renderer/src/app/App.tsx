@@ -41,6 +41,7 @@ import { downloadConversation } from '../features/chat/exportConversation'
 import { WorkbenchDock, type WorkbenchView } from '../features/workbench/WorkbenchDock'
 import { RemoteDialog } from '../features/remote/RemoteDialog'
 import { JobsCenter } from '../features/jobs/JobsCenter'
+import { ProjectLockBanner } from '../features/projects/ProjectLockBanner'
 import { WindowControlBadge } from '../features/windows/WindowControlBadge'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
@@ -349,6 +350,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   return (
     <>
       <Titlebar />
+      <ProjectLockBanner />
       <WindowControlBadge workspaceIds={w.projects.map((project) => project.id)} onError={w.errorHandler} />
       <div
         ref={shell}

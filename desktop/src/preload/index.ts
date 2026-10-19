@@ -19,6 +19,7 @@ const api: DesktopApi = {
   projects: () => ipcRenderer.invoke('prime:projects'),
   openChat: () => ipcRenderer.invoke('prime:openChat'),
   openProject: (path) => ipcRenderer.invoke('prime:openProject', path),
+  cancelProjectWait: () => ipcRenderer.invoke('prime:cancelProjectWait'),
   openRemote: (profileId) => ipcRenderer.invoke('prime:openRemote', profileId),
   remote: (request) => ipcRenderer.invoke('prime:remote', request),
   remoteKey: () => ipcRenderer.invoke('prime:remoteKey'),

@@ -14,6 +14,8 @@ import {
   type LucideIcon
 } from 'lucide-react'
 
+import { desktopToolTitle } from './desktopTools'
+
 type Translate = (key: string, values?: Record<string, string | number>) => string
 
 export type ToolTitle = { icon: LucideIcon; label: string; detail: string }
@@ -32,6 +34,8 @@ export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
   const path = input?.file_path || input?.path || input?.filePath
   if (tool.startsWith('mcp_')) {
     const [, server = '', ...rest] = name.split('_')
+    const desktop = server === 'browser' ? desktopToolTitle(rest.join('_'), input, t) : undefined
+    if (desktop) return desktop
     return { icon: Plug, label: `MCP · ${server}`, detail: rest.join('_') }
   }
   if (/^(view|read|cat)$/.test(tool))
