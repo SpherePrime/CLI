@@ -1,4 +1,5 @@
 import { BrowserWindow, WebContentsView, session, type WebContents } from 'electron'
+import { randomUUID } from 'node:crypto'
 
 export type BrowserBounds = { x: number; y: number; width: number; height: number }
 
@@ -11,16 +12,21 @@ export type BrowserLog = {
   time: number
 }
 
+export type BrowserTabState = { id: string; url: string; title: string; loading: boolean }
+
 export type BrowserState = {
   url: string
   title: string
   loading: boolean
   canGoBack: boolean
   canGoForward: boolean
+  activeTab?: string
+  tabs?: BrowserTabState[]
 }
 
 const partition = 'persist:prime-browser'
 const allowedProtocols = ['http:', 'https:', 'file:', 'about:']
+const maxTabs = 12
 
 export function normalizeBrowserUrl(value: string): string {
   const input = value.trim()
@@ -37,9 +43,13 @@ export function normalizeBrowserUrl(value: string): string {
   return 'https://duckduckgo.com/?q=' + encodeURIComponent(input)
 }
 
+type Tab = { id: string; view: WebContentsView }
+
 export class BrowserPanel {
-  private view: WebContentsView | null = null
-  private attached = false
+  private tabs: Tab[] = []
+  private active?: string
+  private attached?: WebContentsView
+  private visible = false
   private bounds: BrowserBounds = { x: 0, y: 0, width: 0, height: 0 }
   private entries: BrowserLog[] = []
 
@@ -52,16 +62,29 @@ export class BrowserPanel {
     return this.ensure().webContents
   }
 
+  private current(): Tab | undefined {
+    const tab = this.tabs.find((item) => item.id === this.active)
+    return tab && !tab.view.webContents.isDestroyed() ? tab : undefined
+  }
+
+  private tabState(tab: Tab): BrowserTabState {
+    const contents = tab.view.webContents
+    return { id: tab.id, url: contents.getURL(), title: contents.getTitle(), loading: contents.isLoading() }
+  }
+
   state(): BrowserState {
-    const contents = this.view?.webContents
-    if (!contents || contents.isDestroyed())
-      return { url: '', title: '', loading: false, canGoBack: false, canGoForward: false }
+    const tabs = this.tabs.filter((tab) => !tab.view.webContents.isDestroyed()).map((tab) => this.tabState(tab))
+    const contents = this.current()?.view.webContents
+    if (!contents)
+      return { url: '', title: '', loading: false, canGoBack: false, canGoForward: false, tabs, activeTab: this.active }
     return {
       url: contents.getURL(),
       title: contents.getTitle(),
       loading: contents.isLoading(),
       canGoBack: contents.navigationHistory.canGoBack(),
-      canGoForward: contents.navigationHistory.canGoForward()
+      canGoForward: contents.navigationHistory.canGoForward(),
+      activeTab: this.active,
+      tabs
     }
   }
 
@@ -73,35 +96,81 @@ export class BrowserPanel {
     this.entries = []
   }
 
-  private log(entry: Omit<BrowserLog, 'time' | 'url'>) {
-    const url = this.view?.webContents.isDestroyed() ? '' : (this.view?.webContents.getURL() ?? '')
+  private log(entry: Omit<BrowserLog, 'time' | 'url'>, contents: WebContents) {
+    const url = contents.isDestroyed() ? '' : contents.getURL()
     this.entries.push({ ...entry, message: entry.message.slice(0, 4000), url, time: Date.now() })
     if (this.entries.length > 200) this.entries.splice(0, this.entries.length - 200)
     this.publish({ type: 'browser', payload: { action: 'log' } })
   }
 
-  show(bounds: BrowserBounds) {
+  private update() {
+    this.publish({ type: 'browser', payload: { action: 'state', ...this.state() } })
+  }
+
+  private attach() {
     const window = this.window()
     if (!window || window.isDestroyed()) return
-    const view = this.ensure()
+    const view = this.current()?.view
+    if (this.attached && this.attached !== view) {
+      window.contentView.removeChildView(this.attached)
+      this.attached = undefined
+    }
+    if (!this.visible || !view) return
+    view.setBounds(this.bounds)
+    if (this.attached !== view) {
+      window.contentView.addChildView(view)
+      this.attached = view
+    }
+  }
+
+  show(bounds: BrowserBounds) {
+    this.ensure()
     this.bounds = {
       x: Math.round(bounds.x),
       y: Math.round(bounds.y),
       width: Math.max(0, Math.round(bounds.width)),
       height: Math.max(0, Math.round(bounds.height))
     }
-    view.setBounds(this.bounds)
-    if (!this.attached) {
-      window.contentView.addChildView(view)
-      this.attached = true
-    }
+    this.visible = true
+    this.attach()
   }
 
   hide() {
-    const window = this.window()
-    if (this.view && this.attached && window && !window.isDestroyed())
-      window.contentView.removeChildView(this.view)
-    this.attached = false
+    this.visible = false
+    this.attach()
+  }
+
+  newTab(url?: string) {
+    if (this.tabs.length >= maxTabs) throw new Error(`Можно открыть не больше ${maxTabs} вкладок`)
+    const tab = this.create()
+    this.active = tab.id
+    this.attach()
+    this.update()
+    if (url) void this.navigate(url).catch(() => {})
+    return this.state()
+  }
+
+  selectTab(id: string) {
+    if (!this.tabs.some((tab) => tab.id === id)) throw new Error('Вкладка не найдена')
+    this.active = id
+    this.attach()
+    this.update()
+    return this.state()
+  }
+
+  closeTab(id: string) {
+    const index = this.tabs.findIndex((tab) => tab.id === id)
+    if (index < 0) return this.state()
+    const [tab] = this.tabs.splice(index, 1)
+    if (this.attached === tab.view) {
+      this.window()?.contentView.removeChildView(tab.view)
+      this.attached = undefined
+    }
+    if (!tab.view.webContents.isDestroyed()) tab.view.webContents.close()
+    if (this.active === id) this.active = (this.tabs[index] ?? this.tabs[index - 1])?.id
+    this.attach()
+    this.update()
+    return this.state()
   }
 
   async navigate(value: string) {
@@ -114,17 +183,17 @@ export class BrowserPanel {
   }
 
   back() {
-    if (this.view?.webContents.navigationHistory.canGoBack())
-      this.view.webContents.navigationHistory.goBack()
+    const contents = this.current()?.view.webContents
+    if (contents?.navigationHistory.canGoBack()) contents.navigationHistory.goBack()
   }
 
   forward() {
-    if (this.view?.webContents.navigationHistory.canGoForward())
-      this.view.webContents.navigationHistory.goForward()
+    const contents = this.current()?.view.webContents
+    if (contents?.navigationHistory.canGoForward()) contents.navigationHistory.goForward()
   }
 
   reload() {
-    const contents = this.view?.webContents
+    const contents = this.current()?.view.webContents
     if (!contents) return
     if (contents.isLoading()) contents.stop()
     else contents.reload()
@@ -132,16 +201,23 @@ export class BrowserPanel {
 
   destroy() {
     this.hide()
-    if (this.view && !this.view.webContents.isDestroyed()) this.view.webContents.close()
-    this.view = null
+    for (const tab of this.tabs) if (!tab.view.webContents.isDestroyed()) tab.view.webContents.close()
+    this.tabs = []
+    this.active = undefined
   }
 
   private ensure(): WebContentsView {
-    if (this.view && !this.view.webContents.isDestroyed()) return this.view
+    const current = this.current()
+    if (current) return current.view
+    this.tabs = this.tabs.filter((tab) => !tab.view.webContents.isDestroyed())
+    const tab = this.tabs[0] ?? this.create()
+    this.active = tab.id
+    return tab.view
+  }
+
+  private create(): Tab {
     const browserSession = session.fromPartition(partition)
-    browserSession.setPermissionRequestHandler((_contents, _permission, callback) =>
-      callback(false)
-    )
+    browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
     const view = new WebContentsView({
       webPreferences: {
         partition,
@@ -152,10 +228,13 @@ export class BrowserPanel {
       }
     })
     view.setBackgroundColor('#ffffff')
+    const tab: Tab = { id: randomUUID(), view }
     const contents = view.webContents
     contents.setWindowOpenHandler(({ url }) => {
       try {
-        void contents.loadURL(normalizeBrowserUrl(url))
+        const target = normalizeBrowserUrl(url)
+        if (this.tabs.length < maxTabs) this.newTab(target)
+        else void contents.loadURL(target)
       } catch {}
       return { action: 'deny' }
     })
@@ -169,26 +248,18 @@ export class BrowserPanel {
     contents.on('console-message', (event: any) => {
       const level = event.level === 'error' ? 'error' : event.level === 'warning' ? 'warning' : undefined
       if (level && !String(event.message ?? '').includes('Electron Security Warning'))
-        this.log({ level, message: String(event.message ?? ''), source: event.sourceId, line: event.lineNumber })
+        this.log({ level, message: String(event.message ?? ''), source: event.sourceId, line: event.lineNumber }, contents)
     })
     contents.on('did-fail-load', (_event, code, description, url, mainFrame) => {
       if (code !== -3)
-        this.log({ level: 'error', message: `${description} (${code})${mainFrame ? '' : ' subframe'} ${url}` })
+        this.log({ level: 'error', message: `${description} (${code})${mainFrame ? '' : ' subframe'} ${url}` }, contents)
     })
     contents.on('render-process-gone', (_event, details) =>
-      this.log({ level: 'error', message: `Renderer process gone: ${details.reason}` })
+      this.log({ level: 'error', message: `Renderer process gone: ${details.reason}` }, contents)
     )
-    const update = () =>
-      this.publish({ type: 'browser', payload: { action: 'state', ...this.state() } })
-    for (const name of [
-      'did-start-loading',
-      'did-stop-loading',
-      'did-navigate',
-      'did-navigate-in-page',
-      'page-title-updated'
-    ] as const)
-      contents.on(name as any, update)
-    this.view = view
-    return view
+    for (const name of ['did-start-loading', 'did-stop-loading', 'did-navigate', 'did-navigate-in-page', 'page-title-updated'] as const)
+      contents.on(name as any, () => this.update())
+    this.tabs.push(tab)
+    return tab
   }
 }

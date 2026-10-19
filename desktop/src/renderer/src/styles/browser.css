@@ -160,3 +160,83 @@
 [data-motion='reduced'] .element-pick {
   animation: none;
 }
+
+.browser-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+}
+.browser-tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 180px;
+  flex: 0 1 auto;
+  padding: 6px 6px 7px 10px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  color: var(--secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.browser-tab-item:hover {
+  background: color-mix(in srgb, var(--raised) 60%, transparent);
+}
+.browser-tab-item.active {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+  margin-bottom: -1px;
+}
+.browser-tab-item > svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.browser-tab-item.active > svg {
+  color: var(--accent);
+}
+.browser-tab-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.browser-tab-close,
+.browser-tab-new {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.browser-tab-close {
+  opacity: 0;
+}
+.browser-tab-item:hover .browser-tab-close,
+.browser-tab-item.active .browser-tab-close,
+.browser-tab-close:focus-visible {
+  opacity: 1;
+}
+.browser-tab-close:hover,
+.browser-tab-new:hover:not(:disabled) {
+  background: var(--raised);
+  color: var(--text);
+}
+.browser-tab-new {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 3px;
+}

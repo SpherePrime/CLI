@@ -1071,3 +1071,9 @@ Object.assign(english, {
   'Отменить открытие': 'Cancel opening',
   'Проект открыт в Prime CLI. Закройте CLI в этой папке и откройте проект снова.': 'The project is open in Prime CLI. Close the CLI in this folder and open the project again.'
 })
+
+Object.assign(english, {
+  'Вкладки браузера': 'Browser tabs',
+  'Новая вкладка': 'New tab',
+  'Закрыть вкладку {value0}': 'Close tab {value0}'
+})
