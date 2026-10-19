@@ -324,7 +324,9 @@ call :desktop_prepare
 if not "%EXITCODE%"=="0" goto setup_prepare_failed
 pushd desktop
 set "DESKTOP_VERSION="
-for /f "usebackq delims=" %%v in (`node -p "require('./package.json').version"`) do set "DESKTOP_VERSION=%%v"
+for /f "usebackq delims=" %%v in (`node scripts\bump-version.mjs`) do set "DESKTOP_VERSION=%%v"
+if not defined DESKTOP_VERSION goto setup_failed
+echo  Desktop version: %DESKTOP_VERSION%
 set "SETUP_FILE=release\%DESKTOP_VERSION%\PrimeSetup-%DESKTOP_VERSION%.exe"
 if exist "%SETUP_FILE%" del /f /q "%SETUP_FILE%" >nul 2>&1
 if exist "%SETUP_FILE%" (
