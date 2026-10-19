@@ -40,6 +40,7 @@ import { AutomationManager } from './automations/manager'
 import { automationOperation } from './workbench/automationIpc'
 import { createAgentAdapter } from './workbench/agentRuns'
 import { TeamManager } from './teams/manager'
+import { LaunchManager } from './launch/manager'
 import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
 
@@ -66,8 +67,10 @@ const attachmentStore = new Map<string, any>()
 const projectId = z.string().uuid()
 let browserMcp: BrowserMcpServer | undefined
 const emit = (event: any) => {
-  if (event.type === 'terminal')
+  if (event.type === 'terminal') {
     event.payload.activeCount = terminals.list().filter((item) => item.status === 'running').length
+    launches?.terminalEvent(event.payload)
+  }
   if (
     event.type === 'run_complete' &&
     event.payload?.data?.error &&
@@ -103,6 +106,7 @@ const emit = (event: any) => {
 }
 const browserPanel = new BrowserPanel(() => window, emit)
 const terminals = new TerminalManager({ emit })
+let launches: LaunchManager | undefined
 const hasBackgroundWork = () =>
   Boolean(
     prime?.isBusy() ||
@@ -254,6 +258,23 @@ function confirmEditorDiscard(): boolean {
   return true
 }
 function registerIpc(): void {
+  handle('launch', (id: string, request: unknown) => {
+    if (!launches) throw new Error(t('Prime ещё запускается'))
+    const workspaceId = projectId.parse(id)
+    return launches.handle(
+      {
+        workspaceId,
+        root: requirePrime().root(workspaceId),
+        key: workspacePath(workspaceId),
+        remote: remotes?.byWorkspace(workspaceId)?.connection
+      },
+      request
+    )
+  })
+  handle('browserLogs', (clear?: boolean) => {
+    if (clear === true) browserPanel.clearLogs()
+    return browserPanel.logs()
+  })
   handle('team', (id: string, request: unknown) => {
     if (!teams) throw new Error(t('Планировщик ещё загружается'))
     return teamOperation(teams, workspacePath(id), request)
@@ -707,6 +728,13 @@ else {
     })
     await teams.load()
     teams.start()
+    launches = new LaunchManager({
+      path: join(app.getPath('userData'), 'launch.json'),
+      terminals,
+      emit,
+      onUrl: (url) => void browserPanel.navigate(url).catch(() => {})
+    })
+    await launches.load()
   })
   app.on('window-all-closed', () => {
     if (!shouldKeepRunning()) app.quit()

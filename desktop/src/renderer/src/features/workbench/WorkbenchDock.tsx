@@ -1,5 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Clock3, Maximize2, Minimize2, TerminalSquare, Users, X } from 'lucide-react'
+import { Clock3, Maximize2, Minimize2, Rocket, TerminalSquare, Users, X } from 'lucide-react'
+import { LaunchPanel } from '../launch/LaunchPanel'
+import type { LaunchRequest } from '../../../../shared/launch'
 import { TeamPanel } from '../teams/TeamPanel'
 import type { TeamRequest } from '../../../../shared/teams'
 import { TerminalPanel } from '../terminal/TerminalPanel'
@@ -11,7 +13,7 @@ import { AutomationPanel } from '../automations/AutomationPanel'
 import type { AutomationRequest } from '../../../../shared/automations'
 import { openWorkbenchRun } from './openRun'
 
-export type WorkbenchView = 'terminal' | 'automations' | 'teams'
+export type WorkbenchView = 'terminal' | 'automations' | 'teams' | 'launch'
 
 export function WorkbenchDock({
   workspace: w,
@@ -73,6 +75,10 @@ export function WorkbenchDock({
     (request: AutomationRequest) => window.prime.automation(workspaceId, request),
     [workspaceId]
   )
+  const launch = useCallback(
+    (request: LaunchRequest) => window.prime.launch(workspaceId, request),
+    [workspaceId]
+  )
   const team = useCallback(
     (request: TeamRequest) => window.prime.team(workspaceId, request),
     [workspaceId]
@@ -126,6 +132,17 @@ export function WorkbenchDock({
           >
             <TerminalSquare size={14} />
             {t('Терминал')}
+          </button>
+          <button
+            role="tab"
+            aria-selected={view === 'launch'}
+            onClick={() => {
+              setView('launch')
+              setExpanded(true)
+            }}
+          >
+            <Rocket size={14} />
+            {t('Запуск')}
           </button>
           <button
             role="tab"
@@ -189,6 +206,20 @@ export function WorkbenchDock({
             onError={w.errorHandler}
             onOpenRun={(run) => {
               void openWorkbenchRun(w, run).then(close).catch(w.errorHandler)
+            }}
+          />
+        )}
+        {w.project && view === 'launch' && (
+          <LaunchPanel
+            root={w.project.path}
+            api={launch}
+            terminal={terminal}
+            subscribe={window.prime.onEvent}
+            theme={w.preferences.theme}
+            onError={w.errorHandler}
+            onDiagnostics={(text) => {
+              window.dispatchEvent(new CustomEvent('prime:draft', { detail: text }))
+              setExpanded(false)
             }}
           />
         )}

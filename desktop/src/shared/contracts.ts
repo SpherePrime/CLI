@@ -6,6 +6,14 @@ export type BrowserState = {
   canGoBack: boolean
   canGoForward: boolean
 }
+export type BrowserLog = {
+  level: 'error' | 'warning' | 'info'
+  message: string
+  source?: string
+  line?: number
+  url: string
+  time: number
+}
 export type QueuedPrompt = { id: string; prompt: string; attachments: number }
 export type Session = {
   id: string
@@ -119,6 +127,11 @@ export interface DesktopApi {
     workspaceId: string,
     request: import('./automations').AutomationRequest
   ): Promise<import('./automations').AutomationResponse>
+  launch(
+    workspaceId: string,
+    request: import('./launch').LaunchRequest
+  ): Promise<import('./launch').LaunchResponse>
+  browserLogs(clear?: boolean): Promise<BrowserLog[]>
   team(
     workspaceId: string,
     request: import('./teams').TeamRequest
