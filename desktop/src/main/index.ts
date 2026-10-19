@@ -42,6 +42,7 @@ import { automationOperation } from './workbench/automationIpc'
 import { createAgentAdapter } from './workbench/agentRuns'
 import { TeamManager } from './teams/manager'
 import { LaunchManager } from './launch/manager'
+import { SpeechService } from './speech/service'
 import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
 
@@ -108,6 +109,17 @@ const emit = (event: any) => {
 const browserPanel = new BrowserPanel(() => window, emit)
 const terminals = new TerminalManager({ emit })
 let launches: LaunchManager | undefined
+const speech = new SpeechService(
+  (status) => emit({ workspaceId: '', type: 'speech', payload: status }),
+  async () => {
+    const result = await dialog.showOpenDialog(window!, {
+      properties: ['openFile'],
+      title: t('Стиль голоса Supertonic'),
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    return result.canceled ? undefined : result.filePaths[0]
+  }
+)
 const hasBackgroundWork = () =>
   Boolean(
     prime?.isBusy() ||
@@ -292,6 +304,22 @@ function registerIpc(): void {
     }
   })
   handle('browserPickCancel', () => cancelPick(browserPanel.contents))
+  handle('speech', (request: unknown) =>
+    speech.handle(
+      z
+        .discriminatedUnion('action', [
+          z.object({ action: z.enum(['status', 'prepare', 'voices', 'import']) }),
+          z.object({ action: z.literal('remove'), voice: z.string().max(100) }),
+          z.object({
+            action: z.literal('speak'),
+            text: z.string().max(8000),
+            voice: z.string().max(100).optional(),
+            speed: z.number().optional()
+          })
+        ])
+        .parse(request)
+    )
+  )
   handle('browserLogs', (clear?: boolean) => {
     if (clear === true) browserPanel.clearLogs()
     return browserPanel.logs()
@@ -487,6 +515,9 @@ function registerIpc(): void {
         density: z.enum(['comfortable', 'compact']).optional(),
         reduceMotion: z.boolean().optional(),
         sidebarVisible: z.boolean().optional(),
+        speechVoice: z.string().max(100).optional(),
+        speechSpeed: z.number().min(0.7).max(1.6).optional(),
+        speechAutoSend: z.boolean().optional(),
         inspectorVisible: z.boolean().optional(),
         agentContexts: z
           .record(
@@ -773,6 +804,7 @@ else {
     void (async () => {
       await automations?.dispose()
       await teams?.dispose()
+      await speech.dispose()
       projectChanges.dispose()
       await terminals.dispose()
       await remotes?.shutdown()

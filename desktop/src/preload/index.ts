@@ -5,6 +5,7 @@ const api: DesktopApi = {
   team: (id, request) => ipcRenderer.invoke('prime:team', id, request),
   launch: (id, request) => ipcRenderer.invoke('prime:launch', id, request),
   browserLogs: (clear) => ipcRenderer.invoke('prime:browserLogs', clear),
+  speech: (request) => ipcRenderer.invoke('prime:speech', request),
   browserPick: () => ipcRenderer.invoke('prime:browserPick'),
   browserPickCancel: () => ipcRenderer.invoke('prime:browserPickCancel'),
   terminal: (id, request) => ipcRenderer.invoke('prime:terminal', id, request),

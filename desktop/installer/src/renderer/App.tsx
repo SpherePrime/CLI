@@ -20,7 +20,7 @@ export function SetupApp() {
   const [directory, setDirectory] = useState('')
   const [status, setStatus] = useState<InstallStatus>({ phase: 'ready' })
   const [error, setError] = useState('')
-  const active = ['preparing', 'installing', 'verifying'].includes(status.phase)
+  const active = ['preparing', 'installing', 'verifying', 'voice'].includes(status.phase)
   const complete = status.phase === 'complete'
   useEffect(() => {
     void window.setup
@@ -46,7 +46,14 @@ export function SetupApp() {
   const steps = [
     { phase: 'preparing', label: 'Проверка файлов' },
     { phase: 'installing', label: 'Установка приложения' },
-    { phase: 'verifying', label: 'Подготовка к запуску' }
+    { phase: 'verifying', label: 'Подготовка к запуску' },
+    {
+      phase: 'voice',
+      label:
+        status.phase === 'voice' && status.percent !== undefined
+          ? `Голосовая модель · ${Math.floor(status.percent)}%`
+          : 'Голосовая модель'
+    }
   ]
   const current = steps.findIndex((step) => step.phase === status.phase)
   return (
@@ -206,7 +213,7 @@ export function SetupApp() {
               </span>
               <div>
                 <strong>Всё на месте</strong>
-                <p>Приложение и ярлыки готовы.</p>
+                <p>{status.warning || 'Приложение, голосовая модель и ярлыки готовы.'}</p>
               </div>
             </div>
           )}

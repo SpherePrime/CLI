@@ -11,6 +11,9 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowUp, Mic, Paperclip, Square, X, LoaderCircle } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useVoice } from '../plugins/useVoice'
+import { useConversation } from '../voice/useConversation'
+import { ConversationBar } from '../voice/ConversationBar'
+import { AudioLines } from 'lucide-react'
 
 export function Composer({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
@@ -33,6 +36,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     }
   }, [])
   const key = `${!w.project || w.project.kind === 'chat' ? 'chat' : w.project.path}:${w.session?.id || 'new'}`
+  const conversation = useConversation(w)
   const draftKey = useRef(key)
   const latest = useRef(text)
   latest.current = text
@@ -172,6 +176,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       <QueuePanel key={key} workspace={w} />
       {w.session?.todos?.length ? <TodoPanel todos={w.session.todos} /> : null}
       <ContextControl workspace={w} />
+      {conversation.state !== 'off' && <ConversationBar conversation={conversation} />}
       <div className={`composer ${recording ? 'recording' : ''}`}>
         {attachments.length > 0 && (
           <div className="attachment-chips">
@@ -278,6 +283,16 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           </div>
           <div className="composer-actions">
             <ModelControl workspace={w} />
+            <button
+              className={`icon ${conversation.state !== 'off' ? 'active' : ''}`}
+              disabled={!w.project || recording}
+              aria-label={conversation.state !== 'off' ? t('Завершить разговор') : t('Голосовой разговор')}
+              aria-pressed={conversation.state !== 'off'}
+              title={t('Голосовой разговор')}
+              onClick={() => void (conversation.state === 'off' ? conversation.start() : conversation.stop())}
+            >
+              <AudioLines size={17} />
+            </button>
             <button
               className={`icon ${recording ? 'danger' : ''}`}
               disabled={!w.project || transcribing}

@@ -12,7 +12,8 @@ it('installs the bundled payload once and verifies the CLI before reporting comp
   )
   const verifyInstall = vi.fn(async () => {})
   const phases: string[] = []
-  const controller = new InstallerController({ verifyPayload, launch, verifyInstall }, (status) =>
+  const prepareVoice = vi.fn(async (progress: (percent: number) => void) => progress(100))
+  const controller = new InstallerController({ verifyPayload, launch, verifyInstall, prepareVoice }, (status) =>
     phases.push(status.phase)
   )
   const install = controller.install('C:\\Apps\\Prime')
@@ -21,7 +22,7 @@ it('installs the bundled payload once and verifies the CLI before reporting comp
   finish()
   await install
   expect(verifyInstall).toHaveBeenCalledWith('C:\\Apps\\Prime')
-  expect(phases).toEqual(['preparing', 'installing', 'verifying', 'complete'])
+  expect(phases).toEqual(['preparing', 'installing', 'verifying', 'voice', 'voice', 'complete'])
 })
 it('does not execute a corrupt payload or claim that an incomplete installation is ready', async () => {
   const launch = vi.fn()
@@ -31,7 +32,8 @@ it('does not execute a corrupt payload or claim that an incomplete installation 
         throw new Error('Checksum mismatch')
       },
       launch,
-      verifyInstall: vi.fn()
+      verifyInstall: vi.fn(),
+      prepareVoice: vi.fn()
     },
     () => {}
   )
