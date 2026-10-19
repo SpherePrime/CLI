@@ -46,6 +46,28 @@
   display: flex;
   gap: 5px;
 }
+.workbench-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.workbench-tabs button {
+  gap: 6px;
+  padding: 5px 8px;
+  min-height: 27px;
+  flex-shrink: 0;
+  font-size: 11px;
+  border-color: transparent;
+  color: var(--muted);
+  background: transparent;
+}
+.workbench-tabs button[aria-selected='true'] {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
 .workbench-content {
   flex: 1;
   min-height: 0;

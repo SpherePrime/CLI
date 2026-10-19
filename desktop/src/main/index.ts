@@ -34,11 +34,18 @@ import type { Operation } from '../shared/contracts'
 import { TerminalManager } from './terminal/manager'
 import { terminalOperation } from './workbench/terminalIpc'
 import { workbenchTerminalTools } from './workbench/tools'
+import { AutomationManager } from './automations/manager'
+import { automationOperation } from './workbench/automationIpc'
+import { createAgentAdapter } from './workbench/agentRuns'
+import { ProjectChanges } from './workbench/projectChanges'
 
 let window: BrowserWindow | null = null
 let tray: Tray | null = null
 let quitting = false
 let cleanupDone = false
+let cleanupRunning = false
+let automations: AutomationManager | undefined
+const projectChanges = new ProjectChanges()
 let runtime: RuntimeSupervisor
 let prime: PrimeService | undefined
 let settings: SettingsStore
@@ -55,6 +62,18 @@ let browserMcp: BrowserMcpServer | undefined
 const emit = (event: any) => {
   if (event.type === 'terminal')
     event.payload.activeCount = terminals.list().filter((item) => item.status === 'running').length
+  if (
+    event.type === 'run_complete' &&
+    event.payload?.data?.error &&
+    !event.payload.data.cancelled &&
+    !/context canceled/i.test(event.payload.data.error)
+  ) {
+    const root = prime?.projects.get(event.workspaceId)?.path
+    if (root)
+      void automations
+        ?.event({ root, type: 'runFailed', sourceRunId: event.payload.data.run_id })
+        .catch(() => {})
+  }
   if (window && !window.isDestroyed()) window.webContents.send('prime:event', event)
   if (
     event.type === 'runtime' &&
@@ -79,9 +98,15 @@ const emit = (event: any) => {
 const browserPanel = new BrowserPanel(() => window, emit)
 const terminals = new TerminalManager({ emit })
 const hasBackgroundWork = () =>
-  Boolean(prime?.isBusy() || terminals.list().some((item) => item.status === 'running'))
+  Boolean(
+    prime?.isBusy() ||
+    terminals.list().some((item) => item.status === 'running') ||
+    automations?.counts().activeCount
+  )
+const shouldKeepRunning = () => hasBackgroundWork() || Boolean(automations?.counts().enabledCount)
 async function recoverBackend(): Promise<void> {
   recovering = true
+  automations?.stop()
   const previous = [...(prime?.projects.values() || [])]
   prime = undefined
   try {
@@ -107,6 +132,7 @@ async function recoverBackend(): Promise<void> {
         }
       }
       emit({ type: 'recovered', payload: [...recoveredService.projects.values()] })
+      automations?.start()
       emit({ type: 'runtime', payload: { status: 'ready', version: runtime.version } })
       return
     }
@@ -200,6 +226,11 @@ function confirmEditorDiscard(): boolean {
   return true
 }
 function registerIpc(): void {
+  handle('automation', (id: string, request: unknown) => {
+    const root = requirePrime().root(projectId.parse(id))
+    if (!automations) throw new Error(t('Планировщик ещё загружается'))
+    return automationOperation(automations, root, request)
+  })
   handle('terminal', (id: string, request: unknown) =>
     terminalOperation(terminals, projectId.parse(id), requirePrime().root(id), request)
   )
@@ -225,6 +256,7 @@ function registerIpc(): void {
     version: app.getVersion(),
     runtime: runtime?.status || 'starting',
     terminalCount: terminals.list().filter((item) => item.status === 'running').length,
+    automationCounts: automations?.counts() || { activeCount: 0, enabledCount: 0 },
     runtimeVersion: runtime?.version,
     error: runtimeError,
     packaged: app.isPackaged,
@@ -463,11 +495,17 @@ function registerIpc(): void {
         async () => {
           if (hasBackgroundWork()) throw new Error(t('Сначала завершите активные задачи'))
           if (editorDirty) throw new Error(t('Сохраните изменения в файлах перед перезапуском'))
+          await automations?.dispose()
         }
       )
     })()
     const controller = await updateController
-    return action === 'install' ? controller.install() : controller.check()
+    try {
+      return await (action === 'install' ? controller.install() : controller.check())
+    } catch (error) {
+      if (action === 'install') automations?.start()
+      throw error
+    }
   })
 }
 function syncTitlebar(): void {
@@ -512,12 +550,14 @@ function createWindow(): void {
   })
   window.webContents.on('will-navigate', (event) => event.preventDefault())
   window.on('close', (event) => {
-    if (!quitting && hasBackgroundWork()) {
+    if (!quitting && shouldKeepRunning()) {
       event.preventDefault()
       window?.hide()
       new Notification({
         title: 'Prime Desktop',
-        body: t('Задачи продолжают работать. Приложение доступно в трее.')
+        body: automations?.counts().enabledCount
+          ? t('Планировщик работает в трее. Для выхода используйте меню значка.')
+          : t('Задачи продолжают работать. Приложение доступно в трее.')
       }).show()
     }
   })
@@ -566,19 +606,35 @@ else {
       console.error('Built-in browser tools are unavailable', error)
     }
     await startRuntime()
+    automations = new AutomationManager({
+      path: join(app.getPath('userData'), 'automations.json'),
+      emit,
+      adapter: createAgentAdapter({
+        service: requirePrime,
+        channels: (root) => settings.get().projectChannels?.[root] || [],
+        filesFingerprint: (root) => projectChanges.fingerprint(root),
+        onProject: () => emit({ type: 'projectsChanged', payload: {} })
+      })
+    })
+    await automations.load()
+    if (prime) automations.start()
   })
   app.on('window-all-closed', () => {
-    if (!hasBackgroundWork()) app.quit()
+    if (!shouldKeepRunning()) app.quit()
   })
   app.on('before-quit', (event) => {
     if (cleanupDone) return
     event.preventDefault()
+    if (cleanupRunning) return
     if (!confirmEditorDiscard()) {
       quitting = false
       return
     }
     quitting = true
+    cleanupRunning = true
     void (async () => {
+      await automations?.dispose()
+      projectChanges.dispose()
       await terminals.dispose()
       await prime?.dispose()
       await runtime?.stop()

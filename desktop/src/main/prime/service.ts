@@ -12,12 +12,13 @@ export class PrimeService {
   private shells = new Map<string, AbortController>()
   private opening = new Map<string, Promise<Project>>()
   private channels = new Map<string, any[]>()
+  private initializing = new Map<string, Promise<any>>()
   constructor(
     private transport: PrimeTransport,
     private emit: (event: DesktopEvent) => void
   ) {}
   isBusy(): boolean {
-    return this.activity.isBusy() || this.shells.size > 0
+    return this.activity.isBusy() || this.shells.size > 0 || this.initializing.size > 0
   }
   async open(path: string, channels: string[] = []): Promise<Project> {
     const canonical = await realpath(path)
@@ -106,6 +107,7 @@ export class PrimeService {
   async call(id: string, operation: Operation, args: any = {}): Promise<any> {
     const project = this.projects.get(id)
     if (!project) throw new Error('Проект не открыт')
+    if (operation === 'init') return this.initialize(id, args)
     if (operation === 'channelMessages') return this.channels.get(id) || []
     if (operation === 'send' && project.connection !== 'ready')
       throw new Error('Дождитесь восстановления соединения')
@@ -156,7 +158,30 @@ export class PrimeService {
     if (!project) throw new Error('Проект не открыт')
     return project.path
   }
+  private async initialize(id: string, args: any): Promise<any> {
+    const pending = this.initializing.get(id)
+    if (pending) return pending
+    const initialization = (async () => {
+      const status = await this.call(id, 'agent')
+      if (status?.is_ready) return status
+      const [method, route, body] = operationRoute('init', args)
+      return redact(
+        await this.transport.request(
+          method,
+          `/v1/workspaces/${encodeURIComponent(id)}/${route}`,
+          body
+        )
+      )
+    })()
+    this.initializing.set(id, initialization)
+    try {
+      return await initialization
+    } finally {
+      this.initializing.delete(id)
+    }
+  }
   async dispose(): Promise<void> {
+    await Promise.allSettled(this.initializing.values())
     for (const id of [...this.projects.keys()]) await this.close(id).catch(() => {})
   }
 }
