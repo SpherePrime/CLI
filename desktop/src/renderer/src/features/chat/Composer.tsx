@@ -64,6 +64,21 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         if (!previous[index]) element.removeAttribute('inert')
       })
   }, [callHost, callOpen, conversation.state === 'off'])
+  useEffect(() => {
+    if (callOpen && (w.permissions?.length || w.questions?.length)) setCallOpen(false)
+  }, [callOpen, w.permissions?.length, w.questions?.length])
+  useEffect(
+    () =>
+      window.prime.onEvent((event) => {
+        if (
+          event.workspaceId === w.project?.id &&
+          event.type === 'windows' &&
+          event.payload?.request
+        )
+          setCallOpen(false)
+      }),
+    [w.project?.id]
+  )
   const draftKey = useRef(key)
   const latest = useRef(text)
   latest.current = text

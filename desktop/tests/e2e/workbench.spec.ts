@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, writeFile, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
 import { launchWorkbench } from '../fixtures/workbench-app'
 
@@ -73,7 +73,7 @@ test('workspace actions, working context and appearance persist in real Electron
         JSON.stringify(prompt).includes('Existing users can sign in')
       )
     ).toBe(true)
-    await expect(page.locator('.message.user')).not.toContainText('working-context')
+    await expect(page.locator('.conversation')).not.toContainText('working-context')
     await page.keyboard.press('Control+f')
     await page.getByRole('textbox', { name: 'Поиск в чате', exact: true }).fill('Соединение')
     await expect(page.locator('.conversation-search [role=status]')).toHaveText('1 / 1')
@@ -105,6 +105,21 @@ test('workspace actions, working context and appearance persist in real Electron
     await expect(page.locator('.file-editor .view-lines')).not.toContainText('unsavedDraft')
     await page.getByRole('button', { name: 'Закрыть файл app.ts', exact: true }).click()
 
+    await unlink(join(root, 'app.ts'))
+    await page
+      .getByRole('textbox', { name: 'Сообщение Prime', exact: true })
+      .fill('Continue after source deletion')
+    await page.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
+    await expect
+      .poll(
+        () =>
+          provider.prompts.some((prompt) =>
+            JSON.stringify(prompt).includes('unavailable; update the working context sources')
+          ),
+        { timeout: 30000 }
+      )
+      .toBe(true)
+    await expect(page.locator('.conversation')).not.toContainText('working-context')
     await page.keyboard.press('Control+,')
     await page.getByRole('button', { name: 'Компактная', exact: true }).click()
     await page.getByRole('checkbox', { name: 'Меньше анимаций' }).check()
