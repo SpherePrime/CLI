@@ -832,3 +832,37 @@ Object.assign(english, {
   '{path} будет удалён на сервере без возможности восстановления.': '{path} will be permanently deleted on the server.',
   'Откройте сервер в VS Code через SSH-профиль с портом 22': 'Use an SSH profile on port 22 to open the server in VS Code'
 })
+
+Object.assign(english, {
+  'Команды агентов': 'Agent teams',
+  'Команды': 'Teams',
+  'Новая группа': 'New team',
+  'Название группы': 'Team name',
+  'Общая цель': 'Shared goal',
+  'Одновременно': 'Concurrent',
+  'Исполнитель {value0}': 'Member {value0}',
+  'Задача': 'Task',
+  'Инструкция': 'Instruction',
+  'Задача исполнителя {value0}': 'Member {value0} task',
+  'Инструкция исполнителя {value0}': 'Member {value0} instruction',
+  'Убрать исполнителя': 'Remove member',
+  'Добавить исполнителя': 'Add member',
+  'Запустить группу': 'Start team',
+  'Параллельная работа нескольких агентов': 'Several agents working in parallel',
+  'Разделите задачу между исполнителями. Каждый работает в своём чате.': 'Split work between members. Each one works in its own chat.',
+  'до {value0} одновременно': 'up to {value0} at once',
+  'Открыть чат исполнителя {value0}': 'Open chat of {value0}',
+  'Остановить исполнителя {value0}': 'Stop {value0}',
+  'Повторить исполнителя {value0}': 'Retry {value0}',
+  'Повторить': 'Retry',
+  'Остановить группу': 'Stop team',
+  'В очереди': 'Queued',
+  'Запуск': 'Starting',
+  'Остановлено': 'Stopped',
+  'Заполните название группы, задачи и инструкции.': 'Fill in the team name, tasks and instructions.',
+  'Группа или исполнитель не найдены.': 'Team or member not found.',
+  'Сначала остановите группу.': 'Stop the team first.',
+  'Слишком много активных групп.': 'Too many active teams.',
+  'Хранилище групп повреждено. Изменения заблокированы.': 'Team storage is damaged. Changes are blocked.',
+  'Группы ещё загружаются.': 'Teams are still loading.'
+})

@@ -39,6 +39,8 @@ import { workbenchTerminalTools } from './workbench/tools'
 import { AutomationManager } from './automations/manager'
 import { automationOperation } from './workbench/automationIpc'
 import { createAgentAdapter } from './workbench/agentRuns'
+import { TeamManager } from './teams/manager'
+import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
 
 let window: BrowserWindow | null = null
@@ -47,6 +49,7 @@ let quitting = false
 let cleanupDone = false
 let cleanupRunning = false
 let automations: AutomationManager | undefined
+let teams: TeamManager | undefined
 const projectChanges = new ProjectChanges()
 let runtime: RuntimeSupervisor
 let prime: PrimeService | undefined
@@ -105,7 +108,8 @@ const hasBackgroundWork = () =>
     prime?.isBusy() ||
     remotes?.isBusy() ||
     terminals.list().some((item) => item.status === 'running') ||
-    automations?.counts().activeCount
+    automations?.counts().activeCount ||
+    teams?.activeCount()
   )
 const shouldKeepRunning = () => hasBackgroundWork() || Boolean(automations?.counts().enabledCount)
 async function recoverBackend(): Promise<void> {
@@ -250,6 +254,10 @@ function confirmEditorDiscard(): boolean {
   return true
 }
 function registerIpc(): void {
+  handle('team', (id: string, request: unknown) => {
+    if (!teams) throw new Error(t('Планировщик ещё загружается'))
+    return teamOperation(teams, workspacePath(id), request)
+  })
   handle('automation', (id: string, request: unknown) => {
     const root = workspacePath(id)
     if (!automations) throw new Error(t('Планировщик ещё загружается'))
@@ -688,6 +696,17 @@ else {
     })
     await automations.load()
     if (prime) automations.start()
+    teams = new TeamManager({
+      path: join(app.getPath('userData'), 'teams.json'),
+      emit,
+      adapter: createAgentAdapter({
+        service: requirePrime,
+        channels: (root) => settings.get().projectChannels?.[root] || [],
+        onProject: () => emit({ type: 'projectsChanged', payload: {} })
+      })
+    })
+    await teams.load()
+    teams.start()
   })
   app.on('window-all-closed', () => {
     if (!shouldKeepRunning()) app.quit()
@@ -704,6 +723,7 @@ else {
     cleanupRunning = true
     void (async () => {
       await automations?.dispose()
+      await teams?.dispose()
       projectChanges.dispose()
       await terminals.dispose()
       await remotes?.shutdown()

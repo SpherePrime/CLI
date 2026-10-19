@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { DesktopApi } from '../shared/contracts'
 const api: DesktopApi = {
   automation: (id, request) => ipcRenderer.invoke('prime:automation', id, request),
+  team: (id, request) => ipcRenderer.invoke('prime:team', id, request),
   terminal: (id, request) => ipcRenderer.invoke('prime:terminal', id, request),
   changes: (id) => ipcRenderer.invoke('prime:changes', id),
   info: () => ipcRenderer.invoke('prime:info'),

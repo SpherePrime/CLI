@@ -119,6 +119,10 @@ export interface DesktopApi {
     workspaceId: string,
     request: import('./automations').AutomationRequest
   ): Promise<import('./automations').AutomationResponse>
+  team(
+    workspaceId: string,
+    request: import('./teams').TeamRequest
+  ): Promise<import('./teams').TeamResponse>
   terminal(
     workspaceId: string,
     request: import('./terminal').TerminalRequest
