@@ -150,6 +150,7 @@ export interface DesktopApi {
   browserLogs(clear?: boolean): Promise<BrowserLog[]>
   speech(request: import('./speech').SpeechRequest): Promise<any>
   github(workspaceId: string, request: import('./github').GithubRequest): Promise<any>
+  windows(workspaceId: string, request: import('./computer').WindowRequest): Promise<any>
   browserPick(): Promise<PickedElementResult | null>
   browserPickCancel(): Promise<void>
   team(
