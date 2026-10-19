@@ -932,3 +932,33 @@ Object.assign(english, {
   'Стиль голоса Supertonic': 'Supertonic voice style',
   'Голосовая модель': 'Voice model'
 })
+
+Object.assign(english, {
+  'GitHub недоступен': 'GitHub is unavailable',
+  'Проект не связан с репозиторием GitHub.': 'The project is not linked to a GitHub repository.',
+  'gh не установлен. Установите GitHub CLI и выполните gh auth login.': 'gh is not installed. Install GitHub CLI and run gh auth login.',
+  'Выполните gh auth login в терминале.': 'Run gh auth login in the terminal.',
+  'Проверить снова': 'Check again',
+  'Pull request': 'Pull request',
+  'Pull requests': 'Pull requests',
+  'Issues': 'Issues',
+  'Нет открытых': 'Nothing open',
+  'черновик': 'draft',
+  'Pull request создан: {value0}': 'Pull request created: {value0}',
+  'Выберите issue или pull request': 'Select an issue or pull request',
+  'Открыть на GitHub': 'Open on GitHub',
+  'Проверки': 'Checks',
+  'Проверок нет': 'No checks',
+  'Изменённые файлы': 'Changed files',
+  'Показать изменения': 'Show changes',
+  'Замечания ревью агенту': 'Send review to agent',
+  'Логи упавших проверок агенту': 'Send failed check logs to agent',
+  'Ветка': 'Branch',
+  'В ветку': 'Into',
+  'Заголовок': 'Title',
+  'Описание': 'Description',
+  'Черновик': 'Draft',
+  'Ветка {value0} будет отправлена на GitHub и откроется pull request в {value1}.': 'Branch {value0} will be pushed to GitHub and a pull request into {value1} will be opened.',
+  'Подтвердить и опубликовать': 'Confirm and publish',
+  'Создать pull request': 'Create pull request'
+})

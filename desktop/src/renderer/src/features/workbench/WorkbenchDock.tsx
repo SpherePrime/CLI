@@ -1,5 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Clock3, Maximize2, Minimize2, Rocket, TerminalSquare, Users, X } from 'lucide-react'
+import { Clock3, Github, Maximize2, Minimize2, Rocket, TerminalSquare, Users, X } from 'lucide-react'
+import { GithubPanel } from '../github/GithubPanel'
+import { startAgentTask } from './agentTask'
 import { LaunchPanel } from '../launch/LaunchPanel'
 import type { LaunchRequest } from '../../../../shared/launch'
 import { TeamPanel } from '../teams/TeamPanel'
@@ -13,7 +15,7 @@ import { AutomationPanel } from '../automations/AutomationPanel'
 import type { AutomationRequest } from '../../../../shared/automations'
 import { openWorkbenchRun } from './openRun'
 
-export type WorkbenchView = 'terminal' | 'automations' | 'teams' | 'launch'
+export type WorkbenchView = 'terminal' | 'automations' | 'teams' | 'launch' | 'github'
 
 export function WorkbenchDock({
   workspace: w,
@@ -166,6 +168,17 @@ export function WorkbenchDock({
             <Users size={14} />
             {t('Команды')}
           </button>
+          <button
+            role="tab"
+            aria-selected={view === 'github'}
+            onClick={() => {
+              setView('github')
+              setExpanded(true)
+            }}
+          >
+            <Github size={14} />
+            GitHub
+          </button>
         </nav>
         <div>
           <div className="workbench-terminal-actions" ref={setHeaderHost} />
@@ -220,6 +233,16 @@ export function WorkbenchDock({
             onDiagnostics={(text) => {
               window.dispatchEvent(new CustomEvent('prime:draft', { detail: text }))
               setExpanded(false)
+            }}
+          />
+        )}
+        {w.project && view === 'github' && (
+          <GithubPanel
+            workspaceId={workspaceId}
+            onError={w.errorHandler}
+            onAgentTask={async (title, prompt) => {
+              await startAgentTask(w, title, prompt)
+              close()
             }}
           />
         )}

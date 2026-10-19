@@ -43,6 +43,8 @@ import { createAgentAdapter } from './workbench/agentRuns'
 import { TeamManager } from './teams/manager'
 import { LaunchManager } from './launch/manager'
 import { SpeechService } from './speech/service'
+import { githubOperation } from './github/service'
+import { localRunner, remoteRunner } from './github/runner'
 import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
 
@@ -304,6 +306,11 @@ function registerIpc(): void {
     }
   })
   handle('browserPickCancel', () => cancelPick(browserPanel.contents))
+  handle('github', (id: string, request: unknown) => {
+    const workspaceId = projectId.parse(id)
+    const remote = remotes?.byWorkspace(workspaceId)?.connection
+    return githubOperation(remote ? remoteRunner(remote) : localRunner(requirePrime().root(workspaceId)), request)
+  })
   handle('speech', (request: unknown) =>
     speech.handle(
       z
