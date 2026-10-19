@@ -962,3 +962,23 @@ Object.assign(english, {
   'Подтвердить и опубликовать': 'Confirm and publish',
   'Создать pull request': 'Create pull request'
 })
+
+Object.assign(english, {
+  'Окна': 'Windows',
+  'Окна компьютера': 'Computer windows',
+  'Агент видит окно «{value0}» в выбранном чате. Только просмотр.': 'The agent sees “{value0}” in the selected chat. View only.',
+  'Отозвать': 'Revoke',
+  'Окна не найдены': 'No windows found',
+  'Выберите окно, чтобы посмотреть снимок': 'Select a window to see a snapshot',
+  'Снимок…': 'Capturing…',
+  'Снимок недоступен': 'Snapshot unavailable',
+  'Сначала откройте чат': 'Open a chat first',
+  'Показывать агенту в чате «{value0}»': 'Show to the agent in “{value0}”',
+  'Агент получит только снимки этого окна во время работы в выбранном чате. Нажатия и ввод текста недоступны.': 'The agent only gets snapshots of this window while working in the selected chat. Clicks and typing are not available.',
+  'Журнал просмотров': 'View log',
+  'Агент': 'Agent',
+  'Пока пусто': 'Nothing yet',
+  'Окно закрыто': 'The window is closed',
+  'Не удалось получить снимок окна. Окно не должно быть свёрнуто.': 'Could not capture the window. It must not be minimized.',
+  'Просмотр окон доступен только в Windows': 'Window viewing is only available on Windows'
+})

@@ -1,0 +1,108 @@
+.windows-share {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+.windows-share span {
+  flex: 1;
+  min-width: 0;
+}
+.windows-panel .windows-revoke {
+  border-color: color-mix(in srgb, var(--red) 45%, var(--border));
+  color: var(--red);
+}
+.windows-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+}
+.windows-list {
+  border-right: 1px solid var(--border);
+  overflow: auto;
+  padding: 8px;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+.windows-panel .windows-item {
+  display: grid;
+  justify-items: start;
+  text-align: left;
+  gap: 2px;
+  background: transparent;
+  border-color: transparent;
+}
+.windows-panel .windows-item.selected {
+  background: var(--raised);
+  border-color: var(--border);
+}
+.windows-item strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.windows-item small {
+  color: var(--secondary);
+}
+.windows-detail {
+  overflow: auto;
+  padding: 12px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+.windows-preview {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  overflow: hidden;
+}
+.windows-preview img {
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+}
+.windows-detail h4 {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.windows-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--secondary);
+}
+.windows-log time {
+  color: var(--muted);
+  margin-right: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.windows-log .is-error {
+  color: var(--red);
+}
+@media (max-width: 760px) {
+  .windows-layout {
+    grid-template-columns: 1fr;
+  }
+  .windows-list {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    max-height: 180px;
+  }
+}
+.automation-panel.windows-panel .windows-item {
+  display: grid;
+  justify-items: start;
+  justify-content: stretch;
+  text-align: left;
+}

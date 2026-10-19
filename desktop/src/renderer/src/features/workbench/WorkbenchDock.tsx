@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Clock3, Github, Maximize2, Minimize2, Rocket, TerminalSquare, Users, X } from 'lucide-react'
+import { AppWindow, Clock3, Github, Maximize2, Minimize2, Rocket, TerminalSquare, Users, X } from 'lucide-react'
 import { GithubPanel } from '../github/GithubPanel'
+import { WindowsPanel } from '../windows/WindowsPanel'
 import { startAgentTask } from './agentTask'
 import { LaunchPanel } from '../launch/LaunchPanel'
 import type { LaunchRequest } from '../../../../shared/launch'
@@ -15,7 +16,7 @@ import { AutomationPanel } from '../automations/AutomationPanel'
 import type { AutomationRequest } from '../../../../shared/automations'
 import { openWorkbenchRun } from './openRun'
 
-export type WorkbenchView = 'terminal' | 'automations' | 'teams' | 'launch' | 'github'
+export type WorkbenchView = 'terminal' | 'automations' | 'teams' | 'launch' | 'github' | 'windows'
 
 export function WorkbenchDock({
   workspace: w,
@@ -179,6 +180,17 @@ export function WorkbenchDock({
             <Github size={14} />
             GitHub
           </button>
+          <button
+            role="tab"
+            aria-selected={view === 'windows'}
+            onClick={() => {
+              setView('windows')
+              setExpanded(true)
+            }}
+          >
+            <AppWindow size={14} />
+            {t('Окна')}
+          </button>
         </nav>
         <div>
           <div className="workbench-terminal-actions" ref={setHeaderHost} />
@@ -234,6 +246,14 @@ export function WorkbenchDock({
               window.dispatchEvent(new CustomEvent('prime:draft', { detail: text }))
               setExpanded(false)
             }}
+          />
+        )}
+        {w.project && view === 'windows' && (
+          <WindowsPanel
+            workspaceId={workspaceId}
+            sessionId={w.activeSessionId}
+            sessionTitle={w.session?.title}
+            onError={w.errorHandler}
           />
         )}
         {w.project && view === 'github' && (

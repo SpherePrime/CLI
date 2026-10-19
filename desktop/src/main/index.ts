@@ -45,6 +45,7 @@ import { LaunchManager } from './launch/manager'
 import { SpeechService } from './speech/service'
 import { githubOperation } from './github/service'
 import { localRunner, remoteRunner } from './github/runner'
+import { WindowViewer } from './computer/viewer'
 import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
 
@@ -111,6 +112,14 @@ const emit = (event: any) => {
 const browserPanel = new BrowserPanel(() => window, emit)
 const terminals = new TerminalManager({ emit })
 let launches: LaunchManager | undefined
+const windowViewer = new WindowViewer({
+  emit,
+  busySessions: async (workspaceId) => {
+    const sessions = await requirePrime().call(workspaceId, 'sessions')
+    return (Array.isArray(sessions) ? sessions : []).filter((item) => item.is_busy).map((item) => item.id)
+  }
+})
+const agentTools = () => [...workbenchTerminalTools(terminals), ...windowViewer.tools()]
 const speech = new SpeechService(
   (status) => emit({ workspaceId: '', type: 'speech', payload: status }),
   async () => {
@@ -306,6 +315,7 @@ function registerIpc(): void {
     }
   })
   handle('browserPickCancel', () => cancelPick(browserPanel.contents))
+  handle('windows', (id: string, request: unknown) => windowViewer.handle(projectId.parse(id), request))
   handle('github', (id: string, request: unknown) => {
     const workspaceId = projectId.parse(id)
     const remote = remotes?.byWorkspace(workspaceId)?.connection
@@ -728,7 +738,7 @@ else {
     refreshTrayMenu()
     try {
       browserMcp = await startBrowserMcpServer(browserPanel, {
-        tools: () => workbenchTerminalTools(terminals),
+        tools: agentTools,
         resolveWorkspace: (root) =>
           [...(prime?.projects.values() || [])].find(
             (project) =>
@@ -750,7 +760,7 @@ else {
       channels: (key) => settings.get().projectChannels?.[key] || [],
       startBrowser: (resolveWorkspace) =>
         startBrowserMcpServer(browserPanel, {
-          tools: () => workbenchTerminalTools(terminals),
+          tools: agentTools,
           resolveWorkspace
         }),
       onDetached: async (workspaceId) => {
