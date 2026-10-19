@@ -83,9 +83,16 @@
 }
 .automation-panel button.automation-primary {
   background: var(--accent);
-  color: var(--accent-text, #171717);
+  color: var(--on-accent);
   border-color: var(--accent);
   font-weight: 600;
+}
+.automation-panel button.automation-primary svg {
+  color: inherit;
+}
+.automation-panel button.automation-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  border-color: var(--accent);
 }
 .automation-actions {
   display: flex;

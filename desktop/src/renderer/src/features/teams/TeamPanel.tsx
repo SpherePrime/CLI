@@ -1,3 +1,4 @@
+import { EmptyState } from '../../components/EmptyState'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, Plus, RotateCcw, Square, Trash2, Users } from 'lucide-react'
 import type { DesktopEvent } from '../../../../shared/contracts'
@@ -86,10 +87,12 @@ function TeamWorkspace({ root, api, subscribe, onError, onOpenChat }: Props) {
           <h2>{t('Команды агентов')}</h2>
         </div>
         <div className="automation-actions">
-          <button className="automation-primary" onClick={() => setEditor(true)} disabled={busy || editor}>
-            <Plus size={15} />
-            {t('Новая группа')}
-          </button>
+          {snapshot.teams.length > 0 && (
+            <button className="automation-primary" onClick={() => setEditor(true)} disabled={busy || editor}>
+              <Plus size={15} />
+              {t('Новая группа')}
+            </button>
+          )}
         </div>
       </header>
       <div className="automation-content">
@@ -103,11 +106,12 @@ function TeamWorkspace({ root, api, subscribe, onError, onOpenChat }: Props) {
           />
         )}
         {!snapshot.teams.length && !editor && (
-          <div className="automation-empty">
-            <Users size={28} />
-            <h3>{t('Параллельная работа нескольких агентов')}</h3>
-            <p>{t('Разделите задачу между исполнителями. Каждый работает в своём чате.')}</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={t('Параллельная работа нескольких агентов')}
+            text={t('Разделите задачу между исполнителями. Каждый работает в своём чате.')}
+            action={{ label: t('Новая группа'), icon: Plus, onClick: () => setEditor(true) }}
+          />
         )}
         {snapshot.teams.map((team) => {
           const active = team.tasks.some((task) => !finishedTeamStatuses.includes(task.status))

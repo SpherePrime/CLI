@@ -1,3 +1,4 @@
+import { EmptyState } from '../../components/EmptyState'
 import { useEffect, useRef, useState } from 'react'
 import { Clock3, Plus, RefreshCw } from 'lucide-react'
 import type {
@@ -113,14 +114,16 @@ function AutomationWorkspace({ root, api, subscribe, onError, onOpenRun }: Props
           >
             <RefreshCw size={15} />
           </button>
-          <button
-            className="automation-primary"
-            onClick={() => setEditor('new')}
-            disabled={busy || readOnly}
-          >
-            <Plus size={15} />
-            {t('Новая автоматизация')}
-          </button>
+          {(snapshot.rules.length > 0 || readOnly) && (
+            <button
+              className="automation-primary"
+              onClick={() => setEditor('new')}
+              disabled={busy || readOnly}
+            >
+              <Plus size={15} />
+              {t('Новая автоматизация')}
+            </button>
+          )}
         </div>
       </header>
       <div className="automation-content">
@@ -148,13 +151,12 @@ function AutomationWorkspace({ root, api, subscribe, onError, onOpenRun }: Props
         {loading ? (
           <p role="status">{t('Загрузка…')}</p>
         ) : !snapshot.rules.length && !editor && !readOnly ? (
-          <div className="automation-empty">
-            <Clock3 size={28} />
-            <h3>{t('Задачи по расписанию и событиям')}</h3>
-            <p>
-              {t('Добавьте проверку проекта, ежедневный обзор или задачу при изменении файлов.')}
-            </p>
-          </div>
+          <EmptyState
+            icon={Clock3}
+            title={t('Задачи по расписанию и событиям')}
+            text={t('Добавьте проверку проекта, ежедневный обзор или задачу при изменении файлов.')}
+            action={{ label: t('Новая автоматизация'), icon: Plus, onClick: () => setEditor('new') }}
+          />
         ) : null}
         <div className="automation-rule-list">
           {snapshot.rules.map((rule) => {

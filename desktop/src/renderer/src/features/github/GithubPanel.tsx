@@ -1,3 +1,4 @@
+import { EmptyState } from '../../components/EmptyState'
 import { useCallback, useEffect, useState } from 'react'
 import { Bot, CircleDot, ExternalLink, GitPullRequest, Github, Plus, RefreshCw } from 'lucide-react'
 import type {
@@ -79,15 +80,12 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
   if (status && !status.repository)
     return (
       <div className="automation-panel github-panel">
-        <div className="automation-empty github-empty">
-          <Github size={28} />
-          <h3>{t('GitHub недоступен')}</h3>
-          <p>{t(status.error ?? 'Проект не связан с репозиторием GitHub.')}</p>
-          <button onClick={() => void refresh()} disabled={busy}>
-            <RefreshCw size={14} />
-            {t('Проверить снова')}
-          </button>
-        </div>
+        <EmptyState
+          icon={Github}
+          title={t('GitHub недоступен')}
+          text={t(status.error ?? 'Проект не связан с репозиторием GitHub.')}
+          action={{ label: t('Проверить снова'), icon: RefreshCw, onClick: () => void refresh(), disabled: busy }}
+        />
       </div>
     )
   const list = tab === 'issues' ? issues : pulls
@@ -158,7 +156,7 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
             />
           )}
           {!creating && !selected && (
-            <p className="launch-placeholder">{t('Выберите issue или pull request')}</p>
+            <EmptyState compact icon={GitPullRequest} title={t('Выберите issue или pull request')} />
           )}
           {!creating && selected && (
             <article className="github-card">

@@ -1,0 +1,74 @@
+.sidebar-footer > button {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.permission-trigger,
+.composer-options .prime-select,
+.workbench-tabs button {
+  white-space: nowrap;
+}
+.settings-layout > nav > button:focus:not(:focus-visible):not(.active) {
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+.jobs-list .jobs-empty {
+  display: block;
+  padding: 0;
+}
+.automation-header h2 {
+  letter-spacing: -0.1px;
+}
+.automation-panel .automation-header {
+  min-height: 50px;
+}
+.automation-panel button {
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+.automation-panel button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.launch-panel .launch-item,
+.github-panel .github-item,
+.windows-panel .windows-item {
+  border-radius: 9px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.launch-panel .launch-item:hover:not(.selected),
+.github-panel .github-item:hover:not(.selected),
+.windows-panel .windows-item:hover:not(.selected) {
+  background: color-mix(in srgb, var(--raised) 60%, transparent);
+}
+@media (max-width: 980px) {
+  .sidebar-footer .footer-shortcut,
+  .sidebar-actions kbd,
+  .sidebar-command kbd {
+    display: none;
+  }
+}
+[data-motion='reduced'] .automation-panel button:active:not(:disabled) {
+  transform: none;
+}
+.section-caption {
+  gap: 6px;
+}
+.section-caption-actions {
+  flex-shrink: 0;
+}
+.sidebar-scroll {
+  overflow-x: hidden;
+}
+input[type='range'],
+input[type='checkbox'],
+input[type='radio'],
+progress {
+  accent-color: var(--accent);
+}
+
+.message.user .message-body {
+  width: fit-content;
+  max-width: min(760px, calc(100% - 31px));
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}

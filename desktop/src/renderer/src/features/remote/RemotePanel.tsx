@@ -1,3 +1,4 @@
+import { EmptyState } from '../../components/EmptyState'
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowUpRight,
@@ -132,15 +133,12 @@ export function RemotePanel({ api, subscribe, onError, onOpenProject, chooseKey 
         />
       )}
       {!snapshot.profiles.length && !editor && (
-        <div className="remote-empty">
-          <Cable size={32} />
-          <strong>{t('Подключите первый сервер')}</strong>
-          <p>{t('Укажите адрес и папку проекта. Отпечаток сервера проверяется перед входом.')}</p>
-          <button className="primary" disabled={busy || readOnly} onClick={() => setEditor('new')}>
-            <Plus size={15} />
-            {t('Добавить сервер')}
-          </button>
-        </div>
+        <EmptyState
+          icon={Cable}
+          title={t('Подключите первый сервер')}
+          text={t('Укажите адрес и папку проекта. Отпечаток сервера проверяется перед входом.')}
+          action={{ label: t('Добавить сервер'), icon: Plus, onClick: () => setEditor('new'), disabled: busy || readOnly }}
+        />
       )}
       <div className="remote-list">
         {snapshot.profiles.map((profile) => {
