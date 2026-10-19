@@ -219,3 +219,79 @@
 @media (prefers-reduced-motion: reduce) {
   .terminal-spin { animation: none; }
 }
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.terminal-bar .terminal-tabs {
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  scrollbar-width: none;
+}
+.terminal-bar .terminal-tab-wrap {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding-right: 2px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.terminal-bar .terminal-tab-wrap:hover {
+  background: color-mix(in srgb, var(--raised) 60%, transparent);
+}
+.terminal-bar .terminal-tab-wrap.active {
+  background: var(--raised);
+  border-color: var(--border);
+}
+.terminal-bar .terminal-tab-wrap.active::after {
+  display: none;
+}
+.terminal-bar .terminal-tab {
+  padding: 6px 6px 6px 10px;
+}
+.terminal-bar .terminal-tab-close {
+  min-height: 22px;
+  min-width: 22px;
+  border-radius: 6px;
+  opacity: 0.6;
+}
+.terminal-bar .terminal-tab-wrap:hover .terminal-tab-close,
+.terminal-bar .terminal-tab-wrap.active .terminal-tab-close {
+  opacity: 1;
+}
+.terminal-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.terminal-bar .terminal-owner {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.terminal-bar.agent-owned .terminal-owner {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: var(--accent-bg);
+}
+.terminal-status-dot {
+  width: 7px;
+  height: 7px;
+}
+.terminal-status-dot.running {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent);
+}
+@media (max-width: 760px) {
+  .terminal-bar .terminal-owner {
+    display: none;
+  }
+}

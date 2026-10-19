@@ -11,8 +11,8 @@ test('launches a real app, opens preview, collects diagnostics and stops it', as
     await page.getByRole('button', { name: 'Терминал проекта', exact: true }).click()
     await page.getByRole('tab', { name: 'Запуск' }).click()
     await page.getByRole('button', { name: 'Новая команда' }).click()
-    await page.getByLabel('Название').fill('Fixture app')
-    await page.getByLabel('Команда').fill(`node "${resolve('tests/fixtures/launch-app.cjs')}"`)
+    await page.getByLabel('Название', { exact: true }).fill('Fixture app')
+    await page.getByLabel('Команда', { exact: true }).fill(`node "${resolve('tests/fixtures/launch-app.cjs')}"`)
     await page.getByRole('button', { name: 'Сохранить' }).click()
     await page.getByRole('button', { name: 'Запустить', exact: true }).click()
     const list = () =>

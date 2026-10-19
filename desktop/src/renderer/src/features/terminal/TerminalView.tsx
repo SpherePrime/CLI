@@ -1,3 +1,4 @@
+import { isDeviceAttributesReply, isTerminalReport } from '../../../../shared/terminalReports'
 import { useEffect, useRef } from 'react'
 import type { ITheme, Terminal } from '@xterm/xterm'
 import type { TerminalApi, TerminalRead, TerminalSnapshot } from '../../../../shared/terminal'
@@ -105,6 +106,11 @@ export function TerminalView(props: Props) {
           }
         })
         const input = terminal.onData((data) => {
+          if (isTerminalReport(data)) {
+            if (latest.current.terminal.status === 'running' && !isDeviceAttributesReply(data))
+              void latest.current.api({ action: 'report', id: props.terminal.id, data }).catch(() => {})
+            return
+          }
           if (
             !restored ||
             latest.current.terminal.owner !== 'user' ||

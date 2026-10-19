@@ -1,3 +1,4 @@
+import { EmptyState } from '../../components/EmptyState'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -139,37 +140,90 @@ function TerminalWorkspace({ workspaceId, api, subscribe, onError, theme, header
     <section className="terminal-panel" aria-label={t('Терминал')}>
       {headerHost ? createPortal(header, headerHost) : header}
       {terminals.length > 0 && (
-        <div className="terminal-tabs" role="tablist" aria-label={t('Вкладки терминала')}>
-          {terminals.map((terminal, index) => (
-            <div
-              className={`terminal-tab-wrap ${current?.id === terminal.id ? 'active' : ''}`}
-              key={terminal.id}
-            >
-              <button
-                role="tab"
-                className="terminal-tab"
-                id={`terminal-tab-${terminal.id}`}
-                aria-controls={`terminal-panel-${terminal.id}`}
-                aria-selected={current?.id === terminal.id}
-                tabIndex={current?.id === terminal.id ? 0 : -1}
-                onClick={() => select(terminal.id)}
-                onKeyDown={(event) => navigateTabs(event, index)}
+        <div className={`terminal-bar ${current?.owner === 'agent' ? 'agent-owned' : ''}`}>
+          <div className="terminal-tabs" role="tablist" aria-label={t('Вкладки терминала')}>
+            {terminals.map((terminal, index) => (
+              <div
+                className={`terminal-tab-wrap ${current?.id === terminal.id ? 'active' : ''}`}
+                key={terminal.id}
               >
-                <span className={`terminal-status-dot ${terminal.status}`} />
-                <span>{terminal.title.replace(/\.exe$/i, '')}</span>
-                {terminal.owner === 'agent' && <Hand size={11} />}
-              </button>
-              <button
-                className="terminal-tab-close"
-                aria-label={t('Закрыть терминал {name}', { name: terminal.title })}
-                title={t('Закрыть терминал')}
-                disabled={busy}
-                onClick={() => void close(terminal.id)}
-              >
-                <X size={12} />
-              </button>
+                <button
+                  role="tab"
+                  className="terminal-tab"
+                  id={`terminal-tab-${terminal.id}`}
+                  aria-controls={`terminal-panel-${terminal.id}`}
+                  aria-selected={current?.id === terminal.id}
+                  tabIndex={current?.id === terminal.id ? 0 : -1}
+                  onClick={() => select(terminal.id)}
+                  onKeyDown={(event) => navigateTabs(event, index)}
+                >
+                  <span className={`terminal-status-dot ${terminal.status}`} />
+                  <span>{terminal.title.replace(/\.exe$/i, '')}</span>
+                  {terminal.owner === 'agent' && <Hand size={11} />}
+                </button>
+                <button
+                  className="terminal-tab-close"
+                  aria-label={t('Закрыть терминал {name}', { name: terminal.title })}
+                  title={t('Закрыть терминал')}
+                  disabled={busy}
+                  onClick={() => void close(terminal.id)}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {current && (
+            <div className="terminal-bar-actions">
+              <span className="terminal-owner">
+                <span className={`terminal-status-dot ${current.status}`} />
+                {current.status === 'exited'
+                  ? t('Завершён · код {code}', { code: current.exitCode ?? 0 })
+                  : current.owner === 'agent'
+                    ? t('Управляет агент')
+                    : t('Вы управляете')}
+              </span>
+              <div className="terminal-toolbar-actions">
+                <button
+                  className="terminal-icon-button"
+                  onClick={() => void copy()}
+                  title={copied ? t('Скопировано') : t('Копировать вывод')}
+                  aria-label={t('Копировать вывод')}
+                  disabled={busy}
+                >
+                  {copied ? <Check size={13} /> : <Copy size={13} />}
+                </button>
+                <button
+                  className="terminal-icon-button"
+                  onClick={() => handles.current.get(current.id)?.clear()}
+                  title={t('Очистить экран')}
+                  aria-label={t('Очистить экран')}
+                >
+                  <Trash2 size={13} />
+                </button>
+                {current.status === 'running' && (
+                  <button
+                    className="terminal-handover"
+                    disabled={busy}
+                    onClick={() =>
+                      void act(() =>
+                        api({
+                          action: 'owner',
+                          id: current.id,
+                          owner: current.owner === 'user' ? 'agent' : 'user'
+                        })
+                      )
+                    }
+                  >
+                    <Hand size={12} />
+                    <span>
+                      {current.owner === 'agent' ? t('Вернуть управление') : t('Передать агенту')}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
-          ))}
+          )}
         </div>
       )}
       {error && (
@@ -187,74 +241,23 @@ function TerminalWorkspace({ workspaceId, api, subscribe, onError, theme, header
           <p>{t('Загрузка терминалов…')}</p>
         </div>
       ) : !current ? (
-        <div className="terminal-empty">
-          <div className="terminal-empty-icon">
-            <TerminalSquare size={25} />
-          </div>
-          <h3>{t('Команды в контексте проекта')}</h3>
-          <p>
-            {t(
-              'Запускайте команды и следите за выводом. Терминал продолжит работать при смене вкладки.'
-            )}
-          </p>
-          <button className="terminal-start" onClick={() => void create()} disabled={busy}>
-            <Plus size={15} />
-            {t('Новый терминал')}
-            <ChevronRight size={13} />
-          </button>
-          <span className="terminal-empty-note">{t('Управление остаётся у вас')}</span>
-        </div>
+        <EmptyState
+          compact
+          icon={TerminalSquare}
+          title={t('Команды в контексте проекта')}
+          text={t(
+            'Запускайте команды и следите за выводом. Терминал продолжит работать при смене вкладки.'
+          )}
+          action={{
+            label: t('Новый терминал'),
+            icon: Plus,
+            onClick: () => void create(),
+            disabled: busy
+          }}
+          note={t('Управление остаётся у вас')}
+        />
       ) : (
         <>
-          <div className={`terminal-toolbar ${current.owner === 'agent' ? 'agent-owned' : ''}`}>
-            <span className="terminal-owner">
-              <span className={`terminal-status-dot ${current.status}`} />
-              {current.status === 'exited'
-                ? t('Завершён · код {code}', { code: current.exitCode ?? 0 })
-                : current.owner === 'agent'
-                  ? t('Управляет агент')
-                  : t('Вы управляете')}
-            </span>
-            <div className="terminal-toolbar-actions">
-              <button
-                className="terminal-icon-button"
-                onClick={() => void copy()}
-                title={copied ? t('Скопировано') : t('Копировать вывод')}
-                aria-label={t('Копировать вывод')}
-                disabled={busy}
-              >
-                {copied ? <Check size={13} /> : <Copy size={13} />}
-              </button>
-              <button
-                className="terminal-icon-button"
-                onClick={() => handles.current.get(current.id)?.clear()}
-                title={t('Очистить экран')}
-                aria-label={t('Очистить экран')}
-              >
-                <Trash2 size={13} />
-              </button>
-              {current.status === 'running' && (
-                <button
-                  className="terminal-handover"
-                  disabled={busy}
-                  onClick={() =>
-                    void act(() =>
-                      api({
-                        action: 'owner',
-                        id: current.id,
-                        owner: current.owner === 'user' ? 'agent' : 'user'
-                      })
-                    )
-                  }
-                >
-                  <Hand size={12} />
-                  <span>
-                    {current.owner === 'agent' ? t('Вернуть управление') : t('Передать агенту')}
-                  </span>
-                </button>
-              )}
-            </div>
-          </div>
           {current.owner === 'agent' && current.status === 'running' && (
             <div className="terminal-agent-notice">
               {t('Ввод передан агенту. Вы можете вернуть управление в любой момент.')}

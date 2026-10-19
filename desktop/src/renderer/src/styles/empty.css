@@ -80,3 +80,7 @@
 [data-motion='reduced'] .empty-state {
   animation: none;
 }
+.workbench-content .empty-state {
+  min-height: 0;
+  overflow: hidden;
+}
