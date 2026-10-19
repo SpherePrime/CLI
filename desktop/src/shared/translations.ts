@@ -866,3 +866,23 @@ Object.assign(english, {
   'Хранилище групп повреждено. Изменения заблокированы.': 'Team storage is damaged. Changes are blocked.',
   'Группы ещё загружаются.': 'Teams are still loading.'
 })
+
+Object.assign(english, {
+  'Запуск приложений': 'App launcher',
+  'Новая команда': 'New command',
+  'Команды запуска проекта': 'Project run commands',
+  'Например: npm run dev. Адрес приложения откроется во встроенном браузере.': 'For example: npm run dev. The app address opens in the built-in browser.',
+  'Работает': 'Running',
+  'Завершено с кодом {value0}': 'Exited with code {value0}',
+  'Изменить команду': 'Edit command',
+  'Удалить команду': 'Delete command',
+  'Открыть предпросмотр': 'Open preview',
+  'Логи появятся после запуска.': 'Logs appear after start.',
+  'Ошибки браузера': 'Browser errors',
+  'Очистить': 'Clear',
+  'Ошибок нет': 'No errors',
+  'Логи сервера': 'Server logs',
+  'Адрес (необязательно)': 'URL (optional)',
+  'Команда запуска не найдена': 'Run command not found',
+  'Слишком много команд запуска': 'Too many run commands'
+})

@@ -2,6 +2,15 @@ import { BrowserWindow, WebContentsView, session, type WebContents } from 'elect
 
 export type BrowserBounds = { x: number; y: number; width: number; height: number }
 
+export type BrowserLog = {
+  level: 'error' | 'warning' | 'info'
+  message: string
+  source?: string
+  line?: number
+  url: string
+  time: number
+}
+
 export type BrowserState = {
   url: string
   title: string
@@ -32,6 +41,7 @@ export class BrowserPanel {
   private view: WebContentsView | null = null
   private attached = false
   private bounds: BrowserBounds = { x: 0, y: 0, width: 0, height: 0 }
+  private entries: BrowserLog[] = []
 
   constructor(
     private readonly window: () => BrowserWindow | null,
@@ -53,6 +63,21 @@ export class BrowserPanel {
       canGoBack: contents.navigationHistory.canGoBack(),
       canGoForward: contents.navigationHistory.canGoForward()
     }
+  }
+
+  logs(): BrowserLog[] {
+    return [...this.entries]
+  }
+
+  clearLogs() {
+    this.entries = []
+  }
+
+  private log(entry: Omit<BrowserLog, 'time' | 'url'>) {
+    const url = this.view?.webContents.isDestroyed() ? '' : (this.view?.webContents.getURL() ?? '')
+    this.entries.push({ ...entry, message: entry.message.slice(0, 4000), url, time: Date.now() })
+    if (this.entries.length > 200) this.entries.splice(0, this.entries.length - 200)
+    this.publish({ type: 'browser', payload: { action: 'log' } })
   }
 
   show(bounds: BrowserBounds) {
@@ -141,6 +166,18 @@ export class BrowserPanel {
         event.preventDefault()
       }
     })
+    contents.on('console-message', (event: any) => {
+      const level = event.level === 'error' ? 'error' : event.level === 'warning' ? 'warning' : undefined
+      if (level && !String(event.message ?? '').includes('Electron Security Warning'))
+        this.log({ level, message: String(event.message ?? ''), source: event.sourceId, line: event.lineNumber })
+    })
+    contents.on('did-fail-load', (_event, code, description, url, mainFrame) => {
+      if (code !== -3)
+        this.log({ level: 'error', message: `${description} (${code})${mainFrame ? '' : ' subframe'} ${url}` })
+    })
+    contents.on('render-process-gone', (_event, details) =>
+      this.log({ level: 'error', message: `Renderer process gone: ${details.reason}` })
+    )
     const update = () =>
       this.publish({ type: 'browser', payload: { action: 'state', ...this.state() } })
     for (const name of [
