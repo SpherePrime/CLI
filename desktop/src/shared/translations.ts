@@ -982,3 +982,23 @@ Object.assign(english, {
   'Не удалось получить снимок окна. Окно не должно быть свёрнуто.': 'Could not capture the window. It must not be minimized.',
   'Просмотр окон доступен только в Windows': 'Window viewing is only available on Windows'
 })
+
+Object.assign(english, {
+  'Фоновые задачи': 'Background tasks',
+  'Автоматизация': 'Automation',
+  'Ждёт ответа': 'Waiting for answer',
+  'Активные': 'Active',
+  'Ждут ответа': 'Need answer',
+  'Ошибки': 'Errors',
+  'Завершённые': 'Finished',
+  'Все': 'All',
+  'Тип задачи': 'Task type',
+  'Все типы': 'All types',
+  'Нужно разрешение': 'Permission required',
+  'Агент задал вопрос': 'The agent asked a question',
+  'Открыть {value0}': 'Open {value0}',
+  'Остановить {value0}': 'Stop {value0}',
+  'Проект задачи закрыт': 'The task project is closed',
+  'Здесь появятся агенты, автоматизации, команды, терминалы и приложения всех проектов.': 'Agents, automations, teams, terminals and apps of all projects appear here.',
+  'Неизвестная задача': 'Unknown task'
+})

@@ -190,6 +190,9 @@ export class AutomationManager {
     this.stop()
     await this.queue
   }
+  activity() {
+    return structuredClone(this.state.runs.slice(-100))
+  }
   list(root: string) {
     return this.serialize(async () => this.snapshot(await this.canonical(root)))
   }

@@ -46,6 +46,7 @@ import { SpeechService } from './speech/service'
 import { githubOperation } from './github/service'
 import { localRunner, remoteRunner } from './github/runner'
 import { WindowViewer } from './computer/viewer'
+import { JobCenter } from './jobs/center'
 import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
 
@@ -118,6 +119,19 @@ const windowViewer = new WindowViewer({
     const sessions = await requirePrime().call(workspaceId, 'sessions')
     return (Array.isArray(sessions) ? sessions : []).filter((item) => item.is_busy).map((item) => item.id)
   }
+})
+const jobs = new JobCenter({
+  router: () => router(),
+  automations: () => automations,
+  teams: () => teams,
+  launches: () => launches,
+  terminals,
+  label: (project) =>
+    project.kind === 'chat'
+      ? t('Личные чаты')
+      : project.remote
+        ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
+        : project.path.split(/[\\/]/).pop() || project.path
 })
 const agentTools = () => [...workbenchTerminalTools(terminals), ...windowViewer.tools()]
 const speech = new SpeechService(
@@ -315,6 +329,7 @@ function registerIpc(): void {
     }
   })
   handle('browserPickCancel', () => cancelPick(browserPanel.contents))
+  handle('jobs', (request: unknown) => jobs.handle(request))
   handle('windows', (id: string, request: unknown) => windowViewer.handle(projectId.parse(id), request))
   handle('github', (id: string, request: unknown) => {
     const workspaceId = projectId.parse(id)

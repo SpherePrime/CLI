@@ -99,6 +99,10 @@ export class TeamManager {
     this.timer = undefined
   }
 
+  all() {
+    return structuredClone(this.state.teams)
+  }
+
   activeCount() {
     return this.state.teams.reduce(
       (sum, team) => sum + team.tasks.filter((task) => !finishedTeamStatuses.includes(task.status) && task.status !== 'queued').length,

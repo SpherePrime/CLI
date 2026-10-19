@@ -1,0 +1,174 @@
+.jobs-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 420px;
+}
+.jobs-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.jobs-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.jobs-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.jobs-filters button[aria-selected='true'] {
+  background: var(--raised);
+  border-color: var(--border);
+  color: var(--text);
+}
+.jobs-filters span {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.jobs-toolbar select {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  color: var(--text);
+}
+.jobs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  overflow: auto;
+  max-height: 60vh;
+}
+.job {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 12px;
+}
+.job-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--raised);
+  color: var(--secondary);
+}
+.job.is-running .job-icon,
+.job.is-queued .job-icon {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.job.is-waiting .job-icon {
+  color: var(--amber);
+}
+.job-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.job-body strong {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.job-body > span {
+  color: var(--secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.job-attention {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--amber);
+}
+.job-error {
+  margin: 2px 0 0;
+  color: var(--red);
+  overflow-wrap: anywhere;
+}
+.job-status {
+  color: var(--secondary);
+}
+.job.is-running .job-status {
+  color: var(--accent);
+}
+.job.is-completed .job-status {
+  color: var(--green);
+}
+.job.is-failed .job-status,
+.job.is-interrupted .job-status {
+  color: var(--red);
+}
+.job.is-waiting .job-status {
+  color: var(--amber);
+}
+.job-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: right;
+}
+.job-actions {
+  display: flex;
+  gap: 2px;
+}
+.jobs-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 48px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+@media (max-width: 720px) {
+  .job {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .job-status,
+  .job-time {
+    display: none;
+  }
+}
+.sidebar-badge {
+  margin-left: auto;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 10px;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

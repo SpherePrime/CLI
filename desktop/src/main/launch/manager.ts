@@ -192,6 +192,26 @@ export class LaunchManager {
     this.publish(process.key)
   }
 
+  all() {
+    return [...this.processes.values()].map((item) => ({
+      configId: item.configId,
+      terminalId: item.terminalId,
+      status: item.status,
+      startedAt: item.startedAt,
+      url: item.url,
+      exitCode: item.exitCode,
+      key: item.key,
+      workspaceId: item.workspaceId,
+      name: this.state.configs[item.key]?.find((config) => config.id === item.configId)?.name ?? ''
+    }))
+  }
+
+  async stopProcess(configId: string) {
+    const process = this.processes.get(configId)
+    await this.stop(configId)
+    if (process) this.publish(process.key)
+  }
+
   running(): number {
     return [...this.processes.values()].filter((item) => item.status === 'running').length
   }
