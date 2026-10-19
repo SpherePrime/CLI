@@ -1,0 +1,251 @@
+.automation-panel {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+}
+.automation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.automation-header > div,
+.automation-rule-heading,
+.automation-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.automation-header h2,
+.automation-panel h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.automation-header svg,
+.automation-empty > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.automation-count {
+  color: var(--secondary);
+  font-variant-numeric: tabular-nums;
+}
+.automation-content {
+  overflow: auto;
+  min-height: 0;
+  padding: 14px;
+  scrollbar-gutter: stable;
+}
+.automation-notice {
+  color: var(--secondary);
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+.automation-panel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.automation-panel button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.automation-panel button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.automation-panel button:focus-visible,
+.automation-panel input:focus-visible,
+.automation-panel textarea:focus-visible,
+.automation-panel select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.automation-panel button.automation-primary {
+  background: var(--accent);
+  color: var(--accent-text, #171717);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.automation-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.automation-rule-list {
+  display: grid;
+  gap: 10px;
+}
+.automation-rule,
+.automation-editor {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 13px;
+  border-radius: 10px;
+  min-width: 0;
+}
+.automation-rule-heading {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.automation-rule-prompt {
+  color: var(--secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 80px;
+  overflow: auto;
+  margin: 10px 0;
+}
+.automation-schedule {
+  font-weight: 500;
+  margin: 8px 0 4px;
+}
+.automation-muted {
+  color: var(--secondary);
+  line-height: 1.6;
+  margin: 5px 0 10px;
+  overflow-wrap: anywhere;
+}
+.automation-status {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: var(--raised);
+  color: var(--secondary);
+  white-space: nowrap;
+}
+.automation-status-enabled,
+.automation-status-running,
+.automation-status-claimed {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.automation-status-failed,
+.automation-status-interrupted,
+.automation-error-text {
+  color: var(--danger, #db6d64);
+}
+.automation-empty {
+  padding: 22px 12px;
+  text-align: center;
+  color: var(--secondary);
+  line-height: 1.7;
+}
+.automation-empty h3 {
+  color: var(--text);
+  margin-top: 10px;
+}
+.automation-error {
+  border: 1px solid var(--danger, #db6d64);
+  border-radius: 7px;
+  padding: 10px;
+  margin-bottom: 12px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.automation-editor {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.automation-section-heading {
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.automation-editor input:not([type='checkbox']),
+.automation-editor textarea,
+.automation-editor select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+.automation-editor textarea {
+  resize: vertical;
+  min-height: 84px;
+  line-height: 1.6;
+}
+.automation-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 10px;
+}
+.automation-form-grid label {
+  display: grid;
+  gap: 7px;
+}
+.automation-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.automation-days label,
+.automation-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+}
+.automation-panel input[type='checkbox'] {
+  accent-color: var(--accent);
+}
+.automation-history {
+  margin-top: 22px;
+}
+.automation-history > h3 {
+  margin-bottom: 10px;
+}
+.automation-history-row {
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+}
+.automation-history-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.automation-history-main strong {
+  overflow-wrap: anywhere;
+}
+.automation-history-main time {
+  color: var(--secondary);
+  font-size: 11px;
+}
+.automation-history-row .automation-actions {
+  margin-top: 8px;
+}
+.automation-error-text {
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}

@@ -1,19 +1,28 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Maximize2, Minimize2, TerminalSquare, X } from 'lucide-react'
+import { Clock3, Maximize2, Minimize2, TerminalSquare, X } from 'lucide-react'
 import { TerminalPanel } from '../terminal/TerminalPanel'
 import type { Workspace } from '../../app/useWorkspace'
 import type { TerminalRequest } from '../../../../shared/terminal'
 import { useI18n } from '../../i18n'
 import '../../styles/workbench-dock.css'
+import { AutomationPanel } from '../automations/AutomationPanel'
+import type { AutomationRequest } from '../../../../shared/automations'
+import { openWorkbenchRun } from './openRun'
+
+export type WorkbenchView = 'terminal' | 'automations'
 
 export function WorkbenchDock({
   workspace: w,
   expanded,
+  view,
+  setView,
   setExpanded,
   close
 }: {
   workspace: Workspace
   expanded: boolean
+  view: WorkbenchView
+  setView: (view: WorkbenchView) => void
   setExpanded: (expanded: boolean) => void
   close: () => void
 }) {
@@ -58,6 +67,10 @@ export function WorkbenchDock({
     (request: TerminalRequest) => window.prime.terminal(workspaceId, request),
     [workspaceId]
   )
+  const automation = useCallback(
+    (request: AutomationRequest) => window.prime.automation(workspaceId, request),
+    [workspaceId]
+  )
   return (
     <section
       ref={dock}
@@ -99,10 +112,27 @@ export function WorkbenchDock({
         />
       )}
       <header className="workbench-navigation">
-        <span>
-          <TerminalSquare size={15} />
-          {t('Терминал')}
-        </span>
+        <nav className="workbench-tabs" role="tablist" aria-label={t('Инструменты проекта')}>
+          <button
+            role="tab"
+            aria-selected={view === 'terminal'}
+            onClick={() => setView('terminal')}
+          >
+            <TerminalSquare size={14} />
+            {t('Терминал')}
+          </button>
+          <button
+            role="tab"
+            aria-selected={view === 'automations'}
+            onClick={() => {
+              setView('automations')
+              setExpanded(true)
+            }}
+          >
+            <Clock3 size={14} />
+            {t('Автоматизации')}
+          </button>
+        </nav>
         <div>
           <div className="workbench-terminal-actions" ref={setHeaderHost} />
           <button
@@ -124,7 +154,7 @@ export function WorkbenchDock({
         </div>
       </header>
       <div className="workbench-content">
-        {w.project && (
+        {w.project && view === 'terminal' && (
           <TerminalPanel
             workspaceId={workspaceId}
             api={terminal}
@@ -132,6 +162,17 @@ export function WorkbenchDock({
             onError={w.errorHandler}
             theme={w.preferences.theme}
             headerHost={headerHost}
+          />
+        )}
+        {w.project && view === 'automations' && (
+          <AutomationPanel
+            root={w.project.path}
+            api={automation}
+            subscribe={window.prime.onEvent}
+            onError={w.errorHandler}
+            onOpenRun={(run) => {
+              void openWorkbenchRun(w, run).then(close).catch(w.errorHandler)
+            }}
           />
         )}
       </div>

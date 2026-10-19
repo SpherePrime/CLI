@@ -20,7 +20,8 @@ import {
   Download,
   SunMoon,
   Puzzle,
-  TerminalSquare
+  TerminalSquare,
+  Clock3
 } from 'lucide-react'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
@@ -34,7 +35,7 @@ import { ChatActions } from '../features/chat/ChatActions'
 import { Welcome } from '../features/projects/Welcome'
 import { CommandPalette, type QuickAction } from '../features/navigation/CommandPalette'
 import { downloadConversation } from '../features/chat/exportConversation'
-import { WorkbenchDock } from '../features/workbench/WorkbenchDock'
+import { WorkbenchDock, type WorkbenchView } from '../features/workbench/WorkbenchDock'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -53,7 +54,7 @@ export function App() {
         ready={
           Boolean(w.project) && w.project?.connection === 'ready' && w.info.runtime === 'ready'
         }
-        busy={w.busy}
+        busy={w.busy || Boolean(w.info.automationCounts?.activeCount)}
         terminals={w.info.terminalCount || 0}
       />
     </I18nProvider>
@@ -71,6 +72,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [workbench, setWorkbench] = useState(false)
   const [workbenchExpanded, setWorkbenchExpanded] = useState(false)
+  const [workbenchView, setWorkbenchView] = useState<WorkbenchView>('terminal')
   const showSidebar = sidebar && !focusMode
   const showInspector = inspector && !focusMode
   const showEditor = documents.documents.length > 0 && !focusMode
@@ -123,7 +125,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       if (dialogOpen || event.defaultPrevented) return
       if (event.ctrlKey && event.code === 'Backquote' && w.project) {
         event.preventDefault()
-        setWorkbench((value) => !value)
+        setWorkbench((value) => (workbenchView === 'terminal' ? !value : true))
+        setWorkbenchView('terminal')
       }
       if (event.ctrlKey && event.shiftKey && event.code === 'KeyF') {
         event.preventDefault()
@@ -162,7 +165,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [w.project?.id, w.messages.length])
+  }, [w.project?.id, w.messages.length, workbenchView])
   function resize(which: 'sidebar' | 'inspector', event: React.PointerEvent<HTMLDivElement>) {
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -200,7 +203,21 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       icon: TerminalSquare,
       shortcut: 'Ctrl `',
       disabled: !w.project,
-      run: () => setWorkbench(true)
+      run: () => {
+        setWorkbenchView('terminal')
+        setWorkbench(true)
+      }
+    },
+    {
+      id: 'automations',
+      label: t('Автоматизации'),
+      icon: Clock3,
+      disabled: !w.project,
+      run: () => {
+        setWorkbenchView('automations')
+        setWorkbenchExpanded(true)
+        setWorkbench(true)
+      }
     },
     {
       id: 'new',
@@ -392,7 +409,10 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 aria-label={t('Терминал проекта')}
                 aria-expanded={workbench}
                 disabled={!w.project}
-                onClick={() => setWorkbench((value) => !value)}
+                onClick={() => {
+                  setWorkbench((value) => (workbenchView === 'terminal' ? !value : true))
+                  setWorkbenchView('terminal')
+                }}
               >
                 <TerminalSquare size={17} />
               </button>
@@ -445,6 +465,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           <Composer workspace={w} />
           {workbench && (
             <WorkbenchDock
+              view={workbenchView}
+              setView={setWorkbenchView}
               workspace={w}
               expanded={workbenchExpanded}
               setExpanded={setWorkbenchExpanded}

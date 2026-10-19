@@ -73,11 +73,13 @@ export async function launchWorkbench() {
     XDG_CONFIG_HOME: join(root, 'xdg-config'),
     XDG_DATA_HOME: join(root, 'xdg-data')
   }
-  const app = await electron.launch({
-    args: [resolve('out/main/index.js'), `--user-data-dir=${join(root, 'profile')}`],
-    env
-  })
-  const page = await app.firstWindow()
+  const launch = () =>
+    electron.launch({
+      args: [resolve('out/main/index.js'), `--user-data-dir=${join(root, 'profile')}`],
+      env
+    })
+  let app = await launch()
+  let page = await app.firstWindow()
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   let project: Project | null = null
@@ -111,6 +113,16 @@ export async function launchWorkbench() {
     page,
     project: project!,
     errors,
+    restart: async () => {
+      await app.close()
+      app = await launch()
+      page = await app.firstWindow()
+      page.on('pageerror', (error) => errors.push(error.message))
+      await page
+        .getByRole('textbox', { name: 'Сообщение Prime', exact: true })
+        .waitFor({ state: 'visible' })
+      return { app, page }
+    },
     close: async () => {
       await page.evaluate(() => window.prime.editorDirty(false)).catch(() => {})
       await app.close()

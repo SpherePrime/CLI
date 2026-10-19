@@ -42,6 +42,8 @@ Open Project Tools or press Ctrl+` for project-scoped PowerShell tabs. Resize or
 
 ## Data and updates
 
+Project Tools includes automations with interval, daily and weekly schedules, file-change triggers and failed-run triggers. Each run uses a separate persistent chat. Rules can be paused, edited or run manually; active runs can be stopped and opened in chat. The scheduler remains available in the tray, skips missed schedules and never repeats uncertain work after restart. Rules and bounded run history survive application updates.
+
 Queued messages appear above the composer. Send Now interrupts the current turn and runs the selected queued request, retaining its attachments and the other Desktop requests. Reasoning levels are available beside models that support them. Pending approvals update independently from resource loading and are recovered every second during active runs.
 
 Prime owns session history and provider configuration. Desktop keeps window preferences and drafts in its Electron user data folder. Provider secrets are not returned to the renderer. Closing the window during an active run keeps the app in the tray; use its Exit action to stop and quit.
