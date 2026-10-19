@@ -244,6 +244,34 @@ export function useWorkspace() {
       .catch(errorHandler)
     void window.prime.preferences().then(setPreferences).catch(errorHandler)
     const unsubscribe = window.prime.onEvent((event) => {
+      if (event.type === 'workbench' && event.payload?.action === 'contextChanged') {
+        const { key, context } = event.payload
+        if (typeof key === 'string' && context)
+          setPreferences((value) => ({ ...value, agentContexts: { ...value.agentContexts, [key]: context } }))
+        return
+      }
+      if (event.type === 'workbench' && event.payload?.action === 'openSession') {
+        void (async () => {
+          const opened = await window.prime.projects()
+          const targetProject = opened.find((item) => item.id === event.workspaceId)
+          if (!targetProject) throw new Error(translate(language.current, 'Проект задачи недоступен'))
+          const available: Session[] = await window.prime.call(targetProject.id, 'sessions')
+          const targetSession = available.find((item) => item.id === event.payload.sessionId)
+          if (!targetSession) throw new Error(translate(language.current, 'Чат задачи недоступен'))
+          await window.prime.call(targetProject.id, 'currentSession', { sessionId: targetSession.id })
+          current.current = { project: targetProject, session: targetSession }
+          setProjects(opened)
+          setProject(targetProject)
+          setSession(targetSession)
+          setMessages([])
+          setPermissions([])
+          setQuestions([])
+          setQueue([])
+          setBusy(Boolean(targetSession.is_busy))
+          await refresh()
+        })().catch(errorHandler)
+        return
+      }
       if (event.type === 'automation') {
         if (typeof event.payload?.activeCount === 'number')
           setInfo((current: Json) => ({
@@ -535,7 +563,10 @@ export function useWorkspace() {
     if (!targetProject) return false
     const targetSession = current.current.session
     try {
-      const preparedPrompt = await buildAgentPrompt(prompt, agentContext.context, (path) =>
+      const latestPreferences = await window.prime.preferences()
+      setPreferences(latestPreferences)
+      const latestContext = latestPreferences.agentContexts?.[targetProject.path] ?? agentContext.context
+      const preparedPrompt = await buildAgentPrompt(prompt, latestContext, (path) =>
         window.prime.readFile(targetProject.id, path)
       )
       let selected = targetSession

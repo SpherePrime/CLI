@@ -51,7 +51,7 @@ export function terminalTools(manager: TerminalManager): TerminalTool[] {
     {
       name: 'terminal_list',
       description:
-        'List existing terminal sessions in a workspace, including user ownership and exit status. Only the user can open a terminal or hand over control.',
+        'List project terminal sessions, ownership and exit status. Use terminal_create to open a new agent-owned terminal. Existing user-owned terminals require explicit user handover.',
       inputSchema: schema({}, ['workspaceId']),
       run: async (value, boundWorkspace) => {
         const args = argumentsObject(value)

@@ -7,6 +7,7 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  globalShortcut,
   Menu,
   nativeImage,
   nativeTheme,
@@ -37,6 +38,8 @@ import type { Operation } from '../shared/contracts'
 import { TerminalManager } from './terminal/manager'
 import { terminalOperation } from './workbench/terminalIpc'
 import { workbenchTerminalTools } from './workbench/tools'
+import { createProjectTools } from './workbench/projectTools'
+import { createGithubReadTools } from './workbench/projectGithubTools'
 import { AutomationManager } from './automations/manager'
 import { automationOperation } from './workbench/automationIpc'
 import { createAgentAdapter } from './workbench/agentRuns'
@@ -49,6 +52,7 @@ import { WindowViewer } from './computer/viewer'
 import { JobCenter } from './jobs/center'
 import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
+import { importImages } from './attachments/images'
 
 let window: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -117,7 +121,9 @@ const windowViewer = new WindowViewer({
   emit,
   busySessions: async (workspaceId) => {
     const sessions = await requirePrime().call(workspaceId, 'sessions')
-    return (Array.isArray(sessions) ? sessions : []).filter((item) => item.is_busy).map((item) => item.id)
+    return (Array.isArray(sessions) ? sessions : [])
+      .filter((item) => item.is_busy)
+      .map((item) => item.id)
   }
 })
 const jobs = new JobCenter({
@@ -133,7 +139,42 @@ const jobs = new JobCenter({
         ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
         : project.path.split(/[\\/]/).pop() || project.path
 })
-const agentTools = () => [...workbenchTerminalTools(terminals), ...windowViewer.tools()]
+const projectAgentTools = createProjectTools({
+  target: (workspaceId) => ({
+    workspaceId: projectId.parse(workspaceId),
+    root: requirePrime().root(workspaceId),
+    key: workspacePath(workspaceId),
+    remote: remotes?.byWorkspace(workspaceId)?.connection
+  }),
+  automations: () => automations,
+  launches: () => launches,
+  teams: () => teams,
+  terminals: () => terminals,
+  settings: () => settings,
+  files,
+  reveal: (workspaceId, view) =>
+    emit({ workspaceId, type: 'workbench', payload: { action: 'activate', view } }),
+  openSession: (workspaceId, sessionId) =>
+    emit({ workspaceId, type: 'workbench', payload: { action: 'openSession', sessionId } }),
+  onContextChanged: (workspaceId, context) =>
+    emit({
+      workspaceId,
+      type: 'workbench',
+      payload: { action: 'contextChanged', key: workspacePath(workspaceId), context }
+    }),
+  extensions: createGithubReadTools((workspaceId, request) => {
+    const remote = remotes?.byWorkspace(projectId.parse(workspaceId))?.connection
+    return githubOperation(
+      remote ? remoteRunner(remote) : localRunner(requirePrime().root(workspaceId)),
+      request
+    )
+  })
+})
+const agentTools = () => [
+  ...workbenchTerminalTools(terminals),
+  ...projectAgentTools,
+  ...windowViewer.tools()
+]
 const speech = new SpeechService(
   (status) => emit({ workspaceId: '', type: 'speech', payload: status }),
   async () => {
@@ -296,6 +337,24 @@ function confirmEditorDiscard(): boolean {
   return true
 }
 function registerIpc(): void {
+  handle('importImages', (input: unknown) =>
+    importImages(attachmentStore, input, (bytes) => {
+      const image = nativeImage.createFromBuffer(bytes)
+      if (image.isEmpty()) throw new Error(t('Не удалось прочитать изображение'))
+      const size = image.getSize()
+      const scale = Math.min(240 / size.width, 160 / size.height, 1)
+      return image
+        .resize({
+          width: Math.max(1, Math.round(size.width * scale)),
+          height: Math.max(1, Math.round(size.height * scale)),
+          quality: 'good'
+        })
+        .toDataURL()
+    })
+  )
+  handle('releaseAttachments', (input: unknown) => {
+    for (const id of z.array(z.string().uuid()).max(100).parse(input)) attachmentStore.delete(id)
+  })
   handle('launch', (id: string, request: unknown) => {
     if (!launches) throw new Error(t('Prime ещё запускается'))
     const workspaceId = projectId.parse(id)
@@ -330,11 +389,16 @@ function registerIpc(): void {
   })
   handle('browserPickCancel', () => cancelPick(browserPanel.contents))
   handle('jobs', (request: unknown) => jobs.handle(request))
-  handle('windows', (id: string, request: unknown) => windowViewer.handle(projectId.parse(id), request))
+  handle('windows', (id: string, request: unknown) =>
+    windowViewer.handle(projectId.parse(id), request)
+  )
   handle('github', (id: string, request: unknown) => {
     const workspaceId = projectId.parse(id)
     const remote = remotes?.byWorkspace(workspaceId)?.connection
-    return githubOperation(remote ? remoteRunner(remote) : localRunner(requirePrime().root(workspaceId)), request)
+    return githubOperation(
+      remote ? remoteRunner(remote) : localRunner(requirePrime().root(workspaceId)),
+      request
+    )
   })
   handle('speech', (request: unknown) =>
     speech.handle(
@@ -464,6 +528,7 @@ function registerIpc(): void {
     const remote = remotes?.byWorkspace(projectId.parse(id))
     if (remote) await remotes!.manager.disconnect(remote.profile.id)
     else await requirePrime().close(id)
+    windowViewer.forget(id)
     const remaining = [...requirePrime().projects.values()]
     await settings.update({ activeProject: remaining[0]?.path || '' })
   })
@@ -501,9 +566,7 @@ function registerIpc(): void {
     return result
   })
   handle('files', (id: string, path = '') => files(id).list(z.string().max(4096).parse(path)))
-  handle('readFile', (id: string, path: string) =>
-    files(id).read(z.string().max(4096).parse(path))
-  )
+  handle('readFile', (id: string, path: string) => files(id).read(z.string().max(4096).parse(path)))
   handle('diff', async (id: string, sessionId: string, path: string, source: 'session' | 'git') => {
     const history =
       source === 'session' ? await requirePrime().call(id, 'history', { sessionId }) : []
@@ -738,6 +801,7 @@ else {
       callback(permission === 'media')
     )
     registerIpc()
+    globalShortcut.register('Control+Alt+Escape', () => windowViewer.revokeAll())
     createWindow()
     nativeTheme.on('updated', syncTitlebar)
     const image = nativeImage
@@ -779,6 +843,7 @@ else {
           resolveWorkspace
         }),
       onDetached: async (workspaceId) => {
+        windowViewer.forget(workspaceId)
         await terminals.closeWorkspace(workspaceId)
       }
     })
@@ -833,6 +898,8 @@ else {
     }
     quitting = true
     cleanupRunning = true
+    globalShortcut.unregister('Control+Alt+Escape')
+    windowViewer.dispose()
     void (async () => {
       await automations?.dispose()
       await teams?.dispose()

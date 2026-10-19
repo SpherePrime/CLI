@@ -2,7 +2,7 @@ import type { ToolContent } from '../browser/tools'
 import type { TerminalManager } from '../terminal/manager'
 import { terminalTools } from '../terminal/tools'
 
-export type WorkbenchToolContext = { workspaceId?: string }
+export type WorkbenchToolContext = { workspaceId?: string; sessionId?: string }
 export type WorkbenchTool = {
   name: string
   description: string

@@ -41,6 +41,7 @@ import { downloadConversation } from '../features/chat/exportConversation'
 import { WorkbenchDock, type WorkbenchView } from '../features/workbench/WorkbenchDock'
 import { RemoteDialog } from '../features/remote/RemoteDialog'
 import { JobsCenter } from '../features/jobs/JobsCenter'
+import { WindowControlBadge } from '../features/windows/WindowControlBadge'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -100,13 +101,26 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   useEffect(
     () =>
       window.prime.onEvent((event) => {
+        if (event.type === 'workbench' && event.payload?.action === 'activate' && event.workspaceId === w.project?.id) {
+          const view = event.payload.view
+          if (['terminal', 'automations', 'teams', 'launch', 'github', 'windows'].includes(view)) {
+            setWorkbenchView(view as WorkbenchView)
+            setWorkbench(true)
+            setFocusMode(false)
+          }
+        }
+        if (event.type === 'windows' && event.payload?.request && event.workspaceId === w.project?.id) {
+          setWorkbenchView('windows')
+          setWorkbench(true)
+          setFocusMode(false)
+        }
         if (event.type === 'browser' && event.payload?.action === 'activate') {
           setInspector(true)
           setFocusMode(false)
           setBrowserRequest(Date.now())
         }
       }),
-    []
+    [w.project?.id]
   )
   const [widths, setWidths] = useState({ sidebar: 256, inspector: 334 })
   const [zoom, setZoom] = useState(1)
@@ -335,6 +349,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   return (
     <>
       <Titlebar />
+      <WindowControlBadge workspaceIds={w.projects.map((project) => project.id)} onError={w.errorHandler} />
       <div
         ref={shell}
         className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''}`}
