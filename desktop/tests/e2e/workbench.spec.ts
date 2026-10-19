@@ -23,16 +23,22 @@ test('workspace actions, working context and appearance persist in real Electron
     await page.keyboard.press('Control+Shift+f')
     await expect(page.locator('.sidebar')).toBeVisible()
 
-    await page.getByRole('button', { name: 'Задача и контекст', exact: true }).click()
-    await page.getByLabel('Цель задачи', { exact: true }).fill('Fix login')
-    await page.getByLabel('Ограничения', { exact: true }).fill('Keep public exports')
-    await page.getByLabel('Критерии готовности', { exact: true }).fill('Existing users can sign in')
-    await page.getByLabel('Путь файла для контекста').fill('app.ts')
-    await page.getByRole('button', { name: 'Добавить', exact: true }).click()
-    await page.getByRole('button', { name: 'Посмотреть контекст' }).click()
-    await expect(page.locator('.context-preview')).toContainText('export const version = 1')
-    await page.getByRole('button', { name: 'Сохранить', exact: true }).click()
-    await expect(page.getByRole('dialog', { name: 'Задача и контекст' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Задача и контекст', exact: true })).toHaveCount(
+      0
+    )
+    await page.evaluate(async (root) => {
+      await window.prime.preferences({
+        agentContexts: {
+          [root]: {
+            enabled: true,
+            goal: 'Fix login',
+            constraints: 'Keep public exports',
+            criteria: 'Existing users can sign in',
+            sources: [{ id: 'file:app.ts', kind: 'file', path: 'app.ts' }]
+          }
+        }
+      })
+    }, root)
     await writeFile(join(root, 'app.ts'), 'export const version = 2\n')
     await page.getByRole('textbox', { name: 'Сообщение Prime', exact: true }).fill('Fix login now')
     await expect(page.getByRole('textbox', { name: 'Сообщение Prime', exact: true })).toHaveValue(
@@ -67,6 +73,7 @@ test('workspace actions, working context and appearance persist in real Electron
         JSON.stringify(prompt).includes('Existing users can sign in')
       )
     ).toBe(true)
+    await expect(page.locator('.message.user')).not.toContainText('working-context')
     await page.keyboard.press('Control+f')
     await page.getByRole('textbox', { name: 'Поиск в чате', exact: true }).fill('Соединение')
     await expect(page.locator('.conversation-search [role=status]')).toHaveText('1 / 1')
@@ -109,7 +116,7 @@ test('workspace actions, working context and appearance persist in real Electron
     await expect(page.locator('html')).toHaveAttribute('data-density', 'compact')
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced')
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-    await expect(page.locator('.context-control')).toHaveClass(/enabled/)
+    await expect(page.locator('.context-control')).toHaveCount(0)
     await page.screenshot({ path: 'test-results/workbench-chat-light.png' })
     expect(errors).toEqual([])
   } finally {

@@ -20,15 +20,13 @@ import {
   ListTodo,
   Play,
   Trash2,
-  Globe,
-  Target
+  Globe
 } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 import { FileContextMenu, type MenuItem } from './FileContextMenu'
 import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
 import { BrowserTab } from '../browser/BrowserTab'
-import { addAgentSource } from '../context/useAgentContext'
 
 type Entry = { path: string; name: string; directory: boolean }
 
@@ -136,24 +134,11 @@ export function Inspector({
       : [w.project!.path, target.replaceAll('/', '\\')].filter(Boolean).join('\\')
     const items: MenuItem[] = []
     if (entry && !entry.directory)
-      items.push(
-        {
-          label: t('Открыть'),
-          icon: <File size={14} />,
-          action: () => void openFile(entry.path)
-        },
-        {
-          label: t('В контекст агента'),
-          icon: <Target size={14} />,
-          action: () =>
-            attempt(async () => {
-              const file = await window.prime.readFile(id, entry.path)
-              if (file.image || typeof file.content !== 'string')
-                throw new Error(t('Выберите текстовый файл'))
-              addAgentSource(id, { id: `file:${entry.path}`, kind: 'file', path: entry.path })
-            })
-        }
-      )
+      items.push({
+        label: t('Открыть'),
+        icon: <File size={14} />,
+        action: () => void openFile(entry.path)
+      })
     items.push({
       label: t('Открыть в VS Code'),
       icon: <Code2 size={14} />,
@@ -204,9 +189,7 @@ export function Inspector({
   async function diffFile(path: string) {
     try {
       const root = projectRoot(w.project!)
-      const relative = path.startsWith(root)
-        ? path.slice(root.length).replace(/^[\\/]/, '')
-        : path
+      const relative = path.startsWith(root) ? path.slice(root.length).replace(/^[\\/]/, '') : path
       await openDocument(
         w.project!.id,
         relative,
@@ -249,7 +232,9 @@ export function Inspector({
           </button>
         ))}
       </div>
-      {tab === 'browser' && <BrowserTab onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)} />}
+      {tab === 'browser' && (
+        <BrowserTab onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)} />
+      )}
       <div className="inspector-content" hidden={tab === 'browser'}>
         {error && (
           <div className="panel-error">
