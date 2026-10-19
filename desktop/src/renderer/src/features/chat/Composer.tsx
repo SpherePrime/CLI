@@ -3,6 +3,7 @@ import { QueuePanel } from './QueuePanel'
 import { ModelControl } from '../models/ModelControl'
 import { VoiceWave } from './VoiceWave'
 import { TodoPanel } from './TodoPanel'
+import { ContextControl } from '../context/ContextControl'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { CommandRunner } from './CommandRunner'
@@ -170,6 +171,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       )}
       <QueuePanel key={key} workspace={w} />
       {w.session?.todos?.length ? <TodoPanel todos={w.session.todos} /> : null}
+      <ContextControl workspace={w} />
       <div className={`composer ${recording ? 'recording' : ''}`}>
         {attachments.length > 0 && (
           <div className="attachment-chips">

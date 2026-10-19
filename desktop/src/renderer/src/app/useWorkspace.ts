@@ -10,6 +10,8 @@ import type {
 } from '../../../shared/contracts'
 import { applyMessage } from '../../../shared/messages'
 import { translate } from '../i18n'
+import { useAgentContext } from '../features/context/useAgentContext'
+import { buildAgentPrompt } from '../../../shared/agentContext'
 
 export function useWorkspace() {
   const [info, setInfo] = useState<Json>({ runtime: 'starting' })
@@ -24,6 +26,7 @@ export function useWorkspace() {
   })
   const [projects, setProjects] = useState<Project[]>([])
   const language = useRef(preferences.language)
+  const preferenceWrite = useRef(0)
   language.current = preferences.language
   const [project, setProject] = useState<Project | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
@@ -378,6 +381,10 @@ export function useWorkspace() {
         : preferences.theme
   }, [preferences.theme])
   useEffect(() => {
+    document.documentElement.dataset.density = preferences.density || 'comfortable'
+    document.documentElement.dataset.motion = preferences.reduceMotion ? 'reduced' : 'full'
+  }, [preferences.density, preferences.reduceMotion])
+  useEffect(() => {
     if (!project) return
     const timer = setInterval(() => void refresh().catch(() => {}), 10000)
     return () => clearInterval(timer)
@@ -483,8 +490,12 @@ export function useWorkspace() {
     if (!prompt.trim()) return false
     const targetProject = current.current.project
     if (!targetProject) return false
+    const targetSession = current.current.session
     try {
-      let selected = current.current.session
+      const preparedPrompt = await buildAgentPrompt(prompt, agentContext.context, (path) =>
+        window.prime.readFile(targetProject.id, path)
+      )
+      let selected = targetSession
       if (!selected) {
         selected = await window.prime.call(targetProject.id, 'createSession', {
           title: prompt.slice(0, 60)
@@ -504,7 +515,7 @@ export function useWorkspace() {
         await window.prime.call(targetProject.id, 'send', {
           sessionId: selected.id,
           runId,
-          prompt,
+          prompt: preparedPrompt,
           attachmentIds
         })
       if (current.current.project?.id === targetProject.id && !current.current.session) {
@@ -522,9 +533,22 @@ export function useWorkspace() {
     }
   }
   async function savePreferences(patch: Partial<Preferences>) {
-    const saved = await window.prime.preferences(patch)
-    setPreferences(saved)
+    const sequence = ++preferenceWrite.current
+    setPreferences((current) => ({
+      ...current,
+      ...patch,
+      drafts: { ...current.drafts, ...patch.drafts },
+      agentContexts: { ...current.agentContexts, ...patch.agentContexts }
+    }))
+    try {
+      const saved = await window.prime.preferences(patch)
+      if (sequence === preferenceWrite.current) setPreferences(saved)
+    } catch (error) {
+      if (sequence === preferenceWrite.current) setPreferences(await window.prime.preferences())
+      throw error
+    }
   }
+  const agentContext = useAgentContext(project, preferences, savePreferences, errorHandler)
   async function deleteSession(id: string) {
     await call('deleteSession', { sessionId: id })
     if (current.current.session?.id === id) {
@@ -537,6 +561,8 @@ export function useWorkspace() {
     await refresh()
   }
   return {
+    agentContext: agentContext.context,
+    updateAgentContext: agentContext.updateContext,
     info,
     preferences,
     savePreferences,

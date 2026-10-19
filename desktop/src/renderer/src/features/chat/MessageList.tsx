@@ -11,15 +11,21 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Message } from '../../../../shared/contracts'
 import { textContent } from '../../../../shared/messages'
+import { findMessages } from '../../../../shared/workspaceTools'
+import { ConversationSearch } from './ConversationSearch'
 
 export function MessageList({
   messages,
   busy,
-  waiting = false
+  waiting = false,
+  searchOpen = false,
+  closeSearch = () => {}
 }: {
   messages: Message[]
   busy: boolean
   waiting?: boolean
+  searchOpen?: boolean
+  closeSearch?: () => void
 }) {
   const viewport = useRef<HTMLDivElement>(null)
   const { t, locale } = useI18n()
@@ -28,6 +34,11 @@ export function MessageList({
   const leavingBottom = useRef(false)
   const [copied, setCopied] = useState('')
   const visible = useMemo(() => consolidateToolMessages(messages), [messages])
+  const [query, setQuery] = useState('')
+  const [matchIndex, setMatchIndex] = useState(0)
+  const matches = useMemo(() => findMessages(visible, query), [visible, query])
+  const activeMatch = Math.min(matchIndex, Math.max(0, matches.length - 1))
+  const matchId = searchOpen ? matches[activeMatch] : undefined
   const [busySince, setBusySince] = useState<number | null>(null)
   useEffect(() => setBusySince(busy ? Date.now() : null), [busy])
   const working = useElapsedSeconds(busySince)
@@ -39,6 +50,17 @@ export function MessageList({
     estimateSize: () => 180,
     overscan: 6
   })
+  useEffect(() => {
+    if (!searchOpen || !matchId) return
+    virtualizer.cancelScroll()
+    followingRef.current = false
+    leavingBottom.current = false
+    setFollowing(false)
+    virtualizer.scrollToIndex(
+      visible.findIndex((message) => message.id === matchId),
+      { align: 'center' }
+    )
+  }, [searchOpen, matchId, query])
   useLayoutEffect(() => {
     if (followingRef.current && visible.length) virtualizer.scrollToEnd()
     const view = viewport.current
@@ -58,6 +80,26 @@ export function MessageList({
   }
   return (
     <div className="conversation-panel">
+      {searchOpen && (
+        <ConversationSearch
+          query={query}
+          change={(value) => {
+            setQuery(value)
+            setMatchIndex(0)
+          }}
+          count={matches.length}
+          active={activeMatch}
+          move={(delta) =>
+            setMatchIndex(
+              matches.length ? (activeMatch + delta + matches.length) % matches.length : 0
+            )
+          }
+          close={() => {
+            setQuery('')
+            closeSearch()
+          }}
+        />
+      )}
       <div
         className="conversation"
         style={{ scrollBehavior: 'auto' }}
@@ -120,7 +162,7 @@ export function MessageList({
                   }}
                 >
                   <article
-                    className={`message ${message.role} ${continued ? 'continued' : ''} ${fresh ? 'fresh' : ''}`}
+                    className={`message ${message.role} ${continued ? 'continued' : ''} ${fresh ? 'fresh' : ''} ${message.id === matchId ? 'search-match' : ''}`}
                     key={message.id}
                   >
                     {!continued && (

@@ -18,6 +18,10 @@ import './styles/files.css'
 import './styles/tasks.css'
 import './styles/browser.css'
 import './styles/motion.css'
+import './styles/welcome.css'
+import './styles/navigation.css'
+import './styles/workbench.css'
+import './styles/context.css'
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
