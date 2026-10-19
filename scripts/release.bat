@@ -449,7 +449,7 @@ echo        or turn on the equivalent Windows feature.
 exit /b 1
 
 rem resolve_version sets VERSION to the explicit --version if given, otherwise
-rem last release + 1 patch.
+rem the newer of the last release and desktop\package.json, + 1 patch.
 rem
 rem A leading v is stripped so callers can pass either form, and only the first
 rem character is taken: deleting every v would turn 1.2.3-v2 into 1.2.3-2, a
@@ -484,7 +484,7 @@ rem The addition needs its own parentheses: PowerShell binds -f tighter than +,
 rem so -f a, b, c+1 formats with c and then appends "1" to the whole string.
 rem That turned v0.4.36 into v0.4.361.
 for /f "usebackq delims=" %%v in (`powershell -NoProfile -Command ^
-  "$t='!LATEST_TAG!'; if($t -match '^v?(\d+)\.(\d+)\.(\d+)'){ '{0}.{1}.{2}' -f [int]$Matches[1], [int]$Matches[2], ([int]$Matches[3]+1) } else { '0.0.1' }"`) do set "VERSION=%%v"
+  "$t='!LATEST_TAG!'; $v=[version]'0.0.0'; if($t -match '^v?(\d+\.\d+\.\d+)'){ $v=[version]$Matches[1] }; $p=Join-Path '%~dp0..' 'desktop\package.json'; if(Test-Path $p){ $d=[version](Get-Content $p -Raw | ConvertFrom-Json).version; if($d -gt $v){ $v=$d } }; '{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build+1)"`) do set "VERSION=%%v"
 exit /b 0
 
 :current_sha
