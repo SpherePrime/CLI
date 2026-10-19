@@ -40,6 +40,7 @@ import { CommandPalette, type QuickAction } from '../features/navigation/Command
 import { downloadConversation } from '../features/chat/exportConversation'
 import { WorkbenchDock, type WorkbenchView } from '../features/workbench/WorkbenchDock'
 import { RemoteDialog } from '../features/remote/RemoteDialog'
+import { JobsCenter } from '../features/jobs/JobsCenter'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -213,6 +214,13 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       }
     },
     {
+      id: 'jobs',
+      label: t('Фоновые задачи'),
+      icon: Clock3,
+      disabled: w.info.runtime !== 'ready',
+      run: () => setModal('jobs')
+    },
+    {
       id: 'teams',
       label: t('Команды агентов'),
       icon: Users,
@@ -347,6 +355,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               onPlugins={() => setModal('plugins')}
               onCommands={() => setModal('commands')}
               onRemote={() => setModal('remote')}
+              onJobs={() => setModal('jobs')}
               onWorkbench={() => setWorkbench(true)}
             />
             <div
@@ -596,6 +605,17 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         )}
         {modal === 'plugins' && <PluginManager workspace={w} close={() => setModal('')} />}
         {modal === 'remote' && <RemoteDialog workspace={w} close={() => setModal('')} />}
+        {modal === 'jobs' && (
+          <JobsCenter
+            workspace={w}
+            close={() => setModal('')}
+            openTools={(view) => {
+              setWorkbenchView(view)
+              setWorkbenchExpanded(view === 'launch')
+              setWorkbench(true)
+            }}
+          />
+        )}
       </div>
     </>
   )

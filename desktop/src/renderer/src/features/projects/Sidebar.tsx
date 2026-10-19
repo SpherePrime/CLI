@@ -1,4 +1,5 @@
 import { useI18n } from '../../i18n'
+import '../../styles/jobs.css'
 import { Modal } from '../../components/Modal'
 import {
   ChevronDown,
@@ -13,7 +14,8 @@ import {
   Pin,
   MoreHorizontal,
   TerminalSquare,
-  Server
+  Server,
+  ListChecks
 } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { groupSessions } from '../../../../shared/workspaceTools'
@@ -24,6 +26,7 @@ export function Sidebar({
   onPlugins,
   onCommands,
   onRemote,
+  onJobs,
   onWorkbench
 }: {
   workspace: Workspace
@@ -31,10 +34,23 @@ export function Sidebar({
   onPlugins: () => void
   onCommands: () => void
   onRemote: () => void
+  onJobs: () => void
   onWorkbench: () => void
 }) {
   const { t } = useI18n()
   const [search, setSearch] = useState('')
+  const [activeJobs, setActiveJobs] = useState(0)
+  useEffect(() => {
+    if (w.info.runtime !== 'ready') return
+    const load = () =>
+      void window.prime
+        .jobs({ action: 'list' })
+        .then((jobs) => setActiveJobs(jobs.filter((job) => ['queued', 'running', 'waiting'].includes(job.status)).length))
+        .catch(() => {})
+    load()
+    const timer = setInterval(load, 5000)
+    return () => clearInterval(timer)
+  }, [w.info.runtime])
   const [searchOpen, setSearchOpen] = useState(false)
   useEffect(() => {
     setSearch('')
@@ -320,6 +336,11 @@ export function Sidebar({
         )}
       </div>
       <footer className="sidebar-footer">
+        <button onClick={onJobs} className="sidebar-jobs">
+          <ListChecks size={16} />
+          {t('Фоновые задачи')}
+          {activeJobs > 0 && <span className="sidebar-badge">{activeJobs}</span>}
+        </button>
         <button onClick={onWorkbench} disabled={!w.project}>
           <TerminalSquare size={16} />
           {t('Инструменты проекта')}
