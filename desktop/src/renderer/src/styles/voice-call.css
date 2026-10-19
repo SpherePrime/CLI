@@ -65,6 +65,9 @@
   padding-left: 4px;
 }
 .voice-orb {
+  --voice-a: #ff8c60;
+  --voice-b: #ff4f6d;
+  --voice-c: #ffb35c;
   position: relative;
   width: clamp(220px, 33vh, 340px);
   aspect-ratio: 1;
@@ -77,52 +80,11 @@
   width: 100%;
   height: 100%;
 }
-.voice-orb-aura {
-  position: absolute;
-  inset: 13%;
-  border-radius: 50%;
-  background: var(--accent-strong);
-  opacity: calc(0.06 + var(--voice-level) * 0.14);
-  filter: blur(38px);
-  transform: scale(calc(1 + var(--voice-level) * 0.3));
+.voice-orb.is-muted canvas {
+  filter: saturate(0.15) brightness(0.8);
 }
-.voice-orb-core {
-  position: absolute;
-  inset: 25%;
-  overflow: hidden;
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
-  background:
-    radial-gradient(
-      circle at 34% 24%,
-      color-mix(in srgb, var(--accent) 80%, var(--surface)),
-      transparent 52%
-    ),
-    radial-gradient(circle at 68% 84%, var(--accent-strong), transparent 65%),
-    color-mix(in srgb, var(--accent) 28%, var(--surface));
-  box-shadow:
-    inset -12px -18px 32px color-mix(in srgb, var(--bg) 45%, transparent),
-    inset 2px 2px 12px color-mix(in srgb, var(--accent) 65%, transparent),
-    0 0 45px color-mix(in srgb, var(--accent) 9%, transparent);
-  transform: scale(calc(1 + var(--voice-level) * 0.13));
-}
-.voice-orb-light {
-  position: absolute;
-  inset: 8% 12% 42% 9%;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--accent) 65%, white);
-  opacity: calc(0.15 + var(--voice-level) * 0.4);
-  filter: blur(19px);
-  transform: rotate(-32deg) translateY(calc(var(--voice-level) * 12px));
-}
-.voice-orb.is-muted {
-  filter: saturate(0.18);
-  opacity: 0.7;
-}
-.voice-orb.is-preparing .voice-orb-core,
-.voice-orb.is-waiting .voice-orb-core,
-.voice-orb.is-transcribing .voice-orb-core {
-  animation: voice-call-breathe 2.6s ease-in-out infinite;
+.voice-orb canvas {
+  transition: filter 300ms ease;
 }
 .voice-call-copy {
   text-align: center;
@@ -318,4 +280,10 @@ button.voice-call-end:hover:not(:disabled) {
 [data-motion='reduced'] .voice-call button {
   animation: none !important;
   transition: none !important;
+}
+
+:root[data-theme='light'] .voice-orb {
+  --voice-a: #e0602a;
+  --voice-b: #e2456a;
+  --voice-c: #f0a040;
 }
