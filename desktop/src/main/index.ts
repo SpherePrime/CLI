@@ -29,9 +29,10 @@ import { projectFiles } from './workbench/projectFiles'
 import { WorkspaceRouter } from './workbench/workspaceRouter'
 import { isProjectLocked, openWhenUnlocked } from './prime/projectLock'
 import { RemoteWorkspaces } from './remote/workspaces'
+import { createCredentialVault } from './remote/credentialVault'
 import { remoteFingerprint } from './remote/fingerprint'
 import { remoteRequest } from './remote/ipc'
-import { isRemoteWorkspace } from '../shared/remoteWorkspace'
+import { isRemoteWorkspace, remoteWorkspaceIdentity } from '../shared/remoteWorkspace'
 import { BrowserPanel } from './browser/panel'
 import { cancelPick, pickElement } from './browser/picker'
 import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
@@ -453,10 +454,16 @@ function registerIpc(): void {
   })
   handle('openRemote', async (profileId: string) => {
     if (!remotes) throw new Error(t('Prime ещё запускается'))
-    const remote = await remotes.project(z.string().uuid().parse(profileId))
+    const remote = await remotes.open(z.string().uuid().parse(profileId))
     const project = requirePrime().projects.get(remote.id)
     if (!project) throw new Error(t('Сервер отключён.'))
-    await settings.update({ activeProject: project.path })
+    await settings.update({
+      activeProject: project.path,
+      recent: [
+        project.path,
+        ...settings.get().recent.filter((item) => item !== project.path)
+      ].slice(0, 15)
+    })
     return project
   })
   handle('editorDirty', (dirty: boolean) => {
@@ -499,6 +506,7 @@ function registerIpc(): void {
     if (
       path &&
       !settings.get().recent.includes(path) &&
+      !(isRemoteWorkspace(path) && settings.get().activeProject === path) &&
       path !== process.env.PRIME_DESKTOP_TEST_PROJECT
     )
       throw new Error(t('Папку нужно выбрать через диалог'))
@@ -511,6 +519,11 @@ function registerIpc(): void {
       path = result.filePaths[0]
     }
     const target = path
+    if (isRemoteWorkspace(target)) {
+      const identity = remoteWorkspaceIdentity(target)
+      if (!identity || !remotes) throw new Error(t('Сервер отключён.'))
+      await remotes.open(identity.profileId)
+    }
     projectWait?.abort()
     const wait = new AbortController()
     projectWait = wait
@@ -862,6 +875,7 @@ else {
     }
     remotes = new RemoteWorkspaces({
       path: join(app.getPath('userData'), 'remote-profiles.json'),
+      credentials: createCredentialVault(join(app.getPath('userData'), 'remote-credentials.json')),
       runtimeDir: app.isPackaged
         ? join(process.resourcesPath, 'runtime')
         : join(import.meta.dirname, '../../runtime'),

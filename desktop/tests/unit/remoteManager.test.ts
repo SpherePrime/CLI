@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Server } from 'ssh2'
 import { RemoteManager } from '../../src/main/remote/manager'
+import { RemoteCredentialStore } from '../../src/main/remote/credentials'
 const key = generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({
   type: 'pkcs1',
   format: 'pem'
@@ -13,13 +14,15 @@ const cleanup: (() => Promise<unknown>)[] = []
 afterEach(async () => {
   for (const close of cleanup.splice(0).reverse()) await close()
 })
-async function fixture() {
+async function fixture(saveCredentials = false) {
   let authentications = 0
+  const passwords: string[] = []
   const clients: import('ssh2').Connection[] = []
   const server = new Server({ hostKeys: [key] }, (client) => {
     clients.push(client)
     client.on('authentication', (context) => {
       authentications++
+      if (context.method === 'password') passwords.push(context.password)
       context.reject()
     })
     client.on('error', () => {})
@@ -32,7 +35,17 @@ async function fixture() {
   const directory = await mkdtemp(join(tmpdir(), 'prime-remote-'))
   cleanup.push(() => rm(directory, { recursive: true, force: true }))
   const path = join(directory, 'remote.json')
-  const manager = new RemoteManager({ path, emit() {} })
+  const credentialStore = () =>
+    new RemoteCredentialStore(join(directory, 'credentials.json'), {
+      available: () => true,
+      encrypt: (text) => Buffer.from(text.split('').reverse().join('')),
+      decrypt: (bytes) => bytes.toString().split('').reverse().join('')
+    })
+  const manager = new RemoteManager({
+    path,
+    emit() {},
+    credentials: saveCredentials ? credentialStore() : undefined
+  })
   await manager.load()
   const snapshot = await manager.save({
     name: 'Linux',
@@ -44,9 +57,36 @@ async function fixture() {
     runtime: 'bundled'
   })
   cleanup.push(() => manager.shutdown())
-  return { manager, path, id: snapshot.profiles[0].id, authentications: () => authentications }
+  return {
+    manager,
+    path,
+    credentialStore,
+    passwords,
+    id: snapshot.profiles[0].id,
+    authentications: () => authentications
+  }
 }
 describe('remote SSH trust', () => {
+  it('reuses a stored password after restart without including secrets in snapshots and forgets it on request', async () => {
+    const f = await fixture(true)
+    await f.manager.connect(f.id, { password: 'private-password' })
+    await f.manager.trust(f.id, f.manager.list().profiles[0].challenge!.fingerprint)
+    await f.manager.shutdown()
+    const restarted = new RemoteManager({
+      path: f.path,
+      emit() {},
+      credentials: f.credentialStore()
+    })
+    cleanup.push(() => restarted.shutdown())
+    await restarted.load()
+    expect(restarted.list().profiles[0].hasSavedCredentials).toBe(true)
+    await restarted.connect(f.id)
+    expect(f.passwords).toContain('private-password')
+    expect(JSON.stringify(restarted.list())).not.toContain('private-password')
+    expect(await readFile(f.path, 'utf8')).not.toContain('private-password')
+    await restarted.handle({ action: 'forgetCredentials', id: f.id })
+    expect(restarted.list().profiles[0].hasSavedCredentials).toBe(false)
+  })
   it('warns on changed pinned keys and rejects stale trust attempts', async () => {
     const f = await fixture()
     await f.manager.connect(f.id, { password: 'private-password' })

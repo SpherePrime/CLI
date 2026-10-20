@@ -1,4 +1,16 @@
 export const english: Record<string, string> = {
+  'Сохранённый пароль': 'Saved password',
+  'Пароль сохранён в защищённом хранилище ОС. Для замены введите новый.':
+    'Password saved in OS-protected storage. Enter a new one to replace it.',
+  'Пароль будет сохранён в защищённом хранилище ОС и не передаётся в чат.':
+    'The password will be saved in OS-protected storage and is not sent to chat.',
+  'Удалить сохранённый пароль': 'Forget saved password',
+  'Защищённое хранилище ОС недоступно. Пароль не сохранён.':
+    'OS-protected storage is unavailable. The password has not been saved.',
+  'Хранилище SSH-паролей повреждено. Исходный файл сохранён.':
+    'The SSH credential store is damaged. The original file has been preserved.',
+  'Не удалось расшифровать SSH-пароль. Введите его заново или удалите сохранённый пароль.':
+    'Unable to decrypt the SSH password. Enter it again or forget the saved password.',
   'История коммитов': 'Commit history',
   Репозиторий: 'Repository',
   'Коммитов нет': 'No commits',

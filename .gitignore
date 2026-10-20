@@ -19,6 +19,7 @@ config.local.toml
 .env.local
 credentials.json
 credentials.key
+remote-credentials.json
 # Editor / OS
 .vscode/
 .idea/

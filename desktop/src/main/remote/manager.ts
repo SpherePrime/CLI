@@ -12,9 +12,11 @@ import type {
 } from '../../shared/remote'
 import { validateProfile } from './security'
 import { RemoteConnection } from './connection'
+import type { RemoteCredentialStore } from './credentials'
 type State = { version: 1; profiles: RemoteProfile[]; hosts: Record<string, string> }
 type Options = {
   path: string
+  credentials?: RemoteCredentialStore
   emit(snapshot: RemoteSnapshot): void
   onReady?(profile: RemoteProfile, connection: RemoteConnection): Promise<void>
   onDisconnect?(id: string): Promise<void>
@@ -25,6 +27,7 @@ export class RemoteManager {
   private state: State = { version: 1, profiles: [], hosts: {} }
   private store: AtomicStore<State>
   private error?: string
+  private credentialError?: string
   private loaded = false
   private queue: Promise<unknown> = Promise.resolve()
   private statuses = new Map<string, Partial<RemoteProfileState>>()
@@ -36,6 +39,9 @@ export class RemoteManager {
     this.store = new AtomicStore(options.path)
   }
   async load() {
+    await this.options.credentials?.load().catch(() => {
+      this.credentialError = 'remote.credentialsCorrupt'
+    })
     try {
       const saved = (await this.store.read()) as State | undefined
       if (saved) {
@@ -67,10 +73,19 @@ export class RemoteManager {
     return structuredClone({
       profiles: this.state.profiles.map((profile) => ({
         ...profile,
+        ...(this.options.credentials
+          ? { hasSavedCredentials: this.options.credentials.has(profile) }
+          : {}),
         status: 'disconnected',
         ...this.statuses.get(profile.id)
       })),
-      ...(this.error ? { error: this.error } : {})
+      ...(this.error ? { error: this.error } : {}),
+      ...(this.options.credentials
+        ? {
+            credentialStorageAvailable: this.options.credentials.available && !this.credentialError
+          }
+        : {}),
+      ...(this.credentialError ? { credentialError: this.credentialError } : {})
     })
   }
   private emit() {
@@ -102,6 +117,12 @@ export class RemoteManager {
       }
       await this.store.write(next)
       this.state = next
+      if (
+        this.options.credentials &&
+        !this.credentialError &&
+        !this.options.credentials.has(profile)
+      )
+        await this.options.credentials.remove(profile.id)
       this.statuses.delete(profile.id)
       this.emit()
       return this.list()
@@ -111,6 +132,7 @@ export class RemoteManager {
     await this.disconnect(id)
     return this.serialize(async () => {
       this.writable()
+      await this.options.credentials?.remove(id)
       const next = { ...this.state, profiles: this.state.profiles.filter((item) => item.id !== id) }
       await this.store.write(next)
       this.state = next
@@ -187,6 +209,13 @@ export class RemoteManager {
     client.on('close', lost)
     client.on('error', lost)
     try {
+      const supplied = Boolean(credentials.password || credentials.passphrase)
+      if (this.options.credentials && !this.credentialError) {
+        if (supplied && this.options.credentials.available)
+          await this.options.credentials.save(profile, credentials)
+        if (!supplied) credentials = this.options.credentials.get(profile) ?? credentials
+      }
+      if (!current()) return
       const config: ConnectConfig = {
         host: profile.host,
         port: profile.port,
@@ -323,6 +352,12 @@ export class RemoteManager {
         return this.remove(request.id)
       case 'connect':
         return this.connect(request.id, request.credentials)
+      case 'forgetCredentials':
+        this.writable()
+        this.profile(request.id)
+        await this.options.credentials?.remove(request.id)
+        this.emit()
+        return this.list()
       case 'trust':
         return this.trust(request.id, request.fingerprint)
       case 'disconnect':

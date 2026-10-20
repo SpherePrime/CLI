@@ -22,17 +22,23 @@ export type RemoteStatus =
   | 'error'
 export type RemoteHostChallenge = { fingerprint: string; previous?: string }
 export type RemoteProfileState = RemoteProfile & {
+  hasSavedCredentials?: boolean
   status: RemoteStatus
   challenge?: RemoteHostChallenge
   error?: string
   progress?: { message: string; percent?: number }
 }
-export type RemoteSnapshot = { profiles: RemoteProfileState[]; error?: string }
+export type RemoteSnapshot = {
+  profiles: RemoteProfileState[]
+  error?: string
+  credentialStorageAvailable?: boolean
+  credentialError?: string
+}
 export type RemoteResponse = RemoteSnapshot
 export type RemoteRequest =
   | { action: 'list' }
   | { action: 'save'; input: RemoteProfileInput }
-  | { action: 'remove' | 'disconnect'; id: string }
+  | { action: 'remove' | 'disconnect' | 'forgetCredentials'; id: string }
   | { action: 'connect'; id: string; credentials?: RemoteCredentials }
   | { action: 'trust'; id: string; fingerprint: string }
 export type RemoteApi = (request: RemoteRequest) => Promise<RemoteResponse>
