@@ -525,7 +525,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     await expect(page.getByRole('textbox', { name: 'Сообщение Prime' })).toBeEnabled({
       timeout: 20000
     })
-    await page.getByRole('button', { name: 'Чат без проекта', exact: true }).click()
+    await page.getByRole('button', { name: 'Личные чаты', exact: true }).first().click()
     await expect(
       page.locator('.message.user').getByText('Свободный чат без папки', { exact: true })
     ).toBeVisible({ timeout: 15000 })

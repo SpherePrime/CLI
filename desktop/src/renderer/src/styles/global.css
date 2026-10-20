@@ -304,13 +304,26 @@ kbd {
 }
 .sidebar-actions {
   padding: 14px 15px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
   gap: 7px;
 }
 .sidebar-actions button {
   justify-content: flex-start;
   min-height: 35px;
+  padding-inline: 10px;
+}
+.open-project {
+  background: transparent;
+  color: var(--secondary);
+  border-color: var(--border);
+}
+.open-project > svg {
+  color: var(--muted);
+}
+.open-project:hover:not(:disabled) {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 .new-chat {
   background: var(--raised);
@@ -346,6 +359,16 @@ kbd {
   justify-content: space-between;
   margin: 0 7px 10px;
 }
+.project-group {
+  margin-bottom: 4px;
+  border-radius: 10px;
+}
+.project-group.open {
+  background: color-mix(in srgb, var(--raised) 45%, transparent);
+  border: 1px solid var(--border);
+  padding: 2px 4px 6px;
+  margin-bottom: 8px;
+}
 .project-item {
   border: 0;
   display: flex;
@@ -379,7 +402,7 @@ kbd {
   display: flex;
   align-items: center;
   border-radius: 6px;
-  margin: 2px 0 2px 15px;
+  margin: 2px 0 2px 6px;
 }
 .session-row.active {
   background: var(--accent-bg);
