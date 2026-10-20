@@ -11,7 +11,7 @@ module.exports = {
     { from: 'payload', to: 'payload' },
     { from: '../build/icon.png', to: 'icon.png' }
   ],
-  afterPack: './linux-launcher.cjs',
+  afterPack: require('node:path').join(__dirname, 'linux-launcher.cjs'),
   win: {
     executableName: 'PrimeSetup',
     icon: '../build/icon.ico',
