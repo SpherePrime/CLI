@@ -40,9 +40,42 @@ EOF
 
 fail() { echo "Prime: $*" >&2; exit 1; }
 
+menu() {
+    printf '\n Prime\n'
+    printf ' ------------------------------------------------------------------\n'
+    printf '  1  run       launch the build already in dist (no compile)\n'
+    printf '  2  build     build for this machine, then launch\n'
+    printf '  3  release   build and package the release archives\n'
+    printf '  4  desktop   run Prime Desktop from sources\n'
+    printf '  5  setup     build Prime Desktop locally\n'
+    printf '  h  help      print this text\n'
+    printf '  q  quit\n'
+    printf ' ------------------------------------------------------------------\n'
+    printf ' Pick: '
+    IFS= read -r choice || exit 0
+    case "$choice" in
+        1|run) MODE=run ;;
+        2|build) MODE=build ;;
+        3|release) MODE=release ;;
+        4|desktop) MODE=desktop ;;
+        5|setup) MODE=setup ;;
+        h|H|help|-h|--help) usage; exit 0 ;;
+        q|Q|quit) exit 0 ;;
+        *) fail "unknown menu choice: $choice" ;;
+    esac
+}
+
+if [ "$#" -eq 0 ]; then
+    menu
+fi
+
 while [ "$#" -gt 0 ]; do
     case "$1" in
-        run|build|release|desktop|setup) [ -z "$MODE" ] || fail "only one mode may be selected"; MODE=$1; shift ;;
+        1|run) [ -z "$MODE" ] || fail "only one mode may be selected"; MODE=run; shift ;;
+        2|build) [ -z "$MODE" ] || fail "only one mode may be selected"; MODE=build; shift ;;
+        3|release) [ -z "$MODE" ] || fail "only one mode may be selected"; MODE=release; shift ;;
+        4|desktop) [ -z "$MODE" ] || fail "only one mode may be selected"; MODE=desktop; shift ;;
+        5|setup) [ -z "$MODE" ] || fail "only one mode may be selected"; MODE=setup; shift ;;
         help|-h|--help) usage; exit 0 ;;
         --no-sync) NO_SYNC=1; shift ;;
         --test) NO_TEST=0; shift ;;
