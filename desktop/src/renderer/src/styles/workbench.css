@@ -77,23 +77,40 @@
   gap: 7px;
 }
 .sidebar-actions button {
-  min-height: 39px;
+  height: 38px;
+  min-height: 38px;
   border-radius: 9px;
   padding-inline: 10px;
   font-size: 12px;
+  white-space: nowrap;
+  align-items: center;
 }
-.new-chat kbd {
-  display: none;
-}
-.new-chat {
+.sidebar-actions .new-chat {
   background: var(--raised);
+  border-color: var(--border);
   color: var(--text);
+  font-weight: 500;
 }
-.new-chat > svg {
+.sidebar-actions .new-chat > svg {
   color: var(--secondary);
 }
-.new-chat:hover:not(:disabled) {
+.sidebar-actions .new-chat:hover:not(:disabled) {
   background: var(--accent-bg);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+.sidebar-actions .open-project {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--secondary);
+  font-weight: 500;
+  border-radius: 9px;
+  padding: 0 10px;
+}
+.sidebar-actions .open-project > svg {
+  color: var(--muted);
+}
+.sidebar-actions .open-project:hover:not(:disabled) {
+  color: var(--text);
   border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 .personal-chats {
