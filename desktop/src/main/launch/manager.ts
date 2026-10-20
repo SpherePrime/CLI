@@ -6,6 +6,7 @@ import type { RemoteConnection } from '../remote/connection'
 import type { DesktopEvent } from '../../shared/contracts'
 import type { LaunchConfig, LaunchProcess, LaunchRequest, LaunchResponse } from '../../shared/launch'
 import { detectLocalUrl, stripAnsi } from './url'
+import { powershellLaunchCommand } from './command'
 import { createLocalForward, type LocalForward } from '../remote/localForward'
 
 type State = { version: 1; configs: Record<string, LaunchConfig[]> }
@@ -134,7 +135,9 @@ export class LaunchManager {
       remote: target.remote,
       ...(config.url ? { url: config.url } : {})
     })
-    this.options.terminals.write(terminal.id, config.command + (target.remote ? '\n' : '\r'), 'user', target.workspaceId)
+    const command =
+      target.remote || process.platform !== 'win32' ? config.command : powershellLaunchCommand(config.command)
+    this.options.terminals.write(terminal.id, command + (target.remote ? '\n' : '\r'), 'user', target.workspaceId)
   }
 
   private async stop(id: string) {
