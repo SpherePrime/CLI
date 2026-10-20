@@ -377,6 +377,7 @@ export const english: Record<string, string> = {
   Включить: 'Enable',
   'Включите плагин Voice в разделе «Плагины»': 'Enable the Voice plugin in Plugins',
   'РАБОЧИЕ ПРОСТРАНСТВА': 'WORKSPACES',
+  'ЧАТЫ И ПРОЕКТЫ': 'CHATS & PROJECTS',
   'Добавить проект': 'Add project',
   'Закрыть проект': 'Close project',
   'Закрыть личные чаты': 'Close personal chats',

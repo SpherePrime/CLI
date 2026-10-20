@@ -425,7 +425,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                   workspace={w}
                   onSettings={() => setModal('settings')}
                   onPlugins={() => setModal('plugins')}
-                  onCommands={() => setModal('commands')}
                   onRemote={() => setModal('remote')}
                   onJobs={() => setModal('jobs')}
                   onWorkbench={() => setWorkbench(true)}
@@ -436,7 +435,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 workspace={w}
                 onSettings={() => setModal('settings')}
                 onPlugins={() => setModal('plugins')}
-                onCommands={() => setModal('commands')}
                 onRemote={() => setModal('remote')}
                 onJobs={() => setModal('jobs')}
                 onWorkbench={() => setWorkbench(true)}

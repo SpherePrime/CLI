@@ -1,30 +1,20 @@
 import { useI18n } from '../../i18n'
 import '../../styles/jobs.css'
-import { Modal } from '../../components/Modal'
 import {
-  ChevronDown,
   FolderOpen,
-  MessageSquare,
   Plus,
-  Search,
   Settings2,
   Puzzle,
-  Command,
-  X,
-  Pin,
-  MoreHorizontal,
   TerminalSquare,
-  Server,
   ListChecks
 } from 'lucide-react'
-import { Fragment, useEffect, useRef, useState } from 'react'
-import { groupSessions } from '../../../../shared/workspaceTools'
+import { useEffect, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
+import { SidebarChats } from './SidebarChats'
 export function Sidebar({
   workspace: w,
   onSettings,
   onPlugins,
-  onCommands,
   onRemote,
   onJobs,
   onWorkbench
@@ -32,13 +22,11 @@ export function Sidebar({
   workspace: Workspace
   onSettings: () => void
   onPlugins: () => void
-  onCommands: () => void
   onRemote: () => void
   onJobs: () => void
   onWorkbench: () => void
 }) {
   const { t } = useI18n()
-  const [search, setSearch] = useState('')
   const [activeJobs, setActiveJobs] = useState(0)
   useEffect(() => {
     if (w.info.runtime !== 'ready') return
@@ -51,286 +39,23 @@ export function Sidebar({
     const timer = setInterval(load, 5000)
     return () => clearInterval(timer)
   }, [w.info.runtime])
-  const [searchOpen, setSearchOpen] = useState(false)
-  useEffect(() => {
-    setSearch('')
-    setSearchOpen(false)
-  }, [w.project?.id])
-  const [menu, setMenu] = useState<string | null>(null)
-  const [renaming, setRenaming] = useState<string | null>(null)
-  const [title, setTitle] = useState('')
-  const [deleting, setDeleting] = useState<string | null>(null)
-  const [deleteBusy, setDeleteBusy] = useState(false)
-  const [deleteError, setDeleteError] = useState('')
-  const cancelDelete = useRef<HTMLButtonElement>(null)
-  useEffect(() => {
-    setDeleting(null)
-    setDeleteError('')
-  }, [w.project?.id])
-  useEffect(() => {
-    if (!menu) return
-    const pointer = (event: PointerEvent) => {
-      const target = event.target as Element
-      if (target.closest?.('.context-menu') || target.closest?.('.row-menu')) return
-      setMenu(null)
-    }
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenu(null)
-    }
-    document.addEventListener('pointerdown', pointer)
-    document.addEventListener('keydown', key)
-    return () => {
-      document.removeEventListener('pointerdown', pointer)
-      document.removeEventListener('keydown', key)
-    }
-  }, [menu])
-  const groups = groupSessions(w.sessions, w.preferences.pinned, search)
-  const groupLabels = {
-    pinned: t('Закреплённые'),
-    today: t('Сегодня'),
-    yesterday: t('Вчера'),
-    week: t('Последние 7 дней'),
-    older: t('Ранее')
-  }
   return (
     <aside className="sidebar">
       <div className="sidebar-actions">
         <button className="new-chat" disabled={!w.project} onClick={() => void w.createSession()}>
-          <Plus size={17} /> {t('Новый чат')}
+          <Plus size={16} /> {t('Новый чат')}
           <kbd>Ctrl N</kbd>
         </button>
         <button
-          className="quiet"
+          className="open-project"
           onClick={() => void w.openProject()}
           disabled={w.loading || w.info.runtime !== 'ready'}
         >
-          <FolderOpen size={16} /> {t('Открыть проект')}
+          <FolderOpen size={15} /> {t('Открыть проект')}
         </button>
       </div>
-      <button
-        className="personal-chats"
-        onClick={() => void w.openChat()}
-        disabled={w.info.runtime !== 'ready'}
-      >
-        <MessageSquare size={16} />
-        {t('Чат без проекта')}
-      </button>
-      <button className="sidebar-command" onClick={onCommands}>
-        <Command size={15} />
-        <span>{t('Быстрые действия')}</span>
-        <kbd>Ctrl K</kbd>
-      </button>
       <div className="sidebar-scroll">
-        <div className="section-caption">
-          {t('РАБОЧИЕ ПРОСТРАНСТВА')}{' '}
-          <span className="section-caption-actions">
-            <button
-              className="icon small"
-              aria-label={t('SSH-серверы')}
-              title={t('SSH-серверы')}
-              onClick={onRemote}
-              disabled={w.info.runtime !== 'ready'}
-            >
-              <Server size={14} />
-            </button>
-            <button
-              className="icon small"
-              aria-label={t('Добавить проект')}
-              onClick={() => void w.openProject()}
-            >
-              <Plus size={14} />
-            </button>
-          </span>
-        </div>
-        {w.projects.map((project) => (
-          <div key={project.id} className="project-group">
-            <div className="project-heading">
-              <button
-                className={`project-item ${w.project?.id === project.id ? 'selected' : ''}`}
-                onClick={() => void w.selectProject(project)}
-              >
-                <ChevronDown size={14} />
-                {project.remote ? <Server size={15} /> : <FolderOpen size={15} />}
-                <span
-                  title={
-                    project.kind === 'chat'
-                      ? t('Личные чаты')
-                      : project.remote
-                        ? `${project.remote.user}@${project.remote.host}:${project.remote.root}`
-                        : project.path
-                  }
-                >
-                  {project.kind === 'chat'
-                    ? t('Личные чаты')
-                    : project.remote
-                      ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
-                      : project.path.split(/[\\/]/).pop()}
-                </span>
-                <span className={`dot ${project.connection === 'ready' ? 'green' : 'amber'}`} />
-              </button>
-              <button
-                className="icon small"
-                title={project.kind === 'chat' ? t('Закрыть личные чаты') : t('Закрыть проект')}
-                aria-label={
-                  project.kind === 'chat'
-                    ? t('Закрыть личные чаты')
-                    : t('Закрыть проект {value0}', { value0: project.path })
-                }
-                onClick={() => void w.closeProject(project.id)}
-              >
-                <X size={12} />
-              </button>
-            </div>
-            {w.project?.id === project.id && (
-              <>
-                <div className="chat-list-heading">
-                  <span>{t('Чаты')}</span>
-                  <button
-                    className="icon small"
-                    aria-label={t('Найти чат')}
-                    title={t('Найти чат')}
-                    aria-expanded={searchOpen}
-                    onClick={() => {
-                      setSearchOpen(!searchOpen)
-                      setSearch('')
-                    }}
-                  >
-                    <Search size={14} />
-                  </button>
-                </div>
-                {searchOpen && (
-                  <div className="chat-search-box">
-                    <Search size={14} />
-                    <input
-                      autoFocus
-                      aria-label={t('Поиск чатов')}
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder={t('Название чата…')}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Escape') {
-                          setSearchOpen(false)
-                          setSearch('')
-                        }
-                      }}
-                    />
-                    <button
-                      className="icon small"
-                      aria-label={t('Закрыть поиск')}
-                      onClick={() => {
-                        setSearchOpen(false)
-                        setSearch('')
-                      }}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                )}
-                {groups.map((group) => (
-                  <Fragment key={group.id}>
-                    <div className="chat-group-label">
-                      <span>{groupLabels[group.id]}</span>
-                      <span>{group.sessions.length}</span>
-                    </div>
-                    {group.sessions.map((session) => (
-                      <div
-                        key={session.id}
-                        className={`session-row ${session.id === w.session?.id ? 'active' : ''}`}
-                      >
-                        {renaming === session.id ? (
-                          <form
-                            onSubmit={async (event) => {
-                              event.preventDefault()
-                              try {
-                                await w.call('renameSession', {
-                                  sessionId: session.id,
-                                  session: { ...session, title }
-                                })
-                                setRenaming(null)
-                                await w.refresh()
-                              } catch (error) {
-                                w.errorHandler(error)
-                              }
-                            }}
-                          >
-                            <input
-                              autoFocus
-                              value={title}
-                              onChange={(event) => setTitle(event.target.value)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Escape') setRenaming(null)
-                              }}
-                            />
-                          </form>
-                        ) : (
-                          <button
-                            className="session-link"
-                            onClick={() => void w.selectSession(session)}
-                          >
-                            <MessageSquare size={14} />
-                            <span>{session.title || t('Новый чат')}</span>
-                            {session.is_busy && <span className="dot pulse" />}
-                            {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
-                          </button>
-                        )}
-                        <button
-                          className="icon small row-menu"
-                          aria-label={t('Действия: {value0}', { value0: session.title })}
-                          onClick={() => setMenu(menu === session.id ? null : session.id)}
-                        >
-                          <MoreHorizontal size={15} />
-                        </button>
-                        {menu === session.id && (
-                          <div className="context-menu">
-                            <button
-                              onClick={() => {
-                                setTitle(session.title)
-                                setRenaming(session.id)
-                                setMenu(null)
-                              }}
-                            >
-                              {t('Переименовать')}
-                            </button>
-                            <button
-                              onClick={() => {
-                                void w.savePreferences({
-                                  pinned: w.preferences.pinned.includes(session.id)
-                                    ? w.preferences.pinned.filter((id) => id !== session.id)
-                                    : [...w.preferences.pinned, session.id]
-                                })
-                                setMenu(null)
-                              }}
-                            >
-                              {t('Закрепить / открепить')}
-                            </button>
-                            <button
-                              className="danger"
-                              onClick={() => {
-                                setDeleting(session.id)
-                                setDeleteError('')
-                                setMenu(null)
-                              }}
-                            >
-                              {t('Удалить чат')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </Fragment>
-                ))}
-                {!groups.length && (
-                  <p className="sidebar-empty">
-                    {search ? t('Ничего не найдено') : t('Здесь появятся ваши чаты')}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-        ))}
-        {!w.projects.length && (
-          <div className="sidebar-empty">{t('Откройте папку, чтобы начать работу с проектом')}</div>
-        )}
+        <SidebarChats workspace={w} onRemote={onRemote} />
         {w.preferences.recent.filter((path) => !w.projects.some((project) => project.path === path))
           .length > 0 && (
           <>
@@ -371,55 +96,6 @@ export function Sidebar({
           <kbd className="footer-shortcut">Ctrl ,</kbd>
         </button>
       </footer>
-      {deleting && (
-        <Modal
-          title={t('Удалить чат и его историю?')}
-          className="delete-chat-modal"
-          initialFocus={cancelDelete}
-          close={() => {
-            if (!deleteBusy) setDeleting(null)
-          }}
-        >
-          <div className="delete-chat-name">
-            <MessageSquare size={18} />
-            <strong>
-              {w.sessions.find((session) => session.id === deleting)?.title || t('Новый чат')}
-            </strong>
-          </div>
-          <p className="muted">
-            {t('Чат и его сообщения будут удалены. Отменить это действие нельзя.')}
-          </p>
-          {deleteError && (
-            <p role="alert" className="danger">
-              {deleteError}
-            </p>
-          )}
-          <div className="delete-chat-actions">
-            <button ref={cancelDelete} disabled={deleteBusy} onClick={() => setDeleting(null)}>
-              {t('Отмена')}
-            </button>
-            <button
-              className="delete-chat-submit"
-              disabled={deleteBusy}
-              onClick={async () => {
-                if (deleteBusy) return
-                setDeleteBusy(true)
-                setDeleteError('')
-                try {
-                  await w.deleteSession(deleting)
-                  setDeleting(null)
-                } catch (error) {
-                  setDeleteError(error instanceof Error ? error.message : String(error))
-                } finally {
-                  setDeleteBusy(false)
-                }
-              }}
-            >
-              {deleteBusy ? t('Удаление…') : t('Удалить')}
-            </button>
-          </div>
-        </Modal>
-      )}
     </aside>
   )
 }

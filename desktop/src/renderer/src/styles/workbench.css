@@ -72,10 +72,18 @@
 }
 .sidebar-actions {
   padding: 20px 14px 10px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 7px;
 }
 .sidebar-actions button {
   min-height: 39px;
   border-radius: 9px;
+  padding-inline: 10px;
+  font-size: 12px;
+}
+.new-chat kbd {
+  display: none;
 }
 .new-chat {
   background: linear-gradient(115deg, var(--accent-bg), var(--raised));
@@ -93,6 +101,30 @@
   min-height: 34px;
   margin: 0 14px 8px;
   padding-inline: 12px;
+}
+.project-group {
+  margin-bottom: 2px;
+}
+.project-group.open {
+  background: color-mix(in srgb, var(--raised) 40%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px 4px 6px;
+  margin-bottom: 8px;
+}
+.project-item .collapsed {
+  transform: rotate(-90deg);
+  color: var(--muted);
+}
+.personal-open {
+  color: var(--secondary);
+  border: 1px dashed var(--border);
+  border-radius: 9px;
+  min-height: 36px;
+}
+.personal-open:hover:not(:disabled) {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 .section-caption {
   font-family: inherit;
@@ -113,7 +145,7 @@
 .chat-group-label {
   display: flex;
   justify-content: space-between;
-  padding: 16px 12px 6px 22px;
+  padding: 10px 12px 4px 14px;
   font-size: 10px;
   font-weight: 500;
   color: var(--muted);
@@ -123,7 +155,7 @@
 }
 .session-row {
   border-radius: 8px;
-  margin-left: 8px;
+  margin-left: 2px;
   border: 1px solid transparent;
 }
 .session-link {
@@ -137,7 +169,7 @@
 .session-row.active::before {
   content: '';
   position: absolute;
-  inset: 10px auto 10px -9px;
+  inset: 10px auto 10px -3px;
   width: 3px;
   border-radius: 4px;
   background: var(--accent-strong);
