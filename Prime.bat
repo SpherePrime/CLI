@@ -336,7 +336,7 @@ if exist "%SETUP_FILE%" (
 if exist "release\%DESKTOP_VERSION%\PrimeDesktop-Update-%DESKTOP_VERSION%.exe" del /f /q "release\%DESKTOP_VERSION%\PrimeDesktop-Update-%DESKTOP_VERSION%.exe" >nul 2>&1
 call npm run build
 if errorlevel 1 goto setup_failed
-call npx electron-builder --win nsis --x64 --publish never --config.directories.output=release/%DESKTOP_VERSION%
+call npx electron-builder --config electron-builder.yml --win nsis --x64 --publish never --config.directories.output=release/%DESKTOP_VERSION%
 if errorlevel 1 goto setup_failed
 call npm run dist:installer
 if errorlevel 1 goto setup_failed
