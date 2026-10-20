@@ -4,6 +4,7 @@ import { ModelControl } from '../models/ModelControl'
 import { VoiceWave } from './VoiceWave'
 import { TodoPanel } from './TodoPanel'
 import { Select } from '../../components/Select'
+import { ProjectPicker } from './ProjectPicker'
 import { useI18n } from '../../i18n'
 import { CommandRunner } from './CommandRunner'
 import { useEffect, useRef, useState } from 'react'
@@ -126,6 +127,16 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         .then((value) => setSkip(Boolean(value?.skip)))
         .catch(() => {})
   }, [w.project?.id])
+  const sessionKey = w.session?.id || ''
+  useEffect(() => {
+    if (!sessionKey || !w.project) return
+    const target = w.preferences.skipBySession?.[sessionKey] ?? false
+    if (target === skip) return
+    void w
+      .call('skip', { skip: target })
+      .then(() => setSkip(target))
+      .catch(() => {})
+  }, [sessionKey, w.project?.id])
   useEffect(() => {
     if (textarea.current) {
       textarea.current.style.height = 'auto'
@@ -364,6 +375,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               <Paperclip size={17} />
             </button>
             <span className="toolbar-divider" />
+            <ProjectPicker workspace={w} />
             <PermissionMenu
               skip={skip}
               disabled={!w.project}
@@ -371,6 +383,8 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
                 try {
                   await w.call('skip', { skip: value })
                   setSkip(value)
+                  if (sessionKey)
+                    void w.savePreferences({ skipBySession: { [sessionKey]: value } })
                 } catch (error) {
                   w.errorHandler(error)
                 }

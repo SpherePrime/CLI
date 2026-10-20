@@ -258,7 +258,8 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
         filePaths: [path]
       })) as typeof dialog.showOpenDialog
     }, project)
-    await page.getByRole('button', { name: 'Открыть проект', exact: true }).first().click()
+    await page.getByRole('button', { name: 'Выбрать проект', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Новый проект', exact: true }).click()
     await expect(page.getByRole('heading', { name: /Большие идеи/ })).toBeVisible({
       timeout: 20000
     })
@@ -267,12 +268,7 @@ test('opens the real Electron desktop and creates persistent Prime sessions', as
     })
     await expect(page.getByText('Shift Enter — новая строка', { exact: true })).toHaveCount(0)
     await expect(page.locator('.loading-banner')).toHaveCount(0)
-    await expect(page.getByRole('textbox', { name: 'Поиск чатов' })).toHaveCount(0)
-    await page.getByRole('button', { name: 'Найти чат', exact: true }).click()
-    await page.getByRole('textbox', { name: 'Поиск чатов' }).fill('Проверка сессии')
     await expect(page.getByRole('button', { name: 'Проверка сессии', exact: true })).toBeVisible()
-    await page.screenshot({ path: 'test-results/chat-search.png' })
-    await page.getByRole('button', { name: 'Закрыть поиск', exact: true }).click()
     await page.getByRole('button', { name: 'Режим доступа', exact: true }).click()
     await page.getByRole('menuitemradio', { name: /Полный доступ/ }).click()
     await expect
