@@ -4,17 +4,12 @@ import { spawn } from 'node:child_process'
 import { InstallerController } from './controller'
 import { createInstaller } from './payload'
 import type { PlatformInstaller } from './platform'
+import { desktopLaunchOptions } from './appLaunch'
 
-const bundleEnvironment = ['APPIMAGE', 'APPDIR', 'OWD', 'ARGV0', 'APPIMAGE_EXTRACT_AND_RUN']
 let window: BrowserWindow
 let controller: InstallerController
 let installer: PlatformInstaller
 
-function launchEnvironment(extra: NodeJS.ProcessEnv = {}) {
-  const env = { ...process.env }
-  for (const name of bundleEnvironment) delete env[name]
-  return { ...env, ...extra }
-}
 if (!app.requestSingleInstanceLock()) app.quit()
 else {
   app.on('second-instance', () => {
@@ -87,12 +82,7 @@ else {
         if (status.phase !== 'complete' || !status.directory)
           throw new Error('Установка не завершена')
         const command = await installer.open(status.directory)
-        const child = spawn(command.binary, command.args, {
-          detached: true,
-          windowsHide: true,
-          stdio: 'ignore',
-          env: launchEnvironment(command.env)
-        })
+        const child = spawn(command.binary, command.args, desktopLaunchOptions(command.env))
         child.once('error', () =>
           dialog.showErrorBox('Prime Desktop', 'Не удалось открыть приложение')
         )
