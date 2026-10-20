@@ -1,7 +1,13 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { UpdateController } from '../../src/main/updates/controller'
-import { discoverDesktopRelease, selectDesktopRelease } from '../../src/main/updates/github'
+import {
+  discoverDesktopRelease,
+  releaseAssets,
+  selectDesktopRelease
+} from '../../src/main/updates/github'
+
+const windowsAssets = releaseAssets('win32')
 
 const release = (version: string, extra = {}) => ({
   tag_name: `v${version}`,
@@ -23,19 +29,34 @@ describe('release updates', () => {
       return new Response('')
     })
     vi.stubGlobal('fetch', request)
-    expect(await discoverDesktopRelease('0.4.51')).toMatchObject({ version: '0.4.52' })
+    expect(await discoverDesktopRelease('0.4.51', windowsAssets)).toMatchObject({ version: '0.4.52' })
     expect(request.mock.calls.every(([url]) => !url.includes('api.github.com'))).toBe(true)
   })
   it('selects only a newer stable release with complete desktop assets', () => {
     expect(
       selectDesktopRelease(
         [release('0.4.53', { assets: [] }), release('0.4.52'), release('0.4.51')],
-        '0.4.51'
+        '0.4.51',
+        windowsAssets
       )?.version
     ).toBe('0.4.52')
     expect(
-      selectDesktopRelease([release('0.4.52', { prerelease: true }), release('0.4.50')], '0.4.51')
+      selectDesktopRelease(
+        [release('0.4.52', { prerelease: true }), release('0.4.50')],
+        '0.4.51',
+        windowsAssets
+      )
     ).toBeNull()
+  })
+  it('selects Linux releases by AppImage update metadata', () => {
+    const linux = releaseAssets('linux')
+    const linuxRelease = (version: string) =>
+      release(version, {
+        assets: [{ name: 'latest-linux.yml' }, { name: linux.binary(version) }]
+      })
+    expect(
+      selectDesktopRelease([release('0.4.53'), linuxRelease('0.4.52')], '0.4.51', linux)?.version
+    ).toBe('0.4.52')
   })
   it('downloads once and installs only after download and safe shutdown', async () => {
     const updater = Object.assign(new EventEmitter(), {

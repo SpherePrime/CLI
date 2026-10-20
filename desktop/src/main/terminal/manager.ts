@@ -66,7 +66,7 @@ export class TerminalManager {
     if (!statSync(directory).isDirectory())
       throw new Error('Terminal working directory must be a folder')
     const size = dimensions(options.cols, options.rows)
-    const shell = options.shell ?? (process.platform === 'win32' ? 'powershell.exe' : '/bin/sh')
+    const shell = options.shell ?? (process.platform === 'win32' ? 'powershell.exe' : process.env.SHELL || '/bin/sh')
     const args = options.args ?? (process.platform === 'win32' ? ['-NoLogo', '-NoProfile'] : [])
     if (typeof shell !== 'string' || !shell || shell.includes('\0'))
       throw new Error('Invalid terminal shell')

@@ -71,7 +71,7 @@ export function terminalTools(manager: TerminalManager): TerminalTool[] {
     {
       name: 'terminal_write',
       description:
-        'Write raw input to a terminal explicitly handed to the agent by the user. Include carriage return to run a command in PowerShell. Fails while the user owns the terminal.',
+        'Write raw input to a terminal explicitly handed to the agent by the user. Include carriage return to run a command in the terminal shell. Fails while the user owns the terminal.',
       inputSchema: schema({ data: { type: 'string', maxLength: 1048576 } }, [
         'workspaceId',
         'id',
