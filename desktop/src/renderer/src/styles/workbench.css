@@ -72,8 +72,8 @@
 }
 .sidebar-actions {
   padding: 20px 14px 10px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 7px;
 }
 .sidebar-actions button {
@@ -96,21 +96,6 @@
 }
 .sidebar-actions .new-chat:hover:not(:disabled) {
   background: var(--accent-bg);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-}
-.sidebar-actions .open-project {
-  background: transparent;
-  border-color: var(--border);
-  color: var(--secondary);
-  font-weight: 500;
-  border-radius: 9px;
-  padding: 0 10px;
-}
-.sidebar-actions .open-project > svg {
-  color: var(--muted);
-}
-.sidebar-actions .open-project:hover:not(:disabled) {
-  color: var(--text);
   border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 .personal-chats {
@@ -410,4 +395,58 @@
 :root[data-motion='reduced'] .reasoning.live .reasoning-label {
   color: var(--secondary);
   background: none;
+}
+.project-picker-trigger {
+  border: 0;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 12px;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 7px;
+}
+.project-picker-trigger:hover:not(:disabled) {
+  background: var(--raised);
+  color: var(--text);
+}
+.project-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+}
+.project-picker > button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 12px;
+  justify-content: flex-start;
+  padding: 9px 10px;
+  border-radius: 7px;
+  text-align: left;
+}
+.project-picker > button:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+.project-picker > button.current {
+  color: var(--text);
+  background: var(--accent-bg);
+}
+.project-picker > button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.picker-current {
+  color: var(--muted);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.project-picker .chat-search-box {
+  margin: 2px 2px 6px;
 }

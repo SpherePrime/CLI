@@ -76,6 +76,7 @@ export type Preferences = {
   speechAutoSend?: boolean
   inspectorVisible?: boolean
   agentContexts?: Record<string, import('./agentContext').AgentContext>
+  skipBySession?: Record<string, boolean>
   activeProject?: string
   activeSessions?: Record<string, string>
   projectChannels?: Record<string, string[]>
