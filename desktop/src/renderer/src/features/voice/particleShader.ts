@@ -72,12 +72,15 @@ vec3 sphereShape(vec3 dir, float t) {
   float angle = atan(d.y, d.x);
   float equator = 1.0 - d.z * d.z;
   float flow = noise(d * 2.3 + vec3(0.0, t * 0.35, t * 0.25));
-  float shimmer = noise(d * 6.0 - vec3(t * 0.5)) * (0.01 + treble * 0.05);
+  float shimmer = noise(d * 6.0 - vec3(t * 0.5)) * treble * 0.05;
   float spoken = voice(angle + t * 0.15) * equator * (0.22 + flare * 0.16);
   float waves = ripple * sin(d.y * 11.0 - t * 6.5 + seed * 0.6) * (0.015 + energy * 0.09);
   float radius = 0.52 * (1.0 + bass * 0.12 + sin(t * 1.3) * 0.012) * (1.0 - dim * 0.22);
   float spark = step(0.94, seed) * (0.12 + energy * 0.45 + bass * 0.2) * fract(seed * 13.7 + t * (0.1 + energy * 0.3));
-  return d * radius * (1.0 + flow * (0.05 + energy * 0.1) + shimmer + spoken + waves + spark);
+  float drift = pow(fract(seed * 53.17), 2.0) * (0.55 + 0.45 * sin(t * (0.6 + fract(seed * 9.1) * 0.8) + seed * 40.0));
+  float scatter = drift * (0.035 + energy * 0.3 + bass * 0.12) * (1.0 - dim * 0.7);
+  vec3 away = normalize(d + jitter * 1.4);
+  return d * radius * (1.0 + flow * energy * 0.12 + shimmer + spoken + waves + spark) + away * radius * scatter;
 }
 
 vec3 ringShape(float t) {
