@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { ConversationState } from './useConversation'
 import { drawOrb } from './orbRenderer'
 import { readOrbAudio } from './orbAudio'
-import { createCoreRenderer } from './coreRenderer'
+import { createParticleRenderer } from './particleRenderer'
 import { blendLook, coreLook } from './coreStates'
 
 const bandCount = 12
@@ -26,7 +26,7 @@ export function VoiceOrb({
   useEffect(() => {
     const element = canvas.current
     if (!element) return
-    const core = createCoreRenderer(element)
+    const core = createParticleRenderer(element)
     const fallback = core ? null : element.getContext('2d')
     const preference = matchMedia('(prefers-reduced-motion: reduce)')
     let look = coreLook(live.current.state)
@@ -39,7 +39,7 @@ export function VoiceOrb({
     let reduced = false
     let buffers = { frequencies: new Uint8Array(128), samples: new Uint8Array(256) }
     const resize = () => {
-      const size = Math.round(Math.min(512, element.clientWidth * Math.min(1.25, devicePixelRatio || 1)))
+      const size = Math.round(Math.min(1100, element.clientWidth * Math.min(2, devicePixelRatio || 1)))
       if (size && element.width !== size) {
         element.width = size
         element.height = size
