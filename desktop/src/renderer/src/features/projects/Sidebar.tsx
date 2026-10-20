@@ -6,7 +6,8 @@ import {
   Settings2,
   Puzzle,
   TerminalSquare,
-  ListChecks
+  ListChecks,
+  X
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
@@ -64,15 +65,28 @@ export function Sidebar({
               .filter((path) => !w.projects.some((project) => project.path === path))
               .slice(0, 6)
               .map((path) => (
-                <button
-                  key={path}
-                  className="recent-project"
-                  title={path}
-                  onClick={() => void w.openProject(path)}
-                >
-                  <FolderOpen size={14} />
-                  <span>{path.split(/[\\/]/).pop()}</span>
-                </button>
+                <div key={path} className="recent-row">
+                  <button
+                    className="recent-project"
+                    title={path}
+                    onClick={() => void w.openProject(path)}
+                  >
+                    <FolderOpen size={14} />
+                    <span>{path.split(/[\\/]/).pop()}</span>
+                  </button>
+                  <button
+                    className="icon small recent-remove"
+                    aria-label={t('Удалить из недавних')}
+                    title={t('Удалить из недавних')}
+                    onClick={() =>
+                      void w.savePreferences({
+                        recent: w.preferences.recent.filter((item) => item !== path)
+                      })
+                    }
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
               ))}
           </>
         )}

@@ -86,16 +86,15 @@
   display: none;
 }
 .new-chat {
-  background: linear-gradient(115deg, var(--accent-bg), var(--raised));
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: var(--raised);
   color: var(--text);
 }
 .new-chat > svg {
-  color: var(--accent);
+  color: var(--secondary);
 }
 .new-chat:hover:not(:disabled) {
   background: var(--accent-bg);
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 .personal-chats {
   min-height: 34px;
