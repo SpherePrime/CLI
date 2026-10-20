@@ -73,3 +73,49 @@ jobs:
           gh release upload $env:PRIME_RELEASE_TAG @assets --repo SpherePrime/CLI --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  desktop-linux:
+    if: ${{ github.event_name == 'push' && !contains(github.ref_name, '-') }}
+    needs: release
+    env:
+      PRIME_RELEASE_TAG: ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y rpm libarchive-tools
+      - name: Set release version
+        run: |
+          releaseVersion="${PRIME_RELEASE_TAG#v}"
+          [[ "$releaseVersion" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Desktop releases require a stable semantic version'; exit 1; }
+          echo "PRIME_RELEASE_VERSION=$releaseVersion" >> "$GITHUB_ENV"
+      - run: npm ci
+      - name: Build bundled Prime
+        run: node scripts/acquire-runtime.mjs
+        env:
+          PRIME_CLI_SOURCE: ${{ github.workspace }}
+      - run: npm version "$PRIME_RELEASE_VERSION" --allow-same-version --no-git-tag-version
+      - run: npm run build
+      - name: Package Linux Desktop
+        run: npx electron-builder --linux --x64 --publish never --config.directories.output="release/$PRIME_RELEASE_VERSION"
+      - name: Package Linux installer
+        run: node scripts/package-installer.mjs --online
+      - name: Attach Desktop Linux assets
+        run: |
+          cd "release/$PRIME_RELEASE_VERSION"
+          test -f latest-linux.yml || { echo 'Missing Desktop Linux update metadata'; exit 1; }
+          gh release upload "$PRIME_RELEASE_TAG" *.AppImage *.deb *.rpm *.pacman *.tar.gz latest-linux.yml --repo SpherePrime/CLI --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

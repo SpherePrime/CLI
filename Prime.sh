@@ -24,7 +24,7 @@ Usage: ./Prime.sh <run|build|release|desktop|setup|help> [options] [-- prime-arg
   build     build the current Linux binary, then run it
   release   build and package Linux/Windows amd64 and arm64 archives
   desktop   start Prime Desktop in development mode
-  setup     build the Desktop application (installer packaging is platform-specific)
+  setup     build the Desktop application (Linux: AppImage, deb, rpm, pacman, tar.gz)
 
 Options:
   --no-sync             accepted for parity with Prime.bat; no sync is performed
@@ -120,11 +120,21 @@ case "$MODE" in
         ;;
     desktop)
         command -v npm >/dev/null 2>&1 || fail "Node.js/npm is required"
+        [ -d desktop/node_modules ] || npm --prefix desktop ci
+        [ -f desktop/runtime/manifest.json ] || node desktop/scripts/acquire-runtime.mjs
         exec npm --prefix desktop run dev
         ;;
     setup)
         command -v npm >/dev/null 2>&1 || fail "Node.js/npm is required"
-        npm --prefix desktop run build
-        echo "Desktop build completed in desktop/out"
+        [ -d desktop/node_modules ] || npm --prefix desktop ci
+        node desktop/scripts/acquire-runtime.mjs
+        if [ "$(uname -s)" = "Linux" ]; then
+            npm --prefix desktop run dist:linux
+            npm --prefix desktop run dist:installer
+            echo "Linux installer and packages are in desktop/release"
+        else
+            npm --prefix desktop run build
+            echo "Desktop build completed in desktop/out"
+        fi
         ;;
 esac

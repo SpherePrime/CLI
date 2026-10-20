@@ -12,11 +12,17 @@ import {
   RefreshCw,
   CheckCheck
 } from 'lucide-react'
-import type { InstallStatus } from '../shared/contracts'
+import type { InstallStatus, SetupInfo } from '../shared/contracts'
 import { PrimeLogo } from '../../../src/renderer/src/components/PrimeLogo'
 
 export function SetupApp() {
-  const [info, setInfo] = useState({ version: '', directory: '', installedSize: 0 })
+  const [info, setInfo] = useState<SetupInfo>({
+    version: '',
+    directory: '',
+    installedSize: 0,
+    method: { label: '', directoryLocked: false }
+  })
+  const locked = info.method.directoryLocked
   const [directory, setDirectory] = useState('')
   const [status, setStatus] = useState<InstallStatus>({ phase: 'ready' })
   const [error, setError] = useState('')
@@ -142,7 +148,7 @@ export function SetupApp() {
                   </span>
                   <span>
                     <strong>Prime Desktop</strong>
-                    <small>Ваше рабочее пространство</small>
+                    <small>{info.method.label || 'Ваше рабочее пространство'}</small>
                   </span>
                   <Check size={16} />
                 </div>
@@ -160,22 +166,25 @@ export function SetupApp() {
                   id="setup-directory"
                   aria-label="Папка установки"
                   value={directory}
+                  readOnly={locked}
                   onChange={(event) => setDirectory(event.target.value)}
                   spellCheck={false}
                 />
-                <button
-                  aria-label="Выбрать папку"
-                  onClick={() =>
-                    void window.setup
-                      .chooseDirectory(directory)
-                      .then((value) => {
-                        if (value) setDirectory(value)
-                      })
-                      .catch((error) => setError(error.message))
-                  }
-                >
-                  Изменить
-                </button>
+                {!locked && (
+                  <button
+                    aria-label="Выбрать папку"
+                    onClick={() =>
+                      void window.setup
+                        .chooseDirectory(directory)
+                        .then((value) => {
+                          if (value) setDirectory(value)
+                        })
+                        .catch((error) => setError(error.message))
+                    }
+                  >
+                    Изменить
+                  </button>
+                )}
               </div>
             </>
           )}

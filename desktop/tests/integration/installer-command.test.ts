@@ -3,7 +3,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { mkdtemp, mkdir, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { installerCommand } from '../../installer/src/main/payload'
+import { installerCommand } from '../../installer/src/main/windows/process'
 
 it.skipIf(process.platform !== 'win32')(
   'passes a spaced installation directory in the raw format required by NSIS',
