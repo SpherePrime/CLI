@@ -1,8 +1,8 @@
 # Prime Desktop
 
-Windows desktop workspace for [Prime CLI](https://github.com/SpherePrime/CLI), with projects, persistent chats, streaming tool activity, approvals, model settings, Monaco file editing, diffs, MCP/LSP/Skills and optional voice input.
+Windows and Linux desktop workspace for [Prime CLI](https://github.com/SpherePrime/CLI), with projects, persistent chats, streaming tool activity, approvals, model settings, Monaco file editing, diffs, MCP/LSP/Skills and optional voice input.
 
-The bundled CLI starts with the desktop app and runs privately through a Windows named pipe. Chat, models and global MCP/Skills settings are available before opening a project; personal chats use a persistent app-managed workspace. No separate Go, Node.js or Prime installation is needed to run the packaged app. External tools such as Git, language servers and MCP runtimes remain optional dependencies of those features.
+The bundled CLI starts with the desktop app and runs privately through a Windows named pipe or a Unix socket on Linux. Chat, models and global MCP/Skills settings are available before opening a project; personal chats use a persistent app-managed workspace. No separate Go, Node.js or Prime installation is needed to run the packaged app. External tools such as Git, language servers and MCP runtimes remain optional dependencies of those features.
 
 ## Run from source
 
@@ -24,9 +24,27 @@ npm run build
 npm run test:e2e
 npm run runtime:verify
 npm run dist:win
+npm run dist:linux
 ```
 
 The installer and unpacked application are written to `release/<version>/`. The bundled CLI is built from the repository root; `runtime/manifest.json` records its exact revision and checksum. Stable GitHub releases include `PrimeSetup-<version>.exe` and Desktop update files.
+
+## Linux
+
+`PrimeSetup-<version>.AppImage` is the Linux installer with the same interface as on Windows. It detects the distribution and installs the native package through `pkexec`: `.deb` with apt (Debian, Ubuntu, Mint), `.rpm` with dnf or zypper (Fedora, RHEL, openSUSE), `.pacman` (Arch, Manjaro). Without a supported package manager, without `pkexec` or when authorization is cancelled, it installs the AppImage for the current user into `~/.local/share/prime-desktop` with a menu entry and desktop shortcut. Release installers download the selected package from the matching GitHub release and verify its SHA-256; locally built installers contain the packages. Make the file executable before the first launch (`chmod +x` or file properties).
+
+The packages are also published separately: AppImage, `.deb`, `.rpm`, `.pacman` and `.tar.gz`. Only x64 is built.
+
+Build on Linux with Node.js 24, Go, `g++`, `make` and `python3`; `rpm` and `bsdtar` (`libarchive-tools`) are needed for `.rpm` and `.pacman`:
+
+```bash
+npm ci
+node scripts/acquire-runtime.mjs
+npm run dist:linux
+npm run dist:installer
+```
+
+`./Prime.sh setup` runs the same steps. The runtime is built for the host platform; `PRIME_DESKTOP_TARGET=linux-x64` overrides it. `.npmrc` skips the optional CUDA download of `onnxruntime-node`. Terminals use `$SHELL`. Saved SSH passwords require a Secret Service keyring (GNOME Keyring, KWallet). Window access and computer control tools are Windows-only. AppImage installs update automatically; `.deb`, `.rpm` and `.pacman` installs update from `latest-linux.yml` with a system authentication prompt.
 
 ## Built-in browser
 
@@ -59,4 +77,4 @@ Updates are discovered in stable SpherePrime/CLI GitHub Releases after startup. 
 
 Build the main app and NSIS update payload first, then run `npm run dist:installer`. The payload must be in `release/<version>/`. The custom installer appears in the same directory.
 
-The CLI release workflow builds Windows Desktop after the CLI release, assigns the stable tag version, and attaches both installers, the update blockmap and `latest.yml`.
+The CLI release workflow builds Windows and Linux Desktop after the CLI release, assigns the stable tag version, and attaches the Windows installers, the update blockmap, `latest.yml`, `PrimeSetup-<version>.AppImage`, Linux packages and `latest-linux.yml`.
