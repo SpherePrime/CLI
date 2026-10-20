@@ -18,6 +18,7 @@ export class PrimeService {
   private opening = new Map<string, Promise<Project>>()
   private channels = new Map<string, any[]>()
   private initializing = new Map<string, Promise<any>>()
+  private initializationControllers = new Map<string, AbortController>()
   constructor(
     private transport: PrimeTransport,
     private emit: (event: DesktopEvent) => void,
@@ -119,6 +120,7 @@ export class PrimeService {
     return project
   }
   async close(id: string): Promise<void> {
+    this.initializationControllers.get(id)?.abort()
     const project = this.projects.get(id)
     if (!project) return
     try {
@@ -189,6 +191,8 @@ export class PrimeService {
       : path.toLowerCase()
   }
   detach(): void {
+    for (const controller of this.initializationControllers.values()) controller.abort()
+    this.initializationControllers.clear()
     for (const project of this.projects.values())
       this.emit({ workspaceId: project.id, type: 'connection', payload: 'disconnected' })
     for (const unsubscribe of this.subscriptions.values()) unsubscribe()
@@ -204,6 +208,8 @@ export class PrimeService {
   private async initialize(id: string, args: any): Promise<any> {
     const pending = this.initializing.get(id)
     if (pending) return pending
+    const controller = new AbortController()
+    this.initializationControllers.set(id, controller)
     const initialization = (async () => {
       const status = await this.call(id, 'agent')
       if (status?.is_ready) return status
@@ -212,7 +218,9 @@ export class PrimeService {
         await this.transport.request(
           method,
           `/v1/workspaces/${encodeURIComponent(id)}/${route}`,
-          body
+          body,
+          0,
+          controller.signal
         )
       )
     })()
@@ -220,10 +228,13 @@ export class PrimeService {
     try {
       return await initialization
     } finally {
-      this.initializing.delete(id)
+      if (this.initializing.get(id) === initialization) this.initializing.delete(id)
+      if (this.initializationControllers.get(id) === controller)
+        this.initializationControllers.delete(id)
     }
   }
   async dispose(): Promise<void> {
+    for (const controller of this.initializationControllers.values()) controller.abort()
     await Promise.allSettled(this.initializing.values())
     for (const id of [...this.projects.keys()]) await this.close(id).catch(() => {})
   }
