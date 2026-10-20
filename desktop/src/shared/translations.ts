@@ -1153,3 +1153,10 @@ Object.assign(english, {
   'Назовите номер или вариант.': 'Say the number or the option.',
   'Ответьте да или нет.': 'Answer yes or no.'
 })
+
+Object.assign(english, {
+  'Нажмите на элемент. С Ctrl — несколько. Esc — отмена.': 'Click an element. Hold Ctrl to pick several. Esc to cancel.',
+  'Убрать элемент': 'Remove element',
+  'Например: выровняй эти блоки': 'For example: align these blocks',
+  'Отправить {value0} в чат': 'Send {value0} to chat'
+})
