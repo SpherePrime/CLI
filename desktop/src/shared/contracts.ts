@@ -154,7 +154,7 @@ export interface DesktopApi {
   github(workspaceId: string, request: import('./github').GithubRequest): Promise<any>
   windows(workspaceId: string, request: import('./computer').WindowRequest): Promise<any>
   jobs(request: import('./jobs').JobRequest): Promise<import('./jobs').Job[]>
-  browserPick(): Promise<PickedElementResult | null>
+  browserPick(): Promise<PickedElementResult[] | null>
   browserPickCancel(): Promise<void>
   team(
     workspaceId: string,

@@ -31,10 +31,10 @@ test('picks a page element, cancels with Escape and sends it to the chat', async
     const pickButton = page.getByRole('button', { name: 'Выбрать элемент' })
     await expect(pickButton).toBeEnabled()
     await pickButton.click()
-    await expect(page.getByText('Наведите на элемент и нажмите. Esc — отмена.')).toBeVisible()
+    await expect(page.getByText('Нажмите на элемент. С Ctrl — несколько. Esc — отмена.')).toBeVisible()
     await expect.poll(() => view('Boolean(window.__primePicker)')).toBe(true)
     await page.keyboard.press('Escape')
-    await expect(page.getByText('Наведите на элемент и нажмите. Esc — отмена.')).toHaveCount(0)
+    await expect(page.getByText('Нажмите на элемент. С Ctrl — несколько. Esc — отмена.')).toHaveCount(0)
     expect(await view('document.querySelectorAll("[data-prime-picker]").length')).toBe(0)
 
     await pickButton.click()

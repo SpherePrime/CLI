@@ -34,7 +34,7 @@ import { remoteFingerprint } from './remote/fingerprint'
 import { remoteRequest } from './remote/ipc'
 import { isRemoteWorkspace, remoteWorkspaceIdentity } from '../shared/remoteWorkspace'
 import { BrowserPanel } from './browser/panel'
-import { cancelPick, pickElement } from './browser/picker'
+import { cancelPick, pickElements } from './browser/picker'
 import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
 import { validateExternalUrl } from './ipc/security'
 import type { Operation } from '../shared/contracts'
@@ -378,23 +378,20 @@ function registerIpc(): void {
     )
   })
   handle('browserPick', async () => {
-    const result = await pickElement(browserPanel.contents)
-    if (!result) return null
-    let attachmentId: string | undefined
-    if (result.image) {
-      attachmentId = randomUUID()
+    const captures = await pickElements(browserPanel.contents)
+    if (!captures) return null
+    return captures.map(({ element, image }) => {
+      if (!image) return { element }
+      const content = image.toString('base64')
+      const attachmentId = randomUUID()
       attachmentStore.set(attachmentId, {
         file_path: 'element.png',
         file_name: 'element.png',
         mime_type: 'image/png',
-        content: result.image.toString('base64')
+        content
       })
-    }
-    return {
-      element: result.element,
-      attachmentId,
-      image: result.image ? `data:image/png;base64,${result.image.toString('base64')}` : undefined
-    }
+      return { element, attachmentId, image: `data:image/png;base64,${content}` }
+    })
   })
   handle('browserPickCancel', () => cancelPick(browserPanel.contents))
   handle('jobs', (request: unknown) => jobs.handle(request))

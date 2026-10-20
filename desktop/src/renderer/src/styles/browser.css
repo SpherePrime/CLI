@@ -106,6 +106,18 @@
   background: var(--surface);
   animation: element-pick-in 160ms ease;
 }
+.element-pick-list {
+  display: grid;
+  gap: 6px;
+}
+.element-pick-list.multiple {
+  max-height: 210px;
+  overflow-y: auto;
+}
+.element-pick-list.multiple .element-pick-heading img {
+  max-width: 64px;
+  max-height: 40px;
+}
 .element-pick-heading {
   display: flex;
   gap: 10px;
