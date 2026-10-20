@@ -12,6 +12,7 @@
 #    scripts/build.sh --os linux      cross-compile the linux targets
 #    scripts/build.sh --all --jobs 4  override the throttle (slower, cooler)
 #    scripts/build.sh --ratio 0.25    use a quarter of the cores instead of half
+#    scripts/build.sh --version 1.2.3 stamp a release version into the binary
 #
 #  Options: --all --os <name> --jobs <n> --ratio <f> --out <dir> --no-test
 # ---------------------------------------------------------------------------
@@ -23,6 +24,7 @@ RATIO=0.5
 OUT=dist
 RUN_TEST=1
 TARGET_LIST=""
+VERSION=""
 
 usage() {
 	echo "Usage: scripts/build.sh [--all | --os windows|linux|darwin | --target os/arch ...] [--jobs n] [--ratio f] [--out dir] [--no-test] [--version x.y.z]"
@@ -47,6 +49,12 @@ while [ $# -gt 0 ]; do
 	--jobs)    JOBS="${2:-}"; shift 2 ;;
 	--ratio)   RATIO="${2:-}"; shift 2 ;;
 	--out)     OUT="${2:-}"; shift 2 ;;
+	--version)
+		VERSION="${2:-}"
+		VERSION=${VERSION#v}
+		[ -n "$VERSION" ] || { echo "--version needs x.y.z"; exit 2; }
+		shift 2
+		;;
 	-h|--help) usage ;;
 	*)         echo "Unknown option: $1"; usage ;;
 	esac
@@ -132,12 +140,20 @@ for t in $TARGETS; do
 	GOARCH=${t#*/}
 	if [ "$NTARGETS" -gt 1 ]; then
 		BIN="$OUT/prime-$GOOS-$GOARCH"
+		[ "$GOOS" = windows ] && BIN="$BIN.exe"
 	else
 		BIN="$OUT/prime"
 	fi
 	echo " [build] $GOOS/$GOARCH -> $BIN"
-	GOOS="$GOOS" GOARCH="$GOARCH" GOARM="${GOARM:-}" \
-		go build -trimpath -p "$JOBS" -o "$BIN" . || { echo " [fail ] $GOOS/$GOARCH"; FAILED=1; }
+	if [ -n "$VERSION" ]; then
+		GOOS="$GOOS" GOARCH="$GOARCH" GOARM="${GOARM:-}" \
+			go build -trimpath -buildvcs=false -p "$JOBS" \
+			-ldflags "-s -w -X github.com/SpherePrime/CLI/internal/version.Version=$VERSION" \
+			-o "$BIN" . || { echo " [fail ] $GOOS/$GOARCH"; FAILED=1; }
+	else
+		GOOS="$GOOS" GOARCH="$GOARCH" GOARM="${GOARM:-}" \
+			go build -trimpath -buildvcs=false -p "$JOBS" -o "$BIN" . || { echo " [fail ] $GOOS/$GOARCH"; FAILED=1; }
+	fi
 	GOARM=""
 done
 

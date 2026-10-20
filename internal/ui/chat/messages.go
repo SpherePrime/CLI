@@ -405,7 +405,10 @@ func (a *AssistantInfoItem) renderContent(width int) string {
 
 // cappedMessageWidth returns the maximum width for message content for readability.
 func cappedMessageWidth(availableWidth int) int {
-	return min(availableWidth-MessageLeftPaddingTotal, maxTextWidth)
+	// Keep renderers on a valid positive width when a terminal is narrower than
+	// the message chrome. Negative widths make Lip Gloss produce unstable
+	// padding and are common during terminal resize events.
+	return max(1, min(availableWidth-MessageLeftPaddingTotal, maxTextWidth))
 }
 
 // prismSavingsSuffix returns the styled Prism savings suffix for the
