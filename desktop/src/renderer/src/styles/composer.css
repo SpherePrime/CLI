@@ -178,9 +178,19 @@
   border-radius: 6px;
   font-size: 10px;
 }
-.model-picker-group > button {
+.model-picker-row {
   display: flex;
-  width: 100%;
+  align-items: center;
+  border-radius: 8px;
+}
+.model-picker-row.selected {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.model-picker-select {
+  display: flex;
+  flex: 1;
+  min-width: 0;
   min-height: 44px;
   padding: 8px 10px 8px 38px;
   text-align: left;
@@ -190,9 +200,34 @@
   border-radius: 8px;
   gap: 10px;
 }
-.model-picker-group > button[aria-selected='true'] {
-  background: var(--accent-bg);
+.model-picker-select > svg {
+  flex-shrink: 0;
+}
+.model-picker-favorite {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--secondary);
+}
+.model-picker-favorite.active {
   color: var(--accent);
+}
+.model-picker-detail {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.model-picker-detail small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .context-meter {

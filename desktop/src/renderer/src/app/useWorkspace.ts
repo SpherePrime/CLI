@@ -13,6 +13,7 @@ import { translate } from '../i18n'
 import { useAgentContext } from '../features/context/useAgentContext'
 import { buildAgentPrompt } from '../../../shared/agentContext'
 import { isRemoteWorkspace } from '../../../shared/remoteWorkspace'
+import { recordRecentModel } from '../features/models/modelPreferences'
 
 export function useWorkspace() {
   const [info, setInfo] = useState<Json>({ runtime: 'starting' })
@@ -553,7 +554,8 @@ export function useWorkspace() {
   }
   async function createSession() {
     try {
-      const personal = projects.find((item) => item.kind === 'chat') || (await window.prime.openChat())
+      const personal =
+        projects.find((item) => item.kind === 'chat') || (await window.prime.openChat())
       if (personal.id !== current.current.project?.id) {
         setProjects(await window.prime.projects())
         await selectProject(personal)
@@ -574,6 +576,7 @@ export function useWorkspace() {
     const targetProject = current.current.project
     if (!targetProject) return false
     const targetSession = current.current.session
+    const usedModel = config.models?.large
     try {
       const latestPreferences = await window.prime.preferences()
       setPreferences(latestPreferences)
@@ -598,13 +601,24 @@ export function useWorkspace() {
           sessionId: selected.id,
           command: prompt.slice(1).trim()
         })
-      else
+      else {
         await window.prime.call(targetProject.id, 'send', {
           sessionId: selected.id,
           runId,
           prompt: preparedPrompt,
           attachmentIds
         })
+        if (usedModel?.provider && usedModel?.model) {
+          try {
+            const latest = await window.prime.preferences()
+            await savePreferences({
+              recentModels: recordRecentModel(latest.recentModels, usedModel)
+            })
+          } catch (error) {
+            errorHandler(error)
+          }
+        }
+      }
       if (current.current.project?.id === targetProject.id && !current.current.session) {
         setSessions((items) => [selected!, ...items])
         await selectSession(selected)

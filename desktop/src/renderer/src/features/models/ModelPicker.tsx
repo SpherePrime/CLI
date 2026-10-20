@@ -1,9 +1,16 @@
 import { useRef, useState, type RefObject } from 'react'
-import { Check, Search, Plus } from 'lucide-react'
+import { Clock3, Search, Plus, Star } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
-import { useModelCapabilities, type ModelCapability } from './useModelCapabilities'
+import { useModelCapabilities } from './useModelCapabilities'
+import { ModelPickerRow } from './ModelPickerRow'
+import {
+  buildModelGroups,
+  modelIdentity,
+  recordRecentModel,
+  toggleFavoriteModel
+} from './modelPreferences'
 
 export function ModelPicker({
   workspace: w,
@@ -25,20 +32,9 @@ export function ModelPicker({
   const error = saveError || loadError
   const search = useRef<HTMLInputElement>(null)
   const selected = w.config.models?.[kind]
-  const filtered = models.filter((model) =>
-    `${model.name} ${model.model_id} ${model.provider_id} ${model.provider_name || ''}`
-      .toLowerCase()
-      .includes(query.toLowerCase())
-  )
-  const groups = new Map<string, { name: string; models: ModelCapability[] }>()
-  for (const model of filtered) {
-    const group = groups.get(model.provider_id) || {
-      name: model.provider_name || model.provider_id,
-      models: []
-    }
-    group.models.push(model)
-    groups.set(model.provider_id, group)
-  }
+  const favorites = w.preferences.favoriteModels || []
+  const favoriteIdentities = new Set(favorites.map(modelIdentity))
+  const groups = buildModelGroups(models, w.preferences.recentModels, favorites, query)
   return (
     <Popover anchor={anchor} close={close} width={390} align="end" label={t('Выбрать модель')}>
       <div className="model-picker-heading">
@@ -64,7 +60,9 @@ export function ModelPicker({
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown') {
               event.preventDefault()
-              document.querySelector<HTMLElement>('.model-picker-list [role=option]')?.focus()
+              document
+                .querySelector<HTMLElement>('.model-picker-list [role=option]:not(:disabled)')
+                ?.focus()
             }
           }}
         />
@@ -83,7 +81,9 @@ export function ModelPicker({
           if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
             event.preventDefault()
             const buttons = Array.from(
-              event.currentTarget.querySelectorAll<HTMLButtonElement>('[role=option]')
+              event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                '[role=option]:not(:disabled)'
+              )
             )
             const index = buttons.indexOf(document.activeElement as HTMLButtonElement)
             buttons[
@@ -97,58 +97,86 @@ export function ModelPicker({
         }}
       >
         {loading && <p className="picker-note muted">{t('Загружаем каталог моделей…')}</p>}
-        {!loading && !filtered.length && (
+        {!loading && !groups.length && (
           <p className="picker-note muted">
             {models.length
               ? t('Модели не найдены')
               : t('Подключите провайдера, чтобы увидеть модели')}
           </p>
         )}
-        {[...groups.entries()].map(([providerId, group]) => (
-          <div className="model-picker-group" role="group" aria-label={group.name} key={providerId}>
-            <div className="model-picker-provider">
-              <span className="provider-monogram">{group.name.slice(0, 1).toUpperCase()}</span>
-              {group.name}
+        {groups.map((group) => {
+          const groupName =
+            group.kind === 'recent'
+              ? t('Недавние')
+              : group.kind === 'favorites'
+                ? t('Избранное')
+                : group.name
+          return (
+            <div className="model-picker-group" role="group" aria-label={groupName} key={group.id}>
+              <div className="model-picker-provider">
+                {group.kind === 'recent' ? (
+                  <Clock3 size={16} aria-hidden="true" />
+                ) : group.kind === 'favorites' ? (
+                  <Star size={16} aria-hidden="true" />
+                ) : (
+                  <span className="provider-monogram">{group.name.slice(0, 1).toUpperCase()}</span>
+                )}
+                {groupName}
+              </div>
+              {group.models.map((model) => {
+                const active =
+                  model.provider_id === selected?.provider && model.model_id === selected?.model
+                const reference = { provider: model.provider_id, model: model.model_id }
+                const favorite = favoriteIdentities.has(modelIdentity(reference))
+                return (
+                  <ModelPickerRow
+                    model={model}
+                    active={active}
+                    favorite={favorite}
+                    disabled={saving || w.busy}
+                    favoriteDisabled={saving || (!favorite && favorites.length >= 100)}
+                    showProvider={group.kind !== 'provider'}
+                    key={modelIdentity(reference)}
+                    toggleFavorite={async () => {
+                      setSaving(true)
+                      setError('')
+                      try {
+                        await w.savePreferences({
+                          favoriteModels: toggleFavoriteModel(favorites, reference)
+                        })
+                      } catch (error: any) {
+                        setError(error.message)
+                      } finally {
+                        setSaving(false)
+                      }
+                    }}
+                    select={async () => {
+                      setSaving(true)
+                      setError('')
+                      try {
+                        await w.call('model', {
+                          modelType: kind,
+                          model: { provider: model.provider_id, model: model.model_id }
+                        })
+                        await w.call('init')
+                        await w.refresh()
+                        await w.savePreferences({
+                          recentModels: recordRecentModel(w.preferences.recentModels, reference)
+                        })
+                        close()
+                        anchor.current?.focus()
+                      } catch (error: any) {
+                        setError(error.message)
+                      } finally {
+                        setSaving(false)
+                      }
+                    }}
+                  />
+                )
+              })}
             </div>
-            {group.models.map((model) => {
-              const active =
-                model.provider_id === selected?.provider && model.model_id === selected?.model
-              return (
-                <button
-                  role="option"
-                  aria-selected={active}
-                  disabled={saving || w.busy}
-                  key={`${model.provider_id}/${model.model_id}`}
-                  onClick={async () => {
-                    setSaving(true)
-                    try {
-                      await w.call('model', {
-                        modelType: kind,
-                        model: { provider: model.provider_id, model: model.model_id }
-                      })
-                      await w.call('init')
-                      await w.refresh()
-                      close()
-                      anchor.current?.focus()
-                    } catch (error: any) {
-                      setError(error.message)
-                    } finally {
-                      setSaving(false)
-                    }
-                  }}
-                >
-                  <span className="model-description">
-                    <strong>{model.name || model.model_id}</strong>
-                    {model.context_window ? (
-                      <small>{Math.round(model.context_window / 1000)}k</small>
-                    ) : null}
-                  </span>
-                  {active && <Check size={16} />}
-                </button>
-              )
-            })}
-          </div>
-        ))}
+          )
+        })}
       </div>
       <button className="picker-footer" onClick={setup}>
         <Plus size={15} />
