@@ -66,10 +66,22 @@ progress {
   accent-color: var(--accent);
 }
 
+.message.user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.message.user .message-author {
+  margin-right: 31px;
+}
+
 .message.user .message-body {
   width: fit-content;
   max-width: min(760px, calc(100% - 31px));
   box-sizing: border-box;
+  margin-left: 0;
+  margin-right: 31px;
   overflow-wrap: anywhere;
 }
 

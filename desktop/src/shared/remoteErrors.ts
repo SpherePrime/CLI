@@ -1,4 +1,12 @@
 export const remoteErrors: Record<string, string> = {
+  'remote.historyReadFailed':
+    'Не удалось прочитать прежнюю историю SSH-проекта. Локальная история не заменена.',
+  'remote.historySnapshotUnavailable':
+    'Для переноса прежней истории нужен sqlite3 или Python 3 на сервере.',
+  'remote.historySnapshotFailed':
+    'Не удалось создать согласованную копию прежней истории. Исходные чаты сохранены.',
+  'remote.historyInvalidDestination':
+    'Не удалось безопасно сохранить историю SSH-проекта на этом компьютере.',
   'remote.secureStorageUnavailable': 'Защищённое хранилище ОС недоступно. Пароль не сохранён.',
   'remote.credentialsCorrupt': 'Хранилище SSH-паролей повреждено. Исходный файл сохранён.',
   'remote.credentialsUnreadable':

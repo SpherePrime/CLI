@@ -12,9 +12,12 @@ const (
 	desktopBrowserKeyEnv  = "PRIME_DESKTOP_BROWSER_TOKEN"
 )
 
+func desktopBrowserCredentials() (string, string) {
+	return os.Getenv(desktopBrowserURLEnv), os.Getenv(desktopBrowserKeyEnv)
+}
+
 func (c *Config) addDesktopBrowserMCP(workingDir string) {
-	url := os.Getenv(desktopBrowserURLEnv)
-	token := os.Getenv(desktopBrowserKeyEnv)
+	url, token := desktopBrowserCredentials()
 	if url == "" || token == "" {
 		return
 	}

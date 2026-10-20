@@ -1,32 +1,23 @@
-import { PrimeService } from '../prime/service'
+import type { PrimeService } from '../prime/service'
 import type { DesktopEvent, Project } from '../../shared/contracts'
 import type { RemoteProfile, RemoteSnapshot } from '../../shared/remote'
 import { remoteWorkspaceKey } from '../../shared/remoteWorkspace'
 import type { RemoteBackend } from '../workbench/workspaceRouter'
 import { RemoteManager } from './manager'
 import type { RemoteConnection } from './connection'
-import { RemoteRuntime } from '../remoteRuntime/session'
-import { createRemoteForward } from '../remoteRuntime/forward'
 import type { RemoteCredentialStore } from './credentials'
-import type { BrowserMcpServer } from '../browser/mcp-server'
+import { prepareLocalSshWorkspace } from './localWorkspace'
+import { migrateRemoteHistory } from './historyMigration'
 
-export type RemoteWorkspace = RemoteBackend & { connection: RemoteConnection }
-
-type Resources = {
-  runtime?: RemoteRuntime
-  service?: PrimeService
-  browser?: BrowserMcpServer
-  forward?: { port: number; close(): Promise<void> }
-  workspace?: RemoteWorkspace
-}
-
+export type RemoteWorkspace = RemoteBackend & { connection: RemoteConnection; root: string }
+type Resources = { service?: PrimeService; workspace?: RemoteWorkspace }
 type Options = {
   path: string
   credentials?: RemoteCredentialStore
-  runtimeDir: string
+  workspaceDirectory: string
+  service(): PrimeService
   emit(event: DesktopEvent): void
   channels(key: string): string[]
-  startBrowser?(resolveWorkspace: (root: string) => string | undefined): Promise<BrowserMcpServer>
   onDetached(workspaceId: string): Promise<void>
 }
 
@@ -34,7 +25,7 @@ export class RemoteWorkspaces {
   readonly manager: RemoteManager
   private resources = new Map<string, Resources>()
   private opening = new Map<string, Promise<Project>>()
-
+  private transitions = new Map<string, Promise<unknown>>()
   constructor(private options: Options) {
     this.manager = new RemoteManager({
       path: options.path,
@@ -46,110 +37,113 @@ export class RemoteWorkspaces {
       onLost: (id) => void this.detach(id)
     })
   }
-
   backends(): RemoteWorkspace[] {
     return [...this.resources.values()].flatMap((entry) =>
       entry.workspace ? [entry.workspace] : []
     )
   }
-
-  byWorkspace(workspaceId: string): RemoteWorkspace | undefined {
+  byWorkspace(workspaceId: string) {
     return this.backends().find((entry) => entry.workspaceId === workspaceId)
   }
-
-  byProfile(profileId: string): RemoteWorkspace | undefined {
+  byProfile(profileId: string) {
     return this.resources.get(profileId)?.workspace
   }
-
-  isBusy(): boolean {
+  isBusy() {
     return this.backends().some((entry) => entry.service.isBusy())
   }
-
-  private async attach(profile: RemoteProfile, connection: RemoteConnection) {
+  private transition<T>(profileId: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.transitions.get(profileId) ?? Promise.resolve()
+    const pending = previous.catch(() => {}).then(operation)
+    this.transitions.set(profileId, pending)
+    void pending
+      .finally(() => {
+        if (this.transitions.get(profileId) === pending) this.transitions.delete(profileId)
+      })
+      .catch(() => {})
+    return pending
+  }
+  private attach(profile: RemoteProfile, connection: RemoteConnection) {
+    return this.transition(profile.id, () => this.attachConnection(profile, connection))
+  }
+  private async attachConnection(profile: RemoteProfile, connection: RemoteConnection) {
     const resources: Resources = {}
     this.resources.set(profile.id, resources)
     try {
-      await this.prepare(profile, connection, resources)
+      const key = remoteWorkspaceKey(profile.id, connection.root)
+      this.manager.setProgress(profile.id, 'remote.preparingLocalAgent')
+      const localRoot = await prepareLocalSshWorkspace(
+        this.options.workspaceDirectory,
+        profile,
+        connection.root
+      )
+      await migrateRemoteHistory(connection, localRoot)
+      if (this.resources.get(profile.id) !== resources) return
+      resources.service = this.options.service()
+      const project = await resources.service.open(localRoot, this.options.channels(key), {
+        profileId: profile.id,
+        name: profile.name,
+        host: profile.host,
+        port: profile.port,
+        user: profile.user,
+        root: connection.root
+      })
+      resources.workspace = {
+        profile,
+        service: resources.service,
+        workspaceId: project.id,
+        key,
+        connection,
+        root: connection.root
+      }
+      if (this.resources.get(profile.id) === resources)
+        this.options.emit({ workspaceId: project.id, type: 'projectsChanged', payload: {} })
     } finally {
       if (this.resources.get(profile.id) !== resources) await this.release(resources)
     }
   }
-
-  private async prepare(
-    profile: RemoteProfile,
-    connection: RemoteConnection,
-    resources: Resources
-  ) {
-    const key = remoteWorkspaceKey(profile.id, connection.root)
-    const environment: Record<string, string> = {}
-    if (this.options.startBrowser) {
-      try {
-        resources.browser = await this.options.startBrowser((root) =>
-          root === connection.root ? resources.workspace?.workspaceId : undefined
-        )
-        const port = Number(new URL(resources.browser.url).port)
-        resources.forward = await createRemoteForward(connection.client, port)
-        environment.PRIME_DESKTOP_BROWSER_URL = `http://127.0.0.1:${resources.forward.port}/mcp`
-        environment.PRIME_DESKTOP_BROWSER_TOKEN = resources.browser.token
-      } catch {
-        await resources.forward?.close().catch(() => {})
-        await resources.browser?.close().catch(() => {})
-        resources.forward = undefined
-        resources.browser = undefined
-      }
-    }
-    resources.runtime = await RemoteRuntime.start(profile, connection, {
-      runtimeDir: this.options.runtimeDir,
-      environment,
-      progress: (message, percent) => this.manager.setProgress(profile.id, message, percent),
-      onExit: () => void this.manager.fail(profile.id, 'remote.runtimeFailed')
-    })
-    resources.service = new PrimeService(resources.runtime.transport, this.options.emit, {
-      resolveRoot: async () => connection.root,
-      caseSensitive: true
-    })
-    const project = await resources.service.open(connection.root, this.options.channels(key))
-    if (this.resources.get(profile.id) !== resources) return
-    resources.workspace = {
-      profile,
-      service: resources.service,
-      workspaceId: project.id,
-      key,
-      connection
-    }
-    this.options.emit({ workspaceId: project.id, type: 'projectsChanged', payload: {} })
+  private detach(profileId: string) {
+    return this.transition(profileId, () => this.detachConnection(profileId))
   }
-
-  private async detach(profileId: string) {
+  private async detachConnection(profileId: string) {
     const resources = this.resources.get(profileId)
     if (!resources) return
     this.resources.delete(profileId)
     await this.release(resources)
   }
-
   private async release(resources: Resources) {
     const workspaceId = resources.workspace?.workspaceId
-    resources.service?.detach()
-    if (workspaceId) await this.options.onDetached(workspaceId).catch(() => {})
-    await resources.runtime?.close().catch(() => {})
-    await resources.forward?.close().catch(() => {})
-    await resources.browser?.close().catch(() => {})
+    if (workspaceId) {
+      const sessions = await resources.service?.call(workspaceId, 'sessions').catch(() => [])
+      await Promise.all(
+        (Array.isArray(sessions) ? sessions : [])
+          .filter((session) => session.is_busy)
+          .map((session) =>
+            resources.service
+              ?.call(workspaceId, 'cancel', { sessionId: session.id })
+              .catch(() => {})
+          )
+      )
+      await this.options.onDetached(workspaceId).catch(() => {})
+      await resources.service?.close(workspaceId).catch(() => {})
+    }
     this.options.emit({ workspaceId: workspaceId ?? '', type: 'projectsChanged', payload: {} })
   }
-
   async project(profileId: string): Promise<Project> {
     const entry = this.byProfile(profileId)
-    if (!entry) throw new Error('remote.notConnected')
-    const project = entry.service.projects.get(entry.workspaceId)
+    const project = entry?.service.projects.get(entry.workspaceId)
     if (!project) throw new Error('remote.notConnected')
     return project
   }
-
   open(profileId: string): Promise<Project> {
     const pending = this.opening.get(profileId)
     if (pending) return pending
     const operation = (async () => {
-      if (!this.byProfile(profileId)) await this.manager.connect(profileId)
+      if (!this.byProfile(profileId)) {
+        const profile = this.manager.list().profiles.find((entry) => entry.id === profileId)
+        if (profile?.status === 'connected')
+          await this.attach(profile, this.manager.connection(profileId))
+        else await this.manager.connect(profileId)
+      }
       return this.project(profileId)
     })()
     this.opening.set(profileId, operation)
@@ -160,7 +154,6 @@ export class RemoteWorkspaces {
       .catch(() => {})
     return operation
   }
-
   shutdown() {
     return this.manager.shutdown()
   }

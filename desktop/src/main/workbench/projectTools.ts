@@ -291,7 +291,7 @@ export function createProjectTools(options: ProjectToolOptions): WorkbenchTool[]
       browser:
         'Use browser tools registered in this MCP session for navigation, snapshots, DOM evaluation, input and screenshots.',
       remote:
-        'Launch commands and terminals reuse the current project SSH connection. No credentials are requested or stored by these tools.'
+        'Saved SSH servers are available from any chat: call ssh_profiles, then pass profileId to ssh_connect, ssh_exec, SSH file tools or ssh_upload_file. No separate chat or project is required. Without profileId, SSH tools use the current remote project. Credentials stay in the desktop vault; never request passwords in chat. Launch terminals still use the current project connection.'
     })
   )
   return [...tools, ...(options.extensions ?? [])]

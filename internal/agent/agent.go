@@ -737,6 +737,13 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		go a.GenerateTitle(titleCtx, call.SessionID, call.Prompt)
 	}
 
+	if len(currentSession.Todos) > 0 {
+		currentSession.Todos = nil
+		if _, err := a.sessions.Save(ctx, currentSession); err != nil {
+			return nil, fmt.Errorf("failed to clear todos for new task: %w", err)
+		}
+	}
+
 	// Add the user message to the session.
 	_, err = a.createUserMessage(ctx, call)
 	if err != nil {

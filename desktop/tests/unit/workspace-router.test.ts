@@ -31,3 +31,18 @@ it('keeps disconnected remote roots from ever becoming local workspaces', async 
   await expect(router.open(remoteWorkspaceKey('11111111-1111-4111-8111-111111111111', '/remote'))).rejects.toThrow('SSH')
   expect(local.open).not.toHaveBeenCalled()
 })
+
+it('keeps detached SSH proxies hidden and blocked when another remote shares the local service', async () => {
+  const local = backend('local')
+  const profile: RemoteProfile = { id: '11111111-1111-4111-8111-111111111111', name: 'Server', host: 'example.test', port: 22, user: 'user', root: '/server/project', auth: 'agent', runtime: 'bundled' }
+  const metadata = { profileId: profile.id, name: profile.name, host: profile.host, port: profile.port, user: profile.user, root: profile.root }
+  local.projects.set('detached', { id: 'detached', path: 'C:/state/ssh/a', clientId: 'a', connection: 'ready', remote: metadata })
+  local.projects.set('connected', { id: 'connected', path: 'C:/state/ssh/b', clientId: 'b', connection: 'ready', remote: metadata })
+  const key = remoteWorkspaceKey(profile.id, profile.root)
+  const router = new WorkspaceRouter(local, () => [{ profile, service: local, workspaceId: 'connected', key, root: profile.root }])
+  expect(router.projects.has('detached')).toBe(false)
+  expect(router.projects.get('connected')?.remote?.root).toBe(profile.root)
+  expect(router.root('connected')).toBe(profile.root)
+  await expect(router.call('detached', 'sessions')).rejects.toThrow('Сервер отключён')
+  expect(local.call).not.toHaveBeenCalled()
+})

@@ -205,9 +205,9 @@ export function SidebarChats({
           <div className="project-heading">
             <button
               className={`project-item ${w.project?.id === personal.id ? 'selected' : ''}`}
-              aria-expanded={Boolean(expanded[personal.id]) || w.project?.id === personal.id}
+              aria-expanded={Boolean(expanded[personal.id])}
               onClick={() => {
-                const open = Boolean(expanded[personal.id]) || w.project?.id === personal.id
+                const open = Boolean(expanded[personal.id])
                 toggle(personal.id, open)
                 if (w.project?.id !== personal.id) void w.openChat()
               }}
@@ -225,15 +225,14 @@ export function SidebarChats({
               <X size={12} />
             </button>
           </div>
-          {(expanded[personal.id] || w.project?.id === personal.id) &&
-            renderSessions(personal, w.project?.id === personal.id)}
+          {expanded[personal.id] && renderSessions(personal, w.project?.id === personal.id)}
         </div>
       )}
       {folders
         .filter((project) => !needle || project.path.toLocaleLowerCase().includes(needle))
         .map((project) => {
           const active = w.project?.id === project.id
-          const open = Boolean(expanded[project.id]) || active
+          const open = Boolean(expanded[project.id])
           return (
             <div key={project.id} className={`project-group ${active ? 'active-group' : ''}`}>
               <div className="project-heading">

@@ -130,13 +130,13 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const sessionKey = w.session?.id || ''
   useEffect(() => {
     if (!sessionKey || !w.project) return
-    const target = w.preferences.skipBySession?.[sessionKey] ?? false
+    const target = w.preferences.skipBySession?.[sessionKey] ?? w.preferences.defaultSkip ?? false
     if (target === skip) return
     void w
       .call('skip', { skip: target })
       .then(() => setSkip(target))
       .catch(() => {})
-  }, [sessionKey, w.project?.id])
+  }, [sessionKey, w.project?.id, w.preferences.skipBySession, w.preferences.defaultSkip])
   useEffect(() => {
     if (textarea.current) {
       textarea.current.style.height = 'auto'
@@ -383,8 +383,10 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
                 try {
                   await w.call('skip', { skip: value })
                   setSkip(value)
-                  if (sessionKey)
-                    void w.savePreferences({ skipBySession: { [sessionKey]: value } })
+                  void w.savePreferences({
+                    defaultSkip: value,
+                    ...(sessionKey ? { skipBySession: { [sessionKey]: value } } : {})
+                  })
                 } catch (error) {
                   w.errorHandler(error)
                 }

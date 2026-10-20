@@ -125,6 +125,18 @@ export class RemoteConnection {
     this.writes = operation.catch(() => {})
     return operation
   }
+  createFile(path: string, content: string) {
+    const operation = this.writes.then(async () => {
+      if (Buffer.byteLength(content) > limit) throw new Error('remote.fileTooLarge')
+      const absolute = await this.resolve(path, true)
+      await this.call<void>((done) =>
+        this.sftp.writeFile(absolute, content, { flag: 'wx', mode: 0o644 }, done)
+      )
+      return { path, revision: createHash('sha256').update(content).digest('hex') }
+    })
+    this.writes = operation.catch(() => {})
+    return operation
+  }
   private async writeRevision(path: string, content: string, revision: string) {
     if (Buffer.byteLength(content) > limit) throw new Error('remote.fileTooLarge')
     const absolute = await this.resolve(path)

@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/csync"
 	"github.com/SpherePrime/CLI/internal/discover"
@@ -28,6 +27,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/fsext"
 	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/internal/shellconfig"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	powernapConfig "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/config"
 	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons"
 	"github.com/SpherePrime/CLI/vendordeps/tidwall/gjson"
@@ -57,11 +57,11 @@ func Load(workingDir, dataDir string, debug bool) (*ConfigStore, error) {
 	cfg.setDefaults(workingDir, dataDir)
 
 	store := &ConfigStore{
-		config:          cfg,
-		workingDir:      workingDir,
-		globalDataPath:  GlobalConfig(),
-		workspacePath:   filepath.Join(cfg.Options.DataDirectory, fmt.Sprintf("%s.json", appName)),
-		loadedPaths:     loadedPaths,
+		config:         cfg,
+		workingDir:     workingDir,
+		globalDataPath: GlobalConfig(),
+		workspacePath:  filepath.Join(cfg.Options.DataDirectory, fmt.Sprintf("%s.json", appName)),
+		loadedPaths:    loadedPaths,
 	}
 
 	if debug {
@@ -689,6 +689,7 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 		c.MCP = make(map[string]MCPConfig)
 	}
 	c.addDesktopBrowserMCP(workingDir)
+	c.restrictRemoteWorkspace(workingDir)
 	// Drop orphaned OAuth token entries left behind when a user removes
 	// an MCP from prime.json. See MCPConfig.isOrphanedToken.
 	for name, m := range c.MCP {
