@@ -33,11 +33,21 @@ export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
   const tool = name.toLowerCase()
   const path = input?.file_path || input?.path || input?.filePath
   if (tool.startsWith('mcp_')) {
+    const bridge = /^mcp_(?:browser|prime-desktop(?:-\d+)?)_(.+)$/.exec(tool)
+    if (bridge) {
+      return (
+        desktopToolTitle(bridge[1], input, t) ?? {
+          icon: Wrench,
+          label: t('Prime Desktop'),
+          detail: bridge[1].replaceAll('_', ' ')
+        }
+      )
+    }
     const [, server = '', ...rest] = name.split('_')
-    const desktop = server === 'browser' ? desktopToolTitle(rest.join('_'), input, t) : undefined
-    if (desktop) return desktop
     return { icon: Plug, label: `MCP · ${server}`, detail: rest.join('_') }
   }
+  const desktop = desktopToolTitle(tool, input, t)
+  if (desktop) return desktop
   if (/^(view|read|cat)$/.test(tool))
     return { icon: FileCode2, label: t('Чтение'), detail: fileName(path) }
   if (tool === 'write') return { icon: FilePlus2, label: t('Запись'), detail: fileName(path) }
