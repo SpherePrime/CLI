@@ -23,7 +23,7 @@ export function BrowserTab({
 }) {
   const { t } = useI18n()
   const [picking, setPicking] = useState(false)
-  const [picked, setPicked] = useState<PickedElementResult | null>(null)
+  const [picked, setPicked] = useState<PickedElementResult[] | null>(null)
   useEffect(() => {
     if (!picking) return
     const key = (event: KeyboardEvent) => {
@@ -203,11 +203,16 @@ export function BrowserTab({
       {error && <p className="browser-error">{error}</p>}
       {picking && (
         <p className="browser-pick-hint" role="status">
-          {t('Наведите на элемент и нажмите. Esc — отмена.')}
+          {t('Нажмите на элемент. С Ctrl — несколько. Esc — отмена.')}
         </p>
       )}
       {picked && onSend && (
-        <ElementPick result={picked} onSend={onSend} onClose={() => setPicked(null)} />
+        <ElementPick
+          results={picked}
+          onSend={onSend}
+          onRemove={(index) => setPicked(picked.filter((_, position) => position !== index))}
+          onClose={() => setPicked(null)}
+        />
       )}
       <div ref={viewport} className="browser-viewport">
         {!state.url && (
