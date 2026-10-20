@@ -1,4 +1,5 @@
 import type { ConversationState } from './useConversation'
+import { createNeuralScene, type NeuralStrand } from './orbGeometry'
 
 export type OrbFrame = {
   state: ConversationState
@@ -8,63 +9,32 @@ export type OrbFrame = {
   time: number
 }
 
-type Layer = {
-  color: number
-  scale: number
-  alpha: number
-  blur: number
-  waves: [number, number, number][]
-  drift: number
-}
-
-const motion: Record<ConversationState, { speed: number; swirl: number; calm: number }> = {
-  off: { speed: 0.4, swirl: 0.05, calm: 0.025 },
-  preparing: { speed: 1, swirl: 0.6, calm: 0.05 },
-  listening: { speed: 0.7, swirl: 0.12, calm: 0.035 },
-  hearing: { speed: 1.25, swirl: 0.22, calm: 0.04 },
-  transcribing: { speed: 1.5, swirl: 0.9, calm: 0.06 },
-  waiting: { speed: 1.3, swirl: 1.1, calm: 0.065 },
-  speaking: { speed: 1.1, swirl: 0.3, calm: 0.045 }
-}
-
-const layers: Layer[] = [
-  { color: 1, scale: 1.12, alpha: 0.5, blur: 34, drift: 0.9, waves: [[2, 0.5, 0], [3, -0.35, 1.3]] },
-  { color: 0, scale: 1, alpha: 0.95, blur: 2, drift: 0.6, waves: [[2, -0.45, 0.7], [3, 0.6, 2.4], [4, -0.25, 4.2]] },
-  { color: 1, scale: 0.86, alpha: 0.7, blur: 6, drift: 1.2, waves: [[3, 0.7, 1.1], [2, -0.55, 3.3]] },
-  { color: 2, scale: 0.62, alpha: 0.65, blur: 10, drift: 1.5, waves: [[2, 0.8, 0.4], [3, -0.6, 2.9]] }
-]
-
 function rgba(color: string, alpha: number) {
   const hex = color.trim().replace('#', '')
   const value = hex.length === 3 ? hex.replace(/./g, (char) => char + char) : hex.slice(0, 6)
   const number = Number.parseInt(value, 16)
-  if (!Number.isFinite(number)) return `rgba(255, 140, 96, ${alpha})`
   return `rgba(${(number >> 16) & 255}, ${(number >> 8) & 255}, ${number & 255}, ${alpha})`
 }
 
-function trace(
+function drawHemisphere(
   context: CanvasRenderingContext2D,
-  center: number,
-  radius: number,
-  layer: Layer,
-  time: number,
-  amplitude: number,
-  rotation: number
+  strand: NeuralStrand,
+  front: boolean,
+  radius: number
 ) {
-  const points = 96
   context.beginPath()
-  for (let index = 0; index <= points; index++) {
-    const angle = (index / points) * Math.PI * 2
-    let offset = 0
-    for (const [harmonic, velocity, phase] of layer.waves)
-      offset += Math.sin(harmonic * angle + time * velocity * 1.7 + phase) / layer.waves.length
-    const r = radius * layer.scale * (1 + offset * amplitude)
-    const x = center + Math.cos(angle + rotation) * r
-    const y = center + Math.sin(angle + rotation) * r
-    if (index === 0) context.moveTo(x, y)
-    else context.lineTo(x, y)
+  let connected = false
+  for (const point of strand.points) {
+    const visible = front ? point.z >= 0 : point.z < 0
+    if (!visible) {
+      connected = false
+      continue
+    }
+    if (connected) context.lineTo(point.x * radius, point.y * radius)
+    else context.moveTo(point.x * radius, point.y * radius)
+    connected = true
   }
-  context.closePath()
+  context.stroke()
 }
 
 export function drawOrb(
@@ -74,67 +44,61 @@ export function drawOrb(
   colors: [string, string, string],
   dark = true
 ) {
-  const settings = motion[frame.state]
-  const time = frame.time * settings.speed
-  const bands = frame.bands.length ? frame.bands.reduce((sum, value) => sum + value, 0) / frame.bands.length : 0
-  const energy = Math.min(1, frame.level * 0.75 + bands * 0.6)
-  const center = size / 2
-  const radius = size * 0.28 * (1 + energy * 0.1 + Math.sin(time * 1.4) * 0.012)
-  const amplitude = settings.calm + energy * 0.11
-  const rotation = frame.time * settings.swirl
-  const fade = frame.muted ? 0.4 : 1
+  const scene = createNeuralScene(frame)
+  const radius = size * 0.335
+  const palette = [...colors, dark ? '#e2f1f3' : '#526d7b']
   context.clearRect(0, 0, size, size)
   context.save()
-  context.globalCompositeOperation = 'source-over'
-  for (const layer of layers) {
-    const color = colors[layer.color]
-    const drift = time * layer.drift
-    const focusX = center + Math.cos(drift) * radius * 0.28
-    const focusY = center + Math.sin(drift * 0.8) * radius * 0.28 - radius * 0.12
-    const gradient = context.createRadialGradient(focusX, focusY, 0, center, center, radius * layer.scale * 1.15)
-    gradient.addColorStop(0, rgba(color, 0.95))
-    gradient.addColorStop(0.55, rgba(color, 0.7))
-    gradient.addColorStop(1, rgba(color, 0))
-    context.globalAlpha = layer.alpha * fade * 0.85
-    context.filter = `blur(${(layer.blur * size) / 640}px)`
-    context.fillStyle = gradient
-    trace(context, center, radius, layer, time, amplitude * (layer.blur > 20 ? 1.4 : 1), rotation * layer.drift * 0.4)
+  context.translate(size / 2, size / 2)
+  context.globalAlpha = scene.fade
+  const aura = context.createRadialGradient(0, 0, radius * 0.25, 0, 0, radius * 1.38)
+  aura.addColorStop(0, rgba(colors[0], dark ? 0.07 : 0.035))
+  aura.addColorStop(0.65, rgba(colors[1], dark ? 0.045 : 0.02))
+  aura.addColorStop(1, rgba(colors[0], 0))
+  context.fillStyle = aura
+  context.fillRect(-size / 2, -size / 2, size, size)
+  context.lineWidth = size / 900
+  for (const strand of scene.strands) {
+    context.strokeStyle = rgba(palette[strand.color], dark ? 0.14 : 0.15)
+    drawHemisphere(context, strand, false, radius)
+  }
+  const nucleus = context.createRadialGradient(
+    -radius * 0.2,
+    -radius * 0.22,
+    0,
+    0,
+    0,
+    radius * 0.95
+  )
+  nucleus.addColorStop(0, rgba(dark ? '#302024' : '#fff8ef', 0.96))
+  nucleus.addColorStop(0.55, rgba(dark ? '#21191d' : '#fff8f1', 0.88))
+  nucleus.addColorStop(1, rgba(dark ? '#21191d' : '#fff8f1', 0))
+  context.fillStyle = nucleus
+  context.beginPath()
+  context.arc(0, 0, radius, 0, Math.PI * 2)
+  context.fill()
+  for (const strand of scene.strands) {
+    context.lineWidth = (size / 820) * (1 + strand.impulse * 0.4)
+    context.strokeStyle = rgba(palette[strand.color], (dark ? 0.47 : 0.46) + strand.impulse * 0.3)
+    drawHemisphere(context, strand, true, radius)
+    const offset = Math.floor(
+      (frame.time * (scene.processing ? 12 : 5) + strand.color * 15) % (strand.points.length - 1)
+    )
+    const node =
+      strand.points[(offset + scene.strands.indexOf(strand) * 13) % (strand.points.length - 1)]
+    if (node.z < 0.1) continue
+    const x = node.x * radius
+    const y = node.y * radius
+    const dotRadius = size * (0.002 + strand.impulse * 0.0018)
+    const glow = context.createRadialGradient(x, y, 0, x, y, dotRadius * 5)
+    glow.addColorStop(0, rgba(palette[strand.color], 0.55 + strand.impulse * 0.4))
+    glow.addColorStop(1, rgba(palette[strand.color], 0))
+    context.fillStyle = glow
+    context.fillRect(x - dotRadius * 5, y - dotRadius * 5, dotRadius * 10, dotRadius * 10)
+    context.fillStyle = dark ? '#fff0df' : palette[strand.color]
+    context.beginPath()
+    context.arc(x, y, dotRadius, 0, Math.PI * 2)
     context.fill()
   }
-  context.filter = `blur(${(14 * size) / 640}px)`
-  const shine = context.createRadialGradient(
-    center - radius * 0.3,
-    center - radius * 0.38,
-    0,
-    center - radius * 0.3,
-    center - radius * 0.38,
-    radius * 0.5
-  )
-  shine.addColorStop(0, `rgba(255, 255, 255, ${dark ? 0.16 : 0.35})`)
-  shine.addColorStop(1, 'rgba(255, 255, 255, 0)')
-  context.globalAlpha = fade
-  context.globalCompositeOperation = 'source-over'
-  context.fillStyle = shine
-  context.beginPath()
-  context.arc(center - radius * 0.3, center - radius * 0.38, radius * 0.5, 0, Math.PI * 2)
-  context.fill()
   context.restore()
-  if (frame.state === 'waiting' || frame.state === 'transcribing' || frame.state === 'preparing') {
-    context.save()
-    context.globalCompositeOperation = dark ? 'screen' : 'source-over'
-    for (let index = 0; index < 3; index++) {
-      const angle = frame.time * 1.6 + (index * Math.PI * 2) / 3
-      const orbit = radius * (1.42 + Math.sin(frame.time * 2 + index) * 0.04)
-      const x = center + Math.cos(angle) * orbit
-      const y = center + Math.sin(angle) * orbit
-      const dot = context.createRadialGradient(x, y, 0, x, y, size * 0.022)
-      dot.addColorStop(0, rgba(colors[2], 0.95))
-      dot.addColorStop(1, rgba(colors[2], 0))
-      context.fillStyle = dot
-      context.beginPath()
-      context.arc(x, y, size * 0.022, 0, Math.PI * 2)
-      context.fill()
-    }
-    context.restore()
-  }
 }
