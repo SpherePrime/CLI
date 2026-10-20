@@ -12,6 +12,7 @@ import { applyMessage } from '../../../shared/messages'
 import { translate } from '../i18n'
 import { useAgentContext } from '../features/context/useAgentContext'
 import { buildAgentPrompt } from '../../../shared/agentContext'
+import { isRemoteWorkspace } from '../../../shared/remoteWorkspace'
 
 export function useWorkspace() {
   const [info, setInfo] = useState<Json>({ runtime: 'starting' })
@@ -203,7 +204,7 @@ export function useWorkspace() {
       const saved = await window.prime.preferences()
       let opened = await window.prime.projects()
       const lastProject = saved.activeProject
-        ? saved.recent.includes(saved.activeProject)
+        ? saved.recent.includes(saved.activeProject) || isRemoteWorkspace(saved.activeProject)
           ? saved.activeProject
           : ''
         : saved.recent[0]
@@ -247,18 +248,24 @@ export function useWorkspace() {
       if (event.type === 'workbench' && event.payload?.action === 'contextChanged') {
         const { key, context } = event.payload
         if (typeof key === 'string' && context)
-          setPreferences((value) => ({ ...value, agentContexts: { ...value.agentContexts, [key]: context } }))
+          setPreferences((value) => ({
+            ...value,
+            agentContexts: { ...value.agentContexts, [key]: context }
+          }))
         return
       }
       if (event.type === 'workbench' && event.payload?.action === 'openSession') {
         void (async () => {
           const opened = await window.prime.projects()
           const targetProject = opened.find((item) => item.id === event.workspaceId)
-          if (!targetProject) throw new Error(translate(language.current, 'Проект задачи недоступен'))
+          if (!targetProject)
+            throw new Error(translate(language.current, 'Проект задачи недоступен'))
           const available: Session[] = await window.prime.call(targetProject.id, 'sessions')
           const targetSession = available.find((item) => item.id === event.payload.sessionId)
           if (!targetSession) throw new Error(translate(language.current, 'Чат задачи недоступен'))
-          await window.prime.call(targetProject.id, 'currentSession', { sessionId: targetSession.id })
+          await window.prime.call(targetProject.id, 'currentSession', {
+            sessionId: targetSession.id
+          })
           current.current = { project: targetProject, session: targetSession }
           setProjects(opened)
           setProject(targetProject)
@@ -565,7 +572,8 @@ export function useWorkspace() {
     try {
       const latestPreferences = await window.prime.preferences()
       setPreferences(latestPreferences)
-      const latestContext = latestPreferences.agentContexts?.[targetProject.path] ?? agentContext.context
+      const latestContext =
+        latestPreferences.agentContexts?.[targetProject.path] ?? agentContext.context
       const preparedPrompt = await buildAgentPrompt(prompt, latestContext, (path) =>
         window.prime.readFile(targetProject.id, path)
       )

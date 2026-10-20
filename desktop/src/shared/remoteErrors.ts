@@ -1,4 +1,8 @@
 export const remoteErrors: Record<string, string> = {
+  'remote.secureStorageUnavailable': 'Защищённое хранилище ОС недоступно. Пароль не сохранён.',
+  'remote.credentialsCorrupt': 'Хранилище SSH-паролей повреждено. Исходный файл сохранён.',
+  'remote.credentialsUnreadable':
+    'Не удалось расшифровать SSH-пароль. Введите его заново или удалите сохранённый пароль.',
   'remote.runtimeFailed': 'Prime на сервере остановился. Подключитесь снова.',
   'remote.runtimeUnavailable': 'Не удалось подготовить Prime на сервере.',
   'remote.unsupportedPlatform': 'Сервер должен работать на Linux x64 или ARM64.',

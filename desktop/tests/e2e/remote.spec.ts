@@ -128,10 +128,20 @@ test('remote SSH project: connect, agent, file edit, terminal, disconnect', asyn
       id: remote.id,
       terminalId: terminal.id
     })
-    await page.evaluate((id) => window.prime.closeProject(id), remote.id)
-    await expect.poll(async () => (await page.evaluate(() => window.prime.projects())).some((item: Project) => item.remote)).toBe(false)
+    const previousSessions = await page.evaluate((id) => window.prime.call(id, 'sessions'), remote.id)
+    expect(previousSessions.length).toBeGreaterThan(0)
+    const previousMessages = await page.evaluate(({ id, sessionId }) => window.prime.call(id, 'messages', { sessionId }), { id: remote.id, sessionId: previousSessions[0].id })
+    const { page: reopenedPage } = await workbench.restart()
+    await expect(reopenedPage.locator('.project-item.selected')).toContainText('WSL fixture', { timeout: 90000 })
+    const reopenedProject = (await reopenedPage.evaluate(() => window.prime.projects())).find((item: Project) => item.remote)!
+    expect(reopenedProject.path).toBe(remote.path)
+    const restoredSessions = await reopenedPage.evaluate((id) => window.prime.call(id, 'sessions'), reopenedProject.id)
+    expect(restoredSessions.map((item: { id: string }) => item.id)).toEqual(expect.arrayContaining(previousSessions.map((item: { id: string }) => item.id)))
+    expect(await reopenedPage.evaluate(({ id, sessionId }) => window.prime.call(id, 'messages', { sessionId }), { id: reopenedProject.id, sessionId: previousSessions[0].id })).toEqual(previousMessages)
+    await reopenedPage.evaluate((id) => window.prime.closeProject(id), reopenedProject.id)
+    await expect.poll(async () => (await reopenedPage.evaluate(() => window.prime.projects())).some((item: Project) => item.remote)).toBe(false)
     await expect.poll(async () => Number(await runtimeCount()), { timeout: 20000 }).toBe(0)
-    await expect(page.locator('.project-item').filter({ hasText: 'WSL fixture' })).toHaveCount(0)
+    await expect(reopenedPage.locator('.project-item').filter({ hasText: 'WSL fixture' })).toHaveCount(0)
     await forward.close()
     expect(errors).toEqual([])
   } finally {

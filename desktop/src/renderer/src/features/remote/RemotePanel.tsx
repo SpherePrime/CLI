@@ -117,9 +117,9 @@ export function RemotePanel({ api, subscribe, onError, onOpenProject, chooseKey 
       <p className="remote-intro">
         {t('Файлы, Git, терминал и Prime работают на вашем Linux-сервере.')}
       </p>
-      {(error || snapshot.error) && (
+      {(error || snapshot.error || snapshot.credentialError) && (
         <div role="alert" className="remote-error">
-          {error || remoteError(snapshot.error, t)}
+          {error || remoteError(snapshot.error || snapshot.credentialError, t)}
         </div>
       )}
       {editor && (
@@ -137,7 +137,12 @@ export function RemotePanel({ api, subscribe, onError, onOpenProject, chooseKey 
           icon={Cable}
           title={t('Подключите первый сервер')}
           text={t('Укажите адрес и папку проекта. Отпечаток сервера проверяется перед входом.')}
-          action={{ label: t('Добавить сервер'), icon: Plus, onClick: () => setEditor('new'), disabled: busy || readOnly }}
+          action={{
+            label: t('Добавить сервер'),
+            icon: Plus,
+            onClick: () => setEditor('new'),
+            disabled: busy || readOnly
+          }}
         />
       )}
       <div className="remote-list">
@@ -229,6 +234,9 @@ export function RemotePanel({ api, subscribe, onError, onOpenProject, chooseKey 
                     <input
                       type="password"
                       autoComplete="off"
+                      placeholder={
+                        profile.hasSavedCredentials ? t('Сохранённый пароль') : undefined
+                      }
                       value={(profile.auth === 'key' ? secret.passphrase : secret.password) ?? ''}
                       onChange={(event) => {
                         const value = event.target.value
@@ -241,6 +249,26 @@ export function RemotePanel({ api, subscribe, onError, onOpenProject, chooseKey 
                     />
                   </label>
                 )}
+              {profile.auth !== 'agent' && (
+                <p className="remote-hint">
+                  {t(
+                    snapshot.credentialStorageAvailable === false
+                      ? 'Защищённое хранилище ОС недоступно. Пароль не сохранён.'
+                      : profile.hasSavedCredentials
+                        ? 'Пароль сохранён в защищённом хранилище ОС. Для замены введите новый.'
+                        : 'Пароль будет сохранён в защищённом хранилище ОС и не передаётся в чат.'
+                  )}
+                </p>
+              )}
+              {profile.hasSavedCredentials && (
+                <button
+                  className="remote-forget-secret"
+                  disabled={busy}
+                  onClick={() => void request({ action: 'forgetCredentials', id: profile.id })}
+                >
+                  {t('Удалить сохранённый пароль')}
+                </button>
+              )}
               <div className="remote-card-actions">
                 {profile.status === 'connected' ? (
                   <>

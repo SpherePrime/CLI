@@ -10,6 +10,7 @@ const requestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('save'), input: z.record(z.string(), z.unknown()) }),
   z.object({ action: z.literal('remove'), id: profileId }),
   z.object({ action: z.literal('disconnect'), id: profileId }),
+  z.object({ action: z.literal('forgetCredentials'), id: profileId }),
   z.object({
     action: z.literal('connect'),
     id: profileId,

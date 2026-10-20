@@ -7,6 +7,7 @@ import { RemoteManager } from './manager'
 import type { RemoteConnection } from './connection'
 import { RemoteRuntime } from '../remoteRuntime/session'
 import { createRemoteForward } from '../remoteRuntime/forward'
+import type { RemoteCredentialStore } from './credentials'
 import type { BrowserMcpServer } from '../browser/mcp-server'
 
 export type RemoteWorkspace = RemoteBackend & { connection: RemoteConnection }
@@ -21,6 +22,7 @@ type Resources = {
 
 type Options = {
   path: string
+  credentials?: RemoteCredentialStore
   runtimeDir: string
   emit(event: DesktopEvent): void
   channels(key: string): string[]
@@ -31,11 +33,14 @@ type Options = {
 export class RemoteWorkspaces {
   readonly manager: RemoteManager
   private resources = new Map<string, Resources>()
+  private opening = new Map<string, Promise<Project>>()
 
   constructor(private options: Options) {
     this.manager = new RemoteManager({
       path: options.path,
-      emit: (snapshot: RemoteSnapshot) => options.emit({ workspaceId: '', type: 'remote', payload: snapshot }),
+      credentials: options.credentials,
+      emit: (snapshot: RemoteSnapshot) =>
+        options.emit({ workspaceId: '', type: 'remote', payload: snapshot }),
       onReady: (profile, connection) => this.attach(profile, connection),
       onDisconnect: (id) => this.detach(id),
       onLost: (id) => void this.detach(id)
@@ -43,7 +48,9 @@ export class RemoteWorkspaces {
   }
 
   backends(): RemoteWorkspace[] {
-    return [...this.resources.values()].flatMap((entry) => (entry.workspace ? [entry.workspace] : []))
+    return [...this.resources.values()].flatMap((entry) =>
+      entry.workspace ? [entry.workspace] : []
+    )
   }
 
   byWorkspace(workspaceId: string): RemoteWorkspace | undefined {
@@ -68,7 +75,11 @@ export class RemoteWorkspaces {
     }
   }
 
-  private async prepare(profile: RemoteProfile, connection: RemoteConnection, resources: Resources) {
+  private async prepare(
+    profile: RemoteProfile,
+    connection: RemoteConnection,
+    resources: Resources
+  ) {
     const key = remoteWorkspaceKey(profile.id, connection.root)
     const environment: Record<string, string> = {}
     if (this.options.startBrowser) {
@@ -99,7 +110,13 @@ export class RemoteWorkspaces {
     })
     const project = await resources.service.open(connection.root, this.options.channels(key))
     if (this.resources.get(profile.id) !== resources) return
-    resources.workspace = { profile, service: resources.service, workspaceId: project.id, key, connection }
+    resources.workspace = {
+      profile,
+      service: resources.service,
+      workspaceId: project.id,
+      key,
+      connection
+    }
     this.options.emit({ workspaceId: project.id, type: 'projectsChanged', payload: {} })
   }
 
@@ -126,6 +143,22 @@ export class RemoteWorkspaces {
     const project = entry.service.projects.get(entry.workspaceId)
     if (!project) throw new Error('remote.notConnected')
     return project
+  }
+
+  open(profileId: string): Promise<Project> {
+    const pending = this.opening.get(profileId)
+    if (pending) return pending
+    const operation = (async () => {
+      if (!this.byProfile(profileId)) await this.manager.connect(profileId)
+      return this.project(profileId)
+    })()
+    this.opening.set(profileId, operation)
+    void operation
+      .finally(() => {
+        if (this.opening.get(profileId) === operation) this.opening.delete(profileId)
+      })
+      .catch(() => {})
+    return operation
   }
 
   shutdown() {
