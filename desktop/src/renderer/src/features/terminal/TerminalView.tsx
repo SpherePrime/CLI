@@ -4,6 +4,7 @@ import type { ITheme, Terminal } from '@xterm/xterm'
 import type { TerminalApi, TerminalRead, TerminalSnapshot } from '../../../../shared/terminal'
 import { useI18n } from '../../i18n'
 import { TerminalReplay } from './replay'
+import { bindTerminalClipboard } from './clipboardKeys'
 import type { TerminalSubscribe } from './useTerminalWorkspace'
 
 export type TerminalHandle = { clear(): void; copy(): Promise<void>; focus(): void }
@@ -78,6 +79,7 @@ export function TerminalView(props: Props) {
         terminal.loadAddon(fit)
         terminal.open(element)
         emulator.current = terminal
+        const unbindClipboard = bindTerminalClipboard(terminal, element, (error) => latest.current.onError(error))
         const replay = new TerminalReplay()
         let restored = false
         const restore = (snapshot: { output: string; sequence: number }) => {
@@ -186,6 +188,7 @@ export function TerminalView(props: Props) {
           cancelAnimationFrame(frame)
           observer.disconnect()
           themeObserver.disconnect()
+          unbindClipboard()
           unsubscribe()
           input.dispose()
           terminal.dispose()

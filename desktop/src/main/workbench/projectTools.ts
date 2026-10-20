@@ -131,7 +131,7 @@ export function createProjectTools(options: ProjectToolOptions): WorkbenchTool[]
   )
   add(
     'launch_save',
-    'Save a project app launch profile. Command executes in the project shell only when launch_start is called.',
+    'Save a project app launch profile. Command executes in the project shell only when launch_start is called. Local Windows shell is PowerShell: open desktop programs with Start-Process "C:\\Path\\App.exe" (add -ArgumentList for arguments), never cmd syntax like start "" "...".',
     launchSave,
     async (input, target) => {
       const manager = ready(options.launches())
@@ -143,16 +143,13 @@ export function createProjectTools(options: ProjectToolOptions): WorkbenchTool[]
   for (const action of ['start', 'stop', 'restart', 'remove'] as const)
     add(
       `launch_${action}`,
-      `${action} a saved app launch profile in this project. Start/restart executes its saved command and opens the launch panel.`,
+      `${action} a saved app launch profile in this project. Start/restart executes its saved command.`,
       idArguments,
       async ({ id }, target) => {
         const manager = ready(options.launches())
         if (!manager.list(target.key).configs.some((config) => config.id === id))
           throw new Error('Launch profile not found in this project')
-        const result = await manager.handle(target, { action, id })
-        if (action === 'start' || action === 'restart')
-          options.reveal?.(target.workspaceId, 'launch')
-        return result
+        return manager.handle(target, { action, id })
       }
     )
   add(
@@ -222,9 +219,7 @@ export function createProjectTools(options: ProjectToolOptions): WorkbenchTool[]
         ? await manager.createRemote(target.workspaceId, target.remote, input)
         : manager.create(target.workspaceId, target.root, input)
       try {
-        const result = manager.setOwner(terminal.id, 'agent', target.workspaceId)
-        options.reveal?.(target.workspaceId, 'terminal')
-        return result
+        return manager.setOwner(terminal.id, 'agent', target.workspaceId)
       } catch (error) {
         await manager.close(terminal.id, target.workspaceId).catch(() => {})
         throw error
