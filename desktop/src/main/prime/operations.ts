@@ -45,6 +45,16 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     cancelQuestion: () => ['POST', 'questions/cancel', { batch_request_id: args.id }],
     config: () => ['GET', 'config'],
     providers: () => ['GET', 'providers'],
+    providerSave: () => [
+      'POST',
+      'config/provider-save',
+      {
+        scope: args.scope ?? 0,
+        original_id: args.originalId,
+        provider: args.provider,
+        api_key: args.apiKey
+      }
+    ],
     configSet: () => [
       'POST',
       'config/set',

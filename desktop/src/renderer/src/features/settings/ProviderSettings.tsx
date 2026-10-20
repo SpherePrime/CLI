@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Trash2, Server } from 'lucide-react'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
+import { normalizeProviderModels } from './providerModels'
 import type { Workspace } from '../../app/useWorkspace'
 
 export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace; scope: number }) {
@@ -81,44 +82,45 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
         new Set(models.map((item) => item.id)).size !== models.length
       )
         throw new Error(t('У каждой модели должен быть уникальный ID'))
-      if (
-        models.some(
-          (item) =>
-            !Number.isInteger(item.context_window) ||
-            item.context_window < 1024 ||
-            !Number.isInteger(item.default_max_tokens) ||
-            item.default_max_tokens < 1 ||
-            item.default_max_tokens > item.context_window
-        )
-      )
-        throw new Error(t('Проверьте контекст и лимит ответа у каждой модели'))
-      if (!discover && !models.length)
+      const savedModels = normalizeProviderModels(models, t)
+      if (!originalId && w.config.providers?.[providerId])
+        throw new Error(t('Провайдер с таким ID уже существует'))
+      if (!discover && !savedModels.length)
         throw new Error(t('Добавьте хотя бы одну модель или включите автопоиск моделей'))
-      for (const [field, value] of Object.entries({
-        ...(key ? { api_key: key } : {}),
-        id: providerId,
-        name: name || providerId,
-        base_url: baseUrl,
-        type,
-        discover_models: discover,
-        models
-      }))
-        await w.call('configSet', { key: `providers.${providerId}.${field}`, value, scope })
+      await w.call('providerSave', {
+        scope,
+        originalId: originalId || undefined,
+        provider: {
+          id: providerId,
+          name: name || providerId,
+          base_url: baseUrl.trim(),
+          type,
+          discover_models: discover,
+          models: savedModels
+        },
+        ...(key.trim() ? { apiKey: key } : {})
+      })
+      setOriginalId(providerId)
       setKey('')
-      await w.refresh()
-      const loaded = await w.call('models').catch(() => [])
-      const list = Array.isArray(loaded) ? loaded : loaded?.models || []
-      if (!list.some((item: any) => item.provider_id === providerId))
-        throw new Error(
-          models.length
-            ? t('Провайдер сохранён, но Prime не смог его загрузить. Проверьте адрес API и тип.')
-            : t(
-                'Провайдер сохранён, но модели не найдены: сервер не отдал список моделей по этому адресу. Добавьте модели вручную или проверьте адрес API.'
-              )
-        )
       setStatus(t('Настройки провайдера сохранены'))
+      if (originalId && originalId !== providerId) {
+        try {
+          const preferences = await window.prime.preferences()
+          const rename = (items: { provider: string; model: string }[] | undefined) =>
+            items?.map((item) =>
+              item.provider === originalId ? { ...item, provider: providerId } : item
+            )
+          await w.savePreferences({
+            favoriteModels: rename(preferences.favoriteModels),
+            recentModels: rename(preferences.recentModels)
+          })
+        } catch (error) {
+          w.errorHandler(error)
+        }
+      }
+      await w.refresh().catch(w.errorHandler)
     } catch (error: any) {
-      setStatus(error.message)
+      setStatus(t(error.message))
     } finally {
       setSaving(false)
     }
@@ -198,7 +200,6 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
               ID
               <input
                 aria-label={t('ID провайдера')}
-                disabled={Boolean(originalId)}
                 value={providerId}
                 onChange={(event) => setProviderId(event.target.value)}
               />
@@ -301,7 +302,7 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
                       <input
                         type="number"
                         inputMode="numeric"
-                        min={1024}
+                        min={0}
                         value={model.context_window ?? ''}
                         onChange={(event) =>
                           patchModel(
@@ -316,7 +317,7 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
                       <input
                         type="number"
                         inputMode="numeric"
-                        min={1}
+                        min={0}
                         value={model.default_max_tokens ?? ''}
                         onChange={(event) =>
                           patchModel(

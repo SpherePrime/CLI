@@ -1,4 +1,20 @@
 export const english: Record<string, string> = {
+  'Prime Desktop': 'Prime Desktop',
+  Недавние: 'Recent',
+  Избранное: 'Favorites',
+  'Добавить в избранное': 'Add to favorites',
+  'Удалить из избранного': 'Remove from favorites',
+  'Провайдер с таким ID уже существует': 'A provider with this ID already exists',
+  'Переименуйте провайдера в области, где он сохранён':
+    'Rename the provider in the scope where it is saved',
+  'В открытом проекте сохранены настройки этого провайдера. Сначала измените их в области проекта':
+    'An open project has its own provider settings. Update them in the project scope first',
+  'В открытом проекте сохранены ссылки на этот провайдер. Сначала измените модель в области проекта':
+    'An open project references this provider. Change the model in the project scope first',
+  'Модель «{model}»: {field} должен быть целым неотрицательным числом':
+    'Model “{model}”: {field} must be a non-negative integer',
+  'Модель «{model}»: лимит ответа превышает контекст':
+    'Model “{model}”: response limit exceeds the context window',
   'Запускает автоматизацию': 'Runs automation',
   'Удаляет автоматизацию': 'Deletes automation',
   'Запускает приложение': 'Starts app',

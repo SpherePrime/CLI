@@ -50,7 +50,14 @@ export type Message = {
   updated_at?: number
 }
 export type Project = {
-  remote?: { profileId: string; name: string; host: string; port: number; user: string; root: string }
+  remote?: {
+    profileId: string
+    name: string
+    host: string
+    port: number
+    user: string
+    root: string
+  }
   kind?: 'chat' | 'project'
   id: string
   path: string
@@ -65,6 +72,8 @@ export type Preferences = {
   language: 'ru' | 'en'
   recent: string[]
   pinned: string[]
+  favoriteModels?: { provider: string; model: string }[]
+  recentModels?: { provider: string; model: string }[]
   drafts: Record<string, string>
   sidebarWidth: number
   inspectorWidth: number
@@ -112,6 +121,7 @@ export type Operation =
   | 'configRemove'
   | 'model'
   | 'providerKey'
+  | 'providerSave'
   | 'reasoning'
   | 'models'
   | 'mcp'
@@ -193,7 +203,9 @@ export interface DesktopApi {
     source: 'session' | 'git'
   ): Promise<Json>
   attachments(): Promise<Json[]>
-  importImages(images: import('./attachments').ImageUpload[]): Promise<import('./attachments').Attachment[]>
+  importImages(
+    images: import('./attachments').ImageUpload[]
+  ): Promise<import('./attachments').Attachment[]>
   releaseAttachments(ids: string[]): Promise<void>
   preferences(patch?: Partial<Preferences>): Promise<Preferences>
   openExternal(url: string): Promise<void>
