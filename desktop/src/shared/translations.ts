@@ -1,8 +1,39 @@
 export const english: Record<string, string> = {
-  'Не удалось прочитать прежнюю историю SSH-проекта. Локальная история не заменена.': 'Unable to read previous SSH project history. Local history was not replaced.',
-  'Для переноса прежней истории нужен sqlite3 или Python 3 на сервере.': 'Migrating previous history requires sqlite3 or Python 3 on the server.',
-  'Не удалось создать согласованную копию прежней истории. Исходные чаты сохранены.': 'Unable to create a consistent history snapshot. Original chats are preserved.',
-  'Не удалось безопасно сохранить историю SSH-проекта на этом компьютере.': 'Unable to safely save SSH project history on this computer.',
+  'Запускает автоматизацию': 'Runs automation',
+  'Удаляет автоматизацию': 'Deletes automation',
+  'Запускает приложение': 'Starts app',
+  'Останавливает приложение': 'Stops app',
+  'Перезапускает приложение': 'Restarts app',
+  'Удаляет команду запуска': 'Deletes launch command',
+  'Просматривает коммит': 'Views commit',
+  'Восстанавливает состояние проекта': 'Restores project state',
+  'Состояние репозитория': 'Repository status',
+  'Список задач': 'Issue list',
+  'Список pull request': 'Pull requests',
+  'Список веток': 'Branches',
+  'Просматривает задачу': 'Views issue',
+  'Просматривает pull request': 'Views pull request',
+  'Читает изменения': 'Reads changes',
+  'Читает логи ошибок': 'Reads failure logs',
+  'Список серверов': 'Server list',
+  'Подключается к серверу': 'Connects to server',
+  'Отключается от сервера': 'Disconnects from server',
+  'Выполняет команду': 'Runs command',
+  'Читает файл': 'Reads file',
+  'Записывает файл': 'Writes file',
+  'Изменяет файл': 'Edits file',
+  'Ищет в файлах': 'Searches file contents',
+  'Ищет файлы': 'Finds files',
+  'Скачивает файл на сервер': 'Downloads file on server',
+  'Загружает файл на сервер': 'Uploads file to server',
+  'Не удалось прочитать прежнюю историю SSH-проекта. Локальная история не заменена.':
+    'Unable to read previous SSH project history. Local history was not replaced.',
+  'Для переноса прежней истории нужен sqlite3 или Python 3 на сервере.':
+    'Migrating previous history requires sqlite3 or Python 3 on the server.',
+  'Не удалось создать согласованную копию прежней истории. Исходные чаты сохранены.':
+    'Unable to create a consistent history snapshot. Original chats are preserved.',
+  'Не удалось безопасно сохранить историю SSH-проекта на этом компьютере.':
+    'Unable to safely save SSH project history on this computer.',
   'Модели и API-ключи остаются на этом компьютере. Команды и файлы проекта доступны через SSH.':
     'Models and API keys stay on this computer. Project commands and files use SSH.',
   'Агент и модели работают локально. Файлы, Git и терминал — на SSH-сервере.':
@@ -1177,7 +1208,8 @@ Object.assign(english, {
 })
 
 Object.assign(english, {
-  'Нажмите на элемент. С Ctrl — несколько. Esc — отмена.': 'Click an element. Hold Ctrl to pick several. Esc to cancel.',
+  'Нажмите на элемент. С Ctrl — несколько. Esc — отмена.':
+    'Click an element. Hold Ctrl to pick several. Esc to cancel.',
   'Убрать элемент': 'Remove element',
   'Например: выровняй эти блоки': 'For example: align these blocks',
   'Отправить {value0} в чат': 'Send {value0} to chat'
