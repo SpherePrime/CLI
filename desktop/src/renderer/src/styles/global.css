@@ -305,7 +305,7 @@ kbd {
 .sidebar-actions {
   padding: 14px 15px;
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 7px;
 }
 .sidebar-actions button {
@@ -363,11 +363,20 @@ kbd {
   margin-bottom: 4px;
   border-radius: 10px;
 }
-.project-group.open {
-  background: color-mix(in srgb, var(--raised) 45%, transparent);
-  border: 1px solid var(--border);
-  padding: 2px 4px 6px;
-  margin-bottom: 8px;
+.project-group.active-group {
+  background: color-mix(in srgb, var(--raised) 35%, transparent);
+}
+.project-count {
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.project-close {
+  opacity: 0.45;
+}
+.project-heading:hover .project-close,
+.project-close:focus-visible {
+  opacity: 1;
 }
 .project-item {
   border: 0;
@@ -402,7 +411,7 @@ kbd {
   display: flex;
   align-items: center;
   border-radius: 6px;
-  margin: 2px 0 2px 6px;
+  margin: 1px 0 1px 10px;
 }
 .session-row.active {
   background: var(--accent-bg);
@@ -437,9 +446,6 @@ kbd {
 .session-row:hover .row-menu,
 .session-row:focus-within .row-menu {
   opacity: 1;
-}
-.session-row form {
-  width: calc(100% - 28px);
 }
 .session-row input {
   width: 100%;
@@ -505,6 +511,27 @@ kbd {
   border-radius: 7px;
   padding: 5px;
   min-width: 175px;
+}
+.context-menu.fly {
+  position: fixed;
+  top: auto;
+  left: auto;
+  z-index: 40;
+}
+.context-menu button svg {
+  color: var(--muted);
+}
+.row-delete {
+  opacity: 0;
+  margin-right: 4px;
+  color: var(--muted);
+}
+.session-row:hover .row-delete,
+.session-row:focus-within .row-delete {
+  opacity: 1;
+}
+.row-delete:hover {
+  color: #e5484d;
 }
 .context-menu button {
   display: flex;

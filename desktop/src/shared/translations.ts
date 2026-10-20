@@ -388,6 +388,8 @@ export const english: Record<string, string> = {
   'Действия: {value}': 'Actions: {value}',
   Переименовать: 'Rename',
   'Закрепить / открепить': 'Pin / unpin',
+  Закрепить: 'Pin',
+  Открепить: 'Unpin',
   'Удалить чат': 'Delete chat',
   Команда: 'Command',
   Параметры: 'Parameters',

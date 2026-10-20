@@ -1,18 +1,7 @@
-import { useEffect, useRef, useState, Fragment } from 'react'
-import {
-  ChevronDown,
-  FolderOpen,
-  MessageSquare,
-  Search,
-  Server,
-  X,
-  Pin,
-  MoreHorizontal,
-  Plus
-} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { FolderOpen, MessageSquare, Search, Server, X, Pin, Plus } from 'lucide-react'
 import { useI18n } from '../../i18n'
-import { Modal } from '../../components/Modal'
-import { groupSessions } from '../../../../shared/workspaceTools'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
 
@@ -26,24 +15,36 @@ export function SidebarChats({
   const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
-  const [menu, setMenu] = useState<string | null>(null)
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [title, setTitle] = useState('')
-  const [deleting, setDeleting] = useState<string | null>(null)
-  const [deleteBusy, setDeleteBusy] = useState(false)
-  const [deleteError, setDeleteError] = useState('')
-  const cancelDelete = useRef<HTMLButtonElement>(null)
+  const [otherSessions, setOtherSessions] = useState<Record<string, Session[]>>({})
+  const projectIds = w.projects.map((project) => project.id).join('|')
   useEffect(() => {
-    setSearch('')
-    setSearchOpen(false)
-    setDeleting(null)
-    setDeleteError('')
-  }, [w.project?.id])
+    let cancelled = false
+    async function load() {
+      const entries = await Promise.all(
+        w.projects
+          .filter((project) => project.id !== w.project?.id)
+          .map(async (project) => {
+            try {
+              return [project.id, (await window.prime.call(project.id, 'sessions')) as Session[]]
+            } catch {
+              return [project.id, [] as Session[]]
+            }
+          })
+      )
+      if (!cancelled) setOtherSessions(Object.fromEntries(entries))
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [projectIds, w.project?.id])
   useEffect(() => {
     if (!menu) return
     const pointer = (event: PointerEvent) => {
-      const target = event.target as Element
-      if (target.closest?.('.context-menu') || target.closest?.('.row-menu')) return
+      if ((event.target as Element).closest?.('.context-menu')) return
       setMenu(null)
     }
     const key = (event: KeyboardEvent) => {
@@ -56,28 +57,44 @@ export function SidebarChats({
       document.removeEventListener('keydown', key)
     }
   }, [menu])
-  const groups = groupSessions(w.sessions, w.preferences.pinned, search)
-  const groupLabels = {
-    pinned: t('Закреплённые'),
-    today: t('Сегодня'),
-    yesterday: t('Вчера'),
-    week: t('Последние 7 дней'),
-    older: t('Ранее')
-  }
-  const ordered = [...w.projects].sort((a, b) => Number(b.kind === 'chat') - Number(a.kind === 'chat'))
+  const needle = search.trim().toLocaleLowerCase()
+  const ordered = [...w.projects].sort(
+    (a, b) => Number(b.kind === 'chat') - Number(a.kind === 'chat')
+  )
   const personalExists = w.projects.some((project) => project.kind === 'chat')
-  const openProjectGroup = (project: Project) => {
-    if (project.kind === 'chat') {
-      void w.openChat()
-      return
-    }
-    void w.selectProject(project)
+  const sessionsOf = (project: Project) => {
+    const sessions = project.id === w.project?.id ? w.sessions : otherSessions[project.id] || []
+    const pinned = w.preferences.pinned
+    return [...sessions]
+      .filter((session) => !session.parent_session_id)
+      .filter((session) => !needle || (session.title || '').toLocaleLowerCase().includes(needle))
+      .sort((a, b) => {
+        const pin = Number(pinned.includes(b.id)) - Number(pinned.includes(a.id))
+        return pin || (b.updated_at || 0) - (a.updated_at || 0)
+      })
   }
+  const openChatSession = async (project: Project, session: Session) => {
+    if (project.id !== w.project?.id) await w.selectProject(project)
+    await w.selectSession(session)
+  }
+  const menuSession = menu ? w.sessions.find((session) => session.id === menu.id) : null
   return (
     <>
       <div className="section-caption">
         {t('ЧАТЫ И ПРОЕКТЫ')}
         <span className="section-caption-actions">
+          <button
+            className="icon small"
+            aria-label={t('Найти чат')}
+            title={t('Найти чат')}
+            aria-expanded={searchOpen}
+            onClick={() => {
+              setSearchOpen(!searchOpen)
+              setSearch('')
+            }}
+          >
+            <Search size={14} />
+          </button>
           <button
             className="icon small"
             aria-label={t('SSH-серверы')}
@@ -89,6 +106,34 @@ export function SidebarChats({
           </button>
         </span>
       </div>
+      {searchOpen && (
+        <div className="chat-search-box">
+          <Search size={14} />
+          <input
+            autoFocus
+            aria-label={t('Поиск чатов')}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t('Название чата…')}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                setSearchOpen(false)
+                setSearch('')
+              }
+            }}
+          />
+          <button
+            className="icon small"
+            aria-label={t('Закрыть поиск')}
+            onClick={() => {
+              setSearchOpen(false)
+              setSearch('')
+            }}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
       {!personalExists && (
         <div className="project-group">
           <button
@@ -104,14 +149,16 @@ export function SidebarChats({
       )}
       {ordered.map((project) => {
         const active = w.project?.id === project.id
+        const sessions = sessionsOf(project)
         return (
-          <div key={project.id} className={`project-group ${active ? 'open' : ''}`}>
+          <div key={project.id} className={`project-group ${active ? 'active-group' : ''}`}>
             <div className="project-heading">
               <button
                 className={`project-item ${active ? 'selected' : ''}`}
-                onClick={() => openProjectGroup(project)}
+                onClick={() =>
+                  project.kind === 'chat' ? void w.openChat() : void w.selectProject(project)
+                }
               >
-                <ChevronDown size={14} className={active ? '' : 'collapsed'} />
                 {project.remote ? <Server size={15} /> : <FolderOpen size={15} />}
                 <span
                   title={
@@ -128,10 +175,11 @@ export function SidebarChats({
                       ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
                       : project.path.split(/[\\/]/).pop()}
                 </span>
+                {sessions.length > 0 && <span className="project-count">{sessions.length}</span>}
                 <span className={`dot ${project.connection === 'ready' ? 'green' : 'amber'}`} />
               </button>
               <button
-                className="icon small"
+                className="icon small project-close"
                 title={project.kind === 'chat' ? t('Закрыть личные чаты') : t('Закрыть проект')}
                 aria-label={
                   project.kind === 'chat'
@@ -143,241 +191,101 @@ export function SidebarChats({
                 <X size={12} />
               </button>
             </div>
-            {active && (
-              <>
-                <div className="chat-list-heading">
-                  <span>{t('Чаты')}</span>
-                  <button
-                    className="icon small"
-                    aria-label={t('Найти чат')}
-                    title={t('Найти чат')}
-                    aria-expanded={searchOpen}
-                    onClick={() => {
-                      setSearchOpen(!searchOpen)
-                      setSearch('')
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                className={`session-row ${session.id === w.session?.id && active ? 'active' : ''}`}
+                onContextMenu={(event) => {
+                  if (!active) return
+                  event.preventDefault()
+                  setMenu({ id: session.id, x: event.clientX, y: event.clientY })
+                }}
+              >
+                {renaming === session.id ? (
+                  <form
+                    onSubmit={async (event) => {
+                      event.preventDefault()
+                      try {
+                        await w.call('renameSession', {
+                          sessionId: session.id,
+                          session: { ...session, title }
+                        })
+                        setRenaming(null)
+                        await w.refresh()
+                      } catch (error) {
+                        w.errorHandler(error)
+                      }
                     }}
                   >
-                    <Search size={14} />
-                  </button>
-                </div>
-                {searchOpen && (
-                  <div className="chat-search-box">
-                    <Search size={14} />
                     <input
                       autoFocus
-                      aria-label={t('Поиск чатов')}
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder={t('Название чата…')}
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
                       onKeyDown={(event) => {
-                        if (event.key === 'Escape') {
-                          setSearchOpen(false)
-                          setSearch('')
-                        }
+                        if (event.key === 'Escape') setRenaming(null)
                       }}
                     />
-                    <button
-                      className="icon small"
-                      aria-label={t('Закрыть поиск')}
-                      onClick={() => {
-                        setSearchOpen(false)
-                        setSearch('')
-                      }}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
+                  </form>
+                ) : (
+                  <button
+                    className="session-link"
+                    onClick={() => void openChatSession(project, session)}
+                  >
+                    <MessageSquare size={14} />
+                    <span>{session.title || t('Новый чат')}</span>
+                    {session.is_busy && <span className="dot pulse" />}
+                    {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
+                  </button>
                 )}
-                {groups.map((group) => (
-                  <Fragment key={group.id}>
-                    <div className="chat-group-label">
-                      <span>{groupLabels[group.id]}</span>
-                      <span>{group.sessions.length}</span>
-                    </div>
-                    {group.sessions.map((session) => (
-                      <ChatRow
-                        key={session.id}
-                        session={session}
-                        workspace={w}
-                        active={session.id === w.session?.id}
-                        menuOpen={menu === session.id}
-                        renaming={renaming === session.id}
-                        title={title}
-                        onToggleMenu={() => setMenu(menu === session.id ? null : session.id)}
-                        onRenameStart={() => {
-                          setTitle(session.title)
-                          setRenaming(session.id)
-                          setMenu(null)
-                        }}
-                        onRenameChange={setTitle}
-                        onRenameSubmit={async () => {
-                          try {
-                            await w.call('renameSession', {
-                              sessionId: session.id,
-                              session: { ...session, title }
-                            })
-                            setRenaming(null)
-                            await w.refresh()
-                          } catch (error) {
-                            w.errorHandler(error)
-                          }
-                        }}
-                        onRenameCancel={() => setRenaming(null)}
-                        onPin={() => {
-                          void w.savePreferences({
-                            pinned: w.preferences.pinned.includes(session.id)
-                              ? w.preferences.pinned.filter((id) => id !== session.id)
-                              : [...w.preferences.pinned, session.id]
-                          })
-                          setMenu(null)
-                        }}
-                        onDelete={() => {
-                          setDeleting(session.id)
-                          setDeleteError('')
-                          setMenu(null)
-                        }}
-                      />
-                    ))}
-                  </Fragment>
-                ))}
-                {!groups.length && (
-                  <p className="sidebar-empty">
-                    {search ? t('Ничего не найдено') : t('Здесь появятся ваши чаты')}
-                  </p>
+                {active && (
+                  <button
+                    className="icon small row-delete"
+                    aria-label={t('Удалить чат')}
+                    title={t('Удалить чат')}
+                    onClick={() => void w.deleteSession(session.id)}
+                  >
+                    <X size={14} />
+                  </button>
                 )}
-              </>
-            )}
+              </div>
+            ))}
           </div>
         )
       })}
       {!w.projects.length && (
         <div className="sidebar-empty">{t('Откройте папку, чтобы начать работу с проектом')}</div>
       )}
-      {deleting && (
-        <Modal
-          title={t('Удалить чат и его историю?')}
-          className="delete-chat-modal"
-          initialFocus={cancelDelete}
-          close={() => {
-            if (!deleteBusy) setDeleting(null)
-          }}
+      {menu && menuSession && createPortal(
+        <div
+          className="context-menu fly"
+          style={{ top: menu.y, left: menu.x }}
+          onMouseDown={(event) => event.stopPropagation()}
         >
-          <div className="delete-chat-name">
-            <MessageSquare size={18} />
-            <strong>
-              {w.sessions.find((session) => session.id === deleting)?.title || t('Новый чат')}
-            </strong>
-          </div>
-          <p className="muted">
-            {t('Чат и его сообщения будут удалены. Отменить это действие нельзя.')}
-          </p>
-          {deleteError && (
-            <p role="alert" className="danger">
-              {deleteError}
-            </p>
-          )}
-          <div className="delete-chat-actions">
-            <button ref={cancelDelete} disabled={deleteBusy} onClick={() => setDeleting(null)}>
-              {t('Отмена')}
-            </button>
-            <button
-              className="delete-chat-submit"
-              disabled={deleteBusy}
-              onClick={async () => {
-                if (deleteBusy) return
-                setDeleteBusy(true)
-                setDeleteError('')
-                try {
-                  await w.deleteSession(deleting)
-                  setDeleting(null)
-                } catch (error) {
-                  setDeleteError(error instanceof Error ? error.message : String(error))
-                } finally {
-                  setDeleteBusy(false)
-                }
-              }}
-            >
-              {deleteBusy ? t('Удаление…') : t('Удалить')}
-            </button>
-          </div>
-        </Modal>
+          <button
+            onClick={() => {
+              void w.savePreferences({
+                pinned: w.preferences.pinned.includes(menuSession.id)
+                  ? w.preferences.pinned.filter((id) => id !== menuSession.id)
+                  : [...w.preferences.pinned, menuSession.id]
+              })
+              setMenu(null)
+            }}
+          >
+            <Pin size={14} />
+            {w.preferences.pinned.includes(menuSession.id) ? t('Открепить') : t('Закрепить')}
+          </button>
+          <button
+            onClick={() => {
+              setTitle(menuSession.title)
+              setRenaming(menuSession.id)
+              setMenu(null)
+            }}
+          >
+            {t('Переименовать')}
+          </button>
+        </div>,
+        document.body
       )}
     </>
-  )
-}
-
-function ChatRow({
-  session,
-  workspace: w,
-  active,
-  menuOpen,
-  renaming,
-  title,
-  onToggleMenu,
-  onRenameStart,
-  onRenameChange,
-  onRenameSubmit,
-  onRenameCancel,
-  onPin,
-  onDelete
-}: {
-  session: Session
-  workspace: Workspace
-  active: boolean
-  menuOpen: boolean
-  renaming: boolean
-  title: string
-  onToggleMenu: () => void
-  onRenameStart: () => void
-  onRenameChange: (value: string) => void
-  onRenameSubmit: () => Promise<void>
-  onRenameCancel: () => void
-  onPin: () => void
-  onDelete: () => void
-}) {
-  const { t } = useI18n()
-  return (
-    <div className={`session-row ${active ? 'active' : ''}`}>
-      {renaming ? (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            void onRenameSubmit()
-          }}
-        >
-          <input
-            autoFocus
-            value={title}
-            onChange={(event) => onRenameChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') onRenameCancel()
-            }}
-          />
-        </form>
-      ) : (
-        <button className="session-link" onClick={() => void w.selectSession(session)}>
-          <MessageSquare size={14} />
-          <span>{session.title || t('Новый чат')}</span>
-          {session.is_busy && <span className="dot pulse" />}
-          {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
-        </button>
-      )}
-      <button
-        className="icon small row-menu"
-        aria-label={t('Действия: {value0}', { value0: session.title })}
-        onClick={onToggleMenu}
-      >
-        <MoreHorizontal size={15} />
-      </button>
-      {menuOpen && (
-        <div className="context-menu">
-          <button onClick={onRenameStart}>{t('Переименовать')}</button>
-          <button onClick={onPin}>{t('Закрепить / открепить')}</button>
-          <button className="danger" onClick={onDelete}>
-            {t('Удалить чат')}
-          </button>
-        </div>
-      )}
-    </div>
   )
 }
