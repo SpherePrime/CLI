@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FolderOpen, MessageSquare, Search, Server, X, Pin, Plus } from 'lucide-react'
+import {
+  ChevronDown,
+  FolderOpen,
+  MessageSquare,
+  Search,
+  Server,
+  X,
+  Pin,
+  Plus
+} from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
@@ -19,6 +28,8 @@ export function SidebarChats({
   const [renaming, setRenaming] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [otherSessions, setOtherSessions] = useState<Record<string, Session[]>>({})
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const cancelDelete = useRef<HTMLButtonElement>(null)
   const projectIds = w.projects.map((project) => project.id).join('|')
   useEffect(() => {
     let cancelled = false
@@ -57,6 +68,10 @@ export function SidebarChats({
       document.removeEventListener('keydown', key)
     }
   }, [menu])
+  useEffect(() => {
+    if (!w.project?.id) return
+    setExpanded((value) => (value[w.project!.id] ? value : { ...value, [w.project!.id]: true }))
+  }, [w.project?.id])
   const needle = search.trim().toLocaleLowerCase()
   const ordered = [...w.projects].sort(
     (a, b) => Number(b.kind === 'chat') - Number(a.kind === 'chat')
@@ -149,16 +164,19 @@ export function SidebarChats({
       )}
       {ordered.map((project) => {
         const active = w.project?.id === project.id
-        const sessions = sessionsOf(project)
+        const open = Boolean(expanded[project.id]) || active
+        const sessions = open ? sessionsOf(project) : []
         return (
           <div key={project.id} className={`project-group ${active ? 'active-group' : ''}`}>
             <div className="project-heading">
               <button
                 className={`project-item ${active ? 'selected' : ''}`}
+                aria-expanded={open}
                 onClick={() =>
-                  project.kind === 'chat' ? void w.openChat() : void w.selectProject(project)
+                  setExpanded((value) => ({ ...value, [project.id]: !open }))
                 }
               >
+                <ChevronDown size={14} className={open ? '' : 'collapsed'} />
                 {project.remote ? <Server size={15} /> : <FolderOpen size={15} />}
                 <span
                   title={

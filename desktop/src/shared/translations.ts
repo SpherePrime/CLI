@@ -390,6 +390,7 @@ export const english: Record<string, string> = {
   'Закрепить / открепить': 'Pin / unpin',
   Закрепить: 'Pin',
   Открепить: 'Unpin',
+  'Удалить из недавних': 'Remove from recent',
   'Удалить чат': 'Delete chat',
   Команда: 'Command',
   Параметры: 'Parameters',

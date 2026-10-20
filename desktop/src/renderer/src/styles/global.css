@@ -389,6 +389,10 @@ kbd {
   gap: 6px;
   color: var(--secondary);
 }
+.project-item .collapsed {
+  transform: rotate(-90deg);
+  color: var(--muted);
+}
 .project-item.selected {
   color: var(--text);
 }
@@ -458,6 +462,25 @@ kbd {
 }
 .recent-caption {
   margin-top: 25px;
+}
+.recent-row {
+  display: flex;
+  align-items: center;
+}
+.recent-row .recent-project {
+  flex: 1;
+  min-width: 0;
+}
+.recent-remove {
+  opacity: 0;
+  color: var(--muted);
+}
+.recent-row:hover .recent-remove,
+.recent-remove:focus-visible {
+  opacity: 1;
+}
+.recent-remove:hover {
+  color: #e5484d;
 }
 .recent-project {
   background: transparent;
