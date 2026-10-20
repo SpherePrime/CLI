@@ -82,8 +82,14 @@ vec3 sphereShape(vec3 d, float t) {
 
 vec3 spectrumShape(float t) {
   float angle = atan(direction.z, direction.x);
-  float folded = abs(atan(sin(angle), cos(angle)));
-  float level = clamp(voice(folded * 2.0) * (1.0 + flare * 0.6), 0.0, 1.4);
+  float band = floor(fract(seed * 113.7) * 12.0);
+  float value = dot(bandsA, vec4(equal(vec4(band), vec4(0.0, 3.0, 6.0, 9.0))))
+    + dot(bandsB, vec4(equal(vec4(band), vec4(1.0, 4.0, 7.0, 10.0))))
+    + dot(bandsC, vec4(equal(vec4(band), vec4(2.0, 5.0, 8.0, 11.0))));
+  float average = dot(bandsA + bandsB + bandsC, vec4(1.0)) / 12.0;
+  float detail = mix(average, value, 0.55);
+  float swell = 0.65 + 0.35 * (noise(vec3(cos(angle) * 1.4, sin(angle) * 1.4, t * 0.5)) * 0.5 + 0.5);
+  float level = clamp(detail * swell * (1.0 + flare * 0.6), 0.0, 1.2);
   float along = pow(direction.y * 0.5 + 0.5, 2.4);
   float radius = 0.64 + along * (0.012 + level * 0.3) + (1.0 - dim) * energy * 0.02;
   return vec3(cos(angle + t * 0.05) * radius, sin(angle + t * 0.05) * radius, -0.05);
