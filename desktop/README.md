@@ -58,6 +58,14 @@ Open files from the inspector into editor tabs beside the chat. Monaco provides 
 
 Open Project Tools or press Ctrl+` for project-scoped PowerShell tabs. Resize or expand the panel, copy output, and explicitly hand input control to the agent. Terminals keep running when hidden or while switching projects. Closing a tab stops its process tree; quitting stops every terminal. Active terminals block update restart. Native terminal dependencies ship with the application.
 
+## SSH projects
+
+Saved SSH profiles are available from any chat through `ssh_profiles`, `ssh_connect`, `ssh_exec` and the SSH file tools. Pass `profileId` to select a server without opening another project or chat. `ssh_upload_file` transfers local binary or text files up to 50 MiB over SFTP; replacing a destination requires `overwrite: true`. Host trust and credentials remain in the SSH panel and OS-protected vault. Project terminals keep their current project binding.
+
+The agent, model requests, provider configuration and API keys stay on this computer. SSH executes project commands, file operations, Git and terminals on the connected server; no remote Prime installation or provider setup is required. Remote project tools use the normal chat approval and full-access modes. Local shell, filesystem and LSP tools are disabled in SSH chats to prevent execution on the wrong computer; use SSH tools or a project terminal for commands.
+
+Chats and context are stored locally and reopen with the SSH project. Existing remote chat databases are imported once using a consistent SQLite snapshot without copying provider configuration or keys. Saved SSH passwords use OS-protected encryption and are never included in agent tool results.
+
 ## Data and updates
 
 Project Tools includes automations with interval, daily and weekly schedules, file-change triggers and failed-run triggers. Each run uses a separate persistent chat. Rules can be paused, edited or run manually; active runs can be stopped and opened in chat. The scheduler remains available in the tray, skips missed schedules and never repeats uncertain work after restart. Rules and bounded run history survive application updates.

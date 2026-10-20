@@ -7,7 +7,8 @@ const parse = (value) => {
   return match ? match.slice(1).map(Number) : undefined
 }
 const newer = (left, right) => {
-  for (let index = 0; index < 3; index++) if (left[index] !== right[index]) return left[index] > right[index] ? left : right
+  for (let index = 0; index < 3; index++)
+    if (left[index] !== right[index]) return left[index] > right[index] ? left : right
   return left
 }
 

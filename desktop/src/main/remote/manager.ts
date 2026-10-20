@@ -168,7 +168,11 @@ export class RemoteManager {
       this.emit()
     }
   }
-  async connect(id: string, credentials: RemoteCredentials = {}) {
+  async connect(
+    id: string,
+    credentials: RemoteCredentials = {},
+    options: { prepareWorkspace?: boolean } = {}
+  ) {
     this.writable()
     const profile = this.profile(id)
     if (this.pending.has(id) || this.clients.has(id)) throw new Error('remote.alreadyConnecting')
@@ -176,7 +180,12 @@ export class RemoteManager {
     this.generations.set(id, generation)
     this.statuses.set(id, { status: 'connecting' })
     this.emit()
-    const operation = this.establish(profile, credentials, generation)
+    const operation = this.establish(
+      profile,
+      credentials,
+      generation,
+      options.prepareWorkspace !== false
+    )
     this.pending.set(id, operation)
     try {
       await operation
@@ -188,7 +197,8 @@ export class RemoteManager {
   private async establish(
     profile: RemoteProfile,
     credentials: RemoteCredentials,
-    generation: number
+    generation: number,
+    prepareWorkspace: boolean
   ) {
     const id = profile.id
     const client = new Client()
@@ -280,7 +290,7 @@ export class RemoteManager {
       this.connections.set(id, connection)
       this.statuses.set(id, { status: 'preparing' })
       this.emit()
-      await this.options.onReady?.(profile, connection)
+      if (prepareWorkspace) await this.options.onReady?.(profile, connection)
       if (!current()) return
       this.statuses.set(id, { status: 'connected' })
       this.emit()

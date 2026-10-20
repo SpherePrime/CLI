@@ -77,6 +77,7 @@ export type Preferences = {
   inspectorVisible?: boolean
   agentContexts?: Record<string, import('./agentContext').AgentContext>
   skipBySession?: Record<string, boolean>
+  defaultSkip?: boolean
   activeProject?: string
   activeSessions?: Record<string, string>
   projectChannels?: Record<string, string[]>

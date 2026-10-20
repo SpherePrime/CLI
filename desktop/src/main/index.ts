@@ -30,13 +30,16 @@ import { WorkspaceRouter } from './workbench/workspaceRouter'
 import { isProjectLocked, openWhenUnlocked } from './prime/projectLock'
 import { RemoteWorkspaces } from './remote/workspaces'
 import { createCredentialVault } from './remote/credentialVault'
+import { createSshExecutionTools } from './remote/execution'
+import { SshAccess, sshProfileTools } from './remote/access'
+import { sshUploadTools } from './remote/upload'
 import { remoteFingerprint } from './remote/fingerprint'
 import { remoteRequest } from './remote/ipc'
 import { isRemoteWorkspace, remoteWorkspaceIdentity } from '../shared/remoteWorkspace'
 import { BrowserPanel } from './browser/panel'
 import { cancelPick, pickElements } from './browser/picker'
-import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
 import { openInSystemBrowser } from './browser/external'
+import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
 import { validateExternalUrl } from './ipc/security'
 import type { Operation } from '../shared/contracts'
 import { TerminalManager } from './terminal/manager'
@@ -180,9 +183,19 @@ function runGithub(workspaceId: string, request: unknown) {
     transport
   )
 }
+const sshAccess = new SshAccess({
+  manager: () => {
+    if (!remotes) throw new Error('SSH manager is not ready')
+    return remotes.manager
+  },
+  byWorkspace: (workspaceId) => remotes?.byWorkspace(workspaceId)?.connection
+})
 const agentTools = () => [
   ...workbenchTerminalTools(terminals),
   ...projectAgentTools,
+  ...sshProfileTools(sshAccess),
+  ...sshUploadTools(sshAccess, (workspaceId) => requirePrime().root(workspaceId)),
+  ...createSshExecutionTools((workspaceId, profileId) => sshAccess.resolve(workspaceId, profileId)),
   ...windowViewer.tools()
 ]
 const speech = new SpeechService(
@@ -874,16 +887,13 @@ else {
     remotes = new RemoteWorkspaces({
       path: join(app.getPath('userData'), 'remote-profiles.json'),
       credentials: createCredentialVault(join(app.getPath('userData'), 'remote-credentials.json')),
-      runtimeDir: app.isPackaged
-        ? join(process.resourcesPath, 'runtime')
-        : join(import.meta.dirname, '../../runtime'),
+      workspaceDirectory: join(app.getPath('userData'), 'SSH'),
+      service: () => {
+        if (!prime) throw new Error(t('Prime ещё запускается'))
+        return prime
+      },
       emit,
       channels: (key) => settings.get().projectChannels?.[key] || [],
-      startBrowser: (resolveWorkspace) =>
-        startBrowserMcpServer(browserPanel, {
-          tools: agentTools,
-          resolveWorkspace
-        }),
       onDetached: async (workspaceId) => {
         windowViewer.forget(workspaceId)
         await terminals.closeWorkspace(workspaceId)

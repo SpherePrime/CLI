@@ -1,4 +1,13 @@
 export const english: Record<string, string> = {
+  'Не удалось прочитать прежнюю историю SSH-проекта. Локальная история не заменена.': 'Unable to read previous SSH project history. Local history was not replaced.',
+  'Для переноса прежней истории нужен sqlite3 или Python 3 на сервере.': 'Migrating previous history requires sqlite3 or Python 3 on the server.',
+  'Не удалось создать согласованную копию прежней истории. Исходные чаты сохранены.': 'Unable to create a consistent history snapshot. Original chats are preserved.',
+  'Не удалось безопасно сохранить историю SSH-проекта на этом компьютере.': 'Unable to safely save SSH project history on this computer.',
+  'Модели и API-ключи остаются на этом компьютере. Команды и файлы проекта доступны через SSH.':
+    'Models and API keys stay on this computer. Project commands and files use SSH.',
+  'Агент и модели работают локально. Файлы, Git и терминал — на SSH-сервере.':
+    'The agent and models run locally. Files, Git and terminals run on the SSH server.',
+  'Подключение локального агента': 'Connecting the local agent',
   'Сохранённый пароль': 'Saved password',
   'Пароль сохранён в защищённом хранилище ОС. Для замены введите новый.':
     'Password saved in OS-protected storage. Enter a new one to replace it.',

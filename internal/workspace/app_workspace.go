@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/internal/agent"
 	mcptools "github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/app"
@@ -23,6 +22,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/internal/shell"
 	"github.com/SpherePrime/CLI/internal/skills"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 )
 
 // AppWorkspace implements the Workspace interface by delegating
@@ -112,6 +112,9 @@ func (w *AppWorkspace) AgentRun(ctx context.Context, sessionID, prompt string, a
 }
 
 func (w *AppWorkspace) AgentRunShellCommand(ctx context.Context, sessionID, command string, termWidth int, onProgress func(string), isFirstMessage bool) (proto.ShellCommandResponse, error) {
+	if w.store.Config().Options.IsRemoteWorkspace() {
+		return proto.ShellCommandResponse{}, errors.New("local shell execution is disabled for SSH workspaces; use the remote project terminal or SSH tools")
+	}
 	var persist shell.PersistFunc
 	if sessionID != "" {
 		persist = func(cmd, output string, exitCode int) error {

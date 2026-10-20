@@ -309,6 +309,9 @@ func (b *Backend) RunShellCommand(ctx context.Context, workspaceID string, req p
 	if err != nil {
 		return proto.ShellCommandResponse{}, err
 	}
+	if ws.Cfg != nil && ws.Cfg.Config().Options.IsRemoteWorkspace() {
+		return proto.ShellCommandResponse{}, errors.New("local shell execution is disabled for SSH workspaces; use the remote project terminal or SSH tools")
+	}
 
 	// Oversized output spills into the workspace data directory. Tests
 	// build workspaces without a config store; those fall back to the

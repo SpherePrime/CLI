@@ -553,7 +553,12 @@ export function useWorkspace() {
   }
   async function createSession() {
     try {
-      const created = await call('createSession', {
+      const personal = projects.find((item) => item.kind === 'chat') || (await window.prime.openChat())
+      if (personal.id !== current.current.project?.id) {
+        setProjects(await window.prime.projects())
+        await selectProject(personal)
+      }
+      const created = await window.prime.call(personal.id, 'createSession', {
         title: translate(language.current, 'Новый чат')
       })
       setSessions((items) => [created, ...items])

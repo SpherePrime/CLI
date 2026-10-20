@@ -102,21 +102,10 @@ export function RemoteProfileEditor({ initial, busy, onSave, onClose, chooseKey 
           )}
         </div>
       )}
-      <label>
-        {t('Prime на сервере')}
-        <Select
-          label={t('Prime на сервере')}
-          value={value.runtime}
-          onChange={(runtime) => update({ runtime: runtime as RemoteProfileInput['runtime'] })}
-          options={[
-            { value: 'bundled', label: t('Установить автоматически') },
-            { value: 'existing', label: t('Использовать установленный') }
-          ]}
-        />
-      </label>
-      {value.runtime === 'existing' && field('runtimePath', 'Путь к Prime', '/usr/local/bin/prime')}
       <p className="remote-hint">
-        {t('Linux x64 и ARM64. Настройки провайдеров и ключи API остаются на сервере.')}
+        {t(
+          'Модели и API-ключи остаются на этом компьютере. Команды и файлы проекта доступны через SSH.'
+        )}
       </p>
       <button className="primary" disabled={busy} type="submit">
         {t('Сохранить')}

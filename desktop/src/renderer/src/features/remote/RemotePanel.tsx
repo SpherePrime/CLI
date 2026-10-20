@@ -115,7 +115,7 @@ export function RemotePanel({ api, subscribe, onError, onOpenProject, chooseKey 
         </button>
       </header>
       <p className="remote-intro">
-        {t('Файлы, Git, терминал и Prime работают на вашем Linux-сервере.')}
+        {t('Агент и модели работают локально. Файлы, Git и терминал — на SSH-сервере.')}
       </p>
       {(error || snapshot.error || snapshot.credentialError) && (
         <div role="alert" className="remote-error">

@@ -2,9 +2,7 @@ node_modules/
 dist/
 out/
 release/
-runtime/*.exe
-runtime/manifest.json
-runtime/remotes/
+runtime/
 .superpowers/
 CHATS.md
 .env*

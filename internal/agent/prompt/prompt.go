@@ -94,6 +94,9 @@ func (p *Prompt) Build(ctx context.Context, provider, model string, store *confi
 	if err := t.Execute(&sb, d); err != nil {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
+	if remote := store.Config().Options.RemoteWorkspace; remote != nil {
+		sb.WriteString(remoteWorkspaceContext(remote))
+	}
 
 	return sb.String(), nil
 }
@@ -169,6 +172,20 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 	platform := cmp.Or(p.platform, runtime.GOOS)
 
 	cfg := store.Config()
+	if remote := cfg.Options.RemoteWorkspace; remote != nil {
+		data := PromptDat{
+			Provider:   provider,
+			Model:      model,
+			Config:     *cfg,
+			WorkingDir: remote.Root,
+			Platform:   "linux",
+			Date:       p.now().Format("1/2/2006"),
+		}
+		for _, files := range loadContextFiles(cfg.Options.GlobalContextPaths, store) {
+			data.GlobalContextFiles = append(data.GlobalContextFiles, files...)
+		}
+		return data, nil
+	}
 	contextFiles := loadContextFiles(cfg.Options.ContextPaths, store)
 	globalContextFiles := loadContextFiles(cfg.Options.GlobalContextPaths, store)
 

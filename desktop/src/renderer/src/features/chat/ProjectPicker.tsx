@@ -22,12 +22,20 @@ export function ProjectPicker({ workspace: w }: { workspace: Workspace }) {
     .filter((path) => !needle || path.toLocaleLowerCase().includes(needle))
     .slice(0, 8)
   const personal = w.projects.find((project) => project.kind === 'chat')
+  const currentProject =
+    w.project && w.project.kind !== 'chat' && w.session ? w.project : null
+  const projectLabel = currentProject
+    ? currentProject.remote
+      ? `${currentProject.remote.name} · ${currentProject.remote.root.split('/').pop() || '/'}`
+      : currentProject.path.split(/[\\/]/).pop() || currentProject.path
+    : t('Выбрать проект')
   return (
     <>
       <button
         ref={anchor}
         className="project-picker-trigger"
-        aria-label={t('Выбрать проект')}
+        aria-label={projectLabel}
+        title={projectLabel}
         aria-expanded={open}
         disabled={w.loading || w.info.runtime !== 'ready'}
         onClick={() => {
@@ -36,7 +44,7 @@ export function ProjectPicker({ workspace: w }: { workspace: Workspace }) {
         }}
       >
         <FolderOpen size={15} />
-        <span>{t('Выбрать проект')}</span>
+        <span>{projectLabel}</span>
       </button>
       {open && (
         <Popover anchor={anchor} close={() => setOpen(false)} width={280}>

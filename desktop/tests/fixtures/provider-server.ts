@@ -99,6 +99,22 @@ export async function startProvider() {
         return
       }
       if (
+        userText?.includes('SSH_TOOL_FIXTURE') &&
+        !body.messages.slice(lastUserIndex + 1).some((message: any) => message.role === 'tool')
+      ) {
+        const tool = body.tools?.find((item: any) =>
+          item.function?.name?.endsWith('ssh_write_file')
+        )
+        response.write(
+          `data: ${JSON.stringify({ id: 'fixture-ssh-tool', object: 'chat.completion.chunk', model: 'desktop-fixture', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: 'fixture-ssh-write', type: 'function', function: { name: tool?.function.name || 'missing_ssh_write_file', arguments: JSON.stringify({ path: 'created-by-tool.txt', content: 'Tool execution verified' }) } }] }, finish_reason: null }] })}\n\n`
+        )
+        response.write(
+          `data: ${JSON.stringify({ id: 'fixture-ssh-tool', object: 'chat.completion.chunk', model: 'desktop-fixture', choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }] })}\n\n`
+        )
+        response.end('data: [DONE]\n\n')
+        return
+      }
+      if (
         userText?.includes('TOOL_FIXTURE') &&
         !body.messages.slice(lastUserIndex + 1).some((message: any) => message.role === 'tool')
       ) {

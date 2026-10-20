@@ -5,7 +5,10 @@ import { PrimeTransport } from './transport'
 import { operationRoute, redact } from './operations'
 import { ActivityTracker } from './activity'
 
-type ProjectEnvironment = { resolveRoot?: (path: string) => Promise<string>; caseSensitive?: boolean }
+type ProjectEnvironment = {
+  resolveRoot?: (path: string) => Promise<string>
+  caseSensitive?: boolean
+}
 
 export class PrimeService {
   projects = new Map<string, Project>()
@@ -23,12 +26,14 @@ export class PrimeService {
   isBusy(): boolean {
     return this.activity.isBusy() || this.shells.size > 0 || this.initializing.size > 0
   }
-  async open(path: string, channels: string[] = []): Promise<Project> {
-    const canonical = await (this.environment.resolveRoot ? this.environment.resolveRoot(path) : realpath(path))
+  async open(path: string, channels: string[] = [], remote?: Project['remote']): Promise<Project> {
+    const canonical = await (this.environment.resolveRoot
+      ? this.environment.resolveRoot(path)
+      : realpath(path))
     const key = this.pathKey(canonical)
     const pending = this.opening.get(key)
     if (pending) return pending
-    const operation = this.openCanonical(canonical, channels)
+    const operation = this.openCanonical(canonical, channels, remote)
     this.opening.set(key, operation)
     try {
       return await operation
@@ -36,12 +41,20 @@ export class PrimeService {
       this.opening.delete(key)
     }
   }
-  private async openCanonical(canonical: string, channels: string[]): Promise<Project> {
-    if (!this.environment.resolveRoot && !(await stat(canonical)).isDirectory()) throw new Error('Выберите папку проекта')
+  private async openCanonical(
+    canonical: string,
+    channels: string[],
+    remote?: Project['remote']
+  ): Promise<Project> {
+    if (!this.environment.resolveRoot && !(await stat(canonical)).isDirectory())
+      throw new Error('Выберите папку проекта')
     const existing = [...this.projects.values()].find(
       (project) => this.pathKey(project.path) === this.pathKey(canonical)
     )
-    if (existing) return existing
+    if (existing) {
+      if (remote) existing.remote = remote
+      return existing
+    }
     const clientId = randomUUID()
     const workspace: any = await this.transport.request('POST', '/v1/workspaces', {
       path: canonical,
@@ -55,6 +68,7 @@ export class PrimeService {
       channels,
       connection: 'starting'
     }
+    if (remote) project.remote = remote
     this.projects.set(project.id, project)
     let initialReady: () => void = () => {}
     const ready = new Promise<void>((resolve) => {
@@ -91,21 +105,29 @@ export class PrimeService {
         }
       )
     )
-    await Promise.race([
-      ready,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Не удалось открыть поток событий Prime')), 10000)
-      )
-    ])
+    try {
+      await Promise.race([
+        ready,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Не удалось открыть поток событий Prime')), 10000)
+        )
+      ])
+    } catch (error) {
+      await this.close(project.id).catch(() => {})
+      throw error
+    }
     return project
   }
   async close(id: string): Promise<void> {
     const project = this.projects.get(id)
     if (!project) return
-    await this.transport.request('DELETE', `/v1/clients/${project.clientId}`)
-    this.subscriptions.get(id)?.()
-    this.subscriptions.delete(id)
-    this.projects.delete(id)
+    try {
+      await this.transport.request('DELETE', `/v1/clients/${project.clientId}`)
+    } finally {
+      this.subscriptions.get(id)?.()
+      this.subscriptions.delete(id)
+      this.projects.delete(id)
+    }
   }
   async call(id: string, operation: Operation, args: any = {}): Promise<any> {
     const project = this.projects.get(id)
@@ -161,9 +183,14 @@ export class PrimeService {
     if (!project) throw new Error('Проект не открыт')
     return project.path
   }
-  private pathKey(path: string) { return (this.environment.caseSensitive ?? process.platform !== 'win32') ? path : path.toLowerCase() }
+  private pathKey(path: string) {
+    return (this.environment.caseSensitive ?? process.platform !== 'win32')
+      ? path
+      : path.toLowerCase()
+  }
   detach(): void {
-    for (const project of this.projects.values()) this.emit({ workspaceId: project.id, type: 'connection', payload: 'disconnected' })
+    for (const project of this.projects.values())
+      this.emit({ workspaceId: project.id, type: 'connection', payload: 'disconnected' })
     for (const unsubscribe of this.subscriptions.values()) unsubscribe()
     for (const controller of this.shells.values()) controller.abort()
     this.subscriptions.clear()

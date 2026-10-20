@@ -17,6 +17,7 @@ export function remoteError(error: unknown, t: (text: string) => string) {
 }
 
 const progress: Record<string, string> = {
+  'remote.preparingLocalAgent': 'Подключение локального агента',
   'remote.preparingRuntime': 'Проверка Prime на сервере',
   'remote.uploadingRuntime': 'Загрузка Prime на сервер',
   'remote.startRuntime': 'Запуск Prime на сервере'
