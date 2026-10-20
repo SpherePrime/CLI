@@ -1,3 +1,6 @@
+import { panelGeometry } from './panelGeometry'
+import { useLayoutWidth } from './useLayoutWidth'
+import { ProjectRail } from '../features/projects/ProjectRail'
 import { projectName as projectLabel } from '../features/projects/projectName'
 import { useDocuments } from '../features/files/useDocuments'
 import { StartupScreen } from '../components/StartupScreen'
@@ -102,7 +105,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   useEffect(
     () =>
       window.prime.onEvent((event) => {
-        if (event.type === 'workbench' && event.payload?.action === 'activate' && event.workspaceId === w.project?.id) {
+        if (
+          event.type === 'workbench' &&
+          event.payload?.action === 'activate' &&
+          event.workspaceId === w.project?.id
+        ) {
           const view = event.payload.view
           if (['terminal', 'automations', 'teams', 'launch', 'github', 'windows'].includes(view)) {
             setWorkbenchView(view as WorkbenchView)
@@ -110,7 +117,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             setFocusMode(false)
           }
         }
-        if (event.type === 'windows' && event.payload?.request && event.workspaceId === w.project?.id) {
+        if (
+          event.type === 'windows' &&
+          event.payload?.request &&
+          event.workspaceId === w.project?.id
+        ) {
           setWorkbenchView('windows')
           setWorkbench(true)
           setFocusMode(false)
@@ -126,6 +137,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [widths, setWidths] = useState({ sidebar: 256, inspector: 334 })
   const [zoom, setZoom] = useState(1)
   const shell = useRef<HTMLDivElement>(null)
+  const layoutWidth = useLayoutWidth(shell, zoom)
+  const layout = panelGeometry(
+    layoutWidth,
+    widths.sidebar,
+    widths.inspector,
+    showSidebar,
+    showInspector
+  )
   useEffect(() => {
     const setup = () => setModal('providers')
     window.addEventListener('prime:providers', setup)
@@ -186,35 +205,60 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [w.project?.id, w.messages.length, workbenchView])
+  function changePanelWidth(which: 'sidebar' | 'inspector', width: number, persist = false) {
+    const next = Math.max(
+      which === 'sidebar' ? 210 : 280,
+      Math.min(which === 'sidebar' ? 400 : layout.inspectorMax, width)
+    )
+    setWidths((value) => ({ ...value, [which]: next }))
+    if (persist)
+      void w
+        .savePreferences({ [which === 'sidebar' ? 'sidebarWidth' : 'inspectorWidth']: next })
+        .catch(w.errorHandler)
+    return next
+  }
   function resize(which: 'sidebar' | 'inspector', event: React.PointerEvent<HTMLDivElement>) {
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     const start = event.clientX
     const initial = widths[which]
-    const move = (move: PointerEvent) =>
-      setWidths((value) => ({
-        ...value,
-        [which]: Math.min(
-          which === 'sidebar' ? 400 : 650,
-          Math.max(
-            which === 'sidebar' ? 210 : 280,
-            initial + (move.clientX - start) * (which === 'sidebar' ? 1 : -1)
-          )
-        )
-      }))
+    let latest = initial
+    const move = (move: PointerEvent) => {
+      latest = changePanelWidth(
+        which,
+        initial + ((move.clientX - start) / zoom) * (which === 'sidebar' ? 1 : -1)
+      )
+    }
     const stop = () => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', stop)
-      setWidths((value) => {
-        void w.savePreferences({ sidebarWidth: value.sidebar, inspectorWidth: value.inspector })
-        return value
-      })
+      window.removeEventListener('pointercancel', stop)
+      changePanelWidth(which, latest, true)
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', stop)
+    window.addEventListener('pointercancel', stop)
   }
-  const projectName =
-    w.project?.kind === 'chat' ? t('Личные чаты') : projectLabel(w.project)
+  function resizeWithKeyboard(
+    which: 'sidebar' | 'inspector',
+    event: React.KeyboardEvent<HTMLDivElement>
+  ) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    event.preventDefault()
+    const minimum = which === 'sidebar' ? 210 : 280
+    const maximum = which === 'sidebar' ? 400 : layout.inspectorMax
+    const direction = (event.key === 'ArrowRight' ? 1 : -1) * (which === 'sidebar' ? 1 : -1)
+    changePanelWidth(
+      which,
+      event.key === 'Home'
+        ? minimum
+        : event.key === 'End'
+          ? maximum
+          : widths[which] + direction * (event.shiftKey ? 50 : 10),
+      true
+    )
+  }
+  const projectName = w.project?.kind === 'chat' ? t('Личные чаты') : projectLabel(w.project)
   const isEmpty = !w.messages.length && !w.busy
   const quickActions: QuickAction[] = [
     {
@@ -242,7 +286,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       disabled: !w.project,
       run: () => {
         setWorkbenchView('teams')
-        setWorkbenchExpanded(true)
         setWorkbench(true)
       }
     },
@@ -253,7 +296,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       disabled: !w.project,
       run: () => {
         setWorkbenchView('automations')
-        setWorkbenchExpanded(true)
         setWorkbench(true)
       }
     },
@@ -351,47 +393,69 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     <>
       <Titlebar />
       <ProjectLockBanner />
-      <WindowControlBadge workspaceIds={w.projects.map((project) => project.id)} onError={w.errorHandler} />
+      <WindowControlBadge
+        workspaceIds={w.projects.map((project) => project.id)}
+        onError={w.errorHandler}
+      />
       <div
         ref={shell}
-        className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''}`}
+        className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''} ${layout.compact ? 'compact-layout' : ''}`}
         style={
           {
             '--sidebar-width': widths.sidebar + 'px',
             '--editor-fraction': `${editorFraction}fr`,
             '--inspector-width': widths.inspector + 'px',
-            zoom
+            '--layout-zoom': zoom,
+            zoom,
+            gridTemplateColumns:
+              layout.columns +
+              (showEditor && !layout.compact ? ' 1px minmax(0, var(--editor-fraction))' : '')
           } as React.CSSProperties
         }
       >
         {showSidebar && (
           <>
-            <Sidebar
-              workspace={w}
-              onSettings={() => setModal('settings')}
-              onPlugins={() => setModal('plugins')}
-              onCommands={() => setModal('commands')}
-              onRemote={() => setModal('remote')}
-              onJobs={() => setModal('jobs')}
-              onWorkbench={() => setWorkbench(true)}
-            />
-            <div
-              className="resizer left-resizer"
-              role="separator"
-              aria-label={t('Ширина панели проектов')}
-              tabIndex={0}
-              onPointerDown={(event) => resize('sidebar', event)}
-              onKeyDown={(event) => {
-                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-                  setWidths((value) => ({
-                    ...value,
-                    sidebar: Math.max(
-                      210,
-                      Math.min(400, value.sidebar + (event.key === 'ArrowRight' ? 10 : -10))
-                    )
-                  }))
-              }}
-            />
+            {layout.sidebarCompact ? (
+              <ProjectRail
+                workspace={w}
+                onCommands={() => setModal('commands')}
+                onSettings={() => setModal('settings')}
+              >
+                <Sidebar
+                  workspace={w}
+                  onSettings={() => setModal('settings')}
+                  onPlugins={() => setModal('plugins')}
+                  onCommands={() => setModal('commands')}
+                  onRemote={() => setModal('remote')}
+                  onJobs={() => setModal('jobs')}
+                  onWorkbench={() => setWorkbench(true)}
+                />
+              </ProjectRail>
+            ) : (
+              <Sidebar
+                workspace={w}
+                onSettings={() => setModal('settings')}
+                onPlugins={() => setModal('plugins')}
+                onCommands={() => setModal('commands')}
+                onRemote={() => setModal('remote')}
+                onJobs={() => setModal('jobs')}
+                onWorkbench={() => setWorkbench(true)}
+              />
+            )}
+            {!layout.sidebarCompact && (
+              <div
+                className="resizer left-resizer"
+                role="separator"
+                aria-label={t('Ширина панели проектов')}
+                tabIndex={0}
+                onPointerDown={(event) => resize('sidebar', event)}
+                aria-orientation="vertical"
+                aria-valuemin={210}
+                aria-valuemax={400}
+                aria-valuenow={layout.sidebar}
+                onKeyDown={(event) => resizeWithKeyboard('sidebar', event)}
+              />
+            )}
           </>
         )}
         <main className="main-workspace" data-workbench-expanded={workbench && workbenchExpanded}>
@@ -544,24 +608,22 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         </main>
         {showInspector && (
           <>
-            <div
-              className="resizer right-resizer"
-              role="separator"
-              aria-label={t('Ширина рабочей области')}
-              tabIndex={0}
-              onPointerDown={(event) => resize('inspector', event)}
-              onKeyDown={(event) => {
-                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
-                  setWidths((value) => ({
-                    ...value,
-                    inspector: Math.max(
-                      280,
-                      Math.min(650, value.inspector + (event.key === 'ArrowLeft' ? 10 : -10))
-                    )
-                  }))
-              }}
-            />
+            {!layout.compact && (
+              <div
+                className="resizer right-resizer"
+                role="separator"
+                aria-label={t('Ширина рабочей области')}
+                tabIndex={0}
+                onPointerDown={(event) => resize('inspector', event)}
+                aria-orientation="vertical"
+                aria-valuemin={280}
+                aria-valuemax={layout.inspectorMax}
+                aria-valuenow={layout.inspector}
+                onKeyDown={(event) => resizeWithKeyboard('inspector', event)}
+              />
+            )}
             <Inspector
+              compact={layout.compact}
               workspace={w}
               close={toggleInspector}
               openDocument={documents.open}
@@ -628,7 +690,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             close={() => setModal('')}
             openTools={(view) => {
               setWorkbenchView(view)
-              setWorkbenchExpanded(view === 'launch')
               setWorkbench(true)
             }}
           />

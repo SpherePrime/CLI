@@ -1,5 +1,15 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { AppWindow, Clock3, Github, Maximize2, Minimize2, Rocket, TerminalSquare, Users, X } from 'lucide-react'
+import {
+  AppWindow,
+  Clock3,
+  Github,
+  Maximize2,
+  Minimize2,
+  Rocket,
+  TerminalSquare,
+  Users,
+  X
+} from 'lucide-react'
 import { GithubPanel } from '../github/GithubPanel'
 import { WindowsPanel } from '../windows/WindowsPanel'
 import { startAgentTask } from './agentTask'
@@ -132,6 +142,8 @@ export function WorkbenchDock({
           <button
             role="tab"
             aria-selected={view === 'terminal'}
+            title={t('Терминал')}
+            aria-label={t('Терминал')}
             onClick={() => setView('terminal')}
           >
             <TerminalSquare size={14} />
@@ -140,9 +152,10 @@ export function WorkbenchDock({
           <button
             role="tab"
             aria-selected={view === 'launch'}
+            title={t('Запуск')}
+            aria-label={t('Запуск')}
             onClick={() => {
               setView('launch')
-              setExpanded(true)
             }}
           >
             <Rocket size={14} />
@@ -151,9 +164,10 @@ export function WorkbenchDock({
           <button
             role="tab"
             aria-selected={view === 'automations'}
+            title={t('Автоматизации')}
+            aria-label={t('Автоматизации')}
             onClick={() => {
               setView('automations')
-              setExpanded(true)
             }}
           >
             <Clock3 size={14} />
@@ -162,9 +176,10 @@ export function WorkbenchDock({
           <button
             role="tab"
             aria-selected={view === 'teams'}
+            title={t('Команды')}
+            aria-label={t('Команды')}
             onClick={() => {
               setView('teams')
-              setExpanded(true)
             }}
           >
             <Users size={14} />
@@ -173,9 +188,10 @@ export function WorkbenchDock({
           <button
             role="tab"
             aria-selected={view === 'github'}
+            title={t('GitHub')}
+            aria-label={t('GitHub')}
             onClick={() => {
               setView('github')
-              setExpanded(true)
             }}
           >
             <Github size={14} />
@@ -184,9 +200,10 @@ export function WorkbenchDock({
           <button
             role="tab"
             aria-selected={view === 'windows'}
+            title={t('Окна')}
+            aria-label={t('Окна')}
             onClick={() => {
               setView('windows')
-              setExpanded(true)
             }}
           >
             <AppWindow size={14} />

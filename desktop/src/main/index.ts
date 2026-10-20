@@ -1,3 +1,4 @@
+import { applyWindowChrome, windowChromeColors } from './windowChrome'
 import { UpdateController } from './updates/controller'
 import { discoverDesktopRelease } from './updates/github'
 import type { UpdateStatus } from '../shared/updates'
@@ -518,13 +519,17 @@ function registerIpc(): void {
       project = await openWhenUnlocked({
         open: () => requirePrime().open(target, settings.get().projectChannels?.[target] || []),
         signal: wait.signal,
-        onWait: () => emit({ workspaceId: '', type: 'projectLock', payload: { path: target, waiting: true } }),
-        onDone: () => emit({ workspaceId: '', type: 'projectLock', payload: { path: target, waiting: false } })
+        onWait: () =>
+          emit({ workspaceId: '', type: 'projectLock', payload: { path: target, waiting: true } }),
+        onDone: () =>
+          emit({ workspaceId: '', type: 'projectLock', payload: { path: target, waiting: false } })
       })
     } catch (error) {
       if ((error as { cancelled?: boolean }).cancelled) return null
       if (isProjectLocked(error))
-        throw new Error(t('Проект открыт в Prime CLI. Закройте CLI в этой папке и откройте проект снова.'))
+        throw new Error(
+          t('Проект открыт в Prime CLI. Закройте CLI в этой папке и откройте проект снова.')
+        )
       throw error
     } finally {
       if (projectWait === wait) projectWait = undefined
@@ -660,7 +665,7 @@ function registerIpc(): void {
         pinned: z.array(z.string()).max(500).optional(),
         drafts: z.record(z.string(), z.string().max(200000)).optional(),
         sidebarWidth: z.number().min(200).max(500).optional(),
-        inspectorWidth: z.number().min(280).max(700).optional(),
+        inspectorWidth: z.number().finite().min(280).optional(),
         projectChannels: z
           .record(z.string(), z.array(z.string().min(1).max(200)).max(100))
           .optional()
@@ -706,7 +711,8 @@ function registerIpc(): void {
   handle('browserHide', () => browserPanel.hide())
   handle('browserTab', (action: string, id?: string, url?: string) => {
     const command = z.enum(['new', 'select', 'close']).parse(action)
-    if (command === 'new') return browserPanel.newTab(url ? z.string().max(8192).parse(url) : undefined)
+    if (command === 'new')
+      return browserPanel.newTab(url ? z.string().max(8192).parse(url) : undefined)
     const tab = z.string().uuid().parse(id)
     return command === 'select' ? browserPanel.selectTab(tab) : browserPanel.closeTab(tab)
   })
@@ -759,27 +765,24 @@ function registerIpc(): void {
   })
 }
 function syncTitlebar(): void {
-  const theme = settings.get().theme
-  const dark = theme === 'system' ? nativeTheme.shouldUseDarkColors : theme !== 'light'
-  window?.setTitleBarOverlay({
-    color: dark ? '#131313' : '#efede7',
-    symbolColor: dark ? '#f1efe9' : '#17110d',
-    height: 40
-  })
+  applyWindowChrome(window, settings.get().theme)
 }
 function createWindow(): void {
+  applyWindowChrome(undefined, settings.get().theme)
+  const chrome = windowChromeColors()
   window = new BrowserWindow({
     width: 1440,
     height: 940,
-    minWidth: 800,
-    minHeight: 600,
-    backgroundColor: '#101010',
+    minWidth: 420,
+    minHeight: 420,
+    backgroundColor: chrome.color,
+    accentColor: chrome.color,
     icon: app.isPackaged
       ? join(process.resourcesPath, 'icon.png')
       : join(import.meta.dirname, '../../build/icon.png'),
     title: 'Prime Desktop',
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#131313', symbolColor: '#f1efe9', height: 40 },
+    titleBarOverlay: chrome,
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
