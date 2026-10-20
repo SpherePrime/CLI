@@ -64,23 +64,29 @@ float voice(float angle) {
     + lobe(angle, step * 9.0, bandsA.w) + lobe(angle, step * 10.0, bandsB.w) + lobe(angle, step * 11.0, bandsC.w);
 }
 
-vec3 sphereShape(vec3 dir, float t) {
+vec3 surface(vec3 dir, float t) {
   vec3 jitter = vec3(fract(seed * 12.9898), fract(seed * 78.233), fract(seed * 37.719)) - 0.5;
-  vec3 d = normalize(dir + jitter * 0.035);
+  vec3 d = normalize(dir + jitter * 0.03);
   d.xz *= rotate(t * (0.12 + swirl * 0.1));
   d.yz *= rotate(0.32);
-  float angle = atan(d.y, d.x);
-  float equator = 1.0 - d.z * d.z;
-  float flow = noise(d * 2.3 + vec3(0.0, t * 0.35, t * 0.25));
-  float shimmer = noise(d * 6.0 - vec3(t * 0.5)) * treble * 0.05;
-  float spoken = voice(angle + t * 0.15) * equator * (0.22 + flare * 0.16);
-  float waves = ripple * sin(d.y * 11.0 - t * 6.5 + seed * 0.6) * (0.015 + energy * 0.09);
-  float radius = 0.52 * (1.0 + bass * 0.12 + sin(t * 1.3) * 0.012) * (1.0 - dim * 0.22);
-  float spark = step(0.94, seed) * (0.12 + energy * 0.45 + bass * 0.2) * fract(seed * 13.7 + t * (0.1 + energy * 0.3));
+  return d;
+}
+
+vec3 sphereShape(vec3 d, float t) {
+  vec3 jitter = vec3(fract(seed * 41.3), fract(seed * 17.9), fract(seed * 63.1)) - 0.5;
+  float radius = 0.5 * (1.0 + energy * 0.05 + bass * 0.05 + sin(t * 1.3) * 0.01) * (1.0 - dim * 0.2);
   float drift = pow(fract(seed * 53.17), 2.0) * (0.55 + 0.45 * sin(t * (0.6 + fract(seed * 9.1) * 0.8) + seed * 40.0));
-  float scatter = drift * (0.035 + energy * 0.3 + bass * 0.12) * (1.0 - dim * 0.7);
-  vec3 away = normalize(d + jitter * 1.4);
-  return d * radius * (1.0 + flow * energy * 0.12 + shimmer + spoken + waves + spark) + away * radius * scatter;
+  float scatter = drift * (0.035 + energy * 0.12 + bass * 0.05) * (1.0 - dim * 0.7);
+  return d * radius + normalize(d + jitter * 1.4) * radius * scatter;
+}
+
+vec3 spectrumShape(float t) {
+  float angle = atan(direction.z, direction.x);
+  float folded = abs(atan(sin(angle), cos(angle)));
+  float level = clamp(voice(folded * 2.0) * (1.0 + flare * 0.6), 0.0, 1.4);
+  float along = pow(direction.y * 0.5 + 0.5, 2.4);
+  float radius = 0.64 + along * (0.012 + level * 0.3) + (1.0 - dim) * energy * 0.02;
+  return vec3(cos(angle + t * 0.05) * radius, sin(angle + t * 0.05) * radius, -0.05);
 }
 
 vec3 ringShape(float t) {
@@ -95,22 +101,25 @@ vec3 ringShape(float t) {
 void main() {
   float t = time;
   float keep = step(seed, 0.32);
-  vec3 sphere = sphereShape(direction, t) * (1.0 - ring * keep * 0.55);
+  float halo = step(0.84, seed);
+  vec3 d = surface(direction, t);
+  vec3 rest = mix(sphereShape(d, t) * (1.0 - ring * keep * 0.55), spectrumShape(t), halo);
   float morph = smoothstep(seed * 0.5, seed * 0.5 + 0.5, ring) * (1.0 - keep);
-  vec3 position = mix(sphere, ringShape(t), morph);
+  vec3 position = mix(rest, ringShape(t), morph);
   float depth = position.z + 2.6;
   vec2 screen = position.xy * 2.15 / depth;
   gl_Position = vec4(screen, 0.0, 1.0);
   float near = clamp(1.25 - position.z * 0.9, 0.25, 1.6);
-  gl_PointSize = pixel * (1.1 + seed * 1.4 + energy * 1.2) * near / depth * 2.6;
-  float heat = clamp(0.35 + direction.y * 0.25 + energy * 0.55 + step(0.9, seed) * 0.35, 0.0, 1.0);
+  float twinkle = treble * 0.8 * pow(0.5 + 0.5 * sin(t * 9.0 + seed * 91.0), 6.0);
+  float wave = ripple * pow(0.5 + 0.5 * sin(d.y * 7.0 + d.x * 2.0 - t * 4.5), 10.0) * (0.2 + energy * 1.0);
+  float light = (1.0 - halo) * (twinkle + wave) * (1.0 - morph);
+  gl_PointSize = pixel * (1.1 + seed * 1.2 + energy * 0.8 + light * 1.2) * near / depth * 2.6;
+  float heat = clamp(0.32 + direction.y * 0.22 + energy * 0.35 + light * 0.6 + halo * 0.25, 0.0, 1.0);
   tint = mix(mix(deep, mid, smoothstep(0.0, 0.55, heat)), hot, smoothstep(0.5, 1.0, heat));
   tint = mix(tint, vec3(dot(tint, vec3(0.299, 0.587, 0.114))) * vec3(0.95, 0.94, 1.0), dim * 0.85);
-  float sparkFade = 1.0 - step(0.94, seed) * fract(seed * 13.7 + t * (0.1 + energy * 0.3)) * (1.0 - morph);
-  glow = near * (0.55 + energy * 0.6) * (1.0 - dim * 0.65) * sparkFade;
+  glow = near * (0.5 + energy * 0.35 + light * 0.9) * (1.0 - dim * 0.65) * (1.0 - halo * 0.25);
 }
 `
-
 export const particleFragment = `
 precision highp float;
 varying vec3 tint;
