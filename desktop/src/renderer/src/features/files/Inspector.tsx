@@ -1,6 +1,7 @@
+import { GitHistoryPanel } from '../github/GitHistoryPanel'
 import { projectName, projectRoot } from '../projects/projectName'
 import { Select } from '../../components/Select'
-import { useCallback, useEffect, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
 import {
   ChevronDown,
   ChevronRight,
@@ -41,15 +42,37 @@ export function Inspector({
   workspace: w,
   close,
   openDocument,
+  compact = false,
   browserRequest = 0
 }: {
   workspace: Workspace
   close: () => void
   openDocument: (workspaceId: string, path: string, diff?: any) => Promise<void>
+  compact?: boolean
   browserRequest?: number
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
+  const [panelOpen, setPanelOpen] = useState(false)
+  const panel = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (!compact || !panelOpen) return
+    const pointer = (event: PointerEvent) => {
+      if (!panel.current?.contains(event.target as Node)) setPanelOpen(false)
+    }
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setPanelOpen(false)
+        panel.current?.querySelector<HTMLButtonElement>('.inspector-tabs .active')?.focus()
+      }
+    }
+    document.addEventListener('pointerdown', pointer)
+    document.addEventListener('keydown', keyboard)
+    return () => {
+      document.removeEventListener('pointerdown', pointer)
+      document.removeEventListener('keydown', keyboard)
+    }
+  }, [compact, panelOpen])
   const [history, setHistory] = useState<any[]>([])
   const [changes, setChanges] = useState<{ path: string; status: string }[]>([])
   const [gitError, setGitError] = useState('')
@@ -63,7 +86,10 @@ export function Inspector({
   const [removing, setRemoving] = useState<Entry | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
   useEffect(() => {
-    if (browserRequest) setTab('browser')
+    if (browserRequest) {
+      setTab('browser')
+      setPanelOpen(true)
+    }
   }, [browserRequest])
   useEffect(() => setOpened([]), [w.project?.id])
   useEffect(() => {
@@ -201,14 +227,17 @@ export function Inspector({
     }
   }
   return (
-    <aside className="inspector">
+    <aside
+      ref={panel}
+      className={`inspector ${compact ? 'inspector-rail' : ''} ${panelOpen ? 'panel-open' : ''}`}
+    >
       <div className="inspector-header">
         <strong>{t('Рабочая область')}</strong>
         <button
           className="icon"
           title={t('Скрыть панель')}
           aria-label={t('Скрыть панель')}
-          onClick={close}
+          onClick={compact ? () => setPanelOpen(false) : close}
         >
           <PanelRightClose size={16} />
         </button>
@@ -225,7 +254,11 @@ export function Inspector({
             title={item.title}
             aria-label={item.title}
             className={tab === item.id ? 'active' : ''}
-            onClick={() => setTab(item.id)}
+            aria-expanded={compact ? panelOpen && tab === item.id : undefined}
+            onClick={() => {
+              setTab(item.id)
+              setPanelOpen(!panelOpen || tab !== item.id)
+            }}
           >
             <item.icon size={15} />
             <span>{item.title}</span>
@@ -233,7 +266,9 @@ export function Inspector({
         ))}
       </div>
       {tab === 'browser' && (
-        <BrowserTab onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)} />
+        <div className="inspector-browser">
+          <BrowserTab onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)} />
+        </div>
       )}
       <div className="inspector-content" hidden={tab === 'browser'}>
         {error && (
@@ -279,6 +314,12 @@ export function Inspector({
         )}
         {tab === 'changes' && (
           <>
+            {w.project && (
+              <details className="inspector-history">
+                <summary>{t('История коммитов')}</summary>
+                <GitHistoryPanel key={w.project.id} workspaceId={w.project.id} />
+              </details>
+            )}
             <p className="panel-help">
               {source === 'git'
                 ? t('Все изменения проекта относительно Git HEAD.')
