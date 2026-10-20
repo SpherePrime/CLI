@@ -40,3 +40,27 @@ it('shares concurrent initialization and rechecks readiness on later requests', 
   expect(request.mock.calls.filter(([method]) => method === 'POST')).toHaveLength(1)
   expect(service.isBusy()).toBe(false)
 })
+
+it('does not expire interactive initialization while waiting for user input and aborts it on detach', async () => {
+  const { service, request } = fixture(false)
+  let initializationSignal: AbortSignal | undefined
+  request.mockImplementation(async (method: string, route: string, ...options: any[]) => {
+    if (method === 'GET' && route.endsWith('/agent')) return { is_ready: false }
+    if (route.endsWith('/agent/init')) {
+      expect(options[1]).toBe(0)
+      initializationSignal = options[2]
+      return new Promise((_resolve, reject) =>
+        initializationSignal!.addEventListener('abort', () => reject(new Error('aborted')), {
+          once: true
+        })
+      )
+    }
+    return null
+  })
+  const pending = service.call('project', 'init')
+  const rejected = expect(pending).rejects.toThrow('aborted')
+  await vi.waitFor(() => expect(initializationSignal).toBeDefined())
+  service.detach()
+  await rejected
+  expect(initializationSignal!.aborted).toBe(true)
+})
