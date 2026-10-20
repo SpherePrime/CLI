@@ -378,7 +378,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       label: t('Экспорт в Markdown'),
       icon: Download,
       disabled: !w.messages.length,
-      run: () => downloadConversation(w.session?.title || t('Новый чат'), w.messages, t('Вы'))
+      run: () => downloadConversation(w.session?.title || t('Новый чат'), w.messages, t)
     },
     { id: 'plugins', label: t('Плагины'), icon: Puzzle, run: () => setModal('plugins') },
     {

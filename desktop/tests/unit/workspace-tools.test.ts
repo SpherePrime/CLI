@@ -12,12 +12,14 @@ const messages: Message[] = [
     id: 'one',
     session_id: 's',
     role: 'user',
+    created_at: new Date(2026, 9, 20, 14, 2).getTime() / 1000,
     parts: [{ type: 'text', data: { text: 'Найди ошибку' } }]
   },
   {
     id: 'two',
     session_id: 's',
     role: 'assistant',
+    created_at: new Date(2026, 9, 20, 14, 4).getTime() / 1000,
     parts: [
       { type: 'text', data: { text: 'Ошибка в обработчике.' } },
       { type: 'text', data: { text: 'private token', hidden: true } },
@@ -39,9 +41,31 @@ describe('conversation tools', () => {
     expect(findMessages(messages, '  ')).toEqual([])
   })
 
-  it('exports readable messages without hidden text, reasoning or tool payloads', () => {
-    expect(exportConversation('Debug', messages, { user: 'You', assistant: 'Prime' })).toBe(
-      '# Debug\n\n## You\n\nНайди ошибку\n\n## Prime\n\nОшибка в обработчике.\n'
+  it('exports a styled document without hidden text, reasoning or tool payloads', () => {
+    const now = new Date(2026, 9, 20, 14, 30)
+    expect(
+      exportConversation(
+        'Debug',
+        messages,
+        { user: 'User', assistant: 'Prime', exported: 'Export: {value0}' },
+        now
+      )
+    ).toBe(
+      '# Debug\n\n*Export: 20.10.2026, 14:30*\n\n---\n\n**User** · 14:02\n\n> Найди ошибку\n\n---\n\n**Prime** · 14:04\n\nОшибка в обработчике.\n'
+    )
+  })
+
+  it('keeps multiline user quotes and omits timestamps without created_at', () => {
+    const plain: Message[] = [
+      {
+        id: 'q',
+        session_id: 's',
+        role: 'user',
+        parts: [{ type: 'text', data: { text: 'Строка одна\n\nСтрока две' } }]
+      }
+    ]
+    expect(exportConversation('T', plain, { user: 'User', assistant: 'Prime' })).toBe(
+      '# T\n\n---\n\n**User**\n\n> Строка одна\n>\n> Строка две\n'
     )
   })
 
