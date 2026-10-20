@@ -11,6 +11,7 @@ import type {
 } from '../../../../shared/github'
 import { useI18n } from '../../i18n'
 import { CreatePull } from './CreatePull'
+import { GitHistoryPanel } from './GitHistoryPanel'
 import { checksPrompt, issuePrompt, reviewPrompt } from './prompts'
 import '../../styles/automations.css'
 import '../../styles/github.css'
@@ -21,15 +22,46 @@ type Props = {
   onAgentTask(title: string, prompt: string): Promise<void>
 }
 
-type Selection = { kind: 'issue'; detail: GithubIssueDetail } | { kind: 'pull'; detail: GithubPullDetail; diff?: string }
+type Selection =
+  | { kind: 'issue'; detail: GithubIssueDetail }
+  | { kind: 'pull'; detail: GithubPullDetail; diff?: string }
 
 export function GithubPanel(props: Props) {
-  return <GithubWorkspace key={props.workspaceId} {...props} />
+  const { t } = useI18n()
+  const [section, setSection] = useState<'history' | 'github'>('history')
+  return (
+    <div className="github-workspace">
+      <div className="github-tabs" role="tablist" aria-label={t('Репозиторий')}>
+        <button
+          role="tab"
+          aria-selected={section === 'history'}
+          onClick={() => setSection('history')}
+        >
+          {t('История коммитов')}
+        </button>
+        <button
+          role="tab"
+          aria-selected={section === 'github'}
+          onClick={() => setSection('github')}
+        >
+          GitHub
+        </button>
+      </div>
+      {section === 'history' ? (
+        <GitHistoryPanel key={props.workspaceId} workspaceId={props.workspaceId} />
+      ) : (
+        <GithubWorkspace key={props.workspaceId} {...props} />
+      )}
+    </div>
+  )
 }
 
 function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
   const { t } = useI18n()
-  const api = useCallback((request: GithubRequest) => window.prime.github(workspaceId, request), [workspaceId])
+  const api = useCallback(
+    (request: GithubRequest) => window.prime.github(workspaceId, request),
+    [workspaceId]
+  )
   const [status, setStatus] = useState<GithubStatus>()
   const [tab, setTab] = useState<'issues' | 'pulls'>('pulls')
   const [issues, setIssues] = useState<GithubIssue[]>([])
@@ -44,7 +76,10 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
       const next: GithubStatus = await api({ action: 'status' })
       setStatus(next)
       if (next.repository) {
-        const [issueList, pullList] = await Promise.all([api({ action: 'issues' }), api({ action: 'pulls' })])
+        const [issueList, pullList] = await Promise.all([
+          api({ action: 'issues' }),
+          api({ action: 'pulls' })
+        ])
         setIssues(issueList)
         setPulls(pullList)
       }
@@ -84,7 +119,12 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
           icon={Github}
           title={t('GitHub недоступен')}
           text={t(status.error ?? 'Проект не связан с репозиторием GitHub.')}
-          action={{ label: t('Проверить снова'), icon: RefreshCw, onClick: () => void refresh(), disabled: busy }}
+          action={{
+            label: t('Проверить снова'),
+            icon: RefreshCw,
+            onClick: () => void refresh(),
+            disabled: busy
+          }}
         />
       </div>
     )
@@ -101,7 +141,11 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
           <button aria-label={t('Обновить')} onClick={() => void refresh()} disabled={busy}>
             <RefreshCw size={14} className={busy ? 'spin' : ''} />
           </button>
-          <button className="automation-primary" onClick={() => setCreating(true)} disabled={busy || !status}>
+          <button
+            className="automation-primary"
+            onClick={() => setCreating(true)}
+            disabled={busy || !status}
+          >
             <Plus size={14} />
             {t('Pull request')}
           </button>
@@ -119,7 +163,9 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
               {t('Issues')} <span>{issues.length}</span>
             </button>
           </div>
-          {!list.length && <p className="launch-placeholder">{t(busy ? 'Загрузка…' : 'Нет открытых')}</p>}
+          {!list.length && (
+            <p className="launch-placeholder">{t(busy ? 'Загрузка…' : 'Нет открытых')}</p>
+          )}
           {list.map((item) => (
             <button
               key={item.number}
@@ -156,7 +202,11 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
             />
           )}
           {!creating && !selected && (
-            <EmptyState compact icon={GitPullRequest} title={t('Выберите issue или pull request')} />
+            <EmptyState
+              compact
+              icon={GitPullRequest}
+              title={t('Выберите issue или pull request')}
+            />
           )}
           {!creating && selected && (
             <article className="github-card">
@@ -178,7 +228,9 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
                   {selected.detail.reviewDecision ? ` · ${selected.detail.reviewDecision}` : ''}
                 </p>
               )}
-              {selected.detail.body?.trim() && <pre className="github-body">{selected.detail.body.trim()}</pre>}
+              {selected.detail.body?.trim() && (
+                <pre className="github-body">{selected.detail.body.trim()}</pre>
+              )}
               {selected.kind === 'issue' && (
                 <div className="automation-actions">
                   <button
@@ -186,7 +238,10 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
                     disabled={busy}
                     onClick={() =>
                       void run(() =>
-                        onAgentTask(`Issue #${selected.detail.number}`, issuePrompt(selected.detail as GithubIssueDetail))
+                        onAgentTask(
+                          `Issue #${selected.detail.number}`,
+                          issuePrompt(selected.detail as GithubIssueDetail)
+                        )
                       )
                     }
                   >
@@ -207,12 +262,23 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
                     })
                   }
                   onReview={() =>
-                    void run(() => onAgentTask(`Review PR #${selected.detail.number}`, reviewPrompt(selected.detail)))
+                    void run(() =>
+                      onAgentTask(
+                        `Review PR #${selected.detail.number}`,
+                        reviewPrompt(selected.detail)
+                      )
+                    )
                   }
                   onChecks={() =>
                     void run(async () => {
-                      const logs = await api({ action: 'failedLogs', number: selected.detail.number })
-                      await onAgentTask(`Checks PR #${selected.detail.number}`, checksPrompt(selected.detail, logs))
+                      const logs = await api({
+                        action: 'failedLogs',
+                        number: selected.detail.number
+                      })
+                      await onAgentTask(
+                        `Checks PR #${selected.detail.number}`,
+                        checksPrompt(selected.detail, logs)
+                      )
                     })
                   }
                 />
@@ -242,7 +308,8 @@ function PullSections({
 }) {
   const { t } = useI18n()
   const failed = detail.checks.filter((check) => check.bucket === 'fail')
-  const feedback = detail.reviewComments.length + detail.reviews.filter((review) => review.body?.trim()).length
+  const feedback =
+    detail.reviewComments.length + detail.reviews.filter((review) => review.body?.trim()).length
   return (
     <>
       <h4>{t('Проверки')}</h4>

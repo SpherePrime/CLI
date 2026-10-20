@@ -1,0 +1,70 @@
+.github-workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.github-workspace > .github-tabs {
+  padding: 8px 10px 0;
+  flex-shrink: 0;
+}
+.github-workspace > .automation-panel {
+  flex: 1;
+  min-height: 0;
+}
+.git-history-message {
+  margin: 0;
+  padding: 8px 14px;
+  color: var(--secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.git-history-message[role='alert'] {
+  color: var(--danger, #ed7878);
+}
+.git-history-sha,
+.git-history-refs {
+  overflow-wrap: anywhere;
+}
+.git-history-diff {
+  max-height: none;
+}
+.github-panel .git-history-item {
+  width: 100%;
+}
+@media (max-width: 850px) {
+  .git-history-layout {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+  .git-history-layout > .github-list {
+    flex-shrink: 0;
+    max-height: 250px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .git-history-layout > .github-detail {
+    overflow: visible;
+  }
+}
+
+.inspector-history > summary {
+  cursor: pointer;
+  padding: 10px 0;
+  color: var(--secondary);
+}
+.inspector-history .git-history-layout {
+  display: flex;
+  flex-direction: column;
+}
+.inspector-history .github-list {
+  max-height: 220px;
+  overflow: auto;
+  border-right: 0;
+}
+.inspector-history .github-detail {
+  min-height: 180px;
+  max-height: 400px;
+  overflow: auto;
+}
