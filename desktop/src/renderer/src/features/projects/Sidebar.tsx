@@ -67,6 +67,23 @@ export function Sidebar({
     setDeleting(null)
     setDeleteError('')
   }, [w.project?.id])
+  useEffect(() => {
+    if (!menu) return
+    const pointer = (event: PointerEvent) => {
+      const target = event.target as Element
+      if (target.closest?.('.context-menu') || target.closest?.('.row-menu')) return
+      setMenu(null)
+    }
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenu(null)
+    }
+    document.addEventListener('pointerdown', pointer)
+    document.addEventListener('keydown', key)
+    return () => {
+      document.removeEventListener('pointerdown', pointer)
+      document.removeEventListener('keydown', key)
+    }
+  }, [menu])
   const groups = groupSessions(w.sessions, w.preferences.pinned, search)
   const groupLabels = {
     pinned: t('Закреплённые'),

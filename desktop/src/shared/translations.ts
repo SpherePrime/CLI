@@ -1026,6 +1026,7 @@ Object.assign(english, {
   'Pull request создан: {value0}': 'Pull request created: {value0}',
   'Выберите issue или pull request': 'Select an issue or pull request',
   'Открыть на GitHub': 'Open on GitHub',
+  GitHub: 'GitHub',
   Проверки: 'Checks',
   'Проверок нет': 'No checks',
   'Изменённые файлы': 'Changed files',
