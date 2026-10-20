@@ -699,6 +699,12 @@ function registerIpc(): void {
           )
           .max(8)
           .optional(),
+        reasoningBySession: z
+          .record(
+            z.string().min(1).max(200),
+            z.enum(['off', 'low', 'medium', 'high', 'xhigh', 'max', 'default'])
+          )
+          .optional(),
         drafts: z.record(z.string(), z.string().max(200000)).optional(),
         sidebarWidth: z.number().min(200).max(500).optional(),
         inspectorWidth: z.number().finite().min(280).optional(),

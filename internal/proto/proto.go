@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/lsp"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 // Workspace represents a running app.App workspace with its associated
@@ -142,6 +142,7 @@ func (a AgentInfo) IsZero() bool {
 // remains correct only when no other turns are in flight for the
 // same session.
 type AgentMessage struct {
+	ReasoningMode     string       `json:"reasoning_mode,omitempty"`
 	HiddenUserMessage bool         `json:"hidden_user_message,omitempty"`
 	SessionID         string       `json:"session_id"`
 	RunID             string       `json:"run_id,omitempty"`

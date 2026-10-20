@@ -375,6 +375,10 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	if !ok {
 		return nil, errModelProviderNotConfigured
 	}
+	model, err := c.applyRunReasoning(ctx, model, providerCfg)
+	if err != nil {
+		return nil, err
+	}
 	maxTokens := callMaxOutputTokens(model, providerCfg.Type)
 
 	mergedOptions, temp, topP, topK, freqPenalty, presPenalty := mergeCallOptions(model, providerCfg)
@@ -411,6 +415,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	runID := RunIDFromContext(ctx)
 	run := func() (*fantasy.AgentResult, error) {
 		return agent.Run(ctx, SessionAgentCall{
+			ModelOverride:     &model,
 			SessionID:         sessionID,
 			RunID:             runID,
 			Prompt:            prompt,
@@ -435,6 +440,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			slog.Warn("Failed to summarize after context overflow", "error", summarizeErr, "session_id", sessionID)
 		} else {
 			result, originalErr = agent.Run(ctx, SessionAgentCall{
+				ModelOverride:     &model,
 				SessionID:         sessionID,
 				RunID:             runID,
 				Prompt:            contextOverflowContinuation(prompt),
@@ -1433,8 +1439,8 @@ func (c *coordinator) buildGoogleVertexProvider(headers map[string]string, optio
 }
 
 func (c *coordinator) isAnthropicThinking(model config.SelectedModel) bool {
-	if model.Think {
-		return true
+	if model.HasExplicitReasoningMode() {
+		return model.IsReasoningEnabled()
 	}
 	opts, err := anthropic.ParseOptions(model.ProviderOptions)
 	return err == nil && opts.Thinking != nil

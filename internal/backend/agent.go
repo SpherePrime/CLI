@@ -47,6 +47,16 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		return err
 	}
 
+	if msg.ReasoningMode != "" {
+		normalized, err := config.NormalizeModelReasoningMode(ws.AgentCoordinator.Model().CatwalkCfg, msg.ReasoningMode)
+		if err != nil {
+			return err
+		}
+		if msg.ReasoningMode != config.ReasoningModeDefault {
+			msg.ReasoningMode = normalized
+		}
+	}
+
 	ws.runMu.Lock()
 	if ws.closing {
 		ws.runMu.Unlock()
@@ -122,7 +132,7 @@ func (b *Backend) runAgent(ws *Workspace, msg proto.AgentMessage, accept *agent.
 	defer ws.runWG.Done()
 	defer accept.Close()
 
-	ctx := ws.ctx
+	ctx := agent.WithReasoningMode(ws.ctx, msg.ReasoningMode)
 	if msg.HiddenUserMessage {
 		ctx = message.WithHiddenUserMessage(ctx)
 	}

@@ -7,6 +7,7 @@ import { ModelPicker } from './ModelPicker'
 import { ReasoningPopover } from './ReasoningPopover'
 import { currentReasoningMode, reasoningLabel } from './reasoning'
 import { findCapability, useModelCapabilities } from './useModelCapabilities'
+import type { ChatReasoningMode } from '../../../../shared/contracts'
 
 export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
@@ -17,7 +18,8 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const { models } = useModelCapabilities(w)
   const selected = w.config?.models?.large
   const capability = findCapability(models, selected)
-  const mode = currentReasoningMode(selected, capability)
+  const mode =
+    w.reasoningMode === 'default' ? currentReasoningMode(undefined, capability) : w.reasoningMode
   const modelName =
     capability?.name || selected?.model || w.agent?.model?.name || t('Выбрать модель')
   const contextUsed = (w.session?.prompt_tokens || 0) + (w.session?.completion_tokens || 0)
@@ -30,8 +32,7 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const setReasoning = (value: string) => {
     setSaving(true)
     void w
-      .call('reasoning', { scope: 0, model_type: 'large', mode: value })
-      .then(w.refresh)
+      .setReasoningMode(value as ChatReasoningMode)
       .catch(w.errorHandler)
       .finally(() => setSaving(false))
   }
