@@ -79,6 +79,7 @@ export function VoiceOrb({
           treble: reduced ? 0 : average(bands, 7, bandCount),
           dim,
           light: document.documentElement.dataset.theme === 'light' ? 1 : 0,
+          bands: reduced ? [] : bands,
           look
         })
       else if (fallback)

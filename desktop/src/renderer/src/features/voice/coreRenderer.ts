@@ -8,6 +8,7 @@ export type CoreUniforms = {
   treble: number
   dim: number
   light: number
+  bands: number[]
   look: CoreLook
 }
 
@@ -24,7 +25,10 @@ const uniformNames = [
   'light',
   'deep',
   'mid',
-  'hot'
+  'hot',
+  'bandsA',
+  'bandsB',
+  'bandsC'
 ] as const
 
 export function createCoreRenderer(canvas: HTMLCanvasElement) {
@@ -89,6 +93,10 @@ export function createCoreRenderer(canvas: HTMLCanvasElement) {
         gl.uniform3fv(location.deep, values.look.deep)
         gl.uniform3fv(location.mid, values.look.mid)
         gl.uniform3fv(location.hot, values.look.hot)
+        const band = (index: number) => values.bands[index] ?? 0
+        gl.uniform4f(location.bandsA, band(0), band(3), band(6), band(9))
+        gl.uniform4f(location.bandsB, band(1), band(4), band(7), band(10))
+        gl.uniform4f(location.bandsC, band(2), band(5), band(8), band(11))
         gl.drawArrays(gl.TRIANGLES, 0, 6)
       },
       dispose
