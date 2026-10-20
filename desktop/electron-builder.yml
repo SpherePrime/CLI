@@ -10,6 +10,9 @@ directories:
   output: release
 files:
   - out/**/*
+  - '!release{,/**/*}'
+  - '!installer{,/**/*}'
+  - '!.superpowers{,/**/*}'
   - '!node_modules/onnxruntime-node/bin/napi-v6/darwin/**'
   - '!node_modules/cpu-features/**'
 asarUnpack:
@@ -34,6 +37,7 @@ win:
   icon: build/icon.ico
   signAndEditExecutable: true
   files:
+    - out/**/*
     - '!node_modules/onnxruntime-node/bin/napi-v6/linux/**'
     - '!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**'
 nsis:
@@ -58,6 +62,7 @@ linux:
   maintainer: SpherePrime
   synopsis: Desktop workspace for Prime
   files:
+    - out/**/*
     - '!node_modules/onnxruntime-node/bin/napi-v6/win32/**'
 rpm:
   fpm:
