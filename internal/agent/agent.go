@@ -1599,7 +1599,7 @@ func (a *sessionAgent) createUserMessage(ctx context.Context, call SessionAgentC
 	return msg, nil
 }
 
-func (a *sessionAgent) preparePrompt(msgs []message.Message, supportsImages bool, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
+func (a *sessionAgent) preparePrompt(msgs []message.Message, _ bool, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
 	var history []fantasy.Message
 	if !a.isSubAgent {
 		history = append(history, fantasy.NewUserMessage(
@@ -1671,13 +1671,6 @@ If not, please feel free to ignore. Again do not mention this message to the use
 			continue
 		}
 		aiMsgs := m.ToAIMessage()
-		if !supportsImages {
-			for i := range aiMsgs {
-				if aiMsgs[i].Role == fantasy.MessageRoleUser {
-					aiMsgs[i].Content = filterFileParts(aiMsgs[i].Content)
-				}
-			}
-		}
 		history = append(history, aiMsgs...)
 
 		if m.Role == message.Assistant && len(m.ToolCalls()) > 0 {
@@ -1688,9 +1681,6 @@ If not, please feel free to ignore. Again do not mention this message to the use
 	var files []fantasy.FilePart
 	for _, attachment := range attachments {
 		if attachment.IsText() {
-			continue
-		}
-		if !supportsImages {
 			continue
 		}
 		files = append(files, fantasy.FilePart{
@@ -1833,20 +1823,6 @@ func appendTodosToContextSummary(dataDir, sessionID string, todos []session.Todo
 	if _, err := f.WriteString(sb.String()); err != nil {
 		slog.Warn("Failed to append todos to context summary", "error", err)
 	}
-}
-
-// filterFileParts removes fantasy.FilePart entries from a slice of message
-// parts. Used to strip image attachments from historical user messages when
-// the current model does not support them.
-func filterFileParts(parts []fantasy.MessagePart) []fantasy.MessagePart {
-	filtered := make([]fantasy.MessagePart, 0, len(parts))
-	for _, part := range parts {
-		if _, ok := fantasy.AsMessagePart[fantasy.FilePart](part); ok {
-			continue
-		}
-		filtered = append(filtered, part)
-	}
-	return filtered
 }
 
 // toolResultsForCalls builds the tool message that must immediately follow
