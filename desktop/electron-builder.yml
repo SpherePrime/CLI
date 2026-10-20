@@ -10,8 +10,7 @@ directories:
   output: release
 files:
   - out/**/*
-  - '!node_modules/onnxruntime-node/bin/napi-v6/{darwin,linux}/**'
-  - '!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**'
+  - '!node_modules/onnxruntime-node/bin/napi-v6/darwin/**'
   - '!node_modules/cpu-features/**'
 asarUnpack:
   - node_modules/node-pty/**
@@ -25,6 +24,7 @@ extraResources:
   - from: runtime
     to: runtime
     filter:
+      - prime
       - prime.exe
       - manifest.json
       - remotes/**/*
@@ -33,6 +33,9 @@ win:
   executableName: PrimeDesktop
   icon: build/icon.ico
   signAndEditExecutable: true
+  files:
+    - '!node_modules/onnxruntime-node/bin/napi-v6/linux/**'
+    - '!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**'
 nsis:
   include: build/installer-safety.nsh
   oneClick: true
@@ -41,4 +44,21 @@ nsis:
   installerIcon: build/icon.ico
   createDesktopShortcut: true
   deleteAppDataOnUninstall: false
-
+linux:
+  target:
+    - AppImage
+    - deb
+    - rpm
+    - pacman
+    - tar.gz
+  executableName: prime-desktop
+  artifactName: PrimeDesktop-${version}.${ext}
+  icon: build/icon.png
+  category: Development
+  maintainer: SpherePrime
+  synopsis: Desktop workspace for Prime
+  files:
+    - '!node_modules/onnxruntime-node/bin/napi-v6/win32/**'
+rpm:
+  fpm:
+    - --rpm-rpmbuild-define=_build_id_links none

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { mkdir, rename, rm, stat, writeFile, readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -26,7 +27,10 @@ const totalSize = speechAssets.reduce((sum, asset) => sum + asset.size, 0)
 const marker = 'verified.json'
 
 export function speechModelDirectory() {
-  const base = process.env.LOCALAPPDATA || join(process.env.USERPROFILE || '.', 'AppData', 'Local')
+  const base =
+    process.platform === 'win32'
+      ? process.env.LOCALAPPDATA || join(process.env.USERPROFILE || '.', 'AppData', 'Local')
+      : process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share')
   return join(base, 'Prime Desktop', 'speech', 'supertonic-3')
 }
 
