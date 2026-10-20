@@ -7,6 +7,9 @@ import { Listener } from './listener'
 import { Speaker } from './speaker'
 import { speakableText, speechChunks } from './speechText'
 import { resample, wavBase64 } from './wav'
+import { isCancelAnswer, parseAnswer, questionSpeech, type VoiceAnswer, type VoiceQuestion } from './voiceQuestions'
+
+type Asking = { batchId: string; questions: VoiceQuestion[]; index: number; responses: VoiceAnswer[] }
 
 export type ConversationState =
   'off' | 'preparing' | 'listening' | 'hearing' | 'transcribing' | 'waiting' | 'speaking'
@@ -33,6 +36,9 @@ export function useConversation(w: Workspace) {
   const listener = useRef<Listener>(undefined)
   const speaker = useRef<Speaker>(undefined)
   const pending = useRef<{ from: number; sawBusy: boolean } | undefined>(undefined)
+  const asking = useRef<Asking | undefined>(undefined)
+  const askedBatches = useRef(new Set<string>())
+  const [question, setQuestion] = useState('')
   const generation = useRef(0)
   const latest = useRef(w)
   latest.current = w
@@ -49,6 +55,9 @@ export function useConversation(w: Workspace) {
     generation.current++
     stateRef.current = 'off'
     pending.current = undefined
+    asking.current = undefined
+    askedBatches.current.clear()
+    setQuestion('')
     const currentListener = listener.current
     const currentSpeaker = speaker.current
     listener.current = undefined
@@ -68,6 +77,63 @@ export function useConversation(w: Workspace) {
     if (stateRef.current !== 'off') void stop()
   }, [w.project?.id, stop])
 
+  const askCurrent = useCallback(() => {
+    const current = asking.current
+    if (!current) return
+    const text = questionSpeech(current.questions[current.index], current.index, current.questions.length, t)
+    setQuestion(current.questions[current.index].question)
+    void speaker.current?.speak(speechChunks(speakableText(text, t('Код показан в чате'))))
+  }, [t])
+
+  const answerQuestion = useCallback(
+    async (text: string) => {
+      const current = asking.current
+      if (!current) return
+      const workspace = latest.current
+      try {
+        if (isCancelAnswer(text)) {
+          asking.current = undefined
+          setQuestion('')
+          await workspace.call('cancelQuestion', { id: current.batchId })
+          setState(pending.current ? 'waiting' : 'listening')
+          return
+        }
+        current.responses.push(parseAnswer(current.questions[current.index], text))
+        if (current.index + 1 < current.questions.length) {
+          current.index++
+          askCurrent()
+          return
+        }
+        asking.current = undefined
+        setQuestion('')
+        setState('waiting')
+        await workspace.call('answer', { batch_request_id: current.batchId, responses: current.responses })
+      } catch (error) {
+        asking.current = undefined
+        setQuestion('')
+        workspace.errorHandler(error)
+        if (listener.current) setState('listening')
+      }
+    },
+    [askCurrent]
+  )
+
+  useEffect(() => {
+    if (!listener.current || stateRef.current === 'off') return
+    const batches: any[] = w.questions ?? []
+    if (asking.current && !batches.some((batch) => batch.id === asking.current?.batchId)) {
+      asking.current = undefined
+      setQuestion('')
+      speaker.current?.stop()
+    }
+    if (asking.current) return
+    const next = batches.find((batch) => batch?.id && batch.questions?.length && !askedBatches.current.has(batch.id))
+    if (!next) return
+    askedBatches.current.add(next.id)
+    asking.current = { batchId: next.id, questions: next.questions, index: 0, responses: [] }
+    askCurrent()
+  }, [w.questions, askCurrent])
+
   const handleSegment = useCallback(async (samples: Float32Array, sampleRate: number) => {
     if (!listener.current) return
     const turnGeneration = generation.current
@@ -86,6 +152,10 @@ export function useConversation(w: Workspace) {
         return
       }
       setHeard(text)
+      if (asking.current) {
+        await answerQuestion(text)
+        return
+      }
       pending.current = { from: latest.current.messages.length, sawBusy: false }
       setState('waiting')
       const sent = await latest.current.send(text)
@@ -99,7 +169,7 @@ export function useConversation(w: Workspace) {
       latest.current.errorHandler(error)
       if (listener.current) setState('listening')
     }
-  }, [])
+  }, [answerQuestion])
 
   const start = useCallback(async () => {
     if (stateRef.current !== 'off') return
@@ -179,6 +249,7 @@ export function useConversation(w: Workspace) {
     state,
     muted,
     heard,
+    question,
     analyser,
     outputAnalyser,
     startedAt,

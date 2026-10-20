@@ -162,7 +162,7 @@ export function ConversationCall({
           <h2 role="status" aria-live="polite" aria-atomic="true">
             {status}
           </h2>
-          <p>{t(hint)}</p>
+          <p>{conversation.question || t(hint)}</p>
         </div>
         <div className="voice-call-transcript">
           {conversation.heard && <p title={conversation.heard}>{conversation.heard}</p>}

@@ -11,6 +11,7 @@ function conversation(overrides: Partial<Conversation> = {}): Conversation {
     state: 'listening',
     muted: false,
     heard: '',
+    question: '',
     analyser: null,
     outputAnalyser: null,
     startedAt: Date.now(),

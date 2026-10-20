@@ -1145,3 +1145,11 @@ Object.assign(english, {
   'Новая вкладка': 'New tab',
   'Закрыть вкладку {value0}': 'Close tab {value0}'
 })
+
+Object.assign(english, {
+  'Вопрос {value0} из {value1}.': 'Question {value0} of {value1}.',
+  'Варианты:': 'Options:',
+  'Назовите один или несколько вариантов.': 'Name one or more options.',
+  'Назовите номер или вариант.': 'Say the number or the option.',
+  'Ответьте да или нет.': 'Answer yes or no.'
+})
