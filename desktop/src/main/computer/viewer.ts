@@ -98,9 +98,8 @@ export class WindowViewer {
   private async session(context: WorkbenchToolContext) {
     const workspaceId = this.workspace(context)
     const busy = await this.options.busySessions(workspaceId)
-    const explicit = (context as WorkbenchToolContext & { sessionId?: string }).sessionId
+    const explicit = context.sessionId
     if (explicit && busy.includes(explicit)) return explicit
-    if (!explicit && busy.length === 1) return busy[0]
     throw new Error(
       'The window is shared with a different chat, or the active chat cannot be identified unambiguously.'
     )
@@ -237,45 +236,82 @@ export class WindowViewer {
       {
         name: 'window_list',
         description:
-          'List visible desktop windows with handles, titles, process IDs and bounds. Does not grant screenshots or control. Select the intended window, then request access.',
+          'List visible desktop windows with handles, titles, process IDs, identities and bounds. Does not grant screenshots or control. Copy hwnd, pid, identity and title of the intended window into window_request_access.',
         inputSchema: { type: 'object', properties: {}, additionalProperties: false },
         run: async (_args, context) => {
           this.workspace(context)
-          return text(listWindows())
+          return text(
+            listWindows().map((info) => {
+              try {
+                return { ...info, identity: claimWindowIdentity(info.hwnd) }
+              } catch {
+                return info
+              }
+            })
+          )
         }
       },
       {
         name: 'window_request_access',
         description:
-          'Ask the user to grant view or control of one selected desktop window to this chat. Opens an approval card. Never grants access automatically. Wait for user approval before viewing or acting.',
+          'Grant this chat view or control of one selected desktop window through the normal chat permission policy. Copy hwnd, pid, identity and title exactly from window_list. Execution means the request has passed that policy, including full access mode. A successful result grants access immediately; no Windows panel confirmation is needed.',
         inputSchema: {
           type: 'object',
           properties: {
             hwnd: { type: 'string' },
+            pid: { type: 'integer' },
+            identity: { type: 'string' },
+            title: { type: 'string' },
             mode: { type: 'string', enum: ['view', 'control'] }
           },
-          required: ['hwnd', 'mode'],
+          required: ['hwnd', 'pid', 'identity', 'title', 'mode'],
           additionalProperties: false
         },
         run: async (args, context) => {
-          const request = z.object({ hwnd, mode }).strict().parse(args)
+          const request = z
+            .object({
+              hwnd,
+              mode,
+              pid: z.number().int().positive(),
+              identity: z.string().min(1).max(30),
+              title: z.string().min(1).max(32768)
+            })
+            .strict()
+            .parse(args)
           const workspaceId = this.workspace(context)
           const sessionId = await this.session(context)
           const info = windowInfo(request.hwnd)
           if (!info) throw new Error('Window is closed')
-          this.requests.set(workspaceId, {
-            ...request,
+          if (
+            info.pid !== request.pid ||
+            info.title !== request.title ||
+            !verifyWindowIdentity(request.hwnd, request.pid, request.identity)
+          )
+            throw new Error(
+              'The selected window was closed or replaced. Refresh window_list and request access again.'
+            )
+          this.shares.set(workspaceId, {
+            workspaceId,
+            sessionId,
+            hwnd: request.hwnd,
             title: info.title,
             pid: info.pid,
-            identity: claimWindowIdentity(request.hwnd),
-            sessionId,
-            requestedAt: Date.now()
+            identity: request.identity,
+            mode: request.mode,
+            sharedAt: Date.now()
           })
-          this.publish(workspaceId)
+          this.requests.delete(workspaceId)
+          this.record(workspaceId, {
+            title: info.title,
+            source: 'agent',
+            action: request.mode === 'control' ? 'grant_control' : 'grant_view',
+            ok: true
+          })
           return text({
-            status: 'awaiting_user',
-            message:
-              'The user must grant access in the Windows panel. Do not repeat the request while it is pending.'
+            status: 'granted',
+            window: info,
+            mode: request.mode,
+            sessionId
           })
         }
       },
