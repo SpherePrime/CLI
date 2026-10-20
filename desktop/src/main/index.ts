@@ -40,7 +40,7 @@ import { TerminalManager } from './terminal/manager'
 import { terminalOperation } from './workbench/terminalIpc'
 import { workbenchTerminalTools } from './workbench/tools'
 import { createProjectTools } from './workbench/projectTools'
-import { createGithubReadTools } from './workbench/projectGithubTools'
+import { createGithubReadTools, createGitHistoryTools } from './workbench/projectGithubTools'
 import { AutomationManager } from './automations/manager'
 import { automationOperation } from './workbench/automationIpc'
 import { createAgentAdapter } from './workbench/agentRuns'
@@ -164,14 +164,19 @@ const projectAgentTools = createProjectTools({
       type: 'workbench',
       payload: { action: 'contextChanged', key: workspacePath(workspaceId), context }
     }),
-  extensions: createGithubReadTools((workspaceId, request) => {
-    const remote = remotes?.byWorkspace(projectId.parse(workspaceId))?.connection
-    return githubOperation(
-      remote ? remoteRunner(remote) : localRunner(requirePrime().root(workspaceId)),
-      request
-    )
-  })
+  extensions: [...createGithubReadTools(runGithub), ...createGitHistoryTools(runGithub)]
 })
+function runGithub(workspaceId: string, request: unknown) {
+  const remote = remotes?.byWorkspace(projectId.parse(workspaceId))?.connection
+  const transport = remote
+    ? `ssh:${remote.profile.user}@${remote.profile.host}:${remote.profile.port}`
+    : 'local'
+  return githubOperation(
+    remote ? remoteRunner(remote) : localRunner(requirePrime().root(workspaceId)),
+    request,
+    transport
+  )
+}
 const agentTools = () => [
   ...workbenchTerminalTools(terminals),
   ...projectAgentTools,
@@ -394,14 +399,7 @@ function registerIpc(): void {
   handle('windows', (id: string, request: unknown) =>
     windowViewer.handle(projectId.parse(id), request)
   )
-  handle('github', (id: string, request: unknown) => {
-    const workspaceId = projectId.parse(id)
-    const remote = remotes?.byWorkspace(workspaceId)?.connection
-    return githubOperation(
-      remote ? remoteRunner(remote) : localRunner(requirePrime().root(workspaceId)),
-      request
-    )
-  })
+  handle('github', (id: string, request: unknown) => runGithub(projectId.parse(id), request))
   handle('speech', (request: unknown) =>
     speech.handle(
       z

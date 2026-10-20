@@ -1,4 +1,21 @@
 export const english: Record<string, string> = {
+  'История коммитов': 'Commit history',
+  Репозиторий: 'Repository',
+  'Коммитов нет': 'No commits',
+  'Выберите коммит для просмотра изменений': 'Choose a commit to view its changes',
+  'Вернуть это состояние': 'Restore this state',
+  'Изменений в файлах проекта нет': 'No changes in project files',
+  'Показана часть изменений: diff слишком большой.':
+    'Only part of the changes is shown: the diff is too large.',
+  'Подтвердить восстановление': 'Confirm restoration',
+  'Восстановление…': 'Restoring…',
+  'Состояние восстановлено новым локальным коммитом. Для публикации выполните push.':
+    'The state was restored in a new local commit. Push to publish it.',
+  'Проект уже соответствует этому состоянию.': 'The project already matches this state.',
+  'Есть локальные изменения. Перед восстановлением сохраните их в коммите или уберите в stash.':
+    'There are local changes. Commit or stash them before restoring.',
+  'Файлы проекта будут восстановлены из коммита {value0}. Будет создан новый локальный коммит; существующая история сохранится. Изменения не отправляются на GitHub автоматически.':
+    'Project files will be restored from commit {value0}. A new local commit will preserve the existing history. Changes will not be pushed to GitHub automatically.',
   'Управление окном': 'Window control',
   'Посмотри на изображение.': 'Look at the image.',
   'Добавление изображения…': 'Adding image…',
@@ -6,16 +23,20 @@ export const english: Record<string, string> = {
   'Можете перебить меня голосом': 'You can interrupt me by speaking',
   'Включите микрофон, чтобы продолжить': 'Unmute your microphone to continue',
   'Разговор продолжается автоматически': 'The conversation continues automatically',
-  'Говорите свободно. Я отвечу, когда вы закончите.': 'Speak naturally. I’ll respond when you finish.',
+  'Говорите свободно. Я отвечу, когда вы закончите.':
+    'Speak naturally. I’ll respond when you finish.',
   'История разговора сохраняется в чате': 'Your conversation is saved in the chat',
   'Вернуться к разговору': 'Return to call',
-  'Микрофон': 'Microphone',
-  'Прервать': 'Interrupt',
+  Микрофон: 'Microphone',
+  Прервать: 'Interrupt',
   'Приложение ещё не запущено': 'The app has not started yet',
-  'Запустите команду, чтобы увидеть вывод сервера и открыть приложение.': 'Start the command to see server output and open the app.',
-  'Сохраните команду запуска для этого проекта. Prime покажет её вывод и адрес приложения.': 'Save a launch command for this project. Prime shows its output and app URL.',
+  'Запустите команду, чтобы увидеть вывод сервера и открыть приложение.':
+    'Start the command to see server output and open the app.',
+  'Сохраните команду запуска для этого проекта. Prime покажет её вывод и адрес приложения.':
+    'Save a launch command for this project. Prime shows its output and app URL.',
   'Например, Dev server': 'For example, Dev server',
-  'Оставьте пустым, чтобы определить адрес из вывода команды.': 'Leave empty to detect the URL from command output.',
+  'Оставьте пустым, чтобы определить адрес из вывода команды.':
+    'Leave empty to detect the URL from command output.',
   'Открываю вывод сервера…': 'Opening server output…',
   Автоматизации: 'Automations',
   Время: 'Time',
@@ -774,58 +795,73 @@ Object.assign(english, {
 Object.assign(english, {
   'Удалённые проекты': 'Remote projects',
   'Рабочее пространство через SSH': 'Workspace over SSH',
-  'Файлы, Git, терминал и Prime работают на вашем Linux-сервере.': 'Files, Git, terminal and Prime run on your Linux server.',
+  'Файлы, Git, терминал и Prime работают на вашем Linux-сервере.':
+    'Files, Git, terminal and Prime run on your Linux server.',
   'Подключите первый сервер': 'Connect your first server',
-  'Укажите адрес и папку проекта. Отпечаток сервера проверяется перед входом.': 'Enter an address and project folder. The server fingerprint is verified before authentication.',
+  'Укажите адрес и папку проекта. Отпечаток сервера проверяется перед входом.':
+    'Enter an address and project folder. The server fingerprint is verified before authentication.',
   'Изменить сервер': 'Edit server',
   'Новый сервер': 'New server',
-  'Хост': 'Host',
-  'Порт': 'Port',
-  'Пользователь': 'User',
+  Хост: 'Host',
+  Порт: 'Port',
+  Пользователь: 'User',
   'Папка проекта': 'Project folder',
-  'Аутентификация': 'Authentication',
+  Аутентификация: 'Authentication',
   'SSH-агент': 'SSH agent',
   'Файл ключа': 'Key file',
-  'Пароль': 'Password',
+  Пароль: 'Password',
   'Приватный ключ': 'Private key',
   'Выбрать ключ': 'Choose key',
   'Prime на сервере': 'Prime on the server',
   'Установить автоматически': 'Install automatically',
   'Использовать установленный': 'Use existing installation',
   'Путь к Prime': 'Prime path',
-  'Linux x64 и ARM64. Настройки провайдеров и ключи API остаются на сервере.': 'Linux x64 and ARM64. Provider settings and API keys stay on the server.',
+  'Linux x64 и ARM64. Настройки провайдеров и ключи API остаются на сервере.':
+    'Linux x64 and ARM64. Provider settings and API keys stay on the server.',
   'Ключ сервера изменился': 'Server key has changed',
   'Проверьте сервер': 'Verify the server',
-  'Подключение остановлено. Сверьте новый отпечаток с администратором сервера.': 'Connection stopped. Verify the new fingerprint with the server administrator.',
-  'Сверьте отпечаток с администратором перед первым подключением.': 'Verify the fingerprint with the administrator before connecting for the first time.',
+  'Подключение остановлено. Сверьте новый отпечаток с администратором сервера.':
+    'Connection stopped. Verify the new fingerprint with the server administrator.',
+  'Сверьте отпечаток с администратором перед первым подключением.':
+    'Verify the fingerprint with the administrator before connecting for the first time.',
   'Предыдущий отпечаток': 'Previous fingerprint',
   'Отпечаток сервера': 'Server fingerprint',
   'Подтвердить доверие': 'Confirm trust',
   'Я проверил отпечаток': 'I verified the fingerprint',
-  'Доверие сохранит этот ключ. После подтверждения подключитесь снова.': 'Trusting saves this key. Reconnect after confirming.',
+  'Доверие сохранит этот ключ. После подтверждения подключитесь снова.':
+    'Trusting saves this key. Reconnect after confirming.',
   'Пароль ключа (если задан)': 'Key passphrase (if set)',
-  'Подключить': 'Connect',
+  Подключить: 'Connect',
   'Удалить профиль': 'Delete profile',
-  'Нажмите удалить ещё раз. Файлы на сервере сохранятся.': 'Click delete again. Files on the server will be kept.',
-  'Пароли не сохраняются. Локальные ключи API не передаются на сервер.': 'Passwords are not saved. Local API keys are not sent to the server.',
-  'Отключён': 'Disconnected',
+  'Нажмите удалить ещё раз. Файлы на сервере сохранятся.':
+    'Click delete again. Files on the server will be kept.',
+  'Пароли не сохраняются. Локальные ключи API не передаются на сервер.':
+    'Passwords are not saved. Local API keys are not sent to the server.',
+  Отключён: 'Disconnected',
   'Проверка ключа': 'Verifying key',
   'Подготовка Prime': 'Preparing Prime',
-  'Подключён': 'Connected',
-  'Отключение': 'Disconnecting',
+  Подключён: 'Connected',
+  Отключение: 'Disconnecting',
   'Ошибка подключения': 'Connection error',
-  'Хранилище серверов повреждено. Изменения заблокированы, исходный файл сохранён.': 'The server store is damaged. Changes are blocked and the original file is preserved.',
-  'Проверьте адрес, порт, пользователя и абсолютный путь Linux.': 'Check the address, port, user and absolute Linux path.',
-  'Не удалось подключиться. Проверьте адрес сервера и способ входа.': 'Connection failed. Check the server address and authentication method.',
-  'Соединение с сервером потеряно. Подключитесь снова.': 'The server connection was lost. Reconnect to continue.',
+  'Хранилище серверов повреждено. Изменения заблокированы, исходный файл сохранён.':
+    'The server store is damaged. Changes are blocked and the original file is preserved.',
+  'Проверьте адрес, порт, пользователя и абсолютный путь Linux.':
+    'Check the address, port, user and absolute Linux path.',
+  'Не удалось подключиться. Проверьте адрес сервера и способ входа.':
+    'Connection failed. Check the server address and authentication method.',
+  'Соединение с сервером потеряно. Подключитесь снова.':
+    'The server connection was lost. Reconnect to continue.',
   'Введите пароль для подключения.': 'Enter a password to connect.',
-  'Не удалось прочитать приватный ключ. Максимальный размер — 1 MiB.': 'Cannot read the private key. Maximum size is 1 MiB.',
-  'Отпечаток изменился. Проверьте сервер заново.': 'The fingerprint changed. Verify the server again.',
+  'Не удалось прочитать приватный ключ. Максимальный размер — 1 MiB.':
+    'Cannot read the private key. Maximum size is 1 MiB.',
+  'Отпечаток изменился. Проверьте сервер заново.':
+    'The fingerprint changed. Verify the server again.',
   'Отключите сервер перед изменением профиля.': 'Disconnect before editing the server profile.',
   'Подключение уже выполняется.': 'A connection is already in progress.',
   'Папка проекта на сервере не найдена.': 'The project folder was not found on the server.',
   'Путь выходит за пределы удалённого проекта.': 'The path is outside the remote project.',
-  'Файл изменился на сервере. Обновите его перед сохранением.': 'The file changed on the server. Reload it before saving.',
+  'Файл изменился на сервере. Обновите его перед сохранением.':
+    'The file changed on the server. Reload it before saving.',
   'Сервер отключён.': 'The server is disconnected.',
   'Файл больше 2 MiB.': 'The file exceeds 2 MiB.',
   'Предпросмотр бинарного файла недоступен.': 'Binary file preview is unavailable.',
@@ -833,10 +869,12 @@ Object.assign(english, {
   'Сервер не ответил вовремя.': 'The server response timed out.',
   'Ответ сервера превышает допустимый размер.': 'The server response exceeds the size limit.',
   'Не удалось выполнить операцию на сервере.': 'The server operation failed.',
-  'Prime на сервере остановился. Подключитесь снова.': 'Prime on the server stopped. Reconnect to continue.',
+  'Prime на сервере остановился. Подключитесь снова.':
+    'Prime on the server stopped. Reconnect to continue.',
   'Не удалось подготовить Prime на сервере.': 'Cannot prepare Prime on the server.',
   'Сервер должен работать на Linux x64 или ARM64.': 'The server must run Linux x64 or ARM64.',
-  'Сервер запретил SSH-туннель. Проверьте AllowTcpForwarding.': 'The server denied the SSH tunnel. Check AllowTcpForwarding.',
+  'Сервер запретил SSH-туннель. Проверьте AllowTcpForwarding.':
+    'The server denied the SSH tunnel. Check AllowTcpForwarding.',
   'Проверка Prime на сервере': 'Checking Prime on the server',
   'Загрузка Prime на сервер': 'Uploading Prime to the server',
   'Запуск Prime на сервере': 'Starting Prime on the server'
@@ -847,41 +885,46 @@ Object.assign(english, {
   'Приватный ключ SSH': 'SSH private key',
   'Действие недоступно для удалённого проекта': 'Not available for remote projects',
   'Проект не открыт': 'Project is not open',
-  '{path} будет удалён на сервере без возможности восстановления.': '{path} will be permanently deleted on the server.',
-  'Откройте сервер в VS Code через SSH-профиль с портом 22': 'Use an SSH profile on port 22 to open the server in VS Code'
+  '{path} будет удалён на сервере без возможности восстановления.':
+    '{path} will be permanently deleted on the server.',
+  'Откройте сервер в VS Code через SSH-профиль с портом 22':
+    'Use an SSH profile on port 22 to open the server in VS Code'
 })
 
 Object.assign(english, {
   'Команды агентов': 'Agent teams',
-  'Команды': 'Teams',
+  Команды: 'Teams',
   'Новая группа': 'New team',
   'Название группы': 'Team name',
   'Общая цель': 'Shared goal',
-  'Одновременно': 'Concurrent',
+  Одновременно: 'Concurrent',
   'Исполнитель {value0}': 'Member {value0}',
-  'Задача': 'Task',
-  'Инструкция': 'Instruction',
+  Задача: 'Task',
+  Инструкция: 'Instruction',
   'Задача исполнителя {value0}': 'Member {value0} task',
   'Инструкция исполнителя {value0}': 'Member {value0} instruction',
   'Убрать исполнителя': 'Remove member',
   'Добавить исполнителя': 'Add member',
   'Запустить группу': 'Start team',
   'Параллельная работа нескольких агентов': 'Several agents working in parallel',
-  'Разделите задачу между исполнителями. Каждый работает в своём чате.': 'Split work between members. Each one works in its own chat.',
+  'Разделите задачу между исполнителями. Каждый работает в своём чате.':
+    'Split work between members. Each one works in its own chat.',
   'до {value0} одновременно': 'up to {value0} at once',
   'Открыть чат исполнителя {value0}': 'Open chat of {value0}',
   'Остановить исполнителя {value0}': 'Stop {value0}',
   'Повторить исполнителя {value0}': 'Retry {value0}',
-  'Повторить': 'Retry',
+  Повторить: 'Retry',
   'Остановить группу': 'Stop team',
   'В очереди': 'Queued',
-  'Запуск': 'Starting',
-  'Остановлено': 'Stopped',
-  'Заполните название группы, задачи и инструкции.': 'Fill in the team name, tasks and instructions.',
+  Запуск: 'Starting',
+  Остановлено: 'Stopped',
+  'Заполните название группы, задачи и инструкции.':
+    'Fill in the team name, tasks and instructions.',
   'Группа или исполнитель не найдены.': 'Team or member not found.',
   'Сначала остановите группу.': 'Stop the team first.',
   'Слишком много активных групп.': 'Too many active teams.',
-  'Хранилище групп повреждено. Изменения заблокированы.': 'Team storage is damaged. Changes are blocked.',
+  'Хранилище групп повреждено. Изменения заблокированы.':
+    'Team storage is damaged. Changes are blocked.',
   'Группы ещё загружаются.': 'Teams are still loading.'
 })
 
@@ -889,15 +932,16 @@ Object.assign(english, {
   'Запуск приложений': 'App launcher',
   'Новая команда': 'New command',
   'Команды запуска проекта': 'Project run commands',
-  'Например: npm run dev. Адрес приложения откроется во встроенном браузере.': 'For example: npm run dev. The app address opens in the built-in browser.',
-  'Работает': 'Running',
+  'Например: npm run dev. Адрес приложения откроется во встроенном браузере.':
+    'For example: npm run dev. The app address opens in the built-in browser.',
+  Работает: 'Running',
   'Завершено с кодом {value0}': 'Exited with code {value0}',
   'Изменить команду': 'Edit command',
   'Удалить команду': 'Delete command',
   'Открыть предпросмотр': 'Open preview',
   'Логи появятся после запуска.': 'Logs appear after start.',
   'Ошибки браузера': 'Browser errors',
-  'Очистить': 'Clear',
+  Очистить: 'Clear',
   'Ошибок нет': 'No errors',
   'Логи сервера': 'Server logs',
   'Адрес (необязательно)': 'URL (optional)',
@@ -915,11 +959,11 @@ Object.assign(english, {
 })
 
 Object.assign(english, {
-  'Голос': 'Voice',
+  Голос: 'Voice',
   'Голосовой разговор': 'Voice conversation',
   'Завершить разговор': 'End conversation',
   'Подготовка голоса…': 'Preparing voice…',
-  'Слушаю': 'Listening',
+  Слушаю: 'Listening',
   'Говорите…': 'Speak…',
   'Распознаю…': 'Recognizing…',
   'Prime думает…': 'Prime is thinking…',
@@ -928,21 +972,25 @@ Object.assign(english, {
   'Остановить озвучку': 'Stop speech',
   'Включить микрофон': 'Turn microphone on',
   'Выключить микрофон': 'Turn microphone off',
-  'Завершить': 'End',
+  Завершить: 'End',
   'Загрузка голосовой модели · {value0}%': 'Downloading voice model · {value0}%',
   'Голосовая модель недоступна': 'Voice model is unavailable',
   'Код показан в чате': 'The code is shown in the chat',
-  'Локальная модель Supertonic 3. Речь синтезируется на этом компьютере без отправки в интернет.': 'Local Supertonic 3 model. Speech is generated on this computer without sending it online.',
-  'Модель ещё не скачана. Она загрузится при первом разговоре.': 'The model is not downloaded yet. It loads on the first conversation.',
+  'Локальная модель Supertonic 3. Речь синтезируется на этом компьютере без отправки в интернет.':
+    'Local Supertonic 3 model. Speech is generated on this computer without sending it online.',
+  'Модель ещё не скачана. Она загрузится при первом разговоре.':
+    'The model is not downloaded yet. It loads on the first conversation.',
   'Загрузка модели…': 'Loading model…',
   'Модель готова': 'Model is ready',
   'Голос ответа': 'Answer voice',
   'Скорость речи · {value0}×': 'Speech speed · {value0}×',
-  'Прослушать': 'Preview',
+  Прослушать: 'Preview',
   'Импортировать голос': 'Import voice',
   'Удалить голос': 'Delete voice',
-  'Импорт принимает JSON-стиль голоса Supertonic (например, из Voice Builder).': 'Import accepts a Supertonic voice style JSON (for example, from Voice Builder).',
-  'Привет! Так я буду отвечать в голосовом разговоре.': 'Hi! This is how I will answer in a voice conversation.',
+  'Импорт принимает JSON-стиль голоса Supertonic (например, из Voice Builder).':
+    'Import accepts a Supertonic voice style JSON (for example, from Voice Builder).',
+  'Привет! Так я буду отвечать в голосовом разговоре.':
+    'Hi! This is how I will answer in a voice conversation.',
   'Женский 1': 'Female 1',
   'Женский 2': 'Female 2',
   'Мужской 1': 'Male 1',
@@ -954,62 +1002,67 @@ Object.assign(english, {
 Object.assign(english, {
   'GitHub недоступен': 'GitHub is unavailable',
   'Проект не связан с репозиторием GitHub.': 'The project is not linked to a GitHub repository.',
-  'gh не установлен. Установите GitHub CLI и выполните gh auth login.': 'gh is not installed. Install GitHub CLI and run gh auth login.',
+  'gh не установлен. Установите GitHub CLI и выполните gh auth login.':
+    'gh is not installed. Install GitHub CLI and run gh auth login.',
   'Выполните gh auth login в терминале.': 'Run gh auth login in the terminal.',
   'Проверить снова': 'Check again',
   'Pull request': 'Pull request',
   'Pull requests': 'Pull requests',
-  'Issues': 'Issues',
+  Issues: 'Issues',
   'Нет открытых': 'Nothing open',
-  'черновик': 'draft',
+  черновик: 'draft',
   'Pull request создан: {value0}': 'Pull request created: {value0}',
   'Выберите issue или pull request': 'Select an issue or pull request',
   'Открыть на GitHub': 'Open on GitHub',
-  'Проверки': 'Checks',
+  Проверки: 'Checks',
   'Проверок нет': 'No checks',
   'Изменённые файлы': 'Changed files',
   'Показать изменения': 'Show changes',
   'Замечания ревью агенту': 'Send review to agent',
   'Логи упавших проверок агенту': 'Send failed check logs to agent',
-  'Ветка': 'Branch',
+  Ветка: 'Branch',
   'В ветку': 'Into',
-  'Заголовок': 'Title',
-  'Описание': 'Description',
-  'Черновик': 'Draft',
-  'Ветка {value0} будет отправлена на GitHub и откроется pull request в {value1}.': 'Branch {value0} will be pushed to GitHub and a pull request into {value1} will be opened.',
+  Заголовок: 'Title',
+  Описание: 'Description',
+  Черновик: 'Draft',
+  'Ветка {value0} будет отправлена на GitHub и откроется pull request в {value1}.':
+    'Branch {value0} will be pushed to GitHub and a pull request into {value1} will be opened.',
   'Подтвердить и опубликовать': 'Confirm and publish',
   'Создать pull request': 'Create pull request'
 })
 
 Object.assign(english, {
-  'Окна': 'Windows',
+  Окна: 'Windows',
   'Окна компьютера': 'Computer windows',
-  'Агент видит окно «{value0}» в выбранном чате. Только просмотр.': 'The agent sees “{value0}” in the selected chat. View only.',
-  'Отозвать': 'Revoke',
+  'Агент видит окно «{value0}» в выбранном чате. Только просмотр.':
+    'The agent sees “{value0}” in the selected chat. View only.',
+  Отозвать: 'Revoke',
   'Окна не найдены': 'No windows found',
   'Выберите окно, чтобы посмотреть снимок': 'Select a window to see a snapshot',
   'Снимок…': 'Capturing…',
   'Снимок недоступен': 'Snapshot unavailable',
   'Сначала откройте чат': 'Open a chat first',
   'Показывать агенту в чате «{value0}»': 'Show to the agent in “{value0}”',
-  'Агент получит только снимки этого окна во время работы в выбранном чате. Нажатия и ввод текста недоступны.': 'The agent only gets snapshots of this window while working in the selected chat. Clicks and typing are not available.',
+  'Агент получит только снимки этого окна во время работы в выбранном чате. Нажатия и ввод текста недоступны.':
+    'The agent only gets snapshots of this window while working in the selected chat. Clicks and typing are not available.',
   'Журнал просмотров': 'View log',
-  'Агент': 'Agent',
+  Агент: 'Agent',
   'Пока пусто': 'Nothing yet',
   'Окно закрыто': 'The window is closed',
-  'Не удалось получить снимок окна. Окно не должно быть свёрнуто.': 'Could not capture the window. It must not be minimized.',
+  'Не удалось получить снимок окна. Окно не должно быть свёрнуто.':
+    'Could not capture the window. It must not be minimized.',
   'Просмотр окон доступен только в Windows': 'Window viewing is only available on Windows'
 })
 
 Object.assign(english, {
   'Фоновые задачи': 'Background tasks',
-  'Автоматизация': 'Automation',
+  Автоматизация: 'Automation',
   'Ждёт ответа': 'Waiting for answer',
-  'Активные': 'Active',
+  Активные: 'Active',
   'Ждут ответа': 'Need answer',
-  'Ошибки': 'Errors',
-  'Завершённые': 'Finished',
-  'Все': 'All',
+  Ошибки: 'Errors',
+  Завершённые: 'Finished',
+  Все: 'All',
   'Тип задачи': 'Task type',
   'Все типы': 'All types',
   'Нужно разрешение': 'Permission required',
@@ -1017,7 +1070,8 @@ Object.assign(english, {
   'Открыть {value0}': 'Open {value0}',
   'Остановить {value0}': 'Stop {value0}',
   'Проект задачи закрыт': 'The task project is closed',
-  'Здесь появятся агенты, автоматизации, команды, терминалы и приложения всех проектов.': 'Agents, automations, teams, terminals and apps of all projects appear here.',
+  'Здесь появятся агенты, автоматизации, команды, терминалы и приложения всех проектов.':
+    'Agents, automations, teams, terminals and apps of all projects appear here.',
   'Неизвестная задача': 'Unknown task'
 })
 
@@ -1067,9 +1121,11 @@ Object.assign(english, {
 
 Object.assign(english, {
   'Проект открыт в Prime CLI': 'Project is open in Prime CLI',
-  'Закройте CLI в папке {value0} — Desktop откроет проект и его чаты автоматически.': 'Close the CLI in {value0} — Desktop will open the project and its chats automatically.',
+  'Закройте CLI в папке {value0} — Desktop откроет проект и его чаты автоматически.':
+    'Close the CLI in {value0} — Desktop will open the project and its chats automatically.',
   'Отменить открытие': 'Cancel opening',
-  'Проект открыт в Prime CLI. Закройте CLI в этой папке и откройте проект снова.': 'The project is open in Prime CLI. Close the CLI in this folder and open the project again.'
+  'Проект открыт в Prime CLI. Закройте CLI в этой папке и откройте проект снова.':
+    'The project is open in Prime CLI. Close the CLI in this folder and open the project again.'
 })
 
 Object.assign(english, {

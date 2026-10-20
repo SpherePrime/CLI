@@ -17,9 +17,21 @@ export type GithubPull = GithubIssue & {
   reviewDecision?: string
 }
 
-export type GithubComment = { author?: GithubUser; body: string; createdAt?: string; path?: string; line?: number }
+export type GithubComment = {
+  author?: GithubUser
+  body: string
+  createdAt?: string
+  path?: string
+  line?: number
+}
 
-export type GithubCheck = { name: string; state: string; bucket: string; link: string; workflow?: string }
+export type GithubCheck = {
+  name: string
+  state: string
+  bucket: string
+  link: string
+  workflow?: string
+}
 
 export type GithubIssueDetail = GithubIssue & { body: string; comments: GithubComment[] }
 
@@ -44,8 +56,18 @@ export type GithubStatus = {
 }
 
 export type GithubRequest =
+  | { action: 'history' }
+  | { action: 'showCommit'; sha: string }
+  | { action: 'restoreCommit'; sha: string; expectedHead: string }
   | { action: 'status' | 'issues' | 'pulls' | 'branches' }
   | { action: 'issue' | 'pull' | 'diff'; number: number }
   | { action: 'failedLogs'; number: number }
-  | { action: 'createPull'; head: string; base: string; title: string; body: string; draft: boolean }
+  | {
+      action: 'createPull'
+      head: string
+      base: string
+      title: string
+      body: string
+      draft: boolean
+    }
   | { action: 'comment'; number: number; body: string }
