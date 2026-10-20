@@ -111,7 +111,7 @@ export class BrowserPanel {
     const window = this.window()
     if (!window || window.isDestroyed()) return
     const view = this.current()?.view
-    if (this.attached && this.attached !== view) {
+    if (this.attached && (this.attached !== view || !this.visible)) {
       window.contentView.removeChildView(this.attached)
       this.attached = undefined
     }

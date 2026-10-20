@@ -267,7 +267,7 @@ export function Inspector({
       </div>
       {tab === 'browser' && (
         <div className="inspector-browser">
-          <BrowserTab onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)} />
+          <BrowserTab workspace={w} onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)} />
         </div>
       )}
       <div className="inspector-content" hidden={tab === 'browser'}>

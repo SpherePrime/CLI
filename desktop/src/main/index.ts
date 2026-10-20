@@ -36,6 +36,7 @@ import { isRemoteWorkspace, remoteWorkspaceIdentity } from '../shared/remoteWork
 import { BrowserPanel } from './browser/panel'
 import { cancelPick, pickElements } from './browser/picker'
 import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
+import { openInSystemBrowser } from './browser/external'
 import { validateExternalUrl } from './ipc/security'
 import type { Operation } from '../shared/contracts'
 import { TerminalManager } from './terminal/manager'
@@ -733,9 +734,9 @@ function registerIpc(): void {
     browserPanel[action]()
     return browserPanel.state()
   })
-  handle('browserOpenExternal', () => {
+  handle('browserOpenExternal', async () => {
     const url = browserPanel.state().url
-    if (url) void shell.openExternal(validateExternalUrl(url))
+    if (url) await openInSystemBrowser(url)
   })
   handle('reveal', async (id: string, path = '') => {
     localOnly(id)
