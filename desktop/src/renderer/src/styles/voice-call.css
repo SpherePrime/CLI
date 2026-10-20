@@ -69,9 +69,11 @@
   --voice-b: #dc765e;
   --voice-c: #eac79b;
   position: relative;
-  width: clamp(250px, 39vh, 380px);
+  width: clamp(320px, 56vh, 560px);
   aspect-ratio: 1;
   flex-shrink: 0;
+  margin-block: calc(clamp(320px, 56vh, 560px) * -0.14);
+  pointer-events: none;
 }
 .voice-orb canvas {
   position: absolute;
@@ -232,7 +234,8 @@ button.voice-call-end:hover:not(:disabled) {
     padding: 15px 22px;
   }
   .voice-orb {
-    width: 240px;
+    width: 300px;
+    margin-block: -42px;
   }
   .voice-call-stage {
     min-height: 300px;
@@ -279,4 +282,34 @@ button.voice-call-end:hover:not(:disabled) {
   --voice-a: #e0602a;
   --voice-b: #aa6151;
   --voice-c: #aa854f;
+}
+
+.voice-call::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 55% 45% at 50% 42%,
+    var(--voice-ambient, rgb(255 106 61 / 0.1)),
+    transparent 70%
+  );
+  transition: background 900ms ease;
+}
+.voice-call > * {
+  position: relative;
+}
+.voice-call:has(.voice-orb.is-waiting),
+.voice-call:has(.voice-orb.is-transcribing),
+.voice-call:has(.voice-orb.is-preparing) {
+  --voice-ambient: rgb(125 92 255 / 0.12);
+}
+.voice-call:has(.voice-orb.is-speaking) {
+  --voice-ambient: rgb(255 84 112 / 0.12);
+}
+.voice-call:has(.voice-orb.is-muted) {
+  --voice-ambient: rgb(140 140 140 / 0.05);
+}
+:root[data-theme='light'] .voice-call::before {
+  opacity: 0.7;
 }
