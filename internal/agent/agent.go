@@ -70,8 +70,9 @@ var (
 )
 
 type SessionAgentCall struct {
-	queueID   string
-	SessionID string
+	ModelOverride *Model
+	queueID       string
+	SessionID     string
 	// RunID, when non-empty, is the caller-supplied correlator that
 	// gets echoed back on the notify.RunComplete event emitted for
 	// this turn. It is preserved when the call is enqueued behind a
@@ -685,6 +686,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	// Copy mutable fields under lock to avoid races with SetTools/SetModels.
 	agentTools := a.tools.Copy()
 	largeModel := a.largeModel.Get()
+	if call.ModelOverride != nil {
+		largeModel = *call.ModelOverride
+	}
 	systemPrompt := a.systemPrompt.Get()
 	promptPrefix := a.systemPromptPrefix.Get()
 	var instructions strings.Builder

@@ -19,6 +19,7 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
       {
         session_id: args.sessionId,
         run_id: args.runId,
+        reasoning_mode: args.reasoningMode,
         prompt: args.prompt,
         attachments: args.attachments || []
       }

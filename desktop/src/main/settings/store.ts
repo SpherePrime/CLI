@@ -28,6 +28,7 @@ export class SettingsStore {
       ...this.value,
       ...patch,
       drafts: { ...this.value.drafts, ...patch.drafts },
+      reasoningBySession: { ...this.value.reasoningBySession, ...patch.reasoningBySession },
       agentContexts: { ...this.value.agentContexts, ...patch.agentContexts }
     }
     const content = JSON.stringify({ version: 1, preferences: this.value }, null, 2)

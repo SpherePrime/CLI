@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   Json,
+  ChatReasoningMode,
   Message,
   Operation,
   Preferences,
@@ -33,6 +34,7 @@ export function useWorkspace() {
   const [project, setProject] = useState<Project | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
   const [session, setSession] = useState<Session | null>(null)
+  const [draftReasoningMode, setDraftReasoningMode] = useState<ChatReasoningMode>('off')
   const [messages, setMessages] = useState<Message[]>([])
   const [permissions, setPermissions] = useState<Json[]>([])
   const [questions, setQuestions] = useState<Json[]>([])
@@ -498,6 +500,7 @@ export function useWorkspace() {
     }
   }
   async function selectProject(selected: Project) {
+    setDraftReasoningMode('off')
     current.current = { project: selected, session: null }
     setProject(selected)
     setSession(null)
@@ -580,6 +583,9 @@ export function useWorkspace() {
     try {
       const latestPreferences = await window.prime.preferences()
       setPreferences(latestPreferences)
+      const reasoningMode = targetSession
+        ? latestPreferences.reasoningBySession?.[targetSession.id] || 'off'
+        : draftReasoningMode
       const latestContext =
         latestPreferences.agentContexts?.[targetProject.path] ?? agentContext.context
       const preparedPrompt = await buildAgentPrompt(prompt, latestContext, (path) =>
@@ -592,6 +598,9 @@ export function useWorkspace() {
         })
       }
       if (!selected) return false
+      if (!targetSession) {
+        await savePreferences({ reasoningBySession: { [selected.id]: reasoningMode } })
+      }
       const runId = crypto.randomUUID()
       if (current.current.session?.id === selected.id) setBusy(true)
       if (prompt.startsWith('!'))
@@ -606,6 +615,7 @@ export function useWorkspace() {
           sessionId: selected.id,
           runId,
           prompt: preparedPrompt,
+          reasoningMode,
           attachmentIds
         })
         if (usedModel?.provider && usedModel?.model) {
@@ -639,6 +649,7 @@ export function useWorkspace() {
       ...current,
       ...patch,
       drafts: { ...current.drafts, ...patch.drafts },
+      reasoningBySession: { ...current.reasoningBySession, ...patch.reasoningBySession },
       agentContexts: { ...current.agentContexts, ...patch.agentContexts }
     }))
     try {
@@ -650,6 +661,14 @@ export function useWorkspace() {
     }
   }
   const agentContext = useAgentContext(project, preferences, savePreferences, errorHandler)
+  const reasoningMode = session
+    ? preferences.reasoningBySession?.[session.id] || 'off'
+    : draftReasoningMode
+  async function setReasoningMode(mode: ChatReasoningMode) {
+    const selected = current.current.session
+    if (selected) await savePreferences({ reasoningBySession: { [selected.id]: mode } })
+    else setDraftReasoningMode(mode)
+  }
   async function deleteSession(id: string) {
     await call('deleteSession', { sessionId: id })
     if (current.current.session?.id === id) {
@@ -667,6 +686,8 @@ export function useWorkspace() {
     info,
     preferences,
     savePreferences,
+    reasoningMode,
+    setReasoningMode,
     projects,
     project,
     sessions,

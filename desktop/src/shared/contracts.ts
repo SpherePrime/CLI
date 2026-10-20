@@ -67,6 +67,7 @@ export type Project = {
   channels?: string[]
 }
 export type DesktopEvent = { workspaceId: string; type: string; payload: Json }
+export type ChatReasoningMode = 'off' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'default'
 export type Preferences = {
   theme: 'dark' | 'light' | 'system'
   language: 'ru' | 'en'
@@ -74,6 +75,7 @@ export type Preferences = {
   pinned: string[]
   favoriteModels?: { provider: string; model: string }[]
   recentModels?: { provider: string; model: string }[]
+  reasoningBySession?: Record<string, ChatReasoningMode>
   drafts: Record<string, string>
   sidebarWidth: number
   inspectorWidth: number
