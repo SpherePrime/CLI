@@ -73,7 +73,7 @@
 .sidebar-actions {
   padding: 20px 14px 10px;
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 7px;
 }
 .sidebar-actions button {
@@ -105,16 +105,16 @@
 .project-group {
   margin-bottom: 2px;
 }
-.project-group.open {
-  background: color-mix(in srgb, var(--raised) 40%, transparent);
-  border: 1px solid var(--border);
+.project-group.active-group {
+  background: color-mix(in srgb, var(--raised) 35%, transparent);
   border-radius: 10px;
-  padding: 2px 4px 6px;
-  margin-bottom: 8px;
 }
-.project-item .collapsed {
-  transform: rotate(-90deg);
-  color: var(--muted);
+.project-close {
+  opacity: 0.45;
+}
+.project-heading:hover .project-close,
+.project-close:focus-visible {
+  opacity: 1;
 }
 .personal-open {
   color: var(--secondary);
@@ -141,17 +141,6 @@
 }
 .project-item.selected > svg:nth-child(2) {
   color: var(--accent);
-}
-.chat-group-label {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 12px 4px 14px;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--muted);
-}
-.chat-group-label > span:last-child {
-  font-variant-numeric: tabular-nums;
 }
 .session-row {
   border-radius: 8px;
@@ -333,9 +322,6 @@
 }
 :root[data-density='compact'] .session-link {
   padding-block: 7px;
-}
-:root[data-density='compact'] .chat-group-label {
-  padding-top: 10px;
 }
 :root[data-density='compact'] .workspace-header,
 :root[data-density='compact'] .inspector-header {
