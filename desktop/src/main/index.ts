@@ -687,6 +687,18 @@ function registerIpc(): void {
           )
           .optional(),
         pinned: z.array(z.string()).max(500).optional(),
+        favoriteModels: z
+          .array(
+            z.object({ provider: z.string().min(1).max(512), model: z.string().min(1).max(1024) })
+          )
+          .max(100)
+          .optional(),
+        recentModels: z
+          .array(
+            z.object({ provider: z.string().min(1).max(512), model: z.string().min(1).max(1024) })
+          )
+          .max(8)
+          .optional(),
         drafts: z.record(z.string(), z.string().max(200000)).optional(),
         sidebarWidth: z.number().min(200).max(500).optional(),
         inspectorWidth: z.number().finite().min(280).optional(),
