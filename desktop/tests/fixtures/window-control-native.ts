@@ -44,7 +44,7 @@ async function main() {
       viewer
         .tools()
         .find((tool) => tool.name === name)!
-        .run(args, { workspaceId: 'fixture-project' })
+        .run(args, { workspaceId: 'fixture-project', sessionId: 'fixture-chat' })
     let denied = false
     try {
       await run('window_action', { action: 'type', text: 'denied' })
@@ -52,12 +52,22 @@ async function main() {
       denied = true
     }
     assert(denied, 'Missing grant accepted input')
-    await viewer.handle('fixture-project', {
-      action: 'share',
+    const listed = (await run('window_list'))[0]
+    const selected = JSON.parse(listed.type === 'text' ? listed.text : '').find(
+      (item: { hwnd: string }) => item.hwnd === hwnd
+    )
+    await run('window_request_access', {
       hwnd,
-      sessionId: 'fixture-chat',
+      pid: selected.pid,
+      identity: selected.identity,
+      title: selected.title,
       mode: 'control'
     })
+    const granted = await viewer.handle('fixture-project', { action: 'state' })
+    assert(
+      granted.share?.hwnd === hwnd && !granted.request,
+      'Approved execution required another confirmation'
+    )
     await run('window_action', { action: 'focus' })
     const point = async (id: string) => {
       const rect = await fixture.webContents.executeJavaScript(

@@ -6,10 +6,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 // whitelistDockerTools contains Docker MCP tools that don't require permission.
@@ -124,7 +124,7 @@ func (m *Tool) Run(ctx context.Context, params fantasy.ToolCall) (fantasy.ToolRe
 
 	// Skip permission for whitelisted Docker MCP tools.
 	if !slices.Contains(whitelistDockerTools, params.Name) {
-		permissionDescription := fmt.Sprintf("execute %s with the following parameters:", m.Info().Name)
+		permissionDescription := m.permissionDescription(params.Input)
 		p, err := m.permissions.Request(
 			ctx,
 			permission.CreatePermissionRequest{
@@ -145,7 +145,7 @@ func (m *Tool) Run(ctx context.Context, params fantasy.ToolCall) (fantasy.ToolRe
 		}
 	}
 
-	result, err := mcp.RunTool(ctx, m.cfg, m.mcpName, m.tool.Name, params.Input)
+	result, err := mcp.RunTool(ctx, m.cfg, m.mcpName, m.tool.Name, params.Input, sessionID)
 	if err != nil {
 		return fantasy.NewTextErrorResponse(err.Error()), nil
 	}

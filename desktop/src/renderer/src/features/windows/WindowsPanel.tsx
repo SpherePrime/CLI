@@ -7,7 +7,6 @@ import {
   MousePointer2,
   RefreshCw,
   Search,
-  ShieldCheck,
   ShieldOff
 } from 'lucide-react'
 import type { WindowInfo, WindowRequest, WindowState } from '../../../../shared/computer'
@@ -99,7 +98,6 @@ export function WindowsPanel({ workspaceId, sessionId, sessionTitle, onError }: 
     }
   }
   const share = state.share
-  const request = state.request
   const filtered = windows.filter((item) =>
     item.title.toLocaleLowerCase().includes(query.toLocaleLowerCase())
   )
@@ -134,39 +132,6 @@ export function WindowsPanel({ workspaceId, sessionId, sessionTitle, onError }: 
             {c.revoke}
           </button>
         </div>
-      )}
-      {request && (
-        <section
-          className="windows-request"
-          aria-label={request.mode === 'control' ? c.requestControl : c.requestView}
-        >
-          <div>
-            <ShieldCheck size={19} />
-            <strong>{request.mode === 'control' ? c.requestControl : c.requestView}</strong>
-          </div>
-          <p>{request.title}</p>
-          <small>
-            {c.requestHint} {request.mode === 'control' ? c.controlHint : c.scope}
-          </small>
-          <div className="automation-actions">
-            <button
-              className="automation-primary"
-              onClick={() =>
-                void update({
-                  action: 'share',
-                  hwnd: request.hwnd,
-                  sessionId: request.sessionId,
-                  mode: request.mode,
-                  expectedPid: request.pid,
-                  expectedIdentity: request.identity
-                })
-              }
-            >
-              {request.mode === 'control' ? c.control : c.view}
-            </button>
-            <button onClick={() => void update({ action: 'dismiss' })}>{c.close}</button>
-          </div>
-        </section>
       )}
       {error && (
         <div className="windows-error" role="alert">

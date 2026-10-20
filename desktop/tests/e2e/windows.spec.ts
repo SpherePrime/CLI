@@ -25,9 +25,10 @@ test('requests scoped window access, captures and controls the approved fixture,
         id: fixtureWindow.id
       }
     })
+    let sessionId: string | undefined
     const tool = (name: string, args: Record<string, unknown> = {}) =>
       app.evaluate(
-        async (_electron, { name, args, root }) => {
+        async (_electron, { name, args, root, sessionId }) => {
           const response = await fetch(process.env.PRIME_DESKTOP_BROWSER_URL!, {
             method: 'POST',
             headers: {
@@ -39,12 +40,12 @@ test('requests scoped window access, captures and controls the approved fixture,
               jsonrpc: '2.0',
               id: 1,
               method: 'tools/call',
-              params: { name, arguments: args }
+              params: { name, arguments: args, _meta: { 'prime/sessionId': sessionId } }
             })
           })
           return response.json()
         },
-        { name, args, root: fixture.root }
+        { name, args, root: fixture.root, sessionId }
       )
     expect((await tool('window_view')).result.isError).toBe(true)
     const listed = JSON.parse((await tool('window_list')).result.content[0].text)
@@ -60,14 +61,23 @@ test('requests scoped window access, captures and controls the approved fixture,
         )
       )
       .toBe(true)
-    const requestView = await tool('window_request_access', { hwnd: target.hwnd, mode: 'view' })
+    sessionId = await page.evaluate(async (id) => {
+      const sessions = await window.prime.call(id, 'sessions')
+      return sessions.find((item: { is_busy: boolean }) => item.is_busy)?.id
+    }, project.id)
+    const selected = listed.find((item: { hwnd: string }) => item.hwnd === target.hwnd)
+    const selection = {
+      hwnd: target.hwnd,
+      pid: selected.pid,
+      identity: selected.identity,
+      title: selected.title
+    }
+    const requestView = await tool('window_request_access', { ...selection, mode: 'view' })
     expect(requestView.result.isError).not.toBe(true)
-    expect(JSON.parse(requestView.result.content[0].text).status).toBe('awaiting_user')
-    await expect(page.getByRole('region', { name: 'Запрос просмотра окна' })).toBeVisible()
-    await page
-      .getByRole('region', { name: 'Запрос просмотра окна' })
-      .getByRole('button', { name: 'Разрешить просмотр', exact: true })
-      .click()
+    expect(JSON.parse(requestView.result.content[0].text).status).toBe('granted')
+    await page.keyboard.press('Control+`')
+    await page.getByRole('tab', { name: 'Окна', exact: true }).click()
+    await expect(page.locator('.windows-request')).toHaveCount(0)
     await expect(page.locator('.windows-share')).toContainText('Просмотр разрешён')
     expect(
       (await tool('window_view')).result.content.some(
@@ -75,11 +85,8 @@ test('requests scoped window access, captures and controls the approved fixture,
       )
     ).toBe(true)
     expect((await tool('window_action', { action: 'focus' })).result.isError).toBe(true)
-    await tool('window_request_access', { hwnd: target.hwnd, mode: 'control' })
-    await page
-      .getByRole('region', { name: 'Запрос управления окном' })
-      .getByRole('button', { name: 'Разрешить управление', exact: true })
-      .click()
+    await tool('window_request_access', { ...selection, mode: 'control' })
+    await expect(page.locator('.windows-request')).toHaveCount(0)
     await expect(page.locator('.windows-share')).toContainText('Управление разрешено')
     expect(
       await app.evaluate(({ globalShortcut }) => globalShortcut.isRegistered('Control+Alt+Escape'))
