@@ -3,6 +3,8 @@ import { ArrowLeft, ArrowRight, Crosshair, ExternalLink, Globe, RotateCw, X } fr
 import type { BrowserState, PickedElementResult } from '../../../../shared/contracts'
 import { ElementPick } from './ElementPick'
 import { BrowserTabs } from './BrowserTabs'
+import { visibleRect } from './visibleRect'
+import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 
 const overlaySelector =
@@ -17,8 +19,10 @@ const emptyState: BrowserState = {
 }
 
 export function BrowserTab({
+  workspace,
   onSend
 }: {
+  workspace?: Workspace
   onSend?(prompt: string, attachmentIds: string[]): Promise<unknown>
 }) {
   const { t } = useI18n()
@@ -75,17 +79,10 @@ export function BrowserTab({
     const sync = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
-        const rect = element.getBoundingClientRect()
+        const rect = visibleRect(element)
         const covered = Boolean(document.querySelector(overlaySelector))
-        if (covered || rect.width < 2 || rect.height < 2 || !state.url)
-          void window.prime.browserHide()
-        else
-          void window.prime.browserShow({
-            x: rect.left,
-            y: rect.top,
-            width: rect.width,
-            height: rect.height
-          })
+        if (covered || !rect || !state.url) void window.prime.browserHide()
+        else void window.prime.browserShow(rect)
       })
     }
     sync()
@@ -195,7 +192,11 @@ export function BrowserTab({
           aria-label={t('Открыть во внешнем браузере')}
           title={t('Открыть во внешнем браузере')}
           disabled={!/^https?:/.test(state.url)}
-          onClick={() => void window.prime.browserOpenExternal()}
+          onClick={() =>
+            void window.prime
+              .browserOpenExternal()
+              .catch((reason) => setError(String(reason?.message || reason).replace(/^.*Error: /, '')))
+          }
         >
           <ExternalLink size={14} />
         </button>
@@ -206,9 +207,10 @@ export function BrowserTab({
           {t('Нажмите на элемент. С Ctrl — несколько. Esc — отмена.')}
         </p>
       )}
-      {picked && onSend && (
+      {picked && onSend && workspace && (
         <ElementPick
           results={picked}
+          workspace={workspace}
           onSend={onSend}
           onRemove={(index) => setPicked(picked.filter((_, position) => position !== index))}
           onClose={() => setPicked(null)}

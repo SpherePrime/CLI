@@ -157,8 +157,13 @@
   background: var(--bg);
   color: var(--text);
 }
+.element-pick-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
 .element-pick button[type='submit'] {
-  justify-self: end;
   display: inline-flex;
   align-items: center;
   gap: 6px;

@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Send, X } from 'lucide-react'
+import { LoaderCircle, Mic, Send, X } from 'lucide-react'
+import type { Workspace } from '../../app/useWorkspace'
+import { useVoice } from '../plugins/useVoice'
 import type { PickedElementResult } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
 
@@ -35,11 +37,13 @@ export function elementPrompt(results: PickedElementResult[], comment: string) {
 
 export function ElementPick({
   results,
+  workspace,
   onSend,
   onRemove,
   onClose
 }: {
   results: PickedElementResult[]
+  workspace: Workspace
   onSend(prompt: string, attachmentIds: string[]): Promise<unknown>
   onRemove(index: number): void
   onClose(): void
@@ -48,16 +52,22 @@ export function ElementPick({
   const [comment, setComment] = useState('')
   const [sending, setSending] = useState(false)
   const multiple = results.length > 1
+  const voice = useVoice(workspace, (text) =>
+    setComment((value) => [value, text].filter(Boolean).join(' '))
+  )
   return (
     <form
       className="element-pick"
       onSubmit={async (event) => {
         event.preventDefault()
-        if (!comment.trim() || !results.length) return
+        if ((!comment.trim() && !voice.recording) || !results.length) return
         setSending(true)
         try {
+          const spoken = voice.recording ? await voice.finish() : ''
+          const message = [comment, spoken].filter((part) => part.trim()).join(' ')
+          if (!message.trim()) return
           await onSend(
-            elementPrompt(results, comment),
+            elementPrompt(results, message),
             results.flatMap((result) => (result.attachmentId ? [result.attachmentId] : []))
           )
           onClose()
@@ -96,7 +106,9 @@ export function ElementPick({
         autoFocus
         rows={2}
         aria-label={t('Замечание к элементу')}
-        placeholder={multiple ? t('Например: выровняй эти блоки') : t('Например: переделай эту кнопку')}
+        placeholder={
+          multiple ? t('Например: выровняй эти блоки') : t('Например: переделай эту кнопку')
+        }
         value={comment}
         onChange={(event) => setComment(event.target.value)}
         onKeyDown={(event) => {
@@ -106,10 +118,28 @@ export function ElementPick({
           }
         }}
       />
-      <button type="submit" className="primary" disabled={sending || !comment.trim()}>
-        <Send size={13} />
-        {multiple ? t('Отправить {value0} в чат', { value0: results.length }) : t('Отправить в чат')}
-      </button>
+      <div className="element-pick-actions">
+        <button
+          type="button"
+          className={`icon small ${voice.recording ? 'danger' : ''}`}
+          disabled={voice.transcribing || sending}
+          aria-label={voice.recording ? t('Остановить запись') : t('Голосовой ввод')}
+          title={voice.recording ? t('Остановить запись') : t('Голосовой ввод')}
+          onClick={() => void voice.toggle()}
+        >
+          {voice.transcribing ? <LoaderCircle size={14} className="spin" /> : <Mic size={14} />}
+        </button>
+        <button
+          type="submit"
+          className="primary"
+          disabled={sending || voice.transcribing || (!comment.trim() && !voice.recording)}
+        >
+          <Send size={13} />
+          {multiple
+            ? t('Отправить {value0} в чат', { value0: results.length })
+            : t('Отправить в чат')}
+        </button>
+      </div>
     </form>
   )
 }
