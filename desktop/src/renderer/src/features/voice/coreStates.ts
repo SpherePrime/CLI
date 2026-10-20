@@ -16,7 +16,7 @@ const hex = (value: string): [number, number, number] => {
   return [((number >> 16) & 255) / 255, ((number >> 8) & 255) / 255, (number & 255) / 255]
 }
 
-const ember = { deep: hex('#2b0710'), mid: hex('#ff6a3d'), hot: hex('#ffcf8a') }
+const ember = { deep: hex('#3a0a0c'), mid: hex('#ff5a2c'), hot: hex('#ffa65a') }
 const thought = { deep: hex('#140b33'), mid: hex('#7d5cff'), hot: hex('#ff9fd4') }
 const voice = { deep: hex('#300a18'), mid: hex('#ff4d6d'), hot: hex('#ff9c74') }
 
