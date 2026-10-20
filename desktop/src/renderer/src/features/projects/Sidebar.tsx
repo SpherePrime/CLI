@@ -43,9 +43,13 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="sidebar-actions">
-        <button className="new-chat" disabled={!w.project} onClick={() => void w.createSession()}>
+        <button
+          className="new-chat"
+          disabled={!w.project}
+          title={`${t('Новый чат')} · Ctrl N`}
+          onClick={() => void w.createSession()}
+        >
           <Plus size={16} /> {t('Новый чат')}
-          <kbd>Ctrl N</kbd>
         </button>
         <button
           className="open-project"
