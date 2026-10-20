@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { MoreHorizontal, ListRestart, FileText, Download, Copy, Check } from 'lucide-react'
 import { Popover } from '../../components/Popover'
-import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { downloadConversation } from './exportConversation'
 import { exportConversation } from '../../../../shared/workspaceTools'
+import { useI18n } from '../../i18n'
 
 export function ChatActions({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
@@ -46,7 +46,11 @@ export function ChatActions({ workspace: w }: { workspace: Workspace }) {
             <button
               disabled={!w.messages.length}
               onClick={() => {
-                downloadConversation(w.session?.title || t('Новый чат'), w.messages, t('Вы'))
+                downloadConversation(
+                  w.session?.title || t('Новый чат'),
+                  w.messages,
+                  t
+                )
                 setOpen(false)
               }}
             >
@@ -59,8 +63,9 @@ export function ChatActions({ workspace: w }: { workspace: Workspace }) {
                 try {
                   await navigator.clipboard.writeText(
                     exportConversation(w.session?.title || t('Новый чат'), w.messages, {
-                      user: t('Вы'),
-                      assistant: 'Prime'
+                      user: 'User',
+                      assistant: 'Prime',
+                      exported: t('Экспорт: {value0}')
                     })
                   )
                   setCopied(true)

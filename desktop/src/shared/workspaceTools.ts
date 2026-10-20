@@ -16,17 +16,46 @@ export function findMessages(messages: Message[], query: string): string[] {
 export function exportConversation(
   title: string,
   messages: Message[],
-  labels: { user: string; assistant: string }
+  labels: { user: string; assistant: string; exported?: string },
+  now = new Date()
 ): string {
-  const blocks = messages
-    .filter(
-      (message) => ['user', 'assistant'].includes(message.role) && textContent(message).trim()
-    )
-    .map(
-      (message) =>
-        `## ${message.role === 'user' ? labels.user : labels.assistant}\n\n${textContent(message).trim()}`
-    )
-  return [`# ${title.replace(/[\r\n]+/g, ' ').trim() || 'Chat'}`, ...blocks].join('\n\n') + '\n'
+  const time = (seconds?: number) => {
+    if (!seconds) return ''
+    const value = new Date(seconds * 1000)
+    const hours = String(value.getHours()).padStart(2, '0')
+    const minutes = String(value.getMinutes()).padStart(2, '0')
+    return `${hours}:${minutes}`
+  }
+  const day = (seconds: number) => {
+    const value = new Date(seconds * 1000)
+    const dayOfMonth = String(value.getDate()).padStart(2, '0')
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    return `${dayOfMonth}.${month}.${value.getFullYear()}`
+  }
+  const quote = (text: string) =>
+    text
+      .split('\n')
+      .map((line) => (line.trim() ? `> ${line}` : '>'))
+      .join('\n')
+  const visible = messages.filter(
+    (message) => ['user', 'assistant'].includes(message.role) && textContent(message).trim()
+  )
+  const header = [
+    `# ${title.replace(/[\r\n]+/g, ' ').trim() || 'Chat'}`,
+    labels.exported
+      ? `*${labels.exported.replace('{value0}', `${day(+now / 1000)}, ${time(+now / 1000)}`)}*`
+      : ''
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+  const blocks = visible.map((message) => {
+    const role = message.role === 'user' ? labels.user : labels.assistant
+    const stamp = time(message.created_at)
+    const body =
+      message.role === 'user' ? quote(textContent(message).trim()) : textContent(message).trim()
+    return `**${role}**${stamp ? ` · ${stamp}` : ''}\n\n${body}`
+  })
+  return [header, ...blocks].join('\n\n---\n\n') + '\n'
 }
 
 export function safeExportName(title: string): string {

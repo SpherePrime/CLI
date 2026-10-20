@@ -762,6 +762,7 @@ Object.assign(english, {
   'Предыдущее совпадение': 'Previous match',
   'Следующее совпадение': 'Next match',
   'Экспорт в Markdown': 'Export to Markdown',
+  'Экспорт: {value0}': 'Export: {value0}',
   'Скопировать чат': 'Copy chat',
   'Режим фокуса': 'Focus mode',
   'Выйти из фокуса': 'Exit focus mode',
