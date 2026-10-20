@@ -57,7 +57,7 @@ func BenchmarkBuildSummaryPrompt(b *testing.B) {
 	}
 }
 
-func TestPreparePrompt_FiltersImageAttachments(t *testing.T) {
+func TestPreparePrompt_RetainsImageAttachments(t *testing.T) {
 	env := testEnv(t)
 	sa := testSessionAgent(env, nil, nil, "test prompt")
 	agent := sa.(*sessionAgent)
@@ -87,17 +87,14 @@ func TestPreparePrompt_FiltersImageAttachments(t *testing.T) {
 		Content:  []byte("fake-screenshot"),
 	}
 
-	// When supportsImages is false, image attachments should be stripped
-	// from history AND from the files list.
 	history, files := agent.preparePrompt(msgs, false, imageAtt)
-	// First message is the system reminder, second is the user message.
 	require.Len(t, history, 2)
-	require.Len(t, history[1].Content, 1)
+	require.Len(t, history[1].Content, 2)
 	text, ok := fantasy.AsMessagePart[fantasy.TextPart](history[1].Content[0])
 	require.True(t, ok)
 	require.Contains(t, text.Text, "hello world")
 	require.Contains(t, text.Text, "important notes")
-	require.Empty(t, files, "image files should be excluded when model does not support images")
+	require.Len(t, files, 1)
 
 	// When supportsImages is true, image attachments should remain in
 	// history and be included in the files list.
