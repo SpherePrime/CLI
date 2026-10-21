@@ -5,6 +5,7 @@ import { Check, Copy } from 'lucide-react'
 import { MessageAttachment } from './MessageAttachment'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { ToolCard } from './ToolCard'
+import { collectToolImages, ToolGallery } from './ToolGallery'
 import { ReasoningBlock } from './ReasoningBlock'
 import { useI18n } from '../../i18n'
 import type { Message } from '../../../../shared/contracts'
@@ -113,8 +114,17 @@ export const MessageItem = memo(function MessageItem({
                 live={live && !part.data.finished_at}
               />
             )
-          if (['tool_call', 'tool_result', 'shell_command'].includes(part.type))
-            return <ToolCard key={index} part={part} />
+          if (['tool_call', 'tool_result', 'shell_command'].includes(part.type)) {
+            const result =
+              part.type === 'tool_result' ? part.data : (part.data.result as unknown)
+            const images = collectToolImages(result)
+            return (
+              <div className="tool-part" key={index}>
+                <ToolGallery images={images} />
+                <ToolCard part={part} />
+              </div>
+            )
+          }
           if (part.type === 'finish' && ['error', 'canceled'].includes(part.data.reason))
             return (
               <div key={index} className="finish-note">
