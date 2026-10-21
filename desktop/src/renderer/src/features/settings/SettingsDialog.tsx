@@ -19,9 +19,11 @@ import {
   Moon,
   Download,
   AudioLines,
-  Keyboard
+  Keyboard,
+  Image
 } from 'lucide-react'
 import { VoiceSettings } from './VoiceSettings'
+import { ImageGenSettings } from './ImageGenSettings'
 import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
 export function SettingsDialog({
@@ -42,6 +44,7 @@ export function SettingsDialog({
     { id: 'shortcuts', label: t('Горячие клавиши'), icon: Keyboard },
     { id: 'providers', label: t('Провайдеры'), icon: Server },
     { id: 'voice', label: t('Голос'), icon: AudioLines },
+    { id: 'images', label: t('Изображения'), icon: Image },
     { id: 'mcp', label: 'MCP', icon: Boxes },
     { id: 'lsp', label: 'LSP', icon: Code2 },
     { id: 'skills', label: 'Skills', icon: BookOpen },
@@ -68,6 +71,7 @@ export function SettingsDialog({
         </nav>
         <div className="settings-body">
           {tab === 'voice' && <VoiceSettings workspace={w} />}
+          {tab === 'images' && <ImageGenSettings workspace={w} />}
           {tab === 'appearance' && (
             <>
               <h3>{t('Ваше рабочее пространство')}</h3>
