@@ -67,10 +67,10 @@ export function ShortcutSettings({ workspace: w }: { workspace: Workspace }) {
   }, [recording, shortcuts])
   const customized = shortcutActions.some((action) => shortcuts[action] !== defaultShortcuts[action])
   return (
-    <section className="shortcut-settings" aria-label={t('Клавиатура')}>
+    <section className="shortcut-settings" aria-label={t('Горячие клавиши')}>
       <header>
         <div>
-          <strong>{t('Клавиатура')}</strong>
+          <h3>{t('Горячие клавиши')}</h3>
           <small>
             {t('Нажмите на сочетание и введите новое. Esc — отмена, Backspace — отключить.')}
           </small>
