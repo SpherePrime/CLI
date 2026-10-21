@@ -86,6 +86,7 @@ export type Preferences = {
   speechSpeed?: number
   speechAutoSend?: boolean
   inspectorVisible?: boolean
+  keybindings?: Record<string, string>
   agentContexts?: Record<string, import('./agentContext').AgentContext>
   skipBySession?: Record<string, boolean>
   defaultSkip?: boolean

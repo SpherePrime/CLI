@@ -1,3 +1,5 @@
+import { shortcutLabel } from '../../../../shared/keybindings'
+import { useShortcuts } from '../shortcuts/shortcutStore'
 import { useI18n } from '../../i18n'
 import '../../styles/jobs.css'
 import {
@@ -28,6 +30,7 @@ export function Sidebar({
   onWorkbench: () => void
 }) {
   const { t } = useI18n()
+  const shortcuts = useShortcuts()
   const [activeJobs, setActiveJobs] = useState(0)
   useEffect(() => {
     if (w.info.runtime !== 'ready') return
@@ -48,7 +51,7 @@ export function Sidebar({
         <button
           className="new-chat"
           disabled={!w.project}
-          title={`${t('Новый чат')} · Ctrl N`}
+          title={`${t('Новый чат')} · ${shortcutLabel(shortcuts.newChat)}`}
           onClick={() => void w.createSession()}
         >
           <Plus size={16} /> {t('Новый чат')}
@@ -66,14 +69,14 @@ export function Sidebar({
         <button onClick={onWorkbench} disabled={!w.project}>
           <TerminalSquare size={16} />
           {t('Инструменты проекта')}
-          <kbd className="footer-shortcut">Ctrl `</kbd>
+          <kbd className="footer-shortcut">{shortcutLabel(shortcuts.terminal)}</kbd>
         </button>
         <button onClick={onPlugins}>
           <Puzzle size={16} /> {t('Плагины')}
         </button>
         <button onClick={onSettings}>
           <Settings2 size={16} /> {t('Настройки')}
-          <kbd className="footer-shortcut">Ctrl ,</kbd>
+          <kbd className="footer-shortcut">{shortcutLabel(shortcuts.settings)}</kbd>
         </button>
       </footer>
     </aside>

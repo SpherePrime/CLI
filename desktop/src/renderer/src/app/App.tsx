@@ -7,7 +7,7 @@ import { StartupScreen } from '../components/StartupScreen'
 import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
 import { I18nProvider, useI18n } from '../i18n'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AlertCircle, X } from 'lucide-react'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
@@ -29,6 +29,7 @@ import { useQuickActions } from './useQuickActions'
 import { usePanelResize } from './usePanelResize'
 import { useWorkspaceShortcuts } from './useWorkspaceShortcuts'
 import { useModalWindowChrome } from './useModalWindowChrome'
+import { applyShortcuts } from '../features/shortcuts/shortcutStore'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -60,6 +61,7 @@ export function App() {
 function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
   const documents = useDocuments(w.errorHandler)
+  useLayoutEffect(() => applyShortcuts(w.preferences.keybindings), [w.preferences.keybindings])
   useModalWindowChrome()
   const [editorFraction, setEditorFraction] = useState(1.2)
   const [modal, setModal] = useState('')

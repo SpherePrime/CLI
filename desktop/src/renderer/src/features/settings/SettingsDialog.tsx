@@ -1,3 +1,4 @@
+import { ShortcutSettings } from '../shortcuts/ShortcutSettings'
 import { PrimeSettings } from './PrimeSettings'
 import { IntegrationSettings } from './IntegrationSettings'
 import { ProviderSettings } from './ProviderSettings'
@@ -151,20 +152,7 @@ export function SettingsDialog({
                   />
                 </label>
               </div>
-              <div className="settings-note">
-                <strong>{t('Клавиатура')}</strong>
-                <p>
-                  {t('Ctrl+K — быстрые действия · Ctrl+F — поиск в чате')}
-                  <br />
-                  {t('Ctrl+Shift+F — режим фокуса · Ctrl+, — настройки')}
-                  <br />
-                  {t('Ctrl+N — новый чат · Ctrl+L — модели')}
-                  <br />
-                  {t('Shift+Enter — новая строка · двойной Esc — остановить задачу')}
-                  <br />
-                  {t('Alt+V — голосовой ввод')}
-                </p>
-              </div>
+              <ShortcutSettings workspace={w} />
             </>
           )}
           {tab === 'providers' && <ProviderSettings workspace={w} scope={scope} />}

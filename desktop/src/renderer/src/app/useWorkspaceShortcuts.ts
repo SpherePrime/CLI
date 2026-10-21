@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import type { Workspace } from './useWorkspace'
+import { matchesShortcut } from '../../../shared/keybindings'
+import { getShortcuts } from '../features/shortcuts/shortcutStore'
 
 export function useWorkspaceShortcuts({
   workspace: w,
@@ -18,51 +20,37 @@ export function useWorkspaceShortcuts({
 }) {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      const shortcuts = getShortcuts()
       const dialogOpen = Boolean(document.querySelector('dialog[open]'))
-      if (event.ctrlKey && event.code === 'KeyK') {
+      const run = (action: () => void) => {
         event.preventDefault()
-        if (!dialogOpen) setModal('commands')
-        return
+        action()
       }
+      if (matchesShortcut(event, shortcuts.commands))
+        return run(() => {
+          if (!dialogOpen) setModal('commands')
+        })
       if (dialogOpen || event.defaultPrevented) return
-      if (event.ctrlKey && event.code === 'Backquote' && w.project) {
-        event.preventDefault()
-        toggleTerminal()
-      }
-      if (event.ctrlKey && event.shiftKey && event.code === 'KeyF') {
-        event.preventDefault()
-        toggleFocus()
-      }
+      if (matchesShortcut(event, shortcuts.terminal) && w.project) return run(toggleTerminal)
+      if (matchesShortcut(event, shortcuts.focus)) return run(toggleFocus)
       if (
-        event.ctrlKey &&
-        !event.shiftKey &&
-        event.code === 'KeyF' &&
+        matchesShortcut(event, shortcuts.chatSearch) &&
         w.messages.length &&
         !(event.target as HTMLElement).closest('.file-editor, .terminal-panel')
-      ) {
-        event.preventDefault()
-        openSearch()
-      }
-      if (event.ctrlKey && event.code === 'Comma') {
-        event.preventDefault()
-        setModal('settings')
-      }
-      if (event.ctrlKey && event.code === 'KeyL') {
-        event.preventDefault()
-        window.dispatchEvent(new Event('prime:models'))
-      }
-      if (event.ctrlKey && event.code === 'KeyN') {
-        event.preventDefault()
-        if (w.project) void w.createSession()
-      }
-      if (event.ctrlKey && ['Equal', 'Minus', 'Digit0'].includes(event.code)) {
-        event.preventDefault()
-        setZoom((value) =>
-          event.code === 'Digit0'
-            ? 1
-            : Math.max(0.8, Math.min(2, value + (event.code === 'Equal' ? 0.1 : -0.1)))
-        )
-      }
+      )
+        return run(openSearch)
+      if (matchesShortcut(event, shortcuts.settings)) return run(() => setModal('settings'))
+      if (matchesShortcut(event, shortcuts.models))
+        return run(() => window.dispatchEvent(new Event('prime:models')))
+      if (matchesShortcut(event, shortcuts.newChat))
+        return run(() => {
+          if (w.project) void w.createSession()
+        })
+      if (matchesShortcut(event, shortcuts.zoomIn))
+        return run(() => setZoom((value) => Math.min(2, value + 0.1)))
+      if (matchesShortcut(event, shortcuts.zoomOut))
+        return run(() => setZoom((value) => Math.max(0.8, value - 0.1)))
+      if (matchesShortcut(event, shortcuts.zoomReset)) return run(() => setZoom(1))
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)

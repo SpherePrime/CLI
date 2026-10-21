@@ -663,6 +663,7 @@ function registerIpc(): void {
         speechSpeed: z.number().min(0.7).max(1.6).optional(),
         speechAutoSend: z.boolean().optional(),
         inspectorVisible: z.boolean().optional(),
+        keybindings: z.record(z.string().max(40), z.string().max(80)).optional(),
         agentContexts: z
           .record(
             z.string().max(4096),

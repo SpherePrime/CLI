@@ -1,3 +1,5 @@
+import { matchesShortcut, shortcutLabel } from '../../../../shared/keybindings'
+import { getShortcuts, useShortcuts } from '../shortcuts/shortcutStore'
 import { PermissionMenu } from './PermissionMenu'
 import { QueuePanel } from './QueuePanel'
 import { ModelControl } from '../models/ModelControl'
@@ -20,6 +22,7 @@ import '../../styles/attachments.css'
 
 export function Composer({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
+  const shortcuts = useShortcuts()
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<any[]>([])
   const inFlightAttachments = useRef<string[]>([])
@@ -239,7 +242,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         if (Date.now() - lastEscape < 600) void stop()
         lastEscape = Date.now()
       }
-      if (event.altKey && event.code === 'KeyV' && conversation.state === 'off') {
+      if (matchesShortcut(event, getShortcuts().voice) && conversation.state === 'off') {
         event.preventDefault()
         void toggleVoice()
       }
@@ -429,7 +432,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               className={`icon ${recording ? 'danger' : ''}`}
               disabled={!w.project || transcribing || conversation.state !== 'off'}
               aria-label={recording ? t('Остановить запись') : t('Голосовой ввод')}
-              title={t('Голосовой ввод · Alt V')}
+              title={`${t('Голосовой ввод')} · ${shortcutLabel(shortcuts.voice)}`}
               onClick={() => void toggleVoice()}
             >
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
