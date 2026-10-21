@@ -315,15 +315,6 @@ export function MessageList({
               )
             })}
           </div>
-          {hasAfter && (
-            <button
-              className="history-page-button"
-              disabled={historyLoading}
-              onClick={() => void paging.page('after')}
-            >
-              {t('Следующие сообщения')}
-            </button>
-          )}
           <WorkingIndicator
             busy={busy && !hasAfter}
             waiting={waiting}
