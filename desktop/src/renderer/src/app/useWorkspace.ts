@@ -622,6 +622,25 @@ export function useWorkspace() {
     await call('currentSession', { sessionId: selected.id }).catch(errorHandler)
     await refresh()
   }
+  async function openSession(target: Project, selected: Session, known?: Session[]) {
+    if (target.id === current.current.project?.id) return selectSession(selected)
+    const cached = messageCache.current.get(selected.id)
+    setDraftReasoningMode(null)
+    current.current = { project: target, session: selected }
+    setProject(target)
+    setSession(selected)
+    if (known) setSessions(known)
+    setMessages(cached || [])
+    setMessagesSessionId(cached ? selected.id : null)
+    setBusy(Boolean(selected.is_busy))
+    setQueue([])
+    setPermissions([])
+    setQuestions([])
+    await window.prime
+      .call(target.id, 'currentSession', { sessionId: selected.id })
+      .catch(errorHandler)
+    await refresh()
+  }
   async function openChat() {
     try {
       const opened = await window.prime.openChat()
@@ -837,6 +856,7 @@ export function useWorkspace() {
     selectProject,
     closeProject,
     selectSession,
+    openSession,
     createSession,
     deleteSession,
     send

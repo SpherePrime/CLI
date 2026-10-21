@@ -109,13 +109,16 @@ export function JobsCenter({
       return
     }
     close()
-    if (w.project?.id !== project.id) await w.selectProject(project)
     if (job.sessionId) {
       const sessions: Session[] = await window.prime.call(project.id, 'sessions')
       const session = sessions.find((item) => item.id === job.sessionId)
-      if (session) await w.selectSession(session)
-    } else if (job.kind === 'terminal' || job.kind === 'app')
-      openTools(job.kind === 'app' ? 'launch' : 'terminal')
+      if (session) await w.openSession(project, session, sessions)
+      else if (w.project?.id !== project.id) await w.selectProject(project)
+    } else {
+      if (w.project?.id !== project.id) await w.selectProject(project)
+      if (job.kind === 'terminal' || job.kind === 'app')
+        openTools(job.kind === 'app' ? 'launch' : 'terminal')
+    }
   }
   const stop = async (job: Job) => {
     setBusy(job.id)

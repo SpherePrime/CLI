@@ -1,5 +1,5 @@
 import { sessionTitle } from '../../../../shared/sessionTitle'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Folder,
@@ -47,13 +47,20 @@ export function SidebarChats({
             }
           })
       )
-      if (!cancelled) setOtherSessions(Object.fromEntries(entries))
+      if (!cancelled) setOtherSessions((value) => ({ ...value, ...Object.fromEntries(entries) }))
     }
     void load()
     return () => {
       cancelled = true
     }
   }, [projectIds, w.project?.id])
+  const previousProject = useRef<{ id?: string; sessions: Session[] }>({ sessions: [] })
+  useLayoutEffect(() => {
+    const last = previousProject.current
+    if (last.id && last.id !== w.project?.id)
+      setOtherSessions((value) => ({ ...value, [last.id!]: last.sessions }))
+    previousProject.current = { id: w.project?.id, sessions: w.sessions }
+  }, [w.project?.id, w.sessions])
   useEffect(() => {
     if (!w.project?.id) return
     setExpanded((value) => (value[w.project!.id] ? value : { ...value, [w.project!.id]: true }))
@@ -121,8 +128,7 @@ export function SidebarChats({
     }
   }
   const openChatSession = async (project: Project, session: Session) => {
-    if (project.id !== w.project?.id) await w.selectProject(project)
-    await w.selectSession(session)
+    await w.openSession(project, session, otherSessions[project.id])
   }
   const recentChats = [personal, ...folders]
     .filter((project): project is Project => Boolean(project))
