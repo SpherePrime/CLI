@@ -232,13 +232,6 @@
             "https://api.openai.com/v1"
           ]
         },
-        "output_dir": {
-          "type": "string",
-          "description": "Default directory for generated images; relative paths resolve against the working directory",
-          "examples": [
-            "./generated-images"
-          ]
-        },
         "response_format": {
           "type": "string",
           "enum": [

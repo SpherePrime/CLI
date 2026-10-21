@@ -448,9 +448,6 @@ type ImageGenOptions struct {
 	// BaseURL points at an OpenAI-compatible API root such as
 	// https://api.openai.com/v1.
 	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of an OpenAI-compatible image generation endpoint,example=https://api.openai.com/v1"`
-	// OutputDir is the default directory for generated images. Relative
-	// paths resolve against the working directory.
-	OutputDir string `json:"output_dir,omitempty" jsonschema:"description=Default directory for generated images; relative paths resolve against the working directory,example=./generated-images"`
 	// ResponseFormat asks the API for b64_json or url results. Leave empty
 	// for providers that reject the response_format parameter.
 	ResponseFormat string `json:"response_format,omitempty" jsonschema:"description=Response format to request from the API; leave empty for providers that reject the response_format parameter,enum=b64_json,enum=url"`
@@ -478,15 +475,6 @@ func (o *ImageGenOptions) GetBaseURL() string {
 	return strings.TrimRight(value, "/")
 }
 
-// GetOutputDir returns the configured default output directory or an empty
-// string, which means the tool falls back to ./generated-images.
-func (o *ImageGenOptions) GetOutputDir() string {
-	if o == nil {
-		return ""
-	}
-	return strings.TrimSpace(o.OutputDir)
-}
-
 // GetResponseFormat returns the configured response format. Anything other
 // than b64_json or url means "do not send the parameter".
 func (o *ImageGenOptions) GetResponseFormat() string {
@@ -499,14 +487,6 @@ func (o *ImageGenOptions) GetResponseFormat() string {
 	default:
 		return ""
 	}
-}
-
-// GetSize returns the configured default size or an empty string.
-func (o *ImageGenOptions) GetSize() string {
-	if o == nil {
-		return ""
-	}
-	return strings.TrimSpace(o.Size)
 }
 
 // GetTimeout returns the configured request timeout or the default.

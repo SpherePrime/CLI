@@ -196,15 +196,14 @@ func TestImageGenToolSendsConfiguredDefaults(t *testing.T) {
 	})
 
 	options := imageGenOptions(server.URL)
-	options.Size = "1536x1024"
 	options.ResponseFormat = "b64_json"
 	tool := NewImageGenTool(&mockPermissionService{}, workingDir, options, config.IdentityResolver(), nil)
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat", Count: 99})
 	require.NoError(t, err)
 	require.False(t, resp.IsError)
-	require.Equal(t, "1536x1024", requestBody["size"])
 	require.Equal(t, "b64_json", requestBody["response_format"])
+	require.NotContains(t, requestBody, "size")
 	require.Equal(t, float64(10), requestBody["n"], "count must clamp to 10")
 
 	entries, err := os.ReadDir(filepath.Join(workingDir, "generated-images"))

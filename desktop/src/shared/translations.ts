@@ -689,8 +689,6 @@ export const english: Record<string, string> = {
   'API-ключ': 'API key',
   'Модель изображений': 'Image model',
   'Base URL': 'Base URL',
-  'Папка сохранения': 'Save directory',
-  'Размер по умолчанию': 'Default size',
   'Формат ответа': 'Response format',
   'Таймаут, мс': 'Timeout, ms',
   Ключ: 'Key',
