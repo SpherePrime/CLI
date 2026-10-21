@@ -21,6 +21,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/SpherePrime/CLI/internal/agent"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
 	agenttools "github.com/SpherePrime/CLI/internal/agent/tools"
@@ -372,7 +373,7 @@ type UI struct {
 	sidebarTotalLines       int    // total lines in sidebarContent
 	sidebarContentHeight    int    // available height for sidebar content
 	sidebarContentWidth     int    // available width for sidebar content
-	sidebarContentTop       int  // first screen row of the scrollable content
+	sidebarContentTop       int    // first screen row of the scrollable content
 	sidebarDrawLogo         string // logo to render (may differ from sidebarLogo for short heights)
 
 	// sidebarModelInfoRow is the index (in sidebarContent) of the row
@@ -3852,7 +3853,7 @@ func (m *UI) View() tea.View {
 	v.AltScreen = true
 	v.MouseMode = mouseMode(m.mouseEnabled, m.activeInline != nil)
 	v.ReportFocus = m.caps.ReportFocusEvents
-	if m.session != nil && m.session.Title != "" && m.session.Title != "Untitled Session" {
+	if m.session != nil && !agent.IsDefaultSessionTitle(m.session.Title) {
 		v.WindowTitle = m.session.Title
 	} else {
 		v.WindowTitle = "prime " + home.Short(m.com.Workspace.WorkingDir())

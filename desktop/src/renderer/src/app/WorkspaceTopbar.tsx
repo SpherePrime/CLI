@@ -1,3 +1,4 @@
+import { sessionTitle } from '../../../shared/sessionTitle'
 import { shortcutLabel } from '../../../shared/keybindings'
 import { useShortcuts } from '../features/shortcuts/shortcutStore'
 import {
@@ -67,7 +68,7 @@ export function WorkspaceTopbar({
         <span className={`dot ${ready ? 'green' : 'amber'}`} aria-hidden="true" />
         <span className="breadcrumb-project">{projectName || t('Рабочее пространство')}</span>
         <ChevronRight size={13} />
-        <strong>{w.session?.title || t('Новый чат')}</strong>
+        <strong>{sessionTitle(w.session?.title, t('Новый чат'))}</strong>
         {!ready && <span className="topbar-status amber-text">{status}</span>}
       </div>
       <button
@@ -107,7 +108,9 @@ export function WorkspaceTopbar({
         <button
           className={`icon ${inspectorVisible ? 'active-control' : ''}`}
           title={t('Рабочая область')}
-          aria-label={inspectorVisible ? t('Скрыть рабочую область') : t('Показать рабочую область')}
+          aria-label={
+            inspectorVisible ? t('Скрыть рабочую область') : t('Показать рабочую область')
+          }
           aria-pressed={inspectorVisible}
           data-inspector-toggle
           onClick={toggleInspector}

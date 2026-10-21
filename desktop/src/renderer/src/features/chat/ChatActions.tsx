@@ -1,3 +1,4 @@
+import { sessionTitle } from '../../../../shared/sessionTitle'
 import { shortcutLabel } from '../../../../shared/keybindings'
 import { useShortcuts } from '../shortcuts/shortcutStore'
 import { useEffect, useRef, useState } from 'react'
@@ -68,11 +69,7 @@ export function ChatActions({
             <button
               disabled={!w.messages.length}
               onClick={() => {
-                downloadConversation(
-                  w.session?.title || t('Новый чат'),
-                  w.messages,
-                  t
-                )
+                downloadConversation(sessionTitle(w.session?.title, t('Новый чат')), w.messages, t)
                 setOpen(false)
               }}
             >
@@ -84,7 +81,7 @@ export function ChatActions({
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(
-                    exportConversation(w.session?.title || t('Новый чат'), w.messages, {
+                    exportConversation(sessionTitle(w.session?.title, t('Новый чат')), w.messages, {
                       user: 'User',
                       assistant: 'Prime',
                       exported: t('Экспорт: {value0}')
