@@ -718,6 +718,10 @@ function registerIpc(): void {
     if (valid.theme) syncTitlebar()
     return updated
   })
+  handle('windowDimmed', (value: unknown) => {
+    windowDimmed = value === true
+    syncTitlebar()
+  })
   handle('openExternal', (url: string) =>
     shell.openExternal(validateExternalUrl(z.string().max(8192).parse(url)))
   )
@@ -806,8 +810,9 @@ function registerIpc(): void {
     }
   })
 }
+let windowDimmed = false
 function syncTitlebar(): void {
-  applyWindowChrome(window, settings.get().theme)
+  applyWindowChrome(window, settings.get().theme, windowDimmed)
 }
 function createWindow(): void {
   applyWindowChrome(undefined, settings.get().theme)

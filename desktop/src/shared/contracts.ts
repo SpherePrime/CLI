@@ -211,6 +211,7 @@ export interface DesktopApi {
   releaseAttachments(ids: string[]): Promise<void>
   preferences(patch?: Partial<Preferences>): Promise<Preferences>
   openExternal(url: string): Promise<void>
+  windowDimmed(dimmed: boolean): Promise<void>
   reveal(workspaceId: string, path?: string): Promise<void>
   createEntry(workspaceId: string, path: string, kind: 'file' | 'folder'): Promise<{ path: string }>
   trashEntry(workspaceId: string, path: string): Promise<void>

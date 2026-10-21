@@ -24,6 +24,7 @@ import './styles/workbench.css'
 import './styles/context.css'
 import './styles/polish.css'
 import './styles/responsive-layout.css'
+import './styles/shell.css'
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

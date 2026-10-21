@@ -1,4 +1,4 @@
-import { panelGeometry } from './panelGeometry'
+import { chatCenterShift, panelGeometry, panelGutter } from './panelGeometry'
 import { useLayoutWidth } from './useLayoutWidth'
 import { ProjectRail } from '../features/projects/ProjectRail'
 import { projectName as projectLabel } from '../features/projects/projectName'
@@ -8,27 +8,7 @@ import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
 import { I18nProvider, useI18n } from '../i18n'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import {
-  GitBranch,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightOpen,
-  Search,
-  X,
-  AlertCircle,
-  ChevronRight,
-  Command,
-  Focus,
-  Settings2,
-  Plus,
-  Download,
-  SunMoon,
-  Puzzle,
-  TerminalSquare,
-  Clock3,
-  Server,
-  Users
-} from 'lucide-react'
+import { AlertCircle, X } from 'lucide-react'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
 import { MessageList } from '../features/chat/MessageList'
@@ -37,15 +17,18 @@ import { Approvals } from '../features/approvals/Approvals'
 import { Inspector } from '../features/files/Inspector'
 import { SettingsDialog } from '../features/settings/SettingsDialog'
 import { PluginManager } from '../features/plugins/PluginManager'
-import { ChatActions } from '../features/chat/ChatActions'
 import { Welcome } from '../features/projects/Welcome'
-import { CommandPalette, type QuickAction } from '../features/navigation/CommandPalette'
-import { downloadConversation } from '../features/chat/exportConversation'
+import { CommandPalette } from '../features/navigation/CommandPalette'
 import { WorkbenchDock, type WorkbenchView } from '../features/workbench/WorkbenchDock'
 import { RemoteDialog } from '../features/remote/RemoteDialog'
 import { JobsCenter } from '../features/jobs/JobsCenter'
 import { ProjectLockBanner } from '../features/projects/ProjectLockBanner'
 import { WindowControlBadge } from '../features/windows/WindowControlBadge'
+import { WorkspaceTopbar } from './WorkspaceTopbar'
+import { useQuickActions } from './useQuickActions'
+import { usePanelResize } from './usePanelResize'
+import { useWorkspaceShortcuts } from './useWorkspaceShortcuts'
+import { useModalWindowChrome } from './useModalWindowChrome'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -75,8 +58,9 @@ export function App() {
 }
 
 function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const documents = useDocuments(w.errorHandler)
+  useModalWindowChrome()
   const [editorFraction, setEditorFraction] = useState(1.2)
   const [modal, setModal] = useState('')
   const [sidebar, setSidebar] = useState(true)
@@ -95,15 +79,27 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   }, [w.preferences.sidebarVisible, w.preferences.inspectorVisible])
   useEffect(() => setSearchOpen(false), [w.session?.id])
   function toggleSidebar() {
+    if (focusMode) return setFocusMode(false)
     const next = !sidebar
     setSidebar(next)
     void w.savePreferences({ sidebarVisible: next }).catch(w.errorHandler)
   }
   function toggleInspector() {
-    const next = !inspector
+    const next = focusMode ? true : !inspector
+    setFocusMode(false)
     setInspector(next)
     void w.savePreferences({ inspectorVisible: next }).catch(w.errorHandler)
   }
+  function openTools(view: WorkbenchView) {
+    setWorkbenchView(view)
+    setWorkbench(true)
+    setFocusMode(false)
+  }
+  function toggleTerminal() {
+    setWorkbench((value) => (workbenchView === 'terminal' ? !value : true))
+    setWorkbenchView('terminal')
+  }
+  const toggleFocus = () => setFocusMode((value) => !value)
   const [browserRequest, setBrowserRequest] = useState(0)
   useEffect(
     () =>
@@ -111,24 +107,18 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         if (
           event.type === 'workbench' &&
           event.payload?.action === 'activate' &&
-          event.workspaceId === w.project?.id
-        ) {
-          const view = event.payload.view
-          if (['terminal', 'automations', 'teams', 'launch', 'github', 'windows'].includes(view)) {
-            setWorkbenchView(view as WorkbenchView)
-            setWorkbench(true)
-            setFocusMode(false)
-          }
-        }
+          event.workspaceId === w.project?.id &&
+          ['terminal', 'automations', 'teams', 'launch', 'github', 'windows'].includes(
+            event.payload.view
+          )
+        )
+          openTools(event.payload.view as WorkbenchView)
         if (
           event.type === 'windows' &&
           event.payload?.request &&
           event.workspaceId === w.project?.id
-        ) {
-          setWorkbenchView('windows')
-          setWorkbench(true)
-          setFocusMode(false)
-        }
+        )
+          openTools('windows')
         if (event.type === 'browser' && event.payload?.action === 'activate') {
           setInspector(true)
           setFocusMode(false)
@@ -142,12 +132,20 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const shell = useRef<HTMLDivElement>(null)
   const layoutWidth = useLayoutWidth(shell, zoom)
   const layout = panelGeometry(
-    layoutWidth,
+    layoutWidth - panelGutter * 2,
     widths.sidebar,
     widths.inspector,
     showSidebar,
     showInspector
   )
+  const centerShift = chatCenterShift(layout, showSidebar, showInspector, showEditor)
+  const panels = usePanelResize({
+    workspace: w,
+    widths,
+    setWidths,
+    inspectorMax: layout.inspectorMax,
+    zoom
+  })
   useEffect(() => {
     const setup = () => setModal('providers')
     window.addEventListener('prime:providers', setup)
@@ -156,245 +154,47 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   useEffect(() => {
     setWidths({ sidebar: w.preferences.sidebarWidth, inspector: w.preferences.inspectorWidth })
   }, [w.preferences.sidebarWidth, w.preferences.inspectorWidth])
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      const dialogOpen = Boolean(document.querySelector('dialog[open]'))
-      if (event.ctrlKey && event.code === 'KeyK') {
-        event.preventDefault()
-        if (!dialogOpen) setModal('commands')
-        return
-      }
-      if (dialogOpen || event.defaultPrevented) return
-      if (event.ctrlKey && event.code === 'Backquote' && w.project) {
-        event.preventDefault()
-        setWorkbench((value) => (workbenchView === 'terminal' ? !value : true))
-        setWorkbenchView('terminal')
-      }
-      if (event.ctrlKey && event.shiftKey && event.code === 'KeyF') {
-        event.preventDefault()
-        setFocusMode((value) => !value)
-      }
-      if (
-        event.ctrlKey &&
-        !event.shiftKey &&
-        event.code === 'KeyF' &&
-        w.messages.length &&
-        !(event.target as HTMLElement).closest('.file-editor, .terminal-panel')
-      ) {
-        event.preventDefault()
-        setSearchOpen(true)
-      }
-      if (event.ctrlKey && event.code === 'Comma') {
-        event.preventDefault()
-        setModal('settings')
-      }
-      if (event.ctrlKey && event.code === 'KeyL') {
-        event.preventDefault()
-        window.dispatchEvent(new Event('prime:models'))
-      }
-      if (event.ctrlKey && event.code === 'KeyN') {
-        event.preventDefault()
-        if (w.project && !document.querySelector('dialog[open]')) void w.createSession()
-      }
-      if (event.ctrlKey && ['Equal', 'Minus', 'Digit0'].includes(event.code)) {
-        event.preventDefault()
-        setZoom((value) =>
-          event.code === 'Digit0'
-            ? 1
-            : Math.max(0.8, Math.min(2, value + (event.code === 'Equal' ? 0.1 : -0.1)))
-        )
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [w.project?.id, w.messages.length, workbenchView])
-  function changePanelWidth(which: 'sidebar' | 'inspector', width: number, persist = false) {
-    const next = Math.max(
-      which === 'sidebar' ? 210 : 280,
-      Math.min(which === 'sidebar' ? 400 : layout.inspectorMax, width)
-    )
-    setWidths((value) => ({ ...value, [which]: next }))
-    if (persist)
-      void w
-        .savePreferences({ [which === 'sidebar' ? 'sidebarWidth' : 'inspectorWidth']: next })
-        .catch(w.errorHandler)
-    return next
-  }
-  function resize(which: 'sidebar' | 'inspector', event: React.PointerEvent<HTMLDivElement>) {
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    const start = event.clientX
-    const initial = widths[which]
-    let latest = initial
-    const move = (move: PointerEvent) => {
-      latest = changePanelWidth(
-        which,
-        initial + ((move.clientX - start) / zoom) * (which === 'sidebar' ? 1 : -1)
-      )
-    }
-    const stop = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', stop)
-      window.removeEventListener('pointercancel', stop)
-      changePanelWidth(which, latest, true)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', stop)
-    window.addEventListener('pointercancel', stop)
-  }
-  function resizeWithKeyboard(
-    which: 'sidebar' | 'inspector',
-    event: React.KeyboardEvent<HTMLDivElement>
-  ) {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-    event.preventDefault()
-    const minimum = which === 'sidebar' ? 210 : 280
-    const maximum = which === 'sidebar' ? 400 : layout.inspectorMax
-    const direction = (event.key === 'ArrowRight' ? 1 : -1) * (which === 'sidebar' ? 1 : -1)
-    changePanelWidth(
-      which,
-      event.key === 'Home'
-        ? minimum
-        : event.key === 'End'
-          ? maximum
-          : widths[which] + direction * (event.shiftKey ? 50 : 10),
-      true
-    )
-  }
+  useWorkspaceShortcuts({
+    workspace: w,
+    setModal,
+    toggleTerminal,
+    toggleFocus,
+    openSearch: () => setSearchOpen(true),
+    setZoom
+  })
   const projectName = w.project?.kind === 'chat' ? t('Личные чаты') : projectLabel(w.project)
   const isEmpty = !w.messages.length && !w.busy
-  const quickActions: QuickAction[] = [
-    {
-      id: 'terminal',
-      label: t('Терминал проекта'),
-      icon: TerminalSquare,
-      shortcut: 'Ctrl `',
-      disabled: !w.project,
-      run: () => {
-        setWorkbenchView('terminal')
-        setWorkbench(true)
-      }
-    },
-    {
-      id: 'jobs',
-      label: t('Фоновые задачи'),
-      icon: Clock3,
-      disabled: w.info.runtime !== 'ready',
-      run: () => setModal('jobs')
-    },
-    {
-      id: 'teams',
-      label: t('Команды агентов'),
-      icon: Users,
-      disabled: !w.project,
-      run: () => {
-        setWorkbenchView('teams')
-        setWorkbench(true)
-      }
-    },
-    {
-      id: 'automations',
-      label: t('Автоматизации'),
-      icon: Clock3,
-      disabled: !w.project,
-      run: () => {
-        setWorkbenchView('automations')
-        setWorkbench(true)
-      }
-    },
-    {
-      id: 'new',
-      label: t('Новый чат'),
-      icon: Plus,
-      shortcut: 'Ctrl N',
-      disabled: !w.project,
-      run: () => {
-        void w.createSession()
-      }
-    },
-    {
-      id: 'open',
-      label: t('Открыть проект'),
-      icon: PanelRightOpen,
-      disabled: w.info.runtime !== 'ready',
-      run: () => {
-        void w.openProject()
-      }
-    },
-    {
-      id: 'remote',
-      label: t('SSH-серверы'),
-      icon: Server,
-      disabled: w.info.runtime !== 'ready',
-      run: () => setModal('remote')
-    },
-    {
-      id: 'models',
-      label: t('Выбрать модель'),
-      icon: Command,
-      shortcut: 'Ctrl L',
-      run: () => {
-        window.dispatchEvent(new Event('prime:models'))
-      }
-    },
-    {
-      id: 'find',
-      label: t('Поиск в чате'),
-      icon: Search,
-      shortcut: 'Ctrl F',
-      disabled: !w.messages.length,
-      run: () => setSearchOpen(true)
-    },
-    {
-      id: 'focus',
-      label: focusMode ? t('Выйти из фокуса') : t('Режим фокуса'),
-      icon: Focus,
-      shortcut: 'Ctrl Shift F',
-      run: () => setFocusMode((value) => !value)
-    },
-    {
-      id: 'sidebar',
-      label: sidebar ? t('Скрыть проекты') : t('Показать проекты'),
-      icon: PanelLeftOpen,
-      run: toggleSidebar
-    },
-    {
-      id: 'inspector',
-      label: inspector ? t('Скрыть рабочую область') : t('Показать рабочую область'),
-      icon: PanelRightOpen,
-      run: toggleInspector
-    },
-    {
-      id: 'theme',
-      label: t('Переключить тему'),
-      icon: SunMoon,
-      run: () => {
-        void w
-          .savePreferences({
-            theme: document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
-          })
-          .catch(w.errorHandler)
-      }
-    },
-    {
-      id: 'export',
-      label: t('Экспорт в Markdown'),
-      icon: Download,
-      disabled: !w.messages.length,
-      run: () => downloadConversation(w.session?.title || t('Новый чат'), w.messages, t)
-    },
-    { id: 'plugins', label: t('Плагины'), icon: Puzzle, run: () => setModal('plugins') },
-    {
-      id: 'settings',
-      label: t('Настройки'),
-      icon: Settings2,
-      shortcut: 'Ctrl ,',
-      run: () => setModal('settings')
-    }
-  ]
+  const quickActions = useQuickActions({
+    workspace: w,
+    openTools,
+    setModal,
+    openSearch: () => setSearchOpen(true),
+    focusMode,
+    toggleFocus,
+    sidebarVisible: sidebar,
+    toggleSidebar,
+    inspectorVisible: inspector,
+    toggleInspector
+  })
   return (
     <>
-      <Titlebar />
+      <Titlebar>
+        <WorkspaceTopbar
+          workspace={w}
+          projectName={projectName || ''}
+          sidebarVisible={showSidebar}
+          toggleSidebar={toggleSidebar}
+          inspectorVisible={showInspector}
+          toggleInspector={toggleInspector}
+          focusMode={focusMode}
+          toggleFocus={toggleFocus}
+          searchOpen={searchOpen}
+          toggleSearch={() => setSearchOpen((value) => !value)}
+          toolsOpen={workbench}
+          toggleTools={toggleTerminal}
+          openCommands={() => setModal('commands')}
+        />
+      </Titlebar>
       <ProjectLockBanner />
       <WindowControlBadge
         workspaceIds={w.projects.map((project) => project.id)}
@@ -408,11 +208,12 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             '--sidebar-width': widths.sidebar + 'px',
             '--editor-fraction': `${editorFraction}fr`,
             '--inspector-width': widths.inspector + 'px',
+            '--center-shift': centerShift + 'px',
             '--layout-zoom': zoom,
             zoom,
             gridTemplateColumns:
               layout.columns +
-              (showEditor && !layout.compact ? ' 1px minmax(0, var(--editor-fraction))' : '')
+              (showEditor && !layout.compact ? ` ${panelGutter}px minmax(0, var(--editor-fraction))` : '')
           } as React.CSSProperties
         }
       >
@@ -423,6 +224,9 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 workspace={w}
                 onCommands={() => setModal('commands')}
                 onSettings={() => setModal('settings')}
+                onJobs={() => setModal('jobs')}
+                onTools={() => openTools(workbenchView)}
+                onPlugins={() => setModal('plugins')}
               >
                 <Sidebar
                   workspace={w}
@@ -430,7 +234,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                   onPlugins={() => setModal('plugins')}
                   onRemote={() => setModal('remote')}
                   onJobs={() => setModal('jobs')}
-                  onWorkbench={() => setWorkbench(true)}
+                  onWorkbench={() => openTools(workbenchView)}
                 />
               </ProjectRail>
             ) : (
@@ -440,112 +244,15 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 onPlugins={() => setModal('plugins')}
                 onRemote={() => setModal('remote')}
                 onJobs={() => setModal('jobs')}
-                onWorkbench={() => setWorkbench(true)}
+                onWorkbench={() => openTools(workbenchView)}
               />
             )}
             {!layout.sidebarCompact && (
-              <div
-                className="resizer left-resizer"
-                role="separator"
-                aria-label={t('Ширина панели проектов')}
-                tabIndex={0}
-                onPointerDown={(event) => resize('sidebar', event)}
-                aria-orientation="vertical"
-                aria-valuemin={210}
-                aria-valuemax={400}
-                aria-valuenow={layout.sidebar}
-                onKeyDown={(event) => resizeWithKeyboard('sidebar', event)}
-              />
+              <div {...panels.separator('sidebar', t('Ширина панели проектов'), layout.sidebar)} />
             )}
           </>
         )}
         <main className="main-workspace" data-workbench-expanded={workbench && workbenchExpanded}>
-          <header className="workspace-header">
-            <button
-              className="icon"
-              title={showSidebar ? t('Скрыть проекты') : t('Показать проекты')}
-              aria-label={t('Панель проектов')}
-              onClick={() => {
-                if (focusMode) setFocusMode(false)
-                else toggleSidebar()
-              }}
-            >
-              {showSidebar ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
-            </button>
-            <div className="breadcrumbs">
-              <span>{projectName || t('Рабочее пространство')}</span>
-              <ChevronRight size={13} />
-              <strong>{w.session?.title || t('Новый чат')}</strong>
-            </div>
-            <div className="header-actions">
-              <span
-                className={`connection-status ${w.project?.connection === 'reconnecting' ? 'amber-text' : ''}`}
-              >
-                <span className={`dot ${w.info.runtime === 'ready' ? 'green' : 'amber'}`} />
-                {w.project?.connection === 'reconnecting'
-                  ? t('Переподключение')
-                  : w.info.runtime === 'ready'
-                    ? t('Готов к работе')
-                    : t('Запускаем Prime')}
-              </span>
-              <button
-                className="icon"
-                title={t('Быстрые действия') + ' · Ctrl K'}
-                aria-label={t('Быстрые действия')}
-                onClick={() => setModal('commands')}
-              >
-                <Command size={17} />
-              </button>
-              <button
-                className={`icon ${focusMode ? 'active-control' : ''}`}
-                title={t('Режим фокуса') + ' · Ctrl Shift F'}
-                aria-label={focusMode ? t('Выйти из фокуса') : t('Режим фокуса')}
-                aria-pressed={focusMode}
-                onClick={() => setFocusMode((value) => !value)}
-              >
-                <Focus size={17} />
-              </button>
-              {w.messages.length > 0 && (
-                <button
-                  className={`icon ${searchOpen ? 'active-control' : ''}`}
-                  title={t('Поиск в чате') + ' · Ctrl F'}
-                  aria-label={t('Поиск в чате')}
-                  aria-expanded={searchOpen}
-                  onClick={() => setSearchOpen((value) => !value)}
-                >
-                  <Search size={17} />
-                </button>
-              )}
-              <ChatActions workspace={w} />
-              <button
-                className={`icon ${workbench ? 'active-control' : ''}`}
-                title={t('Терминал проекта') + ' · Ctrl `'}
-                aria-label={t('Терминал проекта')}
-                aria-expanded={workbench}
-                disabled={!w.project}
-                onClick={() => {
-                  setWorkbench((value) => (workbenchView === 'terminal' ? !value : true))
-                  setWorkbenchView('terminal')
-                }}
-              >
-                <TerminalSquare size={17} />
-              </button>
-              {!showInspector && (
-                <button
-                  className="icon"
-                  aria-label={t('Показать рабочую область')}
-                  title={t('Рабочая область')}
-                  onClick={() => {
-                    setFocusMode(false)
-                    setInspector(true)
-                    void w.savePreferences({ inspectorVisible: true }).catch(w.errorHandler)
-                  }}
-                >
-                  <PanelRightOpen size={17} />
-                </button>
-              )}
-            </div>
-          </header>
           {(w.error || w.info.error) && (
             <div className="error-banner" role="alert">
               <AlertCircle size={16} />
@@ -587,41 +294,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               close={() => setWorkbench(false)}
             />
           )}
-          <footer className="workspace-statusbar">
-            <span>
-              <GitBranch size={12} />
-              {projectName || t('Проект не выбран')}
-            </span>
-            <span>
-              {w.session
-                ? t('{value0} токенов · ${value1}', {
-                    value0: (w.session.prompt_tokens || 0).toLocaleString(locale),
-                    value1: (w.session.cost || 0).toLocaleString(locale, {
-                      minimumFractionDigits: 4,
-                      maximumFractionDigits: 4
-                    })
-                  })
-                : t('Всё необходимое — в одном пространстве')}
-              <span className="status-separator" />
-              Prime Desktop
-            </span>
-          </footer>
         </main>
         {showInspector && (
           <>
             {!layout.compact && (
-              <div
-                className="resizer right-resizer"
-                role="separator"
-                aria-label={t('Ширина рабочей области')}
-                tabIndex={0}
-                onPointerDown={(event) => resize('inspector', event)}
-                aria-orientation="vertical"
-                aria-valuemin={280}
-                aria-valuemax={layout.inspectorMax}
-                aria-valuenow={layout.inspector}
-                onKeyDown={(event) => resizeWithKeyboard('inspector', event)}
-              />
+              <div {...panels.separator('inspector', t('Ширина рабочей области'), layout.inspector)} />
             )}
             <Inspector
               compact={layout.compact}
@@ -689,10 +366,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           <JobsCenter
             workspace={w}
             close={() => setModal('')}
-            openTools={(view) => {
-              setWorkbenchView(view)
-              setWorkbench(true)
-            }}
+            openTools={openTools}
           />
         )}
       </div>

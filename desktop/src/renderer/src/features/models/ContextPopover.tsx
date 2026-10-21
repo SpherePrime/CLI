@@ -40,7 +40,7 @@ export function ContextPopover({
   close: () => void
   fallbackWindow: number
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [data, setData] = useState<Breakdown | null>(null)
   const [error, setError] = useState('')
   const [compacting, setCompacting] = useState(false)
@@ -112,6 +112,17 @@ export function ContextPopover({
             {t('Автосжатие при {percent}% · свободно {free}', {
               percent: threshold,
               free: compactTokens(free)
+            })}
+          </p>
+        )}
+        {w.session && (
+          <p className="context-note context-usage">
+            {t('{value0} токенов · ${value1}', {
+              value0: (w.session.prompt_tokens || 0).toLocaleString(locale),
+              value1: (w.session.cost || 0).toLocaleString(locale, {
+                minimumFractionDigits: 4,
+                maximumFractionDigits: 4
+              })
             })}
           </p>
         )}

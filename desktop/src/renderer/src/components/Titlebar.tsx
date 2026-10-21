@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react'
 import { PrimeLogo } from './PrimeLogo'
-export function Titlebar() {
+
+export function Titlebar({ children }: { children?: ReactNode }) {
   return (
     <div className="titlebar">
       <div className="titlebar-brand">
@@ -8,7 +10,8 @@ export function Titlebar() {
           Prime<span className="brand-word-muted">Desktop</span>
         </span>
       </div>
-      <div className="titlebar-drag" />
+      {children ? <div className="titlebar-content">{children}</div> : <div className="titlebar-drag" />}
+      <div className="titlebar-window-space" />
     </div>
   )
 }
