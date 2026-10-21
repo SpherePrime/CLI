@@ -1,0 +1,153 @@
+.patch-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.patch-overview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--secondary);
+  font-size: 12px;
+}
+.patch-added {
+  color: var(--green);
+}
+.patch-removed {
+  color: var(--red);
+}
+.patch-file {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.patch-file > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 12px;
+  background: var(--surface);
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+}
+.patch-file > summary::-webkit-details-marker {
+  display: none;
+}
+.patch-file > summary > svg {
+  flex-shrink: 0;
+  color: var(--secondary);
+}
+.patch-file[open] > summary .patch-chevron {
+  transform: rotate(90deg);
+}
+.patch-path {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--mono, monospace);
+}
+.patch-file-counts {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.patch-code {
+  overflow-x: auto;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+  line-height: 1.65;
+  tab-size: 4;
+}
+.patch-row {
+  display: flex;
+  min-width: 100%;
+  width: max-content;
+}
+.patch-row > code {
+  display: block;
+  flex: 1;
+  padding: 0 12px 0 0;
+  font: inherit;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.patch-line-number {
+  flex: 0 0 44px;
+  width: 44px;
+  padding: 0 8px;
+  text-align: right;
+  color: var(--muted);
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+.patch-marker {
+  flex: 0 0 24px;
+  width: 24px;
+  text-align: center;
+  user-select: none;
+}
+.patch-row.patch-added {
+  color: var(--text);
+  background: color-mix(in srgb, var(--green) 18%, var(--bg));
+  box-shadow: inset 3px 0 var(--green);
+}
+.patch-row.patch-removed {
+  color: var(--text);
+  background: color-mix(in srgb, var(--red) 18%, var(--bg));
+  box-shadow: inset 3px 0 var(--red);
+}
+.patch-added .patch-marker {
+  color: var(--green);
+}
+.patch-removed .patch-marker {
+  color: var(--red);
+}
+.patch-hunk {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.patch-hunk > code,
+.patch-meta > code {
+  padding: 5px 12px;
+}
+.patch-meta {
+  color: var(--secondary);
+}
+.patch-more {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--secondary);
+  font-size: 12px;
+}
+.patch-fallback {
+  padding: 14px;
+  margin: 0;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: 12px/1.65 var(--mono, monospace);
+}
+@media (max-width: 700px) {
+  .patch-line-number {
+    flex-basis: 34px;
+    width: 34px;
+    padding: 0 5px;
+  }
+  .patch-marker {
+    flex-basis: 20px;
+    width: 20px;
+  }
+}
