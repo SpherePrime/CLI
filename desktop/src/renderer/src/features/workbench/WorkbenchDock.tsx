@@ -28,6 +28,8 @@ import { openWorkbenchRun } from './openRun'
 
 export type WorkbenchView = 'terminal' | 'automations' | 'teams' | 'launch' | 'github' | 'windows'
 
+const minimumConversation = 180
+
 export function WorkbenchDock({
   workspace: w,
   expanded,
@@ -44,7 +46,7 @@ export function WorkbenchDock({
   close: () => void
 }) {
   const { t } = useI18n()
-  const [height, setHeight] = useState(340)
+  const [height, setHeight] = useState(() => Math.round(Math.min(340, window.innerHeight * 0.42)))
   const [availableHeight, setAvailableHeight] = useState(340)
   const [headerHost, setHeaderHost] = useState<HTMLDivElement | null>(null)
   const dock = useRef<HTMLElement>(null)
@@ -63,7 +65,7 @@ export function WorkbenchDock({
           ((element.closest('.app-shell') as HTMLElement | null)?.clientHeight ??
             parent.clientHeight) -
             fixed().reduce((sum, item) => sum + item.getBoundingClientRect().height, 0) -
-            56
+            minimumConversation
         )
       )
     const observer = new ResizeObserver(measure)
@@ -80,6 +82,14 @@ export function WorkbenchDock({
       changes.disconnect()
     }
   }, [expanded])
+  const tabs: { id: WorkbenchView; label: string; icon: typeof TerminalSquare }[] = [
+    { id: 'terminal', label: t('Терминал'), icon: TerminalSquare },
+    { id: 'launch', label: t('Запуск'), icon: Rocket },
+    { id: 'automations', label: t('Автоматизации'), icon: Clock3 },
+    { id: 'teams', label: t('Команды'), icon: Users },
+    { id: 'github', label: 'GitHub', icon: Github },
+    { id: 'windows', label: t('Окна'), icon: AppWindow }
+  ]
   const workspaceId = w.project?.id || ''
   const terminal = useCallback(
     (request: TerminalRequest) => window.prime.terminal(workspaceId, request),
@@ -139,78 +149,21 @@ export function WorkbenchDock({
       )}
       <header className="workbench-navigation">
         <nav className="workbench-tabs" role="tablist" aria-label={t('Инструменты проекта')}>
-          <button
-            role="tab"
-            aria-selected={view === 'terminal'}
-            title={t('Терминал')}
-            aria-label={t('Терминал')}
-            onClick={() => setView('terminal')}
-          >
-            <TerminalSquare size={14} />
-            {t('Терминал')}
-          </button>
-          <button
-            role="tab"
-            aria-selected={view === 'launch'}
-            title={t('Запуск')}
-            aria-label={t('Запуск')}
-            onClick={() => {
-              setView('launch')
-            }}
-          >
-            <Rocket size={14} />
-            {t('Запуск')}
-          </button>
-          <button
-            role="tab"
-            aria-selected={view === 'automations'}
-            title={t('Автоматизации')}
-            aria-label={t('Автоматизации')}
-            onClick={() => {
-              setView('automations')
-            }}
-          >
-            <Clock3 size={14} />
-            {t('Автоматизации')}
-          </button>
-          <button
-            role="tab"
-            aria-selected={view === 'teams'}
-            title={t('Команды')}
-            aria-label={t('Команды')}
-            onClick={() => {
-              setView('teams')
-            }}
-          >
-            <Users size={14} />
-            {t('Команды')}
-          </button>
-          <button
-            role="tab"
-            aria-selected={view === 'github'}
-            title={t('GitHub')}
-            aria-label={t('GitHub')}
-            onClick={() => {
-              setView('github')
-            }}
-          >
-            <Github size={14} />
-            GitHub
-          </button>
-          <button
-            role="tab"
-            aria-selected={view === 'windows'}
-            title={t('Окна')}
-            aria-label={t('Окна')}
-            onClick={() => {
-              setView('windows')
-            }}
-          >
-            <AppWindow size={14} />
-            {t('Окна')}
-          </button>
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={view === id}
+              title={label}
+              aria-label={label}
+              onClick={() => setView(id)}
+            >
+              <Icon size={14} />
+              <span>{label}</span>
+            </button>
+          ))}
         </nav>
-        <div>
+        <div className="workbench-navigation-actions">
           <div className="workbench-terminal-actions" ref={setHeaderHost} />
           <button
             className="icon small"

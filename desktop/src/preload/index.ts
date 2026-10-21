@@ -34,6 +34,7 @@ const api: DesktopApi = {
   attachments: () => ipcRenderer.invoke('prime:attachments'),
   preferences: (patch) => ipcRenderer.invoke('prime:preferences', patch),
   openExternal: (url) => ipcRenderer.invoke('prime:openExternal', url),
+  windowDimmed: (dimmed) => ipcRenderer.invoke('prime:windowDimmed', dimmed),
   reveal: (id, path) => ipcRenderer.invoke('prime:reveal', id, path),
   createEntry: (id, path, kind) => ipcRenderer.invoke('prime:createEntry', id, path, kind),
   trashEntry: (id, path) => ipcRenderer.invoke('prime:trashEntry', id, path),

@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { MoreHorizontal, ListRestart, FileText, Download, Copy, Check } from 'lucide-react'
+import { MoreHorizontal, ListRestart, FileText, Download, Copy, Check, Focus } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import type { Workspace } from '../../app/useWorkspace'
 import { downloadConversation } from './exportConversation'
 import { exportConversation } from '../../../../shared/workspaceTools'
 import { useI18n } from '../../i18n'
 
-export function ChatActions({ workspace: w }: { workspace: Workspace }) {
+export function ChatActions({
+  workspace: w,
+  focusMode,
+  toggleFocus
+}: {
+  workspace: Workspace
+  focusMode: boolean
+  toggleFocus: () => void
+}) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -32,17 +40,28 @@ export function ChatActions({ workspace: w }: { workspace: Workspace }) {
     <>
       <button
         ref={anchor}
-        className="chat-actions-trigger"
+        className={`icon ${open ? 'active-control' : ''}`}
+        title={t('Действия чата')}
         aria-label={t('Действия чата')}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
         <MoreHorizontal size={18} />
-        <span>{t('Действия')}</span>
       </button>
       {open && (
         <Popover anchor={anchor} close={() => setOpen(false)} width={290}>
           <div className="action-list">
+            <button
+              aria-pressed={focusMode}
+              onClick={() => {
+                setOpen(false)
+                toggleFocus()
+              }}
+            >
+              <Focus size={16} />
+              {focusMode ? t('Выйти из фокуса') : t('Режим фокуса')}
+              <kbd>Ctrl Shift F</kbd>
+            </button>
             <button
               disabled={!w.messages.length}
               onClick={() => {

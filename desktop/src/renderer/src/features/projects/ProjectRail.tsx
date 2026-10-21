@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Command, FolderOpen, MessageSquare, Plus, Settings2, X } from 'lucide-react'
+import {
+  Command,
+  FolderOpen,
+  ListTodo,
+  MessageSquare,
+  Plus,
+  Puzzle,
+  Settings2,
+  TerminalSquare,
+  X
+} from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 
@@ -7,12 +17,18 @@ export function ProjectRail({
   workspace: w,
   children,
   onCommands,
-  onSettings
+  onSettings,
+  onJobs,
+  onTools,
+  onPlugins
 }: {
   workspace: Workspace
   children: ReactNode
   onCommands: () => void
   onSettings: () => void
+  onJobs: () => void
+  onTools: () => void
+  onPlugins: () => void
 }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
@@ -78,6 +94,27 @@ export function ProjectRail({
         <Command size={18} />
       </button>
       <span className="rail-spacer" />
+      <button
+        className="icon"
+        title={t('Фоновые задачи')}
+        aria-label={t('Фоновые задачи')}
+        disabled={w.info.runtime !== 'ready'}
+        onClick={onJobs}
+      >
+        <ListTodo size={18} />
+      </button>
+      <button
+        className="icon"
+        title={t('Инструменты проекта')}
+        aria-label={t('Инструменты проекта')}
+        disabled={!w.project}
+        onClick={onTools}
+      >
+        <TerminalSquare size={18} />
+      </button>
+      <button className="icon" title={t('Плагины')} aria-label={t('Плагины')} onClick={onPlugins}>
+        <Puzzle size={18} />
+      </button>
       <button
         className="icon"
         title={t('Настройки')}
