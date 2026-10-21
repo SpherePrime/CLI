@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowUp, ListOrdered, LoaderCircle, Paperclip, Trash2 } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
@@ -6,10 +6,14 @@ import type { Workspace } from '../../app/useWorkspace'
 export function QueuePanel({ workspace: w }: { workspace: Workspace }) {
   const { t, locale } = useI18n()
   const [pending, setPending] = useState('')
+  const [steering, setSteering] = useState<string[]>([])
   const [error, setError] = useState('')
+  useEffect(() => {
+    setSteering((ids) => ids.filter((id) => w.queue.some((item) => item.id === id)))
+  }, [w.queue])
   if (!w.queue.length) return null
   async function act(id: string) {
-    if (pending || !w.session) return
+    if (pending || steering.includes(id) || !w.session) return
     const projectId = w.project!.id
     const sessionId = w.session.id
     setPending(id)
@@ -19,6 +23,7 @@ export function QueuePanel({ workspace: w }: { workspace: Workspace }) {
         sessionId,
         id
       })
+      if (id !== 'clear') setSteering((ids) => [...ids, id])
       await w.refreshQueue()
     } catch (error) {
       setError(error instanceof Error ? error.message : String(error))
@@ -57,16 +62,16 @@ export function QueuePanel({ workspace: w }: { workspace: Workspace }) {
             </div>
             <button
               className="queue-send-now"
-              disabled={!!pending || w.project?.connection !== 'ready'}
+              disabled={!!pending || steering.includes(item.id) || w.project?.connection !== 'ready'}
               title={t('Добавить к текущей задаче на следующем шаге')}
               onClick={() => void act(item.id)}
             >
-              {pending === item.id ? (
+              {pending === item.id || steering.includes(item.id) ? (
                 <LoaderCircle size={14} className="spin" />
               ) : (
                 <ArrowUp size={14} />
               )}
-              <span>{t('Отправить сейчас')}</span>
+              <span>{steering.includes(item.id) ? t('Отправляется') : t('Отправить сейчас')}</span>
             </button>
           </li>
         ))}

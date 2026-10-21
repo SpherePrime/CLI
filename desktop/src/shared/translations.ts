@@ -533,6 +533,7 @@ export const english: Record<string, string> = {
   'Очередь сообщений': 'Message queue',
   'Следующие сообщения': 'Next messages',
   'Отправить сейчас': 'Send now',
+  Отправляется: 'Sending…',
   'Остановить текущий ответ и отправить это сообщение':
     'Stop the current response and send this message',
   'Вложения: {count}': 'Attachments: {count}',
