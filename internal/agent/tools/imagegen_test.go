@@ -186,6 +186,27 @@ func TestImageGenToolReportsHTMLApiError(t *testing.T) {
 	require.Contains(t, resp.Content, "Bad Gateway")
 }
 
+func TestImageGenToolSendsRequestedSize(t *testing.T) {
+	t.Parallel()
+
+	workingDir := t.TempDir()
+	var requestBody map[string]any
+	server := imageGenTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&requestBody))
+		imageData := base64.StdEncoding.EncodeToString([]byte(testPNGMagic))
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+			"data": []map[string]string{{"b64_json": imageData}},
+		}))
+	})
+
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, imageGenOptions(server.URL), config.IdentityResolver(), nil)
+
+	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat", Size: "1024x1536"})
+	require.NoError(t, err)
+	require.False(t, resp.IsError)
+	require.Equal(t, "1024x1536", requestBody["size"])
+}
+
 func TestImageGenToolSendsConfiguredDefaults(t *testing.T) {
 	t.Parallel()
 

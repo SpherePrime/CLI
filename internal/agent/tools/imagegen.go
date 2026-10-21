@@ -25,12 +25,14 @@ var imageGenDescriptionTpl = template.Must(
 type imageGenDescriptionData struct {
 	DefaultModel  string
 	DefaultMaxima int
+	DefaultSizes  string
 }
 
 func imageGenDescription() string {
 	return renderTemplate(imageGenDescriptionTpl, imageGenDescriptionData{
 		DefaultModel:  config.DefaultImageGenModel,
 		DefaultMaxima: 10,
+		DefaultSizes:  "1024x1024, 1536x1024, 1024x1536, auto",
 	})
 }
 
