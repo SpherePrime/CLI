@@ -522,3 +522,8 @@ dialog.modal,
 ::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--muted) 65%, transparent) padding-box;
 }
+
+.app-shell > .project-rail:has(+ .resizer),
+.app-shell > .resizer + .inspector-rail {
+  margin: 0;
+}

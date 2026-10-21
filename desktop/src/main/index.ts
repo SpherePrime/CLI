@@ -659,10 +659,12 @@ function registerIpc(): void {
         density: z.enum(['comfortable', 'compact']).optional(),
         reduceMotion: z.boolean().optional(),
         sidebarVisible: z.boolean().optional(),
+        sidebarCollapsed: z.boolean().optional(),
         speechVoice: z.string().max(100).optional(),
         speechSpeed: z.number().min(0.7).max(1.6).optional(),
         speechAutoSend: z.boolean().optional(),
         inspectorVisible: z.boolean().optional(),
+        inspectorCollapsed: z.boolean().optional(),
         agentContexts: z
           .record(
             z.string().max(4096),

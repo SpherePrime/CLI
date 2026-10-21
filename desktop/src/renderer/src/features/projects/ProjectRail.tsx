@@ -38,9 +38,16 @@ export function ProjectRail({
     setOpen(false)
   }, [w.project?.id, w.session?.id])
   useEffect(() => {
+    const toggle = () => setOpen((value) => !value)
+    window.addEventListener('prime:projects-flyout', toggle)
+    return () => window.removeEventListener('prime:projects-flyout', toggle)
+  }, [])
+  useEffect(() => {
     if (!open) return
     const pointer = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Element
+      if (!root.current?.contains(target) && !target.closest?.('[data-projects-toggle]'))
+        setOpen(false)
     }
     const keyboard = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {

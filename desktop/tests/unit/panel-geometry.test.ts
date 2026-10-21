@@ -31,3 +31,10 @@ it('shifts the chat column toward the window center', () => {
   const compact = panelGeometry(800, 256, 350, true, true)
   expect(chatCenterShift(compact, true, true, false)).toBe(0)
 })
+
+it('keeps collapsed panels as resizable icon rails', () => {
+  const layout = panelGeometry(1440, 256, 350, true, true, true, true)
+  expect(layout.sidebarCompact).toBe(true)
+  expect(layout.inspectorCompact).toBe(true)
+  expect(layout.columns).toBe('48px 8px minmax(0, 1fr) 8px 48px')
+})
