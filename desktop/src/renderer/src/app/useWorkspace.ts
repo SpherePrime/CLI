@@ -57,7 +57,7 @@ export function useWorkspace() {
   const [session, setSession] = useState<Session | null>(null)
   const [draftReasoningMode, setDraftReasoningMode] = useState<ChatReasoningMode | null>(null)
   const history = useMessageHistory()
-  const { messages, messagesSessionId } = history
+  const { messagesSessionId } = history
   const [permissions, setPermissions] = useState<Json[]>([])
   const [questions, setQuestions] = useState<Json[]>([])
   const [config, setConfig] = useState<Json>({})
@@ -349,6 +349,7 @@ export function useWorkspace() {
       .catch(errorHandler)
     void window.prime.preferences().then(setPreferences).catch(errorHandler)
     const unsubscribe = window.prime.onEvent((event) => {
+      if (event.type !== 'message') history.flush()
       if (event.type === 'workbench' && event.payload?.action === 'contextChanged') {
         const { key, context } = event.payload
         if (typeof key === 'string' && context)
@@ -867,7 +868,9 @@ export function useWorkspace() {
     project,
     sessions,
     session,
-    messages,
+    get messages() {
+      return history.getPage().messages
+    },
     history,
     loadHistory: (direction: 'before' | 'after' | 'latest') => {
       const { project, session } = current.current
