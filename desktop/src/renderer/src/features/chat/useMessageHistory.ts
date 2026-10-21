@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import type { Message } from '../../../../shared/contracts'
 import { MessageCache } from './messageCache'
+import { queueMessageEvent, type MessageEvent } from './messageEvents'
 import {
   mergeMessagePage,
   updateHistoryMessage,
@@ -15,28 +16,91 @@ const empty = (): MessagePage => ({
   timing: { completed: {} }
 })
 
+type Structure = {
+  id: string | null
+  length: number
+  hasBefore: boolean
+  hasAfter: boolean
+  timing: string
+}
+
+function structureOf(id: string | null, page: MessagePage): Structure {
+  return {
+    id,
+    length: page.messages.length,
+    hasBefore: page.has_before,
+    hasAfter: page.has_after,
+    timing: JSON.stringify(page.timing)
+  }
+}
+
+function sameStructure(left: Structure, right: Structure) {
+  return (
+    left.id === right.id &&
+    left.length === right.length &&
+    left.hasBefore === right.hasBefore &&
+    left.hasAfter === right.hasAfter &&
+    left.timing === right.timing
+  )
+}
+
 export function useMessageHistory() {
-  const [state, setState] = useState<MessagePage>(empty)
-  const [messagesSessionId, setMessagesSessionId] = useState<string | null>(null)
   const current = useRef<{ id: string | null; page: MessagePage }>({ id: null, page: empty() })
+  const [structure, setStructure] = useState<Structure>(() => structureOf(null, current.current.page))
   const cache = useRef(new MessageCache())
   const metadata = useRef(new Map<string, Omit<MessagePage, 'messages'>>())
+  const listeners = useRef(new Set<() => void>())
+  const pending = useRef(new Map<string, MessageEvent>())
+  const frame = useRef<number | null>(null)
   const [loading, setLoading] = useState<PageDirection | null>(null)
   const [error, setError] = useState('')
   const request = useRef(0)
   const inFlight = useRef<number | null>(null)
-  const commit = useCallback((id: string, page: MessagePage) => {
+  const publish = useCallback((id: string | null, page: MessagePage) => {
     current.current = { id, page }
-    cache.current.set(id, page.messages)
-    const { messages, ...meta } = page
-    metadata.current.delete(id)
-    metadata.current.set(id, meta)
-    while (metadata.current.size > 8) metadata.current.delete(metadata.current.keys().next().value!)
-    setState(page)
-    setMessagesSessionId(id)
+    for (const listener of listeners.current) listener()
+    const next = structureOf(id, page)
+    setStructure((previous) => (sameStructure(previous, next) ? previous : next))
   }, [])
+  const commit = useCallback(
+    (id: string, page: MessagePage) => {
+      cache.current.set(id, page.messages)
+      const { messages, ...meta } = page
+      metadata.current.delete(id)
+      metadata.current.set(id, meta)
+      while (metadata.current.size > 8) metadata.current.delete(metadata.current.keys().next().value!)
+      publish(id, page)
+    },
+    [publish]
+  )
+  const cancelLive = useCallback(() => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current)
+    frame.current = null
+    pending.current.clear()
+  }, [])
+  const flush = useCallback(() => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current)
+    frame.current = null
+    if (!pending.current.size) return
+    const events = [...pending.current.values()]
+    pending.current.clear()
+    const id = current.current.id
+    if (!id) return
+    let page = current.current.page
+    for (const { message, action } of events)
+      if (message.session_id === id) page = updateHistoryMessage(page, message, action)
+    if (page !== current.current.page) commit(id, page)
+  }, [commit])
+  const subscribe = useCallback((listener: () => void) => {
+    listeners.current.add(listener)
+    return () => {
+      listeners.current.delete(listener)
+    }
+  }, [])
+  const getPage = useCallback(() => current.current.page, [])
   const select = useCallback(
     (id: string) => {
+      cancelLive()
       request.current++
       inFlight.current = null
       setLoading(null)
@@ -48,21 +112,20 @@ export function useMessageHistory() {
         return true
       }
       current.current = { id, page: empty() }
-      setState(current.current.page)
-      setMessagesSessionId(null)
+      publish(null, current.current.page)
+      current.current.id = id
       return false
     },
-    [commit]
+    [cancelLive, commit, publish]
   )
   const reset = useCallback(() => {
+    cancelLive()
     request.current++
     inFlight.current = null
-    current.current = { id: null, page: empty() }
-    setState(current.current.page)
-    setMessagesSessionId(null)
+    publish(null, empty())
     setLoading(null)
     setError('')
-  }, [])
+  }, [cancelLive, publish])
   const accept = useCallback(
     (id: string, page: MessagePage) => {
       setError('')
@@ -77,9 +140,13 @@ export function useMessageHistory() {
   const live = useCallback(
     (message: Message, action: string) => {
       if (current.current.id !== message.session_id) return
-      commit(message.session_id, updateHistoryMessage(current.current.page, message, action))
+      queueMessageEvent(pending.current, message.id, { action, message })
+      frame.current ??= requestAnimationFrame(() => {
+        frame.current = null
+        flush()
+      })
     },
-    [commit]
+    [flush]
   )
   const fail = useCallback((id: string, error: unknown) => {
     if (!current.current.id) current.current.id = id
@@ -158,10 +225,24 @@ export function useMessageHistory() {
     [commit]
   )
   return {
-    ...state,
-    messagesSessionId,
+    get messages() {
+      return current.current.page.messages
+    },
+    get has_before() {
+      return current.current.page.has_before
+    },
+    get has_after() {
+      return current.current.page.has_after
+    },
+    get timing() {
+      return current.current.page.timing
+    },
+    messagesSessionId: structure.id,
     loading,
     error,
+    subscribe,
+    getPage,
+    flush,
     select,
     reset,
     accept,
@@ -175,3 +256,5 @@ export function useMessageHistory() {
     }
   }
 }
+
+export type MessageHistory = ReturnType<typeof useMessageHistory>
