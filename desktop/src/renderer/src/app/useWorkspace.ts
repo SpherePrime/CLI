@@ -16,6 +16,7 @@ import { buildAgentPrompt } from '../../../shared/agentContext'
 import { isRemoteWorkspace } from '../../../shared/remoteWorkspace'
 import { recordRecentModel } from '../features/models/modelPreferences'
 import { useChatPermissions } from '../features/chat/useChatPermissions'
+import { watchProjectSessions } from '../features/projects/projectSessionEvents'
 
 const resolvedLimit = 1000
 
@@ -64,6 +65,11 @@ export function useWorkspace() {
   const [resources, setResources] = useState<Json>({ mcp: {}, lsp: {}, skills: [] })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [observedBusy, setObservedBusy] = useState<{
+    projectId: string
+    sessionId: string
+    busy: boolean
+  } | null>(null)
   const [pendingShell, setPendingShell] = useState<{ projectId: string; sessionId: string } | null>(
     null
   )
@@ -82,6 +88,20 @@ export function useWorkspace() {
   >([])
   const requestSnapshots = useRef(0)
   current.current = { project, session }
+  useEffect(() => {
+    if (!project || !session) return
+    const projectId = project.id
+    const sessionId = session.id
+    return watchProjectSessions([projectId], window.prime, (id, snapshot) => {
+      if (current.current.project?.id !== id || current.current.session?.id !== sessionId) return
+      setSessions(snapshot)
+      const selected = snapshot.find((item) => item.id === sessionId)
+      if (selected) {
+        setSession(selected)
+        setObservedBusy({ projectId: id, sessionId, busy: Boolean(selected.is_busy) })
+      }
+    })
+  }, [project?.id, session?.id])
   const errorHandler = useCallback(
     (error: unknown) =>
       setError(
@@ -473,6 +493,11 @@ export function useWorkspace() {
       if (event.type === 'run_complete') {
         if (payload.session_id === current.current.session?.id) {
           setBusy(false)
+          setObservedBusy({
+            projectId: event.workspaceId,
+            sessionId: payload.session_id,
+            busy: false
+          })
           if (payload.error && !payload.cancelled && !/context canceled/i.test(payload.error))
             setError(payload.error)
         }
@@ -488,7 +513,10 @@ export function useWorkspace() {
       if (event.type === 'permission_notification' && !payload.granted && !payload.denied)
         void refreshPending().catch(() => {})
       if (event.type === 'permission_notification' && (payload.granted || payload.denied)) {
-        rememberResolved(resolvedPermissions.current, `${event.workspaceId}:${payload.tool_call_id}`)
+        rememberResolved(
+          resolvedPermissions.current,
+          `${event.workspaceId}:${payload.tool_call_id}`
+        )
         setPermissions((items) =>
           items.filter((item) => item.tool_call_id !== payload.tool_call_id)
         )
@@ -661,7 +689,8 @@ export function useWorkspace() {
     try {
       const targetProject =
         current.current.project ||
-        projects.find((item) => item.kind === 'chat') || (await window.prime.openChat())
+        projects.find((item) => item.kind === 'chat') ||
+        (await window.prime.openChat())
       if (targetProject.id !== current.current.project?.id) {
         setProjects(await window.prime.projects())
         await selectProject(targetProject)
@@ -711,7 +740,13 @@ export function useWorkspace() {
       }
       const runId = crypto.randomUUID()
       await chatPermissions.prepareSession(targetProject.id, selected.id, chatPermissions.skip)
-      if (current.current.session?.id === selected.id) setBusy(true)
+      if (
+        current.current.project?.id === targetProject.id &&
+        current.current.session?.id === selected.id
+      ) {
+        setObservedBusy(null)
+        setBusy(true)
+      }
       if (prompt.startsWith('!'))
         setPendingShell({ projectId: targetProject.id, sessionId: selected.id })
       if (prompt.startsWith('!'))
@@ -838,7 +873,11 @@ export function useWorkspace() {
     errorHandler,
     loading,
     busy:
-      busy ||
+      (observedBusy &&
+      observedBusy.projectId === project?.id &&
+      observedBusy.sessionId === session?.id
+        ? observedBusy.busy
+        : busy) ||
       Boolean(
         pendingShell &&
         pendingShell.projectId === project?.id &&
