@@ -211,6 +211,61 @@
         "command"
       ]
     },
+    "ImageGenOptions": {
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "description": "API key for options.image_gen.base_url"
+        },
+        "model": {
+          "type": "string",
+          "description": "Image model name",
+          "default": "gpt-image-1",
+          "examples": [
+            "gpt-image-1"
+          ]
+        },
+        "base_url": {
+          "type": "string",
+          "description": "Base URL of an OpenAI-compatible image generation endpoint",
+          "examples": [
+            "https://api.openai.com/v1"
+          ]
+        },
+        "output_dir": {
+          "type": "string",
+          "description": "Default directory for generated images; relative paths resolve against the working directory",
+          "examples": [
+            "./generated-images"
+          ]
+        },
+        "response_format": {
+          "type": "string",
+          "enum": [
+            "b64_json",
+            "url"
+          ],
+          "description": "Response format to request from the API; leave empty for providers that reject the response_format parameter"
+        },
+        "size": {
+          "type": "string",
+          "description": "Default image size when the tool call does not specify one",
+          "examples": [
+            "1024x1024"
+          ]
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "description": "Timeout in milliseconds for one image API request",
+          "default": 180000,
+          "examples": [
+            300000
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
     "LSPConfig": {
       "properties": {
         "disabled": {
@@ -557,6 +612,10 @@
     },
     "Options": {
       "properties": {
+        "remote_workspace": {
+          "$ref": "#/$defs/RemoteWorkspace",
+          "description": "Remote SSH project executed through the desktop bridge"
+        },
         "context_paths": {
           "items": {
             "type": "string",
@@ -702,6 +761,10 @@
         "voice": {
           "$ref": "#/$defs/VoiceOptions",
           "description": "Voice dictation settings for the TUI"
+        },
+        "image_gen": {
+          "$ref": "#/$defs/ImageGenOptions",
+          "description": "Built-in image generation settings for the generate_image tool"
         },
         "auto_update": {
           "type": "boolean",
@@ -896,6 +959,26 @@
       },
       "additionalProperties": false,
       "type": "object"
+    },
+    "RemoteWorkspace": {
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "user": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "host",
+        "user",
+        "root"
+      ]
     },
     "SelectedModel": {
       "properties": {
