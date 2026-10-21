@@ -1131,7 +1131,7 @@ kbd {
   margin: 0;
 }
 .tool-part .tool-gallery {
-  padding: 4px 0 6px;
+  padding: 4px 0 10px;
 }
 .tool-gallery {
   display: flex;

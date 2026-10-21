@@ -120,8 +120,8 @@ export const MessageItem = memo(function MessageItem({
             const images = collectToolImages(result)
             return (
               <div className="tool-part" key={index}>
-                <ToolGallery images={images} />
                 <ToolCard part={part} />
+                <ToolGallery images={images} />
               </div>
             )
           }
