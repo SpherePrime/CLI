@@ -629,6 +629,9 @@ export const english: Record<string, string> = {
     'Total reported by the provider; the breakdown is approximate.',
   'Провайдер не сообщил расход, показана оценка.':
     'The provider did not report usage; showing an estimate.',
+  'Сжатие контекста': 'Context compaction',
+  'Автоматическое сжатие контекста, это может занять несколько минут…':
+    'Automatic context compaction, this may take a few minutes…',
   'Сжать контекст сейчас': 'Compact context now',
   Размышляет: 'Thinking',
   'Размышлял {time}': 'Thought for {time}',
