@@ -26,4 +26,5 @@ export type GitRestoreResult = {
   currentHead: string
   restoredCommit: string
   changed: boolean
+  backupStash?: string
 }

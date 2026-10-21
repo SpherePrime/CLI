@@ -17,8 +17,13 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
     setBusy(true)
     setError('')
     try {
-      setHistory(await window.prime.github(workspaceId, { action: 'history' }))
+      const next: GitHistory = await window.prime.github(workspaceId, { action: 'history' })
+      setHistory(next)
       setSelected(undefined)
+      if (next.commits[0])
+        setSelected(
+          await window.prime.github(workspaceId, { action: 'showCommit', sha: next.commits[0].sha })
+        )
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : String(failure))
     } finally {
@@ -58,6 +63,11 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
             : 'Проект уже соответствует этому состоянию.'
         )
       )
+      if (result.backupStash)
+        setNotice(
+          (value) =>
+            `${value} ${t('Локальные изменения сохранены в stash {value0}. Вернуть их: git stash apply --index {value0}', { value0: result.backupStash! })}`
+        )
       await refresh()
     } catch (failure) {
       setConfirm(false)
@@ -90,59 +100,71 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
       )}
       {history && !history.clean && (
         <p className="git-history-message">
-          {t(
-            'Есть локальные изменения. Перед восстановлением сохраните их в коммите или уберите в stash.'
-          )}
+          {t('Локальные изменения будут сохранены в резервную копию stash перед восстановлением.')}
         </p>
       )}
-      <div className="github-layout git-history-layout">
-        <aside className="github-list" aria-label={t('История коммитов')}>
+      <div className="git-history-layout">
+        <aside className="git-history-list" aria-label={t('История коммитов')}>
           {!history?.commits.length && (
             <p className="launch-placeholder">{t(busy ? 'Загрузка…' : 'Коммитов нет')}</p>
           )}
           {history?.commits.map((commit) => (
             <button
               key={commit.sha}
-              className={`github-item git-history-item ${selected?.commit.sha === commit.sha ? 'selected' : ''}`}
+              className={`git-history-item ${selected?.commit.sha === commit.sha ? 'selected' : ''}`}
+              aria-pressed={selected?.commit.sha === commit.sha}
               onClick={() => void open(commit.sha)}
               disabled={busy}
             >
-              <code className="github-number">{commit.sha.slice(0, 8)}</code>
-              <span className="github-title">{commit.title}</span>
-              <small>
-                {commit.author} · {new Date(commit.date).toLocaleString(locale)}
-                {commit.sha === history.currentHead ? ' · HEAD' : ''}
-              </small>
-              {commit.refs && <small className="git-history-refs">{commit.refs}</small>}
+              <span className="git-history-item-top">
+                <code>{commit.sha.slice(0, 8)}</code>
+                {commit.sha === history.currentHead && (
+                  <span className="git-history-head">HEAD</span>
+                )}
+                <time dateTime={commit.date}>
+                  {new Date(commit.date).toLocaleDateString(locale)}
+                </time>
+              </span>
+              <span className="git-history-title">{commit.title}</span>
+              <span className="git-history-author">{commit.author}</span>
+              {commit.refs && <span className="git-history-refs">{commit.refs}</span>}
             </button>
           ))}
         </aside>
-        <section className="github-detail">
+        <section className="git-history-detail">
           {!selected && (
             <p className="launch-placeholder">{t('Выберите коммит для просмотра изменений')}</p>
           )}
           {selected && (
-            <article className="github-card">
+            <article className="git-history-card">
               <h3>{selected.commit.title}</h3>
-              <p className="github-meta git-history-sha">{selected.commit.sha}</p>
-              <p className="github-meta">
+              <p className="git-history-sha">{selected.commit.sha}</p>
+              <p className="git-history-meta">
                 {selected.commit.author} · {new Date(selected.commit.date).toLocaleString(locale)}
               </p>
               <div className="automation-actions">
                 <button
                   className="automation-primary"
                   onClick={() => setConfirm(true)}
-                  disabled={busy || !history?.clean || selected.commit.sha === selected.currentHead}
+                  disabled={
+                    busy ||
+                    (Boolean(history?.clean) && selected.commit.sha === selected.currentHead)
+                  }
+                  title={
+                    selected.commit.sha === selected.currentHead && history?.clean
+                      ? t('Проект уже соответствует этому состоянию.')
+                      : undefined
+                  }
                 >
                   <RotateCcw size={14} />
                   {t('Вернуть это состояние')}
                 </button>
               </div>
-              <pre className="github-diff git-history-diff">
+              <pre className="git-history-diff">
                 {selected.diff || t('Изменений в файлах проекта нет')}
               </pre>
               {selected.truncated && (
-                <p className="github-meta">
+                <p className="git-history-meta">
                   {t('Показана часть изменений: diff слишком большой.')}
                 </p>
               )}
@@ -159,7 +181,7 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
         >
           <p>
             {t(
-              'Файлы проекта будут восстановлены из коммита {value0}. Будет создан новый локальный коммит; существующая история сохранится. Изменения не отправляются на GitHub автоматически.',
+              'Файлы проекта будут восстановлены из коммита {value0}. Локальные изменения и новые файлы сохранятся в stash. Будет создан новый локальный коммит; существующая история сохранится. Изменения не отправляются на GitHub автоматически.',
               { value0: selected.commit.sha.slice(0, 12) }
             )}
           </p>
