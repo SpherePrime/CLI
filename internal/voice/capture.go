@@ -304,6 +304,8 @@ func (r processRecorder) Start(ctx context.Context) (*Session, error) {
 	cmd.Stderr = &tailBuffer{}
 	if r.fileMode {
 		cmd.Stdout = nil
+		_ = sink.Close()
+		_ = os.Remove(sink.Name())
 		sink = nil
 	}
 
