@@ -1874,6 +1874,66 @@ kbd {
 .plugin-task small {
   display: block;
 }
+.stt-model-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 13px 17px;
+  margin: 13px 0;
+}
+.stt-model-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.stt-model-row h3 {
+  font-size: 12px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stt-model-row p {
+  font-size: 10px;
+  color: var(--secondary);
+  margin: 0;
+}
+.stt-model-row button {
+  font-size: 10px;
+}
+.stt-model-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stt-model-actions small {
+  font-size: 10px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.stt-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.stt-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.stt-progress progress {
+  flex: 1;
+  max-width: 260px;
+}
+.stt-progress small {
+  font-size: 10px;
+  color: var(--secondary);
+}
 .file-image {
   max-width: 100%;
   max-height: 60vh;

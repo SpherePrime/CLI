@@ -14,20 +14,21 @@ export const english: Record<string, string> = {
   'Новый личный чат': 'New personal chat',
   'Начать личный чат': 'Start a personal chat',
   'Не открыт': 'Not open',
-  'Закреплён': 'Pinned',
+  Закреплён: 'Pinned',
   'Горячие клавиши': 'Shortcuts',
   'Открыть настройки': 'Open settings',
   'Сохранить файл': 'Save file',
   'Увеличить масштаб': 'Zoom in',
   'Уменьшить масштаб': 'Zoom out',
   'Сбросить масштаб': 'Reset zoom',
-  'Нажмите на сочетание и введите новое. Esc — отмена, Backspace — отключить.': 'Click a shortcut and press a new one. Esc cancels, Backspace disables.',
+  'Нажмите на сочетание и введите новое. Esc — отмена, Backspace — отключить.':
+    'Click a shortcut and press a new one. Esc cancels, Backspace disables.',
   'Сбросить все': 'Reset all',
   'Совпадает с: {value}': 'Conflicts with: {value}',
   'Изменить сочетание: {value}': 'Change shortcut: {value}',
   'Нажмите сочетание…': 'Press shortcut…',
   'Не задано': 'Not set',
-  'Сбросить': 'Reset',
+  Сбросить: 'Reset',
   'Новая строка': 'New line',
   'Отменяет изменения коммита': 'Reverts commit changes',
   'Для коммита слияния будут отменены изменения относительно первого родителя.':
@@ -269,7 +270,7 @@ export const english: Record<string, string> = {
   'Не удалось загрузить обновление': 'Could not download the update',
   'Не удалось установить обновление': 'Could not install the update',
   'Режим инструментов': 'Tool mode',
-  'Обычный': 'Standard',
+  Обычный: 'Standard',
   'Агент находит нужные инструменты и скиллы через поиск перед использованием.':
     'The agent searches for relevant tools and skills before using them.',
   'Агент получает список инструментов и описания доступных скиллов сразу.':
@@ -1314,4 +1315,33 @@ Object.assign(english, {
   'Убрать элемент': 'Remove element',
   'Например: выровняй эти блоки': 'For example: align these blocks',
   'Отправить {value0} в чат': 'Send {value0} to chat'
+})
+
+Object.assign(english, {
+  'Распознавание речи': 'Speech recognition',
+  Устройства: 'Devices',
+  Микрофон: 'Microphone',
+  'Вывод звука': 'Audio output',
+  'Системный по умолчанию': 'System default',
+  'Распознавание речи для диктовки: облачный Google или локальные модели Whisper и Vosk.':
+    'Speech recognition for dictation: cloud Google or local Whisper and Vosk models.',
+  'Провайдер: {value0}': 'Provider: {value0}',
+  'Провайдер распознавания речи': 'Speech recognition provider',
+  'Google STT': 'Google STT',
+  'Whisper STT': 'Whisper STT',
+  'Vosk STT': 'Vosk STT',
+  'Скачайте модель и выберите её': 'Download a model and select it',
+  'Для выбранного провайдера скачайте модель в настройках распознавания речи':
+    'Download a model for the selected provider in the speech recognition settings',
+  'Работает онлайн без установки моделей.': 'Works online without installing models.',
+  'Модели Whisper': 'Whisper models',
+  'Модели Vosk': 'Vosk models',
+  Рекомендуется: 'Recommended',
+  Скачать: 'Download',
+  Выбрать: 'Select',
+  Удалить: 'Remove',
+  Активна: 'Active',
+  '{value0}%': '{value0}%',
+  '{value0} МБ': '{value0} MB',
+  '{value0} ГБ': '{value0} GB'
 })

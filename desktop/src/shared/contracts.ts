@@ -88,6 +88,8 @@ export type Preferences = {
   speechVoice?: string
   speechSpeed?: number
   speechAutoSend?: boolean
+  micDeviceId?: string
+  speakerDeviceId?: string
   inspectorVisible?: boolean
   keybindings?: Record<string, string>
   agentContexts?: Record<string, import('./agentContext').AgentContext>
@@ -150,6 +152,11 @@ export type Operation =
   | 'pluginEnable'
   | 'pluginDisable'
   | 'pluginTasks'
+  | 'stt'
+  | 'sttInstall'
+  | 'sttRemove'
+  | 'sttSelect'
+  | 'sttTasks'
   | 'voice'
   | 'pending'
   | 'runs'
