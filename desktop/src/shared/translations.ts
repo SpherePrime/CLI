@@ -1,4 +1,17 @@
 export const english: Record<string, string> = {
+  'Открыть настройки': 'Open settings',
+  'Сохранить файл': 'Save file',
+  'Увеличить масштаб': 'Zoom in',
+  'Уменьшить масштаб': 'Zoom out',
+  'Сбросить масштаб': 'Reset zoom',
+  'Нажмите на сочетание и введите новое. Esc — отмена, Backspace — отключить.': 'Click a shortcut and press a new one. Esc cancels, Backspace disables.',
+  'Сбросить все': 'Reset all',
+  'Совпадает с: {value}': 'Conflicts with: {value}',
+  'Изменить сочетание: {value}': 'Change shortcut: {value}',
+  'Нажмите сочетание…': 'Press shortcut…',
+  'Не задано': 'Not set',
+  'Сбросить': 'Reset',
+  'Новая строка': 'New line',
   'Отменяет изменения коммита': 'Reverts commit changes',
   'Для коммита слияния будут отменены изменения относительно первого родителя.':
     'For a merge commit, changes will be reverted relative to its first parent.',
@@ -620,9 +633,6 @@ export const english: Record<string, string> = {
   Клавиатура: 'Keyboard',
   'Ctrl+N — новый чат · Ctrl+P — команды · Ctrl+L — модели':
     'Ctrl+N — new chat · Ctrl+P — commands · Ctrl+L — models',
-  'Shift+Enter — новая строка · двойной Esc — остановить задачу':
-    'Shift+Enter — new line · double Esc — stop task',
-  'Alt+V — голосовой ввод': 'Alt+V — voice input',
   'Подключение к модели': 'Model connection',
   'Используются настройки и провайдеры Prime. Ключ хранится в конфигурации backend.':
     'Uses Prime settings and providers. The key is stored in backend configuration.',
@@ -890,10 +900,6 @@ Object.assign(english, {
   Компактная: 'Compact',
   'Меньше анимаций': 'Reduce motion',
   'Спокойные переходы без движения и пульсации': 'Calm transitions without movement or pulsing',
-  'Ctrl+K — быстрые действия · Ctrl+F — поиск в чате':
-    'Ctrl+K — quick actions · Ctrl+F — search in chat',
-  'Ctrl+Shift+F — режим фокуса · Ctrl+, — настройки':
-    'Ctrl+Shift+F — focus mode · Ctrl+, — settings',
   Закреплённые: 'Pinned',
   Сегодня: 'Today',
   Вчера: 'Yesterday',

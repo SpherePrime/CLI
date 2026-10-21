@@ -1,3 +1,5 @@
+import { shortcutLabel } from '../../../shared/keybindings'
+import { useShortcuts } from '../features/shortcuts/shortcutStore'
 import {
   Clock3,
   Command,
@@ -44,12 +46,13 @@ export function useQuickActions({
   toggleInspector: () => void
 }): QuickAction[] {
   const { t } = useI18n()
+  const shortcuts = useShortcuts()
   return [
     {
       id: 'terminal',
       label: t('Терминал проекта'),
       icon: TerminalSquare,
-      shortcut: 'Ctrl `',
+      shortcut: shortcutLabel(shortcuts.terminal),
       disabled: !w.project,
       run: () => openTools('terminal')
     },
@@ -78,7 +81,7 @@ export function useQuickActions({
       id: 'new',
       label: t('Новый чат'),
       icon: Plus,
-      shortcut: 'Ctrl N',
+      shortcut: shortcutLabel(shortcuts.newChat),
       disabled: !w.project,
       run: () => {
         void w.createSession()
@@ -104,7 +107,7 @@ export function useQuickActions({
       id: 'models',
       label: t('Выбрать модель'),
       icon: Command,
-      shortcut: 'Ctrl L',
+      shortcut: shortcutLabel(shortcuts.models),
       run: () => {
         window.dispatchEvent(new Event('prime:models'))
       }
@@ -113,7 +116,7 @@ export function useQuickActions({
       id: 'find',
       label: t('Поиск в чате'),
       icon: Search,
-      shortcut: 'Ctrl F',
+      shortcut: shortcutLabel(shortcuts.chatSearch),
       disabled: !w.messages.length,
       run: openSearch
     },
@@ -121,7 +124,7 @@ export function useQuickActions({
       id: 'focus',
       label: focusMode ? t('Выйти из фокуса') : t('Режим фокуса'),
       icon: Focus,
-      shortcut: 'Ctrl Shift F',
+      shortcut: shortcutLabel(shortcuts.focus),
       run: toggleFocus
     },
     {
@@ -160,7 +163,7 @@ export function useQuickActions({
       id: 'settings',
       label: t('Настройки'),
       icon: Settings2,
-      shortcut: 'Ctrl ,',
+      shortcut: shortcutLabel(shortcuts.settings),
       run: () => setModal('settings')
     }
   ]

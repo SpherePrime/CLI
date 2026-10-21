@@ -1,3 +1,5 @@
+import { shortcutLabel } from '../../../shared/keybindings'
+import { useShortcuts } from '../features/shortcuts/shortcutStore'
 import {
   ChevronRight,
   PanelLeftClose,
@@ -42,6 +44,7 @@ export function WorkspaceTopbar({
   openCommands: () => void
 }) {
   const { t } = useI18n()
+  const shortcuts = useShortcuts()
   const reconnecting = w.project?.connection === 'reconnecting'
   const ready = w.info.runtime === 'ready' && !reconnecting
   const status = reconnecting
@@ -69,19 +72,19 @@ export function WorkspaceTopbar({
       </div>
       <button
         className="topbar-search"
-        title={t('Быстрые действия') + ' · Ctrl K'}
+        title={`${t('Быстрые действия')} · ${shortcutLabel(shortcuts.commands)}`}
         aria-label={t('Быстрые действия')}
         onClick={openCommands}
       >
         <Search size={15} />
         <span>{t('Поиск и команды')}</span>
-        <kbd>Ctrl K</kbd>
+        <kbd>{shortcutLabel(shortcuts.commands)}</kbd>
       </button>
       <div className="header-actions">
         {w.messages.length > 0 && (
           <button
             className={`icon ${searchOpen ? 'active-control' : ''}`}
-            title={t('Поиск в чате') + ' · Ctrl F'}
+            title={`${t('Поиск в чате')} · ${shortcutLabel(shortcuts.chatSearch)}`}
             aria-label={t('Поиск в чате')}
             aria-expanded={searchOpen}
             onClick={toggleSearch}
@@ -93,7 +96,7 @@ export function WorkspaceTopbar({
         <span className="topbar-divider" />
         <button
           className={`icon ${toolsOpen ? 'active-control' : ''}`}
-          title={t('Терминал проекта') + ' · Ctrl `'}
+          title={`${t('Терминал проекта')} · ${shortcutLabel(shortcuts.terminal)}`}
           aria-label={t('Терминал проекта')}
           aria-expanded={toolsOpen}
           disabled={!w.project}

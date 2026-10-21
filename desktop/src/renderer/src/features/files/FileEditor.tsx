@@ -1,3 +1,5 @@
+import { matchesShortcut } from '../../../../shared/keybindings'
+import { getShortcuts } from '../shortcuts/shortcutStore'
 import { useEffect, useState } from 'react'
 import { CodeEditor, modelUri } from './CodeEditor'
 import { useRef } from 'react'
@@ -36,7 +38,7 @@ export default function FileEditor({
   useEffect(() => {
     if (!enabled) return
     const save = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+      if (matchesShortcut(event, getShortcuts().saveFile)) {
         event.preventDefault()
         event.stopPropagation()
         if (document) void state.save(document.id)

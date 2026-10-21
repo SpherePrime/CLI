@@ -1,0 +1,88 @@
+.shortcut-settings {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.shortcut-settings > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.shortcut-settings > header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.shortcut-settings > header small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.shortcut-settings > header > button {
+  flex-shrink: 0;
+  gap: 6px;
+  font-size: 12px;
+}
+.shortcut-settings ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.shortcut-settings li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 30px;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 6px 10px 6px 14px;
+  border-top: 1px solid var(--border);
+}
+.shortcut-settings li:first-child {
+  border-top: 0;
+}
+.shortcut-settings li.fixed {
+  color: var(--muted);
+}
+.shortcut-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 13px;
+}
+.shortcut-name small {
+  color: var(--amber);
+  font-size: 11px;
+}
+.shortcut-key {
+  min-width: 120px;
+  min-height: 30px;
+  justify-content: center;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: 500 12px/1.4 var(--font-mono, monospace);
+  text-align: center;
+}
+kbd.shortcut-key {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+}
+button.shortcut-key:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+.shortcut-key.recording {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.shortcut-settings li.conflict .shortcut-key {
+  border-color: color-mix(in srgb, var(--amber) 60%, var(--border));
+}

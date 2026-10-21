@@ -1,3 +1,5 @@
+import { shortcutLabel } from '../../../../shared/keybindings'
+import { useShortcuts } from '../shortcuts/shortcutStore'
 import { useEffect, useRef, useState } from 'react'
 import { MoreHorizontal, ListRestart, FileText, Download, Copy, Check, Focus } from 'lucide-react'
 import { Popover } from '../../components/Popover'
@@ -16,6 +18,7 @@ export function ChatActions({
   toggleFocus: () => void
 }) {
   const { t } = useI18n()
+  const shortcuts = useShortcuts()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [templates, setTemplates] = useState<any[]>([])
@@ -60,7 +63,7 @@ export function ChatActions({
             >
               <Focus size={16} />
               {focusMode ? t('Выйти из фокуса') : t('Режим фокуса')}
-              <kbd>Ctrl Shift F</kbd>
+              <kbd>{shortcutLabel(shortcuts.focus)}</kbd>
             </button>
             <button
               disabled={!w.messages.length}

@@ -1,3 +1,5 @@
+import { shortcutLabel } from '../../../../shared/keybindings'
+import { useShortcuts } from '../shortcuts/shortcutStore'
 import { projectName } from './projectName'
 import {
   ArrowUpRight,
@@ -21,6 +23,7 @@ export function Welcome({
   openCommands: () => void
 }) {
   const { t } = useI18n()
+  const shortcuts = useShortcuts()
   const hasFolder = Boolean(w.project && w.project.kind !== 'chat')
   const projectTitle = projectName(w.project)
   const starters = hasFolder
@@ -123,7 +126,7 @@ export function Welcome({
           )}
           <button className="welcome-command" onClick={openCommands}>
             {t('Быстрые действия')}
-            <kbd>Ctrl K</kbd>
+            <kbd>{shortcutLabel(shortcuts.commands)}</kbd>
           </button>
         </div>
         <div className="starter-grid">
