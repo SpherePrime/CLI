@@ -87,12 +87,10 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     setCollapsed('sidebar', !collapsed.sidebar)
   }
   function toggleInspector() {
-    if (focusMode || collapsed.inspector) {
-      setFocusMode(false)
-      setCollapsed('inspector', false)
-      if (inspector) return
-    }
-    setInspector(focusMode ? true : !inspector)
+    if (focusMode) return setFocusMode(false)
+    setInspector(true)
+    if (layout.compact) return window.dispatchEvent(new Event('prime:inspector-panel'))
+    setCollapsed('inspector', !collapsed.inspector)
   }
   function openTools(view: WorkbenchView) {
     setWorkbenchView(view)
@@ -125,6 +123,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           openTools('windows')
         if (event.type === 'browser' && event.payload?.action === 'activate') {
           setInspector(true)
+          setCollapsed('inspector', false)
           setFocusMode(false)
           setBrowserRequest(Date.now())
         }
@@ -181,7 +180,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     toggleFocus,
     sidebarVisible: !collapsed.sidebar,
     toggleSidebar,
-    inspectorVisible: inspector,
+    inspectorVisible: inspector && !collapsed.inspector,
     toggleInspector
   })
   const sidebarPanel = (
@@ -245,6 +244,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 onJobs={() => setModal('jobs')}
                 onTools={() => openTools(workbenchView)}
                 onPlugins={() => setModal('plugins')}
+                onExpand={layout.compact ? undefined : () => setCollapsed('sidebar', false)}
               >
                 {sidebarPanel}
               </ProjectRail>
@@ -307,9 +307,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             <Inspector
               compact={layout.inspectorCompact}
               workspace={w}
-              close={toggleInspector}
+              close={() => setCollapsed('inspector', true)}
               openDocument={documents.open}
               browserRequest={browserRequest}
+              onExpand={
+                layout.inspectorCompact && !layout.compact
+                  ? () => setCollapsed('inspector', false)
+                  : undefined
+              }
             />
           </>
         )}

@@ -109,6 +109,7 @@ export function WorkspaceTopbar({
           title={t('Рабочая область')}
           aria-label={inspectorVisible ? t('Скрыть рабочую область') : t('Показать рабочую область')}
           aria-pressed={inspectorVisible}
+          data-inspector-toggle
           onClick={toggleInspector}
         >
           {inspectorVisible ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}

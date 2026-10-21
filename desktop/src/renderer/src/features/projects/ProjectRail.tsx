@@ -20,7 +20,8 @@ export function ProjectRail({
   onSettings,
   onJobs,
   onTools,
-  onPlugins
+  onPlugins,
+  onExpand
 }: {
   workspace: Workspace
   children: ReactNode
@@ -29,6 +30,7 @@ export function ProjectRail({
   onJobs: () => void
   onTools: () => void
   onPlugins: () => void
+  onExpand?: () => void
 }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
@@ -70,7 +72,7 @@ export function ProjectRail({
         title={t('Панель проектов')}
         aria-label={t('Панель проектов')}
         aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        onClick={() => (onExpand ? onExpand() : setOpen(!open))}
       >
         <FolderOpen size={19} />
       </button>
