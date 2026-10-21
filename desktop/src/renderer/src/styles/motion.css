@@ -178,7 +178,7 @@ dialog.modal[open]::backdrop {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: shimmer 2.2s linear infinite;
+  animation: shimmer 2.2s steps(66) infinite;
 }
 .reasoning.live summary svg:first-child {
   color: var(--accent-strong);

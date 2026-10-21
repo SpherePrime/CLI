@@ -37,3 +37,15 @@ describe('project boundary', () => {
     await expect(resolveProjectPath(root, 'escape')).rejects.toThrow()
   })
 })
+
+it('decodes SSE events split at every byte boundary', () => {
+  const stream = 'data: {"a":1}\r\n\r\ndata: one\ndata: two\n\n: ping\n\ndata: {"big":"' + 'x'.repeat(5000) + '"}\n\n'
+  const expected = ['{"a":1}', 'one\ntwo', '{"big":"' + 'x'.repeat(5000) + '"}']
+  for (const size of [1, 2, 3, 7, 64, stream.length]) {
+    const decoder = new SseDecoder()
+    const output: string[] = []
+    for (let index = 0; index < stream.length; index += size)
+      output.push(...decoder.push(Buffer.from(stream.slice(index, index + size))))
+    expect(output).toEqual(expected)
+  }
+})

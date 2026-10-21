@@ -102,7 +102,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent !important;
-  animation: shimmer 3s linear infinite;
+  animation: shimmer 3s steps(90) infinite;
 }
 .todo-steps {
   display: flex;
