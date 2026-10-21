@@ -527,3 +527,18 @@ dialog.modal,
 .app-shell > .resizer + .inspector-rail {
   margin: 0;
 }
+
+.project-rail > .icon,
+.inspector-rail .inspector-tabs > button {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.project-rail > .icon svg,
+.inspector-rail .inspector-tabs > button svg {
+  width: 18px;
+  height: 18px;
+}
