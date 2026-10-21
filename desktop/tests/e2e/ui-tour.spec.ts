@@ -53,7 +53,7 @@ for (const [prefix, width, height] of sizes)
         await page.waitForTimeout(1500)
         await shot(page, prefix, '05-tool')
       })
-      for (const [index, name] of ['Файлы', 'Изменения', 'Задачи', 'Браузер'].entries())
+      for (const [index, name] of ['Файлы', 'Изменения', 'Браузер'].entries())
         await attempt(async () => {
           await page.locator(`.inspector-tabs button[aria-label="${name}"]`).click()
           await shot(page, prefix, `06-inspector-${index}`)
