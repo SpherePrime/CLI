@@ -78,11 +78,24 @@ export class UpdateController {
     if (this.status.state !== 'downloaded' || this.installing)
       throw new Error('Update is not ready to install')
     this.installing = true
+    const downloaded = this.snapshot()
+    let prepared = false
+    this.set({ state: 'installing' })
     try {
       await this.prepare()
-      this.set({ state: 'installing' })
+      prepared = true
       this.updater.quitAndInstall(true, true)
+      if (this.snapshot().state === 'error')
+        throw new Error(this.status.message || 'Update installation failed')
       return this.snapshot()
+    } catch (error: any) {
+      if (!prepared) {
+        this.status = downloaded
+        this.emit(this.snapshot())
+      } else if (this.snapshot().state !== 'error') {
+        this.set({ state: 'error', message: error.message || String(error) })
+      }
+      throw error
     } finally {
       this.installing = false
     }

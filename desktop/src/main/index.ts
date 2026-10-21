@@ -1,5 +1,6 @@
 import { applyWindowChrome, windowChromeColors } from './windowChrome'
 import { UpdateController } from './updates/controller'
+import { ShutdownController } from './shutdown'
 import { discoverDesktopRelease } from './updates/github'
 import type { UpdateStatus } from '../shared/updates'
 import { translate } from '../shared/localization'
@@ -209,6 +210,32 @@ const speech = new SpeechService(
     return result.canceled ? undefined : result.filePaths[0]
   }
 )
+const shutdown = new ShutdownController(
+  [
+    { name: 'shortcuts', close: () => globalShortcut.unregister('Control+Alt+Escape') },
+    { name: 'window viewer', close: () => windowViewer.dispose() },
+    { name: 'automations', close: () => automations?.dispose() },
+    { name: 'teams', close: () => teams?.dispose() },
+    { name: 'speech', close: () => speech.dispose() },
+    { name: 'project changes', close: () => projectChanges.dispose() },
+    { name: 'terminals', close: () => terminals.dispose() },
+    { name: 'remote workspaces', close: () => remotes?.shutdown() },
+    { name: 'projects', close: () => prime?.dispose() },
+    { name: 'runtime', close: () => runtime?.stop() },
+    { name: 'browser tools', close: () => browserMcp?.close() },
+    { name: 'browser panel', close: () => browserPanel.destroy() },
+    { name: 'tray', close: () => tray?.destroy() }
+  ],
+  (name, error) => console.error(`Failed to close ${name}`, error)
+)
+
+async function prepareShutdown(): Promise<void> {
+  quitting = true
+  cleanupRunning = true
+  await shutdown.run()
+  cleanupDone = true
+}
+
 const hasBackgroundWork = () =>
   Boolean(
     prime?.isBusy() ||
@@ -794,17 +821,24 @@ function registerIpc(): void {
       const { autoUpdater } = (await import('electron-updater')).default
       autoUpdater.allowDowngrade = false
       autoUpdater.allowPrerelease = false
+      let restartPrepared = false
       return new UpdateController(
         autoUpdater,
         () => discoverDesktopRelease(app.getVersion()),
         (status) => {
           updateStatus = status
           emit({ type: 'update', payload: status })
+          if (status.state === 'error' && restartPrepared) {
+            dialog.showErrorBox(t('Не удалось установить обновление'), status.message || '')
+            app.quit()
+          }
         },
         async () => {
           if (hasBackgroundWork()) throw new Error(t('Сначала завершите активные задачи'))
           if (editorDirty) throw new Error(t('Сохраните изменения в файлах перед перезапуском'))
-          await automations?.dispose()
+          await prepareShutdown()
+          restartPrepared = true
+          app.releaseSingleInstanceLock()
         }
       )
     })()
@@ -812,7 +846,7 @@ function registerIpc(): void {
     try {
       return await (action === 'install' ? controller.install() : controller.check())
     } catch (error) {
-      if (action === 'install') automations?.start()
+      if (action === 'install' && !cleanupDone) automations?.start()
       throw error
     }
   })
@@ -980,24 +1014,6 @@ else {
       quitting = false
       return
     }
-    quitting = true
-    cleanupRunning = true
-    globalShortcut.unregister('Control+Alt+Escape')
-    windowViewer.dispose()
-    void (async () => {
-      await automations?.dispose()
-      await teams?.dispose()
-      await speech.dispose()
-      projectChanges.dispose()
-      await terminals.dispose()
-      await remotes?.shutdown()
-      await prime?.dispose()
-      await runtime?.stop()
-      await browserMcp?.close()
-      browserPanel.destroy()
-      tray?.destroy()
-      cleanupDone = true
-      app.quit()
-    })()
+    void prepareShutdown().then(() => app.quit())
   })
 }

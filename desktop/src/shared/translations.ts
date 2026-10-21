@@ -251,6 +251,7 @@ export const english: Record<string, string> = {
   'Обновление Prime Desktop': 'Prime Desktop update',
   'Необходимо перезапустить приложение': 'Restart required',
   'Не удалось загрузить обновление': 'Could not download the update',
+  'Не удалось установить обновление': 'Could not install the update',
   'Перезапускаем Prime': 'Restarting Prime',
   'Доступна новая версия': 'A new version is available',
   'Загружаем обновление': 'Downloading update',
