@@ -54,6 +54,15 @@ func (c *controllerV1) handlePostWorkspaceConfigModel(w http.ResponseWriter, r *
 		return
 	}
 
+	if req.SessionID != "" {
+		model := req.Model
+		if err := c.backend.UpdateSessionModel(id, req.SessionID, &model); err != nil {
+			c.handleError(w, r, err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	if err := c.backend.UpdatePreferredModel(id, req.Scope, req.ModelType, req.Model); err != nil {
 		c.handleError(w, r, err)
 		return

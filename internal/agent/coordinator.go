@@ -371,6 +371,9 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	}
 
 	model := agent.Model()
+	if override := c.sessionModel(ctx, sessionID); override != nil {
+		model = *override
+	}
 	providerCfg, ok := c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
 	if !ok {
 		return nil, errModelProviderNotConfigured
@@ -1183,6 +1186,55 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool, age
 	}
 
 	return large, small, nil
+}
+
+// sessionModel resolves the model chosen for a specific chat. Sessions
+// without a choice, and choices that can no longer be built (provider
+// removed, model gone from the catalog), fall back to the agent's default
+// model by returning nil.
+func (c *coordinator) sessionModel(ctx context.Context, sessionID string) *Model {
+	selected, ok := c.cfg.Config().SessionModels[sessionID]
+	if !ok || selected.Provider == "" || selected.Model == "" {
+		return nil
+	}
+	cfg := c.cfg.Config()
+	providerCfg, ok := cfg.Providers.Get(selected.Provider)
+	if !ok {
+		slog.Warn("Session model provider is not configured, using the default model", "provider", selected.Provider, "session_id", sessionID)
+		return nil
+	}
+	provider, err := c.buildProvider(providerCfg, selected, false)
+	if err != nil {
+		slog.Warn("Failed to build the session model provider, using the default model", "error", err, "session_id", sessionID)
+		return nil
+	}
+	var catalogModel *catwalk.Model
+	for _, m := range providerCfg.Models {
+		if m.ID == selected.Model {
+			catalogModel = &m
+		}
+	}
+	if catalogModel == nil {
+		slog.Warn("Session model is missing from the provider catalog, using the default model", "model", selected.Model, "session_id", sessionID)
+		return nil
+	}
+	modelID := selected.Model
+	if selected.Provider == openrouter.Name && isExactoSupported(modelID) {
+		modelID += ":exacto"
+	}
+	languageModel, err := provider.LanguageModel(ctx, modelID)
+	if err != nil {
+		slog.Warn("Failed to build the session model, using the default model", "error", err, "session_id", sessionID)
+		return nil
+	}
+	languageModel = newRequestTimeoutModel(languageModel, cfg.Options.GetRequestTimeout())
+	languageModel = newToolRoleCompatModel(languageModel)
+	return &Model{
+		Model:      languageModel,
+		CatwalkCfg: applyModelOverrides(*catalogModel, selected),
+		ModelCfg:   selected,
+		FlatRate:   providerCfg.FlatRate,
+	}
 }
 
 // applyModelOverrides copies per-selected-model overrides from the config
