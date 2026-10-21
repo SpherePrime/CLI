@@ -73,7 +73,7 @@ progress {
 }
 
 .message.user .message-author {
-  margin-right: 31px;
+  margin-right: 0;
 }
 
 .message.user .copy-message {
@@ -84,10 +84,10 @@ progress {
 
 .message.user .message-body {
   width: fit-content;
-  max-width: min(760px, calc(100% - 31px));
+  max-width: min(760px, 100%);
   box-sizing: border-box;
   margin-left: 0;
-  margin-right: 31px;
+  margin-right: 0;
   overflow-wrap: anywhere;
 }
 
