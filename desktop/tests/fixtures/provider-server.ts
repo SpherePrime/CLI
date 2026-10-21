@@ -127,11 +127,12 @@ export async function startProvider() {
         response.end('data: [DONE]\n\n')
         return
       }
-      for (const text of [
-        'Соединение работает. ',
-        'Prime Desktop получил ответ ',
-        'через встроенный CLI.'
-      ])
+      const generatingTitle = userText?.startsWith(
+        'Generate a concise title for the following content:'
+      )
+      for (const text of generatingTitle
+        ? ['Проверка названия чата']
+        : ['Соединение работает. ', 'Prime Desktop получил ответ ', 'через встроенный CLI.'])
         response.write(
           `data: ${JSON.stringify({ id: 'fixture-stream', object: 'chat.completion.chunk', model: 'desktop-fixture', choices: [{ index: 0, delta: { content: text }, finish_reason: null }] })}\n\n`
         )

@@ -665,7 +665,7 @@ export function useWorkspace() {
       let selected = targetSession
       if (!selected) {
         selected = await window.prime.call(targetProject.id, 'createSession', {
-          title: prompt.slice(0, 60)
+          title: translate(language.current, 'Новый чат')
         })
       }
       if (!selected) return false

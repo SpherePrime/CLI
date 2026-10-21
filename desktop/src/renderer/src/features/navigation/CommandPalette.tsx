@@ -1,3 +1,4 @@
+import { sessionTitle } from '../../../../shared/sessionTitle'
 import { useEffect, useId, useRef, useState, type ElementType } from 'react'
 import { ArrowUpRight, Command, MessageSquare, Search } from 'lucide-react'
 import { Modal } from '../../components/Modal'
@@ -38,13 +39,14 @@ export function CommandPalette({
     ...sessions
       .filter(
         (session) =>
-          !session.parent_session_id && session.title.toLocaleLowerCase().includes(needle)
+          !session.parent_session_id &&
+          sessionTitle(session.title, t('Новый чат')).toLocaleLowerCase().includes(needle)
       )
       .sort((a, b) => (b.updated_at || 0) - (a.updated_at || 0))
       .slice(0, 30)
       .map((session) => ({
         id: `session-${session.id}`,
-        label: session.title || t('Новый чат'),
+        label: sessionTitle(session.title, t('Новый чат')),
         icon: MessageSquare,
         shortcut: t('Чат'),
         run: () => selectSession(session)

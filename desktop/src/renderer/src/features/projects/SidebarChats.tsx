@@ -1,3 +1,4 @@
+import { sessionTitle } from '../../../../shared/sessionTitle'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -105,7 +106,7 @@ export function SidebarChats({
     .flatMap((project) => sessionsOf(project).map((session) => ({ project, session })))
     .filter(
       ({ session }) =>
-        !needle || (session.title || '').toLocaleLowerCase().includes(needle)
+        !needle || sessionTitle(session.title, t('Новый чат')).toLocaleLowerCase().includes(needle)
     )
     .sort((a, b) => (b.session.updated_at || 0) - (a.session.updated_at || 0))
     .slice(0, 8)
@@ -156,7 +157,7 @@ export function SidebarChats({
             onClick={() => void openChatSession(project, session)}
           >
             <MessageSquare size={14} />
-            <span>{session.title || t('Новый чат')}</span>
+            <span>{sessionTitle(session.title, t('Новый чат'))}</span>
             {session.is_busy && <span className="dot pulse" />}
             {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
           </button>
@@ -319,11 +320,11 @@ export function SidebarChats({
             >
               <button
                 className="session-link"
-                title={session.title || t('Новый чат')}
+                title={sessionTitle(session.title, t('Новый чат'))}
                 onClick={() => void openChatSession(project, session)}
               >
                 <MessageSquare size={14} />
-                <span>{session.title || t('Новый чат')}</span>
+                <span>{sessionTitle(session.title, t('Новый чат'))}</span>
                 <small className="recent-chat-project">
                   {project.kind === 'chat' ? t('Личные чаты') : projectLabel(project)}
                 </small>

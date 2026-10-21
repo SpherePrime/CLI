@@ -39,7 +39,6 @@ import (
 	"github.com/SpherePrime/CLI/internal/stringext"
 	"github.com/SpherePrime/CLI/internal/version"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/colortone"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
@@ -52,7 +51,7 @@ import (
 )
 
 const (
-	DefaultSessionName = "Untitled Session"
+	DefaultSessionName = "Новый чат"
 )
 
 var userAgent = fmt.Sprintf("Prime/%s (https://github.com/SpherePrime/CLI)", version.Version)
@@ -755,7 +754,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	// can take tens of seconds. Blocking Run on it delays the
 	// response to the caller. Use a detached context so the title
 	// goroutine survives Run's cancel.
-	if !hasUserTextMessage(msgs) {
+	if !hasUserTextMessage(msgs) || IsDefaultSessionTitle(currentSession.Title) {
 		titleCtx := context.WithoutCancel(ctx)
 		go a.GenerateTitle(titleCtx, call.SessionID, call.Prompt)
 	}
@@ -1942,22 +1941,26 @@ func hasUserTextMessage(msgs []message.Message) bool {
 
 // GenerateTitle generates a session title based on the initial prompt.
 func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, userPrompt string) {
-	if userPrompt == "" {
+	userPrompt, _, _ = strings.Cut(userPrompt, "<working-context>")
+	if strings.TrimSpace(userPrompt) == "" {
 		return
 	}
 
-	// Ensure the session always gets a title even if every path below
-	// fails or the context is cancelled before we finish.
-	var titleSaved bool
-	defer func() {
-		if !titleSaved {
-			fallbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-			defer cancel()
-			if err := a.sessions.Rename(fallbackCtx, sessionID, DefaultSessionName); err != nil {
-				slog.Error("Failed to save fallback session title", "error", err)
-			}
-		}
-	}()
+	fallbackTitle := promptSessionTitle(userPrompt)
+	fallbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	initialSession, err := a.sessions.Get(fallbackCtx, sessionID)
+	if err != nil {
+		slog.Error("Failed to read session before generating title", "error", err)
+		return
+	}
+	if !IsDefaultSessionTitle(initialSession.Title) {
+		return
+	}
+	if err := a.sessions.Rename(fallbackCtx, sessionID, fallbackTitle); err != nil {
+		slog.Error("Failed to save fallback session title", "error", err)
+		return
+	}
 
 	smallModel := a.smallModel.Get()
 	largeModel := a.largeModel.Get()
@@ -1996,7 +1999,6 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 	}
 
 	var resp *fantasy.AgentResult
-	var err error
 	var model Model
 	var success bool
 	for _, attempt := range attempts {
@@ -2028,7 +2030,6 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 		}
 	}
 	if !success {
-		// The deferred fallback will save the default session name.
 		return
 	}
 
@@ -2042,15 +2043,7 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 
 	title = strings.TrimSpace(title)
 	if title == "" {
-		// LLM returned empty content. Use the prompt itself as a
-		// fallback title, truncated to 50 chars, before resorting to
-		// the generic default.
-		fallback := strings.ReplaceAll(userPrompt, "\n", " ")
-		fallback = strings.TrimSpace(fallback)
-		if len(fallback) > 50 {
-			fallback = ansi.Truncate(fallback, 50, "…")
-		}
-		title = cmp.Or(fallback, DefaultSessionName)
+		title = fallbackTitle
 	}
 
 	// Calculate usage and cost.
@@ -2083,14 +2076,19 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 		cost = 0
 	}
 
-	// Atomically update only title and usage fields to avoid overriding other
-	// concurrent session updates.
+	currentSession, getErr := a.sessions.Get(ctx, sessionID)
+	if getErr != nil {
+		slog.Error("Failed to read session before saving title", "error", getErr)
+		return
+	}
+	if currentSession.Title != fallbackTitle {
+		title = currentSession.Title
+	}
 	saveErr := a.sessions.UpdateTitleAndUsage(ctx, sessionID, title, 0, 0, cost)
 	if saveErr != nil {
 		slog.Error("Failed to save session title and usage", "error", saveErr)
 		return
 	}
-	titleSaved = true
 }
 
 // titleFallbackWorthwhile reports whether a title-generation failure on one
