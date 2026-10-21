@@ -28,6 +28,7 @@ export class SettingsStore {
       ...this.value,
       ...patch,
       drafts: { ...this.value.drafts, ...patch.drafts },
+      skipBySession: { ...this.value.skipBySession, ...patch.skipBySession },
       reasoningBySession: { ...this.value.reasoningBySession, ...patch.reasoningBySession },
       agentContexts: { ...this.value.agentContexts, ...patch.agentContexts }
     }

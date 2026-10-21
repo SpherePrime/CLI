@@ -15,6 +15,7 @@ import { useAgentContext } from '../features/context/useAgentContext'
 import { buildAgentPrompt } from '../../../shared/agentContext'
 import { isRemoteWorkspace } from '../../../shared/remoteWorkspace'
 import { recordRecentModel } from '../features/models/modelPreferences'
+import { useChatPermissions } from '../features/chat/useChatPermissions'
 
 const resolvedLimit = 1000
 
@@ -684,6 +685,7 @@ export function useWorkspace() {
         await savePreferences({ reasoningBySession: { [selected.id]: reasoningMode } })
       }
       const runId = crypto.randomUUID()
+      await chatPermissions.prepareSession(targetProject.id, selected.id, chatPermissions.skip)
       if (current.current.session?.id === selected.id) setBusy(true)
       if (prompt.startsWith('!'))
         setPendingShell({ projectId: targetProject.id, sessionId: selected.id })
@@ -734,6 +736,7 @@ export function useWorkspace() {
       ...current,
       ...patch,
       drafts: { ...current.drafts, ...patch.drafts },
+      skipBySession: { ...current.skipBySession, ...patch.skipBySession },
       reasoningBySession: { ...current.reasoningBySession, ...patch.reasoningBySession },
       agentContexts: { ...current.agentContexts, ...patch.agentContexts }
     }))
@@ -746,6 +749,13 @@ export function useWorkspace() {
     }
   }
   const agentContext = useAgentContext(project, preferences, savePreferences, errorHandler)
+  const chatPermissions = useChatPermissions({
+    projectId: project?.id,
+    sessionId: session?.id,
+    preferences,
+    savePreferences,
+    onError: errorHandler
+  })
   const reasoningFallback = preferences.lastReasoningMode || 'off'
   const reasoningMode = session
     ? preferences.reasoningBySession?.[session.id] || reasoningFallback
@@ -780,6 +790,8 @@ export function useWorkspace() {
     startupReady,
     preferences,
     savePreferences,
+    skipPermissions: chatPermissions.skip,
+    setPermissionMode: chatPermissions.setSkip,
     reasoningMode,
     setReasoningMode,
     projects,

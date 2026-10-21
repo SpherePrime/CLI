@@ -13,6 +13,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
@@ -107,6 +108,7 @@ func (c *coordinator) startAgentJob(ctx context.Context, params subAgentParams, 
 	if err != nil {
 		return nil, fmt.Errorf("create session: %w", err)
 	}
+	permission.InheritSessionSkipRequests(c.permissions, params.SessionID, session.ID)
 
 	if params.SessionSetup != nil {
 		params.SessionSetup(session.ID)

@@ -35,7 +35,6 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const composerRoot = useRef<HTMLDivElement>(null)
   const mode = w.preferences.agentMode || 'general'
   const projectReady = w.project?.connection === 'ready'
-  const [skip, setSkip] = useState(false)
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [command, setCommand] = useState<any>(null)
   const textarea = useRef<HTMLTextAreaElement>(null)
@@ -124,23 +123,6 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     }, 600)
     return () => clearTimeout(timer)
   }, [text, key])
-  useEffect(() => {
-    if (w.project)
-      void w
-        .call('getSkip')
-        .then((value) => setSkip(Boolean(value?.skip)))
-        .catch(() => {})
-  }, [w.project?.id])
-  const sessionKey = w.session?.id || ''
-  useEffect(() => {
-    if (!sessionKey || !w.project) return
-    const target = w.preferences.skipBySession?.[sessionKey] ?? w.preferences.defaultSkip ?? false
-    if (target === skip) return
-    void w
-      .call('skip', { skip: target })
-      .then(() => setSkip(target))
-      .catch(() => {})
-  }, [sessionKey, w.project?.id, w.preferences.skipBySession, w.preferences.defaultSkip])
   useEffect(() => {
     if (!w.project || !projectReady) return
     void w.call('mode', { mode }).catch(() => {})
@@ -385,20 +367,11 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             <span className="toolbar-divider" />
             <ProjectPicker workspace={w} />
             <PermissionMenu
-              skip={skip}
+              skip={w.skipPermissions}
               disabled={!w.project}
-              onChange={async (value) => {
-                try {
-                  await w.call('skip', { skip: value })
-                  setSkip(value)
-                  void w.savePreferences({
-                    defaultSkip: value,
-                    ...(sessionKey ? { skipBySession: { [sessionKey]: value } } : {})
-                  })
-                } catch (error) {
-                  w.errorHandler(error)
-                }
-              }}
+              contextKey={`${w.project?.id}:${w.session?.id}`}
+              onChange={w.setPermissionMode}
+              onError={w.errorHandler}
             />
             <Select
               label={t('Режим агента')}

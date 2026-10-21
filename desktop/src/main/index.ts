@@ -698,6 +698,7 @@ function registerIpc(): void {
         speechAutoSend: z.boolean().optional(),
         inspectorVisible: z.boolean().optional(),
         keybindings: z.record(z.string().max(40), z.string().max(80)).optional(),
+        skipBySession: z.record(z.string().min(1).max(512), z.boolean()).optional(),
         projectOrder: z.array(z.string().min(1).max(4096)).max(1000).optional(),
         recent: z.array(z.string().min(1).max(4096)).max(1000).optional(),
         agentContexts: z

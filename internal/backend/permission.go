@@ -1,6 +1,8 @@
 package backend
 
 import (
+	"fmt"
+
 	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/internal/proto"
 )
@@ -39,22 +41,37 @@ func (b *Backend) GrantPermission(workspaceID string, req proto.PermissionGrant)
 }
 
 // SetPermissionsSkip sets whether permission prompts are skipped.
-func (b *Backend) SetPermissionsSkip(workspaceID string, skip bool) error {
+func (b *Backend) SetPermissionsSkip(workspaceID string, skip bool, sessionIDs ...string) error {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
 		return err
 	}
 
-	ws.Permissions.SetSkipRequests(skip)
+	if len(sessionIDs) > 0 && sessionIDs[0] != "" {
+		scoped, ok := ws.Permissions.(permission.SessionSkipService)
+		if !ok {
+			return fmt.Errorf("session permissions are unavailable")
+		}
+		scoped.SetSessionSkipRequests(sessionIDs[0], skip)
+	} else {
+		ws.Permissions.SetSkipRequests(skip)
+	}
 	return nil
 }
 
 // GetPermissionsSkip returns whether permission prompts are skipped.
-func (b *Backend) GetPermissionsSkip(workspaceID string) (bool, error) {
+func (b *Backend) GetPermissionsSkip(workspaceID string, sessionIDs ...string) (bool, error) {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
 		return false, err
 	}
 
+	if len(sessionIDs) > 0 && sessionIDs[0] != "" {
+		scoped, ok := ws.Permissions.(permission.SessionSkipService)
+		if !ok {
+			return false, fmt.Errorf("session permissions are unavailable")
+		}
+		return scoped.SessionSkipRequests(sessionIDs[0]), nil
+	}
 	return ws.Permissions.SkipRequests(), nil
 }
