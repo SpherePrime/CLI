@@ -78,7 +78,7 @@ progress {
 
 .message.user .copy-message {
   top: auto;
-  bottom: 0;
+  bottom: -15px;
 }
 
 .message.user .message-body {
