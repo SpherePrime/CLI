@@ -16,6 +16,17 @@ import { buildAgentPrompt } from '../../../shared/agentContext'
 import { isRemoteWorkspace } from '../../../shared/remoteWorkspace'
 import { recordRecentModel } from '../features/models/modelPreferences'
 
+const resolvedLimit = 1000
+
+function rememberResolved(keys: Set<string>, key: string) {
+  keys.add(key)
+  if (keys.size <= resolvedLimit) return
+  for (const oldest of keys) {
+    keys.delete(oldest)
+    if (keys.size <= resolvedLimit) break
+  }
+}
+
 export function useWorkspace() {
   const [info, setInfo] = useState<Json>({ runtime: 'starting' })
   const [startupReady, setStartupReady] = useState(false)
@@ -55,12 +66,14 @@ export function useWorkspace() {
   const messageEvents = useRef<
     { sequence: number; workspaceId: string; action: string; message: Message }[]
   >([])
+  const messageSnapshots = useRef(0)
   const resolvedPermissions = useRef(new Set<string>())
   const resolvedQuestions = useRef(new Set<string>())
   const requestSequence = useRef(0)
   const requestEvents = useRef<
     { sequence: number; workspaceId: string; type: string; data: any }[]
   >([])
+  const requestSnapshots = useRef(0)
   current.current = { project, session }
   const errorHandler = useCallback(
     (error: unknown) =>
@@ -121,10 +134,12 @@ export function useWorkspace() {
       )
     })()
     pendingFetches.current.set(project.id, request)
+    requestSnapshots.current++
     try {
       await request
     } finally {
       pendingFetches.current.delete(project.id)
+      if (--requestSnapshots.current === 0) requestEvents.current = []
     }
   }, [])
   const queueFetches = useRef(new Map<string, Promise<void>>())
@@ -146,7 +161,7 @@ export function useWorkspace() {
       queueFetches.current.delete(key)
     }
   }, [])
-  const refresh = useCallback(async () => {
+  const loadWorkspace = useCallback(async (includeMessages: boolean) => {
     const { project, session } = current.current
     if (!project) return
     const results = await Promise.allSettled([
@@ -174,36 +189,72 @@ export function useWorkspace() {
       skills: get(6) || [],
       channels: get(7) || []
     })
-    if (session) {
+    if (!session) return
+    let active: Session[] | undefined = get(0)
+    if (includeMessages) {
       const snapshotSequence = messageSequence.current
-      const [msgs, active] = await Promise.allSettled([
-        window.prime.call(project.id, 'messages', { sessionId: session.id }),
-        window.prime.call(project.id, 'sessions')
-      ])
-      if (current.current.session?.id !== session.id) return
-      if (msgs.status === 'fulfilled') {
-        let reconciled: Message[] = msgs.value || []
-        for (const entry of messageEvents.current)
-          if (
-            entry.sequence > snapshotSequence &&
-            entry.workspaceId === project.id &&
-            entry.message.session_id === session.id
-          )
-            reconciled =
-              entry.action === 'deleted'
-                ? reconciled.filter((item) => item.id !== entry.message.id)
-                : applyMessage(reconciled, entry.message)
-        setMessages(reconciled)
-      }
-      if (active.status === 'fulfilled') {
-        const selected = active.value?.find((item: Session) => item.id === session.id)
-        if (selected) {
-          setSession(selected)
-          setBusy(Boolean(selected.is_busy))
+      messageSnapshots.current++
+      try {
+        const [msgs, latest] = await Promise.allSettled([
+          window.prime.call(project.id, 'messages', { sessionId: session.id }),
+          window.prime.call(project.id, 'sessions')
+        ])
+        if (current.current.session?.id !== session.id) return
+        if (msgs.status === 'fulfilled') {
+          let reconciled: Message[] = msgs.value || []
+          for (const entry of messageEvents.current)
+            if (
+              entry.sequence > snapshotSequence &&
+              entry.workspaceId === project.id &&
+              entry.message.session_id === session.id
+            )
+              reconciled =
+                entry.action === 'deleted'
+                  ? reconciled.filter((item) => item.id !== entry.message.id)
+                  : applyMessage(reconciled, entry.message)
+          setMessages(reconciled)
         }
+        active = latest.status === 'fulfilled' ? latest.value : undefined
+      } finally {
+        if (--messageSnapshots.current === 0) messageEvents.current = []
       }
     }
+    if (current.current.session?.id !== session.id) return
+    const selected = active?.find((item: Session) => item.id === session.id)
+    if (selected) {
+      setSession(selected)
+      setBusy(Boolean(selected.is_busy))
+    }
   }, [refreshPending, refreshQueue])
+  const refreshState = useRef<{
+    running: Promise<void> | null
+    queued: Promise<void> | null
+    queuedMessages: boolean
+  }>({ running: null, queued: null, queuedMessages: false })
+  const scheduleRefresh = useCallback(
+    (includeMessages: boolean): Promise<void> => {
+      const state = refreshState.current
+      if (!state.running) {
+        state.running = loadWorkspace(includeMessages).finally(() => {
+          state.running = null
+        })
+        return state.running
+      }
+      state.queuedMessages ||= includeMessages
+      if (!state.queued)
+        state.queued = state.running
+          .catch(() => {})
+          .then(() => {
+            const messages = state.queuedMessages
+            state.queued = null
+            state.queuedMessages = false
+            return scheduleRefresh(messages)
+          })
+      return state.queued
+    },
+    [loadWorkspace]
+  )
+  const refresh = useCallback(() => scheduleRefresh(true), [scheduleRefresh])
   useEffect(() => {
     async function restoreWorkspace() {
       const saved = await window.prime.preferences()
@@ -366,7 +417,8 @@ export function useWorkspace() {
           'permission_notification',
           'question_batch_request',
           'question_batch_notification'
-        ].includes(event.type)
+        ].includes(event.type) &&
+        requestSnapshots.current > 0
       ) {
         requestEvents.current.push({
           sequence: ++requestSequence.current,
@@ -382,13 +434,16 @@ export function useWorkspace() {
         return
       }
       if (event.type === 'message') {
-        messageEvents.current.push({
-          sequence: ++messageSequence.current,
-          workspaceId: event.workspaceId,
-          action: event.payload.action,
-          message: payload
-        })
-        if (messageEvents.current.length > 10000) messageEvents.current.splice(0, 5000)
+        ++messageSequence.current
+        if (messageSnapshots.current > 0) {
+          messageEvents.current.push({
+            sequence: messageSequence.current,
+            workspaceId: event.workspaceId,
+            action: event.payload.action,
+            message: payload
+          })
+          if (messageEvents.current.length > 2000) messageEvents.current.splice(0, 1000)
+        }
         if (payload?.session_id === current.current.session?.id)
           setMessages((items) =>
             event.payload.action === 'deleted'
@@ -422,7 +477,7 @@ export function useWorkspace() {
       if (event.type === 'permission_notification' && !payload.granted && !payload.denied)
         void refreshPending().catch(() => {})
       if (event.type === 'permission_notification' && (payload.granted || payload.denied)) {
-        resolvedPermissions.current.add(`${event.workspaceId}:${payload.tool_call_id}`)
+        rememberResolved(resolvedPermissions.current, `${event.workspaceId}:${payload.tool_call_id}`)
         setPermissions((items) =>
           items.filter((item) => item.tool_call_id !== payload.tool_call_id)
         )
@@ -430,7 +485,7 @@ export function useWorkspace() {
       if (event.type === 'question_batch_request')
         setQuestions((items) => [...items.filter((item) => item.id !== payload.id), payload])
       if (event.type === 'question_batch_notification') {
-        resolvedQuestions.current.add(`${event.workspaceId}:${payload.batch_id}`)
+        rememberResolved(resolvedQuestions.current, `${event.workspaceId}:${payload.batch_id}`)
         setQuestions((items) => items.filter((item) => item.id !== payload.batch_id))
       }
       if (
@@ -471,9 +526,12 @@ export function useWorkspace() {
   }, [preferences.density, preferences.reduceMotion])
   useEffect(() => {
     if (!project) return
-    const timer = setInterval(() => void refresh().catch(() => {}), 10000)
+    const timer = setInterval(() => {
+      if (document.hidden) return
+      void scheduleRefresh(current.current.project?.connection !== 'ready').catch(() => {})
+    }, 10000)
     return () => clearInterval(timer)
-  }, [project?.id, refresh])
+  }, [project?.id, scheduleRefresh])
   async function openProject(path?: string) {
     await openWorkspace(() => window.prime.openProject(path))
   }
