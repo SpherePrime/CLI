@@ -401,6 +401,7 @@ export const english: Record<string, string> = {
   'Prime работает': 'Prime is working',
   'Работал {time}': 'Worked for {time}',
   'Новые сообщения': 'New messages',
+  'Предыдущие сообщения': 'Previous messages',
   '· рассуждения': '· reasoning',
   'Среда выполнения': 'Runtime',
   'Prime был перезапущен. Незавершённые задачи остановлены; повторный запуск выполняется вручную.':
@@ -629,7 +630,6 @@ export const english: Record<string, string> = {
     'Total reported by the provider; the breakdown is approximate.',
   'Провайдер не сообщил расход, показана оценка.':
     'The provider did not report usage; showing an estimate.',
-  'Сжатие контекста': 'Context compaction',
   'Автоматическое сжатие контекста, это может занять несколько минут…':
     'Automatic context compaction, this may take a few minutes…',
   'Сжать контекст сейчас': 'Compact context now',
