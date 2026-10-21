@@ -19,6 +19,11 @@ export class ActivityTracker {
     const key = `${workspaceId}:${runId}`
     this.runs.delete(key)
     this.terminal.add(key)
+    if (this.terminal.size > 5000)
+      for (const oldest of this.terminal) {
+        this.terminal.delete(oldest)
+        if (this.terminal.size <= 4000) break
+      }
   }
   isBusy(): boolean {
     return this.runs.size > 0

@@ -1,17 +1,12 @@
-import { MessageAttachment } from './MessageAttachment'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useI18n } from '../../i18n'
-import { PrimeLogo } from '../../components/PrimeLogo'
-import { ToolCard } from './ToolCard'
 import { consolidateToolMessages } from '../../../../shared/toolMessages'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Check, Copy, ArrowDown } from 'lucide-react'
-import { ReasoningBlock } from './ReasoningBlock'
-import { clock, useElapsedSeconds } from './elapsed'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { ArrowDown } from 'lucide-react'
 import type { Message } from '../../../../shared/contracts'
-import { textContent, visibleMessageText } from '../../../../shared/messages'
+import { MessageItem } from './MessageItem'
+import { WorkingIndicator } from './WorkingIndicator'
+import { reuseUnchanged } from './stableMessages'
 import { findMessages } from '../../../../shared/workspaceTools'
 import { ConversationSearch } from './ConversationSearch'
 
@@ -29,20 +24,20 @@ export function MessageList({
   closeSearch?: () => void
 }) {
   const viewport = useRef<HTMLDivElement>(null)
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const [following, setFollowing] = useState(true)
   const followingRef = useRef(true)
   const leavingBottom = useRef(false)
-  const [copied, setCopied] = useState('')
-  const visible = useMemo(() => consolidateToolMessages(messages), [messages])
+  const stable = useRef<Message[]>([])
+  const visible = useMemo(
+    () => (stable.current = reuseUnchanged(stable.current, consolidateToolMessages(messages))),
+    [messages]
+  )
   const [query, setQuery] = useState('')
   const [matchIndex, setMatchIndex] = useState(0)
   const matches = useMemo(() => findMessages(visible, query), [visible, query])
   const activeMatch = Math.min(matchIndex, Math.max(0, matches.length - 1))
   const matchId = searchOpen ? matches[activeMatch] : undefined
-  const [busySince, setBusySince] = useState<number | null>(null)
-  useEffect(() => setBusySince(busy ? Date.now() : null), [busy])
-  const working = useElapsedSeconds(busySince)
   const mountedAt = useRef(Date.now())
   const virtualizer = useVirtualizer({
     count: visible.length,
@@ -162,131 +157,18 @@ export function MessageList({
                     transform: `translateY(${row.start}px)`
                   }}
                 >
-                  <article
-                    className={`message ${message.role} ${continued ? 'continued' : ''} ${fresh ? 'fresh' : ''} ${message.id === matchId ? 'search-match' : ''}`}
-                    key={message.id}
-                  >
-                    {!continued && (
-                      <div className="message-author">
-                        {message.role === 'user' ? (
-                          <span className="user-avatar">{t('Вы').slice(0, 1)}</span>
-                        ) : (
-                          <span className="prime-avatar">
-                            <PrimeLogo />
-                          </span>
-                        )}
-                        <strong>
-                          {message.role === 'user'
-                            ? t('Вы')
-                            : message.role === 'tool'
-                              ? t('Инструмент')
-                              : 'Prime'}
-                        </strong>
-                        {message.created_at && (
-                          <time>
-                            {new Date(message.created_at * 1000).toLocaleTimeString(locale, {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </time>
-                        )}
-                      </div>
-                    )}
-                    <div className="message-body">
-                      {(message.parts || []).map((part, index) => {
-                        if (part.type === 'text' && !part.data.hidden)
-                          return (
-                            <div className="markdown" key={index}>
-                              <Markdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                  a: ({ href, children }) => (
-                                    <a
-                                      href={href}
-                                      onClick={(event) => {
-                                        event.preventDefault()
-                                        if (href) void window.prime.openExternal(href)
-                                      }}
-                                    >
-                                      {children}
-                                    </a>
-                                  )
-                                }}
-                              >
-                                {visibleMessageText(part.data.text || '', message.role)}
-                              </Markdown>
-                            </div>
-                          )
-                        if (part.type === 'reasoning' && part.data.thinking)
-                          return (
-                            <ReasoningBlock
-                              key={index}
-                              thinking={part.data.thinking}
-                              startedAt={part.data.started_at}
-                              finishedAt={part.data.finished_at}
-                              live={busy && last && !part.data.finished_at}
-                            />
-                          )
-                        if (['tool_call', 'tool_result', 'shell_command'].includes(part.type))
-                          return <ToolCard key={index} part={part} />
-                        if (
-                          part.type === 'finish' &&
-                          ['error', 'canceled'].includes(part.data.reason)
-                        )
-                          return (
-                            <div key={index} className="finish-note">
-                              {part.data.reason === 'canceled'
-                                ? t('Задача остановлена')
-                                : part.data.message || t('Ошибка выполнения')}
-                            </div>
-                          )
-                        if (part.type === 'image_url')
-                          return (
-                            <div key={index} className="attachment-note">
-                              {t('Изображение:')}{' '}
-                              {part.data.url?.startsWith('data:') ? (
-                                <img src={part.data.url} alt={t('Вложенное изображение')} />
-                              ) : (
-                                part.data.url
-                              )}
-                            </div>
-                          )
-                        if (part.type === 'binary')
-                          return <MessageAttachment key={index} data={part.data} />
-                        return null
-                      })}
-                    </div>
-                    {textContent(message) && (
-                      <button
-                        className="copy-message icon"
-                        aria-label={t('Скопировать сообщение')}
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(textContent(message))
-                          setCopied(message.id)
-                          setTimeout(() => setCopied(''), 1500)
-                        }}
-                      >
-                        {copied === message.id ? <Check size={14} /> : <Copy size={14} />}
-                      </button>
-                    )}
-                  </article>
+                  <MessageItem
+                    message={message}
+                    continued={continued}
+                    fresh={fresh}
+                    live={busy && last}
+                    matched={message.id === matchId}
+                  />
                 </div>
               )
             })}
           </div>
-          {(busy || waiting) && (
-            <div className="working" role="status">
-              <span className="working-orb" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </span>
-              <span className="working-label">
-                {waiting ? t('Ожидается подтверждение') : t('Prime работает')}
-              </span>
-              {busy && !waiting && <span className="working-time">{clock(working)}</span>}
-            </div>
-          )}
+          <WorkingIndicator busy={busy} waiting={waiting} />
         </div>
       </div>
       {!following && (

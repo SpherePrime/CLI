@@ -76,12 +76,17 @@ export function BrowserTab({
     const element = viewport.current
     if (!element) return
     let frame = 0
+    let applied = ''
     const sync = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         const rect = visibleRect(element)
         const covered = Boolean(document.querySelector(overlaySelector))
-        if (covered || !rect || !state.url) void window.prime.browserHide()
+        const hidden = covered || !rect || !state.url
+        const next = hidden ? 'hidden' : JSON.stringify(rect)
+        if (next === applied) return
+        applied = next
+        if (hidden) void window.prime.browserHide()
         else void window.prime.browserShow(rect)
       })
     }

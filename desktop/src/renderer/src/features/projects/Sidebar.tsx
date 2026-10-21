@@ -37,7 +37,9 @@ export function Sidebar({
         .then((jobs) => setActiveJobs(jobs.filter((job) => ['queued', 'running', 'waiting'].includes(job.status)).length))
         .catch(() => {})
     load()
-    const timer = setInterval(load, 5000)
+    const timer = setInterval(() => {
+      if (!document.hidden) load()
+    }, 5000)
     return () => clearInterval(timer)
   }, [w.info.runtime])
   return (
