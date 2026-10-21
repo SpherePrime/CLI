@@ -429,6 +429,100 @@ func (v *VoiceOptions) IsEnabled() bool {
 	return v == nil || v.Enabled == nil || *v.Enabled
 }
 
+// Image generation defaults shared by the config layer and the tool.
+const (
+	DefaultImageGenModel   = "gpt-image-1"
+	DefaultImageGenBaseURL = "https://api.openai.com/v1"
+	// DefaultImageGenTimeoutMs bounds one image API request.
+	DefaultImageGenTimeoutMs = 180_000
+)
+
+// ImageGenOptions configures the built-in generate_image tool. It talks to any
+// OpenAI-compatible POST {base_url}/images/generations endpoint and saves the
+// results to disk.
+type ImageGenOptions struct {
+	// APIKey authorizes BaseURL. May be an environment variable reference.
+	APIKey string `json:"api_key,omitempty" jsonschema:"description=API key for options.image_gen.base_url, may reference a variable like $OPENAI_API_KEY"`
+	// Model is the image model name the endpoint expects.
+	Model string `json:"model,omitempty" jsonschema:"description=Image model name,default=gpt-image-1,example=gpt-image-1"`
+	// BaseURL points at an OpenAI-compatible API root such as
+	// https://api.openai.com/v1.
+	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of an OpenAI-compatible image generation endpoint,example=https://api.openai.com/v1"`
+	// OutputDir is the default directory for generated images. Relative
+	// paths resolve against the working directory.
+	OutputDir string `json:"output_dir,omitempty" jsonschema:"description=Default directory for generated images; relative paths resolve against the working directory,example=./generated-images"`
+	// ResponseFormat asks the API for b64_json or url results. Leave empty
+	// for providers that reject the response_format parameter.
+	ResponseFormat string `json:"response_format,omitempty" jsonschema:"description=Response format to request from the API; leave empty for providers that reject the response_format parameter,enum=b64_json,enum=url"`
+	// Size is the default image size when a tool call does not specify one.
+	Size string `json:"size,omitempty" jsonschema:"description=Default image size when the tool call does not specify one,example=1024x1024"`
+	// TimeoutMs bounds one image API request in milliseconds.
+	TimeoutMs int `json:"timeout_ms,omitempty" jsonschema:"description=Timeout in milliseconds for one image API request,default=180000,example=300000"`
+}
+
+// GetModel returns the configured image model or the default.
+func (o *ImageGenOptions) GetModel() string {
+	if o == nil || strings.TrimSpace(o.Model) == "" {
+		return DefaultImageGenModel
+	}
+	return strings.TrimSpace(o.Model)
+}
+
+// GetBaseURL returns the configured API root or the default, without a
+// trailing slash.
+func (o *ImageGenOptions) GetBaseURL() string {
+	value := DefaultImageGenBaseURL
+	if o != nil && strings.TrimSpace(o.BaseURL) != "" {
+		value = strings.TrimSpace(o.BaseURL)
+	}
+	return strings.TrimRight(value, "/")
+}
+
+// GetOutputDir returns the configured default output directory or an empty
+// string, which means the tool falls back to ./generated-images.
+func (o *ImageGenOptions) GetOutputDir() string {
+	if o == nil {
+		return ""
+	}
+	return strings.TrimSpace(o.OutputDir)
+}
+
+// GetResponseFormat returns the configured response format. Anything other
+// than b64_json or url means "do not send the parameter".
+func (o *ImageGenOptions) GetResponseFormat() string {
+	if o == nil {
+		return ""
+	}
+	switch format := strings.TrimSpace(o.ResponseFormat); format {
+	case "b64_json", "url":
+		return format
+	default:
+		return ""
+	}
+}
+
+// GetSize returns the configured default size or an empty string.
+func (o *ImageGenOptions) GetSize() string {
+	if o == nil {
+		return ""
+	}
+	return strings.TrimSpace(o.Size)
+}
+
+// GetTimeout returns the configured request timeout or the default.
+func (o *ImageGenOptions) GetTimeout() time.Duration {
+	if o == nil || o.TimeoutMs <= 0 {
+		return DefaultImageGenTimeoutMs * time.Millisecond
+	}
+	return time.Duration(o.TimeoutMs) * time.Millisecond
+}
+
+// IsConfigured reports whether image generation has an API key. The value may
+// still be a $VAR reference; resolution happens through the config resolver.
+func (o *ImageGenOptions) IsConfigured() bool {
+	return o != nil && strings.TrimSpace(o.APIKey) != ""
+}
+
 // Diff mode options.
 const (
 	DiffModeUnified = "unified" // Inline unified diffs
@@ -510,6 +604,7 @@ type Options struct {
 	DisabledSkills            []string      `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=prime-config"`
 	Language                  string        `json:"language,omitempty" jsonschema:"description=UI language. Options: en (default), ru.,enum=en,enum=ru,default=en"`
 	Voice                     *VoiceOptions `json:"voice,omitempty" jsonschema:"description=Voice dictation settings for the TUI"`
+	ImageGen                  *ImageGenOptions `json:"image_gen,omitempty" jsonschema:"description=Built-in image generation settings for the generate_image tool"`
 	AutoUpdate                bool          `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
 	SmartTools                bool          `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
 	RequestTimeout            *int          `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. A model that reasons before its first token sends no stream parts while it thinks\\, so this also caps how long one silent thinking phase may last. 0 disables it\\, negative values are invalid.,default=120,example=300,example=600,example=0"`
@@ -1267,6 +1362,7 @@ func allToolNames() []string {
 		"lsp_replace_symbol",
 		"fetch",
 		"agentic_fetch",
+		"generate_image",
 		"glob",
 		"grep",
 		"ls",
