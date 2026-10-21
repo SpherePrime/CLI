@@ -18,7 +18,8 @@ import {
   Sun,
   Moon,
   Download,
-  AudioLines
+  AudioLines,
+  Keyboard
 } from 'lucide-react'
 import { VoiceSettings } from './VoiceSettings'
 import { Modal } from '../../components/Modal'
@@ -38,6 +39,7 @@ export function SettingsDialog({
   const [scope] = useState(0)
   const tabs = [
     { id: 'appearance', label: t('Интерфейс'), icon: Monitor },
+    { id: 'shortcuts', label: t('Горячие клавиши'), icon: Keyboard },
     { id: 'providers', label: t('Провайдеры'), icon: Server },
     { id: 'voice', label: t('Голос'), icon: AudioLines },
     { id: 'mcp', label: 'MCP', icon: Boxes },
@@ -152,9 +154,9 @@ export function SettingsDialog({
                   />
                 </label>
               </div>
-              <ShortcutSettings workspace={w} />
             </>
           )}
+          {tab === 'shortcuts' && <ShortcutSettings workspace={w} />}
           {tab === 'providers' && <ProviderSettings workspace={w} scope={scope} />}
           {tab === 'advanced' && <PrimeSettings workspace={w} />}
           {(['mcp', 'lsp', 'skills'] as const).map(

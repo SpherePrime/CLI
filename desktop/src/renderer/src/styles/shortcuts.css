@@ -1,14 +1,12 @@
-.shortcut-settings {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
+.shortcut-settings > header h3 {
+  margin: 0;
 }
 .shortcut-settings > header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 .shortcut-settings > header > div {
   display: flex;

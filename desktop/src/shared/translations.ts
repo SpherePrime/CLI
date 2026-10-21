@@ -1,4 +1,5 @@
 export const english: Record<string, string> = {
+  'Горячие клавиши': 'Shortcuts',
   'Открыть настройки': 'Open settings',
   'Сохранить файл': 'Save file',
   'Увеличить масштаб': 'Zoom in',

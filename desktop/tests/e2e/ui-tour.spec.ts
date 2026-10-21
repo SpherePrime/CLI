@@ -93,6 +93,7 @@ for (const [prefix, width, height] of sizes)
         await page.locator('dialog[open]').waitFor()
         await shot(page, prefix, '11-settings-0')
         for (const [index, name] of [
+          'Горячие клавиши',
           'Провайдеры',
           'Голос',
           'MCP',
