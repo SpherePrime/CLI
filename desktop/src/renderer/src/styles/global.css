@@ -1185,8 +1185,8 @@ dialog.image-lightbox::backdrop {
   animation: lightbox-backdrop-in 160ms ease-out;
 }
 .image-lightbox img {
-  max-width: min(86vw, 1600px);
-  max-height: 86vh;
+  max-width: min(62vw, 1100px);
+  max-height: 74vh;
   object-fit: contain;
   display: block;
 }
