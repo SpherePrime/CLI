@@ -643,3 +643,15 @@ dialog.modal,
   font-size: 11px;
   color: var(--muted);
 }
+
+.conversation {
+  scrollbar-gutter: stable both-edges;
+}
+.message-rows > div > *,
+.conversation-inner > .working {
+  margin-inline: 16px;
+}
+.message-body,
+.working {
+  padding-left: 0;
+}
