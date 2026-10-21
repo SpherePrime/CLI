@@ -1056,6 +1056,10 @@ type Config struct {
 	// selecting another model cannot drop them.
 	ModelSettings map[string]ModelSettings `json:"model_settings,omitempty" jsonschema:"description=Per-model context window and price overrides, keyed by provider|model"`
 
+	// Model chosen inside a specific chat, keyed by session ID. Sessions
+	// without an entry run on the shared Models selection.
+	SessionModels map[string]SelectedModel `json:"session_models,omitempty" jsonschema:"description=Model selected for a specific chat, keyed by session ID"`
+
 	// The providers that are configured
 	Providers *csync.Map[string, ProviderConfig] `json:"providers,omitempty" jsonschema:"description=AI provider configurations"`
 
@@ -1117,6 +1121,7 @@ func (c *Config) cloneForWrite() *Config {
 	nc.Models = maps.Clone(c.Models)
 	nc.RecentModels = maps.Clone(c.RecentModels)
 	nc.ModelSettings = maps.Clone(c.ModelSettings)
+	nc.SessionModels = maps.Clone(c.SessionModels)
 	nc.MCP = maps.Clone(c.MCP)
 	if c.Options != nil {
 		opts := *c.Options
