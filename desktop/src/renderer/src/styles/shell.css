@@ -3,6 +3,7 @@
 }
 
 .titlebar {
+  position: relative;
   height: var(--topbar-height);
   min-height: var(--topbar-height);
   padding-left: env(titlebar-area-x, 0px);
@@ -136,6 +137,7 @@
   margin-left: auto;
 }
 .workspace-topbar .header-actions {
+  margin-left: auto;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -146,6 +148,18 @@
   height: 18px;
   margin: 0 4px;
   background: var(--border);
+}
+@media (min-width: 961px) {
+  .topbar-search {
+    position: absolute;
+    left: 50%;
+    translate: -50% 0;
+    width: clamp(220px, 24vw, 300px);
+    margin-left: 0;
+  }
+  .workspace-topbar .breadcrumbs {
+    max-width: max(0px, calc(50vw - 340px));
+  }
 }
 
 .main-workspace > .conversation-panel,
