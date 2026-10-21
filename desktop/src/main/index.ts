@@ -61,6 +61,9 @@ import { JobCenter } from './jobs/center'
 import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
 import { importImages } from './attachments/images'
+import { configureDevelopmentProfile } from './developmentProfile'
+
+configureDevelopmentProfile(app)
 
 let window: BrowserWindow | null = null
 let tray: Tray | null = null
