@@ -1261,6 +1261,16 @@ dialog.image-lightbox::backdrop {
   padding: 8px 12px;
   max-width: 640px;
 }
+.compaction-label {
+  font-size: 12px;
+  color: var(--secondary);
+  margin-bottom: 6px;
+}
+.compaction-details .markdown {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
 .compaction-details summary {
   display: flex;
   align-items: center;
@@ -1274,12 +1284,6 @@ dialog.image-lightbox::backdrop {
   margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
-}
-.compaction-details .markdown {
-  font-size: 12px;
-  color: var(--muted);
-  max-height: 320px;
-  overflow-y: auto;
 }
 .working {
   display: flex;
