@@ -76,16 +76,9 @@ progress {
   margin-right: 31px;
 }
 
-.message.user .message-row {
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: flex-start;
-  gap: 7px;
-}
-
 .message.user .copy-message {
-  position: static;
-  margin-top: 10px;
+  top: auto;
+  bottom: 0;
 }
 
 .message.user .message-body {

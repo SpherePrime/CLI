@@ -73,8 +73,7 @@ export const MessageItem = memo(function MessageItem({
           )}
         </div>
       )}
-      <div className="message-row">
-        <div className="message-body">
+      <div className="message-body">
         {(message.parts || []).map((part, index) => {
           if (part.type === 'text' && !part.data.hidden)
             return (
@@ -118,22 +117,21 @@ export const MessageItem = memo(function MessageItem({
           if (part.type === 'binary') return <MessageAttachment key={index} data={part.data} />
           return null
         })}
-        </div>
-        {text && (
-          <button
-            className="copy-message icon"
-            aria-label={t('Скопировать сообщение')}
-            onClick={async () => {
-              await navigator.clipboard.writeText(text)
-              setCopied(true)
-              clearTimeout(copiedTimer.current)
-              copiedTimer.current = setTimeout(() => setCopied(false), 1500)
-            }}
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-          </button>
-        )}
       </div>
+      {text && (
+        <button
+          className="copy-message icon"
+          aria-label={t('Скопировать сообщение')}
+          onClick={async () => {
+            await navigator.clipboard.writeText(text)
+            setCopied(true)
+            clearTimeout(copiedTimer.current)
+            copiedTimer.current = setTimeout(() => setCopied(false), 1500)
+          }}
+        >
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+        </button>
+      )}
     </article>
   )
 })

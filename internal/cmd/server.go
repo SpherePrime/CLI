@@ -8,10 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/SpherePrime/CLI/internal/config"
 	primelog "github.com/SpherePrime/CLI/internal/log"
+	"github.com/SpherePrime/CLI/internal/proctree"
 	"github.com/SpherePrime/CLI/internal/server"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
 	"github.com/SpherePrime/CLI/vendordeps/spf13/cobra"
@@ -72,6 +74,8 @@ var serverCmd = &cobra.Command{
 		select {
 		case <-sigch:
 			slog.Info("Received interrupt signal...")
+		case <-parentExited():
+			slog.Info("Parent process exited...")
 		case err = <-errch:
 			if err != nil && !errors.Is(err, server.ErrServerClosed) {
 				_ = srv.Close()
@@ -96,4 +100,13 @@ var serverCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func parentExited() <-chan struct{} {
+	pid, err := strconv.Atoi(os.Getenv("PRIME_PARENT_PID"))
+	_ = os.Unsetenv("PRIME_PARENT_PID")
+	if err != nil || pid <= 0 {
+		return nil
+	}
+	return proctree.WaitExit(pid)
 }

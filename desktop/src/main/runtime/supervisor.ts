@@ -50,7 +50,7 @@ export class RuntimeSupervisor {
       windowsHide: true,
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, PRIME_DISABLE_METRICS: '1' }
+      env: { ...process.env, PRIME_DISABLE_METRICS: '1', PRIME_PARENT_PID: String(process.pid) }
     })
     this.process.stdout?.on('data', () => {})
     this.process.stderr?.on('data', (chunk: Buffer) => {

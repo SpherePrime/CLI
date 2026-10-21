@@ -938,6 +938,7 @@ func createSession(ctx context.Context, cfg *config.ConfigStore, name string, m 
 		cancelTimer.Stop()
 		return nil, err
 	}
+	transport = withProcessTree(transport)
 
 	// If the caller requested a browser-suppressed flow (server-driven
 	// remote auth), suppress the handler's local browser open; the caller
