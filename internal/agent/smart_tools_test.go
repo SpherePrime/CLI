@@ -136,6 +136,7 @@ func TestCoderPromptSwitchesCapabilitySections(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, standard, "<skills_usage>")
 	require.Contains(t, standard, "LOAD MATCHING SKILLS")
+	require.Contains(t, standard, "BEFORE EVERY TASK, first check for a relevant skill")
 	require.NotContains(t, standard, "<tool_search>")
 
 	cfg.Config().Options.SmartTools = true
@@ -144,8 +145,22 @@ func TestCoderPromptSwitchesCapabilitySections(t *testing.T) {
 	require.Contains(t, searching, "<tool_search>")
 	require.Contains(t, searching, "DISCOVER BEFORE ACTING")
 	require.Contains(t, searching, "search_skills")
+	require.Contains(t, searching, "BEFORE EVERY TASK, first check for a relevant skill")
 	require.NotContains(t, searching, "<skills_usage>")
 
 	// Discovery mode has to pay for itself in prompt size.
 	require.Less(t, len(searching), len(standard))
+}
+
+func TestPlanPromptRequiresSkillCheckInBothToolModes(t *testing.T) {
+	env := testEnv(t)
+	cfg := writeSmartToolsConfig(t, env.workingDir)
+	p, err := planPrompt(prompt.WithWorkingDir(env.workingDir))
+	require.NoError(t, err)
+	for _, smart := range []bool{false, true} {
+		cfg.Config().Options.SmartTools = smart
+		built, err := p.Build(context.Background(), "mock", "mock-model", cfg)
+		require.NoError(t, err)
+		require.Contains(t, built, "BEFORE EVERY TASK, first check for a relevant skill")
+	}
 }
