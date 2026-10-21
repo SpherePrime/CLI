@@ -63,7 +63,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   useModalWindowChrome()
   const [editorFraction, setEditorFraction] = useState(1.2)
   const [modal, setModal] = useState('')
-  const [collapsed, setCollapsedState] = useState({ sidebar: false, inspector: false })
+  const [collapsed, setCollapsedState] = useState({ sidebar: true, inspector: true })
   const [inspector, setInspector] = useState(true)
   const [focusMode, setFocusMode] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -73,46 +73,24 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const showSidebar = !focusMode
   const showInspector = inspector && !focusMode
   const showEditor = documents.documents.length > 0 && !focusMode
-  useEffect(() => {
-    setInspector(w.preferences.inspectorVisible !== false)
-    setCollapsedState({
-      sidebar: w.preferences.sidebarCollapsed ?? w.preferences.sidebarVisible === false,
-      inspector: w.preferences.inspectorCollapsed === true
-    })
-  }, [
-    w.preferences.sidebarVisible,
-    w.preferences.inspectorVisible,
-    w.preferences.sidebarCollapsed,
-    w.preferences.inspectorCollapsed
-  ])
   useEffect(() => setSearchOpen(false), [w.session?.id])
-  function setCollapsed(which: 'sidebar' | 'inspector', value: boolean, persist = false) {
+  function setCollapsed(which: 'sidebar' | 'inspector', value: boolean) {
     setCollapsedState((current) =>
       current[which] === value ? current : { ...current, [which]: value }
     )
-    if (persist)
-      void w
-        .savePreferences(
-          which === 'sidebar'
-            ? { sidebarCollapsed: value, sidebarVisible: true }
-            : { inspectorCollapsed: value }
-        )
-        .catch(w.errorHandler)
   }
   function toggleSidebar() {
     if (focusMode) return setFocusMode(false)
     if (layout.compact) return window.dispatchEvent(new Event('prime:projects-flyout'))
-    setCollapsed('sidebar', !collapsed.sidebar, true)
+    setCollapsed('sidebar', !collapsed.sidebar)
   }
   function toggleInspector() {
     if (focusMode || collapsed.inspector) {
       setFocusMode(false)
-      setCollapsed('inspector', false, collapsed.inspector)
+      setCollapsed('inspector', false)
       if (inspector) return
     }
-    const next = focusMode ? true : !inspector
-    setInspector(next)
-    void w.savePreferences({ inspectorVisible: next }).catch(w.errorHandler)
+    setInspector(focusMode ? true : !inspector)
   }
   function openTools(view: WorkbenchView) {
     setWorkbenchView(view)
