@@ -550,3 +550,40 @@ dialog.modal,
   gap: 8px;
   padding: 10px 4px;
 }
+
+.inspector-rail.panel-open > .inspector-header,
+.inspector-rail.panel-open > .inspector-content:not([hidden]),
+.inspector-rail.panel-open > .inspector-browser,
+.inspector-rail.panel-open > .inspector-footer {
+  right: calc(100% + var(--panel-gutter, 8px));
+  border: 1px solid var(--panel-border);
+  border-left: 1px solid var(--panel-border);
+  box-shadow: -16px 0 40px #0004;
+}
+.inspector-rail.panel-open > .inspector-header {
+  top: -1px;
+  border-bottom: 0;
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+}
+.inspector-rail.panel-open > .inspector-content,
+.inspector-rail.panel-open > .inspector-browser {
+  bottom: -1px;
+  border-top: 0;
+  border-radius: 0 0 var(--panel-radius) var(--panel-radius);
+}
+.inspector-rail.panel-open:has(.inspector-footer) > .inspector-content {
+  bottom: 39px;
+  border-bottom: 0;
+  border-radius: 0;
+}
+.inspector-rail.panel-open > .inspector-footer {
+  bottom: -1px;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--panel-radius) var(--panel-radius);
+}
+.project-flyout {
+  top: -1px;
+  bottom: -1px;
+  left: calc(100% + var(--panel-gutter, 8px));
+  box-shadow: 16px 0 40px #0004;
+}

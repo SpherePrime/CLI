@@ -41,22 +41,31 @@ export function Inspector({
   close,
   openDocument,
   compact = false,
-  browserRequest = 0
+  browserRequest = 0,
+  onExpand
 }: {
   workspace: Workspace
   close: () => void
   openDocument: (workspaceId: string, path: string, diff?: any) => Promise<void>
   compact?: boolean
   browserRequest?: number
+  onExpand?: () => void
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
   const [panelOpen, setPanelOpen] = useState(false)
   const panel = useRef<HTMLElement>(null)
   useEffect(() => {
+    const toggle = () => setPanelOpen((value) => !value)
+    window.addEventListener('prime:inspector-panel', toggle)
+    return () => window.removeEventListener('prime:inspector-panel', toggle)
+  }, [])
+  useEffect(() => {
     if (!compact || !panelOpen) return
     const pointer = (event: PointerEvent) => {
-      if (!panel.current?.contains(event.target as Node)) setPanelOpen(false)
+      const target = event.target as Element
+      if (!panel.current?.contains(target) && !target.closest?.('[data-inspector-toggle]'))
+        setPanelOpen(false)
     }
     const keyboard = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -85,7 +94,7 @@ export function Inspector({
   useEffect(() => {
     if (browserRequest) {
       setTab('browser')
-      setPanelOpen(true)
+      if (!onExpand) setPanelOpen(true)
     }
   }, [browserRequest])
   useEffect(() => setOpened([]), [w.project?.id])
@@ -248,6 +257,7 @@ export function Inspector({
             aria-expanded={compact ? panelOpen && tab === item.id : undefined}
             onClick={() => {
               setTab(item.id)
+              if (compact && onExpand) return onExpand()
               setPanelOpen(!panelOpen || tab !== item.id)
             }}
           >
