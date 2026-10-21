@@ -42,6 +42,7 @@ type PromptDat struct {
 	AvailSkillXML      string
 	SmartTools         bool
 	InstructionTools   bool
+	Desktop            bool
 }
 
 type ContextFile struct {
@@ -93,6 +94,9 @@ func (p *Prompt) Build(ctx context.Context, provider, model string, store *confi
 	}
 	if err := t.Execute(&sb, d); err != nil {
 		return "", fmt.Errorf("executing template: %w", err)
+	}
+	if d.Desktop && (p.name == "coder" || p.name == "plan") {
+		sb.WriteString(desktopContext)
 	}
 	if remote := store.Config().Options.RemoteWorkspace; remote != nil {
 		sb.WriteString(remoteWorkspaceContext(remote))
@@ -180,6 +184,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 			WorkingDir: remote.Root,
 			Platform:   "linux",
 			Date:       p.now().Format("1/2/2006"),
+			Desktop:    os.Getenv("PRIME_DESKTOP") == "1",
 		}
 		for _, files := range loadContextFiles(cfg.Options.GlobalContextPaths, store) {
 			data.GlobalContextFiles = append(data.GlobalContextFiles, files...)
@@ -235,6 +240,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 		AvailSkillXML:    availSkillXML,
 		SmartTools:       cfg.Options.SmartTools,
 		InstructionTools: instructionToolsAvailable(*cfg, p.name),
+		Desktop:          os.Getenv("PRIME_DESKTOP") == "1",
 	}
 	if isGit {
 		var err error
