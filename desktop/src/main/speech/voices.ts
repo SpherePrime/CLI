@@ -54,7 +54,7 @@ export async function listVoices(): Promise<SpeechVoice[]> {
 export async function importVoice(path: string): Promise<SpeechVoice> {
   if ((await stat(path)).size > 5 * 1024 * 1024) throw new Error('Файл голоса больше 5 МБ')
   const value = JSON.parse(await readFile(path, 'utf8'))
-  if (!validStyle(value)) throw new Error('Это не стиль голоса Supertonic (нужны style_ttl и style_dp)')
+  if (!validStyle(value)) throw new Error('Это не стиль голоса (нужны style_ttl и style_dp)')
   const name = basename(path, extname(path)).slice(0, 60)
   const id = slugify(name)
   await mkdir(directory(), { recursive: true })

@@ -207,7 +207,7 @@ const speech = new SpeechService(
   async () => {
     const result = await dialog.showOpenDialog(window!, {
       properties: ['openFile'],
-      title: t('Стиль голоса Supertonic'),
+      title: t('Стиль голоса'),
       filters: [{ name: 'JSON', extensions: ['json'] }]
     })
     return result.canceled ? undefined : result.filePaths[0]
