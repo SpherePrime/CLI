@@ -48,7 +48,7 @@ export function Select({
         }}
       >
         <span>{options.find((item) => item.value === value)?.label || value}</span>
-        <ChevronDown size={14} />
+        <ChevronDown className="menu-chevron" size={14} aria-hidden="true" />
       </button>
       {open && (
         <Popover

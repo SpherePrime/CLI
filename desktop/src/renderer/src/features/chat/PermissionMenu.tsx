@@ -28,7 +28,7 @@ export function PermissionMenu({
       >
         {skip ? <ShieldOff size={15} /> : <ShieldCheck size={15} />}
         <span>{skip ? t('Полный доступ') : t('С подтверждением')}</span>
-        <ChevronDown size={11} />
+        <ChevronDown className="menu-chevron" size={11} aria-hidden="true" />
       </button>
       {open && (
         <Popover anchor={anchor} close={() => setOpen(false)} width={330}>
