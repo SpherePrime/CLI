@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Check, ChevronDown, LoaderCircle, Terminal, X } from 'lucide-react'
 import { toolTitle } from './toolTitle'
 import type { Message } from '../../../../shared/contracts'
@@ -14,6 +15,7 @@ function parameters(value: unknown) {
 
 export function ToolCard({ part }: { part: Message['parts'][number] }) {
   const { t } = useI18n()
+  const [open, setOpen] = useState(false)
   const data = part.data
   const isShell = part.type === 'shell_command'
   const standalone = part.type === 'tool_result'
@@ -29,7 +31,10 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
     : toolTitle(String(data.name || ''), input, t)
   const Icon = title.icon
   return (
-    <details className={`tool-card ${failed ? 'tool-error' : ''}`}>
+    <details
+      className={`tool-card ${failed ? 'tool-error' : ''}`}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
       <summary>
         <span className="tool-icon">
           <Icon size={15} />
@@ -58,8 +63,8 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
         </span>
         <ChevronDown size={13} className="tool-chevron" />
       </summary>
-      {description && <p className="tool-description">{description}</p>}
-      {!standalone && (
+      {open && description && <p className="tool-description">{description}</p>}
+      {open && !standalone && (
         <section className="tool-section">
           <h4>{command !== null ? t('Команда') : t('Параметры')}</h4>
           <pre>
@@ -67,7 +72,7 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
           </pre>
         </section>
       )}
-      {completed && (
+      {open && completed && (
         <section className="tool-section tool-output">
           <h4>{t('Вывод')}</h4>
           <pre>
@@ -79,7 +84,7 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
           </pre>
         </section>
       )}
-      {isShell && (
+      {open && isShell && (
         <small className="tool-exit">{t('Код выхода: {code}', { code: data.exit_code })}</small>
       )}
     </details>
