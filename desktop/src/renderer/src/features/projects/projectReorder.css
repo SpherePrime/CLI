@@ -1,0 +1,27 @@
+.project-reorder-heading {
+  position: relative;
+}
+.project-reorder-heading .project-item[draggable='true'] {
+  cursor: grab;
+}
+.project-reorder-heading.project-dragging {
+  opacity: 0.45;
+}
+.project-drop-before::before,
+.project-drop-after::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+}
+.project-drop-before::before {
+  top: -1px;
+}
+.project-drop-after::after {
+  bottom: -1px;
+}

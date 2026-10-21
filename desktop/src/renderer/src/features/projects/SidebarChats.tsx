@@ -14,6 +14,9 @@ import {
 import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
+import { orderedProjectPaths } from './projectOrder'
+import { useProjectReorder } from './useProjectReorder'
+import './projectReorder.css'
 
 export function SidebarChats({
   workspace: w,
@@ -78,12 +81,17 @@ export function SidebarChats({
     project.remote
       ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
       : project.path.split(/[\\/]/).pop()
-  const visited = [
-    ...w.preferences.recent.map(
-      (path) => folders.find((project) => project.path === path) ?? path
-    ),
-    ...folders.filter((project) => !w.preferences.recent.includes(project.path))
-  ].filter((entry) => {
+  const projectPaths = orderedProjectPaths(
+    w.preferences.recent,
+    folders.map((project) => project.path),
+    w.preferences.projectOrder
+  )
+  const reorder = useProjectReorder(projectPaths, (projectOrder) => {
+    void w.savePreferences({ projectOrder })
+  })
+  const visited = projectPaths.map(
+    (path) => folders.find((project) => project.path === path) ?? path
+  ).filter((entry) => {
     const path = typeof entry === 'string' ? entry : entry.path
     return !needle || path.toLocaleLowerCase().includes(needle)
   })
@@ -250,8 +258,9 @@ export function SidebarChats({
         if (typeof entry === 'string')
           return (
             <div key={entry} className="project-group">
-              <div className="project-heading">
+              <div {...reorder.headingProps(entry)}>
                 <button
+                  {...reorder.buttonProps(entry)}
                   className="project-item"
                   title={entry}
                   onClick={() => void w.openProject(entry)}
@@ -265,7 +274,8 @@ export function SidebarChats({
                   title={t('Удалить из недавних')}
                   onClick={() =>
                     void w.savePreferences({
-                      recent: w.preferences.recent.filter((item) => item !== entry)
+                      recent: w.preferences.recent.filter((item) => item !== entry),
+                      projectOrder: projectPaths.filter((item) => item !== entry)
                     })
                   }
                 >
@@ -279,8 +289,9 @@ export function SidebarChats({
         const open = Boolean(expanded[project.id])
         return (
           <div key={project.id} className={`project-group ${active ? 'active-group' : ''}`}>
-            <div className="project-heading">
+            <div {...reorder.headingProps(project.path)}>
               <button
+                {...reorder.buttonProps(project.path)}
                 className={`project-item ${active ? 'selected' : ''}`}
                 aria-expanded={open}
                 onClick={() => toggle(project.id, open)}

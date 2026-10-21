@@ -72,6 +72,7 @@ export type Preferences = {
   theme: 'dark' | 'light' | 'system'
   language: 'ru' | 'en'
   recent: string[]
+  projectOrder?: string[]
   pinned: string[]
   favoriteModels?: { provider: string; model: string }[]
   recentModels?: { provider: string; model: string }[]
