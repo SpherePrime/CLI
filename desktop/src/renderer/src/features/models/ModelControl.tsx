@@ -16,7 +16,12 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const [open, setOpen] = useState<'reasoning' | 'models' | 'context' | null>(null)
   const [saving, setSaving] = useState(false)
   const { models } = useModelCapabilities(w)
-  const selected = w.config?.models?.large
+  const sessionModel = w.activeSessionId
+    ? (w.config?.session_models as Record<string, { provider: string; model: string }> | undefined)?.[
+        w.activeSessionId
+      ]
+    : undefined
+  const selected = sessionModel ?? w.config?.models?.large
   const capability = findCapability(models, selected)
   const mode =
     w.reasoningMode === 'default' ? currentReasoningMode(undefined, capability) : w.reasoningMode

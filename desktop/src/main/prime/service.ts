@@ -185,7 +185,13 @@ export class PrimeService {
         .request<any[]>('GET', `/v1/workspaces/${id}/runs`)
         .then((records) => this.activity.reconcile(id, records || []))
         .catch(() => {})
-    if (operation === 'sessions' || operation === 'messages') return response
+    if (
+      operation === 'sessions' ||
+      operation === 'messages' ||
+      operation === 'messagePage' ||
+      operation === 'messageSearch'
+    )
+      return response
     return redact(response)
   }
   root(id: string): string {

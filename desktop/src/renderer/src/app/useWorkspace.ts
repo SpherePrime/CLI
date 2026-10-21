@@ -9,7 +9,6 @@ import type {
   Project,
   Session
 } from '../../../shared/contracts'
-import { applyMessage } from '../../../shared/messages'
 import { translate } from '../i18n'
 import { useAgentContext } from '../features/context/useAgentContext'
 import { buildAgentPrompt } from '../../../shared/agentContext'
@@ -17,6 +16,8 @@ import { isRemoteWorkspace } from '../../../shared/remoteWorkspace'
 import { recordRecentModel } from '../features/models/modelPreferences'
 import { useChatPermissions } from '../features/chat/useChatPermissions'
 import { watchProjectSessions } from '../features/projects/projectSessionEvents'
+import { useMessageHistory } from '../features/chat/useMessageHistory'
+import { updateHistoryMessage, type MessagePage } from '../features/chat/messageWindow'
 
 const resolvedLimit = 1000
 
@@ -54,9 +55,8 @@ export function useWorkspace() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [session, setSession] = useState<Session | null>(null)
   const [draftReasoningMode, setDraftReasoningMode] = useState<ChatReasoningMode | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [messagesSessionId, setMessagesSessionId] = useState<string | null>(null)
-  const messageCache = useRef(new Map<string, Message[]>())
+  const history = useMessageHistory()
+  const { messages, messagesSessionId } = history
   const [permissions, setPermissions] = useState<Json[]>([])
   const [questions, setQuestions] = useState<Json[]>([])
   const [config, setConfig] = useState<Json>({})
@@ -189,81 +189,84 @@ export function useWorkspace() {
       queueFetches.current.delete(key)
     }
   }, [])
-  const loadWorkspace = useCallback(async (includeMessages: boolean, heavy = true) => {
-    const { project, session } = current.current
-    if (!project) return
-    const tasks: [string, Promise<Json>][] = [
-      ['sessions', window.prime.call(project.id, 'sessions')],
-      ['pending', refreshPending()],
-      ['queue', refreshQueue()]
-    ]
-    if (heavy)
-      tasks.push(
-        ['config', window.prime.call(project.id, 'config')],
-        ['agent', window.prime.call(project.id, 'agent')],
-        ['mcp', window.prime.call(project.id, 'mcp')],
-        ['lsp', window.prime.call(project.id, 'lsp')],
-        ['skills', window.prime.call(project.id, 'skills')],
-        ['channels', window.prime.call(project.id, 'channelMessages')]
-      )
-    const results = await Promise.allSettled(tasks.map(([, task]) => task))
-    if (current.current.project?.id !== project.id) return
-    const values: Record<string, Json> = {}
-    tasks.forEach(([name], index) => {
-      values[name] =
-        results[index].status === 'fulfilled'
-          ? (results[index] as PromiseFulfilledResult<Json>).value
-          : undefined
-    })
-    if (values.sessions) setSessions(values.sessions)
-    if (values.config) setConfig(values.config)
-    if (values.agent) setAgent(values.agent)
-    if (heavy)
-      setResources({
-        mcp: values.mcp || {},
-        lsp: values.lsp || {},
-        skills: values.skills || [],
-        channels: values.channels || []
+  const loadWorkspace = useCallback(
+    async (includeMessages: boolean, heavy = true) => {
+      const { project, session } = current.current
+      if (!project) return
+      const tasks: [string, Promise<Json>][] = [
+        ['sessions', window.prime.call(project.id, 'sessions')],
+        ['pending', refreshPending()],
+        ['queue', refreshQueue()]
+      ]
+      if (heavy)
+        tasks.push(
+          ['config', window.prime.call(project.id, 'config')],
+          ['agent', window.prime.call(project.id, 'agent')],
+          ['mcp', window.prime.call(project.id, 'mcp')],
+          ['lsp', window.prime.call(project.id, 'lsp')],
+          ['skills', window.prime.call(project.id, 'skills')],
+          ['channels', window.prime.call(project.id, 'channelMessages')]
+        )
+      const results = await Promise.allSettled(tasks.map(([, task]) => task))
+      if (current.current.project?.id !== project.id) return
+      const values: Record<string, Json> = {}
+      tasks.forEach(([name], index) => {
+        values[name] =
+          results[index].status === 'fulfilled'
+            ? (results[index] as PromiseFulfilledResult<Json>).value
+            : undefined
       })
-    if (!session) return
-    let active: Session[] | undefined = values.sessions
-    if (includeMessages) {
-      const snapshotSequence = messageSequence.current
-      messageSnapshots.current++
-      try {
-        const [msgs, latest] = await Promise.allSettled([
-          window.prime.call(project.id, 'messages', { sessionId: session.id }),
-          window.prime.call(project.id, 'sessions')
-        ])
-        if (current.current.session?.id !== session.id) return
-        if (msgs.status === 'fulfilled') {
-          let reconciled: Message[] = msgs.value || []
-          for (const entry of messageEvents.current)
-            if (
-              entry.sequence > snapshotSequence &&
-              entry.workspaceId === project.id &&
-              entry.message.session_id === session.id
-            )
-              reconciled =
-                entry.action === 'deleted'
-                  ? reconciled.filter((item) => item.id !== entry.message.id)
-                  : applyMessage(reconciled, entry.message)
-          messageCache.current.set(session.id, reconciled)
-          setMessages(reconciled)
-          setMessagesSessionId(session.id)
+      if (values.sessions) setSessions(values.sessions)
+      if (values.config) setConfig(values.config)
+      if (values.agent) setAgent(values.agent)
+      if (heavy)
+        setResources({
+          mcp: values.mcp || {},
+          lsp: values.lsp || {},
+          skills: values.skills || [],
+          channels: values.channels || []
+        })
+      if (!session) return
+      let active: Session[] | undefined = values.sessions
+      if (includeMessages) {
+        const snapshotSequence = messageSequence.current
+        messageSnapshots.current++
+        try {
+          const [msgs, latest] = await Promise.allSettled([
+            window.prime.call(project.id, 'messagePage', { sessionId: session.id, limit: 60 }),
+            window.prime.call(project.id, 'sessions')
+          ])
+          if (
+            current.current.project?.id !== project.id ||
+            current.current.session?.id !== session.id
+          )
+            return
+          if (msgs.status === 'fulfilled') {
+            let reconciled = msgs.value as MessagePage
+            for (const entry of messageEvents.current)
+              if (
+                entry.sequence > snapshotSequence &&
+                entry.workspaceId === project.id &&
+                entry.message.session_id === session.id
+              )
+                reconciled = updateHistoryMessage(reconciled, entry.message, entry.action)
+            history.accept(session.id, reconciled)
+          } else history.fail(session.id, msgs.reason)
+          active = latest.status === 'fulfilled' ? latest.value : undefined
+        } finally {
+          if (--messageSnapshots.current === 0) messageEvents.current = []
         }
-        active = latest.status === 'fulfilled' ? latest.value : undefined
-      } finally {
-        if (--messageSnapshots.current === 0) messageEvents.current = []
       }
-    }
-    if (current.current.session?.id !== session.id) return
-    const selected = active?.find((item: Session) => item.id === session.id)
-    if (selected) {
-      setSession(selected)
-      setBusy(Boolean(selected.is_busy))
-    }
-  }, [refreshPending, refreshQueue])
+      if (current.current.project?.id !== project.id || current.current.session?.id !== session.id)
+        return
+      const selected = active?.find((item: Session) => item.id === session.id)
+      if (selected) {
+        setSession(selected)
+        setBusy(Boolean(selected.is_busy))
+      }
+    },
+    [refreshPending, refreshQueue, history.accept]
+  )
   const refreshState = useRef<{
     running: Promise<void> | null
     queued: Promise<void> | null
@@ -372,7 +375,7 @@ export function useWorkspace() {
           setProjects(opened)
           setProject(targetProject)
           setSession(targetSession)
-          setMessages([])
+          history.reset()
           setPermissions([])
           setQuestions([])
           setQueue([])
@@ -403,7 +406,7 @@ export function useWorkspace() {
             current.current = { project: next ?? null, session: null }
             setProject(next ?? null)
             setSession(null)
-            setMessages([])
+            history.reset()
             setSessions([])
             setBusy(false)
             setPermissions([])
@@ -483,11 +486,7 @@ export function useWorkspace() {
           if (messageEvents.current.length > 2000) messageEvents.current.splice(0, 1000)
         }
         if (payload?.session_id === current.current.session?.id)
-          setMessages((items) =>
-            event.payload.action === 'deleted'
-              ? items.filter((item) => item.id !== payload.id)
-              : applyMessage(items, payload)
-          )
+          history.live(payload, event.payload.action)
       }
       if (event.type === 'session') {
         setSessions((items) => {
@@ -605,7 +604,7 @@ export function useWorkspace() {
       current.current = { project: opened, session: null }
       setProject(opened)
       setSession(null)
-      setMessages([])
+      history.reset()
       setPermissions([])
       setQuestions([])
       setBusy(false)
@@ -624,7 +623,7 @@ export function useWorkspace() {
     current.current = { project: selected, session: null }
     setProject(selected)
     setSession(null)
-    setMessages([])
+    history.reset()
     setBusy(false)
     setQueue([])
     await refreshLight()
@@ -640,7 +639,7 @@ export function useWorkspace() {
         current.current = { project: null, session: null }
         setProject(null)
         setSession(null)
-        setMessages([])
+        history.reset()
         setSessions([])
         setBusy(false)
         setQueue([])
@@ -654,27 +653,23 @@ export function useWorkspace() {
     }
   }
   async function selectSession(selected: Session) {
-    const cached = messageCache.current.get(selected.id)
+    const cached = history.select(selected.id)
     setSession(selected)
     current.current.session = selected
-    setMessages(cached || [])
-    setMessagesSessionId(cached ? selected.id : null)
     setBusy(Boolean(selected.is_busy))
     setQueue([])
     await call('currentSession', { sessionId: selected.id }).catch(errorHandler)
-    if (cached) await refreshLight()
+    if (cached) await scheduleRefresh(true, false)
     else await refresh()
   }
   async function openSession(target: Project, selected: Session, known?: Session[]) {
     if (target.id === current.current.project?.id) return selectSession(selected)
-    const cached = messageCache.current.get(selected.id)
+    const cached = history.select(selected.id)
     setDraftReasoningMode(null)
     current.current = { project: target, session: selected }
     setProject(target)
     setSession(selected)
     if (known) setSessions(known)
-    setMessages(cached || [])
-    setMessagesSessionId(cached ? selected.id : null)
     setBusy(Boolean(selected.is_busy))
     setQueue([])
     setPermissions([])
@@ -682,7 +677,7 @@ export function useWorkspace() {
     await window.prime
       .call(target.id, 'currentSession', { sessionId: selected.id })
       .catch(errorHandler)
-    if (cached) await refreshLight()
+    if (cached) await scheduleRefresh(true, false)
     else await refresh()
   }
   async function openChat() {
@@ -844,17 +839,14 @@ export function useWorkspace() {
       ...(selected ? { reasoningBySession: { [selected.id]: mode } } : {})
     })
   }
-  useEffect(() => {
-    if (session && messagesSessionId === session.id) messageCache.current.set(session.id, messages)
-  }, [messages, messagesSessionId, session?.id])
   async function deleteSession(id: string) {
     await call('deleteSession', { sessionId: id })
-    messageCache.current.delete(id)
+    history.delete(id)
     setSessions((items) => items.filter((item) => item.id !== id))
     if (current.current.session?.id === id) {
       current.current.session = null
       setSession(null)
-      setMessages([])
+      history.reset()
       setBusy(false)
       setQueue([])
     }
@@ -876,6 +868,24 @@ export function useWorkspace() {
     sessions,
     session,
     messages,
+    history,
+    loadHistory: (direction: 'before' | 'after' | 'latest') => {
+      const { project, session } = current.current
+      return project && session
+        ? history.load(project.id, session.id, direction)
+        : Promise.resolve()
+    },
+    searchMessages: useCallback(
+      (query: string) => call('messageSearch', { sessionId: current.current.session?.id, query }),
+      [call]
+    ),
+    revealMessage: useCallback(
+      (id: string) => {
+        const { project, session } = current.current
+        return project && session ? history.reveal(project.id, session.id, id) : Promise.resolve()
+      },
+      [history.reveal]
+    ),
     messagesReady: !session || messagesSessionId === session.id,
     permissions,
     questions,

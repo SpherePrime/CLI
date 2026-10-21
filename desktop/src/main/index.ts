@@ -18,8 +18,8 @@ import {
   shell,
   Tray
 } from 'electron'
-import { join, basename, extname } from 'node:path'
-import { mkdir, readFile, stat } from 'node:fs/promises'
+import { join } from 'node:path'
+import { mkdir, readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { RuntimeSupervisor } from './runtime/supervisor'
@@ -43,6 +43,7 @@ import { openInSystemBrowser } from './browser/external'
 import { startBrowserMcpServer, type BrowserMcpServer } from './browser/mcp-server'
 import { validateExternalUrl } from './ipc/security'
 import type { Operation } from '../shared/contracts'
+import type { StoredAttachment } from '../shared/attachments'
 import { TerminalManager } from './terminal/manager'
 import { terminalOperation } from './workbench/terminalIpc'
 import { workbenchTerminalTools } from './workbench/tools'
@@ -61,6 +62,8 @@ import { JobCenter } from './jobs/center'
 import { teamOperation } from './teams/ipc'
 import { ProjectChanges } from './workbench/projectChanges'
 import { importImages } from './attachments/images'
+import { importFiles } from './attachments/files'
+import { storeAttachments } from './attachments/store'
 import { configureDevelopmentProfile } from './developmentProfile'
 
 configureDevelopmentProfile(app)
@@ -85,7 +88,7 @@ let recovering = false
 let editorDirty = false
 const t = (source: string) => translate(settings?.get().language, source)
 const restarts: number[] = []
-const attachmentStore = new Map<string, any>()
+const attachmentStore = new Map<string, StoredAttachment>()
 const projectId = z.string().uuid()
 let activeSessionTimer: NodeJS.Timeout | undefined
 let activeSessionSave: { path: string; sessionId: string } | undefined
@@ -426,18 +429,24 @@ function registerIpc(): void {
   handle('browserPick', async () => {
     const captures = await pickElements(browserPanel.contents)
     if (!captures) return null
-    return captures.map(({ element, image }) => {
+    const prepared: { id: string; attachment: StoredAttachment }[] = []
+    const output = captures.map(({ element, image }) => {
       if (!image) return { element }
       const content = image.toString('base64')
       const attachmentId = randomUUID()
-      attachmentStore.set(attachmentId, {
-        file_path: 'element.png',
-        file_name: 'element.png',
-        mime_type: 'image/png',
-        content
+      prepared.push({
+        id: attachmentId,
+        attachment: {
+          file_path: 'element.png',
+          file_name: 'element.png',
+          mime_type: 'image/png',
+          content
+        }
       })
       return { element, attachmentId, image: `data:image/png;base64,${content}` }
     })
+    storeAttachments(attachmentStore, prepared)
+    return output
   })
   handle('browserPickCancel', () => cancelPick(browserPanel.contents))
   handle('jobs', (request: unknown) => jobs.handle(request))
@@ -680,28 +689,7 @@ function registerIpc(): void {
       properties: ['openFile', 'multiSelections']
     })
     if (result.canceled) return []
-    const output: any[] = []
-    const mimeTypes: Record<string, string> = {
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.webp': 'image/webp',
-      '.pdf': 'application/pdf',
-      '.gif': 'image/gif'
-    }
-    for (const path of result.filePaths) {
-      const info = await stat(path)
-      if (info.size > 20 * 1024 * 1024) throw new Error(t('Вложение больше 20 MiB'))
-      const id = randomUUID()
-      attachmentStore.set(id, {
-        file_path: path,
-        file_name: basename(path),
-        mime_type: mimeTypes[extname(path).toLowerCase()] || 'text/plain',
-        content: (await readFile(path)).toString('base64')
-      })
-      output.push({ id, name: basename(path), size: info.size })
-    }
-    return output
+    return importFiles(attachmentStore, result.filePaths)
   })
   handle('preferences', async (patch?: any) => {
     if (!patch) return settings.get()

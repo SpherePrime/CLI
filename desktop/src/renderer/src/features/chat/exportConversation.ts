@@ -28,3 +28,14 @@ export function downloadConversation(
   link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+export function downloadConversationChunks(title: string, chunks: string[]) {
+  const url = URL.createObjectURL(new Blob(chunks, { type: 'text/markdown;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = safeExportName(title)
+  document.body.append(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}

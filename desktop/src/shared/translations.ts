@@ -401,7 +401,6 @@ export const english: Record<string, string> = {
   'Prime работает': 'Prime is working',
   'Работал {time}': 'Worked for {time}',
   'Новые сообщения': 'New messages',
-  'Предыдущие сообщения': 'Previous messages',
   '· рассуждения': '· reasoning',
   'Среда выполнения': 'Runtime',
   'Prime был перезапущен. Незавершённые задачи остановлены; повторный запуск выполняется вручную.':

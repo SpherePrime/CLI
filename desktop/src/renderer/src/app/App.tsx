@@ -320,6 +320,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               key={w.session?.id || 'new'}
               messages={w.messages}
               busy={w.busy}
+              hasBefore={w.history.has_before}
+              hasAfter={w.history.has_after}
+              historyLoading={Boolean(w.history.loading) || (!w.messagesReady && !w.history.error)}
+              historyError={w.history.error}
+              historyTiming={w.history.timing}
+              loadHistory={w.loadHistory}
+              searchMessages={w.searchMessages}
+              revealMessage={w.revealMessage}
               searchOpen={searchOpen}
               closeSearch={() => setSearchOpen(false)}
               waiting={

@@ -3,6 +3,13 @@ import { TerminalOutput } from '../../src/main/terminal/output'
 import { TerminalReplay } from '../../src/renderer/src/features/terminal/replay'
 
 describe('bounded terminal journal', () => {
+  it('releases an oversized incoming buffer instead of retaining its backing allocation', () => {
+    const output = new TerminalOutput()
+    output.append('x'.repeat(16 * 1024 * 1024))
+    const chunks = (output as unknown as { chunks: Buffer[] }).chunks
+    expect(output.read().length).toBe(1024 * 1024)
+    expect(chunks.every((chunk) => chunk.buffer.byteLength <= 1024 * 1024)).toBe(true)
+  })
   it('retains at most one MiB of UTF-8 output without broken characters', () => {
     const output = new TerminalOutput()
     output.append('x'.repeat(1024 * 1024))
