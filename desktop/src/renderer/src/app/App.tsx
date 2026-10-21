@@ -63,30 +63,54 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   useModalWindowChrome()
   const [editorFraction, setEditorFraction] = useState(1.2)
   const [modal, setModal] = useState('')
-  const [sidebar, setSidebar] = useState(true)
+  const [collapsed, setCollapsedState] = useState({ sidebar: false, inspector: false })
   const [inspector, setInspector] = useState(true)
   const [focusMode, setFocusMode] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [workbench, setWorkbench] = useState(false)
   const [workbenchExpanded, setWorkbenchExpanded] = useState(false)
   const [workbenchView, setWorkbenchView] = useState<WorkbenchView>('terminal')
-  const showSidebar = sidebar && !focusMode
+  const showSidebar = !focusMode
   const showInspector = inspector && !focusMode
   const showEditor = documents.documents.length > 0 && !focusMode
   useEffect(() => {
-    setSidebar(w.preferences.sidebarVisible !== false)
     setInspector(w.preferences.inspectorVisible !== false)
-  }, [w.preferences.sidebarVisible, w.preferences.inspectorVisible])
+    setCollapsedState({
+      sidebar: w.preferences.sidebarCollapsed ?? w.preferences.sidebarVisible === false,
+      inspector: w.preferences.inspectorCollapsed === true
+    })
+  }, [
+    w.preferences.sidebarVisible,
+    w.preferences.inspectorVisible,
+    w.preferences.sidebarCollapsed,
+    w.preferences.inspectorCollapsed
+  ])
   useEffect(() => setSearchOpen(false), [w.session?.id])
+  function setCollapsed(which: 'sidebar' | 'inspector', value: boolean, persist = false) {
+    setCollapsedState((current) =>
+      current[which] === value ? current : { ...current, [which]: value }
+    )
+    if (persist)
+      void w
+        .savePreferences(
+          which === 'sidebar'
+            ? { sidebarCollapsed: value, sidebarVisible: true }
+            : { inspectorCollapsed: value }
+        )
+        .catch(w.errorHandler)
+  }
   function toggleSidebar() {
     if (focusMode) return setFocusMode(false)
-    const next = !sidebar
-    setSidebar(next)
-    void w.savePreferences({ sidebarVisible: next }).catch(w.errorHandler)
+    if (layout.compact) return window.dispatchEvent(new Event('prime:projects-flyout'))
+    setCollapsed('sidebar', !collapsed.sidebar, true)
   }
   function toggleInspector() {
+    if (focusMode || collapsed.inspector) {
+      setFocusMode(false)
+      setCollapsed('inspector', false, collapsed.inspector)
+      if (inspector) return
+    }
     const next = focusMode ? true : !inspector
-    setFocusMode(false)
     setInspector(next)
     void w.savePreferences({ inspectorVisible: next }).catch(w.errorHandler)
   }
@@ -136,13 +160,17 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     widths.sidebar,
     widths.inspector,
     showSidebar,
-    showInspector
+    showInspector,
+    collapsed.sidebar,
+    collapsed.inspector
   )
   const centerShift = chatCenterShift(layout, showSidebar, showInspector, showEditor)
   const panels = usePanelResize({
     workspace: w,
     widths,
     setWidths,
+    collapsed,
+    setCollapsed,
     inspectorMax: layout.inspectorMax,
     zoom
   })
@@ -171,20 +199,30 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     openSearch: () => setSearchOpen(true),
     focusMode,
     toggleFocus,
-    sidebarVisible: sidebar,
+    sidebarVisible: !collapsed.sidebar,
     toggleSidebar,
     inspectorVisible: inspector,
     toggleInspector
   })
+  const sidebarPanel = (
+    <Sidebar
+      workspace={w}
+      onSettings={() => setModal('settings')}
+      onPlugins={() => setModal('plugins')}
+      onRemote={() => setModal('remote')}
+      onJobs={() => setModal('jobs')}
+      onWorkbench={() => openTools(workbenchView)}
+    />
+  )
   return (
     <>
       <Titlebar>
         <WorkspaceTopbar
           workspace={w}
           projectName={projectName || ''}
-          sidebarVisible={showSidebar}
+          sidebarVisible={showSidebar && !layout.sidebarCompact}
           toggleSidebar={toggleSidebar}
-          inspectorVisible={showInspector}
+          inspectorVisible={showInspector && !layout.inspectorCompact}
           toggleInspector={toggleInspector}
           focusMode={focusMode}
           toggleFocus={toggleFocus}
@@ -228,26 +266,12 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 onTools={() => openTools(workbenchView)}
                 onPlugins={() => setModal('plugins')}
               >
-                <Sidebar
-                  workspace={w}
-                  onSettings={() => setModal('settings')}
-                  onPlugins={() => setModal('plugins')}
-                  onRemote={() => setModal('remote')}
-                  onJobs={() => setModal('jobs')}
-                  onWorkbench={() => openTools(workbenchView)}
-                />
+                {sidebarPanel}
               </ProjectRail>
             ) : (
-              <Sidebar
-                workspace={w}
-                onSettings={() => setModal('settings')}
-                onPlugins={() => setModal('plugins')}
-                onRemote={() => setModal('remote')}
-                onJobs={() => setModal('jobs')}
-                onWorkbench={() => openTools(workbenchView)}
-              />
+              sidebarPanel
             )}
-            {!layout.sidebarCompact && (
+            {layout.sidebarResizable && (
               <div {...panels.separator('sidebar', t('Ширина панели проектов'), layout.sidebar)} />
             )}
           </>
@@ -297,11 +321,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         </main>
         {showInspector && (
           <>
-            {!layout.compact && (
+            {layout.inspectorResizable && (
               <div {...panels.separator('inspector', t('Ширина рабочей области'), layout.inspector)} />
             )}
             <Inspector
-              compact={layout.compact}
+              compact={layout.inspectorCompact}
               workspace={w}
               close={toggleInspector}
               openDocument={documents.open}

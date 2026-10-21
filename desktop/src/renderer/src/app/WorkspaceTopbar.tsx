@@ -55,6 +55,7 @@ export function WorkspaceTopbar({
         className="icon"
         title={sidebarVisible ? t('Скрыть проекты') : t('Показать проекты')}
         aria-label={t('Панель проектов')}
+        data-projects-toggle
         onClick={toggleSidebar}
       >
         {sidebarVisible ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}

@@ -1,16 +1,22 @@
 export const panelGutter = 8
-const railWidth = 48
+export const railWidth = 48
 
 export function panelGeometry(
   width: number,
   sidebarWidth: number,
   inspectorWidth: number,
   sidebarVisible: boolean,
-  inspectorVisible: boolean
+  inspectorVisible: boolean,
+  sidebarCollapsed = false,
+  inspectorCollapsed = false
 ) {
   const compact = width < 1050
-  const sidebarCompact =
-    compact || (inspectorVisible && width - sidebarWidth - inspectorWidth < 360)
+  const inspectorCompact = compact || inspectorCollapsed
+  const sidebarCrowded =
+    inspectorVisible && !inspectorCompact && width - sidebarWidth - inspectorWidth < 360
+  const sidebarCompact = compact || sidebarCollapsed || sidebarCrowded
+  const sidebarResizable = sidebarVisible && !compact && (!sidebarCompact || sidebarCollapsed)
+  const inspectorResizable = inspectorVisible && !compact
   const sidebar = sidebarVisible
     ? sidebarCompact
       ? railWidth
@@ -21,20 +27,32 @@ export function panelGeometry(
     width - (sidebarVisible ? railWidth + panelGutter : 0) - panelGutter - 122
   )
   const inspector = inspectorVisible
-    ? compact
+    ? inspectorCompact
       ? railWidth
       : Math.max(280, Math.min(inspectorMax, inspectorWidth))
     : 0
+  const track = (size: number, rail: boolean, resizable: boolean) =>
+    `${rail && !resizable ? size + panelGutter : size}px`
   const columns = [
-    sidebar ? `${sidebarCompact ? sidebar + panelGutter : sidebar}px` : '',
-    sidebar && !sidebarCompact ? `${panelGutter}px` : '',
+    sidebar ? track(sidebar, sidebarCompact, sidebarResizable) : '',
+    sidebarResizable ? `${panelGutter}px` : '',
     'minmax(0, 1fr)',
-    inspector && !compact ? `${panelGutter}px` : '',
-    inspector ? `${compact ? inspector + panelGutter : inspector}px` : ''
+    inspectorResizable ? `${panelGutter}px` : '',
+    inspector ? track(inspector, inspectorCompact, inspectorResizable) : ''
   ]
     .filter(Boolean)
     .join(' ')
-  return { compact, sidebarCompact, sidebar, inspector, inspectorMax, columns }
+  return {
+    compact,
+    sidebarCompact,
+    inspectorCompact,
+    sidebarResizable,
+    inspectorResizable,
+    sidebar,
+    inspector,
+    inspectorMax,
+    columns
+  }
 }
 
 export function chatCenterShift(
