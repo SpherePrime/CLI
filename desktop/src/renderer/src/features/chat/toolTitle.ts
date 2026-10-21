@@ -5,11 +5,18 @@ import {
   FilePlus2,
   FolderTree,
   Globe,
+  HelpCircle,
+  Image,
+  Info,
   ListChecks,
+  ListTree,
+  Network,
   Plug,
+  ScrollText,
   Search,
   Sparkles,
   Terminal,
+  Waypoints,
   Wrench,
   type LucideIcon
 } from 'lucide-react'
@@ -27,6 +34,94 @@ function fileName(path: unknown) {
 
 function text(value: unknown) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''
+}
+
+// Exact labels win over the regex fallbacks below, so names like
+// search_instructions do not get swallowed by the generic code search rule.
+const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
+  agent: (input, t) => ({
+    icon: Sparkles,
+    label: t('Подзадача'),
+    detail: text(input?.description) || text(input?.prompt)
+  }),
+  agent_jobs: (_input, t) => ({ icon: Sparkles, label: t('Фоновые агенты'), detail: '' }),
+  job_output: (_input, t) => ({ icon: Terminal, label: t('Вывод фоновой задачи'), detail: '' }),
+  job_kill: (_input, t) => ({ icon: Terminal, label: t('Остановка задачи'), detail: '' }),
+  prime_info: (_input, t) => ({ icon: Info, label: t('Состояние Prime'), detail: '' }),
+  prime_logs: (_input, t) => ({ icon: ScrollText, label: t('Логи Prime'), detail: '' }),
+  question: (input, t) => ({
+    icon: HelpCircle,
+    label: t('Вопрос'),
+    detail: text(input?.questions?.[0]?.question)
+  }),
+  generate_image: (input, t) => ({
+    icon: Image,
+    label: t('Генерация изображения'),
+    detail: text(input?.prompt)
+  }),
+  lsp_diagnostics: (_input, t) => ({ icon: Wrench, label: t('Диагностика LSP'), detail: '' }),
+  lsp_references: (input, t) => ({
+    icon: Network,
+    label: t('Ссылки символа'),
+    detail: text(input?.symbol)
+  }),
+  lsp_restart: (_input, t) => ({ icon: Wrench, label: t('Перезапуск LSP'), detail: '' }),
+  lsp_symbols: (input, t) => ({
+    icon: ListTree,
+    label: t('Символы файла'),
+    detail: fileName(input?.file_path || input?.path)
+  }),
+  lsp_definition: (input, t) => ({
+    icon: Network,
+    label: t('Определение символа'),
+    detail: text(input?.symbol)
+  }),
+  lsp_call_hierarchy: (input, t) => ({
+    icon: Waypoints,
+    label: t('Иерархия вызовов'),
+    detail: text(input?.symbol)
+  }),
+  lsp_rename: (input, t) => ({
+    icon: FilePen,
+    label: t('Переименование символа'),
+    detail: text(input?.symbol)
+  }),
+  list_mcp_resources: (_input, t) => ({ icon: Plug, label: t('Ресурсы MCP'), detail: '' }),
+  read_mcp_resource: (input, t) => ({
+    icon: Plug,
+    label: t('Ресурс MCP'),
+    detail: text(input?.uri)
+  }),
+  sourcegraph: (input, t) => ({
+    icon: Search,
+    label: t('Поиск по репозиториям'),
+    detail: text(input?.query)
+  }),
+  search_instructions: (input, t) => ({
+    icon: Search,
+    label: t('Поиск инструкций'),
+    detail: text(input?.query)
+  }),
+  read_instruction: (input, t) => ({
+    icon: FileCode2,
+    label: t('Чтение инструкции'),
+    detail: text(input?.id)
+  }),
+  search_skills: (input, t) => ({
+    icon: Search,
+    label: t('Поиск навыков'),
+    detail: text(input?.query)
+  }),
+  search_mcp: (input, t) => ({
+    icon: Search,
+    label: t('Поиск MCP'),
+    detail: text(input?.query)
+  }),
+  search_tools: (input, t) => ({
+    icon: Search,
+    label: t('Поиск инструментов'),
+    detail: text(input?.query)
+  })
 }
 
 export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
@@ -48,33 +143,42 @@ export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
   }
   const desktop = desktopToolTitle(tool, input, t)
   if (desktop) return desktop
+  const named = namedTools[tool]
+  if (named) return named(input, t)
   if (/^(view|read|cat)$/.test(tool))
     return { icon: FileCode2, label: t('Чтение'), detail: fileName(path) }
   if (tool === 'write') return { icon: FilePlus2, label: t('Запись'), detail: fileName(path) }
-  if (/edit|replace/.test(tool))
+  if (/^multi|^edit|replace/.test(tool))
     return { icon: FilePen, label: t('Правка'), detail: fileName(path) }
   if (tool === 'ls')
     return { icon: FolderTree, label: t('Список файлов'), detail: text(path) || '.' }
   if (tool === 'glob')
     return { icon: Search, label: t('Поиск файлов'), detail: text(input?.pattern) }
-  if (/grep|rg|search/.test(tool) && !/web/.test(tool))
+  if (/grep|^rg$|^rg-/.test(tool))
     return { icon: Search, label: t('Поиск в коде'), detail: text(input?.pattern || input?.query) }
-  if (/bash|shell|job/.test(tool))
+  if (/^bash$|^shell$/.test(tool))
     return {
       icon: Terminal,
       label: t('Команда'),
       detail: text(input?.description) || text(input?.command)
     }
-  if (/web_search|websearch/.test(tool))
+  if (/^web_?search$/.test(tool))
     return { icon: Globe, label: t('Поиск в интернете'), detail: text(input?.query) }
-  if (/fetch|download/.test(tool))
+  if (/^agentic_?fetch$/.test(tool))
+    return {
+      icon: Globe,
+      label: t('Анализ страницы'),
+      detail: text(input?.url) || text(input?.prompt)
+    }
+  if (/^fetch$|^download$/.test(tool))
     return { icon: Download, label: t('Загрузка'), detail: text(input?.url) }
-  if (/agent|task/.test(tool))
+  if (/^task$/.test(tool))
     return {
       icon: Sparkles,
       label: t('Подзадача'),
       detail: text(input?.description) || text(input?.prompt)
     }
   if (/todo/.test(tool)) return { icon: ListChecks, label: t('План задач'), detail: '' }
+  if (/lsp_/.test(tool)) return { icon: Wrench, label: `LSP · ${tool.slice(4)}`, detail: '' }
   return { icon: Wrench, label: name || t('Инструмент'), detail: '' }
 }

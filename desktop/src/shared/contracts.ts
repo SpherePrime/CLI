@@ -192,6 +192,7 @@ export interface DesktopApi {
   changes(workspaceId: string): Promise<{ path: string; status: string; originalPath?: string }[]>
   info(): Promise<Json>
   projects(): Promise<Project[]>
+  projectSessions(paths: string[]): Promise<Record<string, Session[]>>
   openChat(): Promise<Project>
   openProject(path?: string): Promise<Project | null>
   cancelProjectWait(): Promise<void>
