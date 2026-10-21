@@ -68,6 +68,7 @@ const actions: Record<string, string> = {
   git_history: 'История коммитов',
   git_show_commit: 'Просматривает коммит',
   git_restore_commit: 'Восстанавливает состояние проекта',
+  git_revert_commit: 'Отменяет изменения коммита',
   github_status: 'Состояние репозитория',
   github_issues: 'Список задач',
   github_pulls: 'Список pull request',

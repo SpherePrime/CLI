@@ -61,6 +61,7 @@ export type GithubRequest =
   | { action: 'history' }
   | { action: 'showCommit'; sha: string }
   | { action: 'restoreCommit'; sha: string; expectedHead: string }
+  | { action: 'revertCommit'; sha: string; expectedHead: string }
   | { action: 'status' | 'branches' }
   | { action: 'issues' | 'pulls'; state?: GithubListState; limit?: number }
   | { action: 'issue' | 'pull' | 'diff'; number: number }

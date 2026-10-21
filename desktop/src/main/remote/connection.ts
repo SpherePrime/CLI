@@ -184,7 +184,7 @@ export class RemoteConnection {
   }
   exec(
     command: string,
-    options: { timeout?: number; maxBytes?: number } = {}
+    options: { timeout?: number; maxBytes?: number; input?: string } = {}
   ): Promise<{ stdout: string; stderr: string; code: number }> {
     return new Promise((resolve, reject) => {
       let channel: import('ssh2').ClientChannel | undefined
@@ -251,6 +251,7 @@ export class RemoteConnection {
             code: code ?? -1
           })
         })
+        if (options.input !== undefined) stream.end(options.input)
       })
     })
   }

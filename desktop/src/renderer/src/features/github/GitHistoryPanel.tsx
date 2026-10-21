@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { GitCommitHorizontal, RefreshCw, RotateCcw } from 'lucide-react'
+import { GitCommitHorizontal, RefreshCw, RotateCcw, Undo2 } from 'lucide-react'
 import type { GitCommitDetail, GitHistory, GitRestoreResult } from '../../../../shared/gitHistory'
 import { Modal } from '../../components/Modal'
 import { GitDiffView } from './GitDiffView'
@@ -13,7 +13,7 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [confirm, setConfirm] = useState(false)
+  const [confirm, setConfirm] = useState<'revert' | 'restore'>()
   const refresh = useCallback(async () => {
     setBusy(true)
     setError('')
@@ -47,21 +47,26 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
     }
   }
   const restore = async () => {
-    if (!selected) return
+    if (!selected || !confirm) return
+    const reverting = confirm === 'revert'
     setBusy(true)
     setError('')
     try {
       const result: GitRestoreResult = await window.prime.github(workspaceId, {
-        action: 'restoreCommit',
+        action: reverting ? 'revertCommit' : 'restoreCommit',
         sha: selected.commit.sha,
         expectedHead: selected.currentHead
       })
-      setConfirm(false)
+      setConfirm(undefined)
       setNotice(
         t(
-          result.changed
-            ? 'Состояние восстановлено новым локальным коммитом. Для публикации выполните push.'
-            : 'Проект уже соответствует этому состоянию.'
+          reverting
+            ? result.changed
+              ? 'Изменения коммита отменены новым локальным коммитом. Для публикации выполните push.'
+              : 'Изменения этого коммита уже отсутствуют.'
+            : result.changed
+              ? 'Состояние восстановлено новым локальным коммитом. Для публикации выполните push.'
+              : 'Проект уже соответствует этому состоянию.'
         )
       )
       if (result.backupStash)
@@ -71,7 +76,7 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
         )
       await refresh()
     } catch (failure) {
-      setConfirm(false)
+      setConfirm(undefined)
       setError(failure instanceof Error ? failure.message : String(failure))
     } finally {
       setBusy(false)
@@ -143,10 +148,19 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
               <p className="git-history-meta">
                 {selected.commit.author} · {new Date(selected.commit.date).toLocaleString(locale)}
               </p>
-              <div className="automation-actions">
+              <div className="automation-actions git-history-actions">
+                <button
+                  className="git-history-revert"
+                  onClick={() => setConfirm('revert')}
+                  disabled={busy}
+                  title={t('Отменяет только изменения выбранного коммита, сохраняя последующие.')}
+                >
+                  <Undo2 size={14} />
+                  {t('Отменить этот коммит')}
+                </button>
                 <button
                   className="automation-primary"
-                  onClick={() => setConfirm(true)}
+                  onClick={() => setConfirm('restore')}
                   disabled={
                     busy ||
                     (Boolean(history?.clean) && selected.commit.sha === selected.currentHead)
@@ -158,9 +172,14 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
                   }
                 >
                   <RotateCcw size={14} />
-                  {t('Вернуть это состояние')}
+                  {t('Восстановить весь проект')}
                 </button>
               </div>
+              <p className="git-history-meta">
+                {t(
+                  'Отмена коммита сохраняет последующие изменения. Восстановление проекта возвращает все файлы к выбранному состоянию.'
+                )}
+              </p>
               <GitDiffView diff={selected.diff} />
               {selected.truncated && (
                 <p className="git-history-meta">
@@ -173,23 +192,36 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
       </div>
       {confirm && selected && (
         <Modal
-          title={t('Вернуть это состояние')}
+          title={t(confirm === 'revert' ? 'Отменить этот коммит' : 'Восстановить весь проект')}
           close={() => {
-            if (!busy) setConfirm(false)
+            if (!busy) setConfirm(undefined)
           }}
         >
+          {confirm === 'revert' && selected.commit.parents.length > 1 && (
+            <p>
+              {t('Для коммита слияния будут отменены изменения относительно первого родителя.')}
+            </p>
+          )}
           <p>
             {t(
-              'Файлы проекта будут восстановлены из коммита {value0}. Локальные изменения и новые файлы сохранятся в stash. Будет создан новый локальный коммит; существующая история сохранится. Изменения не отправляются на GitHub автоматически.',
+              confirm === 'revert'
+                ? 'Будут отменены только изменения коммита {value0}. Последующие изменения сохранятся. Локальные правки будут сохранены в stash. Будет создан новый локальный коммит без автоматической отправки на GitHub.'
+                : 'Все файлы проекта вернутся к состоянию коммита {value0}. Более поздние изменения файлов будут отменены. Локальные правки и новые файлы сохранятся в stash. Операция создаст новый коммит без удаления истории и автоматической отправки на GitHub.',
               { value0: selected.commit.sha.slice(0, 12) }
             )}
           </p>
           <div className="automation-actions">
-            <button onClick={() => setConfirm(false)} disabled={busy}>
+            <button onClick={() => setConfirm(undefined)} disabled={busy}>
               {t('Отмена')}
             </button>
             <button className="automation-primary" onClick={() => void restore()} disabled={busy}>
-              {t(busy ? 'Восстановление…' : 'Подтвердить восстановление')}
+              {t(
+                busy
+                  ? 'Восстановление…'
+                  : confirm === 'revert'
+                    ? 'Подтвердить отмену коммита'
+                    : 'Подтвердить восстановление'
+              )}
             </button>
           </div>
         </Modal>

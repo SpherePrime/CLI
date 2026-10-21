@@ -1,4 +1,21 @@
 export const english: Record<string, string> = {
+  'Отменяет изменения коммита': 'Reverts commit changes',
+  'Для коммита слияния будут отменены изменения относительно первого родителя.':
+    'For a merge commit, changes will be reverted relative to its first parent.',
+  'Отменить этот коммит': 'Revert this commit',
+  'Восстановить весь проект': 'Restore entire project',
+  'Отменяет только изменения выбранного коммита, сохраняя последующие.':
+    'Reverts only the selected commit while preserving later changes.',
+  'Отмена коммита сохраняет последующие изменения. Восстановление проекта возвращает все файлы к выбранному состоянию.':
+    'Reverting a commit preserves later changes. Restoring the project returns all files to the selected state.',
+  'Изменения коммита отменены новым локальным коммитом. Для публикации выполните push.':
+    'Commit changes were reverted with a new local commit. Push to publish.',
+  'Изменения этого коммита уже отсутствуют.': 'This commit’s changes are already absent.',
+  'Подтвердить отмену коммита': 'Confirm commit revert',
+  'Будут отменены только изменения коммита {value0}. Последующие изменения сохранятся. Локальные правки будут сохранены в stash. Будет создан новый локальный коммит без автоматической отправки на GitHub.':
+    'Only changes from commit {value0} will be reverted. Later changes will be preserved. Local edits will be saved in a stash. A new local commit will be created without automatically pushing to GitHub.',
+  'Все файлы проекта вернутся к состоянию коммита {value0}. Более поздние изменения файлов будут отменены. Локальные правки и новые файлы сохранятся в stash. Операция создаст новый коммит без удаления истории и автоматической отправки на GitHub.':
+    'All project files will return to commit {value0}. Later file changes will be undone. Local edits and new files will be saved in a stash. A new commit will preserve history without automatically pushing to GitHub.',
   'Файлов: {count}': 'Files: {count}',
   'Добавлено строк': 'Lines added',
   'Удалено строк': 'Lines deleted',

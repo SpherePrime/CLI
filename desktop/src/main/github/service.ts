@@ -3,6 +3,7 @@ import type { CommandRunner } from './runner'
 import { CommandError } from './runner'
 import type { GithubCheck, GithubRequest, GithubStatus } from '../../shared/github'
 import { gitHistory, restoreGitCommit, showGitCommit } from './history'
+import { revertGitCommit } from './revert'
 
 const issueFields = 'number,title,state,url,updatedAt,author,labels'
 const pullFields = `${issueFields},headRefName,baseRefName,isDraft,reviewDecision`
@@ -17,6 +18,11 @@ const requestSchema = z.discriminatedUnion('action', [
   z.object({
     action: z.literal('showCommit'),
     sha: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i)
+  }),
+  z.object({
+    action: z.literal('revertCommit'),
+    sha: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i),
+    expectedHead: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i)
   }),
   z.object({
     action: z.literal('restoreCommit'),
@@ -149,6 +155,8 @@ export async function githubOperation(
       return gitHistory(runner)
     case 'showCommit':
       return showGitCommit(runner, request.sha)
+    case 'revertCommit':
+      return revertGitCommit(runner, request.sha, request.expectedHead, workspaceKey)
     case 'restoreCommit':
       return restoreGitCommit(runner, request.sha, request.expectedHead, workspaceKey)
     case 'status':

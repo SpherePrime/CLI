@@ -31,7 +31,11 @@ export async function recoverRestoreChanges(runner: CommandRunner, backup: strin
   }
 }
 
-export async function guardIgnoredRestoreFiles(runner: CommandRunner, sha: string) {
+export async function guardIgnoredRestoreFiles(
+  runner: CommandRunner,
+  sha: string,
+  changedPaths?: string[]
+) {
   const [ignored, target, ignoreCase] = await Promise.all([
     runner('git', [
       'ls-files',
@@ -43,7 +47,9 @@ export async function guardIgnoredRestoreFiles(runner: CommandRunner, sha: strin
       '--',
       '.'
     ]),
-    runner('git', ['ls-tree', '-rz', '--name-only', sha, '--', '.']),
+    changedPaths
+      ? Promise.resolve(changedPaths.join('\0'))
+      : runner('git', ['ls-tree', '-rz', '--name-only', sha, '--', '.']),
     runner('git', ['config', '--get', 'core.ignorecase']).then(
       (value) => value.trim() === 'true',
       () => false
