@@ -1958,6 +1958,7 @@ func (c *coordinator) runSubAgent(ctx context.Context, params subAgentParams) (f
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("create session: %w", err)
 	}
+	permission.InheritSessionSkipRequests(c.permissions, params.SessionID, session.ID)
 
 	// Call session setup function if provided
 	if params.SessionSetup != nil {

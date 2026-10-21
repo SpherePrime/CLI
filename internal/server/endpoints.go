@@ -280,6 +280,7 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Summary("Get skip permissions status").
 			Tags("permissions").
 			PathParam("id", "Workspace ID").
+			QueryParam("session_id", "Session ID").
 			Responds(proto.PermissionSkipRequest{}).
 			Fails(404, 500).
 			Handle(c.handleGetWorkspacePermissionsSkip),

@@ -92,6 +92,11 @@ type PermissionKey struct {
 	Path      string
 }
 
+type SessionSkipService interface {
+	SetSessionSkipRequests(sessionID string, skip bool)
+	SessionSkipRequests(sessionID string) bool
+}
+
 type permissionService struct {
 	*pubsub.Broker[PermissionRequest]
 
@@ -100,6 +105,7 @@ type permissionService struct {
 	sessionPermissions    *csync.Map[PermissionKey, bool]
 	pendingRequests       *csync.Map[string, chan bool]
 	autoApproveSessions   map[string]bool
+	sessionSkipRequests   map[string]bool
 	autoApproveSessionsMu sync.RWMutex
 	skip                  atomic.Bool
 	allowedTools          []string
@@ -179,7 +185,7 @@ func (s *permissionService) Deny(permission PermissionRequest) bool {
 }
 
 func (s *permissionService) Request(ctx context.Context, opts CreatePermissionRequest) (bool, error) {
-	if s.skip.Load() {
+	if s.SessionSkipRequests(opts.SessionID) {
 		return true, nil
 	}
 
@@ -302,6 +308,25 @@ func (s *permissionService) SkipRequests() bool {
 	return s.skip.Load()
 }
 
+func (s *permissionService) SetSessionSkipRequests(sessionID string, skip bool) {
+	s.autoApproveSessionsMu.Lock()
+	s.sessionSkipRequests[sessionID] = skip
+	if !skip {
+		delete(s.autoApproveSessions, sessionID)
+	}
+	s.autoApproveSessionsMu.Unlock()
+}
+
+func (s *permissionService) SessionSkipRequests(sessionID string) bool {
+	s.autoApproveSessionsMu.RLock()
+	skip, exists := s.sessionSkipRequests[sessionID]
+	s.autoApproveSessionsMu.RUnlock()
+	if exists {
+		return skip
+	}
+	return s.skip.Load()
+}
+
 func NewPermissionService(workingDir string, skip bool, allowedTools []string) Service {
 	svc := &permissionService{
 		Broker:              pubsub.NewBroker[PermissionRequest](),
@@ -309,6 +334,7 @@ func NewPermissionService(workingDir string, skip bool, allowedTools []string) S
 		workingDir:          workingDir,
 		sessionPermissions:  csync.NewMap[PermissionKey, bool](),
 		autoApproveSessions: make(map[string]bool),
+		sessionSkipRequests: make(map[string]bool),
 		allowedTools:        allowedTools,
 		pendingRequests:     csync.NewMap[string, chan bool](),
 	}

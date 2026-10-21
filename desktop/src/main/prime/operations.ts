@@ -40,8 +40,8 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
       'permissions/grant',
       { permission: args.permission, action: args.action }
     ],
-    getSkip: () => ['GET', 'permissions/skip'],
-    skip: () => ['POST', 'permissions/skip', { skip: args.skip }],
+    getSkip: () => ['GET', `permissions/skip${sid ? `?session_id=${sid}` : ''}`],
+    skip: () => ['POST', 'permissions/skip', { skip: args.skip, session_id: args.sessionId }],
     answer: () => ['POST', 'questions/answer', args],
     cancelQuestion: () => ['POST', 'questions/cancel', { batch_request_id: args.id }],
     config: () => ['GET', 'config'],

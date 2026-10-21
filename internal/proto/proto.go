@@ -267,7 +267,8 @@ type QuestionNotification struct {
 
 // PermissionSkipRequest represents a request to skip permission prompts.
 type PermissionSkipRequest struct {
-	Skip bool `json:"skip"`
+	Skip      bool   `json:"skip"`
+	SessionID string `json:"session_id,omitempty"`
 }
 
 // LSPEventType represents the type of LSP event.

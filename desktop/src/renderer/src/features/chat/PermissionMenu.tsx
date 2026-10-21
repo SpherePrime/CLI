@@ -1,20 +1,25 @@
-import { useRef, useState } from 'react'
-import { Check, ChevronDown, ShieldCheck, ShieldOff } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Check, ChevronDown, LoaderCircle, ShieldCheck, ShieldOff } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import { useI18n } from '../../i18n'
 export function PermissionMenu({
   skip,
   disabled,
-  onChange
+  onChange,
+  onError,
+  contextKey
 }: {
   skip: boolean
   disabled: boolean
   onChange: (skip: boolean) => Promise<void>
+  onError: (error: unknown) => void
+  contextKey: string
 }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const anchor = useRef<HTMLButtonElement>(null)
+  useEffect(() => setOpen(false), [contextKey])
   return (
     <>
       <button
@@ -24,11 +29,16 @@ export function PermissionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         disabled={disabled || saving}
+        aria-busy={saving}
         onClick={() => setOpen(!open)}
       >
         {skip ? <ShieldOff size={15} /> : <ShieldCheck size={15} />}
         <span>{skip ? t('Полный доступ') : t('С подтверждением')}</span>
-        <ChevronDown className="menu-chevron" size={11} aria-hidden="true" />
+        {saving ? (
+          <LoaderCircle className="spin" size={11} aria-hidden="true" />
+        ) : (
+          <ChevronDown className="menu-chevron" size={11} aria-hidden="true" />
+        )}
       </button>
       {open && (
         <Popover anchor={anchor} close={() => setOpen(false)} width={330}>
@@ -50,11 +60,14 @@ export function PermissionMenu({
                 key={String(item.skip)}
                 role="menuitemradio"
                 aria-checked={skip === item.skip}
+                disabled={saving}
                 onClick={async () => {
                   setSaving(true)
                   try {
                     await onChange(item.skip)
                     setOpen(false)
+                  } catch (error) {
+                    onError(error)
                   } finally {
                     setSaving(false)
                   }
