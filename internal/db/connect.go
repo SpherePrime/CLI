@@ -77,6 +77,13 @@ func WithDataDirLock(enable bool) ConnectOption {
 	return func(o *connectOptions) { o.lockDataDir = enable }
 }
 
+// OpenReadOnly opens a project database without migrations, locks or
+// writes. It is meant for metadata lookups (session lists) on projects
+// that have no live workspace; callers own the returned connection.
+func OpenReadOnly(dbPath string) (*sql.DB, error) {
+	return openDBReadOnly(dbPath)
+}
+
 // Connect opens a SQLite database connection for the given data
 // directory and runs migrations. If a connection to the same database
 // file already exists, the existing connection is returned with its

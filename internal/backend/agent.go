@@ -23,12 +23,17 @@ import (
 // agent event channels (a notify.TypeAgentError notification), not
 // through this return value.
 //
+// The agent is initialized lazily: when the workspace has no
+// coordinator yet (workspaces are created without one so opening a
+// project stays cheap), SendMessage initializes it once on the
+// workspace context before dispatching.
+//
 // SendMessage returns synchronously when the request cannot be accepted:
-// ErrWorkspaceNotFound if the workspace is missing, ErrAgentNotInitialized
-// if its coordinator is nil, the structural validation errors from
-// agent.ValidateCall (ErrEmptyPrompt, ErrSessionMissing) when the prompt
-// or session is missing, and ErrWorkspaceClosing if the workspace is
-// being torn down.
+// ErrWorkspaceNotFound if the workspace is missing, the lazy
+// initialization error when the coordinator cannot be created, the
+// structural validation errors from agent.ValidateCall (ErrEmptyPrompt,
+// ErrSessionMissing) when the prompt or session is missing, and
+// ErrWorkspaceClosing if the workspace is being torn down.
 func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
@@ -36,7 +41,9 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 	}
 
 	if ws.AgentCoordinator == nil {
-		return ErrAgentNotInitialized
+		if err := b.ensureAgent(ws); err != nil {
+			return err
+		}
 	}
 
 	if err := agent.ValidateCall(agent.SessionAgentCall{
@@ -102,6 +109,24 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 
 	go b.runAgent(ws, msg, accept)
 	return nil
+}
+
+// ensureAgent initializes the workspace's coder agent on the workspace
+// context when no coordinator exists yet. It serializes concurrent
+// callers so the initialization runs once; a later caller that finds a
+// coordinator already present returns without repeating the work.
+// Workspaces without a backing configuration (test stubs) keep the
+// ErrAgentNotInitialized contract.
+func (b *Backend) ensureAgent(ws *Workspace) error {
+	ws.agentInitMu.Lock()
+	defer ws.agentInitMu.Unlock()
+	if ws.AgentCoordinator != nil {
+		return nil
+	}
+	if ws.Cfg == nil {
+		return ErrAgentNotInitialized
+	}
+	return ws.InitCoderAgent(ws.ctx)
 }
 
 // runAgent executes an accepted agent run for the workspace. It owns the

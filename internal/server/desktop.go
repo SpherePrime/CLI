@@ -17,6 +17,31 @@ func (c *controllerV1) handleGetCapabilities(w http.ResponseWriter, r *http.Requ
 	jsonEncode(w, proto.DesktopCapabilities{ProtocolVersion: 1, RunRegistry: true, RunRegistryPersistence: "sqlite", PendingRequests: true, ModelCapabilities: true, Plugins: true, VoiceUpload: true, QueueControl: true})
 }
 
+// handleGetProjectSessions returns the session lists of the requested
+// project paths without opening workspaces. Failures for one path never
+// fail the whole batch: the project simply contributes an empty list.
+func (c *controllerV1) handleGetProjectSessions(w http.ResponseWriter, r *http.Request) {
+	raw := strings.TrimSpace(r.URL.Query().Get("paths"))
+	if raw == "" {
+		jsonError(w, http.StatusBadRequest, "paths is required")
+		return
+	}
+	result := proto.ProjectSessionsResponse{Projects: map[string][]proto.Session{}}
+	for _, path := range strings.Split(raw, ",") {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			continue
+		}
+		sessions, err := c.backend.ProjectSessions(r.Context(), path)
+		if err != nil {
+			c.server.logError(r, "Failed to read project sessions", "path", path, "error", err)
+			sessions = []proto.Session{}
+		}
+		result.Projects[path] = sessions
+	}
+	jsonEncode(w, result)
+}
+
 func (c *controllerV1) handleGetPending(w http.ResponseWriter, r *http.Request) {
 	ws, err := c.backend.GetWorkspace(r.PathValue("id"))
 	if err != nil {

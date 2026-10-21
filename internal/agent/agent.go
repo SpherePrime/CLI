@@ -2424,6 +2424,22 @@ func (a *sessionAgent) convertToToolResult(result fantasy.ToolResultContent) mes
 				baseResult.Content = content
 				baseResult.Data = r.Data
 				baseResult.MIMEType = r.MediaType
+				for _, image := range result.ClientImages {
+					encoded := base64.StdEncoding.EncodeToString(image.Data)
+					if !stringext.IsValidBase64(encoded) {
+						continue
+					}
+					baseResult.Images = append(baseResult.Images, message.ToolResultImage{
+						Data:     encoded,
+						MIMEType: image.MediaType,
+						Path:     image.Path,
+					})
+				}
+				// A single-image response keeps Data as the only slot, so the
+				// gallery would show the same picture twice otherwise.
+				if len(baseResult.Images) == 1 {
+					baseResult.Images = nil
+				}
 			}
 		}
 	}

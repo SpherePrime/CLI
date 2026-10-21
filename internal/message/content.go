@@ -116,14 +116,24 @@ type ToolCall struct {
 
 func (ToolCall) isPart() {}
 
+// ToolResultImage is one image attached to a tool result for UI display.
+// Images never round-trip back to the model; clients render them inline.
+type ToolResultImage struct {
+	Data     string `json:"data"`
+	MIMEType string `json:"mime_type"`
+	Path     string `json:"path,omitempty"`
+}
+
 type ToolResult struct {
 	ToolCallID string `json:"tool_call_id"`
 	Name       string `json:"name"`
 	Content    string `json:"content"`
 	Data       string `json:"data"`
 	MIMEType   string `json:"mime_type"`
-	Metadata   string `json:"metadata"`
-	IsError    bool   `json:"is_error"`
+	// Images carries additional images beyond the single Data slot.
+	Images  []ToolResultImage `json:"images,omitempty"`
+	Metadata string           `json:"metadata"`
+	IsError  bool             `json:"is_error"`
 }
 
 func (ToolResult) isPart() {}
@@ -637,6 +647,7 @@ func (m *Message) ToAIMessage() []fantasy.Message {
 					content = fantasy.ToolResultOutputContentMedia{
 						Data:      result.Data,
 						MediaType: result.MIMEType,
+						Text:      result.Content,
 					}
 				} else {
 					content = fantasy.ToolResultOutputContentText{

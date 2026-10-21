@@ -36,9 +36,23 @@ type ToolResponse struct {
 	Data []byte `json:"data,omitempty"`
 	// MediaType specifies the MIME type of the media (e.g., "image/png", "audio/wav").
 	MediaType string `json:"media_type,omitempty"`
-	Metadata  string `json:"metadata,omitempty"`
-	IsError   bool   `json:"is_error"`
-	StopTurn  bool   `json:"stop_turn,omitempty"`
+	// Images carries additional media items for UI display. The first item is
+	// mirrored into Data/MediaType so providers keep seeing one media result;
+	// the rest only travel to clients, not back to the model.
+	Images []ImagePayload `json:"images,omitempty"`
+	Metadata string `json:"metadata,omitempty"`
+	IsError  bool   `json:"is_error"`
+	StopTurn bool   `json:"stop_turn,omitempty"`
+}
+
+// ImagePayload is one media item attached to a tool response.
+type ImagePayload struct {
+	// Data holds the raw bytes; they are base64-encoded on the way to clients.
+	Data []byte `json:"data"`
+	// MediaType is the MIME type such as "image/png".
+	MediaType string `json:"media_type"`
+	// Path is the file on disk this item was saved to, when known.
+	Path string `json:"path,omitempty"`
 }
 
 // NewTextResponse creates a text response.
@@ -65,6 +79,18 @@ func NewImageResponse(data []byte, mediaType string) ToolResponse {
 		Data:      data,
 		MediaType: mediaType,
 	}
+}
+
+// NewImagesResponse creates an image response carrying several images. The
+// first image also populates Data/MediaType, because providers accept a single
+// media item per tool result.
+func NewImagesResponse(images []ImagePayload, content string) ToolResponse {
+	response := ToolResponse{Type: "image", Content: content, Images: images}
+	if len(images) > 0 {
+		response.Data = images[0].Data
+		response.MediaType = images[0].MediaType
+	}
+	return response
 }
 
 // NewMediaResponse creates a media response with binary data (e.g., audio, video).

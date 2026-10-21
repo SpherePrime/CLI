@@ -87,6 +87,8 @@ const t = (source: string) => translate(settings?.get().language, source)
 const restarts: number[] = []
 const attachmentStore = new Map<string, any>()
 const projectId = z.string().uuid()
+let activeSessionTimer: NodeJS.Timeout | undefined
+let activeSessionSave: { path: string; sessionId: string } | undefined
 let browserMcp: BrowserMcpServer | undefined
 const emit = (event: any) => {
   if (event.type === 'terminal') {
@@ -543,6 +545,9 @@ function registerIpc(): void {
     return workspace
   })
   handle('projects', () => [...requirePrime().projects.values()])
+  handle('projectSessions', (paths: unknown) =>
+    requirePrime().projectSessions(z.array(z.string().max(4096)).max(64).parse(paths))
+  )
   handle('openProject', async (path?: string) => {
     if (
       path &&
@@ -641,14 +646,25 @@ function registerIpc(): void {
       })
     }
     const result = await requirePrime().call(id, operation, args)
-    if (operation === 'currentSession')
-      await settings.update({
-        activeProject: workspacePath(id),
-        activeSessions: {
-          ...settings.get().activeSessions,
-          [workspacePath(id)]: args.sessionId
-        }
-      })
+    if (operation === 'currentSession') {
+      const path = workspacePath(id)
+      const sessionId = args.sessionId
+      activeSessionSave = { path, sessionId }
+      if (activeSessionTimer) clearTimeout(activeSessionTimer)
+      activeSessionTimer = setTimeout(() => {
+        activeSessionTimer = undefined
+        if (!activeSessionSave) return
+        void settings
+          .update({
+            activeProject: activeSessionSave.path,
+            activeSessions: {
+              ...settings.get().activeSessions,
+              [activeSessionSave.path]: activeSessionSave.sessionId
+            }
+          })
+          .catch(() => {})
+      }, 500)
+    }
     return result
   })
   handle('files', (id: string, path = '') => files(id).list(z.string().max(4096).parse(path)))

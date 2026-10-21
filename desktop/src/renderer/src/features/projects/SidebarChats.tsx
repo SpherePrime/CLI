@@ -1,10 +1,11 @@
 import { sessionTitle } from '../../../../shared/sessionTitle'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Search, Server, X, Pin, Plus, MessagesSquare } from 'lucide-react'
+import { Search, Server, X, Pin, Plus, MessagesSquare, FolderOpen } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
+import { isRemoteWorkspace } from '../../../../shared/remoteWorkspace'
 import { orderedProjectPaths } from './projectOrder'
 import { useProjectReorder } from './useProjectReorder'
 import { watchProjectSessions } from './projectSessionEvents'
@@ -28,6 +29,7 @@ export function SidebarChats({
   const [renaming, setRenaming] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [otherSessions, setOtherSessions] = useState<Record<string, Session[]>>({})
+  const [closedSessions, setClosedSessions] = useState<Record<string, Session[]>>({})
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const projectIds = w.projects.map((project) => project.id).join('|')
   useEffect(() => {
@@ -72,16 +74,34 @@ export function SidebarChats({
   const reorder = useProjectReorder(projectPaths, (projectOrder) => {
     void w.savePreferences({ projectOrder })
   })
-  const sessionsOf = (project: Project) => {
-    const sessions = project.id === w.project?.id ? w.sessions : otherSessions[project.id] || []
-    const pinned = w.preferences.pinned
-    return [...new Map(sessions.map((session) => [session.id, session])).values()]
+  const closedPaths = projectPaths.filter(
+    (path) => !folders.some((project) => project.path === path) && !isRemoteWorkspace(path)
+  )
+  const closedKey = closedPaths.join('|')
+  useEffect(() => {
+    if (!closedKey) return
+    let cancelled = false
+    window.prime
+      .projectSessions(closedKey.split('|'))
+      .then((result) => {
+        if (!cancelled) setClosedSessions(result || {})
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [closedKey])
+  const orderSessions = (sessions: Session[]) =>
+    [...new Map(sessions.map((session) => [session.id, session])).values()]
       .filter((session) => !session.parent_session_id)
       .sort((a, b) => {
-        const pin = Number(pinned.includes(b.id)) - Number(pinned.includes(a.id))
+        const pin =
+          Number(w.preferences.pinned.includes(b.id)) - Number(w.preferences.pinned.includes(a.id))
         return pin || (b.updated_at || 0) - (a.updated_at || 0)
       })
-  }
+  const sessionsOf = (project: Project) =>
+    orderSessions(project.id === w.project?.id ? w.sessions : otherSessions[project.id] || [])
+  const closedSessionsOf = (path: string) => orderSessions(closedSessions[path] || [])
   const deleteChatSession = async (project: Project, session: Session) => {
     try {
       if (project.id === w.project?.id) {
@@ -99,6 +119,14 @@ export function SidebarChats({
   }
   const openChatSession = async (project: Project, session: Session) => {
     await w.openSession(project, session, otherSessions[project.id])
+  }
+  const deleteClosedSession = async (path: string, session: Session) => {
+    try {
+      await w.openProject(path)
+      await w.deleteSession(session.id)
+    } catch (error) {
+      w.errorHandler(error)
+    }
   }
   const recentChats = [personal]
     .filter((project): project is Project => Boolean(project))
@@ -151,7 +179,9 @@ export function SidebarChats({
     .map((path) => folders.find((project) => project.path === path) ?? path)
     .filter((entry) =>
       typeof entry === 'string'
-        ? !needle || entry.toLocaleLowerCase().includes(needle)
+        ? !needle ||
+          entry.toLocaleLowerCase().includes(needle) ||
+          closedSessionsOf(entry).some(matching)
         : !needle ||
           entry.path.toLocaleLowerCase().includes(needle) ||
           sessionsOf(entry).some(matching)
@@ -181,6 +211,24 @@ export function SidebarChats({
           !needle || project.path.toLocaleLowerCase().includes(needle) || matching(session)
       )
       .map((session) => renderSession(project, session))
+  const renderClosedSession = (path: string, session: Session) => (
+    <SidebarSession
+      key={session.id}
+      session={session}
+      personal={false}
+      active={false}
+      busy={Boolean(session.is_busy)}
+      pinned={w.preferences.pinned.includes(session.id)}
+      renaming={false}
+      title={title}
+      onTitle={setTitle}
+      onRename={async () => {}}
+      onCancelRename={() => {}}
+      onOpen={() => void w.openProjectSession(path, session, closedSessionsOf(path))}
+      onDelete={() => void deleteClosedSession(path, session)}
+      onMenu={() => {}}
+    />
+  )
   return (
     <>
       <div className="section-caption navigation-caption">
@@ -235,7 +283,8 @@ export function SidebarChats({
           const subtitle = project?.remote
             ? `${project.remote.user}@${project.remote.host}`
             : path.replace(/[\\/][^\\/]+[\\/]?$/, '') || path
-          const open = Boolean(project && (needle || expanded[project.id]))
+          const open = Boolean(needle || expanded[project ? project.id : path])
+          const closedChats = closedSessionsOf(path)
           return (
             <ProjectCard
               key={path}
@@ -247,10 +296,10 @@ export function SidebarChats({
               closed={closed}
               remote={Boolean(project?.remote)}
               ready={project?.connection === 'ready'}
-              count={project ? sessionsOf(project).length : undefined}
+              count={project ? sessionsOf(project).length : closedChats.length}
               headingProps={reorder.headingProps(path)}
               buttonProps={reorder.buttonProps(path)}
-              onToggle={() => (project ? toggle(project.id, open) : void w.openProject(path))}
+              onToggle={() => toggle(project ? project.id : path, open)}
               onClose={() =>
                 project
                   ? void w.closeProject(project.id)
@@ -259,10 +308,10 @@ export function SidebarChats({
                       projectOrder: projectPaths.filter((item) => item !== path)
                     })
               }
-              onNewChat={() => void createProjectChat(project)}
+              onNewChat={() => void (project ? createProjectChat(project) : w.openProjectNewChat(path))}
             >
-              {project &&
-                (sessionsOf(project).length ? (
+              {project ? (
+                sessionsOf(project).length ? (
                   renderSessions(project)
                 ) : (
                   <button
@@ -272,7 +321,31 @@ export function SidebarChats({
                     <Plus size={13} />
                     {t('Создать первый чат')}
                   </button>
-                ))}
+                )
+              ) : (
+                <>
+                  {closedChats.length ? (
+                    closedChats
+                      .filter((session) => !needle || matching(session))
+                      .map((session) => renderClosedSession(path, session))
+                  ) : (
+                    <button
+                      className="project-empty-chat"
+                      onClick={() => void w.openProjectNewChat(path)}
+                    >
+                      <Plus size={13} />
+                      {t('Создать первый чат')}
+                    </button>
+                  )}
+                  <button
+                    className="project-empty-chat"
+                    onClick={() => void w.openProject(path)}
+                  >
+                    <FolderOpen size={13} />
+                    {t('Открыть проект')}
+                  </button>
+                </>
+              )}
             </ProjectCard>
           )
         })}
