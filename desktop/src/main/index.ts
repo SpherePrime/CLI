@@ -570,6 +570,7 @@ function registerIpc(): void {
   })
   handle('cancelProjectWait', () => projectWait?.abort())
   handle('closeProject', async (id: string) => {
+    const path = workspacePath(id)
     if (requirePrime().isBusy()) throw new Error(t('Сначала завершите активные задачи'))
     if (terminals.list(id).some((item) => item.status === 'running'))
       throw new Error(t('Сначала закройте терминалы проекта'))
@@ -579,7 +580,12 @@ function registerIpc(): void {
     else await requirePrime().close(id)
     windowViewer.forget(id)
     const remaining = [...requirePrime().projects.values()]
-    await settings.update({ activeProject: remaining[0]?.path || '' })
+    const preferences = settings.get()
+    await settings.update({
+      activeProject:
+        preferences.activeProject === path ? remaining[0]?.path || '' : preferences.activeProject,
+      recent: preferences.recent.filter((item) => item !== path)
+    })
   })
   handle('call', async (id: string, operation: Operation, args: any = {}) => {
     projectId.parse(id)
