@@ -58,7 +58,7 @@ test('history pages from disk, searches older messages and exports the complete 
       await page.mouse.wheel(0, -50000)
       await page.waitForTimeout(250)
     }
-    await expect(page.getByRole('button', { name: 'Следующие сообщения', exact: true })).toHaveCount(1)
+    await expect(page.getByRole('button', { name: 'Новые сообщения', exact: true })).toBeVisible()
     await page.keyboard.press('ControlOrMeta+f')
     await page.getByRole('textbox', { name: 'Поиск в чате', exact: true }).fill('Disk history 000')
     await expect(page.locator('[data-message-id="disk-000"]')).toBeVisible()

@@ -16,11 +16,3 @@
 .history-status button {
   margin-left: 10px;
 }
-
-.history-page-button {
-  display: block;
-  margin: 8px auto 18px;
-  padding: 6px 12px;
-  color: var(--secondary);
-  font-size: 12px;
-}
