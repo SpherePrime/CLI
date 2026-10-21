@@ -12,7 +12,7 @@ async function expandProjects(page: Page) {
   await page.locator('.app-shell > .sidebar').waitFor({ state: 'visible' })
 }
 
-export async function launchWorkbench() {
+export async function launchWorkbench(options: { mcp?: Record<string, unknown> } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'prime-workbench-'))
   const provider = await startProvider()
   await mkdir(join(root, 'config'))
@@ -47,7 +47,8 @@ export async function launchWorkbench() {
       models: {
         large: { provider: 'fixture', model: 'desktop-fixture' },
         small: { provider: 'fixture', model: 'desktop-fixture' }
-      }
+      },
+      ...(options.mcp ? { mcp: options.mcp } : {})
     })
   )
   await writeFile(join(root, 'app.ts'), 'export const version = 1\n')

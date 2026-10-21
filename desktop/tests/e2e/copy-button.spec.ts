@@ -26,8 +26,11 @@ test('copy button sits next to the user bubble', async () => {
     expect(buttonBox).not.toBeNull()
     expect(bubbleBox).not.toBeNull()
     expect(articleBox).not.toBeNull()
-    expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(bubbleBox!.x - 2)
-    expect(buttonBox!.x).toBeGreaterThanOrEqual(articleBox!.x)
+    expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(articleBox!.x + articleBox!.width)
+    expect(buttonBox!.x).toBeGreaterThanOrEqual(bubbleBox!.x + bubbleBox!.width - 2)
+    expect(buttonBox!.y + buttonBox!.height).toBeLessThanOrEqual(
+      bubbleBox!.y + bubbleBox!.height + 2
+    )
     await page.screenshot({ path: 'test-results/copy-button.png' })
   } finally {
     await workbench.close()

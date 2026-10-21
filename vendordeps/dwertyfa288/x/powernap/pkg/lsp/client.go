@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/proctree"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/lsp/protocol"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/powernap/pkg/transport"
 )
@@ -807,9 +808,15 @@ func startServerProcess(ctx context.Context, config ClientConfig) (io.ReadWriteC
 	}
 
 	// Start the process
+	proctree.Prepare(cmd)
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start process: %w", err)
 	}
+	group, err := proctree.Attach(cmd)
+	if err != nil {
+		slog.Warn("Language server process tree is not tracked", "command", config.Command, "error", err)
+	}
+	stopGroup := context.AfterFunc(ctx, group.Kill)
 
 	// Monitor stderr
 	go func() {
@@ -829,10 +836,12 @@ func startServerProcess(ctx context.Context, config ClientConfig) (io.ReadWriteC
 	}()
 
 	closer := &processCloser{
-		cmd:    cmd,
-		stdin:  stdin,
-		stdout: stdout,
-		stderr: stderr,
+		cmd:       cmd,
+		stdin:     stdin,
+		stdout:    stdout,
+		stderr:    stderr,
+		group:     group,
+		stopGroup: stopGroup,
 	}
 
 	return transport.NewStreamTransport(stdout, stdin, closer), nil
@@ -843,6 +852,8 @@ type processCloser struct {
 	stdin     io.WriteCloser
 	stdout    io.ReadCloser
 	stderr    io.ReadCloser
+	group     *proctree.Group
+	stopGroup func() bool
 	closeOnce sync.Once
 	closeErr  error
 }
@@ -869,6 +880,8 @@ func (c *processCloser) Close() error {
 			<-done
 		}
 
+		c.stopGroup()
+		c.group.Kill()
 		c.closeErr = errors.Join(errs...)
 	})
 	return c.closeErr
