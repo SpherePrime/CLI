@@ -98,7 +98,7 @@ export function SidebarChats({
   const sessionsOf = (project: Project) => {
     const sessions = project.id === w.project?.id ? w.sessions : otherSessions[project.id] || []
     const pinned = w.preferences.pinned
-    return [...sessions]
+    return [...new Map(sessions.map((session) => [session.id, session])).values()]
       .filter((session) => !session.parent_session_id)
       .sort((a, b) => {
         const pin = Number(pinned.includes(b.id)) - Number(pinned.includes(a.id))

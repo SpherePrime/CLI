@@ -19,6 +19,10 @@ import { useChatPermissions } from '../features/chat/useChatPermissions'
 
 const resolvedLimit = 1000
 
+function upsertSession(items: Session[], session: Session) {
+  return [session, ...items.filter((item) => item.id !== session.id)]
+}
+
 function rememberResolved(keys: Set<string>, key: string) {
   keys.add(key)
   if (keys.size <= resolvedLimit) return
@@ -458,8 +462,10 @@ export function useWorkspace() {
       }
       if (event.type === 'session') {
         setSessions((items) => {
-          const remaining = items.filter((item) => item.id !== payload.id)
-          return event.payload.action === 'deleted' ? remaining : [payload, ...remaining]
+          if (event.payload.action === 'deleted')
+            return items.filter((item) => item.id !== payload.id)
+          if (event.payload.action === 'created') return upsertSession(items, payload)
+          return items.map((item) => (item.id === payload.id ? { ...item, ...payload } : item))
         })
         if (payload?.id === current.current.session?.id)
           setSession((previous: any) => ({ ...previous, ...payload }))
@@ -644,7 +650,7 @@ export function useWorkspace() {
       const created = await window.prime.call(targetProject.id, 'createSession', {
         title: translate(language.current, 'Новый чат')
       })
-      setSessions((items) => [created, ...items])
+      setSessions((items) => upsertSession(items, created))
       void savePreferences({
         reasoningBySession: { [created.id]: draftReasoningMode || reasoningFallback }
       }).catch(errorHandler)
@@ -717,7 +723,7 @@ export function useWorkspace() {
         }
       }
       if (current.current.project?.id === targetProject.id && !current.current.session) {
-        setSessions((items) => [selected!, ...items])
+        setSessions((items) => upsertSession(items, selected!))
         await selectSession(selected)
       }
       await refresh()
@@ -774,6 +780,7 @@ export function useWorkspace() {
   async function deleteSession(id: string) {
     await call('deleteSession', { sessionId: id })
     messageCache.current.delete(id)
+    setSessions((items) => items.filter((item) => item.id !== id))
     if (current.current.session?.id === id) {
       current.current.session = null
       setSession(null)
