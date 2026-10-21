@@ -580,6 +580,7 @@ export function useWorkspace() {
   async function closeProject(id: string) {
     try {
       await window.prime.closeProject(id)
+      setPreferences(await window.prime.preferences())
       const remaining = projects.filter((item) => item.id !== id)
       setProjects(remaining)
       if (current.current.project?.id === id) {
@@ -589,6 +590,7 @@ export function useWorkspace() {
         setMessages([])
         setSessions([])
         setBusy(false)
+        setQueue([])
         setPermissions([])
         setQuestions([])
         setResources({ mcp: {}, lsp: {}, skills: [] })
@@ -625,13 +627,14 @@ export function useWorkspace() {
   }
   async function createSession() {
     try {
-      const personal =
+      const targetProject =
+        current.current.project ||
         projects.find((item) => item.kind === 'chat') || (await window.prime.openChat())
-      if (personal.id !== current.current.project?.id) {
+      if (targetProject.id !== current.current.project?.id) {
         setProjects(await window.prime.projects())
-        await selectProject(personal)
+        await selectProject(targetProject)
       }
-      const created = await window.prime.call(personal.id, 'createSession', {
+      const created = await window.prime.call(targetProject.id, 'createSession', {
         title: translate(language.current, 'Новый чат')
       })
       setSessions((items) => [created, ...items])
