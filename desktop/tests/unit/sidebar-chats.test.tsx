@@ -32,10 +32,18 @@ it('shows a labeled working indicator for the active chat immediately', () => {
 
 it('lists all personal chats only in recent chats', () => {
   const html = sidebar(10)
-  const recent = html.indexOf('НЕДАВНИЕ')
+  const recent = html.indexOf('ЛИЧНЫЕ ЧАТЫ')
   expect(recent).toBeGreaterThan(0)
   expect(html.slice(0, recent)).not.toContain('Personal 0')
   expect(html.match(/class="session-row recent-chat/g)).toHaveLength(10)
+})
+
+it('distinguishes project cards from personal chats with labeled navigation', () => {
+  const html = sidebar()
+  expect(html).toContain('project-card')
+  expect(html).toContain('aria-label="Проект repo"')
+  expect(html).toContain('aria-label="Поиск проектов и чатов"')
+  expect(html).toContain('Без проекта')
 })
 
 it('keeps pinned personal chats marked in recent chats', () => {

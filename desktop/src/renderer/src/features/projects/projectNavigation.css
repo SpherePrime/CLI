@@ -1,0 +1,242 @@
+.sidebar .navigation-caption {
+  margin: 18px 4px 10px;
+  letter-spacing: 1.1px;
+  font-size: 10px;
+}
+.navigation-caption > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.navigation-caption b {
+  font-size: 10px;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--secondary);
+  background: var(--raised);
+  border-radius: 5px;
+  padding: 2px 5px;
+  font-variant-numeric: tabular-nums;
+}
+.sidebar .project-search-box {
+  margin: 0 0 14px;
+  min-height: 36px;
+  padding: 0 10px;
+  background: color-mix(in srgb, var(--bg) 42%, transparent);
+  transition: border-color 140ms ease;
+}
+.sidebar .project-search-box:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+.project-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sidebar .project-card {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 36%, transparent);
+}
+.sidebar .project-card.active-group {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+.sidebar .project-card .project-heading {
+  position: relative;
+  padding: 3px;
+  gap: 0;
+}
+.sidebar .project-card .project-item {
+  padding: 9px 4px;
+  gap: 8px;
+  min-height: 54px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.sidebar .project-card .project-item:hover {
+  background: color-mix(in srgb, var(--hover) 55%, transparent);
+}
+.sidebar .project-card .project-symbol {
+  flex: 0 0 29px;
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--raised);
+  color: var(--secondary);
+  position: relative;
+  overflow: visible;
+}
+.sidebar .active-group .project-symbol {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.project-connection {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--sidebar);
+  border-radius: 50%;
+}
+.project-connection.ready {
+  background: var(--green);
+}
+.project-connection.pending {
+  background: var(--amber);
+}
+.sidebar .project-card .project-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+}
+.project-identity strong,
+.project-identity small {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.project-identity strong {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 600;
+}
+.project-identity small {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.sidebar .project-card .project-count {
+  flex: 0 0 auto;
+  min-width: 15px;
+  font-size: 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.project-chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform 140ms ease;
+}
+.project-chevron.expanded {
+  transform: rotate(90deg);
+}
+.sidebar .project-card .project-close {
+  width: 20px;
+  min-width: 20px;
+  height: 26px;
+  padding: 0;
+  opacity: 0;
+}
+.sidebar .project-card .project-heading:hover .project-close,
+.sidebar .project-card .project-heading:focus-within .project-close {
+  opacity: 1;
+}
+.project-chat-area {
+  padding: 0 7px 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+.project-chat-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 2px 4px 9px;
+  font-size: 9px;
+  letter-spacing: 0.7px;
+  color: var(--muted);
+}
+.project-chat-caption .icon {
+  width: 24px;
+  height: 24px;
+  color: var(--secondary);
+}
+.project-chat-list {
+  border-left: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  margin-left: 10px;
+  padding-left: 8px;
+}
+.sidebar .project-card .session-row {
+  margin: 2px 0;
+  border-radius: 7px;
+}
+.sidebar .project-card .session-link {
+  padding: 10px 5px 10px 7px;
+  gap: 7px;
+  min-height: 36px;
+}
+.sidebar .session-row.active::before {
+  left: -10px;
+  width: 2px;
+  inset-block: 10px;
+}
+.sidebar .session-row:not(.active):hover {
+  background: color-mix(in srgb, var(--hover) 60%, transparent);
+}
+.sidebar .session-row form {
+  min-width: 0;
+  flex: 1;
+  padding: 3px;
+}
+.sidebar .session-row .row-delete {
+  width: 22px;
+  min-width: 22px;
+  margin-right: 2px;
+}
+.project-empty-chat,
+.personal-empty-chat {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  justify-content: flex-start;
+  padding: 10px 6px;
+  width: 100%;
+}
+.sidebar .personal-chat-section {
+  border-top: 1px solid var(--border);
+  margin-top: 21px;
+  padding-top: 1px;
+}
+.sidebar .personal-chat-section .navigation-caption {
+  margin-top: 12px;
+  margin-bottom: 2px;
+  letter-spacing: 0.7px;
+}
+.personal-chat-hint {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 0 4px 10px;
+}
+.sidebar .personal-chat-section .session-row {
+  margin: 2px 0;
+}
+.sidebar .personal-chat-section .session-row.active::before {
+  left: -2px;
+}
+.sidebar .personal-chat-section .session-link {
+  padding: 10px 7px;
+  gap: 8px;
+}
+.session-pin {
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-chevron,
+  .sidebar .project-search-box {
+    transition: none;
+  }
+}
+:root[data-motion='reduced'] .project-chevron {
+  transition: none;
+}
