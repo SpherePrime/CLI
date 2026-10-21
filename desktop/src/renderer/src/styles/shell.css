@@ -587,3 +587,7 @@ dialog.modal,
   left: calc(100% + var(--panel-gutter, 8px));
   box-shadow: 16px 0 40px #0004;
 }
+
+.app-shell .sidebar .sidebar-footer {
+  display: none;
+}

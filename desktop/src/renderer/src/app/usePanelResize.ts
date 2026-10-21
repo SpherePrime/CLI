@@ -44,7 +44,7 @@ export function usePanelResize({
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     const start = event.clientX
-    const initial = collapsed[which] ? railWidth : widths[which]
+    const initial = collapsed[which] ? limits[which].min - collapseDistance : widths[which]
     let latest = initial
     const move = (move: PointerEvent) => {
       latest = initial + ((move.clientX - start) / zoom) * (which === 'sidebar' ? 1 : -1)

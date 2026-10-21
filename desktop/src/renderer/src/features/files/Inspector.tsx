@@ -38,18 +38,18 @@ function parentFolder(entry: Entry | null) {
 
 export function Inspector({
   workspace: w,
-  close,
   openDocument,
   compact = false,
-  browserRequest = 0,
-  onExpand
+  expanded = false,
+  setExpanded,
+  browserRequest = 0
 }: {
   workspace: Workspace
-  close: () => void
   openDocument: (workspaceId: string, path: string, diff?: any) => Promise<void>
   compact?: boolean
+  expanded?: boolean
+  setExpanded: (expanded: boolean) => void
   browserRequest?: number
-  onExpand?: () => void
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
@@ -94,7 +94,7 @@ export function Inspector({
   useEffect(() => {
     if (browserRequest) {
       setTab('browser')
-      if (!onExpand) setPanelOpen(true)
+      if (compact) setPanelOpen(true)
     }
   }, [browserRequest])
   useEffect(() => setOpened([]), [w.project?.id])
@@ -227,48 +227,32 @@ export function Inspector({
       setError(error.message)
     }
   }
-  return (
-    <aside
-      ref={panel}
-      className={`inspector ${compact ? 'inspector-rail' : ''} ${panelOpen ? 'panel-open' : ''}`}
-    >
+  const open = compact ? panelOpen : expanded
+  function select(id: string) {
+    if (open && tab === id) return compact ? setPanelOpen(false) : setExpanded(false)
+    setTab(id)
+    if (compact) setPanelOpen(true)
+    else setExpanded(true)
+  }
+  const body = (
+    <>
       <div className="inspector-header">
         <strong>{t('Рабочая область')}</strong>
         <button
           className="icon"
           title={t('Скрыть панель')}
           aria-label={t('Скрыть панель')}
-          onClick={compact ? () => setPanelOpen(false) : close}
+          onClick={() => (compact ? setPanelOpen(false) : setExpanded(false))}
         >
           <PanelRightClose size={16} />
         </button>
       </div>
-      <div className="inspector-tabs">
-        {[
-          { id: 'files', icon: Files, title: t('Файлы') },
-          { id: 'changes', icon: FileDiff, title: t('Изменения') },
-          { id: 'browser', icon: Globe, title: t('Браузер') }
-        ].map((item) => (
-          <button
-            key={item.id}
-            title={item.title}
-            aria-label={item.title}
-            className={tab === item.id ? 'active' : ''}
-            aria-expanded={compact ? panelOpen && tab === item.id : undefined}
-            onClick={() => {
-              setTab(item.id)
-              if (compact && onExpand) return onExpand()
-              setPanelOpen(!panelOpen || tab !== item.id)
-            }}
-          >
-            <item.icon size={15} />
-            <span>{item.title}</span>
-          </button>
-        ))}
-      </div>
       {tab === 'browser' && (
         <div className="inspector-browser">
-          <BrowserTab workspace={w} onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)} />
+          <BrowserTab
+            workspace={w}
+            onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
+          />
         </div>
       )}
       <div className="inspector-content" hidden={tab === 'browser'}>
@@ -398,7 +382,37 @@ export function Inspector({
           </button>
         </div>
       )}
-    </aside>
+    </>
+  )
+  return (
+    <>
+      {!compact && expanded && <aside className="inspector inspector-panel">{body}</aside>}
+      <aside
+        ref={compact ? panel : undefined}
+        className={`inspector inspector-rail ${compact && panelOpen ? 'panel-open' : ''}`}
+      >
+        <div className="inspector-tabs">
+          {[
+            { id: 'files', icon: Files, title: t('Файлы') },
+            { id: 'changes', icon: FileDiff, title: t('Изменения') },
+            { id: 'browser', icon: Globe, title: t('Браузер') }
+          ].map((item) => (
+            <button
+              key={item.id}
+              title={item.title}
+              aria-label={item.title}
+              className={open && tab === item.id ? 'active' : ''}
+              aria-pressed={open && tab === item.id}
+              onClick={() => select(item.id)}
+            >
+              <item.icon size={15} />
+              <span>{item.title}</span>
+            </button>
+          ))}
+        </div>
+        {compact && panelOpen && body}
+      </aside>
+    </>
   )
 }
 function Tree({

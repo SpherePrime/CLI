@@ -8,7 +8,7 @@ import type { Project } from '../../src/shared/contracts'
 
 async function expandProjects(page: Page) {
   await page.locator('.project-rail').waitFor({ state: 'visible' })
-  await page.getByRole('button', { name: 'Панель проектов', exact: true }).click()
+  await page.locator('.workspace-topbar').getByRole('button', { name: 'Панель проектов', exact: true }).click()
   await page.locator('.app-shell > .sidebar').waitFor({ state: 'visible' })
 }
 

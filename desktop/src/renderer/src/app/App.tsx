@@ -199,9 +199,9 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         <WorkspaceTopbar
           workspace={w}
           projectName={projectName || ''}
-          sidebarVisible={showSidebar && !layout.sidebarCompact}
+          sidebarVisible={showSidebar && layout.sidebarOpen}
           toggleSidebar={toggleSidebar}
-          inspectorVisible={showInspector && !layout.inspectorCompact}
+          inspectorVisible={showInspector && layout.inspectorOpen}
           toggleInspector={toggleInspector}
           focusMode={focusMode}
           toggleFocus={toggleFocus}
@@ -236,21 +236,19 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       >
         {showSidebar && (
           <>
-            {layout.sidebarCompact ? (
-              <ProjectRail
-                workspace={w}
-                onCommands={() => setModal('commands')}
-                onSettings={() => setModal('settings')}
-                onJobs={() => setModal('jobs')}
-                onTools={() => openTools(workbenchView)}
-                onPlugins={() => setModal('plugins')}
-                onExpand={layout.compact ? undefined : () => setCollapsed('sidebar', false)}
-              >
-                {sidebarPanel}
-              </ProjectRail>
-            ) : (
-              sidebarPanel
-            )}
+            <ProjectRail
+              workspace={w}
+              onCommands={() => setModal('commands')}
+              onSettings={() => setModal('settings')}
+              onJobs={() => setModal('jobs')}
+              onTools={() => openTools(workbenchView)}
+              onPlugins={() => setModal('plugins')}
+              expanded={layout.sidebarOpen}
+              onToggle={layout.compact ? undefined : toggleSidebar}
+            >
+              {sidebarPanel}
+            </ProjectRail>
+            {layout.sidebarOpen && sidebarPanel}
             {layout.sidebarResizable && (
               <div {...panels.separator('sidebar', t('Ширина панели проектов'), layout.sidebar)} />
             )}
@@ -305,16 +303,12 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               <div {...panels.separator('inspector', t('Ширина рабочей области'), layout.inspector)} />
             )}
             <Inspector
-              compact={layout.inspectorCompact}
+              compact={layout.compact}
+              expanded={layout.inspectorOpen}
+              setExpanded={(open) => setCollapsed('inspector', !open)}
               workspace={w}
-              close={() => setCollapsed('inspector', true)}
               openDocument={documents.open}
               browserRequest={browserRequest}
-              onExpand={
-                layout.inspectorCompact && !layout.compact
-                  ? () => setCollapsed('inspector', false)
-                  : undefined
-              }
             />
           </>
         )}
