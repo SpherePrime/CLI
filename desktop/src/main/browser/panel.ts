@@ -1,4 +1,4 @@
-import { BrowserWindow, WebContentsView, session, type WebContents } from 'electron'
+import { BrowserWindow, WebContentsView, session, type NativeImage, type WebContents } from 'electron'
 import { randomUUID } from 'node:crypto'
 
 export type BrowserBounds = { x: number; y: number; width: number; height: number }
@@ -50,8 +50,9 @@ export class BrowserPanel {
   private active?: string
   private attached?: WebContentsView
   private visible = false
-  private bounds: BrowserBounds = { x: 0, y: 0, width: 0, height: 0 }
+  private bounds: BrowserBounds = { x: 0, y: 0, width: 1280, height: 720 }
   private entries: BrowserLog[] = []
+  private captures = new Map<string, Promise<NativeImage>>()
 
   constructor(
     private readonly window: () => BrowserWindow | null,
@@ -59,7 +60,48 @@ export class BrowserPanel {
   ) {}
 
   get contents(): WebContents {
-    return this.ensure().webContents
+    return this.getTab().contents
+  }
+
+  getTab(tabId?: string): { id: string; contents: WebContents } {
+    if (tabId === undefined) this.ensure()
+    const tab = this.tabs.find((item) => item.id === (tabId ?? this.active))
+    if (!tab || tab.view.webContents.isDestroyed()) throw new Error('Вкладка не найдена')
+    return { id: tab.id, contents: tab.view.webContents }
+  }
+
+  async captureTab(tabId?: string): Promise<NativeImage> {
+    const target = this.getTab(tabId)
+    const pending = this.captures.get(target.id)
+    if (pending) return pending
+    const tab = this.tabs.find((item) => item.id === target.id)!
+    const capture = this.captureView(tab)
+    this.captures.set(target.id, capture)
+    try {
+      return await capture
+    } finally {
+      this.captures.delete(target.id)
+    }
+  }
+
+  private async captureView(tab: Tab): Promise<NativeImage> {
+    const window = this.window()
+    if (!window || window.isDestroyed()) throw new Error('Окно браузера недоступно')
+    const temporary = this.attached !== tab.view
+    if (temporary) window.contentView.addChildView(tab.view, 0)
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      return await Promise.race([
+        tab.view.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true }),
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => reject(new Error('Не удалось получить снимок вкладки за 5 секунд')), 5000)
+        })
+      ])
+    } finally {
+      if (timer) clearTimeout(timer)
+      if (temporary && this.attached !== tab.view && !window.isDestroyed())
+        window.contentView.removeChildView(tab.view)
+    }
   }
 
   private current(): Tab | undefined {
@@ -108,6 +150,8 @@ export class BrowserPanel {
   }
 
   private attach() {
+    for (const tab of this.tabs)
+      if (!tab.view.webContents.isDestroyed()) tab.view.setBounds(this.bounds)
     const window = this.window()
     if (!window || window.isDestroyed()) return
     const view = this.current()?.view
@@ -116,7 +160,6 @@ export class BrowserPanel {
       this.attached = undefined
     }
     if (!this.visible || !view) return
-    view.setBounds(this.bounds)
     if (this.attached !== view) {
       window.contentView.addChildView(view)
       this.attached = view
@@ -141,17 +184,35 @@ export class BrowserPanel {
   }
 
   newTab(url?: string) {
-    if (this.tabs.length >= maxTabs) throw new Error(`Можно открыть не больше ${maxTabs} вкладок`)
-    const tab = this.create()
-    this.active = tab.id
-    this.attach()
-    this.update()
-    if (url) void this.navigate(url).catch(() => {})
+    const target = url ? normalizeBrowserUrl(url) : undefined
+    const tab = this.createTab(true)
+    if (target) void this.loadTab(tab, target).catch(() => {})
     return this.state()
   }
 
+  async openTab(value = 'about:blank', activate = false): Promise<BrowserTabState> {
+    const url = normalizeBrowserUrl(value)
+    const tab = this.createTab(activate)
+    await this.loadTab(tab, url)
+    return this.tabState(tab)
+  }
+
+  private createTab(activate: boolean): Tab {
+    const tab = this.create()
+    if (activate || !this.current()) this.active = tab.id
+    this.attach()
+    this.update()
+    return tab
+  }
+
+  private async loadTab(tab: Tab, url: string) {
+    await tab.view.webContents.loadURL(url).catch((error) => {
+      if (!String(error?.message).includes('ERR_ABORTED')) throw error
+    })
+  }
+
   selectTab(id: string) {
-    if (!this.tabs.some((tab) => tab.id === id)) throw new Error('Вкладка не найдена')
+    this.getTab(id)
     this.active = id
     this.attach()
     this.update()
@@ -159,8 +220,8 @@ export class BrowserPanel {
   }
 
   closeTab(id: string) {
+    this.getTab(id)
     const index = this.tabs.findIndex((tab) => tab.id === id)
-    if (index < 0) return this.state()
     const [tab] = this.tabs.splice(index, 1)
     if (this.attached === tab.view) {
       this.window()?.contentView.removeChildView(tab.view)
@@ -180,27 +241,28 @@ export class BrowserPanel {
     })
   }
 
-  async navigate(value: string, agent = false, width?: number) {
+  async navigate(value: string, agent = false, width?: number, tabId?: string) {
     const url = normalizeBrowserUrl(value)
+    const { contents } = this.getTab(tabId)
     this.reveal(agent, width)
-    await this.contents.loadURL(url).catch((error) => {
+    await contents.loadURL(url).catch((error) => {
       if (!String(error?.message).includes('ERR_ABORTED')) throw error
     })
     return this.state()
   }
 
-  back() {
-    const contents = this.current()?.view.webContents
+  back(tabId?: string) {
+    const contents = tabId === undefined ? this.current()?.view.webContents : this.getTab(tabId).contents
     if (contents?.navigationHistory.canGoBack()) contents.navigationHistory.goBack()
   }
 
-  forward() {
-    const contents = this.current()?.view.webContents
+  forward(tabId?: string) {
+    const contents = tabId === undefined ? this.current()?.view.webContents : this.getTab(tabId).contents
     if (contents?.navigationHistory.canGoForward()) contents.navigationHistory.goForward()
   }
 
-  reload() {
-    const contents = this.current()?.view.webContents
+  reload(tabId?: string) {
+    const contents = tabId === undefined ? this.current()?.view.webContents : this.getTab(tabId).contents
     if (!contents) return
     if (contents.isLoading()) contents.stop()
     else contents.reload()
@@ -223,6 +285,8 @@ export class BrowserPanel {
   }
 
   private create(): Tab {
+    this.tabs = this.tabs.filter((tab) => !tab.view.webContents.isDestroyed())
+    if (this.tabs.length >= maxTabs) throw new Error(`Можно открыть не больше ${maxTabs} вкладок`)
     const browserSession = session.fromPartition(partition)
     browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
     const view = new WebContentsView({
@@ -231,16 +295,18 @@ export class BrowserPanel {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
-        webSecurity: true
+        webSecurity: true,
+        backgroundThrottling: false
       }
     })
     view.setBackgroundColor('#ffffff')
+    view.setBounds(this.bounds)
     const tab: Tab = { id: randomUUID(), view }
     const contents = view.webContents
     contents.setWindowOpenHandler(({ url }) => {
       try {
         const target = normalizeBrowserUrl(url)
-        if (this.tabs.length < maxTabs) this.newTab(target)
+        if (this.tabs.length < maxTabs) void this.openTab(target, this.active === tab.id).catch(() => {})
         else void contents.loadURL(target)
       } catch {}
       return { action: 'deny' }

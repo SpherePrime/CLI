@@ -31,6 +31,10 @@ const groups: { prefix: string; icon: LucideIcon; label: string }[] = [
 
 const actions: Record<string, string> = {
   browser_navigate: 'Открывает страницу',
+  browser_tabs: 'Список вкладок',
+  browser_new_tab: 'Открывает вкладку',
+  browser_select_tab: 'Выбирает вкладку',
+  browser_close_tab: 'Закрывает вкладку',
   browser_snapshot: 'Читает страницу',
   browser_screenshot: 'Снимок страницы',
   browser_click: 'Нажимает на странице',
