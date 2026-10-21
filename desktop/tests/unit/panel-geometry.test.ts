@@ -5,18 +5,27 @@ describe('panel geometry', () => {
   it('keeps both icon rails and a usable conversation in narrow windows', () => {
     const layout = panelGeometry(480, 256, 334, true, true)
     expect(layout.compact).toBe(true)
-    expect(layout.sidebar).toBe(48)
-    expect(layout.inspector).toBe(48)
+    expect(layout.sidebarOpen).toBe(false)
+    expect(layout.inspectorOpen).toBe(false)
     expect(layout.columns).toBe('56px minmax(0, 1fr) 56px')
   })
-  it('preserves expanded panels when the available width fits', () => {
-    expect(panelGeometry(1440, 256, 334, true, true).compact).toBe(false)
+  it('opens panels next to permanent rails in wide windows', () => {
+    const layout = panelGeometry(1440, 256, 334, true, true)
+    expect(layout.sidebarOpen).toBe(true)
+    expect(layout.inspectorOpen).toBe(true)
+    expect(layout.columns).toBe('56px 256px 8px minmax(0, 1fr) 8px 334px 56px')
   })
-  it('allows the workspace to use nearly the entire available window', () => {
-    const layout = panelGeometry(1440, 256, 1200, true, true)
-    expect(layout.inspector).toBe(1200)
-    expect(layout.sidebar).toBe(48)
-    expect(layout.inspectorMax).toBe(1254)
+  it('keeps collapsed panels as resizable icon rails', () => {
+    const layout = panelGeometry(1440, 256, 350, true, true, true, true)
+    expect(layout.sidebarOpen).toBe(false)
+    expect(layout.inspectorOpen).toBe(false)
+    expect(layout.columns).toBe('48px 8px minmax(0, 1fr) 8px 48px')
+  })
+  it('closes the project panel when the workspace leaves too little room', () => {
+    const layout = panelGeometry(1440, 256, 1100, true, true)
+    expect(layout.inspector).toBe(1100)
+    expect(layout.sidebarOpen).toBe(false)
+    expect(layout.inspectorMax).toBe(1198)
   })
   it('does not reintroduce manually hidden panels', () => {
     expect(panelGeometry(480, 256, 334, false, false).columns).toBe('minmax(0, 1fr)')
@@ -26,15 +35,9 @@ describe('panel geometry', () => {
 it('shifts the chat column toward the window center', () => {
   const wide = panelGeometry(1440, 256, 350, true, true)
   expect(chatCenterShift(wide, true, true, false)).toBe(47)
-  expect(chatCenterShift(wide, true, false, false)).toBe(-132)
   expect(chatCenterShift(wide, true, true, true)).toBe(0)
+  const collapsed = panelGeometry(1440, 256, 350, true, true, false, true)
+  expect(chatCenterShift(collapsed, true, true, false)).toBe(-132)
   const compact = panelGeometry(800, 256, 350, true, true)
   expect(chatCenterShift(compact, true, true, false)).toBe(0)
-})
-
-it('keeps collapsed panels as resizable icon rails', () => {
-  const layout = panelGeometry(1440, 256, 350, true, true, true, true)
-  expect(layout.sidebarCompact).toBe(true)
-  expect(layout.inspectorCompact).toBe(true)
-  expect(layout.columns).toBe('48px 8px minmax(0, 1fr) 8px 48px')
 })

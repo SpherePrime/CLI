@@ -21,7 +21,8 @@ export function ProjectRail({
   onJobs,
   onTools,
   onPlugins,
-  onExpand
+  expanded = false,
+  onToggle
 }: {
   workspace: Workspace
   children: ReactNode
@@ -30,7 +31,8 @@ export function ProjectRail({
   onJobs: () => void
   onTools: () => void
   onPlugins: () => void
-  onExpand?: () => void
+  expanded?: boolean
+  onToggle?: () => void
 }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
@@ -68,11 +70,11 @@ export function ProjectRail({
     <div className="project-rail" ref={root}>
       <button
         ref={trigger}
-        className={`icon ${open ? 'active-control' : ''}`}
+        className={`icon ${open || expanded ? 'active-control' : ''}`}
         title={t('Панель проектов')}
         aria-label={t('Панель проектов')}
-        aria-expanded={open}
-        onClick={() => (onExpand ? onExpand() : setOpen(!open))}
+        aria-expanded={open || expanded}
+        onClick={() => (onToggle ? onToggle() : setOpen(!open))}
       >
         <FolderOpen size={19} />
       </button>
