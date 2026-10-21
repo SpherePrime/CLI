@@ -13,24 +13,33 @@ export type ModelCapability = {
   context_window?: number
 }
 
+const capabilityCache = new Map<string, ModelCapability[]>()
+
 export function useModelCapabilities(workspace: Workspace) {
-  const [models, setModels] = useState<ModelCapability[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const projectId = workspace.project?.id
+  const cached = projectId ? capabilityCache.get(projectId) : undefined
+  const [models, setModels] = useState<ModelCapability[]>(cached || [])
+  const [loading, setLoading] = useState(!cached)
+  const [error, setError] = useState('')
+  const configKey = JSON.stringify([workspace.config?.providers, workspace.config?.models])
   useEffect(() => {
     let current = true
-    setLoading(true)
     setError('')
     if (!projectId) {
       setModels([])
       setLoading(false)
       return
     }
+    const known = capabilityCache.get(projectId)
+    if (known) setModels(known)
+    setLoading(!known)
     void workspace
       .call('models')
       .then((result) => {
-        if (current) setModels(Array.isArray(result) ? result : result?.models || [])
+        const next: ModelCapability[] = Array.isArray(result) ? result : result?.models || []
+        const previous = capabilityCache.get(projectId)
+        capabilityCache.set(projectId, next)
+        if (current && JSON.stringify(previous) !== JSON.stringify(next)) setModels(next)
       })
       .catch((reason) => {
         if (current) setError(reason?.message || String(reason))
@@ -41,7 +50,7 @@ export function useModelCapabilities(workspace: Workspace) {
     return () => {
       current = false
     }
-  }, [projectId, workspace.config])
+  }, [projectId, configKey])
   return { models, loading, error }
 }
 

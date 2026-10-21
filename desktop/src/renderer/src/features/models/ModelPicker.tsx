@@ -96,7 +96,7 @@ export function ModelPicker({
           }
         }}
       >
-        {loading && <p className="picker-note muted">{t('Загружаем каталог моделей…')}</p>}
+        {loading && !models.length && <p className="picker-note muted">{t('Загружаем каталог моделей…')}</p>}
         {!loading && !groups.length && (
           <p className="picker-note muted">
             {models.length
