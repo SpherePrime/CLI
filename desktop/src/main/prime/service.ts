@@ -128,12 +128,13 @@ export class PrimeService {
     }
     return project
   }
-  projectSessions(paths: string[]): Promise<Record<string, Session[]>> {
-    if (!paths.length) return Promise.resolve({})
-    return this.transport.request(
+  async projectSessions(paths: string[]): Promise<Record<string, Session[]>> {
+    if (!paths.length) return {}
+    const response = await this.transport.request<{ projects?: Record<string, Session[]> }>(
       'GET',
       `/v1/project-sessions?paths=${paths.map((path) => encodeURIComponent(path)).join(',')}`
     )
+    return response?.projects ?? {}
   }
   async close(id: string): Promise<void> {
     this.initializationControllers.get(id)?.abort()
