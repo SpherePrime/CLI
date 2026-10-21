@@ -30,7 +30,8 @@ export class SettingsStore {
       drafts: { ...this.value.drafts, ...patch.drafts },
       skipBySession: { ...this.value.skipBySession, ...patch.skipBySession },
       reasoningBySession: { ...this.value.reasoningBySession, ...patch.reasoningBySession },
-      agentContexts: { ...this.value.agentContexts, ...patch.agentContexts }
+      agentContexts: { ...this.value.agentContexts, ...patch.agentContexts },
+      sessionOrder: { ...this.value.sessionOrder, ...patch.sessionOrder }
     }
     const content = JSON.stringify({ version: 1, preferences: this.value }, null, 2)
     const persist = this.writes
