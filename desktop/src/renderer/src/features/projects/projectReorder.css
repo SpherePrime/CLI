@@ -25,3 +25,13 @@
 .project-drop-after::after {
   bottom: -1px;
 }
+
+.session-reorder-row {
+  position: relative;
+}
+.session-reorder-row .session-link[draggable='true'] {
+  cursor: grab;
+}
+.session-reorder-row.session-dragging {
+  opacity: 0.45;
+}

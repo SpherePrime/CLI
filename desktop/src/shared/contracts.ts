@@ -38,6 +38,7 @@ export type Session = {
   cost?: number
   prompt_tokens?: number
   completion_tokens?: number
+  created_at?: number
   updated_at?: number
   todos?: Json[]
 }
@@ -83,6 +84,7 @@ export type Preferences = {
   language: 'ru' | 'en'
   recent: string[]
   projectOrder?: string[]
+  sessionOrder?: Record<string, string[]>
   pinned: string[]
   favoriteModels?: { provider: string; model: string }[]
   recentModels?: { provider: string; model: string }[]

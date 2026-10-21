@@ -6,8 +6,9 @@ import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
 import { isRemoteWorkspace } from '../../../../shared/remoteWorkspace'
-import { orderedProjectPaths } from './projectOrder'
+import { orderedProjectPaths, orderedSessions } from './projectOrder'
 import { useProjectReorder } from './useProjectReorder'
+import { useSessionReorder } from './useSessionReorder'
 import { watchProjectSessions } from './projectSessionEvents'
 import { ProjectCard } from './ProjectCard'
 import { SidebarSession } from './SidebarSession'
@@ -91,24 +92,47 @@ export function SidebarChats({
       cancelled = true
     }
   }, [closedKey])
-  const orderSessions = (sessions: Session[]) =>
-    [...new Map(sessions.map((session) => [session.id, session])).values()]
-      .filter((session) => !session.parent_session_id)
-      .sort((a, b) => {
-        const pin =
-          Number(w.preferences.pinned.includes(b.id)) - Number(w.preferences.pinned.includes(a.id))
-        return pin || (b.updated_at || 0) - (a.updated_at || 0)
-      })
+  const orderSessions = (project: Project, sessions: Session[]) => {
+    const deduped = [...new Map(sessions.map((session) => [session.id, session])).values()].filter(
+      (session) => !session.parent_session_id
+    )
+    return orderedSessions(deduped, w.preferences.pinned, w.preferences.sessionOrder?.[project.id])
+  }
   const sessionsOf = (project: Project) =>
-    orderSessions(project.id === w.project?.id ? w.sessions : otherSessions[project.id] || [])
-  const closedSessionsOf = (path: string) => orderSessions(closedSessions[path] || [])
+    orderSessions(project, project.id === w.project?.id ? w.sessions : otherSessions[project.id] || [])
+  const closedSessionsOf = (path: string) => {
+    const project = w.projects.find((item) => item.path === path)
+    const sessions = closedSessions[path] || []
+    return project ? orderSessions(project, sessions) : [...sessions].sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+  }
+  const sessionIds = (projectId: string) =>
+    w.projects
+      .filter((project) => project.id === projectId)
+      .flatMap((project) => sessionsOf(project).map((session) => session.id))
+  const sessionReorder = useSessionReorder(sessionIds, (projectId, ids) => {
+    void w.savePreferences({
+      sessionOrder: { ...w.preferences.sessionOrder, [projectId]: ids }
+    })
+  })
+  const forgetSessionOrder = (projectId: string, sessionId: string) => {
+    const order = w.preferences.sessionOrder?.[projectId]
+    if (!order?.includes(sessionId)) return
+    void w.savePreferences({
+      sessionOrder: {
+        ...w.preferences.sessionOrder,
+        [projectId]: order.filter((id) => id !== sessionId)
+      }
+    })
+  }
   const deleteChatSession = async (project: Project, session: Session) => {
     try {
       if (project.id === w.project?.id) {
         await w.deleteSession(session.id)
+        forgetSessionOrder(project.id, session.id)
         return
       }
       await window.prime.call(project.id, 'deleteSession', { sessionId: session.id })
+      forgetSessionOrder(project.id, session.id)
       setOtherSessions((value) => ({
         ...value,
         [project.id]: (value[project.id] || []).filter((item) => item.id !== session.id)
@@ -124,6 +148,7 @@ export function SidebarChats({
     try {
       await w.openProject(path)
       await w.deleteSession(session.id)
+      if (w.project) forgetSessionOrder(w.project.id, session.id)
     } catch (error) {
       w.errorHandler(error)
     }
@@ -198,6 +223,8 @@ export function SidebarChats({
       title={title}
       onTitle={setTitle}
       onRename={() => renameSession(project, session)}
+      rowProps={sessionReorder.rowProps(project.id, session.id)}
+      linkProps={sessionReorder.handleProps(project.id, session.id)}
       onCancelRename={() => setRenaming(null)}
       onOpen={() => void openChatSession(project, session)}
       onDelete={() => void deleteChatSession(project, session)}
