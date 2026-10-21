@@ -82,12 +82,10 @@ export type Preferences = {
   density?: 'comfortable' | 'compact'
   reduceMotion?: boolean
   sidebarVisible?: boolean
-  sidebarCollapsed?: boolean
   speechVoice?: string
   speechSpeed?: number
   speechAutoSend?: boolean
   inspectorVisible?: boolean
-  inspectorCollapsed?: boolean
   agentContexts?: Record<string, import('./agentContext').AgentContext>
   skipBySession?: Record<string, boolean>
   defaultSkip?: boolean

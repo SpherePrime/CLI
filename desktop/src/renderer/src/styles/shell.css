@@ -530,8 +530,10 @@ dialog.modal,
 
 .project-rail > .icon,
 .inspector-rail .inspector-tabs > button {
+  flex: 0 0 38px;
   width: 38px;
   height: 38px;
+  min-height: 38px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -541,4 +543,10 @@ dialog.modal,
 .inspector-rail .inspector-tabs > button svg {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
+}
+.inspector-rail .inspector-tabs {
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
 }

@@ -1,10 +1,16 @@
-import { _electron as electron, expect } from '@playwright/test'
+import { _electron as electron, expect, type Page } from '@playwright/test'
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { startProvider } from './provider-server'
 import type { Project } from '../../src/shared/contracts'
+
+async function expandProjects(page: Page) {
+  await page.locator('.project-rail').waitFor({ state: 'visible' })
+  await page.getByRole('button', { name: 'Панель проектов', exact: true }).click()
+  await page.locator('.app-shell > .sidebar').waitFor({ state: 'visible' })
+}
 
 export async function launchWorkbench() {
   const root = await mkdtemp(join(tmpdir(), 'prime-workbench-'))
@@ -107,6 +113,7 @@ export async function launchWorkbench() {
   await page
     .getByRole('textbox', { name: 'Сообщение Prime', exact: true })
     .waitFor({ state: 'visible' })
+  await expandProjects(page)
   return {
     root,
     provider,
@@ -122,6 +129,7 @@ export async function launchWorkbench() {
       await page
         .getByRole('textbox', { name: 'Сообщение Prime', exact: true })
         .waitFor({ state: 'visible' })
+      await expandProjects(page)
       return { app, page }
     },
     close: async () => {
