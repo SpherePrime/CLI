@@ -73,11 +73,19 @@ export function SidebarChats({
   const needle = search.trim().toLocaleLowerCase()
   const personal = w.projects.find((project) => project.kind === 'chat')
   const folders = w.projects.filter((project) => project.kind !== 'chat')
-  const recentFolders = w.preferences.recent.filter(
-    (path) =>
-      !w.projects.some((project) => project.path === path) &&
-      (!needle || path.toLocaleLowerCase().includes(needle))
-  )
+  const projectLabel = (project: Project) =>
+    project.remote
+      ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
+      : project.path.split(/[\\/]/).pop()
+  const visited = [
+    ...w.preferences.recent.map(
+      (path) => folders.find((project) => project.path === path) ?? path
+    ),
+    ...folders.filter((project) => !w.preferences.recent.includes(project.path))
+  ].filter((entry) => {
+    const path = typeof entry === 'string' ? entry : entry.path
+    return !needle || path.toLocaleLowerCase().includes(needle)
+  })
   const sessionsOf = (project: Project) => {
     const sessions = project.id === w.project?.id ? w.sessions : otherSessions[project.id] || []
     const pinned = w.preferences.pinned
@@ -92,6 +100,15 @@ export function SidebarChats({
     if (project.id !== w.project?.id) await w.selectProject(project)
     await w.selectSession(session)
   }
+  const recentChats = [personal, ...folders]
+    .filter((project): project is Project => Boolean(project))
+    .flatMap((project) => sessionsOf(project).map((session) => ({ project, session })))
+    .filter(
+      ({ session }) =>
+        !needle || (session.title || '').toLocaleLowerCase().includes(needle)
+    )
+    .sort((a, b) => (b.session.updated_at || 0) - (a.session.updated_at || 0))
+    .slice(0, 8)
   const toggle = (id: string, open: boolean) =>
     setExpanded((value) => ({ ...value, [id]: !open }))
   const menuSession = menu ? w.sessions.find((session) => session.id === menu.id) : null
@@ -228,76 +245,95 @@ export function SidebarChats({
           {expanded[personal.id] && renderSessions(personal, w.project?.id === personal.id)}
         </div>
       )}
-      {folders
-        .filter((project) => !needle || project.path.toLocaleLowerCase().includes(needle))
-        .map((project) => {
-          const active = w.project?.id === project.id
-          const open = Boolean(expanded[project.id])
+      {visited.map((entry) => {
+        if (typeof entry === 'string')
           return (
-            <div key={project.id} className={`project-group ${active ? 'active-group' : ''}`}>
+            <div key={entry} className="project-group">
               <div className="project-heading">
                 <button
-                  className={`project-item ${active ? 'selected' : ''}`}
-                  aria-expanded={open}
-                  onClick={() => toggle(project.id, open)}
+                  className="project-item"
+                  title={entry}
+                  onClick={() => void w.openProject(entry)}
                 >
-                  {open ? <FolderOpen size={15} /> : <Folder size={15} />}
-                  <span
-                    title={
-                      project.remote
-                        ? `${project.remote.user}@${project.remote.host}:${project.remote.root}`
-                        : project.path
-                    }
-                  >
-                    {project.remote
-                      ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
-                      : project.path.split(/[\\/]/).pop()}
-                  </span>
-                  <span className={`dot ${project.connection === 'ready' ? 'green' : 'amber'}`} />
+                  <Folder size={15} />
+                  <span>{entry.split(/[\\/]/).pop()}</span>
                 </button>
                 <button
                   className="icon small project-close"
-                  title={t('Закрыть проект')}
-                  aria-label={t('Закрыть проект {value0}', { value0: project.path })}
-                  onClick={() => void w.closeProject(project.id)}
+                  aria-label={t('Удалить из недавних')}
+                  title={t('Удалить из недавних')}
+                  onClick={() =>
+                    void w.savePreferences({
+                      recent: w.preferences.recent.filter((item) => item !== entry)
+                    })
+                  }
                 >
                   <X size={12} />
                 </button>
               </div>
-              {open && renderSessions(project, active)}
             </div>
           )
-        })}
-      {recentFolders.length > 0 && (
-        <>
-          <div className="section-caption recent-caption">{t('НЕДАВНИЕ')}</div>
-          {recentFolders.slice(0, 6).map((path) => (
-            <div key={path} className="recent-row">
+        const project = entry
+        const active = w.project?.id === project.id
+        const open = Boolean(expanded[project.id])
+        return (
+          <div key={project.id} className={`project-group ${active ? 'active-group' : ''}`}>
+            <div className="project-heading">
               <button
-                className="recent-project"
-                title={path}
-                onClick={() => void w.openProject(path)}
+                className={`project-item ${active ? 'selected' : ''}`}
+                aria-expanded={open}
+                onClick={() => toggle(project.id, open)}
               >
-                <Folder size={14} />
-                <span>{path.split(/[\\/]/).pop()}</span>
+                {open ? <FolderOpen size={15} /> : <Folder size={15} />}
+                <span
+                  title={
+                    project.remote
+                      ? `${project.remote.user}@${project.remote.host}:${project.remote.root}`
+                      : project.path
+                  }
+                >
+                  {projectLabel(project)}
+                </span>
+                <span className={`dot ${project.connection === 'ready' ? 'green' : 'amber'}`} />
               </button>
               <button
-                className="icon small recent-remove"
-                aria-label={t('Удалить из недавних')}
-                title={t('Удалить из недавних')}
-                onClick={() =>
-                  void w.savePreferences({
-                    recent: w.preferences.recent.filter((item) => item !== path)
-                  })
-                }
+                className="icon small project-close"
+                title={t('Закрыть проект')}
+                aria-label={t('Закрыть проект {value0}', { value0: project.path })}
+                onClick={() => void w.closeProject(project.id)}
               >
                 <X size={12} />
+              </button>
+            </div>
+            {open && renderSessions(project, active)}
+          </div>
+        )
+      })}
+      {recentChats.length > 0 && (
+        <>
+          <div className="section-caption recent-caption">{t('НЕДАВНИЕ')}</div>
+          {recentChats.map(({ project, session }) => (
+            <div
+              key={`${project.id}:${session.id}`}
+              className={`session-row recent-chat ${session.id === w.session?.id ? 'active' : ''}`}
+            >
+              <button
+                className="session-link"
+                title={session.title || t('Новый чат')}
+                onClick={() => void openChatSession(project, session)}
+              >
+                <MessageSquare size={14} />
+                <span>{session.title || t('Новый чат')}</span>
+                <small className="recent-chat-project">
+                  {project.kind === 'chat' ? t('Личные чаты') : projectLabel(project)}
+                </small>
+                {session.is_busy && <span className="dot pulse" />}
               </button>
             </div>
           ))}
         </>
       )}
-      {!w.projects.length && !recentFolders.length && (
+      {!w.projects.length && !visited.length && (
         <div className="sidebar-empty">{t('Откройте папку, чтобы начать работу с проектом')}</div>
       )}
       {menu && menuSession && createPortal(

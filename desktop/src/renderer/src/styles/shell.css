@@ -605,3 +605,24 @@ dialog.modal,
 .inspector-rail.panel-open:has(.inspector-footer) > .inspector-content {
   border-radius: var(--panel-radius) var(--panel-radius) 0 0;
 }
+
+.recent-chat .session-link {
+  min-width: 0;
+}
+.recent-chat .session-link > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-chat-project {
+  flex: 0 1 auto;
+  max-width: 45%;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted);
+}
