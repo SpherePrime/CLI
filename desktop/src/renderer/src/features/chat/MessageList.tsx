@@ -33,7 +33,13 @@ export function MessageList({
   const stable = useRef<Message[]>([])
   const timing = useMemo(() => conversationTiming(messages), [messages])
   const visible = useMemo(
-    () => (stable.current = reuseUnchanged(stable.current, consolidateToolMessages(messages))),
+    () =>
+      (stable.current = reuseUnchanged(
+        stable.current,
+        consolidateToolMessages(messages).filter(
+          (message) => !message.is_summary_message || !(message.parts || []).some((part) => part.type === 'finish')
+        )
+      )),
     [messages]
   )
   const [query, setQuery] = useState('')
