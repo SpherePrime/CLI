@@ -13,6 +13,25 @@ Every question MUST include:
 - `description` — markdown context shown below the question with details,
   tradeoffs, or examples. **Always required.** Omitting it causes an error.
 
+## Choices format
+
+For `single_choice` and `multi_choice`, put the options in a `choices`
+array **inside the same question object**. Each option is an object with
+`id` and `label`. Never list options as separate items of `questions`,
+and never send an empty `choices` array.
+
+Correct:
+```json
+{"questions": [{"type": "single_choice", "question": "Which drink?", "description": "Pick one.", "choices": [{"id": "tea", "label": "Tea"}, {"id": "coffee", "label": "Coffee"}]}]}
+```
+
+Wrong (options as separate questions):
+```json
+{"questions": [{"type": "single_choice", "question": "Which drink?", "description": "Pick one."}, {"id": "tea", "label": "Tea"}, {"id": "coffee", "label": "Coffee"}]}
+```
+
+Pass `questions` as a JSON array, not as a string.
+
 ## Hard limits
 
 These are enforced. Violations return an error and waste a round trip.

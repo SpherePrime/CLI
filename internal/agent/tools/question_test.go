@@ -74,3 +74,68 @@ func TestFormatAnswer_Skipped(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "User skipped this question", resp.Content)
 }
+
+func normalizedInput(t *testing.T, input string) ([]QuestionItem, error) {
+	t.Helper()
+	var p QuestionParams
+	require.NoError(t, json.Unmarshal([]byte(input), &p))
+	return normalizeQuestionItems(p.Questions)
+}
+
+func TestQuestionInput_StringChoicesAndOptionsAlias(t *testing.T) {
+	t.Parallel()
+	items, err := normalizedInput(t, `{"questions":[{"label":"Напиток","type":"single_choice","question":"Что пьём?","description":"d","options":["Чай","Кофе"]}]}`)
+	require.NoError(t, err)
+	require.Equal(t, []QuestionChoice{{ID: "Чай", Label: "Чай"}, {ID: "Кофе", Label: "Кофе"}}, items[0].Choices)
+}
+
+func TestQuestionInput_AlternativeChoiceKeys(t *testing.T) {
+	t.Parallel()
+	items, err := normalizedInput(t, `{"questions":[{"type":"multi_choice","text":"Силы?","description":"d","variants":[{"value":"fly","text":"Полёт"},{"value":"fly","name":"Невидимость"}]}]}`)
+	require.NoError(t, err)
+	require.Equal(t, "Силы?", items[0].Question)
+	require.Equal(t, []QuestionChoice{{ID: "fly", Label: "Полёт"}, {ID: "choice-2", Label: "Невидимость"}}, items[0].Choices)
+}
+
+func TestQuestionInput_OptionsSentAsSeparateItems(t *testing.T) {
+	t.Parallel()
+	items, err := normalizedInput(t, `{"questions":[
+		{"label":"Суперсила","type":"single_choice","question":"Какую силу?","description":"d","options":[]},
+		{"id":"fly","label":"Полёт","description":"Летать","type":"single_choice"},
+		{"id":"time","label":"Время","type":"single_choice"}
+	]}`)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, []QuestionChoice{{ID: "fly", Label: "Полёт", Description: "Летать"}, {ID: "time", Label: "Время"}}, items[0].Choices)
+}
+
+func TestQuestionInput_OnlyOptionsGivesShapeHint(t *testing.T) {
+	t.Parallel()
+	_, err := normalizedInput(t, `{"questions":[{"id":"gh","label":"GitHub Actions","type":"single_choice","description":"d"},{"id":"docker","label":"Docker","type":"single_choice"}]}`)
+	require.ErrorContains(t, err, "looks like an answer option")
+	require.ErrorContains(t, err, `"choices":[{"id":"tea"`)
+}
+
+func TestQuestionInput_MissingChoicesGivesShapeHint(t *testing.T) {
+	t.Parallel()
+	_, err := normalizedInput(t, `{"questions":[{"label":"Напиток","type":"single_choice","question":"Что пьём?","description":"d"}]}`)
+	require.ErrorContains(t, err, "[Напиток]")
+	require.ErrorContains(t, err, "nested inside it")
+}
+
+func TestQuestionInput_InfersTypeAndText(t *testing.T) {
+	t.Parallel()
+	items, err := normalizedInput(t, `{"questions":[{"label":"Цвет","description":"d","choices":[{"id":"r","label":"Red"},{"id":"g","label":"Green"}]},{"label":"Комментарий","description":"d"}]}`)
+	require.NoError(t, err)
+	require.Equal(t, "single_choice", items[0].Type)
+	require.Equal(t, "Цвет", items[0].Question)
+	require.Equal(t, "free_text", items[1].Type)
+}
+
+func TestQuestionParamsUnmarshalJSON_StringWithTrailingGarbage(t *testing.T) {
+	t.Parallel()
+	encoded, _ := json.Marshal(`[{"type":"yes_no","question":"OK?","description":"d"}]}`)
+	var p QuestionParams
+	require.NoError(t, json.Unmarshal([]byte(`{"questions": `+string(encoded)+`}`), &p))
+	require.Len(t, p.Questions, 1)
+}
