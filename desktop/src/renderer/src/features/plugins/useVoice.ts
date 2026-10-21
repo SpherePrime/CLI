@@ -68,12 +68,30 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
   }
   async function start() {
     try {
-      const plugins = await workspace.call('plugins')
-      const list = Array.isArray(plugins) ? plugins : plugins?.plugins || []
-      const voice = list.find((plugin: any) => plugin.name === 'voice')
-      if (!voice?.enabled) throw new Error(t('Включите плагин Voice в разделе «Плагины»'))
+      // Transcription is chosen in the speech recognition settings, so the
+      // gate is the selected engine, not the voice plugin: the plugin only
+      // installs a recorder for CLI-side capture, while the desktop records
+      // through the browser. Local engines need a downloaded model.
+      const stt = (await workspace.call('stt')) as { engine?: string } | undefined
+      const engine = stt?.engine || 'auto'
+      if (engine === 'whisper' || engine === 'vosk') {
+        const catalog = (await workspace.call('stt')) as {
+          providers?: { id: string; models?: { installed: boolean }[] }[]
+        }
+        const models = catalog.providers?.find((item) => item.id === engine)?.models || []
+        if (!models.some((item) => item.installed))
+          throw new Error(
+            t('Для выбранного провайдера скачайте модель в настройках распознавания речи')
+          )
+      }
       const media = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, sampleRate: 16000 }
+        audio: {
+          ...(workspace.preferences.micDeviceId
+            ? { deviceId: { exact: workspace.preferences.micDeviceId } }
+            : {}),
+          channelCount: 1,
+          sampleRate: 16000
+        }
       })
       stream.current = media
       const level = new AudioContext()
