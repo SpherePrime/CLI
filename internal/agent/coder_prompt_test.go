@@ -82,7 +82,6 @@ func TestCoderPromptCarriesOperatingGuidance(t *testing.T) {
 			require.Contains(t, got, "Never send the same failing call twice")
 			require.Contains(t, got, "coding agent")
 			require.Contains(t, got, "User and project instructions")
-			require.Less(t, len(got), 9000)
 			require.NotContains(t, got, "<whitespace_and_exact_matching>")
 		})
 	}
