@@ -28,6 +28,16 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Tags("system").
 			Handle(c.handleGetHealth),
 
+		apigen.Get("/v1/project-sessions").
+			Summary("List sessions of closed projects").
+			Description("Returns the top-level sessions of the given project paths "+
+				"without opening workspaces: no agent, no MCP, read-only database access.").
+			Tags("desktop").
+			RequiredQueryParam("paths", "Comma-separated absolute project paths").
+			Responds(proto.ProjectSessionsResponse{}).
+			Fails(400, 500).
+			Handle(c.handleGetProjectSessions),
+
 		apigen.Get("/v1/version").
 			Summary("Get server version").
 			Tags("system").

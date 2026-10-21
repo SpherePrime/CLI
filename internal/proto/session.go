@@ -35,3 +35,10 @@ type Todo struct {
 	Status     string `json:"status"`
 	ActiveForm string `json:"active_form"`
 }
+
+// ProjectSessionsResponse maps project paths to their top-level sessions.
+// It backs the desktop sidebar, which shows the chats of every recent
+// project without opening workspaces for them.
+type ProjectSessionsResponse struct {
+	Projects map[string][]Session `json:"projects"`
+}
