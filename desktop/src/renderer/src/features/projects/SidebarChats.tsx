@@ -1,7 +1,7 @@
 import { sessionTitle } from '../../../../shared/sessionTitle'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Search, Server, X, Pin, Plus, MessagesSquare, FolderOpen } from 'lucide-react'
+import { Search, Server, X, Pin, Plus, MessagesSquare } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
@@ -79,8 +79,9 @@ export function SidebarChats({
     (path) => !folders.some((project) => project.path === path) && !isRemoteWorkspace(path)
   )
   const closedKey = closedPaths.join('|')
+  const runtimeReady = w.info.runtime === 'ready'
   useEffect(() => {
-    if (!closedKey) return
+    if (!closedKey || !runtimeReady) return
     let cancelled = false
     window.prime
       .projectSessions(closedKey.split('|'))
@@ -91,7 +92,7 @@ export function SidebarChats({
     return () => {
       cancelled = true
     }
-  }, [closedKey])
+  }, [closedKey, runtimeReady])
   const orderSessions = (project: Project, sessions: Session[]) => {
     const deduped = [...new Map(sessions.map((session) => [session.id, session])).values()].filter(
       (session) => !session.parent_session_id
@@ -364,13 +365,6 @@ export function SidebarChats({
                       {t('Создать первый чат')}
                     </button>
                   )}
-                  <button
-                    className="project-empty-chat"
-                    onClick={() => void w.openProject(path)}
-                  >
-                    <FolderOpen size={13} />
-                    {t('Открыть проект')}
-                  </button>
                 </>
               )}
             </ProjectCard>
