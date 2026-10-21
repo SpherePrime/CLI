@@ -1,0 +1,23 @@
+.session-link > .session-activity {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  animation: session-activity-spin 1s linear infinite;
+}
+
+@keyframes session-activity-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+:root[data-motion='reduced'] .session-link > .session-activity {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-link > .session-activity {
+    animation: none;
+  }
+}
