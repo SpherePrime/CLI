@@ -1130,6 +1130,9 @@ kbd {
   border-top: 1px solid var(--border);
   margin: 0;
 }
+.tool-part .tool-gallery {
+  padding: 4px 0 6px;
+}
 .tool-gallery {
   display: flex;
   flex-wrap: wrap;
@@ -1140,9 +1143,16 @@ kbd {
   padding: 0;
   width: auto;
 }
-.tool-gallery.multi .tool-image img {
+.tool-gallery img {
+  max-width: min(340px, 100%);
+  max-height: 230px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+.tool-gallery.multi img {
+  max-width: min(220px, 100%);
   max-height: 170px;
-  max-width: 100%;
 }
 .tool-image {
   display: block;
@@ -1160,15 +1170,24 @@ kbd {
   display: block;
   margin: 0 auto;
 }
+.image-lightbox {
+  max-width: none;
+  width: 92vw;
+  height: 85vh;
+}
 .image-lightbox .modal-content {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  overflow: hidden;
 }
 .image-lightbox img {
   max-width: 100%;
-  max-height: 82vh;
+  max-height: 100%;
   object-fit: contain;
   display: block;
 }
