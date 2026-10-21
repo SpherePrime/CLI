@@ -3,16 +3,56 @@ import { Supertonic, encodeWav } from './supertonic'
 import { importVoice, listVoices, removeVoice, voiceExists } from './voices'
 import type { SpeechRequest, SpeechStatus } from '../../shared/speech'
 
+export const speechIdleUnloadMs = 10 * 60 * 1000
+
 export class SpeechService {
   private engine?: Promise<Supertonic>
   private downloading?: Promise<string>
   private state: SpeechStatus = { state: 'unknown' }
   private queue: Promise<unknown> = Promise.resolve()
+  private idleTimer?: ReturnType<typeof setTimeout>
+  private activeRequests = 0
 
   constructor(
     private emit: (status: SpeechStatus) => void,
-    private chooseFile: () => Promise<string | undefined>
+    private chooseFile: () => Promise<string | undefined>,
+    private idleUnloadMs = speechIdleUnloadMs
   ) {}
+
+  get loaded() {
+    return Boolean(this.engine)
+  }
+
+  private cancelUnload() {
+    if (this.idleTimer) clearTimeout(this.idleTimer)
+    this.idleTimer = undefined
+  }
+
+  private scheduleUnload() {
+    this.cancelUnload()
+    if (!this.engine || this.activeRequests) return
+    this.idleTimer = setTimeout(() => void this.unload(), this.idleUnloadMs)
+    this.idleTimer.unref?.()
+  }
+
+  private async unload() {
+    this.idleTimer = undefined
+    if (this.activeRequests || !this.engine) return
+    const engine = this.engine
+    this.engine = undefined
+    await (await engine.catch(() => undefined))?.release()
+  }
+
+  private async track<T>(work: () => Promise<T>) {
+    this.activeRequests++
+    this.cancelUnload()
+    try {
+      return await work()
+    } finally {
+      this.activeRequests--
+      this.scheduleUnload()
+    }
+  }
 
   private set(status: SpeechStatus) {
     this.state = status
@@ -52,7 +92,7 @@ export class SpeechService {
       case 'status':
         return this.status()
       case 'prepare':
-        await this.load()
+        await this.track(() => this.load())
         return this.state
       case 'voices':
         return listVoices()
@@ -75,17 +115,21 @@ export class SpeechService {
     if (!text) throw new Error('Пустой текст')
     const voice = request.voice && (await voiceExists(request.voice)) ? request.voice : 'F1'
     const speed = Math.min(1.6, Math.max(0.7, Number(request.speed) || 1.05))
-    const operation = this.queue.then(async () => {
-      const engine = await this.load()
-      const samples = await engine.synthesize(text, { voice, speed })
-      return { audio: encodeWav(samples, engine.sampleRate).toString('base64'), mime: 'audio/wav' }
-    })
+    const operation = this.track(() =>
+      this.queue.then(async () => {
+        const engine = await this.load()
+        const samples = await engine.synthesize(text, { voice, speed })
+        return { audio: encodeWav(samples, engine.sampleRate).toString('base64'), mime: 'audio/wav' }
+      })
+    )
     this.queue = operation.catch(() => {})
     return operation
   }
 
   async dispose() {
+    this.cancelUnload()
     const engine = await this.engine?.catch(() => undefined)
+    this.engine = undefined
     await engine?.release()
   }
 }
