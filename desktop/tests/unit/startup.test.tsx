@@ -10,3 +10,27 @@ it('shows a branded loading status and immediately releases the interface on suc
   expect(renderToStaticMarkup(<StartupScreen ready failed={false} />)).toBe('')
   expect(renderToStaticMarkup(<StartupScreen ready={false} failed />)).toBe('')
 })
+
+it('mounts the workspace only after startup finishes or fails', () => {
+  const workspace = <main data-workspace="chat">Chat</main>
+  const starting = renderToStaticMarkup(
+    <StartupScreen ready={false} failed={false}>
+      {workspace}
+    </StartupScreen>
+  )
+  expect(starting).not.toContain('data-workspace')
+  expect(
+    renderToStaticMarkup(
+      <StartupScreen ready failed={false}>
+        {workspace}
+      </StartupScreen>
+    )
+  ).toContain('data-workspace="chat"')
+  expect(
+    renderToStaticMarkup(
+      <StartupScreen ready={false} failed>
+        {workspace}
+      </StartupScreen>
+    )
+  ).toContain('data-workspace="chat"')
+})
