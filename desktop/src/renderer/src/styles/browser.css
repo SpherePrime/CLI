@@ -37,7 +37,7 @@
   background:
     linear-gradient(90deg, transparent, #ff6a3522, transparent) 0 0 / 200% 100%,
     var(--bg);
-  animation: shimmer 1.4s linear infinite;
+  animation: shimmer 1.4s steps(42) infinite;
 }
 .browser-address input {
   flex: 1;

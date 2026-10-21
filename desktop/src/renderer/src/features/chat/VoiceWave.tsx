@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useI18n } from '../../i18n'
+import { sampledStyle } from '../voice/frameStyle'
 
 const barWidth = 3
 const barGap = 2
@@ -33,6 +34,7 @@ export function VoiceWave({
     const samples = new Uint8Array(analyser?.fftSize || 256)
     let frame = 0
     let lastSample = 0
+    const color = sampledStyle(() => getComputedStyle(element).color)
     const draw = () => {
       const ratio = window.devicePixelRatio || 1
       const width = element.clientWidth
@@ -57,7 +59,7 @@ export function VoiceWave({
         lastSample = now
       }
       while (history.length > capacity) history.shift()
-      context.fillStyle = getComputedStyle(element).color
+      context.fillStyle = color()
       const offset = width - history.length * (barWidth + barGap)
       history.forEach((value, index) => {
         const bar = Math.max(2, value * (height - 4))
