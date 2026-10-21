@@ -699,6 +699,10 @@ function registerIpc(): void {
         speechVoice: z.string().max(100).optional(),
         speechSpeed: z.number().min(0.7).max(1.6).optional(),
         speechAutoSend: z.boolean().optional(),
+        // Device ids come from enumerateDevices; an empty string means the
+        // system default, which is how a saved choice is cleared again.
+        micDeviceId: z.string().max(512).optional(),
+        speakerDeviceId: z.string().max(512).optional(),
         inspectorVisible: z.boolean().optional(),
         keybindings: z.record(z.string().max(40), z.string().max(80)).optional(),
         skipBySession: z.record(z.string().min(1).max(512), z.boolean()).optional(),

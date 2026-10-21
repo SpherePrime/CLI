@@ -7,9 +7,20 @@ import { Listener } from './listener'
 import { Speaker } from './speaker'
 import { speakableText, speechChunks } from './speechText'
 import { resample, wavBase64 } from './wav'
-import { isCancelAnswer, parseAnswer, questionSpeech, type VoiceAnswer, type VoiceQuestion } from './voiceQuestions'
+import {
+  isCancelAnswer,
+  parseAnswer,
+  questionSpeech,
+  type VoiceAnswer,
+  type VoiceQuestion
+} from './voiceQuestions'
 
-type Asking = { batchId: string; questions: VoiceQuestion[]; index: number; responses: VoiceAnswer[] }
+type Asking = {
+  batchId: string
+  questions: VoiceQuestion[]
+  index: number
+  responses: VoiceAnswer[]
+}
 
 export type ConversationState =
   'off' | 'preparing' | 'listening' | 'hearing' | 'transcribing' | 'waiting' | 'speaking'
@@ -80,7 +91,12 @@ export function useConversation(w: Workspace) {
   const askCurrent = useCallback(() => {
     const current = asking.current
     if (!current) return
-    const text = questionSpeech(current.questions[current.index], current.index, current.questions.length, t)
+    const text = questionSpeech(
+      current.questions[current.index],
+      current.index,
+      current.questions.length,
+      t
+    )
     setQuestion(current.questions[current.index].question)
     void speaker.current?.speak(speechChunks(speakableText(text, t('Код показан в чате'))))
   }, [t])
@@ -107,7 +123,10 @@ export function useConversation(w: Workspace) {
         asking.current = undefined
         setQuestion('')
         setState('waiting')
-        await workspace.call('answer', { batch_request_id: current.batchId, responses: current.responses })
+        await workspace.call('answer', {
+          batch_request_id: current.batchId,
+          responses: current.responses
+        })
       } catch (error) {
         asking.current = undefined
         setQuestion('')
@@ -127,49 +146,54 @@ export function useConversation(w: Workspace) {
       speaker.current?.stop()
     }
     if (asking.current) return
-    const next = batches.find((batch) => batch?.id && batch.questions?.length && !askedBatches.current.has(batch.id))
+    const next = batches.find(
+      (batch) => batch?.id && batch.questions?.length && !askedBatches.current.has(batch.id)
+    )
     if (!next) return
     askedBatches.current.add(next.id)
     asking.current = { batchId: next.id, questions: next.questions, index: 0, responses: [] }
     askCurrent()
   }, [w.questions, askCurrent])
 
-  const handleSegment = useCallback(async (samples: Float32Array, sampleRate: number) => {
-    if (!listener.current) return
-    const turnGeneration = generation.current
-    setState('transcribing')
-    try {
-      const audio = wavBase64(await resample(samples, sampleRate))
-      if (turnGeneration !== generation.current) return
-      const result = await latest.current.call('voice', {
-        audio_base64: audio,
-        mime_type: 'audio/wav'
-      })
-      const text = String(result?.text || '').trim()
-      if (!listener.current || turnGeneration !== generation.current) return
-      if (!text) {
-        setState(pending.current ? 'waiting' : 'listening')
-        return
+  const handleSegment = useCallback(
+    async (samples: Float32Array, sampleRate: number) => {
+      if (!listener.current) return
+      const turnGeneration = generation.current
+      setState('transcribing')
+      try {
+        const audio = wavBase64(await resample(samples, sampleRate))
+        if (turnGeneration !== generation.current) return
+        const result = await latest.current.call('voice', {
+          audio_base64: audio,
+          mime_type: 'audio/wav'
+        })
+        const text = String(result?.text || '').trim()
+        if (!listener.current || turnGeneration !== generation.current) return
+        if (!text) {
+          setState(pending.current ? 'waiting' : 'listening')
+          return
+        }
+        setHeard(text)
+        if (asking.current) {
+          await answerQuestion(text)
+          return
+        }
+        pending.current = { from: latest.current.messages.length, sawBusy: false }
+        setState('waiting')
+        const sent = await latest.current.send(text)
+        if (turnGeneration !== generation.current) return
+        if (!sent) {
+          pending.current = undefined
+          setState('listening')
+        }
+      } catch (error) {
+        if (turnGeneration !== generation.current) return
+        latest.current.errorHandler(error)
+        if (listener.current) setState('listening')
       }
-      setHeard(text)
-      if (asking.current) {
-        await answerQuestion(text)
-        return
-      }
-      pending.current = { from: latest.current.messages.length, sawBusy: false }
-      setState('waiting')
-      const sent = await latest.current.send(text)
-      if (turnGeneration !== generation.current) return
-      if (!sent) {
-        pending.current = undefined
-        setState('listening')
-      }
-    } catch (error) {
-      if (turnGeneration !== generation.current) return
-      latest.current.errorHandler(error)
-      if (listener.current) setState('listening')
-    }
-  }, [answerQuestion])
+    },
+    [answerQuestion]
+  )
 
   const start = useCallback(async () => {
     if (stateRef.current !== 'off') return
@@ -190,6 +214,7 @@ export function useConversation(w: Workspace) {
       speaker.current = new Speaker({
         voice,
         speed,
+        deviceId: latest.current.preferences.speakerDeviceId || undefined,
         onState: (speaking) => {
           if (!listener.current) return
           setState((current) =>
@@ -201,6 +226,7 @@ export function useConversation(w: Workspace) {
       setOutputAnalyser(speaker.current.analyser)
       const instance = new Listener({
         silenceMs: 900,
+        deviceId: latest.current.preferences.micDeviceId || undefined,
         sensitivity: () => (speaker.current?.speaking ? 2.2 : 1),
         onSpeechStart: () => {
           if (speaker.current?.speaking) speaker.current.stop()

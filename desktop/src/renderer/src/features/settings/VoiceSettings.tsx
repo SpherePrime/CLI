@@ -5,6 +5,7 @@ import type { SpeechStatus, SpeechVoice } from '../../../../shared/speech'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { Speaker } from '../voice/speaker'
+import { useAudioDevices } from './useAudioDevices'
 import '../../styles/conversation.css'
 
 export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
@@ -16,7 +17,11 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
   const speaker = useRef<Speaker>(undefined)
   const voice = w.preferences.speechVoice ?? 'F1'
   const speed = w.preferences.speechSpeed ?? 1.05
-  const report = (failure: unknown) => setError(String((failure as Error)?.message || failure).replace(/^.*Error: /, ''))
+  const micDeviceId = w.preferences.micDeviceId ?? ''
+  const speakerDeviceId = w.preferences.speakerDeviceId ?? ''
+  const { inputs, outputs } = useAudioDevices()
+  const report = (failure: unknown) =>
+    setError(String((failure as Error)?.message || failure).replace(/^.*Error: /, ''))
   useEffect(() => {
     void window.prime.speech({ action: 'voices' }).then(setVoices).catch(report)
     void window.prime.speech({ action: 'status' }).then(setStatus).catch(report)
@@ -33,8 +38,20 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
     setBusy(true)
     try {
       speaker.current?.stop()
-      speaker.current ??= new Speaker({ voice, speed, onState: () => {}, onError: report })
-      speaker.current.update({ voice, speed })
+      // A device change needs a fresh AudioContext, so the speaker is rebuilt
+      // when the output selection differs from the one it was built with.
+      if (speaker.current && speaker.current.deviceId !== speakerDeviceId) {
+        await speaker.current.dispose()
+        speaker.current = undefined
+      }
+      speaker.current ??= new Speaker({
+        voice,
+        speed,
+        deviceId: speakerDeviceId || undefined,
+        onState: () => {},
+        onError: report
+      })
+      speaker.current.update({ voice, speed, deviceId: speakerDeviceId || undefined })
       await speaker.current.speak([t('Привет! Так я буду отвечать в голосовом разговоре.')])
     } finally {
       setBusy(false)
@@ -43,6 +60,33 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
   const current = voices.find((item) => item.id === voice)
   return (
     <>
+      <h3>{t('Устройства')}</h3>
+      <label className="form-label">
+        {t('Микрофон')}
+        <Select
+          label={t('Микрофон')}
+          value={micDeviceId}
+          onChange={(value) =>
+            void w.savePreferences({ micDeviceId: value || undefined }).catch(report)
+          }
+          options={[
+            { value: '', label: t('Системный по умолчанию') },
+            ...inputs.map((device) => ({ value: device.id, label: device.label }))
+          ]}
+        />
+      </label>
+      <label className="form-label">
+        {t('Вывод звука')}
+        <Select
+          label={t('Вывод звука')}
+          value={speakerDeviceId}
+          onChange={(value) => void w.savePreferences({ speakerDeviceId: value }).catch(report)}
+          options={[
+            { value: '', label: t('Системный по умолчанию') },
+            ...outputs.map((device) => ({ value: device.id, label: device.label }))
+          ]}
+        />
+      </label>
       <h3>{t('Голос')}</h3>
       <p className="muted">
         {t('Локальная модель. Речь синтезируется на этом компьютере без отправки в интернет.')}
@@ -64,7 +108,10 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
           label={t('Голос ответа')}
           value={voice}
           onChange={(value) => void w.savePreferences({ speechVoice: value }).catch(report)}
-          options={voices.map((item) => ({ value: item.id, label: item.custom ? item.name : t(item.name) }))}
+          options={voices.map((item) => ({
+            value: item.id,
+            label: item.custom ? item.name : t(item.name)
+          }))}
         />
       </label>
       <label className="form-label">
@@ -75,7 +122,9 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
           max={1.4}
           step={0.05}
           value={speed}
-          onChange={(event) => void w.savePreferences({ speechSpeed: Number(event.target.value) }).catch(report)}
+          onChange={(event) =>
+            void w.savePreferences({ speechSpeed: Number(event.target.value) }).catch(report)
+          }
         />
       </label>
       <div className="settings-actions">

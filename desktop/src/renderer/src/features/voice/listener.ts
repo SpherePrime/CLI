@@ -1,5 +1,8 @@
 type Options = {
   silenceMs: number
+  // deviceId names the microphone from the voice settings. Empty means the
+  // system default.
+  deviceId?: string
   onSpeechStart(): void
   onSegment(samples: Float32Array, sampleRate: number): void
   sensitivity(): number
@@ -33,6 +36,7 @@ export class Listener {
     const generation = ++this.generation
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
+        ...(this.options.deviceId ? { deviceId: { exact: this.options.deviceId } } : {}),
         channelCount: 1,
         echoCancellation: true,
         noiseSuppression: true,
