@@ -9,15 +9,20 @@ export function panelGeometry(
   sidebarVisible: boolean,
   inspectorVisible: boolean,
   sidebarCollapsed = false,
-  inspectorCollapsed = false
+  inspectorCollapsed = false,
+  editorVisible = false
 ) {
+  const editorSpace = editorVisible ? 300 + panelGutter : 0
   const compact = width < 1050
   const rails = (sidebarVisible ? 1 : 0) + (inspectorVisible ? 1 : 0)
   const sidebarResizable = sidebarVisible && !compact
   const inspectorResizable = inspectorVisible && !compact
   const inspectorMax = Math.max(
     280,
-    width - rails * (railWidth + panelGutter) - panelGutter - 122
+    width -
+      rails * (railWidth + panelGutter) -
+      panelGutter -
+      (editorVisible ? 300 + editorSpace : 122)
   )
   const inspectorOpen = inspectorResizable && !inspectorCollapsed
   const inspector = inspectorOpen ? Math.max(280, Math.min(inspectorMax, inspectorWidth)) : 0
@@ -27,6 +32,7 @@ export function panelGeometry(
       rails * (railWidth + panelGutter) -
       sidebarCandidate -
       panelGutter -
+      editorSpace -
       (inspector ? inspector + panelGutter : 0) >=
     minimumChat
   const sidebarOpen = sidebarResizable && !sidebarCollapsed && sidebarFits
@@ -53,6 +59,15 @@ export function panelGeometry(
     sidebar,
     inspector,
     inspectorMax,
+    inspectorWithSidebarMax: Math.max(
+      280,
+      width -
+        rails * (railWidth + panelGutter) -
+        sidebarCandidate -
+        panelGutter * 2 -
+        minimumChat -
+        editorSpace
+    ),
     columns
   }
 }
