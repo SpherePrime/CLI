@@ -1,14 +1,16 @@
 import { sessionTitle } from '../../../../shared/sessionTitle'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Folder, FolderOpen, MessageSquare, Search, Server, X, Pin, Plus } from 'lucide-react'
+import { Search, Server, X, Pin, Plus, MessagesSquare } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
 import { orderedProjectPaths } from './projectOrder'
 import { useProjectReorder } from './useProjectReorder'
 import { watchProjectSessions } from './projectSessionEvents'
-import { SessionActivity } from './SessionActivity'
+import { ProjectCard } from './ProjectCard'
+import { SidebarSession } from './SidebarSession'
+import './projectNavigation.css'
 import './projectReorder.css'
 
 export function SidebarChats({
@@ -70,12 +72,6 @@ export function SidebarChats({
   const reorder = useProjectReorder(projectPaths, (projectOrder) => {
     void w.savePreferences({ projectOrder })
   })
-  const visited = projectPaths
-    .map((path) => folders.find((project) => project.path === path) ?? path)
-    .filter((entry) => {
-      const path = typeof entry === 'string' ? entry : entry.path
-      return !needle || path.toLocaleLowerCase().includes(needle)
-    })
   const sessionsOf = (project: Project) => {
     const sessions = project.id === w.project?.id ? w.sessions : otherSessions[project.id] || []
     const pinned = w.preferences.pinned
@@ -120,78 +116,77 @@ export function SidebarChats({
   const menuSession = menuProject
     ? sessionsOf(menuProject).find((session) => session.id === menu?.id)
     : null
-  const renderSession = (project: Project, session: Session, recent = false) => {
-    const active = project.id === w.project?.id
-    return (
-      <div
-        key={session.id}
-        className={`session-row ${recent ? 'recent-chat' : ''} ${session.id === w.session?.id && active ? 'active' : ''}`}
-        onContextMenu={(event) => {
-          event.preventDefault()
-          setMenu({ id: session.id, projectId: project.id, x: event.clientX, y: event.clientY })
-        }}
-      >
-        {renaming === session.id ? (
-          <form
-            onSubmit={async (event) => {
-              event.preventDefault()
-              try {
-                await window.prime.call(project.id, 'renameSession', {
-                  sessionId: session.id,
-                  session: { ...session, title }
-                })
-                setRenaming(null)
-                if (active) await w.refresh()
-                else
-                  setOtherSessions((value) => ({
-                    ...value,
-                    [project.id]: (value[project.id] || []).map((item) =>
-                      item.id === session.id ? { ...item, title } : item
-                    )
-                  }))
-              } catch (error) {
-                w.errorHandler(error)
-              }
-            }}
-          >
-            <input
-              autoFocus
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') setRenaming(null)
-              }}
-            />
-          </form>
-        ) : (
-          <button
-            className="session-link"
-            title={sessionTitle(session.title, t('Новый чат'))}
-            onClick={() => void openChatSession(project, session)}
-          >
-            <MessageSquare size={14} />
-            <span>{sessionTitle(session.title, t('Новый чат'))}</span>
-            {isWorking(project, session) && <SessionActivity />}
-            {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
-          </button>
-        )}
-        <button
-          className="icon small row-delete"
-          aria-label={t('Удалить чат')}
-          title={t('Удалить чат')}
-          onClick={() => void deleteChatSession(project, session)}
-        >
-          <X size={14} />
-        </button>
-      </div>
-    )
+  const renameSession = async (project: Project, session: Session) => {
+    if (!title.trim()) return
+    try {
+      await window.prime.call(project.id, 'renameSession', {
+        sessionId: session.id,
+        session: { ...session, title: title.trim() }
+      })
+      setRenaming(null)
+      if (project.id === w.project?.id) await w.refresh()
+      else
+        setOtherSessions((value) => ({
+          ...value,
+          [project.id]: (value[project.id] || []).map((item) =>
+            item.id === session.id ? { ...item, title: title.trim() } : item
+          )
+        }))
+    } catch (error) {
+      w.errorHandler(error)
+    }
   }
+  const createProjectChat = async (project?: Project) => {
+    try {
+      if (project) await w.selectProject(project)
+      else await w.openChat()
+      await w.createSession()
+    } catch (error) {
+      w.errorHandler(error)
+    }
+  }
+  const matching = (session: Session) =>
+    !needle || sessionTitle(session.title, t('Новый чат')).toLocaleLowerCase().includes(needle)
+  const visited = projectPaths
+    .map((path) => folders.find((project) => project.path === path) ?? path)
+    .filter((entry) =>
+      typeof entry === 'string'
+        ? !needle || entry.toLocaleLowerCase().includes(needle)
+        : !needle ||
+          entry.path.toLocaleLowerCase().includes(needle) ||
+          sessionsOf(entry).some(matching)
+    )
+  const renderSession = (project: Project, session: Session, recent = false) => (
+    <SidebarSession
+      key={session.id}
+      session={session}
+      personal={recent}
+      active={project.id === w.project?.id && session.id === w.session?.id}
+      busy={Boolean(isWorking(project, session))}
+      pinned={w.preferences.pinned.includes(session.id)}
+      renaming={renaming === session.id}
+      title={title}
+      onTitle={setTitle}
+      onRename={() => renameSession(project, session)}
+      onCancelRename={() => setRenaming(null)}
+      onOpen={() => void openChatSession(project, session)}
+      onDelete={() => void deleteChatSession(project, session)}
+      onMenu={(x, y) => setMenu({ id: session.id, projectId: project.id, x, y })}
+    />
+  )
   const renderSessions = (project: Project) =>
-    sessionsOf(project).map((session) => renderSession(project, session))
+    sessionsOf(project)
+      .filter(
+        (session) =>
+          !needle || project.path.toLocaleLowerCase().includes(needle) || matching(session)
+      )
+      .map((session) => renderSession(project, session))
   return (
     <>
-      <div className="section-caption">
-        {t('ПРОЕКТЫ')}
+      <div className="section-caption navigation-caption">
+        <span>
+          {t('ПРОЕКТЫ')} <b>{projectPaths.length}</b>
+        </span>
         <span className="section-caption-actions">
           <button
             className="icon small"
@@ -216,10 +211,10 @@ export function SidebarChats({
       <div className="project-search-box">
         <Search size={14} />
         <input
-          aria-label={t('Поиск проектов')}
+          aria-label={t('Поиск проектов и чатов')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder={t('Название проекта…')}
+          placeholder={t('Найти проект или чат…')}
         />
         {search && (
           <button
@@ -231,79 +226,86 @@ export function SidebarChats({
           </button>
         )}
       </div>
-      {visited.map((entry) => {
-        if (typeof entry === 'string')
+      <div className="project-card-list">
+        {visited.map((entry) => {
+          const closed = typeof entry === 'string'
+          const project = closed ? undefined : entry
+          const path = closed ? entry : project!.path
+          const name = project ? projectLabel(project) || path : path.split(/[\\/]/).pop() || path
+          const subtitle = project?.remote
+            ? `${project.remote.user}@${project.remote.host}`
+            : path.replace(/[\\/][^\\/]+[\\/]?$/, '') || path
+          const open = Boolean(project && (needle || expanded[project.id]))
           return (
-            <div key={entry} className="project-group">
-              <div {...reorder.headingProps(entry)}>
-                <button
-                  {...reorder.buttonProps(entry)}
-                  className="project-item"
-                  title={entry}
-                  onClick={() => void w.openProject(entry)}
-                >
-                  <Folder size={15} />
-                  <span>{entry.split(/[\\/]/).pop()}</span>
-                </button>
-                <button
-                  className="icon small project-close"
-                  aria-label={t('Удалить из недавних')}
-                  title={t('Удалить из недавних')}
-                  onClick={() =>
-                    void w.savePreferences({
-                      recent: w.preferences.recent.filter((item) => item !== entry),
-                      projectOrder: projectPaths.filter((item) => item !== entry)
+            <ProjectCard
+              key={path}
+              name={name}
+              path={path}
+              subtitle={closed ? t('Не открыт') : subtitle}
+              active={project?.id === w.project?.id}
+              open={open}
+              closed={closed}
+              remote={Boolean(project?.remote)}
+              ready={project?.connection === 'ready'}
+              count={project ? sessionsOf(project).length : undefined}
+              headingProps={reorder.headingProps(path)}
+              buttonProps={reorder.buttonProps(path)}
+              onToggle={() => (project ? toggle(project.id, open) : void w.openProject(path))}
+              onClose={() =>
+                project
+                  ? void w.closeProject(project.id)
+                  : void w.savePreferences({
+                      recent: w.preferences.recent.filter((item) => item !== path),
+                      projectOrder: projectPaths.filter((item) => item !== path)
                     })
-                  }
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            </div>
+              }
+              onNewChat={() => void createProjectChat(project)}
+            >
+              {project &&
+                (sessionsOf(project).length ? (
+                  renderSessions(project)
+                ) : (
+                  <button
+                    className="project-empty-chat"
+                    onClick={() => void createProjectChat(project)}
+                  >
+                    <Plus size={13} />
+                    {t('Создать первый чат')}
+                  </button>
+                ))}
+            </ProjectCard>
           )
-        const project = entry
-        const active = w.project?.id === project.id
-        const open = Boolean(expanded[project.id])
-        return (
-          <div key={project.id} className={`project-group ${active ? 'active-group' : ''}`}>
-            <div {...reorder.headingProps(project.path)}>
-              <button
-                {...reorder.buttonProps(project.path)}
-                className={`project-item ${active ? 'selected' : ''}`}
-                aria-expanded={open}
-                onClick={() => toggle(project.id, open)}
-              >
-                {open ? <FolderOpen size={15} /> : <Folder size={15} />}
-                <span
-                  title={
-                    project.remote
-                      ? `${project.remote.user}@${project.remote.host}:${project.remote.root}`
-                      : project.path
-                  }
-                >
-                  {projectLabel(project)}
-                </span>
-                <span className={`dot ${project.connection === 'ready' ? 'green' : 'amber'}`} />
-              </button>
-              <button
-                className="icon small project-close"
-                title={t('Закрыть проект')}
-                aria-label={t('Закрыть проект {value0}', { value0: project.path })}
-                onClick={() => void w.closeProject(project.id)}
-              >
-                <X size={12} />
-              </button>
-            </div>
-            {open && renderSessions(project)}
-          </div>
-        )
-      })}
-      {recentChats.length > 0 && (
-        <>
-          <div className="section-caption recent-caption">{t('НЕДАВНИЕ')}</div>
-          {recentChats.map(({ project, session }) => renderSession(project, session, true))}
-        </>
+        })}
+      </div>
+      {needle && !visited.length && !recentChats.length && (
+        <div className="sidebar-empty">{t('Проекты и чаты не найдены')}</div>
       )}
+      <section className="personal-chat-section" aria-label={t('Личные чаты')}>
+        <div className="section-caption navigation-caption recent-caption">
+          <span>
+            <MessagesSquare size={13} />
+            {t('ЛИЧНЫЕ ЧАТЫ')}
+            <b>{personal ? sessionsOf(personal).length : 0}</b>
+          </span>
+          <button
+            className="icon small"
+            aria-label={t('Новый личный чат')}
+            title={t('Новый личный чат')}
+            disabled={w.loading || w.info.runtime !== 'ready'}
+            onClick={() => void createProjectChat()}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        <p className="personal-chat-hint">{t('Без проекта')}</p>
+        {recentChats.map(({ project, session }) => renderSession(project, session, true))}
+        {!needle && !recentChats.length && (
+          <button className="personal-empty-chat" onClick={() => void createProjectChat()}>
+            <Plus size={14} />
+            {t('Начать личный чат')}
+          </button>
+        )}
+      </section>
       {!w.projects.length && !visited.length && (
         <div className="sidebar-empty">{t('Откройте папку, чтобы начать работу с проектом')}</div>
       )}
