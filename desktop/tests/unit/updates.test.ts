@@ -120,6 +120,35 @@ describe('release updates', () => {
     expect(controller.snapshot().state).toBe('downloaded')
     expect(updater.quitAndInstall).not.toHaveBeenCalled()
   })
+  it('shows shutdown progress before preparation completes and rejects installer errors', async () => {
+    let finishShutdown!: () => void
+    const shutdown = new Promise<void>((resolve) => {
+      finishShutdown = resolve
+    })
+    const updater = Object.assign(new EventEmitter(), {
+      autoDownload: false,
+      autoInstallOnAppQuit: false,
+      setFeedURL: vi.fn(),
+      checkForUpdates: vi.fn(),
+      downloadUpdate: vi.fn(),
+      quitAndInstall: () => {
+        updater.emit('error', new Error('Installation failed'))
+      }
+    })
+    const controller = new UpdateController(
+      updater,
+      async () => null,
+      () => {},
+      () => shutdown
+    )
+    updater.emit('update-downloaded', { version: '0.4.52' })
+    const installing = controller.install()
+    const stateDuringShutdown = controller.snapshot().state
+    finishShutdown()
+    await expect(installing).rejects.toThrow('Installation failed')
+    expect(stateDuringShutdown).toBe('installing')
+    expect(controller.snapshot()).toMatchObject({ state: 'error', message: 'Installation failed' })
+  })
   it('recovers from a failed download without treating it as ready to install', async () => {
     const updater = Object.assign(new EventEmitter(), {
       autoDownload: false,
