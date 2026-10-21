@@ -30,6 +30,11 @@ describe('panel geometry', () => {
   it('does not reintroduce manually hidden panels', () => {
     expect(panelGeometry(480, 256, 334, false, false).columns).toBe('minmax(0, 1fr)')
   })
+  it('reserves room for an open editor', () => {
+    const layout = panelGeometry(1440, 256, 1100, true, true, true, false, true)
+    expect(layout.inspectorMax).toBeLessThanOrEqual(720)
+    expect(layout.inspector).toBe(layout.inspectorMax)
+  })
 })
 
 it('shifts the chat column toward the window center', () => {

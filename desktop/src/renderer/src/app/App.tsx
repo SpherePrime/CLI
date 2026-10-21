@@ -84,6 +84,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   function toggleSidebar() {
     if (focusMode) return setFocusMode(false)
     if (layout.compact) return window.dispatchEvent(new Event('prime:projects-flyout'))
+    if (!layout.sidebarOpen) {
+      setWidths((value) => ({
+        ...value,
+        inspector: Math.min(value.inspector, layout.inspectorWithSidebarMax)
+      }))
+      setCollapsed('sidebar', false)
+      return
+    }
     setCollapsed('sidebar', !collapsed.sidebar)
   }
   function toggleInspector() {
@@ -142,7 +150,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     showSidebar,
     showInspector,
     collapsed.sidebar,
-    collapsed.inspector
+    collapsed.inspector,
+    showEditor
   )
   const centerShift = chatCenterShift(layout, showSidebar, showInspector, showEditor)
   const geometry = useRef({ available: 0, inspectorMax: 280 })
@@ -162,7 +171,19 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     collapsed,
     setCollapsed,
     inspectorMax: layout.inspectorMax,
-    zoom
+    zoom,
+    beginInspectorResize: () => {
+      const chatWidth = shell.current?.querySelector<HTMLElement>('.main-workspace')?.offsetWidth
+      const editorWidth = shell.current?.querySelector<HTMLElement>('.file-editor')?.offsetWidth
+      const inspectorWidth = layout.inspector
+      return (next) => {
+        if (!showEditor || layout.compact || !chatWidth || !editorWidth) return
+        const releasedGutter = (inspectorWidth > 0 ? panelGutter : 0) - (next > 0 ? panelGutter : 0)
+        setEditorFraction(
+          Math.max(300, editorWidth + inspectorWidth - next + releasedGutter) / chatWidth
+        )
+      }
+    }
   })
   useEffect(() => {
     const setup = () => setModal('providers')
@@ -241,7 +262,9 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             zoom,
             gridTemplateColumns:
               layout.columns +
-              (showEditor && !layout.compact ? ` ${panelGutter}px minmax(0, var(--editor-fraction))` : '')
+              (showEditor && !layout.compact
+                ? ` ${panelGutter}px minmax(0, var(--editor-fraction))`
+                : '')
           } as React.CSSProperties
         }
       >
@@ -311,7 +334,9 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         {showInspector && (
           <>
             {layout.inspectorResizable && (
-              <div {...panels.separator('inspector', t('Ширина рабочей области'), layout.inspector)} />
+              <div
+                {...panels.separator('inspector', t('Ширина рабочей области'), layout.inspector)}
+              />
             )}
             <Inspector
               compact={layout.compact}
@@ -339,8 +364,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                   shell.current!.querySelector<HTMLElement>('.main-workspace')!.offsetWidth
                 const move = (event: PointerEvent) => {
                   const width = Math.max(
-                    360,
-                    Math.min(available - 300, editorWidth - (event.clientX - start))
+                    300,
+                    Math.min(available - 300, editorWidth - (event.clientX - start) / zoom)
                   )
                   setEditorFraction(width / (available - width))
                 }
@@ -377,11 +402,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         {modal === 'plugins' && <PluginManager workspace={w} close={() => setModal('')} />}
         {modal === 'remote' && <RemoteDialog workspace={w} close={() => setModal('')} />}
         {modal === 'jobs' && (
-          <JobsCenter
-            workspace={w}
-            close={() => setModal('')}
-            openTools={openTools}
-          />
+          <JobsCenter workspace={w} close={() => setModal('')} openTools={openTools} />
         )}
       </div>
     </>
