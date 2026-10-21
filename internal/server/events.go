@@ -311,12 +311,21 @@ func messageToProto(m message.Message) proto.Message {
 				Finished: v.Finished,
 			})
 		case message.ToolResult:
+			images := make([]proto.ToolResultImage, len(v.Images))
+			for index, image := range v.Images {
+				images[index] = proto.ToolResultImage{
+					Data:     image.Data,
+					MIMEType: image.MIMEType,
+					Path:     image.Path,
+				}
+			}
 			msg.Parts = append(msg.Parts, proto.ToolResult{
 				ToolCallID: v.ToolCallID,
 				Name:       v.Name,
 				Content:    v.Content,
 				Data:       v.Data,
 				MIMEType:   v.MIMEType,
+				Images:     images,
 				Metadata:   v.Metadata,
 				IsError:    v.IsError,
 			})

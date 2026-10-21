@@ -156,6 +156,13 @@ type ToolCall struct {
 
 func (ToolCall) isPart() {}
 
+// ToolResultImage is one image attached to a tool result for UI display.
+type ToolResultImage struct {
+	Data     string `json:"data"`
+	MIMEType string `json:"mime_type"`
+	Path     string `json:"path,omitempty"`
+}
+
 // ToolResult represents the result of a tool call.
 type ToolResult struct {
 	ToolCallID string `json:"tool_call_id"`
@@ -163,8 +170,10 @@ type ToolResult struct {
 	Content    string `json:"content"`
 	Data       string `json:"data,omitempty"`
 	MIMEType   string `json:"mime_type,omitempty"`
-	Metadata   string `json:"metadata"`
-	IsError    bool   `json:"is_error"`
+	// Images carries additional images beyond the single Data slot.
+	Images    []ToolResultImage `json:"images,omitempty"`
+	Metadata  string            `json:"metadata"`
+	IsError   bool              `json:"is_error"`
 }
 
 func (ToolResult) isPart() {}

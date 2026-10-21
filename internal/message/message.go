@@ -219,8 +219,14 @@ func (s *service) Create(ctx context.Context, sessionID string, params CreateMes
 		return Message{}, err
 	}
 	// Clone the message before publishing to avoid race conditions with
-	// concurrent modifications to the Parts slice.
-	s.Publish(pubsub.CreatedEvent, message.Clone())
+	// concurrent modifications to the Parts slice. Tool results must reach
+	// every client: a dropped created event leaves a tool card running
+	// forever until the next full refresh, so publish with must-deliver.
+	if params.Role == Tool {
+		s.PublishMustDeliver(ctx, pubsub.CreatedEvent, message.Clone())
+	} else {
+		s.Publish(pubsub.CreatedEvent, message.Clone())
+	}
 	return message, nil
 }
 

@@ -877,6 +877,7 @@ func (a *agent) executeSingleTool(ctx context.Context, toolMap map[string]AgentT
 			MediaType: toolResult.MediaType,
 			Text:      toolResult.Content,
 		}
+		result.ClientImages = toolResult.Images
 	} else {
 		result.Result = ToolResultOutputContentText{
 			Text: toolResult.Content,

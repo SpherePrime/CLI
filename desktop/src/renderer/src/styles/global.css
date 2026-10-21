@@ -1130,6 +1130,20 @@ kbd {
   border-top: 1px solid var(--border);
   margin: 0;
 }
+.tool-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px 0;
+}
+.tool-gallery .tool-image {
+  padding: 0;
+  width: auto;
+}
+.tool-gallery.multi .tool-image img {
+  max-height: 170px;
+  max-width: 100%;
+}
 .tool-image {
   display: block;
   padding: 10px 12px 0;
