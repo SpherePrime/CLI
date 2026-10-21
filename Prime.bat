@@ -304,6 +304,7 @@ call :header "Prime Desktop"
 call :desktop_prepare
 if not "%EXITCODE%"=="0" goto finish
 echo  Starting Prime Desktop from sources. Close it to come back here.
+echo  Development uses a separate Desktop profile; installed app settings stay in its profile.
 echo.
 pushd desktop
 call npm run dev
