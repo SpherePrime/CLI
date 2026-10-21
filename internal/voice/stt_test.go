@@ -76,6 +76,10 @@ func sttTestServer(t *testing.T) *httptest.Server {
 			// Stand-in GGML model file.
 			_, _ = w.Write(bytes.Repeat([]byte("ggml"), 1024))
 		case strings.Contains(r.URL.Path, "/whisper-runtime/"):
+			if strings.HasSuffix(r.URL.Path, ".zip") {
+				zipWrite(t, w, map[string][]byte{"whisper-cli.exe": []byte("binary")})
+				return
+			}
 			// The whisper.cpp Linux archive, whose binary entry is called
 			// main here to exercise the fallback detection.
 			tarGzWrite(t, w, map[string][]byte{"main": []byte("binary")})

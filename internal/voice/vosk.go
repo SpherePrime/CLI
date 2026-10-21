@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	purego "github.com/SpherePrime/CLI/vendordeps/ebitengine/purego"
 )
@@ -17,9 +18,6 @@ import (
 // a setup problem, never a crash.
 
 // voskAPI holds the dlopened library handle and the registered C functions.
-// The library and each loaded model are kept for the process lifetime:
-// loading a multi-hundred-megabyte acoustic model per dictation would swamp
-// the latency the feature exists for.
 var voskAPI struct {
 	mu         sync.Mutex
 	loadedPath string
@@ -33,11 +31,15 @@ var voskAPI struct {
 	freeRecognizer   func(recognizer uintptr)
 }
 
-// voskLoadedModels caches the VoskModel handles by model directory.
-var voskLoadedModels = struct {
-	sync.Mutex
-	loaded map[string]uintptr
-}{loaded: map[string]uintptr{}}
+var voskLoadedModels = newVoskModelCache(func(path string) uintptr {
+	voskAPI.mu.Lock()
+	defer voskAPI.mu.Unlock()
+	return voskAPI.createModel(path)
+}, func(handle uintptr) {
+	voskAPI.mu.Lock()
+	defer voskAPI.mu.Unlock()
+	voskAPI.freeModel(handle)
+}, 10*time.Minute)
 
 // voskTranscriber transcribes with a local Vosk model through libvosk. The
 // model decides the language, so the configured language setting plays no
@@ -71,10 +73,11 @@ func (t voskTranscriber) Transcribe(ctx context.Context, audio *Audio) (string, 
 		return "", err
 	}
 
-	model, err := loadVoskModel(modelPath)
+	model, releaseModel, err := voskLoadedModels.acquire(modelPath)
 	if err != nil {
 		return "", err
 	}
+	defer releaseModel()
 
 	pcm, err := decodePCM(audio.WAV)
 	if err != nil {
@@ -160,22 +163,4 @@ func ensureVoskAPI(dataDir string) error {
 	voskAPI.setLogLevel(-1)
 	voskAPI.loadedPath = libPath
 	return nil
-}
-
-// loadVoskModel creates the VoskModel for a directory, reusing the cached
-// handle when this model was loaded before.
-func loadVoskModel(modelPath string) (uintptr, error) {
-	voskLoadedModels.Lock()
-	defer voskLoadedModels.Unlock()
-	if model, ok := voskLoadedModels.loaded[modelPath]; ok {
-		return model, nil
-	}
-	voskAPI.mu.Lock()
-	defer voskAPI.mu.Unlock()
-	model := voskAPI.createModel(modelPath)
-	if model == 0 {
-		return 0, fmt.Errorf("%w: vosk model at %s could not be loaded", ErrTranscribeFailed, modelPath)
-	}
-	voskLoadedModels.loaded[modelPath] = model
-	return model, nil
 }

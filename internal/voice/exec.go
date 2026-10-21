@@ -86,11 +86,13 @@ func (w *limitedWriter) Write(p []byte) (int, error) {
 	if limit == 0 {
 		limit = commandOutputLimit
 	}
-	if room := limit - w.buf.Len(); room > 0 {
-		if len(p) > room {
-			w.buf.Write(p[:room])
-			return len(p), nil
-		}
+	room := limit - w.buf.Len()
+	if room <= 0 {
+		return len(p), nil
+	}
+	if len(p) > room {
+		_, err := w.buf.Write(p[:room])
+		return len(p), err
 	}
 	return w.buf.Write(p)
 }

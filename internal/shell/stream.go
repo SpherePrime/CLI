@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"bytes"
 	"context"
 	"os"
 	"sync"
@@ -12,7 +11,7 @@ import (
 // stderr writing simultaneously).
 type progressWriter struct {
 	mu         sync.Mutex
-	buf        bytes.Buffer
+	buf        syncBuffer
 	onProgress func(string)
 }
 

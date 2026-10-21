@@ -274,4 +274,8 @@ func TestLimitedWriterCapsOutput(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 16, written)
 	require.Equal(t, "01234567", buffer.String())
+	written, err = writer.Write([]byte("next engine output"))
+	require.NoError(t, err)
+	require.Equal(t, len("next engine output"), written)
+	require.Equal(t, "01234567", buffer.String())
 }
