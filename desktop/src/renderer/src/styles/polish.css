@@ -79,14 +79,14 @@ progress {
 .message.user .copy-message {
   top: auto;
   bottom: -34px;
-  margin-right: 35px;
+  margin-right: 4px;
 }
 
 .message.user .message-body {
   width: fit-content;
-  max-width: min(760px, 100%);
+  max-width: min(760px, calc(100% - 31px));
   box-sizing: border-box;
-  margin-left: 0;
+  margin-left: 31px;
   margin-right: 0;
   overflow-wrap: anywhere;
 }
