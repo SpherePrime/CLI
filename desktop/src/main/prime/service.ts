@@ -4,6 +4,7 @@ import type { DesktopEvent, Operation, Project, Session } from '../../shared/con
 import { PrimeTransport } from './transport'
 import { operationRoute, redact } from './operations'
 import { ActivityTracker } from './activity'
+import { MessageCoalescer } from './messageCoalescer'
 
 type ProjectEnvironment = {
   resolveRoot?: (path: string) => Promise<string>
@@ -75,37 +76,42 @@ export class PrimeService {
     const ready = new Promise<void>((resolve) => {
       initialReady = resolve
     })
-    this.subscriptions.set(
-      project.id,
-      this.transport.subscribe(
-        `/v1/workspaces/${project.id}/events?client_id=${clientId}`,
-        (envelope) => {
-          const payload = envelope.payload?.payload ?? envelope.payload
-          this.activity.event(project.id, envelope.type, payload)
-          if (envelope.type === 'mcp_channel_message')
-            this.channels.set(
-              project.id,
-              [...(this.channels.get(project.id) || []), redact(payload)].slice(-200)
-            )
-          this.emit({
-            workspaceId: project.id,
-            type: envelope.type,
-            payload: { action: envelope.payload?.type, data: redact(payload) }
-          })
-        },
-        (connection) => {
-          project.connection = connection
-          this.emit({ workspaceId: project.id, type: 'connection', payload: connection })
-          if (connection === 'ready') {
-            initialReady()
-            void this.transport
-              .request<any[]>('GET', `/v1/workspaces/${project.id}/runs`)
-              .then((records) => this.activity.reconcile(project.id, records || []))
-              .catch(() => {})
+    const events = new MessageCoalescer(this.emit)
+    const unsubscribe = this.transport.subscribe(
+      `/v1/workspaces/${project.id}/events?client_id=${clientId}`,
+      (envelope) => {
+        const payload = envelope.payload?.payload ?? envelope.payload
+        this.activity.event(project.id, envelope.type, payload)
+        if (envelope.type === 'mcp_channel_message')
+          this.channels.set(
+            project.id,
+            [...(this.channels.get(project.id) || []), redact(payload)].slice(-200)
+          )
+        events.push({
+          workspaceId: project.id,
+          type: envelope.type,
+          payload: {
+            action: envelope.payload?.type,
+            data: envelope.type === 'message' ? payload : redact(payload)
           }
+        })
+      },
+      (connection) => {
+        project.connection = connection
+        events.push({ workspaceId: project.id, type: 'connection', payload: connection })
+        if (connection === 'ready') {
+          initialReady()
+          void this.transport
+            .request<any[]>('GET', `/v1/workspaces/${project.id}/runs`)
+            .then((records) => this.activity.reconcile(project.id, records || []))
+            .catch(() => {})
         }
-      )
+      }
     )
+    this.subscriptions.set(project.id, () => {
+      events.dispose()
+      unsubscribe()
+    })
     try {
       await Promise.race([
         ready,

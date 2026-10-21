@@ -18,6 +18,7 @@ import { useChatPermissions } from '../features/chat/useChatPermissions'
 import { watchProjectSessions } from '../features/projects/projectSessionEvents'
 import { useMessageHistory } from '../features/chat/useMessageHistory'
 import { updateHistoryMessage, type MessagePage } from '../features/chat/messageWindow'
+import { queueMessageEvent, type SequencedMessageEvent } from '../features/chat/messageEvents'
 
 const resolvedLimit = 1000
 
@@ -76,9 +77,7 @@ export function useWorkspace() {
   const [loading, setLoading] = useState(false)
   const current = useRef({ project, session })
   const messageSequence = useRef(0)
-  const messageEvents = useRef<
-    { sequence: number; workspaceId: string; action: string; message: Message }[]
-  >([])
+  const messageEvents = useRef(new Map<string, SequencedMessageEvent>())
   const messageSnapshots = useRef(0)
   const resolvedPermissions = useRef(new Set<string>())
   const resolvedQuestions = useRef(new Set<string>())
@@ -243,7 +242,7 @@ export function useWorkspace() {
             return
           if (msgs.status === 'fulfilled') {
             let reconciled = msgs.value as MessagePage
-            for (const entry of messageEvents.current)
+            for (const entry of messageEvents.current.values())
               if (
                 entry.sequence > snapshotSequence &&
                 entry.workspaceId === project.id &&
@@ -254,7 +253,7 @@ export function useWorkspace() {
           } else history.fail(session.id, msgs.reason)
           active = latest.status === 'fulfilled' ? latest.value : undefined
         } finally {
-          if (--messageSnapshots.current === 0) messageEvents.current = []
+          if (--messageSnapshots.current === 0) messageEvents.current.clear()
         }
       }
       if (current.current.project?.id !== project.id || current.current.session?.id !== session.id)
@@ -476,15 +475,18 @@ export function useWorkspace() {
       }
       if (event.type === 'message') {
         ++messageSequence.current
-        if (messageSnapshots.current > 0) {
-          messageEvents.current.push({
-            sequence: messageSequence.current,
-            workspaceId: event.workspaceId,
-            action: event.payload.action,
-            message: payload
-          })
-          if (messageEvents.current.length > 2000) messageEvents.current.splice(0, 1000)
-        }
+        if (messageSnapshots.current > 0 && payload?.id)
+          queueMessageEvent(
+            messageEvents.current,
+            `${event.workspaceId}:${payload.id}`,
+            {
+              sequence: messageSequence.current,
+              workspaceId: event.workspaceId,
+              action: event.payload.action,
+              message: payload
+            },
+            2000
+          )
         if (payload?.session_id === current.current.session?.id)
           history.live(payload, event.payload.action)
       }
