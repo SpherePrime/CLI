@@ -1356,7 +1356,8 @@ Object.assign(english, {
   Устройства: 'Devices',
   Микрофон: 'Microphone',
   'Вывод звука': 'Audio output',
-  'Системный по умолчанию': 'System default',
+  Авто: 'Auto',
+  'Авто - {value0}': 'Auto - {value0}',
   'Распознавание речи для диктовки: облачный Google или локальные модели Whisper и Vosk.':
     'Speech recognition for dictation: cloud Google or local Whisper and Vosk models.',
   'Провайдер: {value0}': 'Provider: {value0}',

@@ -19,7 +19,9 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
   const speed = w.preferences.speechSpeed ?? 1.05
   const micDeviceId = w.preferences.micDeviceId ?? ''
   const speakerDeviceId = w.preferences.speakerDeviceId ?? ''
-  const { inputs, outputs } = useAudioDevices()
+  const { inputs, outputs, defaultInput, defaultOutput } = useAudioDevices()
+  const autoInput = defaultInput ? t('Авто - {value0}', { value0: defaultInput }) : t('Авто')
+  const autoOutput = defaultOutput ? t('Авто - {value0}', { value0: defaultOutput }) : t('Авто')
   const report = (failure: unknown) =>
     setError(String((failure as Error)?.message || failure).replace(/^.*Error: /, ''))
   useEffect(() => {
@@ -66,11 +68,9 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
         <Select
           label={t('Микрофон')}
           value={micDeviceId}
-          onChange={(value) =>
-            void w.savePreferences({ micDeviceId: value || undefined }).catch(report)
-          }
+          onChange={(value) => void w.savePreferences({ micDeviceId: value }).catch(report)}
           options={[
-            { value: '', label: t('Системный по умолчанию') },
+            { value: '', label: autoInput },
             ...inputs.map((device) => ({ value: device.id, label: device.label }))
           ]}
         />
@@ -82,7 +82,7 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
           value={speakerDeviceId}
           onChange={(value) => void w.savePreferences({ speakerDeviceId: value }).catch(report)}
           options={[
-            { value: '', label: t('Системный по умолчанию') },
+            { value: '', label: autoOutput },
             ...outputs.map((device) => ({ value: device.id, label: device.label }))
           ]}
         />
