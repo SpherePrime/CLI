@@ -65,6 +65,16 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   useModalWindowChrome()
   const [editorFraction, setEditorFraction] = useState(1.2)
   const [modal, setModal] = useState('')
+  const [settingsTab, setSettingsTab] = useState('appearance')
+  useEffect(() => {
+    const openSettings = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: string }>).detail?.tab
+      setSettingsTab(tab || 'appearance')
+      setModal('settings')
+    }
+    window.addEventListener('prime:open-settings', openSettings)
+    return () => window.removeEventListener('prime:open-settings', openSettings)
+  }, [])
   const [collapsed, setCollapsedState] = useState({ sidebar: true, inspector: true })
   const [inspector, setInspector] = useState(true)
   const [focusMode, setFocusMode] = useState(false)
@@ -396,7 +406,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           <SettingsDialog
             workspace={w}
             close={() => setModal('')}
-            initial={modal === 'providers' ? 'providers' : 'appearance'}
+            initial={modal === 'providers' ? 'providers' : settingsTab}
           />
         )}
         {modal === 'plugins' && <PluginManager workspace={w} close={() => setModal('')} />}

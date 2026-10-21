@@ -12,17 +12,37 @@ import { textContent, visibleMessageText } from '../../../../shared/messages'
 
 const remarkPlugins = [remarkGfm]
 const markdownComponents: Components = {
-  a: ({ href, children }) => (
-    <a
-      href={href}
-      onClick={(event) => {
-        event.preventDefault()
-        if (href) void window.prime.openExternal(href)
-      }}
-    >
-      {children}
-    </a>
-  )
+  a: ({ href, children }) => {
+    if (href?.startsWith('prime://')) {
+      return (
+        <a
+          href={href}
+          onClick={(event) => {
+            event.preventDefault()
+            const settingsMatch = /^prime:\/\/settings\/(.+)$/.exec(href)
+            if (settingsMatch) {
+              window.dispatchEvent(
+                new CustomEvent('prime:open-settings', { detail: { tab: settingsMatch[1] } })
+              )
+            }
+          }}
+        >
+          {children}
+        </a>
+      )
+    }
+    return (
+      <a
+        href={href}
+        onClick={(event) => {
+          event.preventDefault()
+          if (href) void window.prime.openExternal(href)
+        }}
+      >
+        {children}
+      </a>
+    )
+  }
 }
 
 export const MessageItem = memo(function MessageItem({
