@@ -80,32 +80,6 @@ export function ImageGenSettings({ workspace: w }: { workspace: Workspace }) {
           />
         </label>
         <label className="form-label">
-          {t('Папка сохранения')}
-          <input
-            type="text"
-            key={imageGen.output_dir || ''}
-            defaultValue={imageGen.output_dir || ''}
-            placeholder="./generated-images"
-            onBlur={(event) => {
-              if (event.target.value !== (imageGen.output_dir || ''))
-                void save('output_dir', event.target.value)
-            }}
-          />
-        </label>
-        <label className="form-label">
-          {t('Размер по умолчанию')}
-          <input
-            type="text"
-            key={imageGen.size || ''}
-            defaultValue={imageGen.size || ''}
-            placeholder="1024x1024"
-            onBlur={(event) => {
-              if (event.target.value !== (imageGen.size || ''))
-                void save('size', event.target.value)
-            }}
-          />
-        </label>
-        <label className="form-label">
           {t('Формат ответа')}
           <Select
             label={t('Формат ответа')}

@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"cmp"
 	"context"
 	_ "embed"
 	"fmt"
@@ -39,7 +38,7 @@ type ImageGenParams struct {
 	Prompt         string `json:"prompt" description:"Image description (required)"`
 	Size           string `json:"size,omitempty" description:"Image size like 1024x1024, 1536x1024 or auto (provider default when omitted)"`
 	Count          int    `json:"count,omitempty" description:"Images to generate, 1-10 (default 1)"`
-	OutputDir      string `json:"output_dir,omitempty" description:"Save directory (default: configured output directory or ./generated-images)"`
+	OutputDir      string `json:"output_dir,omitempty" description:"Save directory chosen for this task; without it images go to ./generated-images in the working directory"`
 	FilenamePrefix string `json:"filename_prefix,omitempty" description:"File name prefix (default image)"`
 }
 
@@ -121,9 +120,6 @@ func NewImageGenTool(
 
 			outputDir := params.OutputDir
 			if strings.TrimSpace(outputDir) == "" {
-				outputDir = options.GetOutputDir()
-			}
-			if strings.TrimSpace(outputDir) == "" {
 				outputDir = filepath.Join(workingDir, "generated-images")
 			}
 			if !filepath.IsAbs(outputDir) {
@@ -160,7 +156,7 @@ func NewImageGenTool(
 				Model:          options.GetModel(),
 				Prompt:         params.Prompt,
 				N:              count,
-				Size:           cmp.Or(strings.TrimSpace(params.Size), options.GetSize()),
+				Size:           strings.TrimSpace(params.Size),
 				ResponseFormat: options.GetResponseFormat(),
 			}
 

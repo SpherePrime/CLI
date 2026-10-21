@@ -17,9 +17,11 @@ link that opens the settings dialog on the right tab.
 
 - New `ImageGenOptions` struct in `Options` (`options.image_gen.*`):
   `api_key`, `model` (default `gpt-image-1`), `base_url`
-  (default `https://api.openai.com/v1`), `output_dir`
-  (default `./generated-images`), `response_format` (`b64_json|url`, optional),
-  `size` (optional default), `timeout_ms` (default 180000).
+  (default `https://api.openai.com/v1`), `response_format`
+  (`b64_json|url`, optional), `timeout_ms` (default 180000).
+  Output directory and size are not configurable: the model chooses the
+  folder per task via the `output_dir` parameter (fallback
+  `./generated-images`), and size is passed per call when needed.
 - API key resolves `$VAR` through the config resolver (same as `voice.api_key`).
 - `generate_image` added to `allToolNames()`.
 - `schema.json` regenerated (`prime schema`).
@@ -43,7 +45,7 @@ link that opens the settings dialog on the right tab.
 
 - `SettingsDialog.tsx`: new tab "Images" (`image-generation`), component
   `ImageGenSettings.tsx` modeled after `PrimeSettings.tsx`: api key (masked),
-  model, base URL, output dir, default size, response format select, timeout;
+  model, base URL, response format select, timeout;
   saves via `configSet` with `options.image_gen.*` keys; scope selector
   (global/project).
 - `MessageItem.tsx`: links with `prime://` prefix do not open externally;
