@@ -46,6 +46,7 @@ export type Message = {
   session_id: string
   role: string
   parts: { type: string; data: Json }[]
+  is_summary_message?: boolean
   created_at?: number
   updated_at?: number
 }

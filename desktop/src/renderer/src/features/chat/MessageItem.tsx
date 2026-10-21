@@ -64,6 +64,58 @@ export const MessageItem = memo(function MessageItem({
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const text = textContent(message)
+  if (message.is_summary_message) {
+    const finish = (message.parts || []).find((part) => part.type === 'finish')
+    const failed = finish?.data.reason === 'error'
+    const canceled = finish?.data.reason === 'canceled'
+    const running = !finish && live
+    return (
+      <article
+        className={`message assistant summary-message ${fresh ? 'fresh' : ''} ${matched ? 'search-match' : ''}`}
+      >
+        <div className="message-body">
+          {running ? (
+            <div className="compaction-progress" role="status">
+              <span className="working-orb" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span>{t('Автоматическое сжатие контекста, это может занять несколько минут…')}</span>
+            </div>
+          ) : (
+            <details className="compaction-details">
+              <summary>{t('Сжатие контекста')}</summary>
+              <div className="markdown">
+                <Markdown remarkPlugins={remarkPlugins} components={markdownComponents}>
+                  {text}
+                </Markdown>
+              </div>
+            </details>
+          )}
+          {(failed || canceled) && (
+            <div className="finish-note">
+              {canceled ? t('Задача остановлена') : finish?.data.message || t('Ошибка выполнения')}
+            </div>
+          )}
+        </div>
+        {!running && text && (
+          <button
+            className="copy-message icon"
+            aria-label={t('Скопировать сообщение')}
+            onClick={async () => {
+              await navigator.clipboard.writeText(text)
+              setCopied(true)
+              clearTimeout(copiedTimer.current)
+              copiedTimer.current = setTimeout(() => setCopied(false), 1500)
+            }}
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+          </button>
+        )}
+      </article>
+    )
+  }
   return (
     <article
       className={`message ${message.role} ${continued ? 'continued' : ''} ${fresh ? 'fresh' : ''} ${matched ? 'search-match' : ''}`}
