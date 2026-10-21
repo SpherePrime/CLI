@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
+import { ToolModeSetting } from './ToolModeSetting'
 
 export function PrimeSettings({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
@@ -39,6 +40,11 @@ export function PrimeSettings({ workspace: w }: { workspace: Workspace }) {
         />
       </label>
       <fieldset className="settings-fields" disabled={saving || !w.project}>
+        <ToolModeSetting
+          smart={!!options.smart_tools}
+          disabled={w.busy}
+          onChange={(value) => void save('smart_tools', value)}
+        />
         <label className="form-label">
           {t('Язык Prime')}
           <Select

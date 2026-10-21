@@ -252,6 +252,12 @@ export const english: Record<string, string> = {
   'Необходимо перезапустить приложение': 'Restart required',
   'Не удалось загрузить обновление': 'Could not download the update',
   'Не удалось установить обновление': 'Could not install the update',
+  'Режим инструментов': 'Tool mode',
+  'Обычный': 'Standard',
+  'Агент находит нужные инструменты и скиллы через поиск перед использованием.':
+    'The agent searches for relevant tools and skills before using them.',
+  'Агент получает список инструментов и описания доступных скиллов сразу.':
+    'The agent receives the tool list and available skill descriptions upfront.',
   'Перезапускаем Prime': 'Restarting Prime',
   'Доступна новая версия': 'A new version is available',
   'Загружаем обновление': 'Downloading update',
