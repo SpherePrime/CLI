@@ -85,6 +85,10 @@ func pinnedTranscribers(ctx context.Context, settings Settings, p prober) []Tran
 				lang:    settings.Language,
 			}}
 		}
+	case EngineWhisper:
+		return []Transcriber{newWhisperTranscriber(settings)}
+	case EngineVosk:
+		return []Transcriber{newVoskTranscriber(settings)}
 	}
 	return nil
 }

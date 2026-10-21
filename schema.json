@@ -557,6 +557,10 @@
     },
     "Options": {
       "properties": {
+        "remote_workspace": {
+          "$ref": "#/$defs/RemoteWorkspace",
+          "description": "Remote SSH project executed through the desktop bridge"
+        },
         "context_paths": {
           "items": {
             "type": "string",
@@ -897,6 +901,26 @@
       "additionalProperties": false,
       "type": "object"
     },
+    "RemoteWorkspace": {
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "user": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "host",
+        "user",
+        "root"
+      ]
+    },
     "SelectedModel": {
       "properties": {
         "model": {
@@ -1214,7 +1238,9 @@
             "auto",
             "google",
             "openai",
-            "command"
+            "command",
+            "whisper",
+            "vosk"
           ],
           "description": "Transcription engine to use",
           "default": "auto"

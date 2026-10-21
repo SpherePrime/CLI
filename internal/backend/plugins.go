@@ -3,6 +3,8 @@ package backend
 import (
 	"context"
 	"errors"
+	"strings"
+
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/plugins"
 	"github.com/SpherePrime/CLI/internal/proto"
@@ -91,6 +93,11 @@ func (b *Backend) PluginTasks(workspaceID string) ([]proto.PluginTask, error) {
 	defer ws.pluginMu.Unlock()
 	result := []proto.PluginTask{}
 	for name, task := range ws.pluginTasks {
+		// STT model installs travel in the same store under stt:* keys and
+		// have their own endpoint; here only plugin installs are listed.
+		if strings.HasPrefix(name, "stt:") {
+			continue
+		}
 		snapshot := task.Snapshot()
 		state := "running"
 		if snapshot.State == plugins.TaskDone {

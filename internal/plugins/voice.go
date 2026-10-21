@@ -17,7 +17,7 @@ func voicePlugin() Plugin {
 	return Plugin{
 		Name:        VoiceName,
 		Title:       "Voice dictation",
-		Description: "Dictate into the prompt with alt+v; transcription goes through Google Web Speech.",
+		Description: "Dictate into the prompt with alt+v; transcription uses the STT engine chosen in the settings (Google, Whisper or Vosk).",
 		Install: func(ctx context.Context, settings voice.Settings, report func(Progress)) error {
 			return voice.EnsureInstalled(ctx, settings, func(pr voice.SetupProgress) {
 				if report != nil {
