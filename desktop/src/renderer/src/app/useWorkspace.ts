@@ -89,11 +89,12 @@ export function useWorkspace() {
   const requestSnapshots = useRef(0)
   current.current = { project, session }
   useEffect(() => {
-    if (!project || !session) return
+    if (!project) return
     const projectId = project.id
-    const sessionId = session.id
     return watchProjectSessions([projectId], window.prime, (id, snapshot) => {
-      if (current.current.project?.id !== id || current.current.session?.id !== sessionId) return
+      if (current.current.project?.id !== id) return
+      const sessionId = current.current.session?.id
+      if (!sessionId) return
       setSessions(snapshot)
       const selected = snapshot.find((item) => item.id === sessionId)
       if (selected) {
@@ -101,7 +102,7 @@ export function useWorkspace() {
         setObservedBusy({ projectId: id, sessionId, busy: Boolean(selected.is_busy) })
       }
     })
-  }, [project?.id, session?.id])
+  }, [project?.id])
   const errorHandler = useCallback(
     (error: unknown) =>
       setError(
@@ -188,36 +189,44 @@ export function useWorkspace() {
       queueFetches.current.delete(key)
     }
   }, [])
-  const loadWorkspace = useCallback(async (includeMessages: boolean) => {
+  const loadWorkspace = useCallback(async (includeMessages: boolean, heavy = true) => {
     const { project, session } = current.current
     if (!project) return
-    const results = await Promise.allSettled([
-      window.prime.call(project.id, 'sessions'),
-      window.prime.call(project.id, 'config'),
-      window.prime.call(project.id, 'agent'),
-      refreshPending(),
-      window.prime.call(project.id, 'mcp'),
-      window.prime.call(project.id, 'lsp'),
-      window.prime.call(project.id, 'skills'),
-      window.prime.call(project.id, 'channelMessages'),
-      refreshQueue()
-    ])
+    const tasks: [string, Promise<Json>][] = [
+      ['sessions', window.prime.call(project.id, 'sessions')],
+      ['pending', refreshPending()],
+      ['queue', refreshQueue()]
+    ]
+    if (heavy)
+      tasks.push(
+        ['config', window.prime.call(project.id, 'config')],
+        ['agent', window.prime.call(project.id, 'agent')],
+        ['mcp', window.prime.call(project.id, 'mcp')],
+        ['lsp', window.prime.call(project.id, 'lsp')],
+        ['skills', window.prime.call(project.id, 'skills')],
+        ['channels', window.prime.call(project.id, 'channelMessages')]
+      )
+    const results = await Promise.allSettled(tasks.map(([, task]) => task))
     if (current.current.project?.id !== project.id) return
-    const get = (index: number) =>
-      results[index].status === 'fulfilled'
-        ? (results[index] as PromiseFulfilledResult<Json>).value
-        : undefined
-    if (get(0)) setSessions(get(0))
-    if (get(1)) setConfig(get(1))
-    if (get(2)) setAgent(get(2))
-    setResources({
-      mcp: get(4) || {},
-      lsp: get(5) || {},
-      skills: get(6) || [],
-      channels: get(7) || []
+    const values: Record<string, Json> = {}
+    tasks.forEach(([name], index) => {
+      values[name] =
+        results[index].status === 'fulfilled'
+          ? (results[index] as PromiseFulfilledResult<Json>).value
+          : undefined
     })
+    if (values.sessions) setSessions(values.sessions)
+    if (values.config) setConfig(values.config)
+    if (values.agent) setAgent(values.agent)
+    if (heavy)
+      setResources({
+        mcp: values.mcp || {},
+        lsp: values.lsp || {},
+        skills: values.skills || [],
+        channels: values.channels || []
+      })
     if (!session) return
-    let active: Session[] | undefined = get(0)
+    let active: Session[] | undefined = values.sessions
     if (includeMessages) {
       const snapshotSequence = messageSequence.current
       messageSnapshots.current++
@@ -259,31 +268,36 @@ export function useWorkspace() {
     running: Promise<void> | null
     queued: Promise<void> | null
     queuedMessages: boolean
-  }>({ running: null, queued: null, queuedMessages: false })
+    queuedHeavy: boolean
+  }>({ running: null, queued: null, queuedMessages: false, queuedHeavy: false })
   const scheduleRefresh = useCallback(
-    (includeMessages: boolean): Promise<void> => {
+    (includeMessages: boolean, heavy = true): Promise<void> => {
       const state = refreshState.current
       if (!state.running) {
-        state.running = loadWorkspace(includeMessages).finally(() => {
+        state.running = loadWorkspace(includeMessages, heavy).finally(() => {
           state.running = null
         })
         return state.running
       }
       state.queuedMessages ||= includeMessages
+      state.queuedHeavy ||= heavy
       if (!state.queued)
         state.queued = state.running
           .catch(() => {})
           .then(() => {
             const messages = state.queuedMessages
+            const heavyQueued = state.queuedHeavy
             state.queued = null
             state.queuedMessages = false
-            return scheduleRefresh(messages)
+            state.queuedHeavy = false
+            return scheduleRefresh(messages, heavyQueued)
           })
       return state.queued
     },
     [loadWorkspace]
   )
   const refresh = useCallback(() => scheduleRefresh(true), [scheduleRefresh])
+  const refreshLight = useCallback(() => scheduleRefresh(false, false), [scheduleRefresh])
   useEffect(() => {
     async function restoreWorkspace() {
       const saved = await window.prime.preferences()
@@ -313,11 +327,6 @@ export function useWorkspace() {
           current.current.session = selected
           setSession(selected)
         }
-        const status = await window.prime.call(restored.id, 'agent')
-        if (!status?.is_ready)
-          await window.prime
-            .call(restored.id, 'init')
-            .catch(restored.kind === 'chat' ? () => {} : errorHandler)
         await refresh()
       }
       setStartupReady(true)
@@ -567,12 +576,22 @@ export function useWorkspace() {
     if (!project) return
     const timer = setInterval(() => {
       if (document.hidden) return
-      void scheduleRefresh(current.current.project?.connection !== 'ready').catch(() => {})
+      void scheduleRefresh(current.current.project?.connection !== 'ready', false).catch(() => {})
     }, 10000)
     return () => clearInterval(timer)
   }, [project?.id, scheduleRefresh])
   async function openProject(path?: string) {
     await openWorkspace(() => window.prime.openProject(path))
+  }
+  async function openProjectSession(path: string, selected: Session, known?: Session[]) {
+    await openProject(path)
+    const target = current.current.project
+    if (!target || target.path !== path) return
+    await openSession(target, selected, known)
+  }
+  async function openProjectNewChat(path: string) {
+    await openProject(path)
+    await createSession()
   }
   async function openRemote(profileId: string) {
     await openWorkspace(() => window.prime.openRemote(profileId))
@@ -594,12 +613,6 @@ export function useWorkspace() {
       setProjects(await window.prime.projects())
       setPreferences(await window.prime.preferences())
       await refresh()
-      try {
-        await window.prime.call(opened.id, 'init')
-      } catch (error) {
-        errorHandler(error)
-      }
-      await refresh()
     } catch (error) {
       errorHandler(error)
     } finally {
@@ -614,7 +627,8 @@ export function useWorkspace() {
     setMessages([])
     setBusy(false)
     setQueue([])
-    await refresh()
+    await refreshLight()
+    void scheduleRefresh(false, true).catch(() => {})
   }
   async function closeProject(id: string) {
     try {
@@ -648,7 +662,8 @@ export function useWorkspace() {
     setBusy(Boolean(selected.is_busy))
     setQueue([])
     await call('currentSession', { sessionId: selected.id }).catch(errorHandler)
-    await refresh()
+    if (cached) await refreshLight()
+    else await refresh()
   }
   async function openSession(target: Project, selected: Session, known?: Session[]) {
     if (target.id === current.current.project?.id) return selectSession(selected)
@@ -667,7 +682,8 @@ export function useWorkspace() {
     await window.prime
       .call(target.id, 'currentSession', { sessionId: selected.id })
       .catch(errorHandler)
-    await refresh()
+    if (cached) await refreshLight()
+    else await refresh()
   }
   async function openChat() {
     try {
@@ -891,6 +907,8 @@ export function useWorkspace() {
     refresh,
     openChat,
     openProject,
+    openProjectSession,
+    openProjectNewChat,
     openRemote,
     selectProject,
     closeProject,

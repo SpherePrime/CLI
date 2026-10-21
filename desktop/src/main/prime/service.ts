@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { realpath, stat } from 'node:fs/promises'
-import type { DesktopEvent, Operation, Project } from '../../shared/contracts'
+import type { DesktopEvent, Operation, Project, Session } from '../../shared/contracts'
 import { PrimeTransport } from './transport'
 import { operationRoute, redact } from './operations'
 import { ActivityTracker } from './activity'
@@ -119,6 +119,13 @@ export class PrimeService {
     }
     return project
   }
+  projectSessions(paths: string[]): Promise<Record<string, Session[]>> {
+    if (!paths.length) return Promise.resolve({})
+    return this.transport.request(
+      'GET',
+      `/v1/project-sessions?paths=${paths.map((path) => encodeURIComponent(path)).join(',')}`
+    )
+  }
   async close(id: string): Promise<void> {
     this.initializationControllers.get(id)?.abort()
     const project = this.projects.get(id)
@@ -178,6 +185,7 @@ export class PrimeService {
         .request<any[]>('GET', `/v1/workspaces/${id}/runs`)
         .then((records) => this.activity.reconcile(id, records || []))
         .catch(() => {})
+    if (operation === 'sessions' || operation === 'messages') return response
     return redact(response)
   }
   root(id: string): string {
