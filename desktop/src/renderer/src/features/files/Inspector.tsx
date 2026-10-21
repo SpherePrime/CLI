@@ -14,7 +14,6 @@ import {
   FolderOpen,
   FolderPlus,
   RefreshCw,
-  PanelRightClose,
   ArrowUpRight,
   FileDiff,
   Files,
@@ -236,17 +235,6 @@ export function Inspector({
   }
   const body = (
     <>
-      <div className="inspector-header">
-        <strong>{t('Рабочая область')}</strong>
-        <button
-          className="icon"
-          title={t('Скрыть панель')}
-          aria-label={t('Скрыть панель')}
-          onClick={() => (compact ? setPanelOpen(false) : setExpanded(false))}
-        >
-          <PanelRightClose size={16} />
-        </button>
-      </div>
       {tab === 'browser' && (
         <div className="inspector-browser">
           <BrowserTab

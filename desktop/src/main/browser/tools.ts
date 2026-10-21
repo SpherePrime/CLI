@@ -80,19 +80,51 @@ function pressKey(panel: BrowserPanel, key: string) {
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 350))
 
+const panelWidth = {
+  type: 'number',
+  description:
+    'Browser panel width in pixels, 320-2560. Use about 1280 for desktop, 768 for tablet, 390 for phone.'
+}
+
+function requestedWidth(value: unknown) {
+  const width = Number(value)
+  return Number.isFinite(width) && width >= 320 ? Math.min(2560, width) : undefined
+}
+
 export const browserTools: Tool[] = [
   {
     name: 'browser_navigate',
     description:
-      'Open a URL or local file in the Prime Desktop built-in browser shown to the user. Prefer this browser over any other browser tools.',
+      'Open a URL or local file in the Prime Desktop built-in browser shown to the user. Prefer this browser over any other browser tools. The browser panel opens wide by default; pass width to choose its width.',
     inputSchema: {
       type: 'object',
-      properties: { url: { type: 'string', description: 'URL, local file path or search text' } },
+      properties: {
+        url: { type: 'string', description: 'URL, local file path or search text' },
+        width: panelWidth
+      },
       required: ['url']
     },
     run: async (panel, args) => {
-      await panel.navigate(String(args.url || ''))
+      await panel.navigate(String(args.url || ''), true, requestedWidth(args.width))
       return snapshot(panel)
+    }
+  },
+  {
+    name: 'browser_resize',
+    description:
+      'Change the width of the built-in browser panel to see the page as a desktop, tablet or phone layout. The window size limits the maximum width.',
+    inputSchema: {
+      type: 'object',
+      properties: { width: panelWidth },
+      required: ['width']
+    },
+    run: async (panel, args) => {
+      const width = requestedWidth(args.width)
+      if (!width) throw new Error('width must be a number of pixels between 320 and 2560')
+      panel.reveal(true, width)
+      await settle()
+      const actual = await panel.contents.executeJavaScript('window.innerWidth', true)
+      return text(`Requested ${width}px. Page viewport is now ${actual}px wide.`)
     }
   },
   {

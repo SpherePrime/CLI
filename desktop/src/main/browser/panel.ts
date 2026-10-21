@@ -173,9 +173,16 @@ export class BrowserPanel {
     return this.state()
   }
 
-  async navigate(value: string) {
+  reveal(agent = false, width?: number) {
+    this.publish({
+      type: 'browser',
+      payload: { action: 'activate', agent, ...(width ? { width: Math.round(width) } : {}) }
+    })
+  }
+
+  async navigate(value: string, agent = false, width?: number) {
     const url = normalizeBrowserUrl(value)
-    this.publish({ type: 'browser', payload: { action: 'activate' } })
+    this.reveal(agent, width)
     await this.contents.loadURL(url).catch((error) => {
       if (!String(error?.message).includes('ERR_ABORTED')) throw error
     })
