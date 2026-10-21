@@ -5,6 +5,13 @@ export type AudioDevice = {
   label: string
 }
 
+// Chromium labels the follow-the-system-default entries "Default - <name>".
+// Stripping that prefix turns them into the plain device name for the "Auto"
+// option, which tracks the OS choice without pinning a device id.
+const defaultPrefix = /^(default|communications)\s*-\s*/i
+
+const plainLabel = (device: MediaDeviceInfo) => device.label.replace(defaultPrefix, '').trim()
+
 // Device labels stay empty until the renderer holds microphone permission, so
 // the hook briefly opens a stream to trigger the permission prompt before
 // enumerating. Output devices only get labels once input permission exists —
@@ -12,6 +19,8 @@ export type AudioDevice = {
 export function useAudioDevices() {
   const [inputs, setInputs] = useState<AudioDevice[]>([])
   const [outputs, setOutputs] = useState<AudioDevice[]>([])
+  const [defaultInput, setDefaultInput] = useState('')
+  const [defaultOutput, setDefaultOutput] = useState('')
   useEffect(() => {
     let cancelled = false
     const enumerate = async () => {
@@ -23,12 +32,28 @@ export function useAudioDevices() {
       }
       const devices = await navigator.mediaDevices.enumerateDevices()
       if (cancelled) return
-      const name = (device: MediaDeviceInfo, index: number) => ({
-        id: device.deviceId,
-        label: device.label || `#${index + 1}`
-      })
-      setInputs(devices.filter((device) => device.kind === 'audioinput').map(name))
-      setOutputs(devices.filter((device) => device.kind === 'audiooutput').map(name))
+      const named = (kind: 'audioinput' | 'audiooutput') =>
+        devices
+          .filter((device) => device.kind === kind)
+          // "Default" and "Communications" entries mirror other list items
+          // and carry no id of their own, so the real devices stay alone.
+          .filter((device) => device.deviceId !== 'default' && device.deviceId !== 'communications')
+          .map((device, index) => ({ id: device.deviceId, label: device.label || `#${index + 1}` }))
+      setInputs(named('audioinput'))
+      setOutputs(named('audiooutput'))
+      setDefaultInput(
+        plainLabel(
+          devices.find((device) => device.kind === 'audioinput' && device.deviceId === 'default') ??
+            ({ label: '' } as MediaDeviceInfo)
+        )
+      )
+      setDefaultOutput(
+        plainLabel(
+          devices.find(
+            (device) => device.kind === 'audiooutput' && device.deviceId === 'default'
+          ) ?? ({ label: '' } as MediaDeviceInfo)
+        )
+      )
     }
     void enumerate()
     const handler = () => void enumerate()
@@ -38,5 +63,5 @@ export function useAudioDevices() {
       navigator.mediaDevices.removeEventListener('devicechange', handler)
     }
   }, [])
-  return { inputs, outputs }
+  return { inputs, outputs, defaultInput, defaultOutput }
 }
