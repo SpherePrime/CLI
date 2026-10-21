@@ -352,6 +352,9 @@
 .welcome-content {
   --center-room: max(0px, (100cqw - 64px - 640px) / 2);
 }
+.conversation-panel {
+  --center-room: max(0px, (100cqw - var(--chat-width)) / 2);
+}
 
 @media (max-width: 860px) {
   .settings-modal {
