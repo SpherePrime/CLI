@@ -45,15 +45,27 @@
   border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
   background: color-mix(in srgb, var(--surface) 72%, transparent);
 }
+.sidebar .project-card:has(.project-heading:hover) {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+}
+.sidebar .project-card:has(.project-item:focus-visible),
+.sidebar .session-row:has(.session-link:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.sidebar .project-card .project-item:focus-visible,
+.sidebar .session-row .session-link:focus-visible {
+  outline: none;
+}
 .sidebar .project-card .project-heading {
   position: relative;
-  padding: 3px;
+  padding: 2px;
   gap: 0;
 }
 .sidebar .project-card .project-item {
-  padding: 9px 4px;
+  padding: 5px 4px;
   gap: 8px;
-  min-height: 54px;
+  min-height: 42px;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -61,9 +73,9 @@
   background: color-mix(in srgb, var(--hover) 55%, transparent);
 }
 .sidebar .project-card .project-symbol {
-  flex: 0 0 29px;
-  width: 29px;
-  height: 29px;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
   border-radius: 8px;
@@ -94,7 +106,7 @@
 .sidebar .project-card .project-identity {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
   text-align: left;
@@ -182,6 +194,9 @@
 }
 .sidebar .session-row:not(.active):hover {
   background: color-mix(in srgb, var(--hover) 60%, transparent);
+}
+.sidebar .session-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 .sidebar .session-row form {
   min-width: 0;
