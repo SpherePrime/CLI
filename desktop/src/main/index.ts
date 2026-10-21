@@ -817,6 +817,7 @@ function createWindow(): void {
     height: 940,
     minWidth: 420,
     minHeight: 420,
+    show: false,
     backgroundColor: chrome.color,
     accentColor: chrome.color,
     icon: app.isPackaged
@@ -834,6 +835,7 @@ function createWindow(): void {
     }
   })
   syncTitlebar()
+  window.once('ready-to-show', () => window?.show())
   window.webContents.on('will-prevent-unload', (event) => {
     if (confirmEditorDiscard()) event.preventDefault()
   })

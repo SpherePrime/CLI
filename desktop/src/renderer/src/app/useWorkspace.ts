@@ -18,6 +18,8 @@ import { recordRecentModel } from '../features/models/modelPreferences'
 
 export function useWorkspace() {
   const [info, setInfo] = useState<Json>({ runtime: 'starting' })
+  const [startupReady, setStartupReady] = useState(false)
+  const startupRestore = useRef<Promise<void> | null>(null)
   const [preferences, setPreferences] = useState<Preferences>({
     theme: 'dark',
     language: 'ru',
@@ -203,7 +205,7 @@ export function useWorkspace() {
     }
   }, [refreshPending, refreshQueue])
   useEffect(() => {
-    async function restore() {
+    async function restoreWorkspace() {
       const saved = await window.prime.preferences()
       let opened = await window.prime.projects()
       const lastProject = saved.activeProject
@@ -238,6 +240,14 @@ export function useWorkspace() {
             .catch(restored.kind === 'chat' ? () => {} : errorHandler)
         await refresh()
       }
+      setStartupReady(true)
+    }
+    function restore(): Promise<void> {
+      if (!startupRestore.current)
+        startupRestore.current = restoreWorkspace().finally(() => {
+          startupRestore.current = null
+        })
+      return startupRestore.current
     }
     void window.prime
       .info()
@@ -684,6 +694,7 @@ export function useWorkspace() {
     agentContext: agentContext.context,
     updateAgentContext: agentContext.updateContext,
     info,
+    startupReady,
     preferences,
     savePreferences,
     reasoningMode,

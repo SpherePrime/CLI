@@ -53,13 +53,16 @@ export function App() {
   const w = useWorkspace()
   const [started, setStarted] = useState(false)
   const failed = Boolean(w.error || w.info.error || w.info.runtime === 'failed')
+  const startupNeedsInput = w.questions.length > 0 || w.permissions.length > 0
+  const ready = started || w.startupReady || startupNeedsInput
   useEffect(() => {
-    if (w.project || failed) setStarted(true)
-  }, [w.project?.id, failed])
+    if (ready || failed) setStarted(true)
+  }, [ready, failed])
   return (
     <I18nProvider language={w.preferences.language}>
-      <WorkspaceView workspace={w} />
-      <StartupScreen ready={started || Boolean(w.project)} failed={failed} />
+      <StartupScreen ready={ready} failed={failed}>
+        <WorkspaceView workspace={w} />
+      </StartupScreen>
       <UpdateScreen
         ready={
           Boolean(w.project) && w.project?.connection === 'ready' && w.info.runtime === 'ready'

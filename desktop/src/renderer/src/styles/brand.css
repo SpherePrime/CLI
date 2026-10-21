@@ -725,7 +725,6 @@ input[type='number'] {
   place-items: center;
   overflow: hidden;
   isolation: isolate;
-  animation: startup-appear 0.3s ease-out;
 }
 .startup-screen::before {
   content: '';
@@ -758,6 +757,7 @@ input[type='number'] {
   text-align: center;
   padding: 35px;
   transform: translateY(-20px);
+  animation: startup-appear 0.3s ease-out;
 }
 .startup-mark {
   width: 100px;
@@ -866,7 +866,7 @@ input[type='number'] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .startup-screen,
+  .startup-brand,
   .startup-mark rect,
   .startup-track span,
   .startup-dots {
