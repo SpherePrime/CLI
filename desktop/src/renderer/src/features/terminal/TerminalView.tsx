@@ -70,7 +70,7 @@ export function TerminalView(props: Props) {
           fontFamily: "'JetBrains Mono', Consolas, monospace",
           fontSize: 12,
           lineHeight: 1.35,
-          scrollback: 10000,
+          scrollback: 2000,
           theme: colors(element),
           allowProposedApi: false,
           disableStdin: true
