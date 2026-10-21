@@ -179,11 +179,18 @@ func NewImageGenTool(
 				}
 			}
 
-			// The first image travels with the response so the desktop chat can
-			// show it inline; the full list of files stays in the text content.
-			response := fantasy.NewImageResponse(images[0].Bytes, imageMimeType(images[0].Bytes))
-			response.Content = report.String()
-			return response, nil
+			// Every image travels to clients so the chat can show them all;
+			// providers still see a single media item, the rest only enrich
+			// the UI. The file list stays in the text content for the model.
+			payloads := make([]fantasy.ImagePayload, len(images))
+			for index, image := range images {
+				payloads[index] = fantasy.ImagePayload{
+					Data:      image.Bytes,
+					MediaType: imageMimeType(image.Bytes),
+					Path:      paths[index],
+				}
+			}
+			return fantasy.NewImagesResponse(payloads, report.String()), nil
 		},
 	)
 }
