@@ -6,6 +6,8 @@ import { operationRoute, redact } from './operations'
 import { ActivityTracker } from './activity'
 import { MessageCoalescer } from './messageCoalescer'
 
+const runsReconcileMs = 2000
+
 type ProjectEnvironment = {
   resolveRoot?: (path: string) => Promise<string>
   caseSensitive?: boolean
@@ -20,6 +22,7 @@ export class PrimeService {
   private channels = new Map<string, any[]>()
   private initializing = new Map<string, Promise<any>>()
   private initializationControllers = new Map<string, AbortController>()
+  private reconciledAt = new Map<string, number>()
   constructor(
     private transport: PrimeTransport,
     private emit: (event: DesktopEvent) => void,
@@ -142,6 +145,7 @@ export class PrimeService {
       this.subscriptions.get(id)?.()
       this.subscriptions.delete(id)
       this.projects.delete(id)
+      this.reconciledAt.delete(id)
     }
   }
   async call(id: string, operation: Operation, args: any = {}): Promise<any> {
@@ -186,7 +190,7 @@ export class PrimeService {
     } finally {
       if (controller) this.shells.delete(shellKey)
     }
-    if (operation === 'sessions')
+    if (operation === 'sessions' && this.claimReconcile(id))
       void this.transport
         .request<any[]>('GET', `/v1/workspaces/${id}/runs`)
         .then((records) => this.activity.reconcile(id, records || []))
@@ -199,6 +203,12 @@ export class PrimeService {
     )
       return response
     return redact(response)
+  }
+  private claimReconcile(id: string) {
+    const now = Date.now()
+    if (now - (this.reconciledAt.get(id) ?? 0) < runsReconcileMs) return false
+    this.reconciledAt.set(id, now)
+    return true
   }
   root(id: string): string {
     const project = this.projects.get(id)
@@ -221,6 +231,7 @@ export class PrimeService {
     this.shells.clear()
     this.projects.clear()
     this.channels.clear()
+    this.reconciledAt.clear()
     this.opening.clear()
     this.initializing.clear()
     this.activity = new ActivityTracker()

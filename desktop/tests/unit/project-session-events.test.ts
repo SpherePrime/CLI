@@ -76,3 +76,37 @@ it('refreshes only the project that changes and unsubscribes cleanly', async () 
   stop()
   expect(unsubscribe).toHaveBeenCalledOnce()
 })
+
+it('shares a sessions request started at the same moment by two watchers', async () => {
+  vi.useFakeTimers()
+  const listeners: ((event: any) => void)[] = []
+  const call = vi.fn(
+    () =>
+      new Promise<any[]>((resolve) =>
+        setTimeout(() => resolve([{ id: 'chat', title: 'Chat', is_busy: false }]), 10)
+      )
+  )
+  const source = {
+    call,
+    onEvent: (handler: (event: any) => void) => {
+      listeners.push(handler)
+      return () => {}
+    }
+  }
+  const first = vi.fn()
+  const second = vi.fn()
+  const stopFirst = watchProjectSessions(['project'], source, first)
+  const stopSecond = watchProjectSessions(['project'], source, second)
+  await vi.runAllTimersAsync()
+  expect(call).toHaveBeenCalledTimes(1)
+  expect(first).toHaveBeenCalledTimes(1)
+  expect(second).toHaveBeenCalledTimes(1)
+  vi.advanceTimersByTime(1000)
+  for (const listener of listeners)
+    listener({ workspaceId: 'project', type: 'session', payload: {} })
+  await vi.runAllTimersAsync()
+  expect(call).toHaveBeenCalledTimes(2)
+  expect(second).toHaveBeenCalledTimes(2)
+  stopFirst()
+  stopSecond()
+})

@@ -30,9 +30,21 @@ const runStatus = (status: string): JobStatus =>
 
 const time = (value?: string | number) => (value ? new Date(value).getTime() || undefined : undefined)
 const day = 24 * 60 * 60 * 1000
+const agentJobsCacheMs = 1500
 
 export class JobCenter {
+  private agentCache?: { key: string; at: number; lists: Promise<Job[][]> }
+
   constructor(private options: Options) {}
+
+  private agentLists(projects: Project[]) {
+    const key = projects.map((project) => project.id).join('|')
+    const cached = this.agentCache
+    if (cached && cached.key === key && Date.now() - cached.at < agentJobsCacheMs) return cached.lists
+    const lists = Promise.all(projects.map((project) => this.agentJobs(project)))
+    this.agentCache = { key, at: Date.now(), lists }
+    return lists
+  }
 
   private projects() {
     return [...(this.options.router()?.projects.values() ?? [])]
@@ -83,7 +95,7 @@ export class JobCenter {
   async list(): Promise<Job[]> {
     const jobs: Job[] = []
     const projects = this.projects()
-    const agentLists = await Promise.all(projects.map((project) => this.agentJobs(project)))
+    const agentLists = await this.agentLists(projects)
     const owned = new Set<string>([
       ...(this.options.automations()?.activity() ?? []).map((run) => run.id),
       ...(this.options.teams()?.all() ?? []).flatMap((team) => team.tasks.flatMap((task) => (task.runId ? [task.runId] : [])))
@@ -166,6 +178,7 @@ export class JobCenter {
   }
 
   async stop(id: string) {
+    this.agentCache = undefined
     const [kind, ...rest] = id.split(':')
     if (kind === 'agent') {
       const [workspaceId, sessionId] = rest

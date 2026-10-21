@@ -19,6 +19,7 @@ import { watchProjectSessions } from '../features/projects/projectSessionEvents'
 import { useMessageHistory } from '../features/chat/useMessageHistory'
 import { updateHistoryMessage, type MessagePage } from '../features/chat/messageWindow'
 import { queueMessageEvent, type SequencedMessageEvent } from '../features/chat/messageEvents'
+import { createResourceRefresh, resourceEvents, resourceOperations } from './resourceRefresh'
 
 const resolvedLimit = 1000
 
@@ -348,6 +349,16 @@ export function useWorkspace() {
       })
       .catch(errorHandler)
     void window.prime.preferences().then(setPreferences).catch(errorHandler)
+    const resourceRefresh = createResourceRefresh(async (name) => {
+      const id = current.current.project?.id
+      if (!id) return
+      const value = await window.prime.call(id, resourceOperations[name])
+      if (current.current.project?.id !== id) return
+      setResources((resources: Json) => ({
+        ...resources,
+        [name]: value || (name === 'skills' || name === 'channels' ? [] : {})
+      }))
+    })
     const unsubscribe = window.prime.onEvent((event) => {
       if (event.type !== 'message') history.flush()
       if (event.type === 'workbench' && event.payload?.action === 'contextChanged') {
@@ -418,7 +429,11 @@ export function useWorkspace() {
         return
       }
       if (event.type === 'terminal' && typeof event.payload?.activeCount === 'number') {
-        setInfo((current: Json) => ({ ...current, terminalCount: event.payload.activeCount }))
+        setInfo((current: Json) =>
+          current.terminalCount === event.payload.activeCount
+            ? current
+            : { ...current, terminalCount: event.payload.activeCount }
+        )
         return
       }
       if (event.type === 'recovered') {
@@ -538,19 +553,15 @@ export function useWorkspace() {
         rememberResolved(resolvedQuestions.current, `${event.workspaceId}:${payload.batch_id}`)
         setQuestions((items) => items.filter((item) => item.id !== payload.batch_id))
       }
-      if (
-        [
-          'config_changed',
-          'mcp_event',
-          'lsp_event',
-          'skills_event',
-          'mcp_channel_message'
-        ].includes(event.type)
-      )
-        void refresh()
+      if (event.type === 'config_changed') void scheduleRefresh(false, true).catch(() => {})
+      const resource = resourceEvents[event.type]
+      if (resource) resourceRefresh.schedule(resource)
     })
-    return unsubscribe
-  }, [refresh, refreshPending, errorHandler])
+    return () => {
+      resourceRefresh.dispose()
+      unsubscribe()
+    }
+  }, [refresh, scheduleRefresh, refreshPending, errorHandler])
   const hasPending = permissions.length > 0 || questions.length > 0
   useEffect(() => {
     if (!project || (!busy && !hasPending)) return
