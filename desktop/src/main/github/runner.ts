@@ -19,9 +19,9 @@ export class CommandError extends Error {
 }
 
 export function localRunner(root: string): CommandRunner {
-  return (command, args) =>
+  return (command, args, input) =>
     new Promise((resolve, reject) => {
-      execFile(
+      const child = execFile(
         command,
         args,
         {
@@ -43,17 +43,20 @@ export function localRunner(root: string): CommandRunner {
           else resolve(stdout)
         }
       )
+      child.stdin?.on('error', () => {})
+      if (input !== undefined) child.stdin?.end(input)
     })
 }
 
 export function remoteRunner(connection: RemoteConnection): CommandRunner {
-  return async (command, args) => {
+  return async (command, args, input) => {
     const line = [command, ...args].map(shellQuote).join(' ')
     const result = await connection.exec(
       `cd ${shellQuote(connection.root)} && GH_PROMPT_DISABLED=1 NO_COLOR=1 ${line}`,
       {
         timeout: 60000,
-        maxBytes: 16 * 1024 * 1024
+        maxBytes: 16 * 1024 * 1024,
+        input
       }
     )
     if (result.code === 127) throw new CommandError(`${command} not found`, 'ENOENT')

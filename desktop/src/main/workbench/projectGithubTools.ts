@@ -22,6 +22,13 @@ export function createGitHistoryTools(
         'Inspect an existing project commit and its diff. Supply its full SHA from git_history. Returns currentHead for a later restore.'
     },
     {
+      action: 'revertCommit' as const,
+      name: 'git_revert_commit',
+      schema: z.strictObject({ sha, expectedHead: sha }),
+      description:
+        'Undo only the selected commit changes inside the current project folder with a new local commit, preserving later unrelated changes and existing history. Merge commits are undone relative to their first parent. Local staged, unstaged and untracked changes are saved in a retained stash backup. Conflicts abort the operation and restore local work. Never pushes. Requires expectedHead from the latest preview and an explicit user request to undo this commit.'
+    },
+    {
       action: 'restoreCommit' as const,
       name: 'git_restore_commit',
       schema: z.strictObject({ sha, expectedHead: sha }),
