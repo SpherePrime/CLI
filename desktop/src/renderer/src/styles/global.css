@@ -41,6 +41,13 @@
 * {
   box-sizing: border-box;
 }
+.menu-chevron {
+  flex-shrink: 0;
+  transition: transform 120ms ease;
+}
+button[aria-expanded='true'] > .menu-chevron {
+  transform: rotate(180deg);
+}
 body {
   margin: 0;
   overflow: hidden;
