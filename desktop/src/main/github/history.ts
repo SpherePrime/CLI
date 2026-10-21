@@ -1,4 +1,9 @@
 import type { CommandRunner } from './runner'
+import {
+  backupRestoreChanges,
+  guardIgnoredRestoreFiles,
+  recoverRestoreChanges
+} from './restoreBackup'
 import type {
   GitCommitDetail,
   GitHistory,
@@ -106,18 +111,29 @@ async function restore(
     )
     if (active) throw new Error('Сначала завершите текущую операцию Git.')
   }
-  if ((await runner('git', ['status', '--porcelain', '--untracked-files=all'])).trim()) {
-    throw new Error(
-      'Сохраните или уберите локальные изменения и новые файлы перед восстановлением.'
-    )
-  }
   const difference = await runner('git', ['diff', '--name-only', previousHead, sha, '--', '.'])
-  if (!difference.trim())
-    return { previousHead, currentHead: previousHead, restoredCommit: sha, changed: false }
+  await guardIgnoredRestoreFiles(runner, sha)
+  const backupStash = await backupRestoreChanges(runner, sha)
   let treeChanged = false
   try {
+    if ((await head(runner)) !== previousHead)
+      throw new Error('История изменилась. Обновите список коммитов.')
+    if (!difference.trim())
+      return {
+        previousHead,
+        currentHead: previousHead,
+        restoredCommit: sha,
+        changed: false,
+        backupStash
+      }
+    if ((await runner('git', ['status', '--porcelain', '--untracked-files=all', '--', '.'])).trim())
+      throw new Error(
+        'Во время восстановления появились новые локальные изменения. Повторите операцию.'
+      )
     treeChanged = true
     await runner('git', ['restore', `--source=${sha}`, '--staged', '--worktree', '--', '.'])
+    if ((await head(runner)) !== previousHead)
+      throw new Error('История изменилась. Обновите список коммитов.')
     await runner('git', [
       'commit',
       '--only',
@@ -126,9 +142,20 @@ async function restore(
       '--',
       '.'
     ])
-    return { previousHead, currentHead: await head(runner), restoredCommit: sha, changed: true }
+    return {
+      previousHead,
+      currentHead: await head(runner),
+      restoredCommit: sha,
+      changed: true,
+      backupStash
+    }
   } catch (error) {
-    if (treeChanged && (await head(runner)) === previousHead) {
+    const failedHead = await head(runner).catch(() => '')
+    if (failedHead !== previousHead)
+      throw new Error(
+        `${String(error)}\nHEAD изменился во время восстановления. Автоматический откат и применение stash отменены.${treeChanged ? ' Рабочее дерево может содержать восстановленные файлы; проверьте git status.' : ''}${backupStash ? `\nЛокальные изменения сохранены в stash ${backupStash}. Для ручного восстановления: git stash apply --index ${backupStash}` : ''}`
+      )
+    if (treeChanged) {
       try {
         await runner('git', [
           'restore',
@@ -140,9 +167,14 @@ async function restore(
         ])
       } catch (recoveryError) {
         throw new Error(
-          `${String(error)}\nНе удалось восстановить рабочее дерево: ${String(recoveryError)}`
+          `${String(error)}\nНе удалось восстановить рабочее дерево: ${String(recoveryError)}${backupStash ? `\nЛокальные изменения сохранены в stash ${backupStash}.` : ''}`
         )
       }
+    }
+    try {
+      await recoverRestoreChanges(runner, backupStash)
+    } catch (recoveryError) {
+      throw new Error(`${String(error)}\n${String(recoveryError)}`)
     }
     throw error
   }

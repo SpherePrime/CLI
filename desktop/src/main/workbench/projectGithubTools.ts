@@ -26,7 +26,7 @@ export function createGitHistoryTools(
       name: 'git_restore_commit',
       schema: z.strictObject({ sha, expectedHead: sha }),
       description:
-        'Restore tracked project files to a selected historical commit by creating a new local commit. Preserves existing history and never pushes. Requires a clean repository and expectedHead from the latest preview. This modifies project files and repository history; use only when the user requests restoring this state.'
+        'Restore tracked project files to a selected historical commit by creating a new local commit. Preserves existing history and never pushes. Saves staged, unstaged and untracked project changes in a retained stash backup before restoring. Requires expectedHead from the latest preview. This modifies project files and repository history; use only when the user requests restoring this state.'
     }
   ].map<WorkbenchTool>(({ action, name, schema, description }) => ({
     name,

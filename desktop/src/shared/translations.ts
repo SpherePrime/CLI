@@ -1,4 +1,32 @@
 export const english: Record<string, string> = {
+  'Добавить к текущей задаче на следующем шаге': 'Add to the current task at the next step',
+  Открытые: 'Open',
+  Закрытые: 'Closed',
+  Состояние: 'State',
+  'Нет закрытых': 'No closed items',
+  'Нет pull requests': 'No pull requests',
+  'Нет issues': 'No issues',
+  'Не удалось загрузить список': 'Unable to load the list',
+  'Не удалось загрузить детали': 'Unable to load details',
+  Объединён: 'Merged',
+  Открыт: 'Open',
+  Закрыт: 'Closed',
+  Комментарии: 'Comments',
+  'В этом репозитории пока нет записей этого типа.':
+    'This repository has no items of this type yet.',
+  'Попробуйте другой фильтр состояния.': 'Try another state filter.',
+  'Показать ещё': 'Show more',
+  'Показаны первые 1000 записей. Уточните фильтр состояния.':
+    'Showing the first 1,000 items. Refine the state filter.',
+  'Для pull request выберите разные исходную и целевую ветки.':
+    'Choose different source and target branches for the pull request.',
+  'Не удалось загрузить ветки': 'Unable to load branches',
+  'Локальные изменения будут сохранены в резервную копию stash перед восстановлением.':
+    'Local changes will be saved in a stash backup before restoring.',
+  'Локальные изменения сохранены в stash {value0}. Вернуть их: git stash apply --index {value0}':
+    'Local changes were saved in stash {value0}. Restore them with: git stash apply --index {value0}',
+  'Файлы проекта будут восстановлены из коммита {value0}. Локальные изменения и новые файлы сохранятся в stash. Будет создан новый локальный коммит; существующая история сохранится. Изменения не отправляются на GitHub автоматически.':
+    'Project files will be restored from commit {value0}. Local changes and new files will be saved in a stash. A new local commit will preserve existing history. Changes are not pushed to GitHub automatically.',
   'Prime Desktop': 'Prime Desktop',
   Недавние: 'Recent',
   Избранное: 'Favorites',
