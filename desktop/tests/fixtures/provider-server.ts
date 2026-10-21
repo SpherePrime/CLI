@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 export async function startProvider() {
   const prompts: any[] = []
+  let slowFixtureStepDone = false
   const server = createServer((request, response) => {
     if (request.url?.endsWith('/models')) {
       response.setHeader('Content-Type', 'application/json')
@@ -48,6 +49,28 @@ export async function startProvider() {
         response.write(
           `data: ${JSON.stringify({ id: 'fixture-hold', object: 'chat.completion.chunk', model: 'desktop-fixture', choices: [{ index: 0, delta: { reasoning_content: 'Waiting for the next instruction. '.repeat(20) }, finish_reason: null }] })}\n\n`
         )
+        return
+      }
+      if (userText?.startsWith('SLOW_FIXTURE') && !slowFixtureStepDone) {
+        slowFixtureStepDone = true
+        const chunk = `data: ${JSON.stringify({ id: 'fixture-slow', object: 'chat.completion.chunk', model: 'desktop-fixture', choices: [{ index: 0, delta: { reasoning_content: 'Работаю над долгим шагом. ' }, finish_reason: null }] })}\n\n`
+        let sent = 0
+        const timer = setInterval(() => {
+          if (sent < 20) {
+            response.write(chunk)
+            sent++
+            return
+          }
+          clearInterval(timer)
+          response.write(
+            `data: ${JSON.stringify({ id: 'fixture-slow', object: 'chat.completion.chunk', model: 'desktop-fixture', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: 'fixture-slow-write', type: 'function', function: { name: 'write', arguments: JSON.stringify({ file_path: 'slow-step.txt', content: 'Slow step done' }) } }] }, finish_reason: null }] })}\n\n`
+          )
+          response.write(
+            `data: ${JSON.stringify({ id: 'fixture-slow', object: 'chat.completion.chunk', model: 'desktop-fixture', choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }] })}\n\n`
+          )
+          response.end('data: [DONE]\n\n')
+        }, 250)
+        response.on('close', () => clearInterval(timer))
         return
       }
       if (
