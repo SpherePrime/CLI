@@ -37,9 +37,16 @@ func mergeEnv(extra []string) []string {
 }
 
 // runCommandWithEnv runs argv with an explicit environment, or the current one
-// when env is nil.
+// when env is nil, under the shared transcription budget.
 func runCommandWithEnv(ctx context.Context, name string, args []string, env []string) (stdout string, stderr string, err error) {
-	ctx, cancel := context.WithTimeout(ctx, transcriptionTimeout)
+	return runCommandBudget(ctx, name, args, env, transcriptionTimeout)
+}
+
+// runCommandBudget is runCommandWithEnv with an explicit time budget, which
+// local CPU engines like whisper.cpp need because they run far longer than
+// a hosted request.
+func runCommandBudget(ctx context.Context, name string, args []string, env []string, timeout time.Duration) (stdout string, stderr string, err error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, name, args...)
@@ -60,7 +67,7 @@ func runCommandWithEnv(ctx context.Context, name string, args []string, env []st
 	stderr = strings.TrimSpace(errOut.String())
 	if runErr != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return stdout, stderr, fmt.Errorf("timed out after %s", transcriptionTimeout)
+			return stdout, stderr, fmt.Errorf("timed out after %s", timeout)
 		}
 		return stdout, stderr, runErr
 	}

@@ -14,6 +14,8 @@ var Engines = []string{
 	EngineGoogle,
 	EngineOpenAI,
 	EngineCommand,
+	EngineWhisper,
+	EngineVosk,
 }
 
 // SettingsFrom translates options.voice into pipeline settings. A nil options

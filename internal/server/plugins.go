@@ -70,10 +70,8 @@ func (c *controllerV1) handleVoiceTranscribe(w http.ResponseWriter, r *http.Requ
 		c.handleError(w, r, err)
 		return
 	}
-	if !plugins.Enabled(ws.Cfg.Config(), "voice") {
-		jsonError(w, http.StatusConflict, "voice plugin is disabled")
-		return
-	}
+	// No plugins.Enabled gate here: the transcriber comes from the
+	// configured engine alone, which the STT endpoints maintain.
 	r.Body = http.MaxBytesReader(w, r.Body, 28*1024*1024)
 	var request proto.VoiceUpload
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {

@@ -399,7 +399,7 @@ type VoiceOptions struct {
 	Enabled *bool `json:"enabled,omitempty" jsonschema:"description=Enable voice dictation,default=true"`
 	// Engine pins a transcription backend. Empty or auto lets Prime probe:
 	// a configured OpenAI endpoint, then Google Web Speech.
-	Engine string `json:"engine,omitempty" jsonschema:"description=Transcription engine to use,enum=auto,enum=google,enum=openai,enum=command,default=auto"`
+	Engine string `json:"engine,omitempty" jsonschema:"description=Transcription engine to use,enum=auto,enum=google,enum=openai,enum=command,enum=whisper,enum=vosk,default=auto"`
 	// Model is a hosted API model name, like "whisper-1" for OpenAI.
 	Model string `json:"model,omitempty" jsonschema:"description=Hosted transcription model name,example=whisper-1"`
 	// Language is a BCP-47 tag like ru-RU or en-US, or a comma-separated list

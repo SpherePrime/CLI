@@ -39,6 +39,8 @@ const (
 	EngineGoogle  = "google"
 	EngineOpenAI  = "openai"
 	EngineCommand = "command"
+	EngineWhisper = "whisper"
+	EngineVosk    = "vosk"
 )
 
 var (
@@ -94,6 +96,9 @@ type Settings struct {
 	TranscribeCommand string
 	// MaxDuration bounds one recording. Zero means DefaultMaxDuration.
 	MaxDuration time.Duration
+	// DataDir is the resolved options.data_directory. Local engines keep
+	// their downloaded runtimes and models under its voice/stt tree.
+	DataDir string
 	// Resolver expands "$VAR" style references in APIKey.
 	Resolver VariableResolver
 }

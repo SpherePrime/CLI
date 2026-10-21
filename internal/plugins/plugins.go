@@ -77,5 +77,10 @@ func SettingsFor(cfg *config.Config, resolver voice.VariableResolver) voice.Sett
 	// configured it is the only signal about the user's language, so it decides
 	// which language the search asks first.
 	settings.InterfaceLanguage = interfaceLanguage
+	// Local engines resolve their runtimes and models under the data
+	// directory, which only the full config knows.
+	if cfg != nil && cfg.Options != nil {
+		settings.DataDir = cfg.Options.DataDirectory
+	}
 	return settings
 }

@@ -791,6 +791,12 @@ func (c *controllerV1) handleError(w http.ResponseWriter, r *http.Request, err e
 		status = http.StatusNotFound
 	case errors.Is(err, backend.ErrPluginNotFound):
 		status = http.StatusNotFound
+	case errors.Is(err, backend.ErrSttTaskRunning):
+		// The desktop polls the task list for install progress, so a
+		// duplicate install request is a conflict, not a server error.
+		status = http.StatusConflict
+	case errors.Is(err, backend.ErrSttUnknownProvider):
+		status = http.StatusBadRequest
 	case errors.Is(err, backend.ErrRunConflict):
 		status = http.StatusConflict
 	case errors.Is(err, backend.ErrLSPClientNotFound):
