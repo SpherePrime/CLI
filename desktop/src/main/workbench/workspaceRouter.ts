@@ -1,5 +1,5 @@
 import type { PrimeService } from '../prime/service'
-import type { Operation, Project } from '../../shared/contracts'
+import type { Operation, Project, Session } from '../../shared/contracts'
 import type { RemoteProfile } from '../../shared/remote'
 import { isRemoteWorkspace } from '../../shared/remoteWorkspace'
 
@@ -55,6 +55,9 @@ export class WorkspaceRouter {
   }
   async call(id: string, operation: Operation, args: any = {}): Promise<any> {
     return this.owner(id).call(id, operation, args)
+  }
+  projectSessions(paths: string[]): Promise<Record<string, Session[]>> {
+    return this.local.projectSessions(paths)
   }
   root(id: string): string {
     const entry = [...this.remotes()].find((item) => item.workspaceId === id)

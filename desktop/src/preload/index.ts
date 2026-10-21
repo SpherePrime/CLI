@@ -17,6 +17,7 @@ const api: DesktopApi = {
   changes: (id) => ipcRenderer.invoke('prime:changes', id),
   info: () => ipcRenderer.invoke('prime:info'),
   projects: () => ipcRenderer.invoke('prime:projects'),
+  projectSessions: (paths) => ipcRenderer.invoke('prime:projectSessions', paths),
   openChat: () => ipcRenderer.invoke('prime:openChat'),
   openProject: (path) => ipcRenderer.invoke('prime:openProject', path),
   cancelProjectWait: () => ipcRenderer.invoke('prime:cancelProjectWait'),
