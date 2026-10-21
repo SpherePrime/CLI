@@ -112,6 +112,9 @@ func TestImageGenToolSavesBase64Response(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, testPNGMagic+"payload", string(saved))
 
+	require.Equal(t, "image", resp.Type)
+	require.Equal(t, "image/png", resp.MediaType)
+	require.Equal(t, testPNGMagic+"payload", string(resp.Data))
 	require.Contains(t, resp.Content, "Saved 1 image(s)")
 	require.Contains(t, resp.Content, "a better cat")
 	require.Equal(t, "test-model", requestBody["model"])

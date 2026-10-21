@@ -1130,6 +1130,34 @@ kbd {
   border-top: 1px solid var(--border);
   margin: 0;
 }
+.tool-image {
+  display: block;
+  padding: 10px 12px 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  width: 100%;
+}
+.tool-image img {
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: block;
+  margin: 0 auto;
+}
+.image-lightbox .modal-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.image-lightbox img {
+  max-width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  display: block;
+}
 .tool-error {
   border-color: #ed8b8b55;
 }

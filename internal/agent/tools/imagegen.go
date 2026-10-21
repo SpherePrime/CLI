@@ -173,12 +173,28 @@ func NewImageGenTool(
 			var report strings.Builder
 			report.WriteString(fmt.Sprintf("Saved %d image(s):", len(paths)))
 			for index, path := range paths {
-				report.WriteString("\n- " + path)
+				fmt.Fprintf(&report, "\n- %s", path)
 				if revised := strings.TrimSpace(images[index].RevisedPrompt); revised != "" && revised != params.Prompt {
-					report.WriteString(fmt.Sprintf(" (revised prompt: %s)", revised))
+					fmt.Fprintf(&report, " (revised prompt: %s)", revised)
 				}
 			}
-			return fantasy.NewTextResponse(report.String()), nil
+
+			// The first image travels with the response so the desktop chat can
+			// show it inline; the full list of files stays in the text content.
+			response := fantasy.NewImageResponse(images[0].Bytes, imageMimeType(images[0].Bytes))
+			response.Content = report.String()
+			return response, nil
 		},
 	)
+}
+
+func imageMimeType(bytes []byte) string {
+	switch detectImageExtension(bytes) {
+	case "jpg":
+		return "image/jpeg"
+	case "webp":
+		return "image/webp"
+	default:
+		return "image/png"
+	}
 }

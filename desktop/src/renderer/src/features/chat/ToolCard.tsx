@@ -1,7 +1,9 @@
 import { Check, ChevronDown, LoaderCircle, Terminal, X } from 'lucide-react'
 import { toolTitle } from './toolTitle'
+import { ImageLightbox } from '../../components/ImageLightbox'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
+import { useState } from 'react'
 
 function parameters(value: unknown) {
   if (typeof value !== 'string') return value
@@ -14,6 +16,7 @@ function parameters(value: unknown) {
 
 export function ToolCard({ part }: { part: Message['parts'][number] }) {
   const { t } = useI18n()
+  const [zoomed, setZoomed] = useState(false)
   const data = part.data
   const isShell = part.type === 'shell_command'
   const standalone = part.type === 'tool_result'
@@ -24,6 +27,11 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
   const completed = isShell || result !== undefined
   const failed = Boolean(result?.is_error || (isShell && data.exit_code))
   const output = isShell ? data.output : result?.content
+  const imageMime = typeof result?.mime_type === 'string' ? result.mime_type : ''
+  const imageSrc =
+    imageMime.startsWith('image/') && typeof result?.data === 'string'
+      ? `data:${imageMime};base64,${result.data}`
+      : ''
   const title = isShell
     ? { icon: Terminal, label: t('Команда'), detail: String(data.command || '') }
     : toolTitle(String(data.name || ''), input, t)
@@ -70,17 +78,31 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
       {completed && (
         <section className="tool-section tool-output">
           <h4>{t('Вывод')}</h4>
+          {imageSrc && (
+            <button
+              className="tool-image"
+              onClick={() => setZoomed(true)}
+              aria-label={t('Открыть изображение')}
+            >
+              <img src={imageSrc} alt={title.label} />
+            </button>
+          )}
           <pre>
             {typeof output === 'string'
               ? output || t('Без вывода')
               : output === undefined
-                ? t('Без вывода')
+                ? imageSrc
+                  ? ''
+                  : t('Без вывода')
                 : JSON.stringify(output, null, 2)}
           </pre>
         </section>
       )}
       {isShell && (
         <small className="tool-exit">{t('Код выхода: {code}', { code: data.exit_code })}</small>
+      )}
+      {zoomed && imageSrc && (
+        <ImageLightbox src={imageSrc} alt={title.label} close={() => setZoomed(false)} />
       )}
     </details>
   )
