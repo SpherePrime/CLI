@@ -336,6 +336,10 @@ func (c *controllerV1) handleGetWorkspaceSessionHistory(w http.ResponseWriter, r
 
 // handleGetWorkspaceSessionMessages returns all messages for a session.
 func (c *controllerV1) handleGetWorkspaceSessionMessages(w http.ResponseWriter, r *http.Request) {
+	if query := r.URL.Query(); query.Has("limit") || query.Has("before") || query.Has("after") || query.Has("around") || query.Has("search") || query.Has("text_only") {
+		c.handleMessagePage(w, r)
+		return
+	}
 	id := r.PathValue("id")
 	sid := r.PathValue("sid")
 	messages, err := c.backend.ListSessionMessages(r.Context(), id, sid)
