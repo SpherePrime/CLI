@@ -58,7 +58,7 @@ export function QueuePanel({ workspace: w }: { workspace: Workspace }) {
             <button
               className="queue-send-now"
               disabled={!!pending || w.project?.connection !== 'ready'}
-              title={t('Остановить текущий ответ и отправить это сообщение')}
+              title={t('Добавить к текущей задаче на следующем шаге')}
               onClick={() => void act(item.id)}
             >
               {pending === item.id ? (

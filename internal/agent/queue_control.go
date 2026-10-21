@@ -57,27 +57,16 @@ func (a *sessionAgent) RunQueuedNow(ctx context.Context, sessionID, id string) (
 		return nil, ErrQueuedPromptMissing
 	}
 	selected := calls[index]
+	selected.steering = true
 	promoted := make([]SessionAgentCall, 0, len(calls))
 	promoted = append(promoted, selected)
 	promoted = append(promoted, calls[:index]...)
 	promoted = append(promoted, calls[index+1:]...)
 	a.messageQueue.Set(sessionID, promoted)
-	var previousDone <-chan struct{}
-	if active, ok := a.activeRequests.Get(sessionID); ok && active != nil {
-		previousDone = active.done
-		active.cancel()
-	}
 	mu.Unlock()
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		if previousDone != nil {
-			select {
-			case <-previousDone:
-			case <-ctx.Done():
-				return
-			}
-		}
 		ticker := time.NewTicker(10 * time.Millisecond)
 		defer ticker.Stop()
 		for {
@@ -130,13 +119,5 @@ func (c *coordinator) RunQueuedNow(ctx context.Context, sessionID, id string) (<
 	if !ok {
 		return nil, ErrQueueControlUnsupported
 	}
-	done, err := control.RunQueuedNow(ctx, sessionID, id)
-	if err != nil {
-		return nil, err
-	}
-	for _, sub := range c.cachedSubAgents() {
-		sub.Cancel(sessionID)
-	}
-	c.cancelBackgroundAgents(sessionID)
-	return done, nil
+	return control.RunQueuedNow(ctx, sessionID, id)
 }

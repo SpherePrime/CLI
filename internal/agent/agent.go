@@ -72,6 +72,8 @@ var (
 type SessionAgentCall struct {
 	ModelOverride *Model
 	queueID       string
+	steering      bool
+	steeringCalls []SessionAgentCall
 	SessionID     string
 	// RunID, when non-empty, is the caller-supplied correlator that
 	// gets echoed back on the notify.RunComplete event emitted for
@@ -435,7 +437,7 @@ func (a *sessionAgent) drainQueueForStep(sessionID string) (fold, canceledWithRu
 			}
 			continue
 		}
-		if queued.RunID != "" {
+		if queued.RunID != "" && !queued.steering {
 			keep = append(keep, queued)
 			continue
 		}
@@ -461,7 +463,7 @@ func (a *sessionAgent) drainQueueForStep(sessionID string) (fold, canceledWithRu
 func (a *sessionAgent) publishCanceledQueueDrops(drops []SessionAgentCall) {
 	var hasRunID bool
 	for _, d := range drops {
-		if d.RunID != "" {
+		if d.RunID != "" || len(d.steeringCalls) > 0 {
 			hasRunID = true
 			break
 		}
@@ -472,14 +474,15 @@ func (a *sessionAgent) publishCanceledQueueDrops(drops []SessionAgentCall) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	for _, d := range drops {
-		if d.RunID == "" {
-			continue
-		}
-		a.publishRunComplete(ctx, d, notify.RunComplete{
+		complete := notify.RunComplete{
 			SessionID: d.SessionID,
 			RunID:     d.RunID,
 			Cancelled: true,
-		})
+		}
+		if d.RunID != "" {
+			a.publishRunComplete(ctx, d, complete)
+		}
+		a.publishSteeringComplete(ctx, d.steeringCalls, complete)
 	}
 }
 
@@ -590,6 +593,20 @@ func ValidateCall(call SessionAgentCall) error {
 }
 
 func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *fantasy.AgentResult, retErr error) {
+	earlySteering := call.steeringCalls
+	steeringCancelled := false
+	defer func() {
+		if len(earlySteering) == 0 {
+			return
+		}
+		complete := notify.RunComplete{SessionID: call.SessionID, Cancelled: steeringCancelled || ctx.Err() != nil || errors.Is(retErr, context.Canceled)}
+		if retErr != nil {
+			complete.Error = retErr.Error()
+		}
+		completionCtx, completionCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer completionCancel()
+		a.publishSteeringComplete(completionCtx, earlySteering, complete)
+	}()
 	if err := ValidateCall(call); err != nil {
 		return nil, err
 	}
@@ -615,6 +632,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	sessMu.Lock()
 
 	if call.Accepted != nil && a.canceledBySeq(call.SessionID, call.Accepted.seq) {
+		steeringCancelled = true
 		// Cancel-on-entry: a cancel arrived while this accepted run was
 		// dispatched but not yet active, and this handle's accept sequence
 		// is at or below the session's cancel mark. The mark is left in
@@ -656,6 +674,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		// back to the default broker publish, which is what existing
 		// subscribers expect.
 		a.enqueueCall(call)
+		earlySteering = nil
 		if call.Accepted != nil {
 			call.Accepted.Close()
 		}
@@ -771,6 +790,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	// message of the turn is the value reachable through this
 	// pointer when the defer runs.
 	var currentAssistant *message.Message
+	steeringCalls := call.steeringCalls
+	earlySteering = nil
 	// Drain any debounced message updates before returning. message.Service
 	// already flushes synchronously on terminal updates, but a defer here
 	// guarantees the contract at every Run exit (success, error, panic
@@ -817,6 +838,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		// subscriber channel can't silently drop it and hang
 		// non-interactive clients waiting on RunComplete.
 		a.publishRunComplete(ctx, call, complete)
+		a.publishSteeringComplete(ctx, steeringCalls, complete)
 	}()
 
 	history, files := a.preparePrompt(msgs, largeModel.CatwalkCfg.SupportsImages, call.Attachments...)
@@ -869,12 +891,16 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			// RunComplete) via the recursive run path below.
 			fold, canceledRunIDs := a.drainQueueForStep(call.SessionID)
 			a.publishCanceledQueueDrops(canceledRunIDs)
+			steeringCalls = append(steeringCalls, fold...)
 			for _, queued := range fold {
 				userMessage, createErr := a.createUserMessage(callContext, queued)
 				if createErr != nil {
 					return callContext, prepared, createErr
 				}
 				prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
+			}
+			if hasSteeringCall(steeringCalls) {
+				prepared.Messages = withSteeringInstruction(prepared.Messages)
 			}
 
 			prepared.Messages = a.workaroundProviderMediaLimitations(prepared.Messages, largeModel)
@@ -1266,6 +1292,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				existing = []SessionAgentCall{}
 			}
 			call.Prompt = fmt.Sprintf("The previous session was interrupted because it got too long, the initial user request was: `%s`", call.Prompt)
+			call.steeringCalls = steeringCalls
 			existing = append(existing, call)
 			a.messageQueue.Set(call.SessionID, existing)
 		}
@@ -1377,6 +1404,18 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	// the recursive Run's accepted path observes as cancel-on-entry.
 	firstQueuedMessage.Accepted = a.BeginAccepted(call.SessionID)
 	mu.Unlock()
+	steeringComplete := notify.RunComplete{SessionID: call.SessionID}
+	if currentAssistant != nil {
+		steeringComplete.MessageID = currentAssistant.ID
+		steeringComplete.Text = currentAssistant.Content().String()
+	}
+	if err != nil {
+		steeringComplete.Error = err.Error()
+	}
+	steeringComplete.Cancelled = ctx.Err() != nil || errors.Is(err, context.Canceled)
+	if outerOwesRunComplete || call.RunID == "" {
+		a.publishSteeringComplete(ctx, steeringCalls, steeringComplete)
+	}
 	if outerOwesRunComplete {
 		complete := notify.RunComplete{SessionID: call.SessionID, RunID: call.RunID}
 		if currentAssistant != nil {

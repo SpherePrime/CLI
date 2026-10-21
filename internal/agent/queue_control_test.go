@@ -23,7 +23,7 @@ func TestRunQueuedNowPreservesCallsAndRejectsStaleID(t *testing.T) {
 	require.NotEqual(t, entries[0].ID, entries[1].ID)
 	done, err := a.RunQueuedNow(ctx, "session", entries[1].ID)
 	require.NoError(t, err)
-	require.True(t, interrupted.Load())
+	require.False(t, interrupted.Load())
 	calls, _ := a.messageQueue.Get("session")
 	require.Equal(t, "second", calls[0].RunID)
 	require.Len(t, calls[0].Attachments, 1)
@@ -41,7 +41,7 @@ func TestRunQueuedNowPreservesCallsAndRejectsStaleID(t *testing.T) {
 	}
 }
 
-func TestRunQueuedNowRestartsAfterEarlyCancellation(t *testing.T) {
+func TestRunQueuedNowStartsAfterActiveRunFinishes(t *testing.T) {
 	a, env := newStreamTestAgent(t)
 	session, err := env.sessions.Create(t.Context(), "queue")
 	require.NoError(t, err)
