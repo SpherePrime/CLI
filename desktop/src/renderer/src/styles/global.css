@@ -1171,25 +1171,36 @@ kbd {
   margin: 0 auto;
 }
 .image-lightbox {
-  max-width: none;
-  width: 92vw;
-  height: 85vh;
-}
-.image-lightbox .modal-content {
-  flex: 1;
-  min-height: 0;
-  max-height: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #03060bd9;
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  overflow: hidden;
+  padding: 24px;
 }
 .image-lightbox img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   display: block;
+  border-radius: 8px;
+}
+.image-lightbox .icon {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  color: #fff;
+  background: #ffffff22;
+  border: none;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+}
+.image-lightbox .icon:hover {
+  background: #ffffff33;
 }
 .tool-error {
   border-color: #ed8b8b55;
