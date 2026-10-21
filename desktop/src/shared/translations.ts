@@ -382,6 +382,7 @@ export const english: Record<string, string> = {
   'Вложение ·': 'Attachment ·',
   'Скопировать сообщение': 'Copy message',
   'Prime работает': 'Prime is working',
+  'Работал {time}': 'Worked for {time}',
   'Новые сообщения': 'New messages',
   '· рассуждения': '· reasoning',
   'Среда выполнения': 'Runtime',

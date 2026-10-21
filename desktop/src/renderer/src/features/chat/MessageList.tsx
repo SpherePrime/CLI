@@ -9,6 +9,8 @@ import { WorkingIndicator } from './WorkingIndicator'
 import { reuseUnchanged } from './stableMessages'
 import { findMessages } from '../../../../shared/workspaceTools'
 import { ConversationSearch } from './ConversationSearch'
+import { conversationTiming } from './conversationTiming'
+import { duration } from './elapsed'
 
 export function MessageList({
   messages,
@@ -29,6 +31,7 @@ export function MessageList({
   const followingRef = useRef(true)
   const leavingBottom = useRef(false)
   const stable = useRef<Message[]>([])
+  const timing = useMemo(() => conversationTiming(messages), [messages])
   const visible = useMemo(
     () => (stable.current = reuseUnchanged(stable.current, consolidateToolMessages(messages))),
     [messages]
@@ -186,11 +189,18 @@ export function MessageList({
                     live={busy && last}
                     matched={message.id === matchId}
                   />
+                  {timing.completed.has(message.id) && (
+                    <div className="working completed-working">
+                      {t('Работал {time}', {
+                        time: duration(timing.completed.get(message.id)!, t)
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
-          <WorkingIndicator busy={busy} waiting={waiting} />
+          <WorkingIndicator busy={busy} waiting={waiting} startedAt={timing.startedAt} />
         </div>
       </div>
       {!following && settled && (
