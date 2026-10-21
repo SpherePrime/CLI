@@ -126,6 +126,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           setCollapsed('inspector', false)
           setFocusMode(false)
           setBrowserRequest(Date.now())
+          if (event.payload.agent) widenForAgent(event.payload.width)
         }
       }),
     [w.project?.id]
@@ -144,6 +145,16 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     collapsed.inspector
   )
   const centerShift = chatCenterShift(layout, showSidebar, showInspector, showEditor)
+  const geometry = useRef({ available: 0, inspectorMax: 280 })
+  geometry.current = { available: layoutWidth - panelGutter * 2, inspectorMax: layout.inspectorMax }
+  function widenForAgent(requested?: number) {
+    const { available, inspectorMax } = geometry.current
+    setWidths((value) => {
+      const target = requested ?? Math.max(value.inspector, Math.round(available * 0.55))
+      const inspector = Math.max(280, Math.min(inspectorMax, target))
+      return inspector === value.inspector ? value : { ...value, inspector }
+    })
+  }
   const panels = usePanelResize({
     workspace: w,
     widths,

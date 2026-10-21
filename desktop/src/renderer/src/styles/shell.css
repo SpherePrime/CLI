@@ -591,3 +591,17 @@ dialog.modal,
 .app-shell .sidebar .sidebar-footer {
   display: none;
 }
+
+.inspector-panel > .inspector-browser,
+.inspector-panel > .inspector-content {
+  padding-top: 6px;
+}
+.inspector-rail.panel-open > .inspector-content,
+.inspector-rail.panel-open > .inspector-browser {
+  top: -1px;
+  border-top: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+}
+.inspector-rail.panel-open:has(.inspector-footer) > .inspector-content {
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+}
