@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"slices"
@@ -18,30 +17,6 @@ const (
 	// CompletedJobRetentionMinutes is how long to keep completed jobs before auto-cleanup (8 hours)
 	CompletedJobRetentionMinutes = 8 * 60
 )
-
-// syncBuffer is a thread-safe wrapper around bytes.Buffer.
-type syncBuffer struct {
-	buf bytes.Buffer
-	mu  sync.RWMutex
-}
-
-func (sb *syncBuffer) Write(p []byte) (n int, err error) {
-	sb.mu.Lock()
-	defer sb.mu.Unlock()
-	return sb.buf.Write(p)
-}
-
-func (sb *syncBuffer) WriteString(s string) (n int, err error) {
-	sb.mu.Lock()
-	defer sb.mu.Unlock()
-	return sb.buf.WriteString(s)
-}
-
-func (sb *syncBuffer) String() string {
-	sb.mu.RLock()
-	defer sb.mu.RUnlock()
-	return sb.buf.String()
-}
 
 // BackgroundShell represents a shell running in the background.
 type BackgroundShell struct {
