@@ -181,7 +181,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     setZoom
   })
   const projectName = w.project?.kind === 'chat' ? t('Личные чаты') : projectLabel(w.project)
-  const isEmpty = !w.messages.length && !w.busy
+  const isEmpty = !w.messages.length && !w.busy && w.messagesReady
   const quickActions = useQuickActions({
     workspace: w,
     openTools,

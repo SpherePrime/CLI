@@ -742,6 +742,9 @@ function registerIpc(): void {
             z.enum(['off', 'low', 'medium', 'high', 'xhigh', 'max', 'default'])
           )
           .optional(),
+        lastReasoningMode: z.enum(['off', 'low', 'medium', 'high', 'xhigh', 'max', 'default']).optional(),
+        agentMode: z.enum(['general', 'plan']).optional(),
+        defaultSkip: z.boolean().optional(),
         drafts: z.record(z.string(), z.string().max(200000)).optional(),
         sidebarWidth: z.number().min(200).max(500).optional(),
         inspectorWidth: z.number().finite().min(280).optional(),

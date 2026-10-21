@@ -33,7 +33,8 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const [callOpen, setCallOpen] = useState(false)
   const [callHost, setCallHost] = useState<Element | null>(null)
   const composerRoot = useRef<HTMLDivElement>(null)
-  const [mode, setMode] = useState('general')
+  const mode = w.preferences.agentMode || 'general'
+  const projectReady = w.project?.connection === 'ready'
   const [skip, setSkip] = useState(false)
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [command, setCommand] = useState<any>(null)
@@ -140,6 +141,10 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       .then(() => setSkip(target))
       .catch(() => {})
   }, [sessionKey, w.project?.id, w.preferences.skipBySession, w.preferences.defaultSkip])
+  useEffect(() => {
+    if (!w.project || !projectReady) return
+    void w.call('mode', { mode }).catch(() => {})
+  }, [w.project?.id, projectReady, mode])
   useEffect(() => {
     if (textarea.current) {
       textarea.current.style.height = 'auto'
@@ -406,7 +411,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               onChange={(value) => {
                 void w
                   .call('mode', { mode: value })
-                  .then(() => setMode(value))
+                  .then(() => w.savePreferences({ agentMode: value as 'general' | 'plan' }))
                   .catch(w.errorHandler)
               }}
             />

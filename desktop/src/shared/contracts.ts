@@ -77,6 +77,8 @@ export type Preferences = {
   favoriteModels?: { provider: string; model: string }[]
   recentModels?: { provider: string; model: string }[]
   reasoningBySession?: Record<string, ChatReasoningMode>
+  lastReasoningMode?: ChatReasoningMode
+  agentMode?: 'general' | 'plan'
   drafts: Record<string, string>
   sidebarWidth: number
   inspectorWidth: number

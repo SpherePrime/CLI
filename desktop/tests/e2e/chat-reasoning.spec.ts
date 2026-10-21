@@ -119,7 +119,7 @@ test('keeps reasoning per chat across model switches, sends and restart', async 
       { id: project.id, first }
     )
     await page.getByRole('button', { name: 'Новый чат', exact: true }).click()
-    await expect(page.locator('.model-control-level')).toHaveText('Выключены')
+    await expect(page.locator('.model-control-level')).toHaveText('Высокий')
     await setLevel(page, 1)
     await send('second-reasoning-request', 'low')
     await page.locator('.session-link').filter({ hasText: 'First reasoning' }).click()
