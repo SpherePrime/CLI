@@ -47,7 +47,7 @@ func (p *QuestionParams) UnmarshalJSON(data []byte) error {
 		if err2 := json.Unmarshal(aux.Questions, &s); err2 != nil {
 			return err
 		}
-		if err2 := json.Unmarshal([]byte(strings.TrimSpace(s)), &p.Questions); err2 != nil {
+		if err2 := decodeFirstJSONValue(s, &p.Questions); err2 != nil {
 			return fmt.Errorf("questions must be an array: %w", err2)
 		}
 	}
@@ -60,16 +60,9 @@ type QuestionItem struct {
 	Type        string           `json:"type" description:"The type of question: yes_no, single_choice, multi_choice, or free_text"`
 	Question    string           `json:"question" description:"The question text"`
 	Description string           `json:"description" description:"Required markdown description shown below the question"`
-	Choices     []QuestionChoice `json:"choices,omitempty" description:"List of choices"`
+	Choices     []QuestionChoice `json:"choices,omitempty" description:"Options for single_choice and multi_choice, nested inside this question. At least 2 objects with id and label."`
 	Options     []QuestionChoice `json:"options,omitempty"` // alias for Choices
-}
-
-// GetChoices returns choices, preferring the Choices field over Options.
-func (q QuestionItem) GetChoices() []QuestionChoice {
-	if len(q.Choices) > 0 {
-		return q.Choices
-	}
-	return q.Options
+	id          string
 }
 
 // QuestionChoice represents a selectable option.
@@ -94,8 +87,12 @@ func NewQuestionTool(svc question.Service) fantasy.AgentTool {
 				return fantasy.NewTextErrorResponse(fmt.Sprintf("exceeds maximum of %d questions per batch (got %d). Split into multiple batches and tell the user there will be follow-up questions", question.MaxQuestions, len(params.Questions))), nil
 			}
 
-			questions := make([]question.Question, len(params.Questions))
-			for i, item := range params.Questions {
+			items, err := normalizeQuestionItems(params.Questions)
+			if err != nil {
+				return fantasy.NewTextErrorResponse(err.Error()), nil
+			}
+			questions := make([]question.Question, len(items))
+			for i, item := range items {
 				qType := question.Type(item.Type)
 				if qType != question.TypeYesNo && qType != question.TypeSingleChoice && qType != question.TypeMultiChoice && qType != question.TypeFreeText {
 					label := item.Label
@@ -109,7 +106,7 @@ func NewQuestionTool(svc question.Service) fantasy.AgentTool {
 					Label:       item.Label,
 					Text:        item.Question,
 					Description: item.Description,
-					Choices:     convertChoices(item.GetChoices()),
+					Choices:     convertChoices(item.Choices),
 				}
 			}
 
