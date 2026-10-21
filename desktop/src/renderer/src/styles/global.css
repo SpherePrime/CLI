@@ -1176,6 +1176,7 @@ kbd {
   z-index: 2;
   width: max-content;
   margin: 0 auto;
+  translate: clamp(calc(-1 * var(--center-room)), var(--center-shift, 0px), var(--center-room)) 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
