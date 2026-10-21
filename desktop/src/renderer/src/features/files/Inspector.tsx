@@ -18,8 +18,6 @@ import {
   ArrowUpRight,
   FileDiff,
   Files,
-  ListTodo,
-  Play,
   Trash2,
   Globe
 } from 'lucide-react'
@@ -76,7 +74,6 @@ export function Inspector({
   const [history, setHistory] = useState<any[]>([])
   const [changes, setChanges] = useState<{ path: string; status: string }[]>([])
   const [gitError, setGitError] = useState('')
-  const [jobs, setJobs] = useState<any[]>([])
   const [source, setSource] = useState<'session' | 'git'>('session')
   const [error, setError] = useState('')
   const [treeKey, setTreeKey] = useState(0)
@@ -120,15 +117,10 @@ export function Inspector({
   }, [])
   useEffect(() => {
     setHistory([])
-    setJobs([])
     if (!w.project || !w.session) return
     void w
       .call('history', { sessionId: w.session.id })
       .then((items) => setHistory(items || []))
-      .catch(() => {})
-    void w
-      .call('jobs', { sessionId: w.session.id })
-      .then((items) => setJobs(items || []))
       .catch(() => {})
   }, [w.project?.id, w.session?.id, w.busy])
   async function openFile(path: string) {
@@ -246,7 +238,6 @@ export function Inspector({
         {[
           { id: 'files', icon: Files, title: t('Файлы') },
           { id: 'changes', icon: FileDiff, title: t('Изменения') },
-          { id: 'tasks', icon: ListTodo, title: t('Задачи') },
           { id: 'browser', icon: Globe, title: t('Браузер') }
         ].map((item) => (
           <button
@@ -357,51 +348,6 @@ export function Inspector({
                 <p>{t('Изменения появятся после редактирования файлов')}</p>
               </div>
             )}
-          </>
-        )}
-        {tab === 'tasks' && (
-          <>
-            <h4>{t('План задачи')}</h4>
-            {w.session?.todos?.map((todo: any, index) => (
-              <div className={`todo-item ${todo.status}`} key={index}>
-                <span>
-                  {todo.status === 'completed' ? '✓' : todo.status === 'in_progress' ? '◉' : '○'}
-                </span>
-                {todo.content}
-              </div>
-            ))}
-            {!w.session?.todos?.length && (
-              <p className="panel-help">
-                {t('Агент покажет здесь план, когда создаст список задач.')}
-              </p>
-            )}
-            <h4>{t('Фоновые команды')}</h4>
-            {jobs.map((job) => (
-              <details className="job" key={job.id}>
-                <summary>
-                  <span className={`dot ${job.done ? 'green' : 'amber'}`} />
-                  {job.description || job.command}
-                </summary>
-                <pre>
-                  {job.stdout}
-                  {job.stderr}
-                  {job.error}
-                </pre>
-              </details>
-            ))}
-            {!jobs.length && <p className="panel-help">{t('Нет фоновых команд в этой сессии')}</p>}
-            {w.sessions
-              .filter((item) => item.parent_session_id === w.session?.id)
-              .map((item) => (
-                <button
-                  className="tree-file"
-                  key={item.id}
-                  onClick={() => void w.selectSession(item)}
-                >
-                  <Play size={13} />
-                  {item.title}
-                </button>
-              ))}
           </>
         )}
       </div>
