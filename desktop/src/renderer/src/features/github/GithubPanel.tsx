@@ -1,18 +1,14 @@
 import { EmptyState } from '../../components/EmptyState'
-import { useCallback, useEffect, useState } from 'react'
-import { Bot, CircleDot, ExternalLink, GitPullRequest, Github, Plus, RefreshCw } from 'lucide-react'
-import type {
-  GithubIssue,
-  GithubIssueDetail,
-  GithubPull,
-  GithubPullDetail,
-  GithubRequest,
-  GithubStatus
-} from '../../../../shared/github'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Bot, ExternalLink, GitPullRequest, Github, Plus, RefreshCw } from 'lucide-react'
+import type { GithubIssueDetail, GithubPullDetail, GithubRequest } from '../../../../shared/github'
 import { useI18n } from '../../i18n'
 import { CreatePull } from './CreatePull'
 import { GitHistoryPanel } from './GitHistoryPanel'
 import { checksPrompt, issuePrompt, reviewPrompt } from './prompts'
+import { GithubList, GithubState } from './GithubList'
+import { githubErrorMessage, useGithubRepository } from './useGithubRepository'
+import { GithubComments } from './GithubComments'
 import '../../styles/automations.css'
 import '../../styles/github.css'
 
@@ -62,54 +58,55 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
     (request: GithubRequest) => window.prime.github(workspaceId, request),
     [workspaceId]
   )
-  const [status, setStatus] = useState<GithubStatus>()
+  const { status, state, limit, issues, pulls, loading, error, refresh, changeState, loadMore } =
+    useGithubRepository(api)
   const [tab, setTab] = useState<'issues' | 'pulls'>('pulls')
-  const [issues, setIssues] = useState<GithubIssue[]>([])
-  const [pulls, setPulls] = useState<GithubPull[]>([])
   const [selected, setSelected] = useState<Selection>()
   const [creating, setCreating] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const [detailBusy, setDetailBusy] = useState(false)
+  const [actionBusy, setActionBusy] = useState(false)
+  const [detailError, setDetailError] = useState('')
+  const [opening, setOpening] = useState<{ kind: 'issue' | 'pull'; number: number }>()
+  const detailSequence = useRef(0)
+  const busy = loading || detailBusy || actionBusy
   const [notice, setNotice] = useState('')
-  const refresh = useCallback(async () => {
-    setBusy(true)
-    try {
-      const next: GithubStatus = await api({ action: 'status' })
-      setStatus(next)
-      if (next.repository) {
-        const [issueList, pullList] = await Promise.all([
-          api({ action: 'issues' }),
-          api({ action: 'pulls' })
-        ])
-        setIssues(issueList)
-        setPulls(pullList)
-      }
-    } catch (error) {
-      onError(error)
-    } finally {
-      setBusy(false)
-    }
-  }, [api, onError])
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    return () => {
+      detailSequence.current++
+    }
+  }, [])
+  const clearDetail = () => {
+    detailSequence.current++
+    setSelected(undefined)
+    setOpening(undefined)
+    setDetailError('')
+    setDetailBusy(false)
+    setCreating(false)
+  }
   const open = async (kind: 'issue' | 'pull', number: number) => {
-    setBusy(true)
+    const sequence = ++detailSequence.current
+    setDetailBusy(true)
+    setDetailError('')
+    setSelected(undefined)
+    setOpening({ kind, number })
+    setCreating(false)
     try {
-      setSelected({ kind, detail: await api({ action: kind, number }) } as Selection)
+      const detail = await api({ action: kind, number })
+      if (sequence === detailSequence.current) setSelected({ kind, detail } as Selection)
     } catch (error) {
-      onError(error)
+      if (sequence === detailSequence.current) setDetailError(githubErrorMessage(error))
     } finally {
-      setBusy(false)
+      if (sequence === detailSequence.current) setDetailBusy(false)
     }
   }
   const run = async (action: () => Promise<void>) => {
-    setBusy(true)
+    setActionBusy(true)
     try {
       await action()
     } catch (error) {
       onError(error)
     } finally {
-      setBusy(false)
+      setActionBusy(false)
     }
   }
   if (status && !status.repository)
@@ -128,13 +125,12 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
         />
       </div>
     )
-  const list = tab === 'issues' ? issues : pulls
   return (
     <div className="automation-panel github-panel" aria-label="GitHub">
       <header className="automation-header">
         <div>
           <Github size={17} aria-hidden="true" />
-          <h2>{status?.repository ?? 'GitHub'}</h2>
+          <h2 title={status?.repository}>{status?.repository ?? 'GitHub'}</h2>
           {status?.account && <span className="automation-count">@{status.account}</span>}
         </div>
         <div className="automation-actions">
@@ -143,8 +139,11 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
           </button>
           <button
             className="automation-primary"
-            onClick={() => setCreating(true)}
-            disabled={busy || !status}
+            onClick={() => {
+              clearDetail()
+              setCreating(true)
+            }}
+            disabled={busy || !status?.repository}
           >
             <Plus size={14} />
             {t('Pull request')}
@@ -152,37 +151,29 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
         </div>
       </header>
       <div className="github-layout">
-        <aside className="github-list">
-          <div className="github-tabs" role="tablist">
-            <button role="tab" aria-selected={tab === 'pulls'} onClick={() => setTab('pulls')}>
-              <GitPullRequest size={13} />
-              {t('Pull requests')} <span>{pulls.length}</span>
-            </button>
-            <button role="tab" aria-selected={tab === 'issues'} onClick={() => setTab('issues')}>
-              <CircleDot size={13} />
-              {t('Issues')} <span>{issues.length}</span>
-            </button>
-          </div>
-          {!list.length && (
-            <p className="launch-placeholder">{t(busy ? 'Загрузка…' : 'Нет открытых')}</p>
-          )}
-          {list.map((item) => (
-            <button
-              key={item.number}
-              className={`github-item ${selected?.detail.number === item.number && selected.kind === (tab === 'issues' ? 'issue' : 'pull') ? 'selected' : ''}`}
-              onClick={() => void open(tab === 'issues' ? 'issue' : 'pull', item.number)}
-            >
-              <span className="github-number">#{item.number}</span>
-              <span className="github-title">{item.title}</span>
-              <small>
-                {item.author?.login}
-                {'headRefName' in item ? ` · ${(item as GithubPull).headRefName}` : ''}
-                {'isDraft' in item && (item as GithubPull).isDraft ? ` · ${t('черновик')}` : ''}
-              </small>
-            </button>
-          ))}
-        </aside>
-        <section className="github-detail">
+        <GithubList
+          tab={tab}
+          state={state}
+          limit={limit}
+          loading={loading}
+          issues={error ? { items: [], error } : issues}
+          pulls={error ? { items: [], error } : pulls}
+          selected={selected ? { kind: selected.kind, number: selected.detail.number } : opening}
+          onTab={(next) => {
+            if (next !== tab) {
+              clearDetail()
+              setTab(next)
+            }
+          }}
+          onState={(next) => {
+            clearDetail()
+            changeState(next)
+          }}
+          onOpen={(kind, number) => void open(kind, number)}
+          onRetry={() => void refresh()}
+          onMore={loadMore}
+        />
+        <section className="github-detail" aria-busy={detailBusy || actionBusy}>
           {notice && (
             <p className="github-notice" role="status">
               {notice}
@@ -201,7 +192,23 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
               }}
             />
           )}
-          {!creating && !selected && (
+          {detailBusy && (
+            <p className="launch-placeholder" role="status">
+              {t('Загрузка…')}
+            </p>
+          )}
+          {detailError && (
+            <div className="github-load-error" role="alert">
+              <strong>{t('Не удалось загрузить детали')}</strong>
+              <p>{detailError}</p>
+              {opening && (
+                <button onClick={() => void open(opening.kind, opening.number)}>
+                  {t('Повторить')}
+                </button>
+              )}
+            </div>
+          )}
+          {!creating && !selected && !detailBusy && !detailError && (
             <EmptyState
               compact
               icon={GitPullRequest}
@@ -222,6 +229,7 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
                   <ExternalLink size={13} />
                 </button>
               </header>
+              <GithubState state={selected.detail.state} />
               {selected.kind === 'pull' && (
                 <p className="github-meta">
                   {selected.detail.headRefName} → {selected.detail.baseRefName}
@@ -258,7 +266,11 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
                   onDiff={() =>
                     void run(async () => {
                       const diff = await api({ action: 'diff', number: selected.detail.number })
-                      setSelected({ ...selected, diff })
+                      setSelected((current) =>
+                        current?.kind === 'pull' && current.detail.number === selected.detail.number
+                          ? { ...current, diff }
+                          : current
+                      )
                     })
                   }
                   onReview={() =>
@@ -283,6 +295,17 @@ function GithubWorkspace({ workspaceId, onError, onAgentTask }: Props) {
                   }
                 />
               )}
+              <GithubComments
+                comments={
+                  selected.kind === 'pull'
+                    ? [
+                        ...selected.detail.comments,
+                        ...selected.detail.reviews.filter((review) => review.body?.trim()),
+                        ...selected.detail.reviewComments
+                      ]
+                    : selected.detail.comments
+                }
+              />
             </article>
           )}
         </section>
@@ -313,6 +336,11 @@ function PullSections({
   return (
     <>
       <h4>{t('Проверки')}</h4>
+      {detail.checksError && (
+        <p className="github-load-error" role="alert">
+          {detail.checksError}
+        </p>
+      )}
       <ul className="github-checks">
         {detail.checks.map((check) => (
           <li key={`${check.workflow}-${check.name}`} className={`is-${check.bucket}`}>
@@ -321,7 +349,9 @@ function PullSections({
             {check.name}
           </li>
         ))}
-        {!detail.checks.length && <li className="launch-placeholder">{t('Проверок нет')}</li>}
+        {!detail.checks.length && !detail.checksError && (
+          <li className="launch-placeholder">{t('Проверок нет')}</li>
+        )}
       </ul>
       <h4>
         {t('Изменённые файлы')} <span>{detail.files.length}</span>

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { CommandRunner } from './runner'
-import type { GithubRequest, GithubStatus } from '../../shared/github'
+import { CommandError } from './runner'
+import type { GithubCheck, GithubRequest, GithubStatus } from '../../shared/github'
 import { gitHistory, restoreGitCommit, showGitCommit } from './history'
 
 const issueFields = 'number,title,state,url,updatedAt,author,labels'
@@ -22,7 +23,12 @@ const requestSchema = z.discriminatedUnion('action', [
     sha: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i),
     expectedHead: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i)
   }),
-  z.object({ action: z.enum(['status', 'issues', 'pulls', 'branches']) }),
+  z.object({ action: z.enum(['status', 'branches']) }),
+  z.object({
+    action: z.enum(['issues', 'pulls']),
+    state: z.enum(['open', 'closed', 'all']).optional(),
+    limit: z.number().int().min(1).max(1000).optional()
+  }),
   z.object({
     action: z.enum(['issue', 'pull', 'diff', 'failedLogs']),
     number: z.number().int().positive()
@@ -89,14 +95,32 @@ async function status(runner: CommandRunner): Promise<GithubStatus> {
   }
 }
 
+async function pullChecks(runner: CommandRunner, number: number): Promise<GithubCheck[]> {
+  let output: string
+  try {
+    output = await runner('gh', [
+      'pr',
+      'checks',
+      String(number),
+      '--json',
+      'name,state,bucket,link,workflow'
+    ])
+  } catch (error) {
+    if (
+      !(error instanceof CommandError) ||
+      ![1, 8].includes(Number(error.code)) ||
+      !error.stdout.trim()
+    )
+      throw error
+    output = error.stdout
+  }
+  const checks = JSON.parse(output)
+  if (!Array.isArray(checks)) throw new Error('Invalid GitHub checks response')
+  return checks
+}
+
 async function failedLogs(runner: CommandRunner, number: number) {
-  const checks = await json<{ name: string; bucket: string; link: string }[]>(runner, [
-    'pr',
-    'checks',
-    String(number),
-    '--json',
-    'name,bucket,link'
-  ]).catch(() => [])
+  const checks = await pullChecks(runner, number)
   const failed = checks.filter((check) => check.bucket === 'fail')
   const logs: { name: string; log: string }[] = []
   for (const check of failed.slice(0, 5)) {
@@ -134,14 +158,23 @@ export async function githubOperation(
         'issue',
         'list',
         '--state',
-        'open',
+        request.state ?? 'open',
         '--limit',
-        '50',
+        String(request.limit ?? 50),
         '--json',
         issueFields
       ])
     case 'pulls':
-      return json(runner, ['pr', 'list', '--state', 'open', '--limit', '50', '--json', pullFields])
+      return json(runner, [
+        'pr',
+        'list',
+        '--state',
+        request.state ?? 'open',
+        '--limit',
+        String(request.limit ?? 50),
+        '--json',
+        pullFields
+      ])
     case 'branches': {
       const output = await runner('git', [
         'for-each-ref',
@@ -163,7 +196,7 @@ export async function githubOperation(
       ])
     case 'pull': {
       const number = String(request.number)
-      const [detail, checks, repository] = await Promise.all([
+      const [detail, checkResult, repository] = await Promise.all([
         json<any>(runner, [
           'pr',
           'view',
@@ -171,13 +204,13 @@ export async function githubOperation(
           '--json',
           `${pullFields},body,comments,reviews,files`
         ]),
-        json<any[]>(runner, [
-          'pr',
-          'checks',
-          number,
-          '--json',
-          'name,state,bucket,link,workflow'
-        ]).catch(() => []),
+        pullChecks(runner, request.number).then(
+          (checks) => ({ checks, checksError: undefined }),
+          (error: unknown) => ({
+            checks: [] as GithubCheck[],
+            checksError: error instanceof Error ? error.message : String(error)
+          })
+        ),
         json<{ nameWithOwner: string }>(runner, ['repo', 'view', '--json', 'nameWithOwner'])
       ])
       const reviewComments = await json<any[]>(runner, [
@@ -195,7 +228,7 @@ export async function githubOperation(
           }))
         )
         .catch(() => [])
-      return { ...detail, checks, reviewComments }
+      return { ...detail, ...checkResult, reviewComments }
     }
     case 'diff':
       return (await runner('gh', ['pr', 'diff', String(request.number)])).slice(0, 400000)
