@@ -21,6 +21,8 @@ it('creates a new chat inside the selected project without opening personal chat
   const call = vi.fn(async (id: string, operation: string) => {
     if (operation === 'createSession') return created
     if (operation === 'sessions' || operation === 'messages') return []
+    if (operation === 'messagePage')
+      return { messages: [], has_before: false, has_after: false, timing: { completed: {} } }
     return {}
   })
   const openChat = vi.fn(async () => ({ ...project, id: 'personal', kind: 'chat' }))

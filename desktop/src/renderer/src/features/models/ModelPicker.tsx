@@ -31,7 +31,13 @@ export function ModelPicker({
   const [saveError, setError] = useState('')
   const error = saveError || loadError
   const search = useRef<HTMLInputElement>(null)
-  const selected = w.config.models?.[kind]
+  const sessionModel =
+    kind === 'large' && w.activeSessionId
+      ? (w.config.session_models as Record<string, { provider: string; model: string }> | undefined)?.[
+          w.activeSessionId
+        ]
+      : undefined
+  const selected = sessionModel ?? w.config.models?.[kind]
   const favorites = w.preferences.favoriteModels || []
   const favoriteIdentities = new Set(favorites.map(modelIdentity))
   const groups = buildModelGroups(models, w.preferences.recentModels, favorites, query)
@@ -154,11 +160,13 @@ export function ModelPicker({
                       setSaving(true)
                       setError('')
                       try {
+                        const perSession = kind === 'large' && w.activeSessionId
                         await w.call('model', {
                           modelType: kind,
-                          model: { provider: model.provider_id, model: model.model_id }
+                          model: { provider: model.provider_id, model: model.model_id },
+                          ...(perSession ? { sessionId: w.activeSessionId } : {})
                         })
-                        await w.call('init')
+                        if (!perSession) await w.call('init')
                         await w.refresh()
                         await w.savePreferences({
                           recentModels: recordRecentModel(w.preferences.recentModels, reference)

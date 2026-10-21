@@ -50,6 +50,15 @@ export type Message = {
   created_at?: number
   updated_at?: number
 }
+export type MessagePage = {
+  messages: Message[]
+  before?: string
+  after?: string
+  has_more: boolean
+  has_before: boolean
+  has_after: boolean
+  timing: { started_at?: number; completed?: Record<string, number> }
+}
 export type Project = {
   remote?: {
     profileId: string
@@ -107,6 +116,8 @@ export type Operation =
   | 'renameSession'
   | 'deleteSession'
   | 'messages'
+  | 'messagePage'
+  | 'messageSearch'
   | 'history'
   | 'context'
   | 'agent'

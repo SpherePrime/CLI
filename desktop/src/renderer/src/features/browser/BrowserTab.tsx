@@ -4,6 +4,7 @@ import type { BrowserState, PickedElementResult } from '../../../../shared/contr
 import { ElementPick } from './ElementPick'
 import { BrowserTabs } from './BrowserTabs'
 import { visibleRect } from './visibleRect'
+import { PickedAttachments } from './pickedAttachments'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 
@@ -28,6 +29,15 @@ export function BrowserTab({
   const { t } = useI18n()
   const [picking, setPicking] = useState(false)
   const [picked, setPicked] = useState<PickedElementResult[] | null>(null)
+  const pickedAttachments = useRef<PickedAttachments | null>(null)
+  const updatePicked = (
+    results: PickedElementResult[] | null,
+    owner = pickedAttachments.current
+  ) => {
+    const ids =
+      results?.flatMap((result) => (result.attachmentId ? [result.attachmentId] : [])) || []
+    if (owner?.replace(ids)) setPicked(results)
+  }
   useEffect(() => {
     if (!picking) return
     const key = (event: KeyboardEvent) => {
@@ -36,16 +46,27 @@ export function BrowserTab({
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
   }, [picking])
-  useEffect(() => () => void window.prime.browserPickCancel(), [])
+  useEffect(() => {
+    const owner = new PickedAttachments((ids) => {
+      void window.prime.releaseAttachments(ids).catch(() => {})
+    })
+    pickedAttachments.current = owner
+    return () => {
+      owner.dispose()
+      pickedAttachments.current = null
+      void window.prime.browserPickCancel()
+    }
+  }, [])
   const pick = async () => {
     if (picking) {
       await window.prime.browserPickCancel()
       return
     }
-    setPicked(null)
+    const owner = pickedAttachments.current
+    updatePicked(null, owner)
     setPicking(true)
     try {
-      setPicked(await window.prime.browserPick())
+      updatePicked(await window.prime.browserPick(), owner)
     } catch (reason) {
       setError(String((reason as Error)?.message || reason).replace(/^.*Error: /, ''))
     } finally {
@@ -200,7 +221,9 @@ export function BrowserTab({
           onClick={() =>
             void window.prime
               .browserOpenExternal()
-              .catch((reason) => setError(String(reason?.message || reason).replace(/^.*Error: /, '')))
+              .catch((reason) =>
+                setError(String(reason?.message || reason).replace(/^.*Error: /, ''))
+              )
           }
         >
           <ExternalLink size={14} />
@@ -216,9 +239,17 @@ export function BrowserTab({
         <ElementPick
           results={picked}
           workspace={workspace}
-          onSend={onSend}
-          onRemove={(index) => setPicked(picked.filter((_, position) => position !== index))}
-          onClose={() => setPicked(null)}
+          onSend={async (prompt, ids) => {
+            const owner = pickedAttachments.current
+            owner?.beginSend(ids)
+            try {
+              return await onSend(prompt, ids)
+            } finally {
+              owner?.endSend(ids)
+            }
+          }}
+          onRemove={(index) => updatePicked(picked.filter((_, position) => position !== index))}
+          onClose={() => updatePicked(null)}
         />
       )}
       <div ref={viewport} className="browser-viewport">
