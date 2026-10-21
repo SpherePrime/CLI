@@ -1227,6 +1227,10 @@ Object.assign(english, {
 Object.assign(english, {
   'Контекст задачи': 'Task context',
   'Открывает страницу': 'Opens a page',
+  'Список вкладок': 'Lists tabs',
+  'Открывает вкладку': 'Opens a tab',
+  'Выбирает вкладку': 'Selects a tab',
+  'Закрывает вкладку': 'Closes a tab',
   'Читает страницу': 'Reads the page',
   'Снимок страницы': 'Page screenshot',
   'Нажимает на странице': 'Clicks on the page',
