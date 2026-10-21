@@ -611,7 +611,8 @@ function registerIpc(): void {
     await settings.update({
       activeProject:
         preferences.activeProject === path ? remaining[0]?.path || '' : preferences.activeProject,
-      recent: preferences.recent.filter((item) => item !== path)
+      recent: preferences.recent.filter((item) => item !== path),
+      projectOrder: preferences.projectOrder?.filter((item) => item !== path)
     })
   })
   handle('call', async (id: string, operation: Operation, args: any = {}) => {
@@ -697,6 +698,8 @@ function registerIpc(): void {
         speechAutoSend: z.boolean().optional(),
         inspectorVisible: z.boolean().optional(),
         keybindings: z.record(z.string().max(40), z.string().max(80)).optional(),
+        projectOrder: z.array(z.string().min(1).max(4096)).max(1000).optional(),
+        recent: z.array(z.string().min(1).max(4096)).max(1000).optional(),
         agentContexts: z
           .record(
             z.string().max(4096),
