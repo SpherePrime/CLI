@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { GitCommitHorizontal, RefreshCw, RotateCcw } from 'lucide-react'
 import type { GitCommitDetail, GitHistory, GitRestoreResult } from '../../../../shared/gitHistory'
 import { Modal } from '../../components/Modal'
+import { GitDiffView } from './GitDiffView'
 import { useI18n } from '../../i18n'
 import '../../styles/git-history.css'
 
@@ -160,9 +161,7 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
                   {t('Вернуть это состояние')}
                 </button>
               </div>
-              <pre className="git-history-diff">
-                {selected.diff || t('Изменений в файлах проекта нет')}
-              </pre>
+              <GitDiffView diff={selected.diff} />
               {selected.truncated && (
                 <p className="git-history-meta">
                   {t('Показана часть изменений: diff слишком большой.')}

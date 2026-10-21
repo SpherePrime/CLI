@@ -1,4 +1,8 @@
 export const english: Record<string, string> = {
+  'Файлов: {count}': 'Files: {count}',
+  'Добавлено строк': 'Lines added',
+  'Удалено строк': 'Lines deleted',
+  'Показано строк: {shown} из {total}': 'Showing {shown} of {total} lines',
   'Добавить к текущей задаче на следующем шаге': 'Add to the current task at the next step',
   Открытые: 'Open',
   Закрытые: 'Closed',

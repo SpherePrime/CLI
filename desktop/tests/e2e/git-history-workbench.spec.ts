@@ -44,6 +44,9 @@ test('history rows stay readable and restore preserves local work in a stash', a
     await expect(rows).toHaveCount(2)
     await expect(page.locator('.git-history-card')).toBeVisible()
     await expect(rows.first()).toBeEnabled()
+    await expect(page.locator('.patch-file')).toHaveCount(2)
+    await expect(page.locator('.patch-row.patch-added').first()).toBeVisible()
+    await expect(page.locator('.patch-row.patch-removed').first()).toBeVisible()
     const assertRows = async () => {
       const bounds = await rows.evaluateAll((elements) =>
         elements.map((element) => {
@@ -76,7 +79,9 @@ test('history rows stay readable and restore preserves local work in a stash', a
     await page.getByRole('button', { name: 'Вернуть это состояние', exact: true }).click()
     await page.getByRole('button', { name: 'Подтвердить восстановление', exact: true }).click()
     await expect(page.getByRole('status')).toContainText('stash')
-    expect((await readFile(join(root, 'app.ts'), 'utf8')).replace(/\r\n/g, '\n')).toBe('export const version = 1\n')
+    expect((await readFile(join(root, 'app.ts'), 'utf8')).replace(/\r\n/g, '\n')).toBe(
+      'export const version = 1\n'
+    )
     expect(git('log', '-1', '--format=%s')).toMatch(/^Restore project to /)
     expect(git('stash', 'show', '--include-untracked', '-p', 'stash@{0}')).toContain('unsaved work')
     expect(git('stash', 'show', '--include-untracked', '-p', 'stash@{0}')).toContain(
