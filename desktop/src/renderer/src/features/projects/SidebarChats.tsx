@@ -105,6 +105,21 @@ export function SidebarChats({
         return pin || (b.updated_at || 0) - (a.updated_at || 0)
       })
   }
+  const deleteChatSession = async (project: Project, session: Session) => {
+    try {
+      if (project.id === w.project?.id) {
+        await w.deleteSession(session.id)
+        return
+      }
+      await window.prime.call(project.id, 'deleteSession', { sessionId: session.id })
+      setOtherSessions((value) => ({
+        ...value,
+        [project.id]: (value[project.id] || []).filter((item) => item.id !== session.id)
+      }))
+    } catch (error) {
+      w.errorHandler(error)
+    }
+  }
   const openChatSession = async (project: Project, session: Session) => {
     if (project.id !== w.project?.id) await w.selectProject(project)
     await w.selectSession(session)
@@ -170,16 +185,14 @@ export function SidebarChats({
             {w.preferences.pinned.includes(session.id) && <Pin size={11} />}
           </button>
         )}
-        {active && (
-          <button
-            className="icon small row-delete"
-            aria-label={t('Удалить чат')}
-            title={t('Удалить чат')}
-            onClick={() => void w.deleteSession(session.id)}
-          >
-            <X size={14} />
-          </button>
-        )}
+        <button
+          className="icon small row-delete"
+          aria-label={t('Удалить чат')}
+          title={t('Удалить чат')}
+          onClick={() => void deleteChatSession(project, session)}
+        >
+          <X size={14} />
+        </button>
       </div>
     ))
   }
@@ -327,7 +340,9 @@ export function SidebarChats({
           {recentChats.map(({ project, session }) => (
             <div
               key={`${project.id}:${session.id}`}
-              className={`session-row recent-chat ${session.id === w.session?.id ? 'active' : ''}`}
+              className={`session-row recent-chat ${
+                session.id === w.session?.id && !expanded[project.id] ? 'active' : ''
+              }`}
             >
               <button
                 className="session-link"
@@ -340,6 +355,14 @@ export function SidebarChats({
                   {project.kind === 'chat' ? t('Личные чаты') : projectLabel(project)}
                 </small>
                 {session.is_busy && <span className="dot pulse" />}
+              </button>
+              <button
+                className="icon small row-delete"
+                aria-label={t('Удалить чат')}
+                title={t('Удалить чат')}
+                onClick={() => void deleteChatSession(project, session)}
+              >
+                <X size={14} />
               </button>
             </div>
           ))}

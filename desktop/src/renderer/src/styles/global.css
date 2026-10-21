@@ -566,6 +566,9 @@ kbd {
   opacity: 0;
   margin-right: 4px;
   color: var(--muted);
+  transition:
+    opacity var(--fast, 0.12s) ease,
+    color var(--fast, 0.12s) ease;
 }
 .session-row:hover .row-delete,
 .session-row:focus-within .row-delete {
@@ -972,6 +975,12 @@ kbd {
   margin: 0 auto;
   padding: 30px 35px;
 }
+.message-rows {
+  transition: opacity var(--fast, 0.12s) ease;
+}
+.message-rows.settling {
+  opacity: 0;
+}
 .message {
   position: relative;
   margin-bottom: 32px;
@@ -1161,11 +1170,31 @@ kbd {
 }
 .jump-bottom {
   position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 10px;
-  box-shadow: 0 3px 12px #0004;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  width: max-content;
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 18px #0005;
+  transition:
+    background var(--fast, 0.12s) ease,
+    border-color var(--fast, 0.12s) ease,
+    transform var(--fast, 0.12s) ease;
+}
+.jump-bottom:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.jump-bottom:active {
+  transform: translateY(0) scale(0.98);
 }
 .older-messages {
   width: 100%;

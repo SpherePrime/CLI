@@ -47,8 +47,10 @@ export function useWorkspace() {
   const [project, setProject] = useState<Project | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
   const [session, setSession] = useState<Session | null>(null)
-  const [draftReasoningMode, setDraftReasoningMode] = useState<ChatReasoningMode>('off')
+  const [draftReasoningMode, setDraftReasoningMode] = useState<ChatReasoningMode | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [messagesSessionId, setMessagesSessionId] = useState<string | null>(null)
+  const messageCache = useRef(new Map<string, Message[]>())
   const [permissions, setPermissions] = useState<Json[]>([])
   const [questions, setQuestions] = useState<Json[]>([])
   const [config, setConfig] = useState<Json>({})
@@ -212,7 +214,9 @@ export function useWorkspace() {
                 entry.action === 'deleted'
                   ? reconciled.filter((item) => item.id !== entry.message.id)
                   : applyMessage(reconciled, entry.message)
+          messageCache.current.set(session.id, reconciled)
           setMessages(reconciled)
+          setMessagesSessionId(session.id)
         }
         active = latest.status === 'fulfilled' ? latest.value : undefined
       } finally {
@@ -568,7 +572,7 @@ export function useWorkspace() {
     }
   }
   async function selectProject(selected: Project) {
-    setDraftReasoningMode('off')
+    setDraftReasoningMode(null)
     current.current = { project: selected, session: null }
     setProject(selected)
     setSession(null)
@@ -601,9 +605,11 @@ export function useWorkspace() {
     }
   }
   async function selectSession(selected: Session) {
+    const cached = messageCache.current.get(selected.id)
     setSession(selected)
     current.current.session = selected
-    setMessages([])
+    setMessages(cached || [])
+    setMessagesSessionId(cached ? selected.id : null)
     setBusy(Boolean(selected.is_busy))
     setQueue([])
     await call('currentSession', { sessionId: selected.id }).catch(errorHandler)
@@ -638,6 +644,10 @@ export function useWorkspace() {
         title: translate(language.current, 'Новый чат')
       })
       setSessions((items) => [created, ...items])
+      void savePreferences({
+        reasoningBySession: { [created.id]: draftReasoningMode || reasoningFallback }
+      }).catch(errorHandler)
+      setDraftReasoningMode(null)
       await selectSession(created)
       return created as Session
     } catch (error) {
@@ -654,9 +664,10 @@ export function useWorkspace() {
     try {
       const latestPreferences = await window.prime.preferences()
       setPreferences(latestPreferences)
+      const fallbackReasoning = latestPreferences.lastReasoningMode || 'off'
       const reasoningMode = targetSession
-        ? latestPreferences.reasoningBySession?.[targetSession.id] || 'off'
-        : draftReasoningMode
+        ? latestPreferences.reasoningBySession?.[targetSession.id] || fallbackReasoning
+        : draftReasoningMode || fallbackReasoning
       const latestContext =
         latestPreferences.agentContexts?.[targetProject.path] ?? agentContext.context
       const preparedPrompt = await buildAgentPrompt(prompt, latestContext, (path) =>
@@ -682,6 +693,9 @@ export function useWorkspace() {
           command: prompt.slice(1).trim()
         })
       else {
+        await window.prime
+          .call(targetProject.id, 'mode', { mode: latestPreferences.agentMode || 'general' })
+          .catch(() => {})
         await window.prime.call(targetProject.id, 'send', {
           sessionId: selected.id,
           runId,
@@ -732,16 +746,24 @@ export function useWorkspace() {
     }
   }
   const agentContext = useAgentContext(project, preferences, savePreferences, errorHandler)
+  const reasoningFallback = preferences.lastReasoningMode || 'off'
   const reasoningMode = session
-    ? preferences.reasoningBySession?.[session.id] || 'off'
-    : draftReasoningMode
+    ? preferences.reasoningBySession?.[session.id] || reasoningFallback
+    : draftReasoningMode || reasoningFallback
   async function setReasoningMode(mode: ChatReasoningMode) {
     const selected = current.current.session
-    if (selected) await savePreferences({ reasoningBySession: { [selected.id]: mode } })
-    else setDraftReasoningMode(mode)
+    if (!selected) setDraftReasoningMode(mode)
+    await savePreferences({
+      lastReasoningMode: mode,
+      ...(selected ? { reasoningBySession: { [selected.id]: mode } } : {})
+    })
   }
+  useEffect(() => {
+    if (session && messagesSessionId === session.id) messageCache.current.set(session.id, messages)
+  }, [messages, messagesSessionId, session?.id])
   async function deleteSession(id: string) {
     await call('deleteSession', { sessionId: id })
+    messageCache.current.delete(id)
     if (current.current.session?.id === id) {
       current.current.session = null
       setSession(null)
@@ -765,6 +787,7 @@ export function useWorkspace() {
     sessions,
     session,
     messages,
+    messagesReady: !session || messagesSessionId === session.id,
     permissions,
     questions,
     config,

@@ -39,6 +39,8 @@ export function MessageList({
   const activeMatch = Math.min(matchIndex, Math.max(0, matches.length - 1))
   const matchId = searchOpen ? matches[activeMatch] : undefined
   const mountedAt = useRef(Date.now())
+  const [settled, setSettled] = useState(false)
+  const hasMessages = visible.length > 0
   const virtualizer = useVirtualizer({
     count: visible.length,
     getScrollElement: () => viewport.current,
@@ -66,6 +68,23 @@ export function MessageList({
       if (atBottom && !leavingBottom.current) followingRef.current = true
     }
   }, [messages, virtualizer.getTotalSize()])
+  useEffect(() => {
+    if (settled || !hasMessages) return
+    let frame = 0
+    let stableFrames = 0
+    let lastSize = -1
+    const startedAt = performance.now()
+    const check = () => {
+      const size = virtualizer.getTotalSize()
+      stableFrames = size === lastSize ? stableFrames + 1 : 0
+      lastSize = size
+      if (followingRef.current) virtualizer.scrollToEnd()
+      if (stableFrames >= 2 || performance.now() - startedAt > 500) setSettled(true)
+      else frame = requestAnimationFrame(check)
+    }
+    frame = requestAnimationFrame(check)
+    return () => cancelAnimationFrame(frame)
+  }, [settled, hasMessages])
   function takeControl(up: boolean) {
     virtualizer.cancelScroll()
     const view = viewport.current
@@ -134,7 +153,10 @@ export function MessageList({
         }}
       >
         <div className="conversation-inner">
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
+          <div
+            className={`message-rows ${settled ? '' : 'settling'}`}
+            style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}
+          >
             {virtualizer.getVirtualItems().map((row) => {
               const message = visible[row.index]
               const previous = visible[row.index - 1]
@@ -171,7 +193,7 @@ export function MessageList({
           <WorkingIndicator busy={busy} waiting={waiting} />
         </div>
       </div>
-      {!following && (
+      {!following && settled && (
         <button
           className="jump-bottom"
           onClick={() => {
