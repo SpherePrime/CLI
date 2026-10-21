@@ -1,4 +1,5 @@
 export type GithubUser = { login: string }
+export type GithubListState = 'open' | 'closed' | 'all'
 
 export type GithubIssue = {
   number: number
@@ -41,6 +42,7 @@ export type GithubPullDetail = GithubPull & {
   reviews: { author?: GithubUser; state: string; body: string }[]
   files: { path: string; additions: number; deletions: number }[]
   checks: GithubCheck[]
+  checksError?: string
   reviewComments: GithubComment[]
 }
 
@@ -59,7 +61,8 @@ export type GithubRequest =
   | { action: 'history' }
   | { action: 'showCommit'; sha: string }
   | { action: 'restoreCommit'; sha: string; expectedHead: string }
-  | { action: 'status' | 'issues' | 'pulls' | 'branches' }
+  | { action: 'status' | 'branches' }
+  | { action: 'issues' | 'pulls'; state?: GithubListState; limit?: number }
   | { action: 'issue' | 'pull' | 'diff'; number: number }
   | { action: 'failedLogs'; number: number }
   | {

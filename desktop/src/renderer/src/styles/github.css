@@ -33,7 +33,7 @@
 }
 .github-panel .github-item {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   justify-items: start;
   text-align: left;
   gap: 2px 8px;
@@ -54,7 +54,7 @@
   overflow-wrap: anywhere;
 }
 .github-item small {
-  grid-column: 2;
+  grid-column: 2 / -1;
   color: var(--secondary);
 }
 .github-detail {
@@ -173,6 +173,101 @@
 }
 .github-empty {
   margin: auto;
+}
+.github-panel .automation-header > div:first-child {
+  min-width: 0;
+}
+.github-panel .automation-header h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.github-panel .automation-count {
+  white-space: nowrap;
+}
+.github-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.github-panel .github-filters button {
+  min-width: 0;
+  padding: 6px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--secondary);
+}
+.github-panel .github-filters button[aria-pressed='true'] {
+  background: var(--raised);
+  border-color: var(--border);
+  color: var(--text);
+}
+.github-list-empty,
+.github-load-error {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.github-list-empty p,
+.github-load-error p {
+  margin: 6px 0;
+  color: var(--secondary);
+}
+.github-load-error {
+  color: var(--red);
+}
+.github-state {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.5;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--secondary);
+}
+.github-state.is-open {
+  color: var(--green);
+}
+.github-state.is-merged {
+  color: var(--accent);
+}
+.github-item > .github-state {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: start;
+}
+.github-panel .github-load-more {
+  margin-top: 8px;
+}
+.github-comments,
+.github-comment {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.github-comment {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.github-comment time {
+  font-size: 11px;
+  color: var(--muted);
+}
+.github-create h3 {
+  margin: 0;
+  font-size: 14px;
 }
 @media (max-width: 760px) {
   .github-layout {
