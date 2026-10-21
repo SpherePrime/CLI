@@ -95,7 +95,8 @@ let activeSessionSave: { path: string; sessionId: string } | undefined
 let browserMcp: BrowserMcpServer | undefined
 const emit = (event: any) => {
   if (event.type === 'terminal') {
-    event.payload.activeCount = terminals.list().filter((item) => item.status === 'running').length
+    if (event.payload.action !== 'data')
+      event.payload.activeCount = terminals.list().filter((item) => item.status === 'running').length
     launches?.terminalEvent(event.payload)
   }
   if (
