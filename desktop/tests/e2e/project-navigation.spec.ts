@@ -33,6 +33,22 @@ test('project cards keep chats grouped, search across chats and create them in t
     await api.locator('.project-item').click()
     await expect(website.locator('.project-chat-list .session-row')).toHaveCount(3)
     await expect(website.locator('.project-chevron')).toHaveClass(/expanded/)
+    await website.locator('.project-item').hover()
+    await expect(website.locator('.project-item')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+    await expect(website.locator('.project-heading')).not.toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)'
+    )
+    await website.locator('.session-link').first().hover()
+    await expect(website.locator('.session-link').first()).toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)'
+    )
+    await expect(website.locator('.session-row').first()).not.toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)'
+    )
+    await page.screenshot({ path: 'test-results/project-chat-hover.png' })
     await page.keyboard.press('Tab')
     await website.locator('.project-item').focus()
     await expect(website).toHaveCSS('outline-width', '2px')

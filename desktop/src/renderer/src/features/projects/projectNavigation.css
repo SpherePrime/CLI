@@ -61,6 +61,13 @@
   position: relative;
   padding: 2px;
   gap: 0;
+  border-radius: 10px;
+}
+.sidebar .project-card:has(.project-chat-area) .project-heading {
+  border-radius: 10px 10px 0 0;
+}
+.sidebar .project-card .project-heading:hover {
+  background: color-mix(in srgb, var(--hover) 55%, transparent);
 }
 .sidebar .project-card .project-item {
   padding: 5px 4px;
@@ -69,8 +76,9 @@
   border-radius: 8px;
   overflow: hidden;
 }
-.sidebar .project-card .project-item:hover {
-  background: color-mix(in srgb, var(--hover) 55%, transparent);
+.sidebar .project-card .project-item:hover:not(:disabled),
+.sidebar .session-row .session-link:hover:not(:disabled) {
+  background: transparent;
 }
 .sidebar .project-card .project-symbol {
   flex: 0 0 26px;
