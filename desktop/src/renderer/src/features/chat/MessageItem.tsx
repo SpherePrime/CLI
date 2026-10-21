@@ -84,14 +84,14 @@ export const MessageItem = memo(function MessageItem({
               <span>{t('Автоматическое сжатие контекста, это может занять несколько минут…')}</span>
             </div>
           ) : (
-            <details className="compaction-details">
-              <summary>{t('Сжатие контекста')}</summary>
+            <div className="compaction-details">
+              <div className="compaction-label">{t('Сжатие контекста')}</div>
               <div className="markdown">
                 <Markdown remarkPlugins={remarkPlugins} components={markdownComponents}>
                   {text}
                 </Markdown>
               </div>
-            </details>
+            </div>
           )}
           {(failed || canceled) && (
             <div className="finish-note">
