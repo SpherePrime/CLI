@@ -193,6 +193,10 @@ type Workspace struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	// agentInitMu serializes lazy agent initialization triggered by
+	// SendMessage so concurrent first messages initialize once.
+	agentInitMu sync.Mutex
+
 	// runMu guards closing and gates dispatch of new agent runs.
 	// closing is set by Shutdown so no new runs are accepted once
 	// teardown has begun. runWG tracks dispatched agent goroutines

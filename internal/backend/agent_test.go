@@ -104,6 +104,22 @@ func TestSendMessage_AgentNotInitialized(t *testing.T) {
 	require.ErrorIs(t, err, ErrAgentNotInitialized)
 }
 
+func TestSendMessage_LazilyInitializesAgent(t *testing.T) {
+	xdgIsolated(t)
+	cwd := t.TempDir()
+	dataDir := t.TempDir()
+	b := New(context.Background(), nil, func() {})
+	b.SetCreateGrace(2 * time.Second)
+	t.Cleanup(func() { drainBackend(t, b) })
+	ws, _, err := b.CreateWorkspace(protoWS(cwd, dataDir, uuid.New().String()))
+	require.NoError(t, err)
+	require.Nil(t, ws.AgentCoordinator)
+	err = b.SendMessage(ws.ID, proto.AgentMessage{SessionID: "S1", Prompt: "hi"})
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrAgentNotInitialized)
+	require.ErrorContains(t, err, "coder agent configuration is missing")
+}
+
 func TestSendMessage_EmptyPrompt(t *testing.T) {
 	t.Parallel()
 	b, _ := newTestBackend(t)
