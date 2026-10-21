@@ -655,3 +655,10 @@ dialog.modal,
 .working {
   padding-left: 0;
 }
+.message.user .message-author {
+  flex-direction: row-reverse;
+}
+.message.user .message-author time {
+  margin-left: 0;
+  margin-right: 3px;
+}
