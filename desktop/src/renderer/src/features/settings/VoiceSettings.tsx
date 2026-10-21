@@ -45,7 +45,7 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
     <>
       <h3>{t('Голос')}</h3>
       <p className="muted">
-        {t('Локальная модель Supertonic 3. Речь синтезируется на этом компьютере без отправки в интернет.')}
+        {t('Локальная модель. Речь синтезируется на этом компьютере без отправки в интернет.')}
       </p>
       <p className="muted" role="status">
         {status?.state === 'downloading'
@@ -115,7 +115,7 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
         )}
       </div>
       <p className="muted">
-        {t('Импорт принимает JSON-стиль голоса Supertonic (например, из Voice Builder).')}
+        {t('Импорт принимает JSON-стиль голоса (например, из Voice Builder).')}
       </p>
       {error && <p className="error-text">{error}</p>}
     </>

@@ -1137,8 +1137,8 @@ Object.assign(english, {
   'Загрузка голосовой модели · {value0}%': 'Downloading voice model · {value0}%',
   'Голосовая модель недоступна': 'Voice model is unavailable',
   'Код показан в чате': 'The code is shown in the chat',
-  'Локальная модель Supertonic 3. Речь синтезируется на этом компьютере без отправки в интернет.':
-    'Local Supertonic 3 model. Speech is generated on this computer without sending it online.',
+  'Локальная модель. Речь синтезируется на этом компьютере без отправки в интернет.':
+    'Local model. Speech is generated on this computer without sending it online.',
   'Модель ещё не скачана. Она загрузится при первом разговоре.':
     'The model is not downloaded yet. It loads on the first conversation.',
   'Загрузка модели…': 'Loading model…',
@@ -1148,15 +1148,15 @@ Object.assign(english, {
   Прослушать: 'Preview',
   'Импортировать голос': 'Import voice',
   'Удалить голос': 'Delete voice',
-  'Импорт принимает JSON-стиль голоса Supertonic (например, из Voice Builder).':
-    'Import accepts a Supertonic voice style JSON (for example, from Voice Builder).',
+  'Импорт принимает JSON-стиль голоса (например, из Voice Builder).':
+    'Import accepts a voice style JSON (for example, from Voice Builder).',
   'Привет! Так я буду отвечать в голосовом разговоре.':
     'Hi! This is how I will answer in a voice conversation.',
   'Женский 1': 'Female 1',
   'Женский 2': 'Female 2',
   'Мужской 1': 'Male 1',
   'Мужской 2': 'Male 2',
-  'Стиль голоса Supertonic': 'Supertonic voice style',
+  'Стиль голоса': 'Voice style',
   'Голосовая модель': 'Voice model'
 })
 
