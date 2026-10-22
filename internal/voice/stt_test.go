@@ -284,7 +284,7 @@ func TestDecodeVoskResult(t *testing.T) {
 // TestWhisperArgsAndLanguage pins the command construction.
 func TestWhisperArgsAndLanguage(t *testing.T) {
 	args := whisperArgs("/bin/whisper-cli", "/models/m.bin", "ru", "/tmp/a.wav")
-	require.Equal(t, []string{"/bin/whisper-cli", "-m", "/models/m.bin", "-l", "ru", "-nt", "-f", "/tmp/a.wav"}, args)
+	require.Equal(t, []string{"/bin/whisper-cli", "-m", "/models/m.bin", "-l", "ru", "-t", strconv.Itoa(whisperThreads), "-nt", "-f", "/tmp/a.wav"}, args)
 	require.Equal(t, "auto", whisperLanguage(""))
 	require.Equal(t, "ru-ru", whisperLanguage("ru-RU,en-US"))
 }

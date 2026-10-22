@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -57,9 +58,23 @@ func (t whisperTranscriber) Transcribe(ctx context.Context, audio *Audio) (strin
 
 	args := whisperArgs(binary, modelPath, whisperLanguage(t.settings.Language), wavPath)
 	libDir := whisperBinDir(sttDataDir(t.settings))
-	stdout, stderr, err := runCommandBudget(ctx, args[0], args[1:], whisperEnv(t.settings, libDir), whisperTimeout)
+	// Transcription runs below normal priority like the build does: even a
+	// capped engine can sit on several cores for a while, and the desktop
+	// the user is working in keeps priority.
+	command := lowPriorityCommand(args)
+	stdout, stderr, err := runCommandBudget(ctx, command[0], command[1:], whisperEnv(t.settings, libDir), whisperTimeout)
 	if err != nil {
 		return "", engineError(err, stderr)
+	}
+	// The GPU accelerator is a promise the engine must keep: whisper.cpp
+	// silently falls back to the CPU when the backend fails to initialize,
+	// and the user picked the accelerator to spare that CPU. The backend
+	// announces itself on stderr at startup, so its absence is a failed
+	// promise worth reporting instead of a slow hot surprise. The success
+	// banner ("ggml_vulkan: Found N Vulkan devices:") is matched specifically,
+	// because the failure complaints also name Vulkan.
+	if t.settings.Accelerator == AcceleratorVulkan && !strings.Contains(stderr, "ggml_vulkan: Found") {
+		return "", fmt.Errorf("%w: the Vulkan backend did not initialize, transcription would have run on the CPU; check the GPU drivers", ErrTranscribeFailed)
 	}
 	return tidyTranscript(stdout), nil
 }
@@ -114,8 +129,15 @@ func whisperLanguage(language string) string {
 
 // whisperArgs builds the whisper.cpp command line. -nt suppresses the
 // timestamp blocks so stdout is plain dictated text.
+// whisperThreads caps the CPU threads whisper.cpp spins up. Without the cap
+// the engine grabs every core, and a CPU fallback (or the CPU-side work of a
+// GPU run) can overheat the machine the user is working on; four threads
+// bound the worst case while staying fast enough.
+const whisperThreads = 4
+
 func whisperArgs(binary, modelPath, language, wavPath string) []string {
-	return []string{binary, "-m", modelPath, "-l", language, "-nt", "-f", wavPath}
+	threads := min(whisperThreads, runtime.NumCPU())
+	return []string{binary, "-m", modelPath, "-l", language, "-t", strconv.Itoa(threads), "-nt", "-f", wavPath}
 }
 
 // writeTempWAV parks the recording in a temp file for the engine to read.
