@@ -1010,6 +1010,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		OnAuthRefresh: call.OnAuthRefresh,
 		ModelProvider: func() fantasy.LanguageModel {
 			m := a.largeModel.Get()
+			if call.ModelOverride != nil {
+				m = *call.ModelOverride
+			}
 			slog.Info("ModelProvider called",
 				"provider", m.ModelCfg.Provider,
 				"model", m.ModelCfg.Model)

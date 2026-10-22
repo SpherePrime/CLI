@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
@@ -17,6 +18,7 @@ import (
 // model that does not support it), so a reasoning setting never blocks a run.
 type reasoningCompatModel struct {
 	fantasy.LanguageModel
+	offRejected atomic.Bool
 }
 
 func newReasoningCompatModel(m fantasy.LanguageModel) fantasy.LanguageModel {
@@ -26,10 +28,16 @@ func newReasoningCompatModel(m fantasy.LanguageModel) fantasy.LanguageModel {
 	return &reasoningCompatModel{LanguageModel: m}
 }
 
-func isReasoningRejectionErr(err error) bool {
+// isReasoningRejectionErr reports whether the provider refused the reasoning
+// effort. Some proxies answer an unsupported "off" value with a bare 5xx, so
+// server errors count too when reasoning was being switched off.
+func isReasoningRejectionErr(err error, switchingOff bool) bool {
 	var pe *fantasy.ProviderError
 	if !errors.As(err, &pe) {
 		return false
+	}
+	if switchingOff && pe.StatusCode >= http.StatusInternalServerError {
+		return true
 	}
 	if pe.StatusCode != http.StatusBadRequest && pe.StatusCode != http.StatusUnprocessableEntity {
 		return false
@@ -39,6 +47,39 @@ func isReasoningRejectionErr(err error) bool {
 		body = pe.Message
 	}
 	return strings.Contains(strings.ToLower(body), "reasoning")
+}
+
+func isOffEffort(effort *openai.ReasoningEffort) bool {
+	return effort != nil && (*effort == openai.ReasoningEffortNone || *effort == openai.ReasoningEffortMinimal)
+}
+
+// reasoningEffortOf returns the reasoning effort set on an OpenAI-style call.
+func reasoningEffortOf(call fantasy.Call) *openai.ReasoningEffort {
+	for _, value := range call.ProviderOptions {
+		switch typed := value.(type) {
+		case *openai.ProviderOptions:
+			if typed != nil && typed.ReasoningEffort != nil {
+				return typed.ReasoningEffort
+			}
+		case *openai.ResponsesProviderOptions:
+			if typed != nil && typed.ReasoningEffort != nil {
+				return typed.ReasoningEffort
+			}
+		case *openaicompat.ProviderOptions:
+			if typed != nil && typed.ReasoningEffort != nil {
+				return typed.ReasoningEffort
+			}
+		}
+	}
+	return nil
+}
+
+// prepare drops an "off" effort the provider already refused once.
+func (m *reasoningCompatModel) prepare(call fantasy.Call) fantasy.Call {
+	if m.offRejected.Load() && isOffEffort(reasoningEffortOf(call)) {
+		call, _ = withoutReasoningEffort(call)
+	}
+	return call
 }
 
 // withoutReasoningEffort returns the call with reasoning_effort removed, and
@@ -74,10 +115,14 @@ func withoutReasoningEffort(call fantasy.Call) (fantasy.Call, bool) {
 }
 
 func (m *reasoningCompatModel) retryCall(err error, call fantasy.Call) (fantasy.Call, bool) {
-	if !isReasoningRejectionErr(err) {
+	switchingOff := isOffEffort(reasoningEffortOf(call))
+	if !isReasoningRejectionErr(err, switchingOff) {
 		return call, false
 	}
 	stripped, removed := withoutReasoningEffort(call)
+	if removed && switchingOff {
+		m.offRejected.Store(true)
+	}
 	if removed {
 		slog.Info("Provider rejected the reasoning effort, retrying without it",
 			"provider", m.Provider(), "model", m.Model(), "error", err)
@@ -87,6 +132,7 @@ func (m *reasoningCompatModel) retryCall(err error, call fantasy.Call) (fantasy.
 
 // Generate implements fantasy.LanguageModel.
 func (m *reasoningCompatModel) Generate(ctx context.Context, call fantasy.Call) (*fantasy.Response, error) {
+	call = m.prepare(call)
 	resp, err := m.LanguageModel.Generate(ctx, call)
 	if err == nil {
 		return resp, nil
@@ -100,6 +146,7 @@ func (m *reasoningCompatModel) Generate(ctx context.Context, call fantasy.Call) 
 // Stream implements fantasy.LanguageModel. A rejected request fails before any
 // part is produced, so the retry never duplicates forwarded output.
 func (m *reasoningCompatModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.StreamResponse, error) {
+	call = m.prepare(call)
 	inner, err := m.LanguageModel.Stream(ctx, call)
 	if err != nil {
 		if retry, ok := m.retryCall(err, call); ok {
