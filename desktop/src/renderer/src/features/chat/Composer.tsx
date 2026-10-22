@@ -1,4 +1,4 @@
-import { matchesShortcut, shortcutLabel } from '../../../../shared/keybindings'
+import { matchesPointerShortcut, matchesShortcut, shortcutLabel } from '../../../../shared/keybindings'
 import { getShortcuts, useShortcuts } from '../shortcuts/shortcutStore'
 import { PermissionMenu } from './PermissionMenu'
 import { QueuePanel } from './QueuePanel'
@@ -234,8 +234,19 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         void toggleVoice()
       }
     }
+    const pointerHandler = (event: PointerEvent) => {
+      if (document.querySelector('dialog[open]')) return
+      if (matchesPointerShortcut(event, getShortcuts().voice) && conversation.state === 'off') {
+        if (event.button !== 0) event.preventDefault()
+        void toggleVoice()
+      }
+    }
     window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    window.addEventListener('pointerdown', pointerHandler, true)
+    return () => {
+      window.removeEventListener('keydown', handler)
+      window.removeEventListener('pointerdown', pointerHandler, true)
+    }
   }, [w.busy, w.session?.id, recording, conversation.state])
   async function change(value: string) {
     setText(value)

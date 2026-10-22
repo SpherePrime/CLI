@@ -21,12 +21,13 @@ export const english: Record<string, string> = {
   'Увеличить масштаб': 'Zoom in',
   'Уменьшить масштаб': 'Zoom out',
   'Сбросить масштаб': 'Reset zoom',
-  'Нажмите на сочетание и введите новое. Esc — отмена, Backspace — отключить.':
-    'Click a shortcut and press a new one. Esc cancels, Backspace disables.',
+  'Нажмите на сочетание и введите новое. Esc — отмена, Backspace — отключить. Для боковых кнопок мыши нажмите их во время записи.':
+    'Click a shortcut and press a new one. Esc cancels, Backspace disables. While recording, the back/forward mouse buttons bind too.',
   'Сбросить все': 'Reset all',
   'Совпадает с: {value}': 'Conflicts with: {value}',
   'Изменить сочетание: {value}': 'Change shortcut: {value}',
   'Нажмите сочетание…': 'Press shortcut…',
+  'Нажмите клавишу или кнопку мыши…': 'Press a key or mouse button…',
   'Не задано': 'Not set',
   Сбросить: 'Reset',
   'Новая строка': 'New line',
