@@ -188,7 +188,11 @@ func whisperBuildSrcDir(dataDir string) string {
 // use, with the marker recording that this build speaks Vulkan.
 func ensureWhisperVulkanRuntime(ctx context.Context, dataDir string, emit func(SetupProgress)) error {
 	binDir := whisperBinDir(dataDir)
-	if findWhisperBinary(binDir) != "" && installedWhisperAccelerator(dataDir) == AcceleratorVulkan {
+	// The installed runtime must be complete, not merely present: a build
+	// from before soname links were copied passes the binary check but fails
+	// at load time, so it is rebuilt instead of trusted.
+	if findWhisperBinary(binDir) != "" && installedWhisperAccelerator(dataDir) == AcceleratorVulkan &&
+		vulkanRuntimeComplete(binDir) {
 		return nil
 	}
 	// The toolchain is verified before the old runtime is removed, so a
@@ -508,6 +512,22 @@ func copyBuiltWhisperBinaries(buildBinDir, binDir string) error {
 		return err
 	}
 	for _, entry := range entries {
+		// Shared libraries are linked through their soname, which is a
+		// symlink pointing at the versioned file beside it, so symlinks are
+		// recreated rather than skipped: without them the dynamic loader
+		// reports a missing libwhisper.so.1 at run time.
+		if entry.Type()&os.ModeSymlink != 0 {
+			link, err := os.Readlink(filepath.Join(buildBinDir, entry.Name()))
+			if err != nil {
+				return err
+			}
+			target := filepath.Join(binDir, entry.Name())
+			_ = os.Remove(target)
+			if err := os.Symlink(link, target); err != nil && !os.IsExist(err) {
+				return err
+			}
+			continue
+		}
 		if !entry.Type().IsRegular() {
 			continue
 		}
@@ -526,6 +546,22 @@ func copyBuiltWhisperBinaries(buildBinDir, binDir string) error {
 		}
 	}
 	return nil
+}
+
+// vulkanRuntimeComplete reports whether an installed Vulkan runtime carries
+// the soname links its binary needs, so an install from before symlink
+// copying existed is treated as missing and rebuilt instead of failing at
+// transcription time.
+func vulkanRuntimeComplete(binDir string) bool {
+	if runtime.GOOS == "windows" {
+		return findWhisperBinary(binDir) != ""
+	}
+	for _, soname := range []string{"libwhisper.so.1", "libwhisper.1.dylib"} {
+		if fileExists(filepath.Join(binDir, soname)) {
+			return true
+		}
+	}
+	return false
 }
 
 // installVoskModel brings in the libvosk shared library when it is missing
