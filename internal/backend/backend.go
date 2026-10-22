@@ -846,6 +846,10 @@ func (b *Backend) detachStream(ws *Workspace, clientID string) {
 // order) and aborts if the workspace has been re-claimed.
 func (b *Backend) teardown(ws *Workspace) {
 	b.mu.Lock()
+	if current, ok := b.workspaces.Get(ws.ID); !ok || current != ws {
+		b.mu.Unlock()
+		return
+	}
 	ws.clientsMu.Lock()
 	if len(ws.clients) > 0 {
 		// Race: a CreateWorkspace re-registered a client
