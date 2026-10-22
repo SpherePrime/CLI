@@ -213,6 +213,9 @@ export interface DesktopApi {
   openRemote(profileId: string): Promise<Project>
   remote(request: import('./remote').RemoteRequest): Promise<import('./remote').RemoteSnapshot>
   remoteKey(): Promise<string | undefined>
+  sudoPassword(
+    request: { action: 'status' } | { action: 'set'; password: string } | { action: 'remove' }
+  ): Promise<{ hasPassword: boolean; storageAvailable: boolean }>
   closeProject(id: string): Promise<void>
   call(workspaceId: string, operation: Operation, args?: Json): Promise<Json>
   files(workspaceId: string, path?: string): Promise<Json[]>

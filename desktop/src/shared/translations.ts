@@ -141,6 +141,15 @@ export const english: Record<string, string> = {
   'Пароль будет сохранён в защищённом хранилище ОС и не передаётся в чат.':
     'The password will be saved in OS-protected storage and is not sent to chat.',
   'Удалить сохранённый пароль': 'Forget saved password',
+  'Команды с root-правами (sudo)': 'Root commands (sudo)',
+  'Пароль root (sudo)': 'Root password (sudo)',
+  'Пароль root позволяет агенту выполнять системные команды через тул sudo. Он хранится в защищённом хранилище ОС и не виден модели.':
+    'The root password lets the agent run system commands through the sudo tool. It stays in OS-protected storage and is never shown to the model.',
+  'Сохранить пароль': 'Save password',
+  'Пароль удалён': 'Password removed',
+  'Защищённое хранилище ОС недоступно': 'OS-protected storage is unavailable',
+  'Доступно только на Linux.': 'Available on Linux only.',
+  Sudo: 'Sudo',
   'Защищённое хранилище ОС недоступно. Пароль не сохранён.':
     'OS-protected storage is unavailable. The password has not been saved.',
   'Хранилище SSH-паролей повреждено. Исходный файл сохранён.':

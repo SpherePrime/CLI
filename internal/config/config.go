@@ -1341,6 +1341,7 @@ func allToolNames() []string {
 		"agent",
 		"agent_jobs",
 		"bash",
+		"sudo",
 		"prime_info",
 		"prime_logs",
 		"job_output",

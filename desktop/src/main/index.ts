@@ -31,6 +31,7 @@ import { WorkspaceRouter } from './workbench/workspaceRouter'
 import { isProjectLocked, openWhenUnlocked } from './prime/projectLock'
 import { RemoteWorkspaces } from './remote/workspaces'
 import { createCredentialVault } from './remote/credentialVault'
+import { SudoSecretStore, sudoSecretRequest } from './sudo/secretStore'
 import { createSshExecutionTools } from './remote/execution'
 import { SshAccess, sshProfileTools } from './remote/access'
 import { sshUploadTools } from './remote/upload'
@@ -133,6 +134,8 @@ const emit = (event: any) => {
   }
 }
 const browserPanel = new BrowserPanel(() => window, emit)
+const sudoSecrets = new SudoSecretStore(join(app.getPath('userData'), 'sudo-credentials.json'))
+void sudoSecrets.load().catch(() => {})
 const terminals = new TerminalManager({ emit })
 let launches: LaunchManager | undefined
 const windowViewer = new WindowViewer({
@@ -339,7 +342,8 @@ async function startRuntime(notify = true): Promise<void> {
     app.isPackaged
       ? join(process.resourcesPath, 'runtime')
       : join(import.meta.dirname, '../../runtime'),
-    emit
+    emit,
+    () => Promise.resolve(sudoSecrets.get())
   )
   try {
     await runtime.start()
@@ -505,6 +509,7 @@ function registerIpc(): void {
     })
     return result.canceled ? undefined : result.filePaths[0]
   })
+  handle('sudoPassword', (request: unknown) => sudoSecretRequest(sudoSecrets, request))
   handle('openRemote', async (profileId: string) => {
     if (!remotes) throw new Error(t('Prime ещё запускается'))
     const remote = await remotes.open(z.string().uuid().parse(profileId))
