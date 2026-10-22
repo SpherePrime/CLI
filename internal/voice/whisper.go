@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -55,7 +56,8 @@ func (t whisperTranscriber) Transcribe(ctx context.Context, audio *Audio) (strin
 	defer func() { _ = os.Remove(wavPath) }()
 
 	args := whisperArgs(binary, modelPath, whisperLanguage(t.settings.Language), wavPath)
-	stdout, stderr, err := runCommandBudget(ctx, args[0], args[1:], whisperEnv(t.settings.Accelerator, t.settings.GPUDevice), whisperTimeout)
+	libDir := whisperBinDir(sttDataDir(t.settings))
+	stdout, stderr, err := runCommandBudget(ctx, args[0], args[1:], whisperEnv(t.settings, libDir), whisperTimeout)
 	if err != nil {
 		return "", engineError(err, stderr)
 	}
@@ -64,20 +66,41 @@ func (t whisperTranscriber) Transcribe(ctx context.Context, audio *Audio) (strin
 
 // whisperEnv builds the environment for one whisper.cpp run. A CUDA run may
 // be pinned to one GPU through CUDA_VISIBLE_DEVICES, a Vulkan run through
-// GGML_VK_VISIBLE_DEVICES; CPU runs, and GPU runs without a chosen device,
-// inherit the current environment untouched.
-func whisperEnv(accelerator, gpuDevice string) []string {
-	device := strings.TrimSpace(gpuDevice)
-	if device == "" {
-		return nil
-	}
-	switch accelerator {
+// GGML_VK_VISIBLE_DEVICES. The library directory is always added to the
+// loader path on unix, because an installed runtime cannot rely on the
+// build tree's runpath surviving the copy. CPU runs and GPU runs without a
+// chosen device still get the loader path; only the device variable is
+// omitted.
+func whisperEnv(settings Settings, libDir string) []string {
+	var extra []string
+	device := strings.TrimSpace(settings.GPUDevice)
+	switch settings.Accelerator {
 	case AcceleratorCUDA:
-		return mergeEnv([]string{"CUDA_VISIBLE_DEVICES=" + device})
+		if device != "" {
+			extra = append(extra, "CUDA_VISIBLE_DEVICES="+device)
+		}
 	case AcceleratorVulkan:
-		return mergeEnv([]string{"GGML_VK_VISIBLE_DEVICES=" + device})
+		if device != "" {
+			extra = append(extra, "GGML_VK_VISIBLE_DEVICES="+device)
+		}
 	}
-	return nil
+	return mergeEnv(append(loaderPath(libDir), extra...))
+}
+
+// loaderPath points the dynamic loader at the runtime's own directory, with
+// any existing path preserved so system locations stay reachable.
+func loaderPath(libDir string) []string {
+	if runtime.GOOS == "windows" {
+		return nil // the exe directory is searched automatically
+	}
+	name := "LD_LIBRARY_PATH"
+	if runtime.GOOS == "darwin" {
+		name = "DYLD_LIBRARY_PATH"
+	}
+	if current := os.Getenv(name); current != "" {
+		return []string{name + "=" + libDir + string(os.PathListSeparator) + current}
+	}
+	return []string{name + "=" + libDir}
 }
 
 // whisperLanguage picks the language flag value: the first configured

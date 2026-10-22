@@ -466,27 +466,36 @@ func TestWhisperAcceleratorSwitchReinstalls(t *testing.T) {
 	require.Equal(t, AcceleratorCPU, installedWhisperAccelerator(dataDir))
 }
 
-// TestWhisperEnv pins when the transcriber adds device-pinning environment:
-// an explicit GPU accelerator with a chosen device does, through the
-// variable that backend speaks; everything else inherits the environment
-// untouched.
+// TestWhisperEnv pins when the transcriber adds device-pinning environment
+// and the loader path: the library directory is always handed to the dynamic
+// loader on unix, and an explicit GPU accelerator with a chosen device adds
+// the variable that backend speaks.
 func TestWhisperEnv(t *testing.T) {
-	require.Nil(t, whisperEnv("", "0"))
-	require.Nil(t, whisperEnv(AcceleratorCPU, "0"))
-	require.Nil(t, whisperEnv(AcceleratorCUDA, ""))
-	require.Nil(t, whisperEnv(AcceleratorVulkan, ""))
+	if runtime.GOOS == "windows" {
+		t.Skip("the loader path is Windows-exe-directory semantics")
+	}
+	env := func(settings Settings) []string {
+		return whisperEnv(settings, "/runtime/bin")
+	}
+	for _, settings := range []Settings{
+		{}, {Accelerator: AcceleratorCPU}, {Accelerator: AcceleratorCUDA}, {Accelerator: AcceleratorVulkan},
+	} {
+		list := env(settings)
+		require.NotEmpty(t, list)
+		require.Contains(t, list, "LD_LIBRARY_PATH=/runtime/bin")
+	}
 
-	env := whisperEnv(AcceleratorCUDA, "1")
-	require.NotEmpty(t, env)
-	require.Contains(t, env, "CUDA_VISIBLE_DEVICES=1")
+	list := env(Settings{Accelerator: AcceleratorCUDA, GPUDevice: "1"})
+	require.Contains(t, list, "CUDA_VISIBLE_DEVICES=1")
+	require.Contains(t, list, "LD_LIBRARY_PATH=/runtime/bin")
 	// The rest of the environment survives, because whisper.cpp needs PATH
 	// and friends like any other child process.
-	require.Greater(t, len(env), 1)
+	require.Greater(t, len(list), 2)
 
-	env = whisperEnv(AcceleratorVulkan, "2")
-	require.NotEmpty(t, env)
-	require.Contains(t, env, "GGML_VK_VISIBLE_DEVICES=2")
-	require.Greater(t, len(env), 1)
+	list = env(Settings{Accelerator: AcceleratorVulkan, GPUDevice: "2"})
+	require.Contains(t, list, "GGML_VK_VISIBLE_DEVICES=2")
+	require.Contains(t, list, "LD_LIBRARY_PATH=/runtime/bin")
+	require.Greater(t, len(list), 2)
 }
 
 // TestWhisperAcceleratorFallsBackToCPU pins the runtime resolution: a
@@ -728,6 +737,8 @@ if [ "$1" = "--build" ]; then
   mkdir -p "$2/bin"
   printf 'vulkan-binary' > "$2/bin/whisper-cli"
   printf 'vulkan-lib' > "$2/bin/libggml-vulkan.so"
+  printf 'whisper-lib' > "$2/bin/libwhisper.so.1.9.5"
+  ln -s libwhisper.so.1.9.5 "$2/bin/libwhisper.so.1"
   exit 0
 fi
 exit 1
