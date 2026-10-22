@@ -44,7 +44,7 @@ func (c *coordinator) applyRunReasoning(ctx context.Context, model Model, provid
 		if err != nil {
 			return Model{}, err
 		}
-		model.Model = newToolRoleCompatModel(newRequestTimeoutModel(localModel, c.cfg.Config().Options.GetRequestTimeout()))
+		model.Model = newReasoningCompatModel(newToolRoleCompatModel(newRequestTimeoutModel(localModel, c.cfg.Config().Options.GetRequestTimeout())))
 	}
 	return model, nil
 }

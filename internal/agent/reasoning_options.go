@@ -5,6 +5,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
 )
 
 const (
@@ -108,4 +109,29 @@ func geminiThinkingBudget(modelID, mode string) int64 {
 		budget = min(budget, geminiFlashMaxBudget)
 	}
 	return budget
+}
+
+// compatReasoningEffort maps a reasoning mode for OpenAI-compatible endpoints,
+// which accept the full level range, including an explicit "off".
+func compatReasoningEffort(model Model, mode string) string {
+	if !thinkingEnabled(mode) {
+		return reasoningOffEffort(model)
+	}
+	if levels := model.CatwalkCfg.ReasoningLevels; len(levels) > 0 {
+		return config.ReasoningLevelFor(mode, levels)
+	}
+	return mapModeToProviderEffort(mode)
+}
+
+// reasoningOffEffort returns the effort value that disables reasoning. Models
+// without a catalogued off level get "none" when they can reason or the user
+// picked "off" explicitly; providers that reject it are retried without it.
+func reasoningOffEffort(model Model) string {
+	if level := config.ReasoningOffLevel(model.CatwalkCfg.ReasoningLevels); level != "" {
+		return level
+	}
+	if model.CatwalkCfg.CanReason || model.ModelCfg.HasExplicitReasoningMode() {
+		return string(openai.ReasoningEffortNone)
+	}
+	return ""
 }
