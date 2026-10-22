@@ -914,7 +914,6 @@ Object.assign(english, {
   'Свернуть панель': 'Collapse panel',
   'Развернуть панель': 'Expand panel',
   'Скрыть инструменты': 'Hide tools',
-  'Сначала закройте терминалы проекта': 'Close the project terminals first',
   Проект: 'Project',
   'В контекст агента': 'Add to agent context',
   'Выберите фрагмент до 12 000 символов': 'Select up to 12,000 characters',

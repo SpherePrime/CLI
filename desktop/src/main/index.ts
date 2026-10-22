@@ -616,9 +616,6 @@ function registerIpc(): void {
   handle('cancelProjectWait', () => projectWait?.abort())
   handle('closeProject', async (id: string) => {
     const path = workspacePath(id)
-    if (requirePrime().isBusy()) throw new Error(t('Сначала завершите активные задачи'))
-    if (terminals.list(id).some((item) => item.status === 'running'))
-      throw new Error(t('Сначала закройте терминалы проекта'))
     await Promise.all(terminals.list(id).map((item) => terminals.close(item.id, id)))
     const remote = remotes?.byWorkspace(projectId.parse(id))
     if (remote) await remotes!.manager.disconnect(remote.profile.id)
