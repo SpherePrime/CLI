@@ -81,6 +81,7 @@ type bashDescriptionData struct {
 	ModelID         string
 	RgAvailable     bool
 	GhAvailable     bool
+	SudoAvailable   bool
 	// Platform is the GOOS the agent is running on, so the tool description
 	// can tell the model which shell utilities actually exist here instead
 	// of leaving it to guess and collect 127s.
@@ -170,6 +171,7 @@ func bashDescription(attribution *config.Attribution, modelID string) string {
 		ModelID:         modelID,
 		RgAvailable:     getRg() != "",
 		GhAvailable:     ghAvailable,
+		SudoAvailable:   sudoToolAvailable,
 		Platform:        runtime.GOOS,
 	}); err != nil {
 		// this should never happen.
@@ -286,7 +288,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 						return fantasy.ToolResponse{}, fmt.Errorf("[Job %s] error executing command: %w", bgShell.ID, execErr)
 					}
 
-					stdout = formatOutput(stdout, stderr, execErr, spillDir)
+					stdout = formatOutput(stdout, stderr, execErr, spillDir) + blockedRootHint(execErr)
 
 					metadata := BashResponseMetadata{
 						StartTime:        startTime.UnixMilli(),
@@ -371,7 +373,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 					return fantasy.ToolResponse{}, fmt.Errorf("[Job %s] error executing command: %w", bgShell.ID, execErr)
 				}
 
-				stdout = formatOutput(stdout, stderr, execErr, spillDir)
+				stdout = formatOutput(stdout, stderr, execErr, spillDir) + blockedRootHint(execErr)
 
 				metadata := BashResponseMetadata{
 					StartTime:        startTime.UnixMilli(),
