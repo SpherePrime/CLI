@@ -407,6 +407,17 @@ type VoiceOptions struct {
 	// The jsonschema description holds no comma: the reflector reads everything
 	// up to the first one as the description and the rest as examples.
 	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as a BCP-47 tag or a list of tags to try in order; empty or auto means the interface language decides which language is tried first,example=ru-RU,example=en-US"`
+	// Accelerator selects the compute device for the whisper engine: the
+	// NVIDIA CUDA build needs an NVIDIA GPU and the CUDA driver, the Vulkan
+	// build is compiled from source and works with any vendor's GPU, and
+	// everything else runs the plain CPU build. The jsonschema description
+	// holds no comma: the reflector reads everything up to the first one as
+	// the description and the rest as enum values.
+	Accelerator string `json:"accelerator,omitempty" jsonschema:"description=Compute device for the whisper engine; empty or cpu uses the CPU build,enum=cpu,enum=cuda,enum=vulkan"`
+	// GPUDevice is the device index whisper.cpp is pinned to when Accelerator
+	// names a GPU accelerator: the CUDA device for cuda, the Vulkan device
+	// for vulkan. Empty lets the backend pick a device.
+	GPUDevice string `json:"gpu_device,omitempty" jsonschema:"description=Device index for the whisper engine when accelerator is cuda or vulkan; empty lets the backend pick a device,example=0"`
 	// BaseURL points at an OpenAI-compatible API root such as
 	// https://api.openai.com/v1.
 	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of an OpenAI-compatible transcription endpoint,example=https://api.openai.com/v1"`

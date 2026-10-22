@@ -1312,6 +1312,22 @@
             "en-US"
           ]
         },
+        "accelerator": {
+          "type": "string",
+          "enum": [
+            "cpu",
+            "cuda",
+            "vulkan"
+          ],
+          "description": "Compute device for the whisper engine; empty or cpu uses the CPU build"
+        },
+        "gpu_device": {
+          "type": "string",
+          "description": "Device index for the whisper engine when accelerator is cuda or vulkan; empty lets the backend pick a device",
+          "examples": [
+            "0"
+          ]
+        },
         "base_url": {
           "type": "string",
           "description": "Base URL of an OpenAI-compatible transcription endpoint",

@@ -62,37 +62,75 @@ type SttModel struct {
 	Recommended bool
 }
 
-// whisperModels are the whisper.cpp GGML models on Hugging Face. Whisper
-// models are multilingual, so Language stays empty; the engine decides the
-// language at run time from the audio.
+// whisperModels are the whisper.cpp GGML models on Hugging Face. Most are
+// multilingual, so Language stays empty and the engine decides the language
+// at run time from the audio; the ".en" variants are pinned to English and
+// say so, which lets the desktop filter the list the same way it filters
+// the single-language vosk models.
 var whisperModels = []SttModel{
 	{ID: "ggml-tiny", Label: "Tiny", SizeBytes: 85_000_000},
+	{ID: "ggml-tiny.en", Label: "Tiny (English)", Language: "en", SizeBytes: 85_000_000},
 	{ID: "ggml-base", Label: "Base", SizeBytes: 155_000_000},
+	{ID: "ggml-base.en", Label: "Base (English)", Language: "en", SizeBytes: 155_000_000},
+	{ID: "ggml-base-q5_1", Label: "Base (Q5)", SizeBytes: 63_000_000},
 	{ID: "ggml-small", Label: "Small", SizeBytes: 512_000_000},
+	{ID: "ggml-small.en", Label: "Small (English)", Language: "en", SizeBytes: 512_000_000},
+	{ID: "ggml-small-q5_1", Label: "Small (Q5)", SizeBytes: 200_000_000},
+	{ID: "ggml-medium", Label: "Medium", SizeBytes: 1_530_000_000},
+	{ID: "ggml-medium.en", Label: "Medium (English)", Language: "en", SizeBytes: 1_530_000_000},
+	{ID: "ggml-medium-q5_0", Label: "Medium (Q5)", SizeBytes: 567_000_000},
 	{ID: "ggml-large-v3-turbo-q5_0", Label: "Large v3 Turbo (Q5)", SizeBytes: 602_000_000, Recommended: true},
+	{ID: "ggml-large-v3-turbo-q8_0", Label: "Large v3 Turbo (Q8)", SizeBytes: 917_000_000},
 	{ID: "ggml-large-v3-turbo", Label: "Large v3 Turbo", SizeBytes: 1_740_000_000},
+	{ID: "ggml-large-v3-q5_0", Label: "Large v3 (Q5)", SizeBytes: 1_130_000_000},
 }
 
 // voskModels are the offline models on alphacephei.com. Each model speaks
-// exactly one language, which is why the language is part of the entry.
+// exactly one language, which is why the language is part of the entry. The
+// small models are the recommendation: they load in a moment and answer
+// fast, which is what dictation needs; the full models are for quality.
 var voskModels = []SttModel{
 	{ID: "vosk-model-small-ru-0.22", Label: "Russian (small)", Language: "ru", SizeBytes: 47_000_000, Recommended: true},
-	{ID: "vosk-model-small-en-us-0.15", Label: "English, US (small)", Language: "en", SizeBytes: 42_000_000, Recommended: true},
 	{ID: "vosk-model-ru-0.42", Label: "Russian", Language: "ru", SizeBytes: 1_930_000_000},
+	{ID: "vosk-model-small-en-us-0.15", Label: "English, US (small)", Language: "en", SizeBytes: 42_000_000, Recommended: true},
 	{ID: "vosk-model-en-us-0.22", Label: "English, US", Language: "en", SizeBytes: 1_930_000_000},
+	{ID: "vosk-model-small-en-us-zamia-0.5", Label: "English, US (Zamia)", Language: "en", SizeBytes: 49_000_000, Recommended: true},
+	{ID: "vosk-model-small-es-0.42", Label: "Spanish (small)", Language: "es", SizeBytes: 39_000_000, Recommended: true},
+	{ID: "vosk-model-es-0.42", Label: "Spanish", Language: "es", SizeBytes: 1_400_000_000},
+	{ID: "vosk-model-small-cn-0.22", Label: "Chinese (small)", Language: "zh", SizeBytes: 42_000_000, Recommended: true},
+	{ID: "vosk-model-cn-0.22", Label: "Chinese", Language: "zh", SizeBytes: 1_300_000_000},
+	{ID: "vosk-model-small-fa-0.5", Label: "Persian (small)", Language: "fa", SizeBytes: 60_000_000, Recommended: true},
+	{ID: "vosk-model-small-fr-0.22", Label: "French (small)", Language: "fr", SizeBytes: 41_000_000, Recommended: true},
+	{ID: "vosk-model-fr-0.22", Label: "French", Language: "fr", SizeBytes: 1_400_000_000},
+	{ID: "vosk-model-small-de-0.15", Label: "German (small)", Language: "de", SizeBytes: 45_000_000, Recommended: true},
+	{ID: "vosk-model-de-0.21", Label: "German", Language: "de", SizeBytes: 1_900_000_000},
+	{ID: "vosk-model-small-pt-0.3", Label: "Portuguese (small)", Language: "pt", SizeBytes: 31_000_000, Recommended: true},
 }
 
 const (
 	whisperModelURLPrefix = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/"
 	voskModelURLPrefix    = "https://alphacephei.com/vosk/models/"
+
+	// whisperSourceURL is the versioned whisper.cpp source tarball the
+	// Vulkan runtime is compiled from: whisper.cpp publishes no prebuilt
+	// Vulkan binaries, so building from source with -DGGML_VULKAN=1 is the
+	// supported way to get GPU acceleration for any vendor's GPU.
+	whisperSourceURL = "https://codeload.github.com/ggml-org/whisper.cpp/tar.gz/refs/tags/v1.9.5"
+	// whisperSourceDir is the single root directory inside that tarball.
+	whisperSourceDir = "whisper.cpp-1.9.5"
 )
 
 // whisperRuntimes are the prebuilt whisper.cpp binaries, one per platform
-// the project publishes a zip for. macOS has none, so the whisper provider
-// is marked unavailable there and install explains the manual path.
-var whisperRuntimes = []struct{ goos, goarch, url string }{
-	{"windows", "amd64", "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-x64.zip"},
-	{"linux", "amd64", "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-ubuntu-x64.tar.gz"},
+// and accelerator the project publishes a build for. A CPU build exists
+// everywhere the provider is installable; the CUDA build exists where
+// whisper.cpp publishes one and is chosen by the accelerator setting. macOS
+// has none, so the whisper provider is marked unavailable there and install
+// explains the manual path. There is no prebuilt Vulkan build at all: that
+// runtime is compiled from source instead (stt_install.go).
+var whisperRuntimes = []struct{ goos, goarch, accelerator, url string }{
+	{"windows", "amd64", AcceleratorCPU, "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-x64.zip"},
+	{"windows", "amd64", AcceleratorCUDA, "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-win-cuda-12.4.0-x64.zip"},
+	{"linux", "amd64", AcceleratorCPU, "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-ubuntu-x64.tar.gz"},
 }
 
 // voskRuntimes are the prebuilt libvosk shared libraries from vosk-api
@@ -190,14 +228,83 @@ func sttDataDir(settings Settings) string {
 	return ".prime"
 }
 
-// whisperRuntime returns the runtime download URL for this machine.
-func whisperRuntime() (string, bool) {
+// whisperRuntime returns the runtime download URL and the accelerator the
+// binary is built for, on this machine. A requested accelerator with no
+// published variant falls back to the CPU build: the CPU binary runs
+// everywhere, it just leaves the GPU idle, which is a working engine rather
+// than an error the user has to interpret.
+func whisperRuntime(accelerator string) (url, variant string, ok bool) {
 	for _, candidate := range whisperRuntimes {
-		if candidate.goos == runtime.GOOS && candidate.goarch == runtime.GOARCH {
+		if candidate.goos == runtime.GOOS && candidate.goarch == runtime.GOARCH &&
+			candidate.accelerator == accelerator {
+			return candidate.url, candidate.accelerator, true
+		}
+	}
+	for _, candidate := range whisperRuntimes {
+		if candidate.goos == runtime.GOOS && candidate.goarch == runtime.GOARCH &&
+			candidate.accelerator == AcceleratorCPU {
+			return candidate.url, AcceleratorCPU, true
+		}
+	}
+	return "", "", false
+}
+
+// WhisperAccelerators lists the accelerators a prebuilt whisper.cpp runtime
+// is published for on this platform, in catalog order, regardless of whether
+// the machine actually has usable hardware. The CPU build always exists;
+// CUDA appears only where a prebuilt CUDA binary is published. The
+// hardware-aware offer list lives in WhisperAcceleratorOptions.
+func WhisperAccelerators() []string {
+	offers := []string{AcceleratorCPU}
+	if _, ok := whisperRuntimeVariant(AcceleratorCUDA); ok {
+		offers = append(offers, AcceleratorCUDA)
+	}
+	return offers
+}
+
+// whisperRuntimeVariant returns the runtime URL published for exactly the
+// requested accelerator, with no fallback.
+func whisperRuntimeVariant(accelerator string) (string, bool) {
+	for _, candidate := range whisperRuntimes {
+		if candidate.goos == runtime.GOOS && candidate.goarch == runtime.GOARCH &&
+			candidate.accelerator == accelerator {
 			return candidate.url, true
 		}
 	}
 	return "", false
+}
+
+// whisperAcceleratorMarker names the file in the whisper bin directory that
+// records which build is unpacked there.
+func whisperAcceleratorMarker(dataDir string) string {
+	return filepath.Join(whisperBinDir(dataDir), ".accelerator")
+}
+
+// installedWhisperAccelerator reads the accelerator marker. A missing file
+// means CPU: the marker arrived with CUDA support, so every runtime unpacked
+// before it exists is necessarily the CPU build. A marker naming an
+// accelerator the engine knows is taken literally; anything else is old
+// output treated as CPU.
+func installedWhisperAccelerator(dataDir string) string {
+	data, err := os.ReadFile(whisperAcceleratorMarker(dataDir))
+	if err != nil {
+		return AcceleratorCPU
+	}
+	switch variant := strings.TrimSpace(string(data)); variant {
+	case AcceleratorCUDA, AcceleratorVulkan:
+		return variant
+	}
+	return AcceleratorCPU
+}
+
+// writeWhisperAcceleratorMarker records which whisper.cpp build is unpacked
+// in the bin directory, so a later install with a different accelerator
+// knows the runtime has to be replaced instead of reused.
+func writeWhisperAcceleratorMarker(dataDir, accelerator string) error {
+	if err := os.MkdirAll(whisperBinDir(dataDir), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(whisperAcceleratorMarker(dataDir), []byte(accelerator), 0o644)
 }
 
 // voskRuntime returns the libvosk download URL for this machine.
@@ -245,7 +352,7 @@ var ErrSttUnknownModel = errors.New("unknown STT provider or model")
 // SttCatalog lists the transcription engines Prime can offer, with per-model
 // install state read from the data directory.
 func SttCatalog(dataDir string) []SttProvider {
-	_, whisperInstallable := whisperRuntime()
+	_, _, whisperInstallable := whisperRuntime(AcceleratorCPU)
 	_, voskInstallable := voskRuntime()
 	// A runtime installed by hand counts too: availability is about whether
 	// the machine can run the engine, not only about Prime's own downloads.
@@ -316,14 +423,18 @@ func SttIsInstalled(dataDir, provider, model string) bool {
 
 // SttInstall downloads and unpacks one catalog model, and the provider's
 // runtime first when it is missing. It is idempotent and never runs inside
-// Transcribe: installation is a user decision with visible progress.
-func SttInstall(ctx context.Context, dataDir, provider, model string, emit func(SetupProgress)) error {
+// Transcribe: installation is a user decision with visible progress. The
+// accelerator is the compute device the whisper runtime is installed for
+// ("cuda", "vulkan", or anything else for CPU); it is read once by the
+// caller so a config change mid-install cannot re-target a download already
+// running.
+func SttInstall(ctx context.Context, dataDir, provider, model, accelerator string, emit func(SetupProgress)) error {
 	if emit == nil {
 		emit = func(SetupProgress) {}
 	}
 	switch provider {
 	case SttWhisper:
-		return installWhisperModel(ctx, dataDir, model, emit)
+		return installWhisperModel(ctx, dataDir, model, accelerator, emit)
 	case SttVosk:
 		return installVoskModel(ctx, dataDir, model, emit)
 	case SttGoogle:

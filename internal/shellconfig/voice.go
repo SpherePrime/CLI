@@ -58,6 +58,27 @@ func optionVoice(options map[string]any, args []string, stderr io.Writer) error 
 			return usage(stderr, fmt.Sprintf("option voice %s requires a value", key))
 		}
 		voice[voiceJSONKey(key)] = value
+	case "accelerator":
+		if value == "" {
+			return usage(stderr, "option voice accelerator requires a value")
+		}
+		// The accepted set matches the whisper engine, and anything else
+		// would be normalized to CPU at run time anyway, so it is refused
+		// here where the user can see the typo instead.
+		device := strings.ToLower(value)
+		if device != "cpu" && device != "cuda" && device != "vulkan" {
+			return usage(stderr, fmt.Sprintf("option voice accelerator expects cpu, cuda or vulkan, got %q", value))
+		}
+		voice["accelerator"] = device
+	case "gpu-device":
+		if value == "" {
+			return usage(stderr, "option voice gpu-device requires a value")
+		}
+		index, err := strconv.Atoi(value)
+		if err != nil || index < 0 {
+			return usage(stderr, fmt.Sprintf("option voice gpu-device expects a non-negative device index, got %q", value))
+		}
+		voice["gpu_device"] = strconv.Itoa(index)
 	case "max-duration":
 		if value == "" {
 			return usage(stderr, "option voice max-duration requires a value")

@@ -14,11 +14,17 @@ export type SttProvider = {
   description: string
   available: boolean
   models: SttModel[]
+  // Whisper only: the accelerator used by the runtime and the choices it offers.
+  accelerator?: string
+  gpus?: { index: number; name: string; kind: 'cuda' | 'vulkan' }[]
+  accelerators?: string[]
 }
 
 export type SttStatus = {
   engine: string
   model: string
+  // Recognition language; an empty string means automatic detection.
+  language?: string
   providers: SttProvider[]
 }
 

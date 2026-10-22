@@ -32,6 +32,8 @@ option voice model /models/ggml-small.bin
 option voice base-url http://localhost:8000
 option voice api-key sk-test-key
 option voice engine whispercpp
+option voice accelerator cuda
+option voice gpu-device 1
 option voice max-duration 60
 option voice record-command "rec -q -t raw -"
 option voice transcribe-command "my-whisper %s"`)
@@ -45,6 +47,9 @@ option voice transcribe-command "my-whisper %s"`)
 	require.Equal(t, "http://localhost:8000", voice["base_url"])
 	require.Equal(t, "sk-test-key", voice["api_key"])
 	require.Equal(t, "whispercpp", voice["engine"])
+	require.Equal(t, "cuda", voice["accelerator"])
+	// The device index is stored as the string the config field declares.
+	require.Equal(t, "1", voice["gpu_device"])
 	require.Equal(t, float64(60), voice["max_duration"])
 	require.Equal(t, "rec -q -t raw -", voice["record_command"])
 	require.Equal(t, "my-whisper %s", voice["transcribe_command"])
@@ -60,6 +65,16 @@ func TestOptionVoiceOff(t *testing.T) {
 	options = optionsFromShell(t, "option voice enabled false")
 	voice = options["voice"].(map[string]any)
 	require.Equal(t, false, voice["enabled"])
+}
+
+// The vulkan accelerator is accepted alongside cpu and cuda: a source-built
+// Vulkan runtime is a first-class compute device, not a typo.
+func TestOptionVoiceAcceleratorVulkan(t *testing.T) {
+	t.Parallel()
+
+	options := optionsFromShell(t, "option voice accelerator vulkan")
+	voice := options["voice"].(map[string]any)
+	require.Equal(t, "vulkan", voice["accelerator"])
 }
 
 func TestOptionVoiceKeepsEarlierValues(t *testing.T) {
@@ -91,6 +106,10 @@ func TestOptionVoiceRejectsBadValues(t *testing.T) {
 		"option voice enabled maybe",
 		"option voice language",
 		"option voice unknown-key value",
+		"option voice accelerator rocm",
+		"option voice accelerator",
+		"option voice gpu-device -1",
+		"option voice gpu-device abc",
 	} {
 		t.Run(script, func(t *testing.T) {
 			_, err := LoadShellConfig(t.Context(), filepath.Join(t.TempDir(), "primerc"), []byte(script))

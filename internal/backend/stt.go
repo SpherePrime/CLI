@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,7 +42,8 @@ func isSttTaskKey(name string) bool {
 }
 
 // SttCatalog returns the configured engine plus every provider with its
-// models and their install state.
+// models and their install state, along with the accelerator and GPU
+// information the desktop needs to offer CUDA and Vulkan for whisper.
 func (b *Backend) SttCatalog(workspaceID string) (proto.SttCatalog, error) {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
@@ -49,16 +51,27 @@ func (b *Backend) SttCatalog(workspaceID string) (proto.SttCatalog, error) {
 	}
 	cfg := ws.Cfg.Config()
 	options := cfg.Options.Voice
-	engine, model := "", ""
+	engine, model, language, accelerator := "", "", "", ""
 	if options != nil {
 		// Lowercased like voice.SettingsFrom normalizes it, so the catalog
 		// shows what dictation would actually run.
 		engine = strings.ToLower(strings.TrimSpace(options.Engine))
 		model = strings.TrimSpace(options.Model)
+		language = strings.TrimSpace(options.Language)
+		accelerator = sttConfiguredAccelerator(options.Accelerator)
 	}
+	// Accelerators and GPUs are enumerated once per request: whisper is the
+	// only engine that can use them, and the answers decide which compute
+	// devices are offers at all.
+	accelerators, gpus := voice.WhisperAcceleratorOptions()
 
 	providers := voice.SttCatalog(cfg.Options.DataDirectory)
-	result := proto.SttCatalog{Engine: engine, Model: model, Providers: make([]proto.SttProvider, 0, len(providers))}
+	result := proto.SttCatalog{
+		Engine:    engine,
+		Model:     model,
+		Language:  language,
+		Providers: make([]proto.SttProvider, 0, len(providers)),
+	}
 	for _, provider := range providers {
 		models := make([]proto.SttModel, 0, len(provider.Models))
 		for _, entry := range provider.Models {
@@ -72,15 +85,43 @@ func (b *Backend) SttCatalog(workspaceID string) (proto.SttCatalog, error) {
 				Active:      sttModelActive(provider.ID, entry, engine, model),
 			})
 		}
-		result.Providers = append(result.Providers, proto.SttProvider{
+		entry := proto.SttProvider{
 			ID:          provider.ID,
 			Title:       provider.Title,
 			Description: provider.Description,
 			Available:   provider.Available,
 			Models:      models,
-		})
+			GPUs:        []proto.Gpu{},
+		}
+		if provider.ID == voice.SttWhisper {
+			entry.Accelerator = accelerator
+			entry.GPUs = sttGpusToProto(gpus)
+			entry.Accelerators = accelerators
+		}
+		result.Providers = append(result.Providers, entry)
 	}
 	return result, nil
+}
+
+// sttConfiguredAccelerator returns the accelerator the config names, when it
+// is one the whisper engine accepts; anything else reports as unconfigured.
+func sttConfiguredAccelerator(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	switch normalized {
+	case voice.AcceleratorCPU, voice.AcceleratorCUDA, voice.AcceleratorVulkan:
+		return normalized
+	}
+	return ""
+}
+
+// sttGpusToProto copies the GPU list into the wire shape, carrying the kind
+// of accelerator each device belongs to.
+func sttGpusToProto(gpus []voice.GpuInfo) []proto.Gpu {
+	result := make([]proto.Gpu, 0, len(gpus))
+	for _, gpu := range gpus {
+		result = append(result, proto.Gpu{Index: gpu.Index, Name: gpu.Name, Kind: gpu.Kind})
+	}
+	return result
 }
 
 // sttModelActive marks the model dictation would use today. An engine
@@ -101,7 +142,14 @@ func (b *Backend) StartSttInstall(workspaceID, provider, model string) error {
 	if err != nil {
 		return err
 	}
-	dataDir := ws.Cfg.Config().Options.DataDirectory
+	cfg := ws.Cfg.Config()
+	dataDir := cfg.Options.DataDirectory
+	// The accelerator is captured when the task starts: a config change
+	// mid-install must not re-target a download that already began.
+	accelerator := ""
+	if cfg.Options.Voice != nil {
+		accelerator = sttConfiguredAccelerator(cfg.Options.Voice.Accelerator)
+	}
 	key := sttTaskKey(provider, model)
 
 	ws.pluginMu.Lock()
@@ -112,7 +160,7 @@ func (b *Backend) StartSttInstall(workspaceID, provider, model string) error {
 	plugin := plugins.Plugin{
 		Name: key,
 		Install: func(ctx context.Context, _ voice.Settings, report func(plugins.Progress)) error {
-			return voice.SttInstall(ctx, dataDir, provider, model, func(progress voice.SetupProgress) {
+			return voice.SttInstall(ctx, dataDir, provider, model, accelerator, func(progress voice.SetupProgress) {
 				report(plugins.Progress{Phase: progress.Phase, Text: progress.Text, Done: progress.Done, Total: progress.Total})
 			})
 		},
@@ -151,10 +199,14 @@ func (b *Backend) RemoveSttModel(workspaceID, provider, model string) error {
 	return voice.SttRemove(dataDir, provider, model)
 }
 
-// SelectSttModel writes the engine choice into options.voice and publishes
-// the config change the same way every other config writer does. The
-// hosted engine carries no model.
-func (b *Backend) SelectSttModel(workspaceID, provider, model string) (proto.SttSelection, error) {
+// SelectSttModel writes the engine choice and the settings that travel with
+// it into options.voice, then publishes the config change the same way every
+// other config writer does. The hosted engine carries no model. The language
+// is always written (empty means auto-detect); the accelerator and GPU
+// device only mean something to whisper, so they are written, cleared or
+// left alone depending on what the request says.
+func (b *Backend) SelectSttModel(workspaceID string, request proto.SttModelRequest) (proto.SttSelection, error) {
+	provider, model := request.Provider, request.Model
 	switch provider {
 	case voice.EngineGoogle:
 		model = ""
@@ -169,14 +221,45 @@ func (b *Backend) SelectSttModel(workspaceID, provider, model string) (proto.Stt
 	if err != nil {
 		return proto.SttSelection{}, err
 	}
-	if err := ws.Cfg.SetConfigFields(config.ScopeGlobal, map[string]any{
-		"options.voice.engine": provider,
-		"options.voice.model":  model,
-	}); err != nil {
+	fields := map[string]any{
+		"options.voice.engine":   provider,
+		"options.voice.model":    model,
+		"options.voice.language": strings.TrimSpace(request.Language),
+	}
+	if provider == voice.EngineWhisper {
+		accelerator := sttConfiguredAccelerator(request.Accelerator)
+		if accelerator != "" {
+			fields["options.voice.accelerator"] = accelerator
+		}
+		if accelerator == voice.AcceleratorCPU {
+			// A CPU build has no GPU to name, so a stale device index is
+			// cleared instead of hiding in the config.
+			fields["options.voice.gpu_device"] = ""
+		} else if device, ok := sttGpuDevice(request.GPUDevice); ok {
+			fields["options.voice.gpu_device"] = device
+		}
+	}
+	if err := ws.Cfg.SetConfigFields(config.ScopeGlobal, fields); err != nil {
 		return proto.SttSelection{}, err
 	}
 	publishConfigChanged(ws)
 	return proto.SttSelection{Engine: provider, Model: model}, nil
+}
+
+// sttGpuDevice accepts a non-negative integer device index and returns it in
+// canonical decimal form, so "007" in a request cannot come back out of the
+// config looking like a different device. The same index space serves the
+// CUDA and the Vulkan accelerator.
+func sttGpuDevice(value string) (string, bool) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "", false
+	}
+	index, err := strconv.Atoi(trimmed)
+	if err != nil || index < 0 {
+		return "", false
+	}
+	return strconv.Itoa(index), true
 }
 
 // SttTasks lists the workspace's STT install tasks in the same shape the
