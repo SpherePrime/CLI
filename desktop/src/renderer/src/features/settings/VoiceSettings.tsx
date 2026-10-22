@@ -327,15 +327,20 @@ function SttSection({ workspace: w }: { workspace: Workspace }) {
     const [backend, index] = value.split(':')
     const next = backend === 'cpu' || !index ? 'cpu' : backend
     setAccelChoice({ for: engine, value: next === 'cpu' ? 'cpu' : value })
-    void run('accel', () =>
-      w.call('sttSelect', {
+    void run('accel', async () => {
+      await w.call('sttSelect', {
         provider: local.id,
         model: status?.model ?? '',
         language,
         accelerator: next,
         gpu_device: next === 'cpu' ? '' : index
       })
-    )
+      // The runtime variant switches on the next install, so the current
+      // model is re-installed right away: it is idempotent and only
+      // rebuilds the whisper runtime when the accelerator changed.
+      if (local.id === 'whisper' && status?.model)
+        await w.call('sttInstall', { provider: local.id, model: status.model })
+    })
   }
   const pickModel = (model: SttModel) => {
     if (!local) return
