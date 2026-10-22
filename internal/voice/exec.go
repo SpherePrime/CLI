@@ -57,6 +57,11 @@ func runCommandBudget(ctx context.Context, name string, args []string, env []str
 	// The terminal belongs to the TUI, so a tool that reads stdin must never
 	// see it.
 	cmd.Stdin = nil
+	// Every engine here is transcription work the user is waiting on while
+	// using the desktop: keep it below normal priority everywhere. unix gets
+	// the priority via the nice wrapper, and nil here leaves it untouched;
+	// Windows carries it in the process attributes.
+	cmd.SysProcAttr = lowPrioritySysAttr()
 
 	var out, errOut bytes.Buffer
 	cmd.Stdout = &limitedWriter{buf: &out}
