@@ -62,3 +62,9 @@ CHATS.md
 
 /desktop/.workbench-*
 /desktop/tests/e2e/.workbench-*
+/desktop/src-tauri/target/
+/desktop/src-tauri/gen/
+/desktop/src-tauri/engine/*.dll
+/desktop/src-tauri/engine/*.so
+/desktop/src-tauri/engine/*.dylib
+/desktop/src-tauri/engine/*.h

@@ -26,8 +26,20 @@ import './styles/polish.css'
 import './styles/responsive-layout.css'
 import './styles/shell.css'
 
-createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-)
+async function start() {
+  if (import.meta.env.VITE_NATIVE_HOST === 'true') {
+    const { installNativeHost } = await import('./host/installNativeHost')
+    await installNativeHost()
+  }
+  createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  )
+}
+
+void start().catch(error => {
+  const root = document.getElementById('root')!
+  root.textContent = error instanceof Error ? error.message : String(error)
+  root.setAttribute('role', 'alert')
+})
