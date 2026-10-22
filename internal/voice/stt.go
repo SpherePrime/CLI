@@ -451,6 +451,7 @@ func SttRemove(dataDir, provider, model string) error {
 	case SttWhisper:
 		return os.RemoveAll(whisperModelPath(dataDir, model))
 	case SttVosk:
+		voskLoadedModels.remove(voskModelDir(dataDir, model))
 		return os.RemoveAll(voskModelDir(dataDir, model))
 	case SttGoogle:
 		return nil

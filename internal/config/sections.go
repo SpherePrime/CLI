@@ -65,7 +65,7 @@ func sectionFileFor(key string) string {
 	switch root {
 	case "providers":
 		return providersSectionFile
-	case "models", "recent_models", "model_settings":
+	case "models", "recent_models", "model_settings", "session_models":
 		return modelsSectionFile
 	case "mcp":
 		return mcpSectionFile

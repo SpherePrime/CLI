@@ -609,6 +609,26 @@ func (s *ConfigStore) updatePreferredModelFields(c *Config, modelType SelectedMo
 	return fields
 }
 
+// SetSessionModel stores or clears the model chosen for a specific chat.
+// A nil model clears the override so the session falls back to the shared
+// preferred model. The choice is persisted in the workspace config.
+func (s *ConfigStore) SetSessionModel(sessionID string, model *SelectedModel) error {
+	return s.update(ScopeWorkspace, func(c *Config) map[string]any {
+		if c.SessionModels == nil {
+			c.SessionModels = make(map[string]SelectedModel)
+		}
+		if model == nil {
+			delete(c.SessionModels, sessionID)
+		} else {
+			c.SessionModels[sessionID] = *model
+		}
+		if len(c.SessionModels) == 0 {
+			return map[string]any{}
+		}
+		return map[string]any{"session_models": c.SessionModels}
+	})
+}
+
 // SetCompactMode sets the compact mode setting and persists it.
 func (s *ConfigStore) SetCompactMode(scope Scope, enabled bool) error {
 	return s.update(scope, func(c *Config) map[string]any {

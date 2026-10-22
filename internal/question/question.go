@@ -109,7 +109,7 @@ func (q Question) Validate() error {
 		// No choices needed.
 	case TypeSingleChoice, TypeMultiChoice:
 		if len(q.Choices) < 2 {
-			return fmt.Errorf("%s: %s requires at least 2 choices in the \"choices\" array (got %d). Use \"choices\", not \"options\"", label, q.Type, len(q.Choices))
+			return fmt.Errorf("%s: %s requires at least 2 options in a \"choices\" array nested inside the question (got %d)", label, q.Type, len(q.Choices))
 		}
 		if len(q.Choices) > MaxChoices {
 			return fmt.Errorf("%s: choices exceed maximum of %d (got %d)", label, MaxChoices, len(q.Choices))

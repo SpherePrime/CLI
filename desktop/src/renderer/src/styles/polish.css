@@ -73,20 +73,21 @@ progress {
 }
 
 .message.user .message-author {
-  margin-right: 31px;
+  margin-right: 0;
 }
 
 .message.user .copy-message {
   top: auto;
-  bottom: 0;
+  bottom: -34px;
+  margin-right: 4px;
 }
 
 .message.user .message-body {
   width: fit-content;
   max-width: min(760px, calc(100% - 31px));
   box-sizing: border-box;
-  margin-left: 0;
-  margin-right: 31px;
+  margin-left: 31px;
+  margin-right: 0;
   overflow-wrap: anywhere;
 }
 

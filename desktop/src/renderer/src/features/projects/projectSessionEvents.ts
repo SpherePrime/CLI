@@ -5,6 +5,26 @@ type SessionSource = {
   onEvent: (listener: (event: any) => void) => () => void
 }
 
+const sharedWindowMs = 50
+const inflight = new WeakMap<
+  SessionSource['call'],
+  Map<string, { startedAt: number; request: Promise<Session[]> }>
+>()
+
+function loadSessions(source: SessionSource, projectId: string) {
+  let requests = inflight.get(source.call)
+  if (!requests) inflight.set(source.call, (requests = new Map()))
+  const existing = requests.get(projectId)
+  if (existing && Date.now() - existing.startedAt <= sharedWindowMs) return existing.request
+  const entry = { startedAt: Date.now(), request: source.call(projectId, 'sessions') }
+  requests.set(projectId, entry)
+  const release = () => {
+    if (requests.get(projectId) === entry) requests.delete(projectId)
+  }
+  entry.request.then(release, release)
+  return entry.request
+}
+
 export function watchProjectSessions(
   projectIds: string[],
   source: SessionSource,
@@ -31,7 +51,7 @@ export function watchProjectSessions(
     }
     state.loading = true
     try {
-      const sessions = await source.call(id, 'sessions')
+      const sessions = await loadSessions(source, id)
       if (!disposed) {
         state.sessions = sessions
         onSnapshot(id, sessions)

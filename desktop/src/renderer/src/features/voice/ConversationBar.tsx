@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Mic, MicOff, PhoneOff, VolumeX } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Conversation } from './useConversation'
+import { sampledStyle } from './frameStyle'
 import '../../styles/conversation.css'
 
 const labels = {
@@ -25,14 +26,16 @@ export function ConversationBar({ conversation }: { conversation: Conversation }
     const data = new Uint8Array(analyser?.frequencyBinCount ?? 32)
     let frame = 0
     let phase = 0
+    const accent = sampledStyle(
+      () => getComputedStyle(element).getPropertyValue('--accent').trim() || '#ff7a45'
+    )
     const draw = () => {
       frame = requestAnimationFrame(draw)
       phase += 0.05
       const { width, height } = element
       context.clearRect(0, 0, width, height)
       if (analyser && !muted) analyser.getByteFrequencyData(data)
-      const color = getComputedStyle(element).getPropertyValue('--accent').trim() || '#ff7a45'
-      context.fillStyle = color
+      context.fillStyle = accent()
       const bars = 24
       for (let index = 0; index < bars; index++) {
         const live = analyser && !muted ? data[Math.floor((index / bars) * data.length * 0.6)] / 255 : 0

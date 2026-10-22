@@ -11,7 +11,7 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 're
 import { AlertCircle, X } from 'lucide-react'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
-import { MessageList } from '../features/chat/MessageList'
+import { HistoryMessageList } from '../features/chat/HistoryMessageList'
 import { Composer } from '../features/chat/Composer'
 import { Approvals } from '../features/approvals/Approvals'
 import { Inspector } from '../features/files/Inspector'
@@ -316,10 +316,15 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           {isEmpty ? (
             <Welcome workspace={w} openCommands={() => setModal('commands')} />
           ) : (
-            <MessageList
+            <HistoryMessageList
               key={w.session?.id || 'new'}
-              messages={w.messages}
+              history={w.history}
               busy={w.busy}
+              historyLoading={Boolean(w.history.loading) || (!w.messagesReady && !w.history.error)}
+              historyError={w.history.error}
+              loadHistory={w.loadHistory}
+              searchMessages={w.searchMessages}
+              revealMessage={w.revealMessage}
               searchOpen={searchOpen}
               closeSearch={() => setSearchOpen(false)}
               waiting={

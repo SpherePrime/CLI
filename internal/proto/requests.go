@@ -22,8 +22,10 @@ type ConfigRemoveRequest struct {
 }
 
 // ConfigModelRequest represents a request to update the preferred model.
+// A non-empty SessionID stores the model for that chat only.
 type ConfigModelRequest struct {
 	Scope     config.Scope             `json:"scope"`
+	SessionID string                   `json:"session_id,omitempty"`
 	ModelType config.SelectedModelType `json:"model_type"`
 	Model     config.SelectedModel     `json:"model"`
 }

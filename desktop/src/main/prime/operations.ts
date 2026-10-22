@@ -9,6 +9,18 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     renameSession: () => ['PUT', `sessions/${sid}`, args.session],
     deleteSession: () => ['DELETE', `sessions/${sid}`],
     messages: () => ['GET', `sessions/${sid}/messages`],
+    messagePage: () => {
+      const query = new URLSearchParams({ limit: String(args.limit ?? 60) })
+      if (args.before) query.set('before', String(args.before))
+      if (args.after) query.set('after', String(args.after))
+      if (args.around) query.set('around', String(args.around))
+      if (args.textOnly) query.set('text_only', 'true')
+      return ['GET', `sessions/${sid}/messages?${query}`]
+    },
+    messageSearch: () => [
+      'GET',
+      `sessions/${sid}/messages?${new URLSearchParams({ search: String(args.query || '') })}`
+    ],
     history: () => ['GET', `sessions/${sid}/history`],
     context: () => ['GET', `sessions/${sid}/context`],
     agent: () => ['GET', 'agent'],
@@ -65,7 +77,12 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     model: () => [
       'POST',
       'config/model',
-      { scope: args.scope ?? 0, model_type: args.modelType || 'large', model: args.model }
+      {
+        scope: args.scope ?? 0,
+        session_id: args.sessionId || '',
+        model_type: args.modelType || 'large',
+        model: args.model
+      }
     ],
     providerKey: () => [
       'POST',

@@ -99,6 +99,32 @@ func (b *Backend) UpdatePreferredModel(workspaceID string, scope config.Scope, m
 	return nil
 }
 
+// UpdateSessionModel stores the model chosen for a specific chat or clears
+// it when model is nil. The choice lives in the workspace config, so it
+// applies to that chat only.
+func (b *Backend) UpdateSessionModel(workspaceID, sessionID string, model *config.SelectedModel) error {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+	if model != nil && model.ReasoningMode != "" {
+		catalogModel := ws.Cfg.Config().GetModel(model.Provider, model.Model)
+		if catalogModel == nil {
+			return fmt.Errorf("model %q not found", model.Model)
+		}
+		normalized, err := config.NormalizeModelReasoningMode(*catalogModel, model.ReasoningMode)
+		if err != nil {
+			return err
+		}
+		model.ReasoningMode = normalized
+	}
+	if err := ws.Cfg.SetSessionModel(sessionID, model); err != nil {
+		return err
+	}
+	publishConfigChanged(ws)
+	return nil
+}
+
 // SetCompactMode sets the compact mode setting and persists it.
 func (b *Backend) SetCompactMode(workspaceID string, scope config.Scope, enabled bool) error {
 	ws, err := b.GetWorkspace(workspaceID)

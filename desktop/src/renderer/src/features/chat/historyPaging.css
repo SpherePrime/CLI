@@ -1,0 +1,18 @@
+.history-status {
+  position: absolute;
+  z-index: 4;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: var(--surface, var(--bg));
+  color: var(--secondary);
+  box-shadow: 0 2px 12px #0002;
+  font-size: 12px;
+}
+
+.history-status button {
+  margin-left: 10px;
+}

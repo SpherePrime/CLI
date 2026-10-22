@@ -2,11 +2,64 @@ package backend
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/SpherePrime/CLI/internal/db"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/session"
 )
+
+func (b *Backend) SearchSessionMessages(ctx context.Context, workspaceID, sessionID, needle string) (db.MessageSearch, error) {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return db.MessageSearch{}, err
+	}
+	if _, err := ws.Sessions.Get(ctx, sessionID); err != nil {
+		return db.MessageSearch{}, err
+	}
+	pager, ok := ws.Messages.(message.PagedService)
+	if !ok {
+		return db.MessageSearch{}, fmt.Errorf("message search is unavailable")
+	}
+	return pager.SearchText(ctx, sessionID, needle)
+}
+
+func (b *Backend) ListSessionMessagePage(ctx context.Context, workspaceID, sessionID, before, after, around string, limit int, textOnly ...bool) (message.Page, error) {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return message.Page{}, err
+	}
+	if _, err := ws.Sessions.Get(ctx, sessionID); err != nil {
+		return message.Page{}, err
+	}
+	pager, ok := ws.Messages.(message.PagedService)
+	if !ok {
+		return message.Page{}, fmt.Errorf("message pagination is unavailable")
+	}
+	cursors := 0
+	for _, cursor := range []string{before, after, around} {
+		if cursor != "" {
+			cursors++
+		}
+	}
+	if cursors > 1 {
+		return message.Page{}, fmt.Errorf("before, after and around cannot be used together")
+	}
+	if len(textOnly) > 0 && textOnly[0] {
+		if after != "" || around != "" {
+			return message.Page{}, fmt.Errorf("text-only pages support before cursor")
+		}
+		return pager.ListTextPage(ctx, sessionID, before, limit)
+	}
+	if after != "" {
+		return pager.ListPageAfter(ctx, sessionID, after, limit)
+	}
+	if around != "" {
+		return pager.ListPageAround(ctx, sessionID, around, limit)
+	}
+	return pager.ListPage(ctx, sessionID, before, limit)
+}
 
 // CreateSession creates a new session in the given workspace.
 func (b *Backend) CreateSession(ctx context.Context, workspaceID, title string) (session.Session, error) {

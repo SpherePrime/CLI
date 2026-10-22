@@ -1,9 +1,9 @@
 import * as monaco from 'monaco-editor'
-import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker&inline'
-import JsonWorker from 'monaco-editor/language/json/json.worker.js?worker&inline'
-import CssWorker from 'monaco-editor/language/css/css.worker.js?worker&inline'
-import HtmlWorker from 'monaco-editor/language/html/html.worker.js?worker&inline'
-import TsWorker from 'monaco-editor/language/typescript/ts.worker.js?worker&inline'
+import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker'
+import JsonWorker from 'monaco-editor/language/json/json.worker.js?worker'
+import CssWorker from 'monaco-editor/language/css/css.worker.js?worker'
+import HtmlWorker from 'monaco-editor/language/html/html.worker.js?worker'
+import TsWorker from 'monaco-editor/language/typescript/ts.worker.js?worker'
 self.MonacoEnvironment = {
   getWorker: (_moduleId, label) =>
     label === 'json'

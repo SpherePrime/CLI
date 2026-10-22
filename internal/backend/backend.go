@@ -196,6 +196,7 @@ type Workspace struct {
 	// agentInitMu serializes lazy agent initialization triggered by
 	// SendMessage so concurrent first messages initialize once.
 	agentInitMu sync.Mutex
+	mainAgent   string
 
 	// runMu guards closing and gates dispatch of new agent runs.
 	// closing is set by Shutdown so no new runs are accepted once
@@ -257,15 +258,17 @@ func (w *Workspace) Shutdown() {
 	w.runMu.Lock()
 	w.closing = true
 	w.runMu.Unlock()
+	if w.cancel != nil {
+		w.cancel()
+	}
+	w.agentInitMu.Lock()
+	w.agentInitMu.Unlock()
 	w.pluginMu.Lock()
 	for _, task := range w.pluginTasks {
 		task.Cancel()
 	}
 	w.pluginMu.Unlock()
 
-	if w.cancel != nil {
-		w.cancel()
-	}
 	if w.App != nil && w.AgentCoordinator != nil {
 		w.AgentCoordinator.CancelAll()
 	}
@@ -472,7 +475,7 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 		skills.WithWorkingDir(discoveryCfg.WorkingDir),
 	)
 
-	appWorkspace, err := app.New(b.ctx, conn, cfg, skillsMgr)
+	appWorkspace, err := app.NewDeferred(b.ctx, conn, cfg, skillsMgr)
 	if err != nil {
 		return nil, proto.Workspace{}, fmt.Errorf("failed to create app workspace: %w", err)
 	}

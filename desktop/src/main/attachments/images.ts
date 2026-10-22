@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Attachment, ImageUpload, StoredAttachment } from '../../shared/attachments'
+import { ensureAttachmentCapacity, storeAttachments } from './store'
 
 function mimeType(bytes: Buffer): string {
   if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
@@ -36,17 +37,20 @@ export function importImages(
         .trim() || 'screenshot.png'
     return { bytes, type, name, id: randomUUID() }
   })
-  const retained = [...store.values()].reduce((size, item) => size + item.content.length * 0.75, 0)
-  if (retained + total > 200 * 1024 * 1024)
-    throw new Error('Слишком много вложений. Удалите ненужные изображения.')
+  ensureAttachmentCapacity(store, total)
   const ready = prepared.map((item) => ({ ...item, preview: preview(item.bytes) }))
-  for (const item of ready)
-    store.set(item.id, {
-      file_path: item.name,
-      file_name: item.name,
-      mime_type: item.type,
-      content: item.bytes.toString('base64')
-    })
+  storeAttachments(
+    store,
+    ready.map((item) => ({
+      id: item.id,
+      attachment: {
+        file_path: item.name,
+        file_name: item.name,
+        mime_type: item.type,
+        content: item.bytes.toString('base64')
+      }
+    }))
+  )
   return ready.map((item) => ({
     id: item.id,
     name: item.name,

@@ -55,7 +55,8 @@ export class Supertonic {
       ort.InferenceSession.create(join(onnx, name), {
         executionProviders: ['cpu'],
         graphOptimizationLevel: 'all',
-        intraOpNumThreads: Math.max(1, Math.min(8, availableParallelism() - 1))
+        intraOpNumThreads: Math.max(1, Math.min(4, Math.floor(availableParallelism() / 2))),
+        interOpNumThreads: 1
       })
     const [duration, encoder, estimator, vocoder] = await Promise.all([
       create('duration_predictor.onnx'),
