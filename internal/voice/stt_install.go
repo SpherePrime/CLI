@@ -32,6 +32,11 @@ const downloadChunk = 64 * 1024
 // because the build is expected to need it.
 const vulkanBuildTimeout = 30 * time.Minute
 
+// vulkanBuildJobs caps the parallel cmake jobs so a background build never
+// saturates the machine the user is working on. Four jobs keep a desktop
+// responsive while still building in minutes.
+const vulkanBuildJobs = 4
+
 // sttLookPath resolves a build tool through PATH. It is a package var so
 // tests can stub the lookup instead of depending on the host toolchain.
 var sttLookPath = exec.LookPath
@@ -348,7 +353,10 @@ func buildWhisperVulkan(ctx context.Context, sourceDir string, emit func(SetupPr
 	buildDir := filepath.Join(sourceDir, "build")
 	steps := [][]string{
 		configure,
-		{cmake, "--build", buildDir, "--config", "Release", "-j"},
+		// The job count is capped because the build runs in the background of
+		// a desktop session: every core belongs to the compiler only on a
+		// build server, not while someone is using the machine.
+		{cmake, "--build", buildDir, "--config", "Release", "-j", fmt.Sprintf("%d", min(vulkanBuildJobs, runtime.NumCPU()))},
 	}
 	for _, step := range steps {
 		if err := runBuildStep(buildCtx, sourceDir, step, emit); err != nil {
