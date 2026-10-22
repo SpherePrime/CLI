@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -983,6 +984,12 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		tools.NewWriteTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
 		tools.NewImageGenTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.ImageGen, c.cfg.Resolver(), nil),
 	)
+
+	// The sudo tool only makes sense on Linux hosts where root commands can
+	// actually run; on other platforms the agent keeps using bash alone.
+	if runtime.GOOS == "linux" {
+		allTools = append(allTools, tools.NewSudoTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.DataDirectory))
+	}
 
 	// Question tool is interactive-only and not available to sub-agents.
 	if !isSubAgent && c.interactive {

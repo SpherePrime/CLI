@@ -24,6 +24,7 @@ const api: DesktopApi = {
   openRemote: (profileId) => ipcRenderer.invoke('prime:openRemote', profileId),
   remote: (request) => ipcRenderer.invoke('prime:remote', request),
   remoteKey: () => ipcRenderer.invoke('prime:remoteKey'),
+  sudoPassword: (request) => ipcRenderer.invoke('prime:sudoPassword', request),
   closeProject: (id) => ipcRenderer.invoke('prime:closeProject', id),
   call: (id, operation, args) => ipcRenderer.invoke('prime:call', id, operation, args),
   files: (id, path) => ipcRenderer.invoke('prime:files', id, path),

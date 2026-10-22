@@ -14,7 +14,8 @@ export class RuntimeSupervisor {
   private shuttingDown = false
   constructor(
     private runtimeDir: string,
-    private emit: (event: any) => void
+    private emit: (event: any) => void,
+    private sudoPassword?: () => Promise<string | undefined>
   ) {}
   async start(): Promise<void> {
     const binary =
@@ -46,15 +47,22 @@ export class RuntimeSupervisor {
       '--host',
       `${process.platform === 'win32' ? 'npipe' : 'unix'}://${endpoint.replaceAll('\\', '/')}`
     ]
+    const environment: Record<string, string> = {
+      PRIME_DESKTOP: '1',
+      PRIME_DISABLE_METRICS: '1',
+      PRIME_PARENT_PID: String(process.pid)
+    }
+    if (this.sudoPassword && process.platform === 'linux') {
+      const password = await this.sudoPassword().catch(() => undefined)
+      if (password) environment.PRIME_DESKTOP_SUDO_PASSWORD = password
+    }
     this.process = spawn(binary, args, {
       windowsHide: true,
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        PRIME_DESKTOP: '1',
-        PRIME_DISABLE_METRICS: '1',
-        PRIME_PARENT_PID: String(process.pid)
+        ...environment
       }
     })
     this.process.stdout?.on('data', () => {})
