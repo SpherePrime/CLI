@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -63,6 +64,18 @@ func sudoDescription() string {
 
 func sudoPassword() string {
 	return os.Getenv(sudoPasswordEnv)
+}
+
+var sudoToolAvailable = runtime.GOOS == "linux"
+
+func blockedRootHint(err error) string {
+	if err == nil || !strings.Contains(err.Error(), "not allowed for security reasons") {
+		return ""
+	}
+	if !sudoToolAvailable {
+		return ""
+	}
+	return "\n\nThis command was blocked. If it needs root privileges, run it through the sudo tool (pass the command WITHOUT the sudo prefix) instead of asking the user."
 }
 
 // sudoNotConfiguredResponse explains what is missing and tells the agent to
