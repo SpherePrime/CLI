@@ -119,7 +119,7 @@ function isMouseShortcut(shortcut: string) {
 }
 
 export function matchesPointerShortcut(event: MouseEventType, shortcut: string | undefined) {
-  return Boolean(shortcut) && isMouseShortcut(shortcut) && mouseShortcutFromEvent(event) === shortcut
+  return !!shortcut && isMouseShortcut(shortcut) && mouseShortcutFromEvent(event) === shortcut
 }
 
 const mouseSymbols: Record<string, string> = {
