@@ -734,9 +734,11 @@ func (cfg *RequestConfig) Execute() (err error) {
 		// Load the contents into the error format if it is provided.
 		aerr := apierror.Error{Request: cfg.Request, Response: res, StatusCode: res.StatusCode}
 		unwrapped := gjson.GetBytes(contents, "error").Raw
-		err = aerr.UnmarshalJSON([]byte(unwrapped))
-		if err != nil {
-			return err
+		if unwrapped == "" {
+			unwrapped = string(contents)
+		}
+		if err = aerr.UnmarshalJSON([]byte(unwrapped)); err != nil {
+			return apierror.NewRaw(res.StatusCode, cfg.Request, res, string(contents))
 		}
 		return &aerr
 	}

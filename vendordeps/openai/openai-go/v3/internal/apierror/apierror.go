@@ -1,6 +1,7 @@
 package apierror
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
@@ -34,7 +35,21 @@ type Error struct {
 // Returns the unmodified JSON received from the API
 func (r Error) RawJSON() string { return r.JSON.raw }
 func (r *Error) UnmarshalJSON(data []byte) error {
+	var msg string
+	if len(data) > 1 && data[0] == '"' && json.Unmarshal(data, &msg) == nil {
+		r.Message = msg
+		r.JSON.raw = string(data)
+		return nil
+	}
 	return apijson.UnmarshalRoot(data, r)
+}
+
+// NewRaw builds an Error from a response body that does not follow the
+// documented error shape, keeping the original payload visible.
+func NewRaw(statusCode int, request *http.Request, response *http.Response, body string) *Error {
+	e := &Error{Message: body, StatusCode: statusCode, Request: request, Response: response}
+	e.JSON.raw = body
+	return e
 }
 
 func (r *Error) Error() string {
