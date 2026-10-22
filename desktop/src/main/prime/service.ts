@@ -4,6 +4,9 @@ import type { DesktopEvent, Operation, Project, Session } from '../../shared/con
 import { PrimeTransport } from './transport'
 import { operationRoute, redact } from './operations'
 import { ActivityTracker } from './activity'
+import { MessageCoalescer } from './messageCoalescer'
+
+const runsReconcileMs = 2000
 
 type ProjectEnvironment = {
   resolveRoot?: (path: string) => Promise<string>
@@ -19,6 +22,7 @@ export class PrimeService {
   private channels = new Map<string, any[]>()
   private initializing = new Map<string, Promise<any>>()
   private initializationControllers = new Map<string, AbortController>()
+  private reconciledAt = new Map<string, number>()
   constructor(
     private transport: PrimeTransport,
     private emit: (event: DesktopEvent) => void,
@@ -75,37 +79,42 @@ export class PrimeService {
     const ready = new Promise<void>((resolve) => {
       initialReady = resolve
     })
-    this.subscriptions.set(
-      project.id,
-      this.transport.subscribe(
-        `/v1/workspaces/${project.id}/events?client_id=${clientId}`,
-        (envelope) => {
-          const payload = envelope.payload?.payload ?? envelope.payload
-          this.activity.event(project.id, envelope.type, payload)
-          if (envelope.type === 'mcp_channel_message')
-            this.channels.set(
-              project.id,
-              [...(this.channels.get(project.id) || []), redact(payload)].slice(-200)
-            )
-          this.emit({
-            workspaceId: project.id,
-            type: envelope.type,
-            payload: { action: envelope.payload?.type, data: redact(payload) }
-          })
-        },
-        (connection) => {
-          project.connection = connection
-          this.emit({ workspaceId: project.id, type: 'connection', payload: connection })
-          if (connection === 'ready') {
-            initialReady()
-            void this.transport
-              .request<any[]>('GET', `/v1/workspaces/${project.id}/runs`)
-              .then((records) => this.activity.reconcile(project.id, records || []))
-              .catch(() => {})
+    const events = new MessageCoalescer(this.emit)
+    const unsubscribe = this.transport.subscribe(
+      `/v1/workspaces/${project.id}/events?client_id=${clientId}`,
+      (envelope) => {
+        const payload = envelope.payload?.payload ?? envelope.payload
+        this.activity.event(project.id, envelope.type, payload)
+        if (envelope.type === 'mcp_channel_message')
+          this.channels.set(
+            project.id,
+            [...(this.channels.get(project.id) || []), redact(payload)].slice(-200)
+          )
+        events.push({
+          workspaceId: project.id,
+          type: envelope.type,
+          payload: {
+            action: envelope.payload?.type,
+            data: envelope.type === 'message' ? payload : redact(payload)
           }
+        })
+      },
+      (connection) => {
+        project.connection = connection
+        events.push({ workspaceId: project.id, type: 'connection', payload: connection })
+        if (connection === 'ready') {
+          initialReady()
+          void this.transport
+            .request<any[]>('GET', `/v1/workspaces/${project.id}/runs`)
+            .then((records) => this.activity.reconcile(project.id, records || []))
+            .catch(() => {})
         }
-      )
+      }
     )
+    this.subscriptions.set(project.id, () => {
+      events.dispose()
+      unsubscribe()
+    })
     try {
       await Promise.race([
         ready,
@@ -119,12 +128,13 @@ export class PrimeService {
     }
     return project
   }
-  projectSessions(paths: string[]): Promise<Record<string, Session[]>> {
-    if (!paths.length) return Promise.resolve({})
-    return this.transport.request(
+  async projectSessions(paths: string[]): Promise<Record<string, Session[]>> {
+    if (!paths.length) return {}
+    const response = await this.transport.request<{ projects?: Record<string, Session[]> }>(
       'GET',
       `/v1/project-sessions?paths=${paths.map((path) => encodeURIComponent(path)).join(',')}`
     )
+    return response?.projects ?? {}
   }
   async close(id: string): Promise<void> {
     this.initializationControllers.get(id)?.abort()
@@ -136,6 +146,7 @@ export class PrimeService {
       this.subscriptions.get(id)?.()
       this.subscriptions.delete(id)
       this.projects.delete(id)
+      this.reconciledAt.delete(id)
     }
   }
   async call(id: string, operation: Operation, args: any = {}): Promise<any> {
@@ -180,13 +191,25 @@ export class PrimeService {
     } finally {
       if (controller) this.shells.delete(shellKey)
     }
-    if (operation === 'sessions')
+    if (operation === 'sessions' && this.claimReconcile(id))
       void this.transport
         .request<any[]>('GET', `/v1/workspaces/${id}/runs`)
         .then((records) => this.activity.reconcile(id, records || []))
         .catch(() => {})
-    if (operation === 'sessions' || operation === 'messages') return response
+    if (
+      operation === 'sessions' ||
+      operation === 'messages' ||
+      operation === 'messagePage' ||
+      operation === 'messageSearch'
+    )
+      return response
     return redact(response)
+  }
+  private claimReconcile(id: string) {
+    const now = Date.now()
+    if (now - (this.reconciledAt.get(id) ?? 0) < runsReconcileMs) return false
+    this.reconciledAt.set(id, now)
+    return true
   }
   root(id: string): string {
     const project = this.projects.get(id)
@@ -209,6 +232,7 @@ export class PrimeService {
     this.shells.clear()
     this.projects.clear()
     this.channels.clear()
+    this.reconciledAt.clear()
     this.opening.clear()
     this.initializing.clear()
     this.activity = new ActivityTracker()

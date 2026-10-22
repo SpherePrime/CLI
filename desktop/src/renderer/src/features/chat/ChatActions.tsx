@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from 'react'
 import { MoreHorizontal, ListRestart, FileText, Download, Copy, Check, Focus } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import type { Workspace } from '../../app/useWorkspace'
-import { downloadConversation } from './exportConversation'
-import { exportConversation } from '../../../../shared/workspaceTools'
+import { downloadConversationChunks } from './exportConversation'
+import { conversationExportChunks } from './pagedExport'
 import { useI18n } from '../../i18n'
 
 export function ChatActions({
@@ -22,6 +22,7 @@ export function ChatActions({
   const shortcuts = useShortcuts()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [templates, setTemplates] = useState<any[]>([])
   const anchor = useRef<HTMLButtonElement>(null)
   useEffect(() => {
@@ -67,30 +68,49 @@ export function ChatActions({
               <kbd>{shortcutLabel(shortcuts.focus)}</kbd>
             </button>
             <button
-              disabled={!w.messages.length}
-              onClick={() => {
-                downloadConversation(sessionTitle(w.session?.title, t('Новый чат')), w.messages, t)
-                setOpen(false)
+              disabled={!w.messages.length || exporting}
+              onClick={async () => {
+                if (!w.project || !w.session) return
+                setExporting(true)
+                try {
+                  const title = sessionTitle(w.session.title, t('Новый чат'))
+                  const chunks = await conversationExportChunks(
+                    w.project.id,
+                    w.session.id,
+                    title,
+                    t
+                  )
+                  downloadConversationChunks(title, chunks)
+                  setOpen(false)
+                } catch (error) {
+                  w.errorHandler(error)
+                } finally {
+                  setExporting(false)
+                }
               }}
             >
               <Download size={16} />
               {t('Экспорт в Markdown')}
             </button>
             <button
-              disabled={!w.messages.length}
+              disabled={!w.messages.length || exporting}
               onClick={async () => {
+                setExporting(true)
                 try {
-                  await navigator.clipboard.writeText(
-                    exportConversation(sessionTitle(w.session?.title, t('Новый чат')), w.messages, {
-                      user: 'User',
-                      assistant: 'Prime',
-                      exported: t('Экспорт: {value0}')
-                    })
+                  if (!w.project || !w.session) return
+                  const chunks = await conversationExportChunks(
+                    w.project.id,
+                    w.session.id,
+                    sessionTitle(w.session.title, t('Новый чат')),
+                    t
                   )
+                  await navigator.clipboard.writeText(chunks.join(''))
                   setCopied(true)
                   setTimeout(() => setCopied(false), 1500)
                 } catch (error) {
                   w.errorHandler(error)
+                } finally {
+                  setExporting(false)
                 }
               }}
             >

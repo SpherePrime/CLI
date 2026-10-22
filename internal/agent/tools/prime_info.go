@@ -33,17 +33,17 @@ func NewPrimeInfoTool(
 		PrimeInfoToolName,
 		primeInfoDescription,
 		func(ctx context.Context, _ PrimeInfoParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			return fantasy.NewTextResponse(buildPrimeInfo(cfg, lspManager, allSkills, activeSkills, skillTracker)), nil
+			return fantasy.NewTextResponse(buildPrimeInfo(cfg, lspManager, allSkills, activeSkills, skillTracker, GetSessionFromContext(ctx))), nil
 		},
 	)
 }
 
-func buildPrimeInfo(cfg *config.ConfigStore, lspManager *lsp.Manager, allSkills []*skills.Skill, activeSkills []*skills.Skill, skillTracker *skills.Tracker) string {
+func buildPrimeInfo(cfg *config.ConfigStore, lspManager *lsp.Manager, allSkills []*skills.Skill, activeSkills []*skills.Skill, skillTracker *skills.Tracker, sessionID ...string) string {
 	var b strings.Builder
 
 	writeConfigFiles(&b, cfg)
 	writeConfigStaleness(&b, cfg)
-	writeModels(&b, cfg)
+	writeModels(&b, cfg, sessionID...)
 	writeProviders(&b, cfg)
 	writeLSP(&b, lspManager, cfg)
 	writeMCP(&b, mcp.GetStates(), cfg)
@@ -96,12 +96,21 @@ func writeConfigStaleness(b *strings.Builder, cfg *config.ConfigStore) {
 	b.WriteString("\n")
 }
 
-func writeModels(b *strings.Builder, cfg *config.ConfigStore) {
+func writeModels(b *strings.Builder, cfg *config.ConfigStore, sessionID ...string) {
 	c := cfg.Config()
-	if len(c.Models) == 0 {
+	var chat *config.SelectedModel
+	if len(sessionID) > 0 && sessionID[0] != "" {
+		if m, ok := c.SessionModels[sessionID[0]]; ok && m.Provider != "" && m.Model != "" {
+			chat = &m
+		}
+	}
+	if len(c.Models) == 0 && chat == nil {
 		return
 	}
 	b.WriteString("[model]\n")
+	if chat != nil {
+		fmt.Fprintf(b, "chat = %s (%s)\n", chat.Model, chat.Provider)
+	}
 	for _, typ := range []config.SelectedModelType{config.SelectedModelTypeLarge, config.SelectedModelTypeSmall} {
 		m, ok := c.Models[typ]
 		if !ok {

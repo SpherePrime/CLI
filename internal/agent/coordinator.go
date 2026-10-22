@@ -371,6 +371,9 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	}
 
 	model := agent.Model()
+	if override := c.sessionModel(ctx, sessionID); override != nil {
+		model = *override
+	}
 	providerCfg, ok := c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
 	if !ok {
 		return nil, errModelProviderNotConfigured
@@ -537,6 +540,26 @@ func thinkingEnabled(mode string) bool {
 	return mode != config.ReasoningModeOff && mode != ""
 }
 
+// usesReasoningEffortToggle reports whether an OpenAI-compatible provider
+// controls reasoning only through reasoning_effort. Providers with their own
+// thinking switch in extra_body are excluded.
+func usesReasoningEffortToggle(providerID string) bool {
+	switch providerID {
+	case hyper.Name,
+		string(catwalk.InferenceProviderIoNet),
+		string(catwalk.InferenceProviderZAI),
+		string(catwalk.InferenceProviderDeepSeek),
+		string(catwalk.InferenceProviderFireworks),
+		string(catwalk.InferenceProviderBaseten),
+		string(catwalk.InferenceProviderOpenCodeGo),
+		string(catwalk.InferenceProviderOpenCodeZen),
+		string(catwalk.InferenceProviderAlibabaSingapore),
+		string(catwalk.InferenceProviderAlibabaUS):
+		return false
+	}
+	return true
+}
+
 func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.ProviderOptions {
 	options := fantasy.ProviderOptions{}
 
@@ -595,7 +618,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		_, hasReasoningEffort := mergedOptions["reasoning_effort"]
 		if !hasReasoningEffort && shouldSetEffort {
 			mergedOptions["reasoning_effort"] = openAIEffort
-		} else if offEffort := config.ReasoningOffLevel(model.CatwalkCfg.ReasoningLevels); !hasReasoningEffort && offEffort != "" {
+		} else if offEffort := reasoningOffEffort(model); !hasReasoningEffort && offEffort != "" {
 			mergedOptions["reasoning_effort"] = offEffort
 		}
 		if openai.IsResponsesModel(model.CatwalkCfg.ID) {
@@ -699,7 +722,12 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 					mergedOptions["reasoning_effort"] = openAIEffort
 				}
 			default:
-				mergedOptions["reasoning_effort"] = openAIEffort
+				mergedOptions["reasoning_effort"] = compatReasoningEffort(model, reasoningMode)
+			}
+		}
+		if !hasReasoningEffort && !shouldSetEffort && usesReasoningEffortToggle(providerCfg.ID) {
+			if offEffort := reasoningOffEffort(model); offEffort != "" {
+				mergedOptions["reasoning_effort"] = offEffort
 			}
 		}
 
@@ -788,8 +816,8 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 			}
 
 			_, hasReasoningEffort := mergedOptions["reasoning_effort"]
-			if !hasReasoningEffort && shouldSetEffort {
-				mergedOptions["reasoning_effort"] = openAIEffort
+			if effort := compatReasoningEffort(model, reasoningMode); !hasReasoningEffort && effort != "" {
+				mergedOptions["reasoning_effort"] = effort
 			}
 
 			parsed, err := openaicompat.ParseOptions(mergedOptions)
@@ -1166,8 +1194,8 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool, age
 	smallModel = newRequestTimeoutModel(smallModel, requestTimeout)
 	// Strict OpenAI-compatible endpoints reject the "tool" message role;
 	// replay such calls once with tool results as user messages.
-	largeModel = newToolRoleCompatModel(largeModel)
-	smallModel = newToolRoleCompatModel(smallModel)
+	largeModel = newReasoningCompatModel(newToolRoleCompatModel(largeModel))
+	smallModel = newReasoningCompatModel(newToolRoleCompatModel(smallModel))
 
 	large := Model{
 		Model:      largeModel,
@@ -1183,6 +1211,55 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool, age
 	}
 
 	return large, small, nil
+}
+
+// sessionModel resolves the model chosen for a specific chat. Sessions
+// without a choice, and choices that can no longer be built (provider
+// removed, model gone from the catalog), fall back to the agent's default
+// model by returning nil.
+func (c *coordinator) sessionModel(ctx context.Context, sessionID string) *Model {
+	selected, ok := c.cfg.Config().SessionModels[sessionID]
+	if !ok || selected.Provider == "" || selected.Model == "" {
+		return nil
+	}
+	cfg := c.cfg.Config()
+	providerCfg, ok := cfg.Providers.Get(selected.Provider)
+	if !ok {
+		slog.Warn("Session model provider is not configured, using the default model", "provider", selected.Provider, "session_id", sessionID)
+		return nil
+	}
+	provider, err := c.buildProvider(providerCfg, selected, false)
+	if err != nil {
+		slog.Warn("Failed to build the session model provider, using the default model", "error", err, "session_id", sessionID)
+		return nil
+	}
+	var catalogModel *catwalk.Model
+	for _, m := range providerCfg.Models {
+		if m.ID == selected.Model {
+			catalogModel = &m
+		}
+	}
+	if catalogModel == nil {
+		slog.Warn("Session model is missing from the provider catalog, using the default model", "model", selected.Model, "session_id", sessionID)
+		return nil
+	}
+	modelID := selected.Model
+	if selected.Provider == openrouter.Name && isExactoSupported(modelID) {
+		modelID += ":exacto"
+	}
+	languageModel, err := provider.LanguageModel(ctx, modelID)
+	if err != nil {
+		slog.Warn("Failed to build the session model, using the default model", "error", err, "session_id", sessionID)
+		return nil
+	}
+	languageModel = newRequestTimeoutModel(languageModel, cfg.Options.GetRequestTimeout())
+	languageModel = newReasoningCompatModel(newToolRoleCompatModel(languageModel))
+	return &Model{
+		Model:      languageModel,
+		CatwalkCfg: applyModelOverrides(*catalogModel, selected),
+		ModelCfg:   selected,
+		FlatRate:   providerCfg.FlatRate,
+	}
 }
 
 // applyModelOverrides copies per-selected-model overrides from the config

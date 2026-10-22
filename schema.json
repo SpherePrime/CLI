@@ -124,6 +124,13 @@
           "type": "object",
           "description": "Per-model context window and price overrides"
         },
+        "session_models": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SelectedModel"
+          },
+          "type": "object",
+          "description": "Model selected for a specific chat"
+        },
         "providers": {
           "additionalProperties": {
             "$ref": "#/$defs/ProviderConfig"

@@ -22,7 +22,8 @@ export class TerminalOutput {
       } else {
         let start = excess
         while (start < first.length && (first[start] & 0xc0) === 0x80) start += 1
-        this.chunks[0] = first.subarray(start)
+        const tail = first.subarray(start)
+        this.chunks[0] = first.buffer.byteLength > this.limit ? Buffer.from(tail) : tail
         this.bytes -= start
       }
     }

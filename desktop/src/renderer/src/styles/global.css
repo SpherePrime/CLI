@@ -1247,6 +1247,13 @@ dialog.image-lightbox::backdrop {
   color: var(--amber);
   font-size: 11px;
 }
+.compaction-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--secondary);
+}
 .working {
   display: flex;
   align-items: center;

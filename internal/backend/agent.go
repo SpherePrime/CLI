@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -120,13 +121,32 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 func (b *Backend) ensureAgent(ws *Workspace) error {
 	ws.agentInitMu.Lock()
 	defer ws.agentInitMu.Unlock()
+	ws.runMu.Lock()
+	closing := ws.closing
+	ws.runMu.Unlock()
+	if closing {
+		return ErrWorkspaceClosing
+	}
 	if ws.AgentCoordinator != nil {
 		return nil
 	}
 	if ws.Cfg == nil {
 		return ErrAgentNotInitialized
 	}
-	return ws.InitCoderAgent(ws.ctx)
+	return initializeAgent(ws.ctx, ws, true)
+}
+
+func initializeAgent(ctx context.Context, ws *Workspace, interactive bool) error {
+	var err error
+	if interactive {
+		err = ws.InitCoderAgent(ctx)
+	} else {
+		err = ws.InitCoderAgentNonInteractive(ctx)
+	}
+	if err != nil || ws.mainAgent == "" {
+		return err
+	}
+	return ws.AgentCoordinator.SetMainAgent(ws.mainAgent)
 }
 
 // runAgent executes an accepted agent run for the workspace. It owns the
@@ -220,10 +240,21 @@ func (b *Backend) InitAgent(ctx context.Context, workspaceID string, interactive
 		return err
 	}
 
-	if interactive {
-		return ws.InitCoderAgent(ctx)
+	ws.agentInitMu.Lock()
+	defer ws.agentInitMu.Unlock()
+	ws.runMu.Lock()
+	closing := ws.closing
+	ws.runMu.Unlock()
+	if closing {
+		return ErrWorkspaceClosing
 	}
-	return ws.InitCoderAgentNonInteractive(ctx)
+	initCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	if ws.ctx != nil {
+		stop := context.AfterFunc(ws.ctx, cancel)
+		defer stop()
+	}
+	return initializeAgent(initCtx, ws, interactive)
 }
 
 // UpdateAgent reloads the agent model configuration.
@@ -246,15 +277,31 @@ func (b *Backend) SetMainAgent(workspaceID, agentID string) error {
 		return err
 	}
 
+	ws.agentInitMu.Lock()
+	defer ws.agentInitMu.Unlock()
 	if ws.AgentCoordinator == nil {
-		return ErrAgentNotInitialized
+		if ws.Cfg == nil {
+			return ErrAgentNotInitialized
+		}
+		if agentID != config.AgentGeneral && agentID != config.AgentPlan && agentID != config.AgentTask {
+			return fmt.Errorf("main agent not found: %s", agentID)
+		}
+		if _, ok := ws.Cfg.Config().Agents[agentID]; !ok {
+			return fmt.Errorf("main agent not configured: %s", agentID)
+		}
+		ws.mainAgent = agentID
+		return nil
 	}
 
 	if ws.AgentCoordinator.IsBusy() {
 		return ErrAgentBusy
 	}
 
-	return ws.AgentCoordinator.SetMainAgent(agentID)
+	if err := ws.AgentCoordinator.SetMainAgent(agentID); err != nil {
+		return err
+	}
+	ws.mainAgent = agentID
+	return nil
 }
 
 // CancelSession cancels an ongoing agent operation for the given
@@ -278,8 +325,8 @@ func (b *Backend) SummarizeSession(ctx context.Context, workspaceID, sessionID s
 		return err
 	}
 
-	if ws.AgentCoordinator == nil {
-		return ErrAgentNotInitialized
+	if err := b.ensureAgent(ws); err != nil {
+		return err
 	}
 
 	return ws.AgentCoordinator.Summarize(ctx, sessionID)

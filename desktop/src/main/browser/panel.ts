@@ -1,5 +1,6 @@
 import { BrowserWindow, WebContentsView, session, type NativeImage, type WebContents } from 'electron'
 import { randomUUID } from 'node:crypto'
+import { TabThrottle } from './tabThrottle'
 
 export type BrowserBounds = { x: number; y: number; width: number; height: number }
 
@@ -53,6 +54,9 @@ export class BrowserPanel {
   private bounds: BrowserBounds = { x: 0, y: 0, width: 1280, height: 720 }
   private entries: BrowserLog[] = []
   private captures = new Map<string, Promise<NativeImage>>()
+  private throttle = new TabThrottle(
+    (contents) => this.visible && this.attached?.webContents === contents
+  )
 
   constructor(
     private readonly window: () => BrowserWindow | null,
@@ -67,6 +71,7 @@ export class BrowserPanel {
     if (tabId === undefined) this.ensure()
     const tab = this.tabs.find((item) => item.id === (tabId ?? this.active))
     if (!tab || tab.view.webContents.isDestroyed()) throw new Error('Вкладка не найдена')
+    this.throttle.touch(tab.view.webContents)
     return { id: tab.id, contents: tab.view.webContents }
   }
 
@@ -227,6 +232,7 @@ export class BrowserPanel {
       this.window()?.contentView.removeChildView(tab.view)
       this.attached = undefined
     }
+    this.throttle.forget(tab.view.webContents)
     if (!tab.view.webContents.isDestroyed()) tab.view.webContents.close()
     if (this.active === id) this.active = (this.tabs[index] ?? this.tabs[index - 1])?.id
     this.attach()
@@ -253,16 +259,19 @@ export class BrowserPanel {
 
   back(tabId?: string) {
     const contents = tabId === undefined ? this.current()?.view.webContents : this.getTab(tabId).contents
+    if (contents) this.throttle.touch(contents)
     if (contents?.navigationHistory.canGoBack()) contents.navigationHistory.goBack()
   }
 
   forward(tabId?: string) {
     const contents = tabId === undefined ? this.current()?.view.webContents : this.getTab(tabId).contents
+    if (contents) this.throttle.touch(contents)
     if (contents?.navigationHistory.canGoForward()) contents.navigationHistory.goForward()
   }
 
   reload(tabId?: string) {
     const contents = tabId === undefined ? this.current()?.view.webContents : this.getTab(tabId).contents
+    if (contents) this.throttle.touch(contents)
     if (!contents) return
     if (contents.isLoading()) contents.stop()
     else contents.reload()
@@ -270,6 +279,7 @@ export class BrowserPanel {
 
   destroy() {
     this.hide()
+    this.throttle.dispose()
     for (const tab of this.tabs) if (!tab.view.webContents.isDestroyed()) tab.view.webContents.close()
     this.tabs = []
     this.active = undefined
@@ -303,6 +313,7 @@ export class BrowserPanel {
     view.setBounds(this.bounds)
     const tab: Tab = { id: randomUUID(), view }
     const contents = view.webContents
+    this.throttle.touch(contents)
     contents.setWindowOpenHandler(({ url }) => {
       try {
         const target = normalizeBrowserUrl(url)

@@ -38,6 +38,7 @@ export type Session = {
   cost?: number
   prompt_tokens?: number
   completion_tokens?: number
+  created_at?: number
   updated_at?: number
   todos?: Json[]
 }
@@ -46,8 +47,18 @@ export type Message = {
   session_id: string
   role: string
   parts: { type: string; data: Json }[]
+  is_summary_message?: boolean
   created_at?: number
   updated_at?: number
+}
+export type MessagePage = {
+  messages: Message[]
+  before?: string
+  after?: string
+  has_more: boolean
+  has_before: boolean
+  has_after: boolean
+  timing: { started_at?: number; completed?: Record<string, number> }
 }
 export type Project = {
   remote?: {
@@ -73,6 +84,7 @@ export type Preferences = {
   language: 'ru' | 'en'
   recent: string[]
   projectOrder?: string[]
+  sessionOrder?: Record<string, string[]>
   pinned: string[]
   favoriteModels?: { provider: string; model: string }[]
   recentModels?: { provider: string; model: string }[]
@@ -106,6 +118,8 @@ export type Operation =
   | 'renameSession'
   | 'deleteSession'
   | 'messages'
+  | 'messagePage'
+  | 'messageSearch'
   | 'history'
   | 'context'
   | 'agent'

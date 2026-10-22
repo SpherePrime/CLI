@@ -103,6 +103,14 @@ type App struct {
 // caller is responsible for constructing it (typically via
 // skills.NewManager + skills.DiscoverFromConfig).
 func New(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr *skills.Manager) (*App, error) {
+	return newApplication(ctx, conn, store, skillsMgr, false)
+}
+
+func NewDeferred(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr *skills.Manager) (*App, error) {
+	return newApplication(ctx, conn, store, skillsMgr, true)
+}
+
+func newApplication(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr *skills.Manager, deferred bool) (*App, error) {
 	q := db.New(conn)
 	sessions := session.NewService(q, conn)
 	messages := message.NewService(q)
@@ -179,8 +187,10 @@ func New(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr
 		slog.Warn("No agent configuration found")
 		return app, nil
 	}
-	if err := app.InitCoderAgent(ctx); err != nil {
-		return nil, fmt.Errorf("failed to initialize coder agent: %w", err)
+	if !deferred {
+		if err := app.InitCoderAgent(ctx); err != nil {
+			return nil, fmt.Errorf("failed to initialize coder agent: %w", err)
+		}
 	}
 
 	// Set up callback for LSP state updates.

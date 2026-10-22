@@ -629,6 +629,8 @@ export const english: Record<string, string> = {
     'Total reported by the provider; the breakdown is approximate.',
   'Провайдер не сообщил расход, показана оценка.':
     'The provider did not report usage; showing an estimate.',
+  'Автоматическое сжатие контекста, это может занять несколько минут…':
+    'Automatic context compaction, this may take a few minutes…',
   'Сжать контекст сейчас': 'Compact context now',
   Размышляет: 'Thinking',
   'Размышлял {time}': 'Thought for {time}',
@@ -912,7 +914,6 @@ Object.assign(english, {
   'Свернуть панель': 'Collapse panel',
   'Развернуть панель': 'Expand panel',
   'Скрыть инструменты': 'Hide tools',
-  'Сначала закройте терминалы проекта': 'Close the project terminals first',
   Проект: 'Project',
   'В контекст агента': 'Add to agent context',
   'Выберите фрагмент до 12 000 символов': 'Select up to 12,000 characters',

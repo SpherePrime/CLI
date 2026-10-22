@@ -1,8 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
-import Markdown, { type Components } from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { Check, Copy } from 'lucide-react'
 import { MessageAttachment } from './MessageAttachment'
+import { MarkdownText } from './MarkdownText'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { ToolCard } from './ToolCard'
 import { collectToolImages, ToolGallery } from './ToolGallery'
@@ -10,41 +9,6 @@ import { ReasoningBlock } from './ReasoningBlock'
 import { useI18n } from '../../i18n'
 import type { Message } from '../../../../shared/contracts'
 import { textContent, visibleMessageText } from '../../../../shared/messages'
-
-const remarkPlugins = [remarkGfm]
-const markdownComponents: Components = {
-  a: ({ href, children }) => {
-    if (href?.startsWith('prime://')) {
-      return (
-        <a
-          href={href}
-          onClick={(event) => {
-            event.preventDefault()
-            const settingsMatch = /^prime:\/\/settings\/(.+)$/.exec(href)
-            if (settingsMatch) {
-              window.dispatchEvent(
-                new CustomEvent('prime:open-settings', { detail: { tab: settingsMatch[1] } })
-              )
-            }
-          }}
-        >
-          {children}
-        </a>
-      )
-    }
-    return (
-      <a
-        href={href}
-        onClick={(event) => {
-          event.preventDefault()
-          if (href) void window.prime.openExternal(href)
-        }}
-      >
-        {children}
-      </a>
-    )
-  }
-}
 
 export const MessageItem = memo(function MessageItem({
   message,
@@ -64,6 +28,24 @@ export const MessageItem = memo(function MessageItem({
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const text = textContent(message)
+  if (message.is_summary_message) {
+    const finish = (message.parts || []).find((part) => part.type === 'finish')
+    if (finish) return null
+    return (
+      <article className={`message assistant summary-message ${fresh ? 'fresh' : ''} ${matched ? 'search-match' : ''}`}>
+        <div className="message-body">
+          <div className="compaction-progress" role="status">
+            <span className="working-orb" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span>{t('Автоматическое сжатие контекста, это может занять несколько минут…')}</span>
+          </div>
+        </div>
+      </article>
+    )
+  }
   return (
     <article
       className={`message ${message.role} ${continued ? 'continued' : ''} ${fresh ? 'fresh' : ''} ${matched ? 'search-match' : ''}`}
@@ -99,9 +81,7 @@ export const MessageItem = memo(function MessageItem({
           if (part.type === 'text' && !part.data.hidden)
             return (
               <div className="markdown" key={index}>
-                <Markdown remarkPlugins={remarkPlugins} components={markdownComponents}>
-                  {visibleMessageText(part.data.text || '', message.role)}
-                </Markdown>
+                <MarkdownText text={visibleMessageText(part.data.text || '', message.role)} />
               </div>
             )
           if (part.type === 'reasoning' && part.data.thinking)

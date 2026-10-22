@@ -11,19 +11,38 @@ import { findMessages } from '../../../../shared/workspaceTools'
 import { ConversationSearch } from './ConversationSearch'
 import { conversationTiming } from './conversationTiming'
 import { duration } from './elapsed'
+import { useHistoryPaging } from './useHistoryPaging'
+import type { HistoryTiming, PageDirection } from './messageWindow'
+import './historyPaging.css'
 
 export function MessageList({
   messages,
   busy,
   waiting = false,
   searchOpen = false,
-  closeSearch = () => {}
+  closeSearch = () => {},
+  hasBefore = false,
+  hasAfter = false,
+  historyLoading = false,
+  historyError = '',
+  historyTiming,
+  loadHistory,
+  searchMessages,
+  revealMessage
 }: {
   messages: Message[]
   busy: boolean
   waiting?: boolean
   searchOpen?: boolean
   closeSearch?: () => void
+  hasBefore?: boolean
+  hasAfter?: boolean
+  historyLoading?: boolean
+  historyError?: string
+  historyTiming?: HistoryTiming
+  loadHistory?: (direction: PageDirection) => Promise<void>
+  searchMessages?: (query: string) => Promise<{ matches: string[]; total: number }>
+  revealMessage?: (id: string) => Promise<void>
 }) {
   const viewport = useRef<HTMLDivElement>(null)
   const { t } = useI18n()
@@ -31,16 +50,64 @@ export function MessageList({
   const followingRef = useRef(true)
   const leavingBottom = useRef(false)
   const stable = useRef<Message[]>([])
-  const timing = useMemo(() => conversationTiming(messages), [messages])
+  const timing = useMemo(() => {
+    const local = conversationTiming(messages)
+    return {
+      startedAt: historyTiming?.started_at ? historyTiming.started_at * 1000 : local.startedAt,
+      completed: new Map([...local.completed, ...Object.entries(historyTiming?.completed || {})])
+    }
+  }, [messages, historyTiming])
   const visible = useMemo(
-    () => (stable.current = reuseUnchanged(stable.current, consolidateToolMessages(messages))),
+    () =>
+      (stable.current = reuseUnchanged(
+        stable.current,
+        consolidateToolMessages(messages).filter(
+          (message) => !message.is_summary_message || !(message.parts || []).some((part) => part.type === 'finish')
+        )
+      )),
     [messages]
   )
   const [query, setQuery] = useState('')
   const [matchIndex, setMatchIndex] = useState(0)
-  const matches = useMemo(() => findMessages(visible, query), [visible, query])
+  const localMatches = useMemo(() => findMessages(visible, query), [visible, query])
+  const [remoteMatches, setRemoteMatches] = useState<string[]>([])
+  const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState('')
+  const matches = searchMessages ? remoteMatches : localMatches
+  useEffect(() => {
+    let active = true
+    setRemoteMatches([])
+    setSearchError('')
+    if (!searchOpen || !query.trim() || !searchMessages) {
+      setSearching(false)
+      return
+    }
+    setSearching(true)
+    const timer = setTimeout(() => {
+      void searchMessages(query)
+        .then((result) => {
+          if (active) setRemoteMatches(result.matches)
+        })
+        .catch((error) => {
+          if (active) setSearchError(String(error.message || error))
+        })
+        .finally(() => {
+          if (active) setSearching(false)
+        })
+    }, 250)
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [query, searchOpen, searchMessages])
   const activeMatch = Math.min(matchIndex, Math.max(0, matches.length - 1))
   const matchId = searchOpen ? matches[activeMatch] : undefined
+  const searchTarget = useRef<{
+    id: string
+    query: string
+    requested: boolean
+    positioned: boolean
+  } | null>(null)
   const mountedAt = useRef(Date.now())
   const [settled, setSettled] = useState(false)
   const hasMessages = visible.length > 0
@@ -51,8 +118,40 @@ export function MessageList({
     estimateSize: () => 180,
     overscan: 6
   })
+  const paging = useHistoryPaging({
+    messages: visible,
+    viewport,
+    virtualizer,
+    settled,
+    hasBefore,
+    hasAfter,
+    loading: historyLoading,
+    load: loadHistory,
+    stopFollowing: () => {
+      followingRef.current = false
+      leavingBottom.current = false
+      setFollowing(false)
+    }
+  })
   useEffect(() => {
-    if (!searchOpen || !matchId) return
+    if (!searchOpen || !matchId) {
+      searchTarget.current = null
+      return
+    }
+    if (searchTarget.current?.id !== matchId || searchTarget.current.query !== query)
+      searchTarget.current = { id: matchId, query, requested: false, positioned: false }
+    if (searchTarget.current.positioned) return
+    followingRef.current = false
+    leavingBottom.current = false
+    setFollowing(false)
+    if (!visible.some((message) => message.id === matchId)) {
+      if (!searchTarget.current.requested) {
+        searchTarget.current.requested = true
+        void revealMessage?.(matchId)
+      }
+      return
+    }
+    searchTarget.current.positioned = true
     virtualizer.cancelScroll()
     followingRef.current = false
     leavingBottom.current = false
@@ -61,8 +160,9 @@ export function MessageList({
       visible.findIndex((message) => message.id === matchId),
       { align: 'center' }
     )
-  }, [searchOpen, matchId, query])
+  }, [searchOpen, matchId, query, visible])
   useLayoutEffect(() => {
+    if (paging.restoring.current) return
     if (followingRef.current && visible.length) virtualizer.scrollToEnd()
     const view = viewport.current
     if (view) {
@@ -89,6 +189,7 @@ export function MessageList({
     return () => cancelAnimationFrame(frame)
   }, [settled, hasMessages])
   function takeControl(up: boolean) {
+    paging.interact()
     virtualizer.cancelScroll()
     const view = viewport.current
     if (up && view && view.scrollHeight > view.clientHeight + 1) {
@@ -118,6 +219,18 @@ export function MessageList({
           }}
         />
       )}
+      {(historyLoading || historyError || searching || searchError) && (
+        <div className="history-status" role="status">
+          {historyLoading || searching ? t('Загрузка…') : historyError || searchError}
+          {historyError && (
+            <button
+              onClick={() => void paging.page(hasBefore ? 'before' : hasAfter ? 'after' : 'latest')}
+            >
+              {t('Повторить')}
+            </button>
+          )}
+        </div>
+      )}
       <div
         className="conversation"
         style={{ scrollBehavior: 'auto' }}
@@ -144,8 +257,9 @@ export function MessageList({
             takeControl(false)
         }}
         onScroll={() => {
+          paging.onScroll()
           const view = viewport.current!
-          const atBottom = view.scrollHeight - view.scrollTop - view.clientHeight < 24
+          const atBottom = !hasAfter && view.scrollHeight - view.scrollTop - view.clientHeight < 24
           if (leavingBottom.current && atBottom) {
             setFollowing(true)
             return
@@ -172,6 +286,7 @@ export function MessageList({
                 <div
                   key={message.id}
                   data-index={row.index}
+                  data-message-id={message.id}
                   ref={virtualizer.measureElement}
                   style={{
                     display: 'flow-root',
@@ -200,13 +315,19 @@ export function MessageList({
               )
             })}
           </div>
-          <WorkingIndicator busy={busy} waiting={waiting} startedAt={timing.startedAt} />
+          <WorkingIndicator
+            busy={busy && !hasAfter}
+            waiting={waiting}
+            startedAt={timing.startedAt}
+          />
         </div>
       </div>
-      {!following && settled && (
+      {(!following || hasAfter) && settled && (
         <button
           className="jump-bottom"
-          onClick={() => {
+          disabled={historyLoading}
+          onClick={async () => {
+            if (hasAfter) await loadHistory?.('latest')
             leavingBottom.current = false
             followingRef.current = true
             setFollowing(true)

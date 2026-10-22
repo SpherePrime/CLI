@@ -41,7 +41,12 @@ export function ToolGallery({ images }: { images: ToolImage[] }) {
             aria-label={image.path || ''}
             title={image.path}
           >
-            <img src={`data:${image.mime_type};base64,${image.data}`} alt={image.path || ''} />
+            <img
+              src={`data:${image.mime_type};base64,${image.data}`}
+              alt={image.path || ''}
+              loading="lazy"
+              decoding="async"
+            />
           </button>
         ))}
       </div>

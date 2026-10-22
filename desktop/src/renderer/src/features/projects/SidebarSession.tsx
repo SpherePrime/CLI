@@ -1,4 +1,5 @@
 import { MessageSquare, Pin, X } from 'lucide-react'
+import type { HTMLAttributes } from 'react'
 import type { Session } from '../../../../shared/contracts'
 import { sessionTitle } from '../../../../shared/sessionTitle'
 import { useI18n } from '../../i18n'
@@ -17,7 +18,9 @@ export function SidebarSession({
   onCancelRename,
   onOpen,
   onDelete,
-  onMenu
+  onMenu,
+  rowProps,
+  linkProps
 }: {
   session: Session
   active: boolean
@@ -32,11 +35,14 @@ export function SidebarSession({
   onOpen: () => void
   onDelete: () => void
   onMenu: (x: number, y: number) => void
+  rowProps?: HTMLAttributes<HTMLDivElement>
+  linkProps?: HTMLAttributes<HTMLElement>
 }) {
   const { t } = useI18n()
   return (
     <div
-      className={`session-row ${personal ? 'recent-chat' : ''} ${active ? 'active' : ''}`}
+      {...rowProps}
+      className={`session-row ${personal ? 'recent-chat' : ''} ${active ? 'active' : ''} ${rowProps?.className ?? ''}`}
       onContextMenu={(event) => {
         event.preventDefault()
         onMenu(event.clientX, event.clientY)
@@ -65,6 +71,7 @@ export function SidebarSession({
           title={sessionTitle(session.title, t('Новый чат'))}
           aria-current={active ? 'page' : undefined}
           onClick={onOpen}
+          {...linkProps}
         >
           <MessageSquare size={14} />
           <span>{sessionTitle(session.title, t('Новый чат'))}</span>
