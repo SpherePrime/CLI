@@ -89,21 +89,21 @@ var whisperModels = []SttModel{
 // exactly one language, which is why the language is part of the entry. The
 // small models are the recommendation: they load in a moment and answer
 // fast, which is what dictation needs; the full models are for quality.
+// voskModels are the offline models on alphacephei.com. Only the small
+// models ship: the big ones weigh one to two gigabytes and are clearly
+// outperformed by whisper.cpp at the same quality, so Prime carries the
+// lightweight Vosk option and leaves the heavyweight route to whisper.
+// Each model speaks exactly one language, which is why the language is part
+// of the entry.
 var voskModels = []SttModel{
 	{ID: "vosk-model-small-ru-0.22", Label: "Russian (small)", Language: "ru", SizeBytes: 47_000_000, Recommended: true},
-	{ID: "vosk-model-ru-0.42", Label: "Russian", Language: "ru", SizeBytes: 1_930_000_000},
 	{ID: "vosk-model-small-en-us-0.15", Label: "English, US (small)", Language: "en", SizeBytes: 42_000_000, Recommended: true},
-	{ID: "vosk-model-en-us-0.22", Label: "English, US", Language: "en", SizeBytes: 1_930_000_000},
 	{ID: "vosk-model-small-en-us-zamia-0.5", Label: "English, US (Zamia)", Language: "en", SizeBytes: 49_000_000, Recommended: true},
 	{ID: "vosk-model-small-es-0.42", Label: "Spanish (small)", Language: "es", SizeBytes: 39_000_000, Recommended: true},
-	{ID: "vosk-model-es-0.42", Label: "Spanish", Language: "es", SizeBytes: 1_400_000_000},
 	{ID: "vosk-model-small-cn-0.22", Label: "Chinese (small)", Language: "zh", SizeBytes: 42_000_000, Recommended: true},
-	{ID: "vosk-model-cn-0.22", Label: "Chinese", Language: "zh", SizeBytes: 1_300_000_000},
 	{ID: "vosk-model-small-fa-0.5", Label: "Persian (small)", Language: "fa", SizeBytes: 60_000_000, Recommended: true},
 	{ID: "vosk-model-small-fr-0.22", Label: "French (small)", Language: "fr", SizeBytes: 41_000_000, Recommended: true},
-	{ID: "vosk-model-fr-0.22", Label: "French", Language: "fr", SizeBytes: 1_400_000_000},
 	{ID: "vosk-model-small-de-0.15", Label: "German (small)", Language: "de", SizeBytes: 45_000_000, Recommended: true},
-	{ID: "vosk-model-de-0.21", Label: "German", Language: "de", SizeBytes: 1_900_000_000},
 	{ID: "vosk-model-small-pt-0.3", Label: "Portuguese (small)", Language: "pt", SizeBytes: 31_000_000, Recommended: true},
 }
 
@@ -118,6 +118,15 @@ const (
 	whisperSourceURL = "https://codeload.github.com/ggml-org/whisper.cpp/tar.gz/refs/tags/v1.9.5"
 	// whisperSourceDir is the single root directory inside that tarball.
 	whisperSourceDir = "whisper.cpp-1.9.5"
+	// vulkanHeadersURL and spirvHeadersURL are the Khronos header tarballs
+	// the Vulkan backend needs at build time. Machines without the SDK
+	// headers installed get them fetched into the build prefix, which keeps
+	// the accelerator working out of the box wherever the Vulkan loader and
+	// glslc are already present.
+	vulkanHeadersURL = "https://codeload.github.com/KhronosGroup/Vulkan-Headers/tar.gz/refs/tags/v1.4.365"
+	vulkanHeadersDir = "Vulkan-Headers-1.4.365"
+	spirvHeadersURL  = "https://codeload.github.com/KhronosGroup/SPIRV-Headers/tar.gz/refs/tags/v1.202609.0"
+	spirvHeadersDir  = "SPIRV-Headers-1.202609.0"
 )
 
 // whisperRuntimes are the prebuilt whisper.cpp binaries, one per platform
