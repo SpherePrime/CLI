@@ -56,6 +56,23 @@ func SetSttBuildToolsForTest(table map[string]string) func() {
 	return func() { sttLookPath = previous }
 }
 
+// vulkanHeadersProbe reports whether the machine's Vulkan headers are in
+// place. It is a package var so tests can pin the answer instead of
+// depending on the host filesystem.
+var vulkanHeadersProbe = vulkanHeadersPresent
+
+// SetVulkanHeadersProbeForTest pins the Vulkan headers presence check. For
+// tests outside this package; passing nil restores the real probe.
+func SetVulkanHeadersProbeForTest(present func() bool) func() {
+	previous := vulkanHeadersProbe
+	if present == nil {
+		vulkanHeadersProbe = vulkanHeadersPresent
+	} else {
+		vulkanHeadersProbe = present
+	}
+	return func() { vulkanHeadersProbe = previous }
+}
+
 // installWhisperModel brings in the whisper.cpp runtime when it is missing
 // or built for another accelerator, and then the GGML model file, which is a
 // plain download with no archive to unpack.
@@ -314,9 +331,23 @@ func buildWhisperVulkan(ctx context.Context, sourceDir string, emit func(SetupPr
 		// worth naming rather than swallowing.
 		return fmt.Errorf("resolve cmake: %w", err)
 	}
+	// The Khronos headers the Vulkan backend needs are only fetched when the
+	// machine lacks them; with the SDK headers installed the system paths
+	// win and the prefix stays out of the cmake command.
+	prefix, err := prepareVulkanHeaders(ctx, filepath.Dir(sourceDir), emit)
+	if err != nil {
+		return err
+	}
+	configure := []string{
+		cmake, "-S", sourceDir, "-B", filepath.Join(sourceDir, "build"),
+		"-DGGML_VULKAN=1", "-DCMAKE_BUILD_TYPE=Release",
+	}
+	if prefix != "" {
+		configure = append(configure, "-DCMAKE_PREFIX_PATH="+prefix)
+	}
 	buildDir := filepath.Join(sourceDir, "build")
 	steps := [][]string{
-		{cmake, "-S", sourceDir, "-B", buildDir, "-DGGML_VULKAN=1", "-DCMAKE_BUILD_TYPE=Release"},
+		configure,
 		{cmake, "--build", buildDir, "--config", "Release", "-j"},
 	}
 	for _, step := range steps {
@@ -325,6 +356,88 @@ func buildWhisperVulkan(ctx context.Context, sourceDir string, emit func(SetupPr
 		}
 	}
 	return nil
+}
+
+// prepareVulkanHeaders makes sure cmake can find the Vulkan and SPIR-V
+// headers ggml-vulkan requires. Machines with the SDK headers installed are
+// detected and left alone; the rest get the Khronos header-only tarballs
+// downloaded and installed into a local prefix next to the whisper source,
+// so no system package installation is ever required.
+func prepareVulkanHeaders(ctx context.Context, buildSrc string, emit func(SetupProgress)) (string, error) {
+	if vulkanHeadersProbe() {
+		return "", nil
+	}
+	prefix := filepath.Join(buildSrc, "sdk-prefix")
+	headers := []struct{ name, url, dir string }{
+		{"Vulkan", vulkanHeadersURL, vulkanHeadersDir},
+		{"SPIR-V", spirvHeadersURL, spirvHeadersDir},
+	}
+	for _, entry := range headers {
+		temp, err := os.CreateTemp("", "prime-vulkan-headers-*")
+		if err != nil {
+			return "", fmt.Errorf("stage %s headers download: %w", entry.name, err)
+		}
+		tempPath := temp.Name()
+		stageErr := func() error {
+			defer func() { _ = os.Remove(tempPath) }()
+			if err := temp.Close(); err != nil {
+				return err
+			}
+			if err := downloadToFile(ctx, sttDownloadURL(entry.url), tempPath, "Downloading "+entry.name+" headers", emit); err != nil {
+				return err
+			}
+			extractDir := filepath.Join(buildSrc, entry.name+"-headers")
+			if err := os.RemoveAll(extractDir); err != nil {
+				return err
+			}
+			if err := extractTarGz(tempPath, extractDir); err != nil {
+				return fmt.Errorf("extract %s headers: %w", entry.name, err)
+			}
+			source := filepath.Join(extractDir, entry.dir)
+			if !dirExists(source) {
+				return fmt.Errorf("the %s headers archive did not contain %s", entry.name, entry.dir)
+			}
+			cmake, err := sttLookPath("cmake")
+			if err != nil {
+				return err
+			}
+			build := filepath.Join(extractDir, "build")
+			for _, step := range [][]string{
+				{cmake, "-S", source, "-B", build, "-DCMAKE_INSTALL_PREFIX=" + prefix},
+				{cmake, "--install", build},
+			} {
+				if err := runBuildStep(ctx, extractDir, step, emit); err != nil {
+					return fmt.Errorf("install %s headers: %w", entry.name, err)
+				}
+			}
+			return nil
+		}()
+		if stageErr != nil {
+			return "", stageErr
+		}
+	}
+	return prefix, nil
+}
+
+// vulkanHeadersPresent reports whether the machine already ships the Vulkan
+// headers cmake's FindVulkan needs, either from the distribution packages or
+// from an installed Vulkan SDK on Windows.
+func vulkanHeadersPresent() bool {
+	paths := []string{
+		"/usr/include/vulkan/vulkan.h",
+		"/usr/local/include/vulkan/vulkan.h",
+	}
+	if runtime.GOOS == "windows" {
+		if sdk := os.Getenv("VULKAN_SDK"); sdk != "" {
+			paths = []string{filepath.Join(sdk, "Include", "vulkan", "vulkan.h")}
+		}
+	}
+	for _, path := range paths {
+		if fileExists(path) {
+			return true
+		}
+	}
+	return false
 }
 
 // runBuildStep runs one build command from dir, forwarding its combined
@@ -345,16 +458,26 @@ func runBuildStep(ctx context.Context, dir string, command []string, emit func(S
 	if err := cmd.Start(); err != nil {
 		return err
 	}
+	var tail []string
 	scanner := bufio.NewScanner(pipe)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for scanner.Scan() {
 		if line := strings.TrimSpace(scanner.Text()); line != "" {
 			emit(SetupProgress{Phase: "build", Text: "  " + line})
+			// A failure reported as a bare exit status is useless: the last
+			// output lines carry the actual compiler or cmake error.
+			tail = append(tail, line)
+			if len(tail) > 25 {
+				tail = tail[len(tail)-25:]
+			}
 		}
 	}
 	waitErr := cmd.Wait()
 	if ctx.Err() == context.DeadlineExceeded {
 		return fmt.Errorf("whisper.cpp build timed out after %s", vulkanBuildTimeout)
+	}
+	if waitErr != nil && len(tail) > 0 {
+		return fmt.Errorf("%w\nlast build output:\n%s", waitErr, strings.Join(tail, "\n"))
 	}
 	return waitErr
 }

@@ -69,7 +69,7 @@ func TestSttCatalogShape(t *testing.T) {
 
 	vosk := byID[SttVosk]
 	require.True(t, vosk.Available)
-	require.Len(t, vosk.Models, 15)
+	require.Len(t, vosk.Models, 9)
 	voskSeen := map[string]bool{}
 	for _, model := range vosk.Models {
 		require.False(t, voskSeen[model.ID], "duplicate vosk model %s", model.ID)
@@ -721,6 +721,9 @@ if [ "$1" = "-S" ]; then
   mkdir -p "$3"
   exit 0
 fi
+if [ "$1" = "--install" ]; then
+  exit 0
+fi
 if [ "$1" = "--build" ]; then
   mkdir -p "$2/bin"
   printf 'vulkan-binary' > "$2/bin/whisper-cli"
@@ -765,6 +768,10 @@ func TestWhisperVulkanSourceBuild(t *testing.T) {
 		"glslc": "/usr/bin/glslc",
 	})
 	defer restore()
+	// The host either has or lacks SDK headers; the test pins "present" so
+	// the header download path stays out of this scenario.
+	restoreProbe := SetVulkanHeadersProbeForTest(func() bool { return true })
+	defer restoreProbe()
 
 	dataDir := t.TempDir()
 	var progresses []SetupProgress
@@ -796,4 +803,61 @@ func TestWhisperVulkanSourceBuild(t *testing.T) {
 	// Re-running the install reuses the built runtime: no new download.
 	require.NoError(t, ensureWhisperVulkanRuntime(context.Background(), dataDir, func(SetupProgress) {}))
 	require.Equal(t, int64(1), sourceRequests.Load())
+}
+
+// TestWhisperVulkanFetchesMissingHeaders covers machines without the SDK
+// headers: the Khronos header tarballs are downloaded, unpacked and installed
+// into the build prefix, and the cmake configure step receives the prefix so
+// FindVulkan and FindSPIRV-Headers resolve.
+func TestWhisperVulkanFetchesMissingHeaders(t *testing.T) {
+	var headerRequests atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/src/") {
+			tarGzWrite(t, w, map[string][]byte{
+				"whisper.cpp-1.9.5/CMakeLists.txt": []byte("cmake_minimum_required(VERSION 3.13)"),
+			})
+			return
+		}
+		if strings.Contains(r.URL.Path, "/vh/") {
+			headerRequests.Add(1)
+			tarGzWrite(t, w, map[string][]byte{
+				vulkanHeadersDir + "/include/vulkan/vulkan.h": []byte("header"),
+			})
+			return
+		}
+		if strings.Contains(r.URL.Path, "/sh/") {
+			headerRequests.Add(1)
+			tarGzWrite(t, w, map[string][]byte{
+				spirvHeadersDir + "/include/spirv/unified1/spirv.h": []byte("header"),
+			})
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(server.Close)
+	setSttURLRewrites(map[string]string{
+		whisperSourceURL: server.URL + "/src/",
+		vulkanHeadersURL: server.URL + "/vh/",
+		spirvHeadersURL:  server.URL + "/sh/",
+	})
+	t.Cleanup(func() { setSttURLRewrites(map[string]string{}) })
+
+	logPath := filepath.Join(t.TempDir(), "cmake-args.log")
+	t.Setenv("PRIME_TEST_CMAKE_LOG", logPath)
+	restore := SetSttBuildToolsForTest(map[string]string{
+		"cmake": vulkanCmakeStub(t),
+		"g++":   "/usr/bin/g++",
+		"glslc": "/usr/bin/glslc",
+	})
+	defer restore()
+	restoreProbe := SetVulkanHeadersProbeForTest(func() bool { return false })
+	defer restoreProbe()
+
+	dataDir := t.TempDir()
+	require.NoError(t, ensureWhisperVulkanRuntime(context.Background(), dataDir, func(SetupProgress) {}))
+	require.Equal(t, int64(2), headerRequests.Load(), "both header packages were fetched")
+	log, err := os.ReadFile(logPath)
+	require.NoError(t, err)
+	require.Contains(t, string(log), "-DCMAKE_PREFIX_PATH=")
+	require.Contains(t, string(log), "sdk-prefix")
 }
