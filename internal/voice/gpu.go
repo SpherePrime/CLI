@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -40,22 +41,70 @@ var nvidiaSmiCommand = "nvidia-smi"
 // the settings screen, so a slow answer counts as no GPUs.
 const nvidiaSmiTimeout = 5 * time.Second
 
+// gpuCacheTTL bounds how long one enumeration result is reused. The settings
+// screen polls the catalog every second and a half, and spawning nvidia-smi
+// and vulkaninfo at that rate is wasteful process churn; a short cache keeps
+// the lists fresh for hot-plugging without the constant tool runs.
+const gpuCacheTTL = time.Minute
+
+var (
+	gpuCacheMu     sync.Mutex
+	nvidiaGpuCache []GpuInfo
+	nvidiaGpuAt    time.Time
+	vulkanGpuCache []GpuInfo
+	vulkanGpuAt    time.Time
+)
+
+// cachedGpus returns the cached list when it is younger than the TTL.
+func cachedGpus(list *[]GpuInfo, at *time.Time) ([]GpuInfo, bool) {
+	gpuCacheMu.Lock()
+	defer gpuCacheMu.Unlock()
+	if time.Since(*at) < gpuCacheTTL {
+		return *list, true
+	}
+	return nil, false
+}
+
+// storeGpus saves an enumeration result in the cache.
+func storeGpus(list *[]GpuInfo, at *time.Time, gpus []GpuInfo) {
+	gpuCacheMu.Lock()
+	defer gpuCacheMu.Unlock()
+	*list = gpus
+	*at = time.Now()
+}
+
+// resetGpuCache drops both cached enumerations, used by the test hooks so a
+// stubbed tool is actually consulted.
+func resetGpuCache() {
+	gpuCacheMu.Lock()
+	defer gpuCacheMu.Unlock()
+	nvidiaGpuCache, nvidiaGpuAt = nil, time.Time{}
+	vulkanGpuCache, vulkanGpuAt = nil, time.Time{}
+}
+
 // SttNvidiaGpus lists the NVIDIA GPUs nvidia-smi reports, in driver order.
 // An empty slice means the tool is missing, failed, or saw no GPU, which for
-// the catalog's purposes are all the same state: no CUDA to offer. It runs
-// the query once per call, which is cheap enough to do per catalog request.
+// the catalog's purposes are all the same state: no CUDA to offer. Results
+// are cached briefly, because the settings screen polls the catalog.
 func SttNvidiaGpus() []GpuInfo {
+	if gpus, ok := cachedGpus(&nvidiaGpuCache, &nvidiaGpuAt); ok {
+		return gpus
+	}
 	path, err := exec.LookPath(nvidiaSmiCommand)
 	if err != nil {
+		storeGpus(&nvidiaGpuCache, &nvidiaGpuAt, nil)
 		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), nvidiaSmiTimeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, path, "--query-gpu=index,name", "--format=csv,noheader").Output()
 	if err != nil {
+		storeGpus(&nvidiaGpuCache, &nvidiaGpuAt, nil)
 		return nil
 	}
-	return parseNvidiaSmiOutput(out)
+	gpus := parseNvidiaSmiOutput(out)
+	storeGpus(&nvidiaGpuCache, &nvidiaGpuAt, gpus)
+	return gpus
 }
 
 // parseNvidiaSmiOutput reads rows like "0, NVIDIA GeForce RTX 3070". Rows
@@ -86,7 +135,11 @@ func parseNvidiaSmiOutput(out []byte) []GpuInfo {
 func SetNvidiaSmiForTest(command string) func() {
 	previous := nvidiaSmiCommand
 	nvidiaSmiCommand = command
-	return func() { nvidiaSmiCommand = previous }
+	resetGpuCache()
+	return func() {
+		nvidiaSmiCommand = previous
+		resetGpuCache()
+	}
 }
 
 // vulkanInfoCommand is the tool Vulkan GPU enumeration runs, resolved through
@@ -106,17 +159,24 @@ const vulkanInfoTimeout = 10 * time.Second
 // to offer. Software rendering is filtered out by the parser, because
 // llvmpipe reports itself as a device but cannot accelerate anything.
 func SttVulkanGpus() []GpuInfo {
+	if gpus, ok := cachedGpus(&vulkanGpuCache, &vulkanGpuAt); ok {
+		return gpus
+	}
 	path, err := exec.LookPath(vulkanInfoCommand)
 	if err != nil {
+		storeGpus(&vulkanGpuCache, &vulkanGpuAt, nil)
 		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), vulkanInfoTimeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, path, "--summary").Output()
 	if err != nil {
+		storeGpus(&vulkanGpuCache, &vulkanGpuAt, nil)
 		return nil
 	}
-	return parseVulkanInfoOutput(out)
+	gpus := parseVulkanInfoOutput(out)
+	storeGpus(&vulkanGpuCache, &vulkanGpuAt, gpus)
+	return gpus
 }
 
 // gpuHeaderRE matches the device headers of `vulkaninfo --summary` output,
@@ -174,7 +234,11 @@ func parseVulkanInfoOutput(out []byte) []GpuInfo {
 func SetVulkanInfoForTest(command string) func() {
 	previous := vulkanInfoCommand
 	vulkanInfoCommand = command
-	return func() { vulkanInfoCommand = previous }
+	resetGpuCache()
+	return func() {
+		vulkanInfoCommand = previous
+		resetGpuCache()
+	}
 }
 
 // WhisperAcceleratorOptions composes what the catalog needs for the whisper

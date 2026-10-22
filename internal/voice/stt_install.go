@@ -453,8 +453,12 @@ func vulkanHeadersPresent() bool {
 // because Prime owns the terminal, and a deadline overrun is reported as
 // the timeout it was rather than a bare "killed".
 func runBuildStep(ctx context.Context, dir string, command []string, emit func(SetupProgress)) error {
+	// The build runs below normal priority: minutes of compiling must not
+	// fight the desktop the user is working on.
+	command = lowPriorityCommand(command)
 	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
 	cmd.Dir = dir
+	cmd.SysProcAttr = lowPrioritySysAttr()
 	// Build tools must never read the terminal, which Prime owns.
 	cmd.Stdin = nil
 	pipe, err := cmd.StdoutPipe()
@@ -659,6 +663,12 @@ func emitReady(emit func(SetupProgress), text string) {
 	emit(SetupProgress{Phase: "ready", Text: text, Done: 1, Total: 1})
 }
 
+// progressInterval bounds how often a download reports progress. A chunk
+// arrives every few milliseconds at broadband speed, and reporting each one
+// would spin the task bookkeeping thousands of times a second for no visual
+// gain: the settings screen polls progress twice a second anyway.
+const progressInterval = 250 * time.Millisecond
+
 // downloadToFile streams url into dest, reporting byte progress under the
 // given label. The file is written under its final name in place: the
 // install task holds the only reference, and a failed download leaves a
@@ -685,6 +695,7 @@ func downloadToFile(ctx context.Context, url, dest, label string, emit func(Setu
 	}
 	total := res.ContentLength
 	done := int64(0)
+	lastReport := time.Time{}
 	buf := make([]byte, downloadChunk)
 	for {
 		read, readErr := res.Body.Read(buf)
@@ -694,7 +705,10 @@ func downloadToFile(ctx context.Context, url, dest, label string, emit func(Setu
 				return fmt.Errorf("download %s: %w", label, writeErr)
 			}
 			done += int64(read)
-			emit(SetupProgress{Phase: "download", Text: label, Done: done, Total: total})
+			if now := time.Now(); now.Sub(lastReport) >= progressInterval {
+				lastReport = now
+				emit(SetupProgress{Phase: "download", Text: label, Done: done, Total: total})
+			}
 		}
 		if readErr == io.EOF {
 			break
