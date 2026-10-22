@@ -48,6 +48,16 @@ type BashResponseMetadata struct {
 	ShellID          string `json:"shell_id,omitempty"`
 }
 
+// BackgroundJobWake is called when a background job left running by the
+// agent finishes on its own. sessionID identifies the chat that started
+// the job; exitCode and output carry the terminal state so the agent can
+// be woken up with the result instead of polling job_output.
+type BackgroundJobWake func(sessionID, shellID, description, command string, exitCode int, output string)
+
+// backgroundWakeOutputLimit caps how much of a finished job's output the
+// wake-up prompt carries; job_output still returns the full output.
+const backgroundWakeOutputLimit = 2000
+
 const (
 	BashToolName = "bash"
 
@@ -200,7 +210,7 @@ func blockFuncs() []shell.BlockFunc {
 	}
 }
 
-func NewBashTool(permissions permission.Service, workingDir, spillDir string, attribution *config.Attribution, modelID string) fantasy.AgentTool {
+func NewBashTool(permissions permission.Service, workingDir, spillDir string, attribution *config.Attribution, modelID string, wake BackgroundJobWake) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
 		BashToolName,
 		string(bashDescription(attribution, modelID)),
@@ -294,6 +304,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 				}
 
 				// Still running after fast-failure check - return as background job
+				go watchBackgroundJob(bgShell, sessionID, wake)
 				metadata := BashResponseMetadata{
 					StartTime:        startTime.UnixMilli(),
 					EndTime:          time.Now().UnixMilli(),
@@ -378,6 +389,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 			}
 
 			// Still running - keep as background job
+			go watchBackgroundJob(bgShell, sessionID, wake)
 			metadata := BashResponseMetadata{
 				StartTime:        startTime.UnixMilli(),
 				EndTime:          time.Now().UnixMilli(),
@@ -390,6 +402,33 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 			return fantasy.WithResponseMetadata(fantasy.NewTextResponse(response), metadata), nil
 		},
 	)
+}
+
+// watchBackgroundJob waits for a background job the agent left running and
+// reports its terminal state through wake. Jobs killed by job_kill or torn
+// down at shutdown are interrupted, not finished, so they stay silent — the
+// agent decided to stop them and must not be woken for them.
+func watchBackgroundJob(bgShell *shell.BackgroundShell, sessionID string, wake BackgroundJobWake) {
+	if wake == nil {
+		return
+	}
+	<-bgShell.Done()
+	_, _, done, execErr := bgShell.GetOutput()
+	if !done || shell.IsInterrupt(execErr) {
+		return
+	}
+	stdout, stderr, _, _ := bgShell.GetOutput()
+	output := strings.TrimSpace(stdout)
+	if stderr != "" {
+		if output != "" {
+			output += "\n"
+		}
+		output += strings.TrimSpace(stderr)
+	}
+	if len(output) > backgroundWakeOutputLimit {
+		output = "… " + output[len(output)-backgroundWakeOutputLimit:]
+	}
+	wake(sessionID, bgShell.ID, bgShell.Description, bgShell.Command, shell.ExitCode(execErr), output)
 }
 
 // formatOutput formats the output of a completed command with error handling
