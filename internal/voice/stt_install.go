@@ -163,10 +163,48 @@ func ensureVoskRuntime(ctx context.Context, dataDir string, emit func(SetupProgr
 	if err := extractZip(tempPath, voskLibDir(dataDir)); err != nil {
 		return fmt.Errorf("extract vosk runtime: %w", err)
 	}
+	// The release zips ship the library inside a top-level folder named
+	// after the release, so the file is moved up next to anything else the
+	// archive carried before the presence check runs.
+	if err := relocateFile(voskLibDir(dataDir), filepath.Base(voskLibPath(dataDir))); err != nil {
+		return fmt.Errorf("relocate vosk runtime: %w", err)
+	}
 	if !fileExists(voskLibPath(dataDir)) {
 		return fmt.Errorf("vosk runtime archive contained no %s", filepath.Base(voskLibPath(dataDir)))
 	}
 	return nil
+}
+
+// relocateFile lifts a nested file up to the root of dir so a platform
+// check that expects a fixed layout does not care how the release packaged
+// it. Only the first match moves; release zips carry exactly one.
+func relocateFile(dir, name string) error {
+	found := ""
+	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil || entry.IsDir() || found != "" {
+			return nil //nolint:nilerr // a missing directory just means "nothing to move"
+		}
+		if entry.Name() == name && filepath.Dir(path) != dir {
+			found = path
+		}
+		return nil
+	})
+	if err != nil || found == "" {
+		return err
+	}
+	source, err := os.Open(found)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = source.Close() }()
+	info, err := source.Stat()
+	if err != nil {
+		return err
+	}
+	if err := writeFileWithMode(filepath.Join(dir, name), source, info.Mode().Perm()); err != nil {
+		return err
+	}
+	return os.Remove(found)
 }
 
 // findSttModel locates a catalog entry by id.
