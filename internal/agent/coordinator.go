@@ -540,6 +540,26 @@ func thinkingEnabled(mode string) bool {
 	return mode != config.ReasoningModeOff && mode != ""
 }
 
+// usesReasoningEffortToggle reports whether an OpenAI-compatible provider
+// controls reasoning only through reasoning_effort. Providers with their own
+// thinking switch in extra_body are excluded.
+func usesReasoningEffortToggle(providerID string) bool {
+	switch providerID {
+	case hyper.Name,
+		string(catwalk.InferenceProviderIoNet),
+		string(catwalk.InferenceProviderZAI),
+		string(catwalk.InferenceProviderDeepSeek),
+		string(catwalk.InferenceProviderFireworks),
+		string(catwalk.InferenceProviderBaseten),
+		string(catwalk.InferenceProviderOpenCodeGo),
+		string(catwalk.InferenceProviderOpenCodeZen),
+		string(catwalk.InferenceProviderAlibabaSingapore),
+		string(catwalk.InferenceProviderAlibabaUS):
+		return false
+	}
+	return true
+}
+
 func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.ProviderOptions {
 	options := fantasy.ProviderOptions{}
 
@@ -598,7 +618,7 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		_, hasReasoningEffort := mergedOptions["reasoning_effort"]
 		if !hasReasoningEffort && shouldSetEffort {
 			mergedOptions["reasoning_effort"] = openAIEffort
-		} else if offEffort := config.ReasoningOffLevel(model.CatwalkCfg.ReasoningLevels); !hasReasoningEffort && offEffort != "" {
+		} else if offEffort := reasoningOffEffort(model); !hasReasoningEffort && offEffort != "" {
 			mergedOptions["reasoning_effort"] = offEffort
 		}
 		if openai.IsResponsesModel(model.CatwalkCfg.ID) {
@@ -702,7 +722,12 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 					mergedOptions["reasoning_effort"] = openAIEffort
 				}
 			default:
-				mergedOptions["reasoning_effort"] = openAIEffort
+				mergedOptions["reasoning_effort"] = compatReasoningEffort(model, reasoningMode)
+			}
+		}
+		if !hasReasoningEffort && !shouldSetEffort && usesReasoningEffortToggle(providerCfg.ID) {
+			if offEffort := reasoningOffEffort(model); offEffort != "" {
+				mergedOptions["reasoning_effort"] = offEffort
 			}
 		}
 
@@ -791,8 +816,8 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 			}
 
 			_, hasReasoningEffort := mergedOptions["reasoning_effort"]
-			if !hasReasoningEffort && shouldSetEffort {
-				mergedOptions["reasoning_effort"] = openAIEffort
+			if effort := compatReasoningEffort(model, reasoningMode); !hasReasoningEffort && effort != "" {
+				mergedOptions["reasoning_effort"] = effort
 			}
 
 			parsed, err := openaicompat.ParseOptions(mergedOptions)
@@ -1169,8 +1194,8 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool, age
 	smallModel = newRequestTimeoutModel(smallModel, requestTimeout)
 	// Strict OpenAI-compatible endpoints reject the "tool" message role;
 	// replay such calls once with tool results as user messages.
-	largeModel = newToolRoleCompatModel(largeModel)
-	smallModel = newToolRoleCompatModel(smallModel)
+	largeModel = newReasoningCompatModel(newToolRoleCompatModel(largeModel))
+	smallModel = newReasoningCompatModel(newToolRoleCompatModel(smallModel))
 
 	large := Model{
 		Model:      largeModel,
@@ -1228,7 +1253,7 @@ func (c *coordinator) sessionModel(ctx context.Context, sessionID string) *Model
 		return nil
 	}
 	languageModel = newRequestTimeoutModel(languageModel, cfg.Options.GetRequestTimeout())
-	languageModel = newToolRoleCompatModel(languageModel)
+	languageModel = newReasoningCompatModel(newToolRoleCompatModel(languageModel))
 	return &Model{
 		Model:      languageModel,
 		CatwalkCfg: applyModelOverrides(*catalogModel, selected),
