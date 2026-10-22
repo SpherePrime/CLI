@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { realpath, stat } from 'node:fs/promises'
 import type { DesktopEvent, Operation, Project, Session } from '../../shared/contracts'
-import { PrimeTransport } from './transport'
+import type { EngineTransport } from './engineTransport'
 import { operationRoute, redact } from './operations'
 import { ActivityTracker } from './activity'
 import { MessageCoalescer } from './messageCoalescer'
@@ -24,7 +24,7 @@ export class PrimeService {
   private initializationControllers = new Map<string, AbortController>()
   private reconciledAt = new Map<string, number>()
   constructor(
-    private transport: PrimeTransport,
+    private transport: EngineTransport,
     private emit: (event: DesktopEvent) => void,
     private environment: ProjectEnvironment = {}
   ) {}
