@@ -97,7 +97,19 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     stt: () => ['GET', 'stt'],
     sttInstall: () => ['POST', 'stt/install', { provider: args.provider, model: args.model }],
     sttRemove: () => ['POST', 'stt/remove', { provider: args.provider, model: args.model }],
-    sttSelect: () => ['POST', 'stt/select', { provider: args.provider, model: args.model }],
+    sttSelect: () => [
+      'POST',
+      'stt/select',
+      {
+        provider: args.provider,
+        model: args.model,
+        // Optional extras: language always persists ("": auto), the accelerator
+        // pair only matters for whisper. Undefined keys stay out of the payload.
+        ...(args.language === undefined ? {} : { language: args.language }),
+        ...(args.accelerator === undefined ? {} : { accelerator: args.accelerator }),
+        ...(args.gpu_device === undefined ? {} : { gpu_device: args.gpu_device })
+      }
+    ],
     sttTasks: () => ['GET', 'stt/tasks'],
     voice: () => ['POST', 'voice/transcribe', args],
     pending: () => ['GET', 'pending'],

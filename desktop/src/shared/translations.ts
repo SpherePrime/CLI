@@ -1358,19 +1358,13 @@ Object.assign(english, {
   'Вывод звука': 'Audio output',
   Авто: 'Auto',
   'Авто - {value0}': 'Auto - {value0}',
-  'Распознавание речи для диктовки: облачный Google или локальные модели Whisper и Vosk.':
-    'Speech recognition for dictation: cloud Google or local Whisper and Vosk models.',
-  'Провайдер: {value0}': 'Provider: {value0}',
   'Провайдер распознавания речи': 'Speech recognition provider',
   'Google STT': 'Google STT',
   'Whisper STT': 'Whisper STT',
   'Vosk STT': 'Vosk STT',
-  'Скачайте модель и выберите её': 'Download a model and select it',
   'Для выбранного провайдера скачайте модель в настройках распознавания речи':
     'Download a model for the selected provider in the speech recognition settings',
   'Работает онлайн без установки моделей.': 'Works online without installing models.',
-  'Модели Whisper': 'Whisper models',
-  'Модели Vosk': 'Vosk models',
   Рекомендуется: 'Recommended',
   Скачать: 'Download',
   Выбрать: 'Select',
@@ -1379,4 +1373,25 @@ Object.assign(english, {
   '{value0}%': '{value0}%',
   '{value0} МБ': '{value0} MB',
   '{value0} ГБ': '{value0} GB'
+})
+
+Object.assign(english, {
+  'Голос и речь': 'Voice & speech',
+  'Голосовой ввод и озвучка ответов: микрофон, распознавание речи и локальный синтез.':
+    'Voice input and spoken replies: microphone, speech recognition and local synthesis.',
+  'Озвучка ответов': 'Response speech',
+  'Язык распознавания': 'Recognition language',
+  Ускорение: 'Acceleration',
+  'Процессор (CPU)': 'Processor (CPU)',
+  'Видеокарта - {value0}': 'GPU - {value0}',
+  Модель: 'Model',
+  'не скачана': 'not downloaded',
+  Немецкий: 'German',
+  Испанский: 'Spanish',
+  Французский: 'French',
+  Итальянский: 'Italian',
+  Португальский: 'Portuguese',
+  Китайский: 'Chinese',
+  Японский: 'Japanese',
+  Украинский: 'Ukrainian'
 })

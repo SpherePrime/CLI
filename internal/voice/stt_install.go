@@ -3,15 +3,18 @@ package voice
 import (
 	"archive/tar"
 	"archive/zip"
+	"bufio"
 	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // sttHTTPClient downloads multi-hundred-megabyte models. No overall
@@ -23,19 +26,52 @@ var sttHTTPClient = &http.Client{}
 // chunk, which keeps the callback rate sane without stalling the UI.
 const downloadChunk = 64 * 1024
 
+// vulkanBuildTimeout bounds the whole cmake configure-and-build run for one
+// Vulkan install. Compiling whisper.cpp takes minutes on a healthy machine;
+// the generous ceiling exists so a hung compiler cannot spin forever, not
+// because the build is expected to need it.
+const vulkanBuildTimeout = 30 * time.Minute
+
+// sttLookPath resolves a build tool through PATH. It is a package var so
+// tests can stub the lookup instead of depending on the host toolchain.
+var sttLookPath = exec.LookPath
+
+// SetSttBuildToolsForTest replaces the build-tool lookup with a table for
+// tests: name to resolved path. The table is authoritative — an empty value
+// or a missing name means the tool is not installed. A nil map restores real
+// PATH lookups. For tests outside this package.
+func SetSttBuildToolsForTest(table map[string]string) func() {
+	previous := sttLookPath
+	if table == nil {
+		sttLookPath = exec.LookPath
+	} else {
+		sttLookPath = func(name string) (string, error) {
+			path, ok := table[name]
+			if !ok || path == "" {
+				return "", exec.ErrNotFound
+			}
+			return path, nil
+		}
+	}
+	return func() { sttLookPath = previous }
+}
+
 // installWhisperModel brings in the whisper.cpp runtime when it is missing
-// and then the GGML model file, which is a plain download with no archive
-// to unpack.
-func installWhisperModel(ctx context.Context, dataDir, model string, emit func(SetupProgress)) error {
+// or built for another accelerator, and then the GGML model file, which is a
+// plain download with no archive to unpack.
+func installWhisperModel(ctx context.Context, dataDir, model, accelerator string, emit func(SetupProgress)) error {
 	if _, ok := findSttModel(whisperModels, model); !ok {
 		return fmt.Errorf("%w: whisper model %q", ErrSttUnknownModel, model)
+	}
+	// The runtime is ensured before the model check so switching the
+	// accelerator takes effect even when the requested model is already on
+	// disk; otherwise the switch would wait for the next model download.
+	if err := ensureWhisperRuntime(ctx, dataDir, accelerator, emit); err != nil {
+		return err
 	}
 	if fileExists(whisperModelPath(dataDir, model)) {
 		emitReady(emit, "Whisper model "+model+" is already installed")
 		return nil
-	}
-	if err := ensureWhisperRuntime(ctx, dataDir, emit); err != nil {
-		return err
 	}
 
 	target := whisperModelPath(dataDir, model)
@@ -51,16 +87,31 @@ func installWhisperModel(ctx context.Context, dataDir, model string, emit func(S
 	return nil
 }
 
-// ensureWhisperRuntime downloads and unpacks the whisper.cpp command-line
-// binary unless one is already in the bin directory.
-func ensureWhisperRuntime(ctx context.Context, dataDir string, emit func(SetupProgress)) error {
-	if findWhisperBinary(whisperBinDir(dataDir)) != "" {
-		return nil
+// ensureWhisperRuntime brings the whisper.cpp command-line binary into the
+// bin directory unless one is already there AND built for the accelerator
+// the caller wants. Prebuilt accelerators (CPU, CUDA) are downloaded and
+// unpacked; Vulkan has no prebuilt binaries at all, so that accelerator is
+// compiled from source. The installed build is recorded in a marker file,
+// because the variants unpack into the same directory and nothing else about
+// the files tells them apart.
+func ensureWhisperRuntime(ctx context.Context, dataDir, accelerator string, emit func(SetupProgress)) error {
+	if accelerator == AcceleratorVulkan {
+		return ensureWhisperVulkanRuntime(ctx, dataDir, emit)
 	}
-	url, ok := whisperRuntime()
+	url, variant, ok := whisperRuntime(accelerator)
 	if !ok {
 		return fmt.Errorf("whisper.cpp publishes no prebuilt macOS binary Prime can install; " +
 			"install it manually (for example with brew install whisper-cpp) and the whisper engine will use it")
+	}
+	binDir := whisperBinDir(dataDir)
+	if findWhisperBinary(binDir) != "" && installedWhisperAccelerator(dataDir) == variant {
+		return nil
+	}
+	// A runtime built for another accelerator must not linger: its DLLs and
+	// entry point would half-match the new archive, so the whole directory
+	// goes before anything new lands in it.
+	if err := os.RemoveAll(binDir); err != nil {
+		return fmt.Errorf("replace whisper.cpp runtime: %w", err)
 	}
 	emit(SetupProgress{Phase: "runtime", Text: "Downloading whisper.cpp runtime..."})
 	temp, err := os.CreateTemp("", "prime-whisper-runtime-*")
@@ -76,7 +127,6 @@ func ensureWhisperRuntime(ctx context.Context, dataDir string, emit func(SetupPr
 		return err
 	}
 
-	binDir := whisperBinDir(dataDir)
 	emit(SetupProgress{Phase: "runtime", Text: "Extracting whisper.cpp runtime..."})
 	if strings.HasSuffix(url, ".zip") {
 		err = extractZip(tempPath, binDir)
@@ -91,6 +141,253 @@ func ensureWhisperRuntime(ctx context.Context, dataDir string, emit func(SetupPr
 	if binary := findWhisperBinary(binDir); binary != "" && runtime.GOOS != "windows" {
 		if err := os.Chmod(binary, 0o755); err != nil {
 			return fmt.Errorf("mark whisper binary executable: %w", err)
+		}
+	}
+	// The marker is written last: an interrupted install leaves no runtime
+	// and no marker, and the next install starts from a clean slate.
+	if err := writeWhisperAcceleratorMarker(dataDir, variant); err != nil {
+		return fmt.Errorf("record whisper accelerator: %w", err)
+	}
+	return nil
+}
+
+// whisperBuildSrcDir is where the whisper.cpp source tarball is unpacked for
+// a Vulkan build, inside the provider's own directory so a failed attempt
+// leaves nothing outside the tree Remove knows about.
+func whisperBuildSrcDir(dataDir string) string {
+	return filepath.Join(sttRoot(dataDir), "whisper", "build-src")
+}
+
+// ensureWhisperVulkanRuntime builds whisper.cpp from source with the Vulkan
+// backend, because whisper.cpp publishes no prebuilt Vulkan binaries and a
+// source build with -DGGML_VULKAN=1 is the supported way to get GPU
+// acceleration for any vendor (AMD, NVIDIA, Intel) on both Linux and
+// Windows. The result lands in the same bin directory the prebuilt runtimes
+// use, with the marker recording that this build speaks Vulkan.
+func ensureWhisperVulkanRuntime(ctx context.Context, dataDir string, emit func(SetupProgress)) error {
+	binDir := whisperBinDir(dataDir)
+	if findWhisperBinary(binDir) != "" && installedWhisperAccelerator(dataDir) == AcceleratorVulkan {
+		return nil
+	}
+	// The toolchain is verified before the old runtime is removed, so a
+	// machine without the build tools keeps its working CPU build instead of
+	// ending up with nothing and an error.
+	if err := checkVulkanBuildTools(); err != nil {
+		return err
+	}
+	// A runtime built for another accelerator must not linger: its DLLs and
+	// entry point would half-match the new build, so the whole directory
+	// goes before anything new lands in it.
+	if err := os.RemoveAll(binDir); err != nil {
+		return fmt.Errorf("replace whisper.cpp runtime: %w", err)
+	}
+
+	emit(SetupProgress{Phase: "runtime", Text: "Downloading whisper.cpp source..."})
+	buildSrc := whisperBuildSrcDir(dataDir)
+	// A previous failed attempt may have left a half-extracted tree behind.
+	if err := os.RemoveAll(buildSrc); err != nil {
+		return fmt.Errorf("clear whisper.cpp source tree: %w", err)
+	}
+	if err := os.MkdirAll(buildSrc, 0o755); err != nil {
+		return err
+	}
+	// Source and build artifacts together weigh far more than the resulting
+	// binaries, so the whole tree goes away once the build output is out.
+	defer func() { _ = os.RemoveAll(buildSrc) }()
+
+	temp, err := os.CreateTemp("", "prime-whisper-source-*")
+	if err != nil {
+		return fmt.Errorf("stage source download: %w", err)
+	}
+	tempPath := temp.Name()
+	defer func() { _ = os.Remove(tempPath) }()
+	if err := temp.Close(); err != nil {
+		return err
+	}
+	if err := downloadToFile(ctx, sttDownloadURL(whisperSourceURL), tempPath, "Downloading whisper.cpp source", emit); err != nil {
+		return err
+	}
+
+	emit(SetupProgress{Phase: "runtime", Text: "Extracting whisper.cpp source..."})
+	if err := extractTarGz(tempPath, buildSrc); err != nil {
+		return fmt.Errorf("extract whisper.cpp source: %w", err)
+	}
+	sourceDir := filepath.Join(buildSrc, whisperSourceDir)
+	if !dirExists(sourceDir) {
+		return fmt.Errorf("whisper.cpp source archive did not contain %s", whisperSourceDir)
+	}
+
+	emit(SetupProgress{Phase: "build", Text: "Building whisper.cpp for Vulkan, this can take a few minutes..."})
+	if err := buildWhisperVulkan(ctx, sourceDir, emit); err != nil {
+		return fmt.Errorf("build whisper.cpp for Vulkan: %w", err)
+	}
+	// Shared libraries the Vulkan backend loads live next to the executable
+	// in build/bin, so every file there is collected, not just the binary.
+	if err := copyBuiltWhisperBinaries(filepath.Join(sourceDir, "build", "bin"), binDir); err != nil {
+		return fmt.Errorf("collect whisper.cpp build output: %w", err)
+	}
+	binary := findWhisperBinary(binDir)
+	if binary == "" {
+		return fmt.Errorf("the whisper.cpp Vulkan build produced no whisper-cli executable")
+	}
+	// Matches the prebuilt-runtime path: the executable bit is set
+	// explicitly on unix, where a plain copy can lose it.
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(binary, 0o755); err != nil {
+			return fmt.Errorf("mark whisper binary executable: %w", err)
+		}
+	}
+	// The marker is written last, like every other runtime install: an
+	// interrupted build leaves no runtime and no marker.
+	if err := writeWhisperAcceleratorMarker(dataDir, AcceleratorVulkan); err != nil {
+		return fmt.Errorf("record whisper accelerator: %w", err)
+	}
+	return nil
+}
+
+// vulkanCompilerTools names the C++ compilers a Vulkan build can use, in the
+// order they are probed. On Windows plain PATH lookup is deliberately the
+// only probe: cl.exe is usually absent from a user's PATH even with Visual
+// Studio installed, and cmake's own Visual Studio generator discovery finds
+// the compiler anyway, so a missing cl.exe here would wrongly block builds
+// that would succeed.
+func vulkanCompilerTools() []string {
+	if runtime.GOOS == "windows" {
+		return []string{"cl"}
+	}
+	return []string{"g++", "c++", "clang++"}
+}
+
+// checkVulkanBuildTools verifies that the machine has everything a
+// GGML_VULKAN build needs before any download or destructive step runs, so
+// the error a user sees is about installing a package, not about a compiler
+// error half an hour into a build. On Windows the compiler is not required
+// here: cmake finds Visual Studio on its own, and a genuinely broken setup
+// surfaces in the streamed build log.
+func checkVulkanBuildTools() error {
+	var missing []string
+	for _, tool := range []string{"cmake", "glslc"} {
+		if _, err := sttLookPath(tool); err != nil {
+			missing = append(missing, tool)
+		}
+	}
+	compiler := ""
+	for _, candidate := range vulkanCompilerTools() {
+		if path, err := sttLookPath(candidate); err == nil {
+			compiler = path
+			break
+		}
+	}
+	if compiler == "" {
+		missing = append(missing, strings.Join(vulkanCompilerTools(), "/"))
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("building whisper.cpp for the Vulkan accelerator requires %s, which Prime did not find on this machine. %s",
+		strings.Join(missing, ", "), vulkanToolchainHint())
+}
+
+// vulkanToolchainHint tells the user what to install for the missing tools,
+// spelled out per platform because the package names differ everywhere.
+func vulkanToolchainHint() string {
+	if runtime.GOOS == "windows" {
+		return "install CMake (cmake.org), Visual Studio Build Tools with the C++ workload, " +
+			"and the Vulkan SDK (vulkan.lunarg.com), then retry"
+	}
+	return "install the Vulkan build toolchain: e.g. sudo apt install cmake build-essential " +
+		"libvulkan-dev glslc (Debian/Ubuntu) or pacman -S cmake base-devel vulkan-devel " +
+		"vulkan-headers shaderc (Arch), then retry"
+}
+
+// buildWhisperVulkan runs the cmake configure and build steps that produce a
+// whisper.cpp with the Vulkan backend, sharing one time budget across both
+// steps. Output is streamed into the install progress so a slow or failing
+// build is visible instead of silent.
+func buildWhisperVulkan(ctx context.Context, sourceDir string, emit func(SetupProgress)) error {
+	buildCtx, cancel := context.WithTimeout(ctx, vulkanBuildTimeout)
+	defer cancel()
+	cmake, err := sttLookPath("cmake")
+	if err != nil {
+		// Unreachable in practice: checkVulkanBuildTools just verified the
+		// same lookup, so a miss here is a race with a broken environment
+		// worth naming rather than swallowing.
+		return fmt.Errorf("resolve cmake: %w", err)
+	}
+	buildDir := filepath.Join(sourceDir, "build")
+	steps := [][]string{
+		{cmake, "-S", sourceDir, "-B", buildDir, "-DGGML_VULKAN=1", "-DCMAKE_BUILD_TYPE=Release"},
+		{cmake, "--build", buildDir, "--config", "Release", "-j"},
+	}
+	for _, step := range steps {
+		if err := runBuildStep(buildCtx, sourceDir, step, emit); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// runBuildStep runs one build command from dir, forwarding its combined
+// output lines as build progress. It mirrors runInstaller: stdin is closed
+// because Prime owns the terminal, and a deadline overrun is reported as
+// the timeout it was rather than a bare "killed".
+func runBuildStep(ctx context.Context, dir string, command []string, emit func(SetupProgress)) error {
+	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
+	cmd.Dir = dir
+	// Build tools must never read the terminal, which Prime owns.
+	cmd.Stdin = nil
+	pipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(pipe)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for scanner.Scan() {
+		if line := strings.TrimSpace(scanner.Text()); line != "" {
+			emit(SetupProgress{Phase: "build", Text: "  " + line})
+		}
+	}
+	waitErr := cmd.Wait()
+	if ctx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("whisper.cpp build timed out after %s", vulkanBuildTimeout)
+	}
+	return waitErr
+}
+
+// copyBuiltWhisperBinaries copies every regular file of the build's bin
+// directory into the installed bin directory: the whisper-cli executable and
+// the shared libraries ggml-vulkan loads at run time sit side by side there,
+// and skipping subdirectories keeps the flat layout the prebuilt archives
+// establish.
+func copyBuiltWhisperBinaries(buildBinDir, binDir string) error {
+	entries, err := os.ReadDir(buildBinDir)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if !entry.Type().IsRegular() {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		source, err := os.Open(filepath.Join(buildBinDir, entry.Name()))
+		if err != nil {
+			return err
+		}
+		err = writeFileWithMode(filepath.Join(binDir, entry.Name()), source, info.Mode().Perm())
+		_ = source.Close()
+		if err != nil {
+			return err
 		}
 	}
 	return nil

@@ -43,6 +43,18 @@ const (
 	EngineVosk    = "vosk"
 )
 
+// Accelerator names the compute device options.voice.accelerator may select
+// for the whisper engine. AcceleratorCUDA runs the NVIDIA build of
+// whisper.cpp, which needs an NVIDIA GPU and the CUDA driver.
+// AcceleratorVulkan runs a whisper.cpp build with the Vulkan backend, which
+// works with any vendor's GPU (AMD, NVIDIA, Intel) that vulkaninfo reports.
+// Every other value, including empty, means the plain CPU build.
+const (
+	AcceleratorCPU    = "cpu"
+	AcceleratorCUDA   = "cuda"
+	AcceleratorVulkan = "vulkan"
+)
+
 var (
 	// ErrNoRecorder means no microphone capture tool was found.
 	ErrNoRecorder = errors.New(
@@ -96,6 +108,17 @@ type Settings struct {
 	TranscribeCommand string
 	// MaxDuration bounds one recording. Zero means DefaultMaxDuration.
 	MaxDuration time.Duration
+	// Accelerator is the compute device for the whisper engine:
+	// AcceleratorCUDA runs the NVIDIA build of whisper.cpp,
+	// AcceleratorVulkan a Vulkan-backend build, anything else the CPU build.
+	// The value is normalized on the way in, so it is "cuda", "vulkan" or
+	// empty.
+	Accelerator string
+	// GPUDevice is the device index ("0", "1", ...) whisper.cpp is pinned to
+	// when Accelerator names a GPU accelerator: the CUDA device for
+	// AcceleratorCUDA, the Vulkan device for AcceleratorVulkan. Empty lets
+	// the backend pick a device.
+	GPUDevice string
 	// DataDir is the resolved options.data_directory. Local engines keep
 	// their downloaded runtimes and models under its voice/stt tree.
 	DataDir string

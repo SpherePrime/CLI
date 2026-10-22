@@ -29,6 +29,8 @@ func SettingsFrom(options *config.VoiceOptions, resolver VariableResolver) Setti
 	settings.Engine = normalizedEngine(options.Engine)
 	settings.Model = strings.TrimSpace(options.Model)
 	settings.Language = normalizedLanguage(options.Language)
+	settings.Accelerator = normalizedAccelerator(options.Accelerator)
+	settings.GPUDevice = strings.TrimSpace(options.GPUDevice)
 	settings.BaseURL = strings.TrimSpace(options.BaseURL)
 	settings.APIKey = strings.TrimSpace(options.APIKey)
 	settings.RecordCommand = strings.TrimSpace(options.RecordCommand)
@@ -48,6 +50,19 @@ func normalizedEngine(engine string) string {
 		return candidate
 	}
 	return EngineAuto
+}
+
+// normalizedAccelerator canonicalizes the configured compute device to one of
+// the GPU accelerators or empty: CPU is the default, so "cpu", empty and
+// anything unrecognized all mean the CPU build. A typo therefore degrades to
+// working CPU inference instead of a broken GPU run, and only an exact "cuda"
+// or "vulkan" leaves the default path.
+func normalizedAccelerator(accelerator string) string {
+	candidate := strings.ToLower(strings.TrimSpace(accelerator))
+	if candidate == AcceleratorCUDA || candidate == AcceleratorVulkan {
+		return candidate
+	}
+	return ""
 }
 
 // normalizedLanguage trims the language setting and treats "auto" as unset,

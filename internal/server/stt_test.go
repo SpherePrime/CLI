@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -105,19 +107,35 @@ func (h *sttHarness) waitForTaskState(t *testing.T, taskName, state string) prot
 }
 
 // TestSttCatalogRouteShape checks the catalog contract: three providers,
-// google with no models, and the configured engine echoed back.
+// google with no models, the configured engine echoed back, and whisper
+// carrying the accelerator metadata the desktop renders.
 func TestSttCatalogRouteShape(t *testing.T) {
+	// GPU enumeration must not depend on the machine the tests run on: stubs
+	// that are not on PATH mean the catalog reports no GPUs and the CPU
+	// accelerator as the only offer.
+	restore := voice.SetNvidiaSmiForTest("prime-no-such-nvidia-smi")
+	defer restore()
+	restoreVulkan := voice.SetVulkanInfoForTest("prime-no-such-vulkaninfo")
+	defer restoreVulkan()
 	h := newSttHarness(t)
 
 	var catalog proto.SttCatalog
 	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+h.workspace.ID+"/stt", &catalog))
 	require.Empty(t, catalog.Engine)
+	require.Empty(t, catalog.Language)
 	require.Len(t, catalog.Providers, 3)
 
 	google := providerByID(t, catalog, "google")
 	require.Equal(t, "Google STT", google.Title)
 	require.True(t, google.Available)
 	require.Empty(t, google.Models)
+	require.Empty(t, google.Accelerator)
+	require.Empty(t, google.Accelerators)
+
+	whisper := providerByID(t, catalog, "whisper")
+	require.Empty(t, whisper.Accelerator, "nothing is configured yet")
+	require.Empty(t, whisper.GPUs)
+	require.Equal(t, []string{"cpu"}, whisper.Accelerators)
 
 	vosk := providerByID(t, catalog, "vosk")
 	require.True(t, vosk.Available)
@@ -138,7 +156,7 @@ func TestSttSelectPersistsInConfig(t *testing.T) {
 
 	var selection proto.SttSelection
 	code := h.post(t, "/v1/workspaces/"+id+"/stt/select",
-		`{"provider":"whisper","model":"ggml-tiny"}`, &selection)
+		`{"provider":"whisper","model":"ggml-tiny","language":"ru-RU","accelerator":"cpu"}`, &selection)
 	require.Equal(t, 200, code)
 	require.Equal(t, proto.SttSelection{Engine: "whisper", Model: "ggml-tiny"}, selection)
 
@@ -147,22 +165,180 @@ func TestSttSelectPersistsInConfig(t *testing.T) {
 	require.NotNil(t, options)
 	require.Equal(t, "whisper", options.Engine)
 	require.Equal(t, "ggml-tiny", options.Model)
+	require.Equal(t, "ru-RU", options.Language)
+	require.Equal(t, "cpu", options.Accelerator)
+	require.Empty(t, options.GPUDevice, "a CPU build has no GPU to name")
 
 	var catalog proto.SttCatalog
 	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
 	require.Equal(t, "whisper", catalog.Engine)
 	require.Equal(t, "ggml-tiny", catalog.Model)
+	require.Equal(t, "ru-RU", catalog.Language)
 	whisper := providerByID(t, catalog, "whisper")
 	for _, model := range whisper.Models {
 		// Active follows the configured model id, installed or not.
 		require.Equal(t, model.ID == "ggml-tiny", model.Active, model.ID)
 	}
 
-	// Selecting the hosted engine clears the model again.
-	code = h.post(t, "/v1/workspaces/"+id+"/stt/select", `{"provider":"google","model":""}`, &selection)
+	// Selecting the hosted engine clears the model again; the language is
+	// the engine's setting, so it keeps being written as given.
+	code = h.post(t, "/v1/workspaces/"+id+"/stt/select",
+		`{"provider":"google","model":"","language":"en-US"}`, &selection)
 	require.Equal(t, 200, code)
 	require.Equal(t, proto.SttSelection{Engine: "google", Model: ""}, selection)
+	options = h.workspace.Cfg.Config().Options.Voice
+	require.Equal(t, "google", options.Engine)
+	require.Empty(t, options.Model)
+	require.Equal(t, "en-US", options.Language)
 	require.Equal(t, 400, h.post(t, "/v1/workspaces/"+id+"/stt/select", `{"provider":"nope","model":""}`, nil))
+}
+
+// TestSttSelectAcceleratorAndGPU covers the whisper compute-device settings:
+// cuda with a device index persists, cpu clears a stale device, and values
+// the engine does not accept are refused silently instead of stored.
+func TestSttSelectAcceleratorAndGPU(t *testing.T) {
+	h := newSttHarness(t)
+	id := h.workspace.ID
+	selectBody := func(body string) {
+		t.Helper()
+		var selection proto.SttSelection
+		require.Equal(t, 200, h.post(t, "/v1/workspaces/"+id+"/stt/select", body, &selection))
+		require.Equal(t, "whisper", selection.Engine)
+	}
+
+	// CUDA with a device index lands in the config.
+	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cuda","gpu_device":"1"}`)
+	options := h.workspace.Cfg.Config().Options.Voice
+	require.Equal(t, "cuda", options.Accelerator)
+	require.Equal(t, "1", options.GPUDevice)
+
+	var catalog proto.SttCatalog
+	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
+	require.Equal(t, "cuda", providerByID(t, catalog, "whisper").Accelerator)
+
+	// A padded device index is stored in canonical form.
+	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cuda","gpu_device":" 0 "}`)
+	options = h.workspace.Cfg.Config().Options.Voice
+	require.Equal(t, "cuda", options.Accelerator)
+	require.Equal(t, "0", options.GPUDevice)
+
+	// Switching back to CPU clears the device index: it would otherwise sit
+	// in the config meaning nothing.
+	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cpu"}`)
+	options = h.workspace.Cfg.Config().Options.Voice
+	require.Equal(t, "cpu", options.Accelerator)
+	require.Empty(t, options.GPUDevice)
+	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
+	require.Equal(t, "cpu", providerByID(t, catalog, "whisper").Accelerator)
+
+	// Values the engine does not know are not stored. The accelerator and
+	// the device are validated independently: a valid accelerator with a
+	// rejected device still switches, and a typo leaves the previous
+	// accelerator in charge instead of breaking dictation.
+	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"rocm"}`)
+	options = h.workspace.Cfg.Config().Options.Voice
+	require.Equal(t, "cpu", options.Accelerator)
+	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cuda","gpu_device":"-1"}`)
+	options = h.workspace.Cfg.Config().Options.Voice
+	require.Equal(t, "cuda", options.Accelerator)
+	require.Empty(t, options.GPUDevice, "a rejected device index is not stored")
+	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cuda","gpu_device":"abc"}`)
+	options = h.workspace.Cfg.Config().Options.Voice
+	require.Equal(t, "cuda", options.Accelerator)
+	require.Empty(t, options.GPUDevice)
+
+	// The vulkan accelerator persists the same way: its device index
+	// travels in the same field as the CUDA one.
+	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"vulkan","gpu_device":"0"}`)
+	options = h.workspace.Cfg.Config().Options.Voice
+	require.Equal(t, "vulkan", options.Accelerator)
+	require.Equal(t, "0", options.GPUDevice)
+	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
+	require.Equal(t, "vulkan", providerByID(t, catalog, "whisper").Accelerator)
+}
+
+// TestSttCatalogExposesGPUs checks that a stubbed nvidia-smi reaches the
+// catalog: GPUs are listed with their index, name and the accelerator they
+// belong to, and the accelerator offers follow what this platform can
+// actually install.
+func TestSttCatalogExposesGPUs(t *testing.T) {
+	stub := filepath.Join(t.TempDir(), "nvidia-smi")
+	if runtime.GOOS == "windows" {
+		stub += ".cmd"
+		require.NoError(t, os.WriteFile(stub, []byte("@echo off\r\necho 0, NVIDIA GeForce RTX 3070\r\n"), 0o755))
+	} else {
+		require.NoError(t, os.WriteFile(stub, []byte("#!/bin/sh\necho '0, NVIDIA GeForce RTX 3070'\n"), 0o755))
+		require.NoError(t, os.Chmod(stub, 0o755))
+	}
+	restore := voice.SetNvidiaSmiForTest(stub)
+	defer restore()
+	// Vulkan enumeration is pinned to a missing tool so the accelerator
+	// offers do not depend on whether this machine has vulkaninfo.
+	restoreVulkan := voice.SetVulkanInfoForTest("prime-no-such-vulkaninfo")
+	defer restoreVulkan()
+	h := newSttHarness(t)
+
+	var catalog proto.SttCatalog
+	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+h.workspace.ID+"/stt", &catalog))
+	whisper := providerByID(t, catalog, "whisper")
+	require.Equal(t, []proto.Gpu{{Index: 0, Name: "NVIDIA GeForce RTX 3070", Kind: "cuda"}}, whisper.GPUs)
+	// The CUDA offer follows the runtime table: windows/amd64 has a CUDA
+	// build, other platforms only ship CPU.
+	if runtime.GOOS == "windows" && runtime.GOARCH == "amd64" {
+		require.Equal(t, []string{"cpu", "cuda"}, whisper.Accelerators)
+	} else {
+		require.Equal(t, []string{"cpu"}, whisper.Accelerators)
+	}
+
+	// The other providers never carry GPU metadata: only whisper runs on a
+	// graphics card.
+	for _, provider := range catalog.Providers {
+		if provider.ID != "whisper" {
+			require.Empty(t, provider.GPUs, provider.ID)
+			require.Empty(t, provider.Accelerators, provider.ID)
+			require.Empty(t, provider.Accelerator, provider.ID)
+		}
+	}
+}
+
+// TestSttCatalogExposesVulkanGPU checks the Vulkan half of the catalog: a
+// stubbed vulkaninfo makes vulkan an accelerator offer on any platform and
+// lists the device with the vulkan kind, while the llvmpipe software
+// renderer is filtered out of the GPU list.
+func TestSttCatalogExposesVulkanGPU(t *testing.T) {
+	restore := voice.SetNvidiaSmiForTest("prime-no-such-nvidia-smi")
+	defer restore()
+	stub := filepath.Join(t.TempDir(), "vulkaninfo")
+	if runtime.GOOS == "windows" {
+		stub += ".cmd"
+		require.NoError(t, os.WriteFile(stub, []byte(
+			"@echo off\r\n"+
+				"echo GPU0:\r\n"+
+				"echo deviceType = DISCRETE_GPU\r\n"+
+				"echo deviceName = AMD Radeon RX 7900 XT\r\n"+
+				"echo GPU1:\r\n"+
+				"echo deviceType = CPU\r\n"+
+				"echo deviceName = llvmpipe\r\n"), 0o755))
+	} else {
+		require.NoError(t, os.WriteFile(stub, []byte(
+			"#!/bin/sh\n"+
+				"echo 'GPU0:'\n"+
+				"echo 'deviceType = DISCRETE_GPU'\n"+
+				"echo 'deviceName = AMD Radeon RX 7900 XT'\n"+
+				"echo 'GPU1:'\n"+
+				"echo 'deviceType = CPU'\n"+
+				"echo 'deviceName = llvmpipe'\n"), 0o755))
+		require.NoError(t, os.Chmod(stub, 0o755))
+	}
+	restoreVulkan := voice.SetVulkanInfoForTest(stub)
+	defer restoreVulkan()
+	h := newSttHarness(t)
+
+	var catalog proto.SttCatalog
+	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+h.workspace.ID+"/stt", &catalog))
+	whisper := providerByID(t, catalog, "whisper")
+	require.Equal(t, []proto.Gpu{{Index: 0, Name: "AMD Radeon RX 7900 XT", Kind: "vulkan"}}, whisper.GPUs)
+	require.Equal(t, []string{"cpu", "vulkan"}, whisper.Accelerators)
 }
 
 // sttFakeDownloads serves tiny stand-in archives for the model installer,

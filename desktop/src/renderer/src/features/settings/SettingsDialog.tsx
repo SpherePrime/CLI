@@ -20,11 +20,9 @@ import {
   Download,
   AudioLines,
   Keyboard,
-  Mic,
   Image
 } from 'lucide-react'
 import { VoiceSettings } from './VoiceSettings'
-import { STTSettings } from './STTSettings'
 import { ImageGenSettings } from './ImageGenSettings'
 import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
@@ -45,8 +43,7 @@ export function SettingsDialog({
     { id: 'appearance', label: t('Интерфейс'), icon: Monitor },
     { id: 'shortcuts', label: t('Горячие клавиши'), icon: Keyboard },
     { id: 'providers', label: t('Провайдеры'), icon: Server },
-    { id: 'voice', label: t('Голос'), icon: AudioLines },
-    { id: 'stt', label: t('Распознавание речи'), icon: Mic },
+    { id: 'voice', label: t('Голос и речь'), icon: AudioLines },
     { id: 'images', label: t('Изображения'), icon: Image },
     { id: 'mcp', label: 'MCP', icon: Boxes },
     { id: 'lsp', label: 'LSP', icon: Code2 },
@@ -74,7 +71,6 @@ export function SettingsDialog({
         </nav>
         <div className="settings-body">
           {tab === 'voice' && <VoiceSettings workspace={w} />}
-          {tab === 'stt' && <STTSettings workspace={w} />}
           {tab === 'images' && <ImageGenSettings workspace={w} />}
           {tab === 'appearance' && (
             <>

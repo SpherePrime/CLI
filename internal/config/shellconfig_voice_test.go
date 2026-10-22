@@ -1,6 +1,9 @@
 package config_test
 
 import (
+	"os"
+	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/SpherePrime/CLI/internal/config"
@@ -55,4 +58,53 @@ func TestVoiceSettingsFollowConfig(t *testing.T) {
 	settings := voice.SettingsFrom(store.Config().Options.Voice, store.Resolver())
 	require.True(t, settings.Enabled)
 	require.Equal(t, "ru", settings.Language)
+}
+
+// The accelerator normalizes to the GPU accelerators or empty: a typo must
+// degrade to the CPU build rather than break the engine, and "cpu" is the
+// default, which is stored as empty.
+func TestVoiceSettingsAccelerator(t *testing.T) {
+	store := loadPrimeSh(t, "option voice accelerator cuda\noption voice gpu-device 1")
+
+	settings := voice.SettingsFrom(store.Config().Options.Voice, store.Resolver())
+	require.Equal(t, voice.AcceleratorCUDA, settings.Accelerator)
+	require.Equal(t, "1", settings.GPUDevice)
+
+	store = loadPrimeSh(t, "option voice accelerator vulkan")
+	settings = voice.SettingsFrom(store.Config().Options.Voice, store.Resolver())
+	require.Equal(t, voice.AcceleratorVulkan, settings.Accelerator)
+
+	store = loadPrimeSh(t, "option voice accelerator cpu")
+	settings = voice.SettingsFrom(store.Config().Options.Voice, store.Resolver())
+	require.Empty(t, settings.Accelerator, "cpu is the default, so it normalizes to empty")
+	require.Empty(t, settings.GPUDevice)
+
+	// The shell builtin refuses an unknown accelerator outright, so the
+	// typo case only reaches the settings through a hand-edited config; the
+	// settings layer is the last line of defense.
+	store = storeWithVoiceAccelerator(t, "rocm")
+	settings = voice.SettingsFrom(store.Config().Options.Voice, store.Resolver())
+	require.Empty(t, settings.Accelerator, "an unknown accelerator means the CPU build")
+}
+
+// storeWithVoiceAccelerator loads a store whose global options.json pins the
+// voice accelerator directly, bypassing the shell builtin's validation: a
+// hand-edited config is the one way an unknown value reaches the settings.
+func storeWithVoiceAccelerator(t *testing.T, accelerator string) *config.ConfigStore {
+	t.Helper()
+	root := t.TempDir()
+	configDir := filepath.Join(root, "config", "prime")
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(root, "data"))
+	t.Setenv("PRIME_GLOBAL_CONFIG", configDir)
+	t.Setenv("PRIME_GLOBAL_DATA", filepath.Join(root, "data", "prime"))
+
+	section := filepath.Join(configDir, "options.json")
+	require.NoError(t, os.WriteFile(section,
+		[]byte(`{"options":{"voice":{"accelerator":`+strconv.Quote(accelerator)+`}}}`), 0o600))
+
+	store, err := config.Load(t.TempDir(), t.TempDir(), false)
+	require.NoError(t, err)
+	return store
 }

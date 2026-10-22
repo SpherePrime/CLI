@@ -52,7 +52,7 @@ func (c *controllerV1) handleSttSelect(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusBadRequest, "invalid STT select request")
 		return
 	}
-	result, err := c.backend.SelectSttModel(r.PathValue("id"), request.Provider, request.Model)
+	result, err := c.backend.SelectSttModel(r.PathValue("id"), request)
 	if err != nil {
 		c.handleError(w, r, err)
 		return

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -54,11 +55,29 @@ func (t whisperTranscriber) Transcribe(ctx context.Context, audio *Audio) (strin
 	defer func() { _ = os.Remove(wavPath) }()
 
 	args := whisperArgs(binary, modelPath, whisperLanguage(t.settings.Language), wavPath)
-	stdout, stderr, err := runCommandBudget(ctx, args[0], args[1:], nil, whisperTimeout)
+	stdout, stderr, err := runCommandBudget(ctx, args[0], args[1:], whisperEnv(t.settings.Accelerator, t.settings.GPUDevice), whisperTimeout)
 	if err != nil {
 		return "", engineError(err, stderr)
 	}
 	return tidyTranscript(stdout), nil
+}
+
+// whisperEnv builds the environment for one whisper.cpp run. A CUDA run may
+// be pinned to one GPU through CUDA_VISIBLE_DEVICES, a Vulkan run through
+// GGML_VK_VISIBLE_DEVICES; CPU runs, and GPU runs without a chosen device,
+// inherit the current environment untouched.
+func whisperEnv(accelerator, gpuDevice string) []string {
+	device := strings.TrimSpace(gpuDevice)
+	if device == "" {
+		return nil
+	}
+	switch accelerator {
+	case AcceleratorCUDA:
+		return mergeEnv([]string{"CUDA_VISIBLE_DEVICES=" + device})
+	case AcceleratorVulkan:
+		return mergeEnv([]string{"GGML_VK_VISIBLE_DEVICES=" + device})
+	}
+	return nil
 }
 
 // whisperLanguage picks the language flag value: the first configured
