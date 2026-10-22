@@ -61,6 +61,7 @@ The system has a normal POSIX toolchain; the usual utilities are available.
 - Use job_output tool to view current output from background shell
 - Use job_kill tool to terminate a background shell
 - IMPORTANT: NEVER use `&` at the end of commands to run in background - use run_in_background parameter instead
+- Do NOT poll job_output in a loop waiting for a job to finish: start the job, continue other work or end your turn, and the system will automatically wake you with the job's result when it finishes. Use job_output only for a one-time progress check or to grab output of an already-finished job
 - Commands that should run in background:
   * Long-running servers (e.g., `npm start`, `python -m http.server`, `node server.js`)
   * Watch/monitoring tasks (e.g., `npm run watch`)

@@ -182,6 +182,10 @@ type coordinator struct {
 	skillTracker *skills.Tracker
 
 	readyWg errgroup.Group
+
+	// backgroundWakeRunner, when set by tests, replaces the run dispatch
+	// behind background job wake-ups.
+	backgroundWakeRunner func(ctx context.Context, sessionID, prompt string)
 }
 
 // CoordinatorOptions holds the dependencies for NewCoordinator. Using a
@@ -964,7 +968,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 
 	allTools = append(
 		allTools,
-		tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.DataDirectory, c.cfg.Config().Options.Attribution, modelID),
+		tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.DataDirectory, c.cfg.Config().Options.Attribution, modelID, c.wakeOnBackgroundJob),
 		tools.NewPrimeInfoTool(c.cfg, c.lspManager, c.allSkills, c.activeSkills, c.skillTracker),
 		tools.NewPrimeLogsTool(logFile),
 		tools.NewSearchInstructionsTool(),
