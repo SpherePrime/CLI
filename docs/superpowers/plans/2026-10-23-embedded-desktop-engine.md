@@ -1,5 +1,7 @@
 # Embedded Desktop Engine Implementation Plan
 
+Superseded by [Rust Desktop Migration](2026-10-23-rust-desktop-migration.md). The engine ABI and capability inventory remain relevant; Electron/Koffi hosting is no longer the target architecture.
+
 Goal: ship Desktop as an independent application using an in-process Go engine, preserving the standalone CLI and existing Desktop functionality.
 
 Architecture: retain the shared Go backend and tools. Build a versioned native library for Desktop, loaded through the existing Koffi dependency. Replace local process/socket transport with asynchronous native requests and bounded event polling. Keep the remote SSH transport separate. Do not rewrite tools in TypeScript or duplicate business logic.
