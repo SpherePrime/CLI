@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import {
   defaultShortcuts,
+  mouseShortcutFromEvent,
   shortcutActions,
   shortcutConflicts,
   shortcutFromEvent,
@@ -55,14 +56,31 @@ export function ShortcutSettings({ workspace: w }: { workspace: Workspace }) {
       save({ [recording]: combo })
       setRecording(null)
     }
-    const cancel = (event: PointerEvent) => {
-      if (!(event.target as Element).closest?.('.shortcut-key.recording')) setRecording(null)
+    // Mouse buttons: side (back/forward) buttons only fire pointer events,
+    // so a keyboard-only recorder could never see them. While recording,
+    // pressing the back/forward/middle button (or any click with a modifier)
+    // becomes the new binding; a plain left click keeps meaning "cancel".
+    const handlePointer = (event: PointerEvent) => {
+      if ((event.target as Element).closest?.('.shortcut-key.recording')) {
+        setRecording(null)
+        return
+      }
+      const modified = event.ctrlKey || event.altKey || event.shiftKey || event.metaKey
+      if (event.button === 0 && !modified) {
+        setRecording(null)
+        return
+      }
+      const code = mouseShortcutFromEvent(event)
+      if (!code) return
+      event.preventDefault()
+      save({ [recording]: code })
+      setRecording(null)
     }
     window.addEventListener('keydown', capture, true)
-    window.addEventListener('pointerdown', cancel, true)
+    window.addEventListener('pointerdown', handlePointer, true)
     return () => {
       window.removeEventListener('keydown', capture, true)
-      window.removeEventListener('pointerdown', cancel, true)
+      window.removeEventListener('pointerdown', handlePointer, true)
     }
   }, [recording, shortcuts])
   const customized = shortcutActions.some((action) => shortcuts[action] !== defaultShortcuts[action])
@@ -72,7 +90,7 @@ export function ShortcutSettings({ workspace: w }: { workspace: Workspace }) {
         <div>
           <h3>{t('Горячие клавиши')}</h3>
           <small>
-            {t('Нажмите на сочетание и введите новое. Esc — отмена, Backspace — отключить.')}
+            {t('Нажмите на сочетание и введите новое. Esc — отмена, Backspace — отключить. Для боковых кнопок мыши нажмите их во время записи.')}
           </small>
         </div>
         <button disabled={!customized} onClick={() => void w.savePreferences({ keybindings: {} })}>
@@ -102,7 +120,7 @@ export function ShortcutSettings({ workspace: w }: { workspace: Workspace }) {
                 onClick={() => setRecording(active ? null : action)}
               >
                 {active
-                  ? t('Нажмите сочетание…')
+                  ? t('Нажмите клавишу или кнопку мыши…')
                   : shortcuts[action]
                     ? shortcutLabel(shortcuts[action])
                     : t('Не задано')}

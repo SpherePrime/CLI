@@ -32,8 +32,35 @@ export const defaultShortcuts: Shortcuts = {
 }
 
 type KeyEvent = Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>
+type MouseEventType = Pick<PointerEvent | MouseEvent, 'button' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>
 
 const modifierCodes = /^(Control|Shift|Alt|Meta|OS)(Left|Right)?$/
+// Mouse buttons, per the PointerEvent button codes: 0 primary (left),
+// 1 auxiliary (middle), 2 secondary (right), 3 back, 4 forward, 5-6 extra.
+// Keyboard event codes never start with "Mouse", so keyboard and mouse
+// bindings live in one store without ever clashing. A bare mouse click (no
+// modifiers) is a valid binding too: it does not preventDefault, it just
+// runs the action next to what the click already does in the UI.
+function mouseButton(button: number) {
+  switch (button) {
+    case 0:
+      return 'MouseLeft'
+    case 1:
+      return 'MouseMiddle'
+    case 2:
+      return 'MouseRight'
+    case 3:
+      return 'MouseBack'
+    case 4:
+      return 'MouseForward'
+    case 5:
+      return 'MouseX1'
+    case 6:
+      return 'MouseX2'
+    default:
+      return null
+  }
+}
 const symbols: Record<string, string> = {
   Backquote: '`',
   Minus: '-',
@@ -70,6 +97,40 @@ export function matchesShortcut(event: KeyEvent, shortcut: string | undefined) {
   return Boolean(shortcut) && shortcutFromEvent(event) === shortcut
 }
 
+// Mouse buttons answer to pointer/mouse events, and the back/forward side
+// buttons in particular are what keyboard binding UIs can never capture.
+// Bare clicks bind too; no modifier is required.
+export function mouseShortcutFromEvent(event: MouseEventType): string | null {
+  const code = mouseButton(event.button)
+  if (!code) return null
+  const modifiers = [
+    event.ctrlKey && 'Ctrl',
+    event.altKey && 'Alt',
+    event.shiftKey && 'Shift',
+    event.metaKey && 'Meta'
+  ].filter(Boolean)
+  return [...modifiers, code].join('+')
+}
+
+// A stored shortcut is a mouse binding when its key part starts with "Mouse"
+// (the modifiers prefix — "Ctrl+", "Alt+", etc. — may or may not be present).
+function isMouseShortcut(shortcut: string) {
+  return shortcut.split('+').some((part) => part.startsWith('Mouse'))
+}
+
+export function matchesPointerShortcut(event: MouseEventType, shortcut: string | undefined) {
+  return Boolean(shortcut) && isMouseShortcut(shortcut) && mouseShortcutFromEvent(event) === shortcut
+}
+
+const mouseSymbols: Record<string, string> = {
+  Left: 'LMB',
+  Middle: 'MMB',
+  Back: '⬅',
+  Forward: '➡',
+  X1: 'X1',
+  X2: 'X2'
+}
+
 export function shortcutLabel(shortcut: string | undefined) {
   if (!shortcut) return ''
   return shortcut
@@ -79,7 +140,9 @@ export function shortcutLabel(shortcut: string | undefined) {
         ? part.slice(3)
         : part.startsWith('Digit')
           ? part.slice(5)
-          : (symbols[part] ?? part)
+          : part.startsWith('Mouse')
+            ? (mouseSymbols[part.slice(5)] ?? part)
+            : (symbols[part] ?? part)
     )
     .join(' ')
 }

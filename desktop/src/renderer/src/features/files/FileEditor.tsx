@@ -1,4 +1,4 @@
-import { matchesShortcut } from '../../../../shared/keybindings'
+import { matchesPointerShortcut, matchesShortcut } from '../../../../shared/keybindings'
 import { getShortcuts } from '../shortcuts/shortcutStore'
 import { useEffect, useState } from 'react'
 import { CodeEditor, modelUri } from './CodeEditor'
@@ -44,8 +44,20 @@ export default function FileEditor({
         if (document) void state.save(document.id)
       }
     }
+    // Side (back/forward) mouse buttons can save the open document too;
+    // they never produce keydown events.
+    const savePointer = (event: PointerEvent) => {
+      if (matchesPointerShortcut(event, getShortcuts().saveFile)) {
+        if (event.button !== 0) event.preventDefault()
+        if (document) void state.save(document.id)
+      }
+    }
     window.addEventListener('keydown', save, true)
-    return () => window.removeEventListener('keydown', save, true)
+    window.addEventListener('pointerdown', savePointer, true)
+    return () => {
+      window.removeEventListener('keydown', save, true)
+      window.removeEventListener('pointerdown', savePointer, true)
+    }
   }, [document, state.save, enabled])
   useEffect(() => {
     const ids = state.documents
