@@ -59,6 +59,14 @@ func (r *Error) UnmarshalJSON(data []byte) error {
 // [apijson.CustomUnmarshaler].
 func (r *Error) UnmarshalAPIJSON(data []byte) error { return r.UnmarshalJSON(data) }
 
+// NewRaw returns an Error carrying a response body that does not follow the
+// documented error shape, keeping the original payload visible.
+func NewRaw(statusCode int, request *http.Request, response *http.Response, requestID, workspaceID, body string) *Error {
+	e := &Error{StatusCode: statusCode, Request: request, Response: response, RequestID: requestID, WorkspaceID: workspaceID}
+	e.JSON.raw = body
+	return e
+}
+
 func (r *Error) Error() string {
 	// Attempt to re-populate the response body
 	statusInfo := fmt.Sprintf("%s %q: %d %s", r.Request.Method, r.Request.URL, r.Response.StatusCode, http.StatusText(r.Response.StatusCode))
