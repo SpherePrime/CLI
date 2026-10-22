@@ -15,6 +15,32 @@ type Breakdown = {
   estimated_usage: boolean
 }
 
+/**
+ * Totals for the context popover. The meter and header use the provider's
+ * reported usage of the latest request when it exists (the true current
+ * context); the category list keeps the estimated proportions unscaled so
+ * its percentages always sum to 100% of the estimate instead of inflating
+ * with the reported-vs-estimate ratio.
+ */
+export function contextTotals(data: Breakdown | null, fallbackWindow: number) {
+  const capacity = data?.context_window || fallbackWindow
+  const estimated = data?.estimated_total || 0
+  const reported = data?.reported_total || 0
+  const total = reported || estimated
+  const shareOfEstimate = estimated ? (category: Category) => category.tokens / estimated : () => 0
+  const percentOfTotal = (value: number) => (capacity ? (value / capacity) * 100 : 0)
+  return {
+    capacity,
+    estimated,
+    total,
+    estimatedUsage: Boolean(data?.estimated_usage),
+    shareOfEstimate,
+    percentOfTotal,
+    threshold: data?.auto_summarize_percent || 0,
+    free: Math.max(0, capacity - total)
+  }
+}
+
 const colors: Record<string, string> = {
   system_prompt: '#ff6a35',
   mcp_instructions: '#f59e0b',
@@ -77,13 +103,16 @@ export function ContextPopover({
     tool_results: t('Результаты инструментов'),
     attachments: t('Вложения')
   }
-  const capacity = data?.context_window || fallbackWindow
-  const estimated = data?.estimated_total || 0
-  const total = data?.reported_total || estimated
-  const scale = data?.reported_total && estimated ? data.reported_total / estimated : 1
-  const percentOf = (value: number) => (capacity ? (value / capacity) * 100 : 0)
-  const threshold = data?.auto_summarize_percent || 0
-  const free = Math.max(0, capacity - total)
+  const totals = contextTotals(data, fallbackWindow)
+  const { capacity, total, estimated, estimatedUsage, threshold } = totals
+  const percentOf = totals.percentOfTotal
+  const reported = data?.reported_total || 0
+  // Bars show each category's share of the window using the reported total,
+  // keeping the bar and header consistent even when the estimate differs.
+  const barWidth = (category: Category) => {
+    if (!capacity || !estimated) return 0
+    return ((category.tokens / estimated) * (total / capacity)) * 100
+  }
   return (
     <Popover anchor={anchor} close={close} width={340} align="end" label={t('Контекст')}>
       <div className="context-popover">
@@ -98,7 +127,7 @@ export function ContextPopover({
             <span
               key={category.key}
               style={{
-                width: `${percentOf(category.tokens * scale)}%`,
+                width: `${Math.min(100, barWidth(category))}%`,
                 background: colors[category.key]
               }}
             />
@@ -111,7 +140,7 @@ export function ContextPopover({
           <p className="context-note">
             {t('Автосжатие при {percent}% · свободно {free}', {
               percent: threshold,
-              free: compactTokens(free)
+              free: compactTokens(totals.free)
             })}
           </p>
         )}
@@ -142,10 +171,10 @@ export function ContextPopover({
                   {category.items > 1 && <small>×{category.items}</small>}
                 </span>
                 <span className="context-list-value">
-                  {compactTokens(Math.round(category.tokens * scale))}
+                  {compactTokens(Math.round(category.tokens))}
                 </span>
                 <span className="context-list-percent">
-                  {percentOf(category.tokens * scale).toFixed(1)}%
+                  {(totals.shareOfEstimate(category) * 100).toFixed(1)}%
                 </span>
               </li>
             ))}
@@ -153,9 +182,11 @@ export function ContextPopover({
         )}
         {data && (
           <p className="context-note">
-            {data.reported_total && !data.estimated_usage
-              ? t('Итог — по данным провайдера, разбивка приблизительная.')
-              : t('Провайдер не сообщил расход, показана оценка.')}
+            {estimatedUsage && reported
+              ? t('Расход оценён, так как провайдер не сообщил точные токены.')
+              : data.reported_total
+                ? t('Итог — по данным провайдера, разбивка приблизительная.')
+                : t('Провайдер не сообщил расход, показана оценка.')}
           </p>
         )}
         <button
