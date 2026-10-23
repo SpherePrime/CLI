@@ -365,6 +365,11 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             Ok(Value::Null)
         }
         "windowDimmed" => Err(HostError::unsupported(method)),
+        "cancelProjectWait" => Ok(Value::Null),
+        "sudoPassword" => crate::sudo::handle(args.first().unwrap_or(&Value::Null)),
+        "update" => Err(HostError::unsupported(
+            "native signed updates are not wired yet; use the installed release flow",
+        )),
         "openExternal" => {
             let url = url::Url::parse(string(args, 0)?)
                 .map_err(|error| HostError::new("INVALID_URL", error.to_string()))?;
@@ -405,5 +410,66 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                 .map_err(|error| HostError::new("BROWSER_ERROR", error))
         }
         _ => Err(HostError::unsupported(method)),
+    }
+}
+
+#[cfg(test)]
+mod manifest_tests {
+    use serde_json::Value;
+    use std::collections::BTreeSet;
+
+    const MANIFEST: &str = include_str!("../../src/shared/hostMethods.json");
+    const SOURCE: &str = include_str!("commands.rs");
+
+    const BROWSER_PREFIX_METHODS: [&str; 10] = [
+        "browserShow",
+        "browserHide",
+        "browserTab",
+        "browserState",
+        "browserNavigate",
+        "browserCommand",
+        "browserOpenExternal",
+        "browserPickCancel",
+        "browserPick",
+        "browserLogs",
+    ];
+
+    const EXPLICIT_UNSUPPORTED: [&str; 2] = ["windowDimmed", "update"];
+
+    #[test]
+    fn every_host_method_has_a_native_dispatch_arm() {
+        let manifest: BTreeSet<String> = serde_json::from_str::<Value>(MANIFEST)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect();
+        let browser_arm = SOURCE.contains("method.starts_with(\"browser\")");
+        assert!(browser_arm, "browser prefix dispatch arm is missing");
+        let mut unmatched = Vec::new();
+        for method in &manifest {
+            if BROWSER_PREFIX_METHODS.contains(&method.as_str()) {
+                continue;
+            }
+            if !SOURCE.contains(&format!("\"{method}\"")) {
+                unmatched.push(method.clone());
+            }
+        }
+        assert!(
+            unmatched.is_empty(),
+            "methods without a native dispatch arm: {unmatched:?}"
+        );
+        for method in EXPLICIT_UNSUPPORTED {
+            assert!(manifest.contains(method), "{method} left the manifest");
+        }
+    }
+
+    #[test]
+    fn manifest_matches_preload_contract_shape() {
+        let manifest: Value = serde_json::from_str(MANIFEST).unwrap();
+        let object = manifest.as_object().unwrap();
+        assert!(object.values().all(|value| value == &Value::Bool(true)));
+        assert!(object.contains_key("call") && object.contains_key("info"));
     }
 }
