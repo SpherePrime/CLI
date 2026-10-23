@@ -28,6 +28,10 @@ pub async fn desktop_call(
         .map_err(|error| HostError::new("HOST_WORKER", error.to_string()))?
 }
 
+fn urlencoding(value: &str) -> String {
+    url::form_urlencoded::byte_serialize(value.as_bytes()).collect()
+}
+
 fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<Value> {
     let state = app.state::<AppState>();
     if method == "terminal" {
@@ -372,7 +376,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             );
             Ok(Value::Null)
         }
-        "windowDimmed" => Err(HostError::unsupported(method)),
+        "windowDimmed" => Ok(Value::Null),
         "cancelProjectWait" => Ok(Value::Null),
         "sudoPassword" => crate::sudo::handle(args.first().unwrap_or(&Value::Null)),
         "update" => {
@@ -405,11 +409,31 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             })?;
             Ok(Value::Null)
         }
-        "openWith" if args.get(2).and_then(Value::as_str) == Some("default") => {
+        "openWith" => {
             let target =
                 crate::files::scoped_path(&state.root(string(args, 0)?)?, string(args, 1)?, false)?;
-            open::that(target)?;
+            match string(args, 2)? {
+                "default" => open::that(target)?,
+                "vscode" => open::that(crate::files::editor_url(&target)?)?,
+                _ => return Err(HostError::new("INVALID_ARGUMENT", "Unknown application")),
+            }
             Ok(Value::Null)
+        }
+        "trashEntry" => {
+            let root = state.root(string(args, 0)?)?;
+            crate::files::trash(&root, string(args, 1)?)?;
+            Ok(Value::Null)
+        }
+        "diff" if args.get(3).and_then(Value::as_str) == Some("session") => {
+            let id = string(args, 0)?;
+            let root = state.root(id)?;
+            let session = urlencoding(string(args, 1)?);
+            let history = state.require_engine()?.request(
+                "GET",
+                &format!("/v1/workspaces/{id}/sessions/{session}/history"),
+                None,
+            )?;
+            crate::git::session_diff(&root, string(args, 2)?, &history)
         }
         "changes" | "github" | "diff" => {
             crate::git::dispatch(&state.root(string(args, 0)?)?, method, args)

@@ -39,6 +39,23 @@ pub fn scoped_path(root: &Path, relative: &str, create: bool) -> HostResult<Path
     Ok(resolved)
 }
 
+pub fn trash(root: &Path, relative: &str) -> HostResult<()> {
+    let target = scoped_path(root, relative, false)?;
+    if target == dunce::canonicalize(root)? {
+        return Err(HostError::new(
+            "PATH_DENIED",
+            "The project root cannot be deleted",
+        ));
+    }
+    trash::delete(&target).map_err(|error| HostError::new("TRASH_FAILED", error.to_string()))
+}
+
+pub fn editor_url(target: &Path) -> HostResult<String> {
+    let url = url::Url::from_file_path(target)
+        .map_err(|_| HostError::new("INVALID_PATH", "Path cannot be opened in the editor"))?;
+    Ok(format!("vscode://file{}", url.path()))
+}
+
 pub fn list(root: &Path, relative: &str) -> HostResult<Value> {
     let directory = scoped_path(root, relative, false)?;
     let root = &dunce::canonicalize(root)?;
@@ -194,6 +211,23 @@ mod tests {
         assert_eq!(names, vec!["src", ".gitignore"]);
         let nested = list(&uncanonical, "src").unwrap();
         assert_eq!(nested[0]["name"], "main.rs");
+    }
+
+    #[test]
+    fn trash_refuses_the_project_root_and_moves_entries() {
+        let root = tempfile::tempdir().unwrap();
+        fs::write(root.path().join("old.txt"), "x").unwrap();
+        assert_eq!(trash(root.path(), "").unwrap_err().code, "PATH_DENIED");
+        trash(root.path(), "old.txt").unwrap();
+        assert!(!root.path().join("old.txt").exists());
+    }
+
+    #[test]
+    fn editor_url_uses_the_vscode_file_scheme() {
+        let root = tempfile::tempdir().unwrap();
+        let url = editor_url(&dunce::canonicalize(root.path()).unwrap()).unwrap();
+        assert!(url.starts_with("vscode://file/"));
+        assert!(!url.contains('\\'));
     }
 
     #[test]

@@ -92,6 +92,48 @@ fn body_file(request:&Value)->HostResult<tempfile::NamedTempFile> {
     Ok(file)
 }
 
+fn read_text(path: &Path) -> HostResult<String> {
+    let bytes = match std::fs::metadata(path) {
+        Ok(metadata) if metadata.is_file() && metadata.len() <= 2 * 1024 * 1024 => std::fs::read(path)?,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+        _ => return Err(HostError::new("INVALID_FILE", "Diff requires a file no larger than 2 MiB")),
+    };
+    if bytes.contains(&0) {
+        return Err(HostError::new("BINARY_FILE", "Binary files cannot be previewed"));
+    }
+    String::from_utf8(bytes).map_err(|_| HostError::new("INVALID_ENCODING", "File is not UTF-8"))
+}
+
+pub fn session_diff(root: &Path, relative: &str, history: &Value) -> HostResult<Value> {
+    let after = read_text(&crate::files::scoped_path(root, relative, true)?)?;
+    let wanted = relative.replace('\\', "/");
+    let mut versions = history
+        .as_array()
+        .map(|files| {
+            files
+                .iter()
+                .filter(|file| {
+                    file["path"].as_str().is_some_and(|path| {
+                        let path = path.replace('\\', "/");
+                        path == wanted || path.ends_with(&format!("/{wanted}"))
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    versions.sort_by_key(|file| file["version"].as_i64().unwrap_or(0));
+    let before = versions
+        .first()
+        .and_then(|file| file["content"].as_str())
+        .ok_or_else(|| HostError::new("NO_SESSION_VERSION", "This file has no version in the session history"))?
+        .to_string();
+    let patch = similar::TextDiff::from_lines(&before, &after)
+        .unified_diff()
+        .header(relative, relative)
+        .to_string();
+    Ok(json!({"path":relative,"source":"session","before":before,"after":after,"patch":patch}))
+}
+
 pub fn dispatch(root: &Path, method: &str, args: &[Value]) -> HostResult<Value> {
     if method == "changes" { return changes(root); }
     if method == "diff" {
@@ -214,6 +256,25 @@ pub fn dispatch(root: &Path, method: &str, args: &[Value]) -> HostResult<Value> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn session_diff_compares_the_first_session_version() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(root.path().join("src")).unwrap();
+        std::fs::write(root.path().join("src/app.ts"), "final\n").unwrap();
+        let history = json!([
+            {"path": root.path().join("src/app.ts").to_string_lossy(), "version": 2, "content": "middle\n"},
+            {"path": "src/app.ts", "version": 1, "content": "first\n"},
+            {"path": "other.ts", "version": 0, "content": "unrelated\n"}
+        ]);
+        let diff = session_diff(root.path(), "src/app.ts", &history).unwrap();
+        assert_eq!(diff["before"], "first\n");
+        assert_eq!(diff["after"], "final\n");
+        assert!(diff["patch"].as_str().unwrap().contains("-first"));
+        assert_eq!(
+            session_diff(root.path(), "missing.ts", &history).unwrap_err().code,
+            "NO_SESSION_VERSION"
+        );
+    }
     #[test]
     fn metadata_preserves_unicode() {
         let parsed=commit("abc\0one two\0Исправление\0Author\02026-10-23\0HEAD -> main");

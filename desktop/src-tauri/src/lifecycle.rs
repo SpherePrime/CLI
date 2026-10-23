@@ -28,6 +28,9 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     std::env::set_var("PRIME_DESKTOP_BROWSER_TOKEN", &browser_server.token);
     app.manage(browser_server);
     app.manage(state);
+    if let Err(error) = crate::tray::create(app.handle()) {
+        eprintln!("Tray unavailable: {error}");
+    }
     if let Err(error) = app.state::<crate::state::AppState>().windows.start(app.handle()) {
         eprintln!("Window control unavailable: {error}");
     }
@@ -95,6 +98,9 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
         } else if !state.close_ready.swap(false, Ordering::AcqRel) {
             api.prevent_close();
             crate::events::emit(window.app_handle(), "", "beforeClose", serde_json::Value::Null);
+        } else if !state.quitting.load(Ordering::Acquire) && crate::tray::keep_running(&state) {
+            api.prevent_close();
+            crate::tray::hide_to_tray(window.app_handle());
         }
     }
 }
