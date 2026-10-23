@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn native_engine_round_trip() {
-        let library = engine_resource::resolve(None);
+        let library = crate::engine_resource::resolve(None);
         if library.is_err() {
             eprintln!("skipping: native engine library is not built for this platform");
             return;
