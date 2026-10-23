@@ -18,6 +18,7 @@ mod projects;
 mod redact;
 mod remote;
 mod settings;
+mod sudo;
 mod speech;
 mod state;
 mod teams;
