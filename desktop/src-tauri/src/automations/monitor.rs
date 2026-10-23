@@ -18,7 +18,7 @@ pub struct FileMonitor {
 
 impl FileMonitor {
     pub fn new(root: &Path) -> HostResult<Self> {
-        let root = root.to_path_buf();
+        let root = dunce::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
         let revision = Arc::new(AtomicU64::new(0));
         let error = Arc::new(Mutex::new(None));
         let next_revision = revision.clone();
@@ -86,7 +86,9 @@ impl FileMonitor {
 }
 
 fn ignored(root: &Path, path: &Path, ignores: &Gitignore) -> bool {
-    let relative = path.strip_prefix(root).unwrap_or(path);
+    let Ok(relative) = path.strip_prefix(root) else {
+        return true;
+    };
     if relative.components().any(|component| {
         matches!(
             component.as_os_str().to_str(),

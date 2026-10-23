@@ -19,16 +19,16 @@ pub fn scoped_path(root: &Path, relative: &str, create: bool) -> HostResult<Path
             "Path must stay inside the project",
         ));
     }
-    let root = root.canonicalize()?;
+    let root = dunce::canonicalize(root)?;
     let target = root.join(relative);
     let resolved = if create && !target.exists() {
         target
             .parent()
-            .ok_or_else(|| HostError::new("PATH_DENIED", "Invalid path"))?
-            .canonicalize()?
+            .ok_or_else(|| HostError::new("PATH_DENIED", "Invalid path"))
+            .and_then(|parent| Ok(dunce::canonicalize(parent)?))?
             .join(target.file_name().unwrap())
     } else {
-        target.canonicalize()?
+        dunce::canonicalize(&target)?
     };
     if !resolved.starts_with(&root) {
         return Err(HostError::new(
@@ -41,6 +41,7 @@ pub fn scoped_path(root: &Path, relative: &str, create: bool) -> HostResult<Path
 
 pub fn list(root: &Path, relative: &str) -> HostResult<Value> {
     let directory = scoped_path(root, relative, false)?;
+    let root = &dunce::canonicalize(root)?;
     let mut rules = ignore::gitignore::GitignoreBuilder::new(root);
     for name in [".gitignore", ".primeignore"] {
         rules.add(root.join(name));
@@ -54,9 +55,10 @@ pub fn list(root: &Path, relative: &str) -> HostResult<Value> {
         let name = entry.file_name().to_string_lossy().into_owned();
         let directory = entry.file_type()?.is_dir();
         if [".git", "node_modules", ".superpowers", ".env", ".env.local"].contains(&name.as_str())
-            || rules
-                .matched_path_or_any_parents(entry.path(), directory)
-                .is_ignore()
+            || (entry.path().starts_with(root)
+                && rules
+                    .matched_path_or_any_parents(entry.path(), directory)
+                    .is_ignore())
         {
             continue;
         }
@@ -171,6 +173,27 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         assert!(scoped_path(root.path(), "../secret", true).is_err());
         assert!(scoped_path(root.path(), root.path().to_str().unwrap(), false).is_err());
+    }
+
+    #[test]
+    fn listing_applies_ignore_rules_for_uncanonical_roots() {
+        let root = tempfile::tempdir().unwrap();
+        fs::write(root.path().join(".gitignore"), "build/\n*.log\n").unwrap();
+        fs::create_dir_all(root.path().join("build")).unwrap();
+        fs::create_dir_all(root.path().join("src")).unwrap();
+        fs::write(root.path().join("debug.log"), "").unwrap();
+        fs::write(root.path().join("src").join("main.rs"), "").unwrap();
+        let uncanonical = root.path().join("src").join("..");
+        let names: Vec<String> = list(&uncanonical, "")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["name"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(names, vec!["src", ".gitignore"]);
+        let nested = list(&uncanonical, "src").unwrap();
+        assert_eq!(nested[0]["name"], "main.rs");
     }
 
     #[test]
