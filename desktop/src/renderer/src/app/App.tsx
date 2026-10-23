@@ -8,7 +8,8 @@ import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
 import { I18nProvider, useI18n } from '../i18n'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { AlertCircle, X } from 'lucide-react'
+import { ToastStack } from '../features/notifications/ToastStack'
+import { notifyError } from '../features/notifications/notifications'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
 import { HistoryMessageList } from '../features/chat/HistoryMessageList'
@@ -45,6 +46,14 @@ export function App() {
     window.addEventListener('prime:host-error', handleHostError)
     return () => window.removeEventListener('prime:host-error', handleHostError)
   }, [w.errorHandler])
+  useEffect(() => {
+    if (!w.error) return
+    notifyError(w.error)
+    w.setError('')
+  }, [w.error])
+  useEffect(() => {
+    if (w.info.error) notifyError(w.info.error)
+  }, [w.info.error])
   const [started, setStarted] = useState(false)
   const failed = Boolean(w.error || w.info.error || w.info.runtime === 'failed')
   const startupNeedsInput = w.questions.length > 0 || w.permissions.length > 0
@@ -247,6 +256,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   )
   return (
     <>
+      <ToastStack openProviders={() => setModal('providers')} />
       <Titlebar>
         <WorkspaceTopbar
           workspace={w}
@@ -309,20 +319,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           </>
         )}
         <main className="main-workspace" data-workbench-expanded={workbench && workbenchExpanded}>
-          {(w.error || w.info.error) && (
-            <div className="error-banner" role="alert">
-              <AlertCircle size={16} />
-              <span>{w.error || w.info.error}</span>
-              <button onClick={() => setModal('providers')}>{t('Настройки')}</button>
-              <button
-                className="icon small"
-                aria-label={t('Скрыть ошибку')}
-                onClick={() => w.setError('')}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          )}
           {isEmpty ? (
             <Welcome workspace={w} openCommands={() => setModal('commands')} />
           ) : (
