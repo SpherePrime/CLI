@@ -110,7 +110,7 @@ fn migrate_credentials(state: &crate::state::AppState, legacy: &std::path::Path,
         let Some(encrypted) = entry["encrypted"].as_str() else {
             continue;
         };
-        let outcome = decrypt_entry(encrypted)
+        let outcome = decrypt_entry(legacy, encrypted)
             .and_then(|plaintext| serde_json::from_slice::<Value>(&plaintext).map_err(|_| unreadable()))
             .and_then(|payload| verify_binding(&payload, entry["binding"].as_str().unwrap_or("")))
             .and_then(|credentials| {
@@ -128,7 +128,7 @@ fn migrate_credentials(state: &crate::state::AppState, legacy: &std::path::Path,
     }
 }
 
-fn decrypt_entry(encrypted: &str) -> HostResult<Vec<u8>> {
+fn decrypt_entry(legacy: &std::path::Path, encrypted: &str) -> HostResult<Vec<u8>> {
     use base64::Engine as _;
     let blob = base64::engine::general_purpose::STANDARD
         .decode(encrypted)
@@ -136,7 +136,38 @@ fn decrypt_entry(encrypted: &str) -> HostResult<Vec<u8>> {
     if blob.is_empty() || blob.len() > 48 * 1024 {
         return Err(unreadable());
     }
-    protect::unprotect(&blob)
+    match blob.strip_prefix(b"v10") {
+        Some(sealed) => decrypt_chromium(&chromium_key(legacy)?, sealed),
+        None => protect::unprotect(&blob),
+    }
+}
+
+/// Electron `safeStorage` on Windows uses Chromium `os_crypt`: values are
+/// `v10` + 12-byte nonce + AES-256-GCM ciphertext, and the AES key is kept
+/// DPAPI-protected in the application's `Local State` file.
+fn chromium_key(legacy: &std::path::Path) -> HostResult<Vec<u8>> {
+    use base64::Engine as _;
+    let state: Value = serde_json::from_slice(&std::fs::read(legacy.join("Local State"))?)?;
+    let wrapped = base64::engine::general_purpose::STANDARD
+        .decode(state["os_crypt"]["encrypted_key"].as_str().ok_or_else(unreadable)?)
+        .map_err(|_| unreadable())?;
+    let key = protect::unprotect(wrapped.strip_prefix(b"DPAPI").ok_or_else(unreadable)?)?;
+    if key.len() != 32 {
+        return Err(unreadable());
+    }
+    Ok(key)
+}
+
+fn decrypt_chromium(key: &[u8], sealed: &[u8]) -> HostResult<Vec<u8>> {
+    use aes_gcm::{aead::Aead, Aes256Gcm, KeyInit, Nonce};
+    if sealed.len() < 12 + 16 {
+        return Err(unreadable());
+    }
+    let (nonce, ciphertext) = sealed.split_at(12);
+    Aes256Gcm::new_from_slice(key)
+        .map_err(|_| unreadable())?
+        .decrypt(Nonce::from_slice(nonce), ciphertext)
+        .map_err(|_| unreadable())
 }
 
 fn unreadable() -> HostError {
@@ -229,7 +260,11 @@ fn import_state_files(directory: &std::path::Path, legacy: &std::path::Path) -> 
 /// Runs the migration once: a completion marker prevents repeated work,
 /// and the marker itself records the report for diagnostics.
 pub fn run_once(state: &crate::state::AppState) {
-    if state.directory.join("migration-complete.json").exists() {
+    let complete = std::fs::read(state.directory.join("migration-complete.json"))
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
+        .is_some_and(|report| report["credentialsFailed"].as_u64().unwrap_or(0) == 0);
+    if complete {
         return;
     }
     match run(state) {
@@ -331,6 +366,35 @@ mod tests {
         let protected = protect::protect(plaintext).unwrap();
         assert_ne!(protected, plaintext);
         assert_eq!(protect::unprotect(&protected).unwrap(), plaintext);
+    }
+
+    #[test]
+    fn chromium_v10_values_decrypt_with_the_local_state_key() {
+        use aes_gcm::{aead::Aead, Aes256Gcm, KeyInit, Nonce};
+        use base64::Engine as _;
+        let legacy = tempfile::tempdir().unwrap();
+        let key = [7u8; 32];
+        let mut wrapped = b"DPAPI".to_vec();
+        wrapped.extend(protect::protect(&key).unwrap());
+        std::fs::write(
+            legacy.path().join("Local State"),
+            json!({"os_crypt":{"encrypted_key":base64::engine::general_purpose::STANDARD.encode(&wrapped)}}).to_string(),
+        )
+        .unwrap();
+        let nonce = [3u8; 12];
+        let mut blob = b"v10".to_vec();
+        blob.extend(nonce);
+        blob.extend(
+            Aes256Gcm::new_from_slice(&key)
+                .unwrap()
+                .encrypt(Nonce::from_slice(&nonce), b"secret".as_ref())
+                .unwrap(),
+        );
+        let encoded = base64::engine::general_purpose::STANDARD.encode(&blob);
+        assert_eq!(decrypt_entry(legacy.path(), &encoded).unwrap(), b"secret");
+        blob[20] ^= 1;
+        let tampered = base64::engine::general_purpose::STANDARD.encode(&blob);
+        assert!(decrypt_entry(legacy.path(), &tampered).is_err());
     }
 
     #[test]

@@ -32,6 +32,7 @@ portable-pty = "0.9"
 regex = "1"
 dunce = "1"
 trash = "5"
+aes-gcm = "0.10"
 ssh2 = "0.9.6"
 keyring = { version = "4.2", features = ["v1"] }
 chrono = "0.4"

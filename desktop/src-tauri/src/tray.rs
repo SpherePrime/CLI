@@ -77,7 +77,8 @@ fn busy_chats(state: &AppState) -> bool {
 }
 
 pub fn background_work(state: &AppState) -> bool {
-    state.terminals.count() > 0
+    state.running_shells.load(Ordering::Acquire) > 0
+        || state.terminals.count() > 0
         || state.remotes.terminals.count() > 0
         || state.teams.active_count() > 0
         || state.automations.counts()["activeCount"].as_u64().unwrap_or(0) > 0
