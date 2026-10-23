@@ -374,6 +374,11 @@ mod tests {
 
     #[test]
     fn native_engine_round_trip() {
+        let library = engine_resource::resolve(None);
+        if library.is_err() {
+            eprintln!("skipping: native engine library is not built for this platform");
+            return;
+        }
         let directory = tempfile::tempdir().unwrap();
         let engine = Engine::load(directory.path()).unwrap();
         let client = uuid::Uuid::new_v4().to_string();

@@ -286,6 +286,11 @@ func Close(ctx context.Context) error {
 		h.Close()
 	}
 	broker.Shutdown()
+	// A closed application has no MCP clients; dropping the state
+	// entries keeps later prime_info snapshots (and tests reusing the
+	// process) from reporting stale connected clients.
+	states.Reset(map[string]ClientInfo{})
+	sessions.Reset(map[string]*ClientSession{})
 	return nil
 }
 
