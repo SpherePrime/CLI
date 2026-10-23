@@ -63,13 +63,26 @@ jobs:
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev pkg-config
+      - name: Install MinGW
+        if: runner.os == 'Windows'
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc
       - name: Select Windows compiler
         if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
-          $compiler = 'C:/msys64/mingw64/bin/gcc.exe'
+          $compiler = Join-Path $env:MSYS2_LOCATION 'mingw64/bin/gcc.exe'
           if (!(Test-Path -LiteralPath $compiler)) { throw 'MinGW compiler is unavailable' }
-          "PRIME_NATIVE_CC=$compiler" >> $env:GITHUB_ENV
+          "PRIME_NATIVE_CC=$($compiler -replace '\\', '/')" >> $env:GITHUB_ENV
+          if (!(Test-Path -LiteralPath 'C:/Strawberry/perl/bin/perl.exe')) {
+            choco install strawberryperl -y --no-progress
+          }
           'C:/Strawberry/perl/bin' >> $env:GITHUB_PATH
       - run: npm ci
       - name: Set native version
