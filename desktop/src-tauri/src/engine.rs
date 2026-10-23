@@ -74,7 +74,7 @@ impl Engine {
             let free = symbol!("prime_engine_free", Free);
             let shutdown = symbol!("prime_engine_shutdown", Shutdown);
             let last_error = symbol!("prime_engine_last_error", LastError);
-            let options = CString::new(json!({"working_dir":directory,"data_dir":directory.join("engine-data"),"debug":cfg!(debug_assertions)}).to_string()).unwrap();
+            let options = CString::new(json!({"working_dir":directory,"data_dir":directory.join("engine-data"),"attachment_root":directory.join("attachments"),"debug":cfg!(debug_assertions)}).to_string()).unwrap();
             let handle = create(options.as_ptr());
             if handle == 0 {
                 let pointer = last_error();

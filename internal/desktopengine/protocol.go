@@ -11,7 +11,10 @@ const eventQueueSize = 64
 type Options struct {
 	WorkingDir string `json:"working_dir"`
 	DataDir    string `json:"data_dir"`
-	Debug      bool   `json:"debug"`
+	// AttachmentRoot is the only directory the embedded engine may read
+	// disk-backed attachment files from. Empty disables file references.
+	AttachmentRoot string `json:"attachment_root,omitempty"`
+	Debug          bool   `json:"debug"`
 }
 
 type Request struct {

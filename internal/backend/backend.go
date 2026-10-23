@@ -138,6 +138,10 @@ type Backend struct {
 	createGrace time.Duration
 	lingerDelay time.Duration
 	detachGrace time.Duration
+
+	// AttachmentRoot is the trusted directory disk-backed attachments
+	// resolve from. Empty disables attachment file references entirely.
+	AttachmentRoot string
 }
 
 // clientState tracks one client's claim on a workspace.
