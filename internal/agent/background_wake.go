@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/shell"
 )
 
 // backgroundWakeOutputLimit mirrors tools.BackgroundJobWake's contract: the
@@ -31,17 +33,21 @@ func backgroundJobWakePrompt(shellID, description, command string, exitCode int,
 		}
 		fmt.Fprintf(&b, "\nOutput:\n%s\n", tail)
 	}
-	b.WriteString("\nContinue the interrupted work using this result. If the task is already complete, report the outcome briefly.")
+	b.WriteString("\nThis is an automatic notice, not a message from the user. Continue the interrupted work using this result. If the task is already complete, report the outcome to the user briefly.")
 	return b.String()
 }
 
+// backgroundWakeIdlePoll is how often a pending wake-up checks whether the
+// session's current turn has ended.
+var backgroundWakeIdlePoll = 500 * time.Millisecond
+
 // wakeOnBackgroundJob delivers a finished background job to the session that
-// started it, but only when the agent is no longer watching: an active turn
-// sees the job through job_output on its own, so a wake-up there would only
-// duplicate work. When the turn has already ended, a fresh run starts with
-// the job's result and the agent resumes where it stopped. Callbacks run
-// detached: the tool call that spawned the watcher is long gone by the time
-// a long job finishes.
+// started it. A job that finishes while a turn is still running is held until
+// that turn ends: the agent may have moved on to other work or be writing its
+// final reply, and dropping the wake-up there loses the result for good. The
+// wake-up is skipped only when the agent already read the job's final output
+// through job_output. Callbacks run detached: the tool call that spawned the
+// watcher is long gone by the time a long job finishes.
 func (c *coordinator) wakeOnBackgroundJob(sessionID, shellID, description, command string, exitCode int, output string) {
 	if sessionID == "" {
 		return
@@ -49,11 +55,11 @@ func (c *coordinator) wakeOnBackgroundJob(sessionID, shellID, description, comma
 	prompt := backgroundJobWakePrompt(shellID, description, command, exitCode, output)
 	ctx := message.WithHiddenUserMessage(context.Background())
 	go func() {
-		if c.currentAgent().IsSessionBusy(sessionID) {
-			// The agent was still in its turn when the job finished, so
-			// it has been watching the job itself and already saw the
-			// result. Waking it would start a duplicate continuation.
-			slog.Debug("Background job wake-up skipped: agent was watching the job",
+		for c.currentAgent().IsSessionBusy(sessionID) {
+			time.Sleep(backgroundWakeIdlePoll)
+		}
+		if backgroundJobResultSeen(shellID) {
+			slog.Debug("Background job wake-up skipped: agent already read the result",
 				"session_id", sessionID, "shell_id", shellID)
 			return
 		}
@@ -68,4 +74,9 @@ func (c *coordinator) wakeOnBackgroundJob(sessionID, shellID, description, comma
 		}
 		runner(ctx, sessionID, prompt)
 	}()
+}
+
+func backgroundJobResultSeen(shellID string) bool {
+	bgShell, ok := shell.GetBackgroundShellManager().Get(shellID)
+	return ok && bgShell.ResultSeen()
 }

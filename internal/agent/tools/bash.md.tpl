@@ -20,7 +20,7 @@ Prefer the dedicated tools over shell text utilities in all cases:
 - To read or trim output, do not pipe through head/tail/wc - use the view,
   grep and glob tools, which work the same on every platform.
 - To wait or pause, do not run sleep - run the command that is expected to
-  finish, or start it with run_in_background=true and poll it with job_output.
+  finish, or start it with run_in_background=true and let the system wake you when it finishes.
 - To search file contents, use the grep tool. To find files, use glob.
 - To sort or deduplicate output, prefer having the program emit what you need
   (for example "go test -json", or a flag on the tool itself) over sort|uniq.
@@ -60,7 +60,7 @@ Commands needing root privileges (package installs, system services) cannot be r
 - Each command runs in independent shell (no state persistence between calls)
 - Prefer absolute paths over 'cd' (use 'cd' only if user explicitly requests)
 - Do NOT use 'sleep' to wait for something: run the command that is expected to
-  finish, or start it in the background and poll with job_output
+  finish, or start it in the background and let the system wake you when it finishes
 {{- if .RgAvailable }}
 - Ripgrep (`rg`) is available; prefer it over `grep` for faster, more intuitive searching
 {{- end }}
@@ -73,6 +73,7 @@ Commands needing root privileges (package installs, system services) cannot be r
 - Use job_kill tool to terminate a background shell
 - IMPORTANT: NEVER use `&` at the end of commands to run in background - use run_in_background parameter instead
 - Do NOT poll job_output in a loop waiting for a job to finish: start the job, continue other work or end your turn, and the system will automatically wake you with the job's result when it finishes. Use job_output only for a one-time progress check or to grab output of an already-finished job
+- When a command goes to the background (explicitly or automatically after the time limit) and the task depends on its result, tell the user in one short sentence that it is running in the background and that you will continue once it finishes, then end your turn instead of waiting
 - Commands that should run in background:
   * Long-running servers (e.g., `npm start`, `python -m http.server`, `node server.js`)
   * Watch/monitoring tasks (e.g., `npm run watch`)

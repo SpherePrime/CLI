@@ -58,6 +58,10 @@ type BackgroundJobWake func(sessionID, shellID, description, command string, exi
 // wake-up prompt carries; job_output still returns the full output.
 const backgroundWakeOutputLimit = 2000
 
+// backgroundJobNotice tells the agent how to hand a background job over to
+// the wake-up watcher instead of polling it.
+const backgroundJobNotice = "A watcher is tracking this job. If the rest of the task needs its result, tell the user in one short sentence, in their language, that the command is running in the background and that you will continue as soon as it finishes, then end your turn. You will be woken automatically with the job's result; do not poll job_output in a loop. Use job_kill to terminate it."
+
 const (
 	BashToolName = "bash"
 
@@ -315,7 +319,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 					Background:       true,
 					ShellID:          bgShell.ID,
 				}
-				response := fmt.Sprintf("Background shell started with ID: %s\n\nUse job_output tool to view output or job_kill to terminate.", bgShell.ID)
+				response := fmt.Sprintf("Background shell started with ID: %s\n\n%s", bgShell.ID, backgroundJobNotice)
 				return fantasy.WithResponseMetadata(fantasy.NewTextResponse(response), metadata), nil
 			}
 
@@ -400,7 +404,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 				Background:       true,
 				ShellID:          bgShell.ID,
 			}
-			response := fmt.Sprintf("Command is taking longer than expected and has been moved to background.\n\nBackground shell ID: %s\n\nUse job_output tool to view output or job_kill to terminate.", bgShell.ID)
+			response := fmt.Sprintf("Command is taking longer than expected and has been moved to background.\n\nBackground shell ID: %s\n\n%s", bgShell.ID, backgroundJobNotice)
 			return fantasy.WithResponseMetadata(fantasy.NewTextResponse(response), metadata), nil
 		},
 	)
