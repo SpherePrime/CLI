@@ -169,7 +169,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             crate::projects::open(app, &state, path, "project")
         }
         "openChat" => {
-            let path = state.directory.join("Chats");
+            let path = crate::projects::chats_directory(&state);
             std::fs::create_dir_all(&path)?;
             crate::projects::open(app, &state, path, "chat")
         }

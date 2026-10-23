@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"maps"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -87,7 +86,7 @@ func Load(workingDir, dataDir string, debug bool) (*ConfigStore, error) {
 		return nil, fmt.Errorf("invalid hook configuration: %w", err)
 	}
 
-	if !isInsideWorktree() {
+	if !isInsideWorktree(workingDir) {
 		const depth = 2
 		const items = 100
 		slog.Warn("No git repository detected in working directory, will limit file walk operations", "depth", depth, "items", items)
@@ -517,12 +516,20 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			ExistingModels: pc.Models,
 		}
 		providerType := cmp.Or(pc.Type, catwalk.TypeOpenAICompat)
+		cacheKey := discoveryCacheKey(cfg, providerType)
+		if models, ok := cachedDiscovery(cacheKey); ok {
+			mu.Lock()
+			discoveryResults[id] = discoveryResult{models: models}
+			mu.Unlock()
+			continue
+		}
 		wg.Go(func() {
 			models, err := discover.DiscoverModels(discoverCtx, cfg, resolver)
 			if err == nil && len(models) > 0 {
 				if enricher := discover.GetEnricher(string(providerType)); enricher != nil {
 					models, _ = enricher.EnrichModels(discoverCtx, cfg, resolver, models)
 				}
+				storeDiscovery(cacheKey, models)
 			}
 			mu.Lock()
 			discoveryResults[id] = discoveryResult{models: models, err: err}
@@ -1445,13 +1452,8 @@ func assignIfNil[T any](ptr **T, val T) {
 	}
 }
 
-func isInsideWorktree() bool {
-	bts, err := exec.CommandContext(
-		context.Background(),
-		"git", "rev-parse",
-		"--is-inside-work-tree",
-	).CombinedOutput()
-	return err == nil && strings.TrimSpace(string(bts)) == "true"
+func isInsideWorktree(dir string) bool {
+	return worktreeRoot(dir) != ""
 }
 
 // worktreeRoot returns the absolute path of the git working tree root for
@@ -1475,24 +1477,20 @@ func worktreeRoot(dir string) string {
 }
 
 func computeWorktreeRoot(dir string) string {
-	cmd := exec.CommandContext(
-		context.Background(),
-		"git", "rev-parse", "--show-toplevel",
-	)
-	cmd.Dir = dir
-	out, err := cmd.Output()
+	current, err := filepath.Abs(dir)
 	if err != nil {
 		return ""
 	}
-	root := strings.TrimSpace(string(out))
-	if root == "" {
-		return ""
+	for {
+		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
+			return current
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return ""
+		}
+		current = parent
 	}
-	abs, err := filepath.Abs(root)
-	if err != nil {
-		return ""
-	}
-	return abs
 }
 
 // projectBoundary returns the directory at which an upward configuration

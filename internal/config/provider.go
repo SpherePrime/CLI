@@ -14,11 +14,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/embedded"
-	"github.com/SpherePrime/CLI/internal/agent/hyper"
-	"github.com/SpherePrime/CLI/internal/csync"
-	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/etag"
 )
 
@@ -153,45 +152,27 @@ var (
 // those are logged and the fallback is returned.
 func Providers(cfg *Config, opts ...HyperTokenRefresher) ([]catwalk.Provider, error) {
 	providerOnce.Do(func() {
-		var wg sync.WaitGroup
-		providers := csync.NewSlice[catwalk.Provider]()
 		autoupdate := !cfg.Options.DisableProviderAutoUpdate
 		customProvidersOnly := cfg.Options.DisableDefaultProviders
+		if customProvidersOnly {
+			return
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-		defer cancel()
-
-		// Each goroutine owns its own error so the two can report
-		// independently without racing on a shared slice.
-		var catwalkErr, hyperErr error
-		var hyperProvider catwalk.Provider
-
-		wg.Go(func() {
-			if customProvidersOnly {
-				return
-			}
+		catwalkDone := make(chan catalogResult[[]catwalk.Provider], 1)
+		hyperDone := make(chan catalogResult[catwalk.Provider], 1)
+		var pending sync.WaitGroup
+		pending.Go(func() {
 			catwalkURL := cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL)
 			client := catwalk.NewWithURL(catwalkURL)
-			path := cachePathFor("providers")
-			catwalkSyncer.Init(client, path, autoupdate)
-
-			// A failure to refresh or cache the catalog is worth
-			// reporting, but the syncer still hands back the cached or
-			// embedded list. Dropping that would leave the user with no
-			// providers at all over a transient disk or network problem.
+			catwalkSyncer.Init(client, cachePathFor("providers"), autoupdate)
 			items, err := catwalkSyncer.Get(ctx)
 			if err != nil {
-				catwalkURL := fmt.Sprintf("%s/v2/providers", cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL))
-				catwalkErr = fmt.Errorf("Prime was unable to fetch an updated list of providers from %s. Consider setting PRIME_DISABLE_PROVIDER_AUTO_UPDATE=1 to use the embedded providers bundled at the time of this Prime release. You can also update providers manually. For more info see prime update-providers --help.\n\nCause: %w", catwalkURL, err) //nolint:staticcheck
+				err = fmt.Errorf("Prime was unable to fetch an updated list of providers from %s/v2/providers. Consider setting PRIME_DISABLE_PROVIDER_AUTO_UPDATE=1 to use the embedded providers bundled at the time of this Prime release. You can also update providers manually. For more info see prime update-providers --help.\n\nCause: %w", catwalkURL, err) //nolint:staticcheck
 			}
-			providers.Append(items...)
+			catwalkDone <- catalogResult[[]catwalk.Provider]{value: items, err: err}
 		})
-
-		wg.Go(func() {
-			if customProvidersOnly {
-				return
-			}
-			path := cachePathFor("hyper")
+		pending.Go(func() {
 			cfgSnapshot := cfg
 			var refresher func(context.Context) error
 			if len(opts) > 0 {
@@ -201,31 +182,67 @@ func Providers(cfg *Config, opts ...HyperTokenRefresher) ([]catwalk.Provider, er
 				baseURL:      hyper.BaseURL(),
 				resolveKey:   func() string { return resolveHyperAPIKey(cfgSnapshot) },
 				refreshToken: refresher,
-			}, path, autoupdate)
-
-			// As above: keep whatever provider we were handed. The syncer
-			// already falls back to the cached or embedded copy, so an
-			// error here means "could not refresh", not "no Hyper". This
-			// matters more than for other providers because Hyper's
-			// endpoint and model list live in the catalog rather than in
-			// the user's config: dropping it signs a logged-in user out.
+			}, cachePathFor("hyper"), autoupdate)
 			item, err := hyperSyncer.Get(ctx)
 			if err != nil {
-				hyperErr = fmt.Errorf("Prime was unable to fetch updated information from Hyper: %w", err) //nolint:staticcheck
+				err = fmt.Errorf("Prime was unable to fetch updated information from Hyper: %w", err) //nolint:staticcheck
 			}
-			hyperProvider = item
+			hyperDone <- catalogResult[catwalk.Provider]{value: item, err: err}
+		})
+		go func() {
+			pending.Wait()
+			cancel()
+		}()
+
+		budget, stopBudget := context.WithTimeout(ctx, providerFetchBudget)
+		defer stopBudget()
+		deadline := budget.Done()
+		catwalkResult := awaitCatalog(catwalkDone, deadline, func() []catwalk.Provider {
+			if cached, _, err := newCache[[]catwalk.Provider](cachePathFor("providers")).Get(); err == nil && len(cached) > 0 {
+				return cached
+			}
+			return embedded.GetAll()
+		})
+		hyperResult := awaitCatalog(hyperDone, deadline, func() catwalk.Provider {
+			if cached, _, err := newCache[catwalk.Provider](cachePathFor("hyper")).Get(); err == nil && cached.ID != "" {
+				return cached
+			}
+			return hyper.Embedded()
 		})
 
-		wg.Wait()
-
-		if hyperProvider.ID != "" {
-			providerList = append([]catwalk.Provider{hyperProvider}, slices.Collect(providers.Seq())...)
+		if hyperResult.value.ID != "" {
+			providerList = append([]catwalk.Provider{hyperResult.value}, catwalkResult.value...)
 		} else {
-			providerList = slices.Collect(providers.Seq())
+			providerList = slices.Clone(catwalkResult.value)
 		}
-		providerErr = errors.Join(catwalkErr, hyperErr)
+		providerErr = errors.Join(catwalkResult.err, hyperResult.err)
 	})
 	return providerList, providerErr
+}
+
+// providerFetchBudget bounds how long startup waits for the remote
+// catalogs. Past it the cached or embedded copy is used and the refresh
+// keeps running in the background to update the cache for the next start.
+var providerFetchBudget = 2 * time.Second
+
+type catalogResult[T any] struct {
+	value T
+	err   error
+}
+
+func awaitCatalog[T any](done <-chan catalogResult[T], deadline <-chan struct{}, fallback func() T) catalogResult[T] {
+	select {
+	case result := <-done:
+		return result
+	case <-deadline:
+		select {
+		case result := <-done:
+			return result
+		default:
+			slog.Warn("Provider catalog refresh is slow; using cached copy")
+			return catalogResult[T]{value: fallback()}
+		}
+	}
 }
 
 // UpdateProviderInList replaces a provider in the memoized provider list
