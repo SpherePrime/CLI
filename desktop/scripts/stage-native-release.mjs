@@ -10,9 +10,10 @@ const visit = async (directory) => {
     const path = join(directory, entry.name)
     if (entry.isDirectory()) await visit(path)
     else if (/\.(exe|AppImage|deb|rpm|sig)$/.test(entry.name)) {
-      await copyFile(path, join(destination, entry.name))
-      if (entry.name.endsWith('.sig')) {
-        const asset = entry.name.slice(0, -4)
+      const published = entry.name.replaceAll(' ', '.')
+      await copyFile(path, join(destination, published))
+      if (published.endsWith('.sig')) {
+        const asset = published.slice(0, -4)
         const platform = asset.endsWith('.exe') ? 'windows-x86_64' : asset.endsWith('.AppImage') ? 'linux-x86_64' : null
         if (platform) platforms[platform] = {
           signature: (await readFile(path, 'utf8')).trim(),
