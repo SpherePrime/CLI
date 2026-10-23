@@ -29,7 +29,7 @@ export type PickedElementResult = {
   attachmentId?: string
   image?: string
 }
-export type QueuedPrompt = { id: string; prompt: string; attachments: number }
+export type QueuedPrompt = { id: string; prompt: string; attachments: number; steering?: boolean }
 export type Session = {
   id: string
   title: string
