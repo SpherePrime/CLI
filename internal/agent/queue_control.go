@@ -15,6 +15,7 @@ type QueuedPrompt struct {
 	ID          string `json:"id"`
 	Prompt      string `json:"prompt"`
 	Attachments int    `json:"attachments"`
+	Steering    bool   `json:"steering"`
 }
 
 type QueueController interface {
@@ -33,7 +34,7 @@ func (a *sessionAgent) QueueEntries(sessionID string) []QueuedPrompt {
 		if calls[i].queueID == "" {
 			calls[i].queueID = uuid.NewString()
 		}
-		entries[i] = QueuedPrompt{ID: calls[i].queueID, Prompt: calls[i].Prompt, Attachments: len(calls[i].Attachments)}
+		entries[i] = QueuedPrompt{ID: calls[i].queueID, Prompt: calls[i].Prompt, Attachments: len(calls[i].Attachments), Steering: calls[i].steering}
 	}
 	if len(calls) > 0 {
 		a.messageQueue.Set(sessionID, calls)

@@ -12,8 +12,10 @@ export function QueuePanel({ workspace: w }: { workspace: Workspace }) {
     setSteering((ids) => ids.filter((id) => w.queue.some((item) => item.id === id)))
   }, [w.queue])
   if (!w.queue.length) return null
+  const isSteering = (id: string) =>
+    steering.includes(id) || w.queue.some((item) => item.id === id && item.steering)
   async function act(id: string) {
-    if (pending || steering.includes(id) || !w.session) return
+    if (pending || isSteering(id) || !w.session) return
     const projectId = w.project!.id
     const sessionId = w.session.id
     setPending(id)
@@ -62,16 +64,16 @@ export function QueuePanel({ workspace: w }: { workspace: Workspace }) {
             </div>
             <button
               className="queue-send-now"
-              disabled={!!pending || steering.includes(item.id) || w.project?.connection !== 'ready'}
+              disabled={!!pending || isSteering(item.id) || w.project?.connection !== 'ready'}
               title={t('Добавить к текущей задаче на следующем шаге')}
               onClick={() => void act(item.id)}
             >
-              {pending === item.id || steering.includes(item.id) ? (
+              {pending === item.id || isSteering(item.id) ? (
                 <LoaderCircle size={14} className="spin" />
               ) : (
                 <ArrowUp size={14} />
               )}
-              <span>{steering.includes(item.id) ? t('Отправляется') : t('Отправить сейчас')}</span>
+              <span>{isSteering(item.id) ? t('Отправляется') : t('Отправить сейчас')}</span>
             </button>
           </li>
         ))}
