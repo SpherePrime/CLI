@@ -1,6 +1,6 @@
 import type { DesktopApi, DesktopEvent, Operation } from '../../../shared/contracts'
 import { hostMethods } from '../../../shared/hostMethods'
-import { operationRoute } from '../../../main/prime/operations'
+import { operationRoute } from '../../../shared/operations'
 
 export type NativeInvoke = <T>(command: string, args: Record<string, unknown>) => Promise<T>
 export type NativeListen = (

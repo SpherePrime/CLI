@@ -1,4 +1,4 @@
-import type { Operation } from '../../shared/contracts'
+import type { Operation } from './contracts'
 type Route = [string, string, any?]
 export function operationRoute(operation: Operation, args: any = {}): Route {
   const sid = encodeURIComponent(args.sessionId || '')

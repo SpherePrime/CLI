@@ -57,14 +57,14 @@ CHATS.md
 
 !desktop/build/
 !desktop/build/**
-!desktop/src/main/prime/
-!desktop/src/main/prime/**
 
 /desktop/.workbench-*
 /.workbench-*
 /desktop/tests/e2e/.workbench-*
 /desktop/src-tauri/target/
 /desktop/src-tauri/gen/
+/desktop/installer/src-tauri/gen/
+/desktop/installer/src-tauri/target/
 /desktop/src-tauri/engine/*.dll
 /desktop/src-tauri/engine/*.so
 /desktop/src-tauri/engine/*.dylib

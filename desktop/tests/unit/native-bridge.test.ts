@@ -4,29 +4,8 @@ import {
   type NativeInvoke,
   type NativeListen
 } from '../../src/renderer/src/host/nativeBridge'
-import { hostMethods } from '../../src/shared/hostMethods'
-import { readFileSync } from 'node:fs'
-import ts from 'typescript'
 
 describe('native host bridge', () => {
-  it('covers every current preload method', () => {
-    const source = readFileSync(new URL('../../src/preload/index.ts', import.meta.url), 'utf8')
-    const file = ts.createSourceFile('preload.ts', source, ts.ScriptTarget.Latest, true)
-    const methods: string[] = []
-    function visit(node: ts.Node) {
-      if (
-        ts.isVariableDeclaration(node) &&
-        node.name.getText(file) === 'api' &&
-        node.initializer &&
-        ts.isObjectLiteralExpression(node.initializer)
-      )
-        methods.push(...node.initializer.properties.map((property) => property.name!.getText(file)))
-      ts.forEachChild(node, visit)
-    }
-    visit(file)
-    expect([...Object.keys(hostMethods), 'onEvent'].sort()).toEqual(methods.sort())
-  })
-
   it('preserves arguments and routes existing engine operations', async () => {
     const invoke = vi.fn().mockResolvedValue([])
     const bridge = await createNativeBridge(

@@ -121,17 +121,14 @@ case "$MODE" in
     desktop)
         command -v npm >/dev/null 2>&1 || fail "Node.js/npm is required"
         [ -d desktop/node_modules ] || npm --prefix desktop ci
-        [ -f desktop/runtime/manifest.json ] || node desktop/scripts/acquire-runtime.mjs
         exec npm --prefix desktop run dev
         ;;
     setup)
         command -v npm >/dev/null 2>&1 || fail "Node.js/npm is required"
         [ -d desktop/node_modules ] || npm --prefix desktop ci
-        node desktop/scripts/acquire-runtime.mjs
         if [ "$(uname -s)" = "Linux" ]; then
             npm --prefix desktop run dist:linux
-            npm --prefix desktop run dist:installer
-            echo "Linux installer and packages are in desktop/release"
+            echo "Linux packages are in desktop/src-tauri/target/release/bundle"
         else
             npm --prefix desktop run build
             echo "Desktop build completed in desktop/out"
