@@ -503,8 +503,21 @@ export function useWorkspace() {
             },
             2000
           )
-        if (payload?.session_id === current.current.session?.id)
+        if (payload?.session_id === current.current.session?.id) {
           history.live(payload, event.payload.action)
+          if (
+            payload.role === 'assistant' &&
+            event.payload.action !== 'deleted' &&
+            !(payload.parts || []).some((part: any) => part.type === 'finish')
+          ) {
+            setBusy(true)
+            setObservedBusy({
+              projectId: event.workspaceId,
+              sessionId: payload.session_id,
+              busy: true
+            })
+          }
+        }
       }
       if (event.type === 'session') {
         setSessions((items) => {

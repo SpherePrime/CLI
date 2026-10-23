@@ -77,6 +77,7 @@ func NewJobOutputTool(spillDir string) fantasy.AgentTool {
 
 			status := "running"
 			if done {
+				bgShell.MarkResultSeen()
 				status = "completed"
 				if err != nil {
 					exitCode := shell.ExitCode(err)

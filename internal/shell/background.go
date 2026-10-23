@@ -34,6 +34,7 @@ type BackgroundShell struct {
 	done          chan struct{}
 	exitErr       error
 	completedAt   atomic.Int64 // Unix timestamp when job completed (0 if still running)
+	resultSeen    atomic.Bool
 }
 
 // BackgroundShellManager manages background shell instances.
@@ -206,6 +207,17 @@ func (bs *BackgroundShell) GetOutput() (stdout string, stderr string, done bool,
 	default:
 		return bs.stdout.String(), bs.stderr.String(), false, nil
 	}
+}
+
+// MarkResultSeen records that the agent has already read the job's final
+// output, so no wake-up is needed for it.
+func (bs *BackgroundShell) MarkResultSeen() {
+	bs.resultSeen.Store(true)
+}
+
+// ResultSeen reports whether the agent has already read the job's final output.
+func (bs *BackgroundShell) ResultSeen() bool {
+	return bs.resultSeen.Load()
 }
 
 // IsDone checks if the background shell has finished execution.
