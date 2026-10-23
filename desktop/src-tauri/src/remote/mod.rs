@@ -360,6 +360,108 @@ impl RemoteManager {
         })
     }
 
+    /// Imports legacy Electron profiles. Profiles with the same
+    /// identifier are skipped, imported ones are validated and merged
+    /// into the native store. Returns (imported, skipped).
+    pub fn import_legacy(&self, saved: &Value) -> HostResult<(u64, u64)> {
+        if saved["version"].as_u64() != Some(1) {
+            return Err(HostError::new("REMOTE_STORE", "remote.corrupt"));
+        }
+        let profiles = saved["profiles"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+        let hosts: HashMap<String, String> = saved["hosts"]
+            .as_object()
+            .map(|hosts| {
+                hosts
+                    .iter()
+                    .filter_map(|(key, value)| {
+                        value
+                            .as_str()
+                            .filter(|fingerprint| {
+                                fingerprint.starts_with("SHA256:") && fingerprint.len() == 50
+                            })
+                            .map(|fingerprint| (key.clone(), fingerprint.to_owned()))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        let mut state = self.inner.lock().unwrap();
+        let mut next = state.store.value.clone();
+        let mut imported = 0u64;
+        let mut skipped = 0u64;
+        for profile in profiles {
+            let Ok(profile) = serde_json::from_value::<Profile>(profile) else {
+                skipped += 1;
+                continue;
+            };
+            let Ok(profile) = profile.validate() else {
+                skipped += 1;
+                continue;
+            };
+            if next.profiles.iter().any(|existing| existing.id == profile.id) {
+                skipped += 1;
+                continue;
+            }
+            if let Some(fingerprint) = hosts.get(&profile.host_id()) {
+                state
+                    .store
+                    .value
+                    .hosts
+                    .entry(profile.host_id())
+                    .or_insert_with(|| fingerprint.clone());
+            }
+            next.profiles.push(profile);
+            imported += 1;
+        }
+        if imported > 0 {
+            state.store.persist(next)?;
+        }
+        Ok((imported, skipped))
+    }
+
+    /// Stores legacy decrypted credentials into the native vault for
+    /// the profile with the given identifier. The caller must have
+    /// verified the legacy binding before reaching this method.
+    pub fn store_legacy_credentials(
+        &self,
+        id: &str,
+        expected_binding: &str,
+        credentials: &Value,
+    ) -> HostResult<()> {
+        let profile = {
+            let state = self.inner.lock().unwrap();
+            state
+                .store
+                .value
+                .profiles
+                .iter()
+                .find(|profile| profile.id == id)
+                .cloned()
+        };
+        let Some(profile) = profile else {
+            return Err(HostError::new("MIGRATION_PROFILE", "Legacy profile is missing"));
+        };
+        if profile.legacy_binding() != expected_binding {
+            return Err(HostError::new(
+                "MIGRATION_PROFILE",
+                "Legacy profile no longer matches its credential binding",
+            ));
+        }
+        let credentials = Credentials {
+            password: credentials["password"]
+                .as_str()
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned),
+            passphrase: credentials["passphrase"]
+                .as_str()
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned),
+        };
+        vault::save(&profile, &credentials)
+    }
+
     pub fn snapshot(&self) -> Value {
         let state = self.inner.lock().unwrap();
         let profiles =

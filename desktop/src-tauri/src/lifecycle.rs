@@ -28,6 +28,11 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     if let Err(error) = app.state::<crate::state::AppState>().windows.start(app.handle()) {
         eprintln!("Window control unavailable: {error}");
     }
+    let handle = app.handle().clone();
+    std::thread::spawn(move || {
+        let state = handle.state::<crate::state::AppState>();
+        crate::migration::run_once(&state);
+    });
     let resources = app.path().resource_dir()?;
     let handle = app.handle().clone();
     std::thread::spawn(move || {

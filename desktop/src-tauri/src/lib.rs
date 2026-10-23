@@ -12,6 +12,7 @@ mod files;
 mod git;
 mod jobs;
 mod lifecycle;
+mod migration;
 mod permissions;
 mod projects;
 mod redact;
