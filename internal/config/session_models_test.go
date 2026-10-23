@@ -36,4 +36,9 @@ func TestSetSessionModel_PersistsAndClears(t *testing.T) {
 
 	require.NoError(t, store.SetSessionModel("session-1", nil))
 	require.NotContains(t, store.Config().SessionModels, "session-1")
+	onDisk = readConfigJSON(t, configPath, "session_models")
+	require.Empty(t, onDisk["session_models"])
+	reloaded, err := Load(dir, dir, false)
+	require.NoError(t, err)
+	require.NotContains(t, reloaded.Config().SessionModels, "session-1")
 }

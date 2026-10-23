@@ -10,23 +10,17 @@ func (b *Backend) SaveProvider(workspaceID string, request proto.ProviderSaveReq
 	if err != nil {
 		return err
 	}
-	if request.Scope == config.ScopeGlobal && request.OriginalID != "" && request.OriginalID != request.Provider.ID {
+	var stores []*config.ConfigStore
+	if request.Scope == config.ScopeGlobal {
 		for _, opened := range b.workspaces.Seq2() {
-			if err := opened.Cfg.ValidateGlobalProviderRename(request.OriginalID); err != nil {
-				return err
-			}
+			stores = append(stores, opened.Cfg)
 		}
 	}
-	if err := ws.Cfg.SaveProvider(request.Scope, request.OriginalID, request.Provider, request.APIKey); err != nil {
+	if err := ws.Cfg.SaveProviderWithWorkspaces(request.Scope, request.OriginalID, request.Provider, request.APIKey, stores); err != nil {
 		return err
 	}
 	if request.Scope == config.ScopeGlobal {
 		for _, opened := range b.workspaces.Seq2() {
-			if opened.ID != ws.ID {
-				if err := opened.Cfg.ReloadProviderConfiguration(request.OriginalID, request.Provider.ID); err != nil {
-					return err
-				}
-			}
 			publishConfigChanged(opened)
 		}
 	} else {

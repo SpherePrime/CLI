@@ -1262,7 +1262,7 @@ if "!UPLOAD_LOCAL!"=="0" set "POLL=60"
 rem Stable tags built by the Release workflow also carry the Desktop setup
 rem and its auto-update files. Local uploads and pre-releases do not.
 set "DESKTOP_ASSETS="
-if "!UPLOAD_LOCAL!"=="0" if "!VERSION_BARE!"=="!VERSION_BARE:-=!" set "DESKTOP_ASSETS=PrimeSetup-!VERSION_BARE!.exe PrimeDesktop-Update-!VERSION_BARE!.exe latest.yml"
+if "!UPLOAD_LOCAL!"=="0" if "!VERSION_BARE!"=="!VERSION_BARE:-=!" set "DESKTOP_ASSETS=1"
 echo.
 echo  Verifying the assets on %TAG% ...
 :verify_wait
@@ -1277,10 +1277,8 @@ for %%T in (!TARGETS!) do (
         if not "!FOUND!"=="1" set /a MISSING_COUNT+=1
     )
 )
-for %%D in (!DESKTOP_ASSETS!) do (
-    set "FOUND=0"
-    findstr /i /x /c:"%%D" "%ASSET_LIST%" >nul 2>&1 && set "FOUND=1"
-    if not "!FOUND!"=="1" set /a MISSING_COUNT+=1
+if defined DESKTOP_ASSETS (
+    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!"') do set /a MISSING_COUNT+=%%C
 )
 if "!MISSING_COUNT!"=="0" goto verify_report
 if "!POLL!"=="0" goto verify_report
@@ -1316,15 +1314,9 @@ for %%T in (!TARGETS!) do (
         )
     )
 )
-for %%D in (!DESKTOP_ASSETS!) do (
-    set "FOUND=0"
-    findstr /i /x /c:"%%D" "%ASSET_LIST%" >nul 2>&1 && set "FOUND=1"
-    if "!FOUND!"=="1" (
-        echo   [ok]      %%D
-    ) else (
-        echo   [MISSING] %%D
-        set /a MISSING_COUNT+=1
-    )
+if defined DESKTOP_ASSETS (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -Report
+    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!"') do set /a MISSING_COUNT+=%%C
 )
 del /q "%ASSET_LIST%" >nul 2>&1
 echo  ------------------------------------------------------------------

@@ -24,6 +24,7 @@ mod state;
 mod teams;
 mod terminal;
 mod test_data;
+mod updater;
 mod window_chrome;
 
 pub fn run() {
@@ -36,6 +37,7 @@ pub fn run() {
         .expect("Invalid native preview test data directory");
     }
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(lifecycle::setup)
         .invoke_handler(tauri::generate_handler![
             commands::desktop_call,

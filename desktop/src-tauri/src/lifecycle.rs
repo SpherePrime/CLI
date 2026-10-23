@@ -51,7 +51,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             Err(error) => status.error = Some(error.message),
         }
         status.starting = false;
-        let payload = serde_json::json!({"status":if status.instance.is_some(){"ready"}else{"error"},"error":status.error,"version":"native-abi-1"});
+        let payload = serde_json::json!({"status":if status.instance.is_some(){"ready"}else{"error"},"error":status.error,"version":{"version":"Go ABI 1","transport":"in-process"}});
         drop(status);
         crate::events::emit(&handle, "", "runtime", payload);
         if state.require_engine().is_ok() {
@@ -85,6 +85,9 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
                     let _ = window.close();
                 }
             });
+        } else if !state.close_ready.swap(false, Ordering::AcqRel) {
+            api.prevent_close();
+            crate::events::emit(window.app_handle(), "", "beforeClose", serde_json::Value::Null);
         }
     }
 }
@@ -101,22 +104,26 @@ pub fn run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
         let app = app.clone();
         std::thread::spawn(move || {
             let state = app.state::<crate::state::AppState>();
-            state.automations.stop();
-            state.teams.stop();
-            state.windows.shutdown(&app);
-            state.speech.shutdown();
-            let engine = state.engine.lock().unwrap().instance.clone();
-            if let Some(engine) = engine {
-                engine.close();
-            }
-            state.automations.shutdown();
-            state.teams.shutdown();
-            let _ = state.terminals.shutdown();
-            state.remotes.shutdown();
-            if let Some(server) = app.try_state::<crate::browser::mcp::Server>() {
-                server.shutdown();
-            }
+            shutdown(&app, &state);
             app.exit(code.unwrap_or(0));
         });
+    }
+}
+
+pub fn shutdown(app: &tauri::AppHandle, state: &crate::state::AppState) {
+    state.automations.stop();
+    state.teams.stop();
+    state.windows.shutdown(&app);
+    state.speech.shutdown();
+    let engine = state.engine.lock().unwrap().instance.clone();
+    if let Some(engine) = engine {
+        engine.close();
+    }
+    state.automations.shutdown();
+    state.teams.shutdown();
+    let _ = state.terminals.shutdown();
+    state.remotes.shutdown();
+    if let Some(server) = app.try_state::<crate::browser::mcp::Server>() {
+        server.shutdown();
     }
 }

@@ -194,7 +194,7 @@ export function SettingsDialog({
                   )[w.info.runtime] || w.info.runtime}
                 </dd>
                 <dt>{t('Соединение')}</dt>
-                <dd>Windows named pipe</dd>
+                <dd>{w.info.host === 'tauri' ? 'Rust / Go · in-process' : 'Windows named pipe'}</dd>
               </dl>
               <button
                 onClick={async () => {

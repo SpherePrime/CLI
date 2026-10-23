@@ -61,6 +61,7 @@ CHATS.md
 !desktop/src/main/prime/**
 
 /desktop/.workbench-*
+/.workbench-*
 /desktop/tests/e2e/.workbench-*
 /desktop/src-tauri/target/
 /desktop/src-tauri/gen/
@@ -69,3 +70,8 @@ CHATS.md
 /desktop/src-tauri/engine/*.dylib
 /desktop/src-tauri/engine/*.h
 /desktop/src-tauri/engine/manifest.json
+
+# Updater signing keys
+*.updater.key
+prime-updater.key
+!prime-updater.key.pub

@@ -36,6 +36,38 @@ fn wav_headers_rounding_clipping_and_nonfinite_rejection() {
 }
 
 #[test]
+fn silence_retry_uses_pcm_rounding_and_stops_after_two_attempts() {
+    let mut attempts = 0;
+    let result = audio::synthesize_audible(|| {
+        attempts += 1;
+        Ok(if attempts == 1 {
+            vec![0.00001, -0.00001]
+        } else {
+            vec![0.25]
+        })
+    })
+    .unwrap();
+    assert_eq!(attempts, 2);
+    assert_eq!(result, [0.25]);
+    let mut attempts = 0;
+    let error = audio::synthesize_audible(|| {
+        attempts += 1;
+        Ok(vec![0.00001, -0.00001])
+    })
+    .unwrap_err();
+    assert_eq!(attempts, 2);
+    assert_eq!(error.code, "SPEECH_SILENT");
+    let mut attempts = 0;
+    let error = audio::synthesize_audible(|| {
+        attempts += 1;
+        Err(HostError::new("SPEECH_CANCELLED", "cancelled"))
+    })
+    .unwrap_err();
+    assert_eq!(attempts, 1);
+    assert_eq!(error.code, "SPEECH_CANCELLED");
+}
+
+#[test]
 fn voice_import_validation_list_remove_and_paths() {
     let directory = tempfile::tempdir().unwrap();
     let model = directory.path().join("supertonic-3");
@@ -134,7 +166,7 @@ fn cached_supertonic_inference_outputs_wav_speed_and_idle_release() {
     let service = SpeechService::with_directory(directory, Duration::from_millis(200));
     let fast = service
         .request(
-            json!({"action":"speak","text":"Привет.","voice":"F1","speed":1.6}),
+            json!({"action":"speak","text":"Привет.","voice":"F1","speed":1.6,"testNoiseSeed":42}),
             Arc::new(|_| {}),
         )
         .unwrap();
@@ -154,7 +186,7 @@ fn cached_supertonic_inference_outputs_wav_speed_and_idle_release() {
     assert!(energy > 1000.0, "Inference waveform is silent");
     let slow = service
         .request(
-            json!({"action":"speak","text":"Привет.","voice":"F1","speed":0.7}),
+            json!({"action":"speak","text":"Привет.","voice":"F1","speed":0.7,"testNoiseSeed":42}),
             Arc::new(|_| {}),
         )
         .unwrap();

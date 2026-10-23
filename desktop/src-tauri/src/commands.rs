@@ -69,7 +69,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
         "info" => {
             let engine = state.engine.lock().unwrap();
             Ok(
-                json!({"version":env!("CARGO_PKG_VERSION"),"runtime":if engine.starting{"starting"}else if engine.instance.is_some(){"ready"}else{"error"},"runtimeVersion":"native-abi-1","error":engine.error,"packaged":!cfg!(debug_assertions),"terminalCount":state.terminals.count()+state.remotes.terminals.count(),"automationCounts":state.automations.counts(),"update":{"status":"idle"},"host":"tauri","nativePreview":true}),
+                json!({"version":env!("CARGO_PKG_VERSION"),"runtime":if engine.starting{"starting"}else if engine.instance.is_some(){"ready"}else{"error"},"runtimeVersion":{"version":"Go ABI 1","transport":"in-process"},"error":engine.error,"packaged":!cfg!(debug_assertions),"terminalCount":state.terminals.count()+state.remotes.terminals.count(),"automationCounts":state.automations.counts(),"update":crate::updater::snapshot(),"host":"tauri","nativePreview":true}),
             )
         }
         "preferences" => {
@@ -297,6 +297,14 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                     .unwrap_or(Value::Null);
             }
             let result = crate::projects::call(&state, string(args, 0)?, &route)?;
+            if operation == "currentSession" {
+                let id = string(args, 0)?;
+                let path = state.projects.lock().unwrap().get(id)
+                    .and_then(|project| project["path"].as_str()).map(str::to_owned)
+                    .ok_or_else(|| HostError::new("PROJECT_NOT_FOUND", "Project is not open"))?;
+                let session = args.get(2).and_then(|args| args.get("sessionId")).cloned().unwrap_or(Value::Null);
+                state.settings.lock().unwrap().update(&json!({"activeSessions":{path:session}}))?;
+            }
             if matches!(operation, "messages" | "messagePage" | "messageSearch") {
                 Ok(result)
             } else {
@@ -367,9 +375,10 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
         "windowDimmed" => Err(HostError::unsupported(method)),
         "cancelProjectWait" => Ok(Value::Null),
         "sudoPassword" => crate::sudo::handle(args.first().unwrap_or(&Value::Null)),
-        "update" => Err(HostError::unsupported(
-            "native signed updates are not wired yet; use the installed release flow",
-        )),
+        "update" => {
+            let action = string(args, 0)?;
+            crate::updater::handle(app, &state, action)
+        }
         "openExternal" => {
             let url = url::Url::parse(string(args, 0)?)
                 .map_err(|error| HostError::new("INVALID_URL", error.to_string()))?;

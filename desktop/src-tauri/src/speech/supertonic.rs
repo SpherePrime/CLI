@@ -41,6 +41,8 @@ pub struct Supertonic {
     directory: PathBuf,
     styles: HashMap<String, Style>,
     style_order: VecDeque<String>,
+    #[cfg(test)]
+    noise_random: Option<rand::rngs::StdRng>,
 }
 
 impl Supertonic {
@@ -92,11 +94,18 @@ impl Supertonic {
             directory: directory.into(),
             styles: HashMap::new(),
             style_order: VecDeque::new(),
+            #[cfg(test)]
+            noise_random: None,
         })
     }
 
     pub fn sample_rate(&self) -> u32 {
         self.config.ae.sample_rate
+    }
+    #[cfg(test)]
+    pub fn seed_noise(&mut self, seed: u64) {
+        use rand::SeedableRng;
+        self.noise_random = Some(rand::rngs::StdRng::seed_from_u64(seed));
     }
     pub fn forget(&mut self, voice: &str) {
         self.styles.remove(voice);
@@ -170,8 +179,6 @@ impl Supertonic {
             Tensor::from_array((shape.to_vec(), values.to_vec())).map_err(ort_error)?
         };
         let samples = (seconds * self.sample_rate() as f32).floor() as usize;
-        #[cfg(test)]
-        eprintln!("speech duration={seconds} samples={samples} text_length={length} speed={speed}");
         let chunk = self
             .config
             .ae
@@ -189,16 +196,13 @@ impl Supertonic {
             .checked_mul(latent_length)
             .filter(|count| *count <= 16 * 1024 * 1024)
             .ok_or_else(|| error("Speech latent tensor exceeds the memory limit"))?;
-        let mut random = rand::rng();
-        let mut latent = (0..count)
-            .map(|_| {
-                let u1 = random.random::<f32>().max(1e-10);
-                (-2.0 * u1.ln()).sqrt()
-                    * (2.0 * std::f32::consts::PI * random.random::<f32>()).cos()
-            })
-            .collect::<Vec<_>>();
         #[cfg(test)]
-        trace("noise", &latent);
+        let mut latent = match self.noise_random.as_mut() {
+            Some(random) => gaussian_noise(count, random),
+            None => gaussian_noise(count, &mut rand::rng()),
+        };
+        #[cfg(not(test))]
+        let mut latent = gaussian_noise(count, &mut rand::rng());
         let latent_mask =
             Tensor::from_array(([1usize, 1, latent_length], vec![1.0f32; latent_length]))
                 .map_err(ort_error)?;
@@ -218,8 +222,6 @@ impl Supertonic {
                 return Err(error("Estimator returned an unexpected latent shape"));
             }
             latent = values.to_vec();
-            #[cfg(test)]
-            trace(&format!("step-{step}"), &latent);
         }
         if stop.load(Ordering::Acquire) {
             return Err(assets::cancelled());
@@ -233,25 +235,17 @@ impl Supertonic {
         let (_, waveform) = output["wav_tts"]
             .try_extract_tensor::<f32>()
             .map_err(ort_error)?;
-        #[cfg(test)]
-        {
-            trace("waveform-full", waveform);
-            trace("waveform-trimmed", &waveform[..waveform.len().min(samples)]);
-        }
         Ok(waveform[..waveform.len().min(samples)].to_vec())
     }
 }
 
-#[cfg(test)]
-fn trace(stage: &str, values: &[f32]) {
-    let peak = values
-        .iter()
-        .fold(0.0f32, |peak, value| peak.max(value.abs()));
-    let energy: f64 = values.iter().map(|value| (*value as f64).powi(2)).sum();
-    eprintln!(
-        "speech stage={stage} count={} peak={peak} energy={energy}",
-        values.len()
-    );
+fn gaussian_noise(count: usize, random: &mut impl Rng) -> Vec<f32> {
+    (0..count)
+        .map(|_| {
+            let u1 = random.random::<f32>().max(1e-10);
+            (-2.0 * u1.ln()).sqrt() * (2.0 * std::f32::consts::PI * random.random::<f32>()).cos()
+        })
+        .collect()
 }
 
 fn style_tensor(style: StyleTensor) -> HostResult<Tensor<f32>> {
