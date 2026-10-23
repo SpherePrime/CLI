@@ -11,8 +11,8 @@ rem    release     tag the commit and publish a GitHub release. A sub-menu
 rem                 picks which platforms ship; the build runs and the
 rem                 release is published in one go. Stable tags also ship
 rem                 the Prime Desktop setup, built by the Release workflow.
-rem    desktop     run Prime Desktop from desktop\ with a CLI built from here
-rem    setup       build the Prime Desktop setup locally into desktop\release
+rem    desktop     run Prime Desktop (Rust/Tauri) from desktop\ in dev mode
+rem    setup       build the Prime Desktop installer locally
 rem    help        this text
 rem
 rem  Delayed expansion is off for the whole file, on purpose. The release
@@ -36,7 +36,7 @@ rem    Prime.bat release               pick platforms, tag, publish
 rem    Prime.bat release --targets linux
 rem    Prime.bat release --dry-run     print the plan, publish nothing
 rem    Prime.bat desktop               run Prime Desktop from sources
-rem    Prime.bat setup                 build PrimeSetup-<version>.exe locally
+rem    Prime.bat setup                 build PrimeDesktop-Setup-<version>.exe
 rem ============================================================================
 
 cd /d "%~dp0"
@@ -296,8 +296,9 @@ set "EXITCODE=%errorlevel%"
 goto finish
 
 rem ============================================================================
-rem  desktop / setup - Prime Desktop from desktop\, bundling a CLI built from
-rem  this checkout. Node.js 24 and Go are required.
+rem  desktop / setup - Prime Desktop from desktop\: a Rust/Tauri host with the
+rem  Go engine library built from this checkout. Node.js 24, Go, Rust and the
+rem  Windows C++ build tools are required.
 rem ============================================================================
 :do_desktop
 call :header "Prime Desktop"
@@ -314,6 +315,7 @@ goto finish
 :do_setup
 call :header "Prime Desktop setup"
 tasklist /FI "IMAGENAME eq PrimeDesktop.exe" /NH 2>nul | find /I "PrimeDesktop.exe" >nul
+if errorlevel 1 tasklist /FI "IMAGENAME eq prime-native.exe" /NH 2>nul | find /I "prime-native.exe" >nul
 if not errorlevel 1 (
     echo  Prime Desktop is running. Close it and run setup again.
     set "EXITCODE=1"
@@ -325,11 +327,14 @@ pushd desktop
 call npm run dist:win
 if errorlevel 1 goto setup_failed
 set "SETUP_FILE="
+set "PACKAGE_FILE="
 for %%f in ("src-tauri\target\release\bundle\setup\*.exe") do if exist "%%~f" set "SETUP_FILE=%%~f"
+for %%f in ("src-tauri\target\release\bundle\nsis\*.exe") do if exist "%%~f" set "PACKAGE_FILE=%%~f"
 if not defined SETUP_FILE goto setup_failed
 popd
 echo.
-echo  Setup: desktop\%SETUP_FILE%
+echo  Setup   : desktop\%SETUP_FILE%
+if defined PACKAGE_FILE echo  Package : desktop\%PACKAGE_FILE%  ^(NSIS, used by updates^)
 set "EXITCODE=0"
 choice /c YN /n /t 30 /d N /m "  Install it now? [Y/N] (30s, default N) "
 if errorlevel 2 goto finish
@@ -359,14 +364,17 @@ if not exist "desktop\package.json" (
 )
 where node >nul 2>&1 || goto desktop_no_node
 where go >nul 2>&1 || goto desktop_no_go
+where cargo >nul 2>&1 || goto desktop_no_cargo
 pushd desktop
-if not exist "node_modules" (
+set "DEPS_STALE=0"
+if not exist "node_modules\.package-lock.json" set "DEPS_STALE=1"
+if "%DEPS_STALE%"=="0" powershell -NoProfile -Command "if ((Get-Item package-lock.json).LastWriteTime -gt (Get-Item node_modules\.package-lock.json).LastWriteTime) { exit 1 }"
+if errorlevel 1 set "DEPS_STALE=1"
+if "%DEPS_STALE%"=="1" (
     echo  Installing Desktop dependencies ...
     call npm ci
     if errorlevel 1 goto desktop_prepare_failed
 )
-where cargo >nul 2>&1
-if errorlevel 1 goto desktop_prepare_failed
 popd
 exit /b 0
 
@@ -377,6 +385,11 @@ exit /b 1
 
 :desktop_no_node
 echo  Node.js 24 is required: https://nodejs.org
+set "EXITCODE=1"
+exit /b 1
+
+:desktop_no_cargo
+echo  Rust is required to build the Desktop host: https://rustup.rs
 set "EXITCODE=1"
 exit /b 1
 
@@ -432,9 +445,9 @@ echo   no mode   show a menu
 echo   run       launch the build already in dist - no compile, no Go needed
 echo   build     pull from git, compile for this machine, then launch
 echo   release   pick platforms in a menu, tag HEAD, publish a GitHub release;
-echo             stable tags also ship PrimeSetup-^<version^>.exe for Desktop
-echo   desktop   run Prime Desktop from desktop\ ^(Node.js 24 and Go^)
-echo   setup     build native NSIS installer into desktop\src-tauri\target\release\bundle\nsis
+echo             stable tags also ship PrimeDesktop-Setup-^<version^>.exe
+echo   desktop   run Prime Desktop from desktop\ ^(Node.js 24, Go, Rust^)
+echo   setup     build PrimeDesktop-Setup-^<version^>.exe into desktop\src-tauri\target\release\bundle\setup
 echo   1-5       the choices, as they appear in the menu
 echo   help      print this text
 echo.
