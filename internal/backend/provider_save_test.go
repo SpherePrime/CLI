@@ -1,6 +1,9 @@
 package backend
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -24,6 +27,8 @@ func TestSaveProviderRefreshesAllOpenWorkspaces(t *testing.T) {
 	provider, exists := second.Cfg.Config().Providers.Get(request.Provider.ID)
 	require.True(t, exists)
 	require.Len(t, provider.Models, 2)
+	require.NoError(t, first.Cfg.SetSessionModel("first-chat", &config.SelectedModel{Provider: request.Provider.ID, Model: "partial"}))
+	require.NoError(t, second.Cfg.SetSessionModel("second-chat", &config.SelectedModel{Provider: request.Provider.ID, Model: "second"}))
 	request.OriginalID = request.Provider.ID
 	request.Provider.ID = "provider-save-renamed"
 	require.NoError(t, b.SaveProvider(second.ID, request))
@@ -32,4 +37,19 @@ func TestSaveProviderRefreshesAllOpenWorkspaces(t *testing.T) {
 	provider, exists = first.Cfg.Config().Providers.Get(request.Provider.ID)
 	require.True(t, exists)
 	require.Len(t, provider.Models, 2)
+	for _, opened := range []*Workspace{first, second} {
+		for _, selected := range opened.Cfg.Config().SessionModels {
+			require.Equal(t, request.Provider.ID, selected.Provider)
+		}
+		data, err := os.ReadFile(filepath.Join(opened.Cfg.Config().Options.DataDirectory, "models.json"))
+		require.NoError(t, err)
+		var saved struct {
+			SessionModels map[string]config.SelectedModel `json:"session_models"`
+		}
+		require.NoError(t, json.Unmarshal(data, &saved))
+		require.NotEmpty(t, saved.SessionModels)
+		for _, selected := range saved.SessionModels {
+			require.Equal(t, request.Provider.ID, selected.Provider)
+		}
+	}
 }

@@ -46,7 +46,7 @@ export function IntegrationSettings({
           ...value,
           name
         }))
-  const paths: string[] = w.config.options?.skills_paths || []
+  const paths = [...new Set<string>(w.config.options?.skills_paths || [])]
   useEffect(() => {
     setSkillContent(null)
   }, [kind])

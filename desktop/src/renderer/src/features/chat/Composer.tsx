@@ -23,7 +23,8 @@ import '../../styles/attachments.css'
 export function Composer({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
   const shortcuts = useShortcuts()
-  const [text, setText] = useState('')
+  const key = `${!w.project || w.project.kind === 'chat' ? 'chat' : w.project.path}:${w.session?.id || 'new'}`
+  const [text, setText] = useState(() => w.preferences.drafts[key] || '')
   const [attachments, setAttachments] = useState<any[]>([])
   const inFlightAttachments = useRef<string[]>([])
   const attachmentRef = useRef(attachments)
@@ -48,7 +49,6 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       window.removeEventListener('prime:draft', draft)
     }
   }, [])
-  const key = `${!w.project || w.project.kind === 'chat' ? 'chat' : w.project.path}:${w.session?.id || 'new'}`
   const conversation = useConversation(w)
   useEffect(() => {
     setCallHost(composerRoot.current?.closest('.main-workspace') || null)
@@ -86,6 +86,14 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const draftKey = useRef(key)
   const latest = useRef(text)
   latest.current = text
+  useEffect(() => {
+    const flush = (event: Event) => {
+      const pending = (event as CustomEvent<Promise<unknown>[]>).detail
+      pending.push(w.savePreferences({ drafts: { [draftKey.current]: latest.current } }))
+    }
+    window.addEventListener('prime:flush-drafts', flush)
+    return () => window.removeEventListener('prime:flush-drafts', flush)
+  }, [key])
   const submitting = useRef(false)
   const {
     recording,

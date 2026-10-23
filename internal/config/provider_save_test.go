@@ -18,6 +18,19 @@ func providerEditFixture(t *testing.T, id string) ProviderEdit {
 	return edit
 }
 
+func TestRenameProviderReferencesIncludesChatSelections(t *testing.T) {
+	document := map[string]any{
+		"session_models": map[string]any{
+			"chat-a": map[string]any{"provider": "old", "model": "partial"},
+			"chat-b": map[string]any{"provider": "other", "model": "partial"},
+		},
+	}
+	renameProviderReferences(document, "old", "renamed")
+	selections := document["session_models"].(map[string]any)
+	require.Equal(t, "renamed", selections["chat-a"].(map[string]any)["provider"])
+	require.Equal(t, "other", selections["chat-b"].(map[string]any)["provider"])
+}
+
 func TestSaveProviderPreservesSecretsAndRenamesReferences(t *testing.T) {
 	dir := t.TempDir()
 	store := &ConfigStore{config: &Config{}, globalDataPath: filepath.Join(dir, "prime.json")}

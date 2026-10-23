@@ -64,6 +64,7 @@ impl Settings {
             if matches!(
                 key.as_str(),
                 "drafts"
+                    | "activeSessions"
                     | "skipBySession"
                     | "reasoningBySession"
                     | "agentContexts"

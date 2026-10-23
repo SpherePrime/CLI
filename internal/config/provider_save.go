@@ -10,10 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
-
-	"github.com/SpherePrime/CLI/internal/lock"
 )
 
 type ProviderEdit struct {
@@ -66,6 +63,12 @@ func (p ProviderEdit) Validate() error {
 }
 
 func (s *ConfigStore) SaveProvider(scope Scope, originalID string, edit ProviderEdit, apiKey *string) error {
+	return s.SaveProviderWithWorkspaces(scope, originalID, edit, apiKey, nil)
+}
+
+func (s *ConfigStore) SaveProviderWithWorkspaces(scope Scope, originalID string, edit ProviderEdit, apiKey *string, workspaces []*ConfigStore) error {
+	stores, unlock := lockProviderStores(s, workspaces)
+	defer unlock()
 	if scope != ScopeGlobal && scope != ScopeWorkspace {
 		return fmt.Errorf("invalid config scope")
 	}
@@ -82,7 +85,7 @@ func (s *ConfigStore) SaveProvider(scope Scope, originalID string, edit Provider
 			return fmt.Errorf("Провайдер с таким ID уже существует")
 		}
 	}
-	err = s.editProviderFiles(dir, func(documents map[string]map[string]any) error {
+	err = s.editProviderFilesWithReferences(dir, scope, originalID, edit.ID, workspaces, func(documents map[string]map[string]any) error {
 		providers := map[string]any{}
 		for _, name := range []string{legacyConfigName(), providersSectionFile} {
 			if entries, ok := documents[name]["providers"].(map[string]any); ok {
@@ -152,12 +155,21 @@ func (s *ConfigStore) SaveProvider(scope Scope, originalID string, edit Provider
 	if err != nil {
 		return err
 	}
-	return s.ReloadProviderConfiguration(originalID, edit.ID)
+	for _, store := range stores {
+		if err := store.reloadProviderConfigurationLocked(originalID, edit.ID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *ConfigStore) ReloadProviderConfiguration(originalID, nextID string) error {
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
+	return s.reloadProviderConfigurationLocked(originalID, nextID)
+}
+
+func (s *ConfigStore) reloadProviderConfigurationLocked(originalID, nextID string) error {
 	if originalID != "" && originalID != nextID {
 		for kind, model := range s.overrides.Models {
 			if model.Provider == originalID {
@@ -199,12 +211,6 @@ func (s *ConfigStore) ValidateGlobalProviderRename(originalID string) error {
 			if _, exists := entries[originalID]; exists {
 				return fmt.Errorf("В открытом проекте сохранены настройки этого провайдера. Сначала измените их в области проекта")
 			}
-		}
-		before, _ := json.Marshal(document)
-		renameProviderReferences(document, originalID, originalID+"-renamed")
-		after, _ := json.Marshal(document)
-		if string(before) != string(after) {
-			return fmt.Errorf("В открытом проекте сохранены ссылки на этот провайдер. Сначала измените модель в области проекта")
 		}
 	}
 	return nil
@@ -255,7 +261,7 @@ func renameProviderReferences(document map[string]any, originalID, nextID string
 			}
 		}
 	}
-	for _, key := range []string{"models", "recent_models", "agents"} {
+	for _, key := range []string{"models", "recent_models", "agents", "session_models"} {
 		rename(document[key])
 	}
 	if settings, ok := document["model_settings"].(map[string]any); ok {
@@ -266,82 +272,4 @@ func renameProviderReferences(document map[string]any, originalID, nextID string
 			}
 		}
 	}
-}
-
-func (s *ConfigStore) editProviderFiles(dir string, mutate func(map[string]map[string]any) error) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return err
-	}
-	names := []string{legacyConfigName(), providersSectionFile, modelsSectionFile}
-	slices.Sort(names)
-	releases := []func(){}
-	defer func() {
-		for i := len(releases) - 1; i >= 0; i-- {
-			releases[i]()
-		}
-	}()
-	originals := map[string][]byte{}
-	documents := map[string]map[string]any{}
-	for _, name := range names {
-		path := filepath.Join(dir, name)
-		ctx, cancel := context.WithTimeout(context.Background(), configLockDeadline)
-		release, err := lock.File(ctx, path+".lock")
-		cancel()
-		if err != nil {
-			return err
-		}
-		releases = append(releases, release)
-		data, err := os.ReadFile(path)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-		document := map[string]any{}
-		if err == nil {
-			originals[name] = data
-			if err := json.Unmarshal(data, &document); err != nil {
-				return err
-			}
-			if document == nil {
-				return fmt.Errorf("invalid config document: %s", name)
-			}
-		}
-		documents[name] = document
-	}
-	if err := mutate(documents); err != nil {
-		return err
-	}
-	encoded := map[string][]byte{}
-	for _, name := range names {
-		data, err := json.Marshal(documents[name])
-		if err != nil {
-			return err
-		}
-		if len(documents[name]) > 0 || originals[name] != nil {
-			encoded[name] = data
-		}
-	}
-	written := []string{}
-	for _, name := range names {
-		data, exists := encoded[name]
-		if !exists {
-			continue
-		}
-		if err := atomicWriteFile(filepath.Join(dir, name), data, 0600); err != nil {
-			for i := len(written) - 1; i >= 0; i-- {
-				previous := written[i]
-				var restoreErr error
-				if original, exists := originals[previous]; exists {
-					restoreErr = atomicWriteFile(filepath.Join(dir, previous), original, 0600)
-				} else {
-					restoreErr = os.Remove(filepath.Join(dir, previous))
-				}
-				err = errors.Join(err, restoreErr)
-			}
-			return err
-		}
-		written = append(written, name)
-	}
-	return nil
 }

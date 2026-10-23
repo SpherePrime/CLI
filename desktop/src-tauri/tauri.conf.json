@@ -6,15 +6,62 @@
   "build": {
     "frontendDist": "../out/native-renderer",
     "devUrl": "http://127.0.0.1:5173",
-    "beforeDevCommand": "npm run native:ui:dev",
+    "beforeDevCommand": "npm run native:dev:prepare",
     "beforeBuildCommand": "npm run native:prepare"
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [{ "label": "main", "title": "Prime Native Preview", "width": 1440, "height": 940, "minWidth": 420, "minHeight": 420, "decorations": false, "backgroundColor": "#111318" }],
+    "windows": [
+      {
+        "label": "main",
+        "title": "Prime Native Preview",
+        "width": 1440,
+        "height": 940,
+        "minWidth": 420,
+        "minHeight": 420,
+        "decorations": false,
+        "backgroundColor": "#111318"
+      }
+    ],
     "security": {
       "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:5173 ws://127.0.0.1:5173; img-src 'self' asset: http://asset.localhost data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; font-src 'self' data:; media-src 'self' blob: data:"
     }
   },
-  "bundle": { "active": false, "resources": ["engine/"], "icon": ["../build/icon.png", "../build/icon.ico"] }
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "resources": [
+      "engine/"
+    ],
+    "icon": [
+      "../build/icon.png",
+      "../build/icon.ico"
+    ],
+    "publisher": "SpherePrime",
+    "copyright": "SpherePrime",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installerIcon": "../build/icon.ico",
+        "installMode": "currentUser",
+        "languages": [
+          "Russian",
+          "English"
+        ],
+        "displayLanguageSelector": false
+      }
+    },
+    "createUpdaterArtifacts": false
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [],
+      "dialog": false
+    }
+  }
 }

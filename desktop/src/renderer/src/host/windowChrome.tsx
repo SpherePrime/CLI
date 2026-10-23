@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { Minus, Square, X } from 'lucide-react'
-import type { MouseEvent } from 'react'
+import { useEffect, type MouseEvent } from 'react'
+import { flushDrafts } from './flushDrafts'
 import { useI18n } from '../i18n'
 import './windowChrome.css'
 
@@ -22,6 +23,12 @@ export function dragNativeWindow(event: MouseEvent<HTMLElement>) {
 
 export function NativeWindowControls() {
   const { t } = useI18n()
+  useEffect(() => window.prime.onEvent(event => {
+    if (event.type === 'beforeClose') {
+      void flushDrafts().then(() => invoke('desktop_window', { action: 'confirm_close' }))
+        .catch(error => window.dispatchEvent(new CustomEvent('prime:host-error', { detail: error })))
+    }
+  }), [])
   return (
     <div className="native-window-controls">
       <button aria-label={t('Свернуть')} title={t('Свернуть')} onClick={() => action('minimize')}>

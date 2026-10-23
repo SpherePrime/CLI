@@ -304,7 +304,7 @@ call :header "Prime Desktop"
 call :desktop_prepare
 if not "%EXITCODE%"=="0" goto finish
 echo  Starting Prime Desktop from sources. Close it to come back here.
-echo  Development uses a separate Desktop profile; installed app settings stay in its profile.
+echo  Native preview uses its own Desktop profile.
 echo.
 pushd desktop
 call npm run dev
@@ -314,34 +314,20 @@ goto finish
 
 :do_setup
 call :header "Prime Desktop setup"
-tasklist /FI "IMAGENAME eq PrimeDesktop.exe" /NH 2>nul | find /I "PrimeDesktop.exe" >nul
+tasklist /FI "IMAGENAME eq prime-native.exe" /NH 2>nul | find /I "prime-native.exe" >nul
 if not errorlevel 1 (
-    echo  Prime Desktop is running. Close it ^(also from the tray^) and run setup again:
-    echo  the installer cannot replace files of a running app.
+    echo  Prime Native Preview is running. Close it and run setup again.
     set "EXITCODE=1"
     goto finish
 )
 call :desktop_prepare
 if not "%EXITCODE%"=="0" goto setup_prepare_failed
 pushd desktop
-set "DESKTOP_VERSION="
-for /f "usebackq delims=" %%v in (`node scripts\bump-version.mjs`) do set "DESKTOP_VERSION=%%v"
-if not defined DESKTOP_VERSION goto setup_failed
-echo  Desktop version: %DESKTOP_VERSION%
-set "SETUP_FILE=release\%DESKTOP_VERSION%\PrimeSetup-%DESKTOP_VERSION%.exe"
-if exist "%SETUP_FILE%" del /f /q "%SETUP_FILE%" >nul 2>&1
-if exist "%SETUP_FILE%" (
-    echo  %SETUP_FILE% is in use. Close the running installer and try again.
-    goto setup_failed
-)
-if exist "release\%DESKTOP_VERSION%\PrimeDesktop-Update-%DESKTOP_VERSION%.exe" del /f /q "release\%DESKTOP_VERSION%\PrimeDesktop-Update-%DESKTOP_VERSION%.exe" >nul 2>&1
-call npm run build
+call npm run dist:win
 if errorlevel 1 goto setup_failed
-call npx electron-builder --config electron-builder.yml --win nsis --x64 --publish never --config.directories.output=release/%DESKTOP_VERSION%
-if errorlevel 1 goto setup_failed
-call npm run dist:installer
-if errorlevel 1 goto setup_failed
-if not exist "%SETUP_FILE%" goto setup_failed
+set "SETUP_FILE="
+for %%f in ("src-tauri\target\release\bundle\nsis\*.exe") do if exist "%%~f" set "SETUP_FILE=%%~f"
+if not defined SETUP_FILE goto setup_failed
 popd
 echo.
 echo  Setup: desktop\%SETUP_FILE%
@@ -353,8 +339,8 @@ goto finish
 
 :setup_prepare_failed
 echo.
-echo  Setup was not built: the bundled CLI could not be prepared.
-echo  If Prime Desktop runs from sources ^(menu 4^), close it: it locks desktop\runtime\prime.exe.
+echo  Setup was not built: native Desktop prerequisites could not be prepared.
+echo  Node.js 24, Go, Rust and Windows C++ build tools are required.
 goto finish
 
 :setup_failed
@@ -362,7 +348,7 @@ set "EXITCODE=%errorlevel%"
 if "%EXITCODE%"=="0" set "EXITCODE=1"
 popd
 echo.
-echo  Setup was not built. The messages above show why; no old installer was left behind.
+echo  Setup was not built. The messages above show why; the installer was not launched.
 goto finish
 
 :desktop_prepare
@@ -380,8 +366,7 @@ if not exist "node_modules" (
     call npm ci
     if errorlevel 1 goto desktop_prepare_failed
 )
-echo  Building the bundled CLI runtime ...
-node scripts\acquire-runtime.mjs
+where cargo >nul 2>&1
 if errorlevel 1 goto desktop_prepare_failed
 popd
 exit /b 0
@@ -397,7 +382,7 @@ set "EXITCODE=1"
 exit /b 1
 
 :desktop_no_go
-echo  Go is required to build the bundled CLI. Run "Prime.bat build" once to install it.
+echo  Go is required to build the native Desktop engine. Run "Prime.bat build" once to install it.
 set "EXITCODE=1"
 exit /b 1
 
@@ -450,7 +435,7 @@ echo   build     pull from git, compile for this machine, then launch
 echo   release   pick platforms in a menu, tag HEAD, publish a GitHub release;
 echo             stable tags also ship PrimeSetup-^<version^>.exe for Desktop
 echo   desktop   run Prime Desktop from desktop\ ^(Node.js 24 and Go^)
-echo   setup     build PrimeSetup-^<version^>.exe into desktop\release
+echo   setup     build native NSIS installer into desktop\src-tauri\target\release\bundle\nsis
 echo   1-5       the choices, as they appear in the menu
 echo   help      print this text
 echo.

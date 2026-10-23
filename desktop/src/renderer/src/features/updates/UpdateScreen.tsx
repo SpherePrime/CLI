@@ -3,6 +3,7 @@ import { ArrowDown, Check, RefreshCw, TriangleAlert } from 'lucide-react'
 import type { UpdateStatus } from '../../../../shared/updates'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { useI18n } from '../../i18n'
+import { flushDrafts } from '../../host/flushDrafts'
 
 export function UpdateScreen({
   ready,
@@ -137,7 +138,7 @@ export function UpdateScreen({
             disabled={busy || terminals > 0}
             onClick={() => {
               setError('')
-              void window.prime.update('install').catch((error) => setError(error.message))
+              void flushDrafts().then(() => window.prime.update('install')).catch((error) => setError(error.message))
             }}
           >
             <RefreshCw size={17} />

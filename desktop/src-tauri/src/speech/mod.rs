@@ -255,9 +255,15 @@ fn process(
                 .clamp(0.7, 1.6) as f32;
             load(directory, engine, stop, state, emit)?;
             let engine = engine.as_mut().unwrap();
+            #[cfg(test)]
+            if let Some(seed) = request["testNoiseSeed"].as_u64() {
+                engine.seed_noise(seed);
+            }
             let options = Arc::new(ort::session::RunOptions::new().map_err(supertonic::ort_error)?);
             *active.lock().unwrap() = Some(options.clone());
-            let result = engine.synthesize(input, voice, speed, stop, &options);
+            let result = audio::synthesize_audible(|| {
+                engine.synthesize(input, voice, speed, stop, &options)
+            });
             active.lock().unwrap().take();
             let samples = result?;
             let wav = audio::encode_wav(&samples, engine.sample_rate())?;

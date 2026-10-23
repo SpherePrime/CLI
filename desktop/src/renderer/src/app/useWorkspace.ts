@@ -738,7 +738,8 @@ export function useWorkspace() {
     const targetProject = current.current.project
     if (!targetProject) return false
     const targetSession = current.current.session
-    const usedModel = config.models?.large
+    const usedModel =
+      (targetSession && config.session_models?.[targetSession.id]) ?? config.models?.large
     try {
       const latestPreferences = await window.prime.preferences()
       setPreferences(latestPreferences)

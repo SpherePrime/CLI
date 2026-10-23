@@ -622,9 +622,6 @@ func (s *ConfigStore) SetSessionModel(sessionID string, model *SelectedModel) er
 		} else {
 			c.SessionModels[sessionID] = *model
 		}
-		if len(c.SessionModels) == 0 {
-			return map[string]any{}
-		}
 		return map[string]any{"session_models": c.SessionModels}
 	})
 }
