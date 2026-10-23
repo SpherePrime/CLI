@@ -1,0 +1,24 @@
+.native-window-controls {
+  display: flex;
+  height: 100%;
+  width: 138px;
+  margin-left: auto;
+}
+.native-window-controls button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+}
+.native-window-controls button:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.native-window-controls .native-window-close:hover {
+  background: #c42b1c;
+  color: white;
+}

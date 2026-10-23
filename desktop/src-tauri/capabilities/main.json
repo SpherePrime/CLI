@@ -1,0 +1,6 @@
+{
+  "identifier": "main",
+  "description": "Trusted application renderer",
+  "webviews": ["main"],
+  "permissions": ["core:default", "allow-desktop-call", "allow-desktop-window"]
+}
