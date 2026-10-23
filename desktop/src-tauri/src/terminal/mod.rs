@@ -315,11 +315,21 @@ impl TerminalManager {
         Ok(session)
     }
 
-    fn close_one(&self, workspace: &str, id: &str) -> HostResult<()> {
+    pub(crate) fn close_one(&self, workspace: &str, id: &str) -> HostResult<()> {
         let session = self.find(workspace, id)?;
         session.close()?;
         self.state.lock().unwrap().sessions.remove(id);
         Ok(())
+    }
+
+    pub fn snapshots(&self) -> Vec<TerminalSnapshot> {
+        self.state
+            .lock()
+            .unwrap()
+            .sessions
+            .values()
+            .map(|session| session.snapshot())
+            .collect()
     }
 
     pub fn close_workspace(&self, workspace: &str) -> HostResult<()> {

@@ -313,6 +313,37 @@ impl LaunchManager {
         Ok(())
     }
 
+    pub fn stop_config(&self, terminals: &TerminalManager, config_id: &str) -> HostResult<()> {
+        let entry = {
+            let state = self.state.lock().unwrap();
+            state
+                .processes
+                .values()
+                .find(|process| process.config_id == config_id)
+                .map(|process| {
+                    (
+                        process.root.clone(),
+                        process.workspace.clone(),
+                        process.terminal_id.clone(),
+                    )
+                })
+        };
+        let Some((root, workspace, terminal_id)) = entry else {
+            return Ok(());
+        };
+        match terminals.close_one(&workspace, &terminal_id) {
+            Ok(()) => {}
+            Err(error) if error.code == "TERMINAL_NOT_FOUND" => {}
+            Err(error) => return Err(error),
+        }
+        self.state
+            .lock()
+            .unwrap()
+            .processes
+            .remove(&format!("{root}\0{terminal_id}"));
+        Ok(())
+    }
+
     pub fn all(&self) -> Value {
         let state = self.state.lock().unwrap();
         Value::Array(
