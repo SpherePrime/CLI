@@ -23,6 +23,7 @@
     "preview:shot": "node tests/fixtures/preview-shot.mjs",
     "native:dev": "tauri dev",
     "native:build": "tauri build",
+    "native:prepare": "node scripts/build-desktop-engine.mjs && npm run native:ui",
     "native:ui": "tsc --noEmit && vite build --config vite.native.config.ts",
     "native:ui:dev": "vite --config vite.native.config.ts"
   },

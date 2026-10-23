@@ -68,3 +68,4 @@ CHATS.md
 /desktop/src-tauri/engine/*.so
 /desktop/src-tauri/engine/*.dylib
 /desktop/src-tauri/engine/*.h
+/desktop/src-tauri/engine/manifest.json
