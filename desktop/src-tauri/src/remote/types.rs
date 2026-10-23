@@ -91,6 +91,22 @@ impl Profile {
         format!("[{}]:{}", self.host.to_lowercase(), self.port)
     }
 
+    /// Recomputes the legacy Electron credential binding for this
+    /// profile so migrated secrets can be verified against the value
+    /// recorded in the legacy store.
+    pub fn legacy_binding(&self) -> String {
+        use sha2::{Digest, Sha256};
+        let binding = serde_json::to_vec(&serde_json::json!([
+            self.host.to_lowercase(),
+            self.port,
+            self.user,
+            self.auth,
+            self.key_path.as_deref().unwrap_or("")
+        ]))
+        .unwrap();
+        format!("{:x}", Sha256::digest(binding))
+    }
+
     pub fn credential_id(&self) -> String {
         use sha2::{Digest, Sha256};
         let binding = serde_json::to_vec(&serde_json::json!([
