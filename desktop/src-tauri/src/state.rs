@@ -3,7 +3,10 @@ use serde_json::Value;
 use std::{
     collections::HashMap,
     path::PathBuf,
-    sync::{atomic::AtomicBool, Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
 };
 
 pub struct AppState {
@@ -15,6 +18,7 @@ pub struct AppState {
     pub editor_dirty: AtomicBool,
     pub closing: AtomicBool,
     pub quitting: AtomicBool,
+    pub running_shells: AtomicUsize,
     pub close_ready: AtomicBool,
     pub file_writes: Mutex<()>,
     pub attachments: Mutex<crate::attachments::Attachments>,
@@ -57,6 +61,7 @@ impl AppState {
             editor_dirty: AtomicBool::new(false),
             closing: AtomicBool::new(false),
             quitting: AtomicBool::new(false),
+            running_shells: AtomicUsize::new(0),
             close_ready: AtomicBool::new(false),
             file_writes: Mutex::new(()),
             attachments: Mutex::new(attachments),
@@ -117,4 +122,19 @@ impl AppState {
 
 pub fn isolated_profile() -> bool {
     cfg!(test) || (cfg!(debug_assertions) && std::env::var_os("PRIME_NATIVE_TEST_DATA").is_some())
+}
+
+pub struct ShellGuard<'a>(&'a AtomicUsize);
+
+impl<'a> ShellGuard<'a> {
+    pub fn new(counter: &'a AtomicUsize) -> Self {
+        counter.fetch_add(1, Ordering::AcqRel);
+        Self(counter)
+    }
+}
+
+impl Drop for ShellGuard<'_> {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
 }

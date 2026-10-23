@@ -300,7 +300,12 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                     .cloned()
                     .unwrap_or(Value::Null);
             }
-            let result = crate::projects::call(&state, string(args, 0)?, &route)?;
+            let result = if operation == "shell" {
+                let _running = crate::state::ShellGuard::new(&state.running_shells);
+                crate::projects::call(&state, string(args, 0)?, &route)?
+            } else {
+                crate::projects::call(&state, string(args, 0)?, &route)?
+            };
             if operation == "currentSession" {
                 let id = string(args, 0)?;
                 let path = state.projects.lock().unwrap().get(id)
