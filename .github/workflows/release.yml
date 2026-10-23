@@ -84,6 +84,7 @@ jobs:
             choco install strawberryperl -y --no-progress
           }
           'C:/Strawberry/perl/bin' >> $env:GITHUB_PATH
+          'OPENSSL_SRC_PERL=C:/Strawberry/perl/bin/perl.exe' >> $env:GITHUB_ENV
       - run: npm ci
       - name: Set native version
         env:
