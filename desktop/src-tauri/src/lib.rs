@@ -25,6 +25,7 @@ mod state;
 mod teams;
 mod terminal;
 mod test_data;
+mod tray;
 mod updater;
 mod window_chrome;
 
@@ -38,7 +39,14 @@ pub fn run() {
         )
         .expect("Invalid native preview test data directory");
     }
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+    if !state::isolated_profile() {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            tray::show_main(app);
+        }));
+    }
+    builder
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(lifecycle::setup)
         .invoke_handler(tauri::generate_handler![
