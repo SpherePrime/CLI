@@ -25,6 +25,7 @@ import { useI18n } from '../../i18n'
 import { FileContextMenu, type MenuItem } from './FileContextMenu'
 import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
 import { BrowserTab } from '../browser/BrowserTab'
+import { notifyError } from '../notifications/notifications'
 
 type Entry = { path: string; name: string; directory: boolean }
 
@@ -84,6 +85,11 @@ export function Inspector({
   const [gitError, setGitError] = useState('')
   const [source, setSource] = useState<'session' | 'git'>('session')
   const [error, setError] = useState('')
+  useEffect(() => {
+    if (!error) return
+    notifyError(error)
+    setError('')
+  }, [error])
   const [treeKey, setTreeKey] = useState(0)
   const [opened, setOpened] = useState<string[]>([])
   const [menu, setMenu] = useState<{ x: number; y: number; entry: Entry | null } | null>(null)
@@ -244,14 +250,6 @@ export function Inspector({
         </div>
       )}
       <div className="inspector-content" hidden={tab === 'browser'}>
-        {error && (
-          <div className="panel-error">
-            {error}
-            <button className="quiet" onClick={() => setError('')}>
-              {t('Закрыть')}
-            </button>
-          </div>
-        )}
         {tab === 'files' && (
           <>
             <div className="panel-title">
