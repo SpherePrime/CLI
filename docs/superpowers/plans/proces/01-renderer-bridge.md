@@ -1,6 +1,6 @@
 # Renderer and native contract
 
-Status: in progress.
+Status: completed for renderer bridge and standalone renderer build. Full native feature parity is tracked separately.
 
 Implemented: independent Vite build for the existing renderer; complete compile-time DesktopApi method manifest; native Tauri request/event adapter; original operation routing reused; Electron renderer still uses its existing preload.
 

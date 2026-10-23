@@ -1,0 +1,11 @@
+# Native SSH and SFTP
+
+Status: in progress.
+
+Rust modules implement profile validation and atomic persistence, system credential storage through Keyring, SSH host fingerprint challenges before authentication, SSH agent/key/password authentication, SFTP root validation and scoped file access. File saves check the original content revision and replace a temporary file through an atomic remote rename. Commands retain bounded stdout/stderr and enforce deadlines. Remote projects use the existing Go engine in process, with remote workspace configuration and isolated history data. Existing SSH agent tool names are available through the native MCP bridge. Separate SSH sessions host remote PTYs with Unicode output, resize, user/agent ownership, release and scoped shutdown. Native loopback forwarding uses separate SSH connections, local loopback listeners and bounded byte queues, with scoped close and application shutdown.
+
+Validation: five Windows checks passed against a real disposable OpenSSH/SFTP server with its default modern key exchange policy. They cover host verification, authentication, Unicode execution, SFTP revisions and conflict rejection, symlink escape denial, binary upload, remote PTY input/resize/ownership/shutdown, profile persistence and Windows credential vault storage. A separate loopback forwarding fixture passed: the local TCP client received the actual SSH server banner through a native SSH direct-tcpip channel, then close released both connections and listener. The Windows libssh2 backend uses statically linked OpenSSL because its default WinCNG build could not negotiate the server's modern key exchange algorithms. No server security defaults were changed for the passing checks.
+
+Remaining parity gates: connection-loss detection and reconnect behavior, legacy encrypted credential/profile/history migration, remote Git/launch integration, native UI end-to-end coverage and Linux SSH fixture validation. These remain open and are not represented as completed capabilities.
+
+Production Electron credentials and profiles are not read or converted. Native preview uses a separate vault service and data location. Existing safeStorage migration remains a separate acceptance gate.

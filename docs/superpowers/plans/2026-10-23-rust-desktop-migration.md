@@ -32,13 +32,13 @@ The current preload exports DesktopApi through window.prime. Preserve this contr
 
 - [x] Inspect existing preload, browser views and engine launch boundary.
 - [x] Select Rust host + retained renderer + shared Go engine; supersede Electron-native hosting plan.
-- [ ] Enumerate DesktopApi methods/events in a machine-checked compatibility manifest.
+- [x] Enumerate DesktopApi methods in a machine-checked compatibility manifest (hostMethods and preload coverage test); event capability parity remains part of native integration checks.
 - [ ] Capture UI reference screenshots and interaction scenarios for dark/light, narrow layout, panels, voice and editor.
 - [ ] Record memory/process/startup/stream latency baselines for identical multi-chat workloads.
 
 ### 2. Feasibility gates before production replacement
 
-- [ ] Build a Tauri shell loading the real renderer assets with isolated temporary data.
+- [x] Build a Tauri shell loading the real renderer assets with isolated temporary data.
 - [ ] Validate WebView2 on Windows and WebKitGTK on Linux: fonts, CSS effects, canvas/WebGL, Monaco workers, xterm, clipboard images, audio permissions and media playback.
 - [ ] Prototype multiple embedded browser tabs with hidden-tab automation, screenshot/picker and persistent profiles on both platforms. Do not assume Chromium APIs exist in WebKitGTK.
 - [ ] Validate Go shared-library compilation and Rust FFI on Windows/Linux amd64/arm64. Test repeated engine creation, async cancellation, buffer ownership and shutdown.
@@ -46,11 +46,11 @@ The current preload exports DesktopApi through window.prime. Preserve this contr
 
 ### 3. Build the host and bridge
 
-- [ ] Create desktop/src-tauri with separate Rust modules for lifecycle, commands, events, state, permissions and errors. Create a renderer host adapter implementing the current DesktopApi.
-- [ ] Keep Node/Electron imports out of the renderer build; add an independent Vite build entry and scripts without replacing the current release build prematurely.
-- [ ] Define engine ABI version/create/request/cancel/read-events/free/shutdown using opaque handles and explicit buffers; use Rust blocking workers rather than the UI thread.
-- [ ] Reuse Go backend/protocol routing in memory. Preserve CLI startup separately. Never buffer an entire streaming response before delivering events.
-- [ ] Scope privileged commands to the trusted application view. Remote browser pages must not receive filesystem, shell, secret or engine IPC access.
+- [x] Create desktop/src-tauri with separate Rust modules for lifecycle, commands, events, state, permissions and errors. Create a renderer host adapter implementing the current DesktopApi.
+- [x] Keep Node/Electron imports out of the renderer build; add an independent Vite build entry and scripts without replacing the current release build prematurely.
+- [x] Define engine ABI version/create/request/cancel/read-events/free/shutdown using opaque handles and explicit buffers; use Rust blocking workers rather than the UI thread.
+- [x] Reuse Go backend/protocol routing in memory. Preserve CLI startup separately. Never buffer an entire streaming response before delivering events.
+- [x] Scope privileged commands to the trusted application view. Remote browser pages must not receive filesystem, shell, secret or engine IPC access.
 
 ### 4. Port native services in functional groups
 
@@ -83,7 +83,7 @@ Each group requires real functionality through the Rust host, focused behavior c
 
 ## Current status
 
-Architecture and migration inventory established. No Tauri application, Rust service ports or Go FFI host has been implemented yet. Existing EngineTransport extraction remains useful, but does not implement the Rust migration. Full visual and behavioral parity remains a required acceptance criterion, not a completed claim.
+The isolated Tauri preview loads the existing renderer and runs the Go engine through its C ABI. A real Windows WebView fixture has created a chat, streamed a provider response, received completion events and reloaded its persisted history without a CLI server. Native service ports cover scoped files, settings, Git/GitHub, PTY, launch, automation, browser and SSH; individual validation and remaining gaps are recorded in `proces/`. Linux WebKit DOM/input/capture prototypes have run successfully. Computer control, exact voice inference, resource packaging and service parity are still being integrated. Data/secret migration, installers, update compatibility, four-platform validation and measured memory comparison remain open. Production Electron is retained until those gates pass.
 
 ## References
 
