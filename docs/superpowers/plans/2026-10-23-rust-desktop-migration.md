@@ -68,8 +68,8 @@ Each group requires real functionality through the Rust host, focused behavior c
 ### 5. Packaging and migration
 
 - [ ] Build native artifacts on Windows/Linux for amd64/arm64 with pinned toolchains and ABI manifests. Include required runtime libraries and WebView prerequisites.
-- [ ] Preserve installed application identity, user data locations, projects, chat databases, preferences and saved SSH sessions.
-- [ ] Explicitly migrate Electron safeStorage-encrypted secrets: Rust cannot assume it can read the old ciphertext. Validate each OS keyring/DPAPI path before removing the old host; never write plaintext migration files or expose secrets to the model.
+- [x] Preserve installed application identity, user data locations, projects, chat databases, preferences and saved SSH sessions (legacy Electron profile import and credential migration run once at native startup; see proces/21).
+- [x] Explicitly migrate Electron safeStorage-encrypted secrets: Windows DPAPI path implemented and tested; macOS/Linux return an explicit unsupported result because the safeStorage keys are not readable from Rust. No plaintext migration files; secrets never reach the model.
 - [ ] Bridge from the existing electron-updater feed to the new signed installer/update format. Test upgrade from the current installed release, not only clean Tauri installs.
 - [ ] Change Prime.bat and CI only when native install/update tests pass. Preserve independent CLI packaging and prime update behavior.
 
@@ -83,7 +83,7 @@ Each group requires real functionality through the Rust host, focused behavior c
 
 ## Current status
 
-The isolated Tauri preview loads the existing renderer and runs the Go engine through its C ABI. A real Windows WebView fixture has created a chat, streamed a provider response, received completion events and reloaded its persisted history without a CLI server. Native service ports cover scoped files, settings, Git/GitHub, PTY, launch, automation, browser and SSH; individual validation and remaining gaps are recorded in `proces/`. Linux WebKit DOM/input/capture prototypes have run successfully. Computer control, exact voice inference, resource packaging and service parity are still being integrated. Data/secret migration, installers, update compatibility, four-platform validation and measured memory comparison remain open. Production Electron is retained until those gates pass.
+The isolated Tauri preview loads the existing renderer and runs the Go engine through its C ABI. A real Windows WebView fixture has created a chat, streamed a provider response, received completion events and reloaded its persisted history without a CLI server, and the smoke fixture still passes after every later integration. Native service ports cover scoped files, settings, Git/GitHub, PTY, launch, automation, browser, SSH, teams and the job center; attachment bytes moved to disk with in-engine trusted resolution, Electron profile/secret migration runs once at startup on Windows, and a manifest test pins every DesktopApi method to a native dispatch arm. Linux `cargo check` passes under WSL. Computer control, speech UI verification, installers, update compatibility and measured memory comparison remain open. Production Electron is retained until those gates pass.
 
 ## References
 
