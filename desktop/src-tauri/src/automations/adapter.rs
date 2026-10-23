@@ -38,7 +38,7 @@ impl NativeAdapter {
         Self { app, monitors }
     }
 
-    fn project(&self, root: &str) -> HostResult<Value> {
+    pub(crate) fn project(&self, root: &str) -> HostResult<Value> {
         if root.starts_with("prime-ssh://") {
             return Err(HostError::unsupported("remote automation"));
         }
@@ -62,7 +62,7 @@ impl NativeAdapter {
         Ok(project)
     }
 
-    fn request(
+    pub(crate) fn request(
         &self,
         root: &str,
         method: &str,

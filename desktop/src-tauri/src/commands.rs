@@ -200,6 +200,24 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             request["root"] = json!(root);
             state.automations.handle(app.clone(), &request)
         }
+        "team" => {
+            let id = string(args, 0)?;
+            state.root(id)?;
+            let root = state
+                .projects
+                .lock()
+                .unwrap()
+                .get(id)
+                .and_then(|project| project["path"].as_str())
+                .unwrap()
+                .to_owned();
+            let request = args
+                .get(1)
+                .cloned()
+                .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "Missing team request"))?;
+            state.teams.handle(&root, &request)
+        }
+        "jobs" => crate::jobs::handle(app, &state, args.first().unwrap_or(&Value::Null)),
         "openRemote" => crate::remote::open(app, string(args, 0)?),
         "remoteKey" => Ok(json!(rfd::FileDialog::new()
             .set_title("Выбрать приватный ключ SSH")

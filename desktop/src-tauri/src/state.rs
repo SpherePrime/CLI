@@ -20,6 +20,8 @@ pub struct AppState {
     pub remotes: Arc<crate::remote::RemoteManager>,
     pub launches: crate::terminal::launch::LaunchManager,
     pub automations: Arc<crate::automations::AutomationManager>,
+    pub teams: Arc<crate::teams::TeamManager>,
+    pub jobs: std::sync::Mutex<crate::jobs::JobCenter>,
     pub windows: Arc<crate::computer::WindowManager>,
     pub speech: Arc<crate::speech::SpeechService>,
     pub project_open: Mutex<()>,
@@ -37,6 +39,7 @@ impl AppState {
         let remotes = Arc::new(crate::remote::RemoteManager::load(&directory)?);
         let launches = crate::terminal::launch::LaunchManager::load(&directory)?;
         let automations = crate::automations::AutomationManager::load(&directory)?;
+        let teams = crate::teams::TeamManager::load(&directory)?;
         Ok(Self {
             directory,
             settings: Mutex::new(settings),
@@ -55,6 +58,8 @@ impl AppState {
             remotes,
             launches,
             automations,
+            teams,
+            jobs: std::sync::Mutex::new(crate::jobs::JobCenter::default()),
             windows: Arc::new(crate::computer::WindowManager::new()),
             speech: crate::speech::SpeechService::new(),
             project_open: Mutex::new(()),

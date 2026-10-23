@@ -15,6 +15,11 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(&directory)?;
     let directory = dunce::canonicalize(directory)?;
     let state = crate::state::AppState::new(directory).map_err(|error| error.message)?;
+    state
+        .teams
+        .set_adapter(std::sync::Arc::new(crate::teams::adapter::NativeTeamAdapter::new(
+            app.handle().clone(),
+        )));
     let browser_server = crate::browser::mcp::start(app.handle(), state.browser.clone())?;
     std::env::set_var("PRIME_DESKTOP_BROWSER_URL", &browser_server.url);
     std::env::set_var("PRIME_DESKTOP_BROWSER_TOKEN", &browser_server.token);
@@ -45,6 +50,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         crate::events::emit(&handle, "", "runtime", payload);
         if state.require_engine().is_ok() {
             state.automations.start(handle.clone());
+            state.teams.start(handle.clone());
         }
     });
     Ok(())
@@ -90,6 +96,7 @@ pub fn run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
         std::thread::spawn(move || {
             let state = app.state::<crate::state::AppState>();
             state.automations.stop();
+            state.teams.stop();
             state.windows.shutdown(&app);
             state.speech.shutdown();
             let engine = state.engine.lock().unwrap().instance.clone();
@@ -97,6 +104,7 @@ pub fn run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
                 engine.close();
             }
             state.automations.shutdown();
+            state.teams.shutdown();
             let _ = state.terminals.shutdown();
             state.remotes.shutdown();
             if let Some(server) = app.try_state::<crate::browser::mcp::Server>() {

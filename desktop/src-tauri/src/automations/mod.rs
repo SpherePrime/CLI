@@ -1,4 +1,4 @@
-mod adapter;
+pub(crate) mod adapter;
 mod monitor;
 mod operations;
 mod runs;
