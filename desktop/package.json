@@ -6,7 +6,6 @@
   "author": "SpherePrime",
   "homepage": "https://github.com/SpherePrime/CLI",
   "type": "module",
-  "main": "out/main/index.js",
   "scripts": {
     "dev": "tauri dev",
     "build": "npm run native:ui",
@@ -14,21 +13,18 @@
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
-    "dist:win": "node scripts/build-native-installer.mjs nsis",
+    "dist:win": "node scripts/build-native-installer.mjs nsis && node scripts/build-setup.mjs",
     "dist:linux": "node scripts/build-native-installer.mjs appimage,deb,rpm",
-    "runtime:verify": "node scripts/verify-runtime.mjs",
     "dist:installer": "node scripts/build-native-installer.mjs",
     "native:dev": "tauri dev",
     "native:build": "tauri build",
     "native:prepare": "node scripts/build-desktop-engine.mjs && npm run native:ui",
     "native:ui": "tsc --noEmit && vite build --config vite.native.config.ts",
     "native:ui:dev": "vite --config vite.native.config.ts",
-    "legacy:dev": "electron-vite dev",
-    "legacy:build": "npm run typecheck && electron-vite build",
-    "legacy:installer": "node scripts/package-installer.mjs",
-    "native:dev:prepare": "node scripts/build-desktop-engine.mjs && npm run native:ui:dev"
+    "native:dev:prepare": "node scripts/build-desktop-engine.mjs && npm run native:ui:dev",
+    "setup:ui": "vite build --config installer/vite.config.ts",
+    "setup:ui:dev": "vite --config installer/vite.config.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.2.8",
@@ -38,40 +34,24 @@
     "@tauri-apps/api": "^2.12.4",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
-    "diff": "^8.0.2",
-    "electron-updater": "^6.6.2",
-    "ignore": "^7.0.12",
-    "koffi": "3.3.3",
     "lucide-react": "^0.468.0",
-    "node-pty": "1.1.0",
-    "onnxruntime-node": "1.22.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1",
-    "ssh2": "1.17.0",
-    "zod": "^4.0.0"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",
     "@tauri-apps/cli": "^2.12.4",
-    "@types/diff": "^7.0.2",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/ssh2": "1.15.6",
     "@vitejs/plugin-react": "^5.0.0",
-    "electron": "44.8.0",
-    "electron-builder": "^26.0.0",
-    "electron-vite": "^6.0.0",
     "monaco-editor": "^0.57.0",
     "prettier": "^3.9.10",
     "sharp": "^0.35.5",
     "typescript": "^5.9.0",
     "vite": "^7.0.0",
     "vitest": "^4.0.0"
-  },
-  "allowScripts": {
-    "node-pty@1.1.0": true
   }
 }
