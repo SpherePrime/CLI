@@ -1,21 +1,41 @@
 use crate::error::{HostError, HostResult};
 use base64::Engine;
 use serde_json::{json, Value};
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, path::PathBuf};
 
-#[derive(Default)]
 pub struct Attachments {
-    items: HashMap<String, Value>,
+    root: PathBuf,
+    items: HashMap<String, Stored>,
     bytes: usize,
 }
 
+struct Stored {
+    path: PathBuf,
+    file_name: String,
+    mime_type: String,
+    size: usize,
+}
+
 impl Attachments {
+    pub fn new(root: PathBuf) -> HostResult<Self> {
+        std::fs::create_dir_all(&root)?;
+        let root = dunce::canonicalize(&root)?;
+        for entry in std::fs::read_dir(&root)?.flatten() {
+            let _ = std::fs::remove_file(entry.path());
+        }
+        Ok(Self {
+            root,
+            items: HashMap::new(),
+            bytes: 0,
+        })
+    }
+
     fn prepare(
         name: &str,
         path: &str,
         bytes: &[u8],
         image_only: bool,
-    ) -> HostResult<(String, Value, Value)> {
+    ) -> HostResult<(String, Vec<u8>, String, String, Value)> {
         if bytes.is_empty() || bytes.len() > 20 * 1024 * 1024 {
             return Err(HostError::new(
                 "ATTACHMENT_LIMIT",
@@ -53,13 +73,12 @@ impl Attachments {
                 }
             })
             .collect();
-        let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
-        let stored = json!({"file_path":path,"file_name":name,"mime_type":mime,"content":encoded});
         let mut descriptor = json!({"id":id,"name":name,"size":bytes.len(),"mimeType":mime});
-        if image.is_some() {
+        if image.is_some() && bytes.len() <= 8 * 1024 * 1024 {
+            let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
             descriptor["preview"] = json!(format!("data:{mime};base64,{encoded}"));
         }
-        Ok((id, stored, descriptor))
+        Ok((id, bytes.to_vec(), name, mime.to_owned(), descriptor))
     }
 
     pub fn import(&mut self, input: &Value) -> HostResult<Value> {
@@ -142,10 +161,13 @@ impl Attachments {
         self.store(vec![image])
     }
 
-    fn store(&mut self, prepared: Vec<(String, Value, Value)>) -> HostResult<Value> {
+    fn store(
+        &mut self,
+        prepared: Vec<(String, Vec<u8>, String, String, Value)>,
+    ) -> HostResult<Value> {
         let bytes = prepared
             .iter()
-            .map(|(_, _, descriptor)| descriptor["size"].as_u64().unwrap() as usize)
+            .map(|(_, bytes, _, _, _)| bytes.len())
             .sum::<usize>();
         if self.bytes + bytes > 200 * 1024 * 1024 {
             return Err(HostError::new(
@@ -154,9 +176,20 @@ impl Attachments {
             ));
         }
         let mut output = Vec::new();
-        for (id, stored, descriptor) in prepared {
-            self.items.insert(id, stored);
+        for (id, content, file_name, mime_type, descriptor) in prepared {
+            let path = self.root.join(format!("{id}.bin"));
+            std::fs::write(&path, &content)?;
+            self.items.insert(
+                id.clone(),
+                Stored {
+                    path,
+                    file_name,
+                    mime_type,
+                    size: content.len(),
+                },
+            );
             output.push(descriptor);
+            drop(content);
         }
         self.bytes += bytes;
         Ok(json!(output))
@@ -168,15 +201,20 @@ impl Attachments {
             .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "Expected attachment identifiers"))?;
         ids.iter()
             .map(|id| {
-                id.as_str()
+                let stored = id
+                    .as_str()
                     .and_then(|id| self.items.get(id))
-                    .cloned()
                     .ok_or_else(|| {
                         HostError::new(
                             "ATTACHMENT_NOT_FOUND",
                             "Attachment expired; select it again",
                         )
-                    })
+                    })?;
+                Ok(json!({
+                    "file_path": stored.path.to_string_lossy(),
+                    "file_name": stored.file_name,
+                    "mime_type": stored.mime_type,
+                }))
             })
             .collect::<HostResult<Vec<_>>>()
             .map(Value::Array)
@@ -188,17 +226,8 @@ impl Attachments {
             .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "Expected attachment identifiers"))?;
         for id in ids {
             if let Some(stored) = id.as_str().and_then(|id| self.items.remove(id)) {
-                self.bytes = self.bytes.saturating_sub(
-                    stored["content"]
-                        .as_str()
-                        .and_then(|content| {
-                            base64::engine::general_purpose::STANDARD
-                                .decode(content)
-                                .ok()
-                        })
-                        .map(|bytes| bytes.len())
-                        .unwrap_or(0),
-                );
+                self.bytes = self.bytes.saturating_sub(stored.size);
+                let _ = std::fs::remove_file(&stored.path);
             }
         }
         Ok(Value::Null)
@@ -211,7 +240,8 @@ mod tests {
 
     #[test]
     fn attachments_validate_resolve_and_expire() {
-        let mut store = Attachments::default();
+        let directory = tempfile::tempdir().unwrap();
+        let mut store = Attachments::new(directory.path().join("attachments").to_path_buf()).unwrap();
         assert!(store
             .import(&json!([{"name":"bad.png","data":"aGVsbG8="}]))
             .is_err());
@@ -221,8 +251,39 @@ mod tests {
         let ids = json!([imported[0]["id"]]);
         let resolved = store.resolve(&ids).unwrap();
         assert_eq!(resolved[0]["mime_type"], "image/png");
+        assert!(resolved[0]["content"].is_null());
+        let path = resolved[0]["file_path"].as_str().unwrap();
+        assert!(Path::new(path).exists());
+        assert!(path.contains("attachments") || Path::new(path).is_absolute());
         store.release(&ids).unwrap();
         assert!(store.resolve(&ids).is_err());
         assert_eq!(store.bytes, 0);
+        assert!(!Path::new(path).exists());
+    }
+
+    #[test]
+    fn stale_files_are_cleared_on_startup() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("attachments");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("stale.bin"), b"leftover").unwrap();
+        Attachments::new(root.clone()).unwrap();
+        assert!(std::fs::read_dir(&root).unwrap().next().is_none());
+    }
+
+    #[test]
+    fn resolved_references_stay_inside_the_private_root() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut store =
+            Attachments::new(directory.path().join("attachments").to_path_buf()).unwrap();
+        let imported = store.image("pic.png", &[137, 80, 78, 71, 13, 10, 26, 10]).unwrap();
+        let resolved = store.resolve(&json!([imported[0]["id"]])).unwrap();
+        let path = resolved[0]["file_path"].as_str().unwrap();
+        assert!(path.starts_with(
+            dunce::canonicalize(directory.path().join("attachments"))
+                .unwrap()
+                .to_string_lossy()
+                .as_ref()
+        ));
     }
 }

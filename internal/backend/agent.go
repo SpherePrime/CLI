@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/SpherePrime/CLI/internal/agent"
@@ -15,6 +18,86 @@ import (
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/internal/shell"
 )
+
+// maxResolvedAttachmentBytes matches the attachment size limit of the
+// desktop host: a single disk-backed attachment resolves to at most
+// 20 MiB.
+const maxResolvedAttachmentBytes = 20 << 20
+
+// resolveAttachments loads disk-backed attachment references in place.
+// An attachment with content but no file path passes through unchanged;
+// an attachment with a file path and no content is read from the
+// backend's trusted AttachmentRoot only. References outside the root,
+// symlink escapes, missing files and oversized files are rejected.
+// With no trusted root configured every file reference is rejected, so
+// the ordinary HTTP API can never read arbitrary files this way.
+func (b *Backend) resolveAttachments(attachments []proto.Attachment) ([]proto.Attachment, error) {
+	resolved := make([]proto.Attachment, len(attachments))
+	copy(resolved, attachments)
+	if len(resolved) == 0 {
+		return resolved, nil
+	}
+	for i := range resolved {
+		attachment := &resolved[i]
+		if len(attachment.Content) > 0 || attachment.FilePath == "" {
+			continue
+		}
+		path, err := b.trustedAttachmentPath(attachment.FilePath)
+		if err != nil {
+			return nil, err
+		}
+		info, err := os.Stat(path)
+		if err != nil {
+			return nil, fmt.Errorf("attachment file is unavailable: %w", err)
+		}
+		if !info.Mode().IsRegular() {
+			return nil, fmt.Errorf("attachment file is not a regular file")
+		}
+		if info.Size() > maxResolvedAttachmentBytes {
+			return nil, fmt.Errorf("attachment file exceeds %d bytes", maxResolvedAttachmentBytes)
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("attachment file is unavailable: %w", err)
+		}
+		content, err := io.ReadAll(io.LimitReader(file, maxResolvedAttachmentBytes+1))
+		file.Close()
+		if err != nil {
+			return nil, fmt.Errorf("attachment file could not be read: %w", err)
+		}
+		if len(content) > maxResolvedAttachmentBytes {
+			return nil, fmt.Errorf("attachment file exceeds %d bytes", maxResolvedAttachmentBytes)
+		}
+		attachment.Content = content
+	}
+	return resolved, nil
+}
+
+// trustedAttachmentPath verifies that path stays inside the trusted
+// attachment root after resolving symlinks, and returns the resolved
+// absolute path.
+func (b *Backend) trustedAttachmentPath(path string) (string, error) {
+	if b.AttachmentRoot == "" {
+		return "", errors.New("attachment file references are not accepted")
+	}
+	root, err := filepath.EvalSymlinks(b.AttachmentRoot)
+	if err != nil {
+		return "", fmt.Errorf("attachment storage is unavailable: %w", err)
+	}
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("invalid attachment file reference: %w", err)
+	}
+	resolved, err := filepath.EvalSymlinks(absolute)
+	if err != nil {
+		return "", fmt.Errorf("attachment file is unavailable: %w", err)
+	}
+	relative, err := filepath.Rel(root, resolved)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", errors.New("attachment file reference leaves the trusted storage")
+	}
+	return resolved, nil
+}
 
 // SendMessage validates and accepts a prompt for the workspace's agent,
 // then dispatches the run on a goroutine bound to the workspace context
@@ -47,10 +130,14 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		}
 	}
 
+	attachments, err := b.resolveAttachments(msg.Attachments)
+	if err != nil {
+		return err
+	}
 	if err := agent.ValidateCall(agent.SessionAgentCall{
 		SessionID:   msg.SessionID,
 		Prompt:      msg.Prompt,
-		Attachments: proto.AttachmentsToMessage(msg.Attachments),
+		Attachments: proto.AttachmentsToMessage(attachments),
 	}); err != nil {
 		return err
 	}
@@ -108,6 +195,7 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		}()
 	}
 
+	msg.Attachments = attachments
 	go b.runAgent(ws, msg, accept)
 	return nil
 }

@@ -40,6 +40,7 @@ impl AppState {
         let launches = crate::terminal::launch::LaunchManager::load(&directory)?;
         let automations = crate::automations::AutomationManager::load(&directory)?;
         let teams = crate::teams::TeamManager::load(&directory)?;
+        let attachments = crate::attachments::Attachments::new(directory.join("attachments"))?;
         Ok(Self {
             directory,
             settings: Mutex::new(settings),
@@ -52,7 +53,7 @@ impl AppState {
             editor_dirty: AtomicBool::new(false),
             closing: AtomicBool::new(false),
             file_writes: Mutex::new(()),
-            attachments: Mutex::new(crate::attachments::Attachments::default()),
+            attachments: Mutex::new(attachments),
             browser: crate::browser::BrowserState::new(),
             terminals: Arc::new(crate::terminal::TerminalManager::new()),
             remotes,

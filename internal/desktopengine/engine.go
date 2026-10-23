@@ -46,7 +46,7 @@ func New(options Options) (*Engine, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	srv := server.NewInProcess(ctx, cfg)
+	srv := server.NewInProcessWithOptions(ctx, cfg, options.AttachmentRoot)
 	engine := newEngine(ctx, cancel, srv.Handler())
 	engine.server = srv
 	return engine, nil
