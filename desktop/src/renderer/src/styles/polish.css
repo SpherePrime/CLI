@@ -82,6 +82,13 @@ progress {
   margin-right: 4px;
 }
 
+.message:not(.user) .copy-message {
+  top: auto;
+  right: auto;
+  bottom: -34px;
+  left: 24px;
+}
+
 .message.user .message-body {
   width: fit-content;
   max-width: min(760px, calc(100% - 31px));
