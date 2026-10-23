@@ -35,6 +35,16 @@ const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
 export function App() {
   const w = useWorkspace()
+  useEffect(() => {
+    const handleHostError = (event: Event) => {
+      const detail: unknown = (event as CustomEvent<unknown>).detail
+      w.errorHandler(detail instanceof Error ? detail : new Error(
+        typeof detail === 'string' ? detail : (detail as { message?: string })?.message || 'Ошибка окна'
+      ))
+    }
+    window.addEventListener('prime:host-error', handleHostError)
+    return () => window.removeEventListener('prime:host-error', handleHostError)
+  }, [w.errorHandler])
   const [started, setStarted] = useState(false)
   const failed = Boolean(w.error || w.info.error || w.info.runtime === 'failed')
   const startupNeedsInput = w.questions.length > 0 || w.permissions.length > 0
