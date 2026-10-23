@@ -38,6 +38,16 @@ describe('native host bridge', () => {
       method: 'files',
       args: ['workspace']
     })
+    await bridge.api.call('workspace', 'config')
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
+      method: 'call',
+      args: ['workspace', 'config', null, ['GET', 'config']]
+    })
+    await bridge.api.importImages([{ name: 'image.png', data: new Uint8Array([1, 2, 255]) }])
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
+      method: 'importImages',
+      args: [[{ name: 'image.png', data: 'AQL/' }]]
+    })
     await bridge.api.call('workspace', 'messagePage', { sessionId: 'chat', limit: 60 })
     expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
       method: 'call',
@@ -54,9 +64,7 @@ describe('native host bridge', () => {
   })
 
   it('unsubscribes individual listeners and releases native event registration', async () => {
-    let receive: Parameters<Parameters<NativeListen>[1]>[0] extends never
-      ? never
-      : Parameters<NativeListen>[1]
+    let receive: Parameters<NativeListen>[1]
     const release = vi.fn()
     const bridge = await createNativeBridge(vi.fn() as NativeInvoke, async (_name, listener) => {
       receive = listener
