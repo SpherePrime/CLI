@@ -50,6 +50,8 @@ impl Engine {
         isolated: bool,
     ) -> HostResult<Arc<Self>> {
         std::fs::create_dir_all(directory.join("engine-data"))?;
+        std::env::set_var("PRIME_DESKTOP", "1");
+        std::env::set_var("PRIME_DISABLE_METRICS", "1");
         if isolated {
             std::fs::create_dir_all(directory.join("config"))?;
             std::env::set_var("PRIME_GLOBAL_CONFIG", directory.join("config"));
