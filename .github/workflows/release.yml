@@ -78,6 +78,9 @@ jobs:
         run: node scripts/set-native-version.mjs "$RELEASE_TAG"
       - name: Build signed native installer
         run: node scripts/build-native-installer.mjs "${{ matrix.bundle }}"
+      - name: Build custom setup
+        if: runner.os == 'Windows'
+        run: node scripts/build-setup.mjs
       - name: Stage signed assets
         env:
           RELEASE_TAG: ${{ github.ref_name }}

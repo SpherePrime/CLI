@@ -64,8 +64,8 @@ export function SetupApp() {
   const current = steps.findIndex((step) => step.phase === status.phase)
   return (
     <div className="setup-shell">
-      <header className="setup-titlebar">
-        <div className="setup-wordmark">
+      <header className="setup-titlebar" data-tauri-drag-region>
+        <div className="setup-wordmark" data-tauri-drag-region>
           <PrimeLogo />
           <span>
             Prime<span className="setup-wordmark-separator">/</span>

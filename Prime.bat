@@ -304,7 +304,6 @@ call :header "Prime Desktop"
 call :desktop_prepare
 if not "%EXITCODE%"=="0" goto finish
 echo  Starting Prime Desktop from sources. Close it to come back here.
-echo  Native preview uses its own Desktop profile.
 echo.
 pushd desktop
 call npm run dev
@@ -314,9 +313,9 @@ goto finish
 
 :do_setup
 call :header "Prime Desktop setup"
-tasklist /FI "IMAGENAME eq prime-native.exe" /NH 2>nul | find /I "prime-native.exe" >nul
+tasklist /FI "IMAGENAME eq PrimeDesktop.exe" /NH 2>nul | find /I "PrimeDesktop.exe" >nul
 if not errorlevel 1 (
-    echo  Prime Native Preview is running. Close it and run setup again.
+    echo  Prime Desktop is running. Close it and run setup again.
     set "EXITCODE=1"
     goto finish
 )
@@ -326,7 +325,7 @@ pushd desktop
 call npm run dist:win
 if errorlevel 1 goto setup_failed
 set "SETUP_FILE="
-for %%f in ("src-tauri\target\release\bundle\nsis\*.exe") do if exist "%%~f" set "SETUP_FILE=%%~f"
+for %%f in ("src-tauri\target\release\bundle\setup\*.exe") do if exist "%%~f" set "SETUP_FILE=%%~f"
 if not defined SETUP_FILE goto setup_failed
 popd
 echo.

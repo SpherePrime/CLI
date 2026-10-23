@@ -1,0 +1,6 @@
+{
+  "identifier": "main",
+  "description": "Setup window",
+  "windows": ["main"],
+  "permissions": ["core:default", "core:window:allow-start-dragging"]
+}
