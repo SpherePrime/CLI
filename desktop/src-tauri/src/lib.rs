@@ -47,6 +47,6 @@ pub fn run() {
         ])
         .on_window_event(lifecycle::window_event)
         .build(context)
-        .expect("failed to build Prime Native Preview")
+        .expect("failed to build Prime Desktop")
         .run(lifecycle::run_event);
 }

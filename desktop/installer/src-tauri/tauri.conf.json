@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Prime Desktop Setup",
+  "version": "0.4.61",
+  "identifier": "io.sphereprime.desktop-setup",
+  "build": {
+    "frontendDist": "../out",
+    "devUrl": "http://127.0.0.1:5174"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Prime Desktop",
+        "width": 1000,
+        "height": 690,
+        "resizable": false,
+        "maximizable": false,
+        "decorations": false,
+        "center": true,
+        "shadow": true,
+        "backgroundColor": "#141413"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:5174 ws://127.0.0.1:5174; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": [
+      "../../build/icon.png",
+      "../../build/icon.ico"
+    ],
+    "publisher": "SpherePrime",
+    "copyright": "SpherePrime"
+  }
+}
