@@ -41,15 +41,21 @@ pub struct Engine {
 impl Engine {
     #[cfg(test)]
     pub fn load(directory: &Path) -> HostResult<Arc<Self>> {
-        Self::load_bundled(directory, None)
+        Self::load_bundled(directory, None, true)
     }
 
-    pub fn load_bundled(directory: &Path, resources: Option<&Path>) -> HostResult<Arc<Self>> {
-        std::fs::create_dir_all(directory.join("config"))?;
+    pub fn load_bundled(
+        directory: &Path,
+        resources: Option<&Path>,
+        isolated: bool,
+    ) -> HostResult<Arc<Self>> {
         std::fs::create_dir_all(directory.join("engine-data"))?;
-        std::env::set_var("PRIME_GLOBAL_CONFIG", directory.join("config"));
-        std::env::set_var("PRIME_GLOBAL_DATA", directory.join("engine-data"));
-        std::env::set_var("PRIME_CACHE_DIR", directory.join("cache"));
+        if isolated {
+            std::fs::create_dir_all(directory.join("config"))?;
+            std::env::set_var("PRIME_GLOBAL_CONFIG", directory.join("config"));
+            std::env::set_var("PRIME_GLOBAL_DATA", directory.join("engine-data"));
+            std::env::set_var("PRIME_CACHE_DIR", directory.join("cache"));
+        }
         let path = crate::engine_resource::resolve(resources)?;
         unsafe {
             let library = ManuallyDrop::new(Library::new(&path).map_err(|error| {

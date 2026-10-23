@@ -14,6 +14,9 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     }
     std::fs::create_dir_all(&directory)?;
     let directory = dunce::canonicalize(directory)?;
+    if !crate::state::isolated_profile() {
+        crate::migration::import_legacy_state(&directory);
+    }
     let state = crate::state::AppState::new(directory).map_err(|error| error.message)?;
     state
         .teams
@@ -38,7 +41,11 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let handle = app.handle().clone();
     std::thread::spawn(move || {
         let state = handle.state::<crate::state::AppState>();
-        let result = crate::engine::Engine::load_bundled(&state.directory, Some(&resources));
+        let result = crate::engine::Engine::load_bundled(
+            &state.directory,
+            Some(&resources),
+            state.isolated,
+        );
         if state.closing.load(Ordering::Acquire) {
             if let Ok(engine) = result {
                 engine.close();

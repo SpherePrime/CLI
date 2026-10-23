@@ -7,13 +7,24 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 
-fn data_directory(state: &AppState, path: &str) -> HostResult<PathBuf> {
+fn data_directory(state: &AppState, path: &str) -> HostResult<Option<PathBuf>> {
+    if !state.isolated {
+        return Ok(None);
+    }
     let directory = state
         .directory
         .join("workspaces")
         .join(format!("{:x}", Sha256::digest(path.as_bytes())));
     std::fs::create_dir_all(&directory)?;
-    Ok(dunce::canonicalize(directory)?)
+    Ok(Some(dunce::canonicalize(directory)?))
+}
+
+fn workspace_request(path: &str, client: &str, data_directory: Option<PathBuf>) -> Value {
+    let mut request = json!({"path":path,"client_id":client,"channels":[]});
+    if let Some(directory) = data_directory {
+        request["data_dir"] = json!(directory);
+    }
+    request
 }
 
 pub fn sessions(state: &AppState, path: &str) -> HostResult<Value> {
@@ -24,7 +35,7 @@ pub fn sessions(state: &AppState, path: &str) -> HostResult<Value> {
     let workspace = engine.request(
         "POST",
         "/v1/workspaces",
-        Some(json!({"path":path,"client_id":client,"data_dir":data_directory,"channels":[]})),
+        Some(workspace_request(&path, &client, data_directory)),
     )?;
     let result = workspace["id"]
         .as_str()
@@ -67,7 +78,7 @@ pub fn open(
     let workspace = engine.request(
         "POST",
         "/v1/workspaces",
-        Some(json!({"path":path,"client_id":client,"channels":[],"data_dir":data_directory})),
+        Some(workspace_request(&path, &client, data_directory)),
     )?;
     let id = workspace["id"]
         .as_str()
@@ -169,4 +180,16 @@ mod tests {
             assert!(operation_target("workspace", "GET", path).is_err(), "{path}");
         }
     }
+}
+
+pub fn chats_directory(state: &AppState) -> PathBuf {
+    if !state.isolated {
+        if let Some(legacy) = crate::migration::legacy_directory()
+            .map(|directory| directory.join("Chats"))
+            .filter(|directory| directory.is_dir())
+        {
+            return legacy;
+        }
+    }
+    state.directory.join("Chats")
 }

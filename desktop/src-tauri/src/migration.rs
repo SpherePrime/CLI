@@ -35,9 +35,17 @@ pub fn run(state: &crate::state::AppState) -> HostResult<Value> {
 }
 
 pub fn legacy_directory() -> Option<std::path::PathBuf> {
+    let base = legacy_base()?;
+    ["prime-desktop", "Prime Desktop"]
+        .iter()
+        .map(|name| base.join(name))
+        .find(|directory| directory.is_dir())
+}
+
+fn legacy_base() -> Option<std::path::PathBuf> {
     #[cfg(windows)]
     {
-        std::env::var_os("APPDATA").map(|base| std::path::PathBuf::from(base).join("Prime Desktop"))
+        std::env::var_os("APPDATA").map(std::path::PathBuf::from)
     }
     #[cfg(not(windows))]
     {
@@ -47,16 +55,16 @@ pub fn legacy_directory() -> Option<std::path::PathBuf> {
                 std::path::PathBuf::from(base)
                     .join("Library")
                     .join("Application Support")
-                    .join("Prime Desktop")
             })
         }
         #[cfg(all(unix, not(target_os = "macos")))]
         {
-            std::env::var_os("HOME").map(|base| {
-                std::path::PathBuf::from(base)
-                    .join(".config")
-                    .join("Prime Desktop")
-            })
+            std::env::var_os("XDG_CONFIG_HOME")
+                .map(std::path::PathBuf::from)
+                .or_else(|| {
+                    std::env::var_os("HOME")
+                        .map(|base| std::path::PathBuf::from(base).join(".config"))
+                })
         }
     }
 }
@@ -160,6 +168,61 @@ fn finish(state: &crate::state::AppState, report: &Value) -> HostResult<()> {
         state.directory.join("migration-complete.json"),
         serde_json::to_vec_pretty(report)?,
     )?;
+    Ok(())
+}
+
+pub fn import_legacy_state(directory: &std::path::Path) {
+    let marker = directory.join("legacy-state-imported.json");
+    if marker.exists() {
+        return;
+    }
+    let Some(legacy) = legacy_directory() else {
+        return;
+    };
+    if let Err(error) = import_state_files(directory, &legacy) {
+        eprintln!("Legacy state import failed: {}", error.message);
+        return;
+    }
+    let _ = std::fs::write(marker, json!({"source":legacy}).to_string());
+}
+
+fn import_state_files(directory: &std::path::Path, legacy: &std::path::Path) -> HostResult<()> {
+    for name in ["automations.json", "launch.json"] {
+        let target = directory.join(name);
+        if !target.exists() && legacy.join(name).is_file() {
+            std::fs::copy(legacy.join(name), target)?;
+        }
+    }
+    let Ok(bytes) = std::fs::read(legacy.join("preferences.json")) else {
+        return Ok(());
+    };
+    let legacy_preferences: Value = serde_json::from_slice(&bytes)?;
+    let target = directory.join("preferences.json");
+    let mut native: Value = match std::fs::read(&target) {
+        Ok(bytes) => serde_json::from_slice(&bytes)?,
+        Err(_) => json!({"version":1,"preferences":{}}),
+    };
+    let fresh = native["preferences"]["recent"]
+        .as_array()
+        .is_none_or(|recent| recent.is_empty());
+    let (Some(source), Some(current)) = (
+        legacy_preferences["preferences"].as_object(),
+        native["preferences"].as_object_mut(),
+    ) else {
+        return Ok(());
+    };
+    for (key, value) in source {
+        let empty = current.get(key).is_none_or(|existing| {
+            existing.is_null()
+                || existing.as_array().is_some_and(Vec::is_empty)
+                || existing.as_object().is_some_and(serde_json::Map::is_empty)
+                || existing.as_str().is_some_and(str::is_empty)
+        });
+        if fresh || empty {
+            current.insert(key.clone(), value.clone());
+        }
+    }
+    std::fs::write(target, serde_json::to_vec_pretty(&native)?)?;
     Ok(())
 }
 
@@ -273,5 +336,61 @@ mod tests {
     #[test]
     fn random_bytes_are_rejected() {
         assert!(protect::unprotect(&[1, 2, 3, 4]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod state_tests {
+    use super::*;
+
+    fn write(path: &std::path::Path, value: Value) {
+        std::fs::write(path, value.to_string()).unwrap();
+    }
+
+    fn read(path: &std::path::Path) -> Value {
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn fresh_profile_takes_legacy_preferences_and_files() {
+        let native = tempfile::tempdir().unwrap();
+        let legacy = tempfile::tempdir().unwrap();
+        write(
+            &legacy.path().join("preferences.json"),
+            json!({"version":1,"preferences":{"recent":["/work/project"],"theme":"light","pinned":["/work/project"]}}),
+        );
+        write(&legacy.path().join("launch.json"), json!({"version":1,"configs":{}}));
+        write(
+            &native.path().join("preferences.json"),
+            json!({"version":1,"preferences":{"recent":[],"theme":"dark"}}),
+        );
+        import_state_files(native.path(), legacy.path()).unwrap();
+        let preferences = read(&native.path().join("preferences.json"));
+        assert_eq!(preferences["preferences"]["recent"], json!(["/work/project"]));
+        assert_eq!(preferences["preferences"]["theme"], "light");
+        assert!(native.path().join("launch.json").is_file());
+        assert!(!native.path().join("automations.json").exists());
+    }
+
+    #[test]
+    fn used_profile_keeps_its_values_and_fills_gaps() {
+        let native = tempfile::tempdir().unwrap();
+        let legacy = tempfile::tempdir().unwrap();
+        write(
+            &legacy.path().join("preferences.json"),
+            json!({"version":1,"preferences":{"recent":["/work/old"],"theme":"light","pinned":["/work/old"]}}),
+        );
+        write(
+            &native.path().join("preferences.json"),
+            json!({"version":1,"preferences":{"recent":["/work/new"],"theme":"dark","pinned":[]}}),
+        );
+        write(&native.path().join("launch.json"), json!({"version":1,"configs":{"keep":[]}}));
+        write(&legacy.path().join("launch.json"), json!({"version":1,"configs":{}}));
+        import_state_files(native.path(), legacy.path()).unwrap();
+        let preferences = read(&native.path().join("preferences.json"));
+        assert_eq!(preferences["preferences"]["recent"], json!(["/work/new"]));
+        assert_eq!(preferences["preferences"]["theme"], "dark");
+        assert_eq!(preferences["preferences"]["pinned"], json!(["/work/old"]));
+        assert_eq!(read(&native.path().join("launch.json"))["configs"]["keep"], json!([]));
     }
 }

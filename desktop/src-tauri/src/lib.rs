@@ -2,6 +2,7 @@ mod attachments;
 mod automations;
 mod browser;
 mod commands;
+mod console;
 mod computer;
 mod engine;
 mod engine_resource;
@@ -28,6 +29,7 @@ mod updater;
 mod window_chrome;
 
 pub fn run() {
+    console::attach_hidden();
     let mut context = tauri::generate_context!();
     if cfg!(debug_assertions) {
         test_data::configure(

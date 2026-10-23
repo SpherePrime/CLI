@@ -8,6 +8,7 @@ use std::{
 
 pub struct AppState {
     pub directory: PathBuf,
+    pub isolated: bool,
     pub settings: Mutex<Settings>,
     pub projects: Mutex<HashMap<String, Value>>,
     pub engine: Mutex<EngineStatus>,
@@ -43,6 +44,7 @@ impl AppState {
         let teams = crate::teams::TeamManager::load(&directory)?;
         let attachments = crate::attachments::Attachments::new(directory.join("attachments"))?;
         Ok(Self {
+            isolated: isolated_profile(),
             directory,
             settings: Mutex::new(settings),
             projects: Mutex::new(HashMap::new()),
@@ -109,4 +111,8 @@ impl AppState {
             .map(PathBuf::from)
             .ok_or_else(|| crate::error::HostError::new("PROJECT_NOT_FOUND", "Project is not open"))
     }
+}
+
+pub fn isolated_profile() -> bool {
+    cfg!(test) || (cfg!(debug_assertions) && std::env::var_os("PRIME_NATIVE_TEST_DATA").is_some())
 }
