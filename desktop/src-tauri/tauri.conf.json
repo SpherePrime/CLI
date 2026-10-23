@@ -11,7 +11,7 @@
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [{ "label": "main", "title": "Prime Native Preview", "width": 1440, "height": 940, "minWidth": 420, "minHeight": 420, "decorations": false }],
+    "windows": [{ "label": "main", "title": "Prime Native Preview", "width": 1440, "height": 940, "minWidth": 420, "minHeight": 420, "decorations": false, "backgroundColor": "#111318" }],
     "security": {
       "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:5173 ws://127.0.0.1:5173; img-src 'self' asset: http://asset.localhost data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; font-src 'self' data:; media-src 'self' blob: data:"
     }
