@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { LoaderCircle, Mic, Send, X } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useVoice } from '../plugins/useVoice'
+import { VoiceWave } from '../chat/VoiceWave'
 import type { PickedElementResult } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
 
@@ -102,7 +103,16 @@ export function ElementPick({
           </div>
         ))}
       </div>
+      {(voice.recording || voice.transcribing) && (
+        <VoiceWave
+          compact
+          analyser={voice.analyser}
+          transcribing={voice.transcribing}
+          onCancel={() => void voice.cancel()}
+        />
+      )}
       <textarea
+        hidden={voice.recording || voice.transcribing}
         autoFocus
         rows={2}
         aria-label={t('Замечание к элементу')}

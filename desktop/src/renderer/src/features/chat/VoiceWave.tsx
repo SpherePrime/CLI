@@ -10,11 +10,13 @@ const sampleInterval = 60
 export function VoiceWave({
   analyser,
   transcribing,
-  onCancel
+  onCancel,
+  compact = false
 }: {
   analyser: AnalyserNode | null
   transcribing: boolean
   onCancel: () => void
+  compact?: boolean
 }) {
   const { t } = useI18n()
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -75,8 +77,12 @@ export function VoiceWave({
   }, [analyser, transcribing])
   const time = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
   return (
-    <div className={`voice-wave ${transcribing ? 'transcribing' : ''}`} role="status">
+    <div
+      className={`voice-wave${transcribing ? ' transcribing' : ''}${compact ? ' compact' : ''}`}
+      role="status"
+    >
       <button
+        type="button"
         className="icon small"
         aria-label={t('Отменить запись')}
         title={t('Отменить запись')}
@@ -85,8 +91,12 @@ export function VoiceWave({
       >
         <X size={15} />
       </button>
+      <span className="voice-wave-label">
+        <i className="voice-wave-dot" aria-hidden="true" />
+        {transcribing ? t('Распознаём речь…') : t('Говорите…')}
+      </span>
       <canvas ref={canvas} aria-hidden="true" />
-      <span className="voice-wave-time">{transcribing ? t('Распознаём речь…') : time}</span>
+      <span className="voice-wave-time">{time}</span>
     </div>
   )
 }
