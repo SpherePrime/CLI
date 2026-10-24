@@ -61,15 +61,15 @@ monaco.editor.defineTheme('prime-dark', {
   inherit: true,
   rules: [],
   colors: {
-    'editor.background': '#101010',
-    'editor.foreground': '#F1EFE9',
-    'editorLineNumber.foreground': '#615e58',
-    'editorLineNumber.activeForeground': '#FF8C60',
-    'editor.selectionBackground': '#513425',
-    'editorCursor.foreground': '#FF8C60',
-    'editor.lineHighlightBackground': '#191919',
-    'editorWidget.background': '#191919',
-    'editorIndentGuide.background1': '#2b2b28'
+    'editor.background': '#151618',
+    'editor.foreground': '#F5F3EE',
+    'editorLineNumber.foreground': '#969792',
+    'editorLineNumber.activeForeground': '#FFAD85',
+    'editor.selectionBackground': '#50382D',
+    'editorCursor.foreground': '#FFAD85',
+    'editor.lineHighlightBackground': '#222327',
+    'editorWidget.background': '#222327',
+    'editorIndentGuide.background1': '#383A40'
   }
 })
 monaco.editor.defineTheme('prime-light', {
@@ -77,9 +77,14 @@ monaco.editor.defineTheme('prime-light', {
   inherit: true,
   rules: [],
   colors: {
-    'editor.background': '#faf9f5',
-    'editor.foreground': '#17110d',
-    'editorCursor.foreground': '#b84619',
-    'editor.selectionBackground': '#f8dfd1'
+    'editor.background': '#FAF9F6',
+    'editor.foreground': '#252622',
+    'editorCursor.foreground': '#AE4820',
+    'editor.selectionBackground': '#F8E8DD',
+    'editorLineNumber.foreground': '#72736C',
+    'editorLineNumber.activeForeground': '#AE4820',
+    'editor.lineHighlightBackground': '#EFEEE9',
+    'editorWidget.background': '#FFFFFF',
+    'editorIndentGuide.background1': '#D9D7CF'
   }
 })

@@ -62,6 +62,7 @@ export function SettingsDialog({
             <button
               key={item.id}
               className={tab === item.id ? 'active' : ''}
+              aria-current={tab === item.id ? 'page' : undefined}
               onClick={() => {
                 setTab(item.id)
                 setStatus('')
@@ -72,7 +73,7 @@ export function SettingsDialog({
             </button>
           ))}
         </nav>
-        <div className="settings-body">
+        <div className="settings-body" key={tab}>
           {tab === 'voice' && <VoiceSettings workspace={w} />}
           {tab === 'images' && <ImageGenSettings workspace={w} />}
           {tab === 'sudo' && <SudoSettings />}

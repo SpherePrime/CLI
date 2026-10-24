@@ -1,0 +1,115 @@
+.titlebar {
+  background: var(--sidebar);
+  border-bottom-color: transparent;
+}
+.titlebar-brand {
+  gap: 10px;
+}
+.topbar-search {
+  height: 32px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--bg) 65%, var(--surface));
+  border-color: var(--ui-border);
+  box-shadow: inset 0 1px var(--ui-highlight);
+}
+.workspace-topbar .breadcrumbs {
+  gap: 10px;
+}
+.app-shell > .main-workspace,
+.app-shell > .project-rail,
+.app-shell > .inspector-rail {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius);
+}
+.app-shell > .main-workspace {
+  background: var(--bg);
+  box-shadow: inset 0 1px var(--ui-highlight);
+}
+.project-rail,
+.inspector-rail {
+  background: var(--sidebar);
+}
+.project-rail > .icon,
+.inspector-rail .inspector-tabs > button {
+  border-radius: 12px;
+  color: var(--secondary);
+}
+.project-rail > .icon:hover:not(:disabled),
+.inspector-rail .inspector-tabs > button:hover:not(:disabled) {
+  background: var(--raised);
+  color: var(--text);
+}
+.project-rail > .icon.active,
+.inspector-rail .inspector-tabs > button.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.sidebar {
+  background: var(--sidebar);
+}
+.sidebar-actions .new-chat {
+  min-height: 40px;
+  border-radius: 12px;
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  background: var(--accent-bg);
+  color: var(--accent);
+  box-shadow: inset 0 1px var(--ui-highlight);
+}
+.sidebar-actions .new-chat > svg {
+  color: inherit;
+}
+.sidebar .project-card {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  border-color: var(--ui-border);
+}
+.sidebar .project-card.active-group {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+.sidebar .session-row {
+  margin-block: 3px;
+  border-radius: 9px;
+}
+.sidebar .session-row.active {
+  background: var(--accent-bg);
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.sidebar .session-row.active::before {
+  width: 2px;
+  inset-block: 12px;
+}
+.sidebar-footer > button {
+  min-height: 38px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.sidebar .navigation-caption,
+.sidebar .section-caption {
+  font-size: 10px;
+  letter-spacing: 0.9px;
+  font-weight: 600;
+}
+.project-flyout {
+  border-radius: var(--ui-radius);
+  border-color: var(--ui-border);
+  box-shadow: var(--ui-overlay-shadow);
+}
+.tree-file {
+  border-radius: 7px;
+  margin-block: 1px;
+}
+.tree-file.selected {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.inspector-header,
+.editor-tabs {
+  border-bottom-color: var(--ui-border);
+}
+.editor-tab.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: inset 0 2px var(--accent);
+}

@@ -5,6 +5,10 @@ import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
 import '@fontsource/inter/600.css'
 import '@fontsource/inter/700.css'
+import '@fontsource/inter/cyrillic-400.css'
+import '@fontsource/inter/cyrillic-500.css'
+import '@fontsource/inter/cyrillic-600.css'
+import '@fontsource/inter/cyrillic-700.css'
 import '@fontsource/ibm-plex-sans/400.css'
 import '@fontsource/ibm-plex-sans/500.css'
 import '@fontsource/ibm-plex-sans/600.css'
@@ -26,6 +30,7 @@ import './styles/polish.css'
 import './styles/responsive-layout.css'
 import './styles/shell.css'
 import './styles/dictation.css'
+import './styles/design/index.css'
 
 async function start() {
   if (import.meta.env.VITE_NATIVE_HOST === 'true') {

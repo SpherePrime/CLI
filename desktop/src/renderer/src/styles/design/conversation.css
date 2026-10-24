@@ -1,0 +1,227 @@
+.welcome {
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in srgb, var(--accent) 7%, transparent),
+    transparent 62%
+  );
+  padding-block: 28px;
+}
+.welcome-wordmark {
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  box-shadow:
+    inset 0 1px var(--ui-highlight),
+    0 8px 24px color-mix(in srgb, var(--accent) 7%, transparent);
+  margin-bottom: 22px;
+}
+.welcome .eyebrow {
+  width: fit-content;
+  padding: 6px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent-bg) 60%, transparent);
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+.welcome h1 {
+  font-size: clamp(30px, 4.2cqw, 48px);
+  letter-spacing: -1.9px;
+  font-weight: 600;
+  line-height: 1.12;
+  margin-bottom: 18px;
+}
+.welcome p {
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 1.75;
+  margin-bottom: 22px;
+}
+.welcome-actions {
+  margin-bottom: 26px;
+}
+.welcome-actions .open-project {
+  min-height: 42px;
+  padding-inline: 16px;
+  border-radius: 12px;
+}
+.starter-grid {
+  gap: 12px;
+}
+.starter-grid button {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 16px;
+  grid-template-rows: 1fr 1fr;
+  min-height: 88px;
+  gap: 5px 12px;
+  padding: 18px;
+  border-radius: 16px;
+  border-color: var(--ui-border);
+  background: var(--surface);
+  box-shadow: inset 0 1px var(--ui-highlight);
+}
+.starter-grid .starter-icon {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--accent-bg);
+}
+.starter-grid strong {
+  grid-column: 2;
+  align-self: end;
+  font-size: 12px;
+  font-weight: 600;
+}
+.starter-grid button > span:last-of-type {
+  grid-column: 2;
+  align-self: start;
+  font-size: 11px;
+}
+.starter-grid .starter-arrow {
+  position: static;
+  grid-column: 3;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+.conversation-inner {
+  padding-block: 36px;
+}
+.message-body {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.message-author strong {
+  font-weight: 600;
+}
+.prime-avatar {
+  border-radius: 8px;
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.message.user .message-body {
+  background: color-mix(in srgb, var(--accent-bg) 48%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--border));
+  border-radius: 18px 18px 5px 18px;
+  padding: 14px 18px;
+  box-shadow: inset 0 1px var(--ui-highlight);
+}
+.composer-area {
+  padding-bottom: 22px;
+}
+.composer {
+  background: var(--surface);
+  border-radius: 20px;
+  border-color: color-mix(in srgb, var(--secondary) 23%, var(--border));
+  box-shadow:
+    var(--ui-shadow),
+    inset 0 1px var(--ui-highlight);
+}
+.composer textarea {
+  padding: 20px 20px 14px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.composer-toolbar {
+  padding: 6px 12px 12px;
+}
+.composer .send {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+}
+.composer .model-control {
+  border-radius: 9px;
+  padding-block: 7px;
+}
+.composer .permission-trigger,
+.composer .project-picker-trigger {
+  border-color: var(--ui-border);
+  border-radius: 8px;
+}
+.markdown pre,
+.tool-card {
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 75%, var(--bg));
+}
+.markdown blockquote {
+  border-left-color: var(--accent);
+  color: var(--secondary);
+}
+.tool-card > summary {
+  padding-block: 12px;
+}
+.prompt-queue,
+.approvals > section {
+  border-radius: 14px;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+}
+@container conversation (max-width: 560px) {
+  .welcome h1 {
+    font-size: 30px;
+    letter-spacing: -1px;
+  }
+  .welcome p {
+    font-size: 13px;
+  }
+  .starter-grid button {
+    padding: 14px;
+    gap: 5px 10px;
+  }
+  .composer-area {
+    padding-inline: 12px;
+    padding-bottom: 14px;
+  }
+  .composer textarea {
+    padding-inline: 16px;
+  }
+}
+@container conversation (max-width: 420px) {
+  .composer-toolbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .composer-options {
+    flex: 1 1 100%;
+  }
+  .composer-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+  .composer-actions .model-control {
+    flex: 1 1 0;
+    max-width: none;
+    margin-right: auto;
+  }
+  .composer-actions > .icon:not(.danger):not(.active) {
+    display: inline-flex;
+  }
+}
+@media (max-height: 760px) {
+  .welcome-wordmark {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
+  }
+  .welcome h1 {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+  .welcome p {
+    margin-bottom: 14px;
+  }
+  .welcome-actions {
+    margin-bottom: 16px;
+  }
+  .starter-grid button {
+    min-height: 76px;
+    padding-block: 12px;
+  }
+}
