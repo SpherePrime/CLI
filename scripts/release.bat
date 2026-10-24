@@ -1439,7 +1439,7 @@ rem ---------------------------------------------------------------------------
 :verify_fetch
 set "ASSET_LIST=%OUT%\assets.txt"
 del /q "%ASSET_LIST%" >nul 2>&1
-gh release view "%TAG%" --json assets --jq ".assets[].name" 2^>nul > "%ASSET_LIST%"
+gh release view "%TAG%" --json assets --jq ".assets[].name" 2>nul > "%ASSET_LIST%"
 exit /b 0
 
 rem ---------------------------------------------------------------------------
