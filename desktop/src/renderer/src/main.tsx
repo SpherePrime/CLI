@@ -31,6 +31,7 @@ import './styles/responsive-layout.css'
 import './styles/shell.css'
 import './styles/dictation.css'
 import './styles/design/index.css'
+import './styles/glass/index.css'
 
 async function start() {
   if (import.meta.env.VITE_NATIVE_HOST === 'true') {
