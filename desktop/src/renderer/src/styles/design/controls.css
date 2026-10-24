@@ -199,49 +199,8 @@
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent);
 }
-.reasoning-slider {
-  height: 36px;
-  background: transparent;
-}
-.reasoning-slider::before {
-  content: '';
-  position: absolute;
-  inset: 50% 14px auto;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--raised);
-  transform: translateY(-50%);
-}
-.reasoning-slider-fill {
-  inset: 50% auto auto 14px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--accent);
-  transform: translateY(-50%);
-}
-.reasoning-slider-dot {
-  background: var(--muted);
-}
-.reasoning-slider-dot.active {
-  background: var(--accent);
-}
-.reasoning-slider-thumb {
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  border: 2px solid var(--accent);
-  background: var(--surface);
-  box-shadow: 0 2px 5px #00000020;
-}
-.reasoning-slider:focus-visible {
-  box-shadow: none;
-}
-.reasoning-slider:focus-visible .reasoning-slider-thumb {
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 16%, transparent);
-}
 [data-motion='reduced'] .settings-body input,
 [data-motion='reduced'] .settings-body input::before,
-[data-motion='reduced'] .settings-body input::after,
-[data-motion='reduced'] .reasoning-slider * {
+[data-motion='reduced'] .settings-body input::after {
   transition: none;
 }
