@@ -1,0 +1,219 @@
+dialog.modal {
+  border-radius: 22px;
+  border-color: var(--ui-border);
+  background: var(--surface);
+  box-shadow:
+    var(--ui-overlay-shadow),
+    inset 0 1px var(--ui-highlight);
+}
+dialog.modal::backdrop {
+  background: color-mix(in srgb, var(--bg) 64%, transparent);
+  backdrop-filter: blur(8px);
+}
+.modal > header {
+  min-height: 64px;
+  padding-inline: 24px 18px;
+  border-bottom-color: var(--ui-border);
+}
+.modal > header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.modal.settings-modal {
+  border-radius: 22px;
+}
+.modal > header .icon {
+  border-radius: 9px;
+}
+.settings-modal .settings-layout > nav {
+  background: color-mix(in srgb, var(--sidebar) 75%, var(--surface));
+  padding: 16px 12px;
+  gap: 5px;
+  border-color: var(--ui-border);
+}
+.settings-modal .settings-layout > nav button {
+  min-height: 40px;
+  padding-inline: 12px;
+  gap: 11px;
+  border-radius: 11px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+.settings-modal .settings-layout > nav button.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.settings-modal .settings-layout > nav button.active svg {
+  color: var(--accent);
+}
+.settings-modal .settings-body {
+  padding: 28px;
+  background: var(--surface);
+}
+.settings-body h3 {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  margin-bottom: 8px;
+}
+.settings-body .form-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--secondary);
+  margin-top: 24px;
+}
+.settings-body .theme-options > button,
+.settings-body .density-options > button {
+  min-width: 0;
+  border-radius: 14px;
+  border-color: var(--ui-border);
+  background: var(--bg);
+  box-shadow: inset 0 1px var(--ui-highlight);
+}
+.settings-body .theme-options > button.selected,
+.settings-body .density-options > button[aria-pressed='true'] {
+  background: var(--accent-bg);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.setting-toggle {
+  border-bottom-color: var(--ui-border);
+}
+.prime-popover,
+.file-context-menu,
+.select-options {
+  border-radius: 14px;
+  border-color: var(--ui-border);
+  background: var(--surface);
+  padding: 7px;
+  box-shadow:
+    var(--ui-overlay-shadow),
+    inset 0 1px var(--ui-highlight);
+}
+.prime-popover button,
+.file-context-menu button,
+.select-options button {
+  border-radius: 9px;
+}
+.modal.command-palette {
+  border-radius: 20px;
+}
+.command-results > button {
+  border-radius: 12px;
+  min-height: 54px;
+}
+.command-search input {
+  font-size: 19px;
+  letter-spacing: -0.4px;
+}
+.command-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+.workbench-dock {
+  background: var(--bg);
+  border-top-color: var(--ui-border);
+}
+.workbench-navigation {
+  min-height: 46px;
+  background: var(--sidebar);
+  border-bottom-color: var(--ui-border);
+}
+.workbench-tabs {
+  gap: 5px;
+}
+.workbench-tabs button {
+  min-height: 30px;
+  border-radius: 9px;
+  padding-inline: 10px;
+}
+.workbench-tabs button[aria-selected='true'] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.automation-panel .automation-header {
+  min-height: 52px;
+  border-bottom-color: var(--ui-border);
+}
+.automation-rule,
+.remote-card {
+  box-shadow: inset 0 1px var(--ui-highlight);
+}
+.automation-rule {
+  padding: 16px;
+}
+.automation-editor,
+.team-editor-task,
+.patch-file {
+  border-color: var(--ui-border);
+  border-radius: 14px;
+}
+.browser-address {
+  height: 34px;
+  border-radius: 10px;
+  border-color: var(--ui-border);
+}
+.browser-address:focus-within {
+  border-color: var(--accent);
+}
+.jobs-filters button {
+  border-radius: 9px;
+}
+.jobs-filters button[aria-selected='true'] {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.automation-rule,
+.launch-panel .launch-item,
+.github-panel .github-item,
+.windows-panel .windows-item,
+.team-card,
+.jobs-list .job,
+.remote-card {
+  border-radius: 12px;
+  border-color: var(--ui-border);
+  background: var(--surface);
+}
+.empty-state-icon {
+  border-radius: 18px;
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));
+  box-shadow: inset 0 1px var(--ui-highlight);
+}
+.terminal-tabs,
+.terminal-header,
+.browser-toolbar {
+  background: var(--sidebar);
+  border-color: var(--ui-border);
+}
+.terminal-tab,
+.browser-tab {
+  border-radius: 9px 9px 0 0;
+}
+@media (max-width: 860px) {
+  .settings-modal > header {
+    min-height: 56px;
+  }
+  .settings-modal .settings-body {
+    padding: 22px 18px;
+  }
+  .settings-modal .settings-layout > nav {
+    padding: 8px 12px;
+  }
+  .settings-modal .settings-layout > nav button {
+    min-height: 34px;
+  }
+}
+@media (max-width: 520px) {
+  .settings-body .density-options {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .settings-body .density-options > button {
+    min-height: 64px;
+    width: 100%;
+  }
+}

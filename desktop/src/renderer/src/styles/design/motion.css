@@ -1,0 +1,97 @@
+.project-rail > .icon,
+.inspector-rail .inspector-tabs > button,
+.sidebar .project-card,
+.sidebar .session-row,
+.settings-layout > nav button,
+.theme-options > button,
+.density-options > button {
+  transition:
+    background var(--medium) ease,
+    border-color var(--medium) ease,
+    color var(--fast) ease,
+    box-shadow var(--medium) ease,
+    transform var(--fast) var(--ease-out);
+}
+.project-rail > .icon:hover:not(:disabled),
+.inspector-rail .inspector-tabs > button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.project-rail > .icon:active:not(:disabled),
+.inspector-rail .inspector-tabs > button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.settings-body {
+  animation: settings-page-in 240ms var(--ease-out);
+}
+.project-flyout {
+  animation: panel-reveal 240ms var(--ease-out);
+  transform-origin: left center;
+}
+.starter-grid button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    var(--ui-shadow),
+    inset 0 1px var(--ui-highlight);
+}
+.starter-grid button:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+.starter-grid .starter-icon {
+  transition:
+    background var(--medium) ease,
+    transform var(--medium) var(--ease-out);
+}
+.starter-grid button:hover .starter-icon {
+  transform: rotate(-4deg);
+}
+.composer:focus-within:not(.recording) {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow:
+    var(--ui-shadow),
+    0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.inspector-rail.panel-open > .inspector-content,
+.inspector-rail.panel-open > .inspector-header {
+  animation: settings-page-in 220ms var(--ease-out);
+}
+@keyframes settings-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes panel-reveal {
+  from {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+[data-motion='reduced'] .settings-body,
+[data-motion='reduced'] .project-flyout,
+[data-motion='reduced'] .inspector-rail.panel-open > .inspector-content,
+[data-motion='reduced'] .inspector-rail.panel-open > .inspector-header {
+  animation: none;
+}
+[data-motion='reduced'] .project-rail > .icon,
+[data-motion='reduced'] .inspector-rail .inspector-tabs > button,
+[data-motion='reduced'] .starter-grid button,
+[data-motion='reduced'] .starter-grid .starter-icon {
+  transform: none;
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-rail > .icon,
+  .inspector-rail .inspector-tabs > button,
+  .starter-grid button,
+  .starter-grid .starter-icon {
+    transform: none !important;
+  }
+}
