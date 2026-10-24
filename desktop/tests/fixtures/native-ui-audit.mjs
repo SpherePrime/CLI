@@ -51,6 +51,7 @@ try {
   })
   await audit.step('05-favorites', async page => {
     await openModels(page)
+    await expect(page.getByRole('option', { name: /Audit beta/ }).first()).toHaveAttribute('aria-selected', 'true')
     await page.getByRole('button', { name: 'Добавить в избранное: Audit beta', exact: true }).first().click()
     await expect(page.getByRole('button', { name: 'Удалить из избранного: Audit beta', exact: true }).first()).toHaveAttribute('aria-pressed', 'true')
     await page.keyboard.press('Escape')
@@ -145,6 +146,9 @@ try {
     await page.locator('.session-row').filter({ hasText: 'UI_CHAT_B' }).first().locator('button').first().click()
     await expect(page.getByRole('textbox', { name: 'Сообщение Prime', exact: true })).toHaveValue('UI_DRAFT_PERSISTS')
     await expect(page.getByRole('button', { name: 'Режим доступа', exact: true })).toContainText('С подтверждением')
+    await openModels(page)
+    await expect(page.getByRole('option', { name: /Audit alpha/ }).first()).toHaveAttribute('aria-selected', 'true')
+    await page.keyboard.press('Escape')
     await send(page, 'UI_CHAT_B after full restart', 'audit-alpha')
   })
   await audit.step('12-first-chat-keeps-beta', async page => {
@@ -153,6 +157,9 @@ try {
     await expect(control(page)).toContainText(/audit[- ]beta/i)
     await expect(page.getByRole('button', { name: 'Режим доступа', exact: true })).toContainText('Полный доступ')
     await expect(control(page)).toContainText(/Максим|Высок/)
+    await openModels(page)
+    await expect(page.getByRole('option', { name: /Audit beta/ }).first()).toHaveAttribute('aria-selected', 'true')
+    await page.keyboard.press('Escape')
     await send(page, 'UI_CHAT_A after full restart', 'audit-beta')
   })
   await audit.step('13-provider-mcp-after-restart', async page => {

@@ -5,6 +5,8 @@ import { PrimeLogo } from '../../components/PrimeLogo'
 import { useI18n } from '../../i18n'
 import { flushDrafts } from '../../host/flushDrafts'
 
+const recheckInterval = 60 * 60 * 1000
+
 export function UpdateScreen({
   ready,
   busy,
@@ -18,6 +20,8 @@ export function UpdateScreen({
   const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
   const [error, setError] = useState('')
   const checked = useRef(false)
+  const latest = useRef(status)
+  latest.current = status
   useEffect(() => {
     let alive = true
     let received = false
@@ -44,10 +48,16 @@ export function UpdateScreen({
   useEffect(() => {
     if (!ready || checked.current) return
     checked.current = true
-    void window.prime
-      .update('check')
-      .then((value) => setStatus(value as UpdateStatus))
-      .catch(() => {})
+    const check = () =>
+      void window.prime
+        .update('check')
+        .then((value) => setStatus(value as UpdateStatus))
+        .catch(() => {})
+    check()
+    const timer = window.setInterval(() => {
+      if (['idle', 'current', 'error', 'unavailable'].includes(latest.current.state)) check()
+    }, recheckInterval)
+    return () => window.clearInterval(timer)
   }, [ready])
   const downloaded = status.state === 'downloaded'
   const failed = status.state === 'error'
