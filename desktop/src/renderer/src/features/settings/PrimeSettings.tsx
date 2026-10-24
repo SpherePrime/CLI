@@ -3,6 +3,7 @@ import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { ToolModeSetting } from './ToolModeSetting'
+import { AgentSettings } from './AgentSettings'
 
 export function PrimeSettings({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
@@ -122,6 +123,7 @@ export function PrimeSettings({ workspace: w }: { workspace: Workspace }) {
           />
         </label>
       </fieldset>
+      <AgentSettings key={w.project?.id} workspace={w} />
       {status && (
         <p
           role="status"

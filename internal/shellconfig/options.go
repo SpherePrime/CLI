@@ -210,6 +210,7 @@ var optionSpecs = map[string]optionSpec{
 	"auto-summarize":       {jsonKey: "disable_auto_summarize", kind: optBool, inverted: true},
 	"provider-auto-update": {jsonKey: "disable_provider_auto_update", kind: optBool, inverted: true},
 	"default-providers":    {jsonKey: "disable_default_providers", kind: optBool, inverted: true},
+	"multi-agent":          {jsonKey: "disable_multi_agent", kind: optBool, inverted: true},
 
 	// String fields.
 	"notifications":  {jsonKey: "notifications", kind: optString},
@@ -217,7 +218,8 @@ var optionSpecs = map[string]optionSpec{
 	"initialize-as":  {jsonKey: "initialize_as", kind: optString},
 
 	// Integer fields, in seconds.
-	"request-timeout": {jsonKey: "request_timeout", kind: optInt},
+	"request-timeout":       {jsonKey: "request_timeout", kind: optInt},
+	"max-concurrent-agents": {jsonKey: "max_concurrent_agents", kind: optInt},
 
 	// List fields. Keys are singular because each call appends one value.
 	"context-path":        {jsonKey: "context_paths", kind: optList},

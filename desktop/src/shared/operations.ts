@@ -24,6 +24,10 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     history: () => ['GET', `sessions/${sid}/history`],
     context: () => ['GET', `sessions/${sid}/context`],
     agent: () => ['GET', 'agent'],
+    agentWorkers: () => ['GET', `agent/sessions/${sid}/workers`],
+    agentWorkerMessages: () => ['GET', `agent/sessions/${sid}/workers/${encodeURIComponent(args.workerId || '')}/messages`],
+    agentWorkerSend: () => ['POST', `agent/sessions/${sid}/workers/${encodeURIComponent(args.workerId || '')}/messages`, { text: args.text }],
+    agentWorkerStop: () => ['POST', `agent/sessions/${sid}/workers/${encodeURIComponent(args.workerId || '')}/stop`],
     init: () => ['POST', 'agent/init', { interactive: true }],
     send: () => [
       'POST',

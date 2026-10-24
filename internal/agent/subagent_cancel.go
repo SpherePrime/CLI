@@ -16,8 +16,13 @@ func (c *coordinator) cancelBackgroundAgents(sessionID string) {
 			continue
 		}
 		status, _ := job.snapshot()
-		if status == "running" && job.cancel != nil {
-			job.cancel()
+		job.mu.Lock()
+		cancel := job.cancel
+		job.pending = nil
+		job.seen = true
+		job.mu.Unlock()
+		if (status == "running" || status == "queued") && cancel != nil {
+			cancel()
 		}
 	}
 }
@@ -28,7 +33,7 @@ func (c *coordinator) backgroundAgentsBusy(sessionID string) bool {
 			continue
 		}
 		status, _ := job.snapshot()
-		if status == "running" {
+		if status == "running" || status == "queued" {
 			return true
 		}
 	}

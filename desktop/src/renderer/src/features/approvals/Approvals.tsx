@@ -1,25 +1,84 @@
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ShieldQuestion, CircleHelp, Check, X } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
+import type { AgentWorker } from '../../../../shared/agents'
+import { useAgentPolling } from '../agents/useAgentPolling'
+import { agentApprovalSessions } from '../agents/agentApprovalSessions'
 export function Approvals({ workspace: w }: { workspace: Workspace }) {
+  if (!w.project || !w.session) return null
+  return (
+    <TeamApprovals
+      key={`${w.project.id}:${w.session.id}`}
+      workspace={w}
+      projectId={w.project.id}
+      sessionId={w.session.id}
+    />
+  )
+}
+function TeamApprovals({
+  workspace: w,
+  projectId,
+  sessionId
+}: {
+  workspace: Workspace
+  projectId: string
+  sessionId: string
+}) {
+  const { t } = useI18n()
+  const hasOtherPending = [...w.permissions, ...w.questions].some(
+    (item) => item.session_id !== sessionId
+  )
+  const load = useCallback(async () => {
+    if (!hasOtherPending) return [] as AgentWorker[]
+    const result = await window.prime.call(projectId, 'agentWorkers', { sessionId })
+    return (result.workers || []) as AgentWorker[]
+  }, [projectId, sessionId, hasOtherPending])
+  const roster = useAgentPolling(load, 3000, [] as AgentWorker[])
+  const sessions = agentApprovalSessions(sessionId, roster.value)
   return (
     <div className="approvals" aria-live="polite">
+      {hasOtherPending && roster.error && (
+        <div className="approval-card" role="alert">
+          <p>
+            {t('Не удалось проверить запросы агентов')}: {roster.error}
+          </p>
+          <button onClick={roster.refresh}>{t('Повторить')}</button>
+        </div>
+      )}
       {w.permissions
-        .filter((permission) => permission.session_id === w.session?.id)
+        .filter((permission) => sessions.has(permission.session_id))
         .map((permission) => (
-          <Permission key={permission.id} permission={permission} workspace={w} />
+          <Permission
+            key={permission.id}
+            permission={permission}
+            workspace={w}
+            workerName={sessions.get(permission.session_id)}
+          />
         ))}
       {w.questions
-        .filter((question) => question.session_id === w.session?.id)
+        .filter((question) => sessions.has(question.session_id))
         .map((question) => (
-          <Question key={question.id} request={question} workspace={w} />
+          <Question
+            key={question.id}
+            request={question}
+            workspace={w}
+            workerName={sessions.get(question.session_id)}
+          />
         ))}
     </div>
   )
 }
-function Permission({ permission, workspace: w }: { permission: any; workspace: Workspace }) {
+function Permission({
+  permission,
+  workspace: w,
+  workerName
+}: {
+  permission: any
+  workspace: Workspace
+  workerName?: string
+}) {
   const { t } = useI18n()
   const [pending, setPending] = useState(false)
   const [done, setDone] = useState(false)
@@ -40,6 +99,7 @@ function Permission({ permission, workspace: w }: { permission: any; workspace: 
       <h3>
         <ShieldQuestion size={18} /> {t('Разрешить действие?')}
       </h3>
+      {workerName && <p className="muted">{t('Агент: {name}', { name: workerName })}</p>}
       <p>{permission.description || permission.tool_name}</p>
       {permission.path && <code>{permission.path}</code>}
       <details>
@@ -62,7 +122,15 @@ function Permission({ permission, workspace: w }: { permission: any; workspace: 
     </section>
   )
 }
-function Question({ request, workspace: w }: { request: any; workspace: Workspace }) {
+function Question({
+  request,
+  workspace: w,
+  workerName
+}: {
+  request: any
+  workspace: Workspace
+  workerName?: string
+}) {
   const { t } = useI18n()
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [pending, setPending] = useState(false)
@@ -78,6 +146,7 @@ function Question({ request, workspace: w }: { request: any; workspace: Workspac
         setPending(true)
         try {
           await w.call('answer', {
+            session_id: request.session_id,
             batch_request_id: request.id,
             responses: request.questions.map((question: any) => ({
               request_id: question.id,
@@ -96,6 +165,7 @@ function Question({ request, workspace: w }: { request: any; workspace: Workspac
         <CircleHelp size={18} />
         {request.confirm_title || t('Уточнение задачи')}
       </h3>
+      {workerName && <p className="muted">{t('Агент: {name}', { name: workerName })}</p>}
       {request.questions.map((question: any) => (
         <fieldset key={question.id}>
           <legend>{question.question}</legend>

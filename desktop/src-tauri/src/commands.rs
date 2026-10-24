@@ -314,7 +314,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                 let session = args.get(2).and_then(|args| args.get("sessionId")).cloned().unwrap_or(Value::Null);
                 state.settings.lock().unwrap().update(&json!({"activeSessions":{path:session}}))?;
             }
-            if matches!(operation, "messages" | "messagePage" | "messageSearch") {
+            if matches!(operation, "messages" | "messagePage" | "messageSearch" | "agentWorkerMessages") {
                 Ok(result)
             } else {
                 Ok(crate::redact::value(result))
