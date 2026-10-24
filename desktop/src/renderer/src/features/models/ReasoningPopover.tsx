@@ -108,7 +108,7 @@ export function ReasoningPopover({
         >
           <div
             className="reasoning-slider-fill"
-            style={{ width: `calc((100% - 28px) * ${index / last})` }}
+            style={{ width: `calc(28px + (100% - 28px) * ${index / last})` }}
           />
           {reasoningLevels.map((level, position) => (
             <span
