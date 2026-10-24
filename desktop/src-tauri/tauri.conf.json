@@ -61,7 +61,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEzNUU4REM3QkU3OUFEMjUKUldRbHJYbSt4NDFlRThMWVZqSFJ1ZHhEcC8rSHFRS2xXVkh2bHBxL0xZQ2VYbnN0YVl1Z3pTNnYK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVEODlBMUIxRjU3REJBRjcKUldUM3VuMzFzYUdKWGRtMWR2NXZqeFBJSThOU2ZwOHBvYkpmb0Nnb3Vaa2dYRldMRG5zcmZzZnAK",
       "endpoints": [
         "https://github.com/SpherePrime/CLI/releases/latest/download/latest.json"
       ],
