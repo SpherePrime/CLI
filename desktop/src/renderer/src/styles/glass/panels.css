@@ -1,0 +1,170 @@
+.app-shell > .sidebar,
+.app-shell > .project-rail,
+.app-shell > .inspector-rail,
+.app-shell > .inspector:not(.inspector-rail),
+.project-flyout {
+  background: var(--glass-rail);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+}
+.app-shell > .sidebar,
+.project-flyout {
+  background: var(--glass-panel);
+}
+.app-shell > .main-workspace,
+.app-shell > .file-editor,
+.app-shell > .editor-loading {
+  background: var(--glass-main);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--glass-shadow);
+}
+.app-shell > .main-workspace {
+  background:
+    radial-gradient(120% 60% at 50% -20%, var(--glow-soft), transparent 60%),
+    var(--glass-main);
+}
+
+.project-rail > .icon,
+.inspector-rail .inspector-tabs > button {
+  position: relative;
+  border-radius: 12px;
+  color: var(--secondary);
+}
+.project-rail > .icon:hover:not(:disabled),
+.inspector-rail .inspector-tabs > button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+.project-rail > .icon.active,
+.inspector-rail .inspector-tabs > button.active {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    color-mix(in srgb, var(--accent) 10%, transparent)
+  );
+  color: var(--accent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent),
+    0 4px 16px var(--glow-soft);
+}
+.project-rail > .icon::before,
+.inspector-rail .inspector-tabs > button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  margin-top: -9px;
+  border-radius: 3px;
+  background: var(--accent-gradient);
+  box-shadow: 0 0 10px var(--glow-accent);
+  opacity: 0;
+  transform: scaleY(0.2);
+  transition:
+    opacity var(--medium) ease,
+    transform var(--medium) var(--ease-spring);
+  pointer-events: none;
+}
+.project-rail > .icon::before {
+  left: -3px;
+}
+.inspector-rail .inspector-tabs > button::before {
+  right: -3px;
+}
+.project-rail > .icon.active::before,
+.inspector-rail .inspector-tabs > button.active::before {
+  opacity: 1;
+  transform: none;
+}
+
+.titlebar .icon,
+.workspace-topbar .icon {
+  border-radius: 10px;
+}
+.titlebar .icon:hover:not(:disabled),
+.workspace-topbar .icon:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+.topbar-search {
+  background: var(--glass-float);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-rim);
+  backdrop-filter: var(--glass-blur);
+  transition:
+    border-color var(--medium) ease,
+    box-shadow var(--medium) ease,
+    background var(--medium) ease;
+}
+.topbar-search:hover {
+  border-color: var(--glass-edge-strong);
+  box-shadow:
+    var(--glass-rim),
+    0 0 0 3px var(--glow-soft);
+}
+
+.sidebar-actions .new-chat {
+  border: 0;
+  background: var(--accent-gradient);
+  color: var(--on-accent);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px #ffffff40,
+    0 8px 22px var(--glow-soft);
+}
+.sidebar-actions .new-chat:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px #ffffff50,
+    0 10px 28px var(--glow-accent);
+  transform: translateY(-1px);
+}
+.sidebar .project-card {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border-color: var(--glass-edge);
+}
+.sidebar .project-card.active-group {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--glass-edge));
+}
+.sidebar .session-row:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.sidebar .session-row.active {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    color-mix(in srgb, var(--accent) 5%, transparent)
+  );
+  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.sidebar .session-row.active::before {
+  background: var(--accent-gradient);
+  box-shadow: 0 0 8px var(--glow-accent);
+}
+
+.inspector-header,
+.editor-tabs,
+.inspector-footer {
+  border-color: var(--glass-edge);
+}
+.tree-file:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.tree-file.selected {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.workbench-dock {
+  background: transparent;
+  border-top-color: var(--glass-edge);
+}
+.workbench-navigation {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border-bottom-color: var(--glass-edge);
+}
+
+.app-shell > .resizer:hover:after,
+.app-shell > .resizer:focus-visible:after {
+  background: var(--accent-gradient);
+  box-shadow: 0 0 10px var(--glow-accent);
+}

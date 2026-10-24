@@ -1,0 +1,58 @@
+.prime-popover,
+.file-context-menu,
+.select-options {
+  background: var(--glass-overlay);
+  border-color: var(--glass-edge-strong);
+  box-shadow: var(--glass-rim), var(--glass-shadow-float);
+  backdrop-filter: var(--glass-blur-strong);
+}
+.prime-popover button:hover:not(:disabled),
+.file-context-menu button:hover:not(:disabled),
+.select-options button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+dialog.modal {
+  background: var(--glass-overlay);
+  border-color: var(--glass-edge-strong);
+  box-shadow: var(--glass-rim), var(--glass-shadow-float);
+  backdrop-filter: var(--glass-blur-strong);
+}
+dialog.modal::backdrop,
+dialog.modal[open]::backdrop {
+  background: color-mix(in srgb, var(--shell) 55%, transparent);
+  backdrop-filter: blur(10px) saturate(120%);
+}
+.modal > header {
+  border-bottom-color: var(--glass-edge);
+}
+.settings-modal .settings-layout > nav {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border-color: var(--glass-edge);
+}
+.settings-modal .settings-body {
+  background: transparent;
+}
+.settings-modal .settings-layout > nav button:hover:not(.active) {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.settings-modal .settings-layout > nav button.active {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 20%, transparent),
+    color-mix(in srgb, var(--accent) 6%, transparent)
+  );
+}
+.settings-body .theme-options > button,
+.settings-body .density-options > button {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border-color: var(--glass-edge);
+}
+
+.command-results > button:hover,
+.command-results > button[aria-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.command-icon {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}

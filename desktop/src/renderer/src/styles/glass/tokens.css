@@ -1,0 +1,76 @@
+:root {
+  --shell: #0b0b0d;
+  --glass-panel: color-mix(in srgb, #1c1d21 72%, transparent);
+  --glass-rail: color-mix(in srgb, #1c1d21 62%, transparent);
+  --glass-main: color-mix(in srgb, #141517 74%, transparent);
+  --glass-float: color-mix(in srgb, #24252a 74%, transparent);
+  --glass-overlay: color-mix(in srgb, #222328 86%, transparent);
+  --glass-inset: color-mix(in srgb, #0c0c0e 55%, transparent);
+  --glass-edge: #ffffff14;
+  --glass-edge-strong: #ffffff24;
+  --glass-rim: inset 0 1px 0 #ffffff12, inset 0 0 0 1px #ffffff08;
+  --glass-blur: blur(22px) saturate(150%);
+  --glass-blur-strong: blur(30px) saturate(170%);
+  --glass-shadow: 0 18px 50px #00000059, 0 2px 8px #00000038;
+  --glass-shadow-float: 0 24px 70px #0000006b, 0 4px 14px #00000040;
+  --glow-accent: color-mix(in srgb, var(--accent-strong) 34%, transparent);
+  --glow-soft: color-mix(in srgb, var(--accent-strong) 14%, transparent);
+  --aurora-a: color-mix(in srgb, var(--accent-strong) 28%, transparent);
+  --aurora-b: #5b6cff2e;
+  --aurora-c: #2fd3c41f;
+  --accent-gradient: linear-gradient(135deg, #ffb48c 0%, var(--accent-strong) 55%, #f0603a 100%);
+  --panel-radius: 16px;
+  --ui-radius: 16px;
+}
+:root[data-theme='light'] {
+  --shell: #e9e6df;
+  --glass-panel: color-mix(in srgb, #ffffff 62%, transparent);
+  --glass-rail: color-mix(in srgb, #ffffff 52%, transparent);
+  --glass-main: color-mix(in srgb, #fbfaf7 72%, transparent);
+  --glass-float: color-mix(in srgb, #ffffff 72%, transparent);
+  --glass-overlay: color-mix(in srgb, #ffffff 88%, transparent);
+  --glass-inset: color-mix(in srgb, #ece9e2 70%, transparent);
+  --glass-edge: #ffffffb0;
+  --glass-edge-strong: #ffffffe0;
+  --glass-rim: inset 0 1px 0 #ffffffd0, inset 0 0 0 1px #41372b0d;
+  --glass-shadow: 0 18px 50px #41372b14, 0 2px 8px #41372b0d;
+  --glass-shadow-float: 0 24px 70px #41372b1f, 0 4px 14px #41372b12;
+  --glow-accent: color-mix(in srgb, var(--accent-strong) 26%, transparent);
+  --glow-soft: color-mix(in srgb, var(--accent-strong) 10%, transparent);
+  --aurora-a: color-mix(in srgb, var(--accent-strong) 22%, transparent);
+  --aurora-b: #6b7cff2a;
+  --aurora-c: #22b8a81e;
+  --accent-gradient: linear-gradient(135deg, #d0612f 0%, var(--accent-strong) 55%, #a8401b 100%);
+}
+
+body {
+  background:
+    radial-gradient(60vw 50vh at 8% -10%, var(--aurora-a), transparent 70%),
+    radial-gradient(50vw 50vh at 100% 0%, var(--aurora-b), transparent 70%),
+    radial-gradient(60vw 60vh at 70% 115%, var(--aurora-c), transparent 70%),
+    var(--shell);
+  background-attachment: fixed;
+}
+.titlebar,
+.app-shell {
+  background: transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--secondary) 22%, transparent);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--secondary) 38%, transparent);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

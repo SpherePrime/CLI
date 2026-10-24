@@ -1,0 +1,137 @@
+.prime-popover,
+.file-context-menu,
+.select-options {
+  animation: glass-pop 260ms var(--ease-spring);
+}
+dialog.modal[open] {
+  animation: glass-dialog 320ms var(--ease-out);
+}
+.message.fresh {
+  animation: glass-rise 420ms var(--ease-out);
+}
+.inspector-rail.panel-open > .inspector-content,
+.inspector-rail.panel-open > .inspector-header {
+  animation: glass-slide 260ms var(--ease-out);
+}
+.composer {
+  transition:
+    border-color var(--medium) ease,
+    box-shadow var(--slow) var(--ease-out),
+    background var(--medium) ease;
+}
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.composer .send:not(:disabled):active {
+  transform: scale(0.9);
+}
+.agent-worker {
+  animation: glass-rise 320ms var(--ease-out) both;
+}
+.agent-worker:nth-child(2) {
+  animation-delay: 30ms;
+}
+.agent-worker:nth-child(3) {
+  animation-delay: 60ms;
+}
+.agent-worker:nth-child(n + 4) {
+  animation-delay: 90ms;
+}
+
+@keyframes glass-pop {
+  from {
+    opacity: 0;
+    transform: translateY(var(--popover-shift, 6px)) scale(0.96);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes glass-dialog {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes glass-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes glass-slide {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes glass-sheen {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@keyframes glass-text-sheen {
+  from {
+    background-position: 110% 0;
+  }
+  to {
+    background-position: -110% 0;
+  }
+}
+
+[data-motion='reduced'] .prime-popover,
+[data-motion='reduced'] .file-context-menu,
+[data-motion='reduced'] .select-options,
+[data-motion='reduced'] dialog.modal[open],
+[data-motion='reduced'] .message.fresh,
+[data-motion='reduced'] .inspector-rail.panel-open > .inspector-content,
+[data-motion='reduced'] .inspector-rail.panel-open > .inspector-header,
+[data-motion='reduced'] .agent-worker,
+[data-motion='reduced'] .composer .send.stop::after,
+[data-motion='reduced'] .working:not(.completed-working) .working-label {
+  animation: none;
+}
+[data-motion='reduced'] button:active:not(:disabled),
+[data-motion='reduced'] .sidebar-actions .new-chat:hover,
+[data-motion='reduced'] .composer .send:hover {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .prime-popover,
+  .file-context-menu,
+  .select-options,
+  dialog.modal[open],
+  .message.fresh,
+  .inspector-rail.panel-open > .inspector-content,
+  .inspector-rail.panel-open > .inspector-header,
+  .agent-worker,
+  .composer .send.stop::after,
+  .working:not(.completed-working) .working-label {
+    animation: none;
+  }
+  button:active:not(:disabled) {
+    transform: none;
+  }
+}
