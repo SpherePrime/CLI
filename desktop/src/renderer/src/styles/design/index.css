@@ -2,4 +2,6 @@
 @import './shell.css';
 @import './conversation.css';
 @import './surfaces.css';
+@import './controls.css';
+@import './loading.css';
 @import './motion.css';
