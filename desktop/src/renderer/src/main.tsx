@@ -25,6 +25,7 @@ import './styles/context.css'
 import './styles/polish.css'
 import './styles/responsive-layout.css'
 import './styles/shell.css'
+import './styles/dictation.css'
 
 async function start() {
   if (import.meta.env.VITE_NATIVE_HOST === 'true') {
@@ -38,7 +39,7 @@ async function start() {
   )
 }
 
-void start().catch(error => {
+void start().catch((error) => {
   const root = document.getElementById('root')!
   root.textContent = error instanceof Error ? error.message : String(error)
   root.setAttribute('role', 'alert')

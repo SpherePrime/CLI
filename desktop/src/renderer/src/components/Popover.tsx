@@ -17,12 +17,14 @@ export function Popover({
   align?: 'start' | 'end'
 }) {
   const panel = useRef<HTMLDivElement>(null)
+  const [placement, setPlacement] = useState<'above' | 'below'>('above')
   const [position, setPosition] = useState({ left: 0, top: 0, maxHeight: 400 })
   useLayoutEffect(() => {
     const place = () => {
       const rect = anchor.current?.getBoundingClientRect()
       if (!rect) return
       const above = rect.top > window.innerHeight - rect.bottom
+      setPlacement(above ? 'above' : 'below')
       const height = Math.min(
         panel.current?.scrollHeight || 400,
         above ? rect.top - 20 : window.innerHeight - rect.bottom - 20
@@ -71,6 +73,7 @@ export function Popover({
     <div
       ref={panel}
       className="prime-popover"
+      data-placement={placement}
       aria-label={label}
       style={{ ...position, width: Math.min(width, window.innerWidth - 24) }}
     >

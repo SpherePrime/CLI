@@ -1,9 +1,9 @@
 :root {
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --fast: 120ms;
-  --medium: 200ms;
-  --slow: 320ms;
+  --fast: 140ms;
+  --medium: 220ms;
+  --slow: 300ms;
 }
 
 button {
@@ -16,7 +16,7 @@ button {
     opacity var(--fast) ease;
 }
 button:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 .send:not(:disabled):hover {
   box-shadow: 0 4px 16px #ff6a3540;
@@ -28,7 +28,7 @@ button:active:not(:disabled) {
 @keyframes pop-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(var(--popover-shift, 5px)) scale(0.985);
   }
   to {
     opacity: 1;
@@ -46,7 +46,7 @@ button:active:not(:disabled) {
 @keyframes dialog-in {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.97);
+    transform: translateY(12px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -98,6 +98,10 @@ button:active:not(:disabled) {
 .select-options {
   animation: pop-in var(--medium) var(--ease-out);
   transform-origin: bottom center;
+}
+.prime-popover[data-placement='below'] {
+  --popover-shift: -5px;
+  transform-origin: top center;
 }
 dialog.modal[open] {
   animation: dialog-in var(--slow) var(--ease-out);
@@ -235,7 +239,7 @@ dialog.modal[open]::backdrop {
   transition: border-color var(--medium) ease;
 }
 .tool-card:hover {
-  border-color: #3a414e;
+  border-color: color-mix(in srgb, var(--secondary) 35%, var(--border));
 }
 .tool-card[open] > summary + * {
   animation: fade-in var(--medium) ease;
@@ -301,6 +305,25 @@ dialog.modal[open]::backdrop {
 .model-control-level,
 .model-control-name {
   transition: color var(--fast) ease;
+}
+
+.workbench-content > :not(.terminal-panel) {
+  animation: rise-in var(--medium) var(--ease-out);
+}
+
+[data-motion='reduced'] .workbench-content > *,
+[data-motion='reduced'] .prime-popover,
+[data-motion='reduced'] .select-options,
+[data-motion='reduced'] dialog.modal[open] {
+  animation: none;
+}
+
+.prime-popover,
+.select-options,
+dialog.modal {
+  box-shadow:
+    0 16px 48px color-mix(in srgb, var(--bg) 45%, transparent),
+    0 2px 8px color-mix(in srgb, var(--bg) 25%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
