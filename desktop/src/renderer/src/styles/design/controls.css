@@ -1,0 +1,247 @@
+.range-field {
+  width: 100%;
+  max-width: 480px;
+  margin-block: 24px;
+  padding: 16px 18px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  background: var(--bg);
+}
+.range-field-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.range-field-heading output {
+  flex-shrink: 0;
+  min-width: 62px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.range-field input[type='range'],
+.settings-modal .range-field input[type='range'] {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 34px;
+  min-height: 34px;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.range-field input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--range-progress),
+    var(--raised) var(--range-progress)
+  );
+}
+.range-field input::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 2px 5px #00000020;
+  transition:
+    box-shadow var(--fast) ease,
+    transform var(--fast) var(--ease-out);
+}
+.range-field input::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--raised);
+}
+.range-field input::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.range-field input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: var(--surface);
+}
+.range-field input:hover:not(:disabled)::-webkit-slider-thumb,
+.range-field input:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.range-field input:active:not(:disabled)::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+.range-field input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.range-field-limits {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.range-field.disabled {
+  opacity: 0.5;
+}
+.range-field input:disabled {
+  cursor: default;
+}
+.settings-body input[type='checkbox'] {
+  appearance: none;
+  position: relative;
+  display: inline-grid;
+  place-content: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  cursor: pointer;
+  transition:
+    background var(--fast) ease,
+    border-color var(--fast) ease,
+    box-shadow var(--fast) ease;
+}
+.settings-body input[type='checkbox']::before {
+  content: '';
+  width: 8px;
+  height: 4px;
+  margin-top: -2px;
+  border-left: 2px solid var(--on-accent);
+  border-bottom: 2px solid var(--on-accent);
+  transform: rotate(-45deg) scale(0);
+  transition: transform var(--fast) var(--ease-out);
+}
+.settings-body input[type='checkbox']:checked {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+.settings-body input[type='checkbox']:checked::before {
+  transform: rotate(-45deg) scale(1);
+}
+.settings-body .setting-toggle input[type='checkbox'] {
+  width: 38px;
+  height: 22px;
+  min-height: 22px;
+  border-radius: 999px;
+  background: var(--raised);
+}
+.settings-body .setting-toggle input[type='checkbox']::before {
+  display: none;
+}
+.settings-body .setting-toggle input[type='checkbox']::after {
+  width: 16px;
+  height: 16px;
+  top: 2px;
+  left: 2px;
+  background: var(--secondary);
+  box-shadow: 0 1px 3px #00000020;
+}
+.settings-body .setting-toggle input[type='checkbox']:checked {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+.settings-body .setting-toggle input[type='checkbox']:checked::after {
+  transform: translateX(16px);
+  background: var(--on-accent);
+}
+.settings-body input[type='checkbox']:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.settings-body input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.settings-body input[type='checkbox']:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.settings-body .prime-select,
+.settings-body input:not([type='checkbox']):not([type='range']),
+.settings-body textarea {
+  border-color: var(--ui-border);
+  border-radius: 10px;
+  box-shadow: inset 0 1px var(--ui-highlight);
+  transition:
+    border-color var(--fast) ease,
+    box-shadow var(--fast) ease;
+}
+.settings-body .prime-select:hover:not(:disabled),
+.settings-body input:not([type='checkbox']):not([type='range']):hover:not(:disabled),
+.settings-body textarea:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--secondary) 55%, var(--border));
+}
+.settings-body .prime-select[aria-expanded='true'],
+.settings-body input:not([type='checkbox']):not([type='range']):focus,
+.settings-body textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.reasoning-slider {
+  height: 36px;
+  background: transparent;
+}
+.reasoning-slider::before {
+  content: '';
+  position: absolute;
+  inset: 50% 14px auto;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--raised);
+  transform: translateY(-50%);
+}
+.reasoning-slider-fill {
+  inset: 50% auto auto 14px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+.reasoning-slider-dot {
+  background: var(--muted);
+}
+.reasoning-slider-dot.active {
+  background: var(--accent);
+}
+.reasoning-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  box-shadow: 0 2px 5px #00000020;
+}
+.reasoning-slider:focus-visible {
+  box-shadow: none;
+}
+.reasoning-slider:focus-visible .reasoning-slider-thumb {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+[data-motion='reduced'] .settings-body input,
+[data-motion='reduced'] .settings-body input::before,
+[data-motion='reduced'] .settings-body input::after,
+[data-motion='reduced'] .reasoning-slider * {
+  transition: none;
+}

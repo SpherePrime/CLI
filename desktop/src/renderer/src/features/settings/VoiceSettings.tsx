@@ -4,6 +4,8 @@ import type { Workspace } from '../../app/useWorkspace'
 import type { SpeechStatus, SpeechVoice } from '../../../../shared/speech'
 import type { SttModel, SttProvider, SttStatus, SttTask } from '../../../../shared/stt'
 import { Select } from '../../components/Select'
+import { RangeField } from '../../components/RangeField'
+import { ModelStatusCard } from './ModelStatusCard'
 import { useI18n } from '../../i18n'
 import { Speaker } from '../voice/speaker'
 import { useAudioDevices } from './useAudioDevices'
@@ -139,19 +141,15 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
           }))}
         />
       </label>
-      <label className="form-label">
-        {t('Скорость речи · {value0}×', { value0: speed.toFixed(2) })}
-        <input
-          type="range"
-          min={0.8}
-          max={1.4}
-          step={0.05}
-          value={speed}
-          onChange={(event) =>
-            void w.savePreferences({ speechSpeed: Number(event.target.value) }).catch(report)
-          }
-        />
-      </label>
+      <RangeField
+        label={t('Скорость речи')}
+        min={0.8}
+        max={1.4}
+        step={0.05}
+        value={speed}
+        formatValue={(value) => `${value.toFixed(2)}×`}
+        onChange={(value) => void w.savePreferences({ speechSpeed: value }).catch(report)}
+      />
       <div className="settings-actions">
         <button disabled={busy} onClick={() => void preview()}>
           <Play size={14} />
@@ -258,7 +256,6 @@ function SttSection({ workspace: w }: { workspace: Workspace }) {
   const selectedTaskName = local && selected ? taskName(local.id, selected.id) : ''
   const task = tasks.find((item) => item.name === selectedTaskName && item.state === 'running')
   const failed = tasks.find((item) => item.name === selectedTaskName && item.state === 'failed')
-  const percent = task && task.total > 0 ? Math.floor((task.done / task.total) * 100) : 0
   const background = local
     ? tasks.filter(
         (item) =>
@@ -371,6 +368,7 @@ function SttSection({ workspace: w }: { workspace: Workspace }) {
   }
   return (
     <>
+      {!status && !error && <ModelStatusCard name={t('Распознавание речи')} pending />}
       {status && (
         <>
           <label className="form-label">
@@ -430,65 +428,60 @@ function SttSection({ workspace: w }: { workspace: Workspace }) {
           )}
         </>
       )}
-      {local && selected && task && (
-        <div className="stt-progress">
-          <progress value={task.done} max={task.total || 1} />
-          <small>{t('{value0}%', { value0: percent })}</small>
-        </div>
-      )}
-      {local && selected && failed?.error && <p className="error-text">{failed.error}</p>}
-      {local && selected && !task && (
-        <div className="settings-actions">
-          {!selected.installed ? (
-            <button disabled={busy !== '' || running} onClick={() => void install(selected)}>
-              <Download size={14} />
-              {t('Скачать')}
-            </button>
-          ) : selected.active ? (
-            <>
-              <small>{t('Активна')}</small>
-              <button
-                className="quiet"
-                disabled={busy !== '' || running}
-                onClick={() => void remove(selected)}
-              >
-                <Trash2 size={14} />
-                {t('Удалить')}
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                className="primary"
-                disabled={busy !== '' || running}
-                onClick={() => void choose(selected)}
-              >
-                <Check size={14} />
-                {t('Выбрать')}
-              </button>
-              <button
-                className="quiet"
-                disabled={busy !== '' || running}
-                onClick={() => void remove(selected)}
-              >
-                <Trash2 size={14} />
-                {t('Удалить')}
-              </button>
-            </>
+      {local && selected && (
+        <ModelStatusCard
+          name={selected.label}
+          task={task ?? failed}
+          pending={busy === selectedTaskName || busy === 'accel'}
+          installed={selected.installed}
+          active={selected.active}
+        >
+          {!task && (
+            <div className="settings-actions">
+              {!selected.installed ? (
+                <button disabled={busy !== '' || running} onClick={() => void install(selected)}>
+                  <Download size={14} />
+                  {t('Скачать')}
+                </button>
+              ) : selected.active ? (
+                <>
+                  <button
+                    className="quiet"
+                    disabled={busy !== '' || running}
+                    onClick={() => void remove(selected)}
+                  >
+                    <Trash2 size={14} />
+                    {t('Удалить')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="primary"
+                    disabled={busy !== '' || running}
+                    onClick={() => void choose(selected)}
+                  >
+                    <Check size={14} />
+                    {t('Выбрать')}
+                  </button>
+                  <button
+                    className="quiet"
+                    disabled={busy !== '' || running}
+                    onClick={() => void remove(selected)}
+                  >
+                    <Trash2 size={14} />
+                    {t('Удалить')}
+                  </button>
+                </>
+              )}
+            </div>
           )}
-        </div>
+        </ModelStatusCard>
       )}
       {background.map((item) => {
         const modelId = item.name.split(':')[2] || ''
         const model = models.find((entry) => entry.id === modelId)
-        const share = item.total > 0 ? Math.floor((item.done / item.total) * 100) : 0
-        return (
-          <div className="stt-progress" key={item.name}>
-            <small>{model?.label || item.name}</small>
-            <progress value={item.done} max={item.total || 1} />
-            <small>{t('{value0}%', { value0: share })}</small>
-          </div>
-        )
+        return <ModelStatusCard name={model?.label || modelId} task={item} key={item.name} />
       })}
       {provider?.id === 'google' && (
         <p className="muted">{t('Работает онлайн без установки моделей.')}</p>
