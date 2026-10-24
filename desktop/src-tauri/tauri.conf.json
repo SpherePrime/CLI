@@ -61,8 +61,10 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
-      "endpoints": [],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEzNUU4REM3QkU3OUFEMjUKUldRbHJYbSt4NDFlRThMWVZqSFJ1ZHhEcC8rSHFRS2xXVkh2bHBxL0xZQ2VYbnN0YVl1Z3pTNnYK",
+      "endpoints": [
+        "https://github.com/SpherePrime/CLI/releases/latest/download/latest.json"
+      ],
       "dialog": false
     }
   }

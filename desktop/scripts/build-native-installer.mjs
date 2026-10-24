@@ -20,7 +20,7 @@ try {
   const config = join(directory, 'updater.json')
   writeFileSync(config, JSON.stringify({
     bundle: { createUpdaterArtifacts: signed, resources: { [`engine/${library}`]: `engine/${library}`, 'engine/manifest.json': 'engine/manifest.json' } },
-    plugins: { updater: { pubkey: publicKey || '', endpoints: endpoint ? [endpoint] : [] } }
+    ...(signed ? { plugins: { updater: { pubkey: publicKey, endpoints: [endpoint] } } } : {})
   }))
   const executable = join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js')
   const result = spawnSync(process.execPath, [executable, 'build', '--bundles', target, '--config', config], {

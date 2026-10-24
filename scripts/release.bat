@@ -33,7 +33,7 @@ rem    --dry-run        print what would happen, touch nothing remote
 rem    --skip-build     use whatever is already in the output directory:
 rem                     "release" packages it, "run" launches it with no
 rem                     compile - and so no Go toolchain needed
-rem    --upload-local   publish from this machine without GitHub Actions
+rem    --no-desktop     ship the CLI only, without the Prime Desktop packages
 rem    --yes            skip the confirmation prompt
 rem    --no-auto-commit do not commit the tree before the release build
 rem    --no-verify      skip the post-publish asset check
@@ -61,7 +61,6 @@ set "NOTES="
 set "RUN_TEST=0"
 set "DRY_RUN=0"
 set "SKIP_BUILD=0"
-set "UPLOAD_LOCAL=0"
 set "ASSUME_YES=0"
 set "STRICT_SYNC=0"
 rem Commit the working tree before the release build. Default on; a generic
@@ -71,6 +70,8 @@ set "AUTO_COMMIT=1"
 rem Check that the published release carries every selected asset, and say so
 rem plainly if one is missing. --no-verify turns it off.
 set "VERIFY=1"
+set "DESKTOP=1"
+set "DESKTOP_RELEASE=0"
 rem The targets the release ships. Always a list of os/arch tokens, e.g.
 rem "windows/amd64 windows/arm64 linux/amd64 linux/arm64". Platform names are
 rem expanded to their arches in the parser, so the build, package and verify
@@ -107,13 +108,14 @@ if /I "%~1"=="--out"    goto opt_out
 if /I "%~1"=="--version" goto opt_version
 if /I "%~1"=="--notes"  goto opt_notes
 if /I "%~1"=="--test"   ( set "RUN_TEST=1"  & shift & goto parse )
-if /I "%~1"=="--upload-local" ( set "UPLOAD_LOCAL=1" & shift & goto parse )
+if /I "%~1"=="--upload-local" ( shift & goto parse )
 if /I "%~1"=="--yes"    ( set "ASSUME_YES=1" & shift & goto parse )
 if /I "%~1"=="--strict-sync" ( set "STRICT_SYNC=1" & shift & goto parse )
 if /I "%~1"=="--dry-run" ( set "DRY_RUN=1" & shift & goto parse )
 if /I "%~1"=="--skip-build" ( set "SKIP_BUILD=1" & shift & goto parse )
 if /I "%~1"=="--no-auto-commit" ( set "AUTO_COMMIT=0" & shift & goto parse )
 if /I "%~1"=="--no-verify" ( set "VERIFY=0" & shift & goto parse )
+if /I "%~1"=="--no-desktop" ( set "DESKTOP=0" & shift & goto parse )
 if /I "%~1"=="--targets" goto opt_targets
 echo Unknown option: %~1
 goto usage
@@ -449,7 +451,8 @@ echo        or turn on the equivalent Windows feature.
 exit /b 1
 
 rem resolve_version sets VERSION to the explicit --version if given, otherwise
-rem the newer of the last release and desktop\package.json, + 1 patch.
+rem the last release + 1 patch, or desktop\package.json when it is already
+rem ahead of the last release (a version prepared by a run that did not publish).
 rem
 rem A leading v is stripped so callers can pass either form, and only the first
 rem character is taken: deleting every v would turn 1.2.3-v2 into 1.2.3-2, a
@@ -484,7 +487,7 @@ rem The addition needs its own parentheses: PowerShell binds -f tighter than +,
 rem so -f a, b, c+1 formats with c and then appends "1" to the whole string.
 rem That turned v0.4.36 into v0.4.361.
 for /f "usebackq delims=" %%v in (`powershell -NoProfile -Command ^
-  "$t='!LATEST_TAG!'; $v=[version]'0.0.0'; if($t -match '^v?(\d+\.\d+\.\d+)'){ $v=[version]$Matches[1] }; $p=Join-Path '%~dp0..' 'desktop\package.json'; if(Test-Path $p){ $d=[version](Get-Content $p -Raw | ConvertFrom-Json).version; if($d -gt $v){ $v=$d } }; '{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build+1)"`) do set "VERSION=%%v"
+  "$t='!LATEST_TAG!'; $v=[version]'0.0.0'; if($t -match '^v?(\d+\.\d+\.\d+)'){ $v=[version]$Matches[1] }; $n='{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build+1); $p=Join-Path '%~dp0..' 'desktop\package.json'; if(Test-Path $p){ $d=[version](Get-Content $p -Raw | ConvertFrom-Json).version; if($d -gt $v){ $n='{0}.{1}.{2}' -f $d.Major, $d.Minor, $d.Build } }; $n"`) do set "VERSION=%%v"
 exit /b 0
 
 :current_sha
@@ -861,6 +864,7 @@ call :pick_targets || exit /b 1
 
 call :resolve_version
 set "TAG=v%VERSION%"
+call :desktop_plan || exit /b 1
 
 rem A tag that already exists on the remote is not automatically fatal. Pushing
 rem the tag is the first irreversible step, so a failure after it - a dropped
@@ -898,6 +902,11 @@ echo  from commit : !SHA!
 echo  output      : %OUT%
 echo  mode        : %CMD%
 if "%TAG_EXISTS%"=="1" echo  tag        : already on the remote, will not be re-pushed
+if "%DESKTOP_RELEASE%"=="1" (
+    echo  desktop     : Windows setup and updater built here, Linux by the Release workflow
+) else (
+    echo  desktop     : skipped
+)
 if "%DRY_RUN%"=="1" echo  DRY RUN - nothing will be pushed
 call :print_footer
 
@@ -917,6 +926,16 @@ if errorlevel 2 (
     goto :eof
 )
 :confirmed
+
+if "!DESKTOP_RELEASE!"=="1" if "!DRY_RUN!"=="0" (
+    echo  Setting the desktop version to !VERSION! ...
+    pushd "%ROOT%\desktop"
+    node scripts\set-native-version.mjs "!TAG!"
+    set "SET_VERSION_EXIT=!errorlevel!"
+    popd
+    if not "!SET_VERSION_EXIT!"=="0" ( echo ERROR: could not set the desktop version & exit /b 1 )
+    for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
+)
 
 rem The tree is committed only after the user confirmed the publish: a
 rem cancelled release leaves the working tree exactly as it was found.
@@ -956,6 +975,8 @@ if "%SKIP_BUILD%"=="0" (
 
 call :package || exit /b 1
 
+if "!DESKTOP_RELEASE!"=="1" if "!DRY_RUN!"=="0" call :build_desktop || exit /b 1
+
 rem Notes are written before the dry-run exit so that --dry-run actually shows
 rem what would be published. A dry run that hides the release notes is only
 rem checking half of what it claims to check.
@@ -984,9 +1005,46 @@ if "!VERIFY!"=="1" call :verify_assets
 goto :eof
 
 rem ---------------------------------------------------------------------------
+rem  desktop_plan - decide whether this release ships Prime Desktop and check
+rem  the tools and the updater signing key before anything is built.
+rem  build_desktop - the Windows setup, NSIS update package and its signature.
+rem ---------------------------------------------------------------------------
+:desktop_plan
+set "DESKTOP_RELEASE=0"
+if not "!DESKTOP!"=="1" exit /b 0
+if not "!VERSION!"=="!VERSION:-=!" exit /b 0
+where node >nul 2>&1 || ( echo ERROR: Node.js 24 is required for the desktop release. Use --no-desktop to skip it. & exit /b 1 )
+where cargo >nul 2>&1 || ( echo ERROR: Rust is required for the desktop release: https://rustup.rs & exit /b 1 )
+set "KEY_FILE=%PRIME_UPDATER_KEY_FILE%"
+if not defined KEY_FILE set "KEY_FILE=%USERPROFILE%\.tauri\prime-updater.key"
+if not defined TAURI_SIGNING_PRIVATE_KEY if not exist "!KEY_FILE!" (
+    echo ERROR: the updater signing key was not found.
+    echo        Put it in !KEY_FILE!, or set PRIME_UPDATER_KEY_FILE or TAURI_SIGNING_PRIVATE_KEY.
+    echo        Use --no-desktop to release the CLI only.
+    exit /b 1
+)
+set "DESKTOP_RELEASE=1"
+exit /b 0
+
+:build_desktop
+call :print_header "Prime Desktop"
+pushd "%ROOT%\desktop"
+set "DEPS_STALE=0"
+if not exist "node_modules\.package-lock.json" set "DEPS_STALE=1"
+if "!DEPS_STALE!"=="0" powershell -NoProfile -Command "if ((Get-Item package-lock.json).LastWriteTime -gt (Get-Item node_modules\.package-lock.json).LastWriteTime) { exit 1 }"
+if errorlevel 1 set "DEPS_STALE=1"
+if "!DEPS_STALE!"=="1" call npm ci
+if errorlevel 1 ( popd & echo ERROR: npm ci failed & exit /b 1 )
+node scripts\build-local-release.mjs "%TAG%"
+set "DESKTOP_EXIT=!errorlevel!"
+popd
+if not "!DESKTOP_EXIT!"=="0" ( echo ERROR: the desktop build failed & exit /b 1 )
+exit /b 0
+
+rem ---------------------------------------------------------------------------
 rem  package - one archive per selected target, then checksums
 rem
-rem  Archive names follow the Release workflow's naming
+rem  Archive names follow the goreleaser naming
 rem  (prime_<ver>_<OS>_<arch>.<ext>): local uploads and goreleaser assets
 rem  are interchangeable, and the install scripts look for exactly this.
 rem ---------------------------------------------------------------------------
@@ -1016,6 +1074,7 @@ if exist "%STAGE%" rd /s /q "%STAGE%"
 if exist "%PKG%"   rd /s /q "%PKG%"
 mkdir "%STAGE%" >nul 2>&1
 mkdir "%PKG%"   >nul 2>&1
+call :package_extras
 
 set "ASSETS="
 set "MISSING="
@@ -1044,7 +1103,7 @@ rem certutil fallback covers a box with no PowerShell at all: certutil is an
 rem operating system binary, and its one space-free output line is the hash.
 del /q "%PKG%\checksums.txt" >nul 2>&1
 for %%A in ("%PKG%\*.zip" "%PKG%\*.tar.gz") do (
-    for /f "usebackq delims=" %%h in (`powershell -NoProfile -Command "$b=[System.IO.File]::ReadAllBytes('%%~fA');$s=[System.Security.Cryptography.SHA256]::Create();($s.ComputeHash($b)|ForEach-Object{($_.ToString('x'))}) -join ''"`) do (
+    for /f "usebackq delims=" %%h in (`powershell -NoProfile -Command "$b=[System.IO.File]::ReadAllBytes('%%~fA');$s=[System.Security.Cryptography.SHA256]::Create();($s.ComputeHash($b)|ForEach-Object{($_.ToString('x2'))}) -join ''"`) do (
         >>"%PKG%\checksums.txt" echo %%h  %%~nxA
     )
     if not exist "%PKG%\checksums.txt" for /f "tokens=*" %%h in ('certutil -hashfile "%%~fA" SHA256 2^>nul ^| findstr /v " "') do >>"%PKG%\checksums.txt" echo %%h  %%~nxA
@@ -1066,8 +1125,8 @@ exit /b 0
 rem ---------------------------------------------------------------------------
 rem  package_one <os/arch> - archive one target's binary
 rem
-rem  The archive is named the way the Release workflow's goreleaser names it,
-rem  so an --upload-local release and a CI release carry identical asset sets.
+rem  The archive is named and laid out the way goreleaser does it,
+rem  so the install scripts and "prime update" find the assets they expect.
 rem  A failure here aborts the whole release: half-packed archives would ship
 rem  a release some install script 404s on.
 rem ---------------------------------------------------------------------------
@@ -1095,7 +1154,8 @@ if /I "!OS_L!"=="windows" (
 ) else (
     set "OS_UP=Linux"
 )
-set "NAME=prime_%VERSION_BARE%_!OS_UP!_!ARC_UP!.!EXT!"
+set "BASE=prime_%VERSION_BARE%_!OS_UP!_!ARC_UP!"
+set "NAME=!BASE!.!EXT!"
 set "BIN=%OUT%\prime-!OS_L!-!ARC_L!"
 if /I "!OS_L!"=="windows" set "BIN=!BIN!.exe"
 if not exist "!BIN!" (
@@ -1104,18 +1164,19 @@ if not exist "!BIN!" (
     exit /b 1
 )
 
-rem The archive holds the plain name prime(.exe) plus the README, which is
-rem what the install scripts and the Arch package expect to unpack.
-del /q "%STAGE%\prime" >nul 2>&1
-del /q "%STAGE%\prime.exe" >nul 2>&1
+set "WRAP=%STAGE%\!BASE!"
+mkdir "!WRAP!" >nul 2>&1
+set "PLAIN=prime"
+if /I "!OS_L!"=="windows" set "PLAIN=prime.exe"
+copy /y "!BIN!" "!WRAP!\!PLAIN!" >nul
+call :add_readme "!WRAP!"
+if exist "%EXTRAS%\completions\prime.bash" xcopy /e /i /q /y "%EXTRAS%\completions" "!WRAP!\completions" >nul
+if exist "%EXTRAS%\manpages\prime.1.gz" xcopy /e /i /q /y "%EXTRAS%\manpages" "!WRAP!\manpages" >nul
 
 if /I "!OS_L!"=="windows" (
-    copy /y "!BIN!" "%STAGE%\prime.exe" >nul
-    call :add_readme "%STAGE%"
-    call :make_zip "%STAGE%" "%PKG%\!NAME!" || exit /b 1
+    call :make_zip "%STAGE%" "!BASE!" "%PKG%\!NAME!" || exit /b 1
 ) else (
-    copy /y "!BIN!" "%STAGE%\prime" >nul
-    tar -czf "%PKG%\!NAME!" -C "%STAGE%" prime >nul 2>&1
+    tar -czf "%PKG%\!NAME!" -C "%STAGE%" "!BASE!" >nul 2>&1
 )
 if not exist "%PKG%\!NAME!" (
     echo  ERROR: could not create the archive for !NAME!
@@ -1126,7 +1187,7 @@ set /a COUNT+=1
 exit /b 0
 
 rem ---------------------------------------------------------------------------
-rem  make_zip <stagedir> <out.zip> - zip every file in the stage directory
+rem  make_zip <stagedir> <member> <out.zip> - zip one directory of the stage
 rem
 rem  PowerShell's Compress-Archive is the primary producer because it is the
 rem  reference zip layout; but the Archive module is an operating system
@@ -1135,19 +1196,41 @@ rem  create_zip_by_extension is its universal mode: .zip out, zip in.
 rem ---------------------------------------------------------------------------
 :make_zip
 set "STG=%~1"
-set "ZOUT=%~2"
+set "MEMBER=%~2"
+set "ZOUT=%~3"
 if exist "!ZOUT!" del /q "!ZOUT!" >nul 2>&1
-powershell -NoProfile -Command "Compress-Archive -Path '!STG!\*' -DestinationPath '!ZOUT!' -Force" >nul 2>&1
-if not exist "!ZOUT!" (
-    rem bsdtar's auto-format mode names the archive by extension, so a .zip
-    rem in produces a .zip out. bsdtar does no wildcarding, so the members
-    rem are listed explicitly; the stage holds the binary and, when the repo
-    rem root has one, the README.
-    set "MEMBERS=prime.exe"
-    if exist "!STG!\README.md" set "MEMBERS=!MEMBERS! README.md"
-    tar -a -cf "!ZOUT!" -C "!STG!" !MEMBERS! 2>nul
-)
+powershell -NoProfile -Command "Compress-Archive -Path '!STG!\!MEMBER!' -DestinationPath '!ZOUT!' -Force" >nul 2>&1
+if not exist "!ZOUT!" tar -a -cf "!ZOUT!" -C "!STG!" "!MEMBER!" 2>nul
 if not exist "!ZOUT!" exit /b 1
+exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem  package_extras - shell completions and the manpage that ship inside every
+rem  archive, generated with the host binary. A failure leaves them out.
+rem ---------------------------------------------------------------------------
+:package_extras
+set "EXTRAS=%OUT%\extras"
+if exist "%EXTRAS%" rd /s /q "%EXTRAS%"
+mkdir "%EXTRAS%\completions" >nul 2>&1
+mkdir "%EXTRAS%\manpages" >nul 2>&1
+set "HOST_BIN=%OUT%\prime-windows-amd64.exe"
+if /I "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "HOST_BIN=%OUT%\prime-windows-arm64.exe"
+set "PRIME_CMD="!HOST_BIN!""
+if not exist "!HOST_BIN!" set "PRIME_CMD=go run ."
+for %%S in (bash zsh fish) do (
+    !PRIME_CMD! completion %%S > "%EXTRAS%\completions\prime.%%S" 2>nul
+    if errorlevel 1 goto package_extras_failed
+)
+!PRIME_CMD! man > "%EXTRAS%\manpages\prime.1" 2>nul
+if errorlevel 1 goto package_extras_failed
+powershell -NoProfile -Command "$i=[IO.File]::OpenRead('%EXTRAS%\manpages\prime.1'); $o=[IO.File]::Create('%EXTRAS%\manpages\prime.1.gz'); $g=New-Object IO.Compression.GZipStream($o,[IO.Compression.CompressionMode]::Compress); $i.CopyTo($g); $g.Close(); $i.Close()"
+if errorlevel 1 goto package_extras_failed
+del /q "%EXTRAS%\manpages\prime.1" >nul 2>&1
+exit /b 0
+
+:package_extras_failed
+echo  WARNING: could not generate the completions and manpage, archives ship without them.
+rd /s /q "%EXTRAS%" >nul 2>&1
 exit /b 0
 
 :add_readme
@@ -1244,25 +1327,19 @@ exit /b 0
 rem ---------------------------------------------------------------------------
 rem  verify_assets - prove the published release carries every selected asset.
 rem
-rem  The default publish path hands the build to the Release workflow, so the
-rem  assets are not on the page when the tag is pushed: goreleaser takes about
-rem  fifteen minutes. This reads the asset list back and polls it while the
-rem  workflow runs, then names anything still absent, so a build that quietly
-rem  skipped an arch does not ship a release whose install script 404s. A
-rem  missing asset is reported, not fatal.
+rem  Reads the asset list back and names anything absent, so a build that
+rem  quietly skipped an arch does not ship a release whose install script 404s.
+rem  A missing asset is reported, not fatal.
 rem ---------------------------------------------------------------------------
 :verify_assets
 set "VERSION_BARE=%VERSION%"
 set "VERSION_BARE=%VERSION_BARE:v=%"
-rem Upload-local assets are on the page the moment :publish returns, so no
-rem polling there. The CI path gives the workflow up to 60 x 30s = 30 minutes:
-rem the Desktop job starts only after the CLI release job has finished.
+rem Every asset is built here and is on the page when :publish returns. The
+rem Linux desktop packages come later from the Release workflow and are not
+rem waited for.
 set "POLL=0"
-if "!UPLOAD_LOCAL!"=="0" set "POLL=60"
-rem Stable tags built by the Release workflow also carry the Desktop setup
-rem and its auto-update files. Local uploads and pre-releases do not.
 set "DESKTOP_ASSETS="
-if "!UPLOAD_LOCAL!"=="0" if "!VERSION_BARE!"=="!VERSION_BARE:-=!" set "DESKTOP_ASSETS=1"
+if "!DESKTOP_RELEASE!"=="1" set "DESKTOP_ASSETS=1"
 echo.
 echo  Verifying the assets on %TAG% ...
 :verify_wait
@@ -1278,7 +1355,7 @@ for %%T in (!TARGETS!) do (
     )
 )
 if defined DESKTOP_ASSETS (
-    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!"') do set /a MISSING_COUNT+=%%C
+    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly') do set /a MISSING_COUNT+=%%C
 )
 if "!MISSING_COUNT!"=="0" goto verify_report
 if "!POLL!"=="0" goto verify_report
@@ -1315,8 +1392,8 @@ for %%T in (!TARGETS!) do (
     )
 )
 if defined DESKTOP_ASSETS (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -Report
-    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!"') do set /a MISSING_COUNT+=%%C
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly -Report
+    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly') do set /a MISSING_COUNT+=%%C
 )
 del /q "%ASSET_LIST%" >nul 2>&1
 echo  ------------------------------------------------------------------
@@ -1324,8 +1401,8 @@ if "!MISSING_COUNT!"=="0" (
     echo  All selected assets are present on %TAG%.
 ) else (
     echo  !MISSING_COUNT! asset^(s^) still not on the release page.
-    echo  Check the workflow:  gh run list --workflow Release
-    echo  then the release:    gh release view %TAG%
+    echo  Re-run this script to upload them again, then check:
+    echo    gh release view %TAG%
 )
 exit /b 0
 
@@ -1357,8 +1434,7 @@ exit /b 0
 
 rem ---------------------------------------------------------------------------
 rem  verify_fetch - read the asset names of the release into %ASSET_LIST%.
-rem  An empty or missing file reads as "nothing uploaded yet", which is the
-rem  expected state while the Release workflow is running.
+rem  An empty or missing file reads as "nothing uploaded yet".
 rem ---------------------------------------------------------------------------
 :verify_fetch
 set "ASSET_LIST=%OUT%\assets.txt"
@@ -1367,7 +1443,9 @@ gh release view "%TAG%" --json assets --jq ".assets[].name" 2^>nul > "%ASSET_LIS
 exit /b 0
 
 rem ---------------------------------------------------------------------------
-rem  publish - tag on the remote and create the GitHub release
+rem  publish - push the release commit and tag, create the GitHub release from
+rem  the archives built here, upload the desktop feed, start the Linux desktop
+rem  build. The Release workflow runs only on that dispatch, never on a push.
 rem ---------------------------------------------------------------------------
 :publish
 call :print_header "Publish"
@@ -1375,117 +1453,73 @@ call :print_header "Publish"
 where gh >nul 2>&1 || ( echo gh not found & exit /b 1 )
 gh auth status >nul 2>&1 || ( echo ERROR: gh is not authenticated. Run: gh auth login & exit /b 1 )
 
-if "%UPLOAD_LOCAL%"=="1" (
-    rem Local mode deliberately does NOT push the tag.
-    rem
-    rem A tag push is a "push" event, and the Release workflow is triggered by
-    rem exactly that: push, tags: v*. So pushing here would start a full CI
-    rem release build on GitHub, burning Actions minutes, right when the whole
-    reason for this mode is that the quota is gone or the release is urgent.
-    rem Two builds racing over the same tag is worse: goreleaser would clobber
-    rem the assets uploaded below.
-    rem
-    rem gh release create --target creates the tag through the API instead. An
-    rem API-created ref does not emit a push event, so the workflow stays quiet
-    rem and the release is entirely this machine's work.
-    rem
-    rem The local tag is still created so the working copy matches the release
-    rem and a later build stamps the right version, but it is never pushed.
-    if "%TAG_EXISTS%"=="0" (
-        echo  Tagging %TAG% locally, not pushing it ...
-        git tag -a "%TAG%" -m "%TAG%" !SHA!
-        if errorlevel 1 ( echo ERROR: could not create the tag & exit /b 1 )
-    ) else (
-        echo  Tag %TAG% is already on the remote.
-    )
-) else (
-    if "%TAG_EXISTS%"=="0" (
-        rem The tag has to exist before the release can attach a target to it.
-        echo  Tagging %TAG% at !SHA! ...
-        git tag -a "%TAG%" -m "%TAG%" !SHA!
-        if errorlevel 1 ( echo ERROR: could not create the tag & exit /b 1 )
+call :rel_branch
+if not defined BRANCH ( echo ERROR: HEAD is detached, nothing to push & exit /b 1 )
+echo  Pushing !BRANCH! ...
+git push origin "HEAD:refs/heads/!BRANCH!"
+if errorlevel 1 ( echo ERROR: could not push !BRANCH!. Sync with origin and re-run. & exit /b 1 )
 
-        echo  Pushing the tag, which starts the Release workflow ...
-        git push origin "%TAG%"
-        if errorlevel 1 (
-            echo ERROR: could not push the tag. Delete it locally with: git tag -d %TAG%
-            exit /b 1
-        )
-    ) else (
-        echo  Tag %TAG% is already on the remote.
-    )
-)
-
-
-rem Two ways to get a release out. Pick with --upload-local.
-rem
-rem Default: push the tag and let the Release workflow build the release on
-rem GitHub. goreleaser adds the completions and manpages into each archive
-rem and stamps the checksums, which is what a full publish carries. Use it
-rem when Actions minutes are available.
-rem
-rem --upload-local: nothing is built on GitHub at all. The tag is created
-rem through the API rather than pushed, so no workflow runs, no Actions
-rem minutes are spent, and what ships is exactly the binary built and tested
-rem on this machine. The cost: the release carries the zip and tar.gz archives
-rem plus checksums, without the completions and manpages that goreleaser
-rem bundles in. Use it when the quota is exhausted or a fix has to go out
-rem now.
-if "%UPLOAD_LOCAL%"=="1" (
-    set "GH_ARGS="
-    if /I "%CMD%"=="draft" set "GH_ARGS=--draft"
-
-    rem gh release create refuses to touch a release that already exists, and
-    rem --clobber only replaces same-named assets. So an existing release gets
-    rem an upload instead: that is what makes re-running after a partial
-    rem failure finish the job rather than dead-end on the tag it already
-    rem pushed.
-    gh release view "%TAG%" >nul 2>&1
+if "%TAG_EXISTS%"=="0" (
+    echo  Tagging %TAG% at !SHA! ...
+    git tag -a "%TAG%" -m "%TAG%" !SHA!
+    if errorlevel 1 ( echo ERROR: could not create the tag & exit /b 1 )
+    git push origin "refs/tags/%TAG%"
     if errorlevel 1 (
-        echo.
-        echo  Creating the release from the local binaries ...
-        gh release create "%TAG%" --target !SHA! --title "%TAG%" --notes-file "%NOTES%" !GH_ARGS! !ASSETS!
-    ) else (
-        echo.
-        echo  Release %TAG% exists, uploading the assets again ...
-        gh release upload "%TAG%" --clobber !ASSETS!
-        if not errorlevel 1 gh release edit "%TAG%" --notes-file "%NOTES%"
-    )
-    if errorlevel 1 (
-        echo.
-        echo ERROR: could not publish the release.
-        echo        Re-run this script to retry the upload.
+        echo ERROR: could not push the tag. Delete it locally with: git tag -d %TAG%
         exit /b 1
     )
+) else (
+    echo  Tag %TAG% is already on the remote.
+)
 
-    call :print_footer
-    echo  Release: %TAG%
-    for /f "usebackq delims=" %%u in (`gh release view "%TAG%" --json url --jq .url 2^>nul`) do echo           %%u
+set "GH_ARGS="
+if /I "%CMD%"=="draft" set "GH_ARGS=--draft"
+gh release view "%TAG%" >nul 2>&1
+if errorlevel 1 (
     echo.
-    echo  Published from this machine. No GitHub Actions ran and no minutes
-    echo  were spent: the tag was created through the API, which does not
-    echo  trigger the Release workflow.
-    echo.
-    echo  Shipped: the selected archives plus checksums.
-    echo  The Release workflow would also add the completions and manpages
-    echo  inside each archive. Publish without --upload-local for the
-    echo  full CI set.
-    exit /b 0
+    echo  Creating the release from the local archives ...
+    gh release create "%TAG%" --verify-tag --title "%TAG%" --notes-file "%NOTES%" !GH_ARGS! !ASSETS!
 ) else (
     echo.
-    echo  Tag pushed. Handing the release to the Release workflow.
+    echo  Release %TAG% exists, uploading the archives again ...
+    gh release upload "%TAG%" --clobber !ASSETS!
+    if not errorlevel 1 gh release edit "%TAG%" --notes-file "%NOTES%"
+)
+if errorlevel 1 (
+    echo.
+    echo ERROR: could not publish the release.
+    echo        Re-run this script to retry the upload.
+    exit /b 1
+)
+
+set "LINUX_DISPATCHED=0"
+if "!DESKTOP_RELEASE!"=="1" (
+    echo.
+    echo  Uploading the Windows desktop setup and updater feed ...
+    node "%ROOT%\desktop\scripts\publish-native-release.mjs" "%TAG%"
+    if errorlevel 1 (
+        echo ERROR: could not upload the desktop assets. Re-run to retry.
+        exit /b 1
+    )
+    echo.
+    echo  Starting the Linux desktop build on GitHub Actions ...
+    gh workflow run Release --ref "!BRANCH!" -f "tag=%TAG%"
+    if errorlevel 1 (
+        echo  WARNING: could not start the Release workflow.
+        echo           Start it by hand:  gh workflow run Release -f tag=%TAG%
+    ) else (
+        set "LINUX_DISPATCHED=1"
+    )
 )
 
 call :print_footer
 echo  Release: %TAG%
 for /f "usebackq delims=" %%u in (`gh release view "%TAG%" --json url --jq .url 2^>nul`) do echo           %%u
 echo.
-echo  The Release workflow builds the selected archive set on GitHub - the
-echo  four-asset trim of Windows and Linux, amd64 and arm64 - plus the
-echo  completions and manpages bundled into each archive. About fifteen minutes.
-echo.
-echo  Watch it with:  gh run watch
-goto :eof
+echo  CLI archives and checksums: built here.
+if "!DESKTOP_RELEASE!"=="1" echo  Desktop Windows setup, NSIS update and latest.json: built here.
+if "!LINUX_DISPATCHED!"=="1" echo  Desktop Linux packages: Release workflow, about fifteen minutes. Watch: gh run watch
+exit /b 0
 
 rem ---------------------------------------------------------------------------
 rem ---------------------------------------------------------------------------
@@ -1547,17 +1581,15 @@ echo   --targets ^<tok^>... ship a chosen set: a platform name (windows, linux,
 echo                      all) or exact arches (windows/amd64, linux/arm64).
 echo                      Skips the target pick menu, which is otherwise
 echo                      shown before a release starts.
-echo   --upload-local   publish from this machine without GitHub Actions at all.
-echo                    The tag is created through the API rather than pushed,
-echo                    so no workflow runs and no Actions minutes are spent.
-echo                    Ships the archives and checksums built here, without
-echo                    the completions and manpages the CI build bundles in.
+echo   --no-desktop     ship the CLI only, without Prime Desktop
 echo.
-echo   Publishing, two ways:
-echo     default          push the tag, GitHub Actions builds the archive set
-echo                      with completions and manpages. Needs Actions minutes.
-echo     --upload-local   build and upload here, no Actions. No CI extras.
-echo                      For when the quota is gone or a fix is urgent.
+echo   Everything is built on this machine: CLI archives with completions and
+echo   manpages, the Prime Desktop Windows setup, the signed NSIS update and
+echo   latest.json. Only the Linux desktop packages are built by the Release
+echo   workflow, started after the publish. Signing key:
+echo   %%USERPROFILE%%\.tauri\prime-updater.key, PRIME_UPDATER_KEY_FILE or
+echo   TAURI_SIGNING_PRIVATE_KEY; password: prime-updater.password next to the
+echo   key or TAURI_SIGNING_PRIVATE_KEY_PASSWORD.
 echo.
 popd
 endlocal
