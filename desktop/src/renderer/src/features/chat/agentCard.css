@@ -1,0 +1,82 @@
+.tool-card.agent-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color var(--medium) ease,
+    background var(--medium) ease,
+    transform var(--fast) var(--ease-out);
+}
+.tool-card.agent-card:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--glass-edge, var(--border)));
+  background: color-mix(in srgb, var(--accent) 6%, var(--glass-inset, var(--surface)));
+}
+.tool-card.agent-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.agent-card .tool-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+.agent-card-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.agent-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.agent-card-title strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.agent-card-title .agent-role {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: var(--secondary);
+  font-size: 10.5px;
+  line-height: 1.7;
+}
+.agent-card-task {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.agent-card-open {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform var(--medium) var(--ease-out);
+}
+.agent-card:hover .agent-card-open {
+  transform: translateX(2px);
+  color: var(--accent);
+}
+[data-motion='reduced'] .agent-card,
+[data-motion='reduced'] .agent-card-open {
+  transition: none;
+  transform: none;
+}

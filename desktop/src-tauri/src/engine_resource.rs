@@ -8,6 +8,8 @@ pub fn resolve(resources: Option<&Path>) -> HostResult<PathBuf> {
         if let Some(path) = std::env::var_os("PRIME_NATIVE_ENGINE_PATH") {
             return Ok(PathBuf::from(path));
         }
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("engine").join(filename);
+        if path.is_file() { return Ok(path); }
     }
     if let Some(resources) = resources {
         let path = resources.join("engine").join(filename);
@@ -15,10 +17,6 @@ pub fn resolve(resources: Option<&Path>) -> HostResult<PathBuf> {
             verify(&path)?;
             return Ok(path);
         }
-    }
-    if cfg!(debug_assertions) {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("engine").join(filename);
-        if path.is_file() { return Ok(path); }
     }
     Err(HostError::new("ENGINE_UNAVAILABLE", "Bundled native engine is missing"))
 }

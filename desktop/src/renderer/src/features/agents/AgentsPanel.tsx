@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ChevronRight, RefreshCw, Users } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import type { AgentWorker } from '../../../../shared/agents'
@@ -6,9 +6,16 @@ import { workerActive, workerStatusLabels } from '../../../../shared/agents'
 import { useI18n } from '../../i18n'
 import { useAgentPolling } from './useAgentPolling'
 import { WorkerConversation } from './WorkerConversation'
+import type { AgentRequest } from './openAgent'
 import './agents.css'
 
-export function AgentsPanel({ workspace }: { workspace: Workspace }) {
+export function AgentsPanel({
+  workspace,
+  request
+}: {
+  workspace: Workspace
+  request?: AgentRequest
+}) {
   const { t } = useI18n()
   if (!workspace.project || !workspace.session)
     return (
@@ -23,6 +30,7 @@ export function AgentsPanel({ workspace }: { workspace: Workspace }) {
       projectId={workspace.project.id}
       sessionId={workspace.session.id}
       disabled={!!workspace.config.options?.disable_multi_agent}
+      request={request}
     />
   )
 }
@@ -30,14 +38,19 @@ export function AgentsPanel({ workspace }: { workspace: Workspace }) {
 function AgentTeam({
   projectId,
   sessionId,
-  disabled
+  disabled,
+  request
 }: {
   projectId: string
   sessionId: string
   disabled: boolean
+  request?: AgentRequest
 }) {
   const { t } = useI18n()
-  const [selected, setSelected] = useState('')
+  const [selected, setSelected] = useState(request?.workerId || '')
+  useEffect(() => {
+    if (request?.workerId) setSelected(request.workerId)
+  }, [request?.sequence])
   const load = useCallback(async () => {
     const result = await window.prime.call(projectId, 'agentWorkers', { sessionId })
     const workers = (result.workers || []) as AgentWorker[]

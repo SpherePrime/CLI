@@ -21,11 +21,6 @@ import (
 
 const AgentJobsToolName = "agent_jobs"
 
-// agentJobsWaitCap bounds how long agent_jobs(wait) blocks, so a batch of
-// slow agents cannot stall the parent run. The call is repeatable: a timed
-// out wait simply says "still running" and the model polls again.
-const agentJobsWaitCap = 2 * time.Minute
-
 // agentJob is one sub-agent started with the agent tool's background mode.
 // The coordinator registry is the only record of it: the job outlives the
 // step that started it and is polled through the agent_jobs tool.
@@ -99,21 +94,16 @@ func (j *agentJob) wait(ctx context.Context, timeout time.Duration) bool {
 // agentJobsDescription is the tool text shown to the model. It stays
 // English like every other tool description: the catalog is for the UI,
 // tools are for the model.
-const agentJobsDescription = `Manage background agents started with agent(background=true).
+const agentJobsDescription = `Inspect or stop the agents of this team.
 
 Operations:
-- list (default): one line per job: id, agent name, status, runtime, output size.
-- get: status and output of one job. With wait=true it blocks up to 2 minutes
-  for the job to finish; a job still running when the wait ends returns its
-  current status, so just call again or keep working.
-- wait_all: blocks up to 2 minutes until every running job is finished,
-  then reports all of them.
-- kill: stop a running job.
+- list (default): one line per agent: id, agent name, status, runtime, output size.
+- get: status and output of one agent that already finished.
+- kill: stop a running agent.
 
-Background jobs keep running while you do other work, so starting several
-and checking back later is the intended pattern. A finished job's output is
-its final answer plus the files it touched, exactly like a synchronous agent
-call would have returned.`
+Do not poll or wait for agents. Their results and messages arrive
+automatically as team notices once your current turn ends, so end the turn
+or keep working on your own part instead of checking on them.`
 
 // startAgentJob registers a background sub-agent run. The sub-session is
 // created synchronously so it is immediately visible in the session list
@@ -283,23 +273,20 @@ func (c *coordinator) agentJobsTool() fantasy.AgentTool {
 			case "", "list":
 				return c.listAgentJobs(jobs), nil
 			case "get":
-				return c.getAgentJob(ctx, params)
-			case "wait_all":
-				return c.waitAllAgentJobs(ctx, jobs), nil
+				return c.getAgentJob(params), nil
 			case "kill":
 				return c.killAgentJob(params), nil
 			default:
 				return fantasy.NewTextErrorResponse(
-					fmt.Sprintf("unknown op %q; use list, get, wait_all, or kill", params.Op)), nil
+					fmt.Sprintf("unknown op %q; use list, get, or kill", params.Op)), nil
 			}
 		},
 	)
 }
 
 type agentJobsParams struct {
-	Op    string `json:"op" description:"list (default), get, wait_all, or kill"`
+	Op    string `json:"op" description:"list (default), get, or kill"`
 	JobID string `json:"job_id,omitempty" description:"The job id, for get and kill"`
-	Wait  bool   `json:"wait,omitempty" description:"For get: block up to 2 minutes for the job to finish"`
 }
 
 func (c *coordinator) registrySnapshot() []*agentJob {
@@ -357,23 +344,14 @@ func (c *coordinator) listAgentJobs(scoped ...[]*agentJob) fantasy.ToolResponse 
 	return fantasy.NewTextResponse(b.String())
 }
 
-func (c *coordinator) getAgentJob(ctx context.Context, params agentJobsParams) (fantasy.ToolResponse, error) {
+func (c *coordinator) getAgentJob(params agentJobsParams) fantasy.ToolResponse {
 	if params.JobID == "" {
-		return fantasy.NewTextErrorResponse("job_id is required for get"), nil
+		return fantasy.NewTextErrorResponse("job_id is required for get")
 	}
 	job := c.findJob(params.JobID)
 	if job == nil {
 		return fantasy.NewTextErrorResponse(
-			fmt.Sprintf("background agent job not found: %s", params.JobID)), nil
-	}
-
-	if params.Wait {
-		if !job.wait(ctx, agentJobsWaitCap) {
-			status, _ := job.snapshot()
-			return fantasy.NewTextResponse(fmt.Sprintf(
-				"Job %s is still %s after a 2 minute wait. Call agent_jobs(get) again to poll, or keep working and check back later.",
-				job.id, status)), nil
-		}
+			fmt.Sprintf("background agent job not found: %s", params.JobID))
 	}
 
 	job.mu.Lock()
@@ -392,24 +370,10 @@ func (c *coordinator) getAgentJob(ctx context.Context, params agentJobsParams) (
 	case "error", "canceled":
 		b.WriteString("Error: ")
 		b.WriteString(output)
+	case "queued", "running":
+		b.WriteString("Still working. Its result arrives automatically as a team notice; do not poll.")
 	}
-	return fantasy.NewTextResponse(b.String()), nil
-}
-
-func (c *coordinator) waitAllAgentJobs(ctx context.Context, scoped ...[]*agentJob) fantasy.ToolResponse {
-	deadline := time.Now().Add(agentJobsWaitCap)
-	jobs := c.registrySnapshot()
-	if len(scoped) > 0 {
-		jobs = scoped[0]
-	}
-	for _, job := range jobs {
-		status, _ := job.snapshot()
-		if status != "running" && status != "queued" {
-			continue
-		}
-		_ = job.wait(ctx, time.Until(deadline))
-	}
-	return c.listAgentJobs(jobs)
+	return fantasy.NewTextResponse(b.String())
 }
 
 func (c *coordinator) killAgentJob(params agentJobsParams) fantasy.ToolResponse {

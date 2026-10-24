@@ -4,6 +4,7 @@ import { MessageAttachment } from './MessageAttachment'
 import { MarkdownText } from './MarkdownText'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { ToolCard } from './ToolCard'
+import { AgentCard } from './AgentCard'
 import { collectToolImages, ToolGallery } from './ToolGallery'
 import { ReasoningBlock } from './ReasoningBlock'
 import { useI18n } from '../../i18n'
@@ -32,7 +33,9 @@ export const MessageItem = memo(function MessageItem({
     const finish = (message.parts || []).find((part) => part.type === 'finish')
     if (finish) return null
     return (
-      <article className={`message assistant summary-message ${fresh ? 'fresh' : ''} ${matched ? 'search-match' : ''}`}>
+      <article
+        className={`message assistant summary-message ${fresh ? 'fresh' : ''} ${matched ? 'search-match' : ''}`}
+      >
         <div className="message-body">
           <div className="compaction-progress" role="status">
             <span className="working-orb" aria-hidden="true">
@@ -95,12 +98,15 @@ export const MessageItem = memo(function MessageItem({
               />
             )
           if (['tool_call', 'tool_result', 'shell_command'].includes(part.type)) {
-            const result =
-              part.type === 'tool_result' ? part.data : (part.data.result as unknown)
+            const result = part.type === 'tool_result' ? part.data : (part.data.result as unknown)
             const images = collectToolImages(result)
             return (
               <div className="tool-part" key={index}>
-                <ToolCard part={part} />
+                {part.type === 'tool_call' && part.data?.name === 'agent' ? (
+                  <AgentCard part={part} messageId={message.id} />
+                ) : (
+                  <ToolCard part={part} />
+                )}
                 <ToolGallery images={images} />
               </div>
             )

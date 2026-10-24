@@ -61,7 +61,7 @@ export function consolidateToolMessages(messages: Message[]): Message[] {
       }
       parts.push(part)
     }
-    if (message.role !== 'user' && !parts.some(visiblePart)) continue
+    if (!parts.some(visiblePart)) continue
     displayed.push(changed ? { ...message, parts } : message)
   }
   return displayed

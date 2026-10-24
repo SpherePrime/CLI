@@ -127,47 +127,80 @@ func (c *coordinator) updateWorkerCost(ctx context.Context, childID, parentID st
 	return err
 }
 
+var teamNoticeSettle = 300 * time.Millisecond
+
 func (c *coordinator) wakeOnAgentJob(job *agentJob) {
 	if c.currentAgent() == nil && c.backgroundWakeRunner == nil {
 		return
 	}
 	job.mu.Lock()
-	generation := job.generation
 	shouldWake := job.wake && !job.seen
+	root := job.rootSessionID
 	job.mu.Unlock()
 	if !shouldWake {
 		return
 	}
-	go func() {
-		ctx := message.WithHiddenUserMessage(c.workerContext())
-		for {
-			if ctx.Err() != nil {
-				return
-			}
-			if a := c.currentAgent(); a != nil && a.IsSessionBusy(job.rootSessionID) {
-				select {
-				case <-ctx.Done():
-					return
-				case <-time.After(backgroundWakeIdlePoll):
-				}
-				continue
-			}
-			job.mu.Lock()
-			if job.seen || generation != job.generation || job.status == "running" || job.status == "queued" {
-				job.mu.Unlock()
-				return
-			}
-			job.seen = true
-			prompt := fmt.Sprintf("Worker %s (%s), job %s, finished with status %s.\n%s\n\nThis is an automatic team notice. Continue the task using this result. Do not restart completed work or reply to this notice if no work remains.", job.name, job.agent, job.id, job.status, job.output)
-			job.mu.Unlock()
-			if c.backgroundWakeRunner != nil {
-				c.backgroundWakeRunner(ctx, job.rootSessionID, prompt)
-			} else {
-				_, _ = c.Run(ctx, job.rootSessionID, prompt)
-			}
-			return
+	c.teamNoticeMu.Lock()
+	if c.teamNoticePending == nil {
+		c.teamNoticePending = map[string]bool{}
+	}
+	if c.teamNoticePending[root] {
+		c.teamNoticeMu.Unlock()
+		return
+	}
+	c.teamNoticePending[root] = true
+	c.teamNoticeMu.Unlock()
+	go c.deliverTeamNotices(root)
+}
+
+func (c *coordinator) deliverTeamNotices(root string) {
+	ctx := message.WithHiddenUserMessage(c.workerContext())
+	select {
+	case <-ctx.Done():
+	case <-time.After(teamNoticeSettle):
+	}
+	for ctx.Err() == nil {
+		a := c.currentAgent()
+		if a == nil || !a.IsSessionBusy(root) {
+			break
 		}
-	}()
+		select {
+		case <-ctx.Done():
+		case <-time.After(backgroundWakeIdlePoll):
+		}
+	}
+	c.teamNoticeMu.Lock()
+	delete(c.teamNoticePending, root)
+	c.teamNoticeMu.Unlock()
+	if ctx.Err() != nil {
+		return
+	}
+	prompt := c.collectTeamNotices(root)
+	if prompt == "" {
+		return
+	}
+	if c.backgroundWakeRunner != nil {
+		c.backgroundWakeRunner(ctx, root, prompt)
+	} else {
+		_, _ = c.Run(ctx, root, prompt)
+	}
+}
+
+func (c *coordinator) collectTeamNotices(root string) string {
+	var reports []string
+	for _, job := range c.registrySnapshot() {
+		job.mu.Lock()
+		ready := job.rootSessionID == root && job.wake && !job.seen && job.status != "running" && job.status != "queued"
+		if ready {
+			job.seen = true
+			reports = append(reports, fmt.Sprintf("Agent %s (%s, id %s) finished with status %s.\n%s", job.name, job.agent, job.id, job.status, job.output))
+		}
+		job.mu.Unlock()
+	}
+	if len(reports) == 0 {
+		return ""
+	}
+	return "Automatic team notice with new results from your agents:\n\n" + strings.Join(reports, "\n\n---\n\n") + "\n\nIntegrate these results and assign follow-up or review work if needed. Results you already handled are not repeated here. If nothing remains to do, finish with a one-line status without restating earlier reports."
 }
 
 func (c *coordinator) workerContext() context.Context {

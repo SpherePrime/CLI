@@ -278,7 +278,10 @@ export function MessageList({
               const message = visible[row.index]
               const previous = visible[row.index - 1]
               const continued =
-                message.role !== 'user' && previous !== undefined && previous.role !== 'user'
+                message.role !== 'user' &&
+                previous !== undefined &&
+                previous.role !== 'user' &&
+                !timing.completed.has(previous.id)
               const fresh =
                 (message.created_at || 0) * 1000 > Math.max(mountedAt.current, Date.now() - 4000)
               const last = row.index === visible.length - 1
