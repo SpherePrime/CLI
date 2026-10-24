@@ -75,3 +75,4 @@ CHATS.md
 *.updater.key
 prime-updater.key
 !prime-updater.key.pub
+prime-updater-key/
