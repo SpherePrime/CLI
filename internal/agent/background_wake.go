@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/shell"
 )
@@ -79,4 +80,39 @@ func (c *coordinator) wakeOnBackgroundJob(sessionID, shellID, description, comma
 func backgroundJobResultSeen(shellID string) bool {
 	bgShell, ok := shell.GetBackgroundShellManager().Get(shellID)
 	return ok && bgShell.ResultSeen()
+}
+
+func mcpJobWakePrompt(jobID, toolName, status, output string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Background MCP job %s (%s) finished with status %s.\n", jobID, toolName, status)
+	if tail := strings.TrimSpace(output); tail != "" {
+		fmt.Fprintf(&b, "\nResult:\n%s\n", tail)
+	}
+	fmt.Fprintf(&b, "\nUse %s with op=result and job_id=%s for the full result. This is an automatic notice, not a message from the user. Continue the interrupted work using this result. If the task is already complete, report the outcome to the user briefly.", tools.MCPJobToolName, jobID)
+	return b.String()
+}
+
+func (c *coordinator) wakeOnMCPJob(sessionID, jobID, toolName, status, output string) {
+	if sessionID == "" {
+		return
+	}
+	prompt := mcpJobWakePrompt(jobID, toolName, status, output)
+	ctx := message.WithHiddenUserMessage(context.Background())
+	go func() {
+		for c.currentAgent().IsSessionBusy(sessionID) {
+			time.Sleep(backgroundWakeIdlePoll)
+		}
+		if tools.MCPJobResultSeen(jobID) {
+			return
+		}
+		runner := c.backgroundWakeRunner
+		if runner == nil {
+			runner = func(ctx context.Context, sessionID, prompt string) {
+				if _, err := c.Run(ctx, sessionID, prompt); err != nil {
+					slog.Debug("MCP job wake-up could not start a run", "session_id", sessionID, "job_id", jobID, "error", err)
+				}
+			}
+		}
+		runner(ctx, sessionID, prompt)
+	}()
 }
