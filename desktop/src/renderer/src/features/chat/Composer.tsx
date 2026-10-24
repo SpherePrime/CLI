@@ -1,4 +1,8 @@
-import { matchesPointerShortcut, matchesShortcut, shortcutLabel } from '../../../../shared/keybindings'
+import {
+  matchesPointerShortcut,
+  matchesShortcut,
+  shortcutLabel
+} from '../../../../shared/keybindings'
 import { getShortcuts, useShortcuts } from '../shortcuts/shortcutStore'
 import { PermissionMenu } from './PermissionMenu'
 import { QueuePanel } from './QueuePanel'
@@ -273,7 +277,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       )
     } else setSuggestions([])
   }
-  const voiceActive = recording || (transcribing && sending)
+  const voiceActive = recording || transcribing
   return (
     <div className="composer-area" ref={composerRoot}>
       {callHost &&
@@ -426,9 +430,11 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               <AudioLines size={17} />
             </button>
             <button
-              className={`icon ${recording ? 'danger' : ''}`}
+              className={`icon dictation-button ${recording ? 'danger is-recording' : ''} ${transcribing ? 'is-transcribing' : ''}`}
               disabled={!w.project || transcribing || conversation.state !== 'off'}
               aria-label={recording ? t('Остановить запись') : t('Голосовой ввод')}
+              aria-pressed={recording}
+              aria-busy={transcribing}
               title={`${t('Голосовой ввод')} · ${shortcutLabel(shortcuts.voice)}`}
               onClick={() => void toggleVoice()}
             >

@@ -1,0 +1,172 @@
+.voice-wave {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(32px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 86px;
+  padding: 16px 18px 16px 12px;
+  color: var(--accent);
+  background: radial-gradient(
+    ellipse at 75% 50%,
+    color-mix(in srgb, var(--accent) 7%, transparent),
+    transparent 75%
+  );
+  border-radius: inherit;
+  animation: dictation-enter 280ms var(--ease-out);
+}
+.voice-wave-symbol {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.voice-wave-symbol::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: inherit;
+  animation: dictation-ring 2s ease-out infinite;
+}
+.voice-wave canvas {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.voice-wave-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text);
+}
+.voice-wave-dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.voice-wave-time {
+  min-width: 38px;
+  text-align: right;
+  color: var(--secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.voice-wave .icon {
+  color: var(--secondary);
+}
+.voice-wave.transcribing .voice-wave-symbol svg {
+  animation: spin 1.4s linear infinite;
+}
+.voice-wave.transcribing .voice-wave-symbol::after {
+  animation: none;
+  opacity: 0;
+}
+.voice-wave.compact {
+  min-height: 60px;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 12px;
+  background-color: var(--bg);
+}
+.voice-wave.compact canvas {
+  height: 32px;
+}
+.voice-wave.compact .voice-wave-symbol {
+  width: 28px;
+  height: 28px;
+}
+.voice-wave.compact .voice-wave-label {
+  font-size: 12px;
+}
+.dictation-button {
+  position: relative;
+}
+.dictation-button.is-recording {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.dictation-button.is-recording::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: dictation-ring 2s ease-out infinite;
+}
+.dictation-button.is-transcribing {
+  color: var(--accent);
+  opacity: 0.8;
+}
+.composer.recording {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 7%, transparent);
+}
+@keyframes dictation-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dictation-ring {
+  0% {
+    opacity: 0.65;
+    transform: scale(0.94);
+  }
+  85%,
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+@container (max-width: 440px) {
+  .voice-wave {
+    gap: 8px;
+    padding-inline: 8px;
+  }
+  .voice-wave-symbol {
+    display: none;
+  }
+  .voice-wave {
+    grid-template-columns: auto auto minmax(24px, 1fr) auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-wave,
+  .voice-wave-symbol::after,
+  .voice-wave.transcribing .voice-wave-symbol svg,
+  .dictation-button.is-recording::after {
+    animation: none;
+  }
+  .voice-wave-symbol::after,
+  .dictation-button.is-recording::after {
+    display: none;
+  }
+}
+[data-motion='reduced'] .voice-wave,
+[data-motion='reduced'] .voice-wave-symbol::after,
+[data-motion='reduced'] .voice-wave.transcribing .voice-wave-symbol svg,
+[data-motion='reduced'] .dictation-button.is-recording::after {
+  animation: none;
+}
+[data-motion='reduced'] .voice-wave-symbol::after,
+[data-motion='reduced'] .dictation-button.is-recording::after {
+  display: none;
+}
