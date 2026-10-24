@@ -12,6 +12,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/internal/pubsub"
@@ -35,6 +36,16 @@ type agentJob struct {
 	parentSessionID string
 	prompt          string
 	startedAt       time.Time
+	updatedAt       time.Time
+	rootSessionID   string
+	name            string
+	params          subAgentParams
+	pending         []string
+	wake            bool
+	seen            bool
+	generation      uint64
+	hasRun          bool
+	queuedAt        time.Time
 
 	mu     sync.Mutex
 	status string // "running", "done", "error", "canceled"
@@ -47,8 +58,11 @@ func (j *agentJob) finish(status, output string) {
 	j.mu.Lock()
 	j.status = status
 	j.output = output
+	j.updatedAt = time.Now()
+	if j.done != nil {
+		close(j.done)
+	}
 	j.mu.Unlock()
-	close(j.done)
 }
 
 // snapshot is a point-in-time read of the job state, safe from any goroutine.
@@ -61,6 +75,9 @@ func (j *agentJob) snapshot() (status, output string) {
 // wait blocks until the job finishes, the context is canceled, or timeout
 // elapses. It reports whether the job is done when it returns.
 func (j *agentJob) wait(ctx context.Context, timeout time.Duration) bool {
+	j.mu.Lock()
+	done := j.done
+	j.mu.Unlock()
 	var (
 		timer *time.Timer
 		tick  <-chan time.Time
@@ -70,7 +87,7 @@ func (j *agentJob) wait(ctx context.Context, timeout time.Duration) bool {
 		tick = timer.C
 	}
 	select {
-	case <-j.done:
+	case <-done:
 		return true
 	case <-ctx.Done():
 		return false
@@ -103,6 +120,24 @@ call would have returned.`
 // even while the model is still running; the execution itself happens on a
 // detached goroutine that survives the caller's context being canceled.
 func (c *coordinator) startAgentJob(ctx context.Context, params subAgentParams, agentName string) (*agentJob, error) {
+	return c.launchAgentJob(ctx, params, agentName, true)
+}
+
+func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams, agentName string, wake bool) (*agentJob, error) {
+	if c.cfg.Config().Options.DisableMultiAgent {
+		return nil, errors.New("agent orchestration is disabled")
+	}
+	parent, err := c.sessions.Get(ctx, params.SessionID)
+	if err != nil {
+		return nil, err
+	}
+	if c.sessions.IsAgentToolSession(parent.ID) {
+		return nil, errors.New("workers cannot launch nested agents; request assignments from the primary chat using agent_message")
+	}
+	root, err := c.teamRoot(ctx, params.SessionID)
+	if err != nil {
+		return nil, err
+	}
 	agentToolSessionID := c.sessions.CreateAgentToolSessionID(params.AgentMessageID, params.ToolCallID)
 	session, err := c.sessions.CreateTaskSession(ctx, agentToolSessionID, params.SessionID, params.SessionTitle)
 	if err != nil {
@@ -116,7 +151,7 @@ func (c *coordinator) startAgentJob(ctx context.Context, params subAgentParams, 
 
 	// Get model configuration
 	model := params.Agent.Model()
-	providerCfg, ok := c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
+	_, ok := c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
 	if !ok {
 		// The session already exists, so undo it before reporting the
 		// error instead of leaving an orphan in the session list.
@@ -125,36 +160,46 @@ func (c *coordinator) startAgentJob(ctx context.Context, params subAgentParams, 
 		}
 		return nil, errModelProviderNotConfigured
 	}
-	maxTokens := callMaxOutputTokens(model, providerCfg.Type)
 
 	// Detached from the caller: background jobs survive the step that
 	// started them, like background shells, and are stopped only via
 	// agent_jobs(kill).
-	jobCtx, cancel := context.WithCancel(context.Background())
+	jobCtx, cancel := context.WithCancel(c.workerContext())
 
 	c.jobMu.Lock()
 	c.agentJobSeq++
 	job := &agentJob{
-		id:              fmt.Sprintf("aj-%d", c.agentJobSeq),
+		id:              session.ID,
 		agent:           agentName,
 		sessionID:       session.ID,
 		parentSessionID: params.SessionID,
 		prompt:          params.Prompt,
 		startedAt:       time.Now(),
-		status:          "running",
+		status:          "queued",
+		updatedAt:       time.Now(),
+		queuedAt:        time.Now(),
+		rootSessionID:   root,
+		name:            strings.TrimPrefix(params.SessionTitle, "Agent Session: "+agentName+" | "),
+		params:          params,
+		wake:            wake,
 		cancel:          cancel,
 		done:            make(chan struct{}),
+	}
+	if c.agentJobs == nil {
+		c.agentJobs = make(map[string]*agentJob)
 	}
 	c.agentJobs[job.id] = job
 	c.jobMu.Unlock()
 
-	go c.runAgentJob(job, jobCtx, params, session.ID, model, maxTokens, providerCfg)
+	c.reserveWorker(job)
+	go c.executeWorker(job, jobCtx)
 	return job, nil
 }
 
 // runAgentJob is the background twin of runSubAgent: same execution,
 // results parked on the job instead of handed back as a tool response.
-func (c *coordinator) runAgentJob(job *agentJob, ctx context.Context, params subAgentParams, sessionID string, model Model, maxTokens int64, providerCfg config.ProviderConfig) {
+func (c *coordinator) runAgentJob(job *agentJob, ctx context.Context, params subAgentParams, sessionID string, model Model, maxTokens int64, providerCfg config.ProviderConfig) (string, string) {
+	previous, _ := c.sessions.Get(ctx, sessionID)
 	result, err := c.invokeSubAgent(ctx, params, sessionID, model, maxTokens, providerCfg)
 	if err != nil {
 		failure := fmt.Sprintf("Failed to generate response: %s", err)
@@ -163,22 +208,20 @@ func (c *coordinator) runAgentJob(job *agentJob, ctx context.Context, params sub
 			status = "canceled"
 			failure = "canceled before it finished"
 		}
-		job.finish(status, failure)
-		return
+		return status, failure
 	}
 
 	// Update parent session cost on a best-effort basis, like the
 	// synchronous path.
-	if cerr := c.updateParentSessionCost(context.Background(), sessionID, params.SessionID); cerr != nil {
+	if cerr := c.updateWorkerCost(context.Background(), sessionID, params.SessionID, previous.Cost); cerr != nil {
 		slog.Warn("Update parent session cost for agent job", "job", job.id, "error", cerr)
 	}
 
 	output := subAgentOutput(result)
 	if output == "" {
-		job.finish("error", "Sub-agent completed but produced no text output.")
-		return
+		return "error", "Sub-agent completed but produced no text output."
 	}
-	job.finish("done", output)
+	return "done", output
 }
 
 // invokeSubAgent is the shared execution core of runSubAgent and
@@ -217,13 +260,32 @@ func (c *coordinator) agentJobsTool() fantasy.AgentTool {
 		AgentJobsToolName,
 		agentJobsDescription,
 		func(ctx context.Context, params agentJobsParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			source := tools.GetSessionFromContext(ctx)
+			if source == "" {
+				return fantasy.NewTextErrorResponse("session id missing from context"), nil
+			}
+			root, err := c.teamRoot(ctx, source)
+			if err != nil {
+				return fantasy.NewTextErrorResponse(err.Error()), nil
+			}
+			jobs := []*agentJob{}
+			for _, job := range c.registrySnapshot() {
+				if job.rootSessionID == root {
+					jobs = append(jobs, job)
+				}
+			}
+			if params.JobID != "" {
+				if _, err := c.teamWorker(ctx, source, params.JobID); err != nil {
+					return fantasy.NewTextErrorResponse("background agent job not found in this team"), nil
+				}
+			}
 			switch params.Op {
 			case "", "list":
-				return c.listAgentJobs(), nil
+				return c.listAgentJobs(jobs), nil
 			case "get":
 				return c.getAgentJob(ctx, params)
 			case "wait_all":
-				return c.waitAllAgentJobs(ctx), nil
+				return c.waitAllAgentJobs(ctx, jobs), nil
 			case "kill":
 				return c.killAgentJob(params), nil
 			default:
@@ -248,8 +310,7 @@ func (c *coordinator) registrySnapshot() []*agentJob {
 		jobs = append(jobs, j)
 	}
 	sort.Slice(jobs, func(i, k int) bool {
-		a, b := jobSeq(jobs[i]), jobSeq(jobs[k])
-		return a < b
+		return jobs[i].startedAt.Before(jobs[k].startedAt)
 	})
 	return jobs
 }
@@ -273,8 +334,11 @@ func parseIntAfterPrefix(id, prefix string) (int, bool) {
 	return n, true
 }
 
-func (c *coordinator) listAgentJobs() fantasy.ToolResponse {
+func (c *coordinator) listAgentJobs(scoped ...[]*agentJob) fantasy.ToolResponse {
 	jobs := c.registrySnapshot()
+	if len(scoped) > 0 {
+		jobs = scoped[0]
+	}
 	if len(jobs) == 0 {
 		return fantasy.NewTextResponse("No background agent jobs have been started.")
 	}
@@ -312,7 +376,12 @@ func (c *coordinator) getAgentJob(ctx context.Context, params agentJobsParams) (
 		}
 	}
 
-	status, output := job.snapshot()
+	job.mu.Lock()
+	status, output := job.status, job.output
+	if status != "queued" && status != "running" {
+		job.seen = true
+	}
+	job.mu.Unlock()
 	elapsed := time.Since(job.startedAt).Truncate(time.Second)
 	var b strings.Builder
 	fmt.Fprintf(&b, "Job %s (agent: %s) status: %s, runtime %s\n", job.id, job.agent, status, elapsed.String())
@@ -327,16 +396,20 @@ func (c *coordinator) getAgentJob(ctx context.Context, params agentJobsParams) (
 	return fantasy.NewTextResponse(b.String()), nil
 }
 
-func (c *coordinator) waitAllAgentJobs(ctx context.Context) fantasy.ToolResponse {
+func (c *coordinator) waitAllAgentJobs(ctx context.Context, scoped ...[]*agentJob) fantasy.ToolResponse {
 	deadline := time.Now().Add(agentJobsWaitCap)
-	for _, job := range c.registrySnapshot() {
+	jobs := c.registrySnapshot()
+	if len(scoped) > 0 {
+		jobs = scoped[0]
+	}
+	for _, job := range jobs {
 		status, _ := job.snapshot()
-		if status != "running" {
+		if status != "running" && status != "queued" {
 			continue
 		}
 		_ = job.wait(ctx, time.Until(deadline))
 	}
-	return c.listAgentJobs()
+	return c.listAgentJobs(jobs)
 }
 
 func (c *coordinator) killAgentJob(params agentJobsParams) fantasy.ToolResponse {
@@ -348,7 +421,11 @@ func (c *coordinator) killAgentJob(params agentJobsParams) fantasy.ToolResponse 
 		return fantasy.NewTextErrorResponse(
 			fmt.Sprintf("background agent job not found: %s", params.JobID))
 	}
-	if cancel := job.cancel; cancel != nil {
+	job.mu.Lock()
+	job.pending = nil
+	cancel := job.cancel
+	job.mu.Unlock()
+	if cancel != nil {
 		cancel()
 	}
 	return fantasy.NewTextResponse(fmt.Sprintf("Job %s canceled.", job.id))

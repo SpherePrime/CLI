@@ -17,6 +17,7 @@ import (
 var agentToolDescription string
 
 type AgentParams struct {
+	Name   string `json:"name,omitempty" description:"Short descriptive worker name identifying its assignment"`
 	Prompt string `json:"prompt" description:"What the agent has to accomplish, stated as a complete task with its own context and a concrete deliverable. It cannot see this conversation, so anything it needs must be in here."`
 	Agent  string `json:"agent,omitempty" description:"Which configured agent to run. Omit to use the default agent."`
 	// Background starts the agent without waiting for it: the call returns
@@ -61,7 +62,11 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 				return fantasy.ToolResponse{}, errors.New("agent message id missing from context")
 			}
 
-			agent, err := c.SubAgent(params.Agent)
+			name := params.Agent
+			if name == "" {
+				name = config.AgentCode
+			}
+			agent, err := c.SubAgent(name)
 			if err != nil {
 				// Reported as a tool error rather than a transport error so the
 				// model can see the valid names and retry.
@@ -73,11 +78,10 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 			// Name the agent in the session title. The child session shows up
 			// in the session list, and a run of them all called "New Agent
 			// Session" gave no way to tell which was which afterwards.
-			name := params.Agent
-			if name == "" {
-				name = config.AgentTask
-			}
 			title := "Agent Session: " + name
+			if workerName := strings.TrimSpace(params.Name); workerName != "" {
+				title += " | " + workerName
+			}
 
 			sp := subAgentParams{
 				Agent:          agent,
@@ -103,7 +107,22 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 					job.id, name, job.id)), nil
 			}
 
-			return c.runSubAgent(ctx, sp)
+			job, err := c.launchAgentJob(ctx, sp, name, false)
+			if err != nil {
+				return fantasy.NewTextErrorResponse(err.Error()), nil
+			}
+			if !job.wait(ctx, 0) {
+				_ = c.StopAgentWorker(context.Background(), sessionID, job.id)
+				return fantasy.NewTextErrorResponse(ctx.Err().Error()), nil
+			}
+			job.mu.Lock()
+			job.seen = true
+			status, output := job.status, job.output
+			job.mu.Unlock()
+			if status != "done" {
+				return fantasy.NewTextErrorResponse(output), nil
+			}
+			return fantasy.NewTextResponse(output), nil
 		},
 	), nil
 }

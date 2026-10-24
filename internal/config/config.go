@@ -582,29 +582,31 @@ type Options struct {
 	// the SQLite database and workspace overrides. Relative paths are
 	// resolved against the working directory; absolute paths are used
 	// verbatim. After defaulting the stored value is always absolute.
-	DataDirectory             string        `json:"data_directory,omitempty" jsonschema:"description=Directory for storing application data. Relative paths are resolved against the working directory; absolute paths are used as-is.,default=.prime,example=.prime"`
-	DisabledTools             []string      `json:"disabled_tools,omitempty" jsonschema:"description=List of built-in tools to disable and hide from the agent,example=bash,example=sourcegraph"`
-	DisableProviderAutoUpdate bool          `json:"disable_provider_auto_update,omitempty" jsonschema:"description=Disable providers auto-update,default=false"`
-	DisableDefaultProviders   bool          `json:"disable_default_providers,omitempty" jsonschema:"description=Ignore all default/embedded providers. When enabled\\, providers must be fully specified in the config file with base_url\\, models\\, and api_key - no merging with defaults occurs,default=false"`
-	Attribution               *Attribution  `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
-	DisableMetrics            bool          `json:"disable_metrics,omitempty" jsonschema:"description=Disable sending metrics,default=false"`
-	InitializeAs              string        `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=PRIME.md,example=CLAUDE.md,example=docs/LLMs.md"`
-	AutoLSP                   *bool         `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
-	Progress                  *bool         `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
-	Notifications             string        `json:"notifications,omitempty" jsonschema:"description=Notification style to use. Options: auto (default)\\, native\\, osc\\, bell\\, disabled. Auto selects based on environment: native for local sessions\\, osc for SSH (with automatic OSC 99/777 detection).,enum=auto,enum=native,enum=osc,enum=bell,enum=disabled,default=auto"`
-	DisabledSkills            []string      `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=prime-config"`
-	Language                  string        `json:"language,omitempty" jsonschema:"description=UI language. Options: en (default), ru.,enum=en,enum=ru,default=en"`
-	Voice                     *VoiceOptions `json:"voice,omitempty" jsonschema:"description=Voice dictation settings for the TUI"`
+	DataDirectory             string           `json:"data_directory,omitempty" jsonschema:"description=Directory for storing application data. Relative paths are resolved against the working directory; absolute paths are used as-is.,default=.prime,example=.prime"`
+	DisabledTools             []string         `json:"disabled_tools,omitempty" jsonschema:"description=List of built-in tools to disable and hide from the agent,example=bash,example=sourcegraph"`
+	DisableProviderAutoUpdate bool             `json:"disable_provider_auto_update,omitempty" jsonschema:"description=Disable providers auto-update,default=false"`
+	DisableDefaultProviders   bool             `json:"disable_default_providers,omitempty" jsonschema:"description=Ignore all default/embedded providers. When enabled\\, providers must be fully specified in the config file with base_url\\, models\\, and api_key - no merging with defaults occurs,default=false"`
+	Attribution               *Attribution     `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
+	DisableMetrics            bool             `json:"disable_metrics,omitempty" jsonschema:"description=Disable sending metrics,default=false"`
+	InitializeAs              string           `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=PRIME.md,example=CLAUDE.md,example=docs/LLMs.md"`
+	AutoLSP                   *bool            `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
+	Progress                  *bool            `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
+	Notifications             string           `json:"notifications,omitempty" jsonschema:"description=Notification style to use. Options: auto (default)\\, native\\, osc\\, bell\\, disabled. Auto selects based on environment: native for local sessions\\, osc for SSH (with automatic OSC 99/777 detection).,enum=auto,enum=native,enum=osc,enum=bell,enum=disabled,default=auto"`
+	DisabledSkills            []string         `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=prime-config"`
+	Language                  string           `json:"language,omitempty" jsonschema:"description=UI language. Options: en (default), ru.,enum=en,enum=ru,default=en"`
+	Voice                     *VoiceOptions    `json:"voice,omitempty" jsonschema:"description=Voice dictation settings for the TUI"`
 	ImageGen                  *ImageGenOptions `json:"image_gen,omitempty" jsonschema:"description=Built-in image generation settings for the generate_image tool"`
-	AutoUpdate                bool          `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
-	SmartTools                bool          `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
-	RequestTimeout            *int          `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. A model that reasons before its first token sends no stream parts while it thinks\\, so this also caps how long one silent thinking phase may last. 0 disables it\\, negative values are invalid.,default=120,example=300,example=600,example=0"`
-	AutoSummarizePercent      *int          `json:"auto_summarize_percent,omitempty" jsonschema:"description=Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings. 0 uses the default of 70.,minimum=0,maximum=100,default=70,example=70,example=85"`
+	AutoUpdate                bool             `json:"auto_update,omitempty" jsonschema:"description=Automatically download and install Prime updates in the background without a confirmation dialog. The update takes effect on the next start.,default=false"`
+	SmartTools                bool             `json:"smart_tools,omitempty" jsonschema:"description=Enable tool search mode: expose search_skills, search_mcp, and search_tools so the model can discover capabilities by keyword instead of seeing every available tool,default=false"`
+	RequestTimeout            *int             `json:"request_timeout,omitempty" jsonschema:"description=Timeout in seconds for each LLM API request. Streaming responses are aborted only after this much inactivity\\, so slow but active streams are never killed. A model that reasons before its first token sends no stream parts while it thinks\\, so this also caps how long one silent thinking phase may last. 0 disables it\\, negative values are invalid.,default=120,example=300,example=600,example=0"`
+	AutoSummarizePercent      *int             `json:"auto_summarize_percent,omitempty" jsonschema:"description=Default percentage of the context window that must be in use before a conversation is summarized automatically. Models can override this per-model in model_settings. 0 uses the default of 70.,minimum=0,maximum=100,default=70,example=70,example=85"`
 	// MaxParallelTools bounds how many parallel tool calls - and with it how
 	// many sub-agents launched in one message - may run at the same time.
 	// There is no upper bound; 0 uses the default of 5.
-	MaxParallelTools *int `json:"max_parallel_tools,omitempty" jsonschema:"description=How many parallel tool calls\\, and sub-agents launched in one message\\, may run at the same time. There is no upper bound: set it as high as you need to fan out agents without waiting between messages. 0 uses the default of 5.,minimum=0,default=5,example=50,example=200,example=1000"`
-	AutoContinue     bool `json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
+	MaxParallelTools    *int `json:"max_parallel_tools,omitempty" jsonschema:"description=How many parallel tool calls\\, and sub-agents launched in one message\\, may run at the same time. There is no upper bound: set it as high as you need to fan out agents without waiting between messages. 0 uses the default of 5.,minimum=0,default=5,example=50,example=200,example=1000"`
+	DisableMultiAgent   bool `json:"disable_multi_agent,omitempty" jsonschema:"description=Disable new worker launches and follow-up assignments,default=false"`
+	MaxConcurrentAgents int  `json:"max_concurrent_agents,omitempty" jsonschema:"description=Maximum simultaneously active workers per primary chat; zero uses ten,minimum=0,default=10"`
+	AutoContinue        bool `json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
 	// KeyBindings remaps a key to a different action, by name. The actions are
 	// the keymap's own field paths: "chat.new_session", "editor.send_message",
 	// "app.quit". A value may list several keys separated by a comma, and an
@@ -674,6 +676,13 @@ func (o *Options) GetMaxParallelTools() int {
 		return DefaultMaxParallelTools
 	}
 	return *o.MaxParallelTools
+}
+
+func (o *Options) GetMaxConcurrentAgents() int {
+	if o == nil || o.MaxConcurrentAgents <= 0 {
+		return 10
+	}
+	return o.MaxConcurrentAgents
 }
 
 // GetAutoSummarizePercent returns the global default threshold: how full the
@@ -1340,6 +1349,7 @@ func allToolNames() []string {
 	return []string{
 		"agent",
 		"agent_jobs",
+		"agent_message",
 		"bash",
 		"sudo",
 		"prime_info",
@@ -1387,7 +1397,7 @@ func resolveAllowedTools(allTools []string, disabledTools []string) []string {
 }
 
 func resolveReadOnlyTools(tools []string) []string {
-	readOnlyTools := []string{"search_instructions", "read_instruction", "glob", "grep", "ls", "lsp_call_hierarchy", "lsp_definition", "lsp_symbols", "sourcegraph", "view"}
+	readOnlyTools := []string{"search_instructions", "read_instruction", "glob", "grep", "ls", "lsp_call_hierarchy", "lsp_definition", "lsp_symbols", "sourcegraph", "view", "agent_message"}
 	// filter to only include tools that are in allowedtools (include mode)
 	return filterSlice(tools, readOnlyTools, true)
 }
@@ -1401,6 +1411,7 @@ func resolvePlanTools(tools []string) []string {
 	// delegate would let a plan spawn a worker that spawns a plan, with
 	// nothing in the config to bound the depth.
 	planTools := []string{
+		"agent_message",
 		"search_instructions",
 		"read_instruction",
 		"glob",

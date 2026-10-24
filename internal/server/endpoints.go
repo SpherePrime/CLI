@@ -9,7 +9,7 @@ import (
 // drives both mux registration and the documentation served under
 // /v1/docs/. Add or change an endpoint here, never by hand elsewhere.
 func (c *controllerV1) endpoints() []apigen.Endpoint {
-	return []apigen.Endpoint{
+	return append([]apigen.Endpoint{
 		apigen.Get("/v1/workspaces/{id}/plugins").Summary("List Prime plugins").Tags("plugins").PathParam("id", "Workspace ID").Responds([]proto.PluginInfo{}).Fails(404).Handle(c.handleGetPlugins),
 		apigen.Get("/v1/workspaces/{id}/plugins/tasks").Summary("Plugin install progress").Tags("plugins").PathParam("id", "Workspace ID").Responds([]proto.PluginTask{}).Fails(404).Handle(c.handleGetPluginTasks),
 		apigen.Post("/v1/workspaces/{id}/plugins/{name}/enable").Summary("Install and enable plugin").Tags("plugins").PathParam("id", "Workspace ID").PathParam("name", "Plugin name").Status(202).Fails(404).Handle(c.handleEnablePlugin),
@@ -671,5 +671,5 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			PathParam("id", "Workspace ID").
 			Fails(404, 500).
 			Handle(c.handlePostWorkspaceMCPDisableDocker),
-	}
+	}, c.agentWorkerEndpoints()...)
 }

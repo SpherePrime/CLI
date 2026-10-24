@@ -18,7 +18,8 @@ import {
   FileDiff,
   Files,
   Trash2,
-  Globe
+  Globe,
+  Users
 } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
@@ -26,6 +27,7 @@ import { FileContextMenu, type MenuItem } from './FileContextMenu'
 import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
 import { BrowserTab } from '../browser/BrowserTab'
 import { notifyError } from '../notifications/notifications'
+import { AgentsPanel } from '../agents/AgentsPanel'
 
 type Entry = { path: string; name: string; directory: boolean }
 
@@ -249,7 +251,11 @@ export function Inspector({
           />
         </div>
       )}
-      <div className="inspector-content" hidden={tab === 'browser'}>
+      <div
+        className={`inspector-content ${tab === 'agents' ? 'agents-content' : ''}`}
+        hidden={tab === 'browser'}
+      >
+        {tab === 'agents' && <AgentsPanel workspace={w} />}
         {tab === 'files' && (
           <>
             <div className="panel-title">
@@ -360,7 +366,7 @@ export function Inspector({
           }}
         />
       )}
-      {w.project && !w.project.remote && tab !== 'browser' && (
+      {w.project && !w.project.remote && tab !== 'browser' && tab !== 'agents' && (
         <div className="inspector-footer">
           <button onClick={() => void window.prime.reveal(w.project!.id)}>
             <FolderOpen size={13} /> {t('Открыть в проводнике')}
@@ -381,7 +387,8 @@ export function Inspector({
           {[
             { id: 'files', icon: Files, title: t('Файлы') },
             { id: 'changes', icon: FileDiff, title: t('Изменения') },
-            { id: 'browser', icon: Globe, title: t('Браузер') }
+            { id: 'browser', icon: Globe, title: t('Браузер') },
+            { id: 'agents', icon: Users, title: t('Агенты') }
           ].map((item) => (
             <button
               key={item.id}

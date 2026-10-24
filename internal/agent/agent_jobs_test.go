@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
@@ -86,7 +87,19 @@ func agentJobsCall(t *testing.T, c *coordinator, params agentJobsParams) fantasy
 	t.Helper()
 	b, err := json.Marshal(params)
 	require.NoError(t, err)
-	resp, err := c.agentJobsTool().Run(t.Context(), fantasy.ToolCall{Input: string(b)})
+	parents, err := c.sessions.List(t.Context())
+	require.NoError(t, err)
+	if len(parents) == 0 {
+		parent, err := c.sessions.Create(t.Context(), "parent")
+		require.NoError(t, err)
+		parents = append(parents, parent)
+	}
+	source := parents[0].ID
+	if jobs := c.registrySnapshot(); len(jobs) > 0 {
+		source = jobs[0].parentSessionID
+	}
+	ctx := context.WithValue(t.Context(), tools.SessionIDContextKey, source)
+	resp, err := c.agentJobsTool().Run(ctx, fantasy.ToolCall{Input: string(b)})
 	require.NoError(t, err)
 	return resp
 }

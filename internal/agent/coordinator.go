@@ -172,9 +172,11 @@ type coordinator struct {
 	// agentJobs tracks sub-agents started with the agent tool's background
 	// mode, keyed by job id. The registry is the only record of an
 	// in-flight background run, so it must outlive the step that started it.
-	jobMu       sync.Mutex
-	agentJobs   map[string]*agentJob
-	agentJobSeq int64
+	jobMu           sync.Mutex
+	agentJobs       map[string]*agentJob
+	agentJobSeq     int64
+	workerCostMu    sync.Mutex
+	workerLifecycle context.Context
 
 	// Skills discovery results (session-start snapshot).
 	allSkills    []*skills.Skill // Pre-filter: all discovered after dedup.
@@ -221,23 +223,24 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 	skillTracker := skills.NewTracker(activeSkills)
 
 	c := &coordinator{
-		cfg:          opts.Config,
-		sessions:     opts.Sessions,
-		messages:     opts.Messages,
-		permissions:  opts.Permissions,
-		questions:    opts.Questions,
-		history:      opts.History,
-		filetracker:  opts.FileTracker,
-		lspManager:   opts.LSPManager,
-		notify:       opts.Notify,
-		runComplete:  opts.RunComplete,
-		agents:       make(map[string]SessionAgent),
-		subAgents:    make(map[string]SessionAgent),
-		agentJobs:    make(map[string]*agentJob),
-		allSkills:    allSkills,
-		activeSkills: activeSkills,
-		skillTracker: skillTracker,
-		interactive:  opts.Interactive,
+		cfg:             opts.Config,
+		sessions:        opts.Sessions,
+		messages:        opts.Messages,
+		permissions:     opts.Permissions,
+		questions:       opts.Questions,
+		history:         opts.History,
+		filetracker:     opts.FileTracker,
+		lspManager:      opts.LSPManager,
+		notify:          opts.Notify,
+		runComplete:     opts.RunComplete,
+		agents:          make(map[string]SessionAgent),
+		subAgents:       make(map[string]SessionAgent),
+		agentJobs:       make(map[string]*agentJob),
+		workerLifecycle: ctx,
+		allSkills:       allSkills,
+		activeSkills:    activeSkills,
+		skillTracker:    skillTracker,
+		interactive:     opts.Interactive,
 	}
 
 	agentCfg, ok := opts.Config.Config().Agents[config.AgentGeneral]
@@ -930,6 +933,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		return c.buildRemoteWorkspaceTools(agent, isSubAgent), nil
 	}
 	var allTools []fantasy.AgentTool
+	allTools = append(allTools, c.agentMessageTool())
 	if slices.Contains(agent.AllowedTools, AgentToolName) {
 		agentTool, err := c.agentTool(ctx)
 		if err != nil {
@@ -2097,6 +2101,8 @@ func subAgentOutput(result *fantasy.AgentResult) string {
 
 // updateParentSessionCost accumulates the cost from a child session to its parent session.
 func (c *coordinator) updateParentSessionCost(ctx context.Context, childSessionID, parentSessionID string) error {
+	c.workerCostMu.Lock()
+	defer c.workerCostMu.Unlock()
 	childSession, err := c.sessions.Get(ctx, childSessionID)
 	if err != nil {
 		return fmt.Errorf("get child session: %w", err)
