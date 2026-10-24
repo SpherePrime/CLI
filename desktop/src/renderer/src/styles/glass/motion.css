@@ -54,12 +54,10 @@ button:active:not(:disabled) {
   from {
     opacity: 0;
     transform: translateY(12px) scale(0.97);
-    filter: blur(6px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 @keyframes glass-rise {

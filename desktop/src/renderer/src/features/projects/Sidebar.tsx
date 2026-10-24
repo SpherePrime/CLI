@@ -2,15 +2,7 @@ import { shortcutLabel } from '../../../../shared/keybindings'
 import { useShortcuts } from '../shortcuts/shortcutStore'
 import { useI18n } from '../../i18n'
 import '../../styles/jobs.css'
-import {
-  FolderOpen,
-  Plus,
-  Settings2,
-  Puzzle,
-  TerminalSquare,
-  ListChecks,
-  X
-} from 'lucide-react'
+import { FolderOpen, Settings2, Puzzle, TerminalSquare, ListChecks, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
 import { SidebarChats } from './SidebarChats'
@@ -37,7 +29,11 @@ export function Sidebar({
     const load = () =>
       void window.prime
         .jobs({ action: 'list' })
-        .then((jobs) => setActiveJobs(jobs.filter((job) => ['queued', 'running', 'waiting'].includes(job.status)).length))
+        .then((jobs) =>
+          setActiveJobs(
+            jobs.filter((job) => ['queued', 'running', 'waiting'].includes(job.status)).length
+          )
+        )
         .catch(() => {})
     load()
     const timer = setInterval(() => {
@@ -47,16 +43,6 @@ export function Sidebar({
   }, [w.info.runtime])
   return (
     <aside className="sidebar">
-      <div className="sidebar-actions">
-        <button
-          className="new-chat"
-          disabled={!w.project}
-          title={`${t('Новый чат')} · ${shortcutLabel(shortcuts.newChat)}`}
-          onClick={() => void w.createSession()}
-        >
-          <Plus size={16} /> {t('Новый чат')}
-        </button>
-      </div>
       <div className="sidebar-scroll">
         <SidebarChats workspace={w} onRemote={onRemote} />
       </div>

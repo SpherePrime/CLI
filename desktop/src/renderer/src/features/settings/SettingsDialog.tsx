@@ -68,8 +68,10 @@ export function SettingsDialog({
                 setStatus('')
               }}
             >
-              <item.icon size={16} />
-              {item.label}
+              <span className="settings-nav-icon" aria-hidden="true">
+                <item.icon size={15} />
+              </span>
+              <span className="settings-nav-label">{item.label}</span>
             </button>
           ))}
         </nav>
@@ -81,41 +83,52 @@ export function SettingsDialog({
             <>
               <h3>{t('Ваше рабочее пространство')}</h3>
               <p className="muted">{t('Оформление приложения сохраняется на этом устройстве.')}</p>
-              <label className="form-label">
-                {t('Язык интерфейса')}
-                <Select
-                  label={t('Язык интерфейса')}
-                  value={language}
-                  onChange={(value) => {
-                    void w.savePreferences({ language: value as 'ru' | 'en' })
-                  }}
-                  options={[
-                    { value: 'ru', label: t('Русский') },
-                    { value: 'en', label: t('Английский') }
-                  ]}
-                />
-              </label>
-              <label className="form-label">{t('Цветовая тема')}</label>
-              <div className="theme-options">
-                {(
-                  [
-                    { id: 'dark', label: t('Тёмная'), icon: Moon },
-                    { id: 'light', label: t('Светлая'), icon: Sun },
-                    { id: 'system', label: t('Системная'), icon: Monitor }
-                  ] as const
-                ).map((theme) => (
-                  <button
-                    key={theme.id}
-                    className={w.preferences.theme === theme.id ? 'selected' : ''}
-                    onClick={() => void w.savePreferences({ theme: theme.id })}
-                  >
-                    <theme.icon size={22} />
-                    {theme.label}
-                    {w.preferences.theme === theme.id && <Check size={13} />}
-                  </button>
-                ))}
-              </div>
-              <div className="settings-note">
+              <section className="settings-card">
+                <label className="form-label">
+                  {t('Язык интерфейса')}
+                  <Select
+                    label={t('Язык интерфейса')}
+                    value={language}
+                    onChange={(value) => {
+                      void w.savePreferences({ language: value as 'ru' | 'en' })
+                    }}
+                    options={[
+                      { value: 'ru', label: t('Русский') },
+                      { value: 'en', label: t('Английский') }
+                    ]}
+                  />
+                </label>
+              </section>
+              <section className="settings-card">
+                <label className="form-label">{t('Цветовая тема')}</label>
+                <div className="theme-options">
+                  {(
+                    [
+                      { id: 'dark', label: t('Тёмная'), icon: Moon },
+                      { id: 'light', label: t('Светлая'), icon: Sun },
+                      { id: 'system', label: t('Системная'), icon: Monitor }
+                    ] as const
+                  ).map((theme) => (
+                    <button
+                      key={theme.id}
+                      className={w.preferences.theme === theme.id ? 'selected' : ''}
+                      onClick={() => void w.savePreferences({ theme: theme.id })}
+                    >
+                      <span className={`theme-preview ${theme.id}`} aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                      <span className="theme-option-label">
+                        <theme.icon size={15} />
+                        {theme.label}
+                      </span>
+                      {w.preferences.theme === theme.id && <Check size={13} />}
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section className="settings-card settings-note">
                 <strong>{t('Плотность интерфейса')}</strong>
                 <div
                   className="density-options"
@@ -162,7 +175,7 @@ export function SettingsDialog({
                     }
                   />
                 </label>
-              </div>
+              </section>
             </>
           )}
           {tab === 'shortcuts' && <ShortcutSettings workspace={w} />}

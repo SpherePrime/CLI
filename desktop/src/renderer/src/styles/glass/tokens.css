@@ -6,6 +6,7 @@
   --glass-float: color-mix(in srgb, #24252a 74%, transparent);
   --glass-overlay: color-mix(in srgb, #222328 86%, transparent);
   --glass-inset: color-mix(in srgb, #0c0c0e 55%, transparent);
+  --glass-solid: #1b1c20f5;
   --glass-edge: #ffffff14;
   --glass-edge-strong: #ffffff24;
   --glass-rim: inset 0 1px 0 #ffffff12, inset 0 0 0 1px #ffffff08;
@@ -30,6 +31,7 @@
   --glass-float: color-mix(in srgb, #ffffff 72%, transparent);
   --glass-overlay: color-mix(in srgb, #ffffff 88%, transparent);
   --glass-inset: color-mix(in srgb, #ece9e2 70%, transparent);
+  --glass-solid: #fbfaf7f7;
   --glass-edge: #ffffffb0;
   --glass-edge-strong: #ffffffe0;
   --glass-rim: inset 0 1px 0 #ffffffd0, inset 0 0 0 1px #41372b0d;
