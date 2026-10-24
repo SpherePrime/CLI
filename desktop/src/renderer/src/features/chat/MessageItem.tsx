@@ -134,7 +134,7 @@ export const MessageItem = memo(function MessageItem({
           return null
         })}
       </div>
-      {text && (
+      {text && message.role === 'user' && (
         <button
           className="copy-message icon"
           aria-label={t('Скопировать сообщение')}

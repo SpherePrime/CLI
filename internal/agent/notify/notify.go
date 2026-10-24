@@ -25,6 +25,10 @@ const (
 	// finished. Message carries the error text when it failed, empty on
 	// success.
 	TypeAWSSSOAuthResult Type = "aws_sso_auth_result"
+	// TypeProviderRetry indicates a provider request failed mid-response and
+	// is being retried; the partial reply was discarded. Message carries the
+	// provider error.
+	TypeProviderRetry Type = "provider_retry"
 )
 
 // Notification represents a domain event published by the agent.

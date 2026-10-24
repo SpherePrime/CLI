@@ -1006,6 +1006,18 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			if updateErr := a.messages.Update(genCtx, *currentAssistant); updateErr != nil {
 				slog.Error("Failed to reset message on retry", "error", updateErr)
 			}
+			if a.notify != nil && !call.NonInteractive {
+				reason := ""
+				if err != nil {
+					reason = err.Error()
+				}
+				a.notify.Publish(pubsub.CreatedEvent, notify.Notification{
+					SessionID: call.SessionID,
+					Type:      notify.TypeProviderRetry,
+					RunID:     RunIDFromContext(ctx),
+					Message:   reason,
+				})
+			}
 		},
 		OnAuthRefresh: call.OnAuthRefresh,
 		ModelProvider: func() fantasy.LanguageModel {

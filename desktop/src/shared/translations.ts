@@ -1353,6 +1353,7 @@ Object.assign(english, {
   'В фоне · {id}': 'Background · {id}',
   'Выполняется в фоне': 'Running in the background',
   'Работает в команде': 'Working in the team',
+  'Ответ прервался у провайдера — повторяю запрос': 'The provider interrupted the reply — retrying',
   'Открыть чат агента': 'Open agent chat',
   'Состав команды': 'Team roster',
   'Список терминалов': 'Terminal list',
