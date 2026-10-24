@@ -16,6 +16,7 @@ import {
   Search,
   Sparkles,
   Terminal,
+  Users,
   Waypoints,
   Wrench,
   type LucideIcon
@@ -44,7 +45,19 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
     label: t('Подзадача'),
     detail: text(input?.description) || text(input?.prompt)
   }),
-  agent_jobs: (_input, t) => ({ icon: Sparkles, label: t('Фоновые агенты'), detail: '' }),
+  agent_jobs: (input, t) => ({
+    icon: Users,
+    label: t('Команда агентов'),
+    detail: [text(input?.op) || 'list', text(input?.job_id)].filter(Boolean).join(' · ')
+  }),
+  agent_message: (input, t) => ({
+    icon: Users,
+    label: input?.op === 'send' ? t('Сообщение агенту') : t('Состав команды'),
+    detail:
+      input?.op === 'send'
+        ? [text(input?.worker_id), text(input?.text).slice(0, 120)].filter(Boolean).join(' · ')
+        : ''
+  }),
   job_output: (_input, t) => ({ icon: Terminal, label: t('Вывод фоновой задачи'), detail: '' }),
   job_kill: (_input, t) => ({ icon: Terminal, label: t('Остановка задачи'), detail: '' }),
   mcp_job: (input, t) => ({

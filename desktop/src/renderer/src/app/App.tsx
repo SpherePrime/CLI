@@ -31,6 +31,7 @@ import { usePanelResize } from './usePanelResize'
 import { useWorkspaceShortcuts } from './useWorkspaceShortcuts'
 import { useModalWindowChrome } from './useModalWindowChrome'
 import { applyShortcuts } from '../features/shortcuts/shortcutStore'
+import { openAgentEvent, type AgentRequest } from '../features/agents/openAgent'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -140,6 +141,18 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   }
   const toggleFocus = () => setFocusMode((value) => !value)
   const [browserRequest, setBrowserRequest] = useState(0)
+  const [agentRequest, setAgentRequest] = useState<AgentRequest>()
+  useEffect(() => {
+    const open = (event: Event) => {
+      const workerId = (event as CustomEvent<{ workerId?: string }>).detail?.workerId
+      if (!workerId) return
+      setFocusMode(false)
+      setInspector(true)
+      setAgentRequest((current) => ({ workerId, sequence: (current?.sequence || 0) + 1 }))
+    }
+    window.addEventListener(openAgentEvent, open)
+    return () => window.removeEventListener(openAgentEvent, open)
+  }, [])
   useEffect(
     () =>
       window.prime.onEvent((event) => {
@@ -366,6 +379,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               workspace={w}
               openDocument={documents.open}
               browserRequest={browserRequest}
+              agentRequest={agentRequest}
             />
           </>
         )}

@@ -225,7 +225,6 @@ func TestAgentJobsToolOps(t *testing.T) {
 
 	require.Contains(t, agentJobsCall(t, coord, agentJobsParams{Op: "list"}).Content, job.id)
 	require.Contains(t, agentJobsCall(t, coord, agentJobsParams{Op: "get", JobID: job.id}).Content, "done-after-release")
-	require.Contains(t, agentJobsCall(t, coord, agentJobsParams{Op: "wait_all"}).Content, job.id)
 }
 
 // A still-running job can be killed and reports "canceled".

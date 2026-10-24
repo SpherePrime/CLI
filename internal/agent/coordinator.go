@@ -172,11 +172,13 @@ type coordinator struct {
 	// agentJobs tracks sub-agents started with the agent tool's background
 	// mode, keyed by job id. The registry is the only record of an
 	// in-flight background run, so it must outlive the step that started it.
-	jobMu           sync.Mutex
-	agentJobs       map[string]*agentJob
-	agentJobSeq     int64
-	workerCostMu    sync.Mutex
-	workerLifecycle context.Context
+	jobMu             sync.Mutex
+	agentJobs         map[string]*agentJob
+	agentJobSeq       int64
+	workerCostMu      sync.Mutex
+	workerLifecycle   context.Context
+	teamNoticeMu      sync.Mutex
+	teamNoticePending map[string]bool
 
 	// Skills discovery results (session-start snapshot).
 	allSkills    []*skills.Skill // Pre-filter: all discovered after dedup.

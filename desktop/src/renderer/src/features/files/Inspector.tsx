@@ -28,6 +28,7 @@ import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
 import { BrowserTab } from '../browser/BrowserTab'
 import { notifyError } from '../notifications/notifications'
 import { AgentsPanel } from '../agents/AgentsPanel'
+import type { AgentRequest } from '../agents/openAgent'
 
 type Entry = { path: string; name: string; directory: boolean }
 
@@ -44,7 +45,8 @@ export function Inspector({
   compact = false,
   expanded = false,
   setExpanded,
-  browserRequest = 0
+  browserRequest = 0,
+  agentRequest
 }: {
   workspace: Workspace
   openDocument: (workspaceId: string, path: string, diff?: any) => Promise<void>
@@ -52,6 +54,7 @@ export function Inspector({
   expanded?: boolean
   setExpanded: (expanded: boolean) => void
   browserRequest?: number
+  agentRequest?: AgentRequest
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
@@ -104,6 +107,12 @@ export function Inspector({
       if (compact) setPanelOpen(true)
     }
   }, [browserRequest])
+  useEffect(() => {
+    if (!agentRequest) return
+    setTab('agents')
+    if (compact) setPanelOpen(true)
+    else setExpanded(true)
+  }, [agentRequest?.sequence])
   useEffect(() => setOpened([]), [w.project?.id])
   useEffect(() => {
     let current = true
@@ -255,7 +264,7 @@ export function Inspector({
         className={`inspector-content ${tab === 'agents' ? 'agents-content' : ''}`}
         hidden={tab === 'browser'}
       >
-        {tab === 'agents' && <AgentsPanel workspace={w} />}
+        {tab === 'agents' && <AgentsPanel workspace={w} request={agentRequest} />}
         {tab === 'files' && (
           <>
             <div className="panel-title">

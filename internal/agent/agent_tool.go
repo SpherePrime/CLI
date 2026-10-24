@@ -16,6 +16,11 @@ import (
 //go:embed templates/agent_tool.md
 var agentToolDescription string
 
+type backgroundAgentMetadata struct {
+	Background bool   `json:"background"`
+	JobID      string `json:"job_id"`
+}
+
 type AgentParams struct {
 	Name   string `json:"name,omitempty" description:"Short descriptive worker name identifying its assignment"`
 	Prompt string `json:"prompt" description:"What the agent has to accomplish, stated as a complete task with its own context and a concrete deliverable. It cannot see this conversation, so anything it needs must be in here."`
@@ -102,9 +107,9 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 					return fantasy.NewTextErrorResponse(
 						fmt.Sprintf("could not start background agent: %s", err)), nil
 				}
-				return fantasy.NewTextResponse(fmt.Sprintf(
-					"Background agent started: job %s (agent %s). Keep working; check it later with agent_jobs(op=get, job_id=%s) or agent_jobs(op=list).",
-					job.id, name, job.id)), nil
+				return fantasy.WithResponseMetadata(fantasy.NewTextResponse(fmt.Sprintf(
+					"Agent started: job %s (agent %s). Do not poll it: its result and messages arrive automatically as a team notice after your turn ends. Continue with other assignments or end your turn.",
+					job.id, name)), backgroundAgentMetadata{Background: true, JobID: job.id}), nil
 			}
 
 			job, err := c.launchAgentJob(ctx, sp, name, false)

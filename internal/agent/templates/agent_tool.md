@@ -11,12 +11,15 @@ need, a bug to fix and verify. Only keep what genuinely depends on the context
 you are holding. You stay the one deciding, editing the main files, and talking
 to the user.
 
-For a large task, split it up: launch one agent per independent piece in a
-single message with background=true on every independent assignment, with different agent types where they suit. They run in
-parallel, which is far faster than doing the pieces one by one, so prefer
-launching several at once over a single big sequential job. Each agent
-returns on its own; then verify what came back, apply anything that still
-needs applying, and finish the task yourself.
+For a large task, delegate from the start instead of building a shared base
+first: launch one agent per independent piece in a single message with
+background=true on every assignment, and put the shared conventions (paths,
+interfaces, naming, styles) into each assignment so every agent can start
+immediately. They run in parallel, which is far faster than doing the pieces
+one by one. Pair every implementation piece with a reviewer agent that tests
+and checks the author's result and reports defects to the author through
+agent_message; the author fixes them. When all results are in, integrate them
+and finish the task yourself.
 
 Choosing the agent:
 
@@ -28,4 +31,4 @@ Choosing the agent:
 
 Omit "agent" to use code, the editing worker. Give each worker a short name and a complete assignment with paths, constraints, and verification requirements. The primary chat coordinates and integrates the results.
 
-The team defaults to ten simultaneously running workers. Further assignments wait in a queue. Workers cannot delegate; they communicate through agent_message and request further assignments from the primary chat. Use agent_message to coordinate peers or continue an existing worker conversation. Completion notices resume the primary chat automatically after its current turn; do not poll in a loop or restart completed work.
+The team defaults to ten simultaneously running workers. Further assignments wait in a queue. Workers cannot delegate; they communicate through agent_message and request further assignments from the primary chat. Use agent_message to coordinate peers or continue an existing worker conversation. Do not poll agent_jobs or wait for agents: end your turn, and their results and messages resume the primary chat automatically as one team notice. Do not restart completed work.

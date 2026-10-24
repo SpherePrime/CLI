@@ -169,8 +169,7 @@ func TestWorkerCompletionWaitsForParentAndSkipsConsumedResult(t *testing.T) {
 			close(a.blockOn)
 			require.True(t, job.wait(t.Context(), time.Second))
 			if consume {
-				_, err = c.getAgentJob(t.Context(), agentJobsParams{JobID: job.id})
-				require.NoError(t, err)
+				require.False(t, c.getAgentJob(agentJobsParams{JobID: job.id}).IsError)
 			}
 			select {
 			case <-wake:
@@ -193,6 +192,43 @@ func TestWorkerCompletionWaitsForParentAndSkipsConsumedResult(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestTeamNoticesArriveOnceAsOneBatch(t *testing.T) {
+	env := testEnv(t)
+	c := newJobCoordinator(t, env)
+	parent, err := env.sessions.Create(t.Context(), "parent")
+	require.NoError(t, err)
+	var busy atomic.Bool
+	busy.Store(true)
+	c.mainAgent = &wakeMockAgent{mockSessionAgent: &mockSessionAgent{}, busy: func(string) bool { return busy.Load() }}
+	c.mainAgentName = "test"
+	prompts := make(chan string, 4)
+	c.backgroundWakeRunner = func(ctx context.Context, sessionID, prompt string) { prompts <- prompt }
+	var jobs []*agentJob
+	for _, call := range []string{"first", "second"} {
+		a := newBlockingAgent("job-provider")
+		job, err := c.startAgentJob(t.Context(), subAgentParams{Agent: a, SessionID: parent.ID, AgentMessageID: "batch", ToolCallID: call, Prompt: call, SessionTitle: "Agent Session: code | " + call}, "code")
+		require.NoError(t, err)
+		close(a.blockOn)
+		require.True(t, job.wait(t.Context(), time.Second))
+		jobs = append(jobs, job)
+	}
+	busy.Store(false)
+	select {
+	case prompt := <-prompts:
+		for _, job := range jobs {
+			require.Contains(t, prompt, job.id)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("missing team notice")
+	}
+	c.wakeOnAgentJob(jobs[0])
+	select {
+	case prompt := <-prompts:
+		t.Fatalf("delivered result repeated: %s", prompt)
+	case <-time.After(teamNoticeSettle + backgroundWakeIdlePoll + 100*time.Millisecond):
 	}
 }
 
