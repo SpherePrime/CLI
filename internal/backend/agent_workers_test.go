@@ -63,3 +63,14 @@ func TestAgentWorkerSendValidatesTextAndNormalizesRoster(t *testing.T) {
 	_, err = b.GetAgentWorkers(context.Background(), ws.ID, "")
 	require.Error(t, err)
 }
+
+func TestAgentWorkersEmptyBeforeCoordinatorStarts(t *testing.T) {
+	b, _ := newTestBackend(t)
+	ws, _ := insertTestWorkspace(t, b, t.TempDir())
+	ws.App = &app.App{}
+	workers, err := b.GetAgentWorkers(context.Background(), ws.ID, "root")
+	require.NoError(t, err)
+	require.Empty(t, workers)
+	_, err = b.ListAgentWorkerMessages(context.Background(), ws.ID, "root", "worker")
+	require.ErrorIs(t, err, ErrAgentWorkerNotFound)
+}

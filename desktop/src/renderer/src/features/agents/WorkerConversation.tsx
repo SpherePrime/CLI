@@ -92,9 +92,13 @@ export function WorkerConversation({
         </button>
         <div className="agent-chat-name">
           <strong>{worker.name || worker.agent}</strong>
-          <span className={`agent-status agent-status-${worker.status}`}>
-            {t(workerStatusLabels[worker.status] || worker.status)}
-          </span>
+          <div className="agent-worker-meta">
+            <span className={`agent-dot agent-dot-${worker.status}`} aria-hidden="true" />
+            <span className={`agent-status agent-status-${worker.status}`}>
+              {t(workerStatusLabels[worker.status] || worker.status)}
+            </span>
+            <span className="agent-role">{worker.agent}</span>
+          </div>
         </div>
         <button
           className="icon small"
@@ -119,29 +123,30 @@ export function WorkerConversation({
       <details className="agent-assignment">
         <summary>{t('Задание агента')}</summary>
         <p>{worker.task}</p>
-        <span className="muted">{worker.agent}</span>
       </details>
       {(actionError || history.error || rosterError) && (
         <div className="agent-error" role="alert">
-          {actionError || history.error || rosterError}
+          <span>{actionError || history.error || rosterError}</span>
           <button className="quiet" onClick={refresh}>
             {t('Повторить')}
           </button>
         </div>
       )}
       {history.loading ? (
-        <p className="panel-help" role="status">
+        <p className="agents-loading" role="status">
           {t('Загрузка…')}
         </p>
       ) : history.value.length ? (
         <MessageList messages={history.value} busy={worker.status === 'running'} />
       ) : (
-        <div className="panel-empty">
+        <div className="agents-empty">
           <p>{t('Сообщений пока нет')}</p>
         </div>
       )}
       <form className="agent-composer" onSubmit={submit}>
-        <label htmlFor={`agent-followup-${worker.id}`}>{t('Сообщение агенту')}</label>
+        <label className="sr-only" htmlFor={`agent-followup-${worker.id}`}>
+          {t('Сообщение агенту')}
+        </label>
         <textarea
           id={`agent-followup-${worker.id}`}
           rows={3}
@@ -162,9 +167,14 @@ export function WorkerConversation({
               ? t('Запуск новых агентов отключён в настройках.')
               : t('Разрешения и подтверждения — в основном чате.')}
           </span>
-          <button className="quiet" type="submit" disabled={disabled || pending || !draft.trim()}>
+          <button
+            className="agent-send"
+            type="submit"
+            aria-label={t('Отправить')}
+            title={t('Отправить')}
+            disabled={disabled || pending || !draft.trim()}
+          >
             <Send size={14} />
-            {t('Отправить')}
           </button>
         </div>
       </form>
