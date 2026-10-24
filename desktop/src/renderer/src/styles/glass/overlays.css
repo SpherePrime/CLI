@@ -13,10 +13,9 @@
 }
 
 dialog.modal {
-  background: var(--glass-overlay);
+  background: var(--glass-solid);
   border-color: var(--glass-edge-strong);
   box-shadow: var(--glass-rim), var(--glass-shadow-float);
-  backdrop-filter: var(--glass-blur-strong);
 }
 dialog.modal::backdrop,
 dialog.modal[open]::backdrop {
@@ -55,4 +54,17 @@ dialog.modal[open]::backdrop {
 }
 .command-icon {
   background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.prime-popover > .select-options {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  animation: none;
+}
+.select-options button[aria-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
 }

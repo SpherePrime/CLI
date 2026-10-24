@@ -2,4 +2,6 @@
 @import './panels.css';
 @import './conversation.css';
 @import './overlays.css';
+@import './settings.css';
+@import './workbench.css';
 @import './motion.css';
