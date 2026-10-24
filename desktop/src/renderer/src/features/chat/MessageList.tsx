@@ -19,6 +19,7 @@ export function MessageList({
   messages,
   busy,
   waiting = false,
+  retrying = false,
   searchOpen = false,
   closeSearch = () => {},
   hasBefore = false,
@@ -33,6 +34,7 @@ export function MessageList({
   messages: Message[]
   busy: boolean
   waiting?: boolean
+  retrying?: boolean
   searchOpen?: boolean
   closeSearch?: () => void
   hasBefore?: boolean
@@ -237,7 +239,10 @@ export function MessageList({
         ref={viewport}
         tabIndex={0}
         aria-label={t('История чата')}
-        onWheel={(event) => takeControl(event.deltaY < 0)}
+        onWheel={(event) => {
+          takeControl(event.deltaY < 0)
+          if (event.deltaY !== 0) paging.onEdge(event.deltaY > 0)
+        }}
         onTouchStart={() => takeControl(true)}
         onPointerDown={(event) => {
           if (event.target === event.currentTarget) takeControl(true)
@@ -253,8 +258,10 @@ export function MessageList({
           if (
             ['ArrowDown', 'PageDown', 'End'].includes(event.key) ||
             (event.key === ' ' && !event.shiftKey)
-          )
+          ) {
             takeControl(false)
+            paging.onEdge(true)
+          }
         }}
         onScroll={() => {
           paging.onScroll()
@@ -321,6 +328,7 @@ export function MessageList({
           <WorkingIndicator
             busy={busy && !hasAfter}
             waiting={waiting}
+            retrying={retrying}
             startedAt={timing.startedAt}
           />
         </div>

@@ -339,6 +339,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               key={w.session?.id || 'new'}
               history={w.history}
               busy={w.busy}
+              retrying={w.retrying && w.busy}
               historyLoading={Boolean(w.history.loading) || (!w.messagesReady && !w.history.error)}
               historyError={w.history.error}
               loadHistory={w.loadHistory}

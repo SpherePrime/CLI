@@ -67,6 +67,7 @@ export function useWorkspace() {
   const [resources, setResources] = useState<Json>({ mcp: {}, lsp: {}, skills: [] })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [retryNotice, setRetryNotice] = useState<{ sessionId: string; at: number } | null>(null)
   const [observedBusy, setObservedBusy] = useState<{
     projectId: string
     sessionId: string
@@ -530,6 +531,7 @@ export function useWorkspace() {
           setSession((previous: any) => ({ ...previous, ...payload }))
       }
       if (event.type === 'run_complete') {
+        setRetryNotice((notice) => (notice?.sessionId === payload.session_id ? null : notice))
         if (payload.session_id === current.current.session?.id) {
           setBusy(false)
           setObservedBusy({
@@ -541,6 +543,10 @@ export function useWorkspace() {
             setError(payload.error)
         }
         void refresh()
+      }
+      if (event.type === 'agent_event' && payload?.type === 'provider_retry') {
+        setRetryNotice({ sessionId: payload.session_id, at: Date.now() })
+        return
       }
       if (event.type === 'agent_event') {
         if (payload?.type === 'error' && !/context canceled/i.test(payload.error || ''))
@@ -879,6 +885,7 @@ export function useWorkspace() {
     await refresh()
   }
   return {
+    retrying: Boolean(retryNotice && retryNotice.sessionId === session?.id),
     agentContext: agentContext.context,
     updateAgentContext: agentContext.updateContext,
     info,

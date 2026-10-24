@@ -92,6 +92,14 @@ export function useHistoryPaging({
     interact: () => {
       interacted.current = true
     },
+    onEdge: (down: boolean) => {
+      const view = viewport.current
+      interacted.current = true
+      if (!view || !settled || scrolling.current || pending.current || loading) return
+      const atBottom = view.scrollHeight - view.scrollTop - view.clientHeight < 2
+      if (down && atBottom && hasAfter) void page('after')
+      else if (!down && view.scrollTop < 2 && hasBefore) void page('before')
+    },
     onScroll: () => {
       const view = viewport.current
       if (!view) return

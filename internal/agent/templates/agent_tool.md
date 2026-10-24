@@ -29,6 +29,6 @@ Choosing the agent:
   investigate.
 - plan - reads only, produces an implementation plan.
 
-Omit "agent" to use code, the editing worker. Give each worker a short name and a complete assignment with paths, constraints, and verification requirements. The primary chat coordinates and integrates the results.
+Omit "agent" to use code, the editing worker. Give each worker a short name and a complete assignment with paths, constraints, and verification requirements. Write the name and assignment in English regardless of the conversation language, and state the user's language in the assignment (for example "User language: Russian") so the worker writes user-facing text, UI strings and docs in that language. The primary chat coordinates and integrates the results.
 
 The team defaults to ten simultaneously running workers. Further assignments wait in a queue. Workers cannot delegate; they communicate through agent_message and request further assignments from the primary chat. Use agent_message to coordinate peers or continue an existing worker conversation. Do not poll agent_jobs or wait for agents: end your turn, and their results and messages resume the primary chat automatically as one team notice. Do not restart completed work.
