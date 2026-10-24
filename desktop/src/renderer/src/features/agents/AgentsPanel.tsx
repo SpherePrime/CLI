@@ -64,52 +64,60 @@ function AgentTeam({
     )
   return (
     <section className="agents-panel" aria-label={t('Агенты')}>
-      <div className="panel-title">
-        <span>
-          {t('Агенты')} · {roster.value.length}
-        </span>
-        <button
-          className="icon small"
-          title={t('Обновить')}
-          aria-label={t('Обновить')}
-          onClick={roster.refresh}
-        >
-          <RefreshCw size={14} />
-        </button>
-      </div>
-      <p className="panel-help">
-        {t('Команда текущего чата. Выберите агента, чтобы открыть его переписку.')}
-      </p>
-      {disabled && <p className="panel-help">{t('Запуск новых агентов отключён в настройках.')}</p>}
+      <header className="agents-header">
+        <div className="agents-heading">
+          <h3>{t('Агенты')}</h3>
+          <span className="agents-count">{roster.value.length}</span>
+          <button
+            className="icon small"
+            title={t('Обновить')}
+            aria-label={t('Обновить')}
+            onClick={roster.refresh}
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
+        <p>{t('Команда текущего чата. Выберите агента, чтобы открыть его переписку.')}</p>
+        {disabled && (
+          <p className="agents-notice">{t('Запуск новых агентов отключён в настройках.')}</p>
+        )}
+      </header>
       {roster.error && (
         <div className="agent-error" role="alert">
-          {roster.error}
+          <span>{roster.error}</span>
           <button className="quiet" onClick={roster.refresh}>
             {t('Повторить')}
           </button>
         </div>
       )}
       {roster.loading ? (
-        <p className="panel-help" role="status">
+        <p className="agents-loading" role="status">
           {t('Загрузка…')}
         </p>
       ) : !roster.value.length && !roster.error ? (
-        <div className="panel-empty">
-          <Users size={28} />
-          <p>{t('В этом чате пока нет агентов')}</p>
+        <div className="agents-empty">
+          <span className="agents-empty-icon">
+            <Users size={20} />
+          </span>
+          <strong>{t('В этом чате пока нет агентов')}</strong>
+          <p>{t('Для больших задач главный агент запускает исполнителей параллельно.')}</p>
         </div>
       ) : null}
       <div className="agent-roster">
         {roster.value.map((item) => (
           <button key={item.id} className="agent-worker" onClick={() => setSelected(item.id)}>
             <div className="agent-worker-heading">
+              <span className={`agent-dot agent-dot-${item.status}`} aria-hidden="true" />
               <strong>{item.name || item.agent}</strong>
               <ChevronRight size={14} />
             </div>
-            <span className={`agent-status agent-status-${item.status}`}>
-              {t(workerStatusLabels[item.status] || item.status)}
-            </span>
-            <span className="agent-task">{item.task}</span>
+            <div className="agent-worker-meta">
+              <span className="agent-role">{item.agent}</span>
+              <span className={`agent-status agent-status-${item.status}`}>
+                {t(workerStatusLabels[item.status] || item.status)}
+              </span>
+            </div>
+            {item.task && <span className="agent-task">{item.task}</span>}
           </button>
         ))}
       </div>

@@ -33,6 +33,9 @@ func (b *Backend) workerControl(workspaceID, sessionID string) (agent.AgentOrche
 
 func (b *Backend) GetAgentWorkers(ctx context.Context, workspaceID, sessionID string) ([]agent.AgentWorker, error) {
 	control, err := b.workerControl(workspaceID, sessionID)
+	if errors.Is(err, ErrAgentNotInitialized) {
+		return []agent.AgentWorker{}, nil
+	}
 	if err != nil {
 		return nil, err
 	}

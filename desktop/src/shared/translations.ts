@@ -10,6 +10,8 @@ export const english: Record<string, string> = {
     'This chat’s team. Select an agent to open its conversation.',
   'Запуск новых агентов отключён в настройках.': 'New agent launches are disabled in settings.',
   'В этом чате пока нет агентов': 'No agents in this chat yet',
+  'Для больших задач главный агент запускает исполнителей параллельно.':
+    'For large tasks the primary agent runs workers in parallel.',
   'К списку агентов': 'Back to agents',
   'Остановить агента': 'Stop agent',
   'Задание агента': 'Agent assignment',
