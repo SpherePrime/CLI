@@ -9,8 +9,9 @@ rem    run         build (or not) and launch the app. Arguments after "--"
 rem                 go to prime itself:  Prime.bat build -- --continue
 rem    release     tag the commit and publish a GitHub release. A sub-menu
 rem                 picks which platforms ship; the build runs and the
-rem                 release is published in one go. Stable tags also ship
-rem                 the Prime Desktop setup, built by the Release workflow.
+rem                 release is published in one go, all built on this
+rem                 machine. Stable tags also ship the Prime Desktop setup
+rem                 and updater; only its Linux packages come from Actions.
 rem    desktop     run Prime Desktop (Rust/Tauri) from desktop\ in dev mode
 rem    setup       build the Prime Desktop installer locally
 rem    help        this text
@@ -86,6 +87,7 @@ if /I "%~1"=="--skip-build"    goto opt_bare
 if /I "%~1"=="--upload-local"   goto opt_bare
 if /I "%~1"=="--no-auto-commit" goto opt_bare
 if /I "%~1"=="--no-verify"      goto opt_bare
+if /I "%~1"=="--no-desktop"     goto opt_bare
 if /I "%~1"=="--"          goto opt_prime
 if /I "%~1"=="-h"          goto usage
 if /I "%~1"=="--help"      goto usage
@@ -445,7 +447,8 @@ echo   no mode   show a menu
 echo   run       launch the build already in dist - no compile, no Go needed
 echo   build     pull from git, compile for this machine, then launch
 echo   release   pick platforms in a menu, tag HEAD, publish a GitHub release;
-echo             stable tags also ship PrimeDesktop-Setup-^<version^>.exe
+echo             built locally; stable tags also ship PrimeDesktop-Setup-^<version^>.exe,
+echo             the signed update and latest.json ^(--no-desktop skips them^)
 echo   desktop   run Prime Desktop from desktop\ ^(Node.js 24, Go, Rust^)
 echo   setup     build PrimeDesktop-Setup-^<version^>.exe into desktop\src-tauri\target\release\bundle\setup
 echo   1-5       the choices, as they appear in the menu
@@ -461,6 +464,7 @@ echo   --version ^<x.y.z^>  release only, use this version number
 echo   --notes ^<file^>     release only, release notes file
 echo   --no-auto-commit release only, do not commit the tree before building
 echo   --no-verify      release only, skip the post-publish asset check
+echo   --no-desktop     release only, ship the CLI without Prime Desktop
 echo.
 echo Everything after a bare "--" is passed to prime itself:
 echo   Prime.bat build -- --continue

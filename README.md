@@ -73,11 +73,17 @@ Build from source (requires Go):
 go build -o prime .
 ```
 
-Releases are cut by pushing a version tag:
+Releases are built locally on Windows and published to GitHub Releases:
 
-```bash
-git tag v0.1.0 && git push origin v0.1.0
+```bat
+Prime.bat release
 ```
+
+It builds the CLI archives, the Prime Desktop setup, the signed NSIS update and
+`latest.json`, then starts the Release workflow, which adds only the Linux desktop
+packages. The updater signing key is read from `%USERPROFILE%\.tauri\prime-updater.key`
+(or `PRIME_UPDATER_KEY_FILE` / `TAURI_SIGNING_PRIVATE_KEY`); its password from
+`prime-updater.password` next to it (or `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`).
 
 ### Shell tools on Windows
 
