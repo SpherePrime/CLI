@@ -43,6 +43,7 @@ const actions: Record<string, string> = {
   browser_scroll: 'Прокручивает страницу',
   browser_back: 'Назад',
   browser_evaluate: 'Выполняет скрипт',
+  browser_health: 'Проверяет отклик страницы',
   terminal_list: 'Список терминалов',
   terminal_read: 'Читает вывод',
   terminal_write: 'Вводит команду',

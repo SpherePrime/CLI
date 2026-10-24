@@ -47,6 +47,11 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
   agent_jobs: (_input, t) => ({ icon: Sparkles, label: t('Фоновые агенты'), detail: '' }),
   job_output: (_input, t) => ({ icon: Terminal, label: t('Вывод фоновой задачи'), detail: '' }),
   job_kill: (_input, t) => ({ icon: Terminal, label: t('Остановка задачи'), detail: '' }),
+  mcp_job: (input, t) => ({
+    icon: Plug,
+    label: t('Фоновый вызов'),
+    detail: [text(input?.op) || 'status', text(input?.job_id)].filter(Boolean).join(' · ')
+  }),
   prime_info: (_input, t) => ({ icon: Info, label: t('Состояние Prime'), detail: '' }),
   prime_logs: (_input, t) => ({ icon: ScrollText, label: t('Логи Prime'), detail: '' }),
   question: (input, t) => ({

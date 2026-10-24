@@ -5,6 +5,7 @@ use super::{
 };
 use serde_json::{json, Value};
 use std::{
+    sync::atomic::AtomicBool,
     thread,
     time::{Duration, Instant},
 };
@@ -30,7 +31,8 @@ pub fn definitions() -> Vec<Value> {
         schema("browser_scroll", "Scroll the target browser page up or down.", json!({"direction":{"type":"string","enum":["up","down"]}}), &["direction"]),
         schema("browser_back", "Go back in the target browser tab history.", json!({}), &[]),
         schema("browser_screenshot", "Capture the visible browser page as PNG.", json!({}), &[]),
-        schema("browser_evaluate", "Evaluate an asynchronous JavaScript expression and return its JSON result.", json!({"expression":{"type":"string"}}), &["expression"]),
+        schema("browser_evaluate", "Evaluate an asynchronous JavaScript expression and return its JSON result. Runs until the expression settles; a long run continues in the background and can be checked with mcp_job.", json!({"expression":{"type":"string"}}), &["expression"]),
+        schema("browser_health", "Check whether a browser tab responds and whether a script evaluation is still running in it.", json!({}), &[]),
     ]
 }
 
@@ -97,6 +99,7 @@ pub fn run(
     state: &BrowserState,
     name: &str,
     args: &Value,
+    cancel: &AtomicBool,
 ) -> Result<Value, String> {
     if name == "browser_tabs" {
         super::refresh(app, state)?;
@@ -204,9 +207,10 @@ pub fn run(
             settle(&view, state, &id)?;
         }
         "browser_screenshot" => return Ok(json!([platform::screenshot(&view, None)?])),
+        "browser_health" => return Ok(text(evaluate::page_health(&view, &id).to_string())),
         "browser_evaluate" => {
             let value =
-                evaluate::evaluate(&view, string(args, "expression")?, Duration::from_secs(30))?;
+                evaluate::evaluate_until_done(&view, &id, string(args, "expression")?, cancel)?;
             return Ok(text(
                 value.to_string().chars().take(20000).collect::<String>(),
             ));
@@ -243,6 +247,7 @@ mod tests {
             "browser_back",
             "browser_screenshot",
             "browser_evaluate",
+            "browser_health",
         ]
         .into_iter()
         .collect();

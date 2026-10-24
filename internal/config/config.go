@@ -1356,6 +1356,7 @@ func allToolNames() []string {
 		"prime_logs",
 		"job_output",
 		"job_kill",
+		"mcp_job",
 		"download",
 		"edit",
 		"multiedit",

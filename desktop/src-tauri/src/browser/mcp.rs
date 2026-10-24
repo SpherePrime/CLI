@@ -6,11 +6,12 @@ use super::{
 use base64::Engine;
 use serde_json::{json, Value};
 use std::{
+    collections::HashMap,
     io::{BufReader, Read, Write},
     net::{TcpListener, TcpStream},
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc,
+        Arc, Mutex, OnceLock,
     },
     thread,
     time::Duration,
@@ -171,12 +172,39 @@ fn resolve_workspace(
         .map(|(id, _)| id.clone()))
 }
 
+fn in_flight() -> &'static Mutex<HashMap<String, Arc<AtomicBool>>> {
+    static CALLS: OnceLock<Mutex<HashMap<String, Arc<AtomicBool>>>> = OnceLock::new();
+    CALLS.get_or_init(Default::default)
+}
+
+fn call_key(workspace: Option<&str>, id: &Value) -> String {
+    format!("{}:{id}", workspace.unwrap_or(""))
+}
+
+fn cancel_call(workspace: Option<&str>, message: &Value) -> bool {
+    let Some(request) = message["params"].get("requestId") else {
+        return false;
+    };
+    let Ok(calls) = in_flight().lock() else {
+        return false;
+    };
+    let Some(flag) = calls.get(&call_key(workspace, request)) else {
+        return false;
+    };
+    flag.store(true, Ordering::Release);
+    true
+}
+
 fn handle(
     app: &AppHandle,
     state: &BrowserState,
     workspace: Option<&str>,
     message: &Value,
 ) -> Option<Value> {
+    if message["method"] == "notifications/cancelled" {
+        cancel_call(workspace, message);
+        return None;
+    }
     let id = message.get("id")?;
     let Some(method) = message["method"].as_str() else {
         return Some(fail(id, -32600, "Invalid JSON-RPC request"));
@@ -202,7 +230,16 @@ fn handle(
             let name = params["name"].as_str().unwrap_or("");
             let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
             let result = if tools::definitions().iter().any(|tool| tool["name"] == name) {
-                tools::run(app, state, name, &arguments)
+                let key = call_key(workspace, id);
+                let cancel = Arc::new(AtomicBool::new(false));
+                if let Ok(mut calls) = in_flight().lock() {
+                    calls.insert(key.clone(), cancel.clone());
+                }
+                let result = tools::run(app, state, name, &arguments, &cancel);
+                if let Ok(mut calls) = in_flight().lock() {
+                    calls.remove(&key);
+                }
+                result
             } else if let Some(workspace_id) = workspace {
                 let session_id = params["_meta"]["prime/sessionId"]
                     .as_str()
@@ -379,6 +416,30 @@ pub fn start(app: &AppHandle, state: BrowserState) -> Result<Server, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cancellation_reaches_only_the_matching_call() {
+        let flag = Arc::new(AtomicBool::new(false));
+        let other = Arc::new(AtomicBool::new(false));
+        in_flight()
+            .lock()
+            .unwrap()
+            .insert(call_key(Some("ws"), &json!(41)), flag.clone());
+        in_flight()
+            .lock()
+            .unwrap()
+            .insert(call_key(Some("other"), &json!(41)), other.clone());
+        let notice =
+            json!({"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":41}});
+        assert!(cancel_call(Some("ws"), &notice));
+        assert!(flag.load(Ordering::Acquire));
+        assert!(!other.load(Ordering::Acquire));
+        assert!(!cancel_call(
+            Some("ws"),
+            &json!({"params":{"requestId":99}})
+        ));
+        in_flight().lock().unwrap().clear();
+    }
 
     #[test]
     fn bearer_token_is_exact() {

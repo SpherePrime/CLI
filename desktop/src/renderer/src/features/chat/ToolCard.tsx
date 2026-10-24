@@ -1,8 +1,18 @@
 import { useState } from 'react'
-import { Check, ChevronDown, LoaderCircle, Terminal, X } from 'lucide-react'
+import { Check, ChevronDown, Clock3, LoaderCircle, Terminal, X } from 'lucide-react'
 import { toolTitle } from './toolTitle'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
+
+function backgroundJob(metadata: unknown) {
+  if (typeof metadata !== 'string' || !metadata) return ''
+  try {
+    const value = JSON.parse(metadata)
+    return value?.background && typeof value.job_id === 'string' ? value.job_id : ''
+  } catch {
+    return ''
+  }
+}
 
 function parameters(value: unknown) {
   if (typeof value !== 'string') return value
@@ -26,6 +36,7 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
   const completed = isShell || result !== undefined
   const failed = Boolean(result?.is_error || (isShell && data.exit_code))
   const output = isShell ? data.output : result?.content
+  const job = isShell ? '' : backgroundJob(result?.metadata)
   const title = isShell
     ? { icon: Terminal, label: t('Команда'), detail: String(data.command || '') }
     : toolTitle(String(data.name || ''), input, t)
@@ -49,12 +60,23 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
           )}
         </span>
         {failed && <small>{t('Ошибка')}</small>}
+        {job && <small className="tool-background">{t('В фоне · {id}', { id: job })}</small>}
         <span
-          className={`tool-status ${failed ? 'failed' : completed ? 'done' : 'running'}`}
-          title={failed ? t('Ошибка') : completed ? t('Готово') : t('Выполняется')}
+          className={`tool-status ${failed ? 'failed' : job ? 'background' : completed ? 'done' : 'running'}`}
+          title={
+            failed
+              ? t('Ошибка')
+              : job
+                ? t('Выполняется в фоне')
+                : completed
+                  ? t('Готово')
+                  : t('Выполняется')
+          }
         >
           {failed ? (
             <X size={13} strokeWidth={2.5} />
+          ) : job ? (
+            <Clock3 size={13} strokeWidth={2.5} />
           ) : completed ? (
             <Check size={13} strokeWidth={2.5} />
           ) : (

@@ -22,7 +22,7 @@ func TestRemoteWorkspaceToolsExcludeLocalBypasses(t *testing.T) {
 			built, err := coord.buildTools(context.Background(), coord.cfg.Config().Agents[agentName], isSubAgent)
 			require.NoError(t, err)
 			for _, tool := range built {
-				require.Contains(t, []string{"todos", "fetch", "sourcegraph", "question", "search_mcp", "search_tools"}, tool.Info().Name)
+				require.Contains(t, []string{"todos", "fetch", "sourcegraph", "mcp_job", "question", "search_mcp", "search_tools"}, tool.Info().Name)
 			}
 			if search := builtToolByName(t, built, "search_tools"); search != nil {
 				result, err := search.Run(context.Background(), fantasy.ToolCall{ID: "search", Input: `{"query":"shell bash edit agent lsp"}`})

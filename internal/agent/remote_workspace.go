@@ -14,6 +14,7 @@ func (c *coordinator) buildRemoteWorkspaceTools(agent config.Agent, isSubAgent b
 		tools.NewTodosTool(c.sessions),
 		tools.NewFetchTool(c.permissions, c.cfg.WorkingDir(), nil),
 		tools.NewSourcegraphTool(nil),
+		tools.NewMCPJobTool(c.cfg),
 	}
 	if !isSubAgent && c.interactive {
 		candidates = append(candidates, tools.NewQuestionTool(c.questions))
@@ -25,7 +26,7 @@ func (c *coordinator) buildRemoteWorkspaceTools(agent config.Agent, isSubAgent b
 		}
 	}
 	var mcpEntries []tools.SmartSearchEntry
-	for _, tool := range tools.GetMCPTools(c.permissions, c.cfg, c.cfg.WorkingDir()) {
+	for _, tool := range tools.GetMCPTools(c.permissions, c.cfg, c.cfg.WorkingDir(), c.wakeOnMCPJob) {
 		if !c.cfg.Config().IsDesktopMCP(tool.MCP(), c.cfg.WorkingDir()) || !agentAllowsMCPTool(agent, tool) {
 			continue
 		}

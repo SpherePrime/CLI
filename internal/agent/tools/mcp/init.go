@@ -975,6 +975,7 @@ func createSession(ctx context.Context, cfg *config.ConfigStore, name string, m 
 	// as fatal and tears the connection down. Setting the flag lets those
 	// servers connect at the cost of live list-changed notifications.
 	opts := &mcp.ClientOptions{
+		ProgressNotificationHandler: recordProgress,
 		LoggingMessageHandler: func(ctx context.Context, req *mcp.LoggingMessageRequest) {
 			level := parseLevel(string(req.Params.Level))
 			slog.Log(ctx, level, "MCP log", "name", name, "logger", req.Params.Logger, "data", req.Params.Data)
