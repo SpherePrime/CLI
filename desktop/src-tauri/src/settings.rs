@@ -46,7 +46,7 @@ impl Settings {
                     .is_some_and(|value| (200.0..=500.0).contains(&value)),
                 "inspectorWidth" => value
                     .as_f64()
-                    .is_some_and(|value| (260.0..=800.0).contains(&value)),
+                    .is_some_and(|value| (260.0..=10000.0).contains(&value)),
                 "recent" | "pinned" => value
                     .as_array()
                     .is_some_and(|items| items.len() <= 1000 && items.iter().all(Value::is_string)),
@@ -117,5 +117,9 @@ mod tests {
         assert_eq!(persisted["drafts"], json!({"one":"first","two":"second"}));
         assert!(settings.update(&json!({"sidebarWidth":-1})).is_err());
         assert_eq!(settings.get()["sidebarWidth"], 256);
+        settings.update(&json!({"inspectorWidth":1200.0})).unwrap();
+        assert_eq!(settings.get()["inspectorWidth"], 1200.0);
+        let persisted = Settings::load(directory.path()).unwrap().get();
+        assert_eq!(persisted["inspectorWidth"], 1200.0);
     }
 }
