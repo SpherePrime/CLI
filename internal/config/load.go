@@ -134,6 +134,7 @@ func Load(workingDir, dataDir string, debug bool) (*ConfigStore, error) {
 	if err := cfg.configureProviders(context.Background(), store, env, valueResolver, store.knownProviders); err != nil {
 		return nil, fmt.Errorf("failed to configure providers: %w", err)
 	}
+	store.flushDiscoveredModels()
 
 	if !cfg.IsConfigured() {
 		slog.Warn("No providers configured")
@@ -574,25 +575,25 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			continue
 		}
 
-		// Apply discovery results if available.
+		storedModels := providerConfig.Models
+		discoveryAttempted := false
 		if result, ok := discoveryResults[id]; ok {
+			discoveryAttempted = true
 			if result.err != nil {
 				slog.Warn("Model discovery failed", "provider", id, "error", result.err)
-				if len(providerConfig.Models) == 0 {
-					slog.Warn("Skipping provider with no models after failed discovery", "provider", id)
-					c.Providers.Del(id)
-					continue
-				}
 			} else if len(result.models) > 0 {
 				providerConfig.Models = result.models
 				slog.Info("Discovered models for provider", "provider", id, "count", len(result.models))
 			}
 		}
 
-		if len(providerConfig.Models) == 0 {
+		if len(providerConfig.Models) == 0 && !discoveryAttempted {
 			slog.Warn("Skipping custom provider because the provider has no models", "provider", id)
 			c.Providers.Del(id)
 			continue
+		}
+		if len(providerConfig.Models) > 0 && discoveredModelsDiffer(storedModels, providerConfig.Models) {
+			store.queueDiscoveredModels(id, providerConfig.Models)
 		}
 
 		// Custom-provider headers share the MCP error contract; see
@@ -613,7 +614,14 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 		c.Providers.Set(id, providerConfig)
 	}
 
-	if c.Providers.Len() == 0 && c.Options.DisableDefaultProviders {
+	hasUsableModels := false
+	for _, provider := range c.Providers.Seq2() {
+		if len(provider.Models) > 0 {
+			hasUsableModels = true
+			break
+		}
+	}
+	if !hasUsableModels && c.Options.DisableDefaultProviders {
 		return fmt.Errorf("default providers are disabled and there are no custom providers are configured")
 	}
 
@@ -873,23 +881,26 @@ func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (large
 		return largeModel, smallModel, err
 	}
 
-	providerConfig := enabledProviders[0]
-	if len(providerConfig.Models) == 0 {
-		err = fmt.Errorf("provider %s has no models configured", providerConfig.ID)
-		return largeModel, smallModel, err
+	for _, providerConfig := range enabledProviders {
+		if len(providerConfig.Models) == 0 {
+			slog.Warn("Skipping provider without models for default selection", "provider", providerConfig.ID)
+			continue
+		}
+		defaultLargeModel := c.GetModel(providerConfig.ID, providerConfig.Models[0].ID)
+		largeModel = SelectedModel{
+			Provider:  providerConfig.ID,
+			Model:     defaultLargeModel.ID,
+			MaxTokens: defaultLargeModel.DefaultMaxTokens,
+		}
+		defaultSmallModel := c.GetModel(providerConfig.ID, providerConfig.Models[0].ID)
+		smallModel = SelectedModel{
+			Provider:  providerConfig.ID,
+			Model:     defaultSmallModel.ID,
+			MaxTokens: defaultSmallModel.DefaultMaxTokens,
+		}
+		return largeModel, smallModel, nil
 	}
-	defaultLargeModel := c.GetModel(providerConfig.ID, providerConfig.Models[0].ID)
-	largeModel = SelectedModel{
-		Provider:  providerConfig.ID,
-		Model:     defaultLargeModel.ID,
-		MaxTokens: defaultLargeModel.DefaultMaxTokens,
-	}
-	defaultSmallModel := c.GetModel(providerConfig.ID, providerConfig.Models[0].ID)
-	smallModel = SelectedModel{
-		Provider:  providerConfig.ID,
-		Model:     defaultSmallModel.ID,
-		MaxTokens: defaultSmallModel.DefaultMaxTokens,
-	}
+	err = fmt.Errorf("provider %s has no models configured", enabledProviders[0].ID)
 	return largeModel, smallModel, err
 }
 

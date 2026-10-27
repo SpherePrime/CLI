@@ -98,6 +98,7 @@ type ConfigStore struct {
 	workspacePath      string   // .prime/prime.json
 	loadedPaths        []string // config files that were successfully loaded
 	knownProviders     []catwalk.Provider
+	pendingDiscovery   []discoveredModelUpdate
 	overrides          RuntimeOverrides
 	trackedConfigPaths []string                // unique, normalized config file paths
 	snapshots          map[string]fileSnapshot // path -> snapshot at last capture
@@ -1557,6 +1558,8 @@ func (s *ConfigStore) reloadFromDiskLocked(ctx context.Context) error {
 		s.workspacePath = oldWorkspacePath
 		return setupErr
 	}
+
+	s.flushDiscoveredModels()
 
 	// Rebuild staleness tracking. Track every discovered config path, not
 	// just the ones that loaded, so a config file created after this reload

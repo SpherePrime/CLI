@@ -1145,7 +1145,7 @@ func TestConfig_configureProvidersCustomProviderValidation(t *testing.T) {
 		require.Error(t, err, "the sole custom provider is invalid after resolution, so configuration must fail")
 	})
 
-	t.Run("custom provider with no models attempts discovery and is removed on failure", func(t *testing.T) {
+	t.Run("custom provider with no models attempts discovery and is kept on failure", func(t *testing.T) {
 		cfg := &Config{
 			Providers: csync.NewMapFrom(map[string]ProviderConfig{
 				"custom": {
@@ -1162,10 +1162,10 @@ func TestConfig_configureProvidersCustomProviderValidation(t *testing.T) {
 		err := cfg.configureProviders(context.Background(), testStore(cfg), env, resolver, []catwalk.Provider{})
 		require.NoError(t, err)
 
-		// Discovery fails (unreachable URL) so provider is removed.
-		require.Equal(t, 0, cfg.Providers.Len())
-		_, exists := cfg.Providers.Get("custom")
-		require.False(t, exists)
+		require.Equal(t, 1, cfg.Providers.Len())
+		p, exists := cfg.Providers.Get("custom")
+		require.True(t, exists)
+		require.Empty(t, p.Models)
 	})
 
 	t.Run("custom provider with no models and discover_models:false is removed", func(t *testing.T) {
@@ -1927,8 +1927,9 @@ func TestConfig_configureProvidersDisableDefaultProviders(t *testing.T) {
 		err := cfg.configureProviders(context.Background(), testStore(cfg), env, resolver, []catwalk.Provider{})
 		require.ErrorContains(t, err, "no custom providers")
 
-		// Discovery fails (unreachable URL) so provider is removed.
-		require.Equal(t, 0, cfg.Providers.Len())
+		require.Equal(t, 1, cfg.Providers.Len())
+		_, exists := cfg.Providers.Get("my-llm")
+		require.True(t, exists)
 	})
 
 	t.Run("when enabled, provider missing base_url is rejected", func(t *testing.T) {
