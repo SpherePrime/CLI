@@ -55,6 +55,12 @@ func (c *coordinator) reserveWorker(job *agentJob) bool {
 }
 
 func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
+	defer func() {
+		if failure := recover(); failure != nil {
+			job.finish("error", fmt.Sprintf("Agent stopped unexpectedly: %v", failure))
+			c.wakeOnAgentJob(job)
+		}
+	}()
 	for {
 		for !c.reserveWorker(job) {
 			select {
@@ -134,7 +140,7 @@ func (c *coordinator) wakeOnAgentJob(job *agentJob) {
 		return
 	}
 	job.mu.Lock()
-	shouldWake := job.wake && !job.seen
+	shouldWake := job.wake && !job.seen && job.status != "running" && job.status != "queued"
 	root := job.rootSessionID
 	job.mu.Unlock()
 	if !shouldWake {
@@ -155,52 +161,107 @@ func (c *coordinator) wakeOnAgentJob(job *agentJob) {
 
 func (c *coordinator) deliverTeamNotices(root string) {
 	ctx := message.WithHiddenUserMessage(c.workerContext())
+	defer func() {
+		c.teamNoticeMu.Lock()
+		delete(c.teamNoticePending, root)
+		c.teamNoticeMu.Unlock()
+		if ctx.Err() == nil {
+			for _, job := range c.registrySnapshot() {
+				if job.rootSessionID == root {
+					c.wakeOnAgentJob(job)
+				}
+			}
+		}
+	}()
 	select {
 	case <-ctx.Done():
 	case <-time.After(teamNoticeSettle):
 	}
 	for ctx.Err() == nil {
 		a := c.currentAgent()
-		if a == nil || !a.IsSessionBusy(root) {
-			break
+		if a != nil && a.IsSessionBusy(root) && !c.hasFailedTeamNotice(root) {
+			select {
+			case <-ctx.Done():
+			case <-time.After(backgroundWakeIdlePoll):
+			}
+			continue
+		}
+		prompt, claims := c.collectTeamNotices(root)
+		if prompt == "" {
+			return
+		}
+		if c.dispatchTeamNotice(ctx, root, prompt) {
+			for _, claim := range claims {
+				claim.job.mu.Lock()
+				if claim.job.generation == claim.generation {
+					claim.job.seen = true
+				}
+				claim.job.mu.Unlock()
+			}
+			return
 		}
 		select {
 		case <-ctx.Done():
-		case <-time.After(backgroundWakeIdlePoll):
+		case <-time.After(time.Second):
 		}
-	}
-	c.teamNoticeMu.Lock()
-	delete(c.teamNoticePending, root)
-	c.teamNoticeMu.Unlock()
-	if ctx.Err() != nil {
-		return
-	}
-	prompt := c.collectTeamNotices(root)
-	if prompt == "" {
-		return
-	}
-	if c.backgroundWakeRunner != nil {
-		c.backgroundWakeRunner(ctx, root, prompt)
-	} else {
-		_, _ = c.Run(ctx, root, prompt)
 	}
 }
 
-func (c *coordinator) collectTeamNotices(root string) string {
+func (c *coordinator) dispatchTeamNotice(ctx context.Context, root, prompt string) bool {
+	if c.backgroundWakeRunner != nil {
+		c.backgroundWakeRunner(ctx, root, prompt)
+		return true
+	}
+	marker := &runAcceptance{accepted: make(chan struct{})}
+	dispatchContext := context.WithValue(ctx, runAcceptanceKey{}, marker)
+	finished := make(chan error, 1)
+	go func() {
+		_, err := c.Run(dispatchContext, root, prompt)
+		finished <- err
+	}()
+	select {
+	case <-marker.accepted:
+		return true
+	case err := <-finished:
+		return err == nil || marker.confirmed()
+	case <-ctx.Done():
+		return marker.confirmed()
+	}
+}
+
+func (c *coordinator) hasFailedTeamNotice(root string) bool {
+	for _, job := range c.registrySnapshot() {
+		job.mu.Lock()
+		failed := job.rootSessionID == root && job.wake && !job.seen && (job.status == "error" || job.status == "canceled")
+		job.mu.Unlock()
+		if failed {
+			return true
+		}
+	}
+	return false
+}
+
+type teamNoticeClaim struct {
+	job        *agentJob
+	generation uint64
+}
+
+func (c *coordinator) collectTeamNotices(root string) (string, []teamNoticeClaim) {
 	var reports []string
+	var claims []teamNoticeClaim
 	for _, job := range c.registrySnapshot() {
 		job.mu.Lock()
 		ready := job.rootSessionID == root && job.wake && !job.seen && job.status != "running" && job.status != "queued"
 		if ready {
-			job.seen = true
+			claims = append(claims, teamNoticeClaim{job: job, generation: job.generation})
 			reports = append(reports, fmt.Sprintf("Agent %s (%s, id %s) finished with status %s.\n%s", job.name, job.agent, job.id, job.status, job.output))
 		}
 		job.mu.Unlock()
 	}
 	if len(reports) == 0 {
-		return ""
+		return "", nil
 	}
-	return "Automatic team notice with new results from your agents:\n\n" + strings.Join(reports, "\n\n---\n\n") + "\n\nIntegrate these results and assign follow-up or review work if needed. Results you already handled are not repeated here. If nothing remains to do, finish with a one-line status without restating earlier reports."
+	return "Automatic team notice with new results from your agents:\n\n" + strings.Join(reports, "\n\n---\n\n") + "\n\nIntegrate these results and assign follow-up or review work if needed. Agents with status error or canceled have stopped: do not keep waiting for them. Diagnose the failure, continue their work yourself or give a worker a new assignment. Results you already handled are not repeated here. If nothing remains to do, finish with a one-line status without restating earlier reports.", claims
 }
 
 func (c *coordinator) workerContext() context.Context {

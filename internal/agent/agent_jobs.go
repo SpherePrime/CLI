@@ -103,7 +103,9 @@ Operations:
 
 Do not poll or wait for agents. Their results and messages arrive
 automatically as team notices once your current turn ends, so end the turn
-or keep working on your own part instead of checking on them.`
+or keep working on your own part instead of checking on them. Worker failures
+and cancellations are delivered into your active turn at the next step:
+continue or reassign the stopped work instead of waiting for that worker.`
 
 // startAgentJob registers a background sub-agent run. The sub-session is
 // created synchronously so it is immediately visible in the session list

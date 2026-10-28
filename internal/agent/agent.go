@@ -673,6 +673,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		// back to the default broker publish, which is what existing
 		// subscribers expect.
 		a.enqueueCall(call)
+		markRunAccepted(ctx)
 		earlySteering = nil
 		if call.Accepted != nil {
 			call.Accepted.Close()
@@ -772,6 +773,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		return nil, err
 	}
 	userMsgCreated = true
+	markRunAccepted(ctx)
 
 	// Add the session to the context. The run context (genCtx) and its
 	// cancel func were already created and registered under the dispatch
