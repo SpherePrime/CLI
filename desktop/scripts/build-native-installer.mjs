@@ -19,7 +19,17 @@ const directory = mkdtempSync(join(tmpdir(), 'prime-native-build-'))
 try {
   const config = join(directory, 'updater.json')
   writeFileSync(config, JSON.stringify({
-    bundle: { createUpdaterArtifacts: signed, resources: { [`engine/${library}`]: `engine/${library}`, 'engine/manifest.json': 'engine/manifest.json' } },
+    bundle: {
+      createUpdaterArtifacts: signed,
+      resources: { [`engine/${library}`]: `engine/${library}`, 'engine/manifest.json': 'engine/manifest.json' },
+      ...(process.platform === 'linux' ? {
+        linux: {
+          appimage: { bundleMediaFramework: true },
+          deb: { depends: ['libwebkit2gtk-4.1-0', 'libgtk-3-0', 'libssl3', 'libayatana-appindicator3-1', 'gstreamer1.0-plugins-base', 'gstreamer1.0-plugins-good'] },
+          rpm: { depends: ['libwebkit2gtk-4.1.so.0()(64bit)', 'libgtk-3.so.0()(64bit)', 'libssl.so.3()(64bit)', 'libcrypto.so.3()(64bit)', 'libayatana-appindicator3.so.1()(64bit)'] }
+        }
+      } : {})
+    },
     ...(signed ? { plugins: { updater: { pubkey: publicKey, endpoints: [endpoint] } } } : {})
   }))
   const executable = join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js')

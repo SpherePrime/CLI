@@ -79,9 +79,13 @@ Releases are built locally on Windows and published to GitHub Releases:
 Prime.bat release
 ```
 
-It builds the CLI archives, the Prime Desktop setup, the signed NSIS update and
-`latest.json`, then starts the Release workflow, which adds only the Linux desktop
-packages. The updater signing key is read from `%USERPROFILE%\.tauri\prime-updater.key`
+It builds the CLI archives, the signed Prime Desktop setup and `latest.json`,
+then starts the Release workflow for Linux. Desktop installers are
+`PrimeDesktop-Setup-<version>.exe` and `PrimeDesktop-Setup-<version>.AppImage`.
+The Linux setup selects DEB or RPM and installs dependencies with the system
+package manager, or installs AppImage in the user profile on other distributions.
+Linux builds require Ubuntu 22.04 / Debian 12 or newer. Updates preserve the
+installed package format. The updater signing key is read from `%USERPROFILE%\.tauri\prime-updater.key`
 (or `PRIME_UPDATER_KEY_FILE` / `TAURI_SIGNING_PRIVATE_KEY`); its password from
 `prime-updater.password` next to it (or `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`).
 

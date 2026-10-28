@@ -1517,7 +1517,7 @@ echo  Release: %TAG%
 for /f "usebackq delims=" %%u in (`gh release view "%TAG%" --json url --jq .url 2^>nul`) do echo           %%u
 echo.
 echo  CLI archives and checksums: built here.
-if "!DESKTOP_RELEASE!"=="1" echo  Desktop Windows setup, NSIS update and latest.json: built here.
+if "!DESKTOP_RELEASE!"=="1" echo  Desktop Windows signed setup and latest.json: built here.
 if "!LINUX_DISPATCHED!"=="1" echo  Desktop Linux packages: Release workflow, about fifteen minutes. Watch: gh run watch
 exit /b 0
 
@@ -1584,7 +1584,7 @@ echo                      shown before a release starts.
 echo   --no-desktop     ship the CLI only, without Prime Desktop
 echo.
 echo   Everything is built on this machine: CLI archives with completions and
-echo   manpages, the Prime Desktop Windows setup, the signed NSIS update and
+echo   manpages, the signed Prime Desktop Windows setup and
 echo   latest.json. Only the Linux desktop packages are built by the Release
 echo   workflow, started after the publish. Signing key:
 echo   %%USERPROFILE%%\.tauri\prime-updater.key, PRIME_UPDATER_KEY_FILE or
