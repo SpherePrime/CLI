@@ -24,6 +24,7 @@ npm run dev
 ```powershell
 npm run typecheck
 npm run test:unit
+npm run test:packaging
 cargo test --manifest-path src-tauri/Cargo.toml --lib
 npm run dist:win
 npm run dist:linux
@@ -31,8 +32,15 @@ npm run dist:linux
 
 `npm run dist:win` builds the NSIS package (`src-tauri/target/release/bundle/nsis/`) and the custom installer `src-tauri/target/release/bundle/setup/PrimeDesktop-Setup-<version>.exe`.
 
+`npm run dist:linux` builds the application packages and the custom installer
+`src-tauri/target/release/bundle/setup/PrimeDesktop-Setup-<version>.AppImage`.
+Build on Ubuntu 22.04 for the supported Linux baseline.
+
 ## Installer
 
 `installer/` is a small Tauri application with the Prime Desktop setup interface. The NSIS package is embedded into the executable and verified by SHA-256 before installation. Setup removes previous Electron and preview installations (application files only, user data is kept), installs into `%LOCALAPPDATA%\Programs\Prime Desktop` and downloads the voice model. Existing installations are updated in place.
 
 Automatic updates use the signed Tauri updater feed (`latest.json`) published with stable GitHub releases.
+Windows updates open the signed custom setup. Linux setup detects the distribution,
+installs DEB/RPM with dependencies through APT, DNF or Zypper, and uses a user-local
+AppImage on other distributions. Linux updates keep the installed package format.

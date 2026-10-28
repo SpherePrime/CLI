@@ -2,8 +2,18 @@
 #[path = "../../../src-tauri/src/error.rs"]
 mod error;
 mod install;
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(any(target_os = "linux", test))]
+mod linux_plan;
 mod payload;
+#[cfg(not(target_os = "linux"))]
 mod processes;
+#[cfg(target_os = "linux")]
+mod processes {
+    pub use crate::linux::app_running;
+}
+#[cfg(not(target_os = "linux"))]
 mod registry;
 mod status;
 mod voice;
@@ -22,15 +32,19 @@ fn active(state: &SetupState) -> bool {
 
 #[tauri::command]
 fn setup_info() -> Result<SetupInfo, String> {
-    let existing = registry::current_install();
-    Ok(SetupInfo::new(
+    let existing = install::current_install();
+    let mut info = SetupInfo::new(
         env!("CARGO_PKG_VERSION"),
-        existing
-            .clone()
-            .unwrap_or_else(install::default_directory),
+        existing.clone().unwrap_or_else(install::default_directory),
         payload::INSTALLED_SIZE,
         existing.is_some(),
-    ))
+    );
+    info.method.directory_locked = install::directory_locked();
+    #[cfg(target_os = "linux")]
+    {
+        info.method.label = linux::method_label();
+    }
+    Ok(info)
 }
 
 #[tauri::command]
@@ -38,7 +52,7 @@ async fn setup_choose_directory(
     state: State<'_, SetupState>,
     current: String,
 ) -> Result<Option<String>, String> {
-    if active(&state) || registry::current_install().is_some() {
+    if active(&state) || install::directory_locked() {
         return Ok(None);
     }
     let picked = rfd::AsyncFileDialog::new()
@@ -51,7 +65,7 @@ async fn setup_choose_directory(
 
 #[tauri::command]
 async fn setup_install(app: AppHandle, directory: String) -> Result<InstallStatus, String> {
-    let directory = match registry::current_install() {
+    let directory = match install::current_install() {
         Some(existing) => existing,
         None => directory,
     };
@@ -77,8 +91,7 @@ fn setup_open(app: AppHandle, state: State<'_, SetupState>) -> Result<(), String
         ("complete", Some(directory)) => directory,
         _ => return Err("Установка не завершена".into()),
     };
-    processes::launch(&install::executable(&directory))
-        .map_err(|_| "Не удалось открыть приложение".to_string())?;
+    install::launch(&directory).map_err(|_| "Не удалось открыть приложение".to_string())?;
     app.exit(0);
     Ok(())
 }

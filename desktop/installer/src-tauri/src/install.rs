@@ -1,14 +1,20 @@
-use crate::{payload, processes, registry, status::InstallStatus, voice::assets, SetupState};
+#[cfg(not(target_os = "linux"))]
+use crate::registry;
+use crate::{payload, processes, status::InstallStatus, voice::assets, SetupState};
+use std::sync::atomic::AtomicBool;
+#[cfg(not(target_os = "linux"))]
 use std::{
     io::Write,
     path::{Path, PathBuf},
-    sync::atomic::AtomicBool,
 };
 use tauri::{AppHandle, Emitter, Manager};
 
+#[cfg(not(target_os = "linux"))]
 const EXECUTABLE: &str = "PrimeDesktop.exe";
+#[cfg(not(target_os = "linux"))]
 const ENGINE: &str = "engine/prime_desktop_engine.dll";
 
+#[cfg(not(target_os = "linux"))]
 pub fn default_directory() -> String {
     std::env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
@@ -19,10 +25,12 @@ pub fn default_directory() -> String {
         .into_owned()
 }
 
+#[cfg(not(target_os = "linux"))]
 pub fn executable(directory: &str) -> PathBuf {
     Path::new(directory).join(EXECUTABLE)
 }
 
+#[cfg(not(target_os = "linux"))]
 pub fn validate_directory(directory: &str) -> Result<(), String> {
     let path = Path::new(directory);
     if directory.len() > 240
@@ -70,16 +78,25 @@ fn install(app: &AppHandle, directory: &str) -> Result<Option<String>, String> {
         );
     }
     publish(app, InstallStatus::phase("installing", directory));
+    #[cfg(not(target_os = "linux"))]
     remove_legacy_installs()?;
+    #[cfg(not(target_os = "linux"))]
     run_payload(directory)?;
+    #[cfg(target_os = "linux")]
+    crate::linux::install(directory)?;
     publish(app, InstallStatus::phase("verifying", directory));
+    #[cfg(not(target_os = "linux"))]
     let root = Path::new(directory);
+    #[cfg(not(target_os = "linux"))]
     if !root.join(EXECUTABLE).is_file() || !root.join(ENGINE).is_file() {
         return Err("Файлы приложения не найдены".into());
     }
+    #[cfg(target_os = "linux")]
+    crate::linux::verify(directory)?;
     Ok(prepare_voice(app, directory))
 }
 
+#[cfg(not(target_os = "linux"))]
 fn remove_legacy_installs() -> Result<(), String> {
     for legacy in registry::legacy_installs() {
         let uninstaller = Path::new(&legacy.uninstaller);
@@ -106,6 +123,7 @@ fn remove_legacy_installs() -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(not(target_os = "linux"))]
 fn run_payload(directory: &str) -> Result<(), String> {
     let mut file = tempfile::Builder::new()
         .prefix("prime-desktop-")
@@ -156,4 +174,33 @@ fn prepare_voice(app: &AppHandle, directory: &str) -> Option<String> {
         "Голосовая модель не скачалась. Prime докачает её при первом голосовом разговоре."
             .to_string()
     })
+}
+
+#[cfg(target_os = "linux")]
+pub use crate::linux::{default_directory, validate_directory};
+
+pub fn current_install() -> Option<String> {
+    #[cfg(target_os = "linux")]
+    {
+        crate::linux::current_install()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        registry::current_install()
+    }
+}
+
+pub fn directory_locked() -> bool {
+    cfg!(target_os = "linux") || current_install().is_some()
+}
+
+pub fn launch(directory: &str) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        crate::linux::launch(directory)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        processes::launch(&executable(directory)).map_err(|error| error.to_string())
+    }
 }
