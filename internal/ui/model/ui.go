@@ -6038,10 +6038,6 @@ func (m *UI) handlePermissionNotification(notification permission.PermissionNoti
 	}
 }
 
-// maxAutoContinues caps how many consecutive auto-continue retries are
-// sent for one failing burst before giving up and reporting the stop.
-const maxAutoContinues = 10
-
 // maybeAutoContinue resumes a run that stopped on a provider error when the
 // auto-continue option is on. A cancelled run and a normally-finished run
 // never trigger it; a healthy finish also resets the retry counter so the
@@ -6063,7 +6059,7 @@ func (m *UI) maybeAutoContinue(rc notify.RunComplete) tea.Cmd {
 	if cfg == nil || cfg.Options == nil || !cfg.Options.AutoContinue {
 		return nil
 	}
-	if m.autoContinueCount >= maxAutoContinues {
+	if m.autoContinueCount >= cfg.Options.GetAutoContinueAttempts() {
 		return util.CmdHandler(util.NewInfoMsg(m.com.LSprintf("info.auto_continue_stopped", m.autoContinueCount)))
 	}
 	m.autoContinueCount++

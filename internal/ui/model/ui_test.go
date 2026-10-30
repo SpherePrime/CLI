@@ -541,7 +541,7 @@ func TestMaybeAutoContinue_StopsAfterMaxAttempts(t *testing.T) {
 	ws.cfg.Options.AutoContinue = true
 	ws.agentReady = true
 
-	u.autoContinueCount = maxAutoContinues
+	u.autoContinueCount = config.DefaultAutoContinueAttempts
 	cmd := u.maybeAutoContinue(notify.RunComplete{SessionID: "sess-1", Error: "still broken"})
 	require.NotNil(t, cmd)
 
@@ -549,6 +549,27 @@ func TestMaybeAutoContinue_StopsAfterMaxAttempts(t *testing.T) {
 	_, ok := msg.(util.InfoMsg)
 	require.True(t, ok, "past the budget the UI must report the stop instead of resending")
 	require.Empty(t, ws.runPrompts)
+}
+
+func TestMaybeAutoContinue_HonorsConfiguredAttempts(t *testing.T) {
+	t.Parallel()
+	u, ws := newPlanUI(t, "sess-1")
+	u.mode = uiInputModeCode
+	ws.cfg.Options.AutoContinue = true
+	attempts := 3
+	ws.cfg.Options.AutoContinueAttempts = &attempts
+	ws.agentReady = true
+
+	u.autoContinueCount = 2
+	cmd := u.maybeAutoContinue(notify.RunComplete{SessionID: "sess-1", Error: "still broken"})
+	require.NotNil(t, cmd)
+	runAutoContinueCmd(t, u, cmd)
+	require.Equal(t, []bool{true}, ws.runHidden, "the continuation must stay out of the chat")
+
+	cmd = u.maybeAutoContinue(notify.RunComplete{SessionID: "sess-1", Error: "still broken"})
+	require.NotNil(t, cmd)
+	_, ok := cmd().(util.InfoMsg)
+	require.True(t, ok, "the configured budget must replace the default")
 }
 
 func TestMaybeAutoContinue_HiddenSendKeepsCounter(t *testing.T) {

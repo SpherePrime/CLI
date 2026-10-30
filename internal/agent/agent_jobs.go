@@ -218,21 +218,35 @@ func (c *coordinator) runAgentJob(job *agentJob, ctx context.Context, params sub
 
 // invokeSubAgent is the shared execution core of runSubAgent and
 // runAgentJob: run the agent and surface a re-auth notice when one is
-// needed.
+// needed. When auto-continue is on, a run that stopped on a provider error
+// is resumed with a continuation prompt so a worker recovers on its own
+// instead of reporting a failure the primary chat has to retry by hand.
 func (c *coordinator) invokeSubAgent(ctx context.Context, params subAgentParams, sessionID string, model Model, maxTokens int64, providerCfg config.ProviderConfig) (*fantasy.AgentResult, error) {
-	result, err := params.Agent.Run(ctx, SessionAgentCall{
-		SessionID:        sessionID,
-		Prompt:           params.Prompt,
-		MaxOutputTokens:  maxTokens,
-		ProviderOptions:  getProviderOptions(model, providerCfg),
-		Temperature:      model.ModelCfg.Temperature,
-		TopP:             model.ModelCfg.TopP,
-		TopK:             callTopK(providerCfg, model.ModelCfg.TopK),
-		FrequencyPenalty: model.ModelCfg.FrequencyPenalty,
-		PresencePenalty:  model.ModelCfg.PresencePenalty,
-		NonInteractive:   true,
-		OnAuthRefresh:    c.makeAuthRefreshCallback(providerCfg),
-	})
+	run := func(prompt string, hidden bool) (*fantasy.AgentResult, error) {
+		return params.Agent.Run(ctx, SessionAgentCall{
+			SessionID:         sessionID,
+			Prompt:            prompt,
+			HiddenUserMessage: hidden,
+			MaxOutputTokens:   maxTokens,
+			ProviderOptions:   getProviderOptions(model, providerCfg),
+			Temperature:       model.ModelCfg.Temperature,
+			TopP:              model.ModelCfg.TopP,
+			TopK:              callTopK(providerCfg, model.ModelCfg.TopK),
+			FrequencyPenalty:  model.ModelCfg.FrequencyPenalty,
+			PresencePenalty:   model.ModelCfg.PresencePenalty,
+			NonInteractive:    true,
+			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
+		})
+	}
+	result, err := run(params.Prompt, false)
+	for attempt := 0; autoContinueEnabled(c.cfg.Config(), ctx, err, attempt); attempt++ {
+		slog.Info("Continuing agent after provider error",
+			"session", sessionID,
+			"attempt", attempt+1,
+			"error", err,
+		)
+		result, err = run(autoContinuePrompt, true)
+	}
 	// Notify only if still unauthorized after retry. AWS SSO is handled
 	// transparently inside OnAuthRefresh, so it needs no post-run notice.
 	if err != nil && isUnauthorized(err) && c.notify != nil && model.ModelCfg.Provider == hyper.Name {

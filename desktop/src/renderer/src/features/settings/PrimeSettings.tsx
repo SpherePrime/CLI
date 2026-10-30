@@ -103,6 +103,26 @@ export function PrimeSettings({ workspace: w }: { workspace: Workspace }) {
           </label>
         ))}
         <label className="form-label">
+          {t('Попыток автопродолжения')}
+          <input
+            key={options.auto_continue_attempts}
+            type="number"
+            min={1}
+            max={100}
+            defaultValue={options.auto_continue_attempts || 10}
+            onBlur={(event) => {
+              const value = Number(event.target.value)
+              if (
+                Number.isInteger(value) &&
+                value >= 1 &&
+                value <= 100 &&
+                value !== (options.auto_continue_attempts || 10)
+              )
+                void save('auto_continue_attempts', value)
+            }}
+          />
+        </label>
+        <label className="form-label">
           {t('Сжимать контекст при заполнении, %')}
           <input
             key={options.auto_summarize_percent}

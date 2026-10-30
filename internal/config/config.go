@@ -607,6 +607,10 @@ type Options struct {
 	DisableMultiAgent   bool `json:"disable_multi_agent,omitempty" jsonschema:"description=Disable new worker launches and follow-up assignments,default=false"`
 	MaxConcurrentAgents int  `json:"max_concurrent_agents,omitempty" jsonschema:"description=Maximum simultaneously active workers per primary chat; zero uses ten,minimum=0,default=10"`
 	AutoContinue        bool `json:"auto_continue,omitempty" jsonschema:"description=Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit\\, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.,default=false"`
+	// AutoContinueAttempts bounds how many consecutive continuations one run
+	// gets after provider errors before the failure is reported. 0 uses the
+	// default of 10.
+	AutoContinueAttempts *int `json:"auto_continue_attempts,omitempty" jsonschema:"description=How many times a run is continued automatically after a provider error before the failure is reported. Applies to the chat and to its agents. 0 uses the default of 10.,minimum=0,default=10,example=3,example=50"`
 	// KeyBindings remaps a key to a different action, by name. The actions are
 	// the keymap's own field paths: "chat.new_session", "editor.send_message",
 	// "app.quit". A value may list several keys separated by a comma, and an
@@ -654,6 +658,9 @@ const (
 	// DefaultMaxParallelTools is how many parallel tool calls - and with it
 	// sub-agents launched in one message - run at once when unset.
 	DefaultMaxParallelTools = 5
+	// DefaultAutoContinueAttempts is how many consecutive continuations one
+	// run gets after provider errors before the failure is reported.
+	DefaultAutoContinueAttempts = 10
 )
 
 // clampAutoSummarizePercent keeps a configured percentage inside a range that
@@ -683,6 +690,17 @@ func (o *Options) GetMaxConcurrentAgents() int {
 		return 10
 	}
 	return o.MaxConcurrentAgents
+}
+
+// GetAutoContinueAttempts returns how many consecutive continuations one run
+// gets after provider errors. A nil receiver, an unset value, zero and a
+// negative value all resolve to the default, matching the "0 uses the
+// default" rule in the field's own doc.
+func (o *Options) GetAutoContinueAttempts() int {
+	if o == nil || o.AutoContinueAttempts == nil || *o.AutoContinueAttempts <= 0 {
+		return DefaultAutoContinueAttempts
+	}
+	return *o.AutoContinueAttempts
 }
 
 // GetAutoSummarizePercent returns the global default threshold: how full the
