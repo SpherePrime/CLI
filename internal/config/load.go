@@ -16,7 +16,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/csync"
@@ -495,7 +494,6 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	discoverCtx, discoverCancel := context.WithTimeout(ctx, 3*time.Second)
 	for id, pc := range c.Providers.Seq2() {
 		if knownProviderNames[id] {
 			continue
@@ -525,6 +523,8 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			continue
 		}
 		wg.Go(func() {
+			discoverCtx, discoverCancel := context.WithTimeout(ctx, discover.ProviderDiscoveryTimeout)
+			defer discoverCancel()
 			models, err := discover.DiscoverModels(discoverCtx, cfg, resolver)
 			if err == nil && len(models) > 0 {
 				if enricher := discover.GetEnricher(string(providerType)); enricher != nil {
@@ -538,7 +538,6 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 		})
 	}
 	wg.Wait()
-	discoverCancel()
 
 	// Validate the custom providers.
 	for id, providerConfig := range c.Providers.Seq2() {
@@ -621,7 +620,7 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			break
 		}
 	}
-	if !hasUsableModels && c.Options.DisableDefaultProviders {
+	if !hasUsableModels && c.Options.DisableDefaultProviders && c.Providers.Len() == 0 {
 		return fmt.Errorf("default providers are disabled and there are no custom providers are configured")
 	}
 
@@ -836,7 +835,7 @@ func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (large
 	// if no provider found that is known use the first provider configured
 	for _, p := range knownProviders {
 		providerConfig, ok := c.Providers.Get(string(p.ID))
-		if !ok || providerConfig.Disable {
+		if !ok || providerConfig.Disable || len(providerConfig.Models) == 0 {
 			continue
 		}
 		defaultLargeModel := c.GetModel(string(p.ID), p.DefaultLargeModelID)

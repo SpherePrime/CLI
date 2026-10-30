@@ -1252,9 +1252,13 @@ func (c *Config) EnabledProviders() []ProviderConfig {
 	return enabled
 }
 
-// IsConfigured  return true if at least one provider is configured
 func (c *Config) IsConfigured() bool {
-	return len(c.EnabledProviders()) > 0
+	for _, provider := range c.EnabledProviders() {
+		if len(provider.Models) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Config) GetModel(provider, model string) *catwalk.Model {
