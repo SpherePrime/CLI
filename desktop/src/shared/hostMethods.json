@@ -22,7 +22,7 @@
   "remote": true,
   "remoteKey": true,
   "sudoPassword": true,
-  "closeProject": true,
+  "deleteProject": true,
   "call": true,
   "files": true,
   "saveFile": true,

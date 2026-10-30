@@ -11,6 +11,7 @@ import { useProjectReorder } from './useProjectReorder'
 import { useSessionReorder } from './useSessionReorder'
 import { watchProjectSessions } from './projectSessionEvents'
 import { ProjectCard } from './ProjectCard'
+import { DeleteProjectDialog } from './DeleteProjectDialog'
 import { SidebarSession } from './SidebarSession'
 import './projectNavigation.css'
 import './projectReorder.css'
@@ -32,6 +33,7 @@ export function SidebarChats({
   const [otherSessions, setOtherSessions] = useState<Record<string, Session[]>>({})
   const [closedSessions, setClosedSessions] = useState<Record<string, Session[]>>({})
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [deletingPath, setDeletingPath] = useState<string | null>(null)
   const projectIds = w.projects.map((project) => project.id).join('|')
   useEffect(() => {
     return watchProjectSessions(
@@ -150,6 +152,23 @@ export function SidebarChats({
       await w.openProject(path)
       await w.deleteSession(session.id)
       if (w.project) forgetSessionOrder(w.project.id, session.id)
+    } catch (error) {
+      w.errorHandler(error)
+    }
+  }
+  const removeProject = async (path: string) => {
+    const target = w.projects.find((project) => project.path === path)
+    const removed = (target ? sessionsOf(target) : closedSessionsOf(path)).map(
+      (session) => session.id
+    )
+    setDeletingPath(null)
+    try {
+      await w.deleteProject(path)
+      const saved = await window.prime.preferences()
+      await w.savePreferences({
+        projectOrder: (saved.projectOrder || []).filter((item) => item !== path),
+        pinned: saved.pinned.filter((id) => !removed.includes(id))
+      })
     } catch (error) {
       w.errorHandler(error)
     }
@@ -328,14 +347,7 @@ export function SidebarChats({
               headingProps={reorder.headingProps(path)}
               buttonProps={reorder.buttonProps(path)}
               onToggle={() => toggle(project ? project.id : path, open)}
-              onClose={() =>
-                project
-                  ? void w.closeProject(project.id)
-                  : void w.savePreferences({
-                      recent: w.preferences.recent.filter((item) => item !== path),
-                      projectOrder: projectPaths.filter((item) => item !== path)
-                    })
-              }
+              onClose={() => setDeletingPath(path)}
               onNewChat={() => void (project ? createProjectChat(project) : w.openProjectNewChat(path))}
             >
               {project ? (
@@ -436,6 +448,12 @@ export function SidebarChats({
           </div>,
           document.body
         )}
+      {deletingPath && (
+        <DeleteProjectDialog
+          close={() => setDeletingPath(null)}
+          remove={() => removeProject(deletingPath)}
+        />
+      )}
     </>
   )
 }

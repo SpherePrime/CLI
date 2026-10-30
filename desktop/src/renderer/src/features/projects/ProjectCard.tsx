@@ -66,10 +66,8 @@ export function ProjectCard({
         </button>
         <button
           className="icon small project-close"
-          title={closed ? t('Удалить из недавних') : t('Закрыть проект')}
-          aria-label={
-            closed ? t('Удалить из недавних') : t('Закрыть проект {value0}', { value0: path })
-          }
+          title={t('Удалить проект')}
+          aria-label={t('Удалить проект {value0}', { value0: path })}
           onClick={onClose}
         >
           <X size={12} />

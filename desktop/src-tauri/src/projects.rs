@@ -128,6 +128,114 @@ pub fn close(app: &tauri::AppHandle, state: &AppState, id: &str) -> HostResult<V
     Ok(Value::Null)
 }
 
+fn remove_path(values: &[Value], path: &str) -> Vec<Value> {
+    values
+        .iter()
+        .filter(|value| value.as_str() != Some(path))
+        .cloned()
+        .collect()
+}
+
+fn without_key(values: &Value, key: &str) -> Option<Value> {
+    let entries = values.as_object()?;
+    if !entries.contains_key(key) {
+        return None;
+    }
+    let mut cleared = serde_json::Map::new();
+    cleared.insert(key.to_owned(), Value::Null);
+    Some(Value::Object(cleared))
+}
+
+pub fn delete_project(app: &tauri::AppHandle, state: &AppState, path: &str) -> HostResult<Value> {
+    let project = state
+        .projects
+        .lock()
+        .unwrap()
+        .values()
+        .find(|project| project["path"].as_str() == Some(path))
+        .cloned();
+    let (workspace_id, client) = project
+        .as_ref()
+        .map(|project| {
+            (
+                project["id"].as_str().unwrap_or("").to_owned(),
+                project["clientId"].as_str().unwrap_or("").to_owned(),
+            )
+        })
+        .unwrap_or_default();
+    let local_path = if path.starts_with("prime-ssh://") {
+        let profile = state.remotes.profile(&crate::remote::profile_from_workspace(path)?)?;
+        crate::remote::workspace_directory(state, &profile)?
+            .to_string_lossy()
+            .into_owned()
+    } else {
+        dunce::canonicalize(path)?.to_string_lossy().into_owned()
+    };
+    if !workspace_id.is_empty() {
+        state.windows.forget(app, &workspace_id);
+        state.remotes.terminals.close_workspace(&workspace_id);
+        state.terminals.close_workspace(&workspace_id)?;
+        state.require_engine()?.unsubscribe(&workspace_id);
+    }
+    let engine = state.require_engine()?;
+    let temporary_client = if workspace_id.is_empty() {
+        Some(uuid::Uuid::new_v4().to_string())
+    } else {
+        None
+    };
+    let client_id = temporary_client.as_deref().unwrap_or(&client);
+    let workspace = if workspace_id.is_empty() {
+        engine.request(
+            "POST",
+            "/v1/workspaces",
+            Some(workspace_request(&local_path, client_id, data_directory(state, &local_path)?)),
+        )?
+    } else {
+        json!({"id": workspace_id})
+    };
+    let workspace_id = workspace["id"]
+        .as_str()
+        .ok_or_else(|| HostError::new("ENGINE_RESPONSE", "Workspace response has no id"))?;
+    let sessions = engine.request(
+        "GET",
+        &format!("/v1/workspaces/{workspace_id}/sessions"),
+        None,
+    )?;
+    if let Some(sessions) = sessions.as_array() {
+        for session in sessions {
+            if let Some(session_id) = session["id"].as_str() {
+                engine.request(
+                    "DELETE",
+                    &format!("/v1/workspaces/{workspace_id}/sessions/{session_id}"),
+                    None,
+                )?;
+            }
+        }
+    }
+    engine.request("DELETE", &format!("/v1/clients/{client_id}"), None)?;
+    state.projects.lock().unwrap().retain(|id, _| id != workspace_id);
+    let mut settings = state.settings.lock().unwrap();
+    let preferences = settings.get();
+    let recent = remove_path(
+        preferences["recent"].as_array().map(Vec::as_slice).unwrap_or(&[]),
+        path,
+    );
+    let mut patch = json!({"recent": recent});
+    if preferences["activeProject"].as_str() == Some(path) {
+        patch["activeProject"] = json!("");
+    }
+    if let Some(cleared) = without_key(&preferences["activeSessions"], path) {
+        patch["activeSessions"] = cleared;
+    }
+    if let Some(cleared) = without_key(&preferences["sessionOrder"], workspace_id) {
+        patch["sessionOrder"] = cleared;
+    }
+    settings.update(&patch)?;
+    drop(settings);
+    events::emit(app, "", "projectsChanged", json!({}));
+    Ok(Value::Null)
+}
+
 pub fn call(state: &AppState, id: &str, route: &Value) -> HostResult<Value> {
     state.root(id)?;
     let route = route
@@ -170,6 +278,20 @@ fn operation_target(id: &str, method: &str, path: &str) -> HostResult<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn deleting_a_project_clears_only_its_own_preferences() {
+        let recent = vec![json!("C:/one"), json!("C:/two"), json!("C:/one")];
+        assert_eq!(remove_path(&recent, "C:/one"), vec![json!("C:/two")]);
+        assert!(remove_path(&[], "C:/one").is_empty());
+        let entries = json!({"C:/one": "session", "C:/two": "session"});
+        assert_eq!(
+            without_key(&entries, "C:/one"),
+            Some(json!({"C:/one": null}))
+        );
+        assert_eq!(without_key(&entries, "C:/missing"), None);
+        assert_eq!(without_key(&Value::Null, "C:/one"), None);
+    }
+
     #[test]
     fn search_query_dots_are_data_and_paths_remain_scoped() {
         for query in ["...", "..%2Fsrc"] {
