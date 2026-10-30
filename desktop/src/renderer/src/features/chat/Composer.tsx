@@ -233,6 +233,10 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       w.errorHandler(error)
     }
   }
+  async function interrupt() {
+    await stop()
+    if (hasDraft) await submit()
+  }
   useEffect(() => {
     let lastEscape = 0
     const handler = (event: KeyboardEvent) => {
@@ -278,6 +282,10 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     } else setSuggestions([])
   }
   const voiceActive = recording || transcribing
+  const hasDraft = Boolean(text.trim()) || attachments.length > 0
+  const stopLabel = hasDraft
+    ? t('Остановить текущий ответ и отправить это сообщение')
+    : t('Остановить задачу')
   return (
     <div className="composer-area" ref={composerRoot}>
       {callHost &&
@@ -440,13 +448,19 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             >
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
-            {w.busy && !recording && ((!text.trim() && !attachments.length) || sending) ? (
+            {w.busy && !recording ? (
               <button
                 className="send stop"
-                onClick={() => void stop()}
-                aria-label={t('Остановить задачу')}
+                disabled={sending || importing}
+                title={stopLabel}
+                aria-label={stopLabel}
+                onClick={() => void interrupt()}
               >
-                <Square size={14} fill="currentColor" />
+                {sending ? (
+                  <LoaderCircle size={17} className="spin" />
+                ) : (
+                  <Square size={14} fill="currentColor" />
+                )}
               </button>
             ) : (
               <button
