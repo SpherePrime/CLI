@@ -154,6 +154,9 @@ type modelsResponse struct {
 // user-specified models take precedence.
 func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwalk.Model, error) {
 	resp, err := doRequest(ctx, http.MethodGet, cfg.BaseURL, "/models", cfg.APIKey, cfg.ExtraHeaders, resolver, nil)
+	if err != nil && ctx.Err() == nil {
+		resp, err = doRequest(ctx, http.MethodGet, cfg.BaseURL, "/models", cfg.APIKey, cfg.ExtraHeaders, resolver, nil)
+	}
 	if err != nil {
 		return nil, describeDiscoveryError(cfg, err)
 	}
