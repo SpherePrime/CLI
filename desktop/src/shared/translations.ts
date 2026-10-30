@@ -346,6 +346,7 @@ export const english: Record<string, string> = {
   'Автоматическое сжатие контекста': 'Automatic context compaction',
   'Автоматический запуск LSP': 'Start LSP automatically',
   'Продолжать после ошибки провайдера': 'Continue after a provider error',
+  'Попыток автопродолжения': 'Auto-continue attempts',
   'Сжимать контекст при заполнении, %': 'Compact context when usage reaches, %',
   'Подключения к инструментам и сервисам.': 'Connections to tools and services.',
   'Языковые серверы для работы с кодом.': 'Language servers for working with code.',

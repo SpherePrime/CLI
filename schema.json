@@ -808,10 +808,31 @@
             1000
           ]
         },
+        "disable_multi_agent": {
+          "type": "boolean",
+          "description": "Disable new worker launches and follow-up assignments",
+          "default": false
+        },
+        "max_concurrent_agents": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum simultaneously active workers per primary chat; zero uses ten",
+          "default": 10
+        },
         "auto_continue": {
           "type": "boolean",
           "description": "Automatically send a continuation prompt when a run stops with a provider error such as a timeout or rate limit, instead of waiting for the user to retry. A run that ends normally or is cancelled by the user is never continued.",
           "default": false
+        },
+        "auto_continue_attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many times a run is continued automatically after a provider error before the failure is reported. Applies to the chat and to its agents. 0 uses the default of 10.",
+          "default": 10,
+          "examples": [
+            3,
+            50
+          ]
         },
         "keybindings": {
           "additionalProperties": {
