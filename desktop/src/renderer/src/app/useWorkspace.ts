@@ -662,13 +662,14 @@ export function useWorkspace() {
     await refreshLight()
     void scheduleRefresh(false, true).catch(() => {})
   }
-  async function closeProject(id: string) {
+  async function deleteProject(path: string) {
     try {
-      await window.prime.closeProject(id)
-      setPreferences(await window.prime.preferences())
-      const remaining = projects.filter((item) => item.id !== id)
+      await window.prime.deleteProject(path)
+      const saved = await window.prime.preferences()
+      setPreferences(saved)
+      const remaining = projects.filter((item) => item.path !== path)
       setProjects(remaining)
-      if (current.current.project?.id === id) {
+      if (current.current.project?.path === path) {
         current.current = { project: null, session: null }
         setProject(null)
         setSession(null)
@@ -956,7 +957,7 @@ export function useWorkspace() {
     openProjectNewChat,
     openRemote,
     selectProject,
-    closeProject,
+    deleteProject,
     selectSession,
     openSession,
     createSession,

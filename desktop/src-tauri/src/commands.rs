@@ -177,7 +177,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             std::fs::create_dir_all(&path)?;
             crate::projects::open(app, &state, path, "chat")
         }
-        "closeProject" => crate::projects::close(app, &state, string(args, 0)?),
+        "deleteProject" => crate::projects::delete_project(app, &state, string(args, 0)?),
         "windows" => state.windows.handle(app, string(args, 0)?, args.get(1).unwrap_or(&Value::Null))
             .map_err(|error| HostError::new("WINDOW_ERROR", error)),
         "automation" => {
