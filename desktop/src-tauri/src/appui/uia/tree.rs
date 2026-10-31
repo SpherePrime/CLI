@@ -44,9 +44,19 @@ pub fn snapshot(
     })
 }
 
-pub fn describe(automation: &IUIAutomation, window: HWND) -> Result<serde_json::Value, String> {
-    let mut point = POINT::default();
-    unsafe { GetCursorPos(&mut point) }.map_err(|error| error.to_string())?;
+pub fn describe(
+    automation: &IUIAutomation,
+    window: HWND,
+    point: Option<POINT>,
+) -> Result<serde_json::Value, String> {
+    let point = match point {
+        Some(point) => point,
+        None => {
+            let mut cursor = POINT::default();
+            unsafe { GetCursorPos(&mut cursor) }.map_err(|error| error.to_string())?;
+            cursor
+        }
+    };
     let element = unsafe { automation.ElementFromPoint(point) }.map_err(|error| error.to_string())?;
     let snapshot = snapshot(automation, window, MAX_NODES, MAX_DEPTH)?;
     let role = roles::role(unsafe { element.CurrentControlType() }.unwrap_or_default());

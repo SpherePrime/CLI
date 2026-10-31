@@ -71,6 +71,9 @@ export type AppUiRequest =
   | { action: 'type'; sessionId: string; locator: AppUiLocator; text: string }
   | { action: 'testList' }
   | { action: 'testRun'; sessionId: string; path: string }
+  | { action: 'explore'; sessionId: string; maxSteps?: number }
+  | { action: 'recordStart' }
+  | { action: 'recordStop'; sessionId: string }
   | { action: 'state' }
 
 export type AppUiLogEntry = {
@@ -90,6 +93,21 @@ export type AppUiResponse = {
   log?: AppUiLogEntry[]
   scenarios?: AppUiScenario[]
   run?: AppUiRun
+  explore?: AppUiExplore
+  record?: AppUiRecord
+}
+
+export type AppUiExplore = {
+  visited: number
+  blocked: { ref: string; role: string; name: string }[]
+  steps: { index: number; role: string; name: string; ok: boolean; error?: string | null }[]
+  stopped: string
+}
+
+export type AppUiRecord = {
+  path: string
+  draft: string
+  steps: number
 }
 
 export type AppUiScenario = {

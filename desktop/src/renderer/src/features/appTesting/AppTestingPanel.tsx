@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Crosshair } from 'lucide-react'
 import type {
   AppUiElementAction,
+  AppUiExplore,
   AppUiLogEntry,
+  AppUiRecord,
   AppUiRequest,
   AppUiRun,
   AppUiScenario,
@@ -34,6 +36,9 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
   const [log, setLog] = useState<AppUiLogEntry[]>([])
   const [scenarios, setScenarios] = useState<AppUiScenario[]>([])
   const [result, setResult] = useState<AppUiRun | null>(null)
+  const [explored, setExplored] = useState<AppUiExplore | null>(null)
+  const [recorded, setRecorded] = useState<AppUiRecord | null>(null)
+  const [recording, setRecording] = useState(false)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState('')
   const [text, setText] = useState('')
@@ -87,6 +92,9 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
     setLog([])
     setScenarios([])
     setResult(null)
+    setExplored(null)
+    setRecorded(null)
+    setRecording(false)
     void refresh()
     return window.prime.onEvent((event) => {
       if (event.type === 'appui' && event.workspaceId === workspaceId) {
@@ -157,6 +165,8 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
         if (result.log) setLog(result.log)
         if (result.scenarios) setScenarios(result.scenarios)
         if (result.run) setResult(result.run)
+        if (result.explore) setExplored(result.explore)
+        if (result.record) setRecorded(result.record)
       } catch (cause) {
         fail(cause)
       } finally {
@@ -227,7 +237,35 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
             >
               <Crosshair size={14} />
             </button>
+            <button
+              type="button"
+              disabled={busy || !target || !sessionId}
+              onClick={() => void run({ action: 'explore', sessionId: sessionId || '' })}
+            >
+              {c.explore}
+            </button>
+            <button
+              className={recording ? 'active' : ''}
+              type="button"
+              disabled={!target || !sessionId}
+              onClick={async () => {
+                if (recording) {
+                  setRecording(false)
+                  await run({ action: 'recordStop', sessionId: sessionId || '' })
+                } else {
+                  setRecording(true)
+                  await run({ action: 'recordStart' })
+                }
+              }}
+            >
+              {recording ? c.recordStop : c.record}
+            </button>
           </div>
+          {recording && (
+            <p className="app-testing-warning" role="status">
+              {c.recording}
+            </p>
+          )}
           {picking && (
             <p className="app-testing-warning" role="status">
               {c.pickHint}
@@ -345,6 +383,36 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
                   </li>
                 ))}
               </ul>
+            )}
+            {recorded && (
+              <div className="app-testing-run">
+                <strong>
+                  {c.draft}: {recorded.path} · {recorded.steps}
+                </strong>
+              </div>
+            )}
+            {explored && (
+              <div className="app-testing-run">
+                <strong>
+                  {c.explore}: {explored.visited} · {c.stopped}: {explored.stopped}
+                </strong>
+                <ul>
+                  {explored.steps.map((step) => (
+                    <li key={step.index} className={step.ok ? '' : 'failed'}>
+                      <span>
+                        {step.index}. {step.role} "{step.name}"
+                      </span>
+                      {step.error && <span className="app-testing-log-error">{step.error}</span>}
+                    </li>
+                  ))}
+                </ul>
+                {explored.blocked.length > 0 && (
+                  <span className="app-testing-log-title">
+                    {c.blocked}:{' '}
+                    {explored.blocked.map((item) => `${item.role} "${item.name}"`).join(', ')}
+                  </span>
+                )}
+              </div>
             )}
             {result && (
               <div className="app-testing-run">
