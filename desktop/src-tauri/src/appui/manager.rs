@@ -6,9 +6,12 @@ use base64::Engine;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 
+use super::dom;
+use super::locator;
 use super::picker::{self, CancelHandle};
 #[cfg(windows)]
 use super::recording::{self, Recording};
+use super::render::snapshot_text;
 use super::types::{Locator, UiBounds};
 use super::uia::action::{UiAction, MAX_DEPTH, MAX_NODES};
 use super::uia::capture;
@@ -31,6 +34,12 @@ pub struct Target {
     pub pid: u32,
     pub identity: String,
     pub generation: String,
+    pub port: Option<u16>,
+}
+
+struct DomHandle {
+    port: u16,
+    session: dom::DomSession,
 }
 
 pub struct AppUiManager {
@@ -41,6 +50,7 @@ pub struct AppUiManager {
     picker: Mutex<Option<CancelHandle>>,
     #[cfg(windows)]
     recording: Mutex<Option<Recording>>,
+    dom: Mutex<Option<DomHandle>>,
 }
 
 impl AppUiManager {
@@ -53,6 +63,7 @@ impl AppUiManager {
             picker: Mutex::new(None),
             #[cfg(windows)]
             recording: Mutex::new(None),
+            dom: Mutex::new(None),
         }
     }
 
@@ -164,6 +175,11 @@ impl AppUiManager {
             pid: share.pid,
             identity: share.identity.clone(),
             generation: share.generation.clone(),
+            port: request
+                .get("port")
+                .and_then(Value::as_u64)
+                .filter(|port| *port > 0 && *port <= u16::MAX as u64)
+                .map(|port| port as u16),
         };
         self.targets
             .lock()
@@ -333,6 +349,11 @@ impl AppUiManager {
             pid: share.pid,
             identity: share.identity.clone(),
             generation: share.generation.clone(),
+            port: args
+                .get("port")
+                .and_then(Value::as_u64)
+                .filter(|port| *port > 0 && *port <= u16::MAX as u64)
+                .map(|port| port as u16),
         };
         self.targets
             .lock()
@@ -482,6 +503,11 @@ impl AppUiManager {
             false,
             true,
         )?;
+        if let Some(port) = target.port {
+            let snapshot = self.with_dom(port, |session| session.snapshot())?;
+            self.record(app, &context.workspace_id, "snapshot", &target.title, Ok(()));
+            return Ok(json!({"text": snapshot_text(&snapshot), "snapshot": snapshot}));
+        }
         let result = self.call(
             UiaRequest::Snapshot {
                 hwnd: target.hwnd.clone(),
@@ -510,6 +536,19 @@ impl AppUiManager {
         )?;
         self.budget()?;
         let name = action.name();
+        if let Some(port) = target.port {
+            let snapshot = self.with_dom(port, |session| session.snapshot())?;
+            let reference = locator::resolve(&snapshot, &locator)?;
+            let text = match &action {
+                UiAction::SetValue(value) => Some(value.clone()),
+                _ => None,
+            };
+            let result = self
+                .with_dom(port, |session| session.perform(&reference, &action, text.as_deref()))
+                .map(|_| json!({"status": "ok", "ref": reference, "action": name, "confidence": "high"}));
+            self.record(app, &context.workspace_id, name, &target.title, result.as_ref().map(|_| ()));
+            return result;
+        }
         let result = self.call(
             UiaRequest::Act {
                 hwnd: target.hwnd.clone(),
@@ -652,6 +691,31 @@ impl AppUiManager {
             .share_for(app, workspace, session, control, busy)?;
         check_target(&target, &share)?;
         Ok(target)
+    }
+
+    fn with_dom<T>(
+        &self,
+        port: u16,
+        action: impl FnOnce(&mut dom::DomSession) -> Result<T, String>,
+    ) -> Result<T, String> {
+        let mut slot = self.dom.lock().map_err(|error| error.to_string())?;
+        if slot.as_ref().map(|handle| handle.port) != Some(port) {
+            *slot = None;
+        }
+        if slot.is_none() {
+            *slot = Some(DomHandle {
+                port,
+                session: dom::connect(port)?,
+            });
+        }
+        let handle = slot.as_mut().ok_or("The page session is unavailable")?;
+        match action(&mut handle.session) {
+            Ok(value) => Ok(value),
+            Err(error) => {
+                *slot = None;
+                Err(error)
+            }
+        }
     }
 
     fn budget(&self) -> Result<(), String> {
@@ -817,6 +881,7 @@ mod tests {
             pid: 7,
             identity: "identity".to_owned(),
             generation: "generation".to_owned(),
+            port: None,
         }
     }
 

@@ -64,6 +64,7 @@ export type AppUiRequest =
       identity: string
       title: string
       mode: AppUiAccessMode
+      port?: number
     }
   | { action: 'detach' }
   | { action: 'snapshot'; sessionId: string }

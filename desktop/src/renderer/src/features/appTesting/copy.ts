@@ -38,7 +38,8 @@ export const appTestingCopy = {
     recording: 'Идёт запись действий…',
     draft: 'Черновик сценария',
     blocked: 'Пропущено как опасное',
-    stopped: 'Остановлено'
+    stopped: 'Остановлено',
+    port: 'Порт отладки Chromium'
   },
   en: {
     title: 'Application tests',
@@ -79,6 +80,7 @@ export const appTestingCopy = {
     recording: 'Recording actions…',
     draft: 'Scenario draft',
     blocked: 'Skipped as risky',
-    stopped: 'Stopped'
+    stopped: 'Stopped',
+    port: 'Chromium debug port'
   }
 }

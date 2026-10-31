@@ -39,6 +39,7 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
   const [explored, setExplored] = useState<AppUiExplore | null>(null)
   const [recorded, setRecorded] = useState<AppUiRecord | null>(null)
   const [recording, setRecording] = useState(false)
+  const [port, setPort] = useState('')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState('')
   const [text, setText] = useState('')
@@ -184,7 +185,8 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
       pid: item.pid,
       identity: item.identity || '',
       title: item.title,
-      mode
+      mode,
+      port: Number(port) > 0 ? Number(port) : undefined
     })
 
   const act = (elementAction: AppUiElementAction) =>
@@ -201,7 +203,16 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
         </div>
       )}
       <div className="app-testing-layout">
-        <TargetList
+        <div className="app-testing-targets-column">
+          <input
+            className="app-testing-search"
+            value={port}
+            placeholder={c.port}
+            aria-label={c.port}
+            inputMode="numeric"
+            onChange={(event) => setPort(event.target.value.replace(/[^0-9]/g, ''))}
+          />
+          <TargetList
           language={language}
           targets={targets}
           attached={target}
@@ -209,7 +220,8 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
           onRefresh={() => void refresh()}
           onAttach={attach}
           onDetach={() => void run({ action: 'detach' })}
-        />
+          />
+        </div>
         <div className="app-testing-detail">
           <div className="app-testing-toolbar">
             <input
