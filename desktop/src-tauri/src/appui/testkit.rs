@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use std::thread;
 
-use ::windows::core::{w, PCWSTR};
+use ::windows::core::w;
 use ::windows::Win32::Foundation::{HWND, HINSTANCE, LPARAM, LRESULT, WPARAM};
 use ::windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, FindWindowExW, GetMessageW,
@@ -19,7 +19,6 @@ const EDIT_ID: u16 = 2;
 struct Handles {
     window: usize,
     button: usize,
-    edit: usize,
     label: usize,
     checkbox: usize,
 }
@@ -37,10 +36,6 @@ impl FixtureWindow {
         HWND(self.handles.button as *mut core::ffi::c_void)
     }
 
-    fn edit(&self) -> HWND {
-        HWND(self.handles.edit as *mut core::ffi::c_void)
-    }
-
     fn label_handle(&self) -> HWND {
         HWND(self.handles.label as *mut core::ffi::c_void)
     }
@@ -53,10 +48,6 @@ impl FixtureWindow {
         self.handles.window.to_string()
     }
 
-    pub fn button_hwnd(&self) -> String {
-        self.handles.button.to_string()
-    }
-
     pub fn is_alive(&self) -> bool {
         unsafe { IsWindow(Some(self.window())).as_bool() }
     }
@@ -67,21 +58,8 @@ impl FixtureWindow {
         String::from_utf16_lossy(&buffer[..length.clamp(0, buffer.len() as i32) as usize])
     }
 
-    pub fn set_label(&self, text: &str) {
-        let wide: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
-        unsafe {
-            let _ = SetWindowTextW(self.label_handle(), PCWSTR(wide.as_ptr()));
-        }
-    }
-
     pub fn checkbox_state(&self) -> bool {
         unsafe { SendMessageW(self.checkbox(), BM_GETCHECK, None, None).0 == 1 }
-    }
-
-    pub fn edit_text(&self) -> String {
-        let mut buffer = [0u16; 256];
-        let length = unsafe { GetWindowTextW(self.edit(), &mut buffer) };
-        String::from_utf16_lossy(&buffer[..length.clamp(0, buffer.len() as i32) as usize])
     }
 
     pub fn click_save(&self) {
@@ -154,7 +132,6 @@ unsafe fn create(children: bool) -> Result<Handles, String> {
         return Ok(Handles {
             window: window.0 as usize,
             button: 0,
-            edit: 0,
             label: 0,
             checkbox: 0,
         });
@@ -189,7 +166,7 @@ unsafe fn create(children: bool) -> Result<Handles, String> {
         None,
     )
     .map_err(|error| error.to_string())?;
-    let edit = CreateWindowExW(
+    let _edit = CreateWindowExW(
         WINDOW_EX_STYLE(0),
         w!("EDIT"),
         w!(""),
@@ -222,7 +199,6 @@ unsafe fn create(children: bool) -> Result<Handles, String> {
     Ok(Handles {
         window: window.0 as usize,
         button: button.0 as usize,
-        edit: edit.0 as usize,
         label: label.0 as usize,
         checkbox: checkbox.0 as usize,
     })

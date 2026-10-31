@@ -22,7 +22,6 @@ pub fn snapshot(
     let condition = unsafe { automation.CreateTrueCondition() }.map_err(|error| error.to_string())?;
     let title = text(unsafe { root.CurrentName() });
     let mut builder = Builder {
-        automation,
         condition,
         max_nodes,
         max_depth,
@@ -54,8 +53,7 @@ pub fn warnings(actionable: usize, truncated: bool) -> Vec<String> {
     messages
 }
 
-struct Builder<'a> {
-    automation: &'a IUIAutomation,
+struct Builder {
     condition: IUIAutomationCondition,
     max_nodes: usize,
     max_depth: usize,
@@ -64,7 +62,7 @@ struct Builder<'a> {
     truncated: bool,
 }
 
-impl Builder<'_> {
+impl Builder {
     fn node(
         &mut self,
         element: &IUIAutomationElement,

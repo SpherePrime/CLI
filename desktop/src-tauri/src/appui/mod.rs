@@ -1,5 +1,7 @@
 pub(crate) mod locator;
+pub(crate) mod manager;
 pub(crate) mod render;
+pub(crate) mod tools;
 pub(crate) mod types;
 
 #[cfg(windows)]

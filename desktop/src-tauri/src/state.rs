@@ -30,6 +30,7 @@ pub struct AppState {
     pub teams: Arc<crate::teams::TeamManager>,
     pub jobs: std::sync::Mutex<crate::jobs::JobCenter>,
     pub windows: Arc<crate::computer::WindowManager>,
+    pub appui: Arc<crate::appui::manager::AppUiManager>,
     pub speech: Arc<crate::speech::SpeechService>,
     pub project_open: Mutex<()>,
 }
@@ -73,6 +74,7 @@ impl AppState {
             teams,
             jobs: std::sync::Mutex::new(crate::jobs::JobCenter::default()),
             windows: Arc::new(crate::computer::WindowManager::new()),
+            appui: Arc::new(crate::appui::manager::AppUiManager::new()),
             speech: crate::speech::SpeechService::new(),
             project_open: Mutex::new(()),
         })
