@@ -8,15 +8,18 @@ use ::windows::Win32::UI::WindowsAndMessaging::{
     GetWindowTextW, IsWindow, PostMessageW, PostQuitMessage, RegisterClassW, SendMessageW,
     SetWindowTextW, ShowWindow, TranslateMessage, BM_CLICK, BM_GETCHECK, BN_CLICKED,
     BS_AUTOCHECKBOX, CW_USEDEFAULT, HMENU, MSG, SW_SHOW, WM_CLOSE, WM_COMMAND, WM_DESTROY,
-    WNDCLASSW, WINDOW_EX_STYLE, WINDOW_STYLE, WS_CHILD, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+    WNDCLASSW, WINDOW_EX_STYLE, WINDOW_STYLE, WS_BORDER, WS_CHILD, WS_OVERLAPPEDWINDOW,
+    WS_TABSTOP, WS_VISIBLE,
 };
 
 const SAVE_ID: u16 = 1;
+const EDIT_ID: u16 = 2;
 
 #[derive(Clone, Copy)]
 struct Handles {
     window: usize,
     button: usize,
+    edit: usize,
     label: usize,
     checkbox: usize,
 }
@@ -32,6 +35,10 @@ impl FixtureWindow {
 
     fn button(&self) -> HWND {
         HWND(self.handles.button as *mut core::ffi::c_void)
+    }
+
+    fn edit(&self) -> HWND {
+        HWND(self.handles.edit as *mut core::ffi::c_void)
     }
 
     fn label_handle(&self) -> HWND {
@@ -69,6 +76,12 @@ impl FixtureWindow {
 
     pub fn checkbox_state(&self) -> bool {
         unsafe { SendMessageW(self.checkbox(), BM_GETCHECK, None, None).0 == 1 }
+    }
+
+    pub fn edit_text(&self) -> String {
+        let mut buffer = [0u16; 256];
+        let length = unsafe { GetWindowTextW(self.edit(), &mut buffer) };
+        String::from_utf16_lossy(&buffer[..length.clamp(0, buffer.len() as i32) as usize])
     }
 
     pub fn click_save(&self) {
@@ -141,6 +154,7 @@ unsafe fn create(children: bool) -> Result<Handles, String> {
         return Ok(Handles {
             window: window.0 as usize,
             button: 0,
+            edit: 0,
             label: 0,
             checkbox: 0,
         });
@@ -175,6 +189,21 @@ unsafe fn create(children: bool) -> Result<Handles, String> {
         None,
     )
     .map_err(|error| error.to_string())?;
+    let edit = CreateWindowExW(
+        WINDOW_EX_STYLE(0),
+        w!("EDIT"),
+        w!(""),
+        WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP,
+        12,
+        120,
+        200,
+        24,
+        Some(window),
+        Some(HMENU(EDIT_ID as usize as *mut core::ffi::c_void)),
+        None,
+        None,
+    )
+    .map_err(|error| error.to_string())?;
     let checkbox = CreateWindowExW(
         WINDOW_EX_STYLE(0),
         w!("BUTTON"),
@@ -193,6 +222,7 @@ unsafe fn create(children: bool) -> Result<Handles, String> {
     Ok(Handles {
         window: window.0 as usize,
         button: button.0 as usize,
+        edit: edit.0 as usize,
         label: label.0 as usize,
         checkbox: checkbox.0 as usize,
     })

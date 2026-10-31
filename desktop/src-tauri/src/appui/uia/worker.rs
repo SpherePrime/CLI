@@ -7,16 +7,28 @@ use ::windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
 };
 use ::windows::Win32::UI::Accessibility::{CUIAutomation, IUIAutomation};
+use base64::Engine;
 use serde_json::{json, Value};
 
-use super::tree;
+use super::action::UiAction;
+use super::{action, capture, tree};
 use crate::appui::render::snapshot_text;
+use crate::appui::types::Locator;
 
 pub enum UiaRequest {
     Snapshot {
         hwnd: String,
         max_nodes: usize,
         max_depth: usize,
+    },
+    Act {
+        hwnd: String,
+        locator: Locator,
+        action: UiAction,
+    },
+    ElementPng {
+        hwnd: String,
+        locator: Locator,
     },
 }
 
@@ -106,6 +118,22 @@ fn handle(automation: &IUIAutomation, request: UiaRequest) -> Result<Value, Stri
             let snapshot = tree::snapshot(automation, window, max_nodes, max_depth)?;
             Ok(json!({"text": snapshot_text(&snapshot), "snapshot": snapshot}))
         }
+        UiaRequest::Act {
+            hwnd,
+            locator,
+            action,
+        } => {
+            let window = window_handle(&hwnd)?;
+            action::perform(automation, window, &locator, action)
+        }
+        UiaRequest::ElementPng { hwnd, locator } => {
+            let window = window_handle(&hwnd)?;
+            let png = capture::element_png(automation, window, &locator)?;
+            Ok(json!({
+                "png": base64::engine::general_purpose::STANDARD.encode(&png),
+                "size": png.len(),
+            }))
+        }
     }
 }
 
@@ -121,6 +149,42 @@ mod tests {
             max_nodes: 4000,
             max_depth: 40,
         }
+    }
+
+    fn by_name(name: &str) -> Locator {
+        Locator {
+            name: Some(name.to_owned()),
+            ..Default::default()
+        }
+    }
+
+    fn by_role(role: &str) -> Locator {
+        Locator {
+            role: Some(role.to_owned()),
+            ..Default::default()
+        }
+    }
+
+    fn by_role_name(role: &str, name: &str) -> Locator {
+        Locator {
+            role: Some(role.to_owned()),
+            name: Some(name.to_owned()),
+            ..Default::default()
+        }
+    }
+
+    fn wait_for_label(fixture: &testkit::FixtureWindow, expected: &str) -> bool {
+        wait_until(|| fixture.label() == expected)
+    }
+
+    fn wait_until(check: impl Fn() -> bool) -> bool {
+        for _ in 0..40 {
+            if check() {
+                return true;
+            }
+            thread::sleep(Duration::from_millis(50));
+        }
+        false
     }
 
     #[test]
@@ -150,6 +214,99 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("Prime app UI fixture"));
+    }
+
+    #[test]
+    fn invoke_changes_the_fixture_label() {
+        let fixture = testkit::window();
+        let worker = UiaWorker::start().unwrap();
+        let value = worker
+            .call(
+                UiaRequest::Act {
+                    hwnd: fixture.hwnd(),
+                    locator: by_role_name("button", "Save"),
+                    action: UiAction::Invoke,
+                },
+                Duration::from_secs(15),
+            )
+            .unwrap();
+        assert_eq!(value["confidence"], "high");
+        assert!(wait_for_label(&fixture, "Saved"), "{}", fixture.label());
+    }
+
+    #[test]
+    fn set_value_writes_into_the_edit_control() {
+        let fixture = testkit::window();
+        let worker = UiaWorker::start().unwrap();
+        worker
+            .call(
+                UiaRequest::Act {
+                    hwnd: fixture.hwnd(),
+                    locator: by_role("edit"),
+                    action: UiAction::SetValue("Готово".to_owned()),
+                },
+                Duration::from_secs(15),
+            )
+            .unwrap();
+        let value = worker
+            .call(snapshot_request(fixture.hwnd()), Duration::from_secs(20))
+            .unwrap();
+        assert!(
+            value["text"].as_str().unwrap().contains("value=\"Готово\""),
+            "{}",
+            value["text"]
+        );
+    }
+
+    #[test]
+    fn toggle_switches_the_checkbox_state() {
+        let fixture = testkit::window();
+        let worker = UiaWorker::start().unwrap();
+        worker
+            .call(
+                UiaRequest::Act {
+                    hwnd: fixture.hwnd(),
+                    locator: by_name("Enabled"),
+                    action: UiAction::Toggle,
+                },
+                Duration::from_secs(15),
+            )
+            .unwrap();
+        assert!(wait_until(|| fixture.checkbox_state()));
+    }
+
+    #[test]
+    fn a_missing_element_is_rejected_without_guessing() {
+        let fixture = testkit::window();
+        let worker = UiaWorker::start().unwrap();
+        let error = worker
+            .call(
+                UiaRequest::Act {
+                    hwnd: fixture.hwnd(),
+                    locator: by_name("Нет такой кнопки"),
+                    action: UiAction::Invoke,
+                },
+                Duration::from_secs(15),
+            )
+            .unwrap_err();
+        assert!(error.contains("No element matches"), "{error}");
+    }
+
+    #[test]
+    fn an_element_without_the_required_pattern_is_rejected() {
+        let fixture = testkit::window();
+        let worker = UiaWorker::start().unwrap();
+        let error = worker
+            .call(
+                UiaRequest::Act {
+                    hwnd: fixture.hwnd(),
+                    locator: by_role_name("text", "Ready"),
+                    action: UiAction::Toggle,
+                },
+                Duration::from_secs(15),
+            )
+            .unwrap_err();
+        assert!(error.contains("cannot be toggled"), "{error}");
     }
 
     #[test]
