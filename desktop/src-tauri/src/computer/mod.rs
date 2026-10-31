@@ -225,7 +225,7 @@ impl WindowManager {
         self.state(workspace)
     }
 
-    fn access(
+    pub(crate) fn share_for(
         &self,
         app: &AppHandle,
         workspace: &str,
@@ -359,7 +359,7 @@ impl WindowManager {
                 ))
             }
             "window_view" => {
-                let share = self.access(app, workspace, context.session_id.as_deref(), false)?;
+                let share = self.share_for(app, workspace, context.session_id.as_deref(), false)?;
                 self.guard(app, &share)?;
                 let result = snapshot(&share.hwnd).and_then(|snapshot| {
                     self.guard(app, &share)?;
@@ -389,7 +389,7 @@ impl WindowManager {
                 let action: Action =
                     serde_json::from_value(args.clone()).map_err(|error| error.to_string())?;
                 action.validate()?;
-                let share = self.access(app, workspace, context.session_id.as_deref(), true)?;
+                let share = self.share_for(app, workspace, context.session_id.as_deref(), true)?;
                 let _operation = self.actions.lock().map_err(|error| error.to_string())?;
                 let result = perform(&share.hwnd, &action, || self.guard(app, &share).map(|_| ()));
                 self.record(

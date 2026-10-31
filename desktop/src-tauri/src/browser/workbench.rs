@@ -30,6 +30,7 @@ pub fn definitions() -> Vec<Value> {
     tools.extend(super::workbench_launch::definitions());
     tools.extend(crate::remote::tools::definitions());
     tools.extend(crate::computer::tools::definitions());
+    tools.extend(crate::appui::tools::definitions());
     tools
 }
 
@@ -305,6 +306,7 @@ pub fn run(
         name if name.starts_with("window_") => {
             return crate::computer::tools::run(app, context, name, args)
         }
+        name if name.starts_with("app_") => return crate::appui::tools::run(app, context, name, args),
         _ => return Err(format!("Unknown project tool: {name}")),
     };
     Ok(super::evaluate::text(result.to_string()))

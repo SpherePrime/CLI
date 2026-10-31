@@ -15,6 +15,7 @@ use ::windows::Win32::UI::Accessibility::{
     UIA_WindowControlTypeId,
 };
 
+#[allow(non_upper_case_globals)]
 pub fn role(control_type: UIA_CONTROLTYPE_ID) -> &'static str {
     match control_type {
         UIA_ButtonControlTypeId => "button",
