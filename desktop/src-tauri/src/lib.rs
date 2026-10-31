@@ -1,3 +1,4 @@
+mod appui;
 mod attachments;
 mod automations;
 mod browser;
