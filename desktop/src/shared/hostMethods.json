@@ -7,6 +7,7 @@
   "speech": true,
   "github": true,
   "windows": true,
+  "appTesting": true,
   "jobs": true,
   "browserPick": true,
   "browserPickCancel": true,

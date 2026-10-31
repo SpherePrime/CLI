@@ -231,13 +231,14 @@ impl WindowManager {
         workspace: &str,
         session: Option<&str>,
         control: bool,
+        busy: bool,
     ) -> Result<Share, String> {
         if control && !self.emergency_ready.load(Ordering::Acquire) {
             return Err(
                 "Window control is unavailable because the emergency stop is not active".to_owned(),
             );
         }
-        let session = Self::active_session(app, workspace, session, true)?;
+        let session = Self::active_session(app, workspace, session, busy)?;
         let share = self
             .state
             .lock()
@@ -359,7 +360,7 @@ impl WindowManager {
                 ))
             }
             "window_view" => {
-                let share = self.share_for(app, workspace, context.session_id.as_deref(), false)?;
+                let share = self.share_for(app, workspace, context.session_id.as_deref(), false, true)?;
                 self.guard(app, &share)?;
                 let result = snapshot(&share.hwnd).and_then(|snapshot| {
                     self.guard(app, &share)?;
@@ -389,7 +390,7 @@ impl WindowManager {
                 let action: Action =
                     serde_json::from_value(args.clone()).map_err(|error| error.to_string())?;
                 action.validate()?;
-                let share = self.share_for(app, workspace, context.session_id.as_deref(), true)?;
+                let share = self.share_for(app, workspace, context.session_id.as_deref(), true, true)?;
                 let _operation = self.actions.lock().map_err(|error| error.to_string())?;
                 let result = perform(&share.hwnd, &action, || self.guard(app, &share).map(|_| ()));
                 self.record(

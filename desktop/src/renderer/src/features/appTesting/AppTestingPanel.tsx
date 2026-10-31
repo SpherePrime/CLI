@@ -1,0 +1,222 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type {
+  AppUiElementAction,
+  AppUiLogEntry,
+  AppUiRequest,
+  AppUiSnapshot,
+  AppUiTarget
+} from '../../../../shared/appTesting'
+import { useI18n } from '../../i18n'
+import { appTestingCopy } from './copy'
+import { SnapshotTree } from './SnapshotTree'
+import { TargetList } from './TargetList'
+import '../../styles/app-testing.css'
+
+type Props = {
+  workspaceId: string
+  sessionId?: string
+  onError(error: unknown): void
+}
+
+export function AppTestingPanel({ workspaceId, sessionId, onError }: Props) {
+  const { language } = useI18n()
+  const c = appTestingCopy[language]
+  const [targets, setTargets] = useState<AppUiTarget[]>([])
+  const [target, setTarget] = useState<AppUiTarget | null>(null)
+  const [snapshot, setSnapshot] = useState<AppUiSnapshot | null>(null)
+  const [log, setLog] = useState<AppUiLogEntry[]>([])
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState('')
+  const [text, setText] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const active = useRef(workspaceId)
+  active.current = workspaceId
+
+  const call = useCallback(
+    (request: AppUiRequest) => window.prime.appTesting(workspaceId, request),
+    [workspaceId]
+  )
+
+  const fail = useCallback(
+    (cause: unknown) => {
+      setError(cause instanceof Error ? cause.message : String(cause))
+      onError(cause)
+    },
+    [onError]
+  )
+
+  const refresh = useCallback(async () => {
+    setBusy(true)
+    setError('')
+    try {
+      const [list, state] = await Promise.all([call({ action: 'targets' }), call({ action: 'state' })])
+      if (active.current !== workspaceId) return
+      setTargets(list.windows ?? [])
+      setTarget(state.target ?? null)
+      setLog(state.log ?? [])
+    } catch (cause) {
+      fail(cause)
+    } finally {
+      setBusy(false)
+    }
+  }, [call, fail, workspaceId])
+
+  useEffect(() => {
+    setTargets([])
+    setTarget(null)
+    setSnapshot(null)
+    setSelected('')
+    setLog([])
+    void refresh()
+    return window.prime.onEvent((event) => {
+      if (event.type === 'appui' && event.workspaceId === workspaceId) {
+        setTarget(event.payload?.target ?? null)
+        setLog(event.payload?.log ?? [])
+      }
+    })
+  }, [refresh, workspaceId])
+
+  const run = useCallback(
+    async (request: AppUiRequest) => {
+      if (!sessionId) {
+        setError(c.noChat)
+        return
+      }
+      setBusy(true)
+      setError('')
+      try {
+        const result = await call(request)
+        if (active.current !== workspaceId) return
+        if (result.snapshot) setSnapshot(result.snapshot)
+        if (result.windows) setTargets(result.windows)
+        if (result.target !== undefined) setTarget(result.target)
+        if (result.log) setLog(result.log)
+      } catch (cause) {
+        fail(cause)
+      } finally {
+        setBusy(false)
+      }
+    },
+    [call, c.noChat, fail, sessionId, workspaceId]
+  )
+
+  const attach = (item: AppUiTarget, mode: 'view' | 'control') =>
+    void run({
+      action: 'attach',
+      sessionId: sessionId || '',
+      hwnd: item.hwnd,
+      pid: item.pid,
+      identity: item.identity || '',
+      title: item.title,
+      mode
+    })
+
+  const act = (elementAction: AppUiElementAction) =>
+    void run({ action: 'act', sessionId: sessionId || '', locator: { reference: selected }, elementAction })
+
+  return (
+    <div className="automation-panel app-testing-panel">
+      <div className="automation-header">
+        <strong>{c.title}</strong>
+      </div>
+      {error && (
+        <div className="windows-error" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="app-testing-layout">
+        <TargetList
+          language={language}
+          targets={targets}
+          attached={target}
+          busy={busy}
+          onRefresh={() => void refresh()}
+          onAttach={attach}
+          onDetach={() => void run({ action: 'detach' })}
+        />
+        <div className="app-testing-detail">
+          <div className="app-testing-toolbar">
+            <input
+              className="app-testing-search"
+              value={query}
+              placeholder={c.search}
+              aria-label={c.search}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <button
+              type="button"
+              disabled={busy || !target}
+              onClick={() => void run({ action: 'snapshot', sessionId: sessionId || '' })}
+            >
+              {c.snapshot}
+            </button>
+          </div>
+          <SnapshotTree
+            language={language}
+            snapshot={snapshot}
+            query={query}
+            selected={selected}
+            onSelect={setSelected}
+          />
+          {selected && (
+            <div className="app-testing-actions">
+              <span className="app-testing-actions-title">{c.actions}</span>
+              <button type="button" disabled={busy} onClick={() => act('click')}>
+                {c.click}
+              </button>
+              <button type="button" disabled={busy} onClick={() => act('toggle')}>
+                {c.toggle}
+              </button>
+              <button type="button" disabled={busy} onClick={() => act('select')}>
+                {c.select}
+              </button>
+              <button type="button" disabled={busy} onClick={() => act('focus')}>
+                {c.focus}
+              </button>
+              <input
+                value={text}
+                aria-label={c.type}
+                onChange={(event) => setText(event.target.value)}
+              />
+              <button
+                type="button"
+                disabled={busy || !text}
+                onClick={() =>
+                  void run({
+                    action: 'type',
+                    sessionId: sessionId || '',
+                    locator: { reference: selected },
+                    text
+                  })
+                }
+              >
+                {c.type}
+              </button>
+            </div>
+          )}
+          <div className="app-testing-log">
+            <span className="app-testing-actions-title">{c.log}</span>
+            {log.length === 0 ? (
+              <p className="app-testing-empty">{c.noLog}</p>
+            ) : (
+              <ul>
+                {log
+                  .slice()
+                  .reverse()
+                  .slice(0, 20)
+                  .map((entry, index) => (
+                    <li key={`${entry.time}-${index}`} className={entry.ok ? '' : 'failed'}>
+                      <span>{entry.action}</span>
+                      <span className="app-testing-log-title">{entry.title}</span>
+                      {entry.error && <span className="app-testing-log-error">{entry.error}</span>}
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

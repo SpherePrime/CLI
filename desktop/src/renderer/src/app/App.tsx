@@ -160,7 +160,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           event.type === 'workbench' &&
           event.payload?.action === 'activate' &&
           event.workspaceId === w.project?.id &&
-          ['terminal', 'automations', 'teams', 'launch', 'github', 'windows'].includes(
+          ['terminal', 'automations', 'teams', 'launch', 'github', 'windows', 'appTesting'].includes(
             event.payload.view
           )
         )

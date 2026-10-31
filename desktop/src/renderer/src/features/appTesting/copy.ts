@@ -24,7 +24,8 @@ export const appTestingCopy = {
     pick: 'Выбрать элемент',
     pickHint: 'Ctrl+Alt+P — выбрать элемент под курсором, Escape — отмена',
     sendToChat: 'Отправить в чат',
-    cancel: 'Отмена'
+    cancel: 'Отмена',
+    noChat: 'Сначала откройте чат'
   },
   en: {
     title: 'Application tests',
@@ -51,6 +52,7 @@ export const appTestingCopy = {
     pick: 'Pick element',
     pickHint: 'Ctrl+Alt+P picks the element under the cursor, Escape cancels',
     sendToChat: 'Send to chat',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
+    noChat: 'Open a chat first'
   }
 }

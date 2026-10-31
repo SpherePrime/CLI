@@ -1,0 +1,175 @@
+.app-testing-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+
+.app-testing-targets,
+.app-testing-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.app-testing-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-testing-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-testing-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-testing-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--border, rgba(128, 128, 128, 0.3));
+  border-radius: 6px;
+}
+
+.app-testing-list li.active {
+  border-color: var(--accent, #6f8cff);
+}
+
+.app-testing-target {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.app-testing-target-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-testing-target-meta {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.app-testing-target-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.app-testing-target-actions button,
+.app-testing-actions button,
+.app-testing-toolbar button {
+  font-size: 11px;
+}
+
+.app-testing-tree {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border, rgba(128, 128, 128, 0.3));
+  border-radius: 6px;
+}
+
+.app-testing-rows {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.app-testing-rows button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 2px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.app-testing-rows button.active {
+  background: rgba(111, 140, 255, 0.18);
+}
+
+.app-testing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-testing-actions input {
+  flex: 1;
+  min-width: 80px;
+}
+
+.app-testing-actions-title {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.app-testing-warning,
+.app-testing-empty {
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.app-testing-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow: auto;
+}
+
+.app-testing-log ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.app-testing-log li {
+  display: flex;
+  gap: 6px;
+}
+
+.app-testing-log li.failed {
+  color: var(--danger, #e05561);
+}
+
+.app-testing-log-title {
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-testing-log-error {
+  opacity: 0.8;
+}

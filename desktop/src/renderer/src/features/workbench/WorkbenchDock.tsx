@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import {
   AppWindow,
   Clock3,
+  FlaskConical,
   Github,
   Maximize2,
   Minimize2,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import { GithubPanel } from '../github/GithubPanel'
 import { WindowsPanel } from '../windows/WindowsPanel'
+import { AppTestingPanel } from '../appTesting/AppTestingPanel'
 import { startAgentTask } from './agentTask'
 import { LaunchPanel } from '../launch/LaunchPanel'
 import type { LaunchRequest } from '../../../../shared/launch'
@@ -27,7 +29,14 @@ import type { AutomationRequest } from '../../../../shared/automations'
 import { openWorkbenchRun } from './openRun'
 import { realSessionId } from '../../../../shared/pendingSession'
 
-export type WorkbenchView = 'terminal' | 'automations' | 'teams' | 'launch' | 'github' | 'windows'
+export type WorkbenchView =
+  | 'terminal'
+  | 'automations'
+  | 'teams'
+  | 'launch'
+  | 'github'
+  | 'windows'
+  | 'appTesting'
 
 const minimumConversation = 180
 
@@ -89,7 +98,8 @@ export function WorkbenchDock({
     { id: 'automations', label: t('Автоматизации'), icon: Clock3 },
     { id: 'teams', label: t('Команды'), icon: Users },
     { id: 'github', label: 'GitHub', icon: Github },
-    { id: 'windows', label: t('Окна'), icon: AppWindow }
+    { id: 'windows', label: t('Окна'), icon: AppWindow },
+    { id: 'appTesting', label: t('Тесты приложений'), icon: FlaskConical }
   ]
   const workspaceId = w.project?.id || ''
   const terminal = useCallback(
@@ -225,6 +235,13 @@ export function WorkbenchDock({
             workspaceId={workspaceId}
             sessionId={realSessionId(w.session)}
             sessionTitle={w.session?.title}
+            onError={w.errorHandler}
+          />
+        )}
+        {w.project && view === 'appTesting' && (
+          <AppTestingPanel
+            workspaceId={workspaceId}
+            sessionId={realSessionId(w.session)}
             onError={w.errorHandler}
           />
         )}
