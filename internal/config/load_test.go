@@ -1192,7 +1192,7 @@ func TestConfig_configureProvidersCustomProviderValidation(t *testing.T) {
 		require.False(t, exists)
 	})
 
-	t.Run("custom provider with models and discover_models:true merges discovered models", func(t *testing.T) {
+	t.Run("custom provider with models and discover_models:true keeps stored models without waiting", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"data": [
@@ -1225,15 +1225,13 @@ func TestConfig_configureProvidersCustomProviderValidation(t *testing.T) {
 		require.Equal(t, 1, cfg.Providers.Len())
 		p, exists := cfg.Providers.Get("custom")
 		require.True(t, exists)
-		require.Len(t, p.Models, 2)
 
-		// User-specified model keeps its custom fields.
+		// The stored list is what this load returns; the refresh runs in the
+		// background and reaches the config through the cache on a later load.
+		require.Len(t, p.Models, 1)
 		require.Equal(t, "existing-model", p.Models[0].ID)
 		require.Equal(t, "My Custom Name", p.Models[0].Name)
 		require.Equal(t, int64(200000), p.Models[0].ContextWindow)
-
-		// Discovered model is appended.
-		require.Equal(t, "discovered-model", p.Models[1].ID)
 	})
 
 	t.Run("custom provider with models and no discover_models uses only listed models", func(t *testing.T) {

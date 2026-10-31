@@ -13,6 +13,12 @@ import { translate } from '../i18n'
 import { useAgentContext } from '../features/context/useAgentContext'
 import { buildAgentPrompt } from '../../../shared/agentContext'
 import { isRemoteWorkspace } from '../../../shared/remoteWorkspace'
+import {
+  keepPendingSessions,
+  isPendingSessionId,
+  newPendingSession,
+  pendingSessionsOfProject
+} from '../../../shared/pendingSession'
 import { recordRecentModel } from '../features/models/modelPreferences'
 import { useChatPermissions } from '../features/chat/useChatPermissions'
 import { watchProjectSessions } from '../features/projects/projectSessionEvents'
@@ -86,6 +92,24 @@ export function useWorkspace() {
   >([])
   const requestSnapshots = useRef(0)
   current.current = { project, session }
+  const sessionsRef = useRef<Session[]>([])
+  sessionsRef.current = sessions
+  // Chats the user asked for whose engine session is still being created, and
+  // the workspace open that a personal chat is waiting for.
+  const pendingSessions = useRef(new Map<string, Promise<Session | null>>())
+  const pendingProjects = useRef(new Map<string, string>())
+  const pendingReasoning = useRef(new Map<string, ChatReasoningMode>())
+  const discardedSessions = useRef(new Set<string>())
+  const pendingChatOpen = useRef<Promise<Project> | null>(null)
+  // A refresh that lands while a chat is still materializing must not drop its
+  // row from the sidebar, and a list built for another project must not keep it.
+  const withPendingSessions = (items: Session[], projectId: string) =>
+    keepPendingSessions(
+      items,
+      pendingSessionsOfProject(sessionsRef.current, pendingProjects.current, projectId).filter(
+        (item) => !discardedSessions.current.has(item.id)
+      )
+    )
   useEffect(() => {
     if (!project) return
     const projectId = project.id
@@ -93,7 +117,7 @@ export function useWorkspace() {
       if (current.current.project?.id !== id) return
       const sessionId = current.current.session?.id
       if (!sessionId) return
-      setSessions(snapshot)
+      setSessions(withPendingSessions(snapshot, id))
       const selected = snapshot.find((item) => item.id === sessionId)
       if (selected) {
         setSession(selected)
@@ -172,7 +196,7 @@ export function useWorkspace() {
   const queueFetches = useRef(new Map<string, Promise<void>>())
   const refreshQueue = useCallback(async () => {
     const { project, session } = current.current
-    if (!project || !session) return
+    if (!project || !session || isPendingSessionId(session.id)) return
     const key = `${project.id}:${session.id}`
     const existing = queueFetches.current.get(key)
     if (existing) return existing
@@ -208,7 +232,7 @@ export function useWorkspace() {
         )
       const snapshotSequence = messageSequence.current
       const messageRequest =
-        includeMessages && session
+        includeMessages && session && !isPendingSessionId(session.id)
           ? window.prime.call(project.id, 'messagePage', { sessionId: session.id, limit: 60 }).then(
               (value) => ({ ok: true as const, value: value as MessagePage }),
               (reason: unknown) => ({ ok: false as const, reason })
@@ -227,7 +251,7 @@ export function useWorkspace() {
             ? (results[index] as PromiseFulfilledResult<Json>).value
             : undefined
       })
-      if (values.sessions) setSessions(values.sessions)
+      if (values.sessions) setSessions(withPendingSessions(values.sessions, project.id))
       if (values.config) setConfig(values.config)
       if (values.agent) setAgent(values.agent)
       if (heavy)
@@ -652,7 +676,9 @@ export function useWorkspace() {
   // is still being built is queued here instead of being rejected.
   async function waitForProject() {
     if (current.current.project) return
-    await (openingProject.current ?? startupRestore.current)?.catch(() => {})
+    await (openingProject.current ?? startupRestore.current ?? pendingChatOpen.current)?.catch(
+      () => {}
+    )
   }
   async function openWorkspace(open: () => Promise<Project | null>) {
     setLoading(true)
@@ -728,7 +754,9 @@ export function useWorkspace() {
   // page is requested right away instead of waiting for the rest of the
   // workspace state. The remaining state loads afterwards in the background.
   function showSession(project: Project, selected: Session, known?: Session[]) {
-    if (!history.select(selected.id)) void history.load(project.id, selected.id, 'latest')
+    // A chat the engine has not created yet has no page to load.
+    if (!history.select(selected.id) && !isPendingSessionId(selected.id))
+      void history.load(project.id, selected.id, 'latest')
     current.current = { project, session: selected }
     setProject(project)
     setSession(selected)
@@ -743,6 +771,7 @@ export function useWorkspace() {
     setPermissions([])
     setQuestions([])
     showSession(project, selected)
+    if (isPendingSessionId(selected.id)) return
     void call('currentSession', { sessionId: selected.id }).catch(errorHandler)
     void scheduleRefresh(true, false).catch(errorHandler)
   }
@@ -752,6 +781,7 @@ export function useWorkspace() {
     setPermissions([])
     setQuestions([])
     showSession(target, selected, known)
+    if (isPendingSessionId(selected.id)) return
     void window.prime
       .call(target.id, 'currentSession', { sessionId: selected.id })
       .catch(errorHandler)
@@ -775,37 +805,120 @@ export function useWorkspace() {
       errorHandler(error)
     }
   }
-  async function createSession() {
+  // Creates the chat in the engine and swaps the placeholder the UI already
+  // shows for the real session. A chat the user discarded meanwhile is removed
+  // again instead of appearing in the sidebar.
+  async function materializeSession(
+    project: Project,
+    placeholder: Session
+  ): Promise<Session | null> {
     try {
-      const targetProject =
-        current.current.project ||
-        projects.find((item) => item.kind === 'chat') ||
-        (await window.prime.openChat())
-      if (targetProject.id !== current.current.project?.id) {
-        setProjects(await window.prime.projects())
-        await selectProject(targetProject)
-      }
-      const created = await window.prime.call(targetProject.id, 'createSession', {
+      const created = (await window.prime.call(project.id, 'createSession', {
         title: translate(language.current, 'Новый чат')
-      })
-      setSessions((items) => upsertSession(items, created))
+      })) as Session
+      if (discardedSessions.current.delete(placeholder.id)) {
+        void window.prime
+          .call(project.id, 'deleteSession', { sessionId: created.id })
+          .catch(() => {})
+        return null
+      }
+      // The list belongs to the open project, so a chat created for a project
+      // the user has left meanwhile is not inserted into another project.
+      if (current.current.project?.id === project.id)
+        setSessions((items) =>
+          upsertSession(
+            items.filter((item) => item.id !== placeholder.id),
+            created
+          )
+        )
+      if (current.current.session?.id === placeholder.id) {
+        current.current = { project, session: created }
+        setSession(created)
+        history.select(created.id)
+        void history.load(project.id, created.id, 'latest')
+        void window.prime
+          .call(project.id, 'currentSession', { sessionId: created.id })
+          .catch(errorHandler)
+        void scheduleRefresh(false, false).catch(() => {})
+      }
+      const reasoning = pendingReasoning.current.get(placeholder.id)
       void savePreferences({
-        reasoningBySession: { [created.id]: draftReasoningMode || reasoningFallback }
+        reasoningBySession: { [created.id]: reasoning || draftReasoningMode || reasoningFallback }
       }).catch(errorHandler)
-      setDraftReasoningMode(null)
-      await selectSession(created)
-      return created as Session
+      return created
     } catch (error) {
+      setSessions((items) => items.filter((item) => item.id !== placeholder.id))
+      if (current.current.session?.id === placeholder.id) {
+        current.current = { project, session: null }
+        setSession(null)
+        history.reset()
+      }
       errorHandler(error)
       return null
     }
   }
+  // Shows the new chat at once and finishes the engine work in the background.
+  function startSession(project: Project, placeholder: Session) {
+    setSessions((items) => upsertSession(items, placeholder))
+    setPermissions([])
+    setQuestions([])
+    showSession(project, placeholder)
+    setDraftReasoningMode(null)
+    const task = materializeSession(project, placeholder)
+    pendingSessions.current.set(placeholder.id, task)
+    pendingProjects.current.set(placeholder.id, project.id)
+    void task.finally(() => {
+      pendingSessions.current.delete(placeholder.id)
+      pendingProjects.current.delete(placeholder.id)
+      pendingReasoning.current.delete(placeholder.id)
+      discardedSessions.current.delete(placeholder.id)
+    })
+    return placeholder
+  }
+  // A personal chat needs the chats workspace, which may still be closed. The
+  // chat appears as soon as the workspace answers; a prompt typed meanwhile
+  // waits for it instead of being rejected.
+  async function createPersonalChat(): Promise<Session | null> {
+    const opening = (async () => {
+      const opened = await window.prime.openChat()
+      void window.prime.projects().then(setProjects).catch(errorHandler)
+      if (current.current.project?.id !== opened.id) await selectProject(opened)
+      return opened
+    })()
+    pendingChatOpen.current = opening
+    try {
+      return startSession(
+        await opening,
+        newPendingSession(translate(language.current, 'Новый чат'))
+      )
+    } catch (error) {
+      errorHandler(error)
+      return null
+    } finally {
+      if (pendingChatOpen.current === opening) pendingChatOpen.current = null
+    }
+  }
+  async function createSession() {
+    const target = current.current.project ?? projects.find((item) => item.kind === 'chat') ?? null
+    if (!target) return createPersonalChat()
+    return startSession(target, newPendingSession(translate(language.current, 'Новый чат')))
+  }
   async function send(prompt: string, attachmentIds: string[] = []) {
     if (!prompt.trim()) return false
     await waitForProject()
-    const targetProject = current.current.project
+    // A chat the user just asked for may still be materializing: wait for its
+    // real session instead of sending into the placeholder id. The prompt stays
+    // in the chat it was typed in even when the user switched meanwhile.
+    const placeholder = current.current.session
+    const placeholderProject = current.current.project
+    let created: Session | null = null
+    if (placeholder && isPendingSessionId(placeholder.id)) {
+      created = (await pendingSessions.current.get(placeholder.id)?.catch(() => null)) ?? null
+      if (!created) return false
+    }
+    const targetProject = created ? placeholderProject : current.current.project
     if (!targetProject) return false
-    const targetSession = current.current.session
+    const targetSession = created ?? current.current.session
     const usedModel =
       (targetSession && config.session_models?.[targetSession.id]) ?? config.models?.large
     try {
@@ -903,25 +1016,41 @@ export function useWorkspace() {
   const agentContext = useAgentContext(project, preferences, savePreferences, errorHandler)
   const chatPermissions = useChatPermissions({
     projectId: project?.id,
-    sessionId: session?.id,
+    sessionId: session && !isPendingSessionId(session.id) ? session.id : undefined,
     preferences,
     savePreferences,
     onError: errorHandler
   })
   const reasoningFallback = preferences.lastReasoningMode || 'off'
-  const reasoningMode = session
-    ? preferences.reasoningBySession?.[session.id] || reasoningFallback
-    : draftReasoningMode || reasoningFallback
+  const reasoningMode =
+    session && !isPendingSessionId(session.id)
+      ? preferences.reasoningBySession?.[session.id] || reasoningFallback
+      : draftReasoningMode || reasoningFallback
   async function setReasoningMode(mode: ChatReasoningMode) {
     const selected = current.current.session
-    if (!selected) setDraftReasoningMode(mode)
+    const materialized = selected && !isPendingSessionId(selected.id) ? selected : null
+    if (!materialized) {
+      // The chat may still be materializing, so the choice is remembered for
+      // the session the engine is about to create.
+      if (selected) pendingReasoning.current.set(selected.id, mode)
+      setDraftReasoningMode(mode)
+    }
     await savePreferences({
       lastReasoningMode: mode,
-      ...(selected ? { reasoningBySession: { [selected.id]: mode } } : {})
+      ...(materialized ? { reasoningBySession: { [materialized.id]: mode } } : {})
     })
   }
   async function deleteSession(id: string) {
-    await call('deleteSession', { sessionId: id })
+    if (isPendingSessionId(id)) {
+      // The engine has not created this chat yet; the background creation
+      // removes the session it makes instead of showing it. Forgetting the
+      // placeholder keeps a refresh from putting its row back.
+      discardedSessions.current.add(id)
+      pendingSessions.current.delete(id)
+      pendingProjects.current.delete(id)
+    } else {
+      await call('deleteSession', { sessionId: id })
+    }
     history.delete(id)
     setSessions((items) => items.filter((item) => item.id !== id))
     if (current.current.session?.id === id) {
@@ -960,7 +1089,12 @@ export function useWorkspace() {
         : Promise.resolve()
     },
     searchMessages: useCallback(
-      (query: string) => call('messageSearch', { sessionId: current.current.session?.id, query }),
+      (query: string) => {
+        const id = current.current.session?.id
+        return id && !isPendingSessionId(id)
+          ? call('messageSearch', { sessionId: id, query })
+          : Promise.resolve([] as Message[])
+      },
       [call]
     ),
     revealMessage: useCallback(
@@ -970,7 +1104,8 @@ export function useWorkspace() {
       },
       [history.reveal]
     ),
-    messagesReady: !session || messagesSessionId === session.id,
+    messagesReady:
+      !session || isPendingSessionId(session.id) || messagesSessionId === session.id,
     permissions,
     questions,
     config,
@@ -1000,6 +1135,7 @@ export function useWorkspace() {
     call,
     refresh,
     openChat,
+    newPersonalChat: createPersonalChat,
     openProject,
     openProjectSession,
     openProjectNewChat,

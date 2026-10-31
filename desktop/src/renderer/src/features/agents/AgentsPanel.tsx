@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n'
 import { useAgentPolling } from './useAgentPolling'
 import { WorkerConversation } from './WorkerConversation'
 import type { AgentRequest } from './openAgent'
+import { realSessionId } from '../../../../shared/pendingSession'
 import './agents.css'
 
 export function AgentsPanel({
@@ -17,7 +18,8 @@ export function AgentsPanel({
   request?: AgentRequest
 }) {
   const { t } = useI18n()
-  if (!workspace.project || !workspace.session)
+  const sessionId = realSessionId(workspace.session)
+  if (!workspace.project || !sessionId)
     return (
       <div className="panel-empty">
         <Users size={28} />
@@ -26,9 +28,9 @@ export function AgentsPanel({
     )
   return (
     <AgentTeam
-      key={`${workspace.project.id}:${workspace.session.id}`}
+      key={`${workspace.project.id}:${sessionId}`}
       projectId={workspace.project.id}
-      sessionId={workspace.session.id}
+      sessionId={sessionId}
       disabled={!!workspace.config.options?.disable_multi_agent}
       request={request}
     />

@@ -7,6 +7,7 @@ import { Popover } from '../../components/Popover'
 import type { Workspace } from '../../app/useWorkspace'
 import { downloadConversationChunks } from './exportConversation'
 import { conversationExportChunks } from './pagedExport'
+import { realSessionId } from '../../../../shared/pendingSession'
 import { useI18n } from '../../i18n'
 
 export function ChatActions({
@@ -118,11 +119,11 @@ export function ChatActions({
               {copied ? t('Скопировано') : t('Скопировать чат')}
             </button>
             <button
-              disabled={!w.session || w.busy}
+              disabled={!realSessionId(w.session) || w.busy}
               onClick={() => {
                 setOpen(false)
                 void w
-                  .call('summarize', { sessionId: w.session?.id })
+                  .call('summarize', { sessionId: realSessionId(w.session) })
                   .then(w.refresh)
                   .catch(w.errorHandler)
               }}
