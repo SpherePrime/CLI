@@ -25,7 +25,13 @@ export const appTestingCopy = {
     pickHint: 'Ctrl+Alt+P — выбрать элемент под курсором, Escape — отмена',
     sendToChat: 'Отправить в чат',
     cancel: 'Отмена',
-    noChat: 'Сначала откройте чат'
+    noChat: 'Сначала откройте чат',
+    scenarios: 'Сценарии',
+    noScenarios: 'В корне проекта нет файлов prime-app-test.yaml',
+    run: 'Запустить',
+    passed: 'Пройдено',
+    failed: 'Есть ошибки',
+    artifacts: 'Артефакты'
   },
   en: {
     title: 'Application tests',
@@ -53,6 +59,12 @@ export const appTestingCopy = {
     pickHint: 'Ctrl+Alt+P picks the element under the cursor, Escape cancels',
     sendToChat: 'Send to chat',
     cancel: 'Cancel',
-    noChat: 'Open a chat first'
+    noChat: 'Open a chat first',
+    scenarios: 'Scenarios',
+    noScenarios: 'No prime-app-test.yaml files in the project root',
+    run: 'Run',
+    passed: 'Passed',
+    failed: 'Failed',
+    artifacts: 'Artifacts'
   }
 }
