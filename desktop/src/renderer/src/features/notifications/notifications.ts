@@ -54,7 +54,14 @@ export function describeError(error: unknown): Omit<Toast, 'id'> {
 }
 
 export function notifyError(error: unknown) {
-  const toast = { id: nextId++, ...describeError(error) }
+  push({ id: nextId++, ...describeError(error) })
+}
+
+export function notifyWarning(title: string, message: string) {
+  push({ id: nextId++, title, message })
+}
+
+function push(toast: Toast) {
   if (!toast.message) return
   const duplicate = toasts.find(
     (item) => item.title === toast.title && item.message === toast.message

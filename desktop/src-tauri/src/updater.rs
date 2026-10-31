@@ -4,7 +4,10 @@ use crate::{
     state::AppState,
 };
 use serde_json::{json, Value};
-use std::sync::{atomic::{AtomicBool, Ordering}, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex,
+};
 use tauri_plugin_updater::Update;
 use tauri_plugin_updater::UpdaterExt;
 
@@ -13,13 +16,22 @@ static STATUS: Mutex<Option<Value>> = Mutex::new(None);
 static DOWNLOADED: Mutex<Option<(Update, Vec<u8>)>> = Mutex::new(None);
 
 pub fn snapshot() -> Value {
-    STATUS.lock().unwrap().clone().unwrap_or_else(|| json!({"state":"idle"}))
+    STATUS
+        .lock()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| json!({"state":"idle"}))
 }
 
-pub fn handle(app: &tauri::AppHandle, state: &AppState, action: &str) -> HostResult<Value> {
+pub fn handle(
+    app: &tauri::AppHandle,
+    state: &AppState,
+    action: &str,
+    force: bool,
+) -> HostResult<Value> {
     match action {
         "check" => check(app, state),
-        "install" => install(app, state),
+        "install" => install(app, state, force),
         _ => Err(HostError::new(
             "INVALID_ARGUMENT",
             "Update action must be check or install",
@@ -43,7 +55,16 @@ fn check(app: &tauri::AppHandle, _state: &AppState) -> HostResult<Value> {
     let handle = app.clone();
     let result = tauri::async_runtime::block_on(async move {
         let app = handle;
-        if app.config().plugins.0.get("updater").and_then(|config| config.get("pubkey")).and_then(Value::as_str).unwrap_or("").is_empty() {
+        if app
+            .config()
+            .plugins
+            .0
+            .get("updater")
+            .and_then(|config| config.get("pubkey"))
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .is_empty()
+        {
             let unavailable = json!({"state":"unavailable","message":"Signed native update feed is not configured"});
             status(&app, unavailable.clone());
             return Ok(unavailable);
@@ -112,13 +133,20 @@ fn check(app: &tauri::AppHandle, _state: &AppState) -> HostResult<Value> {
     result
 }
 
-fn install(app: &tauri::AppHandle, state: &AppState) -> HostResult<Value> {
+fn install(app: &tauri::AppHandle, state: &AppState, force: bool) -> HostResult<Value> {
     if UPDATE_IN_PROGRESS.swap(true, Ordering::AcqRel) {
         return Err(HostError::new("UPDATE_BUSY", "Update is already running"));
     }
     let result = (|| {
         if DOWNLOADED.lock().unwrap().is_none() {
-            return Err(HostError::new("UPDATE_NOT_READY", "Update is not ready to install"));
+            return Err(HostError::new(
+                "UPDATE_NOT_READY",
+                "Update is not ready to install",
+            ));
+        }
+        if force {
+            cancel_local_chats(state)?;
+            state.terminals.close_all()?;
         }
         require_idle(state)?;
         let (release, bytes) = DOWNLOADED.lock().unwrap().take().unwrap();
@@ -136,26 +164,99 @@ fn install(app: &tauri::AppHandle, state: &AppState) -> HostResult<Value> {
     result
 }
 
+fn cancel_local_chats(state: &AppState) -> HostResult<()> {
+    let engine = state.require_engine()?;
+    let projects = state
+        .projects
+        .lock()
+        .unwrap()
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
+    for project in projects {
+        let Some(id) = project["id"].as_str() else {
+            continue;
+        };
+        if crate::remote::workspace_profile(state, id).is_some() {
+            continue;
+        }
+        let sessions = engine.request("GET", &format!("/v1/workspaces/{id}/sessions"), None)?;
+        for session in sessions.as_array().into_iter().flatten() {
+            if session["is_busy"] == true {
+                let Some(session_id) = session["id"].as_str() else {
+                    continue;
+                };
+                engine.request(
+                    "POST",
+                    &format!("/v1/workspaces/{id}/agent/sessions/{session_id}/cancel"),
+                    None,
+                )?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn require_idle(state: &AppState) -> HostResult<()> {
-    if state.editor_dirty.load(Ordering::Acquire)
-        || state.terminals.count() > 0
-        || state.remotes.terminals.count() > 0
-        || state.teams.active_count() > 0
-        || state.automations.counts()["activeCount"].as_u64().unwrap_or(0) > 0
+    if state.editor_dirty.load(Ordering::Acquire) {
+        return Err(HostError::new("UPDATE_BUSY", "Save files before updating"));
+    }
+    if state.terminals.count() > 0 {
+        return Err(HostError::new(
+            "UPDATE_BUSY",
+            "Close local terminals before updating",
+        ));
+    }
+    if state.remotes.terminals.count() > 0 {
+        return Err(HostError::new(
+            "UPDATE_BUSY",
+            "Close remote terminals before updating",
+        ));
+    }
+    if state.teams.active_count() > 0 {
+        return Err(HostError::new(
+            "UPDATE_BUSY",
+            "Stop active agent teams before updating",
+        ));
+    }
+    if state.automations.counts()["activeCount"]
+        .as_u64()
+        .unwrap_or(0)
+        > 0
     {
-        return Err(HostError::new("UPDATE_BUSY", "Finish active tasks, close terminals and save files before updating"));
+        return Err(HostError::new(
+            "UPDATE_BUSY",
+            "Stop active automations before updating",
+        ));
     }
     let engine = state.require_engine()?;
-    let projects = state.projects.lock().unwrap().values().cloned().collect::<Vec<_>>();
+    let projects = state
+        .projects
+        .lock()
+        .unwrap()
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
     for project in projects {
-        let Some(id) = project["id"].as_str() else { continue };
+        let Some(id) = project["id"].as_str() else {
+            continue;
+        };
         let sessions = if crate::remote::workspace_profile(state, id).is_some() {
-            return Err(HostError::new("UPDATE_BUSY", "Close remote projects before updating"));
+            return Err(HostError::new(
+                "UPDATE_BUSY",
+                "Close remote projects before updating",
+            ));
         } else {
             engine.request("GET", &format!("/v1/workspaces/{id}/sessions"), None)?
         };
-        if sessions.as_array().is_some_and(|items| items.iter().any(|session| session["is_busy"] == true)) {
-            return Err(HostError::new("UPDATE_BUSY", "Finish active chats before updating"));
+        if sessions
+            .as_array()
+            .is_some_and(|items| items.iter().any(|session| session["is_busy"] == true))
+        {
+            return Err(HostError::new(
+                "UPDATE_BUSY",
+                "Finish active chats before updating",
+            ));
         }
     }
     Ok(())

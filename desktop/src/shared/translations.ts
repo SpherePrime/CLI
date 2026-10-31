@@ -328,6 +328,7 @@ export const english: Record<string, string> = {
   'Подготавливаем загрузку…': 'Preparing download\u2026',
   Перезапустить: 'Restart',
   'Дождитесь завершения текущей задачи.': 'Wait for the current task to finish.',
+  'Остановить задачи и перезапустить': 'Stop tasks and restart',
   'Повторить загрузку': 'Retry download',
   'Обновления загружаются из GitHub Releases SpherePrime/CLI. Приложение и встроенный Prime обновляются вместе.':
     'Updates are downloaded from SpherePrime/CLI GitHub Releases. The app and bundled Prime update together.',
@@ -573,6 +574,7 @@ export const english: Record<string, string> = {
   'Добавить проект': 'Add project',
   'Закрыть личные чаты': 'Close personal chats',
   'Удалить проект и все чаты?': 'Delete project and all chats?',
+  'Проект удалён не полностью': 'The project was not fully deleted',
   'Проект, все его чаты и настройки будут удалены без возможности восстановления.':
     'The project, all its chats, and settings will be permanently deleted.',
   'Поиск чатов': 'Search chats',

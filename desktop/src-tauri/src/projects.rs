@@ -147,73 +147,148 @@ fn without_key(values: &Value, key: &str) -> Option<Value> {
 }
 
 pub fn delete_project(app: &tauri::AppHandle, state: &AppState, path: &str) -> HostResult<Value> {
-    let project = state
+    let result = delete_project_data(state, path, Some(app))?;
+    events::emit(app, "", "projectsChanged", json!({}));
+    Ok(result)
+}
+
+fn delete_project_data(
+    state: &AppState,
+    path: &str,
+    app: Option<&tauri::AppHandle>,
+) -> HostResult<Value> {
+    let project = find_project(state, path);
+    let mut warnings = Vec::new();
+    if let Some(project) = project.as_ref() {
+        detach_project(state, app, project, &mut warnings);
+    }
+    if let Err(error) = delete_project_chats(state, path, project.as_ref()) {
+        warnings.push(error);
+    }
+    if let Some(id) = project
+        .as_ref()
+        .and_then(|project| project["id"].as_str())
+        .map(str::to_owned)
+    {
+        state.projects.lock().unwrap().remove(&id);
+    }
+    clear_project_preferences(state, path, project.as_ref())?;
+    Ok(json!({"warnings": warnings}))
+}
+
+fn find_project(state: &AppState, path: &str) -> Option<Value> {
+    state
         .projects
         .lock()
         .unwrap()
         .values()
         .find(|project| project["path"].as_str() == Some(path))
-        .cloned();
-    let (workspace_id, client) = project
-        .as_ref()
-        .map(|project| {
-            (
-                project["id"].as_str().unwrap_or("").to_owned(),
-                project["clientId"].as_str().unwrap_or("").to_owned(),
-            )
-        })
-        .unwrap_or_default();
-    let local_path = if path.starts_with("prime-ssh://") {
-        let profile = state.remotes.profile(&crate::remote::profile_from_workspace(path)?)?;
-        crate::remote::workspace_directory(state, &profile)?
-            .to_string_lossy()
-            .into_owned()
-    } else {
-        dunce::canonicalize(path)?.to_string_lossy().into_owned()
+        .cloned()
+}
+
+// Detaches the open workspace from the desktop: windows, terminals and the
+// event stream. Failures are reported as warnings because the user asked for
+// the project to be removed and a stuck terminal must not keep it alive.
+fn detach_project(
+    state: &AppState,
+    app: Option<&tauri::AppHandle>,
+    project: &Value,
+    warnings: &mut Vec<String>,
+) {
+    let Some(id) = project["id"].as_str() else {
+        return;
     };
-    if !workspace_id.is_empty() {
-        state.windows.forget(app, &workspace_id);
-        state.remotes.terminals.close_workspace(&workspace_id);
-        state.terminals.close_workspace(&workspace_id)?;
-        state.require_engine()?.unsubscribe(&workspace_id);
+    if let Some(app) = app {
+        state.windows.forget(app, id);
     }
-    let engine = state.require_engine()?;
-    let temporary_client = if workspace_id.is_empty() {
-        Some(uuid::Uuid::new_v4().to_string())
-    } else {
-        None
+    state.remotes.terminals.close_workspace(id);
+    if let Err(error) = state.terminals.close_workspace(id) {
+        warnings.push(error.message);
+    }
+    if let Ok(engine) = state.require_engine() {
+        engine.unsubscribe(id);
+    }
+}
+
+// Deletes every chat of the project. A closed project has no workspace, so a
+// temporary one is opened for the operation and retired afterwards. The
+// failure text is returned instead of an error so the project entry is still
+// removed when the chats cannot be reached (missing folder, locked data
+// directory, engine still starting).
+fn delete_project_chats(
+    state: &AppState,
+    path: &str,
+    project: Option<&Value>,
+) -> Result<(), String> {
+    let engine = state.require_engine().map_err(|error| error.message)?;
+    let local_path = local_project_path(state, path).map_err(|error| error.message)?;
+    let data_directory = data_directory(state, &local_path).map_err(|error| error.message)?;
+    let open_workspace = project
+        .and_then(|project| project["id"].as_str())
+        .filter(|id| !id.is_empty());
+    let client = match open_workspace {
+        Some(_) => project
+            .and_then(|project| project["clientId"].as_str())
+            .unwrap_or_default()
+            .to_owned(),
+        None => uuid::Uuid::new_v4().to_string(),
     };
-    let client_id = temporary_client.as_deref().unwrap_or(&client);
-    let workspace = if workspace_id.is_empty() {
-        engine.request(
-            "POST",
-            "/v1/workspaces",
-            Some(workspace_request(&local_path, client_id, data_directory(state, &local_path)?)),
-        )?
-    } else {
-        json!({"id": workspace_id})
+    let workspace = match open_workspace {
+        Some(id) => json!({"id": id}),
+        None => engine
+            .request(
+                "POST",
+                "/v1/workspaces",
+                Some(workspace_request(&local_path, &client, data_directory)),
+            )
+            .map_err(|error| error.message)?,
     };
     let workspace_id = workspace["id"]
         .as_str()
-        .ok_or_else(|| HostError::new("ENGINE_RESPONSE", "Workspace response has no id"))?;
-    let sessions = engine.request(
-        "GET",
-        &format!("/v1/workspaces/{workspace_id}/sessions"),
-        None,
-    )?;
-    if let Some(sessions) = sessions.as_array() {
-        for session in sessions {
-            if let Some(session_id) = session["id"].as_str() {
-                engine.request(
-                    "DELETE",
-                    &format!("/v1/workspaces/{workspace_id}/sessions/{session_id}"),
-                    None,
-                )?;
-            }
+        .ok_or_else(|| "Workspace response has no id".to_owned())?
+        .to_owned();
+    let sessions = engine
+        .request("GET", &format!("/v1/workspaces/{workspace_id}/sessions"), None)
+        .map_err(|error| error.message)?;
+    let mut failures = Vec::new();
+    for session in sessions.as_array().map(Vec::as_slice).unwrap_or(&[]) {
+        let Some(session_id) = session["id"].as_str() else {
+            continue;
+        };
+        if let Err(error) = engine.request(
+            "DELETE",
+            &format!("/v1/workspaces/{workspace_id}/sessions/{session_id}"),
+            None,
+        ) {
+            failures.push(error.message);
         }
     }
-    engine.request("DELETE", &format!("/v1/clients/{client_id}"), None)?;
-    state.projects.lock().unwrap().retain(|id, _| id != workspace_id);
+    if let Err(error) = engine.request("DELETE", &format!("/v1/clients/{client}"), None) {
+        failures.push(error.message);
+    }
+    if failures.is_empty() {
+        return Ok(());
+    }
+    failures.dedup();
+    Err(failures.join("; "))
+}
+
+fn local_project_path(state: &AppState, path: &str) -> HostResult<String> {
+    if path.starts_with("prime-ssh://") {
+        let profile = state.remotes.profile(&crate::remote::profile_from_workspace(path)?)?;
+        Ok(crate::remote::workspace_directory(state, &profile)?
+            .to_string_lossy()
+            .into_owned())
+    } else {
+        Ok(dunce::canonicalize(path)?.to_string_lossy().into_owned())
+    }
+}
+
+fn clear_project_preferences(
+    state: &AppState,
+    path: &str,
+    project: Option<&Value>,
+) -> HostResult<()> {
     let mut settings = state.settings.lock().unwrap();
     let preferences = settings.get();
     let recent = remove_path(
@@ -227,13 +302,21 @@ pub fn delete_project(app: &tauri::AppHandle, state: &AppState, path: &str) -> H
     if let Some(cleared) = without_key(&preferences["activeSessions"], path) {
         patch["activeSessions"] = cleared;
     }
-    if let Some(cleared) = without_key(&preferences["sessionOrder"], workspace_id) {
-        patch["sessionOrder"] = cleared;
+    for key in [
+        path,
+        project
+            .and_then(|project| project["id"].as_str())
+            .unwrap_or_default(),
+    ] {
+        if key.is_empty() {
+            continue;
+        }
+        if let Some(cleared) = without_key(&preferences["sessionOrder"], key) {
+            patch["sessionOrder"] = cleared;
+        }
     }
     settings.update(&patch)?;
-    drop(settings);
-    events::emit(app, "", "projectsChanged", json!({}));
-    Ok(Value::Null)
+    Ok(())
 }
 
 pub fn call(state: &AppState, id: &str, route: &Value) -> HostResult<Value> {
@@ -278,6 +361,124 @@ fn operation_target(id: &str, method: &str, path: &str) -> HostResult<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{engine::Engine, state::AppState};
+
+    fn test_state(directory: &std::path::Path) -> (AppState, std::sync::Arc<Engine>) {
+        let state = AppState::new(directory.to_path_buf()).unwrap();
+        let engine = Engine::load(directory).unwrap();
+        state.engine.lock().unwrap().instance = Some(engine.clone());
+        (state, engine)
+    }
+
+    fn project_path(root: &std::path::Path) -> String {
+        dunce::canonicalize(root)
+            .unwrap()
+            .to_string_lossy()
+            .into_owned()
+    }
+
+    fn start_workspace(state: &AppState, engine: &Engine, path: &str) -> (String, String) {
+        let client = uuid::Uuid::new_v4().to_string();
+        let workspace = engine
+            .request(
+                "POST",
+                "/v1/workspaces",
+                Some(workspace_request(
+                    path,
+                    &client,
+                    data_directory(state, path).unwrap(),
+                )),
+            )
+            .unwrap();
+        let id = workspace["id"].as_str().unwrap().to_owned();
+        engine
+            .request(
+                "POST",
+                &format!("/v1/workspaces/{id}/sessions"),
+                Some(json!({"title":"Chat"})),
+            )
+            .unwrap();
+        (id, client)
+    }
+
+    fn chat_count(state: &AppState, path: &str) -> usize {
+        sessions(state, path)
+            .unwrap()
+            .as_array()
+            .map(Vec::len)
+            .unwrap_or(0)
+    }
+
+    #[test]
+    fn deleting_a_closed_project_removes_its_chats() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = tempfile::tempdir().unwrap();
+        let (state, engine) = test_state(directory.path());
+        let path = project_path(root.path());
+        let (_, client) = start_workspace(&state, &engine, &path);
+        engine
+            .request("DELETE", &format!("/v1/clients/{client}"), None)
+            .unwrap();
+        assert_eq!(chat_count(&state, &path), 1, "chat must exist before delete");
+        state
+            .settings
+            .lock()
+            .unwrap()
+            .update(&json!({"recent":[path.clone()],"activeProject":path.clone()}))
+            .unwrap();
+        delete_project_data(&state, &path, None).unwrap();
+        assert_eq!(chat_count(&state, &path), 0, "chats must be deleted");
+        let preferences = state.settings.lock().unwrap().get();
+        assert_eq!(preferences["recent"], json!([]));
+        assert_eq!(preferences["activeProject"], json!(""));
+    }
+
+    #[test]
+    fn deleting_an_open_project_removes_its_chats() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = tempfile::tempdir().unwrap();
+        let (state, engine) = test_state(directory.path());
+        let path = project_path(root.path());
+        let (id, client) = start_workspace(&state, &engine, &path);
+        state.projects.lock().unwrap().insert(
+            id.clone(),
+            json!({"id":id,"path":path,"clientId":client,"kind":"project","connection":"ready","channels":[]}),
+        );
+        state
+            .settings
+            .lock()
+            .unwrap()
+            .update(&json!({"recent":[path.clone()],"activeSessions":{path.clone():"chat"}}))
+            .unwrap();
+        delete_project_data(&state, &path, None).unwrap();
+        assert_eq!(chat_count(&state, &path), 0, "chats must be deleted");
+        assert!(state.projects.lock().unwrap().is_empty());
+        let preferences = state.settings.lock().unwrap().get();
+        assert_eq!(preferences["recent"], json!([]));
+        assert_eq!(preferences["activeSessions"][&path], Value::Null);
+    }
+
+    #[test]
+    fn deleting_a_missing_project_still_clears_its_entry() {
+        let directory = tempfile::tempdir().unwrap();
+        let (state, _engine) = test_state(directory.path());
+        let path = "C:/prime/missing/project";
+        state
+            .settings
+            .lock()
+            .unwrap()
+            .update(&json!({"recent":[path],"activeProject":path}))
+            .unwrap();
+        let result = delete_project_data(&state, path, None).unwrap();
+        assert!(
+            !result["warnings"].as_array().unwrap().is_empty(),
+            "the unreachable chats must be reported"
+        );
+        let preferences = state.settings.lock().unwrap().get();
+        assert_eq!(preferences["recent"], json!([]));
+        assert_eq!(preferences["activeProject"], json!(""));
+    }
+
     #[test]
     fn deleting_a_project_clears_only_its_own_preferences() {
         let recent = vec![json!("C:/one"), json!("C:/two"), json!("C:/one")];

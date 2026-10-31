@@ -13,14 +13,44 @@ fn startup_cursor_handles_split_query_without_consuming_later_reports() {
 
 #[test]
 fn agent_creation_release_and_close_respect_user_ownership() {
-    let directory=tempfile::tempdir().unwrap();let manager=TerminalManager::new();let emitter:Emitter=Arc::new(|_,_|{});
-    let user=create(&manager,directory.path());
-    assert!(manager.dispatch_agent("workspace",directory.path(),&json!({"action":"close","id":user.id}),emitter.clone()).is_err());
-    let agent=manager.dispatch_agent("workspace",directory.path(),&json!({"action":"create"}),emitter.clone()).unwrap();
-    assert_eq!(agent["owner"],"agent");
-    let released=manager.dispatch_agent("workspace",directory.path(),&json!({"action":"release","id":agent["id"]}),emitter.clone()).unwrap();
-    assert_eq!(released["owner"],"user");
-    assert!(manager.dispatch_agent("workspace",directory.path(),&json!({"action":"close","id":agent["id"]}),emitter).is_err());
+    let directory = tempfile::tempdir().unwrap();
+    let manager = TerminalManager::new();
+    let emitter: Emitter = Arc::new(|_, _| {});
+    let user = create(&manager, directory.path());
+    assert!(manager
+        .dispatch_agent(
+            "workspace",
+            directory.path(),
+            &json!({"action":"close","id":user.id}),
+            emitter.clone()
+        )
+        .is_err());
+    let agent = manager
+        .dispatch_agent(
+            "workspace",
+            directory.path(),
+            &json!({"action":"create"}),
+            emitter.clone(),
+        )
+        .unwrap();
+    assert_eq!(agent["owner"], "agent");
+    let released = manager
+        .dispatch_agent(
+            "workspace",
+            directory.path(),
+            &json!({"action":"release","id":agent["id"]}),
+            emitter.clone(),
+        )
+        .unwrap();
+    assert_eq!(released["owner"], "user");
+    assert!(manager
+        .dispatch_agent(
+            "workspace",
+            directory.path(),
+            &json!({"action":"close","id":agent["id"]}),
+            emitter
+        )
+        .is_err());
     manager.shutdown().unwrap();
 }
 
@@ -112,6 +142,7 @@ fn shell_exit_retains_tail_and_exit_code() {
         .as_str()
         .unwrap()
         .contains("native-done"));
+    assert_eq!(manager.count(), 0);
     manager.close_one("workspace", &terminal.id).unwrap();
     assert_eq!(manager.count(), 0);
 }

@@ -132,19 +132,25 @@ func (s *service) listPage(ctx context.Context, sessionID, cursor string, limit 
 		}
 	}
 	visit := func(item db.MessageTimingMetadata) {
-		if item.Shell {
+		if item.Shell || item.Hidden {
+			return
+		}
+		if item.Role == "user" {
+			// A request starts at the user's prompt and keeps running through the
+			// runs the agent starts on its own (background wake-ups, provider
+			// retries), so the working timer never restarts mid-task.
+			page.Timing.StartedAt = item.CreatedAt
 			return
 		}
 		if page.Timing.StartedAt == 0 {
 			page.Timing.StartedAt = item.CreatedAt
 		}
-		if item.Role != "assistant" || !item.FinishReason.Valid || item.FinishReason.String == string(FinishReasonToolUse) {
+		if !item.FinishReason.Valid || item.FinishReason.String == string(FinishReasonToolUse) {
 			return
 		}
 		if wanted[item.ID] && item.FinishTime.Valid && item.FinishTime.Int64 > 0 && page.Timing.StartedAt > 0 {
 			page.Timing.Completed[item.ID] = max(int64(0), item.FinishTime.Int64-page.Timing.StartedAt)
 		}
-		page.Timing.StartedAt = 0
 	}
 	if textOnly {
 		return page, nil

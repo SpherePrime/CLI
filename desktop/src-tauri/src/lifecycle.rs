@@ -18,11 +18,9 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         crate::migration::import_legacy_state(&directory);
     }
     let state = crate::state::AppState::new(directory).map_err(|error| error.message)?;
-    state
-        .teams
-        .set_adapter(std::sync::Arc::new(crate::teams::adapter::NativeTeamAdapter::new(
-            app.handle().clone(),
-        )));
+    state.teams.set_adapter(std::sync::Arc::new(
+        crate::teams::adapter::NativeTeamAdapter::new(app.handle().clone()),
+    ));
     let browser_server = crate::browser::mcp::start(app.handle(), state.browser.clone())?;
     std::env::set_var("PRIME_DESKTOP_BROWSER_URL", &browser_server.url);
     std::env::set_var("PRIME_DESKTOP_BROWSER_TOKEN", &browser_server.token);
@@ -31,7 +29,11 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     if let Err(error) = crate::tray::create(app.handle()) {
         eprintln!("Tray unavailable: {error}");
     }
-    if let Err(error) = app.state::<crate::state::AppState>().windows.start(app.handle()) {
+    if let Err(error) = app
+        .state::<crate::state::AppState>()
+        .windows
+        .start(app.handle())
+    {
         eprintln!("Window control unavailable: {error}");
     }
     crate::sudo::publish_environment();
@@ -44,11 +46,8 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let handle = app.handle().clone();
     std::thread::spawn(move || {
         let state = handle.state::<crate::state::AppState>();
-        let result = crate::engine::Engine::load_bundled(
-            &state.directory,
-            Some(&resources),
-            state.isolated,
-        );
+        let result =
+            crate::engine::Engine::load_bundled(&state.directory, Some(&resources), state.isolated);
         if state.closing.load(Ordering::Acquire) {
             if let Ok(engine) = result {
                 engine.close();
@@ -97,8 +96,13 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
             });
         } else if !state.close_ready.swap(false, Ordering::AcqRel) {
             api.prevent_close();
-            crate::events::emit(window.app_handle(), "", "beforeClose", serde_json::Value::Null);
-        } else if !state.quitting.load(Ordering::Acquire) && crate::tray::keep_running(&state) {
+            crate::events::emit(
+                window.app_handle(),
+                "",
+                "beforeClose",
+                serde_json::Value::Null,
+            );
+        } else if crate::tray::should_hide_to_tray(state.quitting.load(Ordering::Acquire)) {
             api.prevent_close();
             crate::tray::hide_to_tray(window.app_handle());
         }
