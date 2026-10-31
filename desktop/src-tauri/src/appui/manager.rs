@@ -73,6 +73,131 @@ impl AppUiManager {
         Ok(json!({"target": target, "log": log}))
     }
 
+    pub fn handle(&self, app: &AppHandle, workspace: &str, request: &Value) -> Result<Value, String> {
+        let action = request
+            .get("action")
+            .and_then(Value::as_str)
+            .ok_or("Missing application request action")?;
+        match action {
+            "targets" => self.targets(workspace),
+            "state" => self.state(workspace),
+            "attach" => self.attach_user(app, workspace, request),
+            "detach" => {
+                self.targets
+                    .lock()
+                    .map_err(|error| error.to_string())?
+                    .remove(workspace);
+                self.state(workspace)
+            }
+            "snapshot" => self.snapshot_user(app, workspace, request),
+            "act" => self.act_user(app, workspace, request),
+            "type" => self.type_user(app, workspace, request),
+            _ => Err("Unknown application request".to_owned()),
+        }
+    }
+
+    fn attach_user(
+        &self,
+        app: &AppHandle,
+        workspace: &str,
+        request: &Value,
+    ) -> Result<Value, String> {
+        let session = session_of(request)?;
+        let hwnd = argument(request, "hwnd")?;
+        let mode = request
+            .get("mode")
+            .and_then(Value::as_str)
+            .unwrap_or("view");
+        if mode != "view" && mode != "control" {
+            return Err("Mode must be view or control".to_owned());
+        }
+        let state = app.state::<crate::state::AppState>();
+        state.windows.handle(
+            app,
+            workspace,
+            &json!({"action": "share", "sessionId": session, "hwnd": hwnd, "mode": mode}),
+        )?;
+        let share = state
+            .windows
+            .share_for(app, workspace, Some(session), mode == "control", false)?;
+        let target = Target {
+            workspace_id: workspace.to_owned(),
+            session_id: share.session_id.clone(),
+            hwnd: share.hwnd.clone(),
+            title: share.title.clone(),
+            pid: share.pid,
+            identity: share.identity.clone(),
+            generation: share.generation.clone(),
+        };
+        self.targets
+            .lock()
+            .map_err(|error| error.to_string())?
+            .insert(workspace.to_owned(), target);
+        self.record(app, workspace, "attach", &share.title, Ok(()));
+        self.state(workspace)
+    }
+
+    fn snapshot_user(
+        &self,
+        app: &AppHandle,
+        workspace: &str,
+        request: &Value,
+    ) -> Result<Value, String> {
+        let session = session_of(request)?;
+        let target = self.target(app, workspace, Some(session), false, false)?;
+        let result = self.call(
+            UiaRequest::Snapshot {
+                hwnd: target.hwnd.clone(),
+                max_nodes: MAX_NODES,
+                max_depth: MAX_DEPTH,
+            },
+            SNAPSHOT_TIMEOUT,
+        );
+        self.record(
+            app,
+            workspace,
+            "snapshot",
+            &target.title,
+            result.as_ref().map(|_| ()),
+        );
+        result
+    }
+
+    fn act_user(&self, app: &AppHandle, workspace: &str, request: &Value) -> Result<Value, String> {
+        let session = session_of(request)?;
+        let target = self.target(app, workspace, Some(session), true, false)?;
+        self.budget()?;
+        let action = element_action(request)?;
+        let name = action.name();
+        let result = self.call(
+            UiaRequest::Act {
+                hwnd: target.hwnd.clone(),
+                locator: locator_of(request),
+                action,
+            },
+            ACTION_TIMEOUT,
+        );
+        self.record(app, workspace, name, &target.title, result.as_ref().map(|_| ()));
+        result
+    }
+
+    fn type_user(&self, app: &AppHandle, workspace: &str, request: &Value) -> Result<Value, String> {
+        let session = session_of(request)?;
+        let target = self.target(app, workspace, Some(session), true, false)?;
+        self.budget()?;
+        let text = argument(request, "text")?;
+        let result = self.call(
+            UiaRequest::Act {
+                hwnd: target.hwnd.clone(),
+                locator: locator_of(request),
+                action: UiAction::SetValue(text),
+            },
+            ACTION_TIMEOUT,
+        );
+        self.record(app, workspace, "type", &target.title, result.as_ref().map(|_| ()));
+        result
+    }
+
     pub fn attach(
         &self,
         app: &AppHandle,
@@ -103,6 +228,7 @@ impl AppUiManager {
             &context.workspace_id,
             context.session_id.as_deref(),
             mode == "control",
+            true,
         )?;
         let target = Target {
             workspace_id: context.workspace_id.clone(),
@@ -140,7 +266,13 @@ impl AppUiManager {
     }
 
     pub fn snapshot(&self, app: &AppHandle, context: &WorkbenchContext) -> Result<Value, String> {
-        let target = self.target(app, context, false)?;
+        let target = self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            false,
+            true,
+        )?;
         let result = self.call(
             UiaRequest::Snapshot {
                 hwnd: target.hwnd.clone(),
@@ -160,7 +292,13 @@ impl AppUiManager {
         locator: Locator,
         action: UiAction,
     ) -> Result<Value, String> {
-        let target = self.target(app, context, true)?;
+        let target = self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            true,
+            true,
+        )?;
         self.budget()?;
         let name = action.name();
         let result = self.call(
@@ -182,7 +320,13 @@ impl AppUiManager {
         locator: Locator,
         text: String,
     ) -> Result<Value, String> {
-        let target = self.target(app, context, true)?;
+        let target = self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            true,
+            true,
+        )?;
         self.budget()?;
         let result = self.call(
             UiaRequest::Act {
@@ -221,7 +365,13 @@ impl AppUiManager {
         context: &WorkbenchContext,
         key: String,
     ) -> Result<Value, String> {
-        let target = self.target(app, context, true)?;
+        let target = self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            true,
+            true,
+        )?;
         self.budget()?;
         let result = crate::computer::input::perform(
             &target.hwnd,
@@ -239,7 +389,13 @@ impl AppUiManager {
         context: &WorkbenchContext,
         locator: Locator,
     ) -> Result<Value, String> {
-        let target = self.target(app, context, false)?;
+        let target = self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            false,
+            true,
+        )?;
         let value = self.call(
             UiaRequest::ElementPng {
                 hwnd: target.hwnd.clone(),
@@ -269,25 +425,22 @@ impl AppUiManager {
     fn target(
         &self,
         app: &AppHandle,
-        context: &WorkbenchContext,
+        workspace: &str,
+        session: Option<&str>,
         control: bool,
+        busy: bool,
     ) -> Result<Target, String> {
         let target = self
             .targets
             .lock()
             .map_err(|error| error.to_string())?
-            .get(&context.workspace_id)
+            .get(workspace)
             .cloned()
             .ok_or("No application is attached. Use app_attach.")?;
         let share = app
             .state::<crate::state::AppState>()
             .windows
-            .share_for(
-                app,
-                &context.workspace_id,
-                context.session_id.as_deref(),
-                control,
-            )?;
+            .share_for(app, workspace, session, control, busy)?;
         check_target(&target, &share)?;
         Ok(target)
     }
@@ -388,6 +541,42 @@ fn target_json(target: &Target) -> Value {
         "identity": target.identity,
         "workspaceId": target.workspace_id,
     })
+}
+
+fn session_of(request: &Value) -> Result<&str, String> {
+    request
+        .get("sessionId")
+        .and_then(Value::as_str)
+        .filter(|value| !value.is_empty())
+        .ok_or("The active chat cannot be identified unambiguously".to_owned())
+}
+
+fn locator_of(request: &Value) -> Locator {
+    let locator = request.get("locator");
+    let field = |name: &str| {
+        locator
+            .and_then(|value| value.get(name))
+            .and_then(Value::as_str)
+            .filter(|value| !value.is_empty())
+            .map(str::to_owned)
+    };
+    Locator {
+        reference: field("reference"),
+        automation_id: field("automationId"),
+        role: field("role"),
+        name: field("name"),
+        path: field("path"),
+    }
+}
+
+fn element_action(request: &Value) -> Result<UiAction, String> {
+    match request.get("elementAction").and_then(Value::as_str) {
+        Some("click") => Ok(UiAction::Invoke),
+        Some("toggle") => Ok(UiAction::Toggle),
+        Some("select") => Ok(UiAction::Select),
+        Some("focus") => Ok(UiAction::Focus),
+        _ => Err("Unknown element action".to_owned()),
+    }
 }
 
 fn argument(args: &Value, name: &str) -> Result<String, String> {

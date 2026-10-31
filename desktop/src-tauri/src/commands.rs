@@ -223,6 +223,10 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             .windows
             .handle(app, string(args, 0)?, args.get(1).unwrap_or(&Value::Null))
             .map_err(|error| HostError::new("WINDOW_ERROR", error)),
+        "appTesting" => state
+            .appui
+            .handle(app, string(args, 0)?, args.get(1).unwrap_or(&Value::Null))
+            .map_err(|error| HostError::new("APP_UI_ERROR", error)),
         "automation" => {
             let id = string(args, 0)?;
             state.root(id)?;

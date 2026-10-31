@@ -58,6 +58,7 @@ export type AppUiRequest =
   | { action: 'targets' }
   | {
       action: 'attach'
+      sessionId: string
       hwnd: string
       pid: number
       identity: string
@@ -65,25 +66,24 @@ export type AppUiRequest =
       mode: AppUiAccessMode
     }
   | { action: 'detach' }
-  | { action: 'snapshot' }
-  | { action: 'act'; locator: AppUiLocator; elementAction: AppUiElementAction }
-  | { action: 'type'; locator: AppUiLocator; text: string }
+  | { action: 'snapshot'; sessionId: string }
+  | { action: 'act'; sessionId: string; locator: AppUiLocator; elementAction: AppUiElementAction }
+  | { action: 'type'; sessionId: string; locator: AppUiLocator; text: string }
   | { action: 'state' }
 
 export type AppUiLogEntry = {
   time: number
+  title: string
+  source: string
   action: string
   ok: boolean
   error?: string
 }
 
-export type AppUiShare = {
-  mode: AppUiAccessMode
-}
-
 export type AppUiResponse = {
+  text?: string
   snapshot?: AppUiSnapshot
-  targets?: AppUiTarget[]
-  share?: AppUiShare | null
+  windows?: AppUiTarget[]
+  target?: AppUiTarget | null
   log?: AppUiLogEntry[]
 }
