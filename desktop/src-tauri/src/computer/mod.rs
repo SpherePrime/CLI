@@ -1,11 +1,11 @@
 #[cfg(windows)]
-mod capture;
+pub(crate) mod capture;
 #[cfg(windows)]
-mod input;
+pub(crate) mod input;
 pub mod tools;
-mod types;
+pub(crate) mod types;
 #[cfg(windows)]
-mod windows;
+pub(crate) mod windows;
 
 use serde_json::{json, Value};
 use std::{
