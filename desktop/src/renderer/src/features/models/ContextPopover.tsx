@@ -4,6 +4,7 @@ import { Popover } from '../../components/Popover'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { compactTokens } from './ContextMeter'
+import { realSessionId } from '../../../../shared/pendingSession'
 
 type Category = { key: string; tokens: number; items: number }
 type Breakdown = {
@@ -70,7 +71,7 @@ export function ContextPopover({
   const [data, setData] = useState<Breakdown | null>(null)
   const [error, setError] = useState('')
   const [compacting, setCompacting] = useState(false)
-  const sessionId = w.session?.id
+  const sessionId = realSessionId(w.session)
   const tokens = (w.session?.prompt_tokens || 0) + (w.session?.completion_tokens || 0)
   useEffect(() => {
     let current = true

@@ -4,6 +4,7 @@ import { Popover } from '../../components/Popover'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { useModelCapabilities } from './useModelCapabilities'
+import { realSessionId } from '../../../../shared/pendingSession'
 import { ModelPickerRow } from './ModelPickerRow'
 import {
   buildModelGroups,
@@ -31,10 +32,11 @@ export function ModelPicker({
   const [saveError, setError] = useState('')
   const error = saveError || loadError
   const search = useRef<HTMLInputElement>(null)
+  const sessionId = realSessionId(w.session)
   const sessionModel =
-    kind === 'large' && w.activeSessionId
+    kind === 'large' && sessionId
       ? (w.config.session_models as Record<string, { provider: string; model: string }> | undefined)?.[
-          w.activeSessionId
+          sessionId
         ]
       : undefined
   const selected = sessionModel ?? w.config.models?.[kind]
@@ -160,11 +162,11 @@ export function ModelPicker({
                       setSaving(true)
                       setError('')
                       try {
-                        const perSession = kind === 'large' && w.activeSessionId
+                        const perSession = kind === 'large' && sessionId
                         await w.call('model', {
                           modelType: kind,
                           model: { provider: model.provider_id, model: model.model_id },
-                          ...(perSession ? { sessionId: w.activeSessionId } : {})
+                          ...(perSession ? { sessionId } : {})
                         })
                         if (!perSession) await w.call('init')
                         await w.refresh()

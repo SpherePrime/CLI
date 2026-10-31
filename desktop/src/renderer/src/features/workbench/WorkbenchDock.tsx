@@ -25,6 +25,7 @@ import '../../styles/workbench-dock.css'
 import { AutomationPanel } from '../automations/AutomationPanel'
 import type { AutomationRequest } from '../../../../shared/automations'
 import { openWorkbenchRun } from './openRun'
+import { realSessionId } from '../../../../shared/pendingSession'
 
 export type WorkbenchView = 'terminal' | 'automations' | 'teams' | 'launch' | 'github' | 'windows'
 
@@ -222,7 +223,7 @@ export function WorkbenchDock({
         {w.project && view === 'windows' && (
           <WindowsPanel
             workspaceId={workspaceId}
-            sessionId={w.activeSessionId}
+            sessionId={realSessionId(w.session)}
             sessionTitle={w.session?.title}
             onError={w.errorHandler}
           />

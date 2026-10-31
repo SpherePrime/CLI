@@ -29,6 +29,7 @@ import { BrowserTab } from '../browser/BrowserTab'
 import { notifyError } from '../notifications/notifications'
 import { AgentsPanel } from '../agents/AgentsPanel'
 import type { AgentRequest } from '../agents/openAgent'
+import { realSessionId } from '../../../../shared/pendingSession'
 
 type Entry = { path: string; name: string; directory: boolean }
 
@@ -142,9 +143,10 @@ export function Inspector({
   }, [])
   useEffect(() => {
     setHistory([])
-    if (!w.project || !w.session) return
+    const sessionId = realSessionId(w.session)
+    if (!w.project || !sessionId) return
     void w
-      .call('history', { sessionId: w.session.id })
+      .call('history', { sessionId })
       .then((items) => setHistory(items || []))
       .catch(() => {})
   }, [w.project?.id, w.session?.id, w.busy])
@@ -236,7 +238,7 @@ export function Inspector({
       await openDocument(
         w.project!.id,
         relative,
-        await window.prime.diff(w.project!.id, w.session?.id || '', relative, source)
+        await window.prime.diff(w.project!.id, realSessionId(w.session) || '', relative, source)
       )
       setError('')
     } catch (error: any) {

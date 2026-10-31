@@ -485,6 +485,9 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 	// Discover models concurrently for custom providers that need it.
 	// A provider needs discovery when discover_models is explicitly true,
 	// or when the models list is empty (auto-trigger, unless opted out).
+	// A provider that already has stored models is refreshed in the
+	// background instead of being awaited, so opening a workspace does not
+	// wait on the provider's catalog.
 	type discoveryResult struct {
 		models []catwalk.Model
 		err    error
@@ -520,6 +523,12 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			mu.Lock()
 			discoveryResults[id] = discoveryResult{models: models}
 			mu.Unlock()
+			continue
+		}
+		if wantsDiscovery && len(pc.Models) > 0 {
+			// The stored models are usable, so the refresh runs in the
+			// background and this load keeps them.
+			refreshDiscoveryInBackground(cacheKey, cfg, providerType, resolver)
 			continue
 		}
 		wg.Go(func() {

@@ -6,14 +6,16 @@ import type { Workspace } from '../../app/useWorkspace'
 import type { AgentWorker } from '../../../../shared/agents'
 import { useAgentPolling } from '../agents/useAgentPolling'
 import { agentApprovalSessions } from '../agents/agentApprovalSessions'
+import { realSessionId } from '../../../../shared/pendingSession'
 export function Approvals({ workspace: w }: { workspace: Workspace }) {
-  if (!w.project || !w.session) return null
+  const sessionId = realSessionId(w.session)
+  if (!w.project || !sessionId) return null
   return (
     <TeamApprovals
-      key={`${w.project.id}:${w.session.id}`}
+      key={`${w.project.id}:${sessionId}`}
       workspace={w}
       projectId={w.project.id}
-      sessionId={w.session.id}
+      sessionId={sessionId}
     />
   )
 }

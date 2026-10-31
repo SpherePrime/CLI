@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
 import { isRemoteWorkspace } from '../../../../shared/remoteWorkspace'
+import { isPendingSessionId } from '../../../../shared/pendingSession'
 import { orderedProjectPaths, orderedSessions } from './projectOrder'
 import { useProjectReorder } from './useProjectReorder'
 import { useSessionReorder } from './useSessionReorder'
@@ -131,7 +132,7 @@ export function SidebarChats({
   }
   const deleteChatSession = async (project: Project, session: Session) => {
     try {
-      if (project.id === w.project?.id) {
+      if (project.id === w.project?.id || isPendingSessionId(session.id)) {
         await w.deleteSession(session.id)
         forgetSessionOrder(project.id, session.id)
         return
@@ -215,7 +216,7 @@ export function SidebarChats({
     ? sessionsOf(menuProject).find((session) => session.id === menu?.id)
     : null
   const renameSession = async (project: Project, session: Session) => {
-    if (!title.trim()) return
+    if (!title.trim() || isPendingSessionId(session.id)) return
     try {
       await window.prime.call(project.id, 'renameSession', {
         sessionId: session.id,
@@ -236,9 +237,12 @@ export function SidebarChats({
   }
   const createProjectChat = async (project?: Project) => {
     try {
-      if (project) await w.selectProject(project)
-      else await w.openChat()
-      await w.createSession()
+      if (project) {
+        await w.selectProject(project)
+        await w.createSession()
+        return
+      }
+      await w.newPersonalChat()
     } catch (error) {
       w.errorHandler(error)
     }
