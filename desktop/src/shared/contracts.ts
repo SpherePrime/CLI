@@ -200,6 +200,8 @@ export interface DesktopApi {
     workspaceId: string,
     request: import('./appTesting').AppUiRequest
   ): Promise<import('./appTesting').AppUiResponse>
+  appPick(workspaceId: string, sessionId: string): Promise<import('./appTesting').PickedAppElement>
+  appPickCancel(): Promise<void>
   jobs(request: import('./jobs').JobRequest): Promise<import('./jobs').Job[]>
   browserPick(): Promise<PickedElementResult[] | null>
   browserPickCancel(): Promise<void>

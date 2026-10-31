@@ -8,6 +8,8 @@
   "github": true,
   "windows": true,
   "appTesting": true,
+  "appPick": true,
+  "appPickCancel": true,
   "jobs": true,
   "browserPick": true,
   "browserPickCancel": true,

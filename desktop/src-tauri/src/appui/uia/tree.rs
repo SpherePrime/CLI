@@ -1,5 +1,5 @@
 use ::windows::core::{BOOL, Result as WindowsResult, BSTR};
-use ::windows::Win32::Foundation::{HWND, RECT};
+use ::windows::Win32::Foundation::{HWND, POINT, RECT};
 use ::windows::Win32::UI::Accessibility::{
     IUIAutomation, IUIAutomationCondition, IUIAutomationElement,
     IUIAutomationExpandCollapsePattern, IUIAutomationInvokePattern, IUIAutomationScrollPattern,
@@ -7,8 +7,10 @@ use ::windows::Win32::UI::Accessibility::{
     TreeScope_Children, UIA_ExpandCollapsePatternId, UIA_InvokePatternId, UIA_ScrollPatternId,
     UIA_SelectionItemPatternId, UIA_TogglePatternId, UIA_ValuePatternId,
 };
+use ::windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use super::action::{MAX_DEPTH, MAX_NODES};
 use super::roles;
 use crate::appui::types::{Confidence, Provider, UiBounds, UiNode, UiSnapshot};
 
@@ -40,6 +42,75 @@ pub fn snapshot(
         count: builder.count,
         nodes: vec![node],
     })
+}
+
+pub fn describe(automation: &IUIAutomation, window: HWND) -> Result<serde_json::Value, String> {
+    let mut point = POINT::default();
+    unsafe { GetCursorPos(&mut point) }.map_err(|error| error.to_string())?;
+    let element = unsafe { automation.ElementFromPoint(point) }.map_err(|error| error.to_string())?;
+    let snapshot = snapshot(automation, window, MAX_NODES, MAX_DEPTH)?;
+    let role = roles::role(unsafe { element.CurrentControlType() }.unwrap_or_default());
+    let name = text(unsafe { element.CurrentName() });
+    let automation_id = optional(unsafe { element.CurrentAutomationId() });
+    let bounds = rect(unsafe { element.CurrentBoundingRectangle() });
+    let mut candidates = Vec::new();
+    for node in all(&snapshot.nodes) {
+        if node.role == role
+            && locator_same(&node.name, &name)
+            && node.automation_id == automation_id
+            && node.bounds == bounds
+        {
+            candidates.push(node.reference.clone());
+        }
+    }
+    let (reference, confidence) = match candidates.len() {
+        1 => (Some(candidates[0].clone()), "high"),
+        0 => (None, "low"),
+        _ => (None, "medium"),
+    };
+    let mut states = Vec::new();
+    if flag(unsafe { element.CurrentIsEnabled() }) {
+        states.push("enabled".to_owned());
+    }
+    if flag(unsafe { element.CurrentIsOffscreen() }) {
+        states.push("offscreen".to_owned());
+    }
+    if flag(unsafe { element.CurrentIsPassword() }) {
+        states.push("password".to_owned());
+    }
+    Ok(serde_json::json!({
+        "element": {
+            "reference": reference,
+            "role": role,
+            "name": name,
+            "value": if flag(unsafe { element.CurrentIsPassword() }) { None } else { value(&element) },
+            "bounds": bounds,
+            "states": states,
+            "actions": actions(&element),
+            "automationId": automation_id,
+            "className": optional(unsafe { element.CurrentClassName() }),
+            "path": format!("{role}[{name}]"),
+            "source": "uia",
+            "confidence": confidence,
+        },
+        "reference": reference,
+        "confidence": confidence,
+        "candidates": candidates.len(),
+        "window": snapshot.title,
+    }))
+}
+
+fn all(nodes: &[UiNode]) -> Vec<&UiNode> {
+    let mut collected = Vec::new();
+    for node in nodes {
+        collected.push(node);
+        collected.extend(all(&node.children));
+    }
+    collected
+}
+
+fn locator_same(left: &str, right: &str) -> bool {
+    left.trim().eq_ignore_ascii_case(right.trim())
 }
 
 pub fn warnings(actionable: usize, truncated: bool) -> Vec<String> {

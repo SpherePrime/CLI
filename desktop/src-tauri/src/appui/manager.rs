@@ -6,8 +6,10 @@ use base64::Engine;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 
-use super::types::Locator;
+use super::picker::{self, CancelHandle};
+use super::types::{Locator, UiBounds};
 use super::uia::action::{UiAction, MAX_DEPTH, MAX_NODES};
+use super::uia::capture;
 use super::uia::worker::{UiaRequest, UiaWorker};
 use crate::browser::workbench::WorkbenchContext;
 use crate::computer::types::{Log, Share};
@@ -16,6 +18,7 @@ const SNAPSHOT_TIMEOUT: Duration = Duration::from_secs(20);
 const ACTION_TIMEOUT: Duration = Duration::from_secs(15);
 const MAX_ACTIONS_PER_MINUTE: usize = 200;
 const MAX_LOG_ENTRIES: usize = 100;
+const PICK_TIMEOUT: Duration = Duration::from_secs(120);
 
 #[derive(Clone)]
 pub struct Target {
@@ -33,6 +36,7 @@ pub struct AppUiManager {
     targets: Mutex<HashMap<String, Target>>,
     logs: Mutex<HashMap<String, Vec<Log>>>,
     actions: Mutex<Vec<Instant>>,
+    picker: Mutex<Option<CancelHandle>>,
 }
 
 impl AppUiManager {
@@ -42,6 +46,7 @@ impl AppUiManager {
             targets: Mutex::new(HashMap::new()),
             logs: Mutex::new(HashMap::new()),
             actions: Mutex::new(Vec::new()),
+            picker: Mutex::new(None),
         }
     }
 
@@ -92,6 +97,8 @@ impl AppUiManager {
             "snapshot" => self.snapshot_user(app, workspace, request),
             "act" => self.act_user(app, workspace, request),
             "type" => self.type_user(app, workspace, request),
+            "pick" => self.pick(app, workspace, request),
+            "pickCancel" => self.pick_cancel(),
             _ => Err("Unknown application request".to_owned()),
         }
     }
@@ -196,6 +203,65 @@ impl AppUiManager {
         );
         self.record(app, workspace, "type", &target.title, result.as_ref().map(|_| ()));
         result
+    }
+
+    pub fn pick(&self, app: &AppHandle, workspace: &str, request: &Value) -> Result<Value, String> {
+        let session = session_of(request)?;
+        let target = self.target(app, workspace, Some(session), false, false)?;
+        let (armed, handle) = picker::arm()?;
+        if let Ok(mut slot) = self.picker.lock() {
+            *slot = Some(handle.clone());
+        }
+        let outcome = picker::wait(&armed, &handle, PICK_TIMEOUT);
+        if let Ok(mut slot) = self.picker.lock() {
+            *slot = None;
+        }
+        outcome?;
+        let described = self.call(
+            UiaRequest::ElementAtCursor {
+                hwnd: target.hwnd.clone(),
+            },
+            SNAPSHOT_TIMEOUT,
+        )?;
+        let bounds = UiBounds {
+            x: described["element"]["bounds"]["x"].as_i64().unwrap_or(0) as i32,
+            y: described["element"]["bounds"]["y"].as_i64().unwrap_or(0) as i32,
+            width: described["element"]["bounds"]["width"].as_i64().unwrap_or(0) as i32,
+            height: described["element"]["bounds"]["height"].as_i64().unwrap_or(0) as i32,
+        };
+        let png = capture::bounds_png(&target.hwnd, &bounds)?;
+        let stored = app
+            .state::<crate::state::AppState>()
+            .attachments
+            .lock()
+            .map_err(|error| error.to_string())?
+            .image("element.png", &png)
+            .map_err(|error| error.message)?;
+        self.record(app, workspace, "pick", &target.title, Ok(()));
+        Ok(json!({
+            "element": described["element"],
+            "reference": described["reference"],
+            "confidence": described["confidence"],
+            "candidates": described["candidates"],
+            "window": described["window"],
+            "attachmentId": stored[0]["id"].clone(),
+            "image": format!(
+                "data:image/png;base64,{}",
+                base64::engine::general_purpose::STANDARD.encode(&png)
+            ),
+        }))
+    }
+
+    pub fn pick_cancel(&self) -> Result<Value, String> {
+        let handle = self
+            .picker
+            .lock()
+            .map_err(|error| error.to_string())?
+            .take();
+        if let Some(handle) = handle {
+            handle.cancel();
+        }
+        Ok(json!({"status": "cancelled"}))
     }
 
     pub fn attach(
