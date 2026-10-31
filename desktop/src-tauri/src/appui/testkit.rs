@@ -87,8 +87,16 @@ impl Drop for FixtureWindow {
 }
 
 pub fn window() -> FixtureWindow {
+    spawn(true)
+}
+
+pub fn bare_window() -> FixtureWindow {
+    spawn(false)
+}
+
+fn spawn(children: bool) -> FixtureWindow {
     let (sender, receiver) = mpsc::channel();
-    thread::spawn(move || match unsafe { create() } {
+    thread::spawn(move || match unsafe { create(children) } {
         Ok(handles) => {
             let _ = sender.send(Ok(handles));
             pump();
@@ -104,7 +112,7 @@ pub fn window() -> FixtureWindow {
     FixtureWindow { handles }
 }
 
-unsafe fn create() -> Result<Handles, String> {
+unsafe fn create(children: bool) -> Result<Handles, String> {
     let class = w!("PrimeAppUiFixture");
     let definition = WNDCLASSW {
         lpfnWndProc: Some(window_proc),
@@ -128,6 +136,15 @@ unsafe fn create() -> Result<Handles, String> {
         None,
     )
     .map_err(|error| error.to_string())?;
+    let _ = ShowWindow(window, SW_SHOW);
+    if !children {
+        return Ok(Handles {
+            window: window.0 as usize,
+            button: 0,
+            label: 0,
+            checkbox: 0,
+        });
+    }
     let button = CreateWindowExW(
         WINDOW_EX_STYLE(0),
         w!("BUTTON"),
@@ -173,7 +190,6 @@ unsafe fn create() -> Result<Handles, String> {
         None,
     )
     .map_err(|error| error.to_string())?;
-    let _ = ShowWindow(window, SW_SHOW);
     Ok(Handles {
         window: window.0 as usize,
         button: button.0 as usize,
