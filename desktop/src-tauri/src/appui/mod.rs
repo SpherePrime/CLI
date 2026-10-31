@@ -1,3 +1,4 @@
+pub(crate) mod dom;
 pub(crate) mod locator;
 pub(crate) mod manager;
 #[cfg(windows)]

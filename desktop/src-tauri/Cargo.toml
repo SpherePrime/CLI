@@ -46,6 +46,7 @@ rand = "0.9"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
 zip = { version = "2", default-features = false, features = ["deflate"] }
 tokio = { version = "1", features = ["rt", "time", "macros"] }
+tungstenite = { version = "0.30.0", features = ["handshake"] }
 
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.39"
