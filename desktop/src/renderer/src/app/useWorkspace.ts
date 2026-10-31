@@ -20,6 +20,7 @@ import { useMessageHistory } from '../features/chat/useMessageHistory'
 import { updateHistoryMessage, type MessagePage } from '../features/chat/messageWindow'
 import { queueMessageEvent, type SequencedMessageEvent } from '../features/chat/messageEvents'
 import { createResourceRefresh, resourceEvents, resourceOperations } from './resourceRefresh'
+import { reconcileObservedBusy, type ObservedBusy } from './sessionBusy'
 
 const resolvedLimit = 1000
 
@@ -68,11 +69,7 @@ export function useWorkspace() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [retryNotice, setRetryNotice] = useState<{ sessionId: string; at: number } | null>(null)
-  const [observedBusy, setObservedBusy] = useState<{
-    projectId: string
-    sessionId: string
-    busy: boolean
-  } | null>(null)
+  const [observedBusy, setObservedBusy] = useState<ObservedBusy>(null)
   const [pendingShell, setPendingShell] = useState<{ projectId: string; sessionId: string } | null>(
     null
   )
@@ -120,6 +117,7 @@ export function useWorkspace() {
     return window.prime.call(id, operation, args)
   }, [])
   const pendingFetches = useRef(new Map<string, Promise<void>>())
+  const openingProject = useRef<Promise<void> | null>(null)
   const refreshPending = useCallback(async () => {
     const { project } = current.current
     if (!project) return
@@ -208,8 +206,20 @@ export function useWorkspace() {
           ['skills', window.prime.call(project.id, 'skills')],
           ['channels', window.prime.call(project.id, 'channelMessages')]
         )
+      const snapshotSequence = messageSequence.current
+      const messageRequest =
+        includeMessages && session
+          ? window.prime.call(project.id, 'messagePage', { sessionId: session.id, limit: 60 }).then(
+              (value) => ({ ok: true as const, value: value as MessagePage }),
+              (reason: unknown) => ({ ok: false as const, reason })
+            )
+          : null
+      if (messageRequest) messageSnapshots.current++
       const results = await Promise.allSettled(tasks.map(([, task]) => task))
-      if (current.current.project?.id !== project.id) return
+      if (current.current.project?.id !== project.id) {
+        if (messageRequest && --messageSnapshots.current === 0) messageEvents.current.clear()
+        return
+      }
       const values: Record<string, Json> = {}
       tasks.forEach(([name], index) => {
         values[name] =
@@ -228,22 +238,17 @@ export function useWorkspace() {
           channels: values.channels || []
         })
       if (!session) return
-      let active: Session[] | undefined = values.sessions
-      if (includeMessages) {
-        const snapshotSequence = messageSequence.current
-        messageSnapshots.current++
+      const active: Session[] | undefined = values.sessions
+      if (messageRequest) {
         try {
-          const [msgs, latest] = await Promise.allSettled([
-            window.prime.call(project.id, 'messagePage', { sessionId: session.id, limit: 60 }),
-            window.prime.call(project.id, 'sessions')
-          ])
+          const settled = await messageRequest
           if (
             current.current.project?.id !== project.id ||
             current.current.session?.id !== session.id
           )
             return
-          if (msgs.status === 'fulfilled') {
-            let reconciled = msgs.value as MessagePage
+          if (settled.ok) {
+            let reconciled = settled.value
             for (const entry of messageEvents.current.values())
               if (
                 entry.sequence > snapshotSequence &&
@@ -252,8 +257,7 @@ export function useWorkspace() {
               )
                 reconciled = updateHistoryMessage(reconciled, entry.message, entry.action)
             history.accept(session.id, reconciled)
-          } else history.fail(session.id, msgs.reason)
-          active = latest.status === 'fulfilled' ? latest.value : undefined
+          } else history.fail(session.id, settled.reason)
         } finally {
           if (--messageSnapshots.current === 0) messageEvents.current.clear()
         }
@@ -264,6 +268,13 @@ export function useWorkspace() {
       if (selected) {
         setSession(selected)
         setBusy(Boolean(selected.is_busy))
+        setObservedBusy((observed) =>
+          reconcileObservedBusy(observed, {
+            projectId: project.id,
+            sessionId: selected.id,
+            isBusy: Boolean(selected.is_busy)
+          })
+        )
       }
     },
     [refreshPending, refreshQueue, history.accept]
@@ -306,6 +317,11 @@ export function useWorkspace() {
     async function restoreWorkspace() {
       const saved = await window.prime.preferences()
       let opened = await window.prime.projects()
+      // The shell renders as soon as the saved state is known. Restoring the
+      // last project workspace is slow (the engine builds a workspace for it),
+      // so it continues in the background while the window is already usable.
+      setProjects(opened)
+      setStartupReady(true)
       const lastProject = saved.activeProject
         ? saved.recent.includes(saved.activeProject) || isRemoteWorkspace(saved.activeProject)
           ? saved.activeProject
@@ -331,9 +347,8 @@ export function useWorkspace() {
           current.current.session = selected
           setSession(selected)
         }
-        await refresh()
+        void refresh().catch(errorHandler)
       }
-      setStartupReady(true)
     }
     function restore(): Promise<void> {
       if (!startupRestore.current)
@@ -438,6 +453,7 @@ export function useWorkspace() {
         return
       }
       if (event.type === 'recovered') {
+        setObservedBusy(null)
         const opened: Project[] = event.payload
         const restored =
           opened.find((item) => item.path === current.current.project?.path) || opened[0]
@@ -463,7 +479,10 @@ export function useWorkspace() {
           error: event.payload.error,
           runtimeVersion: event.payload.version
         }))
-        if (event.payload.status === 'ready') void restore().catch(errorHandler)
+        if (event.payload.status === 'ready') {
+          setObservedBusy(null)
+          void restore().catch(errorHandler)
+        }
         return
       }
       if (event.workspaceId !== current.current.project?.id) return
@@ -542,7 +561,7 @@ export function useWorkspace() {
           if (payload.error && !payload.cancelled && !/context canceled/i.test(payload.error))
             setError(payload.error)
         }
-        void refresh()
+        void refreshLight()
       }
       if (event.type === 'agent_event' && payload?.type === 'provider_retry') {
         setRetryNotice({ sessionId: payload.session_id, at: Date.now() })
@@ -551,7 +570,7 @@ export function useWorkspace() {
       if (event.type === 'agent_event') {
         if (payload?.type === 'error' && !/context canceled/i.test(payload.error || ''))
           setError(payload.error || translate(language.current, 'Ошибка агента'))
-        void refresh()
+        void refreshLight()
       }
       if (event.type === 'permission_request')
         setPermissions((items) => [...items.filter((item) => item.id !== payload.id), payload])
@@ -628,10 +647,17 @@ export function useWorkspace() {
   async function openRemote(profileId: string) {
     await openWorkspace(() => window.prime.openRemote(profileId))
   }
+  // Waits until a project is available. The startup restore and the open
+  // dialog both run in the background, so a prompt typed while the workspace
+  // is still being built is queued here instead of being rejected.
+  async function waitForProject() {
+    if (current.current.project) return
+    await (openingProject.current ?? startupRestore.current)?.catch(() => {})
+  }
   async function openWorkspace(open: () => Promise<Project | null>) {
     setLoading(true)
     setError('')
-    try {
+    const task = (async () => {
       const opened = await open()
       if (!opened) return
       current.current = { project: opened, session: null }
@@ -642,12 +668,20 @@ export function useWorkspace() {
       setQuestions([])
       setBusy(false)
       setQueue([])
-      setProjects(await window.prime.projects())
-      setPreferences(await window.prime.preferences())
-      await refresh()
+      setLoading(false)
+      void (async () => {
+        void window.prime.projects().then(setProjects).catch(errorHandler)
+        void window.prime.preferences().then(setPreferences).catch(errorHandler)
+        await refresh()
+      })().catch(errorHandler)
+    })()
+    openingProject.current = task
+    try {
+      await task
     } catch (error) {
       errorHandler(error)
     } finally {
+      if (openingProject.current === task) openingProject.current = null
       setLoading(false)
     }
   }
@@ -659,12 +693,14 @@ export function useWorkspace() {
     history.reset()
     setBusy(false)
     setQueue([])
-    await refreshLight()
+    void refreshLight().catch(errorHandler)
     void scheduleRefresh(false, true).catch(() => {})
   }
   async function deleteProject(path: string) {
     try {
-      await window.prime.deleteProject(path)
+      const result = (await window.prime.deleteProject(path)) as unknown as {
+        warnings?: string[]
+      } | null
       const saved = await window.prime.preferences()
       setPreferences(saved)
       const remaining = projects.filter((item) => item.path !== path)
@@ -682,43 +718,54 @@ export function useWorkspace() {
         setResources({ mcp: {}, lsp: {}, skills: [] })
         if (remaining[0]) await selectProject(remaining[0])
       }
+      return { warnings: result?.warnings || [] }
     } catch (error) {
       errorHandler(error)
+      return { warnings: [] }
     }
   }
-  async function selectSession(selected: Session) {
-    history.reset()
-    setSession(selected)
-    current.current.session = selected
-    setBusy(Boolean(selected.is_busy))
-    setQueue([])
-    await call('currentSession', { sessionId: selected.id }).catch(errorHandler)
-    await refresh()
-  }
-  async function openSession(target: Project, selected: Session, known?: Session[]) {
-    if (target.id === current.current.project?.id) return selectSession(selected)
-    history.reset()
-    setDraftReasoningMode(null)
-    current.current = { project: target, session: selected }
-    setProject(target)
+  // Shows a chat immediately: a cached page is reused, otherwise the message
+  // page is requested right away instead of waiting for the rest of the
+  // workspace state. The remaining state loads afterwards in the background.
+  function showSession(project: Project, selected: Session, known?: Session[]) {
+    if (!history.select(selected.id)) void history.load(project.id, selected.id, 'latest')
+    current.current = { project, session: selected }
+    setProject(project)
     setSession(selected)
     if (known) setSessions(known)
     setBusy(Boolean(selected.is_busy))
     setQueue([])
+  }
+  async function selectSession(selected: Session) {
+    const project = current.current.project
+    if (!project) return
+    setDraftReasoningMode(null)
     setPermissions([])
     setQuestions([])
-    await window.prime
+    showSession(project, selected)
+    void call('currentSession', { sessionId: selected.id }).catch(errorHandler)
+    void scheduleRefresh(true, false).catch(errorHandler)
+  }
+  async function openSession(target: Project, selected: Session, known?: Session[]) {
+    if (target.id === current.current.project?.id) return selectSession(selected)
+    setDraftReasoningMode(null)
+    setPermissions([])
+    setQuestions([])
+    showSession(target, selected, known)
+    void window.prime
       .call(target.id, 'currentSession', { sessionId: selected.id })
       .catch(errorHandler)
-    await refresh()
+    void refresh().catch(errorHandler)
   }
   async function openChat() {
     try {
       const opened = await window.prime.openChat()
-      setProjects(await window.prime.projects())
+      void window.prime.projects().then(setProjects).catch(errorHandler)
       await selectProject(opened)
-      const existing: Session[] = await window.prime.call(opened.id, 'sessions')
-      const saved = await window.prime.preferences()
+      const [existing, saved] = await Promise.all([
+        window.prime.call(opened.id, 'sessions') as Promise<Session[]>,
+        window.prime.preferences()
+      ])
       const selected =
         existing.find(
           (item) => item.id === (opened.currentSessionId || saved.activeSessions?.[opened.path])
@@ -755,6 +802,7 @@ export function useWorkspace() {
   }
   async function send(prompt: string, attachmentIds: string[] = []) {
     if (!prompt.trim()) return false
+    await waitForProject()
     const targetProject = current.current.project
     if (!targetProject) return false
     const targetSession = current.current.session
@@ -824,11 +872,11 @@ export function useWorkspace() {
         setSessions((items) => upsertSession(items, selected!))
         await selectSession(selected)
       }
-      await refresh()
+      void refreshLight().catch(errorHandler)
       return true
     } catch (error) {
       errorHandler(error)
-      await refresh()
+      void refreshLight().catch(errorHandler)
       return false
     } finally {
       if (prompt.startsWith('!')) setPendingShell(null)
@@ -883,7 +931,7 @@ export function useWorkspace() {
       setBusy(false)
       setQueue([])
     }
-    await refresh()
+    void refreshLight().catch(errorHandler)
   }
   return {
     retrying: Boolean(retryNotice && retryNotice.sessionId === session?.id),

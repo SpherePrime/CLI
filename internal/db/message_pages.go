@@ -111,20 +111,26 @@ type MessageTimingMetadata struct {
 	Role         string
 	CreatedAt    int64
 	Shell        bool
+	Hidden       bool
 	FinishReason sql.NullString
 	FinishTime   sql.NullInt64
 }
 
 func (q *Queries) ScanMessageTiming(ctx context.Context, sessionID, firstID, lastID string, visit func(MessageTimingMetadata)) error {
+	// The boundary is the last finished run before the requested range. It is
+	// only applied when a range is given: the whole-session pass (empty firstID)
+	// has to walk back to the prompt that started the current request.
 	rows, err := q.db.QueryContext(ctx, `WITH boundary AS MATERIALIZED (
 	SELECT created_at, rowid AS message_row FROM messages
 	WHERE session_id = ? AND role = 'assistant'
-	AND (? = '' OR (created_at, rowid) < (SELECT created_at, rowid FROM messages WHERE session_id = ? AND id = ?))
+	AND (? != '' AND (created_at, rowid) < (SELECT created_at, rowid FROM messages WHERE session_id = ? AND id = ?))
 	AND EXISTS (SELECT 1 FROM json_each(parts) WHERE json_extract(value, '$.type') = 'finish' AND json_extract(value, '$.data.reason') != 'tool_use')
 	ORDER BY created_at DESC, rowid DESC LIMIT 1
 	)
 	SELECT id, role, created_at,
 	CASE WHEN role = 'user' THEN EXISTS(SELECT 1 FROM json_each(parts) WHERE json_extract(value, '$.type') = 'shell_command') ELSE 0 END,
+	CASE WHEN role = 'user' THEN EXISTS(SELECT 1 FROM json_each(parts) WHERE json_extract(value, '$.type') = 'text' AND COALESCE(json_extract(value, '$.data.hidden'), 0) = 1)
+		AND NOT EXISTS(SELECT 1 FROM json_each(parts) WHERE json_extract(value, '$.type') = 'text' AND COALESCE(json_extract(value, '$.data.hidden'), 0) = 0) ELSE 0 END,
 	CASE WHEN role = 'assistant' THEN (SELECT json_extract(value, '$.data.reason') FROM json_each(parts) WHERE json_extract(value, '$.type') = 'finish' LIMIT 1) END,
 	CASE WHEN role = 'assistant' THEN (SELECT json_extract(value, '$.data.time') FROM json_each(parts) WHERE json_extract(value, '$.type') = 'finish' LIMIT 1) END
 	FROM messages WHERE session_id = ? AND role IN ('user', 'assistant')
@@ -137,7 +143,7 @@ func (q *Queries) ScanMessageTiming(ctx context.Context, sessionID, firstID, las
 	defer rows.Close()
 	for rows.Next() {
 		var item MessageTimingMetadata
-		if err := rows.Scan(&item.ID, &item.Role, &item.CreatedAt, &item.Shell, &item.FinishReason, &item.FinishTime); err != nil {
+		if err := rows.Scan(&item.ID, &item.Role, &item.CreatedAt, &item.Shell, &item.Hidden, &item.FinishReason, &item.FinishTime); err != nil {
 			return err
 		}
 		visit(item)

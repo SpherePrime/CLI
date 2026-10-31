@@ -12,6 +12,7 @@ import { useSessionReorder } from './useSessionReorder'
 import { watchProjectSessions } from './projectSessionEvents'
 import { ProjectCard } from './ProjectCard'
 import { DeleteProjectDialog } from './DeleteProjectDialog'
+import { notifyWarning } from '../notifications/notifications'
 import { SidebarSession } from './SidebarSession'
 import './projectNavigation.css'
 import './projectReorder.css'
@@ -34,6 +35,7 @@ export function SidebarChats({
   const [closedSessions, setClosedSessions] = useState<Record<string, Session[]>>({})
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [deletingPath, setDeletingPath] = useState<string | null>(null)
+  const [removedPaths, setRemovedPaths] = useState<string[]>([])
   const projectIds = w.projects.map((project) => project.id).join('|')
   useEffect(() => {
     return watchProjectSessions(
@@ -73,7 +75,7 @@ export function SidebarChats({
     w.preferences.recent,
     folders.map((project) => project.path),
     w.preferences.projectOrder
-  )
+  ).filter((path) => !removedPaths.includes(path))
   const reorder = useProjectReorder(projectPaths, (projectOrder) => {
     void w.savePreferences({ projectOrder })
   })
@@ -161,9 +163,31 @@ export function SidebarChats({
     const removed = (target ? sessionsOf(target) : closedSessionsOf(path)).map(
       (session) => session.id
     )
+    // The card and its chats disappear at once; the native side finishes the
+    // deletion in the background and reports chats it could not remove.
+    setRemovedPaths((paths) => (paths.includes(path) ? paths : [...paths, path]))
+    setClosedSessions((value) => {
+      const next = { ...value }
+      delete next[path]
+      return next
+    })
+    setOtherSessions((value) => {
+      const next = { ...value }
+      for (const project of w.projects) if (project.path === path) delete next[project.id]
+      return next
+    })
     setDeletingPath(null)
+    let warnings: string[] = []
     try {
-      await w.deleteProject(path)
+      warnings = (await w.deleteProject(path)).warnings
+    } catch (error) {
+      w.errorHandler(error)
+    } finally {
+      // The saved project list is refreshed by now, so the card no longer needs
+      // the local override and a re-opened folder shows up again.
+      setRemovedPaths((paths) => paths.filter((item) => item !== path))
+    }
+    try {
       const saved = await window.prime.preferences()
       await w.savePreferences({
         projectOrder: (saved.projectOrder || []).filter((item) => item !== path),
@@ -172,6 +196,7 @@ export function SidebarChats({
     } catch (error) {
       w.errorHandler(error)
     }
+    if (warnings.length) notifyWarning(t('Проект удалён не полностью'), warnings.join('; '))
   }
   const recentChats = [personal]
     .filter((project): project is Project => Boolean(project))

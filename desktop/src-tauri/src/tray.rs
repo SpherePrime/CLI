@@ -24,11 +24,21 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(
         app,
         "open",
-        if ru { "Открыть Prime" } else { "Open Prime" },
+        if ru {
+            "Открыть Prime"
+        } else {
+            "Open Prime"
+        },
         true,
         None::<&str>,
     )?;
-    let quit = MenuItem::with_id(app, "quit", if ru { "Выйти" } else { "Quit" }, true, None::<&str>)?;
+    let quit = MenuItem::with_id(
+        app,
+        "quit",
+        if ru { "Выйти" } else { "Quit" },
+        true,
+        None::<&str>,
+    )?;
     let separator = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(app, &[&open, &separator, &quit])?;
     let mut builder = TrayIconBuilder::with_id("main")
@@ -61,7 +71,13 @@ fn busy_chats(state: &AppState) -> bool {
     let Ok(engine) = state.require_engine() else {
         return false;
     };
-    let projects = state.projects.lock().unwrap().values().cloned().collect::<Vec<_>>();
+    let projects = state
+        .projects
+        .lock()
+        .unwrap()
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
     projects.iter().any(|project| {
         project["id"].as_str().is_some_and(|id| {
             crate::remote::workspace_profile(state, id).is_none()
@@ -76,21 +92,63 @@ fn busy_chats(state: &AppState) -> bool {
     })
 }
 
+pub fn should_hide_to_tray(quitting: bool) -> bool {
+    !quitting
+}
+
 pub fn background_work(state: &AppState) -> bool {
-    state.running_shells.load(Ordering::Acquire) > 0
-        || state.terminals.count() > 0
-        || state.remotes.terminals.count() > 0
-        || state.teams.active_count() > 0
-        || state.automations.counts()["activeCount"].as_u64().unwrap_or(0) > 0
-        || busy_chats(state)
+    !busy_reasons(state).is_empty()
 }
 
 fn scheduler_enabled(state: &AppState) -> bool {
-    state.automations.counts()["enabledCount"].as_u64().unwrap_or(0) > 0
+    state.automations.counts()["enabledCount"]
+        .as_u64()
+        .unwrap_or(0)
+        > 0
 }
 
-pub fn keep_running(state: &AppState) -> bool {
-    scheduler_enabled(state) || background_work(state)
+fn busy_reasons(state: &AppState) -> Vec<&'static str> {
+    let mut reasons = Vec::new();
+    if busy_chats(state) {
+        reasons.push("chats");
+    }
+    if state.terminals.count() > 0 || state.remotes.terminals.count() > 0 {
+        reasons.push("terminals");
+    }
+    if state.running_shells.load(Ordering::Acquire) > 0 {
+        reasons.push("shells");
+    }
+    if state.automations.counts()["activeCount"]
+        .as_u64()
+        .unwrap_or(0)
+        > 0
+    {
+        reasons.push("automations");
+    }
+    if state.teams.active_count() > 0 {
+        reasons.push("teams");
+    }
+    reasons
+}
+
+fn busy_reason_text(reasons: &[&str], ru: bool) -> String {
+    let labels = reasons
+        .iter()
+        .map(|reason| match (*reason, ru) {
+            ("chats", true) => "активные чаты агента",
+            ("terminals", true) => "открытые терминалы",
+            ("shells", true) => "выполняемые команды оболочки",
+            ("automations", true) => "активные автоматизации",
+            ("teams", true) => "активные команды агентов",
+            ("chats", false) => "running agent chats",
+            ("terminals", false) => "open terminals",
+            ("shells", false) => "running shell commands",
+            ("automations", false) => "active automations",
+            ("teams", false) => "active agent teams",
+            _ => "active work",
+        })
+        .collect::<Vec<_>>();
+    labels.join(if ru { ", " } else { ", " })
 }
 
 pub fn hide_to_tray(app: &AppHandle) {
@@ -98,11 +156,14 @@ pub fn hide_to_tray(app: &AppHandle) {
         let _ = window.hide();
     }
     let ru = russian(app);
-    let body = match (scheduler_enabled(&app.state::<AppState>()), ru) {
-        (true, true) => "Планировщик работает в трее. Для выхода используйте меню значка.",
-        (false, true) => "Задачи продолжают работать. Приложение доступно в трее.",
-        (true, false) => "The scheduler keeps running in the tray. Use the tray menu to quit.",
-        (false, false) => "Tasks keep running. Prime is available in the tray.",
+    let state = app.state::<AppState>();
+    let body = match (scheduler_enabled(&state), background_work(&state), ru) {
+        (_, true, true) => "Работа продолжается. Приложение доступно в трее.",
+        (true, false, true) => "Планировщик включён. Приложение доступно в трее.",
+        (false, false, true) => "Приложение доступно в трее.",
+        (_, true, false) => "Work is still running. Prime is available in the tray.",
+        (true, false, false) => "The scheduler is enabled. Prime is available in the tray.",
+        (false, false, false) => "Prime is available in the tray.",
     };
     let _ = app
         .notification()
@@ -112,21 +173,55 @@ pub fn hide_to_tray(app: &AppHandle) {
         .show();
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{busy_reason_text, should_hide_to_tray};
+
+    #[test]
+    fn close_hides_to_tray_until_quitting() {
+        assert!(should_hide_to_tray(false));
+        assert!(!should_hide_to_tray(true));
+    }
+
+    #[test]
+    fn busy_reason_text_names_each_kind_of_work() {
+        let reasons = ["chats", "terminals", "shells", "automations", "teams"];
+        let russian = busy_reason_text(&reasons, true);
+        let english = busy_reason_text(&reasons, false);
+        assert!(russian.contains("активные чаты агента"));
+        assert!(russian.contains("активные команды агентов"));
+        assert!(english.contains("running agent chats"));
+        assert!(english.contains("active agent teams"));
+    }
+}
+
 pub fn request_quit(app: AppHandle) {
     std::thread::spawn(move || {
         let state = app.state::<AppState>();
         if background_work(&state) {
             let ru = russian(&app);
-            let stop = if ru { "Остановить и выйти" } else { "Stop and quit" };
-            let keep = if ru { "Продолжить работу" } else { "Keep working" };
+            let stop = if ru {
+                "Остановить и выйти"
+            } else {
+                "Stop and quit"
+            };
+            let keep = if ru {
+                "Продолжить работу"
+            } else {
+                "Keep working"
+            };
+            let reasons = busy_reason_text(&busy_reasons(&state), ru);
             let answer = rfd::MessageDialog::new()
                 .set_title("Prime Desktop")
                 .set_description(if ru {
-                    "Остановить задачи и выйти?"
+                    format!("Остановить и выйти? Будут остановлены: {reasons}.")
                 } else {
-                    "Stop running tasks and quit?"
+                    format!("Stop and quit? This will stop: {reasons}.")
                 })
-                .set_buttons(rfd::MessageButtons::OkCancelCustom(stop.into(), keep.into()))
+                .set_buttons(rfd::MessageButtons::OkCancelCustom(
+                    stop.into(),
+                    keep.into(),
+                ))
                 .show();
             if answer != rfd::MessageDialogResult::Custom(stop.into()) {
                 return;

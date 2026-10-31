@@ -36,7 +36,13 @@ impl TerminalManager {
     }
 
     pub fn count(&self) -> usize {
-        self.state.lock().unwrap().sessions.len()
+        self.state
+            .lock()
+            .unwrap()
+            .sessions
+            .values()
+            .filter(|session| session.snapshot().status == "running")
+            .count()
     }
 
     pub fn call(
@@ -72,7 +78,13 @@ impl TerminalManager {
         self.dispatch_agent(workspace, cwd, request, emit)
     }
 
-    fn dispatch_agent(&self, workspace: &str, cwd: &Path, request: &Value, emit: Emitter) -> HostResult<Value> {
+    fn dispatch_agent(
+        &self,
+        workspace: &str,
+        cwd: &Path,
+        request: &Value,
+        emit: Emitter,
+    ) -> HostResult<Value> {
         if !matches!(
             request["action"].as_str(),
             Some("list" | "read" | "write" | "resize" | "create" | "close" | "release")
@@ -83,11 +95,16 @@ impl TerminalManager {
             ));
         }
         if matches!(request["action"].as_str(), Some("close" | "release")) {
-            let session=self.find(workspace,string(request,"id")?)?;
+            let session = self.find(workspace, string(request, "id")?)?;
             if session.snapshot().owner != "agent" {
-                return Err(HostError::new("TERMINAL_OWNER","Only agent-owned terminals can be closed or released by the agent"));
+                return Err(HostError::new(
+                    "TERMINAL_OWNER",
+                    "Only agent-owned terminals can be closed or released by the agent",
+                ));
             }
-            if request["action"] == "release" {return Ok(serde_json::to_value(session.owner("user")?)?);}
+            if request["action"] == "release" {
+                return Ok(serde_json::to_value(session.owner("user")?)?);
+            }
         }
         self.dispatch(workspace, cwd, request, "agent", emit)
     }
@@ -186,10 +203,17 @@ impl TerminalManager {
         options: TerminalOptions,
         emit: Emitter,
     ) -> HostResult<TerminalSnapshot> {
-        self.create_owned(workspace,cwd,options,emit,"user")
+        self.create_owned(workspace, cwd, options, emit, "user")
     }
 
-    fn create_owned(&self,workspace:&str,cwd:&Path,options:TerminalOptions,emit:Emitter,owner:&str)->HostResult<TerminalSnapshot> {
+    fn create_owned(
+        &self,
+        workspace: &str,
+        cwd: &Path,
+        options: TerminalOptions,
+        emit: Emitter,
+        owner: &str,
+    ) -> HostResult<TerminalSnapshot> {
         let mut manager = self.state.lock().unwrap();
         if manager.disposed || manager.closed_workspaces.contains(workspace) {
             return Err(HostError::new(
@@ -330,6 +354,14 @@ impl TerminalManager {
             .values()
             .map(|session| session.snapshot())
             .collect()
+    }
+
+    pub fn close_all(&self) -> HostResult<()> {
+        let sessions = {
+            let manager = self.state.lock().unwrap();
+            manager.sessions.values().cloned().collect::<Vec<_>>()
+        };
+        self.close_sessions(sessions)
     }
 
     pub fn close_workspace(&self, workspace: &str) -> HostResult<()> {

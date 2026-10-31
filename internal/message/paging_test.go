@@ -94,5 +94,25 @@ func TestMessagePageTimingCrossesPageBoundary(t *testing.T) {
 	require.Len(t, page.Messages, 1)
 	require.True(t, page.HasMore)
 	require.Equal(t, int64(17), page.Timing.Completed[final.ID])
-	require.Zero(t, page.Timing.StartedAt)
+	require.Equal(t, user.CreatedAt, page.Timing.StartedAt)
+}
+
+// A background job wake-up arrives as a hidden user message. It continues the
+// request the user started, so the working timer must keep counting from that
+// prompt instead of restarting at the wake-up.
+func TestMessagePageTimingKeepsRunningAcrossWakeUp(t *testing.T) {
+	svc, sessionID := newTestService(t)
+	user, err := svc.Create(t.Context(), sessionID, CreateMessageParams{Role: User, Parts: []ContentPart{TextContent{Text: "start"}}})
+	require.NoError(t, err)
+	first, err := svc.Create(t.Context(), sessionID, CreateMessageParams{Role: Assistant, Parts: []ContentPart{Finish{Reason: FinishReasonEndTurn, Time: user.CreatedAt + 10}}})
+	require.NoError(t, err)
+	_, err = svc.Create(t.Context(), sessionID, CreateMessageParams{Role: User, Parts: []ContentPart{TextContent{Text: "Background job finished", Hidden: true}}})
+	require.NoError(t, err)
+	second, err := svc.Create(t.Context(), sessionID, CreateMessageParams{Role: Assistant, Parts: []ContentPart{Finish{Reason: FinishReasonEndTurn, Time: user.CreatedAt + 25}}})
+	require.NoError(t, err)
+	page, err := svc.(PagedService).ListPage(t.Context(), sessionID, "", 60)
+	require.NoError(t, err)
+	require.Equal(t, int64(10), page.Timing.Completed[first.ID])
+	require.Equal(t, int64(25), page.Timing.Completed[second.ID])
+	require.Equal(t, user.CreatedAt, page.Timing.StartedAt)
 }

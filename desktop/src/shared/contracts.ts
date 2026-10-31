@@ -220,7 +220,7 @@ export interface DesktopApi {
   sudoPassword(
     request: { action: 'status' } | { action: 'set'; password: string } | { action: 'remove' }
   ): Promise<{ hasPassword: boolean; storageAvailable: boolean }>
-  deleteProject(path: string): Promise<void>
+  deleteProject(path: string): Promise<Json>
   call(workspaceId: string, operation: Operation, args?: Json): Promise<Json>
   files(workspaceId: string, path?: string): Promise<Json[]>
   saveFile(
@@ -256,7 +256,7 @@ export interface DesktopApi {
   browserNavigate(url: string): Promise<BrowserState>
   browserCommand(command: 'back' | 'forward' | 'reload'): Promise<BrowserState>
   browserOpenExternal(): Promise<void>
-  update(action: 'check' | 'install'): Promise<Json>
+  update(action: 'check' | 'install', force?: boolean): Promise<Json>
   onEvent(listener: (event: DesktopEvent) => void): () => void
 }
 declare global {

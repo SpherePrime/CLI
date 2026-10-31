@@ -19,6 +19,7 @@ export function UpdateScreen({
   const { t } = useI18n()
   const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
   const [error, setError] = useState('')
+  const [forceRestarting, setForceRestarting] = useState(false)
   const checked = useRef(false)
   const latest = useRef(status)
   latest.current = status
@@ -156,11 +157,28 @@ export function UpdateScreen({
           </button>
         )}
         {downloaded && (busy || terminals > 0) && (
-          <p className="muted">
-            {terminals > 0
-              ? t('Закройте терминалы перед перезапуском.')
-              : t('Дождитесь завершения текущей задачи.')}
-          </p>
+          <>
+            <p className="muted">
+              {terminals > 0
+                ? t('Закройте терминалы перед перезапуском.')
+                : t('Дождитесь завершения текущей задачи.')}
+            </p>
+            <button
+              className="primary"
+              disabled={forceRestarting}
+              onClick={() => {
+                setError('')
+                setForceRestarting(true)
+                void flushDrafts()
+                  .then(() => window.prime.update('install', true))
+                  .catch((error) => setError(error.message))
+                  .finally(() => setForceRestarting(false))
+              }}
+            >
+              <RefreshCw size={17} />
+              {t('Остановить задачи и перезапустить')}
+            </button>
+          </>
         )}
         {failed && (
           <button

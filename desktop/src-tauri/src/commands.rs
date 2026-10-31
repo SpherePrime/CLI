@@ -32,6 +32,32 @@ fn urlencoding(value: &str) -> String {
     url::form_urlencoded::byte_serialize(value.as_bytes()).collect()
 }
 
+fn project_sessions_route(requested: &[(String, String)]) -> String {
+    let paths = requested
+        .iter()
+        .map(|(_, local_path)| local_path.as_str())
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("/v1/project-sessions?paths={}", urlencoding(&paths))
+}
+
+// Maps the engine answer (keyed by the local path that was requested) back to
+// the paths the desktop asked about, so remote workspaces keep their own key.
+// A path the engine did not answer for is reported as an empty list.
+fn map_project_sessions(requested: &[(String, String)], response: &Value) -> serde_json::Map<String, Value> {
+    let projects = response["projects"].as_object();
+    let mut sessions = serde_json::Map::new();
+    for (path, local_path) in requested {
+        let entries = projects
+            .and_then(|projects| projects.get(local_path))
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        sessions.insert(path.clone(), Value::Array(entries));
+    }
+    sessions
+}
+
 fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<Value> {
     let state = app.state::<AppState>();
     if method == "terminal" {
@@ -83,7 +109,9 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                 None => Ok(settings.get()),
             }
         }
-        "speech" => state.speech.handle(app.clone(), args.first().unwrap_or(&Value::Null)),
+        "speech" => state
+            .speech
+            .handle(app.clone(), args.first().unwrap_or(&Value::Null)),
         "projects" => Ok(Value::Array(
             state.projects.lock().unwrap().values().cloned().collect(),
         )),
@@ -106,7 +134,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                 .as_array()
                 .cloned()
                 .unwrap_or_default();
-            let mut sessions = serde_json::Map::new();
+            let mut requested = Vec::new();
             for path in paths {
                 let path = path.as_str().ok_or_else(|| {
                     HostError::new("INVALID_ARGUMENT", "Expected string project path")
@@ -132,12 +160,25 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                         .to_string_lossy()
                         .into_owned()
                 } else {
-                    path.into()
+                    path.to_owned()
                 };
-                sessions.insert(
-                    path.to_owned(),
-                    crate::projects::sessions(&state, &local_path)?,
-                );
+                requested.push((path.to_owned(), local_path));
+            }
+            // One read-only engine request for the whole batch: closed projects
+            // are read straight from their database instead of opening a
+            // workspace (agent, MCP, config, data-dir lock) for each of them.
+            let response = state
+                .require_engine()?
+                .request("GET", &project_sessions_route(&requested), None)?;
+            let mut sessions = map_project_sessions(&requested, &response);
+            for (path, local_path) in &requested {
+                if sessions.contains_key(path) {
+                    continue;
+                }
+                // The engine splits the batch on commas, so a path containing
+                // one cannot travel in a batch and is read on its own.
+                let entries = crate::projects::sessions(&state, local_path).unwrap_or(json!([]));
+                sessions.insert(path.clone(), entries);
             }
             Ok(Value::Object(sessions))
         }
@@ -178,7 +219,9 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             crate::projects::open(app, &state, path, "chat")
         }
         "deleteProject" => crate::projects::delete_project(app, &state, string(args, 0)?),
-        "windows" => state.windows.handle(app, string(args, 0)?, args.get(1).unwrap_or(&Value::Null))
+        "windows" => state
+            .windows
+            .handle(app, string(args, 0)?, args.get(1).unwrap_or(&Value::Null))
             .map_err(|error| HostError::new("WINDOW_ERROR", error)),
         "automation" => {
             let id = string(args, 0)?;
@@ -308,13 +351,29 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             };
             if operation == "currentSession" {
                 let id = string(args, 0)?;
-                let path = state.projects.lock().unwrap().get(id)
-                    .and_then(|project| project["path"].as_str()).map(str::to_owned)
+                let path = state
+                    .projects
+                    .lock()
+                    .unwrap()
+                    .get(id)
+                    .and_then(|project| project["path"].as_str())
+                    .map(str::to_owned)
                     .ok_or_else(|| HostError::new("PROJECT_NOT_FOUND", "Project is not open"))?;
-                let session = args.get(2).and_then(|args| args.get("sessionId")).cloned().unwrap_or(Value::Null);
-                state.settings.lock().unwrap().update(&json!({"activeSessions":{path:session}}))?;
+                let session = args
+                    .get(2)
+                    .and_then(|args| args.get("sessionId"))
+                    .cloned()
+                    .unwrap_or(Value::Null);
+                state
+                    .settings
+                    .lock()
+                    .unwrap()
+                    .update(&json!({"activeSessions":{path:session}}))?;
             }
-            if matches!(operation, "messages" | "messagePage" | "messageSearch" | "agentWorkerMessages") {
+            if matches!(
+                operation,
+                "messages" | "messagePage" | "messageSearch" | "agentWorkerMessages"
+            ) {
                 Ok(result)
             } else {
                 Ok(crate::redact::value(result))
@@ -386,7 +445,8 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
         "sudoPassword" => crate::sudo::handle(args.first().unwrap_or(&Value::Null)),
         "update" => {
             let action = string(args, 0)?;
-            crate::updater::handle(app, &state, action)
+            let force = args.get(1).and_then(Value::as_bool).unwrap_or(false);
+            crate::updater::handle(app, &state, action, force)
         }
         "openExternal" => {
             let url = url::Url::parse(string(args, 0)?)
@@ -448,6 +508,57 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                 .map_err(|error| HostError::new("BROWSER_ERROR", error))
         }
         _ => Err(HostError::unsupported(method)),
+    }
+}
+
+#[cfg(test)]
+mod project_sessions_tests {
+    use super::*;
+
+    fn requested(paths: &[(&str, &str)]) -> Vec<(String, String)> {
+        paths
+            .iter()
+            .map(|(path, local)| (path.to_string(), local.to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn closed_project_sessions_are_requested_in_one_batch() {
+        let route = project_sessions_route(&requested(&[
+            ("C:/one", "C:/one"),
+            ("C:/two three", "C:/two three"),
+        ]));
+        assert_eq!(
+            route,
+            "/v1/project-sessions?paths=C%3A%2Fone%2CC%3A%2Ftwo+three"
+        );
+    }
+
+    #[test]
+    fn engine_answer_is_mapped_back_to_the_requested_paths() {
+        let asked = requested(&[
+            ("C:/one", "C:/one"),
+            ("C:/missing", "C:/missing"),
+            ("prime-ssh://profile/home", "/home/user/project"),
+        ]);
+        let response = json!({"projects": {
+            "C:/one": [{"id": "chat"}],
+            "/home/user/project": [{"id": "remote-chat"}]
+        }});
+        let sessions = map_project_sessions(&asked, &response);
+        assert_eq!(sessions["C:/one"], json!([{"id": "chat"}]));
+        assert_eq!(sessions["C:/missing"], json!([]));
+        assert_eq!(
+            sessions["prime-ssh://profile/home"],
+            json!([{"id": "remote-chat"}])
+        );
+    }
+
+    #[test]
+    fn an_engine_error_payload_yields_empty_lists() {
+        let asked = requested(&[("C:/one", "C:/one")]);
+        let sessions = map_project_sessions(&asked, &Value::Null);
+        assert_eq!(sessions["C:/one"], json!([]));
     }
 }
 
