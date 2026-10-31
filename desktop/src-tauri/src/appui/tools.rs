@@ -116,6 +116,23 @@ pub fn definitions() -> Vec<Value> {
             &[],
         ),
         tool(
+            "app_test_explore",            "Walk the attached application and activate its actionable elements one by one, reporting what was visited, what was skipped as risky, and where the walk stopped. Use it to find crashes and dead ends without writing a scenario.",
+            json!({"maxSteps":{"type":"integer","minimum":1,"maximum":100}}),
+            &[],
+        ),
+        tool(
+            "app_test_record_start",
+            "Start recording the clicks and key presses the user performs in the attached application. Stop it to get a scenario draft.",
+            json!({}),
+            &[],
+        ),
+        tool(
+            "app_test_record_stop",
+            "Stop recording and write the recorded actions as a scenario draft to prime-app-test-recorded.yaml in the project root.",
+            json!({}),
+            &[],
+        ),
+        tool(
             "app_test_list",
             "List the application test scenarios stored in the project root as prime-app-test*.json files.",
             json!({}),
@@ -167,6 +184,9 @@ pub fn run(
         }        "app_screenshot" => manager.element_png(app, context, locator(args)),
         "app_test_list" => manager.test_list(app, &context.workspace_id),
         "app_test_run" => manager.test_run(app, context, args),
+        "app_test_explore" => manager.explore(app, context, args),
+        "app_test_record_start" => manager.record_start(),
+        "app_test_record_stop" => manager.record_stop(app, context),
         _ => Err(format!("Unknown project tool: {name}")),
     }
 }

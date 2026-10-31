@@ -2,7 +2,7 @@ use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::thread;
 use std::time::Duration;
 
-use ::windows::Win32::Foundation::HWND;
+use ::windows::Win32::Foundation::{HWND, POINT};
 use ::windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
 };
@@ -32,6 +32,11 @@ pub enum UiaRequest {
     },
     ElementAtCursor {
         hwnd: String,
+    },
+    ElementAtPoint {
+        hwnd: String,
+        x: i32,
+        y: i32,
     },
 }
 
@@ -131,7 +136,11 @@ fn handle(automation: &IUIAutomation, request: UiaRequest) -> Result<Value, Stri
         }
         UiaRequest::ElementAtCursor { hwnd } => {
             let window = window_handle(&hwnd)?;
-            tree::describe(automation, window)
+            tree::describe(automation, window, None)
+        }
+        UiaRequest::ElementAtPoint { hwnd, x, y } => {
+            let window = window_handle(&hwnd)?;
+            tree::describe(automation, window, Some(POINT { x, y }))
         }
         UiaRequest::ElementPng { hwnd, locator } => {
             let window = window_handle(&hwnd)?;

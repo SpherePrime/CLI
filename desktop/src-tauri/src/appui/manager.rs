@@ -7,6 +7,8 @@ use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::picker::{self, CancelHandle};
+#[cfg(windows)]
+use super::recording::{self, Recording};
 use super::types::{Locator, UiBounds};
 use super::uia::action::{UiAction, MAX_DEPTH, MAX_NODES};
 use super::uia::capture;
@@ -37,6 +39,8 @@ pub struct AppUiManager {
     logs: Mutex<HashMap<String, Vec<Log>>>,
     actions: Mutex<Vec<Instant>>,
     picker: Mutex<Option<CancelHandle>>,
+    #[cfg(windows)]
+    recording: Mutex<Option<Recording>>,
 }
 
 impl AppUiManager {
@@ -47,6 +51,8 @@ impl AppUiManager {
             logs: Mutex::new(HashMap::new()),
             actions: Mutex::new(Vec::new()),
             picker: Mutex::new(None),
+            #[cfg(windows)]
+            recording: Mutex::new(None),
         }
     }
 
@@ -106,6 +112,21 @@ impl AppUiManager {
                     session_id: Some(session_of(request)?.to_owned()),
                 };
                 self.test_run(app, &context, request)
+            }
+            "explore" => {
+                let context = WorkbenchContext {
+                    workspace_id: workspace.to_owned(),
+                    session_id: Some(session_of(request)?.to_owned()),
+                };
+                self.explore(app, &context, request)
+            }
+            "recordStart" => self.record_start(),
+            "recordStop" => {
+                let context = WorkbenchContext {
+                    workspace_id: workspace.to_owned(),
+                    session_id: Some(session_of(request)?.to_owned()),
+                };
+                self.record_stop(app, &context)
             }
             _ => Err("Unknown application request".to_owned()),
         }
@@ -358,6 +379,87 @@ impl AppUiManager {
             .root(&context.workspace_id)
             .map_err(|error| error.message)?;
         super::scenario::run(app, context, self, &root, request)
+    }
+
+    pub fn explore(
+        &self,
+        app: &AppHandle,
+        context: &WorkbenchContext,
+        request: &Value,
+    ) -> Result<Value, String> {
+        super::explore::run(app, context, self, request)
+    }
+
+    #[cfg(windows)]
+    pub fn record_start(&self) -> Result<Value, String> {
+        let recording = recording::start()?;
+        self.recording
+            .lock()
+            .map_err(|error| error.to_string())?
+            .replace(recording);
+        Ok(json!({"status": "recording"}))
+    }
+
+    #[cfg(windows)]
+    pub fn record_stop(
+        &self,
+        app: &AppHandle,
+        context: &WorkbenchContext,
+    ) -> Result<Value, String> {
+        let recording = self
+            .recording
+            .lock()
+            .map_err(|error| error.to_string())?
+            .take()
+            .ok_or("Recording is not running")?;
+        let events = recording::stop(&recording)?;
+        let target = self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            false,
+            true,
+        )?;
+        let mut steps = Vec::new();
+        for event in events {
+            match event {
+                recording::Event::Click { x, y } => {
+                    let described = self.call(
+                        UiaRequest::ElementAtPoint {
+                            hwnd: target.hwnd.clone(),
+                            x,
+                            y,
+                        },
+                        SNAPSHOT_TIMEOUT,
+                    )?;
+                    let element = &described["element"];
+                    let locator = match element["automationId"].as_str() {
+                        Some(automation_id) => json!({"automationId": automation_id}),
+                        None if element["name"].as_str().is_some_and(|name| !name.is_empty()) => {
+                            json!({"role": element["role"], "name": element["name"]})
+                        }
+                        None => json!({"path": element["path"]}),
+                    };
+                    steps.push(json!({"action": "click", "locator": locator}));
+                }
+                recording::Event::Key { name } => {
+                    steps.push(json!({"action": "press_key", "key": name}));
+                }
+            }
+        }
+        let scenario = json!({"version": 1, "name": "recorded", "steps": steps});
+        let draft = serde_yaml::to_string(&scenario).map_err(|error| error.to_string())?;
+        let root = app
+            .state::<crate::state::AppState>()
+            .root(&context.workspace_id)
+            .map_err(|error| error.message)?;
+        std::fs::write(root.join("prime-app-test-recorded.yaml"), &draft)
+            .map_err(|error| error.to_string())?;
+        Ok(json!({
+            "path": "prime-app-test-recorded.yaml",
+            "draft": draft,
+            "steps": steps.len(),
+        }))
     }
 
     pub fn window(&self, app: &AppHandle, context: &WorkbenchContext) -> Result<String, String> {

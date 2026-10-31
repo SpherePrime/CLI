@@ -31,7 +31,14 @@ export const appTestingCopy = {
     run: 'Запустить',
     passed: 'Пройдено',
     failed: 'Есть ошибки',
-    artifacts: 'Артефакты'
+    artifacts: 'Артефакты',
+    explore: 'Обойти интерфейс',
+    record: 'Записать действия',
+    recordStop: 'Остановить запись',
+    recording: 'Идёт запись действий…',
+    draft: 'Черновик сценария',
+    blocked: 'Пропущено как опасное',
+    stopped: 'Остановлено'
   },
   en: {
     title: 'Application tests',
@@ -65,6 +72,13 @@ export const appTestingCopy = {
     run: 'Run',
     passed: 'Passed',
     failed: 'Failed',
-    artifacts: 'Artifacts'
+    artifacts: 'Artifacts',
+    explore: 'Walk the interface',
+    record: 'Record actions',
+    recordStop: 'Stop recording',
+    recording: 'Recording actions…',
+    draft: 'Scenario draft',
+    blocked: 'Skipped as risky',
+    stopped: 'Stopped'
   }
 }
