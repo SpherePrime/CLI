@@ -16,6 +16,7 @@ import { CommandRunner } from './CommandRunner'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowUp, Mic, Paperclip, Square, X, LoaderCircle } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
+import { realSessionId } from '../../../../shared/pendingSession'
 import { useVoice } from '../plugins/useVoice'
 import { useConversation } from '../voice/useConversation'
 import { ConversationCall, ConversationCallPill } from '../voice/ConversationCall'
@@ -224,9 +225,10 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     }
   }
   async function stop() {
-    if (!w.activeSessionId) return
+    const sessionId = realSessionId(w.session)
+    if (!sessionId) return
     try {
-      await w.call('cancel', { sessionId: w.activeSessionId })
+      await w.call('cancel', { sessionId })
       w.setBusy(false)
       await w.refresh()
     } catch (error) {

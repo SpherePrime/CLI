@@ -899,8 +899,12 @@ export function useWorkspace() {
     }
   }
   async function createSession() {
-    const target = current.current.project ?? projects.find((item) => item.kind === 'chat') ?? null
+    const open = current.current.project
+    const target = open ?? projects.find((item) => item.kind === 'chat') ?? null
     if (!target) return createPersonalChat()
+    // A chat in a project that is not the open one still needs that project's
+    // state, so the switch happens before the chat is shown.
+    if (open?.id !== target.id) await selectProject(target)
     return startSession(target, newPendingSession(translate(language.current, 'Новый чат')))
   }
   async function send(prompt: string, attachmentIds: string[] = []) {
