@@ -30,6 +30,9 @@ pub enum UiaRequest {
         hwnd: String,
         locator: Locator,
     },
+    ElementAtCursor {
+        hwnd: String,
+    },
 }
 
 struct Job {
@@ -125,6 +128,10 @@ fn handle(automation: &IUIAutomation, request: UiaRequest) -> Result<Value, Stri
         } => {
             let window = window_handle(&hwnd)?;
             action::perform(automation, window, &locator, action)
+        }
+        UiaRequest::ElementAtCursor { hwnd } => {
+            let window = window_handle(&hwnd)?;
+            tree::describe(automation, window)
         }
         UiaRequest::ElementPng { hwnd, locator } => {
             let window = window_handle(&hwnd)?;

@@ -242,6 +242,7 @@ export function WorkbenchDock({
           <AppTestingPanel
             workspaceId={workspaceId}
             sessionId={realSessionId(w.session)}
+            onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
             onError={w.errorHandler}
           />
         )}

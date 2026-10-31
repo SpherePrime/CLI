@@ -227,6 +227,14 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             .appui
             .handle(app, string(args, 0)?, args.get(1).unwrap_or(&Value::Null))
             .map_err(|error| HostError::new("APP_UI_ERROR", error)),
+        "appPick" => state
+            .appui
+            .pick(app, string(args, 0)?, &json!({"sessionId": string(args, 1)?}))
+            .map_err(|error| HostError::new("APP_UI_ERROR", error)),
+        "appPickCancel" => state
+            .appui
+            .pick_cancel()
+            .map_err(|error| HostError::new("APP_UI_ERROR", error)),
         "automation" => {
             let id = string(args, 0)?;
             state.root(id)?;

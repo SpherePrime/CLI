@@ -87,3 +87,28 @@ export type AppUiResponse = {
   target?: AppUiTarget | null
   log?: AppUiLogEntry[]
 }
+
+export type AppUiPickedElement = {
+  reference?: string | null
+  role: string
+  name: string
+  value?: string | null
+  bounds: AppUiBounds
+  states: string[]
+  actions: string[]
+  automationId?: string | null
+  className?: string | null
+  path: string
+  source: AppUiProvider
+  confidence: AppUiConfidence
+}
+
+export type PickedAppElement = {
+  element: AppUiPickedElement
+  reference?: string | null
+  confidence: AppUiConfidence
+  candidates: number
+  window: string
+  attachmentId?: string
+  image?: string
+}

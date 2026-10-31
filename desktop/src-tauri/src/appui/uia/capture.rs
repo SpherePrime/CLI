@@ -4,6 +4,17 @@ use ::windows::Win32::UI::Accessibility::IUIAutomation;
 use super::action;
 use crate::appui::types::{Locator, UiBounds};
 
+pub fn bounds_png(hwnd: &str, bounds: &UiBounds) -> Result<Vec<u8>, String> {
+    let capture = crate::computer::capture::capture(hwnd)?;
+    let window = UiBounds {
+        x: capture.info.bounds.x,
+        y: capture.info.bounds.y,
+        width: capture.info.bounds.width,
+        height: capture.info.bounds.height,
+    };
+    crop_png(&capture.png, &window, bounds)
+}
+
 pub fn element_png(
     automation: &IUIAutomation,
     window: HWND,

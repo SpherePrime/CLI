@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Crosshair } from 'lucide-react'
 import type {
   AppUiElementAction,
   AppUiLogEntry,
   AppUiRequest,
   AppUiSnapshot,
-  AppUiTarget
+  AppUiTarget,
+  PickedAppElement
 } from '../../../../shared/appTesting'
 import { useI18n } from '../../i18n'
+import { PickedAttachments } from '../browser/pickedAttachments'
 import { appTestingCopy } from './copy'
+import { PickedElementCard } from './PickedElementCard'
 import { SnapshotTree } from './SnapshotTree'
 import { TargetList } from './TargetList'
 import '../../styles/app-testing.css'
@@ -15,10 +19,11 @@ import '../../styles/app-testing.css'
 type Props = {
   workspaceId: string
   sessionId?: string
+  onSend(prompt: string, attachmentIds: string[]): Promise<unknown>
   onError(error: unknown): void
 }
 
-export function AppTestingPanel({ workspaceId, sessionId, onError }: Props) {
+export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Props) {
   const { language } = useI18n()
   const c = appTestingCopy[language]
   const [targets, setTargets] = useState<AppUiTarget[]>([])
@@ -30,6 +35,9 @@ export function AppTestingPanel({ workspaceId, sessionId, onError }: Props) {
   const [text, setText] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [picking, setPicking] = useState(false)
+  const [picked, setPicked] = useState<PickedAppElement | null>(null)
+  const attachments = useRef<PickedAttachments | null>(null)
   const active = useRef(workspaceId)
   active.current = workspaceId
 
@@ -76,6 +84,50 @@ export function AppTestingPanel({ workspaceId, sessionId, onError }: Props) {
       }
     })
   }, [refresh, workspaceId])
+
+  useEffect(() => {
+    const owner = new PickedAttachments((ids) => {
+      void window.prime.releaseAttachments(ids).catch(() => {})
+    })
+    attachments.current = owner
+    return () => {
+      owner.dispose()
+      attachments.current = null
+      void window.prime.appPickCancel().catch(() => {})
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!picking) return
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') void window.prime.appPickCancel()
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [picking])
+
+  const pick = async () => {
+    if (!sessionId) {
+      setError(c.noChat)
+      return
+    }
+    if (picking) {
+      await window.prime.appPickCancel()
+      return
+    }
+    setPicking(true)
+    setError('')
+    try {
+      const result = await window.prime.appPick(workspaceId, sessionId)
+      if (active.current !== workspaceId || !result) return
+      attachments.current?.replace(result.attachmentId ? [result.attachmentId] : [])
+      setPicked(result)
+    } catch (cause) {
+      fail(cause)
+    } finally {
+      setPicking(false)
+    }
+  }
 
   const run = useCallback(
     async (request: AppUiRequest) => {
@@ -151,7 +203,42 @@ export function AppTestingPanel({ workspaceId, sessionId, onError }: Props) {
             >
               {c.snapshot}
             </button>
+            <button
+              className={`icon small ${picking ? 'active' : ''}`}
+              type="button"
+              aria-label={c.pick}
+              aria-pressed={picking}
+              title={c.pick}
+              disabled={busy || !target}
+              onClick={() => void pick()}
+            >
+              <Crosshair size={14} />
+            </button>
           </div>
+          {picking && (
+            <p className="app-testing-warning" role="status">
+              {c.pickHint}
+            </p>
+          )}
+          {picked && (
+            <PickedElementCard
+              language={language}
+              picked={picked}
+              onSend={async (prompt, ids) => {
+                const owner = attachments.current
+                owner?.beginSend(ids)
+                try {
+                  return await onSend(prompt, ids)
+                } finally {
+                  owner?.endSend(ids)
+                }
+              }}
+              onClose={() => {
+                attachments.current?.replace([])
+                setPicked(null)
+              }}
+            />
+          )}
           <SnapshotTree
             language={language}
             snapshot={snapshot}
