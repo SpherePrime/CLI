@@ -151,3 +151,33 @@ func TestHighlightContentRestoresWrappedCodespanBackticks(t *testing.T) {
 	result := HighlightContent(rendered, uv.Rect(0, 0, width, lipgloss.Height(rendered)), 0, 0, -1, -1)
 	require.Contains(t, result, "`codespan`", "wrapped pill must reassemble in copy, got:\n%s", result)
 }
+
+// TestHighlightContentStaleSelectionIsEmpty is the regression test for a
+// selection that outlived the render it was made on: the item was re-rendered
+// shorter since the drag started, so the start line points past the last line
+// of the content while the end is still "to the end of the item". The region
+// covers nothing, and asking for it must not build a slice with a negative
+// capacity.
+func TestHighlightContentStaleSelectionIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	content := "one\ntwo"
+	height := lipgloss.Height(content)
+
+	require.NotPanics(t, func() {
+		result := HighlightContent(content, uv.Rect(0, 0, 20, height), height+5, 0, -1, -1)
+		require.Equal(t, "", result)
+	})
+}
+
+// TestHighlightContentEmptyAreaIsEmpty covers the same inverted region reached
+// through an empty area: a zero-height area resolves the end line to -1, so a
+// start line past the content must still yield nothing instead of panicking.
+func TestHighlightContentEmptyAreaIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	require.NotPanics(t, func() {
+		result := HighlightContent("one\ntwo", uv.Rect(0, 0, 0, 0), 5, 0, -1, -1)
+		require.Equal(t, "", result)
+	})
+}

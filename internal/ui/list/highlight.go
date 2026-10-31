@@ -42,6 +42,13 @@ func HighlightContent(content string, area image.Rectangle, startLine, startCol,
 		endCol = width
 	}
 
+	// A selection can outlive the render it was made on: the item may have
+	// been re-rendered shorter since the drag started, leaving the region
+	// inverted. Such a region covers nothing.
+	if endLine < startLine {
+		return ""
+	}
+
 	rows := extractRows(buf, startLine, startCol, endLine, endCol, height)
 	return joinRows(rows, width) + "\n"
 }
@@ -57,7 +64,8 @@ func renderBuffer(content string, area image.Rectangle, width, height int) uv.Sc
 // extractRows extracts the text of the selected region from the buffer,
 // one string per row, trimmed to the last cell holding content.
 func extractRows(buf uv.ScreenBuffer, startLine, startCol, endLine, endCol, height int) []string {
-	rows := make([]string, 0, endLine-startLine+1)
+	// An inverted region yields no rows; the capacity must not go negative.
+	rows := make([]string, 0, max(0, endLine-startLine+1))
 	for y := startLine; y <= endLine && y < height; y++ {
 		if y >= buf.Height() {
 			break
