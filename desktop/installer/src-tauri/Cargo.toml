@@ -1,6 +1,6 @@
 [package]
 name = "prime-setup"
-version = "0.4.78"
+version = "0.4.79"
 edition = "2021"
 rust-version = "1.85"
 
