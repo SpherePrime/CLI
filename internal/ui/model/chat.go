@@ -1123,9 +1123,17 @@ func (m *Chat) HighlightContent() string {
 			} else {
 				rendered = item.Render(listWidth)
 			}
+			height := lipgloss.Height(rendered)
+			// The selection can outlive the render it was made on: the item may
+			// have been re-rendered shorter since the drag started, leaving the
+			// start line past the last line of the item. Such an item holds no
+			// selected text.
+			if startLine >= height {
+				continue
+			}
 			sb.WriteString(list.HighlightContent(
 				rendered,
-				uv.Rect(0, 0, listWidth, lipgloss.Height(rendered)),
+				uv.Rect(0, 0, listWidth, height),
 				startLine,
 				startCol,
 				endLine,
