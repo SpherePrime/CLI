@@ -99,6 +99,14 @@ impl AppUiManager {
             "type" => self.type_user(app, workspace, request),
             "pick" => self.pick(app, workspace, request),
             "pickCancel" => self.pick_cancel(),
+            "testList" => self.test_list(app, workspace),
+            "testRun" => {
+                let context = WorkbenchContext {
+                    workspace_id: workspace.to_owned(),
+                    session_id: Some(session_of(request)?.to_owned()),
+                };
+                self.test_run(app, &context, request)
+            }
             _ => Err("Unknown application request".to_owned()),
         }
     }
@@ -329,6 +337,39 @@ impl AppUiManager {
             self.record(app, &context.workspace_id, "detach", &target.title, Ok(()));
         }
         Ok(json!({"status": "detached"}))
+    }
+
+    pub fn test_list(&self, app: &AppHandle, workspace: &str) -> Result<Value, String> {
+        let root = app
+            .state::<crate::state::AppState>()
+            .root(workspace)
+            .map_err(|error| error.message)?;
+        super::scenario::list(&root)
+    }
+
+    pub fn test_run(
+        &self,
+        app: &AppHandle,
+        context: &WorkbenchContext,
+        request: &Value,
+    ) -> Result<Value, String> {
+        let root = app
+            .state::<crate::state::AppState>()
+            .root(&context.workspace_id)
+            .map_err(|error| error.message)?;
+        super::scenario::run(app, context, self, &root, request)
+    }
+
+    pub fn window(&self, app: &AppHandle, context: &WorkbenchContext) -> Result<String, String> {
+        Ok(self
+            .target(
+                app,
+                &context.workspace_id,
+                context.session_id.as_deref(),
+                false,
+                true,
+            )?
+            .hwnd)
     }
 
     pub fn snapshot(&self, app: &AppHandle, context: &WorkbenchContext) -> Result<Value, String> {

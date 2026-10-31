@@ -115,6 +115,18 @@ pub fn definitions() -> Vec<Value> {
             json!({}),
             &[],
         ),
+        tool(
+            "app_test_list",
+            "List the application test scenarios stored in the project root as prime-app-test*.json files.",
+            json!({}),
+            &[],
+        ),
+        tool(
+            "app_test_run",
+            "Run one application test scenario from the project root and return the per-step result with the artifacts directory. Steps: attach, wait_for, click, type, set_value, toggle, select, focus, press_key, scroll, assert, screenshot, stop.",
+            json!({"path":{"type":"string","minLength":1,"maxLength":200}}),
+            &["path"],
+        ),
     ]
 }
 
@@ -153,6 +165,8 @@ pub fn run(
             };
             manager.act(app, context, locator(args), action)
         }        "app_screenshot" => manager.element_png(app, context, locator(args)),
+        "app_test_list" => manager.test_list(app, &context.workspace_id),
+        "app_test_run" => manager.test_run(app, context, args),
         _ => Err(format!("Unknown project tool: {name}")),
     }
 }

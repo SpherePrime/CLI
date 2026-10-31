@@ -173,3 +173,49 @@
 .app-testing-log-error {
   opacity: 0.8;
 }
+
+.app-testing-scenarios {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow: auto;
+}
+
+.app-testing-scenarios ul,
+.app-testing-run ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.app-testing-scenarios li,
+.app-testing-run li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-testing-scenarios li.failed,
+.app-testing-run li.failed {
+  color: var(--danger, #e05561);
+}
+
+.app-testing-run {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.app-testing-run strong.failed {
+  color: var(--danger, #e05561);
+}
+
+.app-testing-target-meta {
+  flex-shrink: 0;
+}

@@ -4,6 +4,8 @@ import type {
   AppUiElementAction,
   AppUiLogEntry,
   AppUiRequest,
+  AppUiRun,
+  AppUiScenario,
   AppUiSnapshot,
   AppUiTarget,
   PickedAppElement
@@ -30,6 +32,8 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
   const [target, setTarget] = useState<AppUiTarget | null>(null)
   const [snapshot, setSnapshot] = useState<AppUiSnapshot | null>(null)
   const [log, setLog] = useState<AppUiLogEntry[]>([])
+  const [scenarios, setScenarios] = useState<AppUiScenario[]>([])
+  const [result, setResult] = useState<AppUiRun | null>(null)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState('')
   const [text, setText] = useState('')
@@ -58,11 +62,16 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
     setBusy(true)
     setError('')
     try {
-      const [list, state] = await Promise.all([call({ action: 'targets' }), call({ action: 'state' })])
+      const [list, state, tests] = await Promise.all([
+        call({ action: 'targets' }),
+        call({ action: 'state' }),
+        call({ action: 'testList' })
+      ])
       if (active.current !== workspaceId) return
       setTargets(list.windows ?? [])
       setTarget(state.target ?? null)
       setLog(state.log ?? [])
+      setScenarios(tests.scenarios ?? [])
     } catch (cause) {
       fail(cause)
     } finally {
@@ -76,6 +85,8 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
     setSnapshot(null)
     setSelected('')
     setLog([])
+    setScenarios([])
+    setResult(null)
     void refresh()
     return window.prime.onEvent((event) => {
       if (event.type === 'appui' && event.workspaceId === workspaceId) {
@@ -144,6 +155,8 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
         if (result.windows) setTargets(result.windows)
         if (result.target !== undefined) setTarget(result.target)
         if (result.log) setLog(result.log)
+        if (result.scenarios) setScenarios(result.scenarios)
+        if (result.run) setResult(result.run)
       } catch (cause) {
         fail(cause)
       } finally {
@@ -283,8 +296,7 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
             </div>
           )}
           <div className="app-testing-log">
-            <span className="app-testing-actions-title">{c.log}</span>
-            {log.length === 0 ? (
+            <span className="app-testing-actions-title">{c.log}</span>            {log.length === 0 ? (
               <p className="app-testing-empty">{c.noLog}</p>
             ) : (
               <ul>
@@ -300,6 +312,60 @@ export function AppTestingPanel({ workspaceId, sessionId, onSend, onError }: Pro
                     </li>
                   ))}
               </ul>
+            )}
+          </div>
+          <div className="app-testing-scenarios">
+            <div className="app-testing-toolbar">
+              <span className="app-testing-actions-title">{c.scenarios}</span>
+              <button type="button" disabled={busy} onClick={() => void run({ action: 'testList' })}>
+                {c.refresh}
+              </button>
+            </div>
+            {scenarios.length === 0 ? (
+              <p className="app-testing-empty">{c.noScenarios}</p>
+            ) : (
+              <ul>
+                {scenarios.map((scenario) => (
+                  <li key={scenario.path} className={scenario.error ? 'failed' : ''}>
+                    <span className="app-testing-log-title">{scenario.name || scenario.path}</span>
+                    <span className="app-testing-target-meta">{scenario.steps ?? 0}</span>
+                    <button
+                      type="button"
+                      disabled={busy || !!scenario.error || !sessionId}
+                      onClick={() =>
+                        void run({
+                          action: 'testRun',
+                          sessionId: sessionId || '',
+                          path: scenario.path
+                        })
+                      }
+                    >
+                      {c.run}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {result && (
+              <div className="app-testing-run">
+                <strong className={result.passed ? '' : 'failed'}>
+                  {result.passed ? c.passed : c.failed}
+                </strong>
+                <span className="app-testing-log-title" title={result.artifacts}>
+                  {c.artifacts}: {result.artifacts}
+                </span>
+                <ul>
+                  {result.steps.map((step) => (
+                    <li key={step.index} className={step.ok ? '' : 'failed'}>
+                      <span>
+                        {step.index}. {step.action}
+                      </span>
+                      <span className="app-testing-target-meta">{step.ms} ms</span>
+                      {step.error && <span className="app-testing-log-error">{step.error}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </div>

@@ -69,6 +69,8 @@ export type AppUiRequest =
   | { action: 'snapshot'; sessionId: string }
   | { action: 'act'; sessionId: string; locator: AppUiLocator; elementAction: AppUiElementAction }
   | { action: 'type'; sessionId: string; locator: AppUiLocator; text: string }
+  | { action: 'testList' }
+  | { action: 'testRun'; sessionId: string; path: string }
   | { action: 'state' }
 
 export type AppUiLogEntry = {
@@ -86,6 +88,32 @@ export type AppUiResponse = {
   windows?: AppUiTarget[]
   target?: AppUiTarget | null
   log?: AppUiLogEntry[]
+  scenarios?: AppUiScenario[]
+  run?: AppUiRun
+}
+
+export type AppUiScenario = {
+  path: string
+  name?: string
+  steps?: number
+  launch?: string | null
+  error?: string
+}
+
+export type AppUiRunStep = {
+  index: number
+  action: string
+  ok: boolean
+  ms: number
+  error?: string | null
+}
+
+export type AppUiRun = {
+  scenario: string
+  name?: string | null
+  passed: boolean
+  steps: AppUiRunStep[]
+  artifacts: string
 }
 
 export type AppUiPickedElement = {

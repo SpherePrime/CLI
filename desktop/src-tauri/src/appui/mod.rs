@@ -3,6 +3,7 @@ pub(crate) mod manager;
 #[cfg(windows)]
 pub(crate) mod picker;
 pub(crate) mod render;
+pub(crate) mod scenario;
 pub(crate) mod tools;
 pub(crate) mod types;
 
