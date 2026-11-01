@@ -446,29 +446,46 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
 		})
 	}
+	// continueRun replays the request with a different prompt and without the
+	// accept reservation: that reservation belongs to the first attempt.
+	continueRun := func(nextPrompt string) (*fantasy.AgentResult, error) {
+		return agent.Run(ctx, SessionAgentCall{
+			ModelOverride:     &model,
+			SessionID:         sessionID,
+			RunID:             runID,
+			Prompt:            nextPrompt,
+			HiddenUserMessage: true,
+			MaxOutputTokens:   maxTokens,
+			ProviderOptions:   mergedOptions,
+			Temperature:       temp,
+			TopP:              topP,
+			TopK:              callTopK(providerCfg, topK),
+			FrequencyPenalty:  freqPenalty,
+			PresencePenalty:   presPenalty,
+			OnComplete:        onComplete,
+			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
+		})
+	}
 	beforeLoaded := c.skillTracker.LoadedNames()
 	result, originalErr := run()
 	if isContextOverflowError(originalErr) && !c.cfg.Config().Options.DisableAutoSummarize {
 		if summarizeErr := agent.Summarize(ctx, sessionID, mergedOptions, c.makeAuthRefreshCallback(providerCfg)); summarizeErr != nil {
 			slog.Warn("Failed to summarize after context overflow", "error", summarizeErr, "session_id", sessionID)
 		} else {
-			result, originalErr = agent.Run(ctx, SessionAgentCall{
-				ModelOverride:     &model,
-				SessionID:         sessionID,
-				RunID:             runID,
-				Prompt:            contextOverflowContinuation(prompt),
-				HiddenUserMessage: true,
-				MaxOutputTokens:   maxTokens,
-				ProviderOptions:   mergedOptions,
-				Temperature:       temp,
-				TopP:              topP,
-				TopK:              callTopK(providerCfg, topK),
-				FrequencyPenalty:  freqPenalty,
-				PresencePenalty:   presPenalty,
-				OnComplete:        onComplete,
-				OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
-			})
+			result, originalErr = continueRun(contextOverflowContinuation(prompt))
 		}
+	}
+	// A provider error — a timeout, a rate limit, a dropped stream — ends the
+	// turn before the task is done. With auto-continue on, the chat resumes
+	// itself the same way a sub-agent does, so the user does not have to press
+	// retry by hand. A cancelled or normally finished run never continues.
+	for attempt := 0; autoContinueEnabled(c.cfg.Config(), ctx, originalErr, attempt); attempt++ {
+		slog.Info("Continuing chat after provider error",
+			"session_id", sessionID,
+			"attempt", attempt+1,
+			"error", originalErr,
+		)
+		result, originalErr = continueRun(autoContinuePrompt)
 	}
 	logTurnSkillUsage(sessionID, prompt, c.activeSkills, c.skillTracker, beforeLoaded)
 
