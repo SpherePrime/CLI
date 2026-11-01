@@ -1212,8 +1212,8 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool, age
 	smallModel = newRequestTimeoutModel(smallModel, requestTimeout)
 	// Strict OpenAI-compatible endpoints reject the "tool" message role;
 	// replay such calls once with tool results as user messages.
-	largeModel = newReasoningCompatModel(newToolRoleCompatModel(largeModel))
-	smallModel = newReasoningCompatModel(newToolRoleCompatModel(smallModel))
+	largeModel = newReasoningCompatModel(newToolRoleCompatModel(newToolCallLeakModel(largeModel)))
+	smallModel = newReasoningCompatModel(newToolRoleCompatModel(newToolCallLeakModel(smallModel)))
 
 	large := Model{
 		Model:      largeModel,
@@ -1271,7 +1271,7 @@ func (c *coordinator) sessionModel(ctx context.Context, sessionID string) *Model
 		return nil
 	}
 	languageModel = newRequestTimeoutModel(languageModel, cfg.Options.GetRequestTimeout())
-	languageModel = newReasoningCompatModel(newToolRoleCompatModel(languageModel))
+	languageModel = newReasoningCompatModel(newToolRoleCompatModel(newToolCallLeakModel(languageModel)))
 	return &Model{
 		Model:      languageModel,
 		CatwalkCfg: applyModelOverrides(*catalogModel, selected),
