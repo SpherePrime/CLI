@@ -103,9 +103,9 @@ Operations:
 
 Do not poll or wait for agents. Their results and messages arrive
 automatically as team notices once your current turn ends, so end the turn
-or keep working on your own part instead of checking on them. Worker failures
+or keep working on your own part instead of checking on them. Agent failures
 and cancellations are delivered into your active turn at the next step:
-continue or reassign the stopped work instead of waiting for that worker.`
+continue or reassign the stopped work instead of waiting for that agent.`
 
 // startAgentJob registers a background sub-agent run. The sub-session is
 // created synchronously so it is immediately visible in the session list
@@ -124,7 +124,7 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		return nil, err
 	}
 	if c.sessions.IsAgentToolSession(parent.ID) {
-		return nil, errors.New("workers cannot launch nested agents; request assignments from the primary chat using agent_message")
+		return nil, errors.New("agents cannot launch nested agents; request assignments from the primary chat using agent_message")
 	}
 	root, err := c.teamRoot(ctx, params.SessionID)
 	if err != nil {

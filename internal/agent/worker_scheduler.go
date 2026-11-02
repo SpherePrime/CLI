@@ -261,7 +261,7 @@ func (c *coordinator) collectTeamNotices(root string) (string, []teamNoticeClaim
 	if len(reports) == 0 {
 		return "", nil
 	}
-	return "Automatic team notice with new results from your agents:\n\n" + strings.Join(reports, "\n\n---\n\n") + "\n\nIntegrate these results and assign follow-up or review work if needed. Agents with status error or canceled have stopped: do not keep waiting for them. Diagnose the failure, continue their work yourself or give a worker a new assignment. Results you already handled are not repeated here. If nothing remains to do, finish with a one-line status without restating earlier reports.", claims
+	return "Automatic team notice with new results from your agents:\n\n" + strings.Join(reports, "\n\n---\n\n") + "\n\nIntegrate these results and assign follow-up or review work if needed. Agents with status error or canceled have stopped: do not keep waiting for them. Diagnose the failure, continue their work yourself or give an agent a new assignment. Results you already handled are not repeated here. If nothing remains to do, finish with a one-line status without restating earlier reports.", claims
 }
 
 func (c *coordinator) workerContext() context.Context {

@@ -22,7 +22,7 @@ type backgroundAgentMetadata struct {
 }
 
 type AgentParams struct {
-	Name   string `json:"name,omitempty" description:"Short descriptive worker name identifying its assignment"`
+	Name   string `json:"name,omitempty" description:"Short descriptive agent name identifying its assignment"`
 	Prompt string `json:"prompt" description:"What the agent has to accomplish, stated as a complete task with its own context and a concrete deliverable. It cannot see this conversation, so anything it needs must be in here."`
 	Agent  string `json:"agent,omitempty" description:"Which configured agent to run. Omit to use the default agent."`
 	// Background starts the agent without waiting for it: the call returns
