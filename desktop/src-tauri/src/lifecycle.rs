@@ -87,10 +87,11 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
                     .set_buttons(rfd::MessageButtons::YesNo)
                     .show();
                 if result == rfd::MessageDialogResult::Yes {
-                    window
-                        .state::<crate::state::AppState>()
-                        .editor_dirty
-                        .store(false, Ordering::Relaxed);
+                    let state = window.state::<crate::state::AppState>();
+                    state.editor_dirty.store(false, Ordering::Relaxed);
+                    // The user confirmed closing the application, so the close
+                    // must not fall back to hiding the window in the tray.
+                    state.quitting.store(true, Ordering::Release);
                     let _ = window.close();
                 }
             });

@@ -180,10 +180,11 @@ func (ToolResult) isPart() {}
 
 // Finish represents the end of a message generation.
 type Finish struct {
-	Reason  FinishReason `json:"reason"`
-	Time    int64        `json:"time"`
-	Message string       `json:"message,omitempty"`
-	Details string       `json:"details,omitempty"`
+	Reason    FinishReason `json:"reason"`
+	Time      int64        `json:"time"`
+	AgentTime int64        `json:"agent_time,omitempty"`
+	Message   string       `json:"message,omitempty"`
+	Details   string       `json:"details,omitempty"`
 }
 
 func (Finish) isPart() {}

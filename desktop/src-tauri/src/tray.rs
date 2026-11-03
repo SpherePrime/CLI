@@ -231,6 +231,17 @@ pub fn request_quit(app: AppHandle) {
         match app.get_webview_window("main") {
             Some(window) => {
                 let _ = window.close();
+                // Closing asks the interface to flush its drafts first. When
+                // that answer never arrives the window stays open and the only
+                // way out left is the task manager, so the quit is forced after
+                // a grace period.
+                let handle = app.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(4));
+                    if handle.get_webview_window("main").is_some() {
+                        handle.exit(0);
+                    }
+                });
             }
             None => app.exit(0),
         }

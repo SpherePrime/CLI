@@ -16,7 +16,6 @@ import { CommandRunner } from './CommandRunner'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowUp, Mic, Paperclip, Square, X, LoaderCircle } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
-import { realSessionId } from '../../../../shared/pendingSession'
 import { useVoice } from '../plugins/useVoice'
 import { useConversation } from '../voice/useConversation'
 import { ConversationCall, ConversationCallPill } from '../voice/ConversationCall'
@@ -89,6 +88,11 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     [w.project?.id]
   )
   const draftKey = useRef(key)
+  // A dictation result can arrive after the user moved to another chat. It
+  // belongs to the chat it was dictated in, so it waits there instead of
+  // landing in whichever chat happens to be open when transcription ends.
+  const voiceDraftKey = useRef(key)
+  const pendingTranscripts = useRef<Map<string, string>>(new Map())
   const latest = useRef(text)
   latest.current = text
   useEffect(() => {
@@ -107,7 +111,31 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     toggle: toggleVoice,
     finish: finishVoice,
     cancel: cancelVoice
-  } = useVoice(w, (transcript) => setText((value) => [value, transcript].filter(Boolean).join(' ')))
+  } = useVoice(w, (transcript) => {
+    if (!transcript) return
+    const target = voiceDraftKey.current
+    if (target === draftKey.current) {
+      setText((value) => [value, transcript].filter(Boolean).join(' '))
+      return
+    }
+    keepTranscript(target, transcript)
+  })
+  // keepTranscript files a dictation under the chat it was dictated in, so the
+  // text is still there when the user returns to that chat.
+  function keepTranscript(target: string, transcript: string) {
+    const accumulated = pendingTranscripts.current.get(target)
+    const merged = accumulated
+      ? [accumulated, transcript].filter(Boolean).join(' ')
+      : [w.preferences.drafts[target], transcript].filter(Boolean).join(' ')
+    pendingTranscripts.current.set(target, merged)
+    void w.savePreferences({ drafts: { [target]: merged } })
+  }
+  // startVoice remembers the chat the user is dictating in before the recorder
+  // starts, so a late transcript is not routed by the chat open at the end.
+  function startVoice() {
+    voiceDraftKey.current = key
+    void toggleVoice()
+  }
   useEffect(() => {
     if (draftKey.current !== key) {
       const previous = draftKey.current
@@ -117,9 +145,24 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         !w.preferences.drafts[key] &&
         !w.messages.length &&
         Date.now() / 1000 - (w.session?.updated_at || 0) < 5
-      if (justCreated && draft && !submitting.current) return
+      if (justCreated && draft && !submitting.current) {
+        // The chat was just created, so the key moved from the placeholder to
+        // the real session: a dictation that arrived meanwhile is still filed
+        // under the placeholder and has to come along.
+        const waitingPlaceholder = pendingTranscripts.current.get(previous)
+        if (waitingPlaceholder) {
+          pendingTranscripts.current.delete(previous)
+          setText((value) => [value, waitingPlaceholder].filter(Boolean).join(' '))
+        }
+        return
+      }
       void w.savePreferences({ drafts: { [previous]: draft } })
       setText(w.preferences.drafts[key] || '')
+      const waiting = pendingTranscripts.current.get(key)
+      if (waiting) {
+        pendingTranscripts.current.delete(key)
+        setText((value) => [value, waiting].filter(Boolean).join(' '))
+      }
       void window.prime
         .releaseAttachments(
           attachmentRef.current
@@ -172,7 +215,13 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       const spoken = await finishVoice()
       message = [text, spoken].filter((part) => part.trim()).join(' ')
       setSending(false)
-      if (draftKey.current !== submittedKey) return
+      if (draftKey.current !== submittedKey) {
+        // The user moved to another chat while the recording was being
+        // transcribed: keep the spoken text with the chat it was dictated in
+        // instead of sending it into the wrong chat or dropping it.
+        keepTranscript(submittedKey, message)
+        return
+      }
     }
     if (!message.trim() && attachments.length) message = t('Посмотри на изображение.')
     if (!message.trim()) return
@@ -225,12 +274,8 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     }
   }
   async function stop() {
-    const sessionId = realSessionId(w.session)
-    if (!sessionId) return
     try {
-      await w.call('cancel', { sessionId })
-      w.setBusy(false)
-      await w.refresh()
+      await w.cancelRun()
     } catch (error) {
       w.errorHandler(error)
     }
@@ -249,14 +294,14 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       }
       if (matchesShortcut(event, getShortcuts().voice) && conversation.state === 'off') {
         event.preventDefault()
-        void toggleVoice()
+        startVoice()
       }
     }
     const pointerHandler = (event: PointerEvent) => {
       if (document.querySelector('dialog[open]')) return
       if (matchesPointerShortcut(event, getShortcuts().voice) && conversation.state === 'off') {
         if (event.button !== 0) event.preventDefault()
-        void toggleVoice()
+        startVoice()
       }
     }
     window.addEventListener('keydown', handler)
@@ -446,7 +491,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               aria-pressed={recording}
               aria-busy={transcribing}
               title={`${t('Голосовой ввод')} · ${shortcutLabel(shortcuts.voice)}`}
-              onClick={() => void toggleVoice()}
+              onClick={startVoice}
             >
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
