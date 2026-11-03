@@ -29,6 +29,8 @@ func New(opts ...Option) (fantasy.Provider, error) {
 			openai.WithName(Name),
 		},
 		languageModelOptions: []openai.LanguageModelOption{
+			openai.WithLanguageModelUsageFunc(compatUsage),
+			openai.WithLanguageModelStreamUsageFunc(compatStreamUsage),
 			openai.WithLanguageModelPrepareCallFunc(PrepareCallFunc),
 			openai.WithLanguageModelStreamExtraFunc(StreamExtraFunc),
 			openai.WithLanguageModelExtraContentFunc(ExtraContentFunc),
