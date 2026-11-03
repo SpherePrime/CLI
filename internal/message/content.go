@@ -139,10 +139,14 @@ type ToolResult struct {
 func (ToolResult) isPart() {}
 
 type Finish struct {
-	Reason  FinishReason `json:"reason"`
-	Time    int64        `json:"time"`
-	Message string       `json:"message,omitempty"`
-	Details string       `json:"details,omitempty"`
+	Reason FinishReason `json:"reason"`
+	Time   int64        `json:"time"`
+	// AgentTime is the part of the turn spent waiting for sub-agents. The
+	// interface subtracts it so the reported time is the work this chat did
+	// itself rather than the work its agents did.
+	AgentTime int64  `json:"agent_time,omitempty"`
+	Message   string `json:"message,omitempty"`
+	Details   string `json:"details,omitempty"`
 }
 
 func (Finish) isPart() {}
@@ -518,6 +522,20 @@ func (m *Message) AddFinish(reason FinishReason, message, details string) {
 		}
 	}
 	m.Parts = append(m.Parts, Finish{Reason: reason, Time: time.Now().Unix(), Message: message, Details: details})
+}
+
+// SetAgentWait records how many seconds of the turn were spent waiting for
+// sub-agents. It applies to the finish part added by [Message.AddFinish].
+func (m *Message) SetAgentWait(seconds int64) {
+	for i := len(m.Parts) - 1; i >= 0; i-- {
+		finish, ok := m.Parts[i].(Finish)
+		if !ok {
+			continue
+		}
+		finish.AgentTime = seconds
+		m.Parts[i] = finish
+		return
+	}
 }
 
 func (m *Message) AddImageURL(url, detail string) {

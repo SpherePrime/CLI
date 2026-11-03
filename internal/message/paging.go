@@ -149,7 +149,13 @@ func (s *service) listPage(ctx context.Context, sessionID, cursor string, limit 
 			return
 		}
 		if wanted[item.ID] && item.FinishTime.Valid && item.FinishTime.Int64 > 0 && page.Timing.StartedAt > 0 {
-			page.Timing.Completed[item.ID] = max(int64(0), item.FinishTime.Int64-page.Timing.StartedAt)
+			// Waiting for sub-agents is their work, not this chat's, so it is
+			// reported apart from the time the chat itself was busy.
+			completed := item.FinishTime.Int64 - page.Timing.StartedAt
+			if item.FinishAgentTime.Valid {
+				completed -= item.FinishAgentTime.Int64
+			}
+			page.Timing.Completed[item.ID] = max(int64(0), completed)
 		}
 	}
 	if textOnly {

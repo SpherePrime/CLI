@@ -999,6 +999,25 @@ export function useWorkspace() {
       if (prompt.startsWith('!')) setPendingShell(null)
     }
   }
+  // Stops the run of the chat the user is looking at. A chat that is still a
+  // placeholder has no engine id yet, so the cancel waits for the session the
+  // engine is creating instead of being dropped, which is why Stop used to do
+  // nothing in a chat whose first message was still being sent.
+  async function cancelRun() {
+    const project = current.current.project
+    const session = current.current.session
+    if (!project || !session) return false
+    let sessionId = session.id
+    if (isPendingSessionId(sessionId)) {
+      const created = (await pendingSessions.current.get(sessionId)?.catch(() => null)) ?? null
+      if (!created) return false
+      sessionId = created.id
+    }
+    await window.prime.call(project.id, 'cancel', { sessionId })
+    if (current.current.project?.id === project.id) setBusy(false)
+    await refresh()
+    return true
+  }
   async function savePreferences(patch: Partial<Preferences>) {
     const sequence = ++preferenceWrite.current
     setPreferences((current) => ({
@@ -1150,7 +1169,8 @@ export function useWorkspace() {
     openSession,
     createSession,
     deleteSession,
-    send
+    send,
+    cancelRun
   }
 }
 export type Workspace = ReturnType<typeof useWorkspace>
