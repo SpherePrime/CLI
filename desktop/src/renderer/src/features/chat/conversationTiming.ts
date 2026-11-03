@@ -12,13 +12,17 @@ function isGeneratedContinuation(message: Message) {
   return texts.length > 0 && texts.every((part) => Boolean(part.data?.hidden))
 }
 
+export function isConversationPrompt(message: Message) {
+  return message.role === 'user' && !isShellCommand(message) && !isGeneratedContinuation(message)
+}
+
 export function conversationTiming(messages: Message[]) {
   let startedAt: number | null = null
   const completed = new Map<string, number>()
   for (const message of messages) {
     if (!['user', 'assistant'].includes(message.role)) continue
     if (message.role === 'user') {
-      if (isShellCommand(message) || isGeneratedContinuation(message)) continue
+      if (!isConversationPrompt(message)) continue
       if (message.created_at && Number.isFinite(message.created_at))
         startedAt = message.created_at * 1000
       continue

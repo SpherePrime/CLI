@@ -1,5 +1,6 @@
 import type { Message } from '../../../../shared/contracts'
 import { applyMessage } from '../../../../shared/messages'
+import { isConversationPrompt } from './conversationTiming'
 
 export type HistoryTiming = { started_at?: number; completed: Record<string, number> }
 export type MessagePage = {
@@ -82,9 +83,9 @@ export function updateHistoryMessage(
   const timing = { ...window.timing, completed: { ...window.timing.completed } }
   if (
     !exists &&
-    message.role === 'user' &&
-    !message.parts.some((part) => part.type === 'shell_command') &&
-    !timing.started_at
+    isConversationPrompt(message) &&
+    message.created_at &&
+    Number.isFinite(message.created_at)
   )
     timing.started_at = message.created_at
   const finish =
@@ -97,7 +98,6 @@ export function updateHistoryMessage(
     timing.completed[message.id] === undefined
   ) {
     timing.completed[message.id] = Math.max(0, Math.floor(finish.time - timing.started_at))
-    timing.started_at = undefined
   }
   const retained = messages.slice(-historyWindowLimit)
   timing.completed = Object.fromEntries(
