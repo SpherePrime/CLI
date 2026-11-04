@@ -878,6 +878,12 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			// Use latest tools (updated by SetTools when MCP tools change).
 			prepared.Tools = a.tools.Copy()
 			searchRecovery.prepare(options.Steps, &prepared)
+			selectedTools := smartToolSelection(prepared.Tools, options.Steps)
+			if len(selectedTools) < len(prepared.Tools) {
+				for _, tool := range selectedTools {
+					prepared.ActiveTools = append(prepared.ActiveTools, tool.Info().Name)
+				}
+			}
 
 			// Drain queued follow-up prompts for this step. Calls covered
 			// by a cancel recorded while they sat in the queue are dropped:
@@ -928,7 +934,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 
 			sessionLock.Lock()
 			stepMessages = cloneFantasyMessages(prepared.Messages)
-			stepToolTokens = estimateToolDefinitionTokens(prepared.Tools)
+			stepToolTokens = estimateToolDefinitionTokens(selectedTools)
 			sessionLock.Unlock()
 
 			var assistantMsg message.Message
