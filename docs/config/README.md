@@ -483,6 +483,11 @@ permissions deny bash
 Configure general Prime behavior, paths, attribution, and the terminal UI.
 Boolean values are optional and default to `true`.
 
+Smart Tools starts each turn with capability search, skill reading, and instruction tools.
+Searching enables the matching tool schemas for subsequent steps in that turn.
+Standard mode sends the full permitted tool catalog. The setting is saved in
+`options.json` at the selected global or project scope and survives restarts and updates.
+
 ```text
 Usage:
   option <key> [value]

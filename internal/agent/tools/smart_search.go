@@ -71,7 +71,7 @@ func NewSearchMCPTool(entries []SmartSearchEntry) fantasy.AgentTool {
 	return fantasy.NewAgentTool("search_mcp",
 		"Search MCP tools by keyword and return matching tools with their mcp_<server>_<tool> names, descriptions, and short usage notes. Use this when an external MCP capability may satisfy the request.",
 		func(ctx context.Context, params SearchMCPParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			return fantasy.NewTextResponse(smartSearchRun(entries, params.Query, params.Limit)), nil
+			return smartSearchToolResponse(entries, params.Query, params.Limit), nil
 		})
 }
 
@@ -80,7 +80,7 @@ func NewSearchToolsTool(entries []SmartSearchEntry) fantasy.AgentTool {
 	return fantasy.NewAgentTool("search_tools",
 		"Search built-in agent tools by keyword and return matching tools with descriptions and usage notes. Use this when a built-in tool may satisfy the request.",
 		func(ctx context.Context, params SearchToolsParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			return fantasy.NewTextResponse(smartSearchRun(entries, params.Query, params.Limit)), nil
+			return smartSearchToolResponse(entries, params.Query, params.Limit), nil
 		})
 }
 
@@ -131,10 +131,9 @@ func SmartSearchEntriesFromTools(all []fantasy.AgentTool) []SmartSearchEntry {
 	return entries
 }
 
-func smartSearchRun(entries []SmartSearchEntry, query string, limit int) string {
-	query = strings.TrimSpace(query)
-	if query == "" {
-		return "No query provided. Provide a keyword or short phrase to search for."
+func smartSearchMatches(entries []SmartSearchEntry, query string, limit int) []SmartSearchHit {
+	if strings.TrimSpace(query) == "" {
+		return nil
 	}
 	if limit <= 0 {
 		limit = SmartSearchDefaultLimit
@@ -154,6 +153,25 @@ func smartSearchRun(entries []SmartSearchEntry, query string, limit int) string 
 	if len(matches) > limit {
 		matches = matches[:limit]
 	}
+	return matches
+}
+
+func smartSearchToolResponse(entries []SmartSearchEntry, query string, limit int) fantasy.ToolResponse {
+	var names []string
+	for _, hit := range smartSearchMatches(entries, query, limit) {
+		names = append(names, hit.Entry.Name)
+	}
+	return fantasy.WithResponseMetadata(fantasy.NewTextResponse(smartSearchRun(entries, query, limit)), struct {
+		DiscoveredTools []string `json:"discovered_tools"`
+	}{names})
+}
+
+func smartSearchRun(entries []SmartSearchEntry, query string, limit int) string {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return "No query provided. Provide a keyword or short phrase to search for."
+	}
+	matches := smartSearchMatches(entries, query, limit)
 
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Query: %q\n", query)

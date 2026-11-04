@@ -71,9 +71,7 @@ func toolNamesOf(built []fantasy.AgentTool) []string {
 	return names
 }
 
-// TestSmartToolsPaletteGatesSearchTools pins the toggle: the default palette is
-// untouched, and Smart Tools adds exactly the three search tools on top of it.
-func TestSmartToolsPaletteGatesSearchTools(t *testing.T) {
+func TestSmartToolsExecutionRegistryRetainsAllowedTools(t *testing.T) {
 	defaultNames := toolNamesOf(builtToolSet(t, false))
 	smartNames := toolNamesOf(builtToolSet(t, true))
 
@@ -82,7 +80,6 @@ func TestSmartToolsPaletteGatesSearchTools(t *testing.T) {
 		require.Contains(t, smartNames, name)
 	}
 
-	// Nothing the default palette offered disappears in smart mode.
 	for _, name := range defaultNames {
 		require.Contains(t, smartNames, name)
 	}
