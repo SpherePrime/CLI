@@ -13,9 +13,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/jsonrepair"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/schema"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/exp/slice"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/jsonrepair"
 )
 
 // StepResult represents the result of a single step in an agent execution.
@@ -109,6 +108,8 @@ type PrepareStepFunctionOptions struct {
 
 // PrepareStepResult contains the result of preparing a step in an agent execution.
 type PrepareStepResult struct {
+	ToolDefinitions []Tool
+	BeforeToolCall  func(context.Context, ToolCall) error
 	Model           LanguageModel
 	Messages        []Message
 	System          *string
@@ -386,8 +387,8 @@ type agent struct {
 // NewAgent creates a new agent with the given language model and options.
 func NewAgent(model LanguageModel, opts ...AgentOption) Agent {
 	settings := agentSettings{
-		model:              model,
-		maxParallelTools:   defaultMaxParallelTools,
+		model:            model,
+		maxParallelTools: defaultMaxParallelTools,
 	}
 	for _, o := range opts {
 		o(&settings)
@@ -463,6 +464,8 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 		}
 		disableAllTools := false
 		stepTools := a.settings.tools
+		var stepDefinitions []Tool
+		var stepGate func(context.Context, ToolCall) error
 		if opts.PrepareStep != nil {
 			updatedCtx, prepared, err := opts.PrepareStep(ctx, PrepareStepFunctionOptions{
 				Model:      stepModel,
@@ -475,6 +478,8 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 			}
 
 			ctx = updatedCtx
+			stepDefinitions = prepared.ToolDefinitions
+			stepGate = prepared.BeforeToolCall
 
 			// Apply prepared step modifications
 			if prepared.Messages != nil {
@@ -511,6 +516,16 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 		}
 
 		preparedTools := a.prepareTools(stepTools, a.settings.providerDefinedTools, stepActiveTools, disableAllTools)
+		if stepDefinitions != nil {
+			if len(a.settings.providerDefinedTools) > 0 || len(a.settings.executableProviderTools) > 0 {
+				return nil, fmt.Errorf("unsupported-policy: provider-executed tools cannot enforce documentation gate")
+			}
+			if err := validateToolDefinitions(stepDefinitions, stepTools, stepActiveTools, disableAllTools); err != nil {
+				return nil, err
+			}
+			preparedTools = stepDefinitions
+		}
+		ctx = context.WithValue(ctx, toolGateContextKey{}, stepGate)
 
 		// Filter executable provider tools by activeTools at the
 		// step level, consistent with how stepTools (AgentTools)
@@ -739,6 +754,7 @@ func toResponseMessages(content []Content) []Message {
 				continue
 			}
 			resultPart := ToolResultPart{
+				Outcome: result.Outcome, Documentation: result.Documentation,
 				ToolCallID:       result.ToolCallID,
 				Output:           result.Result,
 				ProviderExecuted: result.ProviderExecuted,
@@ -814,6 +830,7 @@ func (a *agent) executeSingleTool(ctx context.Context, toolMap map[string]AgentT
 
 	// Skip invalid tool calls - create error result (not critical)
 	if toolCall.Invalid {
+		result.Outcome = ToolOutcomeFailure
 		result.Result = ToolResultOutputContentError{
 			Error: toolCall.ValidationError,
 		}
@@ -832,6 +849,7 @@ func (a *agent) executeSingleTool(ctx context.Context, toolMap map[string]AgentT
 		runTool = ept.Run
 	}
 	if runTool == nil {
+		result.Outcome = ToolOutcomeFailure
 		result.Result = ToolResultOutputContentError{
 			Error: errors.New("tool not found: " + toolCall.ToolName),
 		}
@@ -851,9 +869,14 @@ func (a *agent) executeSingleTool(ctx context.Context, toolMap map[string]AgentT
 		Input: toolCall.Input,
 	})
 	if err != nil {
+		result.Outcome = ToolOutcomeFailure
 		result.Result = ToolResultOutputContentError{
 			Error: err,
 		}
+		if toolResult.Outcome != "" {
+			result.Outcome = toolResult.Outcome
+		}
+		result.Documentation = toolResult.Documentation
 		result.ClientMetadata = toolResult.Metadata
 		result.StopTurn = toolResult.StopTurn
 		if toolResultCallback != nil {
@@ -865,9 +888,15 @@ func (a *agent) executeSingleTool(ctx context.Context, toolMap map[string]AgentT
 		return result, ctx.Err() != nil || errors.Is(err, context.Canceled)
 	}
 
+	result.Outcome = toolResult.Outcome
+	if result.Outcome == "" {
+		result.Outcome = ToolOutcomeUnknown
+	}
+	result.Documentation = toolResult.Documentation
 	result.ClientMetadata = toolResult.Metadata
 	result.StopTurn = toolResult.StopTurn
 	if toolResult.IsError {
+		result.Outcome = ToolOutcomeFailure
 		result.Result = ToolResultOutputContentError{
 			Error: errors.New(toolResult.Content),
 		}
@@ -961,6 +990,8 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 		}
 		disableAllTools := false
 		stepTools := a.settings.tools
+		var stepDefinitions []Tool
+		var stepGate func(context.Context, ToolCall) error
 		// Apply step preparation if provided
 		if call.PrepareStep != nil {
 			updatedCtx, prepared, err := call.PrepareStep(ctx, PrepareStepFunctionOptions{
@@ -974,6 +1005,8 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 			}
 
 			ctx = updatedCtx
+			stepDefinitions = prepared.ToolDefinitions
+			stepGate = prepared.BeforeToolCall
 
 			if prepared.Messages != nil {
 				stepInputMessages = prepared.Messages
@@ -1008,6 +1041,16 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 		}
 
 		preparedTools := a.prepareTools(stepTools, a.settings.providerDefinedTools, stepActiveTools, disableAllTools)
+		if stepDefinitions != nil {
+			if len(a.settings.providerDefinedTools) > 0 || len(a.settings.executableProviderTools) > 0 {
+				return nil, fmt.Errorf("unsupported-policy: provider-executed tools cannot enforce documentation gate")
+			}
+			if err := validateToolDefinitions(stepDefinitions, stepTools, stepActiveTools, disableAllTools); err != nil {
+				return nil, err
+			}
+			preparedTools = stepDefinitions
+		}
+		ctx = context.WithValue(ctx, toolGateContextKey{}, stepGate)
 
 		// Filter executable provider tools by activeTools at the
 		// step level, consistent with how stepTools (AgentTools)
@@ -1139,12 +1182,7 @@ func (a *agent) prepareTools(tools []AgentTool, providerDefinedTools []ProviderD
 			continue
 		}
 		info := tool.Info()
-		inputSchema := map[string]any{
-			"type":       "object",
-			"properties": info.Parameters,
-			"required":   info.Required,
-		}
-		schema.Normalize(inputSchema)
+		inputSchema, _ := CanonicalToolSchema(info)
 		preparedTools = append(preparedTools, FunctionTool{
 			Name:            info.Name,
 			Description:     info.Description,
@@ -1165,6 +1203,11 @@ func (a *agent) prepareTools(tools []AgentTool, providerDefinedTools []ProviderD
 
 // validateAndRepairToolCall validates a tool call and attempts repair if validation fails.
 func (a *agent) validateAndRepairToolCall(ctx context.Context, toolCall ToolCallContent, availableTools []AgentTool, execProviderTools []ExecutableProviderTool, systemPrompt string, messages []Message, repairFunc RepairToolCallFunction) ToolCallContent {
+	if err := checkToolGate(ctx, toolCall, availableTools); err != nil {
+		toolCall.Invalid = true
+		toolCall.ValidationError = err
+		return toolCall
+	}
 	if err := a.validateToolCall(toolCall, availableTools, execProviderTools); err == nil {
 		return toolCall
 	} else { //nolint: revive
@@ -1178,6 +1221,11 @@ func (a *agent) validateAndRepairToolCall(ctx context.Context, toolCall ToolCall
 			}
 
 			if repairedToolCall, repairErr := repairFunc(ctx, repairOptions); repairErr == nil && repairedToolCall != nil {
+				if gateErr := checkToolGate(ctx, *repairedToolCall, availableTools); gateErr != nil {
+					toolCall.Invalid = true
+					toolCall.ValidationError = gateErr
+					return toolCall
+				}
 				if validateErr := a.validateToolCall(*repairedToolCall, availableTools, execProviderTools); validateErr == nil {
 					return *repairedToolCall
 				}
@@ -1240,24 +1288,7 @@ func (a *agent) validateToolCall(toolCall ToolCallContent, availableTools []Agen
 		)
 	}
 
-	// Validate JSON parsing
-	var input map[string]any
-	if err := json.Unmarshal([]byte(toolCall.Input), &input); err != nil {
-		return fmt.Errorf("invalid JSON input: %w", err)
-	}
-
-	// Basic schema validation (check required fields)
-	// TODO: more robust schema validation using JSON Schema or similar
-	toolInfo := tool.Info()
-	for _, required := range toolInfo.Required {
-		if _, exists := input[required]; !exists {
-			return fmt.Errorf(
-				"missing required parameter %q for tool %q; required parameters: [%s]. Retry the call with all required parameters",
-				required, toolCall.ToolName, strings.Join(toolInfo.Required, ", "),
-			)
-		}
-	}
-	return nil
+	return ValidateToolInput(tool.Info(), toolCall.Input)
 }
 
 func (a *agent) createPrompt(system, prompt string, messages []Message, files ...FilePart) (Prompt, error) {

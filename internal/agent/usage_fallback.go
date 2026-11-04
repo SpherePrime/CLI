@@ -34,6 +34,21 @@ func estimateToolDefinitionTokens(tools []fantasy.AgentTool) int64 {
 	return tokens
 }
 
+func estimateToolDefinitionsTokens(definitions []fantasy.Tool) int64 {
+	var tokens int64
+	for _, definition := range definitions {
+		function, ok := definition.(fantasy.FunctionTool)
+		if !ok {
+			continue
+		}
+		tokens += approxTokenCount(function.Name) + approxTokenCount(function.Description)
+		if schema, err := json.Marshal(function.InputSchema); err == nil {
+			tokens += approxTokenCount(string(schema))
+		}
+	}
+	return tokens
+}
+
 func usageIsZero(usage fantasy.Usage) bool {
 	return usage.InputTokens == 0 &&
 		usage.OutputTokens == 0 &&

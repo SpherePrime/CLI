@@ -14,6 +14,7 @@ type Schema = schema.Schema
 
 // ToolInfo represents tool metadata, matching the existing pattern.
 type ToolInfo struct {
+	InputSchema map[string]any `json:"input_schema,omitempty"`
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
 	Parameters  map[string]any `json:"parameters"`
@@ -29,9 +30,32 @@ type ToolCall struct {
 }
 
 // ToolResponse represents the response from a tool execution, matching the existing pattern.
+type ToolOutcome string
+
+const (
+	ToolOutcomeUnknown ToolOutcome = "unknown"
+	ToolOutcomeSuccess ToolOutcome = "success"
+	ToolOutcomeFailure ToolOutcome = "failure"
+	ToolOutcomeRunning ToolOutcome = "running"
+)
+
+type ToolDocumentationReceipt struct {
+	Version    int    `json:"version"`
+	Scope      string `json:"scope"`
+	ToolName   string `json:"tool_name"`
+	Identity   string `json:"identity"`
+	Revision   string `json:"revision"`
+	Offset     int    `json:"offset"`
+	End        int    `json:"end"`
+	Total      int    `json:"total"`
+	PageSHA256 string `json:"page_sha256"`
+}
+
 type ToolResponse struct {
-	Type    string `json:"type"`
-	Content string `json:"content"`
+	Outcome       ToolOutcome               `json:"outcome,omitempty"`
+	Documentation *ToolDocumentationReceipt `json:"documentation,omitempty"`
+	Type          string                    `json:"type"`
+	Content       string                    `json:"content"`
 	// Data contains binary data for image/media responses (e.g., image bytes, audio data).
 	Data []byte `json:"data,omitempty"`
 	// MediaType specifies the MIME type of the media (e.g., "image/png", "audio/wav").
@@ -39,10 +63,10 @@ type ToolResponse struct {
 	// Images carries additional media items for UI display. The first item is
 	// mirrored into Data/MediaType so providers keep seeing one media result;
 	// the rest only travel to clients, not back to the model.
-	Images []ImagePayload `json:"images,omitempty"`
-	Metadata string `json:"metadata,omitempty"`
-	IsError  bool   `json:"is_error"`
-	StopTurn bool   `json:"stop_turn,omitempty"`
+	Images   []ImagePayload `json:"images,omitempty"`
+	Metadata string         `json:"metadata,omitempty"`
+	IsError  bool           `json:"is_error"`
+	StopTurn bool           `json:"stop_turn,omitempty"`
 }
 
 // ImagePayload is one media item attached to a tool response.
@@ -69,6 +93,7 @@ func NewTextErrorResponse(content string) ToolResponse {
 		Type:    "text",
 		Content: content,
 		IsError: true,
+		Outcome: ToolOutcomeFailure,
 	}
 }
 

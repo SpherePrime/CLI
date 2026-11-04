@@ -255,11 +255,13 @@ func (t ToolCallPart) Options() ProviderOptions {
 
 // ToolResultPart represents a tool result in a message.
 type ToolResultPart struct {
-	ToolCallID       string                  `json:"tool_call_id"`
-	Output           ToolResultOutputContent `json:"output"`
-	ProviderExecuted bool                    `json:"provider_executed"`
-	ProviderOptions  ProviderOptions         `json:"provider_options"`
-	ClientMetadata   string                  `json:"client_metadata,omitempty"`
+	Outcome          ToolOutcome               `json:"outcome,omitempty"`
+	Documentation    *ToolDocumentationReceipt `json:"documentation,omitempty"`
+	ToolCallID       string                    `json:"tool_call_id"`
+	Output           ToolResultOutputContent   `json:"output"`
+	ProviderExecuted bool                      `json:"provider_executed"`
+	ProviderOptions  ProviderOptions           `json:"provider_options"`
+	ClientMetadata   string                    `json:"client_metadata,omitempty"`
 }
 
 // GetType returns the type of the tool result part.
@@ -451,6 +453,8 @@ func (t ToolCallContent) GetType() ContentType {
 
 // ToolResultContent represents result of a tool call that has been executed by the provider.
 type ToolResultContent struct {
+	Outcome       ToolOutcome               `json:"outcome,omitempty"`
+	Documentation *ToolDocumentationReceipt `json:"documentation,omitempty"`
 	// The ID of the tool call that this result is associated with.
 	ToolCallID string `json:"tool_call_id"`
 	// Name of the tool that generated this result.
