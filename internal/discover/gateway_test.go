@@ -79,3 +79,18 @@ func TestDiscoverRemovesOnlyWithdrawnCodexDefaultAlias(t *testing.T) {
 		})
 	}
 }
+
+func TestDiscoverClaudeOutputAndReasoningCapabilities(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"data":[{"id":"claude/test","max_output_tokens":65536,"supports_vision":true,"reasoning_efforts":["low","medium","high","max"],"default_reasoning_effort":"medium"}]}`))
+	}))
+	defer server.Close()
+	models, err := DiscoverModels(context.Background(), Config{ID: "relay", BaseURL: server.URL}, &mockResolver{})
+	require.NoError(t, err)
+	require.Equal(t, int64(65536), models[0].DefaultMaxTokens)
+	require.Equal(t, []string{"low", "medium", "high", "max"}, models[0].ReasoningLevels)
+	require.Equal(t, "medium", models[0].DefaultReasoningEffort)
+	require.True(t, models[0].CanReason)
+	require.True(t, models[0].SupportsImages)
+	require.Nil(t, models[0].Options.ProviderOptions)
+}

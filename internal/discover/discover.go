@@ -138,6 +138,7 @@ type modelsResponse struct {
 		ContextWindow          int64          `json:"context_window"`
 		MaxContextLength       int64          `json:"max_context_length"`
 		DefaultMaxTokens       int64          `json:"default_max_tokens"`
+		MaxOutputTokens        int64          `json:"max_output_tokens"`
 		SupportsAttachments    bool           `json:"supports_attachments"`
 		SupportsVision         bool           `json:"supports_vision"`
 		Vision                 bool           `json:"vision"`
@@ -204,11 +205,15 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 			}
 			continue
 		}
+		maxOutputTokens := e.DefaultMaxTokens
+		if maxOutputTokens <= 0 {
+			maxOutputTokens = e.MaxOutputTokens
+		}
 		model := catwalk.Model{
 			ID:               e.ID,
 			Name:             e.ID,
 			ContextWindow:    contextWindow,
-			DefaultMaxTokens: e.DefaultMaxTokens,
+			DefaultMaxTokens: maxOutputTokens,
 			SupportsImages:   e.SupportsAttachments || e.SupportsVision || e.Vision,
 			CostPer1MIn:      e.CostPer1MIn,
 			CostPer1MOut:     e.CostPer1MOut,
@@ -216,10 +221,10 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 		}
 		if e.Gateway["type"] == "codex" {
 			model.Options.ProviderOptions = map[string]any{"gateway": e.Gateway}
-			model.CanReason = len(e.ReasoningEfforts) > 0
-			model.ReasoningLevels = e.ReasoningEfforts
-			model.DefaultReasoningEffort = e.DefaultReasoningEffort
 		}
+		model.CanReason = len(e.ReasoningEfforts) > 0
+		model.ReasoningLevels = e.ReasoningEfforts
+		model.DefaultReasoningEffort = e.DefaultReasoningEffort
 		result = append(result, model)
 	}
 
