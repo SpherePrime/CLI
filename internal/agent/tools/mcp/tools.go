@@ -19,10 +19,12 @@ type Tool = mcp.Tool
 
 // ToolResult represents the result of running an MCP tool.
 type ToolResult struct {
-	Type      string
-	Content   string
-	Data      []byte
-	MediaType string
+	Type              string
+	Content           string
+	Data              []byte
+	MediaType         string
+	IsError           bool
+	StructuredContent any
 }
 
 var allTools = csync.NewMap[string, []*Tool]()
@@ -60,9 +62,10 @@ func RunToolWithProgress(ctx context.Context, cfg *config.ConfigStore, name, too
 		return ToolResult{}, err
 	}
 
-	if len(result.Content) == 0 {
-		return ToolResult{Type: "text", Content: ""}, nil
-	}
+	return convertToolResult(result), nil
+}
+
+func convertToolResult(result *mcp.CallToolResult) ToolResult {
 
 	var textParts []string
 	var imageData []byte
@@ -95,26 +98,32 @@ func RunToolWithProgress(ctx context.Context, cfg *config.ConfigStore, name, too
 	// when using something like docker + playwright the data was not returned correctly.
 	if imageData != nil {
 		return ToolResult{
-			Type:      "image",
-			Content:   textContent,
-			Data:      ensureRawBytes(imageData),
-			MediaType: imageMimeType,
-		}, nil
+			IsError:           result.IsError,
+			StructuredContent: result.StructuredContent,
+			Type:              "image",
+			Content:           textContent,
+			Data:              ensureRawBytes(imageData),
+			MediaType:         imageMimeType,
+		}
 	}
 
 	if audioData != nil {
 		return ToolResult{
-			Type:      "media",
-			Content:   textContent,
-			Data:      ensureRawBytes(audioData),
-			MediaType: audioMimeType,
-		}, nil
+			IsError:           result.IsError,
+			StructuredContent: result.StructuredContent,
+			Type:              "media",
+			Content:           textContent,
+			Data:              ensureRawBytes(audioData),
+			MediaType:         audioMimeType,
+		}
 	}
 
 	return ToolResult{
-		Type:    "text",
-		Content: textContent,
-	}, nil
+		IsError:           result.IsError,
+		StructuredContent: result.StructuredContent,
+		Type:              "text",
+		Content:           textContent,
+	}
 }
 
 // RefreshTools gets the updated list of tools from the MCP and updates the

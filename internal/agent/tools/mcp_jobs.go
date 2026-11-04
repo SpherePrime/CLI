@@ -78,7 +78,7 @@ func startMCPJob(ctx context.Context, tool *Tool, input, sessionID string) *mcpJ
 		switch {
 		case job.killed:
 			job.status = "canceled"
-		case err != nil:
+		case err != nil || result.IsError:
 			job.status = "error"
 		default:
 			job.status = "done"

@@ -178,6 +178,10 @@ type sessionAgent struct {
 	sessions             session.Service
 	messages             message.Service
 	dataDir              string
+	artifactStoreOnce    sync.Once
+	artifactStore        toolArtifactStore
+	artifactStoreErr     error
+	preparedViews        *csync.Map[string, preparedContextView]
 	disableAutoSummarize bool
 	// autoSummarizePercent is the global default threshold: how full the
 	// context window must be before a turn is compacted. A per-model override
@@ -285,6 +289,7 @@ func NewSessionAgent(
 		dispatchMu:           csync.NewMap[string, *sync.Mutex](),
 		acceptedRuns:         csync.NewMap[string, int](),
 		cancelMark:           csync.NewMap[string, uint64](),
+		preparedViews:        csync.NewMap[string, preparedContextView](),
 	}
 }
 
@@ -885,6 +890,21 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				}
 			}
 
+			scope := a.toolScope(call.SessionID)
+			documents, documentErr := buildToolDocuments(scope, selectedTools)
+			if documentErr != nil {
+				return callContext, prepared, documentErr
+			}
+			definitions := make([]fantasy.Tool, 0, len(selectedTools))
+			for _, tool := range selectedTools {
+				definition, _, definitionErr := compactToolDefinition(tool)
+				if definitionErr != nil {
+					return callContext, prepared, definitionErr
+				}
+				definitions = append(definitions, definition)
+			}
+			prepared.ToolDefinitions = definitions
+
 			// Drain queued follow-up prompts for this step. Calls covered
 			// by a cancel recorded while they sat in the queue are dropped:
 			// a cancel that arrived after a prompt was queued must not let
@@ -932,10 +952,21 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				prepared.Messages = append([]fantasy.Message{fantasy.NewSystemMessage(promptPrefix)}, prepared.Messages...)
 			}
 
+			store, storeErr := a.toolArtifactStore()
+			if storeErr != nil {
+				store = nil
+			}
+			prepared.Messages = projectToolMessages(callContext, scope, store, prepared.Messages)
+			covered := documentedTools(scope, documents, prepared.Messages)
+			prepared.BeforeToolCall = documentationGate(documents, covered)
+			callContext = withToolDocumentation(callContext, scope, documents)
+			callContext = withToolArtifacts(callContext, store, scope)
+
 			sessionLock.Lock()
 			stepMessages = cloneFantasyMessages(prepared.Messages)
-			stepToolTokens = estimateToolDefinitionTokens(selectedTools)
+			stepToolTokens = estimateToolDefinitionsTokens(definitions)
 			sessionLock.Unlock()
+			a.recordPreparedContext(call.SessionID, definitions, prepared.Messages)
 
 			var assistantMsg message.Message
 			assistantMsg, err = a.messages.Create(callContext, call.SessionID, message.CreateMessageParams{
@@ -2414,9 +2445,11 @@ func (a *sessionAgent) Model() Model {
 // convertToToolResult converts a fantasy tool result to a message tool result.
 func (a *sessionAgent) convertToToolResult(result fantasy.ToolResultContent) message.ToolResult {
 	baseResult := message.ToolResult{
-		ToolCallID: result.ToolCallID,
-		Name:       result.ToolName,
-		Metadata:   result.ClientMetadata,
+		Outcome:       result.Outcome,
+		Documentation: result.Documentation,
+		ToolCallID:    result.ToolCallID,
+		Name:          result.ToolName,
+		Metadata:      result.ClientMetadata,
 	}
 
 	switch result.Result.GetType() {

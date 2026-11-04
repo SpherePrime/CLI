@@ -42,6 +42,7 @@ func (c *coordinator) buildRemoteWorkspaceTools(agent config.Agent, isSubAgent b
 			available = append(available, tools.NewSearchMCPTool(mcpEntries))
 		}
 	}
+	available = append(available, newReadToolDocumentationTool(), newReadToolResultTool())
 	slices.SortFunc(available, func(a, b fantasy.AgentTool) int {
 		return strings.Compare(a.Info().Name, b.Info().Name)
 	})

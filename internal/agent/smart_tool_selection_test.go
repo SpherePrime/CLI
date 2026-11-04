@@ -11,7 +11,7 @@ import (
 func TestSmartToolSelectionBuiltinsAndRestrictions(t *testing.T) {
 	all := builtToolSet(t, true)
 	initial := toolNamesOf(smartToolSelection(all, nil))
-	require.ElementsMatch(t, []string{"search_skills", "search_tools", "search_mcp", "view", "search_instructions", "read_instruction"}, initial)
+	require.ElementsMatch(t, []string{"search_skills", "search_tools", "search_mcp", "view", "search_instructions", "read_instruction", "read_tool_documentation", "read_tool_result"}, initial)
 	search := builtToolByName(t, all, "search_tools")
 	response, err := search.Run(t.Context(), fantasy.ToolCall{Input: `{"query":"bash","limit":1}`})
 	require.NoError(t, err)

@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/stringext"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/google"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
-	"github.com/SpherePrime/CLI/internal/stringext"
-	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 )
 
 type MessageRole string
@@ -125,15 +125,17 @@ type ToolResultImage struct {
 }
 
 type ToolResult struct {
-	ToolCallID string `json:"tool_call_id"`
-	Name       string `json:"name"`
-	Content    string `json:"content"`
-	Data       string `json:"data"`
-	MIMEType   string `json:"mime_type"`
+	Outcome       fantasy.ToolOutcome               `json:"outcome,omitempty"`
+	Documentation *fantasy.ToolDocumentationReceipt `json:"documentation,omitempty"`
+	ToolCallID    string                            `json:"tool_call_id"`
+	Name          string                            `json:"name"`
+	Content       string                            `json:"content"`
+	Data          string                            `json:"data"`
+	MIMEType      string                            `json:"mime_type"`
 	// Images carries additional images beyond the single Data slot.
-	Images  []ToolResultImage `json:"images,omitempty"`
-	Metadata string           `json:"metadata"`
-	IsError  bool             `json:"is_error"`
+	Images   []ToolResultImage `json:"images,omitempty"`
+	Metadata string            `json:"metadata"`
+	IsError  bool              `json:"is_error"`
 }
 
 func (ToolResult) isPart() {}
@@ -678,8 +680,11 @@ func (m *Message) ToAIMessage() []fantasy.Message {
 				}
 			}
 			parts = append(parts, fantasy.ToolResultPart{
-				ToolCallID: result.ToolCallID,
-				Output:     content,
+				Outcome:        result.Outcome,
+				Documentation:  result.Documentation,
+				ClientMetadata: result.Metadata,
+				ToolCallID:     result.ToolCallID,
+				Output:         content,
 			})
 		}
 		messages = append(messages, fantasy.Message{

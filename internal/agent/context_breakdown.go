@@ -89,28 +89,37 @@ func (a *sessionAgent) ContextBreakdown(ctx context.Context, sessionID string) (
 			add(ContextMCPInstructions, approxTokenCount(result.Instructions))
 		}
 	}
-	for _, tool := range a.tools.Copy() {
-		key := ContextTools
-		if strings.HasPrefix(tool.Info().Name, "mcp_") {
-			key = ContextMCPTools
+	view, hasView := a.preparedContext(sessionID)
+	if hasView {
+		addPreparedToolDefinitions(view, add)
+	} else {
+		for _, tool := range a.tools.Copy() {
+			key := ContextTools
+			if strings.HasPrefix(tool.Info().Name, "mcp_") {
+				key = ContextMCPTools
+			}
+			add(key, estimateToolDefinitionTokens([]fantasy.AgentTool{tool}))
 		}
-		add(key, estimateToolDefinitionTokens([]fantasy.AgentTool{tool}))
 	}
 
 	currentSession, err := a.sessions.Get(ctx, sessionID)
 	if err != nil {
 		return ContextBreakdown{}, err
 	}
-	msgs, err := a.getSessionMessages(ctx, currentSession)
-	if err != nil {
-		return ContextBreakdown{}, err
-	}
-	for index, msg := range msgs {
-		if index == 0 && currentSession.SummaryMessageID != "" && msg.ID == currentSession.SummaryMessageID {
-			add(ContextSummary, approxTokenCount(msg.Content().Text))
-			continue
+	if hasView {
+		addPreparedMessages(view, add)
+	} else {
+		msgs, err := a.getSessionMessages(ctx, currentSession)
+		if err != nil {
+			return ContextBreakdown{}, err
 		}
-		addMessageParts(msg, add)
+		for index, msg := range msgs {
+			if index == 0 && currentSession.SummaryMessageID != "" && msg.ID == currentSession.SummaryMessageID {
+				add(ContextSummary, approxTokenCount(msg.Content().Text))
+				continue
+			}
+			addMessageParts(msg, add)
+		}
 	}
 
 	breakdown := ContextBreakdown{

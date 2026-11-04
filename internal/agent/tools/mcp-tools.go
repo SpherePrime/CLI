@@ -171,10 +171,22 @@ func (m *Tool) Run(ctx context.Context, params fantasy.ToolCall) (fantasy.ToolRe
 	job.moveToBackground()
 	go job.watch(m.wake)
 	notice := fmt.Sprintf("%s is still running after %s and continues in the background as job %s. You will be woken when it finishes. Continue other work meanwhile. To check whether it is progressing or hung, call %s with op=status and job_id=%s; use op=kill to stop it.", m.Name(), MCPBackgroundAfter.Round(time.Second), job.id, MCPJobToolName, job.id)
-	return fantasy.WithResponseMetadata(fantasy.NewTextResponse(notice), MCPJobMetadata{Background: true, JobID: job.id, StartTime: job.startedAt.UnixMilli()}), nil
+	response := fantasy.NewTextResponse(notice)
+	response.Outcome = fantasy.ToolOutcomeRunning
+	return fantasy.WithResponseMetadata(response, MCPJobMetadata{Background: true, JobID: job.id, StartTime: job.startedAt.UnixMilli()}), nil
 }
 
-func mcpResponse(ctx context.Context, result mcp.ToolResult) fantasy.ToolResponse {
+func mcpResponse(ctx context.Context, result mcp.ToolResult) (response fantasy.ToolResponse) {
+	defer func() {
+		response.IsError = response.IsError || result.IsError
+		response.Outcome = fantasy.ToolOutcomeUnknown
+		if response.IsError {
+			response.Outcome = fantasy.ToolOutcomeFailure
+		}
+		if result.StructuredContent != nil {
+			response = fantasy.WithResponseMetadata(response, map[string]any{"structured_content": result.StructuredContent})
+		}
+	}()
 	switch result.Type {
 	case "image", "media":
 		if !GetSupportsImagesFromContext(ctx) {
@@ -182,7 +194,6 @@ func mcpResponse(ctx context.Context, result mcp.ToolResult) fantasy.ToolRespons
 			return fantasy.NewTextErrorResponse(fmt.Sprintf("This model (%s) does not support image data.", modelName))
 		}
 
-		var response fantasy.ToolResponse
 		if result.Type == "image" {
 			response = fantasy.NewImageResponse(result.Data, result.MediaType)
 		} else {

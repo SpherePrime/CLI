@@ -44,6 +44,8 @@ type BashResponseMetadata struct {
 	Output           string `json:"output"`
 	Description      string `json:"description"`
 	WorkingDirectory string `json:"working_directory"`
+	ExitCode         int    `json:"exit_code"`
+	Interrupted      bool   `json:"interrupted"`
 	Background       bool   `json:"background,omitempty"`
 	ShellID          string `json:"shell_id,omitempty"`
 }
@@ -301,12 +303,14 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 						Description:      params.Description,
 						Background:       params.RunInBackground,
 						WorkingDirectory: bgShell.WorkingDir,
+						ExitCode:         exitCode,
+						Interrupted:      interrupted,
 					}
 					if stdout == "" {
-						return fantasy.WithResponseMetadata(fantasy.NewTextResponse(BashNoOutput), metadata), nil
+						return fantasy.WithResponseMetadata(shellResponse(BashNoOutput, execErr, true), metadata), nil
 					}
 					stdout += fmt.Sprintf("\n\n<cwd>%s</cwd>", normalizeWorkingDir(bgShell.WorkingDir))
-					return fantasy.WithResponseMetadata(fantasy.NewTextResponse(stdout), metadata), nil
+					return fantasy.WithResponseMetadata(shellResponse(stdout, execErr, true), metadata), nil
 				}
 
 				// Still running after fast-failure check - return as background job
@@ -320,7 +324,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 					ShellID:          bgShell.ID,
 				}
 				response := fmt.Sprintf("Background shell started with ID: %s\n\n%s", bgShell.ID, backgroundJobNotice)
-				return fantasy.WithResponseMetadata(fantasy.NewTextResponse(response), metadata), nil
+				return fantasy.WithResponseMetadata(shellResponse(response, nil, false), metadata), nil
 			}
 
 			// Start synchronous execution with auto-background support
@@ -386,12 +390,14 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 					Description:      params.Description,
 					Background:       params.RunInBackground,
 					WorkingDirectory: bgShell.WorkingDir,
+					ExitCode:         exitCode,
+					Interrupted:      interrupted,
 				}
 				if stdout == "" {
-					return fantasy.WithResponseMetadata(fantasy.NewTextResponse(BashNoOutput), metadata), nil
+					return fantasy.WithResponseMetadata(shellResponse(BashNoOutput, execErr, true), metadata), nil
 				}
 				stdout += fmt.Sprintf("\n\n<cwd>%s</cwd>", normalizeWorkingDir(bgShell.WorkingDir))
-				return fantasy.WithResponseMetadata(fantasy.NewTextResponse(stdout), metadata), nil
+				return fantasy.WithResponseMetadata(shellResponse(stdout, execErr, true), metadata), nil
 			}
 
 			// Still running - keep as background job
@@ -405,7 +411,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 				ShellID:          bgShell.ID,
 			}
 			response := fmt.Sprintf("Command is taking longer than expected and has been moved to background.\n\nBackground shell ID: %s\n\n%s", bgShell.ID, backgroundJobNotice)
-			return fantasy.WithResponseMetadata(fantasy.NewTextResponse(response), metadata), nil
+			return fantasy.WithResponseMetadata(shellResponse(response, nil, false), metadata), nil
 		},
 	)
 }
@@ -441,9 +447,6 @@ func watchBackgroundJob(bgShell *shell.BackgroundShell, sessionID string, wake B
 func formatOutput(stdout, stderr string, execErr error, spillDir string) string {
 	interrupted := shell.IsInterrupt(execErr)
 	exitCode := shell.ExitCode(execErr)
-
-	stdout = truncateOutput(stdout, spillDir)
-	stderr = truncateOutput(stderr, spillDir)
 
 	errorMessage := stderr
 	if errorMessage == "" && execErr != nil {

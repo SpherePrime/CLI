@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/internal/shell"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 const (
@@ -83,6 +83,8 @@ func NewJobOutputTool(spillDir string) fantasy.AgentTool {
 					exitCode := shell.ExitCode(err)
 					if exitCode != 0 {
 						outputParts = append(outputParts, fmt.Sprintf("Exit code %d", exitCode))
+					} else {
+						outputParts = append(outputParts, err.Error())
 					}
 				}
 			} else if timedOut {
@@ -90,7 +92,6 @@ func NewJobOutputTool(spillDir string) fantasy.AgentTool {
 			}
 
 			output := strings.Join(outputParts, "\n")
-			output = TruncateOutput(output, spillDir)
 
 			metadata := JobOutputResponseMetadata{
 				ShellID:          params.ShellID,
@@ -105,7 +106,7 @@ func NewJobOutputTool(spillDir string) fantasy.AgentTool {
 			}
 
 			result := fmt.Sprintf("Status: %s\n\n%s", status, output)
-			return fantasy.WithResponseMetadata(fantasy.NewTextResponse(result), metadata), nil
+			return fantasy.WithResponseMetadata(shellResponse(result, err, done), metadata), nil
 		},
 	)
 }
