@@ -174,24 +174,35 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 		return nil, fmt.Errorf("discover models for provider %s: %w", cfg.ID, err)
 	}
 
-	// Build set of existing model IDs to skip.
-	existing := make(map[string]struct{}, len(cfg.ExistingModels))
-	for _, m := range cfg.ExistingModels {
-		existing[m.ID] = struct{}{}
-	}
-
 	// Start with user-specified models.
-	result := make([]catwalk.Model, len(cfg.ExistingModels))
-	copy(result, cfg.ExistingModels)
+	advertised := make(map[string]bool, len(modelsResp.Data))
+	codexCatalog := false
+	for _, model := range modelsResp.Data {
+		advertised[model.ID] = true
+		codexCatalog = codexCatalog || model.Gateway["type"] == "codex"
+	}
+	result := make([]catwalk.Model, 0, len(cfg.ExistingModels))
+	existing := make(map[string]int, len(cfg.ExistingModels))
+	for _, model := range cfg.ExistingModels {
+		gateway, _ := model.Options.ProviderOptions["gateway"].(map[string]any)
+		if model.ID == "codex-default" && gateway["type"] == "codex" && codexCatalog && !advertised[model.ID] {
+			continue
+		}
+		existing[model.ID] = len(result)
+		result = append(result, model)
+	}
 
 	// Append discovered models not already in the list.
 	for _, e := range modelsResp.Data {
-		if _, ok := existing[e.ID]; ok {
-			continue
-		}
 		contextWindow := e.ContextWindow
 		if contextWindow <= 0 {
 			contextWindow = e.MaxContextLength
+		}
+		if index, ok := existing[e.ID]; ok {
+			if e.Gateway["type"] == "codex" && result[index].ContextWindow <= 0 && contextWindow > 0 {
+				result[index].ContextWindow = contextWindow
+			}
+			continue
 		}
 		model := catwalk.Model{
 			ID:               e.ID,
