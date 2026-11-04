@@ -131,19 +131,22 @@ type Resolver interface {
 
 type modelsResponse struct {
 	Data []struct {
-		ID                  string  `json:"id"`
-		Object              string  `json:"object"`
-		Created             int64   `json:"created"`
-		OwnedBy             string  `json:"owned_by"`
-		ContextWindow       int64   `json:"context_window"`
-		MaxContextLength    int64   `json:"max_context_length"`
-		DefaultMaxTokens    int64   `json:"default_max_tokens"`
-		SupportsAttachments bool    `json:"supports_attachments"`
-		SupportsVision      bool    `json:"supports_vision"`
-		Vision              bool    `json:"vision"`
-		CostPer1MIn         float64 `json:"cost_per_1m_in"`
-		CostPer1MOut        float64 `json:"cost_per_1m_out"`
-		TokenCounting       string  `json:"token_counting"`
+		ID                     string         `json:"id"`
+		Object                 string         `json:"object"`
+		Created                int64          `json:"created"`
+		OwnedBy                string         `json:"owned_by"`
+		ContextWindow          int64          `json:"context_window"`
+		MaxContextLength       int64          `json:"max_context_length"`
+		DefaultMaxTokens       int64          `json:"default_max_tokens"`
+		SupportsAttachments    bool           `json:"supports_attachments"`
+		SupportsVision         bool           `json:"supports_vision"`
+		Vision                 bool           `json:"vision"`
+		CostPer1MIn            float64        `json:"cost_per_1m_in"`
+		CostPer1MOut           float64        `json:"cost_per_1m_out"`
+		TokenCounting          string         `json:"token_counting"`
+		ReasoningEfforts       []string       `json:"reasoning_efforts"`
+		DefaultReasoningEffort string         `json:"default_reasoning_effort"`
+		Gateway                map[string]any `json:"gateway"`
 	} `json:"data"`
 }
 
@@ -190,7 +193,7 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 		if contextWindow <= 0 {
 			contextWindow = e.MaxContextLength
 		}
-		result = append(result, catwalk.Model{
+		model := catwalk.Model{
 			ID:               e.ID,
 			Name:             e.ID,
 			ContextWindow:    contextWindow,
@@ -199,7 +202,14 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 			CostPer1MIn:      e.CostPer1MIn,
 			CostPer1MOut:     e.CostPer1MOut,
 			TokenCounting:    e.TokenCounting,
-		})
+		}
+		if e.Gateway["type"] == "codex" {
+			model.Options.ProviderOptions = map[string]any{"gateway": e.Gateway}
+			model.CanReason = len(e.ReasoningEfforts) > 0
+			model.ReasoningLevels = e.ReasoningEfforts
+			model.DefaultReasoningEffort = e.DefaultReasoningEffort
+		}
+		result = append(result, model)
 	}
 
 	return result, nil

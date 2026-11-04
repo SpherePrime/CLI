@@ -1451,6 +1451,9 @@ func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers 
 	if httpClient == nil && c.cfg.Config().Options.Debug {
 		httpClient = log.NewHTTPClient()
 	}
+	if providerCfg, ok := c.cfg.Config().Providers.Get(providerID); ok {
+		httpClient = withGatewayCapabilities(httpClient, providerCfg.Models)
+	}
 	if httpClient != nil {
 		opts = append(opts, openaicompat.WithHTTPClient(httpClient))
 	}
