@@ -43,7 +43,7 @@ func smartToolSelection(all []fantasy.AgentTool, steps []fantasy.StepResult) []f
 	}
 	active := make([]fantasy.AgentTool, 0, len(selected)+3)
 	for _, tool := range all {
-		if selected[tool.Info().Name] || isSmartSearch(tool.Info().Name) || inlineDocumentedTool(tool.Info().Name) {
+		if selected[tool.Info().Name] || basicTool(tool.Info().Name) || isSmartSearch(tool.Info().Name) || inlineDocumentedTool(tool.Info().Name) {
 			active = append(active, tool)
 		}
 	}

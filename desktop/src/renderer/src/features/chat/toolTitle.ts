@@ -125,6 +125,16 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
     label: t('Чтение инструкции'),
     detail: text(input?.id)
   }),
+  read_tool_documentation: (input, t) => ({
+    icon: FileCode2,
+    label: t('Чтение документации инструмента'),
+    detail: text(input?.tool_name)
+  }),
+  read_tool_result: (input, t) => ({
+    icon: ScrollText,
+    label: t('Чтение полного результата'),
+    detail: text(input?.artifact_id)
+  }),
   search_skills: (input, t) => ({
     icon: Search,
     label: t('Поиск навыков'),
