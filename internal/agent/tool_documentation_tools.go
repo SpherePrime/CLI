@@ -22,7 +22,7 @@ type readToolResultParams struct {
 
 func newReadToolDocumentationTool() fantasy.AgentTool {
 	return fantasy.NewAgentTool(readToolDocumentationName,
-		"Read the complete documentation and full input schema of one tool before using it. Every other tool must be documented this way once before its first execution.",
+		"Read the complete documentation and full input schema of one tool when more detail is needed. Reading documentation is optional; tools can be called directly with valid parameters.",
 		func(ctx context.Context, params readToolDocumentationParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
 			documentation := toolDocumentationFromContext(ctx)
 			if len(documentation.Documents) == 0 {
@@ -49,7 +49,7 @@ func newReadToolDocumentationTool() fantasy.AgentTool {
 			if end < len(document.Text) {
 				fmt.Fprintf(&builder, "\n\nContinue with %s tool_name=%q offset=%d.", readToolDocumentationName, document.Name, end)
 			} else {
-				fmt.Fprintf(&builder, "\n\nComplete documentation for %q received. It can now be executed.", document.Name)
+				fmt.Fprintf(&builder, "\n\nEnd of documentation for %q.", document.Name)
 			}
 			response := fantasy.NewTextResponse(builder.String())
 			response.Outcome = fantasy.ToolOutcomeSuccess

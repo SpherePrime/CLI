@@ -1,4 +1,6 @@
 export const english: Record<string, string> = {
+  'Чтение документации инструмента': 'Reading tool documentation',
+  'Чтение полного результата': 'Reading full result',
   'Не удалось проверить запросы агентов': 'Could not check agent requests',
   'Агент: {name}': 'Agent: {name}',
   Агенты: 'Agents',

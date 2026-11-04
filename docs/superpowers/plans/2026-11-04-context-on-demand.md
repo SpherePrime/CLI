@@ -1,5 +1,7 @@
 # Context on Demand Implementation Plan
 
+Status 2026-11-05: historical implementation plan. Mandatory documentation reads and the runtime documentation gate have been removed. Documentation is an optional reference; basic file, shell, question and background-job tools are exposed immediately in both modes with parameter documentation. See the current update in the linked specification before using this plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Send compact tool cards and meaningful outputs in CLI/Desktop while enforcing complete documentation delivery before execution without changing system prompts.

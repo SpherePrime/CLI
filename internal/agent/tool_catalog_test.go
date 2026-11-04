@@ -74,6 +74,33 @@ func TestCompactToolRetainsPropertyNamesAndConstraints(t *testing.T) {
 	if !strings.Contains(card.Description, "read_tool_documentation") || len(card.Description) > 400 {
 		t.Fatal(card.Description)
 	}
+	if strings.Contains(card.Description, "before execution") {
+		t.Fatal("documentation must be optional")
+	}
+}
+
+func TestBasicToolCardsKeepParameterDocumentation(t *testing.T) {
+	for _, name := range []string{"view", "bash", "edit", "multiedit", "write", "glob", "grep", "ls", "question", "job_output", "job_kill"} {
+		t.Run(name, func(t *testing.T) {
+			tool := &catalogFixture{info: fantasy.ToolInfo{
+				Name: name, Description: strings.Repeat("Long documentation. ", 50),
+				InputSchema: map[string]any{"type": "object", "properties": map[string]any{
+					"path": map[string]any{"type": "string", "description": "Path to use"},
+				}},
+			}}
+			card, _, err := compactToolDefinition(tool)
+			if err != nil {
+				t.Fatal(err)
+			}
+			properties := card.InputSchema["properties"].(map[string]any)
+			if properties["path"].(map[string]any)["description"] != "Path to use" {
+				t.Fatal("basic tool parameter documentation must be available immediately")
+			}
+			if strings.Contains(card.Description, "before execution") {
+				t.Fatal("documentation must be optional")
+			}
+		})
+	}
 }
 
 func TestCompactToolKeepsShortDocumentationComplete(t *testing.T) {

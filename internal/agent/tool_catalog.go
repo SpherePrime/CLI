@@ -18,6 +18,15 @@ func canonicalToolSchema(info fantasy.ToolInfo) (map[string]any, error) {
 	return fantasy.CanonicalToolSchema(info)
 }
 
+func basicTool(name string) bool {
+	switch name {
+	case "view", "bash", "edit", "multiedit", "write", "glob", "grep", "ls", "question", "job_output", "job_kill":
+		return true
+	default:
+		return false
+	}
+}
+
 // inlineDocumentedTool reports whether a tool always ships its complete
 // documentation in its own card. Runtime routing and discovery tools carry
 // short, self-contained contracts, so a separate documentation read would
@@ -55,11 +64,13 @@ func compactToolDefinition(tool fantasy.AgentTool) (fantasy.FunctionTool, bool, 
 	if err != nil {
 		return fantasy.FunctionTool{}, false, err
 	}
-	stripSchemaAnnotations(compacted)
+	if !basicTool(info.Name) {
+		stripSchemaAnnotations(compacted)
+	}
 	summary := shortToolSummary(info.Name, info.Description)
 	complete := summary == strings.TrimSpace(info.Description) && schemasEqual(compacted, canonical)
 	if !complete {
-		summary += " Read full documentation with " + readToolDocumentationName + " before execution."
+		summary += " Full documentation is available via " + readToolDocumentationName + " if needed."
 	}
 	definition.Description = summary
 	definition.InputSchema = compacted
@@ -89,13 +100,17 @@ func schemasEqual(left, right map[string]any) bool {
 
 func shortToolSummary(name, description string) string {
 	summaries := map[string]string{
-		"view":  "Read file contents.",
-		"bash":  "Execute a shell command.",
-		"edit":  "Replace exact file text.",
-		"write": "Write a complete file.",
-		"glob":  "Find files by name.",
-		"grep":  "Search file contents.",
-		"ls":    "List directory contents.",
+		"view":       "Read file contents.",
+		"bash":       "Execute a shell command.",
+		"edit":       "Replace exact file text.",
+		"write":      "Write a complete file.",
+		"glob":       "Find files by name.",
+		"grep":       "Search file contents.",
+		"ls":         "List directory contents.",
+		"multiedit":  "Apply multiple exact text replacements.",
+		"question":   "Ask the user questions.",
+		"job_output": "Read output from a background command.",
+		"job_kill":   "Stop a background command.",
 	}
 	if summary, ok := summaries[name]; ok {
 		return summary

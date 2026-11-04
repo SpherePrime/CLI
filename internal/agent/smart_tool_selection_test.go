@@ -11,9 +11,9 @@ import (
 func TestSmartToolSelectionBuiltinsAndRestrictions(t *testing.T) {
 	all := builtToolSet(t, true)
 	initial := toolNamesOf(smartToolSelection(all, nil))
-	require.ElementsMatch(t, []string{"search_skills", "search_tools", "search_mcp", "view", "search_instructions", "read_instruction", "read_tool_documentation", "read_tool_result"}, initial)
+	require.ElementsMatch(t, []string{"search_skills", "search_tools", "search_mcp", "view", "bash", "edit", "multiedit", "write", "glob", "grep", "ls", "question", "job_output", "job_kill", "search_instructions", "read_instruction", "read_tool_documentation", "read_tool_result"}, initial)
 	search := builtToolByName(t, all, "search_tools")
-	response, err := search.Run(t.Context(), fantasy.ToolCall{Input: `{"query":"bash","limit":1}`})
+	response, err := search.Run(t.Context(), fantasy.ToolCall{Input: `{"query":"lsp_diagnostics","limit":1}`})
 	require.NoError(t, err)
 	steps := []fantasy.StepResult{{Content: fantasy.ResponseContent{fantasy.ToolResultContent{
 		ToolName: "search_tools", ClientMetadata: response.Metadata,
@@ -21,7 +21,8 @@ func TestSmartToolSelectionBuiltinsAndRestrictions(t *testing.T) {
 	}}}}
 	active := toolNamesOf(smartToolSelection(all, steps))
 	require.Contains(t, active, "bash")
-	require.NotContains(t, active, "write")
+	require.Contains(t, active, "write")
+	require.Contains(t, active, "lsp_diagnostics")
 	require.Len(t, active, len(initial)+1)
 
 	steps[0].Content = fantasy.ResponseContent{fantasy.ToolResultContent{

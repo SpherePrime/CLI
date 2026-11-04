@@ -957,8 +957,6 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				store = nil
 			}
 			prepared.Messages = projectToolMessages(callContext, scope, store, prepared.Messages)
-			covered := documentedTools(scope, documents, prepared.Messages)
-			prepared.BeforeToolCall = documentationGate(documents, covered)
 			callContext = withToolDocumentation(callContext, scope, documents)
 			callContext = withToolArtifacts(callContext, store, scope)
 

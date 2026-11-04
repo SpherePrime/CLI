@@ -149,7 +149,7 @@ func requestSystemText(call fantasy.Call) string {
 	return ""
 }
 
-func TestToolDocumentationGateBlocksFirstUseThenAllowsIt(t *testing.T) {
+func TestToolDocumentationIsOptionalAndRemainsReadable(t *testing.T) {
 	env := testEnv(t)
 	model := &scriptedModel{}
 	runs := 0
@@ -161,7 +161,7 @@ func TestToolDocumentationGateBlocksFirstUseThenAllowsIt(t *testing.T) {
 	model.reset(scriptedStep{toolCalls: []fantasy.StreamPart{toolCallPart("c1", "big_tool", `{"path":"a"}`)}})
 	_, err = agent.Run(t.Context(), SessionAgentCall{SessionID: session.ID, Prompt: "change a"})
 	require.NoError(t, err)
-	require.Equal(t, 0, runs, "an undocumented tool must not run")
+	require.Equal(t, 1, runs, "a valid call must run without reading documentation")
 
 	requests := model.captured()
 	require.NotEmpty(t, requests)
@@ -180,7 +180,7 @@ func TestToolDocumentationGateBlocksFirstUseThenAllowsIt(t *testing.T) {
 	)
 	_, err = agent.Run(t.Context(), SessionAgentCall{SessionID: session.ID, Prompt: "change a again"})
 	require.NoError(t, err)
-	require.Equal(t, 1, runs, "the tool must run after its documentation was read")
+	require.Equal(t, 2, runs, "reading optional documentation must not prevent execution")
 
 	requests = model.captured()
 	require.GreaterOrEqual(t, len(requests), 2)
@@ -189,7 +189,7 @@ func TestToolDocumentationGateBlocksFirstUseThenAllowsIt(t *testing.T) {
 	require.Contains(t, documentation, "File to change", "the full documentation must include property descriptions")
 }
 
-func TestToolDocumentationInSameRequestDoesNotAuthorize(t *testing.T) {
+func TestToolDocumentationInSameRequestDoesNotBlockExecution(t *testing.T) {
 	env := testEnv(t)
 	model := &scriptedModel{}
 	runs := 0
@@ -204,7 +204,26 @@ func TestToolDocumentationInSameRequestDoesNotAuthorize(t *testing.T) {
 	}})
 	_, err = agent.Run(t.Context(), SessionAgentCall{SessionID: session.ID, Prompt: "read and change"})
 	require.NoError(t, err)
-	require.Equal(t, 0, runs, "a documentation read in the same request must not authorize the call")
+	require.Equal(t, 1, runs, "optional documentation must not block a call in the same request")
+}
+
+func TestOptionalDocumentationStillRejectsInvalidArguments(t *testing.T) {
+	env := testEnv(t)
+	model := &scriptedModel{}
+	runs := 0
+	tool := documentedFixtureTool(t, "big_tool", &runs)
+	agent := testSessionAgent(env, model, &finishStreamModel{text: "title"}, "system", tool, newReadToolDocumentationTool()).(*sessionAgent)
+	session, err := env.sessions.Create(t.Context(), "invalid arguments")
+	require.NoError(t, err)
+	model.reset(scriptedStep{toolCalls: []fantasy.StreamPart{toolCallPart("c1", "big_tool", `{"path":42}`)}})
+	_, err = agent.Run(t.Context(), SessionAgentCall{SessionID: session.ID, Prompt: "change a"})
+	require.NoError(t, err)
+	require.Zero(t, runs)
+	requests := model.captured()
+	require.GreaterOrEqual(t, len(requests), 2)
+	diagnostics := strings.Join(requestToolResultTexts(requests[1]), "\n")
+	require.NotEmpty(t, diagnostics)
+	require.NotContains(t, diagnostics, "tool_documentation_required")
 }
 
 func TestToolResultProjectionShortensSuccessAndKeepsFailureRecoverable(t *testing.T) {

@@ -2,6 +2,8 @@
 
 Status: implemented in the shared Go runtime used by both the CLI and the Desktop engine.
 
+Update 2026-11-05: documentation is optional for every tool. Valid calls execute directly without a documentation gate. Basic file, shell, question and background-job tools are available immediately in both modes and retain parameter documentation. Other tools keep compact cards and Smart Tools discovery. The gate and receipt-coverage requirements below describe the original design and are superseded by this update. Canonical validation, permissions and result projection remain in effect.
+
 ## Decision
 
 Standard mode initially exposes compact cards for **every permitted tool**, not discovery-only routing. A tool's complete documentation must be delivered to the model before its first execution. The shared runtime enforces this dependency. Smart Tools retains discovery and applies the same documentation gate to discovered tools. Successful outputs carry compact, meaningful data/status; failures retain diagnostics and unusually large failures have recoverable full artifacts.
