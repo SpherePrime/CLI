@@ -51,6 +51,7 @@ type ContextBreakdown struct {
 	ContextWindow        int64
 	AutoSummarizePercent int
 	EstimatedUsage       bool
+	Calibrated           bool
 }
 
 type ContextReporter interface {
@@ -138,6 +139,10 @@ func (a *sessionAgent) ContextBreakdown(ctx context.Context, sessionID string) (
 			breakdown.EstimatedTotal += category.Tokens
 		}
 	}
+	if ratio, ok := a.contextCalibration(sessionID); ok && hasView {
+		breakdown.Categories, breakdown.EstimatedTotal = calibrateContextCategories(breakdown.Categories, ratio)
+		breakdown.Calibrated = true
+	}
 	return breakdown, nil
 }
 
@@ -155,12 +160,12 @@ func addMessageParts(msg message.Message, add func(string, int64)) {
 		case message.ToolCall:
 			add(ContextToolCalls, estimateToolCallTokens(p.Name, p.Input))
 		case message.ToolResult:
-			add(ContextToolResults, approxTokenCount(p.Content)+approxTokenCount(p.Metadata))
+			add(ContextToolResults, approxTokenCount(p.Content))
 			if p.Data != "" {
-				add(ContextAttachments, estimateMediaTokens(p.MIMEType, "", len(p.Data)))
+				add(ContextAttachments, estimateBase64MediaTokens(p.MIMEType, "", p.Data))
 			}
 		case message.BinaryContent:
-			add(ContextAttachments, estimateMediaTokens(p.MIMEType, p.Path, len(p.Data)))
+			add(ContextAttachments, estimateMediaTokens(p.MIMEType, p.Path, p.Data))
 		case message.ImageURLContent:
 			add(ContextAttachments, approxTokenCount(p.URL))
 		}

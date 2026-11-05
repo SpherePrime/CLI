@@ -14,6 +14,7 @@ type Breakdown = {
   context_window: number
   auto_summarize_percent: number
   estimated_usage: boolean
+  calibrated?: boolean
 }
 
 /**
@@ -185,7 +186,9 @@ export function ContextPopover({
           <p className="context-note">
             {estimatedUsage && reported
               ? t('Расход оценён, так как провайдер не сообщил точные токены.')
-              : data.reported_total
+              : data.reported_total && data.calibrated
+                ? t('Итог — по данным провайдера, разбивка откалибрована по нему.')
+                : data.reported_total
                 ? t('Итог — по данным провайдера, разбивка приблизительная.')
                 : t('Провайдер не сообщил расход, показана оценка.')}
           </p>
