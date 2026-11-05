@@ -424,6 +424,16 @@
             120
           ]
         },
+        "context": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "inline",
+            "grouped"
+          ],
+          "description": "How this server's tools reach the model in Standard mode: auto groups large servers behind mcp_call; inline always sends every tool card; grouped always lists tools by name only",
+          "default": "auto"
+        },
         "sessionless": {
           "type": "boolean",
           "description": "Mark a sessionless MCP server (no Mcp-Session-Id) so Prime skips the subscriptions/listen stream it would otherwise reject. Leave unset to auto-detect known sessionless servers (e.g. GitHub MCP)",

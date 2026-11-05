@@ -155,6 +155,9 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
 export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
   const tool = name.toLowerCase()
   const path = input?.file_path || input?.path || input?.filePath
+  if (tool === 'mcp_call' && typeof input?.tool === 'string' && input.tool.startsWith('mcp_')) {
+    return toolTitle(input.tool, input.arguments ?? {}, t)
+  }
   if (tool.startsWith('mcp_')) {
     const bridge = /^mcp_(?:browser|prime-desktop(?:-\d+)?)_(.+)$/.exec(tool)
     if (bridge) {
