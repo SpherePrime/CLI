@@ -871,7 +871,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			// Use latest tools (updated by SetTools when MCP tools change).
 			prepared.Tools = a.tools.Copy()
 			searchRecovery.prepare(options.Steps, &prepared)
-			selectedTools := smartToolSelection(prepared.Tools, options.Steps)
+			selectedTools := smartToolSelection(prepared.Tools, options.Steps, prepared.Messages...)
 			if len(selectedTools) < len(prepared.Tools) {
 				for _, tool := range selectedTools {
 					prepared.ActiveTools = append(prepared.ActiveTools, tool.Info().Name)
