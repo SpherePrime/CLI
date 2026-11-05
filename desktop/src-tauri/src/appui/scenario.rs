@@ -9,7 +9,7 @@ use tauri::{AppHandle, Manager};
 use super::locator;
 use super::manager::AppUiManager;
 use super::types::{Locator, UiSnapshot};
-use super::uia::action::UiAction;
+use super::ui_action::UiAction;
 use crate::browser::workbench::WorkbenchContext;
 
 const STEP_TIMEOUT: Duration = Duration::from_secs(15);
