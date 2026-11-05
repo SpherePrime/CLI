@@ -872,8 +872,12 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			prepared.Tools = a.tools.Copy()
 			searchRecovery.prepare(options.Steps, &prepared)
 			selectedTools := smartToolSelection(prepared.Tools, options.Steps, prepared.Messages...)
-			if len(selectedTools) < len(prepared.Tools) {
-				for _, tool := range selectedTools {
+			presentation := presentMCPTools(selectedTools)
+			if presentation.CallTool != nil {
+				prepared.Tools = append(prepared.Tools, presentation.CallTool)
+			}
+			if len(presentation.Visible) < len(prepared.Tools) {
+				for _, tool := range presentation.Visible {
 					prepared.ActiveTools = append(prepared.ActiveTools, tool.Info().Name)
 				}
 			}
@@ -883,8 +887,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			if documentErr != nil {
 				return callContext, prepared, documentErr
 			}
-			definitions := make([]fantasy.Tool, 0, len(selectedTools))
-			for _, tool := range selectedTools {
+			definitions := make([]fantasy.Tool, 0, len(presentation.Visible))
+			for _, tool := range presentation.Visible {
 				definition, _, definitionErr := compactToolDefinition(tool)
 				if definitionErr != nil {
 					return callContext, prepared, definitionErr

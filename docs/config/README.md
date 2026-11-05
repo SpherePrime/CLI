@@ -292,6 +292,11 @@ echo "coding with: $(model large)"   # prints: openai/gpt-4o
 
 Manage Model Context Protocol servers.
 
+In Standard mode a server with eight or more tools, or with tool cards above
+about 1000 tokens, is listed by name inside one `mcp_call` card instead of one
+card per tool. Set `"context"` on a server in `prime.json` to `inline` to keep
+its cards or to `grouped` to always list it by name.
+
 ```text
 Usage:
   mcp [command]
