@@ -41,3 +41,20 @@ func TestSmartToolSelectionBuiltinsAndRestrictions(t *testing.T) {
 	}}
 	require.ElementsMatch(t, initial, toolNamesOf(smartToolSelection(all, steps)))
 }
+
+func TestSmartToolSelectionKeepsHistoryDiscoveriesAppended(t *testing.T) {
+	all := builtToolSet(t, true)
+	initial := toolNamesOf(smartToolSelection(all, nil))
+	history := []fantasy.Message{
+		{Role: fantasy.MessageRoleAssistant, Content: []fantasy.MessagePart{fantasy.ToolCallPart{ToolCallID: "s1", ToolName: "search_tools", Input: `{}`}}},
+		{Role: fantasy.MessageRoleTool, Content: []fantasy.MessagePart{fantasy.ToolResultPart{ToolCallID: "s1", ClientMetadata: `{"discovered_tools":["lsp_diagnostics","fetch"]}`, Output: fantasy.ToolResultOutputContentText{Text: "found"}}}},
+		{Role: fantasy.MessageRoleAssistant, Content: []fantasy.MessagePart{fantasy.ToolCallPart{ToolCallID: "s2", ToolName: "search_tools", Input: `{}`}}},
+		{Role: fantasy.MessageRoleTool, Content: []fantasy.MessagePart{fantasy.ToolResultPart{ToolCallID: "s2", ClientMetadata: `{"discovered_tools":["agentic_fetch"]}`, Output: fantasy.ToolResultOutputContentError{Error: errors.New("failed")}}}},
+	}
+	var active []string
+	for _, tool := range smartToolSelection(all, nil, history...) {
+		active = append(active, tool.Info().Name)
+	}
+	require.Equal(t, initial, active[:len(initial)])
+	require.Equal(t, []string{"lsp_diagnostics", "fetch"}, active[len(initial):])
+}
