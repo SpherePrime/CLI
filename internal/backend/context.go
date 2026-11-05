@@ -31,6 +31,7 @@ func (b *Backend) GetContextBreakdown(ctx context.Context, workspaceID, sessionI
 		ContextWindow:        breakdown.ContextWindow,
 		AutoSummarizePercent: breakdown.AutoSummarizePercent,
 		EstimatedUsage:       breakdown.EstimatedUsage,
+		Calibrated:           breakdown.Calibrated,
 	}
 	for _, category := range breakdown.Categories {
 		result.Categories = append(result.Categories, proto.ContextCategory{

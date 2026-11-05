@@ -2,7 +2,6 @@ package agent
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
@@ -122,11 +121,11 @@ func estimateStepCompletionTokens(step fantasy.StepResult) int64 {
 			tokens += estimateToolCallTokens(c.ToolName, c.Input)
 		case fantasy.ToolResultContent:
 			if c.ProviderExecuted {
-				tokens += estimateToolResultContentTokens(c.ToolCallID, c.ToolName, c.ClientMetadata, c.Result)
+				tokens += estimateToolResultContentTokens(c.ToolCallID, c.ToolName, c.Result)
 			}
 		case *fantasy.ToolResultContent:
 			if c.ProviderExecuted {
-				tokens += estimateToolResultContentTokens(c.ToolCallID, c.ToolName, c.ClientMetadata, c.Result)
+				tokens += estimateToolResultContentTokens(c.ToolCallID, c.ToolName, c.Result)
 			}
 		}
 	}
@@ -152,9 +151,9 @@ func estimateMessagePartTokens(part fantasy.MessagePart) int64 {
 	case *fantasy.ToolCallPart:
 		return estimateToolCallTokens(p.ToolName, p.Input)
 	case fantasy.ToolResultPart:
-		return estimateToolResultContentTokens(p.ToolCallID, "", "", p.Output)
+		return estimateToolResultContentTokens(p.ToolCallID, "", p.Output)
 	case *fantasy.ToolResultPart:
-		return estimateToolResultContentTokens(p.ToolCallID, "", "", p.Output)
+		return estimateToolResultContentTokens(p.ToolCallID, "", p.Output)
 	default:
 		return 0
 	}
@@ -164,8 +163,8 @@ func estimateToolCallTokens(toolName, input string) int64 {
 	return approxTokenCount(toolName) + approxTokenCount(input)
 }
 
-func estimateToolResultContentTokens(toolCallID, toolName, metadata string, output fantasy.ToolResultOutputContent) int64 {
-	tokens := approxTokenCount(toolCallID) + approxTokenCount(toolName) + approxTokenCount(metadata)
+func estimateToolResultContentTokens(toolCallID, toolName string, output fantasy.ToolResultOutputContent) int64 {
+	tokens := approxTokenCount(toolCallID) + approxTokenCount(toolName)
 	switch result := output.(type) {
 	case fantasy.ToolResultOutputContentText:
 		tokens += approxTokenCount(result.Text)
@@ -180,26 +179,19 @@ func estimateToolResultContentTokens(toolCallID, toolName, metadata string, outp
 			tokens += approxTokenCount(result.Error.Error())
 		}
 	case fantasy.ToolResultOutputContentMedia:
-		tokens += estimateMediaTokens(result.MediaType, result.Text, len(result.Data))
+		tokens += estimateBase64MediaTokens(result.MediaType, result.Text, result.Data)
 	case *fantasy.ToolResultOutputContentMedia:
-		tokens += estimateMediaTokens(result.MediaType, result.Text, len(result.Data))
+		tokens += estimateBase64MediaTokens(result.MediaType, result.Text, result.Data)
 	}
 	return tokens
 }
 
 func estimateFilePartTokens(file fantasy.FilePart) int64 {
-	return estimateMediaTokens(file.MediaType, file.Filename, len(file.Data))
+	return estimateMediaTokens(file.MediaType, file.Filename, file.Data)
 }
 
 func estimateGeneratedFileTokens(file fantasy.FileContent) int64 {
-	return estimateMediaTokens(file.MediaType, "", len(file.Data))
-}
-
-func estimateMediaTokens(mediaType, text string, dataBytes int) int64 {
-	if dataBytes == 0 {
-		return approxTokenCount(mediaType) + approxTokenCount(text)
-	}
-	return approxTokenCount(fmt.Sprintf("%s %s %d bytes", mediaType, text, dataBytes))
+	return estimateMediaTokens(file.MediaType, "", file.Data)
 }
 
 func estimateSourceTokens(source fantasy.SourceContent) int64 {

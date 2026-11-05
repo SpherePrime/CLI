@@ -182,6 +182,7 @@ type sessionAgent struct {
 	artifactStore        toolArtifactStore
 	artifactStoreErr     error
 	preparedViews        *csync.Map[string, preparedContextView]
+	contextCalibrations  *csync.Map[string, float64]
 	disableAutoSummarize bool
 	// autoSummarizePercent is the global default threshold: how full the
 	// context window must be before a turn is compacted. A per-model override
@@ -290,6 +291,7 @@ func NewSessionAgent(
 		acceptedRuns:         csync.NewMap[string, int](),
 		cancelMark:           csync.NewMap[string, uint64](),
 		preparedViews:        csync.NewMap[string, preparedContextView](),
+		contextCalibrations:  csync.NewMap[string, float64](),
 	}
 }
 
@@ -1136,6 +1138,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			if estimated {
 				usage.InputTokens += stepToolTokens
 				usage.TotalTokens += stepToolTokens
+			} else {
+				a.recordContextCalibration(call.SessionID, usage, stepMessages, stepToolTokens)
 			}
 			updatedSession.ContextTokens = contextTokensFromUsage(usage)
 			a.updateSessionUsage(largeModel, &updatedSession, usage, a.openrouterCost(stepResult.ProviderMetadata), estimated)
