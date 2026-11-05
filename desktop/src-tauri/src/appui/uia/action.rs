@@ -17,34 +17,7 @@ use super::{roles, tree};
 use crate::appui::locator;
 use crate::appui::types::{Locator, UiNode};
 
-pub const MAX_NODES: usize = 4000;
-pub const MAX_DEPTH: usize = 40;
-
-pub enum UiAction {
-    Invoke,
-    SetValue(String),
-    Toggle,
-    Select,
-    Focus,
-    Expand,
-    Collapse,
-    Scroll(String, String),
-}
-
-impl UiAction {
-    pub fn name(&self) -> &'static str {
-        match self {
-            Self::Invoke => "click",
-            Self::SetValue(_) => "set_value",
-            Self::Toggle => "toggle",
-            Self::Select => "select",
-            Self::Focus => "focus",
-            Self::Expand => "expand",
-            Self::Collapse => "collapse",
-            Self::Scroll(_, _) => "scroll",
-        }
-    }
-}
+pub use crate::appui::ui_action::{UiAction, MAX_DEPTH, MAX_NODES};
 
 pub fn perform(
     automation: &IUIAutomation,
