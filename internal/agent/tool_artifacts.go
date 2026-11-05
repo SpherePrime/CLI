@@ -24,8 +24,9 @@ type toolArtifactStore interface {
 }
 
 type diskToolArtifactStore struct {
-	path string
-	mu   sync.Mutex
+	path  string
+	mu    sync.Mutex
+	known map[string]string
 }
 type toolArtifactManifest struct {
 	CallID  string              `json:"call_id"`
@@ -49,7 +50,7 @@ func newToolArtifactStore(dataDir string) (toolArtifactStore, error) {
 	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return nil, errors.New("unsafe tool result storage directory")
 	}
-	return &diskToolArtifactStore{path: path}, nil
+	return &diskToolArtifactStore{path: path, known: map[string]string{}}, nil
 }
 
 func artifactScope(scope string) string {
@@ -99,6 +100,13 @@ func (s *diskToolArtifactStore) Put(ctx context.Context, scope, callID string, o
 	}
 	defer root.Close()
 	checksum := artifactHash(raw)
+	knownKey := artifactKnownKey(scope, callID, outcome, checksum)
+	if id, ok := s.known[knownKey]; ok {
+		if _, statErr := root.Lstat(id); statErr == nil {
+			return id, nil
+		}
+		delete(s.known, knownKey)
+	}
 	entries, err := root.Open(".")
 	if err != nil {
 		return "", err
@@ -114,6 +122,7 @@ func (s *diskToolArtifactStore) Put(ctx context.Context, scope, callID string, o
 		}
 		manifest, data, err := readArtifact(root, name)
 		if err == nil && manifest.CallID == callID && manifest.Outcome == outcome && manifest.SHA256 == checksum && string(data) == string(raw) {
+			s.remember(knownKey, name)
 			return name, nil
 		}
 	}
@@ -154,7 +163,19 @@ func (s *diskToolArtifactStore) Put(ctx context.Context, scope, callID string, o
 	if err := root.Rename(temp, id); err != nil {
 		return "", err
 	}
+	s.remember(knownKey, id)
 	return id, nil
+}
+
+func artifactKnownKey(scope, callID string, outcome fantasy.ToolOutcome, checksum string) string {
+	return strings.Join([]string{artifactScope(scope), callID, string(outcome), checksum}, "|")
+}
+
+func (s *diskToolArtifactStore) remember(key, id string) {
+	if s.known == nil {
+		s.known = map[string]string{}
+	}
+	s.known[key] = id
 }
 
 func readArtifact(root *os.Root, id string) (toolArtifactManifest, []byte, error) {
@@ -236,5 +257,11 @@ func (s *diskToolArtifactStore) DeleteSession(ctx context.Context, scope string)
 		return err
 	}
 	defer root.Close()
+	prefix := artifactScope(scope) + "|"
+	for key := range s.known {
+		if strings.HasPrefix(key, prefix) {
+			delete(s.known, key)
+		}
+	}
 	return root.RemoveAll(artifactScope(scope))
 }

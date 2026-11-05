@@ -45,16 +45,21 @@ func (a *sessionAgent) toolScope(sessionID string) string {
 
 func projectToolMessages(ctx context.Context, scope string, store toolArtifactStore, messages []fantasy.Message) []fantasy.Message {
 	callNames := toolCallNames(messages)
-	projected := cloneFantasyMessages(messages)
+	projected := ageToolHistory(ctx, scope, store, cloneFantasyMessages(messages), defaultHistoryAgingPolicy())
 	for i := range projected {
 		for j, part := range projected[i].Content {
 			result, ok := part.(fantasy.ToolResultPart)
 			if !ok || inlineDocumentedTool(callNames[result.ToolCallID]) {
 				continue
 			}
+			name := callNames[result.ToolCallID]
 			switch output := result.Output.(type) {
 			case fantasy.ToolResultOutputContentText:
-				rewritten, changed := projectToolResultText(ctx, scope, store, result.ToolCallID, result.Outcome, output.Text)
+				compacted := compactToolOutput(name, output.Text)
+				rewritten, changed := projectToolResultText(ctx, scope, store, result.ToolCallID, result.Outcome, compacted)
+				if !changed {
+					rewritten, changed = compacted, compacted != output.Text
+				}
 				if !changed {
 					continue
 				}
@@ -63,7 +68,11 @@ func projectToolMessages(ctx context.Context, scope string, store toolArtifactSt
 				if output.Error == nil {
 					continue
 				}
-				rewritten, changed := projectToolResultText(ctx, scope, store, result.ToolCallID, fantasy.ToolOutcomeFailure, output.Error.Error())
+				compacted := compactToolOutput(name, output.Error.Error())
+				rewritten, changed := projectToolResultText(ctx, scope, store, result.ToolCallID, fantasy.ToolOutcomeFailure, compacted)
+				if !changed {
+					rewritten, changed = compacted, compacted != output.Error.Error()
+				}
 				if !changed {
 					continue
 				}
