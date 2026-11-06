@@ -2,7 +2,7 @@ use serde_json::{json, Value};
 use tauri::{AppHandle, Manager};
 
 use super::types::Locator;
-use super::uia::action::UiAction;
+use super::ui_action::UiAction;
 use crate::browser::workbench::WorkbenchContext;
 
 fn tool(name: &str, description: &str, properties: Value, required: &[&str]) -> Value {

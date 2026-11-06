@@ -68,7 +68,7 @@ func addFantasyMessageParts(message fantasy.Message, add func(string, int64)) {
 		case fantasy.ReasoningPart:
 			add(ContextReasoning, approxTokenCount(p.Text))
 		case fantasy.FilePart:
-			add(ContextAttachments, estimateMediaTokens(p.MediaType, p.Filename, len(p.Data)))
+			add(ContextAttachments, estimateMediaTokens(p.MediaType, p.Filename, p.Data))
 		case fantasy.ToolCallPart:
 			add(ContextToolCalls, estimateToolCallTokens(p.ToolName, p.Input))
 		case fantasy.ToolResultPart:
@@ -87,7 +87,6 @@ func addFantasyToolResult(result fantasy.ToolResultPart, add func(string, int64)
 		}
 	case fantasy.ToolResultOutputContentMedia:
 		add(ContextToolResults, approxTokenCount(output.Text))
-		add(ContextAttachments, estimateMediaTokens(output.MediaType, "", len(output.Data)))
+		add(ContextAttachments, estimateBase64MediaTokens(output.MediaType, "", output.Data))
 	}
-	add(ContextToolResults, approxTokenCount(result.ClientMetadata))
 }

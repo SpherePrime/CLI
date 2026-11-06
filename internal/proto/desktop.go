@@ -74,4 +74,5 @@ type ContextBreakdown struct {
 	ContextWindow        int64             `json:"context_window"`
 	AutoSummarizePercent int               `json:"auto_summarize_percent"`
 	EstimatedUsage       bool              `json:"estimated_usage"`
+	Calibrated           bool              `json:"calibrated"`
 }

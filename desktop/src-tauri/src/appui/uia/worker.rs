@@ -15,30 +15,7 @@ use super::{action, capture, tree};
 use crate::appui::render::snapshot_text;
 use crate::appui::types::Locator;
 
-pub enum UiaRequest {
-    Snapshot {
-        hwnd: String,
-        max_nodes: usize,
-        max_depth: usize,
-    },
-    Act {
-        hwnd: String,
-        locator: Locator,
-        action: UiAction,
-    },
-    ElementPng {
-        hwnd: String,
-        locator: Locator,
-    },
-    ElementAtCursor {
-        hwnd: String,
-    },
-    ElementAtPoint {
-        hwnd: String,
-        x: i32,
-        y: i32,
-    },
-}
+pub use crate::appui::ui_action::UiaRequest;
 
 struct Job {
     request: UiaRequest,
