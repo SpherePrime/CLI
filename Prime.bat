@@ -1,4 +1,17 @@
 @echo off
+if defined PRIME_HOME goto prime_main
+setlocal EnableExtensions DisableDelayedExpansion
+set "PRIME_HOME=%~dp0"
+set "PRIME_SCRIPT_DIR=%TEMP%\prime-scripts"
+if not exist "%PRIME_SCRIPT_DIR%" mkdir "%PRIME_SCRIPT_DIR%" >nul 2>&1
+forfiles /p "%PRIME_SCRIPT_DIR%" /m *.bat /d -1 /c "cmd /c del /q @path" >nul 2>&1
+set "PRIME_COPY=%PRIME_SCRIPT_DIR%\prime-%RANDOM%%RANDOM%.bat"
+type "%~f0" > "%PRIME_COPY%" || ( echo ERROR: could not copy %~nx0 to %PRIME_SCRIPT_DIR% & exit /b 1 )
+(
+    call "%PRIME_COPY%" %*
+    call exit /b %%errorlevel%%
+)
+:prime_main
 setlocal EnableExtensions DisableDelayedExpansion
 rem ============================================================================
 rem  Prime - one launcher for everything: run, build, release.
@@ -40,7 +53,7 @@ rem    Prime.bat desktop               run Prime Desktop from sources
 rem    Prime.bat setup                 build PrimeDesktop-Setup-<version>.exe
 rem ============================================================================
 
-cd /d "%~dp0"
+cd /d "%PRIME_HOME%"
 
 set "MODE="
 set "SYNC=1"
@@ -340,7 +353,7 @@ if defined PACKAGE_FILE echo  Package : desktop\%PACKAGE_FILE%  ^(NSIS, used by 
 set "EXITCODE=0"
 choice /c YN /n /t 30 /d N /m "  Install it now? [Y/N] (30s, default N) "
 if errorlevel 2 goto finish
-start "" "%~dp0desktop\%SETUP_FILE%"
+start "" "%PRIME_HOME%desktop\%SETUP_FILE%"
 goto finish
 
 :setup_prepare_failed
