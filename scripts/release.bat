@@ -965,6 +965,7 @@ if defined DIRTY set "DIRTY="
 
 if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
     call :merge_worktrees || exit /b 1
+    call :sync_desktop_version || exit /b 1
     call :current_sha
 )
 
@@ -1049,6 +1050,7 @@ for /f "usebackq tokens=*" %%c in (`git rev-list --count "HEAD..!WT_BRANCH!"`) d
 if "!WT_AHEAD!"=="0" exit /b 0
 echo  Merging !WT_BRANCH! ^(!WT_AHEAD! commits^) into main ...
 git merge --no-edit "!WT_BRANCH!"
+if errorlevel 1 call :resolve_version_conflicts
 if errorlevel 1 (
     git merge --abort >nul 2>&1
     echo.
@@ -1056,6 +1058,29 @@ if errorlevel 1 (
     echo        Resolve it and run the release again.
     exit /b 1
 )
+exit /b 0
+
+:resolve_version_conflicts
+where node >nul 2>&1 || exit /b 1
+node "%ROOT%\desktop\scripts\resolve-version-conflicts.mjs" || exit /b 1
+git -c core.editor=true commit --no-edit -q || exit /b 1
+echo  Version conflicts resolved, merge committed.
+exit /b 0
+
+:sync_desktop_version
+if not "!DESKTOP_RELEASE!"=="1" exit /b 0
+pushd "%ROOT%\desktop"
+node scripts\set-native-version.mjs "!TAG!"
+set "SET_VERSION_EXIT=!errorlevel!"
+popd
+if not "!SET_VERSION_EXIT!"=="0" ( echo ERROR: could not set the desktop version & exit /b 1 )
+set "VERSION_DIRTY="
+for /f "usebackq tokens=*" %%s in (`git status --porcelain`) do set "VERSION_DIRTY=1"
+if not defined VERSION_DIRTY exit /b 0
+git add -A
+git commit -q -m "Set desktop version to !VERSION!"
+if errorlevel 1 ( echo ERROR: could not commit the desktop version & exit /b 1 )
+echo  Desktop version set to !VERSION! after the merges.
 exit /b 0
 
 rem ---------------------------------------------------------------------------
