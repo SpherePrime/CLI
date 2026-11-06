@@ -1,7 +1,7 @@
 import { sessionTitle } from '../../../../shared/sessionTitle'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Search, Server, X, Pin, Plus, MessagesSquare } from 'lucide-react'
+import { Search, Server, X, Pin, Plus, MessagesSquare, FolderOpen } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
@@ -312,6 +312,10 @@ export function SidebarChats({
           {t('ПРОЕКТЫ')} <b>{projectPaths.length}</b>
         </span>
         <span className="section-caption-actions">
+          <button className="icon small" aria-label={t('Открыть папку')} title={t('Открыть папку')}
+            onClick={() => void w.openFolder()} disabled={w.loading || w.info.runtime !== 'ready'}>
+            <FolderOpen size={14} />
+          </button>
           <button
             className="icon small"
             aria-label={t('Новый проект')}

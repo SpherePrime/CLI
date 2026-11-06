@@ -19,6 +19,8 @@
   "projects": true,
   "projectSessions": true,
   "openChat": true,
+  "projectCreationBase": true,
+  "createProject": true,
   "openProject": true,
   "cancelProjectWait": true,
   "openRemote": true,
