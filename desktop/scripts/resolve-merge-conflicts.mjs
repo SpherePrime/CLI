@@ -4,32 +4,48 @@ import { tmpdir } from 'node:os'
 import { join, posix } from 'node:path'
 import { crateName, readVersion, versionFiles, writeVersion } from './native-version.mjs'
 
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+const bufferSize = 256 * 1024 * 1024
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: bufferSize, stdio: ['ignore', 'pipe', 'ignore'] })
 const root = git('rev-parse', '--show-toplevel').trim()
 const managed = new Set(versionFiles.map(file => `desktop/${file}`))
 
-const stage = (number, path) => {
+const tryGit = (...args) => {
   try {
-    return execFileSync('git', ['show', `:${number}:${path}`], { cwd: root, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] })
+    return git('-C', root, ...args)
   } catch {
     return undefined
   }
 }
 
+const stage = (number, path) => tryGit('show', `:${number}:${path}`)
+
 const conflicted = () => git('-C', root, 'diff', '--name-only', '--diff-filter=U').split('\n').map(line => line.trim()).filter(Boolean)
 
-const lockName = (path, side) => {
+function theirsAlreadyInHistory(path) {
+  const blob = tryGit('rev-parse', `:3:${path}`)?.trim()
+  if (!blob || tryGit('rev-parse', `:2:${path}`) === undefined) return false
+  const commit = tryGit('log', '-1', '--format=%H', `--find-object=${blob}`, 'HEAD', '--', path)?.trim()
+  return Boolean(commit)
+}
+
+const keepOurs = path => {
+  git('-C', root, 'checkout', '--ours', '--', path)
+  git('-C', root, 'add', '--', path)
+}
+
+const lockName = path => {
   if (!path.endsWith('Cargo.lock')) return undefined
-  const manifest = stage(side, posix.join(posix.dirname(path), 'Cargo.toml')) ?? stage(0, posix.join(posix.dirname(path), 'Cargo.toml'))
+  const manifestPath = posix.join(posix.dirname(path), 'Cargo.toml')
+  const manifest = stage(2, manifestPath) ?? stage(0, manifestPath)
   return manifest ? crateName(manifest) : undefined
 }
 
-function resolve(path, workDir) {
+function mergeVersionFile(path, workDir) {
   const base = stage(1, path)
   const ours = stage(2, path)
   const theirs = stage(3, path)
   if (base === undefined || ours === undefined || theirs === undefined) return false
-  const name = lockName(path, 2)
+  const name = lockName(path)
   const version = readVersion(path, ours, name)
   if (!version) return false
   const sides = [base, ours, theirs].map((content, index) => {
@@ -37,18 +53,22 @@ function resolve(path, workDir) {
     writeFileSync(file, writeVersion(path, content, version, name))
     return file
   })
-  const merged = spawnSync('git', ['merge-file', '-p', sides[1], sides[0], sides[2]], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+  const merged = spawnSync('git', ['merge-file', '-p', sides[1], sides[0], sides[2]], { encoding: 'utf8', maxBuffer: bufferSize })
   if (merged.status !== 0) return false
   writeFileSync(join(root, path), merged.stdout)
   git('-C', root, 'add', '--', path)
   return true
 }
 
-const workDir = mkdtempSync(join(tmpdir(), 'prime-version-merge-'))
+const workDir = mkdtempSync(join(tmpdir(), 'prime-merge-'))
 try {
   for (const path of conflicted()) {
-    if (!managed.has(path)) continue
-    if (resolve(path, workDir)) console.log(` Resolved the version conflict in ${path}`)
+    if (theirsAlreadyInHistory(path)) {
+      keepOurs(path)
+      console.log(` Kept main's ${path}: the branch copy is an older main state`)
+    } else if (managed.has(path) && mergeVersionFile(path, workDir)) {
+      console.log(` Resolved the version conflict in ${path}`)
+    }
   }
 } finally {
   rmSync(workDir, { recursive: true, force: true })
