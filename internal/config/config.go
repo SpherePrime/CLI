@@ -282,6 +282,7 @@ type MCPConfig struct {
 	DisabledTools []string          `json:"disabled_tools,omitempty" jsonschema:"description=List of tools from this MCP server to disable,example=get-library-doc"`
 	EnabledTools  []string          `json:"enabled_tools,omitempty" jsonschema:"description=Allow list of tools from this MCP server,example=get-library-doc"`
 	Timeout       int               `json:"timeout,omitempty" jsonschema:"description=Timeout in seconds for MCP server connections,default=10,example=30,example=60,example=120"`
+	Context       string            `json:"context,omitempty" jsonschema:"description=How this server's tools reach the model in Standard mode: auto groups large servers behind mcp_call; inline always sends every tool card; grouped always lists tools by name only,enum=auto,enum=inline,enum=grouped,default=auto"`
 
 	// Sessionless marks a server that does not maintain an MCP session (it
 	// never issues a Mcp-Session-Id). When true, Prime omits the

@@ -90,6 +90,14 @@ func (m *Tool) MCPToolName() string {
 	return m.tool.Name
 }
 
+// ContextMode reports how the server's tools are presented in Standard mode.
+func (m *Tool) ContextMode() string {
+	if m.cfg == nil || m.cfg.Config() == nil {
+		return ""
+	}
+	return m.cfg.Config().MCP[m.mcpName].Context
+}
+
 func (m *Tool) Info() fantasy.ToolInfo {
 	parameters := make(map[string]any)
 	required := make([]string, 0)

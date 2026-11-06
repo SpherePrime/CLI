@@ -57,7 +57,7 @@ func compactToolDefinition(tool fantasy.AgentTool) (fantasy.FunctionTool, bool, 
 		InputSchema:     canonical,
 		ProviderOptions: tool.ProviderOptions(),
 	}
-	if inlineDocumentedTool(info.Name) {
+	if inlineDocumentedTool(info.Name) || info.Name == mcpCallToolName {
 		return definition, true, nil
 	}
 	compacted, err := cloneSchema(canonical)

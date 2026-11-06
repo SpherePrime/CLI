@@ -672,6 +672,8 @@ export const english: Record<string, string> = {
   Вложения: 'Attachments',
   'Автосжатие при {percent}% · свободно {free}': 'Auto-compaction at {percent}% · {free} free',
   'Считаем…': 'Calculating…',
+  'Итог — по данным провайдера, разбивка откалибрована по нему.':
+    'Total reported by the provider; the breakdown is calibrated to it.',
   'Итог — по данным провайдера, разбивка приблизительная.':
     'Total reported by the provider; the breakdown is approximate.',
   'Провайдер не сообщил расход, показана оценка.':

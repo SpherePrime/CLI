@@ -13,9 +13,10 @@ use super::picker::{self, CancelHandle};
 use super::recording::{self, Recording};
 use super::render::snapshot_text;
 use super::types::{Locator, UiBounds};
-use super::uia::action::{UiAction, MAX_DEPTH, MAX_NODES};
+use super::ui_action::{UiAction, MAX_DEPTH, MAX_NODES};
 use super::uia::capture;
-use super::uia::worker::{UiaRequest, UiaWorker};
+use super::ui_action::UiaRequest;
+use super::uia::worker::UiaWorker;
 use crate::browser::workbench::WorkbenchContext;
 use crate::computer::types::{Log, Share};
 
@@ -409,6 +410,20 @@ impl AppUiManager {
         request: &Value,
     ) -> Result<Value, String> {
         super::explore::run(app, context, self, request)
+    }
+
+    #[cfg(not(windows))]
+    pub fn record_start(&self) -> Result<Value, String> {
+        Err("Recording application input is currently supported only on Windows".to_owned())
+    }
+
+    #[cfg(not(windows))]
+    pub fn record_stop(
+        &self,
+        _app: &AppHandle,
+        _context: &WorkbenchContext,
+    ) -> Result<Value, String> {
+        Err("Recording is not running".to_owned())
     }
 
     #[cfg(windows)]

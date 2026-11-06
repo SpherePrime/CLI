@@ -1,10 +1,19 @@
 #[cfg(windows)]
 pub(crate) mod capture;
+#[cfg(not(windows))]
+#[path = "unsupported/capture.rs"]
+pub(crate) mod capture;
 #[cfg(windows)]
+pub(crate) mod input;
+#[cfg(not(windows))]
+#[path = "unsupported/input.rs"]
 pub(crate) mod input;
 pub mod tools;
 pub(crate) mod types;
 #[cfg(windows)]
+pub(crate) mod windows;
+#[cfg(not(windows))]
+#[path = "unsupported/windows.rs"]
 pub(crate) mod windows;
 
 use serde_json::{json, Value};
