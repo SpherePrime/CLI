@@ -939,12 +939,12 @@ if "!DESKTOP_RELEASE!"=="1" if "!DRY_RUN!"=="0" (
 
 rem The tree is committed only after the user confirmed the publish: a
 rem cancelled release leaves the working tree exactly as it was found.
-rem Tracked changes are staged; untracked files are the owner's decision.
+rem Every change is staged, new files included; .gitignore still applies.
 rem The generic author is a fallback for machines without a git identity -
 rem machines with one keep their own.
 if defined DIRTY if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
     echo  Committing local changes ...
-    git add -u
+    git add -A
     git config user.name >nul 2>&1
     if errorlevel 1 (
         git -c user.name="Prime Release" -c user.email="release@prime.local" ^
@@ -962,6 +962,11 @@ if defined DIRTY if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
     echo.
 )
 if defined DIRTY set "DIRTY="
+
+if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
+    call :merge_worktrees || exit /b 1
+    call :current_sha
+)
 
 if "%SKIP_BUILD%"=="0" (
     call :ensure_go || exit /b 1
@@ -1003,6 +1008,55 @@ rem the release page actually carries what was selected, and names anything
 rem that is absent.
 if "!VERIFY!"=="1" call :verify_assets
 goto :eof
+
+rem ---------------------------------------------------------------------------
+rem  merge_worktrees - every agent worktree under .claude\worktrees is
+rem  committed and its branch merged into main, so the release ships all
+rem  finished work. A conflict undoes that merge and stops the release.
+rem ---------------------------------------------------------------------------
+:merge_worktrees
+call :rel_branch
+if /I not "!BRANCH!"=="main" (
+    echo  Worktree merge skipped: the release branch is !BRANCH!, not main.
+    exit /b 0
+)
+if not exist "%ROOT%\.claude\worktrees" exit /b 0
+for /d %%w in ("%ROOT%\.claude\worktrees\*") do (
+    call :merge_worktree "%%~fw" || exit /b 1
+)
+exit /b 0
+
+:merge_worktree
+set "WT=%~1"
+set "WT_BRANCH="
+for /f "usebackq delims=" %%b in (`git -C "%WT%" rev-parse --abbrev-ref HEAD 2^>nul`) do set "WT_BRANCH=%%b"
+if not defined WT_BRANCH exit /b 0
+if /I "!WT_BRANCH!"=="HEAD" exit /b 0
+if /I "!WT_BRANCH!"=="main" exit /b 0
+set "WT_DIRTY="
+for /f "usebackq tokens=*" %%s in (`git -C "%WT%" status --porcelain`) do set "WT_DIRTY=1"
+if defined WT_DIRTY (
+    echo  Committing changes in !WT_BRANCH! ...
+    git -C "%WT%" add -A
+    git -C "%WT%" commit -q -m "Auto commit: prepare release"
+    if errorlevel 1 (
+        echo ERROR: could not commit the worktree of !WT_BRANCH!.
+        exit /b 1
+    )
+)
+set "WT_AHEAD=0"
+for /f "usebackq tokens=*" %%c in (`git rev-list --count "HEAD..!WT_BRANCH!"`) do set "WT_AHEAD=%%c"
+if "!WT_AHEAD!"=="0" exit /b 0
+echo  Merging !WT_BRANCH! ^(!WT_AHEAD! commits^) into main ...
+git merge --no-edit "!WT_BRANCH!"
+if errorlevel 1 (
+    git merge --abort >nul 2>&1
+    echo.
+    echo ERROR: !WT_BRANCH! conflicts with main. The merge was undone.
+    echo        Resolve it and run the release again.
+    exit /b 1
+)
+exit /b 0
 
 rem ---------------------------------------------------------------------------
 rem  desktop_plan - decide whether this release ships Prime Desktop and check
