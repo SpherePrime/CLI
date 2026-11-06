@@ -1,4 +1,17 @@
 @echo off
+if defined PRIME_RELEASE_HOME goto release_main
+setlocal EnableExtensions DisableDelayedExpansion
+set "PRIME_RELEASE_HOME=%~dp0"
+set "PRIME_SCRIPT_DIR=%TEMP%\prime-scripts"
+if not exist "%PRIME_SCRIPT_DIR%" mkdir "%PRIME_SCRIPT_DIR%" >nul 2>&1
+forfiles /p "%PRIME_SCRIPT_DIR%" /m *.bat /d -1 /c "cmd /c del /q @path" >nul 2>&1
+set "PRIME_RELEASE_COPY=%PRIME_SCRIPT_DIR%\release-%RANDOM%%RANDOM%.bat"
+type "%~f0" > "%PRIME_RELEASE_COPY%" || ( echo ERROR: could not copy %~nx0 to %PRIME_SCRIPT_DIR% & exit /b 1 )
+(
+    call "%PRIME_RELEASE_COPY%" %*
+    call exit /b %%errorlevel%%
+)
+:release_main
 setlocal EnableExtensions EnableDelayedExpansion
 rem ============================================================================
 rem  Prime release tool
@@ -81,7 +94,7 @@ rem 1 when --targets came from the command line: the interactive pick menu
 rem stays out of the way when the caller already decided.
 set "TARGETS_SET=0"
 
-set "ROOT=%~dp0.."
+set "ROOT=%PRIME_RELEASE_HOME%.."
 pushd "%ROOT%" >nul 2>&1 || ( echo Cannot enter %ROOT% & exit /b 1 )
 
 rem ---- argument parsing -------------------------------------------------------
@@ -487,7 +500,7 @@ rem The addition needs its own parentheses: PowerShell binds -f tighter than +,
 rem so -f a, b, c+1 formats with c and then appends "1" to the whole string.
 rem That turned v0.4.36 into v0.4.361.
 for /f "usebackq delims=" %%v in (`powershell -NoProfile -Command ^
-  "$t='!LATEST_TAG!'; $v=[version]'0.0.0'; if($t -match '^v?(\d+\.\d+\.\d+)'){ $v=[version]$Matches[1] }; $n='{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build+1); $p=Join-Path '%~dp0..' 'desktop\package.json'; if(Test-Path $p){ $d=[version](Get-Content $p -Raw | ConvertFrom-Json).version; if($d -gt $v){ $n='{0}.{1}.{2}' -f $d.Major, $d.Minor, $d.Build } }; $n"`) do set "VERSION=%%v"
+  "$t='!LATEST_TAG!'; $v=[version]'0.0.0'; if($t -match '^v?(\d+\.\d+\.\d+)'){ $v=[version]$Matches[1] }; $n='{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build+1); $p=Join-Path '%PRIME_RELEASE_HOME%..' 'desktop\package.json'; if(Test-Path $p){ $d=[version](Get-Content $p -Raw | ConvertFrom-Json).version; if($d -gt $v){ $n='{0}.{1}.{2}' -f $d.Major, $d.Minor, $d.Build } }; $n"`) do set "VERSION=%%v"
 exit /b 0
 
 :current_sha
@@ -1050,7 +1063,7 @@ for /f "usebackq tokens=*" %%c in (`git rev-list --count "HEAD..!WT_BRANCH!"`) d
 if "!WT_AHEAD!"=="0" exit /b 0
 echo  Merging !WT_BRANCH! ^(!WT_AHEAD! commits^) into main ...
 git merge --no-edit "!WT_BRANCH!"
-if errorlevel 1 call :resolve_version_conflicts
+if errorlevel 1 call :resolve_merge_conflicts
 if errorlevel 1 (
     git merge --abort >nul 2>&1
     echo.
@@ -1060,11 +1073,11 @@ if errorlevel 1 (
 )
 exit /b 0
 
-:resolve_version_conflicts
+:resolve_merge_conflicts
 where node >nul 2>&1 || exit /b 1
-node "%ROOT%\desktop\scripts\resolve-version-conflicts.mjs" || exit /b 1
+node "%ROOT%\desktop\scripts\resolve-merge-conflicts.mjs" || exit /b 1
 git -c core.editor=true commit --no-edit -q || exit /b 1
-echo  Version conflicts resolved, merge committed.
+echo  Conflicts resolved, merge committed.
 exit /b 0
 
 :sync_desktop_version
@@ -1434,7 +1447,7 @@ for %%T in (!TARGETS!) do (
     )
 )
 if defined DESKTOP_ASSETS (
-    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly') do set /a MISSING_COUNT+=%%C
+    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%PRIME_RELEASE_HOME%verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly') do set /a MISSING_COUNT+=%%C
 )
 if "!MISSING_COUNT!"=="0" goto verify_report
 if "!POLL!"=="0" goto verify_report
@@ -1471,8 +1484,8 @@ for %%T in (!TARGETS!) do (
     )
 )
 if defined DESKTOP_ASSETS (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly -Report
-    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly') do set /a MISSING_COUNT+=%%C
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%PRIME_RELEASE_HOME%verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly -Report
+    for /f %%C in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%PRIME_RELEASE_HOME%verify-desktop-assets.ps1" -AssetList "%ASSET_LIST%" -Version "!VERSION_BARE!" -WindowsOnly') do set /a MISSING_COUNT+=%%C
 )
 del /q "%ASSET_LIST%" >nul 2>&1
 echo  ------------------------------------------------------------------
