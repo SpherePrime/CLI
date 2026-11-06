@@ -85,6 +85,7 @@ type SessionAgentCall struct {
 	RunID             string
 	HiddenUserMessage bool
 	Prompt            string
+	TeamNote          string
 	ProviderOptions   fantasy.ProviderOptions
 	Attachments       []message.Attachment
 	MaxOutputTokens   int64
@@ -921,6 +922,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			if hasSteeringCall(steeringCalls) {
 				prepared.Messages = withSteeringInstruction(prepared.Messages)
 			}
+			prepared.Messages = withTeamNote(prepared.Messages, call.TeamNote)
 
 			prepared.Messages = a.workaroundProviderMediaLimitations(prepared.Messages, largeModel)
 
