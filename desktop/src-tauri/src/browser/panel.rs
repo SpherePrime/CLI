@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Mutex,
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 use tauri::{
     webview::{NewWindowResponse, PageLoadEvent, PermissionResponse, WebviewBuilder},
@@ -35,6 +38,10 @@ pub struct Tab {
     pub url: String,
     pub title: String,
     pub loading: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub owner: Option<String>,
+    #[serde(skip)]
+    pub viewport: Option<f64>,
     #[serde(skip)]
     pub history: Vec<String>,
     #[serde(skip)]
@@ -52,6 +59,9 @@ pub struct Panel {
     pub visible: bool,
     pub bounds: Bounds,
     pub logs: Vec<Value>,
+    pub view: Option<String>,
+    pub selected: HashMap<String, String>,
+    pub agent: HashMap<String, String>,
 }
 
 #[derive(Clone, Default)]
@@ -88,8 +98,83 @@ impl BrowserState {
             .iter()
             .find(|tab| Some(&tab.id) == panel.active.as_ref());
         Ok(
-            json!({"url":current.map(|tab| tab.url.as_str()).unwrap_or(""), "title":current.map(|tab| tab.title.as_str()).unwrap_or(""), "loading":current.map(|tab| tab.loading).unwrap_or(false), "canGoBack":current.map(|tab| tab.index > 0).unwrap_or(false), "canGoForward":current.map(|tab| tab.index + 1 < tab.history.len()).unwrap_or(false), "activeTab":panel.active,"tabs":panel.tabs}),
+            json!({"url":current.map(|tab| tab.url.as_str()).unwrap_or(""), "title":current.map(|tab| tab.title.as_str()).unwrap_or(""), "loading":current.map(|tab| tab.loading).unwrap_or(false), "canGoBack":current.map(|tab| tab.index > 0).unwrap_or(false), "canGoForward":current.map(|tab| tab.index + 1 < tab.history.len()).unwrap_or(false), "activeTab":panel.active,"tabs":panel.visible_tabs()}),
         )
+    }
+
+    pub fn session_state(&self, session: Option<&str>) -> Result<Value, String> {
+        let panel = self.inner.lock().map_err(|error| error.to_string())?;
+        let active = match session {
+            Some(session) => panel.agent_tab(session),
+            None => panel.active.clone(),
+        };
+        Ok(json!({"tabs":panel.session_tabs(session),"activeTab":active}))
+    }
+
+    pub fn set_view(&self, app: &AppHandle, view: Option<String>) -> Result<Value, String> {
+        let changed = self
+            .inner
+            .lock()
+            .map_err(|error| error.to_string())?
+            .set_view(view);
+        if changed {
+            self.attach(app)?;
+            self.publish(app);
+        }
+        self.state()
+    }
+
+    pub fn agent_target(
+        &self,
+        app: &AppHandle,
+        session: Option<&str>,
+        id: Option<&str>,
+    ) -> Result<(String, Webview), String> {
+        let Some(session) = session else {
+            return self.target(app, id);
+        };
+        if let Some(id) = id {
+            self.inner
+                .lock()
+                .map_err(|error| error.to_string())?
+                .accessible(Some(session), id)?;
+            return self.target(app, Some(id));
+        }
+        let current = {
+            let _creation = self.creation.lock().map_err(|error| error.to_string())?;
+            let existing = self
+                .inner
+                .lock()
+                .map_err(|error| error.to_string())?
+                .agent_tab(session);
+            match existing {
+                Some(id) => id,
+                None => {
+                    let created = self.open_inner(app, "about:blank", false, Some(session))?;
+                    let id = created["id"].as_str().ok_or("Вкладка не создана")?.to_owned();
+                    self.bind_agent(session, &id)?;
+                    id
+                }
+            }
+        };
+        self.target(app, Some(&current))
+    }
+
+    pub fn bind_agent(&self, session: &str, id: &str) -> Result<(), String> {
+        self.inner
+            .lock()
+            .map_err(|error| error.to_string())?
+            .agent
+            .insert(session.to_owned(), id.to_owned());
+        Ok(())
+    }
+
+    pub fn resize_hidden(&self, id: &str, width: f64) -> Result<(), String> {
+        let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
+        if let Some(tab) = panel.tabs.iter_mut().find(|tab| tab.id == id) {
+            tab.viewport = Some(width);
+        }
+        Ok(())
     }
 
     pub fn publish(&self, app: &AppHandle) {
@@ -104,21 +189,38 @@ impl BrowserState {
         }
     }
 
-    pub fn reveal(&self, app: &AppHandle, agent: bool, width: Option<f64>) {
-        let _ = app.emit_to(tauri::EventTarget::webview("main"), "prime:event", json!({"type":"browser", "payload":{"action":"activate", "agent":agent, "width":width}}));
+    pub fn reveal(
+        &self,
+        app: &AppHandle,
+        session: Option<&str>,
+        tab: Option<&str>,
+        agent: bool,
+        width: Option<f64>,
+    ) -> bool {
+        if let Some(id) = tab {
+            let on_screen = match self.inner.lock() {
+                Ok(mut panel) => panel.show(session, id),
+                Err(_) => false,
+            };
+            if !on_screen {
+                return false;
+            }
+            let _ = self.attach(app);
+            self.publish(app);
+        }
+        let _ = app.emit_to(tauri::EventTarget::webview("main"), "prime:event", json!({"type":"browser", "payload":{"action":"activate", "agent":agent, "width":width, "sessionId":session}}));
+        true
     }
 
     pub fn target(&self, app: &AppHandle, id: Option<&str>) -> Result<(String, Webview), String> {
         if id.is_none() {
             let _creation = self.creation.lock().map_err(|error| error.to_string())?;
-            if self
-                .inner
-                .lock()
-                .map_err(|error| error.to_string())?
-                .tabs
-                .is_empty()
-            {
-                self.open_inner(app, "about:blank", true)?;
+            let (empty, view) = {
+                let panel = self.inner.lock().map_err(|error| error.to_string())?;
+                (panel.visible_tabs().is_empty(), panel.view.clone())
+            };
+            if empty {
+                self.open_inner(app, "about:blank", true, view.as_deref())?;
             }
         }
         let panel = self.inner.lock().map_err(|error| error.to_string())?;
@@ -144,18 +246,22 @@ impl BrowserState {
         };
         for tab in tabs {
             if let Some(view) = app.get_webview(&label(&tab.id)) {
+                let shown = visible
+                    && bounds.width > 0.0
+                    && bounds.height > 0.0
+                    && active.as_ref() == Some(&tab.id);
+                let width = match tab.viewport {
+                    Some(width) if !shown => width,
+                    _ => bounds.width,
+                };
                 view.set_position(LogicalPosition::new(bounds.x.round(), bounds.y.round()))
                     .map_err(|error| error.to_string())?;
                 view.set_size(LogicalSize::new(
-                    bounds.width.round().max(1.0),
+                    width.round().max(1.0),
                     bounds.height.round().max(1.0),
                 ))
                 .map_err(|error| error.to_string())?;
-                if visible
-                    && bounds.width > 0.0
-                    && bounds.height > 0.0
-                    && active.as_ref() == Some(&tab.id)
-                {
+                if shown {
                     view.show()
                 } else {
                     view.hide()
@@ -166,31 +272,49 @@ impl BrowserState {
         Ok(())
     }
 
-    pub fn open(&self, app: &AppHandle, input: &str, activate: bool) -> Result<Value, String> {
+    pub fn open(
+        &self,
+        app: &AppHandle,
+        input: &str,
+        activate: bool,
+        owner: Option<&str>,
+    ) -> Result<Value, String> {
         let _creation = self.creation.lock().map_err(|error| error.to_string())?;
-        self.open_inner(app, input, activate)
+        self.open_inner(app, input, activate, owner)
     }
 
-    fn open_inner(&self, app: &AppHandle, input: &str, activate: bool) -> Result<Value, String> {
+    fn open_inner(
+        &self,
+        app: &AppHandle,
+        input: &str,
+        activate: bool,
+        owner: Option<&str>,
+    ) -> Result<Value, String> {
         let url = normalize_url(input)?;
         let normalized = url.to_string();
         let id = uuid::Uuid::new_v4().to_string();
         {
             let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
-            if panel.tabs.len() >= 12 {
+            if panel.owned_count(owner) >= super::ownership::TABS_PER_OWNER {
                 return Err("Можно открыть не больше 12 вкладок".to_owned());
             }
-            panel.tabs.push(Tab {
+            let tab = Tab {
                 id: id.clone(),
                 url: url.to_string(),
                 title: String::new(),
                 loading: true,
+                owner: owner.map(str::to_owned),
+                viewport: None,
                 history: vec![url.to_string()],
                 index: 0,
                 traversing: false,
                 load_error: None,
-            });
-            if activate || panel.active.is_none() {
+            };
+            let visible = tab.visible_to(panel.view.as_deref());
+            panel.tabs.push(tab);
+            if activate {
+                panel.show(owner, &id);
+            } else if visible && panel.active.is_none() {
                 panel.active = Some(id.clone());
             }
         }
@@ -248,21 +372,35 @@ impl BrowserState {
                     let state = popup_state.clone();
                     let app = popup_app.clone();
                     let source_id = popup_id.clone();
-                    let active = state
+                    let (active, owner) = state
                         .inner
                         .lock()
                         .ok()
-                        .map(|panel| panel.active.as_ref() == Some(&popup_id))
-                        .unwrap_or(false);
+                        .map(|panel| {
+                            let owner = panel
+                                .tabs
+                                .iter()
+                                .find(|tab| tab.id == popup_id)
+                                .and_then(|tab| tab.owner.clone());
+                            (panel.active.as_ref() == Some(&popup_id), owner)
+                        })
+                        .unwrap_or((false, None));
                     std::thread::spawn(move || {
-                        let at_limit = state.inner.lock().map(|panel| panel.tabs.len() >= 12).unwrap_or(true);
+                        let at_limit = state
+                            .inner
+                            .lock()
+                            .map(|panel| {
+                                panel.owned_count(owner.as_deref())
+                                    >= super::ownership::TABS_PER_OWNER
+                            })
+                            .unwrap_or(true);
                         if at_limit {
                             if let Some(source) = app.get_webview(&label(&source_id)) {
                                 if let Err(error) = source.navigate(url.clone()) { state.log(&app, json!({"level":"error", "message":error.to_string(), "url":url.as_str()})); }
                             }
                             return;
                         }
-                        if let Err(error) = state.open(&app, url.as_str(), active) {
+                        if let Err(error) = state.open(&app, url.as_str(), active, owner.as_deref()) {
                             state.log(
                                 &app,
                                 json!({"level":"error", "message":error, "url":url.as_str()}),
@@ -318,13 +456,7 @@ impl BrowserState {
             .position(|tab| tab.id == id)
             .ok_or("Вкладка не найдена")?;
         panel.tabs.remove(index);
-        if panel.active.as_deref() == Some(id) {
-            panel.active = panel
-                .tabs
-                .get(index)
-                .or_else(|| panel.tabs.last())
-                .map(|tab| tab.id.clone());
-        }
+        panel.forget(id, index);
         Ok(())
     }
 
@@ -333,8 +465,6 @@ impl BrowserState {
         app: &AppHandle,
         value: &str,
         tab: Option<&str>,
-        agent: bool,
-        width: Option<f64>,
     ) -> Result<Value, String> {
         let url = normalize_url(value)?;
         let (id, view) = self.target(app, tab)?;
@@ -350,7 +480,6 @@ impl BrowserState {
             tab.loading = true;
             tab.load_error = None;
         }
-        self.reveal(app, agent, width);
         self.state()
     }
 
@@ -557,6 +686,8 @@ mod tests {
                     url: "about:blank".to_owned(),
                     title: String::new(),
                     loading: false,
+                    owner: None,
+                    viewport: None,
                     history: vec!["about:blank".to_owned()],
                     index: 0,
                     traversing: false,

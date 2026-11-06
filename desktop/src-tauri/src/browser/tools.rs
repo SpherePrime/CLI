@@ -12,15 +12,15 @@ use std::{
 use tauri::{AppHandle, Webview};
 
 fn schema(name: &str, description: &str, mut properties: Value, required: &[&str]) -> Value {
-    properties["tabId"] = json!({"type":"string", "description":"Stable tab ID from browser_tabs. Defaults to the selected tab."});
+    properties["tabId"] = json!({"type":"string", "description":"Stable tab ID from browser_tabs. Defaults to this chat's own tab, created in the background when missing."});
     json!({"name":name,"description":description,"inputSchema":{"type":"object","properties":properties,"required":required}})
 }
 
 pub fn definitions() -> Vec<Value> {
     vec![
-        schema("browser_tabs", "List built-in browser tabs with stable IDs and selected tab.", json!({}), &[]),
+        schema("browser_tabs", "List built-in browser tabs of this chat with stable IDs and the chat's default tab.", json!({}), &[]),
         schema("browser_new_tab", "Open a separate built-in browser tab in the background by default.", json!({"url":{"type":"string"},"activate":{"type":"boolean"}}), &[]),
-        schema("browser_select_tab", "Select a built-in browser tab for the user.", json!({}), &["tabId"]),
+        schema("browser_select_tab", "Make a tab the default for this chat and show it if the user is viewing this chat.", json!({}), &["tabId"]),
         schema("browser_close_tab", "Close a built-in browser tab.", json!({}), &["tabId"]),
         schema("browser_navigate", "Open a URL, local file or search in the built-in browser. Prefer this browser for page automation.", json!({"url":{"type":"string"},"width":{"type":"number","minimum":320,"maximum":2560}}), &["url"]),
         schema("browser_resize", "Change browser panel width in pixels for desktop, tablet or phone layouts.", json!({"width":{"type":"number","minimum":320,"maximum":2560}}), &["width"]),
@@ -97,27 +97,33 @@ fn snapshot(id: &str, view: &Webview) -> Result<Value, String> {
 pub fn run(
     app: &AppHandle,
     state: &BrowserState,
+    session: Option<&str>,
     name: &str,
     args: &Value,
     cancel: &AtomicBool,
 ) -> Result<Value, String> {
     if name == "browser_tabs" {
         super::refresh(app, state)?;
-        let current = state.state()?;
-        return Ok(text(
-            json!({"tabs":current["tabs"],"activeTab":current["activeTab"]}).to_string(),
-        ));
+        return Ok(text(state.session_state(session)?.to_string()));
     }
     if name == "browser_new_tab" {
         let activate = args["activate"].as_bool().unwrap_or(false);
-        let result = state.open(app, args["url"].as_str().unwrap_or("about:blank"), activate)?;
+        let result = state.open(
+            app,
+            args["url"].as_str().unwrap_or("about:blank"),
+            false,
+            session,
+        )?;
         let (id, view) = state.target(app, result["id"].as_str())?;
         settle(&view, state, &id)?;
         super::refresh(app, state)?;
         if activate {
-            state.reveal(app, true, None);
+            if let Some(session) = session {
+                state.bind_agent(session, &id)?;
+            }
+            state.reveal(app, session, Some(&id), true, None);
         }
-        let current = state.state()?;
+        let current = state.session_state(session)?;
         let mut tab = current["tabs"]
             .as_array()
             .and_then(|tabs| tabs.iter().find(|tab| tab["id"] == result["id"]))
@@ -130,34 +136,39 @@ pub fn run(
     if matches!(name, "browser_select_tab" | "browser_close_tab") && requested.is_none() {
         return Err("tabId is required".to_owned());
     }
-    let (id, view) = state.target(app, requested)?;
+    let (id, view) = state.agent_target(app, session, requested)?;
     match name {
-        "browser_select_tab" | "browser_close_tab" => {
-            let action = if name == "browser_select_tab" {
-                "select"
-            } else {
-                "close"
-            };
-            let result = super::dispatch(app, state, "browserTab", &[json!(action), json!(id)])?;
-            if action == "select" {
-                state.reveal(app, true, None);
+        "browser_select_tab" => {
+            if let Some(session) = session {
+                state.bind_agent(session, &id)?;
             }
-            return Ok(text(result.to_string()));
+            state.reveal(app, session, Some(&id), true, None);
+            return Ok(text(state.session_state(session)?.to_string()));
+        }
+        "browser_close_tab" => {
+            view.close().map_err(|error| error.to_string())?;
+            state.remove(&id)?;
+            state.attach(app)?;
+            state.publish(app);
+            return Ok(text(state.session_state(session)?.to_string()));
         }
         "browser_navigate" => {
-            state.navigate(
-                app,
-                string(args, "url")?,
-                Some(&id),
-                true,
-                args.get("width").map(|_| width(args)).transpose()?,
-            )?;
+            let width = args.get("width").map(|_| width(args)).transpose()?;
+            state.navigate(app, string(args, "url")?, Some(&id))?;
+            let shown = state.reveal(app, session, Some(&id), true, width);
+            if let (Some(width), false) = (width, shown) {
+                state.resize_hidden(&id, width)?;
+                state.attach(app)?;
+            }
             settle(&view, state, &id)?;
         }
         "browser_snapshot" => {}
         "browser_resize" => {
             let requested = width(args)?;
-            state.reveal(app, true, Some(requested));
+            if !state.reveal(app, session, Some(&id), true, Some(requested)) {
+                state.resize_hidden(&id, requested)?;
+                state.attach(app)?;
+            }
             thread::sleep(Duration::from_millis(350));
             let actual = evaluate::immediate(&view, "window.innerWidth")?;
             return Ok(text(format!(

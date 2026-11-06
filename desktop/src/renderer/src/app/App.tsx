@@ -32,6 +32,7 @@ import { useWorkspaceShortcuts } from './useWorkspaceShortcuts'
 import { useModalWindowChrome } from './useModalWindowChrome'
 import { applyShortcuts } from '../features/shortcuts/shortcutStore'
 import { openAgentEvent, type AgentRequest } from '../features/agents/openAgent'
+import { isForViewedChat, useBrowserView } from '../features/browser/useBrowserView'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -141,6 +142,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   }
   const toggleFocus = () => setFocusMode((value) => !value)
   const [browserRequest, setBrowserRequest] = useState(0)
+  const viewedChat = useBrowserView(w.session)
   const [agentRequest, setAgentRequest] = useState<AgentRequest>()
   useEffect(() => {
     const open = (event: Event) => {
@@ -171,7 +173,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           event.workspaceId === w.project?.id
         )
           openTools('windows')
-        if (event.type === 'browser' && event.payload?.action === 'activate') {
+        if (
+          event.type === 'browser' &&
+          event.payload?.action === 'activate' &&
+          isForViewedChat(event.payload.sessionId, viewedChat.current)
+        ) {
           setInspector(true)
           setCollapsed('inspector', false)
           setFocusMode(false)
