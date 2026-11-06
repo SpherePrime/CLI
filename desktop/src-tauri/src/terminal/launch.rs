@@ -108,7 +108,9 @@ impl LaunchManager {
         });
         let on_url: UrlHandler = Arc::new(move |url| {
             if let Some(state) = app.try_state::<crate::state::AppState>() {
-                let _ = state.browser.navigate(&app, &url, None, false, None);
+                if state.browser.navigate(&app, &url, None).is_ok() {
+                    state.browser.reveal(&app, None, None, false, None);
+                }
             }
         });
         self.dispatch(terminals, workspace, cwd, request, emit, on_url)
