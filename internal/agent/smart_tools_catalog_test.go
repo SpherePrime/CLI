@@ -100,7 +100,7 @@ func TestSmartToolsOutgoingCatalog(t *testing.T) {
 				_, err = agent.Run(t.Context(), SessionAgentCall{SessionID: session.ID, Prompt: "new turn"})
 				require.NoError(t, err)
 				mu.Lock()
-				require.ElementsMatch(t, catalogs[0], catalogs[3])
+				require.Equal(t, catalogs[2], catalogs[3])
 				mu.Unlock()
 				agent.SetTools(palette[:140])
 				_, err = agent.Run(t.Context(), SessionAgentCall{SessionID: session.ID, Prompt: "standard mode"})
@@ -113,7 +113,7 @@ func TestSmartToolsOutgoingCatalog(t *testing.T) {
 				_, err = agent.Run(t.Context(), SessionAgentCall{SessionID: session.ID, Prompt: "smart mode again"})
 				require.NoError(t, err)
 				mu.Lock()
-				require.ElementsMatch(t, catalogs[0], catalogs[5])
+				require.Equal(t, catalogs[2], catalogs[5])
 				require.Len(t, catalogs[6], 4)
 				require.Equal(t, 2, ran)
 			} else {

@@ -292,6 +292,11 @@ echo "coding with: $(model large)"   # prints: openai/gpt-4o
 
 Manage Model Context Protocol servers.
 
+In Standard mode a server with eight or more tools, or with tool cards above
+about 1000 tokens, is listed by name inside one `mcp_call` card instead of one
+card per tool. Set `"context"` on a server in `prime.json` to `inline` to keep
+its cards or to `grouped` to always list it by name.
+
 ```text
 Usage:
   mcp [command]
@@ -483,9 +488,10 @@ permissions deny bash
 Configure general Prime behavior, paths, attribution, and the terminal UI.
 Boolean values are optional and default to `true`.
 
-Smart Tools starts each turn with capability search, skill reading, and instruction tools.
-Searching enables the matching tool schemas for subsequent steps in that turn.
-Standard mode sends the full permitted tool catalog. The setting is saved in
+Smart Tools starts a session with capability search, skill reading, and instruction tools.
+Searching enables the matching tool schemas for the rest of the session; new
+discoveries are appended to the end of the catalog so the cached request prefix
+stays valid. Standard mode sends the full permitted tool catalog. The setting is saved in
 `options.json` at the selected global or project scope and survives restarts and updates.
 
 ```text
