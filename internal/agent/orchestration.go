@@ -120,6 +120,7 @@ func (c *coordinator) AgentWorkers(ctx context.Context, sessionID string) ([]Age
 		}
 		workers = append(workers, worker)
 	}
+	sortWorkers(workers)
 	return workers, nil
 }
 
