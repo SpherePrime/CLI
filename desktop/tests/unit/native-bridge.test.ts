@@ -12,6 +12,10 @@ describe('native host bridge', () => {
       invoke as NativeInvoke,
       vi.fn().mockResolvedValue(vi.fn())
     )
+    await bridge.api.projectCreationBase()
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', { method: 'projectCreationBase', args: [] })
+    await bridge.api.createProject('New project')
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', { method: 'createProject', args: ['New project'] })
     await bridge.api.files('workspace')
     expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
       method: 'files',

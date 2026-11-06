@@ -1,3 +1,4 @@
+import { CreateProjectDialog } from '../features/projects/CreateProjectDialog'
 import { chatCenterShift, panelGeometry, panelGutter } from './panelGeometry'
 import { useLayoutWidth } from './useLayoutWidth'
 import { ProjectRail } from '../features/projects/ProjectRail'
@@ -275,6 +276,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   )
   return (
     <>
+      {w.projectCreationOpen && <CreateProjectDialog workspace={w} />}
       <ToastStack openProviders={() => setModal('providers')} />
       <Titlebar>
         <WorkspaceTopbar

@@ -56,6 +56,7 @@ export function useWorkspace() {
     sidebarWidth: 256,
     inspectorWidth: 350
   })
+  const [projectCreationOpen, setProjectCreationOpen] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])
   const language = useRef(preferences.language)
   const preferenceWrite = useRef(0)
@@ -656,6 +657,10 @@ export function useWorkspace() {
     return () => clearInterval(timer)
   }, [project?.id, scheduleRefresh])
   async function openProject(path?: string) {
+    if (!path) {
+      setProjectCreationOpen(true)
+      return
+    }
     await openWorkspace(() => window.prime.openProject(path))
   }
   async function openProjectSession(path: string, selected: Session, known?: Session[]) {
@@ -1160,6 +1165,13 @@ export function useWorkspace() {
     openChat,
     newPersonalChat: createPersonalChat,
     openProject,
+    projectCreationOpen,
+    closeProjectCreation: () => setProjectCreationOpen(false),
+    openFolder: async () => { await openWorkspace(() => window.prime.openProject()) },
+    createProject: async (name: string) => {
+      const created = await window.prime.createProject(name)
+      await openWorkspace(async () => created)
+    },
     openProjectSession,
     openProjectNewChat,
     openRemote,
