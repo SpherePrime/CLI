@@ -582,7 +582,7 @@ mod manifest_tests {
     const MANIFEST: &str = include_str!("../../src/shared/hostMethods.json");
     const SOURCE: &str = include_str!("commands.rs");
 
-    const BROWSER_PREFIX_METHODS: [&str; 10] = [
+    const BROWSER_PREFIX_METHODS: [&str; 11] = [
         "browserShow",
         "browserHide",
         "browserTab",
@@ -593,6 +593,7 @@ mod manifest_tests {
         "browserPickCancel",
         "browserPick",
         "browserLogs",
+        "browserView",
     ];
 
     const EXPLICIT_UNSUPPORTED: [&str; 2] = ["windowDimmed", "update"];

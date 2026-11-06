@@ -1,5 +1,6 @@
 mod evaluate;
 pub mod mcp;
+mod ownership;
 mod panel;
 mod platform;
 #[cfg(target_os = "linux")]
@@ -66,10 +67,17 @@ pub fn dispatch(
         "browserTab" => {
             match argument(args, 0)? {
                 "new" => {
+                    let view = state
+                        .inner
+                        .lock()
+                        .map_err(|error| error.to_string())?
+                        .view
+                        .clone();
                     state.open(
                         app,
                         args.get(2).and_then(Value::as_str).unwrap_or("about:blank"),
                         true,
+                        view.as_deref(),
                     )?;
                 }
                 "select" => {
@@ -92,7 +100,19 @@ pub fn dispatch(
             state.publish(app);
             state.state()
         }
-        "browserNavigate" => state.navigate(app, argument(args, 0)?, None, false, None),
+        "browserNavigate" => {
+            let result = state.navigate(app, argument(args, 0)?, None)?;
+            state.reveal(app, None, None, false, None);
+            Ok(result)
+        }
+        "browserView" => {
+            let view = args
+                .first()
+                .and_then(Value::as_str)
+                .filter(|id| !id.is_empty() && id.len() <= 128)
+                .map(str::to_owned);
+            state.set_view(app, view)
+        }
         "browserCommand" => state.command(app, argument(args, 0)?, None),
         "browserOpenExternal" => {
             let (_, view) = state.target(app, None)?;
