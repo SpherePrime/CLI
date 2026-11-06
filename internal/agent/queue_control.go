@@ -29,12 +29,15 @@ func (a *sessionAgent) QueueEntries(sessionID string) []QueuedPrompt {
 	defer mu.Unlock()
 	stored, _ := a.messageQueue.Get(sessionID)
 	calls := append([]SessionAgentCall(nil), stored...)
-	entries := make([]QueuedPrompt, len(calls))
+	entries := make([]QueuedPrompt, 0, len(calls))
 	for i := range calls {
+		if calls[i].HiddenUserMessage {
+			continue
+		}
 		if calls[i].queueID == "" {
 			calls[i].queueID = uuid.NewString()
 		}
-		entries[i] = QueuedPrompt{ID: calls[i].queueID, Prompt: calls[i].Prompt, Attachments: len(calls[i].Attachments), Steering: calls[i].steering}
+		entries = append(entries, QueuedPrompt{ID: calls[i].queueID, Prompt: calls[i].Prompt, Attachments: len(calls[i].Attachments), Steering: calls[i].steering})
 	}
 	if len(calls) > 0 {
 		a.messageQueue.Set(sessionID, calls)
@@ -48,7 +51,7 @@ func (a *sessionAgent) RunQueuedNow(ctx context.Context, sessionID, id string) (
 	calls, _ := a.messageQueue.Get(sessionID)
 	index := -1
 	for i := range calls {
-		if calls[i].queueID == id && id != "" {
+		if calls[i].queueID == id && id != "" && !calls[i].HiddenUserMessage {
 			index = i
 			break
 		}

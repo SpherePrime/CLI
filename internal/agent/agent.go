@@ -2351,17 +2351,28 @@ func (a *sessionAgent) Cancel(sessionID string) {
 		a.cancelMark.Set(sessionID, max(existing, mark))
 	}
 
-	if a.QueuedPrompts(sessionID) > 0 {
-		slog.Debug("Clearing queued prompts", "session_id", sessionID)
-		a.clearQueueAndNotify(sessionID)
-	}
+	a.clearQueueAndNotify(sessionID)
 }
 
 func (a *sessionAgent) ClearQueue(sessionID string) {
-	if a.QueuedPrompts(sessionID) > 0 {
-		slog.Debug("Clearing queued prompts", "session_id", sessionID)
-		a.clearQueueAndNotify(sessionID)
+	mu := a.sessionMu(sessionID)
+	mu.Lock()
+	queued, _ := a.messageQueue.Get(sessionID)
+	var internalCalls, userCalls []SessionAgentCall
+	for _, call := range queued {
+		if call.HiddenUserMessage {
+			internalCalls = append(internalCalls, call)
+		} else {
+			userCalls = append(userCalls, call)
+		}
 	}
+	if len(internalCalls) == 0 {
+		a.messageQueue.Del(sessionID)
+	} else {
+		a.messageQueue.Set(sessionID, internalCalls)
+	}
+	mu.Unlock()
+	a.publishCanceledQueueDrops(userCalls)
 }
 
 func (a *sessionAgent) CancelAll() {
@@ -2400,11 +2411,14 @@ func (a *sessionAgent) IsSessionBusy(sessionID string) bool {
 }
 
 func (a *sessionAgent) QueuedPrompts(sessionID string) int {
-	l, ok := a.messageQueue.Get(sessionID)
-	if !ok {
-		return 0
+	l, _ := a.messageQueue.Get(sessionID)
+	count := 0
+	for _, call := range l {
+		if !call.HiddenUserMessage {
+			count++
+		}
 	}
-	return len(l)
+	return count
 }
 
 func (a *sessionAgent) QueuedPromptsList(sessionID string) []string {
@@ -2412,9 +2426,11 @@ func (a *sessionAgent) QueuedPromptsList(sessionID string) []string {
 	if !ok {
 		return nil
 	}
-	prompts := make([]string, len(l))
-	for i, call := range l {
-		prompts[i] = call.Prompt
+	prompts := make([]string, 0, len(l))
+	for _, call := range l {
+		if !call.HiddenUserMessage {
+			prompts = append(prompts, call.Prompt)
+		}
 	}
 	return prompts
 }
