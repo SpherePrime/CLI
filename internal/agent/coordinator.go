@@ -426,12 +426,17 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	// the coalesce closure publishes the final outcome under that
 	// same correlator.
 	runID := RunIDFromContext(ctx)
+	teamNote := ""
+	if !message.HiddenUserMessage(ctx) {
+		teamNote = c.teamNote(ctx, sessionID)
+	}
 	run := func() (*fantasy.AgentResult, error) {
 		return agent.Run(ctx, SessionAgentCall{
 			ModelOverride:     &model,
 			SessionID:         sessionID,
 			RunID:             runID,
 			Prompt:            prompt,
+			TeamNote:          teamNote,
 			HiddenUserMessage: message.HiddenUserMessage(ctx),
 			Attachments:       attachments,
 			MaxOutputTokens:   maxTokens,
