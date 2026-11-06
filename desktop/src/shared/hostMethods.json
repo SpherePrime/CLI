@@ -47,5 +47,6 @@
   "browserNavigate": true,
   "browserCommand": true,
   "browserOpenExternal": true,
+  "browserView": true,
   "update": true
 }

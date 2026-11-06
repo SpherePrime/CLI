@@ -215,7 +215,7 @@ fn handle(
     Some(match method {
         "initialize" => reply(
             id,
-            json!({"protocolVersion":message["params"]["protocolVersion"].as_str().unwrap_or("2025-03-26"),"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"prime-desktop-browser","version":"1.0.0"},"instructions":"Use desktop_capabilities to discover project-bound terminal, app launch, working context, GitHub and SSH tools. Do not supply workspace IDs or roots. Use terminal_create for new agent-owned terminals; existing user-owned terminals require explicit user handover. Use the Prime built-in browser for page automation. browser_tabs returns stable tab IDs. browser_new_tab opens in the background. Pass tabId to page tools to preserve the user's selected tab. browser_select_tab explicitly changes the visible tab. Use browser_snapshot references for clicking and typing."}),
+            json!({"protocolVersion":message["params"]["protocolVersion"].as_str().unwrap_or("2025-03-26"),"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"prime-desktop-browser","version":"1.0.0"},"instructions":"Use desktop_capabilities to discover project-bound terminal, app launch, working context, GitHub and SSH tools. Do not supply workspace IDs or roots. Use terminal_create for new agent-owned terminals; existing user-owned terminals require explicit user handover. Use the Prime built-in browser for page automation. browser_tabs returns stable tab IDs. Each chat has its own tabs: page tools without tabId use this chat's tab, created in the background, and never touch the user's tabs or other chats. browser_new_tab opens in the background. browser_select_tab sets this chat's default tab. Use browser_snapshot references for clicking and typing."}),
         ),
         "ping" => reply(id, json!({})),
         "tools/list" => {
@@ -229,24 +229,22 @@ fn handle(
             let params = &message["params"];
             let name = params["name"].as_str().unwrap_or("");
             let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
+            let session_id = params["_meta"]["prime/sessionId"]
+                .as_str()
+                .filter(|id| !id.is_empty() && id.len() <= 128 && !id.chars().any(char::is_control))
+                .map(str::to_owned);
             let result = if tools::definitions().iter().any(|tool| tool["name"] == name) {
                 let key = call_key(workspace, id);
                 let cancel = Arc::new(AtomicBool::new(false));
                 if let Ok(mut calls) = in_flight().lock() {
                     calls.insert(key.clone(), cancel.clone());
                 }
-                let result = tools::run(app, state, name, &arguments, &cancel);
+                let result = tools::run(app, state, session_id.as_deref(), name, &arguments, &cancel);
                 if let Ok(mut calls) = in_flight().lock() {
                     calls.remove(&key);
                 }
                 result
             } else if let Some(workspace_id) = workspace {
-                let session_id = params["_meta"]["prime/sessionId"]
-                    .as_str()
-                    .filter(|id| {
-                        !id.is_empty() && id.len() <= 128 && !id.chars().any(char::is_control)
-                    })
-                    .map(str::to_owned);
                 let context = WorkbenchContext {
                     workspace_id: workspace_id.to_owned(),
                     session_id,
