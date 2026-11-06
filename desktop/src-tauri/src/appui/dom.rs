@@ -6,7 +6,7 @@ use tungstenite::stream::MaybeTlsStream;
 use tungstenite::{connect as ws_connect, Message, WebSocket};
 
 use super::types::{Confidence, Provider, UiBounds, UiNode, UiSnapshot};
-use super::uia::action::UiAction;
+use super::ui_action::UiAction;
 
 const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 

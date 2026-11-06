@@ -182,6 +182,7 @@ type sessionAgent struct {
 	artifactStore        toolArtifactStore
 	artifactStoreErr     error
 	preparedViews        *csync.Map[string, preparedContextView]
+	contextCalibrations  *csync.Map[string, float64]
 	disableAutoSummarize bool
 	// autoSummarizePercent is the global default threshold: how full the
 	// context window must be before a turn is compacted. A per-model override
@@ -290,6 +291,7 @@ func NewSessionAgent(
 		acceptedRuns:         csync.NewMap[string, int](),
 		cancelMark:           csync.NewMap[string, uint64](),
 		preparedViews:        csync.NewMap[string, preparedContextView](),
+		contextCalibrations:  csync.NewMap[string, float64](),
 	}
 }
 
@@ -715,21 +717,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	}
 	systemPrompt := a.systemPrompt.Get()
 	promptPrefix := a.systemPromptPrefix.Get()
-	var instructions strings.Builder
-
-	for _, server := range mcp.GetStates() {
-		if server.State != mcp.StateConnected {
-			continue
-		}
-		if s := server.Client.InitializeResult().Instructions; s != "" {
-			instructions.WriteString(s)
-			instructions.WriteString("\n\n")
-		}
-	}
-
-	if s := instructions.String(); s != "" {
-		systemPrompt += "\n\n<mcp-instructions>\n" + s + "\n</mcp-instructions>"
-	}
+	systemPrompt += mcpInstructionsBlock(connectedMCPInstructions(mcp.GetStates()))
 
 	if len(agentTools) > 0 {
 		// Add Anthropic caching to the last tool.
@@ -883,9 +871,13 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			// Use latest tools (updated by SetTools when MCP tools change).
 			prepared.Tools = a.tools.Copy()
 			searchRecovery.prepare(options.Steps, &prepared)
-			selectedTools := smartToolSelection(prepared.Tools, options.Steps)
-			if len(selectedTools) < len(prepared.Tools) {
-				for _, tool := range selectedTools {
+			selectedTools := smartToolSelection(prepared.Tools, options.Steps, prepared.Messages...)
+			presentation := presentMCPTools(selectedTools)
+			if presentation.CallTool != nil {
+				prepared.Tools = append(prepared.Tools, presentation.CallTool)
+			}
+			if len(presentation.Visible) < len(prepared.Tools) {
+				for _, tool := range presentation.Visible {
 					prepared.ActiveTools = append(prepared.ActiveTools, tool.Info().Name)
 				}
 			}
@@ -895,8 +887,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			if documentErr != nil {
 				return callContext, prepared, documentErr
 			}
-			definitions := make([]fantasy.Tool, 0, len(selectedTools))
-			for _, tool := range selectedTools {
+			definitions := make([]fantasy.Tool, 0, len(presentation.Visible))
+			for _, tool := range presentation.Visible {
 				definition, _, definitionErr := compactToolDefinition(tool)
 				if definitionErr != nil {
 					return callContext, prepared, definitionErr
@@ -1150,6 +1142,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			if estimated {
 				usage.InputTokens += stepToolTokens
 				usage.TotalTokens += stepToolTokens
+			} else {
+				a.recordContextCalibration(call.SessionID, usage, stepMessages, stepToolTokens)
 			}
 			updatedSession.ContextTokens = contextTokensFromUsage(usage)
 			a.updateSessionUsage(largeModel, &updatedSession, usage, a.openrouterCost(stepResult.ProviderMetadata), estimated)
