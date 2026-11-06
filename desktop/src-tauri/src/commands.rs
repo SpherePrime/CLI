@@ -182,6 +182,23 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             }
             Ok(Value::Object(sessions))
         }
+        "projectCreationBase" => {
+            let documents = app.path().document_dir().map_err(|error| HostError::new("DOCUMENTS_UNAVAILABLE", error.to_string()))?;
+            Ok(json!(documents.join("Prime")))
+        }
+        "createProject" => {
+            let documents = app.path().document_dir().map_err(|error| HostError::new("DOCUMENTS_UNAVAILABLE", error.to_string()))?;
+            let path = crate::project_creation::create_directory(&documents, string(args, 0)?).map_err(|error| {
+                let code = match error.kind() {
+                    std::io::ErrorKind::AlreadyExists => "PROJECT_EXISTS",
+                    std::io::ErrorKind::InvalidInput => "INVALID_PROJECT_NAME",
+                    std::io::ErrorKind::PermissionDenied => "PROJECT_ACCESS_DENIED",
+                    _ => "PROJECT_CREATE_FAILED",
+                };
+                HostError::new(code, code)
+            })?;
+            crate::projects::open(app, &state, path, "project")
+        }
         "openProject" => {
             let path = match args.first().and_then(Value::as_str) {
                 Some(path) => {

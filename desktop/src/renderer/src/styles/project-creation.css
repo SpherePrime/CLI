@@ -1,0 +1,17 @@
+.project-creation-modal { width: min(520px, calc(100vw - 32px)); }
+.project-creation { display: flex; flex-direction: column; gap: 12px; }
+.project-creation-intro { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.project-creation-symbol { display: grid; place-items: center; width: 58px; height: 58px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 18px; color: var(--accent); background: linear-gradient(145deg, var(--accent-bg), var(--surface)); }
+.project-creation-intro h3 { font-size: 17px; margin-bottom: 5px; font-weight: 600; }
+.project-creation-intro p { color: var(--secondary); font-size: 13px; margin: 0; line-height: 1.5; }
+.project-creation label { font-size: 13px; font-weight: 500; }
+.project-creation input { width: 100%; font-size: 15px; padding: 12px 14px; border-radius: 10px; }
+.project-creation input[aria-invalid='true'] { border-color: var(--red); }
+.project-creation-validation { color: var(--secondary); font-size: 12px; line-height: 1.5; min-height: 36px; }
+.project-creation-location { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--bg); }
+.project-creation-location span { color: var(--secondary); font-size: 12px; }
+.project-creation-location output { font-family: 'JetBrains Mono', monospace; font-size: 12px; overflow-wrap: anywhere; line-height: 1.7; }
+.project-creation-error { color: var(--red); font-size: 13px; line-height: 1.5; margin: 0; }
+.project-creation-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.project-creation-actions button { padding: 10px 14px; border-radius: 9px; }
+:root[data-theme='light'] .project-creation-actions .primary { color: #fff; }

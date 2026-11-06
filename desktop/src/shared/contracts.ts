@@ -218,6 +218,8 @@ export interface DesktopApi {
   projects(): Promise<Project[]>
   projectSessions(paths: string[]): Promise<Record<string, Session[]>>
   openChat(): Promise<Project>
+  projectCreationBase(): Promise<string>
+  createProject(name: string): Promise<Project>
   openProject(path?: string): Promise<Project | null>
   cancelProjectWait(): Promise<void>
   openRemote(profileId: string): Promise<Project>

@@ -17,6 +17,7 @@ mod lifecycle;
 mod migration;
 mod permissions;
 mod projects;
+mod project_creation;
 mod redact;
 mod remote;
 mod settings;

@@ -117,6 +117,9 @@ export function ProjectPicker({ workspace: w }: { workspace: Workspace }) {
               <Plus size={15} />
               <span>{t('Новый проект')}</span>
             </button>
+            <button role="menuitem" onClick={() => { setOpen(false); void w.openFolder() }}>
+              <FolderOpen size={15} /><span>{t("Открыть папку")}</span>
+            </button>
             <button
               role="menuitem"
               className={w.project?.id === personal?.id ? 'current' : ''}
