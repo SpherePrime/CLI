@@ -86,6 +86,8 @@ type SessionAgentCall struct {
 	HiddenUserMessage bool
 	Prompt            string
 	TeamNote          string
+	GoalNote          string
+	KeepTodos         bool
 	ProviderOptions   fantasy.ProviderOptions
 	Attachments       []message.Attachment
 	MaxOutputTokens   int64
@@ -754,7 +756,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		go a.GenerateTitle(titleCtx, call.SessionID, call.Prompt)
 	}
 
-	if len(currentSession.Todos) > 0 {
+	if len(currentSession.Todos) > 0 && !call.KeepTodos {
 		currentSession.Todos = nil
 		if _, err := a.sessions.Save(ctx, currentSession); err != nil {
 			return nil, fmt.Errorf("failed to clear todos for new task: %w", err)
@@ -923,6 +925,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				prepared.Messages = withSteeringInstruction(prepared.Messages)
 			}
 			prepared.Messages = withTeamNote(prepared.Messages, call.TeamNote)
+			prepared.Messages = withGoalNote(prepared.Messages, call.GoalNote)
 
 			prepared.Messages = a.workaroundProviderMediaLimitations(prepared.Messages, largeModel)
 
