@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react'
-import { Target, Check } from 'lucide-react'
+import { Target, Check, Pencil, Play, X } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 import { useChatGoal } from './useChatGoal'
 import { GoalEditor } from './GoalEditor'
 import { GoalStatus } from './GoalStatus'
+import { GoalRing } from './GoalRing'
 import './goal.css'
 
 export function GoalButton({ workspace: w }: { workspace: Workspace }) {
@@ -14,43 +15,52 @@ export function GoalButton({ workspace: w }: { workspace: Workspace }) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const chatGoal = useChatGoal(w)
-  const { goal, progress, phase, saving, busy, hasSession } = chatGoal
+  const { goal, progress, phase, saving, busy, hasSession, stages } = chatGoal
   const showEditor = editing || !goal
   const close = () => {
     setOpen(false)
     setEditing(false)
   }
-  const label = !goal
-    ? t('Цель')
-    : phase === 'achieved'
-      ? t('Цель достигнута')
-      : progress.total
-        ? `${t('Цель')} · ${progress.completed}/${progress.total}`
-        : t('Цель')
+  const canResume =
+    phase === 'paused' && (progress.total === 0 || progress.completed < progress.total)
   return (
     <>
       <button
         ref={anchor}
-        className={`goal-button ${goal ? `has-goal ${phase}` : ''} ${open ? 'active-control' : ''}`}
+        className={`goal-chip ${goal ? `has-goal ${phase}` : ''}`}
         title={goal ? goal.text : t('Задать цель чата')}
         aria-label={t('Цель чата')}
         aria-expanded={open}
+        disabled={!w.project}
         onClick={() => (open ? close() : setOpen(true))}
       >
-        {phase === 'achieved' ? <Check size={15} strokeWidth={2.5} /> : <Target size={15} />}
-        <span>{label}</span>
+        {!goal ? (
+          <Target size={14} />
+        ) : phase === 'achieved' ? (
+          <Check size={14} strokeWidth={2.6} />
+        ) : (
+          <GoalRing ratio={progress.ratio} size={16} />
+        )}
+        <span className="goal-chip-label">{t('Цель')}</span>
         {goal && phase !== 'achieved' && progress.total > 0 && (
-          <i className="goal-button-bar" aria-hidden="true">
-            <b style={{ width: `${Math.round(progress.ratio * 100)}%` }} />
-          </i>
+          <span className="goal-chip-count">
+            {progress.completed}/{progress.total}
+          </span>
         )}
       </button>
       {open && (
-        <Popover anchor={anchor} close={close} width={360} label={t('Цель чата')} align="end">
+        <Popover anchor={anchor} close={close} width={380} label={t('Цель чата')}>
           <div className="goal-panel">
             <header className="goal-panel-head">
-              <Target size={15} />
-              <strong>{t('Цель чата')}</strong>
+              <span className="goal-panel-icon">
+                <Target size={15} />
+              </span>
+              <div>
+                <strong>{t('Цель чата')}</strong>
+                <small>
+                  {t('Агент доводит цель до готового проверенного результата без остановок.')}
+                </small>
+              </div>
             </header>
             {showEditor ? (
               <GoalEditor
@@ -69,15 +79,17 @@ export function GoalButton({ workspace: w }: { workspace: Workspace }) {
             ) : (
               goal && (
                 <>
-                  <GoalStatus goal={goal} phase={phase} progress={progress} />
-                  <div className="goal-actions">
+                  <GoalStatus goal={goal} phase={phase} progress={progress} stages={stages} />
+                  <footer className="goal-actions">
                     <button className="quiet danger" onClick={() => void chatGoal.clear()}>
-                      {t('Снять цель')}
+                      <X size={14} />
+                      {t('Снять')}
                     </button>
                     <button className="quiet" onClick={() => setEditing(true)}>
+                      <Pencil size={13} />
                       {t('Изменить')}
                     </button>
-                    {phase === 'paused' && progress.completed < progress.total && (
+                    {canResume && (
                       <button
                         className="primary"
                         onClick={() => {
@@ -85,10 +97,11 @@ export function GoalButton({ workspace: w }: { workspace: Workspace }) {
                           void chatGoal.resume(t('Продолжи'))
                         }}
                       >
+                        <Play size={13} />
                         {t('Продолжить')}
                       </button>
                     )}
-                  </div>
+                  </footer>
                 </>
               )
             )}

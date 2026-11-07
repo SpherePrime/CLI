@@ -73,6 +73,8 @@ func TestDriverContinuesWhileStagesRemain(t *testing.T) {
 	prompt, reason = driver.Next(activeGoal, true, todos(session.TodoStatusCompleted, session.TodoStatusCompleted))
 	require.Equal(t, StopNone, reason)
 	require.Contains(t, prompt, CompleteToolName)
+	require.Contains(t, prompt, "Final acceptance")
+	require.Contains(t, prompt, "browser_*")
 }
 
 func TestDriverStopsWithoutGoalPlanOrAfterAchievement(t *testing.T) {
@@ -112,6 +114,7 @@ func TestDriverHonoursStepLimit(t *testing.T) {
 func TestNoteAsksQuestionsBeforePlanningAndResumesAfter(t *testing.T) {
 	fresh := Note(activeGoal, Progress{})
 	require.Contains(t, fresh, "question tool")
+	require.Contains(t, fresh, "Final acceptance of the whole product")
 	require.Contains(t, fresh, "ship it")
 	resumed := Note(activeGoal, ProgressOf(todos(session.TodoStatusCompleted, session.TodoStatusPending)))
 	require.Contains(t, resumed, "1 of 2")

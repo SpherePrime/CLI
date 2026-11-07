@@ -9,6 +9,7 @@ import { QueuePanel } from './QueuePanel'
 import { ModelControl } from '../models/ModelControl'
 import { VoiceWave } from './VoiceWave'
 import { TodoPanel } from './TodoPanel'
+import { GoalButton } from '../goal/GoalButton'
 import { Select } from '../../components/Select'
 import { ProjectPicker } from './ProjectPicker'
 import { useI18n } from '../../i18n'
@@ -466,6 +467,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
                   .catch(w.errorHandler)
               }}
             />
+            <GoalButton workspace={w} />
           </div>
           <div className="composer-actions">
             <ModelControl workspace={w} />

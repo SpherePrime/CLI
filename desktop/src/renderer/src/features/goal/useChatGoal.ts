@@ -7,7 +7,8 @@ export function useChatGoal(w: Workspace) {
   const projectId = w.project?.id
   const sessionId = realSessionId(w.session)
   const busy = Boolean(w.busy)
-  const todos = w.session?.todos as { content?: string; status?: string }[] | undefined
+  const todos = w.session?.todos as
+    { content?: string; status?: string; active_form?: string }[] | undefined
   const todoKey = JSON.stringify(todos ?? [])
   const [goal, setGoal] = useState<ChatGoal | null>(null)
   const [saving, setSaving] = useState(false)
@@ -72,6 +73,7 @@ export function useChatGoal(w: Workspace) {
     saving,
     busy,
     hasSession: Boolean(sessionId),
+    stages: todos ?? [],
     save,
     clear,
     resume
