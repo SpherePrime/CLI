@@ -1,5 +1,6 @@
 pub(crate) mod audit;
 pub(crate) mod changes;
+pub(crate) mod content;
 pub(crate) mod dom;
 pub(crate) mod find;
 pub(crate) mod launch;
