@@ -25,7 +25,6 @@ import { WorkbenchDock, type WorkbenchView } from '../features/workbench/Workben
 import { RemoteDialog } from '../features/remote/RemoteDialog'
 import { JobsCenter } from '../features/jobs/JobsCenter'
 import { ProjectLockBanner } from '../features/projects/ProjectLockBanner'
-import { WindowControlBadge } from '../features/windows/WindowControlBadge'
 import { WorkspaceTopbar } from './WorkspaceTopbar'
 import { useQuickActions } from './useQuickActions'
 import { usePanelResize } from './usePanelResize'
@@ -308,10 +307,6 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         />
       </Titlebar>
       <ProjectLockBanner />
-      <WindowControlBadge
-        workspaceIds={w.projects.map((project) => project.id)}
-        onError={w.errorHandler}
-      />
       <div
         ref={shell}
         className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''} ${layout.compact ? 'compact-layout' : ''}`}
