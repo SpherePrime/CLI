@@ -34,7 +34,7 @@ pub fn definitions() -> Vec<Value> {
     vec![
         tool(
             "app_launch",
-            "Start the application being developed from the project and take control of its window. Use this to test any desktop, Electron or GUI app: it runs the command in the project, waits for the new window, attaches to it and returns its interface tree. No vision is needed: every later action returns the interface changes as text. Process output is available through app_output. For Electron or Chromium apps add --remote-debugging-port=N to the command and pass debugPort=N to read the DOM.",
+            "Start the application being developed from the project and take control of its window. Use this to test native desktop, Electron or Tauri apps only; websites and web apps are tested in the built-in browser with browser_* tools. It runs the command in the project, waits for the new window, attaches to it and returns its interface tree. No vision is needed: every later action returns the interface changes as text. Process output is available through app_output. For Electron or Chromium apps add --remote-debugging-port=N to the command and pass debugPort=N to read the DOM.",
             json!({
                 "command": {"type":"string","minLength":1,"maxLength":1000,"description":"Shell command, for example npm run dev or target\\debug\\app.exe"},
                 "cwd": {"type":"string","maxLength":300,"description":"Directory inside the project"},
@@ -185,6 +185,15 @@ pub fn definitions() -> Vec<Value> {
 }
 
 pub fn run(
+    app: &AppHandle,
+    context: &WorkbenchContext,
+    name: &str,
+    args: &Value,
+) -> Result<Value, String> {
+    dispatch(app, context, name, args).map(super::content::mcp_content)
+}
+
+fn dispatch(
     app: &AppHandle,
     context: &WorkbenchContext,
     name: &str,
