@@ -23,6 +23,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/db"
 	"github.com/SpherePrime/CLI/internal/event"
 	"github.com/SpherePrime/CLI/internal/filetracker"
+	"github.com/SpherePrime/CLI/internal/goal"
 	"github.com/SpherePrime/CLI/internal/format"
 	"github.com/SpherePrime/CLI/internal/herdr"
 	"github.com/SpherePrime/CLI/internal/history"
@@ -67,6 +68,7 @@ type App struct {
 	Permissions permission.Service
 	Questions   question.Service
 	FileTracker filetracker.Service
+	Goals       goal.Store
 
 	AgentCoordinator agent.Coordinator
 
@@ -129,6 +131,7 @@ func newApplication(ctx context.Context, conn *sql.DB, store *config.ConfigStore
 		Permissions: permission.NewPermissionService(store.WorkingDir(), skipPermissionsRequests, allowedTools),
 		Questions:   question.NewService(),
 		FileTracker: filetracker.NewService(q),
+		Goals:       goal.NewStore(conn),
 		LSPManager:  lsp.NewManager(store),
 		Skills:      skillsMgr,
 
@@ -791,6 +794,7 @@ func (app *App) initCoderAgent(ctx context.Context, interactive bool) error {
 		Questions:   app.Questions,
 		History:     app.History,
 		FileTracker: app.FileTracker,
+		Goals:       app.Goals,
 		LSPManager:  app.LSPManager,
 		Notify:      app.agentNotifications,
 		RunComplete: app.runCompletions,
