@@ -13,7 +13,6 @@ import {
 } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { ChatActions } from '../features/chat/ChatActions'
-import { GoalButton } from '../features/goal/GoalButton'
 import type { Workspace } from './useWorkspace'
 
 export function WorkspaceTopbar({
@@ -94,7 +93,6 @@ export function WorkspaceTopbar({
             <TextSearch size={17} />
           </button>
         )}
-        {w.project && <GoalButton workspace={w} />}
         <ChatActions workspace={w} focusMode={focusMode} toggleFocus={toggleFocus} />
         <span className="topbar-divider" />
         <button

@@ -1497,4 +1497,8 @@ Object.assign(english, {
   'В работе': 'In progress',
   'Финальная проверка': 'Final check',
   'Этап {current} из {total}: {title}': 'Stage {current} of {total}: {title}',
+  'Финальная приёмка': 'Final acceptance',
+  '{done} из {total} этапов': '{done} of {total} stages',
+  'Снять': 'Remove',
+  'Агент доводит цель до готового проверенного результата без остановок.': 'The agent drives the goal to a finished, verified result without stopping.',
 })

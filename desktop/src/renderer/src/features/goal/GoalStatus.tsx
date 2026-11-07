@@ -2,11 +2,13 @@ import { Check } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { ChatGoal, GoalPhase, GoalProgress } from '../../../../shared/chatGoal'
 
+type GoalStage = { content?: string; status?: string; active_form?: string }
+
 const phaseLabels: Record<GoalPhase, string> = {
   none: '',
   planning: 'Уточнение и план',
   working: 'В работе',
-  verifying: 'Финальная проверка',
+  verifying: 'Финальная приёмка',
   paused: 'Остановлено',
   achieved: 'Цель достигнута'
 }
@@ -14,21 +16,25 @@ const phaseLabels: Record<GoalPhase, string> = {
 export function GoalStatus({
   goal,
   phase,
-  progress
+  progress,
+  stages
 }: {
   goal: ChatGoal
   phase: GoalPhase
   progress: GoalProgress
+  stages: GoalStage[]
 }) {
   const { t } = useI18n()
   return (
     <div className="goal-status">
-      <div className={`goal-phase ${phase}`}>
-        {phase === 'achieved' && <Check size={13} strokeWidth={3} />}
-        {t(phaseLabels[phase])}
+      <div className="goal-status-row">
+        <span className={`goal-phase ${phase}`}>
+          <i aria-hidden="true" />
+          {t(phaseLabels[phase])}
+        </span>
         {progress.total > 0 && (
           <span className="goal-count">
-            {progress.completed}/{progress.total}
+            {t('{done} из {total} этапов', { done: progress.completed, total: progress.total })}
           </span>
         )}
       </div>
@@ -44,14 +50,21 @@ export function GoalStatus({
           <span style={{ width: `${Math.round(progress.ratio * 100)}%` }} />
         </div>
       )}
-      {phase !== 'achieved' && progress.current && (
-        <p className="goal-current">
-          {t('Этап {current} из {total}: {title}', {
-            current: Math.min(progress.completed + 1, progress.total),
-            total: progress.total,
-            title: progress.current
-          })}
-        </p>
+      {stages.length > 0 && (
+        <ol className="goal-stages">
+          {stages.map((stage, index) => (
+            <li key={index} className={stage.status}>
+              <span className="goal-stage-marker">
+                {stage.status === 'completed' ? <Check size={10} strokeWidth={3} /> : index + 1}
+              </span>
+              <span className="goal-stage-text">
+                {stage.status === 'in_progress'
+                  ? stage.active_form || stage.content
+                  : stage.content}
+              </span>
+            </li>
+          ))}
+        </ol>
       )}
       {phase === 'achieved' && goal.summary && <p className="goal-summary">{goal.summary}</p>}
     </div>
