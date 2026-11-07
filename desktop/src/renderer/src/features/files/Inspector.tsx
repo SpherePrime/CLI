@@ -19,7 +19,8 @@ import {
   Files,
   Trash2,
   Globe,
-  Users
+  Users,
+  AppWindow
 } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
@@ -28,6 +29,7 @@ import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
 import { BrowserTab } from '../browser/BrowserTab'
 import { notifyError } from '../notifications/notifications'
 import { AgentsPanel } from '../agents/AgentsPanel'
+import { AppTestingPanel } from '../appTesting/AppTestingPanel'
 import type { AgentRequest } from '../agents/openAgent'
 import { realSessionId } from '../../../../shared/pendingSession'
 
@@ -47,6 +49,7 @@ export function Inspector({
   expanded = false,
   setExpanded,
   browserRequest = 0,
+  appRequest = 0,
   agentRequest
 }: {
   workspace: Workspace
@@ -55,6 +58,7 @@ export function Inspector({
   expanded?: boolean
   setExpanded: (expanded: boolean) => void
   browserRequest?: number
+  appRequest?: number
   agentRequest?: AgentRequest
 }) {
   const { t } = useI18n()
@@ -108,6 +112,12 @@ export function Inspector({
       if (compact) setPanelOpen(true)
     }
   }, [browserRequest])
+  useEffect(() => {
+    if (!appRequest) return
+    setTab('app')
+    if (compact) setPanelOpen(true)
+    else setExpanded(true)
+  }, [appRequest])
   useEffect(() => {
     if (!agentRequest) return
     setTab('agents')
@@ -267,6 +277,15 @@ export function Inspector({
         hidden={tab === 'browser'}
       >
         {tab === 'agents' && <AgentsPanel workspace={w} request={agentRequest} />}
+        {tab === 'app' && w.project && (
+          <AppTestingPanel
+            workspace={w}
+            workspaceId={w.project.id}
+            sessionId={realSessionId(w.session)}
+            onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
+            onError={w.errorHandler}
+          />
+        )}
         {tab === 'files' && (
           <>
             <div className="panel-title">
@@ -377,7 +396,7 @@ export function Inspector({
           }}
         />
       )}
-      {w.project && !w.project.remote && tab !== 'browser' && tab !== 'agents' && (
+      {w.project && !w.project.remote && tab !== 'browser' && tab !== 'agents' && tab !== 'app' && (
         <div className="inspector-footer">
           <button onClick={() => void window.prime.reveal(w.project!.id)}>
             <FolderOpen size={13} /> {t('Открыть в проводнике')}
@@ -399,6 +418,9 @@ export function Inspector({
             { id: 'files', icon: Files, title: t('Файлы') },
             { id: 'changes', icon: FileDiff, title: t('Изменения') },
             { id: 'browser', icon: Globe, title: t('Браузер') },
+            ...(w.project && !w.project.remote
+              ? [{ id: 'app', icon: AppWindow, title: t('Приложение') }]
+              : []),
             { id: 'agents', icon: Users, title: t('Агенты') }
           ].map((item) => (
             <button

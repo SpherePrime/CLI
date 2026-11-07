@@ -111,13 +111,13 @@ fn handle(automation: &IUIAutomation, request: UiaRequest) -> Result<Value, Stri
             let window = window_handle(&hwnd)?;
             action::perform(automation, window, &locator, action)
         }
-        UiaRequest::ElementAtCursor { hwnd } => {
-            let window = window_handle(&hwnd)?;
-            tree::describe(automation, window, None)
-        }
         UiaRequest::ElementAtPoint { hwnd, x, y } => {
             let window = window_handle(&hwnd)?;
             tree::describe(automation, window, Some(POINT { x, y }))
+        }
+        UiaRequest::BoundsAtPoint { x, y } => {
+            let bounds = tree::bounds_at(automation, POINT { x, y })?;
+            Ok(json!({"bounds": bounds}))
         }
         UiaRequest::ElementPng { hwnd, locator } => {
             let window = window_handle(&hwnd)?;

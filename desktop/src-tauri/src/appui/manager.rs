@@ -6,13 +6,16 @@ use base64::Engine;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 
+use super::audit;
+use super::changes;
 use super::dom;
+use super::find::{self, Query};
+use super::launch::{self, Launched};
 use super::locator;
-use super::picker::{self, CancelHandle};
-#[cfg(windows)]
-use super::recording::{self, Recording};
+use super::picker::{self, CancelHandle, Poll};
 use super::render::snapshot_text;
-use super::types::{Locator, UiBounds};
+use super::report::{Check, Report};
+use super::types::{Locator, UiBounds, UiSnapshot};
 use super::ui_action::{UiAction, MAX_DEPTH, MAX_NODES};
 use super::uia::capture;
 use super::ui_action::UiaRequest;
@@ -25,6 +28,11 @@ const ACTION_TIMEOUT: Duration = Duration::from_secs(15);
 const MAX_ACTIONS_PER_MINUTE: usize = 200;
 const MAX_LOG_ENTRIES: usize = 100;
 const PICK_TIMEOUT: Duration = Duration::from_secs(120);
+const PICK_POLL: Duration = Duration::from_millis(60);
+const SETTLE: Duration = Duration::from_millis(350);
+const WAIT_POLL: Duration = Duration::from_millis(400);
+const DEFAULT_WAIT: Duration = Duration::from_secs(10);
+const MAX_WAIT: Duration = Duration::from_secs(120);
 
 #[derive(Clone)]
 pub struct Target {
@@ -49,9 +57,10 @@ pub struct AppUiManager {
     logs: Mutex<HashMap<String, Vec<Log>>>,
     actions: Mutex<Vec<Instant>>,
     picker: Mutex<Option<CancelHandle>>,
-    #[cfg(windows)]
-    recording: Mutex<Option<Recording>>,
     dom: Mutex<Option<DomHandle>>,
+    snapshots: Mutex<HashMap<String, UiSnapshot>>,
+    launched: Mutex<HashMap<String, Launched>>,
+    reports: Mutex<HashMap<String, Report>>,
 }
 
 impl AppUiManager {
@@ -62,9 +71,10 @@ impl AppUiManager {
             logs: Mutex::new(HashMap::new()),
             actions: Mutex::new(Vec::new()),
             picker: Mutex::new(None),
-            #[cfg(windows)]
-            recording: Mutex::new(None),
             dom: Mutex::new(None),
+            snapshots: Mutex::new(HashMap::new()),
+            launched: Mutex::new(HashMap::new()),
+            reports: Mutex::new(HashMap::new()),
         }
     }
 
@@ -93,7 +103,26 @@ impl AppUiManager {
             .get(workspace)
             .cloned()
             .unwrap_or_default();
-        Ok(json!({"target": target, "log": log}))
+        let launched = self
+            .launched
+            .lock()
+            .map_err(|error| error.to_string())?
+            .get_mut(workspace)
+            .map(|launched| {
+                json!({
+                    "command": launched.command,
+                    "pid": launched.pid,
+                    "running": launch::running(launched),
+                })
+            });
+        let report = self
+            .reports
+            .lock()
+            .map_err(|error| error.to_string())?
+            .get(workspace)
+            .cloned()
+            .unwrap_or_default();
+        Ok(json!({"target": target, "log": log, "launched": launched, "report": report}))
     }
 
     pub fn handle(&self, app: &AppHandle, workspace: &str, request: &Value) -> Result<Value, String> {
@@ -110,36 +139,16 @@ impl AppUiManager {
                     .lock()
                     .map_err(|error| error.to_string())?
                     .remove(workspace);
+                self.close_launched(workspace);
+                self.state(workspace)
+            }
+            "clearReport" => {
+                self.reset_report(workspace);
                 self.state(workspace)
             }
             "snapshot" => self.snapshot_user(app, workspace, request),
-            "act" => self.act_user(app, workspace, request),
-            "type" => self.type_user(app, workspace, request),
             "pick" => self.pick(app, workspace, request),
             "pickCancel" => self.pick_cancel(),
-            "testList" => self.test_list(app, workspace),
-            "testRun" => {
-                let context = WorkbenchContext {
-                    workspace_id: workspace.to_owned(),
-                    session_id: Some(session_of(request)?.to_owned()),
-                };
-                self.test_run(app, &context, request)
-            }
-            "explore" => {
-                let context = WorkbenchContext {
-                    workspace_id: workspace.to_owned(),
-                    session_id: Some(session_of(request)?.to_owned()),
-                };
-                self.explore(app, &context, request)
-            }
-            "recordStart" => self.record_start(),
-            "recordStop" => {
-                let context = WorkbenchContext {
-                    workspace_id: workspace.to_owned(),
-                    session_id: Some(session_of(request)?.to_owned()),
-                };
-                self.record_stop(app, &context)
-            }
             _ => Err("Unknown application request".to_owned()),
         }
     }
@@ -198,74 +207,33 @@ impl AppUiManager {
     ) -> Result<Value, String> {
         let session = session_of(request)?;
         let target = self.target(app, workspace, Some(session), false, false)?;
-        let result = self.call(
-            UiaRequest::Snapshot {
-                hwnd: target.hwnd.clone(),
-                max_nodes: MAX_NODES,
-                max_depth: MAX_DEPTH,
-            },
-            SNAPSHOT_TIMEOUT,
-        );
-        self.record(
-            app,
-            workspace,
-            "snapshot",
-            &target.title,
-            result.as_ref().map(|_| ()),
-        );
-        result
-    }
-
-    fn act_user(&self, app: &AppHandle, workspace: &str, request: &Value) -> Result<Value, String> {
-        let session = session_of(request)?;
-        let target = self.target(app, workspace, Some(session), true, false)?;
-        self.budget()?;
-        let action = element_action(request)?;
-        let name = action.name();
-        let result = self.call(
-            UiaRequest::Act {
-                hwnd: target.hwnd.clone(),
-                locator: locator_of(request),
-                action,
-            },
-            ACTION_TIMEOUT,
-        );
-        self.record(app, workspace, name, &target.title, result.as_ref().map(|_| ()));
-        result
-    }
-
-    fn type_user(&self, app: &AppHandle, workspace: &str, request: &Value) -> Result<Value, String> {
-        let session = session_of(request)?;
-        let target = self.target(app, workspace, Some(session), true, false)?;
-        self.budget()?;
-        let text = argument(request, "text")?;
-        let result = self.call(
-            UiaRequest::Act {
-                hwnd: target.hwnd.clone(),
-                locator: locator_of(request),
-                action: UiAction::SetValue(text),
-            },
-            ACTION_TIMEOUT,
-        );
-        self.record(app, workspace, "type", &target.title, result.as_ref().map(|_| ()));
-        result
+        let snapshot = self.capture(&target)?;
+        Ok(json!({"snapshot": snapshot}))
     }
 
     pub fn pick(&self, app: &AppHandle, workspace: &str, request: &Value) -> Result<Value, String> {
         let session = session_of(request)?;
         let target = self.target(app, workspace, Some(session), false, false)?;
-        let (armed, handle) = picker::arm()?;
+        let _ = crate::computer::input::perform(
+            &target.hwnd,
+            &crate::computer::types::Action::Focus {},
+            || Ok(()),
+        );
+        let (armed, handle) = picker::arm(&target.hwnd)?;
         if let Ok(mut slot) = self.picker.lock() {
             *slot = Some(handle.clone());
         }
-        let outcome = picker::wait(&armed, &handle, PICK_TIMEOUT);
+        let outcome = self.track_pick(&armed, &handle);
+        picker::finish(&handle);
         if let Ok(mut slot) = self.picker.lock() {
             *slot = None;
         }
-        outcome?;
+        let (x, y) = outcome?;
         let described = self.call(
-            UiaRequest::ElementAtCursor {
+            UiaRequest::ElementAtPoint {
                 hwnd: target.hwnd.clone(),
+                x,
+                y,
             },
             SNAPSHOT_TIMEOUT,
         )?;
@@ -296,6 +264,36 @@ impl AppUiManager {
                 base64::engine::general_purpose::STANDARD.encode(&png)
             ),
         }))
+    }
+
+    fn track_pick(
+        &self,
+        armed: &picker::PickSession,
+        handle: &CancelHandle,
+    ) -> Result<(i32, i32), String> {
+        let deadline = Instant::now() + PICK_TIMEOUT;
+        let mut last = None;
+        loop {
+            if Instant::now() >= deadline {
+                return Err("The element was not picked in time".to_owned());
+            }
+            if let Poll::Picked(x, y) = picker::poll(armed, handle, PICK_POLL)? {
+                return Ok((x, y));
+            }
+            let cursor = picker::cursor();
+            if cursor == last {
+                continue;
+            }
+            last = cursor;
+            let bounds = cursor
+                .filter(|(x, y)| picker::inside_target(*x, *y))
+                .and_then(|(x, y)| {
+                    self.call(UiaRequest::BoundsAtPoint { x, y }, Duration::from_secs(2))
+                        .ok()
+                })
+                .and_then(|value| serde_json::from_value::<UiBounds>(value["bounds"].clone()).ok());
+            handle.highlight(bounds);
+        }
     }
 
     pub fn pick_cancel(&self) -> Result<Value, String> {
@@ -367,6 +365,15 @@ impl AppUiManager {
             &target.title,
             Ok(()),
         );
+        let _ = app.emit_to(
+            tauri::EventTarget::webview("main"),
+            "prime:event",
+            json!({
+                "workspaceId": context.workspace_id,
+                "type": "appui",
+                "payload": {"activate": true, "sessionId": target.session_id},
+            }),
+        );
         Ok(json!({"status": "attached", "mode": mode, "target": target_json(&target)}))
     }
 
@@ -412,92 +419,6 @@ impl AppUiManager {
         super::explore::run(app, context, self, request)
     }
 
-    #[cfg(not(windows))]
-    pub fn record_start(&self) -> Result<Value, String> {
-        Err("Recording application input is currently supported only on Windows".to_owned())
-    }
-
-    #[cfg(not(windows))]
-    pub fn record_stop(
-        &self,
-        _app: &AppHandle,
-        _context: &WorkbenchContext,
-    ) -> Result<Value, String> {
-        Err("Recording is not running".to_owned())
-    }
-
-    #[cfg(windows)]
-    pub fn record_start(&self) -> Result<Value, String> {
-        let recording = recording::start()?;
-        self.recording
-            .lock()
-            .map_err(|error| error.to_string())?
-            .replace(recording);
-        Ok(json!({"status": "recording"}))
-    }
-
-    #[cfg(windows)]
-    pub fn record_stop(
-        &self,
-        app: &AppHandle,
-        context: &WorkbenchContext,
-    ) -> Result<Value, String> {
-        let recording = self
-            .recording
-            .lock()
-            .map_err(|error| error.to_string())?
-            .take()
-            .ok_or("Recording is not running")?;
-        let events = recording::stop(&recording)?;
-        let target = self.target(
-            app,
-            &context.workspace_id,
-            context.session_id.as_deref(),
-            false,
-            true,
-        )?;
-        let mut steps = Vec::new();
-        for event in events {
-            match event {
-                recording::Event::Click { x, y } => {
-                    let described = self.call(
-                        UiaRequest::ElementAtPoint {
-                            hwnd: target.hwnd.clone(),
-                            x,
-                            y,
-                        },
-                        SNAPSHOT_TIMEOUT,
-                    )?;
-                    let element = &described["element"];
-                    let locator = match element["automationId"].as_str() {
-                        Some(automation_id) => json!({"automationId": automation_id}),
-                        None if element["name"].as_str().is_some_and(|name| !name.is_empty()) => {
-                            json!({"role": element["role"], "name": element["name"]})
-                        }
-                        None => json!({"path": element["path"]}),
-                    };
-                    steps.push(json!({"action": "click", "locator": locator}));
-                }
-                recording::Event::Key { name } => {
-                    steps.push(json!({"action": "press_key", "key": name}));
-                }
-            }
-        }
-        let scenario = json!({"version": 1, "name": "recorded", "steps": steps});
-        let draft = serde_yaml::to_string(&scenario).map_err(|error| error.to_string())?;
-        let root = app
-            .state::<crate::state::AppState>()
-            .root(&context.workspace_id)
-            .map_err(|error| error.message)?;
-        std::fs::write(root.join("prime-app-test-recorded.yaml"), &draft)
-            .map_err(|error| error.to_string())?;
-        Ok(json!({
-            "path": "prime-app-test-recorded.yaml",
-            "draft": draft,
-            "steps": steps.len(),
-        }))
-    }
-
     pub fn window(&self, app: &AppHandle, context: &WorkbenchContext) -> Result<String, String> {
         Ok(self
             .target(
@@ -518,21 +439,365 @@ impl AppUiManager {
             false,
             true,
         )?;
-        if let Some(port) = target.port {
-            let snapshot = self.with_dom(port, |session| session.snapshot())?;
-            self.record(app, &context.workspace_id, "snapshot", &target.title, Ok(()));
-            return Ok(json!({"text": snapshot_text(&snapshot), "snapshot": snapshot}));
+        let result = self.capture(&target);
+        self.record(
+            app,
+            &context.workspace_id,
+            "snapshot",
+            &target.title,
+            result.as_ref().map(|_| ()),
+        );
+        let snapshot = result?;
+        self.remember(&context.workspace_id, &snapshot);
+        Ok(json!({"text": snapshot_text(&snapshot), "snapshot": snapshot}))
+    }
+
+    pub fn observe(&self, app: &AppHandle, context: &WorkbenchContext) -> String {
+        std::thread::sleep(SETTLE);
+        let target = match self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            false,
+            true,
+        ) {
+            Ok(target) => target,
+            Err(error) => return format!("The application window is no longer available: {error}"),
+        };
+        if !crate::computer::windows::list()
+            .map(|windows| windows.iter().any(|window| window.hwnd == target.hwnd))
+            .unwrap_or(true)
+        {
+            return "The application window closed after the action. Check app_output for a crash."
+                .to_owned();
         }
-        let result = self.call(
+        let snapshot = match self.capture(&target) {
+            Ok(snapshot) => snapshot,
+            Err(error) => {
+                return format!("The interface could not be read after the action: {error}")
+            }
+        };
+        let previous = self
+            .snapshots
+            .lock()
+            .ok()
+            .and_then(|snapshots| snapshots.get(&context.workspace_id).cloned());
+        self.remember(&context.workspace_id, &snapshot);
+        match previous {
+            Some(previous) => changes::describe(&previous, &snapshot),
+            None => snapshot_text(&snapshot),
+        }
+    }
+
+    pub fn find(
+        &self,
+        app: &AppHandle,
+        context: &WorkbenchContext,
+        query: Query,
+    ) -> Result<Value, String> {
+        if query.is_empty() {
+            return Err("Pass text or role".to_owned());
+        }
+        let target = self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            false,
+            true,
+        )?;
+        let snapshot = self.capture(&target)?;
+        self.remember(&context.workspace_id, &snapshot);
+        let found = find::matches(&snapshot, &query);
+        Ok(json!({"count": found.len(), "text": find::render(&found)}))
+    }
+
+    pub fn wait(
+        &self,
+        app: &AppHandle,
+        context: &WorkbenchContext,
+        query: Query,
+        gone: bool,
+        timeout: Option<u64>,
+    ) -> Result<Value, String> {
+        if query.is_empty() {
+            return Err("Pass text or role".to_owned());
+        }
+        let timeout = timeout
+            .map(Duration::from_millis)
+            .unwrap_or(DEFAULT_WAIT)
+            .min(MAX_WAIT);
+        let started = Instant::now();
+        loop {
+            let target = self.target(
+                app,
+                &context.workspace_id,
+                context.session_id.as_deref(),
+                false,
+                true,
+            )?;
+            let snapshot = self.capture(&target)?;
+            let found = find::matches(&snapshot, &query);
+            let done = if gone { found.is_empty() } else { !found.is_empty() };
+            if done {
+                let text = if gone {
+                    "The element is gone".to_owned()
+                } else {
+                    find::render(&found)
+                };
+                self.remember(&context.workspace_id, &snapshot);
+                return Ok(json!({
+                    "status": "ok",
+                    "ms": started.elapsed().as_millis() as u64,
+                    "text": text,
+                }));
+            }
+            if started.elapsed() >= timeout {
+                return Err(format!(
+                    "The condition was not met within {} ms",
+                    timeout.as_millis()
+                ));
+            }
+            std::thread::sleep(WAIT_POLL);
+        }
+    }
+
+    pub fn launch(
+        &self,
+        app: &AppHandle,
+        context: &WorkbenchContext,
+        args: &Value,
+    ) -> Result<Value, String> {
+        let command = argument(args, "command")?;
+        let root = app
+            .state::<crate::state::AppState>()
+            .root(&context.workspace_id)
+            .map_err(|error| error.message)?;
+        self.close_launched(&context.workspace_id);
+        self.reset_report(&context.workspace_id);
+        let before = crate::computer::windows::list()?
+            .into_iter()
+            .map(|window| window.hwnd)
+            .collect();
+        let wait = args
+            .get("waitSeconds")
+            .and_then(Value::as_u64)
+            .map(Duration::from_secs)
+            .unwrap_or(launch::DEFAULT_WAIT)
+            .min(launch::MAX_WAIT);
+        let mut launched = launch::spawn(
+            &root,
+            &launch::Request {
+                command: &command,
+                cwd: args.get("cwd").and_then(Value::as_str),
+            },
+        )?;
+        let window = match launch::wait_for_window(
+            &mut launched,
+            &before,
+            args.get("windowTitle").and_then(Value::as_str),
+            wait,
+        ) {
+            Ok(window) => window,
+            Err(error) => {
+                launch::stop(&mut launched);
+                return Err(error);
+            }
+        };
+        let pid = launched.pid;
+        self.launched
+            .lock()
+            .map_err(|error| error.to_string())?
+            .insert(context.workspace_id.clone(), launched);
+        self.attach(
+            app,
+            context,
+            &json!({
+                "hwnd": window.hwnd,
+                "pid": window.pid,
+                "identity": window.identity.clone().unwrap_or_default(),
+                "title": window.title,
+                "mode": "control",
+                "port": args.get("debugPort"),
+            }),
+        )?;
+        let snapshot = self.snapshot(app, context)?;
+        Ok(json!({
+            "status": "running",
+            "processId": pid,
+            "window": {"hwnd": window.hwnd, "title": window.title, "pid": window.pid},
+            "text": snapshot["text"],
+        }))
+    }
+
+    pub fn attach_matching(
+        &self,
+        app: &AppHandle,
+        context: &WorkbenchContext,
+        args: &Value,
+    ) -> Result<Value, String> {
+        let hwnd = args.get("hwnd").and_then(Value::as_str);
+        let pid = args.get("pid").and_then(Value::as_u64);
+        let title = args
+            .get("title")
+            .and_then(Value::as_str)
+            .map(str::to_lowercase);
+        if hwnd.is_none() && pid.is_none() && title.is_none() {
+            return Err("Pass title, pid or hwnd from app_targets".to_owned());
+        }
+        let own = std::process::id();
+        let window = crate::computer::windows::list()?
+            .into_iter()
+            .filter(|window| window.pid != own)
+            .find(|window| {
+                hwnd.map_or(true, |hwnd| window.hwnd == hwnd)
+                    && pid.map_or(true, |pid| window.pid as u64 == pid)
+                    && title
+                        .as_deref()
+                        .map_or(true, |title| window.title.to_lowercase().contains(title))
+            })
+            .ok_or("No matching application window. Call app_targets.")?;
+        let attached = self.attach(
+            app,
+            context,
+            &json!({
+                "hwnd": window.hwnd,
+                "pid": window.pid,
+                "identity": window.identity.clone().unwrap_or_default(),
+                "title": window.title,
+                "mode": "control",
+                "port": args.get("debugPort"),
+            }),
+        )?;
+        let snapshot = self.snapshot(app, context)?;
+        Ok(json!({
+            "status": attached["status"],
+            "target": attached["target"],
+            "text": snapshot["text"],
+        }))
+    }
+
+    pub fn close(&self, app: &AppHandle, context: &WorkbenchContext) -> Result<Value, String> {
+        let stopped = self.close_launched(&context.workspace_id);
+        self.detach(app, context)?;
+        Ok(json!({"status": if stopped { "stopped" } else { "detached" }}))
+    }
+
+    pub fn output(&self, workspace: &str) -> Result<Value, String> {
+        let mut launched = self.launched.lock().map_err(|error| error.to_string())?;
+        let launched = launched
+            .get_mut(workspace)
+            .ok_or("No application was started with app_launch")?;
+        Ok(json!({
+            "running": launch::running(launched),
+            "text": launch::output_tail(&launched.output),
+        }))
+    }
+
+    fn close_launched(&self, workspace: &str) -> bool {
+        let removed = self
+            .launched
+            .lock()
+            .ok()
+            .and_then(|mut launched| launched.remove(workspace));
+        if let Ok(mut snapshots) = self.snapshots.lock() {
+            snapshots.remove(workspace);
+        }
+        match removed {
+            Some(mut launched) => {
+                launch::stop(&mut launched);
+                let _ = std::fs::remove_file(&launched.output);
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub fn audit(&self, app: &AppHandle, context: &WorkbenchContext) -> Result<Value, String> {
+        let target = self.target(
+            app,
+            &context.workspace_id,
+            context.session_id.as_deref(),
+            false,
+            true,
+        )?;
+        let snapshot = self.capture(&target)?;
+        self.remember(&context.workspace_id, &snapshot);
+        let result = audit::run(&snapshot);
+        let text = result.text();
+        if let Ok(mut reports) = self.reports.lock() {
+            let report = reports.entry(context.workspace_id.clone()).or_default();
+            report.add(Check {
+                time: now(),
+                name: format!("Layout: {}", target.title),
+                passed: result.passed(),
+                details: Some(format!(
+                    "{} errors, {} warnings",
+                    result.errors, result.warnings
+                )),
+            });
+            report.audit = Some(result.clone());
+        }
+        self.record(app, &context.workspace_id, "audit", &target.title, Ok(()));
+        Ok(json!({"passed": result.passed(), "text": text}))
+    }
+
+    pub fn check(
+        &self,
+        app: &AppHandle,
+        context: &WorkbenchContext,
+        args: &Value,
+    ) -> Result<Value, String> {
+        let name = argument(args, "name")?;
+        let passed = args
+            .get("passed")
+            .and_then(Value::as_bool)
+            .ok_or("Missing argument: passed")?;
+        let details = args
+            .get("details")
+            .and_then(Value::as_str)
+            .filter(|details| !details.trim().is_empty())
+            .map(str::to_owned);
+        let summary = {
+            let mut reports = self.reports.lock().map_err(|error| error.to_string())?;
+            let report = reports.entry(context.workspace_id.clone()).or_default();
+            report.add(Check {
+                time: now(),
+                name: name.clone(),
+                passed,
+                details,
+            });
+            report.summary()
+        };
+        let failure = if passed { Ok(()) } else { Err(&name) };
+        self.record(app, &context.workspace_id, "check", &name, failure);
+        Ok(json!({"status": "recorded", "text": summary}))
+    }
+
+    pub fn reset_report(&self, workspace: &str) {
+        if let Ok(mut reports) = self.reports.lock() {
+            reports.remove(workspace);
+        }
+    }
+
+    fn capture(&self, target: &Target) -> Result<UiSnapshot, String> {
+        if let Some(port) = target.port {
+            return self.with_dom(port, |session| session.snapshot());
+        }
+        let value = self.call(
             UiaRequest::Snapshot {
                 hwnd: target.hwnd.clone(),
                 max_nodes: MAX_NODES,
                 max_depth: MAX_DEPTH,
             },
             SNAPSHOT_TIMEOUT,
-        );
-        self.record(app, &context.workspace_id, "snapshot", &target.title, result.as_ref().map(|_| ()));
-        result
+        )?;
+        serde_json::from_value(value["snapshot"].clone()).map_err(|error| error.to_string())
+    }
+
+    fn remember(&self, workspace: &str, snapshot: &UiSnapshot) {
+        if let Ok(mut snapshots) = self.snapshots.lock() {
+            snapshots.insert(workspace.to_owned(), snapshot.clone());
+        }
     }
 
     pub fn act(
@@ -837,34 +1102,6 @@ fn session_of(request: &Value) -> Result<&str, String> {
         .and_then(Value::as_str)
         .filter(|value| !value.is_empty())
         .ok_or("The active chat cannot be identified unambiguously".to_owned())
-}
-
-fn locator_of(request: &Value) -> Locator {
-    let locator = request.get("locator");
-    let field = |name: &str| {
-        locator
-            .and_then(|value| value.get(name))
-            .and_then(Value::as_str)
-            .filter(|value| !value.is_empty())
-            .map(str::to_owned)
-    };
-    Locator {
-        reference: field("reference"),
-        automation_id: field("automationId"),
-        role: field("role"),
-        name: field("name"),
-        path: field("path"),
-    }
-}
-
-fn element_action(request: &Value) -> Result<UiAction, String> {
-    match request.get("elementAction").and_then(Value::as_str) {
-        Some("click") => Ok(UiAction::Invoke),
-        Some("toggle") => Ok(UiAction::Toggle),
-        Some("select") => Ok(UiAction::Select),
-        Some("focus") => Ok(UiAction::Focus),
-        _ => Err("Unknown element action".to_owned()),
-    }
 }
 
 fn argument(args: &Value, name: &str) -> Result<String, String> {

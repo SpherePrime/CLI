@@ -44,6 +44,11 @@ pub fn snapshot(
     })
 }
 
+pub fn bounds_at(automation: &IUIAutomation, point: POINT) -> Result<UiBounds, String> {
+    let element = unsafe { automation.ElementFromPoint(point) }.map_err(|error| error.to_string())?;
+    Ok(rect(unsafe { element.CurrentBoundingRectangle() }))
+}
+
 pub fn describe(
     automation: &IUIAutomation,
     window: HWND,

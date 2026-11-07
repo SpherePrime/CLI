@@ -18,9 +18,15 @@ pub fn snapshot_text(snapshot: &UiSnapshot) -> String {
 }
 
 fn render_node(node: &UiNode, depth: usize, lines: &mut Vec<String>) {
+    lines.push(format!("{}{}", "  ".repeat(depth), node_line(node)));
+    for child in &node.children {
+        render_node(child, depth + 1, lines);
+    }
+}
+
+pub fn node_line(node: &UiNode) -> String {
     let mut line = format!(
-        "{}{} {} \"{}\" [{}]",
-        "  ".repeat(depth),
+        "{} {} \"{}\" [{}]",
         node.reference,
         node.role,
         node.name.replace('\n', " "),
@@ -39,10 +45,7 @@ fn render_node(node: &UiNode, depth: usize, lines: &mut Vec<String>) {
     if node.confidence != Confidence::High {
         line.push_str(&format!(" confidence={}", confidence_name(node.confidence)));
     }
-    lines.push(line);
-    for child in &node.children {
-        render_node(child, depth + 1, lines);
-    }
+    line
 }
 
 fn provider_name(provider: Provider) -> &'static str {

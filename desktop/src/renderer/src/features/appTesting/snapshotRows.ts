@@ -1,9 +1,10 @@
-import type { AppUiNode } from '../../../../shared/appTesting'
+import type { AppUiNode, AppUiSnapshot, PickedAppElement } from '../../../../shared/appTesting'
 
 export type AppUiRow = {
   ref: string
   depth: number
   label: string
+  node: AppUiNode
 }
 
 export function flattenSnapshot(nodes: AppUiNode[]): AppUiRow[] {
@@ -14,7 +15,7 @@ export function flattenSnapshot(nodes: AppUiNode[]): AppUiRow[] {
 
 function collectRows(nodes: AppUiNode[], depth: number, rows: AppUiRow[]): void {
   for (const node of nodes) {
-    rows.push({ ref: node.ref, depth, label: nodeLabel(node) })
+    rows.push({ ref: node.ref, depth, label: nodeLabel(node), node })
     collectRows(node.children, depth + 1, rows)
   }
 }
@@ -37,4 +38,27 @@ function nodeLabel(node: AppUiNode): string {
 
 function singleLine(text: string): string {
   return text.replace(/\n/g, ' ')
+}
+
+export function pickedFromNode(node: AppUiNode, snapshot: AppUiSnapshot): PickedAppElement {
+  return {
+    element: {
+      reference: node.ref,
+      role: node.role,
+      name: node.name,
+      value: node.value ?? null,
+      bounds: node.bounds,
+      states: node.states,
+      actions: node.actions,
+      automationId: node.automationId ?? null,
+      className: node.className ?? null,
+      path: node.path,
+      source: node.source,
+      confidence: node.confidence
+    },
+    reference: node.ref,
+    confidence: node.confidence,
+    candidates: 1,
+    window: snapshot.title
+  }
 }
