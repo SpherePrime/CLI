@@ -22,6 +22,9 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
       `sessions/${sid}/messages?${new URLSearchParams({ search: String(args.query || '') })}`
     ],
     history: () => ['GET', `sessions/${sid}/history`],
+    goal: () => ['GET', `sessions/${sid}/goal`],
+    setGoal: () => ['PUT', `sessions/${sid}/goal`, { text: args.text }],
+    clearGoal: () => ['DELETE', `sessions/${sid}/goal`],
     context: () => ['GET', `sessions/${sid}/context`],
     agent: () => ['GET', 'agent'],
     agentWorkers: () => ['GET', `agent/sessions/${sid}/workers`],
