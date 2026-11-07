@@ -1,221 +1,414 @@
-.app-testing-layout {
-  display: grid;
-  grid-template-columns: minmax(180px, 240px) 1fr;
+.app-testing-panel {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  min-height: 0;
-  flex: 1;
-}
-
-.app-testing-targets,
-.app-testing-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
   min-width: 0;
-}
-
-.app-testing-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.app-testing-search {
-  flex: 1;
-  min-width: 0;
-}
-
-.app-testing-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.app-testing-list li {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px 8px;
-  border: 1px solid var(--border, rgba(128, 128, 128, 0.3));
-  border-radius: 6px;
-}
-
-.app-testing-list li.active {
-  border-color: var(--accent, #6f8cff);
-}
-
-.app-testing-target {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
   font-size: 12px;
 }
 
-.app-testing-target-title {
+.app-testing-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--raised);
+  min-width: 0;
+}
+
+.app-testing-status.idle {
+  align-items: flex-start;
+  color: var(--secondary);
+}
+
+.app-testing-status.idle strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.app-testing-status.idle p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.app-testing-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-testing-status-text strong,
+.app-testing-status-text span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.app-testing-target-meta {
-  opacity: 0.6;
-  flex-shrink: 0;
-}
-
-.app-testing-target-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.app-testing-target-actions button,
-.app-testing-actions button,
-.app-testing-toolbar button {
+.app-testing-status-text span {
+  color: var(--muted);
   font-size: 11px;
 }
 
-.app-testing-tree {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  border: 1px solid var(--border, rgba(128, 128, 128, 0.3));
-  border-radius: 6px;
+.app-testing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 20%, transparent);
 }
 
+.app-testing-dot.off {
+  background: var(--muted);
+  box-shadow: none;
+}
+
+.app-testing-status .icon.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.app-testing-hint {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  color: var(--accent-strong, var(--accent));
+  line-height: 1.4;
+}
+
+.app-testing-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.app-testing-section > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--secondary);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.app-testing-score {
+  display: flex;
+  gap: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.app-testing-score b {
+  font-weight: 600;
+}
+
+.app-testing-score .ok {
+  color: var(--green);
+}
+
+.app-testing-score .fail {
+  color: var(--red);
+}
+
+.app-testing-link {
+  margin-left: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.app-testing-link:hover {
+  color: var(--text);
+}
+
+.app-testing-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.app-testing-muted {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.app-testing-checks,
+.app-testing-issues,
+.app-testing-activity,
+.app-testing-windows,
 .app-testing-rows {
   list-style: none;
   margin: 0;
-  padding: 4px 0;
+  padding: 0;
 }
 
-.app-testing-rows button {
-  display: block;
+.app-testing-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-testing-checks li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.app-testing-checks li > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.app-testing-checks li.ok > svg {
+  color: var(--green);
+}
+
+.app-testing-checks li.fail > svg {
+  color: var(--red);
+}
+
+.app-testing-checks li div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-testing-checks li span {
+  color: var(--secondary);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.app-testing-disclosure {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.app-testing-disclosure:hover {
+  color: var(--text);
+}
+
+.app-testing-audit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-testing-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-testing-issues button {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
   width: 100%;
   text-align: left;
   background: none;
   border: 0;
-  padding: 2px 8px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-radius: 6px;
+  padding: 4px 6px;
+  color: var(--text);
+  line-height: 1.4;
   cursor: pointer;
 }
 
-.app-testing-rows button.active {
-  background: rgba(111, 140, 255, 0.18);
+.app-testing-issues button:hover {
+  background: var(--hover, var(--surface));
 }
 
-.app-testing-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+.app-testing-issues button svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.app-testing-actions input {
-  flex: 1;
-  min-width: 80px;
+.app-testing-issues .error svg {
+  color: var(--red);
 }
 
-.app-testing-actions-title {
-  font-size: 11px;
-  opacity: 0.6;
+.app-testing-issues .warning svg {
+  color: var(--amber);
 }
 
-.app-testing-warning,
-.app-testing-empty {
-  margin: 0;
-  padding: 6px 8px;
-  font-size: 11px;
-  opacity: 0.75;
+.app-testing-issues .info svg {
+  color: var(--muted);
 }
 
-.app-testing-log {
+.app-testing-tree {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 140px;
-  overflow: auto;
+  gap: 6px;
+  min-width: 0;
 }
 
-.app-testing-log ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.app-testing-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+}
+
+.app-testing-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 6px 0;
+  color: var(--text);
+  outline: none;
+}
+
+.app-testing-rows {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 0;
+}
+
+.app-testing-rows button {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 3px 8px;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.app-testing-rows button:hover {
+  background: var(--hover, var(--surface));
+}
+
+.app-testing-rows button.flagged {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+}
+
+.app-testing-role {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10.5px;
+}
+
+.app-testing-name,
+.app-testing-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-testing-value {
+  color: var(--secondary);
+}
+
+.app-testing-activity {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.app-testing-activity li {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 2px 0;
+}
+
+.app-testing-activity time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
   font-size: 11px;
 }
 
-.app-testing-log li {
-  display: flex;
-  gap: 6px;
-}
-
-.app-testing-log li.failed {
-  color: var(--danger, #e05561);
-}
-
-.app-testing-log-title {
-  opacity: 0.6;
+.app-testing-activity span {
+  color: var(--secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.app-testing-log-error {
-  opacity: 0.8;
+.app-testing-activity li.fail b,
+.app-testing-activity li.fail span {
+  color: var(--red);
 }
 
-.app-testing-scenarios {
+.app-testing-windows-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.app-testing-windows {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 200px;
+  max-height: 260px;
   overflow: auto;
 }
 
-.app-testing-scenarios ul,
-.app-testing-run ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 11px;
-}
-
-.app-testing-scenarios li,
-.app-testing-run li {
+.app-testing-windows li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 4px 4px 4px 8px;
+  border-radius: 8px;
+  background: var(--surface);
 }
 
-.app-testing-scenarios li.failed,
-.app-testing-run li.failed {
-  color: var(--danger, #e05561);
+.app-testing-windows li span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.app-testing-run {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.app-testing-windows li button {
+  flex-shrink: 0;
   font-size: 11px;
 }
 
-.app-testing-run strong.failed {
-  color: var(--danger, #e05561);
-}
-
-.app-testing-target-meta {
-  flex-shrink: 0;
+.app-testing-pick .element-pick-heading img {
+  max-height: 64px;
 }

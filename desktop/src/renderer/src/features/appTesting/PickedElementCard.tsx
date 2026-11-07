@@ -1,6 +1,10 @@
 import { useState } from 'react'
+import { LoaderCircle, Mic, Send, X } from 'lucide-react'
 import type { PickedAppElement } from '../../../../shared/appTesting'
-import { appTestingCopy } from './copy'
+import type { Workspace } from '../../app/useWorkspace'
+import { useVoice } from '../plugins/useVoice'
+import { VoiceWave } from '../chat/VoiceWave'
+import type { AppTestingCopy } from './copy'
 
 export function locatorText(picked: PickedAppElement): string {
   const { element } = picked
@@ -33,59 +37,97 @@ export function appElementPrompt(picked: PickedAppElement, comment: string): str
 }
 
 type Props = {
-  language: 'ru' | 'en'
+  copy: AppTestingCopy
+  workspace: Workspace
   picked: PickedAppElement
   onSend(prompt: string, attachmentIds: string[]): Promise<unknown>
   onClose(): void
 }
 
-export function PickedElementCard({ language, picked, onSend, onClose }: Props) {
-  const c = appTestingCopy[language]
+export function PickedElementCard({ copy, workspace, picked, onSend, onClose }: Props) {
   const [comment, setComment] = useState('')
   const [sending, setSending] = useState(false)
+  const voice = useVoice(workspace, (text) => setComment((value) => [value, text].filter(Boolean).join(' ')))
+  const { element } = picked
   return (
     <form
       className="element-pick app-testing-pick"
       onSubmit={async (event) => {
         event.preventDefault()
-        if (!comment.trim()) return
+        if (!comment.trim() && !voice.recording) return
         setSending(true)
         try {
-          await onSend(appElementPrompt(picked, comment), picked.attachmentId ? [picked.attachmentId] : [])
+          const spoken = voice.recording ? await voice.finish() : ''
+          const message = [comment, spoken].filter((part) => part.trim()).join(' ')
+          if (!message.trim()) return
+          await onSend(appElementPrompt(picked, message), picked.attachmentId ? [picked.attachmentId] : [])
           onClose()
         } finally {
           setSending(false)
         }
       }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') onClose()
+      }}
     >
       <div className="element-pick-list">
         <div className="element-pick-heading">
-          {picked.image && <img src={picked.image} alt={picked.element.name} />}
-          <strong>
-            {picked.element.role} · {picked.element.bounds.width}×{picked.element.bounds.height}
-          </strong>
-          <code title={picked.element.path}>{locatorText(picked)}</code>
-          <button type="button" aria-label={c.cancel} title={c.cancel} onClick={onClose}>
-            ×
+          {picked.image && <img src={picked.image} alt={element.name} />}
+          <div>
+            <strong>
+              {element.role} · {element.bounds.width}×{element.bounds.height}
+            </strong>
+            <code title={element.path}>{locatorText(picked)}</code>
+            {element.name && <span>{element.name.slice(0, 120)}</span>}
+          </div>
+          <button type="button" className="icon small" aria-label={copy.close} onClick={onClose}>
+            <X size={14} />
           </button>
         </div>
-        {picked.element.name && <p className="app-testing-pick-name">{picked.element.name}</p>}
-        {picked.confidence !== 'high' && (
-          <p className="app-testing-warning">
-            confidence: {picked.confidence}
-            {picked.candidates > 1 ? ` · ${picked.candidates}` : ''}
-          </p>
-        )}
       </div>
+      {(voice.recording || voice.transcribing) && (
+        <VoiceWave
+          compact
+          analyser={voice.analyser}
+          transcribing={voice.transcribing}
+          onCancel={() => void voice.cancel()}
+        />
+      )}
       <textarea
+        hidden={voice.recording || voice.transcribing}
+        autoFocus
+        rows={2}
+        aria-label={copy.comment}
+        placeholder={copy.commentHint}
         value={comment}
-        placeholder={c.pick}
-        aria-label={c.pick}
         onChange={(event) => setComment(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault()
+            event.currentTarget.form?.requestSubmit()
+          }
+        }}
       />
-      <button type="submit" disabled={sending || !comment.trim()}>
-        {c.sendToChat}
-      </button>
+      <div className="element-pick-actions">
+        <button
+          type="button"
+          className={`icon small ${voice.recording ? 'danger' : ''}`}
+          disabled={voice.transcribing || sending}
+          aria-label={voice.recording ? copy.voiceStop : copy.voice}
+          title={voice.recording ? copy.voiceStop : copy.voice}
+          onClick={() => void voice.toggle()}
+        >
+          {voice.transcribing ? <LoaderCircle size={14} className="spin" /> : <Mic size={14} />}
+        </button>
+        <button
+          type="submit"
+          className="primary"
+          disabled={sending || voice.transcribing || (!comment.trim() && !voice.recording)}
+        >
+          <Send size={13} />
+          {copy.sendToChat}
+        </button>
+      </div>
     </form>
   )
 }
