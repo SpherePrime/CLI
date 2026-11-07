@@ -1,4 +1,5 @@
 mod evaluate;
+pub mod areas;
 pub mod mcp;
 mod ownership;
 mod panel;

@@ -224,7 +224,10 @@ pub fn run(
         .ok_or("Project path is unavailable")?;
     let result = match name {
         "desktop_capabilities" => {
-            json!({"tools":definitions().into_iter().map(|tool| json!({"name":tool["name"],"description":tool["description"]})).collect::<Vec<_>>(),"context":"Project-bound; workspace/root arguments are not accepted.","sessionBound":context.session_id.is_some(),"browser":"Use browser tools in this MCP session for navigation, DOM snapshots/evaluation, input and screenshots."})
+            let mut all = super::tools::definitions();
+            all.extend(definitions());
+            let areas = super::areas::AREAS.iter().map(|area| json!({"area":area.name,"purpose":area.summary,"tools":super::areas::filter(Some(area), all.clone()).iter().map(|tool| tool["name"].clone()).collect::<Vec<_>>()})).collect::<Vec<_>>();
+            json!({"areas":areas,"context":"Project-bound; workspace/root arguments are not accepted.","sessionBound":context.session_id.is_some(),"usage":"Read a tool's documentation and schema before its first call."})
         }
         "terminal_list" | "terminal_read" | "terminal_write" | "terminal_resize"
         | "terminal_create" | "terminal_close" | "terminal_release" => {

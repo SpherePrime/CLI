@@ -159,7 +159,7 @@ export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
     return toolTitle(input.tool, input.arguments ?? {}, t)
   }
   if (tool.startsWith('mcp_')) {
-    const bridge = /^mcp_(?:browser|prime-desktop(?:-\d+)?)_(.+)$/.exec(tool)
+    const bridge = /^mcp_(?:browser|project|terminal|git|ssh|windows|apps|prime-desktop(?:-[a-z]+)?(?:-\d+)?)_(.+)$/.exec(tool)
     if (bridge) {
       return (
         desktopToolTitle(bridge[1], input, t) ?? {

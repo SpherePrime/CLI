@@ -1501,4 +1501,5 @@ Object.assign(english, {
   '{done} из {total} этапов': '{done} of {total} stages',
   'Снять': 'Remove',
   'Агент доводит цель до готового проверенного результата без остановок.': 'The agent drives the goal to a finished, verified result without stopping.',
+  'Проверка приложения': 'App testing',
 })

@@ -9,4 +9,13 @@ describe('mcp_call title', () => {
     expect(title.label).toBe('MCP · docs')
     expect(title.detail).toBe('search')
   })
+
+  it('recognizes desktop area servers', () => {
+    expect(toolTitle('mcp_call', { tool: 'mcp_apps_app_find', arguments: {} }, t).label).toBe(
+      'Проверка приложения'
+    )
+    expect(toolTitle('mcp_terminal_terminal_list', {}, t).label).toBe('Терминал')
+    expect(toolTitle('mcp_prime-desktop-git_git_history', {}, t).label).toBe('Git')
+    expect(toolTitle('mcp_browser_browser_click', {}, t).label).toBe('Браузер')
+  })
 })
