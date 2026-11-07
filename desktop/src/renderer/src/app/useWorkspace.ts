@@ -912,7 +912,7 @@ export function useWorkspace() {
     if (open?.id !== target.id) await selectProject(target)
     return startSession(target, newPendingSession(translate(language.current, 'Новый чат')))
   }
-  async function send(prompt: string, attachmentIds: string[] = []) {
+  async function send(prompt: string, attachmentIds: string[] = [], options: SendOptions = {}) {
     if (!prompt.trim()) return false
     await waitForProject()
     // A chat the user just asked for may still be materializing: wait for its
@@ -952,6 +952,11 @@ export function useWorkspace() {
       if (!targetSession) {
         await savePreferences({ reasoningBySession: { [selected.id]: reasoningMode } })
       }
+      if (options.goal !== undefined)
+        await window.prime.call(targetProject.id, 'setGoal', {
+          sessionId: selected.id,
+          text: options.goal
+        })
       const runId = crypto.randomUUID()
       await chatPermissions.prepareSession(targetProject.id, selected.id, chatPermissions.skip)
       if (
@@ -1186,3 +1191,4 @@ export function useWorkspace() {
   }
 }
 export type Workspace = ReturnType<typeof useWorkspace>
+export type SendOptions = { goal?: string }

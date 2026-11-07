@@ -1,0 +1,181 @@
+.goal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  max-width: 200px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 12.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.goal-button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.goal-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.goal-button.has-goal {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.goal-button.has-goal > svg {
+  color: var(--accent-strong, var(--accent));
+}
+.goal-button.achieved > svg {
+  color: var(--green);
+}
+.goal-button-bar {
+  position: relative;
+  width: 34px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--raised);
+  flex-shrink: 0;
+}
+.goal-button-bar > b {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--accent-strong, var(--accent));
+  transition: width 0.5s ease;
+}
+.goal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+.goal-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+}
+.goal-panel-head > svg {
+  color: var(--accent-strong, var(--accent));
+}
+.goal-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.goal-editor textarea {
+  width: 100%;
+  min-height: 96px;
+  max-height: 260px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.goal-editor textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.goal-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.goal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.goal-actions > .danger {
+  margin-right: auto;
+}
+.goal-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.goal-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.goal-phase.working,
+.goal-phase.planning,
+.goal-phase.verifying {
+  color: var(--accent);
+}
+.goal-phase.paused {
+  color: var(--amber);
+}
+.goal-phase.achieved {
+  color: var(--green);
+}
+.goal-count {
+  margin-left: auto;
+  color: var(--secondary);
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: none;
+}
+.goal-text {
+  margin: 0;
+  max-height: 160px;
+  overflow: auto;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.goal-progress {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--raised);
+}
+.goal-progress > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--accent-strong, var(--accent));
+  transition: width 0.5s ease;
+}
+.goal-current,
+.goal-summary {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .goal-button > span {
+    display: none;
+  }
+  .goal-button {
+    padding: 0 7px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .goal-button-bar > b,
+  .goal-progress > span {
+    transition: none;
+  }
+}
