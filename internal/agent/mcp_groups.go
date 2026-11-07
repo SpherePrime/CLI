@@ -17,6 +17,7 @@ const (
 	mcpGroupMinTools     = 4
 	mcpGroupManyTools    = 8
 	mcpGroupSummaryRunes = 100
+	mcpGroupBriefRunes   = 70
 	mcpContextInline     = "inline"
 	mcpContextGrouped    = "grouped"
 )
@@ -121,12 +122,14 @@ type mcpCallParams struct {
 func newMCPCallTool(grouped []fantasy.AgentTool) *mcpCallTool {
 	call := &mcpCallTool{tools: make(map[string]fantasy.AgentTool, len(grouped))}
 	byServer := map[string][]string{}
+	namesOnly := map[string]bool{}
 	for _, tool := range grouped {
 		name := tool.Info().Name
 		call.tools[name] = tool
 		call.names = append(call.names, name)
 		if server, ok := mcpIdentity(tool); ok {
 			byServer[server.MCP()] = append(byServer[server.MCP()], name)
+			namesOnly[server.MCP()] = server.ContextMode() == mcpContextGrouped
 		}
 	}
 	slices.Sort(call.names)
@@ -139,22 +142,29 @@ func newMCPCallTool(grouped []fantasy.AgentTool) *mcpCallTool {
 	builder.WriteString("Call a tool of an MCP server that is listed here by name instead of as a separate card. Pass the full tool name and its arguments object. Read a tool's input schema with ")
 	builder.WriteString(readToolDocumentationName)
 	builder.WriteString(" when its arguments are not obvious.")
+	if slices.ContainsFunc(servers, func(server string) bool { return namesOnly[server] }) {
+		builder.WriteString(" Short-listed servers show only what each tool is for: before the first call of such a tool, read its documentation and argument schema with " + readToolDocumentationName + ", only for the tool you are about to use.")
+	}
 	for _, server := range servers {
 		names := byServer[server]
 		slices.Sort(names)
+		limit := mcpGroupSummaryRunes
+		if namesOnly[server] {
+			limit = mcpGroupBriefRunes
+		}
 		fmt.Fprintf(&builder, "\n\n%s:", server)
 		for _, name := range names {
-			fmt.Fprintf(&builder, "\n- %s: %s", name, groupSummary(call.tools[name].Info().Description))
+			fmt.Fprintf(&builder, "\n- %s: %s", name, groupSummary(call.tools[name].Info().Description, limit))
 		}
 	}
 	call.description = builder.String()
 	return call
 }
 
-func groupSummary(description string) string {
+func groupSummary(description string, limit int) string {
 	summary := shortToolSummary("", description)
-	if utf8.RuneCountInString(summary) > mcpGroupSummaryRunes {
-		summary = string([]rune(summary)[:mcpGroupSummaryRunes]) + "…"
+	if utf8.RuneCountInString(summary) > limit {
+		summary = string([]rune(summary)[:limit]) + "…"
 	}
 	return summary
 }

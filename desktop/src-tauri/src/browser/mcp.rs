@@ -1,4 +1,5 @@
 use super::{
+    areas::{self, Area},
     tools,
     workbench::{self, WorkbenchContext},
     BrowserState,
@@ -18,6 +19,7 @@ use std::{
 };
 use tauri::{AppHandle, Manager};
 
+const LEGACY_INSTRUCTIONS: &str = "Use desktop_capabilities to discover project-bound terminal, app launch, working context, GitHub and SSH tools. Do not supply workspace IDs or roots. Use terminal_create for new agent-owned terminals; existing user-owned terminals require explicit user handover. Use the Prime built-in browser for page automation. browser_tabs returns stable tab IDs. Each chat has its own tabs: page tools without tabId use this chat's tab, created in the background, and never touch the user's tabs or other chats. browser_new_tab opens in the background. browser_select_tab sets this chat's default tab. Use browser_snapshot references for clicking and typing. Verify websites and web apps only in the built-in browser with browser_* tools, never with app_* tools. After creating or changing a native desktop GUI application, verify it yourself with app_launch, app_find and app_* actions (each action returns interface changes as text, no vision needed), app_audit for layout problems and app_check for every verified behaviour, then app_close.";
 const MAX_BODY: usize = 1024 * 1024;
 const MAX_HEADERS: usize = 16 * 1024;
 const MAX_CONNECTIONS: usize = 16;
@@ -199,6 +201,7 @@ fn handle(
     app: &AppHandle,
     state: &BrowserState,
     workspace: Option<&str>,
+    area: Option<&Area>,
     message: &Value,
 ) -> Option<Value> {
     if message["method"] == "notifications/cancelled" {
@@ -215,7 +218,7 @@ fn handle(
     Some(match method {
         "initialize" => reply(
             id,
-            json!({"protocolVersion":message["params"]["protocolVersion"].as_str().unwrap_or("2025-03-26"),"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"prime-desktop-browser","version":"1.0.0"},"instructions":"Use desktop_capabilities to discover project-bound terminal, app launch, working context, GitHub and SSH tools. Do not supply workspace IDs or roots. Use terminal_create for new agent-owned terminals; existing user-owned terminals require explicit user handover. Use the Prime built-in browser for page automation. browser_tabs returns stable tab IDs. Each chat has its own tabs: page tools without tabId use this chat's tab, created in the background, and never touch the user's tabs or other chats. browser_new_tab opens in the background. browser_select_tab sets this chat's default tab. Use browser_snapshot references for clicking and typing. Verify websites and web apps only in the built-in browser with browser_* tools, never with app_* tools. After creating or changing a native desktop GUI application, verify it yourself with app_launch, app_find and app_* actions (each action returns interface changes as text, no vision needed), app_audit for layout problems and app_check for every verified behaviour, then app_close."}),
+            json!({"protocolVersion":message["params"]["protocolVersion"].as_str().unwrap_or("2025-03-26"),"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":format!("prime-desktop-{}", area.map_or("browser", |area| area.name)),"version":"1.0.0"},"instructions":area.map_or(LEGACY_INSTRUCTIONS, |area| area.summary)}),
         ),
         "ping" => reply(id, json!({})),
         "tools/list" => {
@@ -223,11 +226,15 @@ fn handle(
             if workspace.is_some() {
                 definitions.extend(workbench::definitions());
             }
+            let definitions = areas::filter(area, definitions);
             reply(id, json!({"tools":definitions}))
         }
         "tools/call" => {
             let params = &message["params"];
             let name = params["name"].as_str().unwrap_or("");
+            if area.is_some_and(|area| !areas::contains(area, name)) {
+                return Some(fail(id, -32602, "Tool does not belong to this desktop MCP area"));
+            }
             let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
             let session_id = params["_meta"]["prime/sessionId"]
                 .as_str()
@@ -282,9 +289,9 @@ fn connection(
         Ok(request) => request,
         Err(_) => return send(&mut stream, 400, None),
     };
-    if request.path != "/mcp" {
+    let Ok(area) = areas::from_path(&request.path) else {
         return send(&mut stream, 404, None);
-    }
+    };
     if !authorized(&request.authorization, token) {
         return send(&mut stream, 401, None);
     }
@@ -334,7 +341,7 @@ fn connection(
         }
         let replies: Vec<Value> = messages
             .iter()
-            .filter_map(|message| handle(app, state, workspace.as_deref(), message))
+            .filter_map(|message| handle(app, state, workspace.as_deref(), area, message))
             .collect();
         if replies.is_empty() {
             None
@@ -342,7 +349,7 @@ fn connection(
             Some(json!(replies))
         }
     } else {
-        handle(app, state, workspace.as_deref(), &message)
+        handle(app, state, workspace.as_deref(), area, &message)
     };
     send(
         &mut stream,

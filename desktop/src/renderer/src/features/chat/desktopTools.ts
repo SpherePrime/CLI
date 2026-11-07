@@ -25,6 +25,7 @@ const groups: { prefix: string; icon: LucideIcon; label: string }[] = [
   { prefix: 'git_', icon: GitCommitHorizontal, label: 'Git' },
   { prefix: 'ssh_', icon: Server, label: 'SSH' },
   { prefix: 'window_', icon: AppWindow, label: 'Окна' },
+  { prefix: 'app_', icon: AppWindow, label: 'Проверка приложения' },
   { prefix: 'context_', icon: Target, label: 'Контекст задачи' },
   { prefix: 'desktop_', icon: SlidersHorizontal, label: 'Prime Desktop' }
 ]

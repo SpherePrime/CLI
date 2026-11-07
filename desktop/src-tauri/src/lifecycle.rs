@@ -24,6 +24,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let browser_server = crate::browser::mcp::start(app.handle(), state.browser.clone())?;
     std::env::set_var("PRIME_DESKTOP_BROWSER_URL", &browser_server.url);
     std::env::set_var("PRIME_DESKTOP_BROWSER_TOKEN", &browser_server.token);
+    std::env::set_var("PRIME_DESKTOP_MCP_AREAS", crate::browser::areas::names());
     app.manage(browser_server);
     app.manage(state);
     if let Err(error) = crate::tray::create(app.handle()) {

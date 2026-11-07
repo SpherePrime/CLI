@@ -111,3 +111,16 @@ func TestMCPCallCardIsComplete(t *testing.T) {
 	require.True(t, complete)
 	require.NotContains(t, definition.Description, "Full documentation is available")
 }
+
+func TestMCPCallListsGroupedServersWithBriefSummaries(t *testing.T) {
+	var ran []string
+	tools := append(fakeServer("apps", mcpContextGrouped, 3, &ran), fakeServer("big", "", 8, &ran)...)
+	description := newMCPCallTool(tools).Info().Description
+	require.Contains(t, description, "- mcp_apps_t0: Does t0 with a long explanation.")
+	require.Contains(t, description, "- mcp_big_t0: Does t0")
+	require.NotContains(t, description, "query text")
+
+	presented := presentMCPTools(fakeServer("apps", mcpContextGrouped, 2, &ran))
+	require.NotNil(t, presented.CallTool)
+	require.Equal(t, []string{mcpCallToolName}, namesOf(presented.Visible))
+}

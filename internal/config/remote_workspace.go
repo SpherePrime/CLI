@@ -18,7 +18,7 @@ func (c *Config) IsDesktopMCP(name, workingDir string) bool {
 		return false
 	}
 	url, token := desktopBrowserCredentials()
-	return url != "" && token != "" && server.Type == MCPHttp && server.URL == url &&
+	return url != "" && token != "" && server.Type == MCPHttp && isDesktopMCPURL(server.URL, url) &&
 		server.Headers["Authorization"] == "Bearer "+token &&
 		server.Headers["X-Prime-Workspace"] == base64.RawURLEncoding.EncodeToString([]byte(workingDir))
 }
