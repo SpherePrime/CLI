@@ -1400,6 +1400,7 @@ func allToolNames() []string {
 		"question",
 		"sourcegraph",
 		"todos",
+		"goal_complete",
 		"view",
 		"write",
 		"list_mcp_resources",

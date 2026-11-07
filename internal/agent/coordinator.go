@@ -28,6 +28,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/discover"
 	"github.com/SpherePrime/CLI/internal/event"
 	"github.com/SpherePrime/CLI/internal/filetracker"
+	"github.com/SpherePrime/CLI/internal/goal"
 	"github.com/SpherePrime/CLI/internal/history"
 	"github.com/SpherePrime/CLI/internal/hooks"
 	"github.com/SpherePrime/CLI/internal/log"
@@ -150,6 +151,7 @@ type coordinator struct {
 	questions   question.Service
 	history     history.Service
 	filetracker filetracker.Service
+	goals       goal.Store
 	lspManager  *lsp.Manager
 	notify      pubsub.Publisher[notify.Notification]
 	runComplete pubsub.Publisher[notify.RunComplete]
@@ -203,6 +205,7 @@ type CoordinatorOptions struct {
 	Questions   question.Service
 	History     history.Service
 	FileTracker filetracker.Service
+	Goals       goal.Store
 	LSPManager  *lsp.Manager
 	Notify      pubsub.Publisher[notify.Notification]
 	RunComplete pubsub.Publisher[notify.RunComplete]
@@ -232,6 +235,7 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 		questions:       opts.Questions,
 		history:         opts.History,
 		filetracker:     opts.FileTracker,
+		goals:           opts.Goals,
 		lspManager:      opts.LSPManager,
 		notify:          opts.Notify,
 		runComplete:     opts.RunComplete,
@@ -430,6 +434,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	if !message.HiddenUserMessage(ctx) {
 		teamNote = c.teamNote(ctx, sessionID)
 	}
+	goalNote, goalActive := c.goalNote(ctx, sessionID)
 	run := func() (*fantasy.AgentResult, error) {
 		return agent.Run(ctx, SessionAgentCall{
 			ModelOverride:     &model,
@@ -437,6 +442,8 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			RunID:             runID,
 			Prompt:            prompt,
 			TeamNote:          teamNote,
+			GoalNote:          goalNote,
+			KeepTodos:         goalActive,
 			HiddenUserMessage: message.HiddenUserMessage(ctx),
 			Attachments:       attachments,
 			MaxOutputTokens:   maxTokens,
@@ -454,11 +461,14 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	// continueRun replays the request with a different prompt and without the
 	// accept reservation: that reservation belongs to the first attempt.
 	continueRun := func(nextPrompt string) (*fantasy.AgentResult, error) {
+		currentGoalNote, _ := c.goalNote(ctx, sessionID)
 		return agent.Run(ctx, SessionAgentCall{
 			ModelOverride:     &model,
 			SessionID:         sessionID,
 			RunID:             runID,
 			Prompt:            nextPrompt,
+			GoalNote:          currentGoalNote,
+			KeepTodos:         true,
 			HiddenUserMessage: true,
 			MaxOutputTokens:   maxTokens,
 			ProviderOptions:   mergedOptions,
@@ -473,24 +483,43 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	}
 	beforeLoaded := c.skillTracker.LoadedNames()
 	result, originalErr := run()
-	if isContextOverflowError(originalErr) && !c.cfg.Config().Options.DisableAutoSummarize {
-		if summarizeErr := agent.Summarize(ctx, sessionID, mergedOptions, c.makeAuthRefreshCallback(providerCfg)); summarizeErr != nil {
-			slog.Warn("Failed to summarize after context overflow", "error", summarizeErr, "session_id", sessionID)
-		} else {
-			result, originalErr = continueRun(contextOverflowContinuation(prompt))
+	recoverFromOverflow := func(stepPrompt string) {
+		if isContextOverflowError(originalErr) && !c.cfg.Config().Options.DisableAutoSummarize {
+			if summarizeErr := agent.Summarize(ctx, sessionID, mergedOptions, c.makeAuthRefreshCallback(providerCfg)); summarizeErr != nil {
+				slog.Warn("Failed to summarize after context overflow", "error", summarizeErr, "session_id", sessionID)
+			} else {
+				result, originalErr = continueRun(contextOverflowContinuation(stepPrompt))
+			}
 		}
 	}
 	// A provider error — a timeout, a rate limit, a dropped stream — ends the
 	// turn before the task is done. With auto-continue on, the chat resumes
 	// itself the same way a sub-agent does, so the user does not have to press
 	// retry by hand. A cancelled or normally finished run never continues.
-	for attempt := 0; autoContinueEnabled(c.cfg.Config(), ctx, originalErr, attempt); attempt++ {
-		slog.Info("Continuing chat after provider error",
-			"session_id", sessionID,
-			"attempt", attempt+1,
-			"error", originalErr,
-		)
-		result, originalErr = continueRun(autoContinuePrompt)
+	recoverFromProviderErrors := func() {
+		for attempt := 0; autoContinueEnabled(c.cfg.Config(), ctx, originalErr, attempt); attempt++ {
+			slog.Info("Continuing chat after provider error",
+				"session_id", sessionID,
+				"attempt", attempt+1,
+				"error", originalErr,
+			)
+			result, originalErr = continueRun(autoContinuePrompt)
+		}
+	}
+	recoverFromOverflow(prompt)
+	recoverFromProviderErrors()
+	goalDriver := goal.NewDriver()
+	for originalErr == nil && ctx.Err() == nil {
+		stepPrompt, stop := c.nextGoalStep(ctx, sessionID, goalDriver)
+		if stop != goal.StopNone {
+			if stop != goal.StopNoGoal {
+				slog.Info("Chat goal loop stopped", "session_id", sessionID, "reason", stop)
+			}
+			break
+		}
+		result, originalErr = continueRun(stepPrompt)
+		recoverFromOverflow(stepPrompt)
+		recoverFromProviderErrors()
 	}
 	logTurnSkillUsage(sessionID, prompt, c.activeSkills, c.skillTracker, beforeLoaded)
 
@@ -1027,6 +1056,9 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 	// Question tool is interactive-only and not available to sub-agents.
 	if !isSubAgent && c.interactive {
 		allTools = append(allTools, tools.NewQuestionTool(c.questions))
+	}
+	if !isSubAgent && c.goals != nil {
+		allTools = append(allTools, tools.NewGoalCompleteTool(c.goals, c.sessions))
 	}
 
 	// Add LSP tools if user has configured LSPs or auto_lsp is enabled (nil or true).

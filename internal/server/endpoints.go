@@ -184,6 +184,33 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(404, 500).
 			Handle(c.handleDeleteWorkspaceSession),
 
+		apigen.Get("/v1/workspaces/{id}/sessions/{sid}/goal").
+			Summary("Get chat goal").
+			Tags("sessions").
+			PathParam("id", "Workspace ID").
+			PathParam("sid", "Session ID").
+			Responds(proto.ChatGoal{}).
+			Fails(404, 500).
+			Handle(c.handleGetSessionGoal),
+
+		apigen.Put("/v1/workspaces/{id}/sessions/{sid}/goal").
+			Summary("Set chat goal").
+			Tags("sessions").
+			PathParam("id", "Workspace ID").
+			PathParam("sid", "Session ID").
+			Accepts(proto.ChatGoalRequest{}).
+			Responds(proto.ChatGoal{}).
+			Fails(400, 404, 500).
+			Handle(c.handlePutSessionGoal),
+
+		apigen.Delete("/v1/workspaces/{id}/sessions/{sid}/goal").
+			Summary("Clear chat goal").
+			Tags("sessions").
+			PathParam("id", "Workspace ID").
+			PathParam("sid", "Session ID").
+			Fails(404, 500).
+			Handle(c.handleDeleteSessionGoal),
+
 		apigen.Get("/v1/workspaces/{id}/sessions/{sid}/history").
 			Summary("Get session history").
 			Tags("sessions").
