@@ -183,14 +183,17 @@ func TestAppAttachPermissionDescription(t *testing.T) {
 		description := tool.permissionDescription(`{"hwnd":"45678","pid":1234,"identity":"native-token","title":"Calculator","mode":"view"}`)
 		require.Equal(t, `Allow view of application window "Calculator" (PID 1234, HWND 45678) in this chat`, description)
 	})
+	t.Run("title only renders a match", func(t *testing.T) {
+		description := tool.permissionDescription(`{"title":"Calculator"}`)
+		require.Equal(t, `Allow control of application window matching "Calculator" in this chat`, description)
+	})
 	for _, scenario := range []struct {
 		name  string
 		input string
 	}{
-		{name: "missing title", input: `{"hwnd":"45678","pid":1234,"identity":"native-token","title":"","mode":"control"}`},
-		{name: "invalid mode", input: `{"hwnd":"45678","pid":1234,"identity":"native-token","title":"Calculator","mode":"read"}`},
-		{name: "missing hwnd", input: `{"hwnd":"","pid":1234,"identity":"native-token","title":"Calculator","mode":"control"}`},
-		{name: "missing pid", input: `{"hwnd":"45678","pid":0,"identity":"native-token","title":"Calculator","mode":"control"}`},
+		{name: "invalid mode", input: `{"hwnd":"45678","pid":1234,"title":"Calculator","mode":"read"}`},
+		{name: "no window", input: `{"debugPort":9222}`},
+		{name: "invalid json", input: `{`},
 	} {
 		t.Run(scenario.name+" falls back", func(t *testing.T) {
 			description := tool.permissionDescription(scenario.input)
@@ -198,4 +201,10 @@ func TestAppAttachPermissionDescription(t *testing.T) {
 			require.NotContains(t, description, "Calculator")
 		})
 	}
+}
+
+func TestAppLaunchPermissionDescription(t *testing.T) {
+	tool := &Tool{mcpName: "app-fixture", tool: &mcp.Tool{Name: "app_launch"}}
+	require.Equal(t, `Run "npm run dev" in desktop and control the application window it opens in this chat`, tool.permissionDescription(`{"command":"npm run dev","cwd":"desktop"}`))
+	require.Equal(t, "execute mcp_app-fixture_app_launch with the following parameters:", tool.permissionDescription(`{"command":""}`))
 }

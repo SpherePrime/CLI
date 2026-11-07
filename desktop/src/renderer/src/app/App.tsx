@@ -143,6 +143,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   }
   const toggleFocus = () => setFocusMode((value) => !value)
   const [browserRequest, setBrowserRequest] = useState(0)
+  const [appRequest, setAppRequest] = useState(0)
   const viewedChat = useBrowserView(w.session)
   const [agentRequest, setAgentRequest] = useState<AgentRequest>()
   useEffect(() => {
@@ -163,7 +164,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           event.type === 'workbench' &&
           event.payload?.action === 'activate' &&
           event.workspaceId === w.project?.id &&
-          ['terminal', 'automations', 'teams', 'launch', 'github', 'windows', 'appTesting'].includes(
+          ['terminal', 'automations', 'teams', 'launch', 'github', 'windows'].includes(
             event.payload.view
           )
         )
@@ -174,6 +175,17 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           event.workspaceId === w.project?.id
         )
           openTools('windows')
+        if (
+          event.type === 'appui' &&
+          event.payload?.activate &&
+          event.workspaceId === w.project?.id &&
+          isForViewedChat(event.payload.sessionId, viewedChat.current)
+        ) {
+          setInspector(true)
+          setCollapsed('inspector', false)
+          setFocusMode(false)
+          setAppRequest(Date.now())
+        }
         if (
           event.type === 'browser' &&
           event.payload?.action === 'activate' &&
@@ -388,6 +400,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               workspace={w}
               openDocument={documents.open}
               browserRequest={browserRequest}
+              appRequest={appRequest}
               agentRequest={agentRequest}
             />
           </>

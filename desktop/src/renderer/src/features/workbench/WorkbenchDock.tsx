@@ -2,7 +2,6 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import {
   AppWindow,
   Clock3,
-  FlaskConical,
   Github,
   Maximize2,
   Minimize2,
@@ -13,7 +12,6 @@ import {
 } from 'lucide-react'
 import { GithubPanel } from '../github/GithubPanel'
 import { WindowsPanel } from '../windows/WindowsPanel'
-import { AppTestingPanel } from '../appTesting/AppTestingPanel'
 import { startAgentTask } from './agentTask'
 import { LaunchPanel } from '../launch/LaunchPanel'
 import type { LaunchRequest } from '../../../../shared/launch'
@@ -36,7 +34,6 @@ export type WorkbenchView =
   | 'launch'
   | 'github'
   | 'windows'
-  | 'appTesting'
 
 const minimumConversation = 180
 
@@ -98,8 +95,7 @@ export function WorkbenchDock({
     { id: 'automations', label: t('Автоматизации'), icon: Clock3 },
     { id: 'teams', label: t('Команды'), icon: Users },
     { id: 'github', label: 'GitHub', icon: Github },
-    { id: 'windows', label: t('Окна'), icon: AppWindow },
-    { id: 'appTesting', label: t('Тесты приложений'), icon: FlaskConical }
+    { id: 'windows', label: t('Окна'), icon: AppWindow }
   ]
   const workspaceId = w.project?.id || ''
   const terminal = useCallback(
@@ -235,14 +231,6 @@ export function WorkbenchDock({
             workspaceId={workspaceId}
             sessionId={realSessionId(w.session)}
             sessionTitle={w.session?.title}
-            onError={w.errorHandler}
-          />
-        )}
-        {w.project && view === 'appTesting' && (
-          <AppTestingPanel
-            workspaceId={workspaceId}
-            sessionId={realSessionId(w.session)}
-            onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
             onError={w.errorHandler}
           />
         )}

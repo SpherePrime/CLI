@@ -46,11 +46,12 @@ pub enum UiaRequest {
         hwnd: String,
         locator: Locator,
     },
-    ElementAtCursor {
-        hwnd: String,
-    },
     ElementAtPoint {
         hwnd: String,
+        x: i32,
+        y: i32,
+    },
+    BoundsAtPoint {
         x: i32,
         y: i32,
     },

@@ -1,48 +1,60 @@
-import { useMemo } from 'react'
-import type { AppUiSnapshot } from '../../../../shared/appTesting'
-import { appTestingCopy } from './copy'
+import { useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
+import type { AppUiNode, AppUiSnapshot } from '../../../../shared/appTesting'
+import type { AppTestingCopy } from './copy'
 import { flattenSnapshot } from './snapshotRows'
 
+const MAX_ROWS = 400
+
 type Props = {
-  language: 'ru' | 'en'
-  snapshot?: AppUiSnapshot | null
-  query: string
-  selected?: string
-  onSelect(ref: string): void
+  copy: AppTestingCopy
+  snapshot: AppUiSnapshot | null
+  highlighted: string[]
+  onPick(node: AppUiNode): void
 }
 
-export function SnapshotTree({ language, snapshot, query, selected, onSelect }: Props) {
-  const c = appTestingCopy[language]
+export function SnapshotTree({ copy, snapshot, highlighted, onPick }: Props) {
+  const [query, setQuery] = useState('')
   const rows = useMemo(() => flattenSnapshot(snapshot?.nodes ?? []), [snapshot])
   const needle = query.trim().toLowerCase()
-  const visible = needle ? rows.filter((row) => row.label.toLowerCase().includes(needle)) : rows
+  const visible = (needle ? rows.filter((row) => row.label.toLowerCase().includes(needle)) : rows).slice(
+    0,
+    MAX_ROWS
+  )
   if (!snapshot) return null
   return (
     <div className="app-testing-tree">
-      {snapshot.truncated && (
-        <p className="app-testing-warning" role="status">
-          {c.truncated}
-        </p>
-      )}
+      <label className="app-testing-search">
+        <Search size={13} />
+        <input
+          value={query}
+          placeholder={copy.search}
+          aria-label={copy.search}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </label>
+      {snapshot.truncated && <p className="app-testing-note">{copy.truncated}</p>}
       {snapshot.warnings.map((warning) => (
-        <p className="app-testing-warning" role="status" key={warning}>
+        <p className="app-testing-note" key={warning}>
           {warning}
         </p>
       ))}
       {visible.length === 0 ? (
-        <p className="app-testing-empty">{c.noMatch}</p>
+        <p className="app-testing-note">{copy.noMatch}</p>
       ) : (
         <ul className="app-testing-rows" role="tree">
           {visible.map((row) => (
-            <li key={row.ref} role="treeitem" aria-selected={selected === row.ref}>
+            <li key={row.ref} role="treeitem">
               <button
                 type="button"
-                className={selected === row.ref ? 'active' : ''}
-                style={{ paddingLeft: `${8 + row.depth * 14}px` }}
+                className={highlighted.includes(row.ref) ? 'flagged' : ''}
+                style={{ paddingLeft: `${6 + (needle ? 0 : Math.min(row.depth, 12) * 10)}px` }}
                 title={row.label}
-                onClick={() => onSelect(row.ref)}
+                onClick={() => onPick(row.node)}
               >
-                {row.label}
+                <span className="app-testing-role">{row.node.role}</span>
+                <span className="app-testing-name">{row.node.name || row.node.automationId || row.ref}</span>
+                {row.node.value && <span className="app-testing-value">{row.node.value}</span>}
               </button>
             </li>
           ))}
