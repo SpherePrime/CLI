@@ -1694,7 +1694,7 @@ func (a *sessionAgent) createUserMessage(ctx context.Context, call SessionAgentC
 	return msg, nil
 }
 
-func (a *sessionAgent) preparePrompt(msgs []message.Message, _ bool, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
+func (a *sessionAgent) preparePrompt(msgs []message.Message, supportsImages bool, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
 	var history []fantasy.Message
 	if !a.isSubAgent {
 		history = append(history, fantasy.NewUserMessage(
@@ -1753,6 +1753,10 @@ If not, please feel free to ignore. Again do not mention this message to the use
 		}
 	}
 
+	var extraImages map[string][]fantasy.FilePart
+	if supportsImages {
+		extraImages = extraToolImages(msgs)
+	}
 	for _, m := range msgs {
 		if len(m.Parts) == 0 {
 			continue
@@ -1770,6 +1774,9 @@ If not, please feel free to ignore. Again do not mention this message to the use
 
 		if m.Role == message.Assistant && len(m.ToolCalls()) > 0 {
 			history = append(history, toolResultsForCalls(m, toolResultsByCall))
+			if imagesMessage, ok := extraImagesMessage(m.ToolCalls(), extraImages); ok {
+				history = append(history, imagesMessage)
+			}
 		}
 	}
 

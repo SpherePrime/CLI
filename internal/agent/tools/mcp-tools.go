@@ -202,7 +202,13 @@ func mcpResponse(ctx context.Context, result mcp.ToolResult) (response fantasy.T
 			return fantasy.NewTextErrorResponse(fmt.Sprintf("This model (%s) does not support image data.", modelName))
 		}
 
-		if result.Type == "image" {
+		if result.Type == "image" && len(result.Images) > 1 {
+			payloads := make([]fantasy.ImagePayload, 0, len(result.Images))
+			for _, image := range result.Images {
+				payloads = append(payloads, fantasy.ImagePayload{Data: image.Data, MediaType: image.MediaType})
+			}
+			response = fantasy.NewImagesResponse(payloads, result.Content)
+		} else if result.Type == "image" {
 			response = fantasy.NewImageResponse(result.Data, result.MediaType)
 		} else {
 			response = fantasy.NewMediaResponse(result.Data, result.MediaType)

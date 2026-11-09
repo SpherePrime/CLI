@@ -23,8 +23,15 @@ type ToolResult struct {
 	Content           string
 	Data              []byte
 	MediaType         string
+	Images            []ToolImage
 	IsError           bool
 	StructuredContent any
+}
+
+// ToolImage is one image returned by an MCP tool.
+type ToolImage struct {
+	Data      []byte
+	MediaType string
 }
 
 var allTools = csync.NewMap[string, []*Tool]()
@@ -70,6 +77,7 @@ func convertToolResult(result *mcp.CallToolResult) ToolResult {
 	var textParts []string
 	var imageData []byte
 	var imageMimeType string
+	var images []ToolImage
 	var audioData []byte
 	var audioMimeType string
 
@@ -78,6 +86,7 @@ func convertToolResult(result *mcp.CallToolResult) ToolResult {
 		case *mcp.TextContent:
 			textParts = append(textParts, content.Text)
 		case *mcp.ImageContent:
+			images = append(images, ToolImage{Data: ensureRawBytes(content.Data), MediaType: content.MIMEType})
 			if imageData == nil {
 				imageData = content.Data
 				imageMimeType = content.MIMEType
@@ -104,6 +113,7 @@ func convertToolResult(result *mcp.CallToolResult) ToolResult {
 			Content:           textContent,
 			Data:              ensureRawBytes(imageData),
 			MediaType:         imageMimeType,
+			Images:            images,
 		}
 	}
 
