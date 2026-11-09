@@ -34,6 +34,9 @@ func TestDesktopPromptIdentityAndCapabilities(t *testing.T) {
 			require.NotContains(t, body, "private-endpoint")
 			if p.Name() == "plan" {
 				require.Contains(t, body, "You are in read-only mode")
+			} else {
+				require.Contains(t, body, "<completion_check>")
+				require.Contains(t, body, "For the completion check, use the desktop tools")
 			}
 		}
 	}
