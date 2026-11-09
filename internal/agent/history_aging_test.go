@@ -97,7 +97,8 @@ func TestAgingShrinksLongCallArguments(t *testing.T) {
 	var decoded map[string]string
 	require.NoError(t, json.Unmarshal([]byte(shrunk), &decoded))
 	require.Equal(t, "a.go", decoded["file_path"])
-	require.Equal(t, "[5000 bytes omitted from an earlier call]", decoded["content"])
+	require.Equal(t, agedPlaceholder(5000), decoded["content"])
+	require.True(t, agedPlaceholderPattern.MatchString(decoded["content"]))
 	require.Equal(t, `{"a":"<b>"}`, shrinkCallInput(`{"a":"<b>"}`))
 }
 

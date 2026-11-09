@@ -310,7 +310,7 @@ func shrinkJSONStrings(value any) (any, bool) {
 		if len(v) < agingCallStringMinBytes {
 			return v, false
 		}
-		return fmt.Sprintf("[%d bytes omitted from an earlier call]", len(v)), true
+		return agedPlaceholder(len(v)), true
 	case map[string]any:
 		changed := false
 		for key, item := range v {

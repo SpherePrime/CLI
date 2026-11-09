@@ -1130,6 +1130,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 	// per delegated turn. The top-level invocation of the sub-agent tool
 	// itself is still wrapped from the coder's side.
 	filteredTools = wrapToolsWithHooks(filteredTools, hookRunner, isSubAgent)
+	filteredTools = wrapToolsWithPlaceholderGuard(filteredTools)
 
 	return filteredTools, nil
 }
