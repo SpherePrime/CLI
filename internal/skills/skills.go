@@ -252,6 +252,9 @@ func DiscoverWithStates(paths []string) ([]*Skill, []*SkillState) {
 			if d.IsDir() || d.Name() != SkillFileName {
 				return nil
 			}
+			if isMaterializedBuiltin(filepath.Dir(path)) {
+				return nil
+			}
 			mu.Lock()
 			if seen[path] {
 				mu.Unlock()

@@ -363,7 +363,7 @@ func TestReadBuiltinSkillGivesDiskDirectoryForResources(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, resp.IsError)
 	require.Contains(t, resp.Content, "Prime Designer")
-	directory := filepath.Join(dataRoot, "skills", "prime-designer")
+	directory := filepath.Join(dataRoot, "builtin-skills", "prime-designer")
 	require.Contains(t, resp.Content, "<skill_directory>"+filepath.ToSlash(directory)+"</skill_directory>")
 	require.FileExists(t, filepath.Join(directory, "scripts", "audit.mjs"))
 
