@@ -109,4 +109,9 @@ func TestCoderPromptListsPrimeDesignerSkill(t *testing.T) {
 	require.Contains(t, got, "prime://skills/prime-designer/SKILL.md")
 	require.NotContains(t, got, "Design lead and frontend engineer for distinctive, production-ready interfaces and visuals with a measurable quality gate.\n\n# Prime Designer")
 	require.NotContains(t, got, "## Anti-slop rules")
+	require.Contains(t, got, "read every matching SKILL.md, not only the first")
+	require.Contains(t, got, "read prime://skills/prime-designer/SKILL.md before planning")
+
+	smart := renderCoderPrompt(t, true)
+	require.Contains(t, smart, "read prime://skills/prime-designer/SKILL.md before planning")
 }

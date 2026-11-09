@@ -43,6 +43,7 @@ type PromptDat struct {
 	SmartTools         bool
 	InstructionTools   bool
 	Desktop            bool
+	DesignSkill        string
 }
 
 type ContextFile struct {
@@ -241,6 +242,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 		SmartTools:       cfg.Options.SmartTools,
 		InstructionTools: instructionToolsAvailable(*cfg, p.name),
 		Desktop:          os.Getenv("PRIME_DESKTOP") == "1",
+		DesignSkill:      designSkillLocation(allSkills),
 	}
 	if isGit {
 		var err error
