@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Defects fixture</title>
+<style>
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: #222; background: #fff; }
+  .header { position: fixed; top: 0; left: 0; right: 0; height: 64px; background: #fff; box-shadow: 0 1px 0 #ddd; z-index: 10; }
+  .hero-title { margin: 24px 16px; font-size: 40px; }
+  .wide-strip { width: 1400px; height: 40px; background: #eee; }
+  .stack { position: relative; height: 80px; margin: 16px; }
+  .stack .first, .stack .second { position: absolute; top: 0; left: 0; font-size: 20px; }
+  .stack .second { top: 8px; left: 20px; }
+  .pill { width: 120px; overflow: hidden; white-space: nowrap; border: 1px solid #ccc; margin: 16px; }
+  .faint { color: #bbb; margin: 16px; }
+  .crowded { display: flex; gap: 2px; margin: 16px; }
+  .tiny-button { width: 16px; height: 16px; padding: 0; font-size: 12px; line-height: 1; }
+  .stretched { width: 300px; height: 60px; margin: 16px; display: block; }
+  .no-focus:focus { outline: none; }
+  .long-measure { max-width: none; margin: 16px; }
+</style>
+</head>
+<body>
+  <div class="header"><a href="#" class="no-focus">Brand</a></div>
+  <h1 class="hero-title">Hero title hidden under a fixed header</h1>
+  <div class="wide-strip"></div>
+  <div class="stack"><p class="first">First overlapping line</p><p class="second">Second overlapping line</p></div>
+  <div class="pill">This label is much too long for its pill container</div>
+  <p class="faint">Low contrast paragraph text that is hard to read.</p>
+  <div class="crowded"><button class="tiny-button"></button><button class="tiny-button" aria-label="Next">›</button></div>
+  <img class="stretched" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23c33'/%3E%3C/svg%3E">
+  <h3>Skipped heading level here for the structural check</h3>
+  <p class="long-measure">This paragraph runs the full width of a desktop window so that every line carries far more than eighty characters, which makes the eye lose its place when jumping back to the start of the next line. It continues for a while to exceed the length threshold used by the audit.</p>
+  <input placeholder="Email only in placeholder">
+</body>
+</html>

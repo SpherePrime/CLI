@@ -1,0 +1,17 @@
+{
+  "name": "prime-designer-qa",
+  "private": true,
+  "type": "module",
+  "description": "Visual QA tools for the prime-designer skill",
+  "scripts": {
+    "audit": "node audit.mjs",
+    "contrast": "node contrast.mjs",
+    "selftest": "node selftest.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.56.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

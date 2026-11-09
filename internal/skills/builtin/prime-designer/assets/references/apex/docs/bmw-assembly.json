@@ -1,0 +1,22 @@
+{
+  "modules": [
+    "front",
+    "rear",
+    "shell",
+    "trunk",
+    "door-right",
+    "cabin",
+    "door-left",
+    "hood",
+    "interior",
+    "engine",
+    "chassis",
+    "wheel-rear-right",
+    "wheel-rear-left",
+    "wheel-front-right",
+    "wheel-front-left"
+  ],
+  "drawCalls": 87,
+  "source": "BMW M4 Competition M Package",
+  "sourceTriangles": 206593
+}
