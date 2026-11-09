@@ -15,6 +15,7 @@ import {
   ScrollText,
   Search,
   Sparkles,
+  Target,
   Terminal,
   Users,
   Waypoints,
@@ -57,6 +58,11 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
       input?.op === 'send'
         ? [text(input?.worker_id), text(input?.text).slice(0, 120)].filter(Boolean).join(' · ')
         : ''
+  }),
+  goal_complete: (input, t) => ({
+    icon: Target,
+    label: t('Цель выполнена'),
+    detail: text(input?.summary).slice(0, 160)
   }),
   job_output: (_input, t) => ({ icon: Terminal, label: t('Вывод фоновой задачи'), detail: '' }),
   job_kill: (_input, t) => ({ icon: Terminal, label: t('Остановка задачи'), detail: '' }),

@@ -661,6 +661,7 @@ export const english: Record<string, string> = {
   'Ресурс MCP': 'MCP resource',
   'Поиск по репозиториям': 'Repository search',
   'Поиск инструкций': 'Search instructions',
+  'Цель выполнена': 'Goal achieved',
   'Чтение инструкции': 'Read instruction',
   'Поиск навыков': 'Search skills',
   'Поиск MCP': 'Search MCP',

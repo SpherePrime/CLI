@@ -66,3 +66,13 @@ func withGoalNote(messages []fantasy.Message, note string) []fantasy.Message {
 	result = append(result, fantasy.NewSystemMessage(note))
 	return append(result, messages[insertAt:]...)
 }
+
+func withoutGoalTools(available []fantasy.AgentTool) []fantasy.AgentTool {
+	filtered := available[:0:0]
+	for _, tool := range available {
+		if tool.Info().Name != goal.CompleteToolName {
+			filtered = append(filtered, tool)
+		}
+	}
+	return filtered
+}

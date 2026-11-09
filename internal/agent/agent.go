@@ -714,6 +714,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 
 	// Copy mutable fields under lock to avoid races with SetTools/SetModels.
 	agentTools := a.tools.Copy()
+	if call.GoalNote == "" {
+		agentTools = withoutGoalTools(agentTools)
+	}
 	largeModel := a.largeModel.Get()
 	if call.ModelOverride != nil {
 		largeModel = *call.ModelOverride
@@ -872,6 +875,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 
 			// Use latest tools (updated by SetTools when MCP tools change).
 			prepared.Tools = a.tools.Copy()
+			if call.GoalNote == "" {
+				prepared.Tools = withoutGoalTools(prepared.Tools)
+			}
 			searchRecovery.prepare(options.Steps, &prepared)
 			selectedTools := smartToolSelection(prepared.Tools, options.Steps, prepared.Messages...)
 			presentation := presentMCPTools(selectedTools)
