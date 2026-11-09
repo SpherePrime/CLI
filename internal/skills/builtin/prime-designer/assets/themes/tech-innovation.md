@@ -1,6 +1,6 @@
 # Tech Innovation
 
-A bold and modern theme with high-contrast colors perfect for cutting-edge technology presentations.
+A neon theme with Electric Blue and Neon Cyan on dark gray. Use it only when the user explicitly asks for a neon look; a tech or AI subject alone is not a reason.
 
 ## Color Palette
 
@@ -16,7 +16,7 @@ A bold and modern theme with high-contrast colors perfect for cutting-edge techn
 
 ## Best Used For
 
-Tech startups, software launches, innovation showcases, AI/ML presentations, digital transformation content.
+Projects where the user explicitly asked for a neon or cyber look.
 
 ## Verified contrast pairs
 
