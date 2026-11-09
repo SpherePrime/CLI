@@ -724,6 +724,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	systemPrompt := a.systemPrompt.Get()
 	promptPrefix := a.systemPromptPrefix.Get()
 	systemPrompt += mcpInstructionsBlock(connectedMCPInstructions(mcp.GetStates()))
+	systemPrompt += visualCheckBlock(largeModel.CatwalkCfg.SupportsImages)
 
 	if len(agentTools) > 0 {
 		// Add Anthropic caching to the last tool.
