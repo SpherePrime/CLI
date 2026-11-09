@@ -89,6 +89,11 @@ func MaterializeBuiltin(name, root string) (string, error) {
 	return target, nil
 }
 
+func isMaterializedBuiltin(directory string) bool {
+	_, err := os.Stat(filepath.Join(directory, materializedStampFile))
+	return err == nil
+}
+
 func builtinStamp(source string) (string, error) {
 	if cached, ok := builtinStamps.Load(source); ok {
 		return cached.(string), nil

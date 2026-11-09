@@ -70,3 +70,18 @@ func TestMaterializeBuiltinCopiesAndRefreshes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, embedded, refreshed)
 }
+
+func TestDiscoverSkipsMaterializedBuiltinCopies(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	_, err := MaterializeBuiltin("prime-designer", root)
+	require.NoError(t, err)
+	userSkill := filepath.Join(root, "my-skill")
+	require.NoError(t, os.MkdirAll(userSkill, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(userSkill, SkillFileName), []byte("---\nname: my-skill\ndescription: Mine.\n---\nBody\n"), 0o644))
+
+	discovered := Discover([]string{root})
+	require.Len(t, discovered, 1)
+	require.Equal(t, "my-skill", discovered[0].Name)
+}

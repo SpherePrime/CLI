@@ -501,7 +501,7 @@ func builtinSkillDirectoryNote(location string) string {
 	if !ok || !skills.BuiltinHasResources(name) {
 		return ""
 	}
-	directory, err := skills.MaterializeBuiltin(name, filepath.Join(config.GlobalDataDir(), "skills"))
+	directory, err := skills.MaterializeBuiltin(name, filepath.Join(config.GlobalDataDir(), "builtin-skills"))
 	if err != nil {
 		return fmt.Sprintf("\nSkill scripts and assets are unavailable on disk: %v\n", err)
 	}
