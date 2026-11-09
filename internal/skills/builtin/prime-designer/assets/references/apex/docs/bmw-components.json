@@ -1,0 +1,3982 @@
+[
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 0,
+    "triangles": 354,
+    "min": [
+      2.528,
+      0.228,
+      0.8
+    ],
+    "max": [
+      2.936,
+      0.333,
+      1.189
+    ],
+    "center": [
+      2.732,
+      0.28,
+      0.994
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 1,
+    "triangles": 320,
+    "min": [
+      -3.123,
+      0.325,
+      0.145
+    ],
+    "max": [
+      -3.019,
+      0.443,
+      0.262
+    ],
+    "center": [
+      -3.071,
+      0.384,
+      0.204
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 2,
+    "triangles": 421,
+    "min": [
+      1.199,
+      0.778,
+      1.161
+    ],
+    "max": [
+      1.462,
+      1.052,
+      1.218
+    ],
+    "center": [
+      1.33,
+      0.915,
+      1.189
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 3,
+    "triangles": 688,
+    "min": [
+      -3.02,
+      1.348,
+      -0.783
+    ],
+    "max": [
+      -2.813,
+      1.41,
+      0.783
+    ],
+    "center": [
+      -2.916,
+      1.379,
+      0
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 4,
+    "triangles": 320,
+    "min": [
+      -3.144,
+      0.407,
+      0.047
+    ],
+    "max": [
+      -3.04,
+      0.524,
+      0.164
+    ],
+    "center": [
+      -3.092,
+      0.466,
+      0.106
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 5,
+    "triangles": 320,
+    "min": [
+      -3.144,
+      0.407,
+      -0.164
+    ],
+    "max": [
+      -3.04,
+      0.524,
+      -0.047
+    ],
+    "center": [
+      -3.092,
+      0.466,
+      -0.105
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 6,
+    "triangles": 320,
+    "min": [
+      -3.123,
+      0.325,
+      -0.262
+    ],
+    "max": [
+      -3.019,
+      0.443,
+      -0.145
+    ],
+    "center": [
+      -3.071,
+      0.384,
+      -0.204
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 7,
+    "triangles": 405,
+    "min": [
+      1.338,
+      0.921,
+      1.188
+    ],
+    "max": [
+      1.365,
+      0.937,
+      1.196
+    ],
+    "center": [
+      1.352,
+      0.929,
+      1.192
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 8,
+    "triangles": 363,
+    "min": [
+      1.316,
+      0.922,
+      1.188
+    ],
+    "max": [
+      1.349,
+      0.938,
+      1.196
+    ],
+    "center": [
+      1.332,
+      0.93,
+      1.192
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 9,
+    "triangles": 356,
+    "min": [
+      1.37,
+      0.919,
+      1.187
+    ],
+    "max": [
+      1.393,
+      0.935,
+      1.195
+    ],
+    "center": [
+      1.382,
+      0.927,
+      1.191
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 10,
+    "triangles": 354,
+    "min": [
+      2.528,
+      0.228,
+      -1.189
+    ],
+    "max": [
+      2.936,
+      0.333,
+      -0.8
+    ],
+    "center": [
+      2.732,
+      0.28,
+      -0.994
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 12,
+    "triangles": 262,
+    "min": [
+      1.309,
+      0.91,
+      1.19
+    ],
+    "max": [
+      1.392,
+      0.922,
+      1.198
+    ],
+    "center": [
+      1.35,
+      0.916,
+      1.194
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 13,
+    "triangles": 249,
+    "min": [
+      -1.426,
+      1.756,
+      -0.062
+    ],
+    "max": [
+      -1.148,
+      1.851,
+      0.062
+    ],
+    "center": [
+      -1.287,
+      1.803,
+      0
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 14,
+    "triangles": 356,
+    "min": [
+      -2.981,
+      1.257,
+      0.543
+    ],
+    "max": [
+      -2.962,
+      1.284,
+      0.583
+    ],
+    "center": [
+      -2.971,
+      1.271,
+      0.563
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 15,
+    "triangles": 409,
+    "min": [
+      -2.992,
+      1.257,
+      0.488
+    ],
+    "max": [
+      -2.973,
+      1.285,
+      0.533
+    ],
+    "center": [
+      -2.983,
+      1.271,
+      0.511
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 16,
+    "triangles": 266,
+    "min": [
+      -2.996,
+      1.24,
+      0.439
+    ],
+    "max": [
+      -2.961,
+      1.256,
+      0.582
+    ],
+    "center": [
+      -2.979,
+      1.248,
+      0.51
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 17,
+    "triangles": 410,
+    "min": [
+      -3,
+      1.258,
+      0.449
+    ],
+    "max": [
+      -2.984,
+      1.286,
+      0.503
+    ],
+    "center": [
+      -2.992,
+      1.272,
+      0.476
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 18,
+    "triangles": 421,
+    "min": [
+      1.199,
+      0.778,
+      -1.218
+    ],
+    "max": [
+      1.462,
+      1.052,
+      -1.161
+    ],
+    "center": [
+      1.33,
+      0.915,
+      -1.189
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 20,
+    "triangles": 362,
+    "min": [
+      1.356,
+      0.92,
+      -1.196
+    ],
+    "max": [
+      1.386,
+      0.937,
+      -1.187
+    ],
+    "center": [
+      1.371,
+      0.928,
+      -1.191
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 21,
+    "triangles": 403,
+    "min": [
+      1.338,
+      0.921,
+      -1.195
+    ],
+    "max": [
+      1.364,
+      0.937,
+      -1.186
+    ],
+    "center": [
+      1.351,
+      0.929,
+      -1.191
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 22,
+    "triangles": 356,
+    "min": [
+      1.31,
+      0.923,
+      -1.193
+    ],
+    "max": [
+      1.333,
+      0.938,
+      -1.185
+    ],
+    "center": [
+      1.322,
+      0.931,
+      -1.189
+    ]
+  },
+  {
+    "material": "Meshesblack161Mtl",
+    "index": 23,
+    "triangles": 264,
+    "min": [
+      1.311,
+      0.91,
+      -1.198
+    ],
+    "max": [
+      1.392,
+      0.922,
+      -1.188
+    ],
+    "center": [
+      1.351,
+      0.916,
+      -1.193
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 0,
+    "triangles": 1016,
+    "min": [
+      2.755,
+      0.197,
+      -0.957
+    ],
+    "max": [
+      3.112,
+      0.916,
+      0.957
+    ],
+    "center": [
+      2.934,
+      0.557,
+      0
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 2,
+    "triangles": 213,
+    "min": [
+      3.013,
+      0.76,
+      0.044
+    ],
+    "max": [
+      3.134,
+      0.813,
+      0.438
+    ],
+    "center": [
+      3.073,
+      0.787,
+      0.241
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 5,
+    "triangles": 207,
+    "min": [
+      3.01,
+      0.841,
+      0.062
+    ],
+    "max": [
+      3.118,
+      0.892,
+      0.409
+    ],
+    "center": [
+      3.064,
+      0.866,
+      0.236
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 8,
+    "triangles": 207,
+    "min": [
+      3.001,
+      0.461,
+      0.042
+    ],
+    "max": [
+      3.109,
+      0.511,
+      0.407
+    ],
+    "center": [
+      3.055,
+      0.486,
+      0.225
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 13,
+    "triangles": 212,
+    "min": [
+      2.995,
+      0.372,
+      0.048
+    ],
+    "max": [
+      3.092,
+      0.436,
+      0.362
+    ],
+    "center": [
+      3.044,
+      0.404,
+      0.205
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 16,
+    "triangles": 212,
+    "min": [
+      3.013,
+      0.76,
+      -0.438
+    ],
+    "max": [
+      3.134,
+      0.813,
+      -0.044
+    ],
+    "center": [
+      3.073,
+      0.787,
+      -0.241
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 17,
+    "triangles": 207,
+    "min": [
+      3.01,
+      0.841,
+      -0.409
+    ],
+    "max": [
+      3.118,
+      0.892,
+      -0.062
+    ],
+    "center": [
+      3.064,
+      0.866,
+      -0.236
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 24,
+    "triangles": 205,
+    "min": [
+      3.001,
+      0.461,
+      -0.407
+    ],
+    "max": [
+      3.109,
+      0.511,
+      -0.042
+    ],
+    "center": [
+      3.055,
+      0.486,
+      -0.225
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 27,
+    "triangles": 212,
+    "min": [
+      2.995,
+      0.372,
+      -0.362
+    ],
+    "max": [
+      3.092,
+      0.436,
+      -0.048
+    ],
+    "center": [
+      3.044,
+      0.404,
+      -0.205
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 36,
+    "triangles": 274,
+    "min": [
+      3.104,
+      0.853,
+      -0.334
+    ],
+    "max": [
+      3.111,
+      0.867,
+      -0.313
+    ],
+    "center": [
+      3.108,
+      0.86,
+      -0.323
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 38,
+    "triangles": 305,
+    "min": [
+      3.108,
+      0.853,
+      -0.309
+    ],
+    "max": [
+      3.114,
+      0.867,
+      -0.285
+    ],
+    "center": [
+      3.111,
+      0.86,
+      -0.297
+    ]
+  },
+  {
+    "material": "Meshespiggrill1Mtl",
+    "index": 44,
+    "triangles": 257,
+    "min": [
+      3.11,
+      0.853,
+      -0.293
+    ],
+    "max": [
+      3.117,
+      0.867,
+      -0.265
+    ],
+    "center": [
+      3.113,
+      0.86,
+      -0.279
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 0,
+    "triangles": 8180,
+    "min": [
+      -2.495,
+      0.327,
+      -1.239
+    ],
+    "max": [
+      3.147,
+      1.835,
+      1.239
+    ],
+    "center": [
+      0.326,
+      1.081,
+      0
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 12,
+    "triangles": 889,
+    "min": [
+      -3.019,
+      0.871,
+      -0.797
+    ],
+    "max": [
+      -2.325,
+      1.44,
+      0.797
+    ],
+    "center": [
+      -2.672,
+      1.155,
+      0
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 20,
+    "triangles": 300,
+    "min": [
+      -0.535,
+      1.077,
+      1.168
+    ],
+    "max": [
+      -0.249,
+      1.144,
+      1.228
+    ],
+    "center": [
+      -0.392,
+      1.11,
+      1.198
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 24,
+    "triangles": 641,
+    "min": [
+      -0.703,
+      0.374,
+      1.047
+    ],
+    "max": [
+      1.148,
+      1.306,
+      1.213
+    ],
+    "center": [
+      0.222,
+      0.84,
+      1.13
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 75,
+    "triangles": 5078,
+    "min": [
+      1.095,
+      0.95,
+      -1.056
+    ],
+    "max": [
+      2.973,
+      1.315,
+      1.056
+    ],
+    "center": [
+      2.034,
+      1.132,
+      0
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 100,
+    "triangles": 341,
+    "min": [
+      1.811,
+      0.885,
+      -0.898
+    ],
+    "max": [
+      2.187,
+      1.14,
+      -0.596
+    ],
+    "center": [
+      1.999,
+      1.012,
+      -0.747
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 103,
+    "triangles": 402,
+    "min": [
+      2.336,
+      0.918,
+      -1.028
+    ],
+    "max": [
+      2.515,
+      1.035,
+      -0.713
+    ],
+    "center": [
+      2.425,
+      0.977,
+      -0.871
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 104,
+    "triangles": 402,
+    "min": [
+      2.336,
+      0.918,
+      0.713
+    ],
+    "max": [
+      2.515,
+      1.035,
+      1.028
+    ],
+    "center": [
+      2.425,
+      0.977,
+      0.871
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 107,
+    "triangles": 341,
+    "min": [
+      1.811,
+      0.885,
+      0.596
+    ],
+    "max": [
+      2.187,
+      1.14,
+      0.898
+    ],
+    "center": [
+      1.999,
+      1.012,
+      0.747
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 120,
+    "triangles": 207,
+    "min": [
+      1.093,
+      0.995,
+      0.953
+    ],
+    "max": [
+      2.639,
+      1.295,
+      1.057
+    ],
+    "center": [
+      1.866,
+      1.145,
+      1.005
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 122,
+    "triangles": 354,
+    "min": [
+      1.824,
+      0.952,
+      0.648
+    ],
+    "max": [
+      2.484,
+      1.111,
+      1.018
+    ],
+    "center": [
+      2.154,
+      1.031,
+      0.833
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 126,
+    "triangles": 207,
+    "min": [
+      1.093,
+      0.995,
+      -1.057
+    ],
+    "max": [
+      2.639,
+      1.295,
+      -0.953
+    ],
+    "center": [
+      1.866,
+      1.145,
+      -1.005
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 127,
+    "triangles": 354,
+    "min": [
+      1.824,
+      0.952,
+      -1.018
+    ],
+    "max": [
+      2.484,
+      1.111,
+      -0.648
+    ],
+    "center": [
+      2.154,
+      1.031,
+      -0.833
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 3,
+    "triangles": 288,
+    "min": [
+      -3.004,
+      0.866,
+      -0.763
+    ],
+    "max": [
+      -2.855,
+      1.12,
+      0.763
+    ],
+    "center": [
+      -2.929,
+      0.993,
+      0
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 10,
+    "triangles": 1136,
+    "min": [
+      -0.703,
+      0.374,
+      -1.213
+    ],
+    "max": [
+      1.148,
+      1.311,
+      -0.978
+    ],
+    "center": [
+      0.222,
+      0.842,
+      -1.096
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 16,
+    "triangles": 432,
+    "min": [
+      -0.539,
+      1.084,
+      -1.228
+    ],
+    "max": [
+      -0.25,
+      1.145,
+      -1.157
+    ],
+    "center": [
+      -0.394,
+      1.114,
+      -1.193
+    ]
+  },
+  {
+    "material": "Mesheszx1Mtl",
+    "index": 40,
+    "triangles": 356,
+    "min": [
+      -0.669,
+      0.374,
+      0.979
+    ],
+    "max": [
+      1.135,
+      1.264,
+      1.182
+    ],
+    "center": [
+      0.233,
+      0.819,
+      1.08
+    ]
+  },
+  {
+    "material": "Mesheswhite41Mtl",
+    "index": 8,
+    "triangles": 594,
+    "min": [
+      -0.613,
+      0.694,
+      0.167
+    ],
+    "max": [
+      -0.237,
+      1.645,
+      0.819
+    ],
+    "center": [
+      -0.425,
+      1.169,
+      0.493
+    ]
+  },
+  {
+    "material": "Mesheswhite41Mtl",
+    "index": 10,
+    "triangles": 594,
+    "min": [
+      -0.613,
+      0.694,
+      -0.819
+    ],
+    "max": [
+      -0.237,
+      1.645,
+      -0.167
+    ],
+    "center": [
+      -0.425,
+      1.169,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 6,
+    "triangles": 323,
+    "min": [
+      -0.478,
+      0.546,
+      0.869
+    ],
+    "max": [
+      0.96,
+      0.904,
+      1.018
+    ],
+    "center": [
+      0.241,
+      0.725,
+      0.943
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 7,
+    "triangles": 266,
+    "min": [
+      -0.542,
+      1.127,
+      0.888
+    ],
+    "max": [
+      1.089,
+      1.458,
+      1.091
+    ],
+    "center": [
+      0.274,
+      1.292,
+      0.989
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 9,
+    "triangles": 925,
+    "min": [
+      0.653,
+      0.917,
+      -0.918
+    ],
+    "max": [
+      1.183,
+      1.386,
+      0.919
+    ],
+    "center": [
+      0.918,
+      1.152,
+      0
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 10,
+    "triangles": 235,
+    "min": [
+      -0.445,
+      0.549,
+      0.15
+    ],
+    "max": [
+      -0.119,
+      1.141,
+      0.836
+    ],
+    "center": [
+      -0.282,
+      0.845,
+      0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 15,
+    "triangles": 402,
+    "min": [
+      -0.627,
+      1.246,
+      0.24
+    ],
+    "max": [
+      -0.446,
+      1.633,
+      0.746
+    ],
+    "center": [
+      -0.536,
+      1.44,
+      0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 19,
+    "triangles": 321,
+    "min": [
+      -0.478,
+      0.546,
+      -1.018
+    ],
+    "max": [
+      0.96,
+      0.904,
+      -0.869
+    ],
+    "center": [
+      0.241,
+      0.725,
+      -0.943
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 23,
+    "triangles": 266,
+    "min": [
+      -0.542,
+      1.127,
+      -1.091
+    ],
+    "max": [
+      1.089,
+      1.458,
+      -0.888
+    ],
+    "center": [
+      0.274,
+      1.292,
+      -0.989
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 25,
+    "triangles": 406,
+    "min": [
+      -0.627,
+      1.246,
+      -0.746
+    ],
+    "max": [
+      -0.446,
+      1.633,
+      -0.24
+    ],
+    "center": [
+      -0.536,
+      1.44,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 28,
+    "triangles": 235,
+    "min": [
+      -0.445,
+      0.549,
+      -0.836
+    ],
+    "max": [
+      -0.119,
+      1.141,
+      -0.15
+    ],
+    "center": [
+      -0.282,
+      0.845,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 58,
+    "triangles": 1063,
+    "min": [
+      0.347,
+      0.966,
+      -0.74
+    ],
+    "max": [
+      0.578,
+      1.427,
+      -0.247
+    ],
+    "center": [
+      0.463,
+      1.197,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior71Mtl",
+    "index": 68,
+    "triangles": 239,
+    "min": [
+      0.518,
+      0.927,
+      -0.623
+    ],
+    "max": [
+      0.939,
+      1.224,
+      -0.362
+    ],
+    "center": [
+      0.729,
+      1.076,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 2,
+    "triangles": 560,
+    "min": [
+      -2.895,
+      0.67,
+      -0.901
+    ],
+    "max": [
+      -1.532,
+      1.37,
+      0.928
+    ],
+    "center": [
+      -2.213,
+      1.02,
+      0.014
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 27,
+    "triangles": 10329,
+    "min": [
+      -2.482,
+      1.204,
+      -1.37
+    ],
+    "max": [
+      1.345,
+      1.835,
+      1.37
+    ],
+    "center": [
+      -0.568,
+      1.52,
+      0
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 28,
+    "triangles": 1245,
+    "min": [
+      -1.301,
+      0.323,
+      -0.924
+    ],
+    "max": [
+      1.377,
+      0.915,
+      1.007
+    ],
+    "center": [
+      0.038,
+      0.619,
+      0.041
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 32,
+    "triangles": 209,
+    "min": [
+      -0.342,
+      0.456,
+      0.712
+    ],
+    "max": [
+      0.382,
+      0.676,
+      0.848
+    ],
+    "center": [
+      0.02,
+      0.566,
+      0.78
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 33,
+    "triangles": 313,
+    "min": [
+      -0.342,
+      0.456,
+      -0.853
+    ],
+    "max": [
+      0.382,
+      0.668,
+      -0.712
+    ],
+    "center": [
+      0.02,
+      0.562,
+      -0.782
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 98,
+    "triangles": 209,
+    "min": [
+      -0.131,
+      0.562,
+      -0.776
+    ],
+    "max": [
+      0.394,
+      0.77,
+      -0.71
+    ],
+    "center": [
+      0.132,
+      0.666,
+      -0.743
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 99,
+    "triangles": 212,
+    "min": [
+      -0.266,
+      0.536,
+      0.71
+    ],
+    "max": [
+      0.394,
+      0.768,
+      0.79
+    ],
+    "center": [
+      0.064,
+      0.652,
+      0.75
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 100,
+    "triangles": 237,
+    "min": [
+      -0.131,
+      0.562,
+      0.196
+    ],
+    "max": [
+      0.474,
+      0.772,
+      0.414
+    ],
+    "center": [
+      0.171,
+      0.667,
+      0.305
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 101,
+    "triangles": 212,
+    "min": [
+      -0.266,
+      0.536,
+      -0.275
+    ],
+    "max": [
+      0.394,
+      0.768,
+      -0.195
+    ],
+    "center": [
+      0.064,
+      0.652,
+      -0.235
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 112,
+    "triangles": 1548,
+    "min": [
+      -3.001,
+      0.216,
+      -1.236
+    ],
+    "max": [
+      3.024,
+      1.039,
+      1.236
+    ],
+    "center": [
+      0.012,
+      0.628,
+      0
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 158,
+    "triangles": 438,
+    "min": [
+      -0.493,
+      0.794,
+      -0.995
+    ],
+    "max": [
+      0.936,
+      1.185,
+      -0.866
+    ],
+    "center": [
+      0.221,
+      0.989,
+      -0.93
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 1,
+    "triangles": 1616,
+    "min": [
+      -1.791,
+      0.548,
+      -0.859
+    ],
+    "max": [
+      -0.631,
+      1.565,
+      0.859
+    ],
+    "center": [
+      -1.211,
+      1.057,
+      0
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 2,
+    "triangles": 585,
+    "min": [
+      -0.584,
+      0.549,
+      -0.802
+    ],
+    "max": [
+      -0.182,
+      1.634,
+      -0.183
+    ],
+    "center": [
+      -0.383,
+      1.092,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 3,
+    "triangles": 866,
+    "min": [
+      -0.267,
+      0.532,
+      -0.807
+    ],
+    "max": [
+      0.483,
+      0.776,
+      -0.179
+    ],
+    "center": [
+      0.108,
+      0.654,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 4,
+    "triangles": 538,
+    "min": [
+      -0.584,
+      0.549,
+      0.183
+    ],
+    "max": [
+      -0.182,
+      1.634,
+      0.802
+    ],
+    "center": [
+      -0.383,
+      1.092,
+      0.493
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 5,
+    "triangles": 870,
+    "min": [
+      -0.267,
+      0.532,
+      0.179
+    ],
+    "max": [
+      0.483,
+      0.776,
+      0.806
+    ],
+    "center": [
+      0.108,
+      0.654,
+      0.492
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 7,
+    "triangles": 871,
+    "min": [
+      0.586,
+      0.727,
+      -0.93
+    ],
+    "max": [
+      1.388,
+      1.143,
+      0.927
+    ],
+    "center": [
+      0.987,
+      0.935,
+      -0.002
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 9,
+    "triangles": 259,
+    "min": [
+      -1.597,
+      0.895,
+      0.829
+    ],
+    "max": [
+      -0.494,
+      1.327,
+      0.961
+    ],
+    "center": [
+      -1.046,
+      1.111,
+      0.895
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 11,
+    "triangles": 677,
+    "min": [
+      -0.514,
+      0.79,
+      0.866
+    ],
+    "max": [
+      0.946,
+      1.185,
+      1.002
+    ],
+    "center": [
+      0.216,
+      0.987,
+      0.934
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 21,
+    "triangles": 879,
+    "min": [
+      -1.305,
+      0.317,
+      -1.007
+    ],
+    "max": [
+      1.37,
+      1.193,
+      -0.198
+    ],
+    "center": [
+      0.032,
+      0.755,
+      -0.602
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 51,
+    "triangles": 283,
+    "min": [
+      -0.338,
+      0.458,
+      0.756
+    ],
+    "max": [
+      0.376,
+      0.677,
+      0.853
+    ],
+    "center": [
+      0.019,
+      0.568,
+      0.804
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 54,
+    "triangles": 802,
+    "min": [
+      -2.957,
+      0.67,
+      -0.928
+    ],
+    "max": [
+      -1.532,
+      1.37,
+      0.618
+    ],
+    "center": [
+      -2.244,
+      1.02,
+      -0.155
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 63,
+    "triangles": 583,
+    "min": [
+      -2.34,
+      1.384,
+      -0.833
+    ],
+    "max": [
+      -1.645,
+      1.476,
+      0.833
+    ],
+    "center": [
+      -1.993,
+      1.43,
+      0
+    ]
+  },
+  {
+    "material": "Meshespillars1Mtl",
+    "index": 67,
+    "triangles": 541,
+    "min": [
+      -0.664,
+      0.304,
+      -0.155
+    ],
+    "max": [
+      1.327,
+      0.907,
+      0.92
+    ],
+    "center": [
+      0.331,
+      0.605,
+      0.382
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 2,
+    "triangles": 279,
+    "min": [
+      2.392,
+      0.794,
+      0.527
+    ],
+    "max": [
+      2.994,
+      0.999,
+      1.144
+    ],
+    "center": [
+      2.693,
+      0.896,
+      0.835
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 3,
+    "triangles": 280,
+    "min": [
+      2.505,
+      0.821,
+      0.874
+    ],
+    "max": [
+      2.759,
+      0.958,
+      1.092
+    ],
+    "center": [
+      2.632,
+      0.889,
+      0.983
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 4,
+    "triangles": 280,
+    "min": [
+      2.647,
+      0.803,
+      0.661
+    ],
+    "max": [
+      2.876,
+      0.937,
+      0.874
+    ],
+    "center": [
+      2.762,
+      0.87,
+      0.767
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 5,
+    "triangles": 280,
+    "min": [
+      2.647,
+      0.803,
+      -0.874
+    ],
+    "max": [
+      2.876,
+      0.937,
+      -0.661
+    ],
+    "center": [
+      2.762,
+      0.87,
+      -0.767
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 6,
+    "triangles": 280,
+    "min": [
+      2.505,
+      0.821,
+      -1.092
+    ],
+    "max": [
+      2.759,
+      0.958,
+      -0.874
+    ],
+    "center": [
+      2.632,
+      0.889,
+      -0.983
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 7,
+    "triangles": 279,
+    "min": [
+      2.392,
+      0.794,
+      -1.143
+    ],
+    "max": [
+      2.994,
+      0.999,
+      -0.527
+    ],
+    "center": [
+      2.693,
+      0.896,
+      -0.835
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 8,
+    "triangles": 565,
+    "min": [
+      -2.929,
+      1.062,
+      0.759
+    ],
+    "max": [
+      -2.388,
+      1.246,
+      1.092
+    ],
+    "center": [
+      -2.659,
+      1.154,
+      0.925
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 9,
+    "triangles": 256,
+    "min": [
+      -2.985,
+      1.111,
+      0.35
+    ],
+    "max": [
+      -2.88,
+      1.235,
+      0.787
+    ],
+    "center": [
+      -2.933,
+      1.173,
+      0.568
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 10,
+    "triangles": 256,
+    "min": [
+      -2.985,
+      1.111,
+      -0.787
+    ],
+    "max": [
+      -2.88,
+      1.235,
+      -0.35
+    ],
+    "center": [
+      -2.933,
+      1.173,
+      -0.568
+    ]
+  },
+  {
+    "material": "Meshesheadlight51Mtl",
+    "index": 11,
+    "triangles": 565,
+    "min": [
+      -2.929,
+      1.062,
+      -1.092
+    ],
+    "max": [
+      -2.388,
+      1.246,
+      -0.759
+    ],
+    "center": [
+      -2.659,
+      1.154,
+      -0.925
+    ]
+  },
+  {
+    "material": "Mesheslogo11Mtl",
+    "index": 51,
+    "triangles": 233,
+    "min": [
+      -0.532,
+      1.303,
+      0.497
+    ],
+    "max": [
+      -0.528,
+      1.317,
+      0.526
+    ],
+    "center": [
+      -0.53,
+      1.31,
+      0.511
+    ]
+  },
+  {
+    "material": "Mesheslogo11Mtl",
+    "index": 54,
+    "triangles": 236,
+    "min": [
+      -0.532,
+      1.303,
+      -0.486
+    ],
+    "max": [
+      -0.528,
+      1.317,
+      -0.457
+    ],
+    "center": [
+      -0.53,
+      1.31,
+      -0.472
+    ]
+  },
+  {
+    "material": "Mesheslogo11Mtl",
+    "index": 55,
+    "triangles": 203,
+    "min": [
+      -0.532,
+      1.303,
+      -0.502
+    ],
+    "max": [
+      -0.528,
+      1.317,
+      -0.478
+    ],
+    "center": [
+      -0.53,
+      1.31,
+      -0.49
+    ]
+  },
+  {
+    "material": "Mesheslogo11Mtl",
+    "index": 56,
+    "triangles": 718,
+    "min": [
+      3.009,
+      0.914,
+      -0.047
+    ],
+    "max": [
+      3.086,
+      0.97,
+      0.047
+    ],
+    "center": [
+      3.047,
+      0.942,
+      0
+    ]
+  },
+  {
+    "material": "Mesheslogo11Mtl",
+    "index": 57,
+    "triangles": 542,
+    "min": [
+      3.004,
+      0.909,
+      -0.049
+    ],
+    "max": [
+      3.087,
+      0.971,
+      0.049
+    ],
+    "center": [
+      3.046,
+      0.94,
+      0
+    ]
+  },
+  {
+    "material": "Mesheslogo11Mtl",
+    "index": 62,
+    "triangles": 724,
+    "min": [
+      3.021,
+      0.952,
+      0.021
+    ],
+    "max": [
+      3.037,
+      0.962,
+      0.038
+    ],
+    "center": [
+      3.029,
+      0.957,
+      0.03
+    ]
+  },
+  {
+    "material": "Meshesredlight1Mtl",
+    "index": 1,
+    "triangles": 230,
+    "min": [
+      -2.913,
+      1.095,
+      -1.045
+    ],
+    "max": [
+      -2.548,
+      1.219,
+      -0.783
+    ],
+    "center": [
+      -2.731,
+      1.157,
+      -0.914
+    ]
+  },
+  {
+    "material": "Meshesredlight1Mtl",
+    "index": 2,
+    "triangles": 230,
+    "min": [
+      -2.913,
+      1.095,
+      0.783
+    ],
+    "max": [
+      -2.548,
+      1.219,
+      1.045
+    ],
+    "center": [
+      -2.731,
+      1.157,
+      0.914
+    ]
+  },
+  {
+    "material": "Meshesinterior231Mtl",
+    "index": 0,
+    "triangles": 232,
+    "min": [
+      -0.563,
+      1.345,
+      -0.603
+    ],
+    "max": [
+      -0.52,
+      1.632,
+      -0.382
+    ],
+    "center": [
+      -0.542,
+      1.488,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior231Mtl",
+    "index": 1,
+    "triangles": 232,
+    "min": [
+      -0.563,
+      1.345,
+      0.382
+    ],
+    "max": [
+      -0.52,
+      1.632,
+      0.603
+    ],
+    "center": [
+      -0.542,
+      1.488,
+      0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior181Mtl",
+    "index": 0,
+    "triangles": 1717,
+    "min": [
+      -0.643,
+      0.56,
+      0.154
+    ],
+    "max": [
+      -0.185,
+      1.633,
+      0.832
+    ],
+    "center": [
+      -0.414,
+      1.097,
+      0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior181Mtl",
+    "index": 2,
+    "triangles": 1717,
+    "min": [
+      -0.643,
+      0.56,
+      -0.831
+    ],
+    "max": [
+      -0.185,
+      1.633,
+      -0.154
+    ],
+    "center": [
+      -0.414,
+      1.097,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior181Mtl",
+    "index": 3,
+    "triangles": 522,
+    "min": [
+      0.476,
+      1.063,
+      -0.674
+    ],
+    "max": [
+      0.552,
+      1.237,
+      -0.595
+    ],
+    "center": [
+      0.514,
+      1.15,
+      -0.634
+    ]
+  },
+  {
+    "material": "Meshesinterior181Mtl",
+    "index": 6,
+    "triangles": 524,
+    "min": [
+      0.476,
+      1.063,
+      -0.391
+    ],
+    "max": [
+      0.552,
+      1.237,
+      -0.312
+    ],
+    "center": [
+      0.514,
+      1.15,
+      -0.352
+    ]
+  },
+  {
+    "material": "Meshesinterior181Mtl",
+    "index": 8,
+    "triangles": 580,
+    "min": [
+      0.42,
+      1.125,
+      -0.695
+    ],
+    "max": [
+      0.525,
+      1.264,
+      -0.29
+    ],
+    "center": [
+      0.472,
+      1.194,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior181Mtl",
+    "index": 9,
+    "triangles": 273,
+    "min": [
+      0.359,
+      1.007,
+      -0.517
+    ],
+    "max": [
+      0.448,
+      1.105,
+      -0.468
+    ],
+    "center": [
+      0.403,
+      1.056,
+      -0.493
+    ]
+  },
+  {
+    "material": "Meshesinterior181Mtl",
+    "index": 10,
+    "triangles": 210,
+    "min": [
+      0.09,
+      0.81,
+      -0.152
+    ],
+    "max": [
+      0.691,
+      0.924,
+      0.159
+    ],
+    "center": [
+      0.391,
+      0.867,
+      0.004
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 0,
+    "triangles": 682,
+    "min": [
+      2.41,
+      0.817,
+      0.555
+    ],
+    "max": [
+      2.962,
+      0.983,
+      1.117
+    ],
+    "center": [
+      2.686,
+      0.9,
+      0.836
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 1,
+    "triangles": 682,
+    "min": [
+      2.41,
+      0.817,
+      -1.117
+    ],
+    "max": [
+      2.962,
+      0.983,
+      -0.555
+    ],
+    "center": [
+      2.686,
+      0.9,
+      -0.836
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 2,
+    "triangles": 1060,
+    "min": [
+      2.393,
+      0.79,
+      0.526
+    ],
+    "max": [
+      2.989,
+      0.998,
+      1.141
+    ],
+    "center": [
+      2.691,
+      0.894,
+      0.833
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 3,
+    "triangles": 1060,
+    "min": [
+      2.393,
+      0.79,
+      -1.141
+    ],
+    "max": [
+      2.989,
+      0.998,
+      -0.526
+    ],
+    "center": [
+      2.691,
+      0.894,
+      -0.833
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 4,
+    "triangles": 2512,
+    "min": [
+      2.545,
+      0.84,
+      0.891
+    ],
+    "max": [
+      2.676,
+      0.954,
+      1.049
+    ],
+    "center": [
+      2.611,
+      0.897,
+      0.97
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 5,
+    "triangles": 2512,
+    "min": [
+      2.545,
+      0.84,
+      -1.049
+    ],
+    "max": [
+      2.676,
+      0.954,
+      -0.891
+    ],
+    "center": [
+      2.611,
+      0.897,
+      -0.97
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 6,
+    "triangles": 242,
+    "min": [
+      2.59,
+      0.854,
+      0.92
+    ],
+    "max": [
+      2.617,
+      0.889,
+      1.015
+    ],
+    "center": [
+      2.603,
+      0.871,
+      0.967
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 7,
+    "triangles": 242,
+    "min": [
+      2.59,
+      0.854,
+      -1.015
+    ],
+    "max": [
+      2.617,
+      0.889,
+      -0.92
+    ],
+    "center": [
+      2.603,
+      0.871,
+      -0.967
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 10,
+    "triangles": 2354,
+    "min": [
+      2.688,
+      0.791,
+      0.667
+    ],
+    "max": [
+      2.82,
+      0.94,
+      0.848
+    ],
+    "center": [
+      2.754,
+      0.866,
+      0.758
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 11,
+    "triangles": 2354,
+    "min": [
+      2.688,
+      0.791,
+      -0.848
+    ],
+    "max": [
+      2.82,
+      0.94,
+      -0.667
+    ],
+    "center": [
+      2.754,
+      0.866,
+      -0.758
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 12,
+    "triangles": 320,
+    "min": [
+      2.696,
+      0.836,
+      0.709
+    ],
+    "max": [
+      2.758,
+      0.871,
+      0.81
+    ],
+    "center": [
+      2.727,
+      0.853,
+      0.76
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 13,
+    "triangles": 320,
+    "min": [
+      2.696,
+      0.836,
+      -0.81
+    ],
+    "max": [
+      2.758,
+      0.871,
+      -0.709
+    ],
+    "center": [
+      2.727,
+      0.853,
+      -0.76
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 14,
+    "triangles": 532,
+    "min": [
+      2.505,
+      0.792,
+      0.532
+    ],
+    "max": [
+      2.927,
+      0.933,
+      1.094
+    ],
+    "center": [
+      2.716,
+      0.862,
+      0.813
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 15,
+    "triangles": 532,
+    "min": [
+      2.505,
+      0.792,
+      -1.094
+    ],
+    "max": [
+      2.927,
+      0.933,
+      -0.532
+    ],
+    "center": [
+      2.716,
+      0.862,
+      -0.813
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 16,
+    "triangles": 296,
+    "min": [
+      2.849,
+      0.85,
+      0.583
+    ],
+    "max": [
+      2.884,
+      0.88,
+      0.619
+    ],
+    "center": [
+      2.866,
+      0.865,
+      0.601
+    ]
+  },
+  {
+    "material": "Mesheslight51Mtl",
+    "index": 17,
+    "triangles": 296,
+    "min": [
+      2.849,
+      0.85,
+      -0.619
+    ],
+    "max": [
+      2.884,
+      0.88,
+      -0.583
+    ],
+    "center": [
+      2.866,
+      0.865,
+      -0.601
+    ]
+  },
+  {
+    "material": "Meshesengine51Mtl",
+    "index": 16,
+    "triangles": 1736,
+    "min": [
+      1.039,
+      0.71,
+      -1.057
+    ],
+    "max": [
+      2.983,
+      1.295,
+      1.057
+    ],
+    "center": [
+      2.011,
+      1.002,
+      0
+    ]
+  },
+  {
+    "material": "Meshesengine51Mtl",
+    "index": 225,
+    "triangles": 286,
+    "min": [
+      2.481,
+      0.863,
+      -0.584
+    ],
+    "max": [
+      2.879,
+      1.044,
+      0.584
+    ],
+    "center": [
+      2.68,
+      0.953,
+      0
+    ]
+  },
+  {
+    "material": "Meshesengine51Mtl",
+    "index": 247,
+    "triangles": 249,
+    "min": [
+      1.581,
+      1.07,
+      -0.207
+    ],
+    "max": [
+      2.426,
+      1.227,
+      0.373
+    ],
+    "center": [
+      2.003,
+      1.148,
+      0.083
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 0,
+    "triangles": 228,
+    "min": [
+      2.468,
+      0.8,
+      0.658
+    ],
+    "max": [
+      2.802,
+      0.94,
+      0.876
+    ],
+    "center": [
+      2.635,
+      0.87,
+      0.767
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 1,
+    "triangles": 228,
+    "min": [
+      2.468,
+      0.8,
+      -0.876
+    ],
+    "max": [
+      2.802,
+      0.94,
+      -0.658
+    ],
+    "center": [
+      2.635,
+      0.87,
+      -0.767
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 2,
+    "triangles": 376,
+    "min": [
+      2.559,
+      0.884,
+      0.903
+    ],
+    "max": [
+      2.687,
+      0.915,
+      1.037
+    ],
+    "center": [
+      2.623,
+      0.899,
+      0.97
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 3,
+    "triangles": 376,
+    "min": [
+      2.559,
+      0.884,
+      -1.037
+    ],
+    "max": [
+      2.687,
+      0.915,
+      -0.903
+    ],
+    "center": [
+      2.623,
+      0.899,
+      -0.97
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 4,
+    "triangles": 392,
+    "min": [
+      2.701,
+      0.866,
+      0.694
+    ],
+    "max": [
+      2.83,
+      0.895,
+      0.827
+    ],
+    "center": [
+      2.766,
+      0.88,
+      0.76
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 5,
+    "triangles": 392,
+    "min": [
+      2.701,
+      0.866,
+      -0.827
+    ],
+    "max": [
+      2.83,
+      0.895,
+      -0.694
+    ],
+    "center": [
+      2.766,
+      0.88,
+      -0.76
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 6,
+    "triangles": 228,
+    "min": [
+      2.325,
+      0.818,
+      0.871
+    ],
+    "max": [
+      2.689,
+      0.961,
+      1.095
+    ],
+    "center": [
+      2.507,
+      0.889,
+      0.983
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 7,
+    "triangles": 228,
+    "min": [
+      2.325,
+      0.818,
+      -1.095
+    ],
+    "max": [
+      2.689,
+      0.961,
+      -0.871
+    ],
+    "center": [
+      2.507,
+      0.889,
+      -0.983
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 12,
+    "triangles": 714,
+    "min": [
+      -2.915,
+      1.063,
+      0.761
+    ],
+    "max": [
+      -2.394,
+      1.241,
+      1.083
+    ],
+    "center": [
+      -2.655,
+      1.152,
+      0.922
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 13,
+    "triangles": 714,
+    "min": [
+      -2.915,
+      1.063,
+      -1.083
+    ],
+    "max": [
+      -2.394,
+      1.241,
+      -0.76
+    ],
+    "center": [
+      -2.655,
+      1.152,
+      -0.922
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 14,
+    "triangles": 748,
+    "min": [
+      -2.983,
+      1.112,
+      -0.787
+    ],
+    "max": [
+      -2.878,
+      1.233,
+      -0.358
+    ],
+    "center": [
+      -2.93,
+      1.173,
+      -0.572
+    ]
+  },
+  {
+    "material": "Meshesled11Mtl",
+    "index": 15,
+    "triangles": 748,
+    "min": [
+      -2.983,
+      1.112,
+      0.358
+    ],
+    "max": [
+      -2.878,
+      1.233,
+      0.787
+    ],
+    "center": [
+      -2.93,
+      1.173,
+      0.572
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 0,
+    "triangles": 1402,
+    "min": [
+      2.529,
+      0.222,
+      -1.189
+    ],
+    "max": [
+      3.146,
+      0.356,
+      1.189
+    ],
+    "center": [
+      2.838,
+      0.289,
+      0
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 1,
+    "triangles": 540,
+    "min": [
+      2.766,
+      0.31,
+      0.333
+    ],
+    "max": [
+      3.063,
+      0.545,
+      0.861
+    ],
+    "center": [
+      2.915,
+      0.428,
+      0.597
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 2,
+    "triangles": 540,
+    "min": [
+      2.766,
+      0.31,
+      -0.861
+    ],
+    "max": [
+      3.063,
+      0.545,
+      -0.333
+    ],
+    "center": [
+      2.915,
+      0.428,
+      -0.597
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 7,
+    "triangles": 3006,
+    "min": [
+      -3.15,
+      0.327,
+      -1.24
+    ],
+    "max": [
+      -2.215,
+      0.656,
+      1.24
+    ],
+    "center": [
+      -2.682,
+      0.491,
+      0
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 8,
+    "triangles": 1802,
+    "min": [
+      -3.063,
+      1.377,
+      -0.902
+    ],
+    "max": [
+      -2.58,
+      1.546,
+      0.902
+    ],
+    "center": [
+      -2.821,
+      1.462,
+      0
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 9,
+    "triangles": 476,
+    "min": [
+      -1.236,
+      0.215,
+      1.121
+    ],
+    "max": [
+      1.508,
+      0.499,
+      1.239
+    ],
+    "center": [
+      0.136,
+      0.357,
+      1.18
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 10,
+    "triangles": 476,
+    "min": [
+      -1.236,
+      0.215,
+      -1.239
+    ],
+    "max": [
+      1.508,
+      0.499,
+      -1.121
+    ],
+    "center": [
+      0.136,
+      0.357,
+      -1.18
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 11,
+    "triangles": 201,
+    "min": [
+      -2.899,
+      1.407,
+      0.845
+    ],
+    "max": [
+      -2.508,
+      1.512,
+      0.965
+    ],
+    "center": [
+      -2.703,
+      1.459,
+      0.905
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 12,
+    "triangles": 201,
+    "min": [
+      -2.899,
+      1.407,
+      -0.965
+    ],
+    "max": [
+      -2.508,
+      1.512,
+      -0.845
+    ],
+    "center": [
+      -2.703,
+      1.459,
+      -0.905
+    ]
+  },
+  {
+    "material": "Meshesbody151Mtl",
+    "index": 13,
+    "triangles": 646,
+    "min": [
+      -1.517,
+      1.695,
+      -0.701
+    ],
+    "max": [
+      0.37,
+      1.872,
+      0.701
+    ],
+    "center": [
+      -0.573,
+      1.783,
+      0
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 1,
+    "triangles": 300,
+    "min": [
+      -3.123,
+      0.336,
+      -0.323
+    ],
+    "max": [
+      -3.002,
+      0.572,
+      0.323
+    ],
+    "center": [
+      -3.063,
+      0.454,
+      0
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 4,
+    "triangles": 772,
+    "min": [
+      -0.706,
+      0.504,
+      -1.111
+    ],
+    "max": [
+      1,
+      1.73,
+      -0.75
+    ],
+    "center": [
+      0.147,
+      1.117,
+      -0.93
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 8,
+    "triangles": 323,
+    "min": [
+      0.659,
+      0.803,
+      -0.963
+    ],
+    "max": [
+      0.975,
+      1.25,
+      -0.701
+    ],
+    "center": [
+      0.817,
+      1.026,
+      -0.832
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 9,
+    "triangles": 394,
+    "min": [
+      -2.992,
+      0.889,
+      -0.74
+    ],
+    "max": [
+      -2.435,
+      1.413,
+      0.74
+    ],
+    "center": [
+      -2.713,
+      1.151,
+      0
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 10,
+    "triangles": 773,
+    "min": [
+      -0.706,
+      0.504,
+      0.75
+    ],
+    "max": [
+      1,
+      1.73,
+      1.111
+    ],
+    "center": [
+      0.147,
+      1.117,
+      0.93
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 11,
+    "triangles": 475,
+    "min": [
+      0.586,
+      0.803,
+      -0.284
+    ],
+    "max": [
+      0.974,
+      1.25,
+      0.963
+    ],
+    "center": [
+      0.78,
+      1.027,
+      0.339
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 14,
+    "triangles": 213,
+    "min": [
+      0.467,
+      1.561,
+      -0.166
+    ],
+    "max": [
+      0.519,
+      1.649,
+      0.166
+    ],
+    "center": [
+      0.493,
+      1.605,
+      0
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 18,
+    "triangles": 217,
+    "min": [
+      0.299,
+      1.106,
+      0.915
+    ],
+    "max": [
+      0.814,
+      1.222,
+      0.944
+    ],
+    "center": [
+      0.557,
+      1.164,
+      0.93
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 19,
+    "triangles": 217,
+    "min": [
+      0.299,
+      1.106,
+      -0.944
+    ],
+    "max": [
+      0.814,
+      1.222,
+      -0.915
+    ],
+    "center": [
+      0.557,
+      1.164,
+      -0.93
+    ]
+  },
+  {
+    "material": "Meshesblack151Mtl",
+    "index": 24,
+    "triangles": 1388,
+    "min": [
+      -2.973,
+      0.921,
+      -0.707
+    ],
+    "max": [
+      -2.083,
+      1.412,
+      0.707
+    ],
+    "center": [
+      -2.528,
+      1.167,
+      0
+    ]
+  },
+  {
+    "material": "Mesheswindows1Mtl",
+    "index": 3,
+    "triangles": 234,
+    "min": [
+      0.37,
+      1.319,
+      -0.895
+    ],
+    "max": [
+      1.187,
+      1.745,
+      0.895
+    ],
+    "center": [
+      0.779,
+      1.532,
+      0
+    ]
+  },
+  {
+    "material": "Mesheswindows1Mtl",
+    "index": 4,
+    "triangles": 224,
+    "min": [
+      -2.429,
+      1.44,
+      -0.707
+    ],
+    "max": [
+      -1.498,
+      1.725,
+      0.707
+    ],
+    "center": [
+      -1.963,
+      1.583,
+      0
+    ]
+  },
+  {
+    "material": "Mesheswindows1Mtl",
+    "index": 8,
+    "triangles": 224,
+    "min": [
+      -2.428,
+      1.437,
+      -0.706
+    ],
+    "max": [
+      -1.497,
+      1.722,
+      0.707
+    ],
+    "center": [
+      -1.962,
+      1.58,
+      0
+    ]
+  },
+  {
+    "material": "Mesheswindows1Mtl",
+    "index": 9,
+    "triangles": 234,
+    "min": [
+      0.368,
+      1.314,
+      -0.894
+    ],
+    "max": [
+      1.185,
+      1.74,
+      0.894
+    ],
+    "center": [
+      0.776,
+      1.527,
+      0
+    ]
+  },
+  {
+    "material": "Mesheslogo31Mtl",
+    "index": 2,
+    "triangles": 206,
+    "min": [
+      -2.976,
+      1.245,
+      0.54
+    ],
+    "max": [
+      -2.974,
+      1.252,
+      0.549
+    ],
+    "center": [
+      -2.975,
+      1.249,
+      0.545
+    ]
+  },
+  {
+    "material": "Mesheslogo31Mtl",
+    "index": 3,
+    "triangles": 203,
+    "min": [
+      -2.979,
+      1.245,
+      0.528
+    ],
+    "max": [
+      -2.976,
+      1.252,
+      0.537
+    ],
+    "center": [
+      -2.977,
+      1.249,
+      0.532
+    ]
+  },
+  {
+    "material": "Mesheslogo31Mtl",
+    "index": 4,
+    "triangles": 261,
+    "min": [
+      -2.981,
+      1.245,
+      0.517
+    ],
+    "max": [
+      -2.978,
+      1.251,
+      0.529
+    ],
+    "center": [
+      -2.98,
+      1.248,
+      0.523
+    ]
+  },
+  {
+    "material": "Mesheslogo31Mtl",
+    "index": 7,
+    "triangles": 230,
+    "min": [
+      -2.984,
+      1.244,
+      0.505
+    ],
+    "max": [
+      -2.98,
+      1.251,
+      0.518
+    ],
+    "center": [
+      -2.982,
+      1.248,
+      0.511
+    ]
+  },
+  {
+    "material": "Mesheslogo31Mtl",
+    "index": 10,
+    "triangles": 236,
+    "min": [
+      -2.986,
+      1.246,
+      0.491
+    ],
+    "max": [
+      -2.983,
+      1.252,
+      0.507
+    ],
+    "center": [
+      -2.984,
+      1.249,
+      0.499
+    ]
+  },
+  {
+    "material": "Mesheslogo31Mtl",
+    "index": 13,
+    "triangles": 720,
+    "min": [
+      -3.052,
+      1.212,
+      -0.063
+    ],
+    "max": [
+      -3.01,
+      1.337,
+      0.064
+    ],
+    "center": [
+      -3.031,
+      1.275,
+      0
+    ]
+  },
+  {
+    "material": "Mesheslogo31Mtl",
+    "index": 14,
+    "triangles": 720,
+    "min": [
+      -3.052,
+      1.218,
+      -0.057
+    ],
+    "max": [
+      -3.028,
+      1.331,
+      0.057
+    ],
+    "center": [
+      -3.04,
+      1.275,
+      0
+    ]
+  },
+  {
+    "material": "Mesheslogo31Mtl",
+    "index": 15,
+    "triangles": 810,
+    "min": [
+      -3.051,
+      1.292,
+      -0.046
+    ],
+    "max": [
+      -3.045,
+      1.313,
+      -0.025
+    ],
+    "center": [
+      -3.048,
+      1.302,
+      -0.036
+    ]
+  },
+  {
+    "material": "Mesheslivery1Mtl",
+    "index": 5,
+    "triangles": 5450,
+    "min": [
+      -3.132,
+      0.323,
+      -1.237
+    ],
+    "max": [
+      1.503,
+      1.393,
+      1.237
+    ],
+    "center": [
+      -0.814,
+      0.858,
+      0
+    ]
+  },
+  {
+    "material": "Mesheslivery1Mtl",
+    "index": 6,
+    "triangles": 293,
+    "min": [
+      -0.681,
+      0.374,
+      -1.197
+    ],
+    "max": [
+      1.12,
+      0.898,
+      -1.142
+    ],
+    "center": [
+      0.219,
+      0.636,
+      -1.169
+    ]
+  },
+  {
+    "material": "Mesheslivery1Mtl",
+    "index": 7,
+    "triangles": 293,
+    "min": [
+      -0.681,
+      0.374,
+      1.142
+    ],
+    "max": [
+      1.12,
+      0.898,
+      1.197
+    ],
+    "center": [
+      0.219,
+      0.636,
+      1.169
+    ]
+  },
+  {
+    "material": "Mesheslivery1Mtl",
+    "index": 12,
+    "triangles": 1342,
+    "min": [
+      -3.043,
+      0.871,
+      -0.797
+    ],
+    "max": [
+      -2.495,
+      1.423,
+      0.797
+    ],
+    "center": [
+      -2.769,
+      1.147,
+      0
+    ]
+  },
+  {
+    "material": "Meshesff41Mtl",
+    "index": 0,
+    "triangles": 1971,
+    "min": [
+      2.532,
+      0.251,
+      -1.206
+    ],
+    "max": [
+      3.139,
+      0.741,
+      1.206
+    ],
+    "center": [
+      2.835,
+      0.496,
+      0
+    ]
+  },
+  {
+    "material": "Caliper1Mtl",
+    "index": 0,
+    "triangles": 284,
+    "min": [
+      -1.634,
+      0.392,
+      0.945
+    ],
+    "max": [
+      -1.395,
+      0.595,
+      1.174
+    ],
+    "center": [
+      -1.515,
+      0.494,
+      1.059
+    ]
+  },
+  {
+    "material": "Caliper1Mtl",
+    "index": 5,
+    "triangles": 286,
+    "min": [
+      -1.634,
+      0.392,
+      -1.166
+    ],
+    "max": [
+      -1.395,
+      0.595,
+      -0.937
+    ],
+    "center": [
+      -1.515,
+      0.494,
+      -1.052
+    ]
+  },
+  {
+    "material": "Caliper1Mtl",
+    "index": 10,
+    "triangles": 292,
+    "min": [
+      1.702,
+      0.221,
+      0.923
+    ],
+    "max": [
+      1.887,
+      0.745,
+      1.124
+    ],
+    "center": [
+      1.795,
+      0.483,
+      1.024
+    ]
+  },
+  {
+    "material": "Caliper1Mtl",
+    "index": 21,
+    "triangles": 294,
+    "min": [
+      1.702,
+      0.221,
+      -1.118
+    ],
+    "max": [
+      1.887,
+      0.745,
+      -0.917
+    ],
+    "center": [
+      1.795,
+      0.483,
+      -1.017
+    ]
+  },
+  {
+    "material": "Meshesm8rim1Mtl",
+    "index": 1,
+    "triangles": 2808,
+    "min": [
+      -2.12,
+      0.104,
+      1.13
+    ],
+    "max": [
+      -1.351,
+      0.872,
+      1.264
+    ],
+    "center": [
+      -1.736,
+      0.488,
+      1.197
+    ]
+  },
+  {
+    "material": "Meshesm8rim1Mtl",
+    "index": 2,
+    "triangles": 212,
+    "min": [
+      -2.024,
+      0.2,
+      1.028
+    ],
+    "max": [
+      -1.448,
+      0.776,
+      1.121
+    ],
+    "center": [
+      -1.736,
+      0.488,
+      1.074
+    ]
+  },
+  {
+    "material": "Meshesm8rim1Mtl",
+    "index": 39,
+    "triangles": 2808,
+    "min": [
+      -2.12,
+      0.104,
+      -1.264
+    ],
+    "max": [
+      -1.351,
+      0.872,
+      -1.131
+    ],
+    "center": [
+      -1.736,
+      0.488,
+      -1.197
+    ]
+  },
+  {
+    "material": "Meshesm8rim1Mtl",
+    "index": 40,
+    "triangles": 212,
+    "min": [
+      -2.024,
+      0.2,
+      -1.12
+    ],
+    "max": [
+      -1.448,
+      0.776,
+      -1.028
+    ],
+    "center": [
+      -1.736,
+      0.488,
+      -1.074
+    ]
+  },
+  {
+    "material": "Meshesm8rim1Mtl",
+    "index": 77,
+    "triangles": 2808,
+    "min": [
+      1.642,
+      0.125,
+      1.092
+    ],
+    "max": [
+      2.394,
+      0.876,
+      1.222
+    ],
+    "center": [
+      2.018,
+      0.501,
+      1.157
+    ]
+  },
+  {
+    "material": "Meshesm8rim1Mtl",
+    "index": 78,
+    "triangles": 212,
+    "min": [
+      1.737,
+      0.219,
+      0.992
+    ],
+    "max": [
+      2.3,
+      0.782,
+      1.082
+    ],
+    "center": [
+      2.018,
+      0.501,
+      1.037
+    ]
+  },
+  {
+    "material": "Meshesm8rim1Mtl",
+    "index": 115,
+    "triangles": 2808,
+    "min": [
+      1.642,
+      0.125,
+      -1.223
+    ],
+    "max": [
+      2.394,
+      0.876,
+      -1.093
+    ],
+    "center": [
+      2.018,
+      0.501,
+      -1.158
+    ]
+  },
+  {
+    "material": "Meshesm8rim1Mtl",
+    "index": 116,
+    "triangles": 212,
+    "min": [
+      1.737,
+      0.219,
+      -1.083
+    ],
+    "max": [
+      2.3,
+      0.782,
+      -0.993
+    ],
+    "center": [
+      2.018,
+      0.501,
+      -1.038
+    ]
+  },
+  {
+    "material": "Meshesm8rim0011Mtl",
+    "index": 0,
+    "triangles": 950,
+    "min": [
+      -2.224,
+      0,
+      0.88
+    ],
+    "max": [
+      -1.248,
+      0.976,
+      1.268
+    ],
+    "center": [
+      -1.736,
+      0.488,
+      1.074
+    ]
+  },
+  {
+    "material": "Meshesm8rim0011Mtl",
+    "index": 1,
+    "triangles": 950,
+    "min": [
+      -2.224,
+      0,
+      -1.269
+    ],
+    "max": [
+      -1.248,
+      0.976,
+      -0.88
+    ],
+    "center": [
+      -1.736,
+      0.488,
+      -1.074
+    ]
+  },
+  {
+    "material": "Meshesm8rim0011Mtl",
+    "index": 2,
+    "triangles": 950,
+    "min": [
+      1.541,
+      0.024,
+      0.847
+    ],
+    "max": [
+      2.495,
+      0.978,
+      1.227
+    ],
+    "center": [
+      2.018,
+      0.501,
+      1.037
+    ]
+  },
+  {
+    "material": "Meshesm8rim0011Mtl",
+    "index": 3,
+    "triangles": 950,
+    "min": [
+      1.541,
+      0.024,
+      -1.228
+    ],
+    "max": [
+      2.495,
+      0.978,
+      -0.848
+    ],
+    "center": [
+      2.018,
+      0.501,
+      -1.038
+    ]
+  }
+]

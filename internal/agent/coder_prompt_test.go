@@ -100,3 +100,13 @@ func TestCoderPromptMcpGuidanceNamesRealTools(t *testing.T) {
 		require.Contains(t, got, tool)
 	}
 }
+
+func TestCoderPromptListsPrimeDesignerSkill(t *testing.T) {
+	t.Parallel()
+
+	got := renderCoderPrompt(t, false)
+	require.Contains(t, got, "<name>prime-designer</name>")
+	require.Contains(t, got, "prime://skills/prime-designer/SKILL.md")
+	require.NotContains(t, got, "Design lead and frontend engineer for distinctive, production-ready interfaces and visuals with a measurable quality gate.\n\n# Prime Designer")
+	require.NotContains(t, got, "## Anti-slop rules")
+}

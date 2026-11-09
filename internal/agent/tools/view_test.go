@@ -354,3 +354,25 @@ func TestSniffImageMimeType(t *testing.T) {
 		})
 	}
 }
+
+func TestReadBuiltinSkillGivesDiskDirectoryForResources(t *testing.T) {
+	dataRoot := t.TempDir()
+	t.Setenv("PRIME_GLOBAL_DATA", dataRoot)
+
+	resp, err := readBuiltinFile(ViewParams{FilePath: "prime://skills/prime-designer/SKILL.md"}, nil)
+	require.NoError(t, err)
+	require.False(t, resp.IsError)
+	require.Contains(t, resp.Content, "Prime Designer")
+	directory := filepath.Join(dataRoot, "skills", "prime-designer")
+	require.Contains(t, resp.Content, "<skill_directory>"+filepath.ToSlash(directory)+"</skill_directory>")
+	require.FileExists(t, filepath.Join(directory, "scripts", "audit.mjs"))
+
+	resp, err = readBuiltinFile(ViewParams{FilePath: "prime://skills/prime-designer/references/quality-gate.md"}, nil)
+	require.NoError(t, err)
+	require.False(t, resp.IsError)
+	require.NotContains(t, resp.Content, "<skill_directory>")
+
+	resp, err = readBuiltinFile(ViewParams{FilePath: "prime://skills/prime-config/SKILL.md"}, nil)
+	require.NoError(t, err)
+	require.NotContains(t, resp.Content, "<skill_directory>")
+}

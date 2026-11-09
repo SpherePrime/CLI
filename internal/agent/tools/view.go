@@ -17,6 +17,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/filepathext"
 	"github.com/SpherePrime/CLI/internal/filetracker"
 	"github.com/SpherePrime/CLI/internal/lsp"
@@ -476,6 +477,7 @@ func readBuiltinFile(params ViewParams, skillTracker *skills.Tracker) (fantasy.T
 			offset+len(lines))
 	}
 	output += "\n</file>\n"
+	output += builtinSkillDirectoryNote(params.FilePath)
 
 	meta := ViewResponseMetadata{
 		FilePath: params.FilePath,
@@ -492,4 +494,16 @@ func readBuiltinFile(params ViewParams, skillTracker *skills.Tracker) (fantasy.T
 		fantasy.NewTextResponse(output),
 		meta,
 	), nil
+}
+
+func builtinSkillDirectoryNote(location string) string {
+	name, ok := skills.BuiltinSkillName(location)
+	if !ok || !skills.BuiltinHasResources(name) {
+		return ""
+	}
+	directory, err := skills.MaterializeBuiltin(name, filepath.Join(config.GlobalDataDir(), "skills"))
+	if err != nil {
+		return fmt.Sprintf("\nSkill scripts and assets are unavailable on disk: %v\n", err)
+	}
+	return fmt.Sprintf("\n<skill_directory>%s</skill_directory>\nRun this skill's scripts and use its assets from this directory.\n", filepath.ToSlash(directory))
 }
