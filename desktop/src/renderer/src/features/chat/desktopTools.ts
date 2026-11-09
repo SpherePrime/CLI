@@ -40,6 +40,7 @@ const actions: Record<string, string> = {
   browser_screenshot: 'Снимок страницы',
   browser_screenshot_full: 'Снимок всей страницы',
   browser_screenshot_element: 'Снимок элемента',
+  browser_run: 'Проверка сценарием',
   browser_click: 'Нажимает на странице',
   browser_type: 'Вводит текст',
   browser_press_key: 'Нажимает клавишу',

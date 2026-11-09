@@ -5,7 +5,7 @@ import { MarkdownText } from './MarkdownText'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { ToolCard } from './ToolCard'
 import { AgentCard } from './AgentCard'
-import { collectToolImages, ToolGallery } from './ToolGallery'
+import { collectToolImages, ToolGallery, toolImageCaptions } from './ToolGallery'
 import { ReasoningBlock } from './ReasoningBlock'
 import { useI18n } from '../../i18n'
 import type { Message } from '../../../../shared/contracts'
@@ -107,7 +107,7 @@ export const MessageItem = memo(function MessageItem({
                 ) : (
                   <ToolCard part={part} />
                 )}
-                <ToolGallery images={images} />
+                <ToolGallery images={images} captions={toolImageCaptions(result)} />
               </div>
             )
           }
