@@ -1150,9 +1150,45 @@ kbd {
   border: 1px solid var(--border);
   display: block;
 }
+.tool-gallery.multi {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 6px;
+  max-width: 560px;
+}
+.tool-gallery-count {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--muted);
+}
+.tool-gallery.multi .tool-image {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  width: 100%;
+}
 .tool-gallery.multi img {
-  max-width: min(220px, 100%);
-  max-height: 170px;
+  width: 100%;
+  max-width: none;
+  height: 76px;
+  max-height: none;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 6px;
+  transition: border-color 120ms ease;
+}
+.tool-gallery.multi .tool-image:hover img,
+.tool-gallery.multi .tool-image:focus-visible img {
+  border-color: var(--accent);
+}
+.tool-image-caption {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tool-image {
   display: block;
@@ -1221,6 +1257,52 @@ dialog.image-lightbox::backdrop {
 }
 .image-lightbox .icon:hover {
   background: #ffffff33;
+}
+dialog.image-lightbox.gallery {
+  max-width: 92vw;
+  max-height: 88vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.image-lightbox.gallery img {
+  max-width: min(86vw, 1280px);
+  max-height: none;
+}
+.image-lightbox.gallery > .icon:first-child {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+}
+.image-lightbox .lightbox-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  padding: 10px;
+}
+.image-lightbox .lightbox-nav.previous {
+  left: 16px;
+  right: auto;
+}
+.image-lightbox .lightbox-nav.next {
+  right: 16px;
+}
+.lightbox-caption {
+  position: fixed;
+  z-index: 1;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #000000aa;
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tool-error {
   border-color: #ed8b8b55;

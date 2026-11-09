@@ -95,6 +95,9 @@ export const english: Record<string, string> = {
   'Все файлы проекта вернутся к состоянию коммита {value0}. Более поздние изменения файлов будут отменены. Локальные правки и новые файлы сохранятся в stash. Операция создаст новый коммит без удаления истории и автоматической отправки на GitHub.':
     'All project files will return to commit {value0}. Later file changes will be undone. Local edits and new files will be saved in a stash. A new commit will preserve history without automatically pushing to GitHub.',
   'Файлов: {count}': 'Files: {count}',
+  'Снимков: {count}': 'Screenshots: {count}',
+  'Предыдущее': 'Previous',
+  'Следующее': 'Next',
   'Добавлено строк': 'Lines added',
   'Удалено строк': 'Lines deleted',
   'Показано строк: {shown} из {total}': 'Showing {shown} of {total} lines',
@@ -1369,6 +1372,7 @@ Object.assign(english, {
   'Снимок страницы': 'Page screenshot',
   'Снимок всей страницы': 'Full page screenshot',
   'Снимок элемента': 'Element screenshot',
+  'Проверка сценарием': 'Scenario check',
   'Нажимает на странице': 'Clicks on the page',
   'Вводит текст': 'Types text',
   'Нажимает клавишу': 'Presses a key',
