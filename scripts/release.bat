@@ -979,6 +979,7 @@ if defined DIRTY set "DIRTY="
 if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
     call :merge_worktrees || exit /b 1
     call :sync_desktop_version || exit /b 1
+    call :push_branch || exit /b 1
     call :current_sha
 )
 
@@ -1022,6 +1023,19 @@ rem the release page actually carries what was selected, and names anything
 rem that is absent.
 if "!VERIFY!"=="1" call :verify_assets
 goto :eof
+
+rem ---------------------------------------------------------------------------
+rem  push_branch - the committed and merged branch goes to origin before the
+rem  build, so GitHub has every change even if the build or publish fails.
+rem ---------------------------------------------------------------------------
+:push_branch
+call :rel_branch
+if not defined BRANCH ( echo ERROR: HEAD is detached, nothing to push & exit /b 1 )
+echo  Pushing !BRANCH! to origin ...
+git push origin "HEAD:refs/heads/!BRANCH!"
+if errorlevel 1 ( echo ERROR: could not push !BRANCH!. Sync with origin and re-run. & exit /b 1 )
+echo.
+exit /b 0
 
 rem ---------------------------------------------------------------------------
 rem  merge_worktrees - every agent worktree under .claude\worktrees is
