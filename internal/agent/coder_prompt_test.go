@@ -83,6 +83,9 @@ func TestCoderPromptCarriesOperatingGuidance(t *testing.T) {
 			require.Contains(t, got, "coding agent")
 			require.Contains(t, got, "User and project instructions")
 			require.NotContains(t, got, "<whitespace_and_exact_matching>")
+			require.Contains(t, got, "<completion_check>")
+			require.Contains(t, got, "each follow-up correction")
+			require.Contains(t, got, "read_instruction only for modules that match")
 		})
 	}
 }
