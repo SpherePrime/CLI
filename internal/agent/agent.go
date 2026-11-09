@@ -747,14 +747,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		return nil, fmt.Errorf("failed to get session messages: %w", err)
 	}
 
-	// Generate title from the first real (non-shell) user prompt.
-	// can take tens of seconds. Blocking Run on it delays the
-	// response to the caller. Use a detached context so the title
-	// goroutine survives Run's cancel.
-	if !hasUserTextMessage(msgs) || IsDefaultSessionTitle(currentSession.Title) {
-		titleCtx := context.WithoutCancel(ctx)
-		go a.GenerateTitle(titleCtx, call.SessionID, call.Prompt)
-	}
+	needsTitle := !hasUserTextMessage(msgs) || IsDefaultSessionTitle(currentSession.Title)
 
 	if len(currentSession.Todos) > 0 && !call.KeepTodos {
 		currentSession.Todos = nil
@@ -770,6 +763,12 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	}
 	userMsgCreated = true
 	markRunAccepted(ctx)
+
+	if needsTitle {
+		titleCtx, cancelTitle := context.WithTimeout(ctx, 30*time.Second)
+		a.GenerateTitle(titleCtx, call.SessionID, call.Prompt)
+		cancelTitle()
+	}
 
 	// Add the session to the context. The run context (genCtx) and its
 	// cancel func were already created and registered under the dispatch
@@ -2013,7 +2012,6 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 		return
 	}
 
-	smallModel := a.smallModel.Get()
 	largeModel := a.largeModel.Get()
 	systemPromptPrefix := a.systemPromptPrefix.Get()
 
@@ -2045,7 +2043,6 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 		model Model
 	}
 	attempts := []modelAttempt{
-		{"small", smallModel},
 		{"large", largeModel},
 	}
 
