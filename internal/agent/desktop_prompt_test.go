@@ -38,6 +38,8 @@ func TestDesktopPromptIdentityAndCapabilities(t *testing.T) {
 				require.Contains(t, body, "<completion_check>")
 				require.Contains(t, body, "For the completion check, use the desktop tools")
 				require.Contains(t, body, "Verify a page with browser_run")
+				require.Contains(t, body, "Do not walk through a check with separate browser_resize")
+				require.NotContains(t, body, "navigate, snapshot, click, type, resize, health")
 			}
 		}
 	}

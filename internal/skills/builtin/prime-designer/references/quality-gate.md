@@ -33,6 +33,8 @@ cd scripts && npm install && node audit.mjs http://localhost:5173 --dark --out q
 
 Then open every screenshot it produced. Automation finds mechanical defects; your eyes judge the rest.
 
+In Prime Desktop, also run the interaction pass as one `browser_run` scenario: all widths above, every control, overlays, inputs and states, with a screenshot at each state. Run it in one call, review the log and screenshots, fix, and rerun the same scenario. Do not click through the page with separate browser_* calls.
+
 ## 2. Layout integrity — P0
 
 Nothing may collide, spill, or hide. Each criterion is binary.
