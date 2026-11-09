@@ -37,6 +37,7 @@ func TestDesktopPromptIdentityAndCapabilities(t *testing.T) {
 			} else {
 				require.Contains(t, body, "<completion_check>")
 				require.Contains(t, body, "For the completion check, use the desktop tools")
+				require.Contains(t, body, "Verify a page with browser_run")
 			}
 		}
 	}

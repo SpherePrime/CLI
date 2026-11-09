@@ -1,7 +1,7 @@
 use super::{
     evaluate::{self, text},
     panel::BrowserState,
-    platform, screenshot,
+    platform, scenario, screenshot,
 };
 use serde_json::{json, Value};
 use std::{
@@ -31,6 +31,7 @@ pub fn definitions() -> Vec<Value> {
         schema("browser_scroll", "Scroll the target browser page up or down.", json!({"direction":{"type":"string","enum":["up","down"]}}), &["direction"]),
         schema("browser_back", "Go back in the target browser tab history.", json!({}), &[]),
         schema("browser_screenshot", "Capture the page as PNG. Default: the visible viewport. fullPage: the whole scrollable page in one image (lazy content is loaded first). ref: one element from browser_snapshot, fully, even beyond the viewport.", json!({"fullPage":{"type":"boolean"},"ref":{"type":"integer","minimum":1}}), &[]),
+        schema("browser_run", "Run a whole check in one call: a list of steps executed in order, returning a pass/fail log and every screenshot at once. Prefer it over separate click/screenshot calls when verifying a page. Steps (field action): navigate{url}, resize{width}, click{selector|text}, type{selector|text,value,submit?}, press_key{key}, scroll{to:top|bottom | selector|text}, wait_for{selector|text,gone?,timeoutMs?}, wait{ms}, assert{selector|text,contains?,absent?}, evaluate{expression}, screenshot{name,fullPage? | selector|text}. text matches visible text, labels and placeholders. A failed action stops the run unless continueOnError; failed asserts are recorded and the run continues. Up to 80 steps and 16 screenshots.", json!({"steps":{"type":"array","items":{"type":"object","properties":{"action":{"type":"string","enum":["navigate","resize","click","type","press_key","scroll","wait_for","wait","assert","evaluate","screenshot"]}},"required":["action"]}},"continueOnError":{"type":"boolean"}}), &["steps"]),
         schema("browser_evaluate", "Evaluate an asynchronous JavaScript expression and return its JSON result. Runs until the expression settles; a long run continues in the background and can be checked with mcp_job.", json!({"expression":{"type":"string"}}), &["expression"]),
         schema("browser_health", "Check whether a browser tab responds and whether a script evaluation is still running in it.", json!({}), &[]),
     ]
@@ -217,6 +218,34 @@ pub fn run(
             state.command(app, "back", Some(&id))?;
             settle(&view, state, &id)?;
         }
+        "browser_run" => {
+            let plan = scenario::parse(args)?;
+            let settle_tab = || settle(&view, state, &id);
+            let resize_tab = |requested: f64| -> Result<(), String> {
+                if !(320.0..=2560.0).contains(&requested) {
+                    return Err("width must be between 320 and 2560 pixels".to_owned());
+                }
+                if !state.reveal(app, session, Some(&id), true, Some(requested)) {
+                    state.resize_hidden(&id, requested)?;
+                    state.attach(app)?;
+                }
+                thread::sleep(Duration::from_millis(350));
+                Ok(())
+            };
+            let browser = scenario::Browser {
+                app,
+                state,
+                session,
+                id: &id,
+                view: &view,
+                cancel,
+                settle: &settle_tab,
+                resize: &resize_tab,
+            };
+            let result = scenario::run(&browser, plan);
+            super::refresh(app, state)?;
+            return result;
+        }
         "browser_screenshot" => {
             let target = screenshot::target(args, selector)?;
             return screenshot::capture(&view, &id, target, cancel);
@@ -260,6 +289,7 @@ mod tests {
             "browser_scroll",
             "browser_back",
             "browser_screenshot",
+            "browser_run",
             "browser_evaluate",
             "browser_health",
         ]

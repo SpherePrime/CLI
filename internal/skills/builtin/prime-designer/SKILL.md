@@ -97,7 +97,7 @@ Mandatory for anything with a visual surface. Follow `references/quality-gate.md
 
 2. **Look at every screenshot.** Automation cannot judge hierarchy, rhythm, alignment intent, image crops, or whether the design feels finished. Walk through `quality-gate.md` §5 (V1–V14) with the screenshots open.
 
-3. **Exercise the primary flow** in a real browser: every control, repeated and interrupted actions, open/close of every overlay, back button, loading/empty/error states, keyboard only, touch emulation.
+3. **Exercise the primary flow** in a real browser. In Prime Desktop write it as one `browser_run` scenario (steps for every width, click, input, wait, assert and a screenshot at each state worth seeing), run it in one call and rerun the same scenario after fixes. Cover: every control, repeated and interrupted actions, open/close of every overlay, back button, loading/empty/error states, keyboard only, touch emulation.
 
 4. **Stress content** with the strings in `layout-defects.md` (pre-ship stress test).
 
@@ -117,7 +117,8 @@ Before finishing:
 - Every prominent color, type choice, shape, line, label, image, and animation has a job.
 - One signature gesture; everything else disciplined.
 - No bento, glass, noise, glow, marquee, split hero, or parallax by default.
-- No familiar combination (cream + terracotta + serif, black + neon, purple gradient + white cards) without a subject-specific reason.
+- No familiar combination (cream + terracotta + serif, purple gradient + white cards) without a subject-specific reason.
+- **Neon is opt-in only.** Never use neon colors (saturated cyan, magenta, electric green or pink on dark), glow, bloom, light trails, glowing borders or text-shadow halos, cyberpunk or synthwave looks unless the user explicitly asks for neon or that style. A tech, AI, gaming, crypto, music or night subject is not a request for neon, and neither is a dark theme. Dark themes use calm, desaturated accents.
 - Specific copy; outcome-based button labels ("Book a visit", not "Submit"); errors that say how to fix; empty states with one next action.
 - No lorem ipsum, fabricated numbers, broken media, dead controls, or decoration pretending to be information.
 - Freeze all motion: hierarchy and meaning still work.
@@ -131,7 +132,7 @@ Before finishing:
 
 **Motion.** Write the motion spec (trigger, purpose, path, timing, easing, rest, interruption, reduced motion, cost) for every important animation. Details in `motion-and-3d.md`.
 
-**Theme/brand.** If a theme is requested, show the options from `assets/themes/` (visual selector: `assets/examples/theme-showcase.pdf`), wait for the choice, apply it through role tokens, and use only the verified contrast pairs listed in the theme file. For an official brand, apply only that brand's published rules; never force a brand palette on unrelated work.
+**Theme/brand.** If a theme is requested, show the options from `assets/themes/` (Tech Innovation is a neon theme: offer it only when the user asked for neon) (visual selector: `assets/examples/theme-showcase.pdf`), wait for the choice, apply it through role tokens, and use only the verified contrast pairs listed in the theme file. For an official brand, apply only that brand's published rules; never force a brand palette on unrelated work.
 
 ## Research
 
