@@ -1367,6 +1367,8 @@ Object.assign(english, {
   'Закрывает вкладку': 'Closes a tab',
   'Читает страницу': 'Reads the page',
   'Снимок страницы': 'Page screenshot',
+  'Снимок всей страницы': 'Full page screenshot',
+  'Снимок элемента': 'Element screenshot',
   'Нажимает на странице': 'Clicks on the page',
   'Вводит текст': 'Types text',
   'Нажимает клавишу': 'Presses a key',

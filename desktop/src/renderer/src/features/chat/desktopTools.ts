@@ -38,6 +38,8 @@ const actions: Record<string, string> = {
   browser_close_tab: 'Закрывает вкладку',
   browser_snapshot: 'Читает страницу',
   browser_screenshot: 'Снимок страницы',
+  browser_screenshot_full: 'Снимок всей страницы',
+  browser_screenshot_element: 'Снимок элемента',
   browser_click: 'Нажимает на странице',
   browser_type: 'Вводит текст',
   browser_press_key: 'Нажимает клавишу',
@@ -122,11 +124,19 @@ const detailKeys = [
   'action'
 ]
 
+function screenshotAction(tool: string, input: any) {
+  if (tool !== 'browser_screenshot') return tool
+  if (input?.fullPage === true) return 'browser_screenshot_full'
+  if (input?.ref) return 'browser_screenshot_element'
+  return tool
+}
+
 export function desktopToolTitle(tool: string, input: any, t: Translate) {
   const group = groups.find((item) => tool.startsWith(item.prefix))
   if (!group) return undefined
-  const action = actions[tool]
-    ? t(actions[tool])
+  const actionKey = screenshotAction(tool, input)
+  const action = actions[actionKey]
+    ? t(actions[actionKey])
     : tool.slice(group.prefix.length).replaceAll('_', ' ')
   const value = detailKeys
     .map((key) => input?.[key])

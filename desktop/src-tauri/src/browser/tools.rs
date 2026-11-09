@@ -1,7 +1,7 @@
 use super::{
     evaluate::{self, text},
     panel::BrowserState,
-    platform,
+    platform, screenshot,
 };
 use serde_json::{json, Value};
 use std::{
@@ -30,7 +30,7 @@ pub fn definitions() -> Vec<Value> {
         schema("browser_press_key", "Press a keyboard key in the target browser tab.", json!({"key":{"type":"string"}}), &["key"]),
         schema("browser_scroll", "Scroll the target browser page up or down.", json!({"direction":{"type":"string","enum":["up","down"]}}), &["direction"]),
         schema("browser_back", "Go back in the target browser tab history.", json!({}), &[]),
-        schema("browser_screenshot", "Capture the visible browser page as PNG.", json!({}), &[]),
+        schema("browser_screenshot", "Capture the page as PNG. Default: the visible viewport. fullPage: the whole scrollable page in one image (lazy content is loaded first). ref: one element from browser_snapshot, fully, even beyond the viewport.", json!({"fullPage":{"type":"boolean"},"ref":{"type":"integer","minimum":1}}), &[]),
         schema("browser_evaluate", "Evaluate an asynchronous JavaScript expression and return its JSON result. Runs until the expression settles; a long run continues in the background and can be checked with mcp_job.", json!({"expression":{"type":"string"}}), &["expression"]),
         schema("browser_health", "Check whether a browser tab responds and whether a script evaluation is still running in it.", json!({}), &[]),
     ]
@@ -217,7 +217,10 @@ pub fn run(
             state.command(app, "back", Some(&id))?;
             settle(&view, state, &id)?;
         }
-        "browser_screenshot" => return Ok(json!([platform::screenshot(&view, None)?])),
+        "browser_screenshot" => {
+            let target = screenshot::target(args, selector)?;
+            return screenshot::capture(&view, &id, target, cancel);
+        }
         "browser_health" => return Ok(text(evaluate::page_health(&view, &id).to_string())),
         "browser_evaluate" => {
             let value =
