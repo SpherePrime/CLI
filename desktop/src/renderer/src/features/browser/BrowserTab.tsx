@@ -4,12 +4,10 @@ import type { BrowserState, PickedElementResult } from '../../../../shared/contr
 import { ElementPick } from './ElementPick'
 import { BrowserTabs } from './BrowserTabs'
 import { visibleRect } from './visibleRect'
+import { isOverlayCovering } from './overlayCoverage'
 import { PickedAttachments } from './pickedAttachments'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
-
-const overlaySelector =
-  'dialog[open], .prime-popover, .file-context-menu, .select-options, .update-screen, .startup-screen:not(.hidden)'
 
 const emptyState: BrowserState = {
   url: '',
@@ -93,6 +91,9 @@ export function BrowserTab({
   useEffect(() => {
     if (!editing) setAddress(state.url === 'about:blank' ? '' : state.url)
   }, [state.url, editing])
+  const stateUrlRef = useRef(state.url)
+  stateUrlRef.current = state.url
+  const syncRef = useRef<() => void>(() => {})
   useEffect(() => {
     const element = viewport.current
     if (!element) return
@@ -102,8 +103,8 @@ export function BrowserTab({
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         const rect = visibleRect(element)
-        const covered = Boolean(document.querySelector(overlaySelector))
-        const hidden = covered || !rect || !state.url
+        const covered = rect ? isOverlayCovering(rect) : false
+        const hidden = covered || !rect || !stateUrlRef.current
         const next = hidden ? 'hidden' : JSON.stringify(rect)
         if (next === applied) return
         applied = next
@@ -111,6 +112,7 @@ export function BrowserTab({
         else void window.prime.browserShow(rect)
       })
     }
+    syncRef.current = sync
     sync()
     const resize = new ResizeObserver(sync)
     resize.observe(element)
@@ -130,6 +132,9 @@ export function BrowserTab({
       window.removeEventListener('resize', sync)
       void window.prime.browserHide()
     }
+  }, [])
+  useEffect(() => {
+    syncRef.current()
   }, [state.url])
   const navigate = (value: string) => {
     setEditing(false)

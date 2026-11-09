@@ -25,8 +25,14 @@ export function NativeWindowControls() {
   const { t } = useI18n()
   useEffect(() => window.prime.onEvent(event => {
     if (event.type === 'beforeClose') {
-      void flushDrafts().then(() => invoke('desktop_window', { action: 'confirm_close' }))
-        .catch(error => window.dispatchEvent(new CustomEvent('prime:host-error', { detail: error })))
+      void Promise.race([
+        flushDrafts(),
+        new Promise((resolve) => setTimeout(resolve, 800))
+      ])
+        .catch(() => {})
+        .finally(() => {
+          invoke('desktop_window', { action: 'confirm_close' }).catch(() => {})
+        })
     }
   }), [])
   return (

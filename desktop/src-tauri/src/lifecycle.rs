@@ -87,16 +87,17 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
                     .set_description("Закрыть приложение и потерять несохранённые изменения?")
                     .set_buttons(rfd::MessageButtons::YesNo)
                     .show();
-                if result == rfd::MessageDialogResult::Yes {
+                if matches!(result, rfd::MessageDialogResult::Yes | rfd::MessageDialogResult::Ok) {
                     let state = window.state::<crate::state::AppState>();
                     state.editor_dirty.store(false, Ordering::Relaxed);
-                    // The user confirmed closing the application, so the close
-                    // must not fall back to hiding the window in the tray.
                     state.quitting.store(true, Ordering::Release);
+                    state.close_ready.store(true, Ordering::Release);
                     let _ = window.close();
                 }
             });
-        } else if !state.close_ready.swap(false, Ordering::AcqRel) {
+        } else if !state.quitting.load(Ordering::Acquire)
+            && !state.close_ready.swap(false, Ordering::AcqRel)
+        {
             api.prevent_close();
             crate::events::emit(
                 window.app_handle(),
@@ -104,6 +105,15 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
                 "beforeClose",
                 serde_json::Value::Null,
             );
+            let window_clone = window.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(1000));
+                let state = window_clone.state::<crate::state::AppState>();
+                if !state.close_ready.load(Ordering::Acquire) {
+                    state.close_ready.store(true, Ordering::Release);
+                    let _ = window_clone.close();
+                }
+            });
         } else if crate::tray::should_hide_to_tray(state.quitting.load(Ordering::Acquire)) {
             api.prevent_close();
             crate::tray::hide_to_tray(window.app_handle());

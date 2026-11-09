@@ -5,7 +5,6 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager,
 };
-use tauri_plugin_notification::NotificationExt;
 
 fn russian(app: &AppHandle) -> bool {
     app.state::<AppState>().settings.lock().unwrap().get()["language"] != "en"
@@ -100,13 +99,6 @@ pub fn background_work(state: &AppState) -> bool {
     !busy_reasons(state).is_empty()
 }
 
-fn scheduler_enabled(state: &AppState) -> bool {
-    state.automations.counts()["enabledCount"]
-        .as_u64()
-        .unwrap_or(0)
-        > 0
-}
-
 fn busy_reasons(state: &AppState) -> Vec<&'static str> {
     let mut reasons = Vec::new();
     if busy_chats(state) {
@@ -155,27 +147,19 @@ pub fn hide_to_tray(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
     }
-    let ru = russian(app);
-    let state = app.state::<AppState>();
-    let body = match (scheduler_enabled(&state), background_work(&state), ru) {
-        (_, true, true) => "Работа продолжается. Приложение доступно в трее.",
-        (true, false, true) => "Планировщик включён. Приложение доступно в трее.",
-        (false, false, true) => "Приложение доступно в трее.",
-        (_, true, false) => "Work is still running. Prime is available in the tray.",
-        (true, false, false) => "The scheduler is enabled. Prime is available in the tray.",
-        (false, false, false) => "Prime is available in the tray.",
-    };
-    let _ = app
-        .notification()
-        .builder()
-        .title("Prime Desktop")
-        .body(body)
-        .show();
+}
+
+pub(crate) fn quit_confirmed(answer: &rfd::MessageDialogResult, stop_label: &str) -> bool {
+    match answer {
+        rfd::MessageDialogResult::Ok | rfd::MessageDialogResult::Yes => true,
+        rfd::MessageDialogResult::Custom(text) if text == stop_label => true,
+        _ => false,
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{busy_reason_text, should_hide_to_tray};
+    use super::{busy_reason_text, quit_confirmed, should_hide_to_tray};
 
     #[test]
     fn close_hides_to_tray_until_quitting() {
@@ -192,6 +176,22 @@ mod tests {
         assert!(russian.contains("активные команды агентов"));
         assert!(english.contains("running agent chats"));
         assert!(english.contains("active agent teams"));
+    }
+
+    #[test]
+    fn quit_confirmed_accepts_ok_yes_and_custom_stop() {
+        assert!(quit_confirmed(&rfd::MessageDialogResult::Ok, "Остановить и выйти"));
+        assert!(quit_confirmed(&rfd::MessageDialogResult::Yes, "Остановить и выйти"));
+        assert!(quit_confirmed(
+            &rfd::MessageDialogResult::Custom("Остановить и выйти".into()),
+            "Остановить и выйти"
+        ));
+        assert!(!quit_confirmed(&rfd::MessageDialogResult::Cancel, "Остановить и выйти"));
+        assert!(!quit_confirmed(&rfd::MessageDialogResult::No, "Остановить и выйти"));
+        assert!(!quit_confirmed(
+            &rfd::MessageDialogResult::Custom("Продолжить работу".into()),
+            "Остановить и выйти"
+        ));
     }
 }
 
@@ -223,21 +223,18 @@ pub fn request_quit(app: AppHandle) {
                     keep.into(),
                 ))
                 .show();
-            if answer != rfd::MessageDialogResult::Custom(stop.into()) {
+            if !quit_confirmed(&answer, stop) {
                 return;
             }
         }
         state.quitting.store(true, Ordering::Release);
+        state.close_ready.store(true, Ordering::Release);
         match app.get_webview_window("main") {
             Some(window) => {
                 let _ = window.close();
-                // Closing asks the interface to flush its drafts first. When
-                // that answer never arrives the window stays open and the only
-                // way out left is the task manager, so the quit is forced after
-                // a grace period.
                 let handle = app.clone();
                 std::thread::spawn(move || {
-                    std::thread::sleep(std::time::Duration::from_secs(4));
+                    std::thread::sleep(std::time::Duration::from_secs(2));
                     if handle.get_webview_window("main").is_some() {
                         handle.exit(0);
                     }
