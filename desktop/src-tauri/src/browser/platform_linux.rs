@@ -173,12 +173,24 @@ fn png(surface: cairo::Surface, clip: Option<Value>, zoom: f64) -> Result<Value,
 }
 
 pub fn screenshot(view: &Webview, clip: Option<Value>) -> Result<Value, String> {
+    snapshot_region(view, SnapshotRegion::Visible, clip)
+}
+
+pub fn screenshot_document(view: &Webview, clip: Value) -> Result<Value, String> {
+    snapshot_region(view, SnapshotRegion::FullDocument, Some(clip))
+}
+
+fn snapshot_region(
+    view: &Webview,
+    region: SnapshotRegion,
+    clip: Option<Value>,
+) -> Result<Value, String> {
     let (sender, receiver) = mpsc::channel();
     view.with_webview(move |platform| {
         let browser = platform.inner();
         let zoom = browser.zoom_level();
         browser.snapshot(
-            SnapshotRegion::Visible,
+            region,
             SnapshotOptions::NONE,
             None::<&gio::Cancellable>,
             move |result| {

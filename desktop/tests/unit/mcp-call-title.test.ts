@@ -19,3 +19,11 @@ describe('mcp_call title', () => {
     expect(toolTitle('mcp_browser_browser_click', {}, t).label).toBe('Браузер')
   })
 })
+
+describe('browser screenshot title', () => {
+  it('names the capture mode', () => {
+    expect(toolTitle('mcp_browser_browser_screenshot', {}, t).detail).toBe('Снимок страницы')
+    expect(toolTitle('mcp_browser_browser_screenshot', { fullPage: true }, t).detail).toBe('Снимок всей страницы')
+    expect(toolTitle('mcp_browser_browser_screenshot', { ref: 4 }, t).detail).toBe('Снимок элемента')
+  })
+})

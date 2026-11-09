@@ -146,6 +146,31 @@ pub fn screenshot(view: &Webview, clip: Option<Value>) -> Result<Value, String> 
     }
 }
 
+pub fn screenshot_document(view: &Webview, clip: Value) -> Result<Value, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let result = protocol(
+            view,
+            "Page.captureScreenshot",
+            json!({"format":"png", "captureBeyondViewport":true, "fromSurface":true, "clip":clip}),
+        )?;
+        let data = result["data"]
+            .as_str()
+            .filter(|data| !data.is_empty())
+            .ok_or("Browser returned an empty screenshot")?;
+        Ok(json!({"type":"image", "data":data, "mimeType":"image/png"}))
+    }
+    #[cfg(target_os = "linux")]
+    {
+        super::platform_linux::screenshot_document(view, clip)
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        let _ = (view, clip);
+        Err("Native browser screenshots require a platform capture adapter on this operating system".to_owned())
+    }
+}
+
 pub fn insert_text(view: &Webview, text: &str) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
