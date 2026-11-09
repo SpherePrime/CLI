@@ -26,3 +26,20 @@ func TestCorePromptUsesLazyInstructions(t *testing.T) {
 	require.Contains(t, output.String(), "read_instruction")
 	require.Less(t, output.Len(), 8000)
 }
+
+func TestDesignRuleNeedsAvailableDesignSkill(t *testing.T) {
+	body, err := os.ReadFile("../templates/coder.md.tpl")
+	require.NoError(t, err)
+	tmpl, err := template.New("coder").Parse(string(body))
+	require.NoError(t, err)
+	render := func(designSkill string) string {
+		var output bytes.Buffer
+		require.NoError(t, tmpl.Execute(&output, map[string]any{
+			"Config": config.Config{}, "WorkingDir": "/project", "Platform": "windows", "Date": "10/8/2026",
+			"DesignSkill": designSkill,
+		}))
+		return output.String()
+	}
+	require.Contains(t, render("prime://skills/prime-designer/SKILL.md"), "read prime://skills/prime-designer/SKILL.md before planning")
+	require.NotContains(t, render(""), "counts as a design task")
+}
