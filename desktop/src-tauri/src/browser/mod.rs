@@ -4,6 +4,7 @@ pub mod mcp;
 mod ownership;
 mod panel;
 mod platform;
+mod scenario;
 mod screenshot;
 #[cfg(target_os = "linux")]
 mod platform_linux;
