@@ -227,6 +227,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     if (!message.trim() && attachments.length) message = t('Посмотри на изображение.')
     if (!message.trim()) return
     const submittedText = message
+    const sentAttachmentIds = new Set(attachments.map((item) => item.id))
     setSending(true)
     if (
       await w.send(
@@ -234,11 +235,25 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         attachments.map((item) => item.id)
       )
     ) {
-      void window.prime.releaseAttachments(attachments.map((item) => item.id)).catch(w.errorHandler)
-      await w.savePreferences({ drafts: { [submittedKey]: '' } })
-      if (draftKey.current === submittedKey && submittedText.startsWith(latest.current)) {
+      void window.prime.releaseAttachments([...sentAttachmentIds]).catch(w.errorHandler)
+      setAttachments((current) => current.filter((item) => !sentAttachmentIds.has(item.id)))
+      const currentKey = draftKey.current
+      const isSameOrCreatedChat =
+        currentKey === submittedKey ||
+        (submittedKey.endsWith(':new') && currentKey.startsWith(submittedKey.slice(0, -3)))
+      await w.savePreferences({
+        drafts: {
+          [submittedKey]: '',
+          ...(isSameOrCreatedChat ? { [currentKey]: '' } : {})
+        }
+      })
+      if (
+        isSameOrCreatedChat &&
+        (submittedText === latest.current ||
+          submittedText.startsWith(latest.current) ||
+          latest.current.startsWith(submittedText))
+      ) {
         setText('')
-        setAttachments([])
         setSuggestions([])
       }
     }

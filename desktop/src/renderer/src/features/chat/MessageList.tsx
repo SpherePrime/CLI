@@ -9,7 +9,7 @@ import { WorkingIndicator } from './WorkingIndicator'
 import { reuseUnchanged } from './stableMessages'
 import { findMessages } from '../../../../shared/workspaceTools'
 import { ConversationSearch } from './ConversationSearch'
-import { conversationTiming } from './conversationTiming'
+import { conversationTiming, isEndOfTurn, turnCompletedDuration } from './conversationTiming'
 import { duration } from './elapsed'
 import { useHistoryPaging } from './useHistoryPaging'
 import type { HistoryTiming, PageDirection } from './messageWindow'
@@ -288,10 +288,13 @@ export function MessageList({
                 message.role !== 'user' &&
                 previous !== undefined &&
                 previous.role !== 'user' &&
-                !timing.completed.has(previous.id)
+                !isEndOfTurn(visible, row.index - 1, busy)
               const fresh =
                 (message.created_at || 0) * 1000 > Math.max(mountedAt.current, Date.now() - 4000)
               const last = row.index === visible.length - 1
+              const durationTime = isEndOfTurn(visible, row.index, busy)
+                ? turnCompletedDuration(visible, row.index, timing.completed)
+                : undefined
               return (
                 <div
                   key={message.id}
@@ -314,10 +317,10 @@ export function MessageList({
                     live={busy && last}
                     matched={message.id === matchId}
                   />
-                  {timing.completed.has(message.id) && (
+                  {durationTime !== undefined && (
                     <div className="working completed-working">
                       {t('Работал {time}', {
-                        time: duration(timing.completed.get(message.id)!, t)
+                        time: duration(durationTime, t)
                       })}
                     </div>
                   )}

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { conversationTiming } from '../../src/renderer/src/features/chat/conversationTiming'
+import {
+  conversationTiming,
+  isEndOfTurn,
+  turnCompletedDuration
+} from '../../src/renderer/src/features/chat/conversationTiming'
 import type { Message } from '../../src/shared/contracts'
 
 function message(
@@ -57,5 +61,34 @@ describe('conversationTiming', () => {
       message('a1', 'assistant', 201, [finish('tool_use', 205)])
     ])
     expect(timing.startedAt).toBe(100_000)
+  })
+
+  it('determines the end of turn correctly across intermediate and finished messages', () => {
+    const messages = [
+      message('u1', 'user', 100, [text('start')]),
+      message('a1', 'assistant', 110, [finish('end_turn', 110)]),
+      message('u2', 'user', 400, [text('Background job finished', true)]),
+      message('a2', 'assistant', 401, [finish('end_turn', 425)])
+    ]
+    expect(isEndOfTurn(messages, 1, false)).toBe(false)
+    expect(isEndOfTurn(messages, 3, true)).toBe(false)
+    expect(isEndOfTurn(messages, 3, false)).toBe(true)
+
+    const completed = new Map([
+      ['a1', 10],
+      ['a2', 325]
+    ])
+    expect(turnCompletedDuration(messages, 3, completed)).toBe(325)
+  })
+
+  it('marks previous turn assistant message as end of turn when followed by a new prompt', () => {
+    const messages = [
+      message('u1', 'user', 100, [text('first')]),
+      message('a1', 'assistant', 110, [finish('end_turn', 130)]),
+      message('u2', 'user', 500, [text('second')]),
+      message('a2', 'assistant', 501, [finish('tool_use', 505)])
+    ]
+    expect(isEndOfTurn(messages, 1, true)).toBe(true)
+    expect(isEndOfTurn(messages, 3, true)).toBe(false)
   })
 })

@@ -36,3 +36,37 @@ export function conversationTiming(messages: Message[]) {
   }
   return { startedAt, completed }
 }
+
+export function isEndOfTurn(messages: Message[], index: number, busy: boolean): boolean {
+  const current = messages[index]
+  if (!current || current.role !== 'assistant') return false
+
+  for (let i = index + 1; i < messages.length; i++) {
+    const next = messages[i]
+    if (next.role === 'user' && isConversationPrompt(next)) {
+      return true
+    }
+    if (next.role === 'assistant') {
+      return false
+    }
+  }
+
+  return !busy
+}
+
+export function turnCompletedDuration(
+  messages: Message[],
+  index: number,
+  completedMap: Map<string, number>
+): number | undefined {
+  const direct = completedMap.get(messages[index]?.id)
+  if (direct !== undefined) return direct
+
+  for (let i = index - 1; i >= 0; i--) {
+    const prev = messages[i]
+    if (prev.role === 'user' && isConversationPrompt(prev)) break
+    const prevTime = completedMap.get(prev.id)
+    if (prevTime !== undefined) return prevTime
+  }
+  return undefined
+}
