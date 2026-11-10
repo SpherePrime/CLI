@@ -44,6 +44,7 @@ type PromptDat struct {
 	InstructionTools   bool
 	Desktop            bool
 	DesignSkill        string
+	ImageGeneration    bool
 }
 
 type ContextFile struct {
@@ -243,6 +244,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 		InstructionTools: instructionToolsAvailable(*cfg, p.name),
 		Desktop:          os.Getenv("PRIME_DESKTOP") == "1",
 		DesignSkill:      designSkillLocation(allSkills),
+		ImageGeneration:  imageGenerationAvailable(cfg),
 	}
 	if isGit {
 		var err error
@@ -320,4 +322,12 @@ func getGitRecentCommits(ctx context.Context, sh *shell.Shell) (string, error) {
 
 func (p *Prompt) Name() string {
 	return p.name
+}
+
+func imageGenerationAvailable(cfg *config.Config) bool {
+	if cfg.Options != nil && cfg.Options.ImageGen.IsConfigured() {
+		return true
+	}
+	_, ok := cfg.ProviderImageModel()
+	return ok
 }

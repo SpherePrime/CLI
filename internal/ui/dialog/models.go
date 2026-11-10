@@ -477,6 +477,9 @@ func (m *Models) setProviderItems() error {
 
 			group := NewModelGroup(t, name, true)
 			for _, model := range p.Models {
+				if config.IsImageOutputModel(model) {
+					continue
+				}
 				item := NewModelItem(t, provider, model, m.modelType, false)
 				group.AppendItems(item)
 				itemsMap[item.ID()] = item
@@ -557,6 +560,9 @@ func (m *Models) setProviderItems() error {
 
 		group := NewModelGroup(t, name, true)
 		for _, model := range displayProvider.Models {
+			if config.IsImageOutputModel(model) {
+				continue
+			}
 			item := NewModelItem(t, provider, model, m.modelType, false)
 			group.AppendItems(item)
 			itemsMap[item.ID()] = item

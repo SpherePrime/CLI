@@ -253,3 +253,41 @@ func TestSanitizeImagePrefix(t *testing.T) {
 	require.Equal(t, "my-image", sanitizeImagePrefix("my image"))
 	require.Equal(t, "image", sanitizeImagePrefix("///"))
 }
+
+func TestImageGenToolFallsBackToProviderImageModel(t *testing.T) {
+	t.Parallel()
+
+	workingDir := t.TempDir()
+	var requestBody map[string]any
+	server := imageGenTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/v1/images/generations", r.URL.Path)
+		require.Equal(t, "Bearer relay-key", r.Header.Get("Authorization"))
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&requestBody))
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+			"data": []map[string]string{{"b64_json": base64.StdEncoding.EncodeToString([]byte(testPNGMagic + "relay"))}},
+		}))
+	})
+	providerModel := func() (config.ProviderImageModel, bool) {
+		return config.ProviderImageModel{ProviderID: "relay", BaseURL: server.URL + "/v1", APIKey: "relay-key", Model: "antigravity/gemini-3.1-flash-image"}, true
+	}
+	tool := NewImageGenToolWithProviders(&mockPermissionService{}, workingDir, &config.ImageGenOptions{}, config.IdentityResolver(), nil, providerModel)
+
+	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a hero banner of a mountain at dawn", Size: "1536x1024"})
+	require.NoError(t, err)
+	require.False(t, resp.IsError, resp.Content)
+	require.Equal(t, "antigravity/gemini-3.1-flash-image", requestBody["model"])
+	require.Equal(t, "a hero banner of a mountain at dawn", requestBody["prompt"])
+	require.Equal(t, "1536x1024", requestBody["size"])
+	require.NotContains(t, requestBody, "messages")
+	require.Len(t, resp.Images, 1)
+}
+
+func TestImageGenToolWithoutProviderImageModelSuggestsSettings(t *testing.T) {
+	t.Parallel()
+
+	tool := NewImageGenToolWithProviders(nil, t.TempDir(), &config.ImageGenOptions{}, config.IdentityResolver(), nil, func() (config.ProviderImageModel, bool) { return config.ProviderImageModel{}, false })
+	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat"})
+	require.NoError(t, err)
+	require.True(t, resp.IsError)
+	require.Contains(t, resp.Content, "prime://settings/image-generation")
+}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -148,6 +149,8 @@ type modelsResponse struct {
 		ReasoningEfforts       []string       `json:"reasoning_efforts"`
 		DefaultReasoningEffort string         `json:"default_reasoning_effort"`
 		Gateway                map[string]any `json:"gateway"`
+		SupportsImageOutput    bool           `json:"supports_image_output"`
+		OutputModalities       []string       `json:"output_modalities"`
 	} `json:"data"`
 }
 
@@ -199,9 +202,13 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 		if contextWindow <= 0 {
 			contextWindow = e.MaxContextLength
 		}
+		imageOutput := e.SupportsImageOutput || slices.Contains(e.OutputModalities, "image")
 		if index, ok := existing[e.ID]; ok {
 			if e.Gateway["type"] == "codex" && result[index].ContextWindow <= 0 && contextWindow > 0 {
 				result[index].ContextWindow = contextWindow
+			}
+			if imageOutput {
+				markImageOutput(&result[index])
 			}
 			continue
 		}
@@ -222,6 +229,9 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 		if e.Gateway["type"] == "codex" {
 			model.Options.ProviderOptions = map[string]any{"gateway": e.Gateway}
 		}
+		if imageOutput {
+			markImageOutput(&model)
+		}
 		model.CanReason = len(e.ReasoningEfforts) > 0
 		model.ReasoningLevels = e.ReasoningEfforts
 		model.DefaultReasoningEffort = e.DefaultReasoningEffort
@@ -229,4 +239,11 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 	}
 
 	return result, nil
+}
+
+func markImageOutput(model *catwalk.Model) {
+	if model.Options.ProviderOptions == nil {
+		model.Options.ProviderOptions = map[string]any{}
+	}
+	model.Options.ProviderOptions["image_output"] = true
 }

@@ -239,3 +239,26 @@ func TestStripV1Suffix(t *testing.T) {
 		require.Equal(t, tt.want, got, "stripV1Suffix(%q)", tt.input)
 	}
 }
+
+func TestDiscoverModels_MarksImageOutputModels(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data": [
+			{"id": "relay/flash-image", "supports_image_output": true},
+			{"id": "relay/painter", "output_modalities": ["text", "image"]},
+			{"id": "relay/chat"}
+		]}`))
+	}))
+	defer server.Close()
+
+	existing := catwalk.Model{ID: "relay/flash-image", Name: "Flash Image"}
+	models, err := DiscoverModels(context.Background(), Config{ID: "relay", BaseURL: server.URL + "/v1", ExistingModels: []catwalk.Model{existing}}, &mockResolver{})
+	require.NoError(t, err)
+	require.Len(t, models, 3)
+	flags := map[string]bool{}
+	for _, model := range models {
+		flag, _ := model.Options.ProviderOptions["image_output"].(bool)
+		flags[model.ID] = flag
+	}
+	require.Equal(t, map[string]bool{"relay/flash-image": true, "relay/painter": true, "relay/chat": false}, flags)
+}

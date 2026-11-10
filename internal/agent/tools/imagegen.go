@@ -61,7 +61,7 @@ const (
 // imageGenNotConfiguredResponse explains what is missing and tells the agent
 // to guide the user to the settings instead of retrying.
 func imageGenNotConfiguredResponse() fantasy.ToolResponse {
-	message := "Image generation is not configured: options.image_gen.api_key is empty. " +
+	message := "Image generation is not configured: options.image_gen.api_key is empty and no connected provider has an image model. " +
 		"Tell the user that image generation needs setup and include this exact markdown link in your reply: " +
 		ImageGenSettingsLink + " " +
 		"The link opens the settings dialog on the image generation tab where the API key, model and base URL are set. " +
@@ -86,12 +86,61 @@ func resolveImageAPIKey(options *config.ImageGenOptions, resolver config.Variabl
 	return strings.TrimSpace(resolved), nil
 }
 
+// ProviderImageModelFunc returns an image model of a connected provider, used
+// when options.image_gen has no API key of its own.
+type ProviderImageModelFunc func() (config.ProviderImageModel, bool)
+
 func NewImageGenTool(
 	permissions permission.Service,
 	workingDir string,
 	options *config.ImageGenOptions,
 	resolver config.VariableResolver,
 	client *http.Client,
+) fantasy.AgentTool {
+	return NewImageGenToolWithProviders(permissions, workingDir, options, resolver, client, nil)
+}
+
+// imageTarget is the endpoint, key and model one generate_image call uses.
+type imageTarget struct {
+	baseURL        string
+	apiKey         string
+	model          string
+	responseFormat string
+}
+
+func resolveImageTarget(options *config.ImageGenOptions, resolver config.VariableResolver, providerModel ProviderImageModelFunc) (imageTarget, bool, error) {
+	apiKey, err := resolveImageAPIKey(options, resolver)
+	if err != nil {
+		return imageTarget{}, false, err
+	}
+	if apiKey != "" {
+		return imageTarget{baseURL: options.GetBaseURL(), apiKey: apiKey, model: options.GetModel(), responseFormat: options.GetResponseFormat()}, true, nil
+	}
+	if providerModel == nil {
+		return imageTarget{}, false, nil
+	}
+	found, ok := providerModel()
+	if !ok {
+		return imageTarget{}, false, nil
+	}
+	key := strings.TrimSpace(found.APIKey)
+	if key != "" && resolver != nil {
+		resolved, err := resolver.ResolveValue(key)
+		if err != nil {
+			return imageTarget{}, false, fmt.Errorf("failed to resolve the API key of provider %s: %w", found.ProviderID, err)
+		}
+		key = strings.TrimSpace(resolved)
+	}
+	return imageTarget{baseURL: found.BaseURL, apiKey: key, model: found.Model}, true, nil
+}
+
+func NewImageGenToolWithProviders(
+	permissions permission.Service,
+	workingDir string,
+	options *config.ImageGenOptions,
+	resolver config.VariableResolver,
+	client *http.Client,
+	providerModel ProviderImageModelFunc,
 ) fantasy.AgentTool {
 	if client == nil {
 		client = &http.Client{}
@@ -104,11 +153,11 @@ func NewImageGenTool(
 				return fantasy.NewTextErrorResponse("prompt is required"), nil
 			}
 
-			apiKey, err := resolveImageAPIKey(options, resolver)
+			target, configured, err := resolveImageTarget(options, resolver, providerModel)
 			if err != nil {
 				return fantasy.NewTextErrorResponse(err.Error()), nil
 			}
-			if apiKey == "" {
+			if !configured {
 				return imageGenNotConfiguredResponse(), nil
 			}
 
@@ -155,14 +204,14 @@ func NewImageGenTool(
 			}
 
 			request := imageAPIRequest{
-				Model:          options.GetModel(),
+				Model:          target.model,
 				Prompt:         params.Prompt,
 				N:              count,
 				Size:           strings.TrimSpace(params.Size),
-				ResponseFormat: options.GetResponseFormat(),
+				ResponseFormat: target.responseFormat,
 			}
 
-			images, err := generateImages(ctx, client, options.GetBaseURL(), apiKey, request, options.GetTimeout())
+			images, err := generateImages(ctx, client, target.baseURL, target.apiKey, request, options.GetTimeout())
 			if err != nil {
 				return fantasy.NewTextErrorResponse("Failed to generate images: " + err.Error()), nil
 			}

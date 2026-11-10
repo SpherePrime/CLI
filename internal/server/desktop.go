@@ -94,6 +94,9 @@ func (c *controllerV1) handleGetModelCapabilities(w http.ResponseWriter, r *http
 			continue
 		}
 		for _, model := range provider.Models {
+			if config.IsImageOutputModel(model) {
+				continue
+			}
 			modes := append([]string{config.ReasoningModeOff}, config.AllReasoningModes()...)
 			models = append(models, proto.ModelCapabilities{
 				ProviderID:           providerID,
