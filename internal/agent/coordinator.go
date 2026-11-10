@@ -1406,9 +1406,7 @@ func (c *coordinator) buildOpenaiProvider(baseURL, apiKey string, headers map[st
 			Token: token,
 		}
 	}
-	if httpClient != nil {
-		opts = append(opts, openai.WithHTTPClient(httpClient))
-	}
+	opts = append(opts, openai.WithHTTPClient(withStreamActivityTransport(httpClient)))
 	if len(headers) > 0 {
 		opts = append(opts, openai.WithHeaders(headers))
 	}
@@ -1494,9 +1492,7 @@ func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers 
 	if providerCfg, ok := c.cfg.Config().Providers.Get(providerID); ok {
 		httpClient = withGatewayCapabilities(httpClient, providerCfg.Models)
 	}
-	if httpClient != nil {
-		opts = append(opts, openaicompat.WithHTTPClient(httpClient))
-	}
+	opts = append(opts, openaicompat.WithHTTPClient(withStreamActivityTransport(httpClient)))
 
 	if len(headers) > 0 {
 		opts = append(opts, openaicompat.WithHeaders(headers))

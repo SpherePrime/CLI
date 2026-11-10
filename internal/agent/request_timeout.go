@@ -113,6 +113,7 @@ func (m requestTimeoutModel) Stream(ctx context.Context, call fantasy.Call) (fan
 	timeoutErr := &requestTimeoutError{timeout: m.timeout, idle: true}
 	ctx, cancel := context.WithCancelCause(ctx)
 	timer := time.AfterFunc(m.timeout, func() { cancel(timeoutErr) })
+	ctx = withStreamActivity(ctx, func() { timer.Reset(m.timeout) })
 
 	inner, err := m.LanguageModel.Stream(ctx, call)
 	if err != nil {
