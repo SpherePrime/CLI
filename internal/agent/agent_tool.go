@@ -69,7 +69,8 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 			if name == "" {
 				name = config.AgentCode
 			}
-			dormant := params.WaitForMessage || (name == config.AgentReview && c.reviewStartsDormant(ctx, sessionID))
+			awaitHandoff := name == config.AgentReview && !params.WaitForMessage && (params.Background || c.reviewStartsDormant(ctx, sessionID))
+			dormant := params.WaitForMessage || awaitHandoff
 			agent, err := c.SubAgent(name)
 			if err != nil {
 				// Reported as a tool error rather than a transport error so the
@@ -95,6 +96,7 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 				Prompt:         params.Prompt,
 				SessionTitle:   title,
 				Dormant:        dormant,
+				AwaitHandoff:   awaitHandoff,
 			}
 			if name == config.AgentCode {
 				sp.Reviewer = strings.TrimSpace(params.Reviewer)
@@ -112,7 +114,7 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 				}
 				if dormant {
 					return fantasy.WithResponseMetadata(fantasy.NewTextResponse(fmt.Sprintf(
-						"Agent registered and waiting: job %s (agent %s). It makes no calls until a message arrives: an automatic handoff from a code agent launched with reviewer=%q, or agent_message. Do not poll it.",
+						"Agent registered and waiting: job %s (agent %s). It makes no calls until work is handed to it: the automatic handoff from a code agent launched with reviewer=%q, or, when no code agent is linked to it, the moment every code agent has finished. Messages sent to it before that are queued, not delivered. Do not poll it or message it to start.",
 						job.id, name, strings.TrimSpace(params.Name))), backgroundAgentMetadata{Background: true, JobID: job.id}), nil
 				}
 				return fantasy.WithResponseMetadata(fantasy.NewTextResponse(fmt.Sprintf(

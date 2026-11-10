@@ -44,6 +44,7 @@ type agentJob struct {
 	reviewer        string
 	author          string
 	reviewRound     int
+	awaitHandoff    bool
 
 	mu     sync.Mutex
 	status string // "waiting", "queued", "running", "done", "error", "canceled"
@@ -185,6 +186,7 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		cancel()
 		job.cancel = nil
 		job.status = "waiting"
+		job.awaitHandoff = params.AwaitHandoff
 	}
 	if c.agentJobs == nil {
 		c.agentJobs = make(map[string]*agentJob)
@@ -193,6 +195,9 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 	c.jobMu.Unlock()
 
 	if params.Dormant {
+		if job.awaitHandoff {
+			time.AfterFunc(orphanReviewDelay, func() { c.wakeOrphanReviewers(root) })
+		}
 		return job, nil
 	}
 	c.reserveWorker(job)

@@ -66,6 +66,9 @@ func (c *coordinator) agentMessageTool() fantasy.AgentTool {
 		if err != nil {
 			return fantasy.NewTextErrorResponse(err.Error()), nil
 		}
+		if worker.Status == "waiting" {
+			return fantasy.NewTextResponse(fmt.Sprintf("%s (%s) is waiting for its author's handoff. The message is queued and delivered with the handoff; it does not start the agent.", worker.Name, worker.ID)), nil
+		}
 		return fantasy.NewTextResponse(fmt.Sprintf("Message queued for %s (%s).", worker.Name, worker.ID)), nil
 	})
 }

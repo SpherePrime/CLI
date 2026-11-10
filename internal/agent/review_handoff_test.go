@@ -105,6 +105,77 @@ func TestReviewerStartsDormantWhileCodeRuns(t *testing.T) {
 	require.False(t, c.reviewStartsDormant(t.Context(), parent.ID))
 }
 
+func TestReviewerIgnoresMessagesUntilAuthorHandsOff(t *testing.T) {
+	env := testEnv(t)
+	c := newJobCoordinator(t, env)
+	parent, err := env.sessions.Create(t.Context(), "parent")
+	require.NoError(t, err)
+
+	coder := newBlockingAgent("job-provider")
+	authorJob, err := c.startAgentJob(t.Context(), subAgentParams{Agent: coder, SessionID: parent.ID, AgentMessageID: "m", ToolCallID: "code", Prompt: "build", SessionTitle: "Agent Session: code | site", Reviewer: "site-review"}, config.AgentCode)
+	require.NoError(t, err)
+	reviewScript := &scriptedAgent{replies: []string{"VERDICT: APPROVED\nDEFECTS: none"}}
+	reviewJob, err := c.startAgentJob(t.Context(), subAgentParams{Agent: newMockAgent("job-provider", 1024, reviewScript.run), SessionID: parent.ID, AgentMessageID: "m", ToolCallID: "rev", Prompt: "review the site strictly", SessionTitle: "Agent Session: review | site-review", Dormant: true, AwaitHandoff: true}, config.AgentReview)
+	require.NoError(t, err)
+
+	_, err = c.SendAgentWorkerMessage(t.Context(), parent.ID, "site-review", "full review checklist from the coordinator")
+	require.NoError(t, err)
+	time.Sleep(50 * time.Millisecond)
+	require.Equal(t, "waiting", jobStatus(reviewJob))
+	require.Empty(t, reviewScript.calls())
+
+	close(coder.blockOn)
+	require.True(t, authorJob.wait(t.Context(), time.Second))
+	waitUntil(t, func() bool { return jobStatus(reviewJob) == "done" })
+	calls := reviewScript.calls()
+	require.Len(t, calls, 1)
+	require.Contains(t, calls[0], "review the site strictly")
+	require.Contains(t, calls[0], "full review checklist from the coordinator")
+	require.Contains(t, calls[0], "Automatic review handoff")
+}
+
+func TestUnlinkedReviewerStartsWhenNoCodeAgentsRemain(t *testing.T) {
+	previous := orphanReviewDelay
+	orphanReviewDelay = 20 * time.Millisecond
+	t.Cleanup(func() { orphanReviewDelay = previous })
+	env := testEnv(t)
+	c := newJobCoordinator(t, env)
+	parent, err := env.sessions.Create(t.Context(), "parent")
+	require.NoError(t, err)
+
+	reviewScript := &scriptedAgent{replies: []string{"VERDICT: APPROVED"}}
+	reviewJob, err := c.startAgentJob(t.Context(), subAgentParams{Agent: newMockAgent("job-provider", 1024, reviewScript.run), SessionID: parent.ID, AgentMessageID: "m", ToolCallID: "rev", Prompt: "review the finished site", SessionTitle: "Agent Session: review | late-review", Dormant: true, AwaitHandoff: true}, config.AgentReview)
+	require.NoError(t, err)
+	waitUntil(t, func() bool { return jobStatus(reviewJob) == "done" })
+	calls := reviewScript.calls()
+	require.Len(t, calls, 1)
+	require.Contains(t, calls[0], "review the finished site")
+	require.Contains(t, calls[0], "Every code agent of the team has finished")
+}
+
+func TestUnlinkedReviewerWaitsForRunningCodeAgents(t *testing.T) {
+	previous := orphanReviewDelay
+	orphanReviewDelay = 20 * time.Millisecond
+	t.Cleanup(func() { orphanReviewDelay = previous })
+	env := testEnv(t)
+	c := newJobCoordinator(t, env)
+	parent, err := env.sessions.Create(t.Context(), "parent")
+	require.NoError(t, err)
+
+	coder := newBlockingAgent("job-provider")
+	authorJob, err := c.startAgentJob(t.Context(), subAgentParams{Agent: coder, SessionID: parent.ID, AgentMessageID: "m", ToolCallID: "code", Prompt: "build"}, config.AgentCode)
+	require.NoError(t, err)
+	reviewScript := &scriptedAgent{replies: []string{"VERDICT: APPROVED"}}
+	reviewJob, err := c.startAgentJob(t.Context(), subAgentParams{Agent: newMockAgent("job-provider", 1024, reviewScript.run), SessionID: parent.ID, AgentMessageID: "m", ToolCallID: "rev", Prompt: "review", SessionTitle: "Agent Session: review | any-review", Dormant: true, AwaitHandoff: true}, config.AgentReview)
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+	require.Equal(t, "waiting", jobStatus(reviewJob))
+
+	close(coder.blockOn)
+	require.True(t, authorJob.wait(t.Context(), time.Second))
+	waitUntil(t, func() bool { return jobStatus(reviewJob) == "done" })
+}
+
 func TestReviewLoopRunsBetweenAuthorAndReviewer(t *testing.T) {
 	env := testEnv(t)
 	c := newJobCoordinator(t, env)

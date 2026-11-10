@@ -2101,6 +2101,7 @@ type subAgentParams struct {
 	// but before agent execution, for custom session configuration.
 	SessionSetup func(sessionID string)
 	Dormant      bool
+	AwaitHandoff bool
 	Reviewer     string
 }
 

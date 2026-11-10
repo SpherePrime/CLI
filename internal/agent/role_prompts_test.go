@@ -37,7 +37,8 @@ func TestRolePromptsDescribeTheirJob(t *testing.T) {
 	require.Contains(t, review, "ROUND:")
 	require.Contains(t, review, "Never start reviewing on your own")
 	require.Contains(t, review, "routed automatically")
-	require.Contains(t, review, "Never poll files")
+	require.Contains(t, review, "never poll files")
+	require.Contains(t, review, "Never wait with sleep")
 	require.Contains(t, review, "(repeat N)")
 	require.Contains(t, explore, "Never split one feature by layer")
 

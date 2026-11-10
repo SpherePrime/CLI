@@ -167,10 +167,10 @@ func (c *coordinator) StopAgentWorker(ctx context.Context, source, workerID stri
 }
 
 func (c *coordinator) SendAgentWorkerMessage(ctx context.Context, source, workerID, text string) (AgentWorker, error) {
-	return c.sendWorkerMessage(ctx, source, workerID, text, nil)
+	return c.sendWorkerMessage(ctx, source, workerID, text, nil, false)
 }
 
-func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, text string, prepare func(*agentJob)) (AgentWorker, error) {
+func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, text string, prepare func(*agentJob), handoff bool) (AgentWorker, error) {
 	if strings.TrimSpace(text) == "" {
 		return AgentWorker{}, errors.New("message text is required")
 	}
@@ -202,6 +202,9 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 		c.jobMu.Unlock()
 	}
 	senderLabel := source
+	if source == worker.RootSessionID {
+		senderLabel = "coordinator"
+	}
 	if sender, err := c.teamWorker(ctx, source, source); err == nil {
 		if sender.Name != "" {
 			senderLabel = fmt.Sprintf("%s (id: %s, role: %s)", sender.Name, sender.ID, sender.Agent)
@@ -215,6 +218,11 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 	}
 	job.pending = append(job.pending, fmt.Sprintf("Message from team member %s:\n%s", senderLabel, text))
 	job.updatedAt = time.Now()
+	if job.status == "waiting" && job.awaitHandoff && !handoff {
+		job.mu.Unlock()
+		return job.worker(), nil
+	}
+	job.awaitHandoff = false
 	if job.status != "running" && job.status != "queued" {
 		jobCtx, cancel := context.WithCancel(c.workerContext())
 		job.cancel = cancel

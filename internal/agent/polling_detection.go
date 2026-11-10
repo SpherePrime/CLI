@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+	"regexp"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
@@ -9,7 +10,10 @@ import (
 const (
 	pollingWindowSize = 8
 	pollingMaxRepeats = 3
+	pollingMaxSleeps  = 1
 )
+
+var sleepCommand = regexp.MustCompile(`(?i)(\bsleep\s+-?[a-z]*\s*\d|start-sleep\b|\btimeout\s+/t\b|\bping\s+-n\s+\d+\s+127\.0\.0\.1)`)
 
 var pollingTools = map[string]bool{
 	"ls":            true,
@@ -31,17 +35,25 @@ var changingTools = map[string]bool{
 }
 
 func hasPollingCalls(steps []fantasy.StepResult) bool {
-	if len(steps) < pollingWindowSize {
-		return false
+	window := steps
+	if len(window) > pollingWindowSize {
+		window = window[len(window)-pollingWindowSize:]
 	}
 	counts := map[string]int{}
-	for _, step := range steps[len(steps)-pollingWindowSize:] {
+	sleeps := 0
+	for _, step := range window {
 		for _, call := range step.Content.ToolCalls() {
 			if changingTools[call.ToolName] {
 				return false
 			}
 			if !pollingTools[call.ToolName] {
 				continue
+			}
+			if call.ToolName == "bash" && sleepCommand.MatchString(call.Input) {
+				sleeps++
+				if sleeps > pollingMaxSleeps {
+					return true
+				}
 			}
 			key := call.ToolName + "\x00" + normalizedToolInput(call.Input)
 			counts[key]++

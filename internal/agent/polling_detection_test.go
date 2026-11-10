@@ -29,6 +29,27 @@ func TestReadingDifferentFilesIsNotPolling(t *testing.T) {
 	require.False(t, hasPollingCalls(steps))
 }
 
+func TestRepeatedSleepWaitingIsDetected(t *testing.T) {
+	steps := []fantasy.StepResult{
+		toolStep("bash", `{"command":"sleep 10 && ls"}`),
+		toolStep("view", `{"file_path":"a"}`),
+	}
+	require.False(t, hasPollingCalls(steps))
+	steps = append(steps, toolStep("bash", `{"command":"sleep 15; ls -la"}`))
+	require.True(t, hasPollingCalls(steps))
+	require.True(t, hasPollingCalls([]fantasy.StepResult{
+		toolStep("bash", `{"command":"Start-Sleep -Seconds 20; Get-ChildItem"}`),
+		toolStep("bash", `{"command":"Start-Sleep 25"}`),
+	}))
+}
+
+func TestStartingAServerWithOneSleepIsNotPolling(t *testing.T) {
+	require.False(t, hasPollingCalls([]fantasy.StepResult{
+		toolStep("bash", `{"command":"npm run dev & sleep 3"}`),
+		toolStep("bash", `{"command":"curl localhost:3000"}`),
+	}))
+}
+
 func TestEditsBetweenReadsAreNotPolling(t *testing.T) {
 	var steps []fantasy.StepResult
 	for range 4 {

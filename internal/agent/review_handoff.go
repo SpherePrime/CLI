@@ -87,7 +87,7 @@ func (c *coordinator) deliverReviewRoute(job *agentJob, route *reviewRouteAction
 	if route.target == "" {
 		return true
 	}
-	if _, err := c.sendWorkerMessage(c.workerContext(), job.sessionID, route.target, route.text, route.prepare); err != nil {
+	if _, err := c.sendWorkerMessage(c.workerContext(), job.sessionID, route.target, route.text, route.prepare, true); err != nil {
 		slog.Warn("Review handoff failed", "job", job.id, "target", route.target, "error", err)
 		return false
 	}

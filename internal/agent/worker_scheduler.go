@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/permission"
 )
@@ -155,6 +156,9 @@ func (c *coordinator) updateWorkerCost(ctx context.Context, childID, parentID st
 var teamNoticeSettle = 300 * time.Millisecond
 
 func (c *coordinator) wakeOnAgentJob(job *agentJob) {
+	if job.agent == config.AgentCode {
+		c.wakeOrphanReviewers(job.rootSessionID)
+	}
 	if c.currentAgent() == nil && c.backgroundWakeRunner == nil {
 		return
 	}

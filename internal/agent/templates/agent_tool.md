@@ -38,9 +38,11 @@ screenshots. Checking is done by review agents or by you.
 
 Review agents and waiting:
 
-- A review agent launched while code agents are running is registered as
-  waiting and makes no calls until work is handed to it. You can launch the
-  reviewers together with the code agents.
+- A background review agent always starts as waiting and makes no calls
+  until work is handed to it; its assignment is delivered together with the
+  author's report. Messages sent to it earlier are queued, not delivered.
+  Launch the reviewers together with the code agents. A reviewer that no code
+  agent names as its reviewer starts once every code agent has finished.
 - Launch a code agent with reviewer=<review agent name> to link them: when the
   author finishes, its report goes to that reviewer automatically; a
   CHANGES_REQUIRED verdict goes back to the author automatically, and the fixed
