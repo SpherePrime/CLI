@@ -1044,7 +1044,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		tools.NewTodosTool(c.sessions),
 		tools.NewViewTool(c.lspManager, c.permissions, c.filetracker, c.skillTracker, c.cfg.WorkingDir(), c.cfg.Config().Options.SkillsPaths...),
 		tools.NewWriteTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
-		tools.NewImageGenToolWithProviders(c.permissions, c.cfg.WorkingDir(), c.cfg.Config().Options.ImageGen, c.cfg.Resolver(), nil, func() (config.ProviderImageModel, bool) { return c.cfg.Config().ProviderImageModel() }),
+		tools.NewImageGenTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Resolver(), nil, func() (config.ProviderImageModel, bool) { return c.cfg.Config().ProviderImageModel() }),
 	)
 
 	// The sudo tool only makes sense on Linux hosts where root commands can

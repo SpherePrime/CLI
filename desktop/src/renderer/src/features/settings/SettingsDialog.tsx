@@ -20,11 +20,9 @@ import {
   Download,
   AudioLines,
   Keyboard,
-  Image,
   KeyRound
 } from 'lucide-react'
 import { VoiceSettings } from './VoiceSettings'
-import { ImageGenSettings } from './ImageGenSettings'
 import { SudoSettings } from './SudoSettings'
 import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
@@ -46,7 +44,6 @@ export function SettingsDialog({
     { id: 'shortcuts', label: t('Горячие клавиши'), icon: Keyboard },
     { id: 'providers', label: t('Провайдеры'), icon: Server },
     { id: 'voice', label: t('Голос и речь'), icon: AudioLines },
-    { id: 'images', label: t('Изображения'), icon: Image },
     { id: 'sudo', label: t('Sudo'), icon: KeyRound },
     { id: 'mcp', label: 'MCP', icon: Boxes },
     { id: 'lsp', label: 'LSP', icon: Code2 },
@@ -77,7 +74,6 @@ export function SettingsDialog({
         </nav>
         <div className="settings-body" key={tab}>
           {tab === 'voice' && <VoiceSettings workspace={w} />}
-          {tab === 'images' && <ImageGenSettings workspace={w} />}
           {tab === 'sudo' && <SudoSettings />}
           {tab === 'appearance' && (
             <>

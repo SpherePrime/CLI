@@ -23,7 +23,6 @@ type imageAPIRequest struct {
 	Prompt         string `json:"prompt"`
 	N              int    `json:"n"`
 	Size           string `json:"size,omitempty"`
-	ResponseFormat string `json:"response_format,omitempty"`
 }
 
 type imageAPIResponseItem struct {
@@ -82,7 +81,7 @@ func readErrorMessage(rawBody string) string {
 func editRequestBody(request imageAPIRequest, sources []sourceImage) (*bytes.Buffer, string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	fields := [][2]string{{"model", request.Model}, {"prompt", request.Prompt}, {"n", strconv.Itoa(request.N)}, {"size", request.Size}, {"response_format", request.ResponseFormat}}
+	fields := [][2]string{{"model", request.Model}, {"prompt", request.Prompt}, {"n", strconv.Itoa(request.N)}, {"size", request.Size}}
 	for _, field := range fields {
 		if field[1] == "" {
 			continue

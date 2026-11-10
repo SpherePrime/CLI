@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/permission"
@@ -24,16 +25,12 @@ var imageGenDescriptionTpl = template.Must(
 )
 
 type imageGenDescriptionData struct {
-	DefaultModel  string
-	DefaultMaxima int
-	DefaultSizes  string
+	DefaultSizes string
 }
 
 func imageGenDescription() string {
 	return renderTemplate(imageGenDescriptionTpl, imageGenDescriptionData{
-		DefaultModel:  config.DefaultImageGenModel,
-		DefaultMaxima: 10,
-		DefaultSizes:  "1024x1024, 1536x1024, 1024x1536, auto",
+		DefaultSizes: "1024x1024, 1536x1024, 1024x1536, auto",
 	})
 }
 
@@ -55,69 +52,33 @@ type ImageGenPermissionsParams struct {
 const (
 	ImageGenToolName = "generate_image"
 	// ImageGenSettingsLink is the markdown link the tool asks the agent to
-	// repeat when image generation is not configured. The desktop chat opens
-	// the settings dialog on the image tab for prime:// links.
-	ImageGenSettingsLink = "[Image settings](prime://settings/image-generation)"
+	// repeat when no connected provider has an image model. The desktop chat
+	// opens the settings dialog on the providers tab for prime:// links.
+	ImageGenSettingsLink = "[Providers](prime://settings/providers)"
+	imageGenTimeout      = 6 * time.Minute
 )
 
 // imageGenNotConfiguredResponse explains what is missing and tells the agent
-// to guide the user to the settings instead of retrying.
+// to guide the user to the provider settings instead of retrying.
 func imageGenNotConfiguredResponse() fantasy.ToolResponse {
-	message := "Image generation is not configured: options.image_gen.api_key is empty and no connected provider has an image model. " +
-		"Tell the user that image generation needs setup and include this exact markdown link in your reply: " +
+	message := "Image generation is not available: no connected provider has an image model. " +
+		"Tell the user that image generation needs a provider with an image model and include this exact markdown link in your reply: " +
 		ImageGenSettingsLink + " " +
-		"The link opens the settings dialog on the image generation tab where the API key, model and base URL are set. " +
-		"Do not call generate_image again until the user has saved the settings."
+		"Do not call generate_image again until the user has connected such a provider."
 	return fantasy.NewTextErrorResponse(message)
 }
 
-// resolveImageAPIKey resolves a $VAR reference in the configured API key at
-// call time so updated environment variables are picked up without a restart.
-func resolveImageAPIKey(options *config.ImageGenOptions, resolver config.VariableResolver) (string, error) {
-	if options == nil || strings.TrimSpace(options.APIKey) == "" {
-		return "", nil
-	}
-	value := strings.TrimSpace(options.APIKey)
-	if resolver == nil {
-		return value, nil
-	}
-	resolved, err := resolver.ResolveValue(value)
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve options.image_gen.api_key: %w", err)
-	}
-	return strings.TrimSpace(resolved), nil
-}
-
-// ProviderImageModelFunc returns an image model of a connected provider, used
-// when options.image_gen has no API key of its own.
+// ProviderImageModelFunc returns the image model of a connected provider.
 type ProviderImageModelFunc func() (config.ProviderImageModel, bool)
-
-func NewImageGenTool(
-	permissions permission.Service,
-	workingDir string,
-	options *config.ImageGenOptions,
-	resolver config.VariableResolver,
-	client *http.Client,
-) fantasy.AgentTool {
-	return NewImageGenToolWithProviders(permissions, workingDir, options, resolver, client, nil)
-}
 
 // imageTarget is the endpoint, key and model one generate_image call uses.
 type imageTarget struct {
-	baseURL        string
-	apiKey         string
-	model          string
-	responseFormat string
+	baseURL string
+	apiKey  string
+	model   string
 }
 
-func resolveImageTarget(options *config.ImageGenOptions, resolver config.VariableResolver, providerModel ProviderImageModelFunc) (imageTarget, bool, error) {
-	apiKey, err := resolveImageAPIKey(options, resolver)
-	if err != nil {
-		return imageTarget{}, false, err
-	}
-	if apiKey != "" {
-		return imageTarget{baseURL: options.GetBaseURL(), apiKey: apiKey, model: options.GetModel(), responseFormat: options.GetResponseFormat()}, true, nil
-	}
+func resolveImageTarget(resolver config.VariableResolver, providerModel ProviderImageModelFunc) (imageTarget, bool, error) {
 	if providerModel == nil {
 		return imageTarget{}, false, nil
 	}
@@ -136,10 +97,9 @@ func resolveImageTarget(options *config.ImageGenOptions, resolver config.Variabl
 	return imageTarget{baseURL: found.BaseURL, apiKey: key, model: found.Model}, true, nil
 }
 
-func NewImageGenToolWithProviders(
+func NewImageGenTool(
 	permissions permission.Service,
 	workingDir string,
-	options *config.ImageGenOptions,
 	resolver config.VariableResolver,
 	client *http.Client,
 	providerModel ProviderImageModelFunc,
@@ -155,7 +115,7 @@ func NewImageGenToolWithProviders(
 				return fantasy.NewTextErrorResponse("prompt is required"), nil
 			}
 
-			target, configured, err := resolveImageTarget(options, resolver, providerModel)
+			target, configured, err := resolveImageTarget(resolver, providerModel)
 			if err != nil {
 				return fantasy.NewTextErrorResponse(err.Error()), nil
 			}
@@ -215,10 +175,9 @@ func NewImageGenToolWithProviders(
 				Prompt:         params.Prompt,
 				N:              count,
 				Size:           strings.TrimSpace(params.Size),
-				ResponseFormat: target.responseFormat,
 			}
 
-			images, err := generateImages(ctx, client, target.baseURL, target.apiKey, request, sources, options.GetTimeout())
+			images, err := generateImages(ctx, client, target.baseURL, target.apiKey, request, sources, imageGenTimeout)
 			if err != nil {
 				return fantasy.NewTextErrorResponse("Failed to generate images: " + err.Error()), nil
 			}

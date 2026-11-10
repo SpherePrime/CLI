@@ -325,9 +325,6 @@ func (p *Prompt) Name() string {
 }
 
 func imageGenerationAvailable(cfg *config.Config) bool {
-	if cfg.Options != nil && cfg.Options.ImageGen.IsConfigured() {
-		return true
-	}
 	_, ok := cfg.ProviderImageModel()
 	return ok
 }

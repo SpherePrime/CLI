@@ -30,11 +30,9 @@ func imageGenTestServer(t *testing.T, handler http.HandlerFunc) *httptest.Server
 	return server
 }
 
-func imageGenOptions(serverURL string) *config.ImageGenOptions {
-	return &config.ImageGenOptions{
-		APIKey:  "test-key",
-		Model:   "test-model",
-		BaseURL: serverURL,
+func imageGenProvider(serverURL string) ProviderImageModelFunc {
+	return func() (config.ProviderImageModel, bool) {
+		return config.ProviderImageModel{ProviderID: "test", BaseURL: serverURL, APIKey: "test-key", Model: "test-model"}, true
 	}
 }
 
@@ -49,33 +47,22 @@ func runImageGen(t *testing.T, tool fantasy.AgentTool, params ImageGenParams) (f
 	})
 }
 
-func TestImageGenToolWithoutAPIKeySuggestsSettings(t *testing.T) {
+func TestImageGenToolWithoutProviderSuggestsProviders(t *testing.T) {
 	t.Parallel()
 
-	tool := NewImageGenTool(nil, t.TempDir(), &config.ImageGenOptions{}, config.IdentityResolver(), nil)
+	tool := NewImageGenTool(nil, t.TempDir(), config.IdentityResolver(), nil, nil)
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat"})
 	require.NoError(t, err)
 	require.True(t, resp.IsError)
-	require.Contains(t, resp.Content, "not configured")
-	require.Contains(t, resp.Content, "prime://settings/image-generation")
-}
-
-func TestImageGenToolNilOptionsSuggestsSettings(t *testing.T) {
-	t.Parallel()
-
-	tool := NewImageGenTool(nil, t.TempDir(), nil, config.IdentityResolver(), nil)
-
-	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat"})
-	require.NoError(t, err)
-	require.True(t, resp.IsError)
-	require.Contains(t, resp.Content, "prime://settings/image-generation")
+	require.Contains(t, resp.Content, "no connected provider has an image model")
+	require.Contains(t, resp.Content, "prime://settings/providers")
 }
 
 func TestImageGenToolRequiresPrompt(t *testing.T) {
 	t.Parallel()
 
-	tool := NewImageGenTool(nil, t.TempDir(), imageGenOptions(imageGenTestServer(t, func(w http.ResponseWriter, r *http.Request) {}).URL), config.IdentityResolver(), nil)
+	tool := NewImageGenTool(nil, t.TempDir(), config.IdentityResolver(), nil, imageGenProvider(imageGenTestServer(t, func(w http.ResponseWriter, r *http.Request) {}).URL))
 
 	resp, err := runImageGen(t, tool, ImageGenParams{})
 	require.NoError(t, err)
@@ -98,7 +85,7 @@ func TestImageGenToolSavesBase64Response(t *testing.T) {
 		}))
 	})
 
-	tool := NewImageGenTool(&mockPermissionService{}, workingDir, imageGenOptions(server.URL), config.IdentityResolver(), nil)
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, config.IdentityResolver(), nil, imageGenProvider(server.URL))
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat", OutputDir: "images"})
 	require.NoError(t, err)
@@ -139,7 +126,7 @@ func TestImageGenToolDownloadsURLResponse(t *testing.T) {
 		}))
 	})
 
-	tool := NewImageGenTool(&mockPermissionService{}, workingDir, imageGenOptions(apiServer.URL), config.IdentityResolver(), nil)
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, config.IdentityResolver(), nil, imageGenProvider(apiServer.URL))
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat"})
 	require.NoError(t, err)
@@ -162,7 +149,7 @@ func TestImageGenToolReportsAPIError(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	tool := NewImageGenTool(&mockPermissionService{}, t.TempDir(), imageGenOptions(server.URL), config.IdentityResolver(), nil)
+	tool := NewImageGenTool(&mockPermissionService{}, t.TempDir(), config.IdentityResolver(), nil, imageGenProvider(server.URL))
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat"})
 	require.NoError(t, err)
@@ -179,7 +166,7 @@ func TestImageGenToolReportsHTMLApiError(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	tool := NewImageGenTool(&mockPermissionService{}, t.TempDir(), imageGenOptions(server.URL), config.IdentityResolver(), nil)
+	tool := NewImageGenTool(&mockPermissionService{}, t.TempDir(), config.IdentityResolver(), nil, imageGenProvider(server.URL))
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat"})
 	require.NoError(t, err)
@@ -200,7 +187,7 @@ func TestImageGenToolSendsRequestedSize(t *testing.T) {
 		}))
 	})
 
-	tool := NewImageGenTool(&mockPermissionService{}, workingDir, imageGenOptions(server.URL), config.IdentityResolver(), nil)
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, config.IdentityResolver(), nil, imageGenProvider(server.URL))
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat", Size: "1024x1536"})
 	require.NoError(t, err)
@@ -208,7 +195,7 @@ func TestImageGenToolSendsRequestedSize(t *testing.T) {
 	require.Equal(t, "1024x1536", requestBody["size"])
 }
 
-func TestImageGenToolSendsConfiguredDefaults(t *testing.T) {
+func TestImageGenToolSendsDefaults(t *testing.T) {
 	t.Parallel()
 
 	workingDir := t.TempDir()
@@ -223,14 +210,12 @@ func TestImageGenToolSendsConfiguredDefaults(t *testing.T) {
 		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{"data": items}))
 	})
 
-	options := imageGenOptions(server.URL)
-	options.ResponseFormat = "b64_json"
-	tool := NewImageGenTool(&mockPermissionService{}, workingDir, options, config.IdentityResolver(), nil)
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, config.IdentityResolver(), nil, imageGenProvider(server.URL))
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat", Count: 99})
 	require.NoError(t, err)
 	require.False(t, resp.IsError)
-	require.Equal(t, "b64_json", requestBody["response_format"])
+	require.NotContains(t, requestBody, "response_format")
 	require.NotContains(t, requestBody, "size")
 	require.Equal(t, float64(10), requestBody["n"], "count must clamp to 10")
 
@@ -255,7 +240,7 @@ func TestSanitizeImagePrefix(t *testing.T) {
 	require.Equal(t, "image", sanitizeImagePrefix("///"))
 }
 
-func TestImageGenToolFallsBackToProviderImageModel(t *testing.T) {
+func TestImageGenToolUsesProviderImageModel(t *testing.T) {
 	t.Parallel()
 
 	workingDir := t.TempDir()
@@ -271,7 +256,7 @@ func TestImageGenToolFallsBackToProviderImageModel(t *testing.T) {
 	providerModel := func() (config.ProviderImageModel, bool) {
 		return config.ProviderImageModel{ProviderID: "relay", BaseURL: server.URL + "/v1", APIKey: "relay-key", Model: "antigravity/gemini-3.1-flash-image"}, true
 	}
-	tool := NewImageGenToolWithProviders(&mockPermissionService{}, workingDir, &config.ImageGenOptions{}, config.IdentityResolver(), nil, providerModel)
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, config.IdentityResolver(), nil, providerModel)
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a hero banner of a mountain at dawn", Size: "1536x1024"})
 	require.NoError(t, err)
@@ -286,11 +271,11 @@ func TestImageGenToolFallsBackToProviderImageModel(t *testing.T) {
 func TestImageGenToolWithoutProviderImageModelSuggestsSettings(t *testing.T) {
 	t.Parallel()
 
-	tool := NewImageGenToolWithProviders(nil, t.TempDir(), &config.ImageGenOptions{}, config.IdentityResolver(), nil, func() (config.ProviderImageModel, bool) { return config.ProviderImageModel{}, false })
+	tool := NewImageGenTool(nil, t.TempDir(), config.IdentityResolver(), nil, func() (config.ProviderImageModel, bool) { return config.ProviderImageModel{}, false })
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "a cat"})
 	require.NoError(t, err)
 	require.True(t, resp.IsError)
-	require.Contains(t, resp.Content, "prime://settings/image-generation")
+	require.Contains(t, resp.Content, "prime://settings/providers")
 }
 
 func TestImageGenToolEditsSourceImages(t *testing.T) {
@@ -320,7 +305,7 @@ func TestImageGenToolEditsSourceImages(t *testing.T) {
 	providerModel := func() (config.ProviderImageModel, bool) {
 		return config.ProviderImageModel{ProviderID: "relay", BaseURL: server.URL + "/v1", APIKey: "k", Model: "antigravity/gemini-3.1-flash-image"}, true
 	}
-	tool := NewImageGenToolWithProviders(&mockPermissionService{}, workingDir, &config.ImageGenOptions{}, config.IdentityResolver(), nil, providerModel)
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, config.IdentityResolver(), nil, providerModel)
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "make the cube blue, keep everything else", SourceImages: []string{"assets/cube.png"}, OutputDir: "assets", FilenamePrefix: "cube-blue"})
 	require.NoError(t, err)
@@ -338,7 +323,7 @@ func TestImageGenToolRejectsBadSourceImages(t *testing.T) {
 	workingDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(workingDir, "notes.txt"), []byte("hello"), 0o644))
 	server := imageGenTestServer(t, func(w http.ResponseWriter, r *http.Request) { t.Fatal("no request expected") })
-	tool := NewImageGenTool(&mockPermissionService{}, workingDir, imageGenOptions(server.URL), config.IdentityResolver(), nil)
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, config.IdentityResolver(), nil, imageGenProvider(server.URL))
 
 	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "x", SourceImages: []string{"notes.txt"}})
 	require.NoError(t, err)
