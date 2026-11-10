@@ -1200,7 +1200,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				return false
 			},
 			func(steps []fantasy.StepResult) bool {
-				return !hasRepeatedEmptySearches(steps) && hasRepeatedToolCalls(steps, loopDetectionWindowSize, loopDetectionMaxRepeats)
+				return hasPollingCalls(steps) || (!hasRepeatedEmptySearches(steps) && hasRepeatedToolCalls(steps, loopDetectionWindowSize, loopDetectionMaxRepeats))
 			},
 		},
 	})
