@@ -10,7 +10,9 @@ pub fn desktop_window(app:tauri::AppHandle,webview:tauri::Webview,action:String)
         "maximize"=>window.is_maximized().and_then(|maximized|if maximized{window.unmaximize()}else{window.maximize()}),
         "close"=>window.close(),
         "confirm_close"=>{
-            app.state::<crate::state::AppState>().close_ready.store(true,std::sync::atomic::Ordering::Release);
+            let state = app.state::<crate::state::AppState>();
+            state.close_in_progress.store(false, std::sync::atomic::Ordering::Release);
+            state.close_ready.store(true, std::sync::atomic::Ordering::Release);
             window.close()
         },
         "drag"=>window.start_dragging(),

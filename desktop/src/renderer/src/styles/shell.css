@@ -23,7 +23,9 @@
   flex-shrink: 0;
   height: 100%;
   width: calc(100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, calc(100% - 138px)));
+  min-width: 138px;
   max-width: 50%;
+  -webkit-app-region: no-drag;
 }
 .app-shell {
   height: calc(100vh - var(--topbar-height));

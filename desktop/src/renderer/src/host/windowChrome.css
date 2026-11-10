@@ -3,6 +3,7 @@
   height: 100%;
   width: 138px;
   margin-left: auto;
+  -webkit-app-region: no-drag;
 }
 .native-window-controls button {
   display: grid;
@@ -14,6 +15,7 @@
   border-radius: 0;
   background: transparent;
   color: var(--text);
+  -webkit-app-region: no-drag;
 }
 .native-window-controls button:hover {
   background: color-mix(in srgb, currentColor 10%, transparent);

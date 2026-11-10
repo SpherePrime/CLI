@@ -92,6 +92,7 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
                     state.editor_dirty.store(false, Ordering::Relaxed);
                     state.quitting.store(true, Ordering::Release);
                     state.close_ready.store(true, Ordering::Release);
+                    state.close_in_progress.store(false, Ordering::Release);
                     let _ = window.close();
                 }
             });
@@ -99,6 +100,9 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
             && !state.close_ready.swap(false, Ordering::AcqRel)
         {
             api.prevent_close();
+            if state.close_in_progress.swap(true, Ordering::AcqRel) {
+                return;
+            }
             crate::events::emit(
                 window.app_handle(),
                 "",
@@ -106,16 +110,21 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
                 serde_json::Value::Null,
             );
             let window_clone = window.clone();
+            let generation = state.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
             std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(1000));
+                std::thread::sleep(std::time::Duration::from_millis(600));
                 let state = window_clone.state::<crate::state::AppState>();
-                if !state.close_ready.load(Ordering::Acquire) {
+                if state.close_generation.load(Ordering::Acquire) == generation {
+                    state.close_in_progress.store(false, Ordering::Release);
                     state.close_ready.store(true, Ordering::Release);
                     let _ = window_clone.close();
                 }
             });
         } else if crate::tray::should_hide_to_tray(state.quitting.load(Ordering::Acquire)) {
             api.prevent_close();
+            state.close_in_progress.store(false, Ordering::Release);
+            state.close_generation.fetch_add(1, Ordering::SeqCst);
+            let _ = window.hide();
             crate::tray::hide_to_tray(window.app_handle());
         }
     }

@@ -11,7 +11,7 @@ fn russian(app: &AppHandle) -> bool {
 }
 
 pub fn show_main(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
+    if let Some(window) = app.get_window("main") {
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
@@ -144,7 +144,7 @@ fn busy_reason_text(reasons: &[&str], ru: bool) -> String {
 }
 
 pub fn hide_to_tray(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
+    if let Some(window) = app.get_window("main") {
         let _ = window.hide();
     }
 }
@@ -229,13 +229,13 @@ pub fn request_quit(app: AppHandle) {
         }
         state.quitting.store(true, Ordering::Release);
         state.close_ready.store(true, Ordering::Release);
-        match app.get_webview_window("main") {
+        match app.get_window("main") {
             Some(window) => {
                 let _ = window.close();
                 let handle = app.clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(2));
-                    if handle.get_webview_window("main").is_some() {
+                    if handle.get_window("main").is_some() {
                         handle.exit(0);
                     }
                 });

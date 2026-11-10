@@ -4,7 +4,7 @@ use std::{
     collections::HashMap,
     path::PathBuf,
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         Arc, Mutex,
     },
 };
@@ -20,6 +20,8 @@ pub struct AppState {
     pub quitting: AtomicBool,
     pub running_shells: AtomicUsize,
     pub close_ready: AtomicBool,
+    pub close_in_progress: AtomicBool,
+    pub close_generation: AtomicU64,
     pub file_writes: Mutex<()>,
     pub attachments: Mutex<crate::attachments::Attachments>,
     pub browser: crate::browser::BrowserState,
@@ -64,6 +66,8 @@ impl AppState {
             quitting: AtomicBool::new(false),
             running_shells: AtomicUsize::new(0),
             close_ready: AtomicBool::new(false),
+            close_in_progress: AtomicBool::new(false),
+            close_generation: AtomicU64::new(0),
             file_writes: Mutex::new(()),
             attachments: Mutex::new(attachments),
             browser: crate::browser::BrowserState::new(),
