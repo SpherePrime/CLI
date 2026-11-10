@@ -1442,6 +1442,7 @@ func (c *Config) SetupAgents() {
 			AllowedMCP: map[string][]string{},
 		},
 	}
+	maps.Copy(agents, teamRoleAgents(allowedTools, c.Options.ContextPaths))
 
 	// Carry the user's own settings over from the ids those agents used to
 	// have, so a rename does not throw away a pinned model or a tool
@@ -1494,6 +1495,7 @@ func (c *Config) SetupAgents() {
 		}
 		c.Agents[id] = agent
 	}
+	inheritExploreModel(c.Agents)
 }
 
 func (c *ProviderConfig) TestConnection(resolver VariableResolver) error {

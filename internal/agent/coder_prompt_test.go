@@ -18,6 +18,23 @@ func renderCoderPrompt(t *testing.T, smartTools bool) string {
 	t.Helper()
 
 	env := testEnv(t)
+	cfg := renderPromptConfig(t, env, smartTools)
+
+	p, err := coderPrompt(prompt.WithWorkingDir(env.workingDir))
+	require.NoError(t, err)
+
+	out, err := p.Build(context.Background(), "mock", "mock-model", cfg)
+	require.NoError(t, err)
+	return out
+}
+
+func renderCoderConfig(t *testing.T, env fakeEnv) *config.ConfigStore {
+	t.Helper()
+	return renderPromptConfig(t, env, false)
+}
+
+func renderPromptConfig(t *testing.T, env fakeEnv, smartTools bool) *config.ConfigStore {
+	t.Helper()
 	primeJSON := `{
   "options": {"disable_default_providers": true, "disable_provider_auto_update": true,
               "smart_tools": ` + boolLiteral(smartTools) + `},
@@ -35,13 +52,7 @@ func renderCoderPrompt(t *testing.T, smartTools bool) string {
 	cfg.Config().Options.ContextPaths = nil
 	cfg.Config().Options.SkillsPaths = nil
 	cfg.SetupAgents()
-
-	p, err := coderPrompt(prompt.WithWorkingDir(env.workingDir))
-	require.NoError(t, err)
-
-	out, err := p.Build(context.Background(), "mock", "mock-model", cfg)
-	require.NoError(t, err)
-	return out
+	return cfg
 }
 
 func boolLiteral(b bool) string {

@@ -20,6 +20,12 @@ var codePromptTmpl []byte
 //go:embed templates/plan.md.tpl
 var planPromptTmpl []byte
 
+//go:embed templates/explore.md.tpl
+var explorePromptTmpl []byte
+
+//go:embed templates/review.md.tpl
+var reviewPromptTmpl []byte
+
 //go:embed templates/initialize.md.tpl
 var initializePromptTmpl []byte
 
@@ -56,6 +62,14 @@ func codePrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 		return nil, err
 	}
 	return systemPrompt, nil
+}
+
+func explorePrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
+	return prompt.NewPrompt("explore", string(explorePromptTmpl)+string(instructionRoutingTmpl), opts...)
+}
+
+func reviewPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
+	return prompt.NewPrompt("review", string(reviewPromptTmpl)+string(instructionRoutingTmpl), opts...)
 }
 
 func InitializePrompt(cfg *config.ConfigStore) (string, error) {

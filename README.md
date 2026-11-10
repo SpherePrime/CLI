@@ -37,6 +37,23 @@ Instruction bodies are loaded on demand, never attached as one complete set.
 The library works offline and updates with Prime. Project instructions and mode
 restrictions take priority.
 
+## Agent team
+
+The main agent delegates by default and works alone only when told not to use
+agents or when the task is trivial.
+
+- `explore` — collects project context before the work is split; read-only.
+- `code` — implements one part end to end.
+- `review` — strict check: build, tests, run, screenshots, verdict with
+  scores and defects; read-only.
+- `task`, `plan` — read-only search and planning.
+
+With Max reasoning in Prime Desktop the team runs a strict pipeline: explore →
+code agents in parallel → fresh reviewers only after every code agent finished
+→ defects go back to the same author → re-review until `APPROVED` (up to 5
+rounds per part). Sub-agents inherit the chat's reasoning level. Each role's
+model can be pinned in the agents dialog.
+
 ## Install
 
 Linux / macOS:

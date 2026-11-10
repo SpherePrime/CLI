@@ -68,7 +68,7 @@ func NewAgents(com *common.Common) *Agents {
 	// put the same choice in a second place, where picking it cleared every
 	// worker instead of opening a picker, so pressing enter on it looked like
 	// nothing happened.
-	m.agentIDs = []string{config.AgentCode, config.AgentTask, config.AgentPlan}
+	m.agentIDs = []string{config.AgentCode, config.AgentExplore, config.AgentReview, config.AgentTask, config.AgentPlan}
 
 	m.list = list.NewFilterableList()
 	m.list.Focus()

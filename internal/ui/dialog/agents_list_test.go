@@ -48,8 +48,8 @@ func TestAgentsDialogHidesTheMainAgent(t *testing.T) {
 	}
 
 	// Every worker that can be delegated to must still be reachable.
-	require.Len(t, d.agentIDs, 3)
-	for _, id := range []string{config.AgentCode, config.AgentTask, config.AgentPlan} {
+	require.Len(t, d.agentIDs, 5)
+	for _, id := range []string{config.AgentCode, config.AgentExplore, config.AgentReview, config.AgentTask, config.AgentPlan} {
 		require.Contains(t, d.agentIDs, id)
 	}
 }

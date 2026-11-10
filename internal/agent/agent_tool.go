@@ -71,6 +71,11 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 			if name == "" {
 				name = config.AgentCode
 			}
+			if name == config.AgentReview {
+				if blocked := c.reviewLaunchBlocked(ctx, sessionID); blocked != "" {
+					return fantasy.NewTextErrorResponse(blocked), nil
+				}
+			}
 			agent, err := c.SubAgent(name)
 			if err != nil {
 				// Reported as a tool error rather than a transport error so the

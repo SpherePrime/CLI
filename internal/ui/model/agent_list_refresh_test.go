@@ -105,7 +105,7 @@ func TestRefreshingTheWorkerListKeepsTheRowUnderTheCursor(t *testing.T) {
 	agents.HandleMsg(tea.KeyPressMsg{Code: tea.KeyDown})
 
 	cmd := u.handleSetAgentModel(dialog.ActionSetAgentModel{
-		AgentID: config.AgentTask,
+		AgentID: config.AgentExplore,
 		Model:   config.SelectedModel{Provider: "acme", Model: "slow"},
 	})
 	require.NotNil(t, cmd)
@@ -115,6 +115,6 @@ func TestRefreshingTheWorkerListKeepsTheRowUnderTheCursor(t *testing.T) {
 	action := agents.HandleMsg(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 	require.IsType(t, dialog.ActionClearAgentModel{}, action,
 		"the refreshed list must still have the worker that was pinned selected")
-	require.Equal(t, config.AgentTask, action.(dialog.ActionClearAgentModel).AgentID,
+	require.Equal(t, config.AgentExplore, action.(dialog.ActionClearAgentModel).AgentID,
 		"the cursor has to stay on the worker that was just configured")
 }

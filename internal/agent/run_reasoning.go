@@ -16,8 +16,13 @@ func WithReasoningMode(ctx context.Context, mode string) context.Context {
 	return context.WithValue(ctx, runReasoningKey{}, mode)
 }
 
-func applyRunReasoningMode(ctx context.Context, model config.SelectedModel) config.SelectedModel {
+func runReasoningMode(ctx context.Context) (string, bool) {
 	mode, exists := ctx.Value(runReasoningKey{}).(string)
+	return mode, exists
+}
+
+func applyRunReasoningMode(ctx context.Context, model config.SelectedModel) config.SelectedModel {
+	mode, exists := runReasoningMode(ctx)
 	if !exists {
 		return model
 	}
@@ -31,7 +36,7 @@ func applyRunReasoningMode(ctx context.Context, model config.SelectedModel) conf
 }
 
 func (c *coordinator) applyRunReasoning(ctx context.Context, model Model, provider config.ProviderConfig) (Model, error) {
-	if _, exists := ctx.Value(runReasoningKey{}).(string); !exists {
+	if _, exists := runReasoningMode(ctx); !exists {
 		return model, nil
 	}
 	model.ModelCfg = applyRunReasoningMode(ctx, model.ModelCfg)

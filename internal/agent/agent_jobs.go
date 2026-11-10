@@ -224,6 +224,7 @@ func (c *coordinator) runAgentJob(job *agentJob, ctx context.Context, params sub
 func (c *coordinator) invokeSubAgent(ctx context.Context, params subAgentParams, sessionID string, model Model, maxTokens int64, providerCfg config.ProviderConfig) (*fantasy.AgentResult, error) {
 	run := func(prompt string, hidden bool) (*fantasy.AgentResult, error) {
 		return params.Agent.Run(ctx, SessionAgentCall{
+			ModelOverride:     params.ModelOverride,
 			SessionID:         sessionID,
 			Prompt:            prompt,
 			HiddenUserMessage: hidden,

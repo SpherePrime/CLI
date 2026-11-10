@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -96,6 +97,12 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 			job.finish("error", errModelProviderNotConfigured.Error())
 			c.wakeOnAgentJob(job)
 			return
+		}
+		if tuned, overridden, err := c.teamWorkerModel(ctx, job.rootSessionID, model, provider); err != nil {
+			slog.Warn("Agent keeps its own reasoning level", "job", job.id, "error", err)
+		} else if overridden {
+			model = tuned
+			params.ModelOverride = &tuned
 		}
 		status, output := c.runAgentJob(job, ctx, params, job.sessionID, model, callMaxOutputTokens(model, provider.Type), provider)
 		job.mu.Lock()

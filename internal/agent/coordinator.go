@@ -181,6 +181,7 @@ type coordinator struct {
 	workerLifecycle   context.Context
 	teamNoticeMu      sync.Mutex
 	teamNoticePending map[string]bool
+	teamReasoning     sync.Map
 
 	// Skills discovery results (session-start snapshot).
 	allSkills    []*skills.Skill // Pre-filter: all discovered after dedup.
@@ -353,6 +354,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	if err := c.readyWg.Wait(); err != nil {
 		return nil, err
 	}
+	ctx = c.withTeamReasoning(ctx, sessionID)
 
 	// MCP servers connect asynchronously (see mcp.Initialize).
 	//
@@ -1719,6 +1721,10 @@ func subAgentPrompt(id string, opts ...prompt.Option) (*prompt.Prompt, error) {
 		return planPrompt(opts...)
 	case config.AgentCode:
 		return codePrompt(opts...)
+	case config.AgentExplore:
+		return explorePrompt(opts...)
+	case config.AgentReview:
+		return reviewPrompt(opts...)
 	default:
 		return taskPrompt(opts...)
 	}
@@ -1779,7 +1785,7 @@ func (c *coordinator) SubAgentNames() []string {
 		return nil
 	}
 	names := make([]string, 0, len(cfg.Agents))
-	for _, id := range []string{config.AgentCode, config.AgentTask, config.AgentPlan} {
+	for _, id := range []string{config.AgentCode, config.AgentExplore, config.AgentReview, config.AgentTask, config.AgentPlan} {
 		if _, ok := cfg.Agents[id]; ok {
 			names = append(names, id)
 		}
@@ -2084,6 +2090,7 @@ type subAgentParams struct {
 	ToolCallID     string
 	Prompt         string
 	SessionTitle   string
+	ModelOverride  *Model
 	// SessionSetup is an optional callback invoked after session creation
 	// but before agent execution, for custom session configuration.
 	SessionSetup func(sessionID string)
