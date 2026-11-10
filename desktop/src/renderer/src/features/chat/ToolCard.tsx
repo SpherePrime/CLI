@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, ChevronDown, Clock3, LoaderCircle, Terminal, X } from 'lucide-react'
 import { toolTitle } from './toolTitle'
+import { hidesToolOutput } from './hiddenToolOutput'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
 
@@ -36,6 +37,7 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
   const completed = isShell || result !== undefined
   const failed = Boolean(result?.is_error || (isShell && data.exit_code))
   const output = isShell ? data.output : result?.content
+  const outputHidden = !isShell && !failed && hidesToolOutput(String(data.name || ''), input)
   const job = isShell ? '' : backgroundJob(result?.metadata)
   const title = isShell
     ? { icon: Terminal, label: t('Команда'), detail: String(data.command || '') }
@@ -94,7 +96,7 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
           </pre>
         </section>
       )}
-      {open && completed && (
+      {open && completed && !outputHidden && (
         <section className="tool-section tool-output">
           <h4>{t('Вывод')}</h4>
           <pre>
