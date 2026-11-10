@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -290,4 +291,66 @@ func TestImageGenToolWithoutProviderImageModelSuggestsSettings(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, resp.IsError)
 	require.Contains(t, resp.Content, "prime://settings/image-generation")
+}
+
+func TestImageGenToolEditsSourceImages(t *testing.T) {
+	t.Parallel()
+
+	workingDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(workingDir, "assets"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(workingDir, "assets", "cube.png"), []byte(testPNGMagic+"red"), 0o644))
+
+	var fields map[string]string
+	var files []string
+	server := imageGenTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/v1/images/edits", r.URL.Path)
+		require.NoError(t, r.ParseMultipartForm(1<<20))
+		fields = map[string]string{"model": r.FormValue("model"), "prompt": r.FormValue("prompt"), "n": r.FormValue("n")}
+		for _, header := range r.MultipartForm.File["image[]"] {
+			file, err := header.Open()
+			require.NoError(t, err)
+			data, err := io.ReadAll(file)
+			require.NoError(t, err)
+			files = append(files, header.Filename+":"+header.Header.Get("Content-Type")+":"+string(data))
+		}
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+			"data": []map[string]string{{"b64_json": base64.StdEncoding.EncodeToString([]byte(testPNGMagic + "blue"))}},
+		}))
+	})
+	providerModel := func() (config.ProviderImageModel, bool) {
+		return config.ProviderImageModel{ProviderID: "relay", BaseURL: server.URL + "/v1", APIKey: "k", Model: "antigravity/gemini-3.1-flash-image"}, true
+	}
+	tool := NewImageGenToolWithProviders(&mockPermissionService{}, workingDir, &config.ImageGenOptions{}, config.IdentityResolver(), nil, providerModel)
+
+	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "make the cube blue, keep everything else", SourceImages: []string{"assets/cube.png"}, OutputDir: "assets", FilenamePrefix: "cube-blue"})
+	require.NoError(t, err)
+	require.False(t, resp.IsError, resp.Content)
+	require.Equal(t, map[string]string{"model": "antigravity/gemini-3.1-flash-image", "prompt": "make the cube blue, keep everything else", "n": "1"}, fields)
+	require.Equal(t, []string{"cube.png:image/png:" + testPNGMagic + "red"}, files)
+	original, err := os.ReadFile(filepath.Join(workingDir, "assets", "cube.png"))
+	require.NoError(t, err)
+	require.Equal(t, testPNGMagic+"red", string(original))
+}
+
+func TestImageGenToolRejectsBadSourceImages(t *testing.T) {
+	t.Parallel()
+
+	workingDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(workingDir, "notes.txt"), []byte("hello"), 0o644))
+	server := imageGenTestServer(t, func(w http.ResponseWriter, r *http.Request) { t.Fatal("no request expected") })
+	tool := NewImageGenTool(&mockPermissionService{}, workingDir, imageGenOptions(server.URL), config.IdentityResolver(), nil)
+
+	resp, err := runImageGen(t, tool, ImageGenParams{Prompt: "x", SourceImages: []string{"notes.txt"}})
+	require.NoError(t, err)
+	require.True(t, resp.IsError)
+	require.Contains(t, resp.Content, "not a png, jpeg or webp")
+
+	resp, err = runImageGen(t, tool, ImageGenParams{Prompt: "x", SourceImages: []string{"missing.png"}})
+	require.NoError(t, err)
+	require.True(t, resp.IsError)
+
+	resp, err = runImageGen(t, tool, ImageGenParams{Prompt: "x", SourceImages: []string{"a", "b", "c", "d", "e"}})
+	require.NoError(t, err)
+	require.True(t, resp.IsError)
+	require.Contains(t, resp.Content, "up to 4")
 }

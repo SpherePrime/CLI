@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -41,7 +42,8 @@ type ImageGenParams struct {
 	Size           string `json:"size,omitempty" description:"Image size like 1024x1024, 1536x1024 or auto (provider default when omitted)"`
 	Count          int    `json:"count,omitempty" description:"Images to generate, 1-10 (default 1)"`
 	OutputDir      string `json:"output_dir,omitempty" description:"Save directory chosen for this task; without it images go to ./generated-images in the working directory"`
-	FilenamePrefix string `json:"filename_prefix,omitempty" description:"File name prefix (default image)"`
+	FilenamePrefix string   `json:"filename_prefix,omitempty" description:"File name prefix (default image)"`
+	SourceImages   []string `json:"source_images,omitempty" description:"Paths of existing images (up to 4) to edit or to use as references; when set, the edits endpoint is used and the prompt describes the change"`
 }
 
 type ImageGenPermissionsParams struct {
@@ -203,6 +205,11 @@ func NewImageGenToolWithProviders(
 				return NewPermissionDeniedResponse(), nil
 			}
 
+			sources, err := readSourceImages(workingDir, params.SourceImages)
+			if err != nil {
+				return fantasy.NewTextErrorResponse(err.Error()), nil
+			}
+
 			request := imageAPIRequest{
 				Model:          target.model,
 				Prompt:         params.Prompt,
@@ -211,7 +218,7 @@ func NewImageGenToolWithProviders(
 				ResponseFormat: target.responseFormat,
 			}
 
-			images, err := generateImages(ctx, client, target.baseURL, target.apiKey, request, options.GetTimeout())
+			images, err := generateImages(ctx, client, target.baseURL, target.apiKey, request, sources, options.GetTimeout())
 			if err != nil {
 				return fantasy.NewTextErrorResponse("Failed to generate images: " + err.Error()), nil
 			}
@@ -255,4 +262,48 @@ func imageMimeType(bytes []byte) string {
 	default:
 		return "image/png"
 	}
+}
+
+const (
+	maxSourceImages     = 4
+	maxSourceImageBytes = 20 << 20
+)
+
+func readSourceImages(workingDir string, paths []string) ([]sourceImage, error) {
+	if len(paths) > maxSourceImages {
+		return nil, fmt.Errorf("source_images accepts up to %d images", maxSourceImages)
+	}
+	sources := make([]sourceImage, 0, len(paths))
+	for _, path := range paths {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			continue
+		}
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(workingDir, path)
+		}
+		info, err := os.Stat(path)
+		if err != nil {
+			return nil, fmt.Errorf("source image %s: %w", path, err)
+		}
+		if info.Size() > maxSourceImageBytes {
+			return nil, fmt.Errorf("source image %s is larger than 20 MB", path)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("source image %s: %w", path, err)
+		}
+		if !isKnownImage(data) {
+			return nil, fmt.Errorf("source image %s is not a png, jpeg or webp image", path)
+		}
+		sources = append(sources, sourceImage{Name: filepath.Base(path), MediaType: imageMimeType(data), Bytes: data})
+	}
+	return sources, nil
+}
+
+func isKnownImage(data []byte) bool {
+	isPNG := len(data) >= 8 && string(data[:8]) == "\x89PNG\r\n\x1a\n"
+	isJPEG := len(data) >= 3 && data[0] == 0xff && data[1] == 0xd8 && data[2] == 0xff
+	isWebP := len(data) >= 12 && string(data[:4]) == "RIFF" && string(data[8:12]) == "WEBP"
+	return isPNG || isJPEG || isWebP
 }

@@ -8,7 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -34,6 +37,12 @@ type imageAPIResponse struct {
 	Error *struct {
 		Message string `json:"message"`
 	} `json:"error"`
+}
+
+type sourceImage struct {
+	Name      string
+	MediaType string
+	Bytes     []byte
 }
 
 type generatedImage struct {
@@ -70,22 +79,67 @@ func readErrorMessage(rawBody string) string {
 	return summarizeErrorBody(rawBody)
 }
 
-// generateImages calls POST {baseURL}/images/generations and returns the
-// decoded image bytes. Both b64_json and url result styles are supported.
-func generateImages(ctx context.Context, client *http.Client, baseURL, apiKey string, request imageAPIRequest, timeout time.Duration) ([]generatedImage, error) {
+func editRequestBody(request imageAPIRequest, sources []sourceImage) (*bytes.Buffer, string, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	fields := [][2]string{{"model", request.Model}, {"prompt", request.Prompt}, {"n", strconv.Itoa(request.N)}, {"size", request.Size}, {"response_format", request.ResponseFormat}}
+	for _, field := range fields {
+		if field[1] == "" {
+			continue
+		}
+		if err := writer.WriteField(field[0], field[1]); err != nil {
+			return nil, "", err
+		}
+	}
+	for _, source := range sources {
+		header := make(textproto.MIMEHeader)
+		header.Set("Content-Disposition", fmt.Sprintf(`form-data; name="image[]"; filename=%q`, source.Name))
+		header.Set("Content-Type", source.MediaType)
+		part, err := writer.CreatePart(header)
+		if err != nil {
+			return nil, "", err
+		}
+		if _, err := part.Write(source.Bytes); err != nil {
+			return nil, "", err
+		}
+	}
+	if err := writer.Close(); err != nil {
+		return nil, "", err
+	}
+	return body, writer.FormDataContentType(), nil
+}
+
+// generateImages calls POST {baseURL}/images/generations, or
+// {baseURL}/images/edits as multipart when source images are given, and
+// returns the decoded image bytes. Both b64_json and url result styles are
+// supported.
+func generateImages(ctx context.Context, client *http.Client, baseURL, apiKey string, request imageAPIRequest, sources []sourceImage, timeout time.Duration) ([]generatedImage, error) {
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	body, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode request: %w", err)
+	var body *bytes.Buffer
+	contentType := "application/json"
+	path := "/images/generations"
+	if len(sources) > 0 {
+		var err error
+		body, contentType, err = editRequestBody(request, sources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode request: %w", err)
+		}
+		path = "/images/edits"
+	} else {
+		encoded, err := json.Marshal(request)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode request: %w", err)
+		}
+		body = bytes.NewBuffer(encoded)
 	}
 
-	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, baseURL+"/images/generations", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, baseURL+path, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 
 	resp, err := client.Do(req)
