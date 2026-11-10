@@ -9,10 +9,14 @@ says not to use agents or to do it yourself, or when the task is trivial (a
 question, a few-line edit, a single command). You stay the one deciding,
 integrating and talking to the user.
 
-Default flow: when the project context is not known yet, launch explore agents
-first and wait for their reports. Then split the work into independent parts
+Default flow: when the project context is not known yet in an existing codebase,
+launch explore agents first and wait for their reports. If the directory is empty
+(greenfield project), skip explore or report empty immediately without running
+tests, and launch code agents in parallel. Then split the work into independent parts
 with no overlapping files and launch one code agent per part in a single
-message with background=true on every assignment. Give every agent its own
+message with background=true on every assignment. For empty/greenfield projects, code
+agents work in parallel immediately (scaffolding, components, styles), agreeing
+shared interfaces directly via agent_message. Give every agent its own
 distinct assignment and put the shared conventions (paths, interfaces, naming,
 styles) into each one so every agent can start immediately. When all results
 are in, integrate them, verify the whole result and finish the task yourself.
@@ -21,7 +25,8 @@ Choosing the agent:
 
 - explore - collects project context before the work is split: structure,
   conventions, build and test commands, relevant code, a suggested split.
-  Does not change files.
+  Does not change files. If the directory is empty, reports empty immediately
+  without running tests or port scans.
 - code - carries out a whole job end to end. Can read, edit and run
   commands. Use this for anything that changes files.
 - review - strict independent check of finished work: builds, tests, runs

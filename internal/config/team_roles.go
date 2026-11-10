@@ -50,7 +50,7 @@ func teamRoleAgents(allowedTools []string, contextPaths []string) map[string]Age
 		AgentExplore: {
 			ID:           AgentExplore,
 			Name:         "Explore",
-			Description:  "Collects project context before work is split: structure, conventions, build and test commands, relevant code. Does not change files.",
+			Description:  "Collects project context before work is split: structure, conventions, build and test commands, relevant code. Does not change files. If directory is empty, reports empty immediately without running tests.",
 			Model:        SelectedModelTypeLarge,
 			ContextPaths: contextPaths,
 			AllowedTools: resolveExploreTools(allowedTools),

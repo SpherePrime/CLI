@@ -703,7 +703,13 @@ func teardown(name string) {
 }
 
 func getOrRenewClient(ctx context.Context, cfg *config.ConfigStore, name string) (*ClientSession, error) {
-	m := cfg.Config().MCP[name]
+	m, exists := cfg.Config().MCP[name]
+	if !exists {
+		return nil, fmt.Errorf("mcp '%s' not configured", name)
+	}
+	if m.Disabled {
+		return nil, fmt.Errorf("mcp '%s' is disabled", name)
+	}
 	timeout := mcpTimeout(m)
 
 	// Fast path: reuse a healthy session without taking the renewal lock.
@@ -722,29 +728,20 @@ func getOrRenewClient(ctx context.Context, cfg *config.ConfigStore, name string)
 	mu.Lock()
 	defer mu.Unlock()
 
-	// Under the lock the map is stable: any in-flight renewal has finished and
-	// either re-registered its session or failed and left none. A renewal
-	// removes the session transiently (StateError takes it before rebuilding),
-	// so this check must happen here rather than before the lock — otherwise a
-	// caller arriving mid-renewal sees no session and wrongly reports the
-	// server unavailable.
-	sess, ok := sessions.Get(name)
-	if !ok {
-		return nil, fmt.Errorf("mcp '%s' not available", name)
-	}
-
-	// A concurrent goroutine may have already renewed the session while we
+	// A concurrent goroutine may have already renewed or connected the session while we
 	// waited for the lock. Reuse it if it is now healthy.
-	pingErr := pingSession(ctx, sess, timeout)
-	if pingErr == nil {
-		return sess, nil
-	}
+	if sess, ok := sessions.Get(name); ok {
+		pingErr := pingSession(ctx, sess, timeout)
+		if pingErr == nil {
+			return sess, nil
+		}
 
-	state, _ := states.Get(name)
-	// StateError closes the dead session and clears its tools, prompts, and
-	// resources from the registry. Report the failure against the exact
-	// session that failed the ping so only that session is torn down.
-	updateState(name, StateError, maybeTimeoutErr(pingErr, timeout), sess, state.Counts)
+		state, _ := states.Get(name)
+		// StateError closes the dead session and clears its tools, prompts, and
+		// resources from the registry. Report the failure against the exact
+		// session that failed the ping so only that session is torn down.
+		updateState(name, StateError, maybeTimeoutErr(pingErr, timeout), sess, state.Counts)
+	}
 
 	// Capture the generation so a reconcile teardown that lands mid-renewal
 	// invalidates this rebuild instead of letting it clobber the newer one.

@@ -473,6 +473,44 @@ func TestGetOrRenewClient_RestoresPromptsAndResources(t *testing.T) {
 		"reported counts must match the restored registries")
 }
 
+func TestGetOrRenewClient_ConnectsOnDemandWhenSessionMissing(t *testing.T) {
+	const name = "test-ondemand-connect"
+	t.Cleanup(func() {
+		sessions.Del(name)
+		allTools.Del(name)
+		allPrompts.Del(name)
+		allResources.Del(name)
+	})
+
+	cfg := config.NewTestStore(&config.Config{
+		MCP: config.MCPs{
+			name: {Type: config.MCPStdio},
+		},
+	})
+
+	replacement := liveSessionWithCapabilities(t, "on_demand_tool", "", "")
+	origNewSession := newSession
+	newSession = func(context.Context, *config.ConfigStore, string, config.MCPConfig, config.VariableResolver, bool) (*ClientSession, error) {
+		return replacement, nil
+	}
+	t.Cleanup(func() { newSession = origNewSession })
+
+	// Ensure no session exists beforehand
+	sessions.Del(name)
+
+	sess, err := getOrRenewClient(context.Background(), cfg, name)
+	require.NoError(t, err)
+	require.Same(t, replacement, sess)
+
+	tools, ok := allTools.Get(name)
+	require.True(t, ok)
+	require.Len(t, tools, 1)
+
+	info, ok := GetState(name)
+	require.True(t, ok)
+	require.Equal(t, StateConnected, info.State)
+}
+
 // testTransportWrapper is a second, test-local decorator. maybeStdioErr must
 // see through an arbitrary stack of them, not just the one wrapper that
 // happens to exist in createSession today.

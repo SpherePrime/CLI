@@ -25,6 +25,8 @@ func TestRolePromptsDescribeTheirJob(t *testing.T) {
 	require.Contains(t, explore, "Never create, edit, move or delete files")
 	require.Contains(t, explore, "Suggested split")
 	require.Contains(t, explore, "answer them precisely")
+	require.Contains(t, explore, "Check if the directory is empty first")
+	require.Contains(t, explore, "greenfield project")
 
 	review := renderRolePrompt(t, reviewPrompt)
 	require.Contains(t, review, "strict, independent quality gate")
@@ -47,6 +49,7 @@ func TestCoderPromptDelegatesByDefault(t *testing.T) {
 	require.Contains(t, got, "delegation is the default")
 	require.Contains(t, got, "explicitly says not to use agents")
 	require.Contains(t, got, "agent=explore")
+	require.Contains(t, got, "empty or new (greenfield)")
 	require.Contains(t, got, "Agents talk to each other directly with agent_message")
 	require.NotContains(t, got, "Handle small tasks yourself")
 }

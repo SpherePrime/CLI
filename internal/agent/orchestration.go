@@ -141,8 +141,14 @@ func (c *coordinator) teamWorker(ctx context.Context, source, workerID string) (
 	if err != nil {
 		return AgentWorker{}, err
 	}
+	target := strings.TrimLeft(strings.TrimSpace(workerID), "@#")
 	for _, worker := range workers {
-		if worker.ID == workerID || worker.SessionID == workerID {
+		if worker.ID == workerID || worker.SessionID == workerID || (target != "" && (worker.ID == target || worker.SessionID == target)) {
+			return worker, nil
+		}
+	}
+	for _, worker := range workers {
+		if worker.Name != "" && (strings.EqualFold(worker.Name, workerID) || (target != "" && strings.EqualFold(worker.Name, target))) {
 			return worker, nil
 		}
 	}
@@ -197,8 +203,16 @@ func (c *coordinator) SendAgentWorkerMessage(ctx context.Context, source, worker
 		}
 		c.jobMu.Unlock()
 	}
+	senderLabel := source
+	if sender, err := c.teamWorker(ctx, source, source); err == nil {
+		if sender.Name != "" {
+			senderLabel = fmt.Sprintf("%s (id: %s, role: %s)", sender.Name, sender.ID, sender.Agent)
+		} else {
+			senderLabel = fmt.Sprintf("id: %s (role: %s)", sender.ID, sender.Agent)
+		}
+	}
 	job.mu.Lock()
-	job.pending = append(job.pending, fmt.Sprintf("Message from team member %s:\n%s", source, text))
+	job.pending = append(job.pending, fmt.Sprintf("Message from team member %s:\n%s", senderLabel, text))
 	job.updatedAt = time.Now()
 	if job.status != "running" && job.status != "queued" {
 		jobCtx, cancel := context.WithCancel(c.workerContext())

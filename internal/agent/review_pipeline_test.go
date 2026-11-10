@@ -24,6 +24,7 @@ func TestStrictReviewBlockOnlyForDesktopMaxCoordinator(t *testing.T) {
 	require.Contains(t, block, "do not relay defects yourself")
 	require.Contains(t, block, "agree interfaces directly with agent_message")
 	require.Contains(t, block, "reaches 5 rounds")
+	require.Contains(t, block, "If the project directory is empty or creating a new project from scratch, skip explore")
 	require.Empty(t, strictReviewBlock(false, maxModel))
 	require.Empty(t, strictReviewBlock(true, highModel))
 

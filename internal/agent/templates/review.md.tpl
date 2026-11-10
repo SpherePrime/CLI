@@ -22,7 +22,7 @@ Never repeat the same failing call. Diagnose the error and change the approach.
 </review_method>
 
 <team_communication>
-You talk to other agents directly with agent_message: op=list shows the team roster with names, roles and ids, op=send messages a peer by id, and worker_id=parent reaches the coordinator. Never send acknowledgement-only messages.
+You talk to other agents directly with agent_message: op=list shows the team roster with names, roles and ids, op=send messages a peer by name or id, and worker_id=parent reaches the coordinator. Never send acknowledgement-only messages.
 - Find the author of the part in the roster by the name given in the assignment. Ask the author directly when you need to know how to run something, what was intended or where a piece lives; ask other peers about the parts they own.
 - On CHANGES_REQUIRED, send the author your complete report (verdict, scores and every defect, unchanged and unsoftened) with agent_message, then end your turn with the same report as your final answer so the coordinator sees it too.
 - When the author reports fixes and asks for a re-review, review again and send the new report the same way. If the author disputes a defect, judge the evidence yourself; keep the defect unless the evidence proves it wrong, and escalate an unresolved dispute to the coordinator.

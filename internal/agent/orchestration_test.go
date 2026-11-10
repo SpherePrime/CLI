@@ -345,3 +345,45 @@ func TestWorkerLifecycleCancelsQueuedRunsAndSuppressesWake(t *testing.T) {
 	case <-time.After(20 * time.Millisecond):
 	}
 }
+
+func TestSendAgentWorkerMessageByName(t *testing.T) {
+	env := testEnv(t)
+	c := newJobCoordinator(t, env)
+	parent, err := env.sessions.Create(t.Context(), "parent")
+	require.NoError(t, err)
+
+	calls := make(chan SessionAgentCall, 3)
+	a := newMockAgent("job-provider", 1024, func(ctx context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+		calls <- call
+		return agentResultWithText("done"), nil
+	})
+
+	job, err := c.startAgentJob(t.Context(), subAgentParams{
+		Agent:          a,
+		SessionID:      parent.ID,
+		AgentMessageID: "msg-1",
+		ToolCallID:     "call-1",
+		Prompt:         "start",
+		SessionTitle:   "Agent Session: code | FrontendWorker",
+	}, "code")
+	require.NoError(t, err)
+	<-calls
+	require.True(t, job.wait(t.Context(), time.Second))
+
+	// Send message using the worker's name (case-insensitive and with prefix @)
+	worker, err := c.SendAgentWorkerMessage(t.Context(), parent.ID, "FrontendWorker", "work by exact name")
+	require.NoError(t, err)
+	require.Equal(t, job.id, worker.ID)
+	second := <-calls
+	require.Contains(t, second.Prompt, "work by exact name")
+	require.True(t, job.wait(t.Context(), time.Second))
+
+	// Also case-insensitive and with @
+	worker, err = c.SendAgentWorkerMessage(t.Context(), parent.ID, "@frontendworker", "work with at sign")
+	require.NoError(t, err)
+	require.Equal(t, job.id, worker.ID)
+	third := <-calls
+	require.Contains(t, third.Prompt, "work with at sign")
+	require.True(t, job.wait(t.Context(), time.Second))
+}
+
