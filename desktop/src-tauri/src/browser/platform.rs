@@ -75,7 +75,17 @@ pub fn install_events(
 
 #[cfg(target_os = "windows")]
 pub fn protocol(view: &Webview, method: &str, parameters: Value) -> Result<Value, String> {
-    use std::{sync::mpsc, time::Duration};
+    protocol_within(view, method, parameters, std::time::Duration::from_secs(10))
+}
+
+#[cfg(target_os = "windows")]
+pub fn protocol_within(
+    view: &Webview,
+    method: &str,
+    parameters: Value,
+    timeout: std::time::Duration,
+) -> Result<Value, String> {
+    use std::sync::mpsc;
     use webview2_com::CallDevToolsProtocolMethodCompletedHandler;
     use windows::core::HSTRING;
     let method = method.to_owned();
@@ -116,8 +126,21 @@ pub fn protocol(view: &Webview, method: &str, parameters: Value) -> Result<Value
     })
     .map_err(|error| error.to_string())?;
     receiver
-        .recv_timeout(Duration::from_secs(10))
+        .recv_timeout(timeout)
         .map_err(|_| "Browser protocol operation timed out".to_owned())?
+}
+
+#[cfg(target_os = "windows")]
+fn capture_with_retry(view: &Webview, parameters: Value) -> Result<Value, String> {
+    use std::time::Duration;
+    let timeout = Duration::from_secs(30);
+    match protocol_within(view, "Page.captureScreenshot", parameters.clone(), timeout) {
+        Err(error) if error.contains("timed out") => {
+            std::thread::sleep(Duration::from_millis(300));
+            protocol_within(view, "Page.captureScreenshot", parameters, timeout)
+        }
+        result => result,
+    }
 }
 
 pub fn screenshot(view: &Webview, clip: Option<Value>) -> Result<Value, String> {
@@ -128,7 +151,7 @@ pub fn screenshot(view: &Webview, clip: Option<Value>) -> Result<Value, String> 
         if let Some(clip) = clip {
             parameters["clip"] = clip;
         }
-        let result = protocol(view, "Page.captureScreenshot", parameters)?;
+        let result = capture_with_retry(view, parameters)?;
         let data = result["data"]
             .as_str()
             .filter(|data| !data.is_empty())
@@ -149,9 +172,8 @@ pub fn screenshot(view: &Webview, clip: Option<Value>) -> Result<Value, String> 
 pub fn screenshot_document(view: &Webview, clip: Value) -> Result<Value, String> {
     #[cfg(target_os = "windows")]
     {
-        let result = protocol(
+        let result = capture_with_retry(
             view,
-            "Page.captureScreenshot",
             json!({"format":"png", "captureBeyondViewport":true, "fromSurface":true, "clip":clip}),
         )?;
         let data = result["data"]

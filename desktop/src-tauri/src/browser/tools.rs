@@ -1,7 +1,7 @@
 use super::{
     evaluate::{self, text},
     panel::BrowserState,
-    platform, scenario, screenshot,
+    platform, rendering, scenario, screenshot,
 };
 use serde_json::{json, Value};
 use std::{
@@ -138,6 +138,11 @@ pub fn run(
         return Err("tabId is required".to_owned());
     }
     let (id, view) = state.agent_target(app, session, requested)?;
+    let _rendering = if name == "browser_close_tab" {
+        None
+    } else {
+        Some(rendering::keep_rendering(app, state, &id)?)
+    };
     match name {
         "browser_select_tab" => {
             if let Some(session) = session {

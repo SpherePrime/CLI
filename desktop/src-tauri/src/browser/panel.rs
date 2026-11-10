@@ -62,7 +62,10 @@ pub struct Panel {
     pub view: Option<String>,
     pub selected: HashMap<String, String>,
     pub agent: HashMap<String, String>,
+    pub rendering: HashMap<String, usize>,
 }
+
+const OFFSCREEN_OFFSET: f64 = 40000.0;
 
 #[derive(Clone, Default)]
 pub struct BrowserState {
@@ -169,6 +172,38 @@ impl BrowserState {
         Ok(())
     }
 
+    pub fn hold_rendering(&self, id: &str) -> Result<bool, String> {
+        let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
+        let count = panel.rendering.entry(id.to_owned()).or_insert(0);
+        *count += 1;
+        Ok(*count == 1)
+    }
+
+    pub fn release_rendering(&self, id: &str) -> bool {
+        let Ok(mut panel) = self.inner.lock() else {
+            return false;
+        };
+        match panel.rendering.get_mut(id) {
+            Some(count) if *count > 1 => {
+                *count -= 1;
+                false
+            }
+            Some(_) => {
+                panel.rendering.remove(id);
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub fn is_shown(&self, id: &str) -> Result<bool, String> {
+        let panel = self.inner.lock().map_err(|error| error.to_string())?;
+        Ok(panel.visible
+            && panel.bounds.width > 0.0
+            && panel.bounds.height > 0.0
+            && panel.active.as_deref() == Some(id))
+    }
+
     pub fn resize_hidden(&self, id: &str, width: f64) -> Result<(), String> {
         let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
         if let Some(tab) = panel.tabs.iter_mut().find(|tab| tab.id == id) {
@@ -235,13 +270,14 @@ impl BrowserState {
     }
 
     pub fn attach(&self, app: &AppHandle) -> Result<(), String> {
-        let (tabs, active, visible, bounds) = {
+        let (tabs, active, visible, bounds, rendering) = {
             let panel = self.inner.lock().map_err(|error| error.to_string())?;
             (
                 panel.tabs.clone(),
                 panel.active.clone(),
                 panel.visible,
                 panel.bounds.clone(),
+                panel.rendering.clone(),
             )
         };
         for tab in tabs {
@@ -254,14 +290,20 @@ impl BrowserState {
                     Some(width) if !shown => width,
                     _ => bounds.width,
                 };
-                view.set_position(LogicalPosition::new(bounds.x.round(), bounds.y.round()))
+                let offscreen = !shown && rendering.contains_key(&tab.id);
+                let x = if offscreen {
+                    -OFFSCREEN_OFFSET
+                } else {
+                    bounds.x.round()
+                };
+                view.set_position(LogicalPosition::new(x, bounds.y.round()))
                     .map_err(|error| error.to_string())?;
                 view.set_size(LogicalSize::new(
                     width.round().max(1.0),
                     bounds.height.round().max(1.0),
                 ))
                 .map_err(|error| error.to_string())?;
-                if shown {
+                if shown || offscreen {
                     view.show()
                 } else {
                     view.hide()
@@ -629,6 +671,29 @@ pub fn normalize_url(value: &str) -> Result<Url, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rendering_holds_are_counted_per_tab() {
+        let state = BrowserState::new();
+        assert!(state.hold_rendering("agent").unwrap());
+        assert!(!state.hold_rendering("agent").unwrap());
+        assert!(!state.release_rendering("agent"));
+        assert!(state.release_rendering("agent"));
+        assert!(!state.release_rendering("agent"));
+        assert!(state.inner.lock().unwrap().rendering.is_empty());
+    }
+
+    #[test]
+    fn only_the_active_tab_of_a_visible_panel_is_shown() {
+        let state = BrowserState::new();
+        {
+            let mut panel = state.inner.lock().unwrap();
+            panel.visible = true;
+            panel.active = Some("user".to_owned());
+        }
+        assert!(state.is_shown("user").unwrap());
+        assert!(!state.is_shown("agent").unwrap());
+    }
 
     #[test]
     fn normalizes_browser_addresses_and_searches() {
