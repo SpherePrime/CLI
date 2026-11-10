@@ -20,8 +20,10 @@ func TestStrictReviewBlockOnlyForDesktopMaxCoordinator(t *testing.T) {
 	block := strictReviewBlock(true, maxModel)
 	require.Contains(t, block, "<strict_review_pipeline>")
 	require.Contains(t, block, "Never launch a review agent while any code agent is running")
-	require.Contains(t, block, "same code agent that built that part")
-	require.Contains(t, block, "after 5 rounds")
+	require.Contains(t, block, "sends its complete report straight to the author")
+	require.Contains(t, block, "do not relay defects yourself")
+	require.Contains(t, block, "agree interfaces directly with agent_message")
+	require.Contains(t, block, "reaches 5 rounds")
 	require.Empty(t, strictReviewBlock(false, maxModel))
 	require.Empty(t, strictReviewBlock(true, highModel))
 
