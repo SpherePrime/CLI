@@ -15,15 +15,10 @@ func (c *coordinator) cancelBackgroundAgents(sessionID string) {
 		if sessionID != "" && job.sessionID != sessionID && job.parentSessionID != sessionID {
 			continue
 		}
-		status, _ := job.snapshot()
 		job.mu.Lock()
-		cancel := job.cancel
-		job.pending = nil
 		job.seen = true
 		job.mu.Unlock()
-		if (status == "running" || status == "queued") && cancel != nil {
-			cancel()
-		}
+		job.stop()
 	}
 }
 

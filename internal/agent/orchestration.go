@@ -161,18 +161,16 @@ func (c *coordinator) StopAgentWorker(ctx context.Context, source, workerID stri
 		return err
 	}
 	if job := c.findJob(worker.ID); job != nil {
-		job.mu.Lock()
-		job.pending = nil
-		cancel := job.cancel
-		job.mu.Unlock()
-		if cancel != nil {
-			cancel()
-		}
+		job.stop()
 	}
 	return nil
 }
 
 func (c *coordinator) SendAgentWorkerMessage(ctx context.Context, source, workerID, text string) (AgentWorker, error) {
+	return c.sendWorkerMessage(ctx, source, workerID, text, nil)
+}
+
+func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, text string, prepare func(*agentJob)) (AgentWorker, error) {
 	if strings.TrimSpace(text) == "" {
 		return AgentWorker{}, errors.New("message text is required")
 	}
@@ -212,6 +210,9 @@ func (c *coordinator) SendAgentWorkerMessage(ctx context.Context, source, worker
 		}
 	}
 	job.mu.Lock()
+	if prepare != nil {
+		prepare(job)
+	}
 	job.pending = append(job.pending, fmt.Sprintf("Message from team member %s:\n%s", senderLabel, text))
 	job.updatedAt = time.Now()
 	if job.status != "running" && job.status != "queued" {

@@ -114,11 +114,23 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 			job.mu.Unlock()
 			continue
 		}
+		route := c.reviewRoute(job, status, output)
+		if route != nil {
+			output = route.note + output
+			if route.quiet {
+				job.seen = true
+			}
+		}
 		job.status = status
 		job.output = output
 		job.updatedAt = time.Now()
 		close(job.done)
 		job.mu.Unlock()
+		if route != nil && !c.deliverReviewRoute(job, route) && route.quiet {
+			job.mu.Lock()
+			job.seen = false
+			job.mu.Unlock()
+		}
 		c.wakeOnAgentJob(job)
 		return
 	}
@@ -147,7 +159,7 @@ func (c *coordinator) wakeOnAgentJob(job *agentJob) {
 		return
 	}
 	job.mu.Lock()
-	shouldWake := job.wake && !job.seen && job.status != "running" && job.status != "queued"
+	shouldWake := job.wake && !job.seen && !jobActive(job.status)
 	root := job.rootSessionID
 	job.mu.Unlock()
 	if !shouldWake {
@@ -258,7 +270,7 @@ func (c *coordinator) collectTeamNotices(root string) (string, []teamNoticeClaim
 	var claims []teamNoticeClaim
 	for _, job := range c.registrySnapshot() {
 		job.mu.Lock()
-		ready := job.rootSessionID == root && job.wake && !job.seen && job.status != "running" && job.status != "queued"
+		ready := job.rootSessionID == root && job.wake && !job.seen && !jobActive(job.status)
 		if ready {
 			claims = append(claims, teamNoticeClaim{job: job, generation: job.generation})
 			reports = append(reports, fmt.Sprintf("Agent %s (%s, id %s) finished with status %s.\n%s", job.name, job.agent, job.id, job.status, job.output))

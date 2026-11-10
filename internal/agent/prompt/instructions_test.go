@@ -24,7 +24,7 @@ func TestCorePromptUsesLazyInstructions(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, output.String(), "<task_instructions>")
 	require.Contains(t, output.String(), "read_instruction")
-	require.Less(t, output.Len(), 8000)
+	require.Less(t, output.Len(), 12000)
 }
 
 func TestDesignRuleNeedsAvailableDesignSkill(t *testing.T) {

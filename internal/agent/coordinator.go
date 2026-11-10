@@ -1098,6 +1098,9 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 	}
 
 	for _, tool := range tools.GetMCPTools(c.permissions, c.cfg, c.cfg.WorkingDir(), c.wakeOnMCPJob) {
+		if roleDeniesMCP(agent, tool.MCP()) {
+			continue
+		}
 		if agent.AllowedMCP == nil {
 			// No MCP restrictions
 			filteredTools = append(filteredTools, tool)
@@ -1168,6 +1171,9 @@ func (c *coordinator) appendSmartSearchTools(allTools []fantasy.AgentTool, agent
 // agentAllowsMCPTool reports whether an agent may call an MCP tool, applying
 // the same AllowedMCP gating that buildTools uses for the tool palette itself.
 func agentAllowsMCPTool(agent config.Agent, tool *tools.Tool) bool {
+	if roleDeniesMCP(agent, tool.MCP()) {
+		return false
+	}
 	if agent.AllowedMCP == nil {
 		return true
 	}
@@ -2094,6 +2100,8 @@ type subAgentParams struct {
 	// SessionSetup is an optional callback invoked after session creation
 	// but before agent execution, for custom session configuration.
 	SessionSetup func(sessionID string)
+	Dormant      bool
+	Reviewer     string
 }
 
 // callTopK returns topK for use on fantasy.Call.TopK, suppressing it for

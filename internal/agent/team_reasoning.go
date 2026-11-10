@@ -25,16 +25,6 @@ func (c *coordinator) teamReasoningMode(rootSessionID string) string {
 	return stored.(string)
 }
 
-func (c *coordinator) effectiveTeamReasoning(ctx context.Context, rootSessionID string) string {
-	selected := config.SelectedModel{}
-	if session, ok := c.cfg.Config().SessionModels[rootSessionID]; ok && session.Provider != "" && session.Model != "" {
-		selected = session
-	} else if agent := c.currentAgent(); agent != nil {
-		selected = agent.Model().ModelCfg
-	}
-	return applyRunReasoningMode(c.withTeamReasoning(ctx, rootSessionID), selected).EffectiveReasoningMode()
-}
-
 func (c *coordinator) teamWorkerModel(ctx context.Context, rootSessionID string, model Model, provider config.ProviderConfig) (Model, bool, error) {
 	mode := c.teamReasoningMode(rootSessionID)
 	if mode == "" || mode == config.ReasoningModeDefault {

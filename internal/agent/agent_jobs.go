@@ -41,9 +41,12 @@ type agentJob struct {
 	generation      uint64
 	hasRun          bool
 	queuedAt        time.Time
+	reviewer        string
+	author          string
+	reviewRound     int
 
 	mu     sync.Mutex
-	status string // "running", "done", "error", "canceled"
+	status string // "waiting", "queued", "running", "done", "error", "canceled"
 	output string
 	cancel context.CancelFunc
 	done   chan struct{}
@@ -176,6 +179,12 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		wake:            wake,
 		cancel:          cancel,
 		done:            make(chan struct{}),
+		reviewer:        strings.TrimSpace(params.Reviewer),
+	}
+	if params.Dormant {
+		cancel()
+		job.cancel = nil
+		job.status = "waiting"
 	}
 	if c.agentJobs == nil {
 		c.agentJobs = make(map[string]*agentJob)
@@ -183,6 +192,9 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 	c.agentJobs[job.id] = job
 	c.jobMu.Unlock()
 
+	if params.Dormant {
+		return job, nil
+	}
 	c.reserveWorker(job)
 	go c.executeWorker(job, jobCtx)
 	return job, nil
@@ -373,7 +385,7 @@ func (c *coordinator) getAgentJob(params agentJobsParams) fantasy.ToolResponse {
 
 	job.mu.Lock()
 	status, output := job.status, job.output
-	if status != "queued" && status != "running" {
+	if !jobActive(status) {
 		job.seen = true
 	}
 	job.mu.Unlock()
@@ -389,6 +401,8 @@ func (c *coordinator) getAgentJob(params agentJobsParams) fantasy.ToolResponse {
 		b.WriteString(output)
 	case "queued", "running":
 		b.WriteString("Still working. Its result arrives automatically as a team notice; do not poll.")
+	case "waiting":
+		b.WriteString("Waiting for a message before it starts. It wakes on agent_message or an automatic review handoff; do not poll.")
 	}
 	return fantasy.NewTextResponse(b.String())
 }
@@ -402,13 +416,7 @@ func (c *coordinator) killAgentJob(params agentJobsParams) fantasy.ToolResponse 
 		return fantasy.NewTextErrorResponse(
 			fmt.Sprintf("background agent job not found: %s", params.JobID))
 	}
-	job.mu.Lock()
-	job.pending = nil
-	cancel := job.cancel
-	job.mu.Unlock()
-	if cancel != nil {
-		cancel()
-	}
+	job.stop()
 	return fantasy.NewTextResponse(fmt.Sprintf("Job %s canceled.", job.id))
 }
 

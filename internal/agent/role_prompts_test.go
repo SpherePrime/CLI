@@ -35,13 +35,19 @@ func TestRolePromptsDescribeTheirJob(t *testing.T) {
 	require.Contains(t, review, "LIKED:")
 	require.Contains(t, review, "screenshots")
 	require.Contains(t, review, "ROUND:")
-	require.Contains(t, review, "send the author your complete report")
-	require.NotContains(t, review, "Send nothing to the author")
+	require.Contains(t, review, "Never start reviewing on your own")
+	require.Contains(t, review, "routed automatically")
+	require.Contains(t, review, "Never poll files")
+	require.Contains(t, review, "(repeat N)")
+	require.Contains(t, explore, "Never split one feature by layer")
 
 	code := renderRolePrompt(t, codePrompt)
-	require.Contains(t, code, "When a reviewer sends you defects, fix every one")
-	require.Contains(t, code, "message that same reviewer directly")
+	require.Contains(t, code, "checking it is not your job")
+	require.Contains(t, code, "Do not run tests, builds, linters")
+	require.Contains(t, code, "STATUS: WAITING")
+	require.Contains(t, code, "do not message the reviewer yourself")
 	require.Contains(t, code, "agree shared interfaces")
+	require.NotContains(t, code, "Run the project's relevant tests")
 }
 
 func TestCoderPromptDelegatesByDefault(t *testing.T) {
@@ -49,7 +55,8 @@ func TestCoderPromptDelegatesByDefault(t *testing.T) {
 	require.Contains(t, got, "delegation is the default")
 	require.Contains(t, got, "explicitly says not to use agents")
 	require.Contains(t, got, "agent=explore")
-	require.Contains(t, got, "empty or new (greenfield)")
+	require.Contains(t, got, "empty or new project")
+	require.Contains(t, got, "vertical slices, never by layer")
 	require.Contains(t, got, "Agents talk to each other directly with agent_message")
 	require.NotContains(t, got, "Handle small tasks yourself")
 }
