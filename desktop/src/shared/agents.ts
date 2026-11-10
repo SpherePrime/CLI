@@ -1,5 +1,5 @@
 export type AgentWorkerStatus =
-  'queued' | 'running' | 'done' | 'error' | 'canceled' | 'interrupted' | 'idle'
+  'waiting' | 'queued' | 'running' | 'done' | 'error' | 'canceled' | 'interrupted' | 'idle'
 
 export type AgentWorker = {
   id: string
@@ -19,6 +19,7 @@ export function workerActive(worker: AgentWorker) {
 }
 
 export const workerStatusLabels: Record<AgentWorkerStatus, string> = {
+  waiting: 'Ждёт работу',
   queued: 'В очереди',
   running: 'Выполняется',
   done: 'Завершён',

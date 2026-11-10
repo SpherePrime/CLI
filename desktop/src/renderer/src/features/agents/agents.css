@@ -211,6 +211,10 @@
 .agent-dot-queued {
   background: var(--secondary);
 }
+.agent-dot-waiting {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--secondary);
+}
 .agent-dot-done {
   background: var(--green, #5fb87a);
 }
@@ -235,7 +239,8 @@
 .agent-status-running {
   color: var(--accent);
 }
-.agent-status-queued {
+.agent-status-queued,
+.agent-status-waiting {
   color: var(--secondary);
 }
 .agent-status-error,

@@ -21,6 +21,7 @@ export const english: Record<string, string> = {
   Завершён: 'Completed',
   Прерван: 'Interrupted',
   'Ожидает задания': 'Awaiting assignment',
+  'Ждёт работу': 'Waiting for work',
   'Откройте чат, чтобы увидеть его агентов': 'Open a chat to see its agents',
   'Команда текущего чата. Выберите агента, чтобы открыть его переписку.':
     'This chat’s team. Select an agent to open its conversation.',
