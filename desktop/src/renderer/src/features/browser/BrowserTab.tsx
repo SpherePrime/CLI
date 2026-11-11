@@ -76,16 +76,22 @@ export function BrowserTab({
   const [address, setAddress] = useState('')
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState('')
+  const stateLoadedRef = useRef(false)
+  const syncRef = useRef<() => void>(() => {})
   useEffect(() => {
     void window.prime.browserState().then((value) => {
+      stateLoadedRef.current = true
       setState(value)
       setAddress(value.url)
+      syncRef.current()
     })
     return window.prime.onEvent((event) => {
       if (event.type !== 'browser' || event.payload?.action !== 'state') return
       const { action: _action, ...next } = event.payload
+      stateLoadedRef.current = true
       setState(next)
       setError('')
+      syncRef.current()
     })
   }, [])
   useEffect(() => {
@@ -93,7 +99,6 @@ export function BrowserTab({
   }, [state.url, editing])
   const stateUrlRef = useRef(state.url)
   stateUrlRef.current = state.url
-  const syncRef = useRef<() => void>(() => {})
   useEffect(() => {
     const element = viewport.current
     if (!element) return
@@ -102,6 +107,7 @@ export function BrowserTab({
     const sync = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
+        if (!stateLoadedRef.current) return
         const rect = visibleRect(element)
         const covered = rect ? isOverlayCovering(rect) : false
         const hidden = covered || !rect || !stateUrlRef.current
@@ -144,7 +150,7 @@ export function BrowserTab({
       .then(setState)
       .catch((reason) => setError(String(reason?.message || reason).replace(/^.*Error: /, '')))
   }
-  const command = (name: 'back' | 'forward' | 'reload') =>
+  const command = (name: 'back' | 'forward' | 'reload' | 'fit') =>
     void window.prime.browserCommand(name).then(setState)
   return (
     <div className="browser-tab">
@@ -267,6 +273,22 @@ export function BrowserTab({
                 'Откройте адрес выше. Prime тоже работает здесь: открывает страницы, читает их, нажимает и вводит текст.'
               )}
             </p>
+          </div>
+        )}
+        {state.url && state.offscreenViewport && (
+          <div className="browser-empty browser-offscreen">
+            <Globe size={28} />
+            <strong>
+              {t('Проверка в ширине {value0} px', {
+                value0: Math.round(state.offscreenViewport)
+              })}
+            </strong>
+            <p>
+              {t('Страница проверяется в фоне в запрошенной ширине, чтобы интерфейс не скакал.')}
+            </p>
+            <button type="button" className="quiet" onClick={() => command('fit')}>
+              {t('Показать по ширине панели')}
+            </button>
           </div>
         )}
       </div>

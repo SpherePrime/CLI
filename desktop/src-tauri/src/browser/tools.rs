@@ -159,22 +159,21 @@ pub fn run(
             return Ok(text(state.session_state(session)?.to_string()));
         }
         "browser_navigate" => {
-            let width = args.get("width").map(|_| width(args)).transpose()?;
+            let requested_width = args.get("width").map(|_| width(args)).transpose()?;
+            state.set_viewport(&id, requested_width)?;
             state.navigate(app, string(args, "url")?, Some(&id))?;
-            let shown = state.reveal(app, session, Some(&id), true, width);
-            if let (Some(width), false) = (width, shown) {
-                state.resize_hidden(&id, width)?;
-                state.attach(app)?;
-            }
+            state.reveal(app, session, Some(&id), true, requested_width);
+            state.attach(app)?;
+            state.publish(app);
             settle(&view, state, &id)?;
         }
         "browser_snapshot" => {}
         "browser_resize" => {
             let requested = width(args)?;
-            if !state.reveal(app, session, Some(&id), true, Some(requested)) {
-                state.resize_hidden(&id, requested)?;
-                state.attach(app)?;
-            }
+            state.set_viewport(&id, Some(requested))?;
+            state.reveal(app, session, Some(&id), true, Some(requested));
+            state.attach(app)?;
+            state.publish(app);
             thread::sleep(Duration::from_millis(350));
             let actual = evaluate::immediate(&view, "window.innerWidth")?;
             return Ok(text(format!(
@@ -230,10 +229,10 @@ pub fn run(
                 if !(320.0..=2560.0).contains(&requested) {
                     return Err("width must be between 320 and 2560 pixels".to_owned());
                 }
-                if !state.reveal(app, session, Some(&id), true, Some(requested)) {
-                    state.resize_hidden(&id, requested)?;
-                    state.attach(app)?;
-                }
+                state.set_viewport(&id, Some(requested))?;
+                state.reveal(app, session, Some(&id), true, Some(requested));
+                state.attach(app)?;
+                state.publish(app);
                 thread::sleep(Duration::from_millis(350));
                 Ok(())
             };

@@ -3,6 +3,7 @@ pub mod areas;
 pub mod mcp;
 mod ownership;
 mod panel;
+mod placement;
 mod platform;
 mod rendering;
 mod scenario;
@@ -51,12 +52,21 @@ pub fn dispatch(
             {
                 return Err("Invalid browser bounds".to_owned());
             }
-            {
+            let has_viewport = {
                 let mut panel = state.inner.lock().map_err(|error| error.to_string())?;
                 panel.bounds = bounds;
                 panel.visible = true;
-            }
+                panel
+                    .tabs
+                    .iter()
+                    .find(|tab| Some(&tab.id) == panel.active.as_ref())
+                    .and_then(|tab| tab.viewport)
+                    .is_some()
+            };
             state.attach(app)?;
+            if has_viewport {
+                state.publish(app);
+            }
             Ok(Value::Null)
         }
         "browserHide" => {
@@ -110,6 +120,9 @@ pub fn dispatch(
             Ok(result)
         }
         "browserView" => {
+            if let Some(open) = args.get(1).and_then(Value::as_bool) {
+                state.set_inspector_open(open)?;
+            }
             let view = args
                 .first()
                 .and_then(Value::as_str)
@@ -117,7 +130,18 @@ pub fn dispatch(
                 .map(str::to_owned);
             state.set_view(app, view)
         }
-        "browserCommand" => state.command(app, argument(args, 0)?, None),
+        "browserCommand" => {
+            let action = argument(args, 0)?;
+            if action == "fit" {
+                let (id, _) = state.target(app, None)?;
+                state.set_viewport(&id, None)?;
+                state.attach(app)?;
+                state.publish(app);
+                state.state()
+            } else {
+                state.command(app, action, None)
+            }
+        }
         "browserOpenExternal" => {
             let (_, view) = state.target(app, None)?;
             let url = view.url().map_err(|error| error.to_string())?;

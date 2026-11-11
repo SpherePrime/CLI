@@ -6,7 +6,8 @@ export type BrowserState = {
   canGoBack: boolean
   canGoForward: boolean
   activeTab?: string
-  tabs?: { id: string; url: string; title: string; loading: boolean; owner?: string }[]
+  tabs?: { id: string; url: string; title: string; loading: boolean; owner?: string; viewport?: number }[]
+  offscreenViewport?: number
 }
 export type BrowserLog = {
   level: 'error' | 'warning' | 'info'
@@ -265,9 +266,9 @@ export interface DesktopApi {
   browserTab(action: 'new' | 'select' | 'close', id?: string, url?: string): Promise<BrowserState>
   browserState(): Promise<BrowserState>
   browserNavigate(url: string): Promise<BrowserState>
-  browserCommand(command: 'back' | 'forward' | 'reload'): Promise<BrowserState>
+  browserCommand(command: 'back' | 'forward' | 'reload' | 'fit'): Promise<BrowserState>
   browserOpenExternal(): Promise<void>
-  browserView(sessionId?: string | null): Promise<BrowserState>
+  browserView(sessionId?: string | null, inspectorOpen?: boolean): Promise<BrowserState>
   update(action: 'check' | 'install', force?: boolean): Promise<Json>
   onEvent(listener: (event: DesktopEvent) => void): () => void
 }

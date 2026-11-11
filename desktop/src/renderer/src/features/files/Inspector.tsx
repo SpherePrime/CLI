@@ -46,6 +46,8 @@ export function Inspector({
   workspace: w,
   openDocument,
   compact = false,
+  compactOpen,
+  setCompactOpen,
   expanded = false,
   setExpanded,
   browserRequest = 0,
@@ -55,6 +57,8 @@ export function Inspector({
   workspace: Workspace
   openDocument: (workspaceId: string, path: string, diff?: any) => Promise<void>
   compact?: boolean
+  compactOpen?: boolean
+  setCompactOpen?: (open: boolean | ((value: boolean) => boolean)) => void
   expanded?: boolean
   setExpanded: (expanded: boolean) => void
   browserRequest?: number
@@ -63,13 +67,15 @@ export function Inspector({
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
-  const [panelOpen, setPanelOpen] = useState(false)
+  const [internalPanelOpen, setInternalPanelOpen] = useState(false)
+  const panelOpen = compactOpen ?? internalPanelOpen
+  const setPanelOpen = setCompactOpen ?? setInternalPanelOpen
   const panel = useRef<HTMLElement>(null)
   useEffect(() => {
     const toggle = () => setPanelOpen((value) => !value)
     window.addEventListener('prime:inspector-panel', toggle)
     return () => window.removeEventListener('prime:inspector-panel', toggle)
-  }, [])
+  }, [setPanelOpen])
   useEffect(() => {
     if (!compact || !panelOpen) return
     const pointer = (event: PointerEvent) => {
@@ -89,7 +95,7 @@ export function Inspector({
       document.removeEventListener('pointerdown', pointer)
       document.removeEventListener('keydown', keyboard)
     }
-  }, [compact, panelOpen])
+  }, [compact, panelOpen, setPanelOpen])
   const [history, setHistory] = useState<any[]>([])
   const [changes, setChanges] = useState<{ path: string; status: string }[]>([])
   const [gitError, setGitError] = useState('')
@@ -109,7 +115,6 @@ export function Inspector({
   useEffect(() => {
     if (browserRequest) {
       setTab('browser')
-      if (compact) setPanelOpen(true)
     }
   }, [browserRequest])
   useEffect(() => {

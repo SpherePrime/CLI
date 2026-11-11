@@ -86,6 +86,32 @@
   font-size: 12px;
   line-height: 1.6;
 }
+.browser-offscreen {
+  padding: 20px 16px;
+}
+.browser-offscreen p {
+  max-width: 250px;
+  color: var(--secondary);
+}
+.browser-empty .quiet {
+  margin-top: 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.4;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.browser-empty .quiet:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--muted);
+}
 
 .browser-toolbar .icon.active {
   color: var(--accent);

@@ -1503,4 +1503,8 @@ Object.assign(english, {
   'Снять': 'Remove',
   'Агент доводит цель до готового проверенного результата без остановок.': 'The agent drives the goal to a finished, verified result without stopping.',
   'Проверка приложения': 'App testing',
+  'Проверка в ширине {value0} px': 'Testing at {value0} px width',
+  'Страница проверяется в фоне в запрошенной ширине, чтобы интерфейс не скакал.':
+    'The page is tested in the background at the requested width to keep the interface stable.',
+  'Показать по ширине панели': 'Fit to panel width'
 })

@@ -33,6 +33,7 @@ import { useModalWindowChrome } from './useModalWindowChrome'
 import { applyShortcuts } from '../features/shortcuts/shortcutStore'
 import { openAgentEvent, type AgentRequest } from '../features/agents/openAgent'
 import { isForViewedChat, useBrowserView } from '../features/browser/useBrowserView'
+import { isInspectorOpen, shouldActivateBrowserTab } from '../features/browser/browserActivation'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -99,6 +100,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [collapsed, setCollapsedState] = useState({ sidebar: true, inspector: true })
   const [inspector, setInspector] = useState(true)
   const [focusMode, setFocusMode] = useState(false)
+  const [compactPanelOpen, setCompactPanelOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [workbench, setWorkbench] = useState(false)
   const [workbenchExpanded, setWorkbenchExpanded] = useState(false)
@@ -128,7 +130,10 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   function toggleInspector() {
     if (focusMode) return setFocusMode(false)
     setInspector(true)
-    if (layout.compact) return window.dispatchEvent(new Event('prime:inspector-panel'))
+    if (layout.compact) {
+      setCompactPanelOpen((value) => !value)
+      return
+    }
     setCollapsed('inspector', !collapsed.inspector)
   }
   function openTools(view: WorkbenchView) {
@@ -141,9 +146,32 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     setWorkbenchView('terminal')
   }
   const toggleFocus = () => setFocusMode((value) => !value)
+  const [widths, setWidths] = useState({ sidebar: 256, inspector: 334 })
+  const [zoom, setZoom] = useState(1)
+  const shell = useRef<HTMLDivElement>(null)
+  const layoutWidth = useLayoutWidth(shell, zoom)
+  const layout = panelGeometry(
+    layoutWidth - panelGutter * 2,
+    widths.sidebar,
+    widths.inspector,
+    showSidebar,
+    showInspector,
+    collapsed.sidebar,
+    collapsed.inspector,
+    showEditor
+  )
+  const centerShift = chatCenterShift(layout, showSidebar, showInspector, showEditor)
+  const inspectorOpen = isInspectorOpen(
+    layout.compact,
+    compactPanelOpen,
+    showInspector,
+    collapsed.inspector
+  )
+  const inspectorOpenRef = useRef(inspectorOpen)
+  inspectorOpenRef.current = inspectorOpen
   const [browserRequest, setBrowserRequest] = useState(0)
   const [appRequest, setAppRequest] = useState(0)
-  const viewedChat = useBrowserView(w.session)
+  const viewedChat = useBrowserView(w.session, inspectorOpen)
   const [agentRequest, setAgentRequest] = useState<AgentRequest>()
   useEffect(() => {
     const open = (event: Event) => {
@@ -187,43 +215,13 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         }
         if (
           event.type === 'browser' &&
-          event.payload?.action === 'activate' &&
-          isForViewedChat(event.payload.sessionId, viewedChat.current)
+          shouldActivateBrowserTab(event.payload, viewedChat.current, inspectorOpenRef.current)
         ) {
-          setInspector(true)
-          setCollapsed('inspector', false)
-          setFocusMode(false)
           setBrowserRequest(Date.now())
-          if (event.payload.agent) widenForAgent(event.payload.width)
         }
       }),
     [w.project?.id]
   )
-  const [widths, setWidths] = useState({ sidebar: 256, inspector: 334 })
-  const [zoom, setZoom] = useState(1)
-  const shell = useRef<HTMLDivElement>(null)
-  const layoutWidth = useLayoutWidth(shell, zoom)
-  const layout = panelGeometry(
-    layoutWidth - panelGutter * 2,
-    widths.sidebar,
-    widths.inspector,
-    showSidebar,
-    showInspector,
-    collapsed.sidebar,
-    collapsed.inspector,
-    showEditor
-  )
-  const centerShift = chatCenterShift(layout, showSidebar, showInspector, showEditor)
-  const geometry = useRef({ available: 0, inspectorMax: 280 })
-  geometry.current = { available: layoutWidth - panelGutter * 2, inspectorMax: layout.inspectorMax }
-  function widenForAgent(requested?: number) {
-    const { available, inspectorMax } = geometry.current
-    setWidths((value) => {
-      const target = requested ?? Math.max(value.inspector, Math.round(available * 0.55))
-      const inspector = Math.max(280, Math.min(inspectorMax, target))
-      return inspector === value.inspector ? value : { ...value, inspector }
-    })
-  }
   const panels = usePanelResize({
     workspace: w,
     widths,
@@ -272,7 +270,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     toggleFocus,
     sidebarVisible: !collapsed.sidebar,
     toggleSidebar,
-    inspectorVisible: inspector && !collapsed.inspector,
+    inspectorVisible: inspectorOpen,
     toggleInspector
   })
   const sidebarPanel = (
@@ -295,7 +293,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           projectName={projectName || ''}
           sidebarVisible={showSidebar && layout.sidebarOpen}
           toggleSidebar={toggleSidebar}
-          inspectorVisible={showInspector && layout.inspectorOpen}
+          inspectorVisible={inspectorOpen}
           toggleInspector={toggleInspector}
           focusMode={focusMode}
           toggleFocus={toggleFocus}
@@ -390,6 +388,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             )}
             <Inspector
               compact={layout.compact}
+              compactOpen={compactPanelOpen}
+              setCompactOpen={setCompactPanelOpen}
               expanded={layout.inspectorOpen}
               setExpanded={(open) => setCollapsed('inspector', !open)}
               workspace={w}

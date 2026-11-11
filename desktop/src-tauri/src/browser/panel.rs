@@ -7,13 +7,14 @@ use std::{
         Arc, Mutex,
     },
 };
+use super::placement::{self, TabPlacement, OFFSCREEN_OFFSET};
 use tauri::{
     webview::{NewWindowResponse, PageLoadEvent, PermissionResponse, WebviewBuilder},
-    AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Webview, WebviewUrl,
+    AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Rect, Webview, WebviewUrl,
 };
 use url::Url;
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Bounds {
     pub x: f64,
     pub y: f64,
@@ -40,7 +41,7 @@ pub struct Tab {
     pub loading: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
-    #[serde(skip)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub viewport: Option<f64>,
     #[serde(skip)]
     pub history: Vec<String>,
@@ -57,6 +58,7 @@ pub struct Panel {
     pub tabs: Vec<Tab>,
     pub active: Option<String>,
     pub visible: bool,
+    pub inspector_open: bool,
     pub bounds: Bounds,
     pub logs: Vec<Value>,
     pub view: Option<String>,
@@ -65,12 +67,11 @@ pub struct Panel {
     pub rendering: HashMap<String, usize>,
 }
 
-const OFFSCREEN_OFFSET: f64 = 40000.0;
-
 #[derive(Clone, Default)]
 pub struct BrowserState {
     pub inner: Arc<Mutex<Panel>>,
     pub creation: Arc<Mutex<()>>,
+    pub applied: Arc<Mutex<HashMap<String, TabPlacement>>>,
     monitoring: Arc<AtomicBool>,
 }
 
@@ -100,9 +101,26 @@ impl BrowserState {
             .tabs
             .iter()
             .find(|tab| Some(&tab.id) == panel.active.as_ref());
-        Ok(
-            json!({"url":current.map(|tab| tab.url.as_str()).unwrap_or(""), "title":current.map(|tab| tab.title.as_str()).unwrap_or(""), "loading":current.map(|tab| tab.loading).unwrap_or(false), "canGoBack":current.map(|tab| tab.index > 0).unwrap_or(false), "canGoForward":current.map(|tab| tab.index + 1 < tab.history.len()).unwrap_or(false), "activeTab":panel.active,"tabs":panel.visible_tabs()}),
-        )
+        let offscreen_viewport = current.and_then(|tab| {
+            tab.viewport.filter(|width| {
+                panel.visible
+                    && panel.bounds.width > 0.0
+                    && width.round() > panel.bounds.width.round()
+            })
+        });
+        let mut result = json!({
+            "url": current.map(|tab| tab.url.as_str()).unwrap_or(""),
+            "title": current.map(|tab| tab.title.as_str()).unwrap_or(""),
+            "loading": current.map(|tab| tab.loading).unwrap_or(false),
+            "canGoBack": current.map(|tab| tab.index > 0).unwrap_or(false),
+            "canGoForward": current.map(|tab| tab.index + 1 < tab.history.len()).unwrap_or(false),
+            "activeTab": panel.active,
+            "tabs": panel.visible_tabs(),
+        });
+        if let Some(width) = offscreen_viewport {
+            result["offscreenViewport"] = json!(width);
+        }
+        Ok(result)
     }
 
     pub fn session_state(&self, session: Option<&str>) -> Result<Value, String> {
@@ -196,20 +214,32 @@ impl BrowserState {
         }
     }
 
+    pub fn set_inspector_open(&self, open: bool) -> Result<(), String> {
+        let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
+        panel.inspector_open = open;
+        Ok(())
+    }
+
+    pub fn set_viewport(&self, id: &str, viewport: Option<f64>) -> Result<(), String> {
+        let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
+        if let Some(tab) = panel.tabs.iter_mut().find(|tab| tab.id == id) {
+            tab.viewport = viewport;
+        }
+        Ok(())
+    }
+
     pub fn is_shown(&self, id: &str) -> Result<bool, String> {
         let panel = self.inner.lock().map_err(|error| error.to_string())?;
+        let tab_viewport = panel
+            .tabs
+            .iter()
+            .find(|tab| tab.id == id)
+            .and_then(|tab| tab.viewport);
         Ok(panel.visible
             && panel.bounds.width > 0.0
             && panel.bounds.height > 0.0
-            && panel.active.as_deref() == Some(id))
-    }
-
-    pub fn resize_hidden(&self, id: &str, width: f64) -> Result<(), String> {
-        let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
-        if let Some(tab) = panel.tabs.iter_mut().find(|tab| tab.id == id) {
-            tab.viewport = Some(width);
-        }
-        Ok(())
+            && panel.active.as_deref() == Some(id)
+            && placement::fits_panel(&panel.bounds, tab_viewport))
     }
 
     pub fn publish(&self, app: &AppHandle) {
@@ -224,26 +254,49 @@ impl BrowserState {
         }
     }
 
+    pub fn reveal_target(&self, session: Option<&str>, tab: Option<&str>) -> (bool, bool) {
+        match tab {
+            Some(id) => match self.inner.lock() {
+                Ok(mut panel) => (panel.show(session, id), panel.inspector_open),
+                Err(_) => (false, false),
+            },
+            None => match self.inner.lock() {
+                Ok(panel) => (true, panel.inspector_open),
+                Err(_) => (false, false),
+            },
+        }
+    }
+
     pub fn reveal(
         &self,
         app: &AppHandle,
         session: Option<&str>,
         tab: Option<&str>,
         agent: bool,
-        width: Option<f64>,
+        _width: Option<f64>,
     ) -> bool {
-        if let Some(id) = tab {
-            let on_screen = match self.inner.lock() {
-                Ok(mut panel) => panel.show(session, id),
-                Err(_) => false,
-            };
-            if !on_screen {
-                return false;
-            }
+        let (on_screen, inspector_open) = self.reveal_target(session, tab);
+        if !on_screen {
+            return false;
+        }
+        if tab.is_some() {
             let _ = self.attach(app);
             self.publish(app);
         }
-        let _ = app.emit_to(tauri::EventTarget::webview("main"), "prime:event", json!({"type":"browser", "payload":{"action":"activate", "agent":agent, "width":width, "sessionId":session}}));
+        if !agent || inspector_open {
+            let _ = app.emit_to(
+                tauri::EventTarget::webview("main"),
+                "prime:event",
+                json!({
+                    "type": "browser",
+                    "payload": {
+                        "action": "activate",
+                        "agent": agent,
+                        "sessionId": session
+                    }
+                }),
+            );
+        }
         true
     }
 
@@ -270,6 +323,7 @@ impl BrowserState {
     }
 
     pub fn attach(&self, app: &AppHandle) -> Result<(), String> {
+        let mut applied = self.applied.lock().map_err(|error| error.to_string())?;
         let (tabs, active, visible, bounds, rendering) = {
             let panel = self.inner.lock().map_err(|error| error.to_string())?;
             (
@@ -280,36 +334,50 @@ impl BrowserState {
                 panel.rendering.clone(),
             )
         };
+        applied.retain(|id, _| tabs.iter().any(|tab| &tab.id == id));
         for tab in tabs {
-            if let Some(view) = app.get_webview(&label(&tab.id)) {
-                let shown = visible
-                    && bounds.width > 0.0
-                    && bounds.height > 0.0
-                    && active.as_ref() == Some(&tab.id);
-                let width = match tab.viewport {
-                    Some(width) if !shown => width,
-                    _ => bounds.width,
-                };
-                let offscreen = !shown && rendering.contains_key(&tab.id);
-                let x = if offscreen {
-                    -OFFSCREEN_OFFSET
-                } else {
-                    bounds.x.round()
-                };
-                view.set_position(LogicalPosition::new(x, bounds.y.round()))
-                    .map_err(|error| error.to_string())?;
-                view.set_size(LogicalSize::new(
-                    width.round().max(1.0),
-                    bounds.height.round().max(1.0),
-                ))
-                .map_err(|error| error.to_string())?;
-                if shown || offscreen {
-                    view.show()
-                } else {
-                    view.hide()
-                }
-                .map_err(|error| error.to_string())?;
+            let Some(view) = app.get_webview(&label(&tab.id)) else {
+                continue;
+            };
+            let shown = visible
+                && bounds.width > 0.0
+                && bounds.height > 0.0
+                && active.as_ref() == Some(&tab.id);
+            let offscreen = rendering.contains_key(&tab.id)
+                && (!shown || !placement::fits_panel(&bounds, tab.viewport));
+            let target = placement::compute_placement(shown, offscreen, &bounds, tab.viewport);
+            let previous = applied.get(&tab.id).copied();
+            if previous == Some(target) {
+                continue;
             }
+            let rect = Rect {
+                position: LogicalPosition::new(target.x, target.y).into(),
+                size: LogicalSize::new(target.width, target.height).into(),
+            };
+            let bounds_changed = previous
+                .map(|p| {
+                    p.x != target.x
+                        || p.y != target.y
+                        || p.width != target.width
+                        || p.height != target.height
+                })
+                .unwrap_or(true);
+            if !target.visible {
+                if previous.map(|p| p.visible).unwrap_or(true) {
+                    view.hide().map_err(|error| error.to_string())?;
+                }
+                if bounds_changed {
+                    view.set_bounds(rect).map_err(|error| error.to_string())?;
+                }
+            } else {
+                if bounds_changed {
+                    view.set_bounds(rect).map_err(|error| error.to_string())?;
+                }
+                if !previous.map(|p| p.visible).unwrap_or(false) {
+                    view.show().map_err(|error| error.to_string())?;
+                }
+            }
+            applied.insert(tab.id, target);
         }
         Ok(())
     }
@@ -360,6 +428,16 @@ impl BrowserState {
                 panel.active = Some(id.clone());
             }
         }
+        let (initial_width, initial_height) = {
+            let panel = self.inner.lock().map_err(|error| error.to_string())?;
+            let width = if panel.bounds.width > 0.0 {
+                panel.bounds.width.round().max(1.0)
+            } else {
+                1280.0
+            };
+            let height = panel.bounds.height.max(720.0).round().max(1.0);
+            (width, height)
+        };
         let navigation_state = self.clone();
         let navigation_id = id.clone();
         let load_state = self.clone();
@@ -370,6 +448,7 @@ impl BrowserState {
         let popup_app = app.clone();
         let popup_id = id.clone();
         let mut builder = WebviewBuilder::new(label(&id), WebviewUrl::External(url))
+            .focused(activate)
             .initialization_script(include_str!("telemetry.js"))
             .disable_drag_drop_handler()
             .on_permission_request(|_, _| PermissionResponse::Deny)
@@ -470,12 +549,25 @@ impl BrowserState {
             let view = window
                 .add_child(
                     builder,
-                    LogicalPosition::new(0.0, 0.0),
-                    LogicalSize::new(1280.0, 720.0),
+                    LogicalPosition::new(-OFFSCREEN_OFFSET, 0.0),
+                    LogicalSize::new(initial_width, initial_height),
                 )
                 .map_err(|error| error.to_string())?;
             super::platform::install_events(&view, self, app, &id)?;
             view.hide().map_err(|error| error.to_string())?;
+            {
+                let mut applied = self.applied.lock().map_err(|error| error.to_string())?;
+                applied.insert(
+                    id.clone(),
+                    TabPlacement {
+                        visible: false,
+                        x: -OFFSCREEN_OFFSET,
+                        y: 0.0,
+                        width: initial_width,
+                        height: initial_height,
+                    },
+                );
+            }
             self.attach(app)
         })();
         if let Err(error) = build {
@@ -491,14 +583,19 @@ impl BrowserState {
     }
 
     pub fn remove(&self, id: &str) -> Result<(), String> {
-        let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
-        let index = panel
-            .tabs
-            .iter()
-            .position(|tab| tab.id == id)
-            .ok_or("Вкладка не найдена")?;
-        panel.tabs.remove(index);
-        panel.forget(id, index);
+        {
+            let mut panel = self.inner.lock().map_err(|error| error.to_string())?;
+            let index = panel
+                .tabs
+                .iter()
+                .position(|tab| tab.id == id)
+                .ok_or("Вкладка не найдена")?;
+            panel.tabs.remove(index);
+            panel.forget(id, index);
+        }
+        if let Ok(mut applied) = self.applied.lock() {
+            applied.remove(id);
+        }
         Ok(())
     }
 
@@ -533,6 +630,10 @@ impl BrowserState {
     ) -> Result<Value, String> {
         let (id, view) = self.target(app, id)?;
         match command {
+            "fit" => {
+                self.set_viewport(&id, None)?;
+                self.attach(app)?;
+            }
             "back" | "forward" => {
                 #[cfg(target_os = "windows")]
                 {
@@ -693,6 +794,145 @@ mod tests {
         }
         assert!(state.is_shown("user").unwrap());
         assert!(!state.is_shown("agent").unwrap());
+    }
+
+    #[test]
+    fn state_emits_offscreen_viewport_only_when_visible_and_exceeding_bounds() {
+        let state = BrowserState::new();
+        {
+            let mut panel = state.inner.lock().unwrap();
+            panel.tabs.push(Tab {
+                id: "tab1".to_owned(),
+                url: "https://example.com".to_owned(),
+                title: "Example".to_owned(),
+                loading: false,
+                owner: None,
+                viewport: Some(1280.0),
+                history: vec!["https://example.com".to_owned()],
+                index: 0,
+                traversing: false,
+                load_error: None,
+            });
+            panel.active = Some("tab1".to_owned());
+            panel.bounds = Bounds {
+                x: 0.0,
+                y: 0.0,
+                width: 800.0,
+                height: 600.0,
+            };
+            panel.visible = false;
+        }
+        let hidden_state = state.state().unwrap();
+        assert_eq!(hidden_state.get("offscreenViewport"), None);
+
+        state.inner.lock().unwrap().visible = true;
+        let visible_state = state.state().unwrap();
+        assert_eq!(visible_state["offscreenViewport"], json!(1280.0));
+
+        state.inner.lock().unwrap().bounds.width = 1400.0;
+        let wider_bounds_state = state.state().unwrap();
+        assert_eq!(wider_bounds_state.get("offscreenViewport"), None);
+
+        state.inner.lock().unwrap().bounds.width = 800.0;
+        state.set_viewport("tab1", None).unwrap();
+        let reset_viewport_state = state.state().unwrap();
+        assert_eq!(reset_viewport_state.get("offscreenViewport"), None);
+    }
+
+    #[test]
+    fn is_shown_returns_false_when_viewport_exceeds_bounds() {
+        let state = BrowserState::new();
+        {
+            let mut panel = state.inner.lock().unwrap();
+            panel.tabs.push(Tab {
+                id: "tab1".to_owned(),
+                url: "https://example.com".to_owned(),
+                title: "Example".to_owned(),
+                loading: false,
+                owner: None,
+                viewport: Some(1200.0),
+                history: vec!["https://example.com".to_owned()],
+                index: 0,
+                traversing: false,
+                load_error: None,
+            });
+            panel.active = Some("tab1".to_owned());
+            panel.bounds = Bounds {
+                x: 0.0,
+                y: 0.0,
+                width: 800.0,
+                height: 600.0,
+            };
+            panel.visible = true;
+        }
+        assert!(!state.is_shown("tab1").unwrap());
+
+        state.set_viewport("tab1", Some(700.0)).unwrap();
+        assert!(state.is_shown("tab1").unwrap());
+
+        state.set_viewport("tab1", None).unwrap();
+        assert!(state.is_shown("tab1").unwrap());
+    }
+
+    #[test]
+    fn reveal_updates_active_and_selected_when_inspector_closed() {
+        let state = BrowserState::new();
+        assert!(!state.inner.lock().unwrap().inspector_open);
+        state.set_inspector_open(true).unwrap();
+        assert!(state.inner.lock().unwrap().inspector_open);
+        state.set_inspector_open(false).unwrap();
+        assert!(!state.inner.lock().unwrap().inspector_open);
+
+        {
+            let mut panel = state.inner.lock().unwrap();
+            panel.view = Some("chat-a".to_owned());
+            panel.tabs = vec![
+                Tab {
+                    id: "tab-a".to_owned(),
+                    url: "about:blank".to_owned(),
+                    title: String::new(),
+                    loading: false,
+                    owner: Some("chat-a".to_owned()),
+                    viewport: None,
+                    history: vec!["about:blank".to_owned()],
+                    index: 0,
+                    traversing: false,
+                    load_error: None,
+                },
+                Tab {
+                    id: "tab-b".to_owned(),
+                    url: "about:blank".to_owned(),
+                    title: String::new(),
+                    loading: false,
+                    owner: Some("chat-b".to_owned()),
+                    viewport: None,
+                    history: vec!["about:blank".to_owned()],
+                    index: 0,
+                    traversing: false,
+                    load_error: None,
+                },
+            ];
+        }
+
+        let (on_screen_a, open_a) = state.reveal_target(Some("chat-a"), Some("tab-a"));
+        assert!(on_screen_a);
+        assert!(!open_a);
+        assert_eq!(state.inner.lock().unwrap().active.as_deref(), Some("tab-a"));
+
+        let (on_screen_b, open_b) = state.reveal_target(Some("chat-b"), Some("tab-b"));
+        assert!(!on_screen_b);
+        assert!(!open_b);
+        assert_eq!(
+            state
+                .inner
+                .lock()
+                .unwrap()
+                .selected
+                .get("chat-b")
+                .map(String::as_str),
+            Some("tab-b")
+        );
+        assert_eq!(state.inner.lock().unwrap().active.as_deref(), Some("tab-a"));
     }
 
     #[test]
