@@ -217,23 +217,41 @@ func TestAuthorWaitingOnPeerIsNotHandedOff(t *testing.T) {
 	require.Nil(t, c.reviewRoute(&agentJob{agent: config.AgentCode}, "done", "built it"))
 }
 
+func TestStrictReviewAllowsThreeRounds(t *testing.T) {
+	t.Setenv("PRIME_DESKTOP", "1")
+	c := &coordinator{}
+	c.withTeamReasoning(WithReasoningMode(context.Background(), config.ReasoningModeMax), "root")
+	minor := "VERDICT: CHANGES_REQUIRED\n- [major] header overlaps"
+	require.Equal(t, "a", c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", rootSessionID: "root", reviewRound: 2}, "done", minor).target)
+	route := c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", rootSessionID: "root", reviewRound: 3}, "done", minor)
+	require.Empty(t, route.target)
+	require.Contains(t, route.note, "limit (3) reached")
+	require.Contains(t, c.reviewDepthNote("root"), "REVIEW DEPTH: strict")
+	require.Contains(t, (&coordinator{}).reviewDepthNote("other"), "REVIEW DEPTH: quick")
+}
+
 func TestReviewRoundLimit(t *testing.T) {
 	c := &coordinator{}
 	minor := "VERDICT: CHANGES_REQUIRED\n- [minor] spacing"
 	critical := "VERDICT: CHANGES_REQUIRED\n- [critical] (repeat 2) build fails"
 
-	route := c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 3}, "done", minor)
+
+	route := c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 1}, "done", minor)
 	require.Equal(t, "a", route.target)
 	require.True(t, route.quiet)
 
-	route = c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 10}, "done", minor)
+	route = c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 2}, "done", minor)
 	require.Empty(t, route.target)
-	require.Contains(t, route.note, "limit (10) reached")
+	require.Contains(t, route.note, "limit (2) reached")
 
-	route = c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 12}, "done", critical)
+	mixed := "VERDICT: CHANGES_REQUIRED\n- [critical] build fails\n- [minor] spacing"
+	route = c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 4}, "done", mixed)
 	require.Equal(t, "a", route.target)
 	require.False(t, route.quiet)
-	require.Contains(t, route.note, "critical defects remain")
+	require.Contains(t, route.note, "only the critical defects")
+	require.Contains(t, route.text, "build fails")
+	require.NotContains(t, route.text, "spacing")
+	require.Equal(t, "a", c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 5}, "done", critical).target)
 
 	require.Nil(t, c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 1}, "done", "VERDICT: APPROVED\nDEFECTS: none"))
 }

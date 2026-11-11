@@ -89,6 +89,9 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 			}
 			job.pending = nil
 		}
+		if !job.hasRun && job.agent == config.AgentReview {
+			params.Prompt += c.reviewDepthNote(job.rootSessionID)
+		}
 		job.hasRun = true
 		job.mu.Unlock()
 		permission.InheritSessionSkipRequests(c.permissions, job.parentSessionID, job.sessionID)

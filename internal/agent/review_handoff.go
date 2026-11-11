@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"strings"
 
 	"github.com/SpherePrime/CLI/internal/config"
 )
@@ -71,12 +72,17 @@ func (c *coordinator) reviewRoute(job *agentJob, status, output string) *reviewR
 		}
 		critical := criticalDefect.MatchString(output)
 		round := job.reviewRound
-		if round >= strictReviewMaxRounds && !critical {
-			return &reviewRouteAction{note: fmt.Sprintf("Review round limit (%d) reached without APPROVED and no critical defects remain. Stop this part and report its remaining defects to the user.\n\n", strictReviewMaxRounds)}
+		limit := c.reviewRoundLimit(job.rootSessionID)
+		if round >= limit && !critical {
+			return &reviewRouteAction{note: fmt.Sprintf("Review round limit (%d) reached without APPROVED and no critical defects remain. Stop this part and report its remaining defects to the user.\n\n", limit)}
 		}
-		action := &reviewRouteAction{target: job.author, text: fixRequestText(round, output), quiet: round < strictReviewMaxRounds}
+		text := fixRequestText(round, output)
+		if round >= limit {
+			text = fixRequestText(round, criticalOnlyReport(output))
+		}
+		action := &reviewRouteAction{target: job.author, text: text, quiet: round < limit}
 		if !action.quiet {
-			action.note = fmt.Sprintf("Round %d is past the limit of %d, but critical defects remain, so the fix loop continues. If the same critical defect keeps coming back unchanged, give the part to a new code agent with the full defect history.\n\n", round, strictReviewMaxRounds)
+			action.note = fmt.Sprintf("Round %d is past the limit of %d; only the critical defects went back to the author. If the same critical defect keeps coming back unchanged, give the part to a new code agent with the full defect history.\n\n", round, limit)
 		}
 		return action
 	}
@@ -94,8 +100,21 @@ func (c *coordinator) deliverReviewRoute(job *agentJob, route *reviewRouteAction
 	return true
 }
 
+func criticalOnlyReport(report string) string {
+	var kept []string
+	for _, line := range strings.Split(report, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "- [") && !criticalDefect.MatchString(trimmed) {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	return "The review round limit is reached: fix only the critical defects below and ignore everything else.\n" + strings.Join(kept, "\n")
+}
+
 func authorHandoffText(name, id, report string) string {
 	return fmt.Sprintf(`Automatic review handoff: author %s (worker id %s) finished its part and the work is ready for review. Review it now as your assignment describes.
+If you already reviewed this part, this is a re-review: check only your previous defects, the author's changes for them and regressions those changes caused, not the whole part again.
 Your final answer is routed automatically: CHANGES_REQUIRED goes back to this author for fixes, APPROVED goes to the coordinator. Do not send the report with agent_message.
 
 Author report:

@@ -29,7 +29,9 @@ func TestRolePromptsDescribeTheirJob(t *testing.T) {
 	require.Contains(t, explore, "greenfield project")
 
 	review := renderRolePrompt(t, reviewPrompt)
-	require.Contains(t, review, "strict, independent quality gate")
+	require.Contains(t, review, "independent quality gate")
+	require.Contains(t, review, "REVIEW DEPTH")
+	require.Contains(t, review, "A re-review is not")
 	require.Contains(t, review, "Never fix anything yourself")
 	require.Contains(t, review, "VERDICT: APPROVED or CHANGES_REQUIRED")
 	require.Contains(t, review, "LIKED:")

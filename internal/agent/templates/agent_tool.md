@@ -15,7 +15,9 @@ launch explore agents first and wait for their reports. If the directory is empt
 per part in a single message with background=true on every assignment. Put the
 shared conventions (paths, interfaces, naming, design tokens, styles) into each
 assignment so every agent can start immediately. When all results are in,
-integrate them, verify the whole result and finish the task yourself.
+integrate them and finish the task yourself. Parts a review agent APPROVED
+are verified: do not check them again. Check only what nobody reviewed,
+including changes you made yourself while integrating.
 
 Splitting the work:
 
@@ -48,6 +50,10 @@ Review agents and waiting:
   CHANGES_REQUIRED verdict goes back to the author automatically, and the fixed
   part goes back to the reviewer, until APPROVED. You receive the APPROVED
   verdict, a stopped part, or a failure, not every round.
+- Review depth follows the reasoning level by itself: Maximum in Prime
+  Desktop is strict with up to 3 rounds, every other level is a quick check
+  of critical and major defects with up to 2 rounds. Past the limit only
+  critical defects go back to the author. Do not ask reviewers for more.
 - wait_for_message=true registers any agent as waiting until a message
   arrives.
 

@@ -10,7 +10,10 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
-const strictReviewMaxRounds = 10
+const (
+	strictReviewMaxRounds = 3
+	quickReviewMaxRounds  = 2
+)
 
 var strictReviewPipeline = fmt.Sprintf(`
 
@@ -19,8 +22,8 @@ Maximum reasoning is selected in Prime Desktop, so this task runs through the st
 1. Explore: for an existing codebase whose context is not known yet, launch explore agents and wait for their reports. If the project directory is empty or this is a new project, skip explore and go straight to Build.
 2. Split: vertical slices only. One code agent owns a whole feature, page or module with its markup, styles and logic; never split one feature by layer (HTML, CSS, JS). Only truly independent, substantial parts get their own agent; a single page or small site is one part. Shared conventions go into every assignment.
 3. Build and review in one launch: in a single message, for every part launch one review agent (agent=review, background=true, unique name) and one code agent (background=true, unique name, reviewer=<that review agent's name>). Reviewers always start as waiting and make no calls until their author hands work over; the assignment you write is delivered to the reviewer together with the author's report. Do not message a reviewer to start it. Each reviewer assignment names the part, its author, the original user request, the acceptance criteria, how to build and run it, and the user language, and tells it to check as strictly as possible, take and inspect screenshots of every screen, state and width, judge for itself whether it likes the result, and answer in its verdict format. Code agents write code only; they do not test, build-check or screenshot their own work.
-4. Fix loop, routed automatically: when an author finishes, its report goes to its reviewer; CHANGES_REQUIRED goes back to the author; the fixed part goes back to the reviewer; this repeats until APPROVED. Do not relay defects, do not message reviewers to start, do not restart the loop. You are woken only for APPROVED verdicts, failures, escalated disputes and parts past the round limit. After %d rounds a part without APPROVED stops if no critical defect remains; report its remaining defects to the user. A part with a critical defect keeps looping past the limit; if the same critical defect comes back unchanged three rounds in a row (marked "repeat 3"), give the part to a new code agent with the full defect history and link it to the same reviewer.
-5. Finish: when every part is APPROVED or stopped, run your own final check of the integrated whole, then report in the main chat what was built, the review rounds and final scores per part, and any part that was stopped.
+4. Fix loop, routed automatically: when an author finishes, its report goes to its reviewer; CHANGES_REQUIRED goes back to the author; the fixed part goes back to the reviewer; this repeats until APPROVED. Do not relay defects, do not message reviewers to start, do not restart the loop. You are woken only for APPROVED verdicts, failures, escalated disputes and parts past the round limit. After %d rounds a part without APPROVED stops if no critical defect remains; report its remaining defects to the user. Past the limit only critical defects go back to the author and the loop continues until they are fixed; if the same critical defect comes back unchanged three rounds in a row (marked "repeat 3"), give the part to a new code agent with the full defect history and link it to the same reviewer.
+5. Finish: an APPROVED part is verified; do not review, test or screenshot it again. When every part is APPROVED or stopped, check only changes you made yourself after the reviews (for example integration edits) with one direct check, then report in the main chat what was built, the review rounds and final scores per part, and any part that was stopped.
 A verdict counts as APPROVED only when it says VERDICT: APPROVED, lists no critical or major defects and every score is at least 9/10. Treat anything else as CHANGES_REQUIRED. If an author and a reviewer settle a defect by dropping it without evidence, send it back to the reviewer.
 </strict_review_pipeline>
 `, strictReviewMaxRounds)
@@ -56,6 +59,24 @@ func (c *coordinator) activeCodeAgents(rootSessionID string) int {
 		job.mu.Unlock()
 	}
 	return active
+}
+
+func (c *coordinator) strictTeamReview(root string) bool {
+	return strictReviewMode(c.teamReasoningMode(root))
+}
+
+func (c *coordinator) reviewRoundLimit(root string) int {
+	if c.strictTeamReview(root) {
+		return strictReviewMaxRounds
+	}
+	return quickReviewMaxRounds
+}
+
+func (c *coordinator) reviewDepthNote(root string) string {
+	if c.strictTeamReview(root) {
+		return fmt.Sprintf("\n\nREVIEW DEPTH: strict. Maximum reasoning is selected: check as strictly as possible. A part gets at most %d review rounds; after that only critical defects go back to the author.", strictReviewMaxRounds)
+	}
+	return fmt.Sprintf("\n\nREVIEW DEPTH: quick. Check fast and focused, report only critical and major defects, never redo a check whose result cannot have changed. A part gets at most %d review rounds; after that only critical defects go back to the author.", quickReviewMaxRounds)
 }
 
 func (c *coordinator) reviewStartsDormant(ctx context.Context, sessionID string) bool {
