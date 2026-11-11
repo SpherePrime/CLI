@@ -45,6 +45,11 @@ func (s SelectedModel) ResolveReasoningMode(model catwalk.Model) string {
 	if model.DefaultReasoningEffort != "" && slices.Contains(model.ReasoningLevels, model.DefaultReasoningEffort) {
 		return NormalizeReasoningMode(model.DefaultReasoningEffort)
 	}
+	if level := ReasoningLevelFor(ReasoningModeHigh, model.ReasoningLevels); level != "" {
+		if mode := NormalizeReasoningMode(level); mode != ReasoningModeOff {
+			return mode
+		}
+	}
 	for _, level := range model.ReasoningLevels {
 		if mode := NormalizeReasoningMode(level); mode != ReasoningModeOff {
 			return mode

@@ -45,8 +45,9 @@ func TestTeamReasoningSurvivesWakeRuns(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, config.ReasoningModeMax, mode)
 
-	_, ok = runReasoningMode(c.withTeamReasoning(context.Background(), "other"))
-	require.False(t, ok)
+	mode, ok = runReasoningMode(c.withTeamReasoning(context.Background(), "other"))
+	require.True(t, ok)
+	require.Equal(t, config.ReasoningModeMax, mode)
 
 	c.withTeamReasoning(WithReasoningMode(context.Background(), config.ReasoningModeLow), "root")
 	require.Equal(t, config.ReasoningModeLow, c.teamReasoningMode("root"))

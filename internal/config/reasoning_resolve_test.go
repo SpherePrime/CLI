@@ -29,6 +29,8 @@ func TestResolveReasoningMode(t *testing.T) {
 		{name: "model without reasoning", model: catwalk.Model{}, want: ReasoningModeOff},
 		{name: "invalid value uses catalog default", selected: SelectedModel{ReasoningEffort: "invalid"}, model: catalogModel, want: ReasoningModeHigh},
 		{name: "custom model honors explicit level", selected: SelectedModel{ReasoningMode: ReasoningModeMax}, model: catwalk.Model{ID: "custom"}, want: ReasoningModeMax},
+		{name: "no catalog default picks high, not the lowest level", model: catwalk.Model{CanReason: true, ReasoningLevels: []string{"minimal", "low", "medium", "high"}}, want: ReasoningModeHigh},
+		{name: "no catalog default and no high picks the best below high", model: catwalk.Model{CanReason: true, ReasoningLevels: []string{"low", "medium"}}, want: ReasoningModeMedium},
 		{name: "default outside levels uses first usable level", model: catwalk.Model{CanReason: true, ReasoningLevels: []string{"minimal", "low"}, DefaultReasoningEffort: "max"}, want: ReasoningModeLow},
 	}
 
