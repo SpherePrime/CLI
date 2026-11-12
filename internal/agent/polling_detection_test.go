@@ -50,6 +50,33 @@ func TestStartingAServerWithOneSleepIsNotPolling(t *testing.T) {
 	}))
 }
 
+func TestRestartAndBrowserVerificationIsNotPolling(t *testing.T) {
+	steps := []fantasy.StepResult{
+		toolStep("bash", `{"command":"Start-Sleep -Seconds 1; Start-Process PrimeAstra.exe; Start-Sleep -Seconds 3"}`),
+		toolStep("mcp_browser_browser_navigate", `{"url":"http://127.0.0.1:43190"}`),
+		toolStep("mcp_browser_browser_type", `{"ref":11,"text":"15 * 4","submit":true}`),
+		toolStep("bash", `{"command":"Start-Sleep -Seconds 3"}`),
+	}
+	require.False(t, hasPollingCalls(steps))
+}
+
+func TestChangedReadResultsAreNotPolling(t *testing.T) {
+	var steps []fantasy.StepResult
+	for _, output := range []string{"pending", "starting", "running", "complete"} {
+		steps = append(steps, makeToolStep("job_output", `{"shell_id":"build"}`, output))
+	}
+	require.False(t, hasPollingCalls(steps))
+}
+
+func TestEditAfterOldPollingResetsDetection(t *testing.T) {
+	var steps []fantasy.StepResult
+	for range 4 {
+		steps = append(steps, toolStep("view", `{"file_path":"a"}`))
+	}
+	steps = append(steps, toolStep("edit", `{"file_path":"a"}`))
+	require.False(t, hasPollingCalls(steps))
+}
+
 func TestEditsBetweenReadsAreNotPolling(t *testing.T) {
 	var steps []fantasy.StepResult
 	for range 4 {

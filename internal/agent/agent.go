@@ -850,6 +850,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	var stepMessages []fantasy.Message
 	var stepToolTokens int64
 	var shouldSummarize bool
+	var stoppedForRepeatedCalls bool
 	searchRecovery := emptySearchRecovery{}
 	sanitizedToolCalls := make(map[string]bool)
 	// Don't send MaxOutputTokens if 0 — some providers (e.g. LM Studio) reject it
@@ -1200,12 +1201,17 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				return false
 			},
 			func(steps []fantasy.StepResult) bool {
-				return hasPollingCalls(steps) || (!hasRepeatedEmptySearches(steps) && hasRepeatedToolCalls(steps, loopDetectionWindowSize, loopDetectionMaxRepeats))
+				stoppedForRepeatedCalls = hasPollingCalls(steps) || (!hasRepeatedEmptySearches(steps) && hasRepeatedToolCalls(steps, loopDetectionWindowSize, loopDetectionMaxRepeats))
+				return stoppedForRepeatedCalls
 			},
 		},
 	})
 
 	a.eventPromptResponded(call.SessionID, time.Since(startTime).Truncate(time.Second))
+
+	if err == nil && stoppedForRepeatedCalls && !shouldSummarize {
+		err = errors.New("Stopped repeated tool calls without progress. The task is not complete; change the approach before continuing.")
+	}
 
 	if err != nil {
 		isHyper := largeModel.ModelCfg.Provider == hyper.Name

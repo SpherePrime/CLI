@@ -41,13 +41,11 @@ func hasPollingCalls(steps []fantasy.StepResult) bool {
 	}
 	counts := map[string]int{}
 	sleeps := 0
-	for _, step := range window {
+	for index := len(window) - 1; index >= 0; index-- {
+		step := window[index]
 		for _, call := range step.Content.ToolCalls() {
-			if changingTools[call.ToolName] {
+			if changingTools[call.ToolName] || !pollingTools[call.ToolName] {
 				return false
-			}
-			if !pollingTools[call.ToolName] {
-				continue
 			}
 			if call.ToolName == "bash" && sleepCommand.MatchString(call.Input) {
 				sleeps++
@@ -56,6 +54,12 @@ func hasPollingCalls(steps []fantasy.StepResult) bool {
 				}
 			}
 			key := call.ToolName + "\x00" + normalizedToolInput(call.Input)
+			for _, result := range step.Content.ToolResults() {
+				if result.ToolCallID == call.ToolCallID {
+					key += "\x00" + toolResultOutputString(result.Result)
+					break
+				}
+			}
 			counts[key]++
 			if counts[key] > pollingMaxRepeats {
 				return true
