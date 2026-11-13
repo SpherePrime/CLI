@@ -174,6 +174,20 @@ export function MessageList({
     }
   }, [messages, virtualizer.getTotalSize()])
   useEffect(() => {
+    const view = viewport.current
+    if (!view) return
+    let lastHeight = view.clientHeight
+    const observer = new ResizeObserver(() => {
+      const height = view.clientHeight
+      const shrunk = height < lastHeight
+      lastHeight = height
+      if (!shrunk || !followingRef.current || paging.restoring.current) return
+      view.scrollTop = view.scrollHeight
+    })
+    observer.observe(view)
+    return () => observer.disconnect()
+  }, [])
+  useEffect(() => {
     if (settled || !hasMessages) return
     let frame = 0
     let stableFrames = 0

@@ -127,6 +127,15 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     }
     setCollapsed('sidebar', !collapsed.sidebar)
   }
+  function keepSidebarBesideInspector() {
+    const current = layoutRef.current
+    if (!current.sidebarOpen) return
+    setWidths((value) =>
+      value.inspector <= current.inspectorWithSidebarMax
+        ? value
+        : { ...value, inspector: current.inspectorWithSidebarMax }
+    )
+  }
   function toggleInspector() {
     if (focusMode) return setFocusMode(false)
     setInspector(true)
@@ -134,6 +143,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       setCompactPanelOpen((value) => !value)
       return
     }
+    if (collapsed.inspector) keepSidebarBesideInspector()
     setCollapsed('inspector', !collapsed.inspector)
   }
   function openTools(view: WorkbenchView) {
@@ -160,6 +170,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     collapsed.inspector,
     showEditor
   )
+  const layoutRef = useRef(layout)
+  layoutRef.current = layout
   const centerShift = chatCenterShift(layout, showSidebar, showInspector, showEditor)
   const inspectorOpen = isInspectorOpen(
     layout.compact,
@@ -209,6 +221,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           isForViewedChat(event.payload.sessionId, viewedChat.current)
         ) {
           setInspector(true)
+          keepSidebarBesideInspector()
           setCollapsed('inspector', false)
           setFocusMode(false)
           setAppRequest(Date.now())
@@ -228,7 +241,9 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     setWidths,
     collapsed,
     setCollapsed,
-    inspectorMax: layout.inspectorMax,
+    inspectorMax: layout.sidebarOpen
+      ? Math.min(layout.inspectorMax, layout.inspectorWithSidebarMax)
+      : layout.inspectorMax,
     zoom,
     beginInspectorResize: () => {
       const chatWidth = shell.current?.querySelector<HTMLElement>('.main-workspace')?.offsetWidth
