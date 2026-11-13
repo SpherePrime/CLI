@@ -65,6 +65,9 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 	}()
 	for {
 		for !c.reserveWorker(job) {
+			if status, _ := job.snapshot(); !jobActive(status) {
+				return
+			}
 			select {
 			case <-ctx.Done():
 				job.finish("canceled", "canceled before it finished")
@@ -132,7 +135,7 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 		job.status = status
 		job.output = output
 		job.updatedAt = time.Now()
-		close(job.done)
+		job.closeDoneLocked()
 		job.mu.Unlock()
 		if route != nil && !c.deliverReviewRoute(job, route) && route.quiet {
 			job.mu.Lock()

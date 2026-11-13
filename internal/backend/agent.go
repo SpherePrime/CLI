@@ -336,13 +336,14 @@ func (b *Backend) InitAgent(ctx context.Context, workspaceID string, interactive
 	if closing {
 		return ErrWorkspaceClosing
 	}
-	initCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	if ws.ctx != nil {
-		stop := context.AfterFunc(ws.ctx, cancel)
-		defer stop()
+	if ws.AgentCoordinator != nil {
+		return ws.UpdateAgentModel(ctx)
 	}
-	return initializeAgent(initCtx, ws, interactive)
+	lifecycle := ws.ctx
+	if lifecycle == nil {
+		lifecycle = context.Background()
+	}
+	return initializeAgent(lifecycle, ws, interactive)
 }
 
 // UpdateAgent reloads the agent model configuration.

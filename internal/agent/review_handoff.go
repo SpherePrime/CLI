@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/SpherePrime/CLI/internal/config"
 )
@@ -32,12 +33,15 @@ func (j *agentJob) stop() {
 	j.mu.Lock()
 	j.pending = nil
 	cancel := j.cancel
-	waiting := j.status == "waiting"
-	j.mu.Unlock()
-	if waiting {
-		j.finish("canceled", "canceled while waiting for a message")
+	if j.status == "waiting" {
+		j.status = "canceled"
+		j.output = "canceled while waiting for a message"
+		j.updatedAt = time.Now()
+		j.closeDoneLocked()
+		j.mu.Unlock()
 		return
 	}
+	j.mu.Unlock()
 	if cancel != nil {
 		cancel()
 	}

@@ -58,10 +58,19 @@ func (j *agentJob) finish(status, output string) {
 	j.status = status
 	j.output = output
 	j.updatedAt = time.Now()
-	if j.done != nil {
+	j.closeDoneLocked()
+	j.mu.Unlock()
+}
+
+func (j *agentJob) closeDoneLocked() {
+	if j.done == nil {
+		return
+	}
+	select {
+	case <-j.done:
+	default:
 		close(j.done)
 	}
-	j.mu.Unlock()
 }
 
 // snapshot is a point-in-time read of the job state, safe from any goroutine.
