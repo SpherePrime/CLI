@@ -621,6 +621,12 @@ export const english: Record<string, string> = {
     'Stop the current response and send this message',
   'Вложения: {count}': 'Attachments: {count}',
   'Уровень размышлений': 'Reasoning level',
+  'Максимальный уровень размышлений': 'Maximum reasoning level',
+  'Модель размышляет дольше всего, а каждую часть задачи строго проверяют отдельные агенты-ревьюеры. Они делают скриншоты на разных размерах экрана, в том числе крупные планы отдельных элементов, и возвращают замечания автору, пока результат их не устроит.':
+    'The model reasons as long as it can, and separate reviewer agents check every part of the task strictly. They take screenshots at different screen sizes, including close-ups of individual elements, and send their findings back to the author until they are satisfied with the result.',
+  'Работа займёт больше времени и потратит заметно больше токенов, зато результат обычно точнее и аккуратнее. Подходит для сложных и важных задач, для простых правок хватит высокого уровня.':
+    'Work takes longer and uses noticeably more tokens, but the result is usually more accurate and polished. Best for complex and important tasks; High is enough for simple edits.',
+  'Больше не показывать': 'Do not show again',
   'Модель и уровень размышлений': 'Model and reasoning level',
   'Все задачи выполнены': 'All tasks done',
   Браузер: 'Browser',

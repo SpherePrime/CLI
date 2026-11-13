@@ -91,6 +91,7 @@ export type Preferences = {
   recentModels?: { provider: string; model: string }[]
   reasoningBySession?: Record<string, ChatReasoningMode>
   lastReasoningMode?: ChatReasoningMode
+  skipMaxReasoningNotice?: boolean
   agentMode?: 'general' | 'plan'
   drafts: Record<string, string>
   sidebarWidth: number

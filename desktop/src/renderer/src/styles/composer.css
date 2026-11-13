@@ -352,3 +352,22 @@
   margin-top: 2px;
   font-size: 12px;
 }
+.modal.max-reasoning-dialog {
+  width: min(480px, calc(100vw - 32px));
+}
+.max-reasoning-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.max-reasoning-notice p {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text);
+}
+.max-reasoning-notice .checkbox-label {
+  margin: 4px 0 0;
+}
+.max-reasoning-notice .approval-actions {
+  margin-top: 4px;
+}

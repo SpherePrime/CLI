@@ -3,6 +3,8 @@ import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { ContextMeter } from './ContextMeter'
 import { ContextPopover } from './ContextPopover'
+import { MaxReasoningDialog } from './MaxReasoningDialog'
+import { needsMaxReasoningNotice } from './maxReasoningNotice'
 import { ModelPicker } from './ModelPicker'
 import { ReasoningPopover } from './ReasoningPopover'
 import { currentReasoningMode, reasoningLabel } from './reasoning'
@@ -15,6 +17,7 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const contextAnchor = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState<'reasoning' | 'models' | 'context' | null>(null)
   const [saving, setSaving] = useState(false)
+  const [maxNotice, setMaxNotice] = useState(false)
   const { models } = useModelCapabilities(w)
   const sessionModel = w.activeSessionId
     ? (w.config?.session_models as Record<string, { provider: string; model: string; context_window?: number }> | undefined)?.[
@@ -40,6 +43,19 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
       .setReasoningMode(value as ChatReasoningMode)
       .catch(w.errorHandler)
       .finally(() => setSaving(false))
+  }
+  const chooseReasoning = (value: string) => {
+    if (needsMaxReasoningNotice(value, mode, w.preferences?.skipMaxReasoningNotice)) {
+      setOpen(null)
+      setMaxNotice(true)
+      return
+    }
+    setReasoning(value)
+  }
+  const enableMax = (skipNextTime: boolean) => {
+    setMaxNotice(false)
+    if (skipNextTime) void w.savePreferences({ skipMaxReasoningNotice: true }).catch(w.errorHandler)
+    setReasoning('max')
   }
   return (
     <>
@@ -81,11 +97,12 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
           modelName={modelName}
           mode={mode}
           disabled={saving || w.busy || w.project?.connection !== 'ready'}
-          onChange={setReasoning}
+          onChange={chooseReasoning}
           onReset={() => setReasoning('default')}
           onOpenModels={() => setOpen('models')}
         />
       )}
+      {maxNotice && <MaxReasoningDialog close={() => setMaxNotice(false)} confirm={enableMax} />}
       {open === 'models' && (
         <ModelPicker
           workspace={w}
