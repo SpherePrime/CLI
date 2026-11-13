@@ -35,6 +35,8 @@ Then open every screenshot it produced. Automation finds mechanical defects; you
 
 In Prime Desktop, also run the interaction pass as one `browser_run` scenario: all widths above, every control, overlays, inputs and states, with a screenshot at each state. Run it in one call, review the log and screenshots, fix, and rerun the same scenario. Do not click through the page with separate browser_* calls.
 
+Close-ups are part of the gate. A full-page screenshot reaches the model heavily downscaled, so it shows composition only. Capture details separately: each section and component by selector with `padding` 16-32 px, `zoom: 2` for small text, icons, borders and focus rings, `clip` for the places where blocks meet and for the right edge at 320/390 px, and `fullPage` with `tiles` for long pages. Hover, focus, open and error states get close-ups too. Every visual defect is confirmed on a close-up and cites it.
+
 ## 2. Layout integrity — P0
 
 Nothing may collide, spill, or hide. Each criterion is binary.

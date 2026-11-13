@@ -95,7 +95,7 @@ Mandatory for anything with a visual surface. Follow `references/quality-gate.md
 
    No Playwright? Inject `scripts/layout-audit.js` into the page with any browser tool, then call `window.__designAudit()` at each width.
 
-2. **Look at every screenshot.** Automation cannot judge hierarchy, rhythm, alignment intent, image crops, or whether the design feels finished. Walk through `quality-gate.md` §5 (V1–V14) with the screenshots open.
+2. **Look at every screenshot.** Automation cannot judge hierarchy, rhythm, alignment intent, image crops, or whether the design feels finished. Walk through `quality-gate.md` §5 (V1–V14) with the screenshots open. Full-page shots reach the model downscaled: judge details only on close-ups of components (selector with padding, zoom 2, clip, tiles for long pages).
 
 3. **Exercise the primary flow** in a real browser. In Prime Desktop write it as one `browser_run` scenario (steps for every width, click, input, wait, assert and a screenshot at each state worth seeing), run it in one call and rerun the same scenario after fixes. Cover: every control, repeated and interrupted actions, open/close of every overlay, back button, loading/empty/error states, keyboard only, touch emulation.
 
