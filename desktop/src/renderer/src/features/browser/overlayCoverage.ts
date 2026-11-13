@@ -27,7 +27,7 @@ const fullScreenOverlaySelector =
   'dialog[open], .update-screen, .startup-screen:not(.hidden)'
 
 const localizedOverlaySelector =
-  '.prime-popover, .file-context-menu, .select-options'
+  '.prime-popover, .file-context-menu, .select-options, .context-menu, .toast-card'
 
 export function rectsOverlap(rect: RectBounds, box: BoxBounds): boolean {
   if (box.width <= 0 || box.height <= 0) {

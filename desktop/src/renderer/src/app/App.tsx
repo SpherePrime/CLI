@@ -172,6 +172,9 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   )
   const layoutRef = useRef(layout)
   layoutRef.current = layout
+  useEffect(() => {
+    if (showEditor) keepSidebarBesideInspector()
+  }, [showEditor])
   const centerShift = chatCenterShift(layout, showSidebar, showInspector, showEditor)
   const inspectorOpen = isInspectorOpen(
     layout.compact,
@@ -406,7 +409,10 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               compactOpen={compactPanelOpen}
               setCompactOpen={setCompactPanelOpen}
               expanded={layout.inspectorOpen}
-              setExpanded={(open) => setCollapsed('inspector', !open)}
+              setExpanded={(open) => {
+                if (open) keepSidebarBesideInspector()
+                setCollapsed('inspector', !open)
+              }}
               workspace={w}
               openDocument={documents.open}
               browserRequest={browserRequest}

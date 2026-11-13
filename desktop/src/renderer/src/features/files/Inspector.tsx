@@ -67,6 +67,10 @@ export function Inspector({
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
+  const [browserVisited, setBrowserVisited] = useState(false)
+  useEffect(() => {
+    if (tab === 'browser') setBrowserVisited(true)
+  }, [tab])
   const [internalPanelOpen, setInternalPanelOpen] = useState(false)
   const panelOpen = compactOpen ?? internalPanelOpen
   const setPanelOpen = setCompactOpen ?? setInternalPanelOpen
@@ -80,14 +84,19 @@ export function Inspector({
     if (!compact || !panelOpen) return
     const pointer = (event: PointerEvent) => {
       const target = event.target as Element
-      if (!panel.current?.contains(target) && !target.closest?.('[data-inspector-toggle]'))
+      if (
+        !panel.current?.contains(target) &&
+        !target.closest?.('[data-inspector-toggle]') &&
+        !target.closest?.('.prime-popover, .file-context-menu, .context-menu, .select-options, dialog')
+      )
         setPanelOpen(false)
     }
     const keyboard = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setPanelOpen(false)
-        panel.current?.querySelector<HTMLButtonElement>('.inspector-tabs .active')?.focus()
-      }
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      if (document.querySelector('dialog[open]')) return
+      event.preventDefault()
+      setPanelOpen(false)
+      panel.current?.querySelector<HTMLButtonElement>('.inspector-tabs .active')?.focus()
     }
     document.addEventListener('pointerdown', pointer)
     document.addEventListener('keydown', keyboard)
@@ -157,13 +166,19 @@ export function Inspector({
     return () => window.removeEventListener('prime:file-saved', refresh)
   }, [])
   useEffect(() => {
+    let current = true
     setHistory([])
     const sessionId = realSessionId(w.session)
     if (!w.project || !sessionId) return
     void w
       .call('history', { sessionId })
-      .then((items) => setHistory(items || []))
+      .then((items) => {
+        if (current) setHistory(items || [])
+      })
       .catch(() => {})
+    return () => {
+      current = false
+    }
   }, [w.project?.id, w.session?.id, w.busy])
   async function openFile(path: string) {
     try {
@@ -269,8 +284,8 @@ export function Inspector({
   }
   const body = (
     <>
-      {tab === 'browser' && (
-        <div className="inspector-browser">
+      {browserVisited && (
+        <div className="inspector-browser" hidden={tab !== 'browser'}>
           <BrowserTab
             workspace={w}
             onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
@@ -307,7 +322,8 @@ export function Inspector({
             {w.project ? (
               <div className="file-tree-area" onContextMenu={(event) => showMenu(event, null)}>
                 <Tree
-                  key={`${w.project.id}:${treeKey}`}
+                  key={w.project.id}
+                  refresh={treeKey}
                   workspaceId={w.project.id}
                   opened={opened}
                   onToggle={toggleFolder}
@@ -449,6 +465,7 @@ export function Inspector({
 function Tree({
   workspaceId,
   path = '',
+  refresh = 0,
   opened,
   onToggle,
   onFile,
@@ -457,6 +474,7 @@ function Tree({
 }: {
   workspaceId: string
   path?: string
+  refresh?: number
   opened: string[]
   onToggle: (path: string) => void
   onFile: (path: string) => void
@@ -465,11 +483,19 @@ function Tree({
 }) {
   const [entries, setEntries] = useState<Entry[]>([])
   useEffect(() => {
+    let current = true
     void window.prime
       .files(workspaceId, path)
-      .then((items) => setEntries(items as Entry[]))
-      .catch((error) => onError(error.message))
-  }, [workspaceId, path])
+      .then((items) => {
+        if (current) setEntries(items as Entry[])
+      })
+      .catch((error) => {
+        if (current) onError(error.message)
+      })
+    return () => {
+      current = false
+    }
+  }, [workspaceId, path, refresh])
   return (
     <div className="file-tree">
       {entries.map((entry) => (
@@ -501,6 +527,7 @@ function Tree({
               <Tree
                 workspaceId={workspaceId}
                 path={entry.path}
+                refresh={refresh}
                 opened={opened}
                 onToggle={onToggle}
                 onFile={onFile}

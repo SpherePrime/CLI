@@ -24,6 +24,9 @@
   min-height: 0;
   flex-direction: column;
 }
+.inspector-browser[hidden] {
+  display: none !important;
+}
 .project-rail {
   display: flex;
   flex-direction: column;
@@ -49,7 +52,7 @@
   top: 0;
   bottom: 0;
   left: 48px;
-  width: min(300px, calc(100% - 96px));
+  width: min(300px, calc(100vw - 112px));
   z-index: 12;
   border-right: 1px solid var(--border);
   box-shadow: 12px 0 40px #0004;
@@ -60,6 +63,13 @@
 }
 .project-flyout .sidebar-actions {
   padding-right: 40px;
+}
+.project-flyout .sidebar-scroll > .navigation-caption:first-child {
+  padding-right: 40px;
+}
+.app-shell.compact-layout > .file-editor,
+.app-shell.compact-layout > .editor-loading {
+  background: var(--bg);
 }
 .compact-panel-close {
   position: absolute;
@@ -132,6 +142,10 @@
   position: absolute;
   inset: 0 48px 0 48px;
   z-index: 11;
+}
+.compact-layout > .project-rail,
+.compact-layout > .inspector-rail {
+  z-index: 12;
 }
 .compact-layout > .editor-divider {
   display: none;

@@ -10,6 +10,8 @@ import type { AgentRequest } from './openAgent'
 import { realSessionId } from '../../../../shared/pendingSession'
 import './agents.css'
 
+const consumedRequests = new Set<number>()
+
 export function AgentsPanel({
   workspace,
   request
@@ -49,9 +51,11 @@ function AgentTeam({
   request?: AgentRequest
 }) {
   const { t } = useI18n()
-  const [selected, setSelected] = useState(request?.workerId || '')
+  const [selected, setSelected] = useState(() => (request && !consumedRequests.has(request.sequence) ? request.workerId : ''))
   useEffect(() => {
-    if (request?.workerId) setSelected(request.workerId)
+    if (!request?.workerId || consumedRequests.has(request.sequence)) return
+    consumedRequests.add(request.sequence)
+    setSelected(request.workerId)
   }, [request?.sequence])
   const load = useCallback(async () => {
     const result = await window.prime.call(projectId, 'agentWorkers', { sessionId })

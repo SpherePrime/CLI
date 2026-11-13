@@ -50,14 +50,19 @@ export function ProjectRail({
     if (!open) return
     const pointer = (event: PointerEvent) => {
       const target = event.target as Element
-      if (!root.current?.contains(target) && !target.closest?.('[data-projects-toggle]'))
+      if (
+        !root.current?.contains(target) &&
+        !target.closest?.('[data-projects-toggle]') &&
+        !target.closest?.('.prime-popover, .file-context-menu, .context-menu, .select-options, dialog')
+      )
         setOpen(false)
     }
     const keyboard = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false)
-        trigger.current?.focus()
-      }
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      if (document.querySelector('dialog[open]')) return
+      event.preventDefault()
+      setOpen(false)
+      trigger.current?.focus()
     }
     document.addEventListener('pointerdown', pointer)
     document.addEventListener('keydown', keyboard)

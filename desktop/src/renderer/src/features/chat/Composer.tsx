@@ -304,7 +304,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     let lastEscape = 0
     const handler = (event: KeyboardEvent) => {
       if (document.querySelector('dialog[open]')) return
-      if (event.key === 'Escape' && w.busy) {
+      if (event.key === 'Escape' && w.busy && !event.defaultPrevented) {
         if (Date.now() - lastEscape < 600) void stop()
         lastEscape = Date.now()
       }

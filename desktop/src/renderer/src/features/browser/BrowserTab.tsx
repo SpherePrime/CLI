@@ -128,7 +128,7 @@ export function BrowserTab({
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['open', 'class']
+      attributeFilter: ['open', 'class', 'hidden']
     })
     window.addEventListener('resize', sync)
     return () => {
