@@ -1,5 +1,7 @@
 # Motion, 3D, and 2D art
 
+Implementation techniques for UI motion (tokens, springs, enter and exit, FLIP, View Transitions, scroll, text, micro-interactions, performance) are in `motion-craft.md`.
+
 ## Motion spec
 
 Write one line per important animation before building it:

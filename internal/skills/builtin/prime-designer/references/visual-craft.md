@@ -101,6 +101,7 @@ The values above are a shape to follow. Derive the actual hues, scale, and chara
 - **Easing:** ease-out (fast start, gentle stop) for entering; ease-in for exiting; spring or overshoot only when the subject is physical or playful.
 - **Choreography:** stagger related items 30–60ms; lead with the element the user acted on; never animate everything at once.
 - **Purpose:** each animation explains a change (where something came from, where it went, what it is connected to). Decorative loops need a pause control and stop under reduced motion.
+- **Implementation:** tokens, springs and recipes are in `motion-craft.md`.
 
 ## 8. Signature moves (pick one, adapt it)
 

@@ -120,6 +120,9 @@ These need eyes. Check each on the desktop and the 390px screenshots.
 | I5 | Only `transform` and `opacity` animate in hot paths; no animated `width/height/top/left` on large elements | P1 |
 | I6 | Scroll-linked effects do not hijack scrolling, do not break anchor links, and turn off with reduced motion | P0 |
 | I7 | Hover-only affordances have a touch and keyboard equivalent | P0 |
+| I8 | Overlays enter from their trigger and exit faster than they enter; layout changes move elements (FLIP or View Transitions) instead of jumping | P1 |
+| I9 | One motion language: durations and easings come from the motion tokens; no fade-up on every block, no motion slop from `motion-craft.md` §13 | P1 |
+| I10 | Slow-motion check at 10–25%: no jump at the end frame, stagger order follows the user's action, interrupted animations reverse smoothly | P1 |
 
 ## 7. Runtime and performance — P0/P1
 

@@ -17,7 +17,9 @@ Read only what the task needs. Text files are readable with the view tool at `pr
 | --- | --- |
 | `references/quality-gate.md` | **Always before finishing.** Definition of done, thresholds, test matrix |
 | `references/layout-defects.md` | Fixing overlap, overflow, clipping, sticky, viewport, z-index issues |
+| `references/distinctive-design.md` | **Before designing anything visible.** Deriving the visual language from the subject, composition, typography, generic moves and their replacements, self-critique |
 | `references/visual-craft.md` | Building or upgrading the visual system: tokens, color, type, space, polish |
+| `references/motion-craft.md` | **Any animation or interaction.** Motion tokens and springs, enter/exit, FLIP, View Transitions, scroll, text, micro-interactions, performance, reduced motion |
 | `references/motion-and-3d.md` | Animation, Three.js/WebGL, posters, 2D art, Slack GIFs |
 | `references/review-report.md` | Writing the final QA report |
 | `scripts/audit.mjs` | Automated multi-viewport layout and accessibility audit |
@@ -54,11 +56,11 @@ When a reference project helps, open its `README.md`, `docs/design.md`, and sour
 Decide before building, in a few lines:
 
 - **Intent:** who uses this and what they must understand or do.
-- **Character:** 3–5 traits specific to the subject (not "modern, clean").
+- **Character:** 3–5 traits specific to the subject (not "modern, clean"), derived with `distinctive-design.md` §1.
 - **Primary action:** the one task the screen must make obvious.
 - **Signature:** one memorable idea: typographic, spatial, material, data, or interactive. See `visual-craft.md` §8.
 - **Medium:** what is 2D, what is 3D, and why.
-- **System:** color roles, type scale and pairing, grid and spacing base, radius and elevation, motion character.
+- **System:** color roles, type scale and pairing, grid and spacing base, radius and elevation, motion tokens (`motion-craft.md` §2).
 - **States:** default, hover, focus, active, selected, disabled, loading, empty, error, success, open/closed.
 - **Gate:** the widths, flows, and checks that will prove it works.
 
@@ -75,10 +77,11 @@ Every inherited token, layout, or effect must earn its place: name its job or dr
 - Defensive CSS from the start: `min-width: 0` on flex/grid text children, `max-width: 100%` on media, `overflow-wrap: anywhere` on user content, `min-height` instead of `height` on text containers, `100svh/dvh` instead of `100vh`, `scroll-padding-top` for sticky headers, a z-index scale, `text-wrap: balance` on headings.
 - Real content. Dashboards and reports never get invented metrics, names, testimonials, or trends: use connected data, labeled sample data, or explicit empty/not-connected states.
 - Every chart answers a stated question; otherwise remove it.
+- Motion is built with `motion-craft.md`: every control has designed hover, press and focus; every overlay enters from its origin and exits faster; layout changes use FLIP or View Transitions; one intro sequence or one signature interaction, nothing on every block; reduced motion handled in CSS and JS.
 
 ### 4. Elevate
 
-Before QA, run the polish pass in `visual-craft.md` §9 and the anti-slop check below. This is where a correct design becomes a distinctive one.
+Before QA, run the self-critique loop in `distinctive-design.md` §8, the polish pass in `visual-craft.md` §9 and the anti-slop check below. This is where a correct design becomes a distinctive one.
 
 ### 5. Verify — quality gate
 
@@ -122,6 +125,8 @@ Before finishing:
 - Specific copy; outcome-based button labels ("Book a visit", not "Submit"); errors that say how to fix; empty states with one next action.
 - No lorem ipsum, fabricated numbers, broken media, dead controls, or decoration pretending to be information.
 - Freeze all motion: hierarchy and meaning still work.
+- Motion slop is out: fade-up on every block, one easing for everything, pulsing buttons, floating blobs, typewriter headlines, scroll-jacking, cursor trails, fake counters (full list in `motion-craft.md` §13).
+- Replace each generic move with its alternative from `distinctive-design.md` §7.
 - Swap the logo for a competitor's: if the design still fits, make the visual language more specific.
 
 ## Mode notes
@@ -130,7 +135,7 @@ Before finishing:
 
 **3D.** Only when volume, material, assembly, or manipulation is the point. Design form, material, light, and camera before code. Semantic HTML for labels and controls; a real fallback without WebGL. Full checklist in `motion-and-3d.md`.
 
-**Motion.** Write the motion spec (trigger, purpose, path, timing, easing, rest, interruption, reduced motion, cost) for every important animation. Details in `motion-and-3d.md`.
+**Motion.** Write the motion spec (trigger, purpose, path, timing, easing, rest, interruption, reduced motion, cost) for every important animation (`motion-and-3d.md`), then build it with the techniques in `motion-craft.md`.
 
 **Theme/brand.** If a theme is requested, show the options from `assets/themes/` (Tech Innovation is a neon theme: offer it only when the user asked for neon) (visual selector: `assets/examples/theme-showcase.pdf`), wait for the choice, apply it through role tokens, and use only the verified contrast pairs listed in the theme file. For an official brand, apply only that brand's published rules; never force a brand palette on unrelated work.
 
