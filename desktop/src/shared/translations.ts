@@ -1365,6 +1365,7 @@ Object.assign(english, {
   'Читает страницу': 'Reads the page',
   'Снимок страницы': 'Page screenshot',
   'Снимок всей страницы': 'Full page screenshot',
+  'Снимок области': 'Region screenshot',
   'Снимок элемента': 'Element screenshot',
   'Проверка сценарием': 'Scenario check',
   'Нажимает на странице': 'Clicks on the page',

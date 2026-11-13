@@ -1,71 +1,178 @@
-use super::{evaluate, platform};
+use super::{evaluate, platform, scenario_parse::Clip, shot_view};
 use serde_json::{json, Value};
 use std::sync::atomic::AtomicBool;
 use tauri::Webview;
 
 const MAX_OUTPUT_SIDE: f64 = 8000.0;
 const MAX_DOCUMENT_HEIGHT: f64 = 16000.0;
+const MAX_TILES: usize = 10;
+const MAX_PADDING: f64 = 400.0;
+const MAX_ZOOM: f64 = 3.0;
 
 const LOAD_LAZY_CONTENT: &str = "(async () => { const start = scrollY; const step = Math.max(200, innerHeight * 0.8); for (let index = 0, top = 0; index < 80 && top < document.documentElement.scrollHeight; index += 1, top += step) { scrollTo(0, top); await new Promise(resolve => setTimeout(resolve, 120)); } scrollTo(0, start); await new Promise(resolve => setTimeout(resolve, 250)); return true })()";
 
-const DOCUMENT_SIZE: &str = "(() => { const root = document.documentElement; const body = document.body; return { width: Math.max(root.scrollWidth, body ? body.scrollWidth : 0, innerWidth), height: Math.max(root.scrollHeight, body ? body.scrollHeight : 0, innerHeight) } })()";
+const DOCUMENT_SIZE: &str = "(() => { const root = document.documentElement; const body = document.body; return { width: Math.max(root.scrollWidth, body ? body.scrollWidth : 0, innerWidth), height: Math.max(root.scrollHeight, body ? body.scrollHeight : 0, innerHeight), dpr: devicePixelRatio || 1 } })()";
+
+const VIEWPORT: &str = "(() => ({ x: scrollX, y: scrollY, width: innerWidth, height: innerHeight }))()";
 
 const HIDE_OVERLAYS: &str = "for (const layer of document.querySelectorAll('body *')) { if (layer.contains(element) || element.contains(layer)) continue; const position = getComputedStyle(layer).position; if (position !== 'fixed' && position !== 'sticky') continue; layer.setAttribute('data-prime-shot-hidden', layer.style.visibility); layer.style.visibility = 'hidden'; }";
 
 const RESTORE_OVERLAYS: &str = "(() => { for (const layer of document.querySelectorAll('[data-prime-shot-hidden]')) { layer.style.visibility = layer.getAttribute('data-prime-shot-hidden'); layer.removeAttribute('data-prime-shot-hidden'); } return true })()";
 
+#[derive(Debug, PartialEq)]
 pub enum Target {
     Visible,
-    FullPage,
+    FullPage { tiles: bool },
     Element(String),
+    Region(Clip),
 }
 
-pub fn target(args: &Value, element_selector: impl Fn(&Value) -> Result<String, String>) -> Result<Target, String> {
+#[derive(Debug, PartialEq)]
+pub struct Shot {
+    pub target: Target,
+    pub padding: f64,
+    pub zoom: f64,
+}
+
+impl Shot {
+    pub fn new(target: Target, padding: Option<f64>, zoom: Option<f64>) -> Result<Self, String> {
+        let padding = padding.unwrap_or(0.0);
+        if !padding.is_finite() || !(0.0..=MAX_PADDING).contains(&padding) {
+            return Err(format!("padding must be between 0 and {MAX_PADDING} CSS px"));
+        }
+        let zoom = zoom.unwrap_or(1.0);
+        if !zoom.is_finite() || !(1.0..=MAX_ZOOM).contains(&zoom) {
+            return Err(format!("zoom must be between 1 and {MAX_ZOOM}"));
+        }
+        if let Target::Region(clip) = &target {
+            if [clip.x, clip.y, clip.width, clip.height].iter().any(|value| !value.is_finite()) || clip.width < 1.0 || clip.height < 1.0 {
+                return Err("clip needs finite x, y and a width and height of at least 1 CSS px".to_owned());
+            }
+        }
+        Ok(Self { target, padding, zoom })
+    }
+}
+
+pub fn target(args: &Value, element_selector: impl Fn(&Value) -> Result<String, String>) -> Result<Shot, String> {
     let full_page = args["fullPage"] == true;
     let has_ref = !args["ref"].is_null();
-    match (full_page, has_ref) {
-        (true, true) => Err("Use either fullPage or ref, not both".to_owned()),
-        (true, false) => Ok(Target::FullPage),
-        (false, true) => Ok(Target::Element(element_selector(args)?)),
-        (false, false) => Ok(Target::Visible),
+    let clip = match args.get("clip").filter(|value| !value.is_null()) {
+        Some(value) => Some(serde_json::from_value::<Clip>(value.clone()).map_err(|_| "clip must be {x, y, width, height} in CSS px")?),
+        None => None,
+    };
+    let chosen = [full_page, has_ref, clip.is_some()].iter().filter(|flag| **flag).count();
+    if chosen > 1 {
+        return Err("Use only one of fullPage, ref or clip".to_owned());
     }
+    let target = if full_page {
+        Target::FullPage { tiles: args["tiles"] == true }
+    } else if has_ref {
+        Target::Element(element_selector(args)?)
+    } else if let Some(clip) = clip {
+        Target::Region(clip)
+    } else {
+        Target::Visible
+    };
+    Shot::new(target, args["padding"].as_f64(), args["zoom"].as_f64())
 }
 
-pub fn capture(view: &Webview, tab: &str, target: Target, cancel: &AtomicBool) -> Result<Value, String> {
-    match target {
-        Target::Visible => Ok(json!([platform::screenshot(view, None)?])),
-        Target::FullPage => {
-            evaluate::evaluate_until_done(view, tab, LOAD_LAZY_CONTENT, cancel)?;
-            let size = evaluate::immediate(view, DOCUMENT_SIZE)?;
-            let width = dimension(&size, "width")?;
-            let full_height = dimension(&size, "height")?;
-            let height = full_height.min(MAX_DOCUMENT_HEIGHT);
-            let image = platform::screenshot_document(view, region(0.0, 0.0, width, height))?;
-            let mut note = format!("Full page {width}x{full_height} CSS px in one image.");
-            if height < full_height {
-                note.push_str(&format!(" Only the top {height} px fit; capture lower parts by ref."));
-            }
-            Ok(json!([image, {"type":"text", "text":note}]))
+pub fn capture(view: &Webview, tab: &str, shot: &Shot, cancel: &AtomicBool) -> Result<Vec<Value>, String> {
+    let parts = match &shot.target {
+        Target::Visible if shot.zoom == 1.0 => vec![platform::screenshot(view, None)?],
+        Target::Visible => {
+            let viewport = evaluate::immediate(view, VIEWPORT)?;
+            let clip = Clip {
+                x: number(&viewport, "x"),
+                y: number(&viewport, "y"),
+                width: dimension(&viewport, "width")?,
+                height: dimension(&viewport, "height")?,
+            };
+            vec![platform::screenshot_document(view, region(&clip, shot.zoom))?]
         }
-        Target::Element(selector) => {
-            let selector = serde_json::to_string(&selector).map_err(|error| error.to_string())?;
-            let rect = evaluate::immediate(view, &format!("(() => {{ const element = document.querySelector({selector}); if (!element) return null; element.scrollIntoView({{block:'nearest'}}); {HIDE_OVERLAYS} const box = element.getBoundingClientRect(); return {{ x: box.left + scrollX, y: box.top + scrollY, width: box.width, height: box.height }} }})()"))?;
-            if rect.is_null() {
-                return Err("Element not found. Call browser_snapshot again.".to_owned());
-            }
-            let image = element_image(view, &rect);
-            evaluate::immediate(view, RESTORE_OVERLAYS)?;
-            Ok(json!([image?]))
+        Target::FullPage { tiles } => full_page(view, tab, *tiles, shot.zoom, cancel)?,
+        Target::Region(clip) => {
+            let document = evaluate::immediate(view, DOCUMENT_SIZE)?;
+            let clip = shot_view::bounded(clip, dimension(&document, "width")?, dimension(&document, "height")?)
+                .ok_or("clip lies outside the page")?;
+            vec![platform::screenshot_document(view, region(&clip, shot.zoom))?]
         }
-    }
+        Target::Element(selector) => vec![element(view, selector, shot.padding, shot.zoom)?],
+    };
+    Ok(with_model_notes(parts))
 }
 
-fn element_image(view: &Webview, rect: &Value) -> Result<Value, String> {
-    let width = dimension(rect, "width")?;
-    let height = dimension(rect, "height")?.min(MAX_DOCUMENT_HEIGHT);
-    let x = rect["x"].as_f64().unwrap_or(0.0).max(0.0);
-    let y = rect["y"].as_f64().unwrap_or(0.0).max(0.0);
-    platform::screenshot_document(view, region(x, y, width, height))
+fn full_page(view: &Webview, tab: &str, tiles: bool, zoom: f64, cancel: &AtomicBool) -> Result<Vec<Value>, String> {
+    evaluate::evaluate_until_done(view, tab, LOAD_LAZY_CONTENT, cancel)?;
+    let size = evaluate::immediate(view, DOCUMENT_SIZE)?;
+    let width = dimension(&size, "width")?;
+    let full_height = dimension(&size, "height")?;
+    let height = full_height.min(MAX_DOCUMENT_HEIGHT);
+    if !tiles {
+        let page = Clip { x: 0.0, y: 0.0, width, height };
+        let image = platform::screenshot_document(view, region(&page, zoom))?;
+        let mut note = format!("Full page {width}x{full_height} CSS px in one image.");
+        if height < full_height {
+            note.push_str(&format!(" Only the top {height} px fit; capture lower parts with clip or tiles."));
+        }
+        return Ok(vec![image, evaluate::text(note)]);
+    }
+    let dpr = size["dpr"].as_f64().filter(|value| value.is_finite() && *value > 0.0).unwrap_or(1.0);
+    let sections = shot_view::tiles(width, height, zoom * dpr, MAX_TILES);
+    let mut parts = Vec::with_capacity(sections.len() * 2 + 1);
+    for (index, tile) in sections.iter().enumerate() {
+        parts.push(evaluate::text(format!(
+            "Tile {}/{}: y {}-{} of {full_height} CSS px",
+            index + 1,
+            sections.len(),
+            tile.y,
+            tile.y + tile.height
+        )));
+        parts.push(platform::screenshot_document(view, region(tile, zoom))?);
+    }
+    let covered = sections.last().map_or(0.0, |tile| tile.y + tile.height);
+    if covered < full_height {
+        parts.push(evaluate::text(format!("Tiles cover the top {covered} px; capture the rest with clip from y {covered}.")));
+    }
+    Ok(parts)
+}
+
+fn element(view: &Webview, selector: &str, padding: f64, zoom: f64) -> Result<Value, String> {
+    let selector = serde_json::to_string(selector).map_err(|error| error.to_string())?;
+    let rect = evaluate::immediate(view, &format!("(() => {{ const element = document.querySelector({selector}); if (!element) return null; element.scrollIntoView({{block:'nearest'}}); {HIDE_OVERLAYS} const box = element.getBoundingClientRect(); const root = document.documentElement; return {{ x: box.left + scrollX, y: box.top + scrollY, width: box.width, height: box.height, pageWidth: Math.max(root.scrollWidth, innerWidth), pageHeight: Math.max(root.scrollHeight, innerHeight) }} }})()"))?;
+    if rect.is_null() {
+        return Err("Element not found. Call browser_snapshot again.".to_owned());
+    }
+    let image = (|| {
+        let clip = Clip {
+            x: number(&rect, "x") - padding,
+            y: number(&rect, "y") - padding,
+            width: dimension(&rect, "width")? + padding * 2.0,
+            height: dimension(&rect, "height")?.min(MAX_DOCUMENT_HEIGHT) + padding * 2.0,
+        };
+        let clip = shot_view::bounded(&clip, dimension(&rect, "pageWidth")?, dimension(&rect, "pageHeight")?)
+            .ok_or("Element lies outside the page")?;
+        platform::screenshot_document(view, region(&clip, zoom))
+    })();
+    evaluate::immediate(view, RESTORE_OVERLAYS)?;
+    image
+}
+
+fn with_model_notes(parts: Vec<Value>) -> Vec<Value> {
+    let mut output = Vec::with_capacity(parts.len() + 1);
+    for part in parts {
+        let note = (part["type"] == "image")
+            .then(|| part["data"].as_str().and_then(shot_view::model_note))
+            .flatten();
+        output.push(part);
+        if let Some(note) = note {
+            output.push(evaluate::text(note));
+        }
+    }
+    output
+}
+
+fn number(value: &Value, name: &str) -> f64 {
+    value[name].as_f64().filter(|number| number.is_finite()).unwrap_or(0.0)
 }
 
 fn dimension(value: &Value, name: &str) -> Result<f64, String> {
@@ -76,12 +183,8 @@ fn dimension(value: &Value, name: &str) -> Result<f64, String> {
         .ok_or_else(|| format!("Page has no visible {name} to capture"))
 }
 
-fn region(x: f64, y: f64, width: f64, height: f64) -> Value {
-    json!({"x":x, "y":y, "width":width, "height":height, "scale":output_scale(width, height)})
-}
-
-fn output_scale(width: f64, height: f64) -> f64 {
-    (MAX_OUTPUT_SIDE / width.max(height)).min(1.0)
+fn region(clip: &Clip, zoom: f64) -> Value {
+    json!({"x":clip.x, "y":clip.y, "width":clip.width, "height":clip.height, "scale":shot_view::output_scale(clip.width, clip.height, zoom, MAX_OUTPUT_SIDE)})
 }
 
 #[cfg(test)]
@@ -94,16 +197,13 @@ mod tests {
 
     #[test]
     fn target_follows_arguments() {
-        assert!(matches!(target(&json!({}), by_ref), Ok(Target::Visible)));
-        assert!(matches!(target(&json!({"fullPage":true}), by_ref), Ok(Target::FullPage)));
-        assert!(matches!(target(&json!({"ref":3}), by_ref), Ok(Target::Element(selector)) if selector == "[data-prime-ref=\"3\"]"));
+        assert_eq!(target(&json!({}), by_ref).unwrap().target, Target::Visible);
+        assert_eq!(target(&json!({"fullPage":true}), by_ref).unwrap().target, Target::FullPage { tiles: false });
+        assert_eq!(target(&json!({"fullPage":true, "tiles":true}), by_ref).unwrap().target, Target::FullPage { tiles: true });
+        assert_eq!(target(&json!({"ref":3, "padding":16, "zoom":2}), by_ref).unwrap(), Shot { target: Target::Element("[data-prime-ref=\"3\"]".to_owned()), padding: 16.0, zoom: 2.0 });
+        assert_eq!(target(&json!({"clip":{"x":0,"y":10,"width":200,"height":100}}), by_ref).unwrap().target, Target::Region(Clip { x: 0.0, y: 10.0, width: 200.0, height: 100.0 }));
         assert!(target(&json!({"fullPage":true, "ref":3}), by_ref).is_err());
-    }
-
-    #[test]
-    fn long_pages_are_scaled_to_the_output_limit() {
-        assert_eq!(output_scale(1280.0, 4000.0), 1.0);
-        assert_eq!(output_scale(1000.0, 16000.0), 0.5);
-        assert_eq!(region(0.0, 0.0, 1280.0, 16000.0)["scale"], 0.5);
+        assert!(target(&json!({"zoom":5}), by_ref).is_err());
+        assert!(target(&json!({"clip":{"x":0,"y":0,"width":0,"height":10}}), by_ref).is_err());
     }
 }

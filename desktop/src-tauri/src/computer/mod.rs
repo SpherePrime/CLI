@@ -8,6 +8,7 @@ pub(crate) mod input;
 #[cfg(not(windows))]
 #[path = "unsupported/input.rs"]
 pub(crate) mod input;
+pub(crate) mod region;
 pub mod tools;
 pub(crate) mod types;
 #[cfg(windows)]
@@ -290,7 +291,7 @@ impl WindowManager {
                 self.state(workspace)
             }
             "snapshot" => {
-                let captured = snapshot(string(request, "hwnd")?)?;
+                let captured = snapshot(string(request, "hwnd")?, None)?;
                 self.record(
                     app,
                     workspace,
@@ -371,7 +372,8 @@ impl WindowManager {
             "window_view" => {
                 let share = self.share_for(app, workspace, context.session_id.as_deref(), false, true)?;
                 self.guard(app, &share)?;
-                let result = snapshot(&share.hwnd).and_then(|snapshot| {
+                let region = region::parse(args)?;
+                let result = snapshot(&share.hwnd, region).and_then(|snapshot| {
                     self.guard(app, &share)?;
                     Ok(snapshot)
                 });
@@ -524,11 +526,11 @@ fn perform(
         Err("Desktop window control requires Windows".to_owned())
     }
 }
-fn snapshot(hwnd: &str) -> Result<Value, String> {
+fn snapshot(hwnd: &str, region: Option<region::Region>) -> Result<Value, String> {
     #[cfg(windows)]
     {
         use base64::Engine;
-        let captured = capture::capture(hwnd)?;
+        let captured = capture::capture_region(hwnd, region)?;
         windows::verify(
             hwnd,
             captured.info.pid,
@@ -545,7 +547,7 @@ fn snapshot(hwnd: &str) -> Result<Value, String> {
     }
     #[cfg(not(windows))]
     {
-        let _ = hwnd;
+        let _ = (hwnd, region);
         Err("Desktop window screenshots require Windows".to_owned())
     }
 }

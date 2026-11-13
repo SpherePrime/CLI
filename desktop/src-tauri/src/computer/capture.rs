@@ -1,3 +1,4 @@
+use super::region::{source_crop, view_size, Crop, Region};
 use super::types::WindowInfo;
 use ::windows::Win32::{
     Foundation::{HWND, RECT},
@@ -48,7 +49,7 @@ impl Drop for Resources {
     }
 }
 
-fn image(hwnd: &str) -> Result<Capture, String> {
+fn image(hwnd: &str, region: Option<Region>) -> Result<Capture, String> {
     let info = super::windows::claim(hwnd)?;
     let window = super::windows::handle(hwnd)?;
     unsafe {
@@ -133,15 +134,17 @@ fn image(hwnd: &str) -> Result<Capture, String> {
         let top = info.bounds.y.saturating_sub(rect.top).clamp(0, height - 1) as usize;
         let crop_width = (info.bounds.width.max(1) as usize).min(width as usize - left);
         let crop_height = (info.bounds.height.max(1) as usize).min(height as usize - top);
-        let output_width = crop_width.min(1920);
-        let output_height = ((crop_height as f64 * output_width as f64 / crop_width as f64).round()
-            as usize)
-            .max(1);
+        let window_crop = Crop { left, top, width: crop_width, height: crop_height };
+        let crop = match region {
+            Some(region) => source_crop(&region, window_crop).ok_or("region lies outside the window image")?,
+            None => window_crop,
+        };
+        let (output_width, output_height) = view_size(crop.width, crop.height);
         let mut rgba = vec![0u8; output_width * output_height * 4];
         for y in 0..output_height {
             for x in 0..output_width {
-                let source = (((top + y * crop_height / output_height) * width as usize)
-                    + (left + x * crop_width / output_width))
+                let source = (((crop.top + y * crop.height / output_height) * width as usize)
+                    + (crop.left + x * crop.width / output_width))
                     * 4;
                 let target = (y * output_width + x) * 4;
                 rgba[target..target + 4].copy_from_slice(&[
@@ -174,6 +177,10 @@ fn image(hwnd: &str) -> Result<Capture, String> {
 }
 
 pub fn capture(hwnd: &str) -> Result<Capture, String> {
+    capture_region(hwnd, None)
+}
+
+pub fn capture_region(hwnd: &str, region: Option<Region>) -> Result<Capture, String> {
     if CAPTURES
         .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
             (count < 2).then_some(count + 1)
@@ -192,7 +199,7 @@ pub fn capture(hwnd: &str) -> Result<Capture, String> {
             }
         }
         let _active = Active;
-        let _ = sender.send(image(&hwnd));
+        let _ = sender.send(image(&hwnd, region));
     });
     receiver
         .recv_timeout(Duration::from_secs(5))

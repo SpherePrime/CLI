@@ -11,7 +11,8 @@
     const label = (element.getAttribute('aria-label') || element.innerText || element.value || element.getAttribute('placeholder') || element.getAttribute('title') || element.getAttribute('alt') || '').replace(/\s+/g, ' ').trim().slice(0,80)
     const tag = element.tagName.toLowerCase()
     const kind = element.getAttribute('role') || (tag === 'input' ? 'input:' + (element.type || 'text') : tag)
-    elements.push('[' + ref + '] ' + kind + ' "' + label + '"' + (tag === 'a' ? ' -> ' + element.getAttribute('href') : ''))
+    const box = ' @' + Math.round(rect.left + scrollX) + ',' + Math.round(rect.top + scrollY) + ' ' + Math.round(rect.width) + 'x' + Math.round(rect.height)
+    elements.push('[' + ref + '] ' + kind + ' "' + label + '"' + (tag === 'a' ? ' -> ' + element.getAttribute('href') : '') + box)
   }
   return {title: document.title, url: location.href, text: (document.body?.innerText || '').replace(/\n{3,}/g, '\n\n').slice(0,12000), elements}
 })()

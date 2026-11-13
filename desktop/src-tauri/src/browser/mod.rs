@@ -7,7 +7,10 @@ mod placement;
 mod platform;
 mod rendering;
 mod scenario;
+mod scenario_dom;
+mod scenario_parse;
 mod screenshot;
+mod shot_view;
 #[cfg(target_os = "linux")]
 mod platform_linux;
 pub mod tools;

@@ -40,6 +40,7 @@ const actions: Record<string, string> = {
   browser_screenshot: 'Снимок страницы',
   browser_screenshot_full: 'Снимок всей страницы',
   browser_screenshot_element: 'Снимок элемента',
+  browser_screenshot_region: 'Снимок области',
   browser_run: 'Проверка сценарием',
   browser_click: 'Нажимает на странице',
   browser_type: 'Вводит текст',
@@ -129,6 +130,7 @@ function screenshotAction(tool: string, input: any) {
   if (tool !== 'browser_screenshot') return tool
   if (input?.fullPage === true) return 'browser_screenshot_full'
   if (input?.ref) return 'browser_screenshot_element'
+  if (input?.clip) return 'browser_screenshot_region'
   return tool
 }
 

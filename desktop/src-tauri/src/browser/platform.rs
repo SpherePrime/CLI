@@ -274,6 +274,35 @@ pub fn press_key(view: &Webview, key: &str) -> Result<(), String> {
     }
 }
 
+pub fn pointer(view: &Webview, x: f64, y: f64, press: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        protocol(
+            view,
+            "Input.dispatchMouseEvent",
+            json!({"type":"mouseMoved", "x":x, "y":y, "button":"none", "buttons":0}),
+        )?;
+        if press {
+            protocol(
+                view,
+                "Input.dispatchMouseEvent",
+                json!({"type":"mousePressed", "x":x, "y":y, "button":"left", "buttons":1, "clickCount":1}),
+            )?;
+            protocol(
+                view,
+                "Input.dispatchMouseEvent",
+                json!({"type":"mouseReleased", "x":x, "y":y, "button":"left", "buttons":0, "clickCount":1}),
+            )?;
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (view, x, y, press);
+        Err("Trusted pointer input is unavailable on this platform".to_owned())
+    }
+}
+
 pub fn history(view: &Webview) -> Result<Value, String> {
     #[cfg(target_os = "windows")]
     {

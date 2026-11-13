@@ -30,8 +30,8 @@ pub fn definitions() -> Vec<Value> {
         schema("browser_press_key", "Press a keyboard key in the target browser tab.", json!({"key":{"type":"string"}}), &["key"]),
         schema("browser_scroll", "Scroll the target browser page up or down.", json!({"direction":{"type":"string","enum":["up","down"]}}), &["direction"]),
         schema("browser_back", "Go back in the target browser tab history.", json!({}), &[]),
-        schema("browser_screenshot", "Capture the page as PNG. Default: the visible viewport. fullPage: the whole scrollable page in one image (lazy content is loaded first). ref: one element from browser_snapshot, fully, even beyond the viewport.", json!({"fullPage":{"type":"boolean"},"ref":{"type":"integer","minimum":1}}), &[]),
-        schema("browser_run", "Default tool for verifying or testing a page: the whole check in one call, a list of steps executed in order, returning a pass/fail log and every screenshot at once. Use it instead of separate resize/click/type/scroll/screenshot calls. Steps (field action): navigate{url}, resize{width}, click{selector|text}, type{selector|text,value,submit?}, press_key{key}, scroll{to:top|bottom | selector|text}, wait_for{selector|text,gone?,timeoutMs?}, wait{ms}, assert{selector|text,contains?,absent?}, evaluate{expression}, screenshot{name,fullPage? | selector|text}. text matches visible text, labels and placeholders. A failed action stops the run unless continueOnError; failed asserts are recorded and the run continues. Up to 80 steps and 16 screenshots.", json!({"steps":{"type":"array","items":{"type":"object","properties":{"action":{"type":"string","enum":["navigate","resize","click","type","press_key","scroll","wait_for","wait","assert","evaluate","screenshot"]}},"required":["action"]}},"continueOnError":{"type":"boolean"}}), &["steps"]),
+        schema("browser_screenshot", "Capture the page as PNG. Default: the visible viewport. fullPage: the whole scrollable page (lazy content is loaded first); add tiles to split a long page into sections the model can read. ref: one element from browser_snapshot in full, even beyond the viewport; padding adds CSS px around it to show its neighbours. clip: any page region {x,y,width,height} in CSS px (element boxes come from browser_snapshot). zoom 1-3 renders sharper for small text, icons, borders and focus rings. A full page reaches the model heavily downscaled: judge composition from it and details from close-ups.", json!({"fullPage":{"type":"boolean"},"tiles":{"type":"boolean"},"ref":{"type":"integer","minimum":1},"padding":{"type":"number","minimum":0,"maximum":400},"clip":{"type":"object","properties":{"x":{"type":"number"},"y":{"type":"number"},"width":{"type":"number"},"height":{"type":"number"}},"required":["x","y","width","height"]},"zoom":{"type":"number","minimum":1,"maximum":3}}), &[]),
+        schema("browser_run", "Default tool for verifying or testing a page: the whole check in one call. Steps run in order and return a pass/fail log and every screenshot at once. Use it instead of separate resize/click/type/scroll/screenshot calls. Actions: navigate{url}, resize{width}, click{selector|text}, hover{selector|text}, focus{selector|text}, type{selector|text,value,submit?}, select{selector|text,option}, press_key{key}, scroll{to:top|bottom | selector|text}, wait_for{selector|text,gone?,timeoutMs?}, wait{ms}, assert{selector|text,contains?,absent?}, evaluate{expression}, screenshot{name?,fullPage?,tiles?,selector|text,padding?,clip?,zoom?}. Any target can also be ref from browser_snapshot. text matches visible text, labels and placeholders. click and hover move the real mouse, so :hover styles and pointer handlers work; a covered target is reported in the log. A failed action stops the run unless continueOnError; failed asserts are recorded and the run continues. Up to 80 steps and 16 screenshot steps.", json!({"steps":{"type":"array","items":super::scenario_parse::step_schema()},"continueOnError":{"type":"boolean"}}), &["steps"]),
         schema("browser_evaluate", "Evaluate an asynchronous JavaScript expression and return its JSON result. Runs until the expression settles; a long run continues in the background and can be checked with mcp_job.", json!({"expression":{"type":"string"}}), &["expression"]),
         schema("browser_health", "Check whether a browser tab responds and whether a script evaluation is still running in it.", json!({}), &[]),
     ]
@@ -92,7 +92,7 @@ fn snapshot(id: &str, view: &Webview) -> Result<Value, String> {
                 .join("\n")
         })
         .unwrap_or_default();
-    Ok(text(format!("Tab ID: {id}\nURL: {}\nTitle: {}\n\nInteractive elements (use ref with browser_click / browser_type):\n{}\n\nPage text:\n{}", page["url"].as_str().unwrap_or(""), page["title"].as_str().unwrap_or(""), if elements.is_empty() { "(none)" } else { &elements }, page["text"].as_str().unwrap_or("(empty)"))))
+    Ok(text(format!("Tab ID: {id}\nURL: {}\nTitle: {}\n\nInteractive elements (use ref with browser_click / browser_type; @x,y WxH is the page box in CSS px for screenshot clip):\n{}\n\nPage text:\n{}", page["url"].as_str().unwrap_or(""), page["title"].as_str().unwrap_or(""), if elements.is_empty() { "(none)" } else { &elements }, page["text"].as_str().unwrap_or("(empty)"))))
 }
 
 pub fn run(
@@ -251,8 +251,8 @@ pub fn run(
             return result;
         }
         "browser_screenshot" => {
-            let target = screenshot::target(args, selector)?;
-            return screenshot::capture(&view, &id, target, cancel);
+            let shot = screenshot::target(args, selector)?;
+            return screenshot::capture(&view, &id, &shot, cancel).map(Value::Array);
         }
         "browser_health" => return Ok(text(evaluate::page_health(&view, &id).to_string())),
         "browser_evaluate" => {
