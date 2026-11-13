@@ -1,4 +1,7 @@
 export const english: Record<string, string> = {
+  'Панель не открылась': 'This panel failed to open',
+  'Неизвестная ошибка': 'Unknown error',
+  'Повторить': 'Retry',
   'Открыть папку': 'Open folder',
   'Название проекта': 'Project name',
   'Место для ваших идей': 'A home for your ideas',

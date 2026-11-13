@@ -1,3 +1,4 @@
+import { PanelBoundary } from '../components/PanelBoundary'
 import { CreateProjectDialog } from '../features/projects/CreateProjectDialog'
 import { chatCenterShift, panelGeometry, panelGutter } from './panelGeometry'
 import { useLayoutWidth } from './useLayoutWidth'
@@ -363,27 +364,29 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           </>
         )}
         <main className="main-workspace" data-workbench-expanded={workbench && workbenchExpanded}>
-          {isEmpty ? (
-            <Welcome workspace={w} openCommands={() => setModal('commands')} />
-          ) : (
-            <HistoryMessageList
-              key={w.session?.id || 'new'}
-              history={w.history}
-              busy={w.busy}
-              retrying={w.retrying && w.busy}
-              historyLoading={Boolean(w.history.loading) || (!w.messagesReady && !w.history.error)}
-              historyError={w.history.error}
-              loadHistory={w.loadHistory}
-              searchMessages={w.searchMessages}
-              revealMessage={w.revealMessage}
-              searchOpen={searchOpen}
-              closeSearch={() => setSearchOpen(false)}
-              waiting={
-                w.permissions.some((item) => item.session_id === w.session?.id) ||
-                w.questions.some((item) => item.session_id === w.session?.id)
-              }
-            />
-          )}
+          <PanelBoundary resetKey={w.session?.id}>
+            {isEmpty ? (
+              <Welcome workspace={w} openCommands={() => setModal('commands')} />
+            ) : (
+              <HistoryMessageList
+                key={w.session?.id || 'new'}
+                history={w.history}
+                busy={w.busy}
+                retrying={w.retrying && w.busy}
+                historyLoading={Boolean(w.history.loading) || (!w.messagesReady && !w.history.error)}
+                historyError={w.history.error}
+                loadHistory={w.loadHistory}
+                searchMessages={w.searchMessages}
+                revealMessage={w.revealMessage}
+                searchOpen={searchOpen}
+                closeSearch={() => setSearchOpen(false)}
+                waiting={
+                  w.permissions.some((item) => item.session_id === w.session?.id) ||
+                  w.questions.some((item) => item.session_id === w.session?.id)
+                }
+              />
+            )}
+          </PanelBoundary>
           <Approvals workspace={w} />
           <Composer workspace={w} />
           {workbench && (
@@ -455,28 +458,30 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             </Suspense>
           </>
         )}
-        {modal === 'commands' && (
-          <CommandPalette
-            actions={quickActions}
-            sessions={w.sessions}
-            selectSession={(session) => {
-              void w.selectSession(session).catch(w.errorHandler)
-            }}
-            close={() => setModal('')}
-          />
-        )}
-        {(modal === 'settings' || modal === 'providers') && (
-          <SettingsDialog
-            workspace={w}
-            close={() => setModal('')}
-            initial={modal === 'providers' ? 'providers' : settingsTab}
-          />
-        )}
-        {modal === 'plugins' && <PluginManager workspace={w} close={() => setModal('')} />}
-        {modal === 'remote' && <RemoteDialog workspace={w} close={() => setModal('')} />}
-        {modal === 'jobs' && (
-          <JobsCenter workspace={w} close={() => setModal('')} openTools={openTools} />
-        )}
+        <PanelBoundary resetKey={modal}>
+          {modal === 'commands' && (
+            <CommandPalette
+              actions={quickActions}
+              sessions={w.sessions}
+              selectSession={(session) => {
+                void w.selectSession(session).catch(w.errorHandler)
+              }}
+              close={() => setModal('')}
+            />
+          )}
+          {(modal === 'settings' || modal === 'providers') && (
+            <SettingsDialog
+              workspace={w}
+              close={() => setModal('')}
+              initial={modal === 'providers' ? 'providers' : settingsTab}
+            />
+          )}
+          {modal === 'plugins' && <PluginManager workspace={w} close={() => setModal('')} />}
+          {modal === 'remote' && <RemoteDialog workspace={w} close={() => setModal('')} />}
+          {modal === 'jobs' && (
+            <JobsCenter workspace={w} close={() => setModal('')} openTools={openTools} />
+          )}
+        </PanelBoundary>
       </div>
     </>
   )

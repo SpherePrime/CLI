@@ -1,4 +1,5 @@
 import { GitHistoryPanel } from '../github/GitHistoryPanel'
+import { PanelBoundary } from '../../components/PanelBoundary'
 import { projectName, projectRoot } from '../projects/projectName'
 import { Select } from '../../components/Select'
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
@@ -283,7 +284,7 @@ export function Inspector({
     else setExpanded(true)
   }
   const body = (
-    <>
+    <PanelBoundary resetKey={tab}>
       {browserVisited && (
         <div className="inspector-browser" hidden={tab !== 'browser'}>
           <BrowserTab
@@ -425,7 +426,7 @@ export function Inspector({
           </button>
         </div>
       )}
-    </>
+    </PanelBoundary>
   )
   return (
     <>

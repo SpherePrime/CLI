@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { PanelBoundary } from '../../components/PanelBoundary'
 import {
   AppWindow,
   Clock3,
@@ -191,70 +192,72 @@ export function WorkbenchDock({
         </div>
       </header>
       <div className="workbench-content">
-        {w.project && view === 'terminal' && (
-          <TerminalPanel
-            workspaceId={workspaceId}
-            api={terminal}
-            subscribe={window.prime.onEvent}
-            onError={w.errorHandler}
-            theme={w.preferences.theme}
-            headerHost={headerHost}
-          />
-        )}
-        {w.project && view === 'automations' && (
-          <AutomationPanel
-            root={w.project.path}
-            api={automation}
-            subscribe={window.prime.onEvent}
-            onError={w.errorHandler}
-            onOpenRun={(run) => {
-              void openWorkbenchRun(w, run).then(close).catch(w.errorHandler)
-            }}
-          />
-        )}
-        {w.project && view === 'launch' && (
-          <LaunchPanel
-            root={w.project.path}
-            api={launch}
-            terminal={terminal}
-            subscribe={window.prime.onEvent}
-            theme={w.preferences.theme}
-            onError={w.errorHandler}
-            onDiagnostics={(text) => {
-              window.dispatchEvent(new CustomEvent('prime:draft', { detail: text }))
-              setExpanded(false)
-            }}
-          />
-        )}
-        {w.project && view === 'windows' && (
-          <WindowsPanel
-            workspaceId={workspaceId}
-            sessionId={realSessionId(w.session)}
-            sessionTitle={w.session?.title}
-            onError={w.errorHandler}
-          />
-        )}
-        {w.project && view === 'github' && (
-          <GithubPanel
-            workspaceId={workspaceId}
-            onError={w.errorHandler}
-            onAgentTask={async (title, prompt) => {
-              await startAgentTask(w, title, prompt)
-              close()
-            }}
-          />
-        )}
-        {w.project && view === 'teams' && (
-          <TeamPanel
-            root={w.project.path}
-            api={team}
-            subscribe={window.prime.onEvent}
-            onError={w.errorHandler}
-            onOpenChat={(run) => {
-              void openWorkbenchRun(w, run).then(close).catch(w.errorHandler)
-            }}
-          />
-        )}
+        <PanelBoundary resetKey={view}>
+          {w.project && view === 'terminal' && (
+            <TerminalPanel
+              workspaceId={workspaceId}
+              api={terminal}
+              subscribe={window.prime.onEvent}
+              onError={w.errorHandler}
+              theme={w.preferences.theme}
+              headerHost={headerHost}
+            />
+          )}
+          {w.project && view === 'automations' && (
+            <AutomationPanel
+              root={w.project.path}
+              api={automation}
+              subscribe={window.prime.onEvent}
+              onError={w.errorHandler}
+              onOpenRun={(run) => {
+                void openWorkbenchRun(w, run).then(close).catch(w.errorHandler)
+              }}
+            />
+          )}
+          {w.project && view === 'launch' && (
+            <LaunchPanel
+              root={w.project.path}
+              api={launch}
+              terminal={terminal}
+              subscribe={window.prime.onEvent}
+              theme={w.preferences.theme}
+              onError={w.errorHandler}
+              onDiagnostics={(text) => {
+                window.dispatchEvent(new CustomEvent('prime:draft', { detail: text }))
+                setExpanded(false)
+              }}
+            />
+          )}
+          {w.project && view === 'windows' && (
+            <WindowsPanel
+              workspaceId={workspaceId}
+              sessionId={realSessionId(w.session)}
+              sessionTitle={w.session?.title}
+              onError={w.errorHandler}
+            />
+          )}
+          {w.project && view === 'github' && (
+            <GithubPanel
+              workspaceId={workspaceId}
+              onError={w.errorHandler}
+              onAgentTask={async (title, prompt) => {
+                await startAgentTask(w, title, prompt)
+                close()
+              }}
+            />
+          )}
+          {w.project && view === 'teams' && (
+            <TeamPanel
+              root={w.project.path}
+              api={team}
+              subscribe={window.prime.onEvent}
+              onError={w.errorHandler}
+              onOpenChat={(run) => {
+                void openWorkbenchRun(w, run).then(close).catch(w.errorHandler)
+              }}
+            />
+          )}
+        </PanelBoundary>
       </div>
     </section>
   )
