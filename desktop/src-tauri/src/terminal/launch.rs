@@ -342,7 +342,7 @@ impl LaunchManager {
             .lock()
             .unwrap()
             .processes
-            .remove(&format!("{root}\0{terminal_id}"));
+            .remove(&format!("{root}\0{config_id}"));
         Ok(())
     }
 

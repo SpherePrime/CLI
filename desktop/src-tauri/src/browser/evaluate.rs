@@ -24,6 +24,12 @@ fn health() -> &'static Mutex<HashMap<String, TabHealth>> {
     HEALTH.get_or_init(Default::default)
 }
 
+pub fn forget_health(tab: &str) {
+    if let Ok(mut tabs) = health().lock() {
+        tabs.remove(tab);
+    }
+}
+
 fn update_health(tab: &str, change: impl FnOnce(&mut TabHealth)) {
     if let Ok(mut tabs) = health().lock() {
         change(tabs.entry(tab.to_owned()).or_default());

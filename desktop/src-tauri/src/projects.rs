@@ -93,6 +93,7 @@ pub fn open(
         .lock()
         .unwrap()
         .insert(id.into(), project.clone());
+    state.terminals.reopen_workspace(id);
     let mut settings = state.settings.lock().unwrap();
     let mut recent = settings.get()["recent"]
         .as_array()
@@ -112,7 +113,10 @@ pub fn close(app: &tauri::AppHandle, state: &AppState, id: &str) -> HostResult<V
     state.root(id)?;
     state.windows.forget(app, id);
     state.remotes.terminals.close_workspace(id);
-    state.terminals.close_workspace(id)?;
+    if let Err(error) = state.terminals.close_workspace(id) {
+        state.terminals.reopen_workspace(id);
+        return Err(error);
+    }
     let engine = state.require_engine()?;
     let client = state
         .projects

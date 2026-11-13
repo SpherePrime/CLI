@@ -593,6 +593,7 @@ impl BrowserState {
             panel.tabs.remove(index);
             panel.forget(id, index);
         }
+        super::evaluate::forget_health(id);
         if let Ok(mut applied) = self.applied.lock() {
             applied.remove(id);
         }

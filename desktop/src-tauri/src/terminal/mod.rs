@@ -364,6 +364,10 @@ impl TerminalManager {
         self.close_sessions(sessions)
     }
 
+    pub fn reopen_workspace(&self, workspace: &str) {
+        self.state.lock().unwrap().closed_workspaces.remove(workspace);
+    }
+
     pub fn close_workspace(&self, workspace: &str) -> HostResult<()> {
         let sessions = {
             let mut manager = self.state.lock().unwrap();

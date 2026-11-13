@@ -254,15 +254,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             .map_err(|error| HostError::new("APP_UI_ERROR", error)),
         "automation" => {
             let id = string(args, 0)?;
-            state.root(id)?;
-            let root = state
-                .projects
-                .lock()
-                .unwrap()
-                .get(id)
-                .and_then(|project| project["path"].as_str())
-                .unwrap()
-                .to_owned();
+            let root = project_path(&state, id)?;
             let mut request = args
                 .get(1)
                 .cloned()
@@ -278,15 +270,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
         }
         "team" => {
             let id = string(args, 0)?;
-            state.root(id)?;
-            let root = state
-                .projects
-                .lock()
-                .unwrap()
-                .get(id)
-                .and_then(|project| project["path"].as_str())
-                .unwrap()
-                .to_owned();
+            let root = project_path(&state, id)?;
             let request = args
                 .get(1)
                 .cloned()
@@ -651,4 +635,15 @@ mod manifest_tests {
         assert!(object.values().all(|value| value == &Value::Bool(true)));
         assert!(object.contains_key("call") && object.contains_key("info"));
     }
+}
+
+fn project_path(state: &AppState, id: &str) -> HostResult<String> {
+    state
+        .projects
+        .lock()
+        .unwrap()
+        .get(id)
+        .and_then(|project| project["path"].as_str())
+        .map(str::to_owned)
+        .ok_or_else(|| HostError::new("PROJECT_NOT_FOUND", "Project is not open"))
 }

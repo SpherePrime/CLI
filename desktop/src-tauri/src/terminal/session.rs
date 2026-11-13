@@ -148,7 +148,7 @@ impl Session {
                 Ok(0) => break,
                 Ok(length) => {
                     let (text, reply) = startup.consume(&decoder.decode(&buffer[..length], false));
-                    if reply && self.raw_write("\u{1b}[1;1R").is_err() {
+                    if reply && self.queue_write("\u{1b}[1;1R").is_err() {
                         break;
                     }
                     if !startup.active {
@@ -172,7 +172,7 @@ impl Session {
         }
         let queries = data.matches("\u{1b}[c").count() + data.matches("\u{1b}[0c").count();
         if queries > 0 {
-            let _ = self.raw_write(&"\u{1b}[?61;4c".repeat(queries));
+            let _ = self.queue_write(&"\u{1b}[?61;4c".repeat(queries));
         }
         let mut journal = self.journal.lock().unwrap();
         if journal.snapshot.status != "running" {
@@ -233,6 +233,20 @@ impl Session {
             return Err(HostError::new("TERMINAL_REPORT", "Invalid terminal report"));
         }
         self.raw_write(data)
+    }
+
+    fn queue_write(&self, data: &str) -> HostResult<()> {
+        let (result, _receiver) = mpsc::sync_channel(1);
+        let sender = self.writer.lock().unwrap();
+        let sender = sender
+            .as_ref()
+            .ok_or_else(|| HostError::new("TERMINAL_EXITED", "Terminal is not running"))?;
+        sender
+            .try_send(WriteRequest {
+                data: data.into(),
+                result,
+            })
+            .map_err(|_| HostError::new("TERMINAL_BUSY", "Terminal input queue is full or closed"))
     }
 
     fn raw_write(&self, data: &str) -> HostResult<()> {
