@@ -96,6 +96,18 @@
   border-color: var(--ui-border);
   box-shadow: var(--ui-overlay-shadow);
 }
+.inspector-panel .panel-title {
+  min-height: 30px;
+  padding: 0 4px 8px 8px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--secondary);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+}
 .tree-file {
   border-radius: 7px;
   margin-block: 1px;

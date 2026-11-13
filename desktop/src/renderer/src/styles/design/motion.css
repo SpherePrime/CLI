@@ -51,7 +51,8 @@
     0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .inspector-rail.panel-open > .inspector-content,
-.inspector-rail.panel-open > .inspector-header {
+.inspector-rail.panel-open > .inspector-header,
+.app-shell > .inspector-panel > .inspector-content:not([hidden]) > * {
   animation: settings-page-in 220ms var(--ease-out);
 }
 @keyframes settings-page-in {
@@ -77,7 +78,8 @@
 [data-motion='reduced'] .settings-body,
 [data-motion='reduced'] .project-flyout,
 [data-motion='reduced'] .inspector-rail.panel-open > .inspector-content,
-[data-motion='reduced'] .inspector-rail.panel-open > .inspector-header {
+[data-motion='reduced'] .inspector-rail.panel-open > .inspector-header,
+[data-motion='reduced'] .app-shell > .inspector-panel > .inspector-content > * {
   animation: none;
 }
 [data-motion='reduced'] .project-rail > .icon,
