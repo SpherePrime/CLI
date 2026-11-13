@@ -510,6 +510,15 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	}
 	recoverFromOverflow(prompt)
 	recoverFromProviderErrors()
+	for attempt := 0; attempt < 2 && originalErr == nil && ctx.Err() == nil && result != nil; attempt++ {
+		current, getErr := c.sessions.Get(ctx, sessionID)
+		if getErr != nil || !unfinishedProgress(result.Response.Content.Text(), session.HasIncompleteTodos(current.Todos)) {
+			break
+		}
+		result, originalErr = continueRun(progressContinuationPrompt)
+		recoverFromOverflow(progressContinuationPrompt)
+		recoverFromProviderErrors()
+	}
 	goalDriver := goal.NewDriver()
 	for originalErr == nil && ctx.Err() == nil {
 		stepPrompt, stop := c.nextGoalStep(ctx, sessionID, goalDriver)

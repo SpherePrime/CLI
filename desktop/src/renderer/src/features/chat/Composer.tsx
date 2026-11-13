@@ -512,7 +512,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             >
               {transcribing ? <LoaderCircle size={17} className="spin" /> : <Mic size={17} />}
             </button>
-            {w.busy && !recording ? (
+            {w.busy && !recording && !hasDraft ? (
               <button
                 className="send stop"
                 disabled={sending || importing}

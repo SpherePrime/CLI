@@ -96,6 +96,10 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 		job.mu.Unlock()
 		permission.InheritSessionSkipRequests(c.permissions, job.parentSessionID, job.sessionID)
 		model := params.Agent.Model()
+		if selected := c.sessionModel(ctx, job.rootSessionID); selected != nil {
+			model = *selected
+			params.ModelOverride = selected
+		}
 		provider, ok := c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
 		if !ok {
 			job.finish("error", errModelProviderNotConfigured.Error())

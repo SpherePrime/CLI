@@ -17,7 +17,7 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const [saving, setSaving] = useState(false)
   const { models } = useModelCapabilities(w)
   const sessionModel = w.activeSessionId
-    ? (w.config?.session_models as Record<string, { provider: string; model: string }> | undefined)?.[
+    ? (w.config?.session_models as Record<string, { provider: string; model: string; context_window?: number }> | undefined)?.[
         w.activeSessionId
       ]
     : undefined
@@ -28,7 +28,7 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
   const modelName =
     capability?.name || selected?.model || w.agent?.model?.name || t('Выбрать модель')
   const contextUsed = (w.session?.prompt_tokens || 0) + (w.session?.completion_tokens || 0)
-  const contextWindow = capability?.context_window || 0
+  const contextWindow = selected?.context_window || capability?.context_window || 0
   useEffect(() => {
     const toggle = () => setOpen((value) => (value === 'models' ? null : 'models'))
     window.addEventListener('prime:models', toggle)

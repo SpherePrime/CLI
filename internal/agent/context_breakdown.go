@@ -63,7 +63,17 @@ func (c *coordinator) ContextBreakdown(ctx context.Context, sessionID string) (C
 	if !ok {
 		return ContextBreakdown{}, errors.New("context breakdown is not available")
 	}
-	return reporter.ContextBreakdown(ctx, sessionID)
+	breakdown, err := reporter.ContextBreakdown(ctx, sessionID)
+	if err != nil {
+		return ContextBreakdown{}, err
+	}
+	if model := c.sessionModel(ctx, sessionID); model != nil {
+		breakdown.ContextWindow = model.CatwalkCfg.ContextWindow
+		if model.ModelCfg.AutoSummarizePercent > 0 {
+			breakdown.AutoSummarizePercent = model.ModelCfg.AutoSummarizePercent
+		}
+	}
+	return breakdown, nil
 }
 
 func (a *sessionAgent) ContextBreakdown(ctx context.Context, sessionID string) (ContextBreakdown, error) {

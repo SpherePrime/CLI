@@ -621,7 +621,7 @@ func (s *ConfigStore) SetSessionModel(sessionID string, model *SelectedModel) er
 		if model == nil {
 			delete(c.SessionModels, sessionID)
 		} else {
-			c.SessionModels[sessionID] = *model
+			c.SessionModels[sessionID] = c.rememberModelSettings(*model)
 		}
 		return map[string]any{"session_models": c.SessionModels}
 	})

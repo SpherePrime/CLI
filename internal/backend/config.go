@@ -99,9 +99,6 @@ func (b *Backend) UpdatePreferredModel(workspaceID string, scope config.Scope, m
 	return nil
 }
 
-// UpdateSessionModel stores the model chosen for a specific chat or clears
-// it when model is nil. The choice lives in the workspace config, so it
-// applies to that chat only.
 func (b *Backend) UpdateSessionModel(workspaceID, sessionID string, model *config.SelectedModel) error {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
@@ -120,6 +117,12 @@ func (b *Backend) UpdateSessionModel(workspaceID, sessionID string, model *confi
 	}
 	if err := ws.Cfg.SetSessionModel(sessionID, model); err != nil {
 		return err
+	}
+	if model != nil {
+		selected := ws.Cfg.Config().SessionModels[sessionID]
+		if err := ws.Cfg.UpdatePreferredModel(config.ScopeGlobal, config.SelectedModelTypeLarge, selected); err != nil {
+			return err
+		}
 	}
 	publishConfigChanged(ws)
 	return nil
