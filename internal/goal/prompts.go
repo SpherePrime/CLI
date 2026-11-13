@@ -11,7 +11,7 @@ const NoteHeader = "<chat_goal>"
 
 const qualityBar = "The result must be a complete, production-ready product: every requested feature works end to end, no placeholders, stubs, TODOs or mock data, errors and edge cases are handled, the interface is clean and consistent, and build, tests and linters pass."
 
-const acceptanceSteps = "Final acceptance: re-check everything from scratch like a strict QA engineer and senior reviewer. Build and run the real product (websites in the built-in browser with browser_* tools, native desktop apps with app_* tools), walk through every user flow including empty, invalid and error states, check layout at different sizes, run all tests and linters, and review the full diff for bugs, dead code and inconsistencies."
+const acceptanceSteps = "Final acceptance: re-check everything from scratch like a strict QA engineer and senior reviewer. Build and run the real product (websites in the built-in browser with browser_* tools, native desktop apps with app_* tools), walk through every user flow including empty, invalid and error states by actually clicking and typing, check layout at different sizes with overview screenshots and close-ups of every component, run all tests and linters, and review the full diff for bugs, dead code and inconsistencies."
 
 func ContinuationPrompt(progress Progress) string {
 	if progress.Finished() {

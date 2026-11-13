@@ -42,6 +42,12 @@ func TestRolePromptsDescribeTheirJob(t *testing.T) {
 	require.Contains(t, review, "never poll files")
 	require.Contains(t, review, "Never wait with sleep")
 	require.Contains(t, review, "(repeat N)")
+	require.Contains(t, review, "CRITERIA:")
+	require.Contains(t, review, "Use it, do not only look at it")
+	require.Contains(t, review, "Screenshots go from overview to close-ups")
+	require.Contains(t, review, "check the UI in the built-in browser")
+	require.Contains(t, review, "- light: one fast pass")
+	require.Contains(t, review, "- thorough:")
 	require.Contains(t, explore, "Never split one feature by layer")
 
 	code := renderRolePrompt(t, codePrompt)
@@ -50,6 +56,7 @@ func TestRolePromptsDescribeTheirJob(t *testing.T) {
 	require.Contains(t, code, "STATUS: WAITING")
 	require.Contains(t, code, "do not message the reviewer yourself")
 	require.Contains(t, code, "agree shared interfaces")
+	require.Contains(t, code, "acceptance criteria one by one")
 	require.NotContains(t, code, "Run the project's relevant tests")
 }
 
