@@ -21,6 +21,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/agent/prompt"
 	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
@@ -538,7 +539,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	// retry means the user doesn't need to re-authenticate. AWS SSO is
 	// handled transparently inside OnAuthRefresh, so it needs no post-run
 	// notification here.
-	if originalErr != nil && isUnauthorized(originalErr) && c.notify != nil && model.ModelCfg.Provider == hyper.Name {
+	if originalErr != nil && isUnauthorized(originalErr) && c.notify != nil && (model.ModelCfg.Provider == hyper.Name || model.ModelCfg.Provider == primeai.Name) {
 		c.notify.Publish(pubsub.CreatedEvent, notify.Notification{
 			Type:       notify.TypeReAuthenticate,
 			ProviderID: model.ModelCfg.Provider,
@@ -618,6 +619,7 @@ func thinkingEnabled(mode string) bool {
 func usesReasoningEffortToggle(providerID string) bool {
 	switch providerID {
 	case hyper.Name,
+		primeai.Name,
 		string(catwalk.InferenceProviderIoNet),
 		string(catwalk.InferenceProviderZAI),
 		string(catwalk.InferenceProviderDeepSeek),
@@ -776,6 +778,13 @@ func getProviderOptions(model Model, providerCfg config.ProviderConfig) fantasy.
 		parsed, err := google.ParseOptions(mergedOptions)
 		if err == nil {
 			options[google.Name] = parsed
+		}
+
+	case primeai.Name:
+		showReasoning := thinkingEnabled(reasoningMode)
+		options[primeai.Name] = &primeai.Options{
+			ReasoningEffort: openAIEffort,
+			ShowReasoning:   &showReasoning,
 		}
 
 	case openaicompat.Name, hyper.Name:
@@ -1677,6 +1686,8 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 		return c.buildGoogleProvider(baseURL, apiKey, headers)
 	case "google-vertex":
 		return c.buildGoogleVertexProvider(headers, providerCfg.ExtraParams)
+	case primeai.Name:
+		return primeai.NewProvider(primeai.WithProviderBaseURL(baseURL))
 	case openaicompat.Name, hyper.Name:
 		switch providerCfg.ID {
 		case hyper.Name:
@@ -1986,6 +1997,9 @@ func (c *coordinator) refreshTokenIfExpired(ctx context.Context, providerCfg con
 // user completes it (or the context is cancelled).
 func (c *coordinator) retryAfterUnauthorized(ctx context.Context, providerCfg config.ProviderConfig) error {
 	switch {
+	case providerCfg.ID == primeai.Name:
+		primeai.DefaultClient().Session().Invalidate("")
+		return nil
 	case providerCfg.OAuthToken != nil:
 		slog.Debug("Received 401. Refreshing token and retrying", "provider", providerCfg.ID)
 		if err := c.refreshOAuth2Token(ctx, providerCfg); err != nil {
@@ -2060,7 +2074,8 @@ func isUnauthorized(err error) bool {
 // delegates to the coordinator's existing credential refresh logic. Returns
 // nil if no refresh mechanism is configured for the provider.
 func (c *coordinator) makeAuthRefreshCallback(providerCfg config.ProviderConfig) func(context.Context, *fantasy.ProviderError) error {
-	if providerCfg.OAuthToken == nil &&
+	if providerCfg.ID != primeai.Name &&
+		providerCfg.OAuthToken == nil &&
 		!strings.Contains(providerCfg.APIKeyTemplate, "$") &&
 		providerCfg.AWSAuthRefresh == "" {
 		return nil

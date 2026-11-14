@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { AccountState } from '../../src/shared/contracts'
+import type { AccountState, PrimeAILimits } from '../../src/shared/contracts'
 import { I18nProvider } from '../../src/renderer/src/i18n'
 import { AuthGate } from '../../src/renderer/src/features/auth/AuthGate'
 import { AccountCard } from '../../src/renderer/src/features/auth/AccountCard'
@@ -37,12 +37,47 @@ function renderGate(account: AccountState, language: 'ru' | 'en' = 'ru') {
   )
 }
 
-function renderAccountCard(account: AccountState, language: 'ru' | 'en' = 'ru') {
+function renderAccountCard(
+  account: AccountState,
+  language: 'ru' | 'en' = 'ru',
+  limits?: PrimeAILimits | null
+) {
   return renderToStaticMarkup(
     <I18nProvider language={language}>
-      <AccountCard account={account} onLogout={() => {}} onAfterLogout={() => {}} />
+      <AccountCard
+        account={account}
+        limits={limits}
+        onRefreshLimits={limits !== undefined ? () => {} : undefined}
+        onLogout={() => {}}
+        onAfterLogout={() => {}}
+      />
     </I18nProvider>
   )
+}
+
+function makeLimits(overrides: Partial<PrimeAILimits> = {}): PrimeAILimits {
+  return {
+    available: true,
+    planName: 'Pro',
+    cacheWeightPercent: 0,
+    fiveHour: {
+      usedTokens: 142500,
+      limitTokens: 500000,
+      usedRequests: 18,
+      limitRequests: 120,
+      percent: 28.5,
+      resetInSeconds: 3 * 3600 + 12 * 60
+    },
+    weekly: {
+      usedTokens: 710000,
+      limitTokens: 5000000,
+      usedRequests: 86,
+      limitRequests: 1000,
+      percent: 14.2,
+      resetInSeconds: 4 * 86400 + 6 * 3600
+    },
+    ...overrides
+  }
 }
 
 describe('auth gate and account UI', () => {
@@ -155,6 +190,60 @@ describe('auth gate and account UI', () => {
       method: 'account',
       args: ['logout']
     })
+    await bridge.api.account('limits')
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
+      method: 'account',
+      args: ['limits']
+    })
+    await bridge.api.account('refreshLimits')
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
+      method: 'account',
+      args: ['refreshLimits']
+    })
     bridge.dispose()
+  })
+
+  it('renders PrimeAI limits section inside AccountCard in RU and EN', () => {
+    const account = makeAccount({ signedIn: true, email: 'user@sphereprime.ru' })
+    const ruMarkup = renderAccountCard(account, 'ru', makeLimits())
+    expect(ruMarkup).toContain('PrimeAI Лимиты')
+    expect(ruMarkup).toContain('Pro')
+    expect(ruMarkup).toContain('5-часовой лимит')
+    expect(ruMarkup).toContain('Недельный лимит')
+    expect(ruMarkup).toContain('29%')
+    expect(ruMarkup).toContain('14%')
+    expect(ruMarkup).toContain('Сброс через 3ч 12м')
+    expect(ruMarkup).toContain('Сброс через 4д 6ч')
+    expect(ruMarkup).toContain('Кэш не расходует лимит')
+    expect(ruMarkup).toContain('Обновить')
+
+    const enMarkup = renderAccountCard(
+      account,
+      'en',
+      makeLimits({ cacheWeightPercent: 25 })
+    )
+    expect(enMarkup).toContain('PrimeAI Limits')
+    expect(enMarkup).toContain('5-hour limit')
+    expect(enMarkup).toContain('Weekly limit')
+    expect(enMarkup).toContain('Resets in 3h 12m')
+    expect(enMarkup).toContain('Resets in 4d 6h')
+    expect(enMarkup).toContain('Cache weight: 25%')
+    expect(enMarkup).toContain('Refresh')
+    expect(enMarkup).not.toContain('5-часовой лимит')
+  })
+
+  it('renders error fallback inside AccountCard when limits fail to load', () => {
+    const markup = renderAccountCard(
+      makeAccount({ signedIn: true, email: 'user@sphereprime.ru' }),
+      'ru',
+      {
+        available: false,
+        cacheWeightPercent: 0,
+        error: 'Сервис лимитов временно недоступен'
+      }
+    )
+    expect(markup).toContain('role="alert"')
+    expect(markup).toContain('Сервис лимитов временно недоступен')
+    expect(markup).toContain('Обновить')
   })
 })

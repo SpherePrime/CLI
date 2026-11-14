@@ -366,6 +366,16 @@ func enStrings() map[string]string {
 		"auth.run_required":         "Prime account sign-in required. Run 'prime login' or 'prime' to sign in.",
 		"auth.logged_out":           "Signed out of Prime account",
 		"auth.open_url_hint":        "Login URL (open in browser or copy):",
+
+		// PrimeAI limits.
+		"primeai.limits_title":  "PrimeAI Limits",
+		"primeai.plan_label":    "Plan",
+		"primeai.window_5h":     "5h",
+		"primeai.window_weekly": "Weekly",
+		"primeai.unlimited":     "Unlimited",
+		"primeai.resets_in":     "resets in %s",
+		"primeai.unavailable":   "Unavailable",
+		"primeai.auth_required": "Please sign in again with your Prime account.",
 	}
 }
 
@@ -720,5 +730,15 @@ func ruStrings() map[string]string {
 		"auth.run_required":         "Требуется вход в аккаунт Prime. Выполните 'prime login' или запустите 'prime'.",
 		"auth.logged_out":           "Выход из аккаунта Prime выполнен",
 		"auth.open_url_hint":        "Ссылка для входа (откройте в браузере или скопируйте):",
+
+		// PrimeAI limits.
+		"primeai.limits_title":  "Лимиты PrimeAI",
+		"primeai.plan_label":    "Тариф",
+		"primeai.window_5h":     "5ч",
+		"primeai.window_weekly": "Неделя",
+		"primeai.unlimited":     "Безлимит",
+		"primeai.resets_in":     "сброс через %s",
+		"primeai.unavailable":   "Недоступно",
+		"primeai.auth_required": "Войдите в аккаунт Prime снова.",
 	}
 }

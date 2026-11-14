@@ -468,6 +468,8 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                 "restore" => ("POST", "/v1/account/restore"),
                 "login" => ("POST", "/v1/account/login"),
                 "logout" => ("POST", "/v1/account/logout"),
+                "limits" => ("GET", "/v1/account/limits"),
+                "refreshLimits" => ("POST", "/v1/account/limits/refresh"),
                 _ => {
                     return Err(HostError::new(
                         "INVALID_ARGUMENT",

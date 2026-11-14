@@ -9,6 +9,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/session"
@@ -26,12 +27,13 @@ const statusDialogMaxWidth = 56
 
 // StatusData holds the information shown in the status dialog.
 type StatusData struct {
-	AccountEmail string
-	Session      *session.Session
-	MCPStates    map[string]mcp.ClientInfo
-	LSPStates    map[string]workspace.LSPClientInfo
-	LSPDiags     map[string]lsp.DiagnosticCounts
-	Skills       []skills.CatalogEntry
+	AccountEmail  string
+	PrimeAILimits *primeai.Limits
+	Session       *session.Session
+	MCPStates     map[string]mcp.ClientInfo
+	LSPStates     map[string]workspace.LSPClientInfo
+	LSPDiags      map[string]lsp.DiagnosticCounts
+	Skills        []skills.CatalogEntry
 }
 
 // Status is a read-only dialog showing session usage and server states.
@@ -165,9 +167,12 @@ func (s *Status) contentLines(width int) []string {
 	lines := []string{
 		section.Render(s.com.L("auth.account_label")),
 		label.Render(ansi.Truncate(accountEmail, max(1, width), "…")),
-		"",
-		section.Render(s.com.L("status.usage")),
 	}
+	if s.data.PrimeAILimits != nil && s.data.PrimeAILimits.Available {
+		lines = append(lines, "", section.Render(s.com.L("primeai.limits_title")))
+		lines = append(lines, s.primeAILimitsSection(label, width)...)
+	}
+	lines = append(lines, "", section.Render(s.com.L("status.usage")))
 	lines = append(lines, s.usageSection(label, width)...)
 
 	lines = append(lines, "", section.Render(s.com.L("status.mcp_servers")))
@@ -179,6 +184,37 @@ func (s *Status) contentLines(width int) []string {
 	lines = append(lines, "", section.Render(s.com.L("status.skills")))
 	lines = append(lines, s.skillsSection(label, width)...)
 
+	return lines
+}
+
+func (s *Status) primeAILimitsSection(label lipgloss.Style, width int) []string {
+	lim := s.data.PrimeAILimits
+	if lim == nil || !lim.Available {
+		return []string{label.Render(s.com.L("primeai.unavailable"))}
+	}
+	row := func(k, v string) string {
+		return label.Render(ansi.Truncate(fmt.Sprintf("%s  %s", k, v), max(1, width), "…"))
+	}
+	var lines []string
+	if lim.PlanName != "" {
+		lines = append(lines, row(s.com.L("primeai.plan_label"), lim.PlanName))
+	}
+	formatWindow := func(key string, w *primeai.LimitWindow) {
+		if w == nil {
+			return
+		}
+		if w.LimitTokens <= 0 && w.LimitRequests <= 0 && w.Percent <= 0 && w.ResetInSeconds <= 0 {
+			lines = append(lines, row(s.com.L(key), s.com.L("primeai.unlimited")))
+			return
+		}
+		val := fmt.Sprintf("%.0f%%", w.Percent)
+		if w.ResetInSeconds > 0 {
+			val += " (" + s.com.LSprintf("primeai.resets_in", common.FormatResetDuration(w.ResetInSeconds)) + ")"
+		}
+		lines = append(lines, row(s.com.L(key), val))
+	}
+	formatWindow("primeai.window_5h", lim.FiveHour)
+	formatWindow("primeai.window_weekly", lim.Weekly)
 	return lines
 }
 

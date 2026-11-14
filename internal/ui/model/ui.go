@@ -25,6 +25,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/agent"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	agenttools "github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/app"
@@ -185,6 +186,9 @@ type (
 	// display disabled.
 	creditsUpdatedMsg struct {
 		credits *int
+	}
+	primeAILimitsUpdatedMsg struct {
+		limits *primeai.Limits
 	}
 )
 
@@ -453,7 +457,8 @@ type UI struct {
 	// hyperCredits is the remaining Hyper credits, updated after each prompt.
 	// It is nil when unknown, or when the team has hypercredit display
 	// disabled, and no balance is rendered in either case.
-	hyperCredits *int
+	hyperCredits  *int
+	primeAILimits *primeai.Limits
 
 	// Prompt history for up/down navigation through previous messages.
 	promptHistory struct {
@@ -683,6 +688,11 @@ func (m *UI) deferredInitCmds() []tea.Cmd {
 	}
 	if m.com.IsHyper() {
 		cmds = append(cmds, m.fetchHyperCredits())
+	}
+	if m.authState.SignedIn {
+		if cmd := m.fetchPrimeAILimits(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	}
 	// Prime the ChatGPT model catalog: a signed-in OpenAI provider
 	// whose catalog is missing (the fetch at login failed, or the
@@ -1619,6 +1629,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case creditsUpdatedMsg:
 		m.hyperCredits = msg.credits
+	case primeAILimitsUpdatedMsg:
+		m.primeAILimits = msg.limits
+		if s, ok := m.dialog.Dialog(dialog.StatusID).(*dialog.Status); ok {
+			s.SetData(m.buildStatusData())
+		}
 	case util.InfoMsg:
 		if msg.Type == util.InfoTypeError {
 			slog.Error("Error reported", "error", msg.Msg)
@@ -2402,6 +2417,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		if s, ok := m.dialog.Dialog(dialog.StatusID).(*dialog.Status); ok {
 			s.SetData(m.buildStatusData())
 		}
+		if cmd := m.fetchPrimeAILimits(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.ActionToggleHelp:
 		m.status.ToggleHelp()
 		m.dialog.CloseDialog(dialog.CommandsID)
@@ -2756,6 +2774,47 @@ func (m *UI) fetchHyperCredits() tea.Cmd {
 	}
 }
 
+func (m *UI) effectivePrimeAILimits() *primeai.Limits {
+	if !m.authState.SignedIn {
+		return nil
+	}
+	if m.primeAILimits != nil && m.primeAILimits.Available {
+		return m.primeAILimits
+	}
+	if m.accountSvc != nil {
+		if tok := m.accountSvc.Token(); tok != "" {
+			if cached, ok := primeai.CachedLimitsForToken(tok); ok && cached.Available {
+				return &cached
+			}
+		}
+		return m.primeAILimits
+	}
+	if cached, ok := primeai.CachedLimits(); ok && cached.Available {
+		return &cached
+	}
+	return m.primeAILimits
+}
+
+func (m *UI) fetchPrimeAILimits() tea.Cmd {
+	if m.accountSvc == nil {
+		return nil
+	}
+	tok := m.accountSvc.Token()
+	if tok == "" {
+		return nil
+	}
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		limits, err := primeai.FetchLimitsWithToken(ctx, tok)
+		if err != nil && !limits.Available {
+			slog.Debug("Failed to fetch PrimeAI limits", "error", err)
+			return nil
+		}
+		return primeAILimitsUpdatedMsg{limits: &limits}
+	}
+}
+
 // restoreModelFromSession checks the last assistant message in the
 // loaded session and, if it used a different provider/model than the
 // current config, restores that model/provider provided it is still
@@ -3099,6 +3158,8 @@ func (m *UI) openAuthenticationDialog(provider catwalk.Provider, model config.Se
 	)
 
 	switch provider.ID {
+	case primeai.Name:
+		return nil
 	case "hyper":
 		dlg, cmd = dialog.NewOAuthHyper(m.com, isOnboarding, provider, model, modelType)
 	case catwalk.InferenceProviderCopilot:
@@ -5720,13 +5781,13 @@ func (m *UI) openQuitDialog() tea.Cmd {
 func (m *UI) openStatusDialog() tea.Cmd {
 	if m.dialog.ContainsDialog(dialog.StatusID) {
 		m.dialog.BringToFront(dialog.StatusID)
-		return nil
+		return m.fetchPrimeAILimits()
 	}
 
 	data := m.buildStatusData()
 	statusDialog := dialog.NewStatus(m.com, data)
 	m.dialog.OpenDialog(statusDialog)
-	return nil
+	return m.fetchPrimeAILimits()
 }
 
 // buildStatusData assembles the data for the status dialog from the
@@ -5745,12 +5806,13 @@ func (m *UI) buildStatusData() dialog.StatusData {
 	skillEntries, _ := m.com.Workspace.ListSkills(context.Background())
 
 	return dialog.StatusData{
-		AccountEmail: m.authState.Email,
-		Session:      session,
-		MCPStates:    m.mcpStates,
-		LSPStates:    m.lspStates,
-		LSPDiags:     diags,
-		Skills:       skillEntries,
+		AccountEmail:  m.authState.Email,
+		PrimeAILimits: m.effectivePrimeAILimits(),
+		Session:       session,
+		MCPStates:     m.mcpStates,
+		LSPStates:     m.lspStates,
+		LSPDiags:      diags,
+		Skills:        skillEntries,
 	}
 }
 
@@ -6264,7 +6326,24 @@ func (m *UI) handleAgentNotification(n notify.Notification) tea.Cmd {
 		if m.com.IsHyper() {
 			cmds = append(cmds, m.fetchHyperCredits())
 		}
+		if m.authState.SignedIn {
+			if m.accountSvc != nil {
+				if tok := m.accountSvc.Token(); tok != "" {
+					if cached, ok := primeai.CachedLimitsForToken(tok); ok && cached.Available {
+						m.primeAILimits = &cached
+					}
+				}
+			}
+			if cmd := m.fetchPrimeAILimits(); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
 	case notify.TypeAgentError:
+		if m.authState.SignedIn {
+			if cmd := m.fetchPrimeAILimits(); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
 		// Terminal edge like TypeAgentFinished; fall through to the
 		// busy/queue refresh below.
 	case notify.TypeReAuthenticate:

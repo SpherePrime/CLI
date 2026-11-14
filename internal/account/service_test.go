@@ -500,3 +500,56 @@ func TestEnvOverrides(t *testing.T) {
 	require.Equal(t, filepath.Join(dataDir, "prime-account.bin"), svc.DefaultPath())
 	require.Equal(t, "http://127.0.0.1:8787", svc.baseURL)
 }
+
+func TestTokenAndStateRedaction(t *testing.T) {
+	t.Parallel()
+
+	const rawToken = "tok_secret_account_value"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/auth/me":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"user": map[string]string{"email": "tok@sphereprime.ru"},
+			})
+		default:
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status": "success",
+				"token":  rawToken,
+				"user":   map[string]string{"email": "tok@sphereprime.ru"},
+			})
+		}
+	}))
+	defer srv.Close()
+
+	path := filepath.Join(t.TempDir(), "prime-account.bin")
+	svc := NewService(
+		WithStoragePath(path),
+		WithBaseURL(srv.URL),
+		WithPollInterval(5*time.Millisecond),
+		WithMaxAttempts(10),
+		WithOpenBrowser(func(string) error { return nil }),
+	)
+	defer svc.Close()
+
+	require.Empty(t, svc.Token())
+
+	_, err := svc.StartLogin(context.Background())
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		return svc.State(context.Background()).SignedIn
+	}, 2*time.Second, 5*time.Millisecond)
+
+	require.Equal(t, rawToken, svc.Token())
+
+	svcOther := NewService(WithStoragePath(path), WithBaseURL(srv.URL))
+	defer svcOther.Close()
+	require.Equal(t, rawToken, svcOther.Token())
+
+	stateJSON, err := json.Marshal(svc.State(context.Background()))
+	require.NoError(t, err)
+	require.NotContains(t, string(stateJSON), rawToken)
+
+	svc.CancelOrLogout(context.Background())
+	require.Empty(t, svc.Token())
+	require.Empty(t, svcOther.Token())
+}

@@ -50,6 +50,20 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(503).
 			Handle(c.handlePostAccountLogout),
 
+		apigen.Get("/v1/account/limits").
+			Summary("Get PrimeAI tariff usage limits").
+			Tags("account").
+			Responds(proto.PrimeAILimits{}).
+			Fails(503).
+			Handle(c.handleGetAccountLimits),
+
+		apigen.Post("/v1/account/limits/refresh").
+			Summary("Refresh PrimeAI tariff usage limits").
+			Tags("account").
+			Responds(proto.PrimeAILimits{}).
+			Fails(503).
+			Handle(c.handlePostAccountLimitsRefresh),
+
 		apigen.Get("/v1/capabilities").Summary("Desktop protocol capabilities").Tags("system").Responds(proto.DesktopCapabilities{}).Handle(c.handleGetCapabilities),
 		apigen.Get("/v1/workspaces/{id}/pending").Summary("Pending permissions and question").Tags("desktop").PathParam("id", "Workspace ID").Fails(404).Handle(c.handleGetPending),
 		apigen.Get("/v1/workspaces/{id}/runs").Summary("Workspace run registry").Tags("agent").PathParam("id", "Workspace ID").Responds([]proto.RunRecord{}).Fails(404).Handle(c.handleGetRuns),

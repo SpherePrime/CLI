@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
+	"github.com/SpherePrime/CLI/internal/account"
 	hyperp "github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/env"
 	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/internal/lock"
@@ -246,6 +248,67 @@ func (s *ConfigStore) RefetchHyperProvider(ctx context.Context) error {
 	// config.Providers() (e.g. the models dialog) see fresh data.
 	UpdateProviderInList(hyperProvider)
 
+	s.SetupAgents()
+	return nil
+}
+
+func (s *ConfigStore) EnsurePrimeAI(ctx context.Context) error {
+	if s.Config().Options.DisableDefaultProviders || !hasPrimeAccountToken() {
+		return nil
+	}
+	client := realPrimeAIClient{
+		accountToken: func() string { return account.NewService().Token() },
+	}
+	if !primeaiSyncer.init.Load() {
+		primeaiSyncer.Init(client, cachePathFor("primeai"), !s.Config().Options.DisableProviderAutoUpdate)
+	} else {
+		primeaiSyncer.SetClient(client)
+	}
+	provider, err := primeaiSyncer.Refetch(ctx)
+	if err != nil {
+		return err
+	}
+	if provider.ID == "" {
+		provider = primeai.Embedded()
+	}
+
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	found := false
+	for i, p := range s.knownProviders {
+		if string(p.ID) == string(provider.ID) {
+			s.knownProviders[i] = provider
+			found = true
+			break
+		}
+	}
+	if !found {
+		s.knownProviders = append([]catwalk.Provider{provider}, s.knownProviders...)
+	}
+
+	nc := s.config.cloneForWrite()
+	existing, ok := nc.Providers.Get(string(provider.ID))
+	if !ok || !existing.Disable {
+		pc := existing
+		pc.ID = string(provider.ID)
+		pc.Name = provider.Name
+		pc.BaseURL = provider.APIEndpoint
+		pc.Type = provider.Type
+		pc.Models = provider.Models
+		if pc.ExtraParams == nil {
+			pc.ExtraParams = make(map[string]string)
+		}
+		nc.Providers.Set(string(provider.ID), pc)
+	}
+	if _, hasLarge := nc.Models[SelectedModelTypeLarge]; !hasLarge && nc.IsConfigured() {
+		if resolved, rerr := resolveSelectedModels(nc, s.knownProviders); rerr == nil {
+			nc.Models[SelectedModelTypeLarge] = resolved.Large
+			nc.Models[SelectedModelTypeSmall] = resolved.Small
+		}
+	}
+	s.setConfig(nc)
+	UpdateProviderInList(provider)
 	s.SetupAgents()
 	return nil
 }

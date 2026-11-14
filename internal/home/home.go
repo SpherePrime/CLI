@@ -181,3 +181,20 @@ func Long(p string) string {
 	}
 	return strings.Replace(p, "~", homedir, 1)
 }
+
+func PrimeDataDir() string {
+	if primeData := os.Getenv("PRIME_GLOBAL_DATA"); primeData != "" {
+		return primeData
+	}
+	if xdgDataHome := os.Getenv("XDG_DATA_HOME"); xdgDataHome != "" {
+		return filepath.Join(xdgDataHome, "prime")
+	}
+	if runtime.GOOS == "windows" {
+		localAppData := cmp.Or(
+			os.Getenv("LOCALAPPDATA"),
+			filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Local"),
+		)
+		return filepath.Join(localAppData, "prime")
+	}
+	return filepath.Join(homedir, ".local", "share", "prime")
+}

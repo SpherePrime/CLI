@@ -14,7 +14,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/embedded"
@@ -27,6 +29,7 @@ type syncer[T any] interface {
 
 var (
 	providerOnce sync.Once
+	providerMu   sync.RWMutex
 	providerList []catwalk.Provider
 	providerErr  error
 )
@@ -132,6 +135,7 @@ func UpdateHyper(pathOrURL string) error {
 var (
 	catwalkSyncer = &catwalkSync{}
 	hyperSyncer   = &hyperSync{}
+	primeaiSyncer = &primeaiSync{}
 )
 
 // Providers returns the list of providers, taking into account cached results
@@ -161,7 +165,26 @@ func Providers(cfg *Config, opts ...HyperTokenRefresher) ([]catwalk.Provider, er
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 		catwalkDone := make(chan catalogResult[[]catwalk.Provider], 1)
 		hyperDone := make(chan catalogResult[catwalk.Provider], 1)
+		primeaiDone := make(chan catalogResult[catwalk.Provider], 1)
+		includePrimeAI := hasPrimeAccountToken() || primeaiSyncer.init.Load()
+		if !includePrimeAI && cfg != nil && cfg.Providers != nil {
+			_, includePrimeAI = cfg.Providers.Get(primeai.Name)
+		}
 		var pending sync.WaitGroup
+		if includePrimeAI {
+			pending.Go(func() {
+				if !primeaiSyncer.init.Load() {
+					primeaiSyncer.Init(realPrimeAIClient{
+						accountToken: func() string { return account.NewService().Token() },
+					}, cachePathFor("primeai"), autoupdate)
+				}
+				item, err := primeaiSyncer.Get(ctx)
+				if err != nil {
+					err = fmt.Errorf("Prime was unable to fetch updated information from PrimeAI: %w", err) //nolint:staticcheck
+				}
+				primeaiDone <- catalogResult[catwalk.Provider]{value: item, err: err}
+			})
+		}
 		pending.Go(func() {
 			catwalkURL := cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL)
 			client := catwalk.NewWithURL(catwalkURL)
@@ -210,14 +233,33 @@ func Providers(cfg *Config, opts ...HyperTokenRefresher) ([]catwalk.Provider, er
 			return hyper.Embedded()
 		})
 
+		providerMu.Lock()
 		if hyperResult.value.ID != "" {
 			providerList = append([]catwalk.Provider{hyperResult.value}, catwalkResult.value...)
 		} else {
 			providerList = slices.Clone(catwalkResult.value)
 		}
-		providerErr = errors.Join(catwalkResult.err, hyperResult.err)
+		var primeaiErr error
+		if includePrimeAI {
+			primeaiResult := awaitCatalog(primeaiDone, deadline, func() catwalk.Provider {
+				if cached, _, err := newCache[catwalk.Provider](cachePathFor("primeai")).Get(); err == nil && cached.ID != "" {
+					return cached
+				}
+				return primeai.Embedded()
+			})
+			primeaiErr = primeaiResult.err
+			if primeaiResult.value.ID != "" {
+				providerList = append([]catwalk.Provider{primeaiResult.value}, providerList...)
+			}
+		}
+		providerErr = errors.Join(catwalkResult.err, hyperResult.err, primeaiErr)
+		providerMu.Unlock()
 	})
-	return providerList, providerErr
+	providerMu.RLock()
+	listCopy := slices.Clone(providerList)
+	errCopy := providerErr
+	providerMu.RUnlock()
+	return listCopy, errCopy
 }
 
 // providerFetchBudget bounds how long startup waits for the remote
@@ -250,6 +292,8 @@ func awaitCatalog[T any](done <-chan catalogResult[T], deadline <-chan struct{},
 // provider (e.g. Hyper after OAuth) so that all callers of Providers()
 // see the updated entry without needing to reset sync.Once.
 func UpdateProviderInList(provider catwalk.Provider) {
+	providerMu.Lock()
+	defer providerMu.Unlock()
 	for i, p := range providerList {
 		if p.ID == provider.ID {
 			providerList[i] = provider

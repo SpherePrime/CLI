@@ -16,8 +16,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/agent"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/clipboard"
 	"github.com/SpherePrime/CLI/internal/config"
@@ -509,8 +511,14 @@ func (app *App) SetCoordinator(coord agent.Coordinator) {
 }
 
 func (app *App) UpdateAgentModel(ctx context.Context) error {
+	if _, ok := app.config.Config().Providers.Get(primeai.Name); !ok && account.NewService().Token() != "" {
+		_ = app.config.EnsurePrimeAI(ctx)
+	}
 	coord := app.Coordinator()
 	if coord == nil {
+		if app.config.Config().IsConfigured() {
+			return app.InitCoderAgent(ctx)
+		}
 		return fmt.Errorf("agent configuration is missing")
 	}
 	return coord.UpdateModels(ctx)
@@ -819,6 +827,9 @@ func (app *App) InitCoderAgentWithMain(ctx context.Context, interactive bool, ma
 }
 
 func (app *App) initCoderAgent(ctx context.Context, interactive bool, mainAgent string) error {
+	if _, ok := app.config.Config().Providers.Get(primeai.Name); !ok && account.NewService().Token() != "" {
+		_ = app.config.EnsurePrimeAI(ctx)
+	}
 	coderAgentCfg := app.config.Config().Agents[config.AgentGeneral]
 	if coderAgentCfg.ID == "" {
 		return fmt.Errorf("coder agent configuration is missing")

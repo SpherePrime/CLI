@@ -29,6 +29,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/config"
@@ -1226,6 +1227,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 
 	if err != nil {
 		isHyper := largeModel.ModelCfg.Provider == hyper.Name
+		isPrimeAI := largeModel.ModelCfg.Provider == primeai.Name
 		isCancelErr := errors.Is(err, context.Canceled)
 		slog.Info("Agent stream returned error",
 			"error", err.Error(),
@@ -1325,6 +1327,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			currentAssistant.AddFinish(message.FinishReasonError, "Request timed out", requestTimedOutErr.userMessage())
 		} else if isHyper && errors.As(err, &providerErr) && providerErr.StatusCode == http.StatusUnauthorized {
 			currentAssistant.AddFinish(message.FinishReasonError, "Unauthorized", `Please re-authenticate with Hyper. You can also run "prime auth" to re-authenticate.`)
+		} else if isPrimeAI && errors.As(err, &providerErr) && providerErr.StatusCode == http.StatusUnauthorized {
+			currentAssistant.AddFinish(message.FinishReasonError, "Unauthorized", "Please sign in again with your Prime account.")
 		} else if errors.As(err, &providerErr) {
 			if providerErr.Message == "The requested model is not supported." {
 				url := "https://github.com/settings/copilot/features"

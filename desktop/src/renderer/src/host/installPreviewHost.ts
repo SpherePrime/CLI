@@ -1,8 +1,10 @@
 import type {
+  AccountAction,
   AccountState,
   DesktopApi,
   DesktopEvent,
   Preferences,
+  PrimeAILimits,
   Project,
   Session
 } from '../../../shared/contracts'
@@ -110,6 +112,7 @@ export function installPreviewHost() {
 
   const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
   const authMode = search?.get('auth') || ''
+  const limitsMode = search?.get('limits') || ''
   let storedAuth = ''
   try {
     storedAuth = typeof localStorage !== 'undefined' ? localStorage.getItem('prime:preview-auth') || '' : ''
@@ -173,6 +176,155 @@ export function installPreviewHost() {
       clearTimeout(previewLoginTimer)
       previewLoginTimer = null
     }
+  }
+
+  const buildPreviewLimits = (): PrimeAILimits => {
+    if (!accountState.signedIn) {
+      return { available: false, cacheWeightPercent: 0 }
+    }
+    const now = Date.now()
+    const fiveHourResetInSeconds = 3 * 3600 + 12 * 60
+    const weeklyResetInSeconds = 4 * 86400 + 6 * 3600
+    const preset =
+      limitsMode === 'exceeded'
+        ? {
+            fiveHour: {
+              usedTokens: 500_000,
+              limitTokens: 500_000,
+              usedRequests: 120,
+              limitRequests: 120,
+              percent: 100
+            },
+            weekly: {
+              usedTokens: 4_750_000,
+              limitTokens: 5_000_000,
+              usedRequests: 950,
+              limitRequests: 1000,
+              percent: 95
+            }
+          }
+        : limitsMode === 'high'
+          ? {
+              fiveHour: {
+                usedTokens: 410_000,
+                limitTokens: 500_000,
+                usedRequests: 98,
+                limitRequests: 120,
+                percent: 82
+              },
+              weekly: {
+                usedTokens: 3_200_000,
+                limitTokens: 5_000_000,
+                usedRequests: 640,
+                limitRequests: 1000,
+                percent: 64
+              }
+            }
+          : {
+              fiveHour: {
+                usedTokens: 142_500,
+                limitTokens: 500_000,
+                usedRequests: 18,
+                limitRequests: 120,
+                percent: 28.5
+              },
+              weekly: {
+                usedTokens: 710_000,
+                limitTokens: 5_000_000,
+                usedRequests: 86,
+                limitRequests: 1000,
+                percent: 14.2
+              }
+            }
+    return {
+      available: true,
+      planName: 'Pro',
+      cacheWeightPercent: 0,
+      fiveHour: {
+        ...preset.fiveHour,
+        resetAt: new Date(now + fiveHourResetInSeconds * 1000).toISOString(),
+        resetInSeconds: fiveHourResetInSeconds
+      },
+      weekly: {
+        ...preset.weekly,
+        resetAt: new Date(now + weeklyResetInSeconds * 1000).toISOString(),
+        resetInSeconds: weeklyResetInSeconds
+      },
+      updatedAt: new Date(now).toISOString()
+    }
+  }
+
+  function account(action: 'status' | 'restore' | 'login' | 'logout'): Promise<AccountState>
+  function account(action: 'limits' | 'refreshLimits'): Promise<PrimeAILimits>
+  function account(action: AccountAction): Promise<AccountState | PrimeAILimits>
+  async function account(action: AccountAction): Promise<AccountState | PrimeAILimits> {
+    if (action === 'limits' || action === 'refreshLimits') return buildPreviewLimits()
+    if (action === 'status') return { ...accountState }
+    if (action === 'restore') {
+      if (previewNetworkError) {
+        accountState = {
+          ...accountState,
+          signedIn: false,
+          waiting: false,
+          checking: false,
+          networkError: true,
+          hasStoredSession: true,
+          error: 'Не удалось проверить сессию из-за ошибки сети. Повторите проверку или войдите заново.'
+        }
+        return { ...accountState }
+      }
+      accountState = { ...accountState, checking: false }
+      return { ...accountState }
+    }
+    if (action === 'login') {
+      clearPreviewLoginTimer()
+      previewNetworkError = false
+      accountState = {
+        signedIn: false,
+        waiting: true,
+        checking: false,
+        email: '',
+        loginUrl: previewLoginUrl,
+        error: '',
+        networkError: false,
+        hasStoredSession: false
+      }
+      if (authMode !== 'waiting' && authMode !== 'manual') {
+        previewLoginTimer = setTimeout(() => {
+          previewLoginTimer = null
+          try {
+            localStorage.removeItem('prime:preview-auth')
+          } catch {}
+          accountState = {
+            signedIn: true,
+            waiting: false,
+            checking: false,
+            email: 'preview@sphereprime.ru',
+            loginUrl: '',
+            error: '',
+            networkError: false,
+            hasStoredSession: true
+          }
+        }, 2500)
+      }
+      return { ...accountState }
+    }
+    clearPreviewLoginTimer()
+    previewNetworkError = false
+    try {
+      localStorage.setItem('prime:preview-auth', 'signed-out')
+    } catch {}
+    accountState = {
+      signedIn: false,
+      waiting: false,
+      checking: false,
+      email: '',
+      loginUrl: '',
+      error: '',
+      networkError: false,
+      hasStoredSession: false
+    }
+    return { ...accountState }
   }
 
   const api: DesktopApi = {
@@ -635,74 +787,7 @@ export function installPreviewHost() {
     async update() {
       return { state: 'current', version: '0.4.105' }
     },
-    async account(action) {
-      if (action === 'status') return { ...accountState }
-      if (action === 'restore') {
-        if (previewNetworkError) {
-          accountState = {
-            ...accountState,
-            signedIn: false,
-            waiting: false,
-            checking: false,
-            networkError: true,
-            hasStoredSession: true,
-            error: 'Не удалось проверить сессию из-за ошибки сети. Повторите проверку или войдите заново.'
-          }
-          return { ...accountState }
-        }
-        accountState = { ...accountState, checking: false }
-        return { ...accountState }
-      }
-      if (action === 'login') {
-        clearPreviewLoginTimer()
-        previewNetworkError = false
-        accountState = {
-          signedIn: false,
-          waiting: true,
-          checking: false,
-          email: '',
-          loginUrl: previewLoginUrl,
-          error: '',
-          networkError: false,
-          hasStoredSession: false
-        }
-        if (authMode !== 'waiting' && authMode !== 'manual') {
-          previewLoginTimer = setTimeout(() => {
-            previewLoginTimer = null
-            try {
-              localStorage.removeItem('prime:preview-auth')
-            } catch {}
-            accountState = {
-              signedIn: true,
-              waiting: false,
-              checking: false,
-              email: 'preview@sphereprime.ru',
-              loginUrl: '',
-              error: '',
-              networkError: false,
-              hasStoredSession: true
-            }
-          }, 2500)
-        }
-        return { ...accountState }
-      }
-      clearPreviewLoginTimer()
-      previewNetworkError = false
-      try {
-        localStorage.setItem('prime:preview-auth', 'signed-out')
-      } catch {}
-      accountState = {
-        signedIn: false,
-        waiting: false,
-        checking: false,
-        email: '',
-        loginUrl: '',
-        error: '',
-        networkError: false,
-        hasStoredSession: false
-      }
-      return { ...accountState }
-    },
+    account,
     onEvent(listener) {
       listeners.add(listener)
       return () => {

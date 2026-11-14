@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/vendordeps/pkg/browser"
 )
 
@@ -131,7 +131,46 @@ func NewService(opts ...Option) *Service {
 }
 
 func (s *Service) DefaultPath() string {
-	return filepath.Join(config.GlobalDataDir(), accountFileName)
+	return filepath.Join(home.PrimeDataDir(), accountFileName)
+}
+
+func (s *Service) Token() string {
+	if s == nil {
+		return ""
+	}
+	s.mu.Lock()
+	token := s.token
+	storagePath := s.storagePath
+	closed := s.closed
+	s.mu.Unlock()
+	if closed {
+		return ""
+	}
+	if storagePath != "" {
+		s.fileMu.Lock()
+		diskToken, err := loadToken(storagePath)
+		s.fileMu.Unlock()
+		if err == nil {
+			if diskToken != "" {
+				s.mu.Lock()
+				if !s.closed && s.token != diskToken {
+					s.token = diskToken
+				}
+				s.mu.Unlock()
+				return diskToken
+			}
+			return ""
+		}
+		if os.IsNotExist(err) {
+			s.mu.Lock()
+			if !s.closed {
+				s.token = ""
+			}
+			s.mu.Unlock()
+			return ""
+		}
+	}
+	return token
 }
 
 func (s *Service) Restore(ctx context.Context) State {

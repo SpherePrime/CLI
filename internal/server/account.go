@@ -2,8 +2,11 @@ package server
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/SpherePrime/CLI/internal/account"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
+	"github.com/SpherePrime/CLI/internal/proto"
 )
 
 func (c *controllerV1) accountService() *account.Service {
@@ -57,5 +60,53 @@ func (c *controllerV1) handlePostAccountLogout(w http.ResponseWriter, r *http.Re
 		jsonError(w, http.StatusServiceUnavailable, "account service unavailable")
 		return
 	}
+	primeai.ClearLimits()
 	jsonEncode(w, svc.CancelOrLogout(r.Context()))
+}
+
+func (c *controllerV1) handleGetAccountLimits(w http.ResponseWriter, r *http.Request) {
+	svc := c.accountService()
+	if svc == nil {
+		jsonError(w, http.StatusServiceUnavailable, "account service unavailable")
+		return
+	}
+	token := svc.Token()
+	if token == "" {
+		jsonEncode(w, proto.PrimeAILimits{Available: false})
+		return
+	}
+	if cached, ok := primeai.CachedLimitsForToken(token); ok {
+		jsonEncode(w, cached)
+		return
+	}
+	limits, err := primeai.FetchLimitsWithToken(r.Context(), token)
+	if err != nil {
+		limits.Available = false
+		if limits.Error == "" {
+			limits.Error = strings.ReplaceAll(err.Error(), token, "[redacted]")
+		}
+	}
+	jsonEncode(w, limits)
+}
+
+func (c *controllerV1) handlePostAccountLimitsRefresh(w http.ResponseWriter, r *http.Request) {
+	svc := c.accountService()
+	if svc == nil {
+		jsonError(w, http.StatusServiceUnavailable, "account service unavailable")
+		return
+	}
+	token := svc.Token()
+	if token == "" {
+		primeai.ClearLimits()
+		jsonEncode(w, proto.PrimeAILimits{Available: false})
+		return
+	}
+	limits, err := primeai.FetchLimitsWithToken(r.Context(), token)
+	if err != nil {
+		limits.Available = false
+		if limits.Error == "" {
+			limits.Error = strings.ReplaceAll(err.Error(), token, "[redacted]")
+		}
+	}
+	jsonEncode(w, limits)
 }

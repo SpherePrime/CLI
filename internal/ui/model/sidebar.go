@@ -83,6 +83,13 @@ func (m *UI) findModelInfoRow(modelInfoStr string) int {
 // updateSidebarScrollState renders the sidebar content and computes scroll
 // state (scrollability, max offset, clamp) before drawing. This keeps all
 // state mutation in the update path rather than in the draw function.
+func (m *UI) primeAILimitsInfo(width int) string {
+	if !m.authState.SignedIn {
+		return ""
+	}
+	return common.PrimeAILimitsInfo(m.com.Styles, m.com.T(), m.effectivePrimeAILimits(), width)
+}
+
 func (m *UI) updateSidebarScrollState() {
 	if m.customDesign() {
 		m.updateDesignSidebarScrollState()
@@ -123,18 +130,22 @@ func (m *UI) updateSidebarScrollState() {
 	skillsSection := m.skillsInfo(contentWidth, len(m.skillStatusItems()), true)
 	filesSection := m.filesInfo(m.com.Workspace.WorkingDir(), contentWidth, fileChangeCount(m.sessionFiles), true)
 
-	// Build the scrollable content.
 	modelInfoStr, hasReasoning := m.modelInfo(contentWidth)
 	m.sidebarReasoningClickable = hasReasoning
+	limitsSection := m.primeAILimitsInfo(contentWidth)
 
-	// Build the scrollable content.
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
+	sections := []string{
 		title,
 		"",
 		cwd,
 		"",
 		modelInfoStr,
+	}
+	if limitsSection != "" {
+		sections = append(sections, "", limitsSection)
+	}
+	sections = append(
+		sections,
 		"",
 		filesSection,
 		"",
@@ -144,6 +155,7 @@ func (m *UI) updateSidebarScrollState() {
 		"",
 		skillsSection,
 	)
+	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
 
 	totalLines := strings.Count(content, "\n") + 1
 	m.sidebarContent = content

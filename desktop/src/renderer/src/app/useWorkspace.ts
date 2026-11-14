@@ -6,6 +6,7 @@ import type {
   Message,
   Operation,
   Preferences,
+  PrimeAILimits,
   QueuedPrompt,
   Project,
   Session
@@ -69,7 +70,12 @@ export function useWorkspace() {
   const restoreWorkspaceRef = useRef<(() => Promise<void>) | null>(null)
   const [account, setAccount] = useState<AccountState>(initialAccountState)
   const [accountLoaded, setAccountLoaded] = useState(false)
+  const [primeLimits, setPrimeLimits] = useState<PrimeAILimits | null>(null)
   const accountRestoreRef = useRef<Promise<AccountState> | null>(null)
+  const accountSignedInRef = useRef(account.signedIn)
+  accountSignedInRef.current = account.signedIn
+  const limitsRequestRef = useRef<Promise<PrimeAILimits | null> | null>(null)
+  const limitsSeqRef = useRef(0)
   const [preferences, setPreferences] = useState<Preferences>({
     theme: 'dark',
     language: 'ru',
@@ -1200,9 +1206,68 @@ export function useWorkspace() {
       return null
     }
   }, [])
+  const refreshPrimeLimits = useCallback(async (force = true): Promise<PrimeAILimits | null> => {
+    if (!accountSignedInRef.current) {
+      limitsSeqRef.current++
+      setPrimeLimits(null)
+      return null
+    }
+    if (!force && limitsRequestRef.current) return limitsRequestRef.current
+    const seq = ++limitsSeqRef.current
+    const action = force ? 'refreshLimits' : 'limits'
+    const task = window.prime
+      .account(action)
+      .then((next) => {
+        if (!accountSignedInRef.current) {
+          setPrimeLimits(null)
+          return null
+        }
+        if (seq === limitsSeqRef.current) setPrimeLimits(next)
+        return next
+      })
+      .catch((err) => {
+        if (!accountSignedInRef.current) {
+          setPrimeLimits(null)
+          return null
+        }
+        const message = cleanHostError(err)
+        if (seq === limitsSeqRef.current) {
+          setPrimeLimits((previous) => {
+            if (previous?.available && !force) return previous
+            return {
+              ...(previous ?? { available: false, cacheWeightPercent: 0 }),
+              error: message
+            }
+          })
+        }
+        return null
+      })
+      .finally(() => {
+        if (limitsRequestRef.current === task) limitsRequestRef.current = null
+      })
+    limitsRequestRef.current = task
+    return task
+  }, [])
+  useEffect(() => {
+    if (info.runtime !== 'ready' || !account.signedIn) {
+      if (!account.signedIn) {
+        limitsSeqRef.current++
+        setPrimeLimits(null)
+      }
+      return
+    }
+    void refreshPrimeLimits(false)
+    const timer = setInterval(() => {
+      if (document.hidden) return
+      void refreshPrimeLimits(false)
+    }, 60000)
+    return () => clearInterval(timer)
+  }, [info.runtime, account.signedIn, refreshPrimeLimits])
   const logoutAccount = useCallback(async () => {
     const next = await window.prime.account('logout')
+    limitsSeqRef.current++
     setAccount(next)
+    setPrimeLimits(null)
     setAccountLoaded(true)
     return next
   }, [])
@@ -1222,9 +1287,30 @@ export function useWorkspace() {
       return null
     }
   }, [])
+  const isWorkspaceBusy =
+    (observedBusy &&
+    observedBusy.projectId === project?.id &&
+    observedBusy.sessionId === session?.id
+      ? observedBusy.busy
+      : busy) ||
+    Boolean(
+      pendingShell &&
+      pendingShell.projectId === project?.id &&
+      (!session || session.id === pendingShell.sessionId)
+    )
+  const prevBusyRef = useRef(isWorkspaceBusy)
+  useEffect(() => {
+    const wasBusy = prevBusyRef.current
+    prevBusyRef.current = isWorkspaceBusy
+    if (wasBusy && !isWorkspaceBusy && info.runtime === 'ready' && account.signedIn) {
+      void refreshPrimeLimits(true)
+    }
+  }, [isWorkspaceBusy, info.runtime, account.signedIn, refreshPrimeLimits])
   return {
     account,
     accountLoaded,
+    primeLimits,
+    refreshPrimeLimits,
     loginAccount,
     logoutAccount,
     retryAccountRestore,
@@ -1282,17 +1368,7 @@ export function useWorkspace() {
     setError,
     errorHandler,
     loading,
-    busy:
-      (observedBusy &&
-      observedBusy.projectId === project?.id &&
-      observedBusy.sessionId === session?.id
-        ? observedBusy.busy
-        : busy) ||
-      Boolean(
-        pendingShell &&
-        pendingShell.projectId === project?.id &&
-        (!session || session.id === pendingShell.sessionId)
-      ),
+    busy: isWorkspaceBusy,
     activeSessionId:
       session?.id ||
       (pendingShell?.projectId === project?.id ? pendingShell?.sessionId : undefined),

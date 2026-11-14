@@ -12,6 +12,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/permission"
@@ -303,7 +304,7 @@ func (c *coordinator) invokeSubAgent(ctx context.Context, params subAgentParams,
 	}
 	// Notify only if still unauthorized after retry. AWS SSO is handled
 	// transparently inside OnAuthRefresh, so it needs no post-run notice.
-	if err != nil && isUnauthorized(err) && c.notify != nil && model.ModelCfg.Provider == hyper.Name {
+	if err != nil && isUnauthorized(err) && c.notify != nil && (model.ModelCfg.Provider == hyper.Name || model.ModelCfg.Provider == primeai.Name) {
 		c.notify.Publish(pubsub.CreatedEvent, notify.Notification{
 			Type:       notify.TypeReAuthenticate,
 			ProviderID: model.ModelCfg.Provider,

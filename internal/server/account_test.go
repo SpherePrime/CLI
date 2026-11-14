@@ -154,3 +154,142 @@ func testAccountOptions(dir, baseURL string) []account.Option {
 		account.WithOpenBrowser(func(string) error { return nil }),
 	}
 }
+
+func TestAccountLimitsEndpoints(t *testing.T) {
+	const rawAcctToken = "tok_acct_limits_secret"
+	const rawSessToken = "tok_sess_limits_secret"
+
+	var limitsCalls int
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/auth/me":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"user": map[string]string{"email": "limits@sphereprime.ru"},
+			})
+		case strings.HasPrefix(r.URL.Path, "/api/auth/desktop-auth/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status": "success",
+				"token":  rawAcctToken,
+				"user":   map[string]string{"email": "limits@sphereprime.ru"},
+			})
+		case r.URL.Path == "/api/plugin/session":
+			require.Equal(t, "Bearer "+rawAcctToken, r.Header.Get("Authorization"))
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"token":     rawSessToken,
+				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
+			})
+		case r.URL.Path == "/api/plugin/limits":
+			require.Equal(t, "Bearer "+rawSessToken, r.Header.Get("Authorization"))
+			limitsCalls++
+			pct := 25.0 * float64(limitsCalls)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"planName":           "Pro",
+				"cacheWeightPercent": 10,
+				"fiveHour": map[string]any{
+					"usedTokens":     500 * limitsCalls,
+					"limitTokens":    2000,
+					"percent":        pct,
+					"resetInSeconds": 3600,
+				},
+				"weekly": map[string]any{
+					"usedTokens":     1000,
+					"limitTokens":    20000,
+					"percent":        5.0,
+					"resetInSeconds": 86400,
+				},
+			})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer upstream.Close()
+	t.Setenv("PRIMEAI_URL", upstream.URL)
+
+	svc := account.NewService(testAccountOptions(t.TempDir(), upstream.URL)...)
+	defer svc.Close()
+
+	srv := &Server{account: svc}
+	srv.installHandler()
+
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/account/limits", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
+	var signedOut proto.PrimeAILimits
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &signedOut))
+	require.False(t, signedOut.Available)
+
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v1/account/login", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Eventually(t, func() bool {
+		return svc.Token() == rawAcctToken
+	}, 2*time.Second, 5*time.Millisecond)
+
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/account/limits", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.NotContains(t, rec.Body.String(), rawAcctToken)
+	require.NotContains(t, rec.Body.String(), rawSessToken)
+	var first proto.PrimeAILimits
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &first))
+	require.True(t, first.Available)
+	require.Equal(t, "Pro", first.PlanName)
+	require.NotNil(t, first.FiveHour)
+	require.Equal(t, 25.0, first.FiveHour.Percent)
+
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/account/limits", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, 1, limitsCalls)
+
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v1/account/limits/refresh", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.NotContains(t, rec.Body.String(), rawAcctToken)
+	require.NotContains(t, rec.Body.String(), rawSessToken)
+	var refreshed proto.PrimeAILimits
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &refreshed))
+	require.True(t, refreshed.Available)
+	require.Equal(t, 50.0, refreshed.FiveHour.Percent)
+	require.Equal(t, 2, limitsCalls)
+}
+
+func TestAccountLimitsUnavailableUpstreamDoesNotCrash(t *testing.T) {
+	const rawAcctToken = "tok_acct_unavailable"
+	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/auth/me":
+			_ = json.NewEncoder(w).Encode(map[string]any{"user": map[string]string{"email": "u@sphereprime.ru"}})
+		case strings.HasPrefix(r.URL.Path, "/api/auth/desktop-auth/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status": "success",
+				"token":  rawAcctToken,
+				"user":   map[string]string{"email": "u@sphereprime.ru"},
+			})
+		}
+	}))
+	defer authSrv.Close()
+	t.Setenv("PRIMEAI_URL", "http://127.0.0.1:1")
+
+	svc := account.NewService(testAccountOptions(t.TempDir(), authSrv.URL)...)
+	defer svc.Close()
+
+	srv := &Server{account: svc}
+	srv.installHandler()
+
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v1/account/login", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Eventually(t, func() bool {
+		return svc.Token() == rawAcctToken
+	}, 2*time.Second, 5*time.Millisecond)
+
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v1/account/limits/refresh", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.NotContains(t, rec.Body.String(), rawAcctToken)
+	var lim proto.PrimeAILimits
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &lim))
+	require.False(t, lim.Available)
+	require.NotEmpty(t, lim.Error)
+}

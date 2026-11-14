@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/csync"
 	"github.com/SpherePrime/CLI/internal/discover"
 	"github.com/SpherePrime/CLI/internal/env"
@@ -436,6 +437,17 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 				}
 				continue
 			}
+		case catwalk.InferenceProvider(primeai.Name):
+			if !hasPrimeAccountToken() {
+				v, err := resolver.ResolveValue(p.APIKey)
+				if v == "" || err != nil {
+					if configExists {
+						slog.Warn("Skipping PrimeAI provider due to missing Prime account session", "provider", p.ID)
+						c.Providers.Del(string(p.ID))
+					}
+					continue
+				}
+			}
 		case catwalk.InferenceProvider("hyper"):
 			if apiKey := env.Get("HYPER_API_KEY"); apiKey != "" {
 				prepared.APIKey = apiKey
@@ -561,6 +573,7 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 		providerConfig.Type = cmp.Or(providerConfig.Type, catwalk.TypeOpenAICompat)
 		if !slices.Contains(catwalk.KnownProviderTypes(), providerConfig.Type) &&
 			providerConfig.Type != hyper.Name &&
+			providerConfig.Type != primeai.Name &&
 			!discover.IsKnownCustomProvider(string(providerConfig.Type)) {
 			slog.Warn("Skipping custom provider due to unsupported provider type", "provider", id)
 			c.Providers.Del(id)
@@ -1435,25 +1448,7 @@ func ProjectConfigs(cwd string) []string {
 // GlobalConfigData returns the path to the main data directory for the application.
 // this config is used when the app overrides configurations instead of updating the global config.
 func GlobalConfigData() string {
-	if primeData := os.Getenv("PRIME_GLOBAL_DATA"); primeData != "" {
-		return filepath.Join(primeData, fmt.Sprintf("%s.json", appName))
-	}
-	if xdgDataHome := os.Getenv("XDG_DATA_HOME"); xdgDataHome != "" {
-		return filepath.Join(xdgDataHome, appName, fmt.Sprintf("%s.json", appName))
-	}
-
-	// return the path to the main data directory
-	// for windows, it should be in `%LOCALAPPDATA%/prime/`
-	// for linux and macOS, it should be in `$HOME/.local/share/prime/`
-	if runtime.GOOS == "windows" {
-		localAppData := cmp.Or(
-			os.Getenv("LOCALAPPDATA"),
-			filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Local"),
-		)
-		return filepath.Join(localAppData, appName, fmt.Sprintf("%s.json", appName))
-	}
-
-	return filepath.Join(home.Dir(), ".local", "share", appName, fmt.Sprintf("%s.json", appName))
+	return filepath.Join(home.PrimeDataDir(), fmt.Sprintf("%s.json", appName))
 }
 
 // GlobalWorkspaceDir returns the path to the global server workspace

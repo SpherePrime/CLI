@@ -81,6 +81,8 @@ export function SettingsDialog({
           {tab === 'account' && (
             <AccountCard
               account={w.account}
+              limits={w.primeLimits}
+              onRefreshLimits={() => w.refreshPrimeLimits(true)}
               onLogout={w.logoutAccount}
               onAfterLogout={close}
             />

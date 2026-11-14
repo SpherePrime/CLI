@@ -36,9 +36,15 @@ func (m *UI) updateDesignSidebarScrollState() {
 		m.com.Styles.Sidebar.SessionTitle.Width(width).Render(m.designSessionTitle()),
 		common.PrettyPath(m.com.Styles, m.com.Workspace.WorkingDir(), width),
 		modelInfoStr,
+	}
+	if limitsSection := m.primeAILimitsInfo(width); limitsSection != "" {
+		body = append(body, limitsSection)
+	}
+	body = append(
+		body,
 		m.filesInfo(m.com.Workspace.WorkingDir(), width, fileChangeCount(m.sessionFiles), true),
 		m.lspInfo(width, len(m.lspStates), true),
-	}
+	)
 	if cfg != nil {
 		body = append(body, m.mcpInfo(width, mcpCount(cfg.MCP.Sorted(), m.mcpStates), true))
 	}

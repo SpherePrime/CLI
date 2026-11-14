@@ -13,6 +13,7 @@ import {
   UserRound
 } from 'lucide-react'
 import { useI18n } from '../i18n'
+import { PrimeLimitsWidget } from '../features/auth/PrimeLimitsWidget'
 import { ChatActions } from '../features/chat/ChatActions'
 import type { Workspace } from './useWorkspace'
 
@@ -118,6 +119,10 @@ export function WorkspaceTopbar({
         >
           {inspectorVisible ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}
         </button>
+        <PrimeLimitsWidget
+          limits={w.primeLimits}
+          onRefresh={() => w.refreshPrimeLimits(true)}
+        />
         <button
           type="button"
           className="topbar-account"

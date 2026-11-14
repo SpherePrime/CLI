@@ -19,6 +19,7 @@ func resetProviderState() {
 	providerErr = nil
 	catwalkSyncer = &catwalkSync{}
 	hyperSyncer = &hyperSync{}
+	primeaiSyncer = &primeaiSync{}
 }
 
 func TestProviders_Integration_AutoUpdateDisabled(t *testing.T) {

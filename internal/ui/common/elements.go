@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/home"
+	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
@@ -91,6 +93,80 @@ func ModelInfo(t *styles.Styles, modelName, providerName, reasoningInfo string, 
 		parts = append(parts, "", hcInfo)
 	}
 
+	return lipgloss.NewStyle().Width(width).Render(
+		lipgloss.JoinVertical(lipgloss.Left, parts...),
+	)
+}
+
+func FormatResetDuration(seconds int64) string {
+	if seconds <= 0 {
+		return ""
+	}
+	if seconds >= 86400 {
+		days := seconds / 86400
+		hours := (seconds % 86400) / 3600
+		if hours == 0 {
+			return fmt.Sprintf("%dd", days)
+		}
+		return fmt.Sprintf("%dd %dh", days, hours)
+	}
+	if seconds >= 3600 {
+		hours := seconds / 3600
+		mins := (seconds % 3600) / 60
+		if mins == 0 {
+			return fmt.Sprintf("%dh", hours)
+		}
+		return fmt.Sprintf("%dh %dm", hours, mins)
+	}
+	if seconds >= 60 {
+		return fmt.Sprintf("%dm", seconds/60)
+	}
+	return fmt.Sprintf("%ds", seconds)
+}
+
+func PrimeAILimitsInfo(t *styles.Styles, tr i18n.Translator, limits *primeai.Limits, width int) string {
+	if limits == nil || !limits.Available {
+		return ""
+	}
+	header := tr.Label("primeai.limits_title")
+	if limits.PlanName != "" {
+		header += " · " + limits.PlanName
+	}
+	parts := []string{
+		t.ModelInfo.Provider.Render(ansi.Truncate(header, max(1, width), "…")),
+	}
+	formatWindow := func(labelKey string, w *primeai.LimitWindow) string {
+		if w == nil {
+			return ""
+		}
+		label := tr.Label(labelKey)
+		if w.LimitTokens <= 0 && w.LimitRequests <= 0 && w.Percent <= 0 && w.ResetInSeconds <= 0 {
+			line := fmt.Sprintf("  %s: %s", label, tr.Label("primeai.unlimited"))
+			return t.ModelInfo.MaxContext.Render(ansi.Truncate(line, max(1, width), "…"))
+		}
+		pctText := fmt.Sprintf("%.0f%%", w.Percent)
+		pctStyle := t.ModelInfo.TokenPercentage
+		switch {
+		case w.Percent >= 90:
+			pctStyle = t.LSP.ErrorDiagnostic
+		case w.Percent >= 75:
+			pctStyle = t.LSP.WarningDiagnostic
+		}
+		renderedPct := pctStyle.Render(pctText)
+		reset := ""
+		if w.ResetInSeconds > 0 {
+			reset = " (" + FormatResetDuration(w.ResetInSeconds) + ")"
+		}
+		prefix := t.ModelInfo.MaxContext.Render(fmt.Sprintf("  %s: ", label))
+		suffix := t.ModelInfo.MaxContext.Render(reset)
+		return ansi.Truncate(prefix+renderedPct+suffix, max(1, width), "…")
+	}
+	if line := formatWindow("primeai.window_5h", limits.FiveHour); line != "" {
+		parts = append(parts, line)
+	}
+	if line := formatWindow("primeai.window_weekly", limits.Weekly); line != "" {
+		parts = append(parts, line)
+	}
 	return lipgloss.NewStyle().Width(width).Render(
 		lipgloss.JoinVertical(lipgloss.Left, parts...),
 	)

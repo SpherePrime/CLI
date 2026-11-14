@@ -1,5 +1,29 @@
 export type Json = any
-export type AccountAction = 'status' | 'restore' | 'login' | 'logout'
+export type AccountAction =
+  | 'status'
+  | 'restore'
+  | 'login'
+  | 'logout'
+  | 'limits'
+  | 'refreshLimits'
+export interface PrimeAILimitWindow {
+  usedTokens: number
+  limitTokens: number
+  usedRequests: number
+  limitRequests: number
+  percent: number
+  resetAt?: string
+  resetInSeconds: number
+}
+export interface PrimeAILimits {
+  available: boolean
+  planName?: string
+  cacheWeightPercent: number
+  fiveHour?: PrimeAILimitWindow
+  weekly?: PrimeAILimitWindow
+  updatedAt?: string
+  error?: string
+}
 export type AccountState = {
   signedIn: boolean
   waiting: boolean
@@ -283,7 +307,9 @@ export interface DesktopApi {
   browserOpenExternal(): Promise<void>
   browserView(sessionId?: string | null, inspectorOpen?: boolean): Promise<BrowserState>
   update(action: 'check' | 'install', force?: boolean): Promise<Json>
-  account(action: AccountAction): Promise<AccountState>
+  account(action: 'status' | 'restore' | 'login' | 'logout'): Promise<AccountState>
+  account(action: 'limits' | 'refreshLimits'): Promise<PrimeAILimits>
+  account(action: AccountAction): Promise<AccountState | PrimeAILimits>
   onEvent(listener: (event: DesktopEvent) => void): () => void
 }
 declare global {

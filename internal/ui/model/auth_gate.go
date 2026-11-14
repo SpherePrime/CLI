@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/SpherePrime/CLI/internal/account"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/internal/ui/util"
@@ -176,6 +177,10 @@ func (m *UI) handleAuthStateMsg(msg authStateMsg) []tea.Cmd {
 	if msg.State.SignedIn {
 		if m.state == uiAuthGate {
 			cmds = append(cmds, m.completeAuthGate()...)
+		} else if m.primeAILimits == nil {
+			if cmd := m.fetchPrimeAILimits(); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
 		}
 		return cmds
 	}
@@ -221,6 +226,10 @@ func (m *UI) enterAuthGate(fromLogout bool) []tea.Cmd {
 	var cmds []tea.Cmd
 	m.authSyncSeq++
 	m.authCopied = false
+	m.primeAILimits = nil
+	if fromLogout {
+		primeai.ClearLimits()
+	}
 	if m.dialog != nil && m.dialog.HasDialogs() {
 		cmds = append(cmds, m.dialog.CloseAllDialogs()...)
 	}
