@@ -15,7 +15,7 @@ const reviewerAssignment = "Each reviewer assignment names the part, its author,
 var strictReviewPipeline = fmt.Sprintf(`
 
 <strict_review_pipeline>
-Maximum reasoning is selected in Prime Desktop, so this task runs through the strict review pipeline. It replaces the default delegation flow. The exceptions still apply: work yourself only when the user explicitly said not to use agents or the task is trivial.
+Maximum reasoning is selected, so this task runs through the strict review pipeline. It replaces the default delegation flow. The exceptions still apply: work yourself only when the user explicitly said not to use agents or the task is trivial.
 1. Explore: for an existing codebase whose context is not known yet, launch explore agents and wait for their reports. If the project directory is empty or this is a new project, skip explore and go straight to Build.
 2. Split: vertical slices only. One code agent owns a whole feature, page or module with its markup, styles and logic; never split one feature by layer (HTML, CSS, JS). Only truly independent, substantial parts get their own agent; a single page or small site is one part. Shared conventions go into every assignment.
 3. Build and review in one launch: in a single message, for every part launch one review agent (agent=review, background=true, unique name) and one code agent (background=true, unique name, reviewer=<that review agent's name>). Reviewers always start as waiting and make no calls until their author hands work over; the assignment you write is delivered to the reviewer together with the author's report. Do not message a reviewer to start it. %s Code agents write code only; they do not test, build-check or screenshot their own work.
@@ -37,7 +37,7 @@ Review depth for this task: %s (it follows the selected reasoning level). For ev
 const lightReviewPolicy = `
 
 <review_policy>
-Review depth for this task: light (a low reasoning level is selected). Do not launch review agents unless the user asks for a review. When the code agents finish, check the integrated result yourself in one pass: build and the relevant tests once, the main flow through its real surface, and for visible work one browser_run (or app check) with a desktop and a phone screenshot plus a close-up of anything that looks off. Send only critical problems back to the author with agent_message; do not run a second full pass.
+Review depth for this task: light (a low reasoning level is selected). Do not launch review agents unless the user asks for a review. When the code agents finish, check the integrated result yourself in one pass: build and the relevant tests once, the main flow through its real surface, and for visible work one browser_run (in Desktop) or Playwright / Chrome / browser MCP check (in CLI) or app check with a desktop and a phone screenshot plus a close-up of anything that looks off. Send only critical problems back to the author with agent_message; do not run a second full pass.
 </review_policy>
 `
 

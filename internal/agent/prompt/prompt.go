@@ -99,6 +99,8 @@ func (p *Prompt) Build(ctx context.Context, provider, model string, store *confi
 	}
 	if d.Desktop && (p.name == "coder" || p.name == "plan") {
 		sb.WriteString(desktopContext)
+	} else if !d.Desktop && (p.name == "coder" || p.name == "plan") {
+		sb.WriteString(cliContext)
 	}
 	if remote := store.Config().Options.RemoteWorkspace; remote != nil {
 		sb.WriteString(remoteWorkspaceContext(remote))

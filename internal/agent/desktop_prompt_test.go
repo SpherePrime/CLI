@@ -54,6 +54,24 @@ func TestTerminalPromptDoesNotInferDesktopFromBrowserCredentials(t *testing.T) {
 			body := renderCoderPrompt(t, false)
 			require.Contains(t, body, "running in the user's terminal")
 			require.NotContains(t, body, "<desktop_context>")
+			require.Contains(t, body, "<cli_context>")
+			require.Contains(t, body, "Playwright")
 		})
+	}
+}
+
+func TestCLIPromptVerificationContext(t *testing.T) {
+	t.Setenv("PRIME_DESKTOP", "")
+	env := testEnv(t)
+	cfg := writeSmartToolsConfig(t, env.workingDir)
+	for _, builder := range []func(...prompt.Option) (*prompt.Prompt, error){coderPrompt, planPrompt} {
+		p, err := builder(prompt.WithWorkingDir(env.workingDir))
+		require.NoError(t, err)
+		body, err := p.Build(context.Background(), "mock", "mock-model", cfg)
+		require.NoError(t, err)
+		require.NotContains(t, body, "<desktop_context>")
+		require.Contains(t, body, "<cli_context>")
+		require.Contains(t, body, "prime-designer")
+		require.Contains(t, body, "Playwright")
 	}
 }
