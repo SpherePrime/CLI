@@ -1,10 +1,12 @@
 package agent
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -849,4 +851,153 @@ func TestAppendTodosToContextSummary(t *testing.T) {
 	require.Contains(t, content, "[completed] Fix login bug")
 	require.Contains(t, content, "[pending] Add tests")
 	require.Contains(t, content, "Recreate this todo list")
+}
+
+func TestSummarize_UpdatesBasePromptTokensAndClearsCaches(t *testing.T) {
+	t.Parallel()
+
+	env := testEnv(t)
+	ctx := t.Context()
+
+	summaryText := "compacted summary of conversation"
+	model := &scriptLanguageModel{
+		streamFn: func(_ context.Context, _ fantasy.Call) (fantasy.StreamResponse, error) {
+			return func(yield func(fantasy.StreamPart) bool) {
+				if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeReasoningStart, ID: "r1"}) {
+					return
+				}
+				if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeReasoningDelta, ID: "r1", Delta: strings.Repeat("reasoning ", 100)}) {
+					return
+				}
+				if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeReasoningEnd, ID: "r1"}) {
+					return
+				}
+				if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextStart, ID: "t1"}) {
+					return
+				}
+				if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextDelta, ID: "t1", Delta: summaryText}) {
+					return
+				}
+				if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextEnd, ID: "t1"}) {
+					return
+				}
+				yield(fantasy.StreamPart{
+					Type:         fantasy.StreamPartTypeFinish,
+					FinishReason: fantasy.FinishReasonStop,
+					Usage:        fantasy.Usage{InputTokens: 90000, OutputTokens: 5000, TotalTokens: 95000},
+				})
+			}, nil
+		},
+	}
+
+	tool := &stubContextTool{
+		info: fantasy.ToolInfo{
+			Name:        "view",
+			Description: "read file contents",
+			Parameters:  map[string]any{"file_path": map[string]any{"type": "string"}},
+		},
+	}
+	sa := testSessionAgent(env, model, model, "main system prompt instructions", tool)
+	agent := sa.(*sessionAgent)
+
+	sess, err := env.sessions.Create(ctx, "summarize test")
+	require.NoError(t, err)
+	_, err = env.messages.Create(ctx, sess.ID, message.CreateMessageParams{
+		Role:  message.User,
+		Parts: []message.ContentPart{message.TextContent{Text: "hello"}},
+	})
+	require.NoError(t, err)
+
+	agent.recordPreparedContext(sess.ID, nil, []fantasy.Message{fantasy.NewUserMessage("stale cached message")})
+	agent.contextCalibrations.Set(sess.ID, 1.5)
+
+	err = agent.Summarize(ctx, sess.ID, nil, nil)
+	require.NoError(t, err)
+
+	_, hasView := agent.preparedContext(sess.ID)
+	require.False(t, hasView)
+	_, hasCal := agent.contextCalibration(sess.ID)
+	require.False(t, hasCal)
+
+	updated, err := env.sessions.Get(ctx, sess.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, updated.SummaryMessageID)
+
+	expectedBase := agent.estimateBaseContextTokens()
+	expectedSummary := approxTokenCount(summaryText)
+	require.Positive(t, expectedBase)
+	require.Equal(t, expectedBase, updated.PromptTokens)
+	require.Equal(t, expectedSummary, updated.CompletionTokens)
+	require.Equal(t, expectedBase+expectedSummary, updated.ContextTokens)
+	require.True(t, updated.EstimatedUsage)
+
+	breakdown, err := agent.ContextBreakdown(ctx, sess.ID)
+	require.NoError(t, err)
+	require.Zero(t, breakdown.ReportedTotal)
+	require.True(t, breakdown.EstimatedUsage)
+	require.False(t, breakdown.Calibrated)
+	require.Equal(t, expectedBase+expectedSummary, breakdown.EstimatedTotal)
+}
+
+func TestPrepareSessionPrompt_TodosAndCompactedReminders(t *testing.T) {
+	t.Parallel()
+
+	msgs := []message.Message{
+		{
+			Role:  message.User,
+			Parts: []message.ContentPart{message.TextContent{Text: "user prompt"}},
+		},
+	}
+
+	collectTexts := func(history []fantasy.Message) []string {
+		var texts []string
+		for _, m := range history {
+			for _, p := range m.Content {
+				if tp, ok := fantasy.AsMessagePart[fantasy.TextPart](p); ok {
+					texts = append(texts, tp.Text)
+				}
+			}
+		}
+		return texts
+	}
+
+	agent := &sessionAgent{}
+
+	t.Run("no todos and not compacted", func(t *testing.T) {
+		history, _ := agent.prepareSessionPrompt(msgs, false, preparePromptOptions{})
+		joined := strings.Join(collectTexts(history), "\n")
+		require.Contains(t, joined, "todo list is currently empty")
+		require.NotContains(t, joined, "compacted into the summary below")
+	})
+
+	t.Run("has todos and not compacted", func(t *testing.T) {
+		history, _ := agent.prepareSessionPrompt(msgs, false, preparePromptOptions{hasTodos: true})
+		joined := strings.Join(collectTexts(history), "\n")
+		require.NotContains(t, joined, "todo list is currently empty")
+		require.NotContains(t, joined, "compacted into the summary below")
+	})
+
+	t.Run("has todos and compacted", func(t *testing.T) {
+		history, _ := agent.prepareSessionPrompt(msgs, false, preparePromptOptions{hasTodos: true, compacted: true})
+		joined := strings.Join(collectTexts(history), "\n")
+		require.NotContains(t, joined, "todo list is currently empty")
+		require.Contains(t, joined, "compacted into the summary below")
+		require.Contains(t, joined, "system prompt instructions")
+	})
+
+	t.Run("no todos and compacted", func(t *testing.T) {
+		history, _ := agent.prepareSessionPrompt(msgs, false, preparePromptOptions{hasTodos: false, compacted: true})
+		joined := strings.Join(collectTexts(history), "\n")
+		require.Contains(t, joined, "todo list is currently empty")
+		require.Contains(t, joined, "compacted into the summary below")
+	})
+
+	t.Run("subagent omits reminders", func(t *testing.T) {
+		subAgent := &sessionAgent{isSubAgent: true}
+		history, _ := subAgent.prepareSessionPrompt(msgs, false, preparePromptOptions{hasTodos: false, compacted: true})
+		require.Len(t, history, 1)
+		joined := strings.Join(collectTexts(history), "\n")
+		require.NotContains(t, joined, "todo list is currently empty")
+		require.NotContains(t, joined, "compacted into the summary below")
+	})
 }

@@ -350,37 +350,26 @@ func (g languageModel) prepareParams(call fantasy.Call) (*genai.GenerateContentC
 }
 
 func toGooglePrompt(prompt fantasy.Prompt, isVertexAI bool) (*genai.Content, []*genai.Content, []fantasy.CallWarning) { //nolint: unparam
-	var systemInstructions *genai.Content
+	var systemMessages []string
 	var content []*genai.Content
 	var warnings []fantasy.CallWarning
 
 	finishedSystemBlock := false
 	for _, msg := range prompt {
+		if msg.Role != fantasy.MessageRoleSystem {
+			finishedSystemBlock = true
+		}
 		switch msg.Role {
 		case fantasy.MessageRoleSystem:
 			if finishedSystemBlock {
-				// skip multiple system messages that are separated by user/assistant messages
-				// TODO: see if we need to send error here?
 				continue
 			}
-			finishedSystemBlock = true
-
-			var systemMessages []string
 			for _, part := range msg.Content {
 				text, ok := fantasy.AsMessagePart[fantasy.TextPart](part)
 				if !ok || text.Text == "" {
 					continue
 				}
 				systemMessages = append(systemMessages, text.Text)
-			}
-			if len(systemMessages) > 0 {
-				systemInstructions = &genai.Content{
-					Parts: []*genai.Part{
-						{
-							Text: strings.Join(systemMessages, "\n"),
-						},
-					},
-				}
 			}
 		case fantasy.MessageRoleUser:
 			var parts []*genai.Part
@@ -557,6 +546,16 @@ func toGooglePrompt(prompt fantasy.Prompt, isVertexAI bool) (*genai.Content, []*
 			}
 		default:
 			panic("unsupported message role: " + msg.Role)
+		}
+	}
+	var systemInstructions *genai.Content
+	if len(systemMessages) > 0 {
+		systemInstructions = &genai.Content{
+			Parts: []*genai.Part{
+				{
+					Text: strings.Join(systemMessages, "\n"),
+				},
+			},
 		}
 	}
 	return systemInstructions, content, warnings

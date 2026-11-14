@@ -168,8 +168,12 @@ fn health_report(tab: &str, responsive: bool, state: TabHealth) -> Value {
     })
 }
 
+pub fn text_part(value: impl Into<String>) -> Value {
+    json!({ "type": "text", "text": value.into() })
+}
+
 pub fn text(value: impl Into<String>) -> Value {
-    json!([{ "type": "text", "text": value.into() }])
+    Value::Array(vec![text_part(value)])
 }
 
 #[cfg(test)]
@@ -197,5 +201,18 @@ mod tests {
         assert_eq!(waiting["responsive"], true);
         assert_eq!(waiting["unresponsiveSeconds"], 0.0);
         assert!(waiting["evaluatingSeconds"].as_f64().unwrap() >= 40.0);
+    }
+
+    #[test]
+    fn text_part_is_object_and_text_wraps_single_part() {
+        let part = text_part("hello");
+        assert!(part.is_object());
+        assert_eq!(part, json!({ "type": "text", "text": "hello" }));
+
+        let wrapped = text("hello");
+        let items = wrapped.as_array().expect("text() must return an array");
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0], part);
+        assert!(items[0].is_object());
     }
 }

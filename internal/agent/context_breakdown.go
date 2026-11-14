@@ -91,26 +91,10 @@ func (a *sessionAgent) ContextBreakdown(ctx context.Context, sessionID string) (
 		category.Items++
 	}
 
-	add(ContextSystemPrompt, approxTokenCount(a.systemPrompt.Get())+approxTokenCount(a.systemPromptPrefix.Get()))
-	for _, server := range mcp.GetStates() {
-		if server.State != mcp.StateConnected || server.Client == nil {
-			continue
-		}
-		if result := server.Client.InitializeResult(); result != nil {
-			add(ContextMCPInstructions, approxTokenCount(result.Instructions))
-		}
-	}
 	view, hasView := a.preparedContext(sessionID)
+	a.addBaseContextCategories(add, !hasView)
 	if hasView {
 		addPreparedToolDefinitions(view, add)
-	} else {
-		for _, tool := range a.tools.Copy() {
-			key := ContextTools
-			if strings.HasPrefix(tool.Info().Name, "mcp_") {
-				key = ContextMCPTools
-			}
-			add(key, estimateToolDefinitionTokens([]fantasy.AgentTool{tool}))
-		}
 	}
 
 	currentSession, err := a.sessions.Get(ctx, sessionID)
@@ -133,8 +117,12 @@ func (a *sessionAgent) ContextBreakdown(ctx context.Context, sessionID string) (
 		}
 	}
 
+	var reportedTotal int64
+	if !currentSession.EstimatedUsage && currentSession.PromptTokens > 0 {
+		reportedTotal = currentSession.PromptTokens + currentSession.CompletionTokens
+	}
 	breakdown := ContextBreakdown{
-		ReportedTotal:  currentSession.PromptTokens + currentSession.CompletionTokens,
+		ReportedTotal:  reportedTotal,
 		EstimatedUsage: currentSession.EstimatedUsage,
 	}
 	largeModel := a.largeModel.Get()
@@ -154,6 +142,42 @@ func (a *sessionAgent) ContextBreakdown(ctx context.Context, sessionID string) (
 		breakdown.Calibrated = true
 	}
 	return breakdown, nil
+}
+
+func (a *sessionAgent) addBaseContextCategories(add func(string, int64), includeTools bool) {
+	var systemTokens int64
+	if a.systemPrompt != nil {
+		systemTokens += approxTokenCount(a.systemPrompt.Get())
+	}
+	if a.systemPromptPrefix != nil {
+		systemTokens += approxTokenCount(a.systemPromptPrefix.Get())
+	}
+	add(ContextSystemPrompt, systemTokens)
+	for _, server := range mcp.GetStates() {
+		if server.State != mcp.StateConnected || server.Client == nil {
+			continue
+		}
+		if result := server.Client.InitializeResult(); result != nil {
+			add(ContextMCPInstructions, approxTokenCount(result.Instructions))
+		}
+	}
+	if includeTools && a.tools != nil {
+		for _, tool := range a.tools.Copy() {
+			key := ContextTools
+			if strings.HasPrefix(tool.Info().Name, "mcp_") {
+				key = ContextMCPTools
+			}
+			add(key, estimateToolDefinitionTokens([]fantasy.AgentTool{tool}))
+		}
+	}
+}
+
+func (a *sessionAgent) estimateBaseContextTokens() int64 {
+	var total int64
+	a.addBaseContextCategories(func(_ string, tokens int64) {
+		total += tokens
+	}, true)
+	return total
 }
 
 func addMessageParts(msg message.Message, add func(string, int64)) {

@@ -842,7 +842,10 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		a.publishSteeringComplete(ctx, steeringCalls, complete)
 	}()
 
-	history, files := a.preparePrompt(msgs, largeModel.CatwalkCfg.SupportsImages, call.Attachments...)
+	history, files := a.prepareSessionPrompt(msgs, largeModel.CatwalkCfg.SupportsImages, preparePromptOptions{
+		hasTodos:  len(currentSession.Todos) > 0,
+		compacted: currentSession.SummaryMessageID != "",
+	}, call.Attachments...)
 
 	startTime := time.Now()
 	a.eventPromptSent(call.SessionID)
@@ -1152,14 +1155,22 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				return getSessionErr
 			}
 			usage, estimated := fallbackStepUsage(stepMessages, stepResult)
+			promptTokens := promptTokensFromUsage(usage)
 			if estimated {
 				usage.InputTokens += stepToolTokens
 				usage.TotalTokens += stepToolTokens
-			} else {
+			} else if promptTokens > 0 {
 				a.recordContextCalibration(call.SessionID, usage, stepMessages, stepToolTokens)
 			}
-			updatedSession.ContextTokens = contextTokensFromUsage(usage)
 			a.updateSessionUsage(largeModel, &updatedSession, usage, a.openrouterCost(stepResult.ProviderMetadata), estimated)
+			if promptTokens == 0 {
+				estimatedInput := estimateMessageTokens(stepMessages) + stepToolTokens
+				updatedSession.ContextTokens = estimatedInput + usage.OutputTokens
+				updatedSession.PromptTokens = estimatedInput
+				updatedSession.EstimatedUsage = true
+			} else {
+				updatedSession.ContextTokens = contextTokensFromUsage(usage)
+			}
 			extractHyperCredits(stepResult.ProviderMetadata)
 			_, sessionErr := a.sessions.Save(ctx, updatedSession)
 			if sessionErr != nil {
@@ -1355,6 +1366,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				existing = []SessionAgentCall{}
 			}
 			call.Prompt = fmt.Sprintf("The previous session was interrupted because it got too long, the initial user request was: `%s`", call.Prompt)
+			call.KeepTodos = true
 			call.steeringCalls = steeringCalls
 			existing = append(existing, call)
 			a.messageQueue.Set(call.SessionID, existing)
@@ -1515,7 +1527,10 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		return nil
 	}
 
-	aiMsgs, _ := a.preparePrompt(msgs, largeModel.CatwalkCfg.SupportsImages)
+	aiMsgs, _ := a.prepareSessionPrompt(msgs, largeModel.CatwalkCfg.SupportsImages, preparePromptOptions{
+		hasTodos:  len(currentSession.Todos) > 0,
+		compacted: currentSession.SummaryMessageID != "",
+	})
 
 	appendTodosToContextSummary(a.dataDir, sessionID, currentSession.Todos)
 	summaryMsgs := readSessionContextSummaryMessages(a.dataDir, sessionID, aiMsgs)
@@ -1628,11 +1643,22 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 
 	// Just in case, get just the last usage info.
 	usage := resp.Response.Usage
+	if a.preparedViews != nil {
+		a.preparedViews.Del(sessionID)
+	}
+	if a.contextCalibrations != nil {
+		a.contextCalibrations.Del(sessionID)
+	}
+	summaryTokens := approxTokenCount(summaryMessage.Content().Text)
+	if summaryTokens == 0 {
+		summaryTokens = summaryCompletionTokens(usage, summaryMessage)
+	}
+	basePromptTokens := a.estimateBaseContextTokens()
 	currentSession.SummaryMessageID = summaryMessage.ID
-	currentSession.CompletionTokens = summaryCompletionTokens(usage, summaryMessage)
-	currentSession.PromptTokens = 0
-	currentSession.ContextTokens = currentSession.CompletionTokens
-	currentSession.EstimatedUsage = usageIsZero(usage)
+	currentSession.PromptTokens = basePromptTokens
+	currentSession.CompletionTokens = summaryTokens
+	currentSession.ContextTokens = basePromptTokens + summaryTokens
+	currentSession.EstimatedUsage = true
 	_, err = a.sessions.Save(genCtx, currentSession)
 	if err != nil {
 		return err
@@ -1701,15 +1727,33 @@ func (a *sessionAgent) createUserMessage(ctx context.Context, call SessionAgentC
 	return msg, nil
 }
 
+type preparePromptOptions struct {
+	hasTodos  bool
+	compacted bool
+}
+
 func (a *sessionAgent) preparePrompt(msgs []message.Message, supportsImages bool, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
+	return a.prepareSessionPrompt(msgs, supportsImages, preparePromptOptions{}, attachments...)
+}
+
+func (a *sessionAgent) prepareSessionPrompt(msgs []message.Message, supportsImages bool, opts preparePromptOptions, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
 	var history []fantasy.Message
-	if !a.isSubAgent {
+	if !a.isSubAgent && !opts.hasTodos {
 		history = append(history, fantasy.NewUserMessage(
 			fmt.Sprintf(
 				"<system_reminder>%s</system_reminder>",
 				`This is a reminder that your todo list is currently empty. DO NOT mention this to the user explicitly because they are already aware.
 If you are working on tasks that would benefit from a todo list please use the "todos" tool to create one.
 If not, please feel free to ignore. Again do not mention this message to the user.`,
+			),
+		))
+	}
+	if !a.isSubAgent && opts.compacted {
+		history = append(history, fantasy.NewUserMessage(
+			fmt.Sprintf(
+				"<system_reminder>%s</system_reminder>",
+				`The conversation history before this point was compacted into the summary below.
+All system prompt instructions, workspace rules, and tool protocols remain in full effect. Continue working seamlessly without mentioning this reminder to the user.`,
 			),
 		))
 	}

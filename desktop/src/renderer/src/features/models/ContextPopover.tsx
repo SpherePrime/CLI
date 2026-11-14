@@ -28,14 +28,15 @@ export function contextTotals(data: Breakdown | null, fallbackWindow: number) {
   const capacity = data?.context_window || fallbackWindow
   const estimated = data?.estimated_total || 0
   const reported = data?.reported_total || 0
-  const total = reported || estimated
+  const estimatedUsage = Boolean(data?.estimated_usage)
+  const total = estimatedUsage ? Math.max(reported, estimated) : reported || estimated
   const shareOfEstimate = estimated ? (category: Category) => category.tokens / estimated : () => 0
   const percentOfTotal = (value: number) => (capacity ? (value / capacity) * 100 : 0)
   return {
     capacity,
     estimated,
     total,
-    estimatedUsage: Boolean(data?.estimated_usage),
+    estimatedUsage,
     shareOfEstimate,
     percentOfTotal,
     threshold: data?.auto_summarize_percent || 0,
@@ -149,7 +150,10 @@ export function ContextPopover({
         {w.session && (
           <p className="context-note context-usage">
             {t('{value0} токенов · ${value1}', {
-              value0: (w.session.prompt_tokens || 0).toLocaleString(locale),
+              value0: (estimatedUsage && totals.total > (w.session.prompt_tokens || 0)
+                ? totals.total
+                : w.session.prompt_tokens || totals.total || w.session.completion_tokens || 0
+              ).toLocaleString(locale),
               value1: (w.session.cost || 0).toLocaleString(locale, {
                 minimumFractionDigits: 4,
                 maximumFractionDigits: 4

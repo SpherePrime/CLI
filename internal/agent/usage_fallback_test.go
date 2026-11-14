@@ -1,12 +1,16 @@
 package agent
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
@@ -391,4 +395,168 @@ func TestIsContextOverflowError(t *testing.T) {
 	require.False(t, isContextOverflowError(nil))
 	require.False(t, isContextOverflowError(&fantasy.ProviderError{StatusCode: 400}))
 	require.True(t, isContextOverflowError(fmt.Errorf("wrapped: %w", &fantasy.ProviderError{ContextTooLargeErr: true})))
+}
+
+type scriptLanguageModel struct {
+	streamFn func(ctx context.Context, call fantasy.Call) (fantasy.StreamResponse, error)
+}
+
+func (m *scriptLanguageModel) Generate(context.Context, fantasy.Call) (*fantasy.Response, error) {
+	return &fantasy.Response{}, nil
+}
+
+func (m *scriptLanguageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.StreamResponse, error) {
+	return m.streamFn(ctx, call)
+}
+
+func (m *scriptLanguageModel) GenerateObject(context.Context, fantasy.ObjectCall) (*fantasy.ObjectResponse, error) {
+	return &fantasy.ObjectResponse{}, nil
+}
+
+func (m *scriptLanguageModel) StreamObject(context.Context, fantasy.ObjectCall) (fantasy.ObjectStreamResponse, error) {
+	return nil, nil
+}
+
+func (m *scriptLanguageModel) Provider() string { return "fake" }
+func (m *scriptLanguageModel) Model() string    { return "fake-model" }
+
+func promptHasText(prompt fantasy.Prompt, substr string) bool {
+	for _, msg := range prompt {
+		for _, part := range msg.Content {
+			if tp, ok := fantasy.AsMessagePart[fantasy.TextPart](part); ok && strings.Contains(tp.Text, substr) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func TestRun_OutputOnlyUsageEstimatesContextAndAutoCompacts(t *testing.T) {
+	t.Parallel()
+
+	env := testEnv(t)
+	ctx := t.Context()
+
+	sess, err := env.sessions.Create(ctx, "Custom Title")
+	require.NoError(t, err)
+	_, err = env.messages.Create(ctx, sess.ID, message.CreateMessageParams{
+		Role:  message.User,
+		Parts: []message.ContentPart{message.TextContent{Text: "initial user message"}},
+	})
+	require.NoError(t, err)
+
+	var stepIdx atomic.Int32
+	var continuationPrompt fantasy.Prompt
+
+	model := &scriptLanguageModel{
+		streamFn: func(_ context.Context, call fantasy.Call) (fantasy.StreamResponse, error) {
+			idx := stepIdx.Add(1)
+			switch idx {
+			case 1:
+				return func(yield func(fantasy.StreamPart) bool) {
+					if !yield(fantasy.StreamPart{
+						Type:          fantasy.StreamPartTypeToolCall,
+						ID:            "call_1",
+						ToolCallName:  "view",
+						ToolCallInput: "{}",
+					}) {
+						return
+					}
+					yield(fantasy.StreamPart{
+						Type:         fantasy.StreamPartTypeFinish,
+						FinishReason: fantasy.FinishReasonToolCalls,
+						Usage:        fantasy.Usage{OutputTokens: 200},
+					})
+				}, nil
+			case 2:
+				return func(yield func(fantasy.StreamPart) bool) {
+					if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextStart, ID: "sum"}) {
+						return
+					}
+					if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextDelta, ID: "sum", Delta: "compacted summary"}) {
+						return
+					}
+					if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextEnd, ID: "sum"}) {
+						return
+					}
+					yield(fantasy.StreamPart{
+						Type:         fantasy.StreamPartTypeFinish,
+						FinishReason: fantasy.FinishReasonStop,
+						Usage:        fantasy.Usage{InputTokens: 900, OutputTokens: 100},
+					})
+				}, nil
+			default:
+				continuationPrompt = append(fantasy.Prompt(nil), call.Prompt...)
+				return func(yield func(fantasy.StreamPart) bool) {
+					if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextStart, ID: "done"}) {
+						return
+					}
+					if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextDelta, ID: "done", Delta: "continued and done"}) {
+						return
+					}
+					if !yield(fantasy.StreamPart{Type: fantasy.StreamPartTypeTextEnd, ID: "done"}) {
+						return
+					}
+					yield(fantasy.StreamPart{
+						Type:         fantasy.StreamPartTypeFinish,
+						FinishReason: fantasy.FinishReasonStop,
+						Usage:        fantasy.Usage{InputTokens: 400, OutputTokens: 20},
+					})
+				}, nil
+			}
+		},
+	}
+
+	todoCreatingTool := fantasy.NewAgentTool("view", "view file", func(ctx context.Context, _ struct{}, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		s, getErr := env.sessions.Get(ctx, sess.ID)
+		if getErr != nil {
+			return fantasy.ToolResponse{}, getErr
+		}
+		s.Todos = []session.Todo{{Content: "finish task", Status: session.TodoStatusInProgress}}
+		if _, saveErr := env.sessions.Save(ctx, s); saveErr != nil {
+			return fantasy.ToolResponse{}, saveErr
+		}
+		return fantasy.NewTextResponse("file body"), nil
+	})
+
+	largeModel := Model{
+		Model: model,
+		CatwalkCfg: catwalk.Model{
+			ContextWindow:    1000,
+			DefaultMaxTokens: 500,
+		},
+		ModelCfg: config.SelectedModel{
+			Provider:             "fake",
+			Model:                "fake-model",
+			AutoSummarizePercent: 60,
+		},
+	}
+
+	sa := NewSessionAgent(SessionAgentOptions{
+		LargeModel:           largeModel,
+		SmallModel:           largeModel,
+		SystemPrompt:         strings.Repeat("system instructions ", 120),
+		AutoSummarizePercent: 60,
+		IsYolo:               true,
+		Sessions:             env.sessions,
+		Messages:             env.messages,
+		Tools:                []fantasy.AgentTool{todoCreatingTool},
+	})
+
+	_, err = sa.Run(ctx, SessionAgentCall{
+		SessionID: sess.ID,
+		Prompt:    "run the task",
+	})
+	require.NoError(t, err)
+	require.Equal(t, int32(3), stepIdx.Load())
+
+	finalSess, err := env.sessions.Get(ctx, sess.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, finalSess.SummaryMessageID)
+	require.Len(t, finalSess.Todos, 1)
+	require.Equal(t, "finish task", finalSess.Todos[0].Content)
+
+	require.True(t, promptHasText(continuationPrompt, "compacted into the summary below"))
+	require.False(t, promptHasText(continuationPrompt, "todo list is currently empty"))
+	require.True(t, promptHasText(continuationPrompt, "compacted summary"))
 }

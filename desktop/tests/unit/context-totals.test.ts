@@ -51,4 +51,22 @@ describe('contextTotals', () => {
   it('exposes the estimated-usage flag', () => {
     expect(contextTotals({ ...breakdown, estimated_usage: true }, 50000).estimatedUsage).toBe(true)
   })
+
+  it('uses the larger estimate when usage is estimated and reported is partial', () => {
+    const totals = contextTotals(
+      { ...breakdown, estimated_usage: true, reported_total: 5000, estimated_total: 34400 },
+      50000
+    )
+    expect(totals.total).toBe(34400)
+    expect(totals.free).toBe(65600)
+  })
+
+  it('uses the post-compaction estimate when reported total is zero', () => {
+    const totals = contextTotals(
+      { ...breakdown, reported_total: 0, estimated_total: 34400 },
+      50000
+    )
+    expect(totals.total).toBe(34400)
+    expect(totals.free).toBe(65600)
+  })
 })

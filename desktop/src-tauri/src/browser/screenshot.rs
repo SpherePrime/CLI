@@ -114,13 +114,13 @@ fn full_page(view: &Webview, tab: &str, tiles: bool, zoom: f64, cancel: &AtomicB
         if height < full_height {
             note.push_str(&format!(" Only the top {height} px fit; capture lower parts with clip or tiles."));
         }
-        return Ok(vec![image, evaluate::text(note)]);
+        return Ok(vec![image, evaluate::text_part(note)]);
     }
     let dpr = size["dpr"].as_f64().filter(|value| value.is_finite() && *value > 0.0).unwrap_or(1.0);
     let sections = shot_view::tiles(width, height, zoom * dpr, MAX_TILES);
     let mut parts = Vec::with_capacity(sections.len() * 2 + 1);
     for (index, tile) in sections.iter().enumerate() {
-        parts.push(evaluate::text(format!(
+        parts.push(evaluate::text_part(format!(
             "Tile {}/{}: y {}-{} of {full_height} CSS px",
             index + 1,
             sections.len(),
@@ -131,7 +131,7 @@ fn full_page(view: &Webview, tab: &str, tiles: bool, zoom: f64, cancel: &AtomicB
     }
     let covered = sections.last().map_or(0.0, |tile| tile.y + tile.height);
     if covered < full_height {
-        parts.push(evaluate::text(format!("Tiles cover the top {covered} px; capture the rest with clip from y {covered}.")));
+        parts.push(evaluate::text_part(format!("Tiles cover the top {covered} px; capture the rest with clip from y {covered}.")));
     }
     Ok(parts)
 }
@@ -165,7 +165,7 @@ fn with_model_notes(parts: Vec<Value>) -> Vec<Value> {
             .flatten();
         output.push(part);
         if let Some(note) = note {
-            output.push(evaluate::text(note));
+            output.push(evaluate::text_part(note));
         }
     }
     output
@@ -205,5 +205,33 @@ mod tests {
         assert!(target(&json!({"fullPage":true, "ref":3}), by_ref).is_err());
         assert!(target(&json!({"zoom":5}), by_ref).is_err());
         assert!(target(&json!({"clip":{"x":0,"y":0,"width":0,"height":10}}), by_ref).is_err());
+    }
+
+    #[test]
+    fn with_model_notes_returns_flat_objects() {
+        use base64::Engine;
+
+        let png_base64 = |width: u32, height: u32| {
+            let mut bytes = vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, b'I', b'H', b'D', b'R'];
+            bytes.extend(width.to_be_bytes());
+            bytes.extend(height.to_be_bytes());
+            base64::engine::general_purpose::STANDARD.encode(bytes)
+        };
+
+        let small_image = json!({ "type": "image", "data": png_base64(1200, 800), "mimeType": "image/png" });
+        let large_image = json!({ "type": "image", "data": png_base64(1440, 6000), "mimeType": "image/png" });
+        let tile_label = evaluate::text_part("Tile 1/2: y 0-1000 of 2000 CSS px");
+
+        let parts = with_model_notes(vec![tile_label, small_image, large_image]);
+        assert_eq!(parts.len(), 4);
+        for part in &parts {
+            assert!(part.is_object(), "every screenshot part must be a JSON object, got {part}");
+            assert!(!part.is_array());
+            assert!(part["type"].as_str().is_some());
+        }
+        assert_eq!(parts[0]["type"], "text");
+        assert_eq!(parts[1]["type"], "image");
+        assert_eq!(parts[2]["type"], "image");
+        assert_eq!(parts[3]["type"], "text");
     }
 }

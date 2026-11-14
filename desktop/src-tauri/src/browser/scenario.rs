@@ -1,5 +1,5 @@
 use super::{
-    evaluate::{self, text},
+    evaluate::{self, text_part},
     panel::BrowserState,
     platform,
     scenario_dom::{self as dom, locate},
@@ -60,23 +60,48 @@ pub fn run(browser: &Browser, plan: Plan) -> Result<Value, String> {
         }
     }
     let skipped = plan.steps.len() - log.len();
+    let summary = build_summary(
+        &log,
+        plan.steps.len(),
+        failed,
+        stopped,
+        shots,
+        started.elapsed().as_millis(),
+        skipped,
+        &plan.notes,
+    );
+    Ok(assemble_content(summary, images))
+}
+
+fn build_summary(
+    log: &[String],
+    total_steps: usize,
+    failed: usize,
+    stopped: bool,
+    shots: usize,
+    elapsed_ms: u128,
+    skipped: usize,
+    notes: &[String],
+) -> String {
     let verdict = if failed == 0 && !stopped { "PASSED" } else { "FAILED" };
     let mut summary = format!(
-        "Scenario {verdict}: {} of {} steps run, {failed} failed, {shots} screenshots, {}ms.\n{}",
+        "Scenario {verdict}: {} of {total_steps} steps run, {failed} failed, {shots} screenshots, {elapsed_ms}ms.\n{}",
         log.len(),
-        plan.steps.len(),
-        started.elapsed().as_millis(),
         log.join("\n")
     );
     if skipped > 0 {
         summary.push_str(&format!("\n{skipped} remaining steps were not run."));
     }
-    if !plan.notes.is_empty() {
-        summary.push_str(&format!("\nNotes:\n{}", plan.notes.join("\n")));
+    if !notes.is_empty() {
+        summary.push_str(&format!("\nNotes:\n{}", notes.join("\n")));
     }
-    let mut content = vec![text(summary)];
+    summary
+}
+
+fn assemble_content(summary: String, images: Vec<Value>) -> Value {
+    let mut content = vec![text_part(summary)];
     content.extend(images);
-    Ok(Value::Array(content))
+    Value::Array(content)
 }
 
 fn suffix(detail: &str) -> String {
@@ -220,7 +245,7 @@ fn execute(browser: &Browser, step: &Step, images: &mut Vec<Value>, shots: &mut 
                 return Err("Browser returned no screenshot".to_owned());
             }
             let width = evaluate::immediate(view, "window.innerWidth")?;
-            images.push(evaluate::text(format!("Screenshot \"{name}\" at {width}px")));
+            images.push(text_part(format!("Screenshot \"{name}\" at {width}px")));
             images.extend(captured);
             *shots += 1;
             Ok(name.clone())
@@ -248,4 +273,55 @@ fn covered_note(covered_by: &Option<String>) -> String {
         .as_ref()
         .map(|layer| format!("element center is covered by {layer}"))
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn assembled_content_contains_only_flat_mcp_objects() {
+        let passed_summary = build_summary(
+            &["1. navigate ok 12ms".to_owned(), "2. screenshot ok 20ms: home".to_owned()],
+            2,
+            0,
+            false,
+            1,
+            32,
+            0,
+            &[],
+        );
+        assert!(passed_summary.starts_with("Scenario PASSED: 2 of 2 steps run, 0 failed, 1 screenshots"));
+
+        let failed_summary = build_summary(
+            &["1. click FAILED 5ms: not found".to_owned()],
+            3,
+            1,
+            true,
+            1,
+            15,
+            2,
+            &["extra note".to_owned()],
+        );
+        assert!(failed_summary.starts_with("Scenario FAILED: 1 of 3 steps run, 1 failed, 1 screenshots"));
+        assert!(failed_summary.contains("2 remaining steps were not run."));
+        assert!(failed_summary.contains("Notes:\nextra note"));
+
+        let images = vec![
+            text_part("Screenshot \"home\" at 1280px"),
+            json!({ "type": "image", "data": "AAAA", "mimeType": "image/png" }),
+        ];
+        let content = assemble_content(failed_summary, images);
+        let parts = content.as_array().expect("scenario content must be a JSON array");
+        assert_eq!(parts.len(), 3);
+        for part in parts {
+            assert!(part.is_object(), "every content part must be a JSON object, got {part}");
+            assert!(!part.is_array());
+            assert!(part["type"].as_str().is_some());
+        }
+        assert_eq!(parts[0]["type"], "text");
+        assert_eq!(parts[1]["type"], "text");
+        assert_eq!(parts[2]["type"], "image");
+    }
 }
