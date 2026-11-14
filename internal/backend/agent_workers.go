@@ -21,10 +21,11 @@ func (b *Backend) workerControl(workspaceID, sessionID string) (agent.AgentOrche
 	if err != nil {
 		return nil, err
 	}
-	if ws.App == nil || ws.AgentCoordinator == nil {
+	coord := ws.Coordinator()
+	if coord == nil {
 		return nil, ErrAgentNotInitialized
 	}
-	control, ok := ws.AgentCoordinator.(agent.AgentOrchestrator)
+	control, ok := coord.(agent.AgentOrchestrator)
 	if !ok {
 		return nil, ErrAgentWorkersUnsupported
 	}

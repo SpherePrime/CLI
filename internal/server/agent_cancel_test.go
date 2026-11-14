@@ -104,7 +104,8 @@ func (s *runCoordinator) capturedCtx() context.Context {
 func buildAgentWorkspace(t *testing.T, coord agent.Coordinator) (*controllerV1, string) {
 	t.Helper()
 	b := backend.New(context.Background(), nil, nil)
-	a := &app.App{AgentCoordinator: coord}
+	a := &app.App{}
+	a.SetCoordinator(coord)
 
 	ws := &backend.Workspace{
 		ID:   uuid.New().String(),

@@ -37,9 +37,13 @@ func (j *agentJob) stop() {
 		j.status = "canceled"
 		j.output = "canceled while waiting for a message"
 		j.updatedAt = time.Now()
+		j.stopping = false
 		j.closeDoneLocked()
 		j.mu.Unlock()
 		return
+	}
+	if j.status == "running" || j.status == "queued" {
+		j.stopping = true
 	}
 	j.mu.Unlock()
 	if cancel != nil {

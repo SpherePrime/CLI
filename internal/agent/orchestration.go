@@ -213,6 +213,10 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 		}
 	}
 	job.mu.Lock()
+	if job.stopping {
+		job.mu.Unlock()
+		return AgentWorker{}, errors.New("agent worker is stopping")
+	}
 	if prepare != nil {
 		prepare(job)
 	}
@@ -226,6 +230,7 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 	if job.status != "running" && job.status != "queued" {
 		jobCtx, cancel := context.WithCancel(c.workerContext())
 		job.cancel = cancel
+		job.stopping = false
 		job.done = make(chan struct{})
 		job.status = "queued"
 		job.queuedAt = time.Now()

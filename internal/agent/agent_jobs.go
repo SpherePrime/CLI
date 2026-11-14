@@ -46,20 +46,43 @@ type agentJob struct {
 	reviewRound     int
 	awaitHandoff    bool
 
-	mu     sync.Mutex
-	status string // "waiting", "queued", "running", "done", "error", "canceled"
-	output string
-	cancel context.CancelFunc
-	done   chan struct{}
+	mu       sync.Mutex
+	status   string // "waiting", "queued", "running", "done", "error", "canceled"
+	output   string
+	cancel   context.CancelFunc
+	stopping bool
+	done     chan struct{}
 }
 
 func (j *agentJob) finish(status, output string) {
 	j.mu.Lock()
+	cancel := j.cancel
+	j.cancel = nil
+	j.stopping = false
+	j.pending = nil
 	j.status = status
 	j.output = output
 	j.updatedAt = time.Now()
 	j.closeDoneLocked()
 	j.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+func (j *agentJob) releaseCancel(generation uint64) {
+	j.mu.Lock()
+	if j.generation != generation {
+		j.mu.Unlock()
+		return
+	}
+	cancel := j.cancel
+	j.cancel = nil
+	j.stopping = false
+	j.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
 }
 
 func (j *agentJob) closeDoneLocked() {
@@ -169,7 +192,13 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 	// Detached from the caller: background jobs survive the step that
 	// started them, like background shells, and are stopped only via
 	// agent_jobs(kill).
-	jobCtx, cancel := context.WithCancel(c.workerContext())
+	var (
+		jobCtx context.Context
+		cancel context.CancelFunc
+	)
+	if !params.Dormant {
+		jobCtx, cancel = context.WithCancel(c.workerContext())
+	}
 
 	c.jobMu.Lock()
 	c.agentJobSeq++
@@ -192,8 +221,6 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		reviewer:        strings.TrimSpace(params.Reviewer),
 	}
 	if params.Dormant {
-		cancel()
-		job.cancel = nil
 		job.status = "waiting"
 		job.awaitHandoff = params.AwaitHandoff
 	}

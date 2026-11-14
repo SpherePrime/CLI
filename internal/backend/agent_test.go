@@ -80,7 +80,8 @@ func insertAgentWorkspace(t *testing.T, b *Backend, coord agent.Coordinator) *Wo
 		clients:      make(map[string]*clientState),
 		shutdownFn:   func() {},
 	}
-	ws.App = &app.App{AgentCoordinator: coord}
+	ws.App = &app.App{}
+	ws.App.SetCoordinator(coord)
 	ws.ctx, ws.cancel = context.WithCancel(b.ctx)
 	b.mu.Lock()
 	b.workspaces.Set(ws.ID, ws)
@@ -113,7 +114,7 @@ func TestSendMessage_LazilyInitializesAgent(t *testing.T) {
 	t.Cleanup(func() { drainBackend(t, b) })
 	ws, _, err := b.CreateWorkspace(protoWS(cwd, dataDir, uuid.New().String()))
 	require.NoError(t, err)
-	require.Nil(t, ws.AgentCoordinator)
+	require.Nil(t, ws.Coordinator())
 	err = b.SendMessage(ws.ID, proto.AgentMessage{SessionID: "S1", Prompt: "hi"})
 	require.Error(t, err)
 	require.NotErrorIs(t, err, ErrAgentNotInitialized)

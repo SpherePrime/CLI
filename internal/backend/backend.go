@@ -273,8 +273,8 @@ func (w *Workspace) Shutdown() {
 	}
 	w.pluginMu.Unlock()
 
-	if w.App != nil && w.AgentCoordinator != nil {
-		w.AgentCoordinator.CancelAll()
+	if coord := w.Coordinator(); coord != nil {
+		coord.CancelAll()
 	}
 	w.runWG.Wait()
 	if w.runStore != nil {
@@ -453,17 +453,21 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 	cfg.Overrides().SkipPermissionRequests = args.YOLO
 	cfg.Overrides().EnabledChannels = args.Channels
 
-	if err := createDotPrimeDir(cfg.Config().Options.DataDirectory); err != nil {
+	dataDir := cfg.Config().Options.DataDirectory
+	if err := createDotPrimeDir(dataDir); err != nil {
 		return nil, proto.Workspace{}, fmt.Errorf("failed to create data directory: %w", err)
 	}
 
-	conn, err := db.Connect(b.ctx, cfg.Config().Options.DataDirectory, db.WithDataDirLock(true))
+	evictProjectMetaConn(args.Path, dataDir)
+	conn, err := db.Connect(b.ctx, dataDir, db.WithDataDirLock(true))
 	if err != nil {
 		return nil, proto.Workspace{}, fmt.Errorf("failed to connect to database: %w", err)
 	}
 	runStore, err := runregistry.New(b.ctx, conn, key, b.processID, id)
 	if err != nil {
-		db.Release(cfg.Config().Options.DataDirectory)
+		if rerr := db.Release(dataDir); rerr != nil {
+			_ = conn.Close()
+		}
 		return nil, proto.Workspace{}, fmt.Errorf("failed to recover run registry: %w", err)
 	}
 
@@ -481,6 +485,9 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 
 	appWorkspace, err := app.NewDeferred(b.ctx, conn, cfg, skillsMgr)
 	if err != nil {
+		if rerr := db.Release(dataDir); rerr != nil {
+			_ = conn.Close()
+		}
 		return nil, proto.Workspace{}, fmt.Errorf("failed to create app workspace: %w", err)
 	}
 
@@ -538,6 +545,7 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 	// moment it appears in the index.
 	b.registerClient(ws, clientID)
 	b.mu.Unlock()
+	evictProjectMetaConn(args.Path, dataDir)
 
 	if args.Version != "" && args.Version != version.Version {
 		slog.Warn(
@@ -1048,6 +1056,7 @@ func (b *Backend) Shutdown() {
 	b.closing = true
 	fn := b.shutdownFn
 	b.mu.Unlock()
+	CloseAllProjectMetaConns()
 	if fn != nil {
 		fn()
 	}

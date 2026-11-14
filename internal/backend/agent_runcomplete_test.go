@@ -56,7 +56,7 @@ func (c *errorCoordinator) GenerateTitle(context.Context, string, string)     {}
 func insertRunCompleteWorkspace(t *testing.T, b *Backend, base context.Context, coord agent.Coordinator) *Workspace {
 	t.Helper()
 	a := app.NewForTest(base)
-	a.AgentCoordinator = coord
+	a.SetCoordinator(coord)
 	t.Cleanup(a.ShutdownForTest)
 	ws := &Workspace{
 		ID:           uuid.New().String(),

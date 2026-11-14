@@ -35,7 +35,8 @@ func TestAgentWorkerOperationsRequireTeamMembership(t *testing.T) {
 	b, _ := newTestBackend(t)
 	ws, _ := insertTestWorkspace(t, b, t.TempDir())
 	stub := &workerCoordinatorStub{workers: []agent.AgentWorker{{ID: "worker", SessionID: "child", RootSessionID: "root"}}}
-	ws.App = &app.App{AgentCoordinator: stub}
+	ws.App = &app.App{}
+	ws.App.SetCoordinator(stub)
 	_, err := b.ListAgentWorkerMessages(context.Background(), ws.ID, "root", "other-team")
 	require.ErrorIs(t, err, ErrAgentWorkerNotFound)
 	_, err = b.SendAgentWorkerMessage(context.Background(), ws.ID, "root", "other-team", "hello")
@@ -50,7 +51,8 @@ func TestAgentWorkerSendValidatesTextAndNormalizesRoster(t *testing.T) {
 	b, _ := newTestBackend(t)
 	ws, _ := insertTestWorkspace(t, b, t.TempDir())
 	stub := &workerCoordinatorStub{}
-	ws.App = &app.App{AgentCoordinator: stub}
+	ws.App = &app.App{}
+	ws.App.SetCoordinator(stub)
 	workers, err := b.GetAgentWorkers(context.Background(), ws.ID, "root")
 	require.NoError(t, err)
 	require.NotNil(t, workers)

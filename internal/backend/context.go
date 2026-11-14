@@ -16,7 +16,7 @@ func (b *Backend) GetContextBreakdown(ctx context.Context, workspaceID, sessionI
 	if err := b.ensureAgent(ws); err != nil {
 		return proto.ContextBreakdown{}, err
 	}
-	reporter, ok := ws.AgentCoordinator.(agent.ContextReporter)
+	reporter, ok := ws.Coordinator().(agent.ContextReporter)
 	if !ok {
 		return proto.ContextBreakdown{}, errors.New("agent is not initialized")
 	}

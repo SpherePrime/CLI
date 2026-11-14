@@ -23,4 +23,5 @@ func (b *Backend) CloseInProcess() {
 	for _, workspace := range workspaces {
 		workspace.invokeShutdown()
 	}
+	CloseAllProjectMetaConns()
 }

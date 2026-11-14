@@ -41,22 +41,22 @@ func TestConfiguredWorkspaceDefersAgentAndPreservesSelectedMode(t *testing.T) {
 	ws, _, err := b.CreateWorkspace(protoWS(project, t.TempDir(), uuid.New().String()))
 	require.NoError(t, err)
 	require.True(t, ws.Cfg.Config().IsConfigured())
-	require.Nil(t, ws.AgentCoordinator)
+	require.Nil(t, ws.Coordinator())
 	require.NoError(t, b.SetMainAgent(ws.ID, config.AgentPlan))
-	require.Nil(t, ws.AgentCoordinator)
+	require.Nil(t, ws.Coordinator())
 	require.NoError(t, b.SetConfigField(ws.ID, config.ScopeWorkspace, "options.disable_metrics", true))
 	plan := ws.Cfg.Config().Agents[config.AgentPlan]
 	planModel := ws.Cfg.Config().Models[config.SelectedModelTypeSmall]
 	plan.ModelOverride = &planModel
 	ws.Cfg.Config().Agents[config.AgentPlan] = plan
 	require.Eventually(t, func() bool { return requests.Load() > 0 }, 3*time.Second, 10*time.Millisecond)
-	require.Nil(t, ws.AgentCoordinator)
+	require.Nil(t, ws.Coordinator())
 	session, err := ws.Sessions.Create(context.Background(), "Existing chat")
 	require.NoError(t, err)
 	require.NoError(t, b.SummarizeSession(context.Background(), ws.ID, session.ID))
-	require.NotNil(t, ws.AgentCoordinator)
-	require.Equal(t, "fixture-small", ws.AgentCoordinator.Model().ModelCfg.Model)
+	require.NotNil(t, ws.Coordinator())
+	require.Equal(t, "fixture-small", ws.Coordinator().Model().ModelCfg.Model)
 	require.NoError(t, b.InitAgent(context.Background(), ws.ID, true))
-	require.NotNil(t, ws.AgentCoordinator)
-	require.Equal(t, "fixture-small", ws.AgentCoordinator.Model().ModelCfg.Model)
+	require.NotNil(t, ws.Coordinator())
+	require.Equal(t, "fixture-small", ws.Coordinator().Model().ModelCfg.Model)
 }

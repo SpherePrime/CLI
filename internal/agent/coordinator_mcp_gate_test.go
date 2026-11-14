@@ -56,6 +56,7 @@ func newGateTestCoordinator(t *testing.T, interactive bool) *coordinator {
 	coord.mainAgent = agent
 	coord.mainAgentName = config.AgentGeneral
 	coord.agents[config.AgentGeneral] = agent
+	require.NoError(t, coord.readyWg.Wait())
 
 	return coord
 }

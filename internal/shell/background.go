@@ -39,6 +39,7 @@ type BackgroundShell struct {
 
 // BackgroundShellManager manages background shell instances.
 type BackgroundShellManager struct {
+	mu     sync.Mutex
 	shells *csync.Map[string, *BackgroundShell]
 }
 
@@ -65,6 +66,7 @@ func GetBackgroundShellManager() *BackgroundShellManager {
 
 // Start creates and starts a new background shell with the given command.
 func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, blockFuncs []BlockFunc, command string, description string, ownership ...BackgroundOwnership) (*BackgroundShell, error) {
+	m.mu.Lock()
 	running := 0
 	for shell := range m.shells.Seq() {
 		if !shell.IsDone() {
@@ -72,6 +74,7 @@ func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, b
 		}
 	}
 	if running >= MaxBackgroundJobs {
+		m.mu.Unlock()
 		return nil, fmt.Errorf("maximum number of background jobs (%d) reached. Please terminate or wait for some jobs to complete", MaxBackgroundJobs)
 	}
 
@@ -105,9 +108,11 @@ func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, b
 	}
 
 	m.shells.Set(id, bgShell)
+	m.mu.Unlock()
 
 	go func() {
 		defer close(bgShell.done)
+		defer cancel()
 
 		err := shell.ExecStream(shellCtx, command, bgShell.stdout, bgShell.stderr)
 

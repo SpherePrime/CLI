@@ -85,7 +85,8 @@ func buildBusyWorkspace(t *testing.T, sessionID string, busy bool) (*controllerV
 	b := backend.New(context.Background(), nil, nil)
 	wsID := uuid.New().String()
 	coord := &stubCoordinator{busy: map[string]bool{sessionID: busy}}
-	a := &app.App{AgentCoordinator: coord}
+	a := &app.App{}
+	a.SetCoordinator(coord)
 	a.Sessions = &stubSessions{all: []session.Session{{ID: sessionID, Title: "t"}}}
 
 	ws := &backend.Workspace{
@@ -192,7 +193,8 @@ func buildMultiSessionWorkspace(t *testing.T, sessionIDs ...string) (*controller
 	t.Helper()
 
 	b := backend.New(context.Background(), nil, nil)
-	a := &app.App{AgentCoordinator: &stubCoordinator{}}
+	a := &app.App{}
+	a.SetCoordinator(&stubCoordinator{})
 	sessions := make([]session.Session, len(sessionIDs))
 	for i, sid := range sessionIDs {
 		sessions[i] = session.Session{ID: sid, Title: sid}

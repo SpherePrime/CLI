@@ -104,10 +104,11 @@ func (w *AppWorkspace) ListAllUserMessages(ctx context.Context) ([]message.Messa
 // -- Agent --
 
 func (w *AppWorkspace) AgentRun(ctx context.Context, sessionID, prompt string, attachments ...message.Attachment) error {
-	if w.app.AgentCoordinator == nil {
+	coord := w.app.Coordinator()
+	if coord == nil {
 		return errors.New("agent coordinator not initialized")
 	}
-	_, err := w.app.AgentCoordinator.Run(ctx, sessionID, prompt, attachments...)
+	_, err := coord.Run(ctx, sessionID, prompt, attachments...)
 	return err
 }
 
@@ -149,9 +150,9 @@ func (w *AppWorkspace) AgentRunShellCommand(ctx context.Context, sessionID, comm
 	}
 
 	// Generate a title from the shell command if it was the first message.
-	if isFirstMessage && w.app.AgentCoordinator != nil {
+	if coord := w.app.Coordinator(); isFirstMessage && coord != nil {
 		titleCtx := context.WithoutCancel(ctx)
-		w.app.AgentCoordinator.GenerateTitle(titleCtx, sessionID, "$ "+command)
+		coord.GenerateTitle(titleCtx, sessionID, "$ "+command)
 	}
 
 	return proto.ShellCommandResponse{
@@ -161,30 +162,33 @@ func (w *AppWorkspace) AgentRunShellCommand(ctx context.Context, sessionID, comm
 }
 
 func (w *AppWorkspace) AgentCancel(sessionID string) {
-	if w.app.AgentCoordinator != nil {
-		w.app.AgentCoordinator.Cancel(sessionID)
+	if coord := w.app.Coordinator(); coord != nil {
+		coord.Cancel(sessionID)
 	}
 }
 
 func (w *AppWorkspace) AgentIsBusy() bool {
-	if w.app.AgentCoordinator == nil {
+	coord := w.app.Coordinator()
+	if coord == nil {
 		return false
 	}
-	return w.app.AgentCoordinator.IsBusy()
+	return coord.IsBusy()
 }
 
 func (w *AppWorkspace) AgentIsSessionBusy(sessionID string) bool {
-	if w.app.AgentCoordinator == nil {
+	coord := w.app.Coordinator()
+	if coord == nil {
 		return false
 	}
-	return w.app.AgentCoordinator.IsSessionBusy(sessionID)
+	return coord.IsSessionBusy(sessionID)
 }
 
 func (w *AppWorkspace) AgentModel() AgentModel {
-	if w.app.AgentCoordinator == nil {
+	coord := w.app.Coordinator()
+	if coord == nil {
 		return AgentModel{}
 	}
-	m := w.app.AgentCoordinator.Model()
+	m := coord.Model()
 	return AgentModel{
 		CatwalkCfg: m.CatwalkCfg,
 		ModelCfg:   m.ModelCfg,
@@ -192,48 +196,52 @@ func (w *AppWorkspace) AgentModel() AgentModel {
 }
 
 func (w *AppWorkspace) AgentIsReady() bool {
-	return w.app.AgentCoordinator != nil
+	return w.app.Coordinator() != nil
 }
 
 func (w *AppWorkspace) AgentReadyErr() error {
-	if w.app.AgentCoordinator == nil {
+	if w.app.Coordinator() == nil {
 		return ErrAgentNotInitialized
 	}
 	return nil
 }
 
 func (w *AppWorkspace) AgentQueuedPrompts(sessionID string) int {
-	if w.app.AgentCoordinator == nil {
+	coord := w.app.Coordinator()
+	if coord == nil {
 		return 0
 	}
-	return w.app.AgentCoordinator.QueuedPrompts(sessionID)
+	return coord.QueuedPrompts(sessionID)
 }
 
 func (w *AppWorkspace) AgentQueuedPromptsList(sessionID string) []string {
-	if w.app.AgentCoordinator == nil {
+	coord := w.app.Coordinator()
+	if coord == nil {
 		return nil
 	}
-	return w.app.AgentCoordinator.QueuedPromptsList(sessionID)
+	return coord.QueuedPromptsList(sessionID)
 }
 
 func (w *AppWorkspace) AgentClearQueue(sessionID string) {
-	if w.app.AgentCoordinator != nil {
-		w.app.AgentCoordinator.ClearQueue(sessionID)
+	if coord := w.app.Coordinator(); coord != nil {
+		coord.ClearQueue(sessionID)
 	}
 }
 
 func (w *AppWorkspace) AgentSetMain(agentID string) error {
-	if w.app.AgentCoordinator == nil {
+	coord := w.app.Coordinator()
+	if coord == nil {
 		return errors.New("agent coordinator not initialized")
 	}
-	return w.app.AgentCoordinator.SetMainAgent(agentID)
+	return coord.SetMainAgent(agentID)
 }
 
 func (w *AppWorkspace) AgentSummarize(ctx context.Context, sessionID string) error {
-	if w.app.AgentCoordinator == nil {
+	coord := w.app.Coordinator()
+	if coord == nil {
 		return errors.New("agent coordinator not initialized")
 	}
-	return w.app.AgentCoordinator.Summarize(ctx, sessionID)
+	return coord.Summarize(ctx, sessionID)
 }
 
 func (w *AppWorkspace) UpdateAgentModel(ctx context.Context) error {

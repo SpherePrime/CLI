@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/SpherePrime/CLI/internal/agent"
@@ -70,7 +71,7 @@ type App struct {
 	FileTracker filetracker.Service
 	Goals       goal.Store
 
-	AgentCoordinator agent.Coordinator
+	agentCoordinator atomic.Pointer[agent.Coordinator]
 
 	LSPManager *lsp.Manager
 
@@ -361,7 +362,9 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 	}
 
 	// force update of agent models before running so mcp tools are loaded
-	app.AgentCoordinator.UpdateModels(ctx)
+	if coord := app.Coordinator(); coord != nil {
+		coord.UpdateModels(ctx)
+	}
 
 	defer stopSpinner()
 
@@ -404,7 +407,7 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 	done := make(chan response, 1)
 
 	go func(ctx context.Context, sessionID, prompt string) {
-		result, err := app.AgentCoordinator.Run(ctx, sess.ID, prompt)
+		result, err := app.Coordinator().Run(ctx, sess.ID, prompt)
 		if err != nil {
 			done <- response{
 				err: fmt.Errorf("failed to start agent processing stream: %w", err),
@@ -483,11 +486,34 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 	}
 }
 
+func (app *App) Coordinator() agent.Coordinator {
+	if app == nil {
+		return nil
+	}
+	ptr := app.agentCoordinator.Load()
+	if ptr == nil {
+		return nil
+	}
+	return *ptr
+}
+
+func (app *App) SetCoordinator(coord agent.Coordinator) {
+	if app == nil {
+		return
+	}
+	if coord == nil {
+		app.agentCoordinator.Store(nil)
+		return
+	}
+	app.agentCoordinator.Store(&coord)
+}
+
 func (app *App) UpdateAgentModel(ctx context.Context) error {
-	if app.AgentCoordinator == nil {
+	coord := app.Coordinator()
+	if coord == nil {
 		return fmt.Errorf("agent configuration is missing")
 	}
-	return app.AgentCoordinator.UpdateModels(ctx)
+	return coord.UpdateModels(ctx)
 }
 
 // restoreModelFromSession reads the last assistant message in the
@@ -529,8 +555,10 @@ func (app *App) restoreModelFromSession(ctx context.Context, sessionID string) e
 		smallModel := app.GetDefaultSmallModel(lastMsg.Provider)
 		app.config.OverridePreferredModel(config.SelectedModelTypeSmall, smallModel)
 	}
-	if err := app.AgentCoordinator.UpdateModels(ctx); err != nil {
-		return fmt.Errorf("failed to update agent models: %w", err)
+	if coord := app.Coordinator(); coord != nil {
+		if err := coord.UpdateModels(ctx); err != nil {
+			return fmt.Errorf("failed to update agent models: %w", err)
+		}
 	}
 	slog.Info("Restored model from session",
 		"provider", lastMsg.Provider,
@@ -587,7 +615,10 @@ func (app *App) overrideModelsForNonInteractive(ctx context.Context, largeModel,
 		app.config.OverridePreferredModel(config.SelectedModelTypeSmall, smallCfg)
 	}
 
-	return app.AgentCoordinator.UpdateModels(ctx)
+	if coord := app.Coordinator(); coord != nil {
+		return coord.UpdateModels(ctx)
+	}
+	return nil
 }
 
 // overrideReasoningEffort validates the requested reasoning effort against
@@ -609,7 +640,10 @@ func (app *App) overrideReasoningEffort(ctx context.Context, reasoningEffort str
 		"model", selected.Model,
 		"reasoning_effort", reasoningEffort)
 	app.config.OverridePreferredModel(config.SelectedModelTypeLarge, selected)
-	return app.AgentCoordinator.UpdateModels(ctx)
+	if coord := app.Coordinator(); coord != nil {
+		return coord.UpdateModels(ctx)
+	}
+	return nil
 }
 
 // GetDefaultSmallModel returns the default small model for the given
@@ -771,22 +805,25 @@ func (app *App) subscribeMustDeliver[T any](
 }
 
 func (app *App) InitCoderAgent(ctx context.Context) error {
-	return app.initCoderAgent(ctx, true)
+	return app.initCoderAgent(ctx, true, "")
 }
 
 // InitCoderAgentNonInteractive initializes the coder agent without
 // interactive-only tools (e.g. question).
 func (app *App) InitCoderAgentNonInteractive(ctx context.Context) error {
-	return app.initCoderAgent(ctx, false)
+	return app.initCoderAgent(ctx, false, "")
 }
 
-func (app *App) initCoderAgent(ctx context.Context, interactive bool) error {
+func (app *App) InitCoderAgentWithMain(ctx context.Context, interactive bool, mainAgent string) error {
+	return app.initCoderAgent(ctx, interactive, mainAgent)
+}
+
+func (app *App) initCoderAgent(ctx context.Context, interactive bool, mainAgent string) error {
 	coderAgentCfg := app.config.Config().Agents[config.AgentGeneral]
 	if coderAgentCfg.ID == "" {
 		return fmt.Errorf("coder agent configuration is missing")
 	}
-	var err error
-	app.AgentCoordinator, err = agent.NewCoordinator(ctx, agent.CoordinatorOptions{
+	coord, err := agent.NewCoordinator(ctx, agent.CoordinatorOptions{
 		Config:      app.config,
 		Sessions:    app.Sessions,
 		Messages:    app.Messages,
@@ -805,6 +842,13 @@ func (app *App) initCoderAgent(ctx context.Context, interactive bool) error {
 		slog.Error("Failed to create coder agent", "err", err)
 		return err
 	}
+	if mainAgent != "" {
+		if err := coord.SetMainAgent(mainAgent); err != nil {
+			coord.CancelAll()
+			return err
+		}
+	}
+	app.SetCoordinator(coord)
 	return nil
 }
 
@@ -848,8 +892,8 @@ func (app *App) Shutdown() {
 
 	// First, cancel all agents and wait for them to finish. This must complete
 	// before closing the DB so agents can finish writing their state.
-	if app.AgentCoordinator != nil {
-		app.AgentCoordinator.CancelAll()
+	if coord := app.Coordinator(); coord != nil {
+		coord.CancelAll()
 	}
 
 	// Shared shutdown context for all timeout-bounded cleanup.

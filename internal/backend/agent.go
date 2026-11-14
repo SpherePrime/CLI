@@ -124,9 +124,14 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		return err
 	}
 
-	if ws.AgentCoordinator == nil {
+	coord := ws.Coordinator()
+	if coord == nil {
 		if err := b.ensureAgent(ws); err != nil {
 			return err
+		}
+		coord = ws.Coordinator()
+		if coord == nil {
+			return ErrAgentNotInitialized
 		}
 	}
 
@@ -143,7 +148,7 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 	}
 
 	if msg.ReasoningMode != "" {
-		normalized, err := config.NormalizeModelReasoningMode(ws.AgentCoordinator.Model().CatwalkCfg, msg.ReasoningMode)
+		normalized, err := config.NormalizeModelReasoningMode(coord.Model().CatwalkCfg, msg.ReasoningMode)
 		if err != nil {
 			return err
 		}
@@ -178,7 +183,7 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		}
 		ws.runs[msg.RunID] = registeredRun{fingerprint: fingerprint, record: proto.RunRecord{RunID: msg.RunID, SessionID: msg.SessionID, Status: "running", AcceptedAt: time.Now().UTC()}}
 	}
-	accept := ws.AgentCoordinator.BeginAccepted(msg.SessionID)
+	accept := coord.BeginAccepted(msg.SessionID)
 	ws.runWG.Add(1)
 	ws.runMu.Unlock()
 	if msg.RunID != "" && ws.RunCompletions() != nil {
@@ -196,7 +201,7 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 	}
 
 	msg.Attachments = attachments
-	go b.runAgent(ws, msg, accept)
+	go b.runAgent(ws, coord, msg, accept)
 	return nil
 }
 
@@ -215,7 +220,7 @@ func (b *Backend) ensureAgent(ws *Workspace) error {
 	if closing {
 		return ErrWorkspaceClosing
 	}
-	if ws.AgentCoordinator != nil {
+	if ws.Coordinator() != nil {
 		return nil
 	}
 	if ws.Cfg == nil {
@@ -225,16 +230,7 @@ func (b *Backend) ensureAgent(ws *Workspace) error {
 }
 
 func initializeAgent(ctx context.Context, ws *Workspace, interactive bool) error {
-	var err error
-	if interactive {
-		err = ws.InitCoderAgent(ctx)
-	} else {
-		err = ws.InitCoderAgentNonInteractive(ctx)
-	}
-	if err != nil || ws.mainAgent == "" {
-		return err
-	}
-	return ws.AgentCoordinator.SetMainAgent(ws.mainAgent)
+	return ws.InitCoderAgentWithMain(ctx, interactive, ws.mainAgent)
 }
 
 // runAgent executes an accepted agent run for the workspace. It owns the
@@ -261,7 +257,7 @@ func initializeAgent(ctx context.Context, ws *Workspace, interactive bool) error
 // notify.RunComplete event with that correlator. A run-complete marker
 // is also attached so the coordinator can report whether it published
 // the terminal event, letting runAgent avoid a duplicate fallback.
-func (b *Backend) runAgent(ws *Workspace, msg proto.AgentMessage, accept *agent.AcceptedRun) {
+func (b *Backend) runAgent(ws *Workspace, coord agent.Coordinator, msg proto.AgentMessage, accept *agent.AcceptedRun) {
 	defer ws.runWG.Done()
 	defer accept.Close()
 
@@ -274,7 +270,7 @@ func (b *Backend) runAgent(ws *Workspace, msg proto.AgentMessage, accept *agent.
 	}
 	ctx = agent.WithRunCompleteMarker(ctx)
 
-	_, err := ws.AgentCoordinator.RunAccepted(ctx, accept, msg.SessionID, msg.Prompt, proto.AttachmentsToMessage(msg.Attachments)...)
+	_, err := coord.RunAccepted(ctx, accept, msg.SessionID, msg.Prompt, proto.AttachmentsToMessage(msg.Attachments)...)
 	if err == nil || errors.Is(err, context.Canceled) {
 		return
 	}
@@ -309,12 +305,12 @@ func (b *Backend) GetAgentInfo(workspaceID string) (proto.AgentInfo, error) {
 	}
 
 	var agentInfo proto.AgentInfo
-	if ws.AgentCoordinator != nil {
-		m := ws.AgentCoordinator.Model()
+	if coord := ws.Coordinator(); coord != nil {
+		m := coord.Model()
 		agentInfo = proto.AgentInfo{
 			Model:    m.CatwalkCfg,
 			ModelCfg: m.ModelCfg,
-			IsBusy:   ws.AgentCoordinator.IsBusy(),
+			IsBusy:   coord.IsBusy(),
 			IsReady:  true,
 		}
 	}
@@ -336,7 +332,7 @@ func (b *Backend) InitAgent(ctx context.Context, workspaceID string, interactive
 	if closing {
 		return ErrWorkspaceClosing
 	}
-	if ws.AgentCoordinator != nil {
+	if ws.Coordinator() != nil {
 		return ws.UpdateAgentModel(ctx)
 	}
 	lifecycle := ws.ctx
@@ -368,7 +364,8 @@ func (b *Backend) SetMainAgent(workspaceID, agentID string) error {
 
 	ws.agentInitMu.Lock()
 	defer ws.agentInitMu.Unlock()
-	if ws.AgentCoordinator == nil {
+	coord := ws.Coordinator()
+	if coord == nil {
 		if ws.Cfg == nil {
 			return ErrAgentNotInitialized
 		}
@@ -382,11 +379,11 @@ func (b *Backend) SetMainAgent(workspaceID, agentID string) error {
 		return nil
 	}
 
-	if ws.AgentCoordinator.IsBusy() {
+	if coord.IsBusy() {
 		return ErrAgentBusy
 	}
 
-	if err := ws.AgentCoordinator.SetMainAgent(agentID); err != nil {
+	if err := coord.SetMainAgent(agentID); err != nil {
 		return err
 	}
 	ws.mainAgent = agentID
@@ -401,8 +398,8 @@ func (b *Backend) CancelSession(workspaceID, sessionID string) error {
 		return err
 	}
 
-	if ws.AgentCoordinator != nil {
-		ws.AgentCoordinator.Cancel(sessionID)
+	if coord := ws.Coordinator(); coord != nil {
+		coord.Cancel(sessionID)
 	}
 	return nil
 }
@@ -418,7 +415,11 @@ func (b *Backend) SummarizeSession(ctx context.Context, workspaceID, sessionID s
 		return err
 	}
 
-	return ws.AgentCoordinator.Summarize(ctx, sessionID)
+	coord := ws.Coordinator()
+	if coord == nil {
+		return ErrAgentNotInitialized
+	}
+	return coord.Summarize(ctx, sessionID)
 }
 
 // QueuedPrompts returns the number of queued prompts for the session.
@@ -428,11 +429,12 @@ func (b *Backend) QueuedPrompts(workspaceID, sessionID string) (int, error) {
 		return 0, err
 	}
 
-	if ws.AgentCoordinator == nil {
+	coord := ws.Coordinator()
+	if coord == nil {
 		return 0, nil
 	}
 
-	return ws.AgentCoordinator.QueuedPrompts(sessionID), nil
+	return coord.QueuedPrompts(sessionID), nil
 }
 
 // ClearQueue clears the prompt queue for the session.
@@ -442,8 +444,8 @@ func (b *Backend) ClearQueue(workspaceID, sessionID string) error {
 		return err
 	}
 
-	if ws.AgentCoordinator != nil {
-		ws.AgentCoordinator.ClearQueue(sessionID)
+	if coord := ws.Coordinator(); coord != nil {
+		coord.ClearQueue(sessionID)
 	}
 	return nil
 }
@@ -456,11 +458,12 @@ func (b *Backend) QueuedPromptsList(workspaceID, sessionID string) ([]string, er
 		return nil, err
 	}
 
-	if ws.AgentCoordinator == nil {
+	coord := ws.Coordinator()
+	if coord == nil {
 		return nil, nil
 	}
 
-	return ws.AgentCoordinator.QueuedPromptsList(sessionID), nil
+	return coord.QueuedPromptsList(sessionID), nil
 }
 
 // GetDefaultSmallModel returns the default small model for a provider.

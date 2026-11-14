@@ -28,7 +28,10 @@ const (
 
 type projectMetaEntry struct {
 	conn     *sql.DB
+	dbPath   string
 	lastUsed time.Time
+	inUse    int
+	retired  bool
 }
 
 type projectMetaCache struct {
@@ -74,10 +77,11 @@ func (b *Backend) ProjectSessions(ctx context.Context, projectPath string) ([]pr
 		return []proto.Session{}, nil
 	}
 
-	conn, err := acquireProjectMetaConn(absPath, dbPath)
+	conn, release, err := acquireProjectMetaConn(absPath, dbPath)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	rows, err := conn.QueryContext(ctx, projectSessionsQuery)
 	if err != nil {
@@ -156,40 +160,115 @@ func sessionToProtoValue(s session.Session) proto.Session {
 	}
 }
 
-func acquireProjectMetaConn(path, dbPath string) (*sql.DB, error) {
-	projectMeta.mu.Lock()
-	defer projectMeta.mu.Unlock()
+func normalizeProjectMetaDBPath(dbPath string) string {
+	if dbPath == "" {
+		return ""
+	}
+	abs, err := filepath.Abs(dbPath)
+	if err != nil {
+		return filepath.Clean(dbPath)
+	}
+	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
+		return resolved
+	}
+	return abs
+}
 
-	if entry, ok := projectMeta.entries[path]; ok {
-		entry.lastUsed = time.Now()
-		return entry.conn, nil
+func acquireProjectMetaConn(path, dbPath string) (*sql.DB, func(), error) {
+	cleanDBPath := normalizeProjectMetaDBPath(dbPath)
+	now := time.Now()
+
+	projectMeta.mu.Lock()
+	if entry, ok := projectMeta.entries[path]; ok && !entry.retired {
+		entry.inUse++
+		entry.lastUsed = now
+		projectMeta.mu.Unlock()
+		return entry.conn, func() { releaseProjectMetaEntry(entry) }, nil
 	}
 
 	conn, err := db.OpenReadOnly(dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %w", dbPath, err)
+		projectMeta.mu.Unlock()
+		return nil, nil, fmt.Errorf("failed to open %s: %w", dbPath, err)
 	}
 	conn.SetMaxOpenConns(1)
 	conn.SetMaxIdleConns(1)
 
+	var evictedConn *sql.DB
 	if len(projectMeta.entries) >= projectMetaMaxConns {
-		var oldestPath string
-		var oldest time.Time
+		var oldestUnusedPath string
+		var oldestUnused time.Time
+		var oldestAnyPath string
+		var oldestAny time.Time
 		for candidate, entry := range projectMeta.entries {
-			if oldestPath == "" || entry.lastUsed.Before(oldest) {
-				oldestPath = candidate
-				oldest = entry.lastUsed
+			if oldestAnyPath == "" || entry.lastUsed.Before(oldestAny) {
+				oldestAnyPath = candidate
+				oldestAny = entry.lastUsed
+			}
+			if entry.inUse == 0 && (oldestUnusedPath == "" || entry.lastUsed.Before(oldestUnused)) {
+				oldestUnusedPath = candidate
+				oldestUnused = entry.lastUsed
 			}
 		}
-		if old, ok := projectMeta.entries[oldestPath]; ok {
-			_ = old.conn.Close()
-			delete(projectMeta.entries, oldestPath)
+		evictPath := oldestUnusedPath
+		if evictPath == "" {
+			evictPath = oldestAnyPath
+		}
+		if old, ok := projectMeta.entries[evictPath]; ok {
+			delete(projectMeta.entries, evictPath)
+			old.retired = true
+			if old.inUse == 0 {
+				evictedConn = old.conn
+			}
 		}
 	}
 
-	projectMeta.entries[path] = &projectMetaEntry{conn: conn, lastUsed: time.Now()}
+	entry := &projectMetaEntry{
+		conn:     conn,
+		dbPath:   cleanDBPath,
+		lastUsed: now,
+		inUse:    1,
+	}
+	projectMeta.entries[path] = entry
+	projectMeta.mu.Unlock()
+
+	if evictedConn != nil {
+		_ = evictedConn.Close()
+	}
 	slog.Debug("Opened project metadata connection", "path", dbPath)
-	return conn, nil
+	return entry.conn, func() { releaseProjectMetaEntry(entry) }, nil
+}
+
+func releaseProjectMetaEntry(entry *projectMetaEntry) {
+	projectMeta.mu.Lock()
+	entry.inUse--
+	entry.lastUsed = time.Now()
+	shouldClose := entry.retired && entry.inUse == 0
+	projectMeta.mu.Unlock()
+	if shouldClose {
+		_ = entry.conn.Close()
+	}
+}
+
+func evictProjectMetaConn(projectPath, dataDir string) {
+	absProject, err := filepath.Abs(projectPath)
+	if err != nil {
+		absProject = projectPath
+	}
+	resolvedProject, _ := resolveWorkspaceKey(projectPath)
+	targetDBPath := normalizeProjectMetaDBPath(filepath.Join(dataDir, "prime.db"))
+	closeProjectMetaConns(func(path string, entry *projectMetaEntry) bool {
+		if path == absProject {
+			return true
+		}
+		if resolvedProject != "" && path == resolvedProject {
+			return true
+		}
+		if targetDBPath != "" && entry.dbPath == targetDBPath {
+			return true
+		}
+		return false
+	})
 }
 
 // CloseIdleProjectMetaConns drops cached read-only connections older than
@@ -197,7 +276,7 @@ func acquireProjectMetaConn(path, dbPath string) (*sql.DB, error) {
 // stays open in the background.
 func CloseIdleProjectMetaConns() {
 	closeProjectMetaConns(func(path string, entry *projectMetaEntry) bool {
-		return time.Since(entry.lastUsed) > projectMetaTTL
+		return entry.inUse == 0 && time.Since(entry.lastUsed) > projectMetaTTL
 	})
 }
 
@@ -208,12 +287,19 @@ func CloseAllProjectMetaConns() {
 }
 
 func closeProjectMetaConns(shouldClose func(path string, entry *projectMetaEntry) bool) {
+	var toClose []*sql.DB
 	projectMeta.mu.Lock()
-	defer projectMeta.mu.Unlock()
 	for path, entry := range projectMeta.entries {
 		if shouldClose(path, entry) {
-			_ = entry.conn.Close()
 			delete(projectMeta.entries, path)
+			entry.retired = true
+			if entry.inUse == 0 {
+				toClose = append(toClose, entry.conn)
+			}
 		}
+	}
+	projectMeta.mu.Unlock()
+	for _, conn := range toClose {
+		_ = conn.Close()
 	}
 }

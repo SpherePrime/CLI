@@ -36,14 +36,17 @@ type sttHarness struct {
 
 func newSttHarness(t *testing.T) *sttHarness {
 	t.Helper()
+	projectDir := t.TempDir()
+	dataDir := t.TempDir()
 	h := &sttHarness{e2eHarness: newRealCreateHarness(t)}
-	resp := h.postWorkspace(t, proto.Workspace{Path: t.TempDir(), DataDir: t.TempDir(), ClientID: uuid.New().String()})
+	resp := h.postWorkspace(t, proto.Workspace{Path: projectDir, DataDir: dataDir, ClientID: uuid.New().String()})
 	ws, err := h.backend.GetWorkspace(resp.ID)
 	require.NoError(t, err)
 	// Skip the full app teardown in cleanup, but release the pooled DB
 	// connection so the temp data directory can be removed on Windows.
-	dataDir := ws.Cfg.Config().Options.DataDirectory
-	backend.SetWorkspaceShutdownFnForTest(ws, func() { _ = db.Release(dataDir) })
+	resolvedDataDir := ws.Cfg.Config().Options.DataDirectory
+	backend.SetWorkspaceShutdownFnForTest(ws, func() { _ = db.Release(resolvedDataDir) })
+	t.Cleanup(h.backend.CloseInProcess)
 	h.workspace = ws
 	return h
 }

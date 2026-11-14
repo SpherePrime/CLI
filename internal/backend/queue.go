@@ -7,10 +7,11 @@ func (b *Backend) QueueEntries(workspaceID, sessionID string) ([]agent.QueuedPro
 	if err != nil {
 		return nil, err
 	}
-	if ws.AgentCoordinator == nil {
+	coord := ws.Coordinator()
+	if coord == nil {
 		return []agent.QueuedPrompt{}, nil
 	}
-	control, ok := ws.AgentCoordinator.(agent.QueueController)
+	control, ok := coord.(agent.QueueController)
 	if !ok {
 		return nil, agent.ErrQueueControlUnsupported
 	}
@@ -22,10 +23,11 @@ func (b *Backend) RunQueuedNow(workspaceID, sessionID, id string) error {
 	if err != nil {
 		return err
 	}
-	if ws.AgentCoordinator == nil {
+	coord := ws.Coordinator()
+	if coord == nil {
 		return ErrAgentNotInitialized
 	}
-	control, ok := ws.AgentCoordinator.(agent.QueueController)
+	control, ok := coord.(agent.QueueController)
 	if !ok {
 		return agent.ErrQueueControlUnsupported
 	}

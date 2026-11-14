@@ -89,7 +89,7 @@ func TestResolveAttachments_CoordinatorSeesResolvedBytes(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte("disk payload"), 0o600))
 
 	coord := newBlockingCoordinator()
-	ws.App.AgentCoordinator = coord
+	ws.App.SetCoordinator(coord)
 
 	msg := proto.AgentMessage{
 		SessionID: "S1",

@@ -240,7 +240,7 @@ func newAgentE2EHarness(t *testing.T) *agentE2EHarness {
 	appCtx, cancel := context.WithCancel(context.Background())
 	a := app.NewForTest(appCtx)
 	coord := newScriptedCoordinator(a)
-	a.AgentCoordinator = coord
+	a.SetCoordinator(coord)
 	t.Cleanup(func() {
 		cancel()
 		a.ShutdownForTest()

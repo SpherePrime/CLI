@@ -20,15 +20,17 @@ func (c *coordinator) reserveWorker(job *agentJob) bool {
 		limit = 10
 	}
 	job.mu.Lock()
+	if job.stopping {
+		job.mu.Unlock()
+		return false
+	}
 	if job.status == "running" {
 		job.mu.Unlock()
 		return true
 	}
-	job.mu.Unlock()
-	active := 0
-	job.mu.Lock()
 	queuedAt := job.queuedAt
 	job.mu.Unlock()
+	active := 0
 	earlier := false
 	for _, other := range c.agentJobs {
 		other.mu.Lock()
@@ -45,6 +47,9 @@ func (c *coordinator) reserveWorker(job *agentJob) bool {
 	}
 	job.mu.Lock()
 	defer job.mu.Unlock()
+	if job.stopping {
+		return false
+	}
 	if job.status == "running" {
 		return true
 	}
@@ -57,15 +62,28 @@ func (c *coordinator) reserveWorker(job *agentJob) bool {
 }
 
 func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
+	job.mu.Lock()
+	runGeneration := job.generation
+	job.mu.Unlock()
 	defer func() {
 		if failure := recover(); failure != nil {
 			job.finish("error", fmt.Sprintf("Agent stopped unexpectedly: %v", failure))
 			c.wakeOnAgentJob(job)
 		}
+		job.releaseCancel(runGeneration)
 	}()
 	for {
 		for !c.reserveWorker(job) {
-			if status, _ := job.snapshot(); !jobActive(status) {
+			job.mu.Lock()
+			status := job.status
+			stopping := job.stopping
+			job.mu.Unlock()
+			if !jobActive(status) {
+				return
+			}
+			if stopping || ctx.Err() != nil {
+				job.finish("canceled", "canceled before it finished")
+				c.wakeOnAgentJob(job)
 				return
 			}
 			select {
@@ -117,13 +135,21 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 		}
 		status, output := c.runAgentJob(job, ctx, params, job.sessionID, model, callMaxOutputTokens(model, provider.Type), provider)
 		job.mu.Lock()
-		if len(job.pending) > 0 && ctx.Err() == nil {
+		if len(job.pending) > 0 && ctx.Err() == nil && !job.stopping {
 			job.status = "queued"
 			job.queuedAt = time.Now()
 			job.generation++
+			runGeneration = job.generation
 			job.seen = false
 			job.mu.Unlock()
 			continue
+		}
+		if job.stopping {
+			job.pending = nil
+			status = "canceled"
+			output = "canceled before it finished"
+		} else if ctx.Err() != nil {
+			job.pending = nil
 		}
 		route := c.reviewRoute(job, status, output)
 		if route != nil {
@@ -132,11 +158,17 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 				job.seen = true
 			}
 		}
+		cancel := job.cancel
+		job.cancel = nil
+		job.stopping = false
 		job.status = status
 		job.output = output
 		job.updatedAt = time.Now()
 		job.closeDoneLocked()
 		job.mu.Unlock()
+		if cancel != nil {
+			cancel()
+		}
 		if route != nil && !c.deliverReviewRoute(job, route) && route.quiet {
 			job.mu.Lock()
 			job.seen = false
