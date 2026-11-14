@@ -575,6 +575,8 @@ export const english: Record<string, string> = {
   'Подключите провайдера, чтобы увидеть модели': 'Connect a provider to see models',
   'Глубина рассуждений': 'Reasoning effort',
   'Подключить провайдера': 'Connect provider',
+  'Доступно в подписке: {plan}': 'Available with {plan} subscription',
+  'Модель недоступна на текущем тарифе': 'This model is locked on your current plan',
   'Плагины Prime': 'Prime plugins',
   'Дополнительные возможности встроенного CLI. Плагины устанавливаются по вашему выбору.':
     'Additional features for the bundled CLI. Choose which plugins to install.',
@@ -1590,5 +1592,7 @@ Object.assign(english, {
   'Обновлено в {time}': 'Updated at {time}',
   'Загрузка лимитов…': 'Loading limits…',
   'Лимиты PrimeAI недоступны': 'PrimeAI limits unavailable',
-  'Тариф: {plan}': 'Plan: {plan}'
+  'Тариф: {plan}': 'Plan: {plan}',
+  'Доступно в подписке: {plan}': 'Available with {plan} subscription',
+  'Модель недоступна на текущем тарифе': 'This model is locked on your current plan'
 })

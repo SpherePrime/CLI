@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
@@ -142,6 +143,26 @@ type PublicModel struct {
 	DefaultReasoningEffort string   `json:"defaultReasoningEffort,omitempty"`
 	PriceIn                *float64 `json:"priceIn,omitempty"`
 	PriceOut               *float64 `json:"priceOut,omitempty"`
+	AllowedTariffIDs       []string `json:"allowedTariffIds,omitempty"`
+	AllowedTariffNames     []string `json:"allowedTariffNames,omitempty"`
+	PlanLabel              string   `json:"planLabel,omitempty"`
+	Locked                 bool     `json:"locked,omitempty"`
+}
+
+type ModelAccess struct {
+	AllowedTariffIDs   []string `json:"allowedTariffIds,omitempty"`
+	AllowedTariffNames []string `json:"allowedTariffNames,omitempty"`
+	PlanLabel          string   `json:"planLabel,omitempty"`
+	Locked             bool     `json:"locked,omitempty"`
+}
+
+func (a ModelAccess) Clone() ModelAccess {
+	return ModelAccess{
+		AllowedTariffIDs:   slices.Clone(a.AllowedTariffIDs),
+		AllowedTariffNames: slices.Clone(a.AllowedTariffNames),
+		PlanLabel:          a.PlanLabel,
+		Locked:             a.Locked,
+	}
 }
 
 type RouterImageURL struct {

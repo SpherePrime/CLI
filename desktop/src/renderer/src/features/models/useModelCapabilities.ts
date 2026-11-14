@@ -11,6 +11,9 @@ export type ModelCapability = {
   reasoning_levels?: string[]
   default_reasoning_mode?: string
   context_window?: number
+  plan_label?: string
+  locked?: boolean
+  allowed_tariffs?: string[]
 }
 
 const capabilityCache = new Map<string, ModelCapability[]>()

@@ -2906,7 +2906,7 @@ func (m *UI) openAgentModelDialog(agentID string) tea.Cmd {
 
 	m.dialog.OpenDialog(modelsDialog)
 
-	return nil
+	return modelsDialog.RefreshCmd()
 }
 
 // handleSetAgentModel pins a concrete model to a subagent.
@@ -5835,7 +5835,7 @@ func (m *UI) openModelsDialog() tea.Cmd {
 
 	m.dialog.OpenDialog(modelsDialog)
 
-	return nil
+	return modelsDialog.RefreshCmd()
 }
 
 // openModelsConfigDialog opens the model settings dialog.

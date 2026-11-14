@@ -1,4 +1,4 @@
-import { Check, Star } from 'lucide-react'
+import { Check, Lock, Star } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { ModelCapability } from './useModelCapabilities'
 
@@ -22,18 +22,43 @@ export function ModelPickerRow({
   toggleFavorite: () => void
 }) {
   const { t } = useI18n()
+  const isLocked = Boolean(model.locked)
+  const planText =
+    model.plan_label ||
+    (isLocked && model.allowed_tariffs?.length ? model.allowed_tariffs.join(', ') : '')
+  const badgeLabel =
+    model.plan_label || (isLocked && model.allowed_tariffs?.length ? model.allowed_tariffs[0] : '')
+  const lockTitle = planText
+    ? t('Доступно в подписке: {plan}', { plan: planText })
+    : t('Модель недоступна на текущем тарифе')
   const favoriteLabel = `${t(favorite ? 'Удалить из избранного' : 'Добавить в избранное')}: ${model.name || model.model_id}`
   return (
-    <div className={`model-picker-row${active ? ' selected' : ''}`}>
+    <div
+      className={`model-picker-row${active ? ' selected' : ''}${isLocked ? ' is-locked' : ''}`}
+      title={isLocked ? lockTitle : undefined}
+    >
       <button
         className="model-picker-select"
         role="option"
         aria-selected={active}
-        disabled={disabled}
-        onClick={select}
+        aria-disabled={disabled || isLocked ? 'true' : undefined}
+        aria-description={isLocked ? lockTitle : undefined}
+        disabled={disabled || isLocked}
+        title={isLocked ? lockTitle : undefined}
+        onClick={() => {
+          if (!disabled && !isLocked) select()
+        }}
       >
         <span className="model-description">
-          <strong>{model.name || model.model_id}</strong>
+          <span className="model-picker-title-row">
+            <strong>{model.name || model.model_id}</strong>
+            {badgeLabel && (
+              <span className={`model-plan-badge${isLocked ? ' is-locked' : ''}`}>
+                {isLocked && <Lock size={11} aria-hidden="true" />}
+                <span>{badgeLabel}</span>
+              </span>
+            )}
+          </span>
           <span className="model-picker-detail">
             {showProvider && <small>{model.provider_name || model.provider_id}</small>}
             {model.context_window ? (

@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/internal/account"
 	hyperp "github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/env"
@@ -253,12 +252,48 @@ func (s *ConfigStore) RefetchHyperProvider(ctx context.Context) error {
 	return nil
 }
 
+func (s *ConfigStore) PrimeAIModelAccess(modelID string) (primeai.ModelAccess, bool) {
+	return primeaiSyncer.ModelAccess(modelID)
+}
+
+func (s *ConfigStore) PrimeAIModelAccessMap() map[string]primeai.ModelAccess {
+	return primeaiSyncer.ModelAccessMap()
+}
+
+func (s *ConfigStore) RefreshPrimeAIIfStale(ctx context.Context, maxAge time.Duration) error {
+	cfg := s.Config()
+	if cfg == nil || cfg.Options == nil || cfg.Options.DisableDefaultProviders || !hasPrimeAccountToken() {
+		return nil
+	}
+	client := realPrimeAIClient{
+		accountToken: primeAccountToken,
+	}
+	if !primeaiSyncer.init.Load() {
+		primeaiSyncer.Init(client, cachePathFor("primeai"), !cfg.Options.DisableProviderAutoUpdate)
+	} else {
+		primeaiSyncer.SetClient(client)
+	}
+	provider, refreshed, err := primeaiSyncer.RefetchIfStale(ctx, maxAge)
+	if err != nil {
+		return err
+	}
+	if !refreshed {
+		existing, ok := cfg.Providers.Get(primeai.Name)
+		if ok && (existing.Disable || slices.EqualFunc(existing.Models, provider.Models, func(a, b catwalk.Model) bool {
+			return a.ID == b.ID && a.Name == b.Name
+		})) {
+			return nil
+		}
+	}
+	return s.applyPrimeAIProvider(provider)
+}
+
 func (s *ConfigStore) EnsurePrimeAI(ctx context.Context) error {
 	if s.Config().Options.DisableDefaultProviders || !hasPrimeAccountToken() {
 		return nil
 	}
 	client := realPrimeAIClient{
-		accountToken: func() string { return account.NewService().Token() },
+		accountToken: primeAccountToken,
 	}
 	if !primeaiSyncer.init.Load() {
 		primeaiSyncer.Init(client, cachePathFor("primeai"), !s.Config().Options.DisableProviderAutoUpdate)
@@ -269,6 +304,10 @@ func (s *ConfigStore) EnsurePrimeAI(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	return s.applyPrimeAIProvider(provider)
+}
+
+func (s *ConfigStore) applyPrimeAIProvider(provider catwalk.Provider) error {
 	provider = sanitizePrimeAIProvider(provider)
 
 	s.writeMu.Lock()

@@ -431,3 +431,89 @@ func TestStream_LimitExceeded429UpdatesCache(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, 100.0, cached.FiveHour.Percent)
 }
+
+func TestFetchModelsWithAccess_PreservesLockedAndTariffMetadata(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/prime/session":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"token":     "sess_acc",
+				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
+			})
+		case "/api/prime/models":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"models": []map[string]any{
+					{
+						"id":                 "gpt-5-pro",
+						"name":               "GPT-5 Pro",
+						"kind":               "text",
+						"planLabel":          "Pro",
+						"locked":             false,
+						"allowedTariffIds":   []string{"tariff_pro", "tariff_ultra"},
+						"allowedTariffNames": []string{"Pro", "Ultra"},
+					},
+					{
+						"id":                 "claude-opus-ultra",
+						"name":               "Claude Opus Ultra",
+						"kind":               "text",
+						"planLabel":          "Ultra",
+						"locked":             true,
+						"allowedTariffIds":   []string{"tariff_ultra"},
+						"allowedTariffNames": []string{"Ultra"},
+					},
+					{
+						"id":        "img-model",
+						"name":      "Image Gen",
+						"kind":      "image",
+						"planLabel": "Ultra",
+						"locked":    true,
+					},
+				},
+			})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	client := NewClient(
+		func() string { return "acct_acc" },
+		WithBaseURL(func() string { return srv.URL }),
+		WithLimitsStore(NewLimitsStore()),
+	)
+
+	models, accessMap, err := client.FetchModelsWithAccess(context.Background())
+	require.NoError(t, err)
+	require.Len(t, models, 3)
+	require.Equal(t, AutomaticModelID, models[0].ID)
+	require.Equal(t, "gpt-5-pro", models[1].ID)
+	require.Equal(t, "claude-opus-ultra", models[2].ID)
+
+	proAccess, ok := accessMap["gpt-5-pro"]
+	require.True(t, ok)
+	require.Equal(t, "Pro", proAccess.PlanLabel)
+	require.False(t, proAccess.Locked)
+	require.Equal(t, []string{"tariff_pro", "tariff_ultra"}, proAccess.AllowedTariffIDs)
+	require.Equal(t, []string{"Pro", "Ultra"}, proAccess.AllowedTariffNames)
+
+	ultraAccess, ok := client.ModelAccess("claude-opus-ultra")
+	require.True(t, ok)
+	require.Equal(t, "Ultra", ultraAccess.PlanLabel)
+	require.True(t, ultraAccess.Locked)
+	require.Equal(t, []string{"Ultra"}, ultraAccess.AllowedTariffNames)
+
+	_, hasImage := client.ModelAccess("img-model")
+	require.False(t, hasImage)
+
+	allViaFetch, err := client.FetchModels(context.Background())
+	require.NoError(t, err)
+	require.Len(t, allViaFetch, 3)
+	snapshot := client.ModelAccessMap()
+	require.Len(t, snapshot, 2)
+	snapshot["claude-opus-ultra"].AllowedTariffNames[0] = "mutated"
+	fresh, ok := client.ModelAccess("claude-opus-ultra")
+	require.True(t, ok)
+	require.Equal(t, []string{"Ultra"}, fresh.AllowedTariffNames)
+}

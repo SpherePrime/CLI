@@ -2,14 +2,16 @@ package dialog
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
 	"github.com/SpherePrime/CLI/internal/ui/list"
 	"github.com/SpherePrime/CLI/internal/ui/styles"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
 )
 
@@ -80,6 +82,7 @@ type ModelItem struct {
 	prov      catwalk.Provider
 	model     catwalk.Model
 	modelType ModelType
+	access    primeai.ModelAccess
 
 	cache        map[int]string
 	t            *styles.Styles
@@ -134,15 +137,48 @@ func (m *ModelItem) ID() string {
 	return modelKey(string(m.prov.ID), m.model.ID)
 }
 
+func (m *ModelItem) SetAccess(access primeai.ModelAccess) {
+	m.access = access.Clone()
+	m.cache = nil
+	if m.Versioned != nil {
+		m.Bump()
+	}
+}
+
+func (m *ModelItem) IsLocked() bool {
+	return m.access.Locked
+}
+
+func (m *ModelItem) SubscriptionBadge() string {
+	plan := strings.TrimSpace(m.access.PlanLabel)
+	if plan == "" && m.access.Locked && len(m.access.AllowedTariffNames) > 0 {
+		plan = strings.Join(m.access.AllowedTariffNames, "/")
+	}
+	if plan == "" {
+		if m.access.Locked {
+			return "[🔒]"
+		}
+		return ""
+	}
+	if m.access.Locked {
+		return fmt.Sprintf("[🔒 %s]", plan)
+	}
+	return fmt.Sprintf("[%s]", plan)
+}
+
 // Render implements ListItem.
 func (m *ModelItem) Render(width int) string {
-	var providerInfo string
+	var parts []string
+	if badge := m.SubscriptionBadge(); badge != "" {
+		parts = append(parts, badge)
+	}
 	if m.showProvider {
-		providerInfo = string(m.prov.Name)
+		parts = append(parts, string(m.prov.Name))
 	}
 	if m.model.SupportsImages {
-		providerInfo = appendVisionBadge(providerInfo)
+		parts = append(parts, "vision")
 	}
+	providerInfo := strings.Join(parts, " · ")
 	styles := ListItemStyles{
 		ItemBlurred:     m.t.Dialog.NormalItem,
 		ItemFocused:     m.t.Dialog.SelectedItem,
@@ -174,13 +210,4 @@ func (m *ModelItem) SetMatch(fm fuzzy.Match) {
 	if m.Versioned != nil {
 		m.Bump()
 	}
-}
-
-// appendVisionBadge marks models that accept image attachments.
-func appendVisionBadge(info string) string {
-	const badge = "vision"
-	if info == "" {
-		return badge
-	}
-	return fmt.Sprintf("%s · %s", info, badge)
 }

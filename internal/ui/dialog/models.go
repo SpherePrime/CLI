@@ -2,20 +2,24 @@ package dialog
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
+	"time"
 
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/util"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/textinput"
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
-	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
-	"github.com/SpherePrime/CLI/internal/config"
-	"github.com/SpherePrime/CLI/internal/ui/common"
-	"github.com/SpherePrime/CLI/internal/ui/util"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
+	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 )
 
 // ModelType represents the type of model to select.
@@ -82,8 +86,9 @@ type Models struct {
 	// that agent instead of updating the global model.
 	agentID string
 
-	modelType ModelType
-	providers []catwalk.Provider
+	modelType    ModelType
+	providers    []catwalk.Provider
+	accessLookup func(modelID string) (primeai.ModelAccess, bool)
 
 	keyMap struct {
 		Tab      key.Binding
@@ -197,9 +202,49 @@ func (m *Models) AgentID() string {
 	return m.agentID
 }
 
+type primeAIModelsRefreshedMsg struct{}
+
+func (m *Models) RefreshCmd() tea.Cmd {
+	cfg := m.com.Config()
+	if cfg == nil || cfg.Options == nil || cfg.Options.DisableDefaultProviders {
+		return nil
+	}
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 2500*time.Millisecond)
+		defer cancel()
+		if refresher, ok := m.com.Workspace.(interface {
+			RefreshPrimeAIIfStale(context.Context, time.Duration) error
+		}); ok {
+			_ = refresher.RefreshPrimeAIIfStale(ctx, 20*time.Second)
+		} else if storeOwner, ok := m.com.Workspace.(interface {
+			Store() *config.ConfigStore
+		}); ok && storeOwner.Store() != nil {
+			_ = storeOwner.Store().RefreshPrimeAIIfStale(ctx, 20*time.Second)
+		} else {
+			_ = config.RefreshPrimeAIIfStale(ctx, 20*time.Second)
+		}
+		return primeAIModelsRefreshedMsg{}
+	}
+}
+
 // HandleMsg implements Dialog.
 func (m *Models) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
+	case primeAIModelsRefreshedMsg:
+		providers, err := config.Providers(m.com.Config())
+		if err == nil && len(providers) > 0 {
+			m.providers = providers
+		}
+		if err := m.setProviderItems(); err != nil {
+			return ActionCmd{util.ReportError(err)}
+		}
+		if q := m.input.Value(); q != "" {
+			m.list.Focus()
+			m.list.SetFilter(q)
+			m.list.SelectFirst()
+			m.list.ScrollToTop()
+		}
+		return nil
 	case tea.PasteMsg:
 		// The filter field is the only text input here.
 		prevValue := m.input.Value()
@@ -244,7 +289,7 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 				m.modelType = ModelTypeLarge
 			}
 			if err := m.setProviderItems(); err != nil {
-				return util.ReportError(err)
+				return ActionCmd{util.ReportError(err)}
 			}
 		default:
 			prevValue := m.input.Value()
@@ -281,6 +326,9 @@ func (m *Models) activateModel(idx int, isEdit bool) Action {
 	if !ok || modelItem == nil {
 		return nil
 	}
+	if modelItem.IsLocked() {
+		return ActionCmd{Cmd: util.ReportWarn(m.lockedModelMessage(modelItem))}
+	}
 
 	if m.agentID != "" {
 		return ActionSetAgentModel{
@@ -297,6 +345,24 @@ func (m *Models) activateModel(idx int, isEdit bool) Action {
 	}
 }
 
+
+func (m *Models) lockedModelMessage(item *ModelItem) string {
+	plan := strings.TrimSpace(item.access.PlanLabel)
+	if plan == "" && len(item.access.AllowedTariffNames) > 0 {
+		plan = strings.Join(item.access.AllowedTariffNames, ", ")
+	}
+	if plan != "" {
+		return m.com.LSprintf("info.model_requires_subscription", plan)
+	}
+	return m.com.L("info.model_locked")
+}
+
+func (m *Models) primeAIAccess(modelID string) (primeai.ModelAccess, bool) {
+	if m.accessLookup != nil {
+		return m.accessLookup(modelID)
+	}
+	return config.PrimeAIModelAccess(modelID)
+}
 
 // BackspaceDeletesText implements [BackspaceAware].
 func (m *Models) BackspaceDeletesText() bool {
@@ -481,6 +547,11 @@ func (m *Models) setProviderItems() error {
 					continue
 				}
 				item := NewModelItem(t, provider, model, m.modelType, false)
+				if id == primeai.Name {
+					if access, ok := m.primeAIAccess(model.ID); ok {
+						item.SetAccess(access)
+					}
+				}
 				group.AppendItems(item)
 				itemsMap[item.ID()] = item
 				if model.ID == currentModel.Model && string(provider.ID) == currentModel.Provider {
@@ -516,23 +587,25 @@ func (m *Models) setProviderItems() error {
 		displayProvider := provider
 		{
 			displayProvider.Name = cmp.Or(providerConfig.Name, displayProvider.Name)
-			modelIndex := make(map[string]int, len(displayProvider.Models))
-			for i, model := range displayProvider.Models {
-				modelIndex[model.ID] = i
-			}
-			for _, model := range providerConfig.Models {
-				if model.ID == "" {
-					continue
+			if provider.ID != catwalk.InferenceProvider(primeai.Name) || len(displayProvider.Models) == 0 {
+				modelIndex := make(map[string]int, len(displayProvider.Models))
+				for i, model := range displayProvider.Models {
+					modelIndex[model.ID] = i
 				}
-				if idx, ok := modelIndex[model.ID]; ok {
-					if model.Name != "" {
-						displayProvider.Models[idx].Name = model.Name
+				for _, model := range providerConfig.Models {
+					if model.ID == "" {
+						continue
 					}
-					continue
+					if idx, ok := modelIndex[model.ID]; ok {
+						if model.Name != "" {
+							displayProvider.Models[idx].Name = model.Name
+						}
+						continue
+					}
+					model.Name = cmp.Or(model.Name, model.ID)
+					displayProvider.Models = append(displayProvider.Models, model)
+					modelIndex[model.ID] = len(displayProvider.Models) - 1
 				}
-				model.Name = cmp.Or(model.Name, model.ID)
-				displayProvider.Models = append(displayProvider.Models, model)
-				modelIndex[model.ID] = len(displayProvider.Models) - 1
 			}
 		}
 
@@ -564,6 +637,11 @@ func (m *Models) setProviderItems() error {
 				continue
 			}
 			item := NewModelItem(t, provider, model, m.modelType, false)
+			if providerID == primeai.Name {
+				if access, ok := m.primeAIAccess(model.ID); ok {
+					item.SetAccess(access)
+				}
+			}
 			group.AppendItems(item)
 			itemsMap[item.ID()] = item
 			if model.ID == currentModel.Model && string(provider.ID) == currentModel.Provider {
@@ -586,8 +664,10 @@ func (m *Models) setProviderItems() error {
 			}
 
 			// Show provider for recent items
-			item = NewModelItem(t, item.prov, item.model, m.modelType, true)
-			item.showProvider = true
+			recentItem := NewModelItem(t, item.prov, item.model, m.modelType, true)
+			recentItem.showProvider = true
+			recentItem.SetAccess(item.access)
+			item = recentItem
 
 			validRecentItems = append(validRecentItems, recent)
 			recentGroup.AppendItems(item)

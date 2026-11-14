@@ -333,7 +333,9 @@ func enStrings() map[string]string {
 		"info.disabled":                "disabled",
 		"info.systems_restarted":       "SKILLs, MCPs and LSPs restarted",
 		"info.systems_restart_failed":  "Failed to restart systems: %v",
-		"info.provider_models_updated": "Models updated for %s",
+		"info.provider_models_updated":     "Models updated for %s",
+		"info.model_requires_subscription": "Available with %s subscription",
+		"info.model_locked":                "This model is locked on your current plan",
 
 		// Provider settings dialog.
 		"provider_settings.title":          "Provider Settings",
@@ -676,7 +678,9 @@ func ruStrings() map[string]string {
 		"info.disabled":                  "выключено",
 		"info.systems_restarted":         "SKILLs, MCPs и LSPs перезапущены",
 		"info.systems_restart_failed":    "Не удалось перезапустить системы: %v",
-		"info.provider_models_updated":   "Модели провайдера %s обновлены",
+		"info.provider_models_updated":     "Модели провайдера %s обновлены",
+		"info.model_requires_subscription": "Доступно в подписке: %s",
+		"info.model_locked":                "Модель недоступна на текущем тарифе",
 
 		// Provider settings dialog.
 		"provider_settings.title":          "Настройки провайдеров",

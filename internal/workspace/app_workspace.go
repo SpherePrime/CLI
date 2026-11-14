@@ -580,5 +580,12 @@ func (w *AppWorkspace) Store() *config.ConfigStore {
 	return w.store
 }
 
+func (w *AppWorkspace) RefreshPrimeAIIfStale(ctx context.Context, maxAge time.Duration) error {
+	if w.store == nil {
+		return nil
+	}
+	return w.store.RefreshPrimeAIIfStale(ctx, maxAge)
+}
+
 // Compile-time check that AppWorkspace implements Workspace.
 var _ Workspace = (*AppWorkspace)(nil)

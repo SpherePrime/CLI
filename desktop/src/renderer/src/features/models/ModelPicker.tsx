@@ -161,6 +161,7 @@ export function ModelPicker({
                       }
                     }}
                     select={async () => {
+                      if (model.locked) return
                       setSaving(true)
                       setError('')
                       try {

@@ -96,15 +96,17 @@ func (c *controllerV1) handleGetModelCapabilities(w http.ResponseWriter, r *http
 	if ws.Cfg != nil {
 		cfg = ws.Cfg.Config()
 		if cfg != nil && !cfg.Options.DisableDefaultProviders {
-			p, ok := cfg.Providers.Get(primeai.Name)
-			needsPrimeRefresh := !ok || (!p.Disable && len(p.Models) <= 1)
 			var acctToken string
 			if svc := c.accountService(); svc != nil {
 				acctToken = svc.Token()
 			}
-			if needsPrimeRefresh && acctToken != "" {
-				refreshCtx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-				_ = ws.Cfg.EnsurePrimeAI(refreshCtx)
+			if acctToken != "" {
+				refreshCtx, cancel := context.WithTimeout(r.Context(), 2500*time.Millisecond)
+				if p, ok := cfg.Providers.Get(primeai.Name); !ok || (!p.Disable && len(p.Models) <= 1) {
+					_ = ws.Cfg.EnsurePrimeAI(refreshCtx)
+				} else if !p.Disable {
+					_ = ws.Cfg.RefreshPrimeAIIfStale(refreshCtx, 20*time.Second)
+				}
 				cancel()
 				cfg = ws.Cfg.Config()
 			}
@@ -126,6 +128,20 @@ func (c *controllerV1) handleGetModelCapabilities(w http.ResponseWriter, r *http
 			if config.IsImageOutputModel(model) {
 				continue
 			}
+			var planLabel string
+			var locked bool
+			var allowedTariffs []string
+			if providerID == primeai.Name && ws.Cfg != nil {
+				if access, ok := ws.Cfg.PrimeAIModelAccess(model.ID); ok {
+					planLabel = access.PlanLabel
+					locked = access.Locked
+					if len(access.AllowedTariffNames) > 0 {
+						allowedTariffs = append([]string(nil), access.AllowedTariffNames...)
+					} else if len(access.AllowedTariffIDs) > 0 {
+						allowedTariffs = append([]string(nil), access.AllowedTariffIDs...)
+					}
+				}
+			}
 			modes := append([]string{config.ReasoningModeOff}, config.AllReasoningModes()...)
 			models = append(models, proto.ModelCapabilities{
 				ProviderID:           providerID,
@@ -139,6 +155,9 @@ func (c *controllerV1) handleGetModelCapabilities(w http.ResponseWriter, r *http
 				SupportsAttachments:  model.SupportsImages,
 				ContextWindow:        model.ContextWindow,
 				DefaultMaxTokens:     model.DefaultMaxTokens,
+				PlanLabel:            planLabel,
+				Locked:               locked,
+				AllowedTariffs:       allowedTariffs,
 			})
 		}
 	}

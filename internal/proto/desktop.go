@@ -48,6 +48,9 @@ type ModelCapabilities struct {
 	SupportsAttachments  bool     `json:"supports_attachments"`
 	ContextWindow        int64    `json:"context_window"`
 	DefaultMaxTokens     int64    `json:"default_max_tokens"`
+	PlanLabel            string   `json:"plan_label,omitempty"`
+	Locked               bool     `json:"locked,omitempty"`
+	AllowedTariffs       []string `json:"allowed_tariffs,omitempty"`
 }
 
 type BackgroundJob struct {

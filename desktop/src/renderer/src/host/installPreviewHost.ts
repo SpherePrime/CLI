@@ -680,15 +680,65 @@ export function installPreviewHost() {
       }
       if (operation === 'config') return config
       if (operation === 'providers') return providers
-      if (operation === 'models')
-        return providers.flatMap((p) =>
-          p.models.map((m) => ({
-            provider_id: p.id,
-            provider_name: p.name,
-            model_id: m.id,
-            ...m
-          }))
-        )
+      if (operation === 'models') {
+        const primeModels = accountState.signedIn
+          ? [
+              {
+                provider_id: 'primeai',
+                provider_name: 'PrimeAI',
+                model_id: '__primeai_auto__',
+                name: 'Автоматически',
+                context_window: 270000,
+                can_reason: true,
+                reasoning_modes: ['off', 'low', 'medium', 'high'],
+                reasoning_levels: ['low', 'medium', 'high'],
+                default_reasoning_mode: 'medium',
+                supports_attachments: true
+              },
+              {
+                provider_id: 'primeai',
+                provider_name: 'PrimeAI',
+                model_id: 'gpt-5.4-pro',
+                name: 'GPT-5.4',
+                context_window: 270000,
+                can_reason: true,
+                reasoning_modes: ['off', 'low', 'medium', 'high'],
+                reasoning_levels: ['low', 'medium', 'high'],
+                default_reasoning_mode: 'medium',
+                supports_attachments: true,
+                plan_label: 'Pro',
+                locked: false,
+                allowed_tariffs: ['Pro', 'Ultra']
+              },
+              {
+                provider_id: 'primeai',
+                provider_name: 'PrimeAI',
+                model_id: 'claude-opus-4.5',
+                name: 'Claude Opus 4.5',
+                context_window: 200000,
+                can_reason: true,
+                reasoning_modes: ['off', 'low', 'medium', 'high'],
+                reasoning_levels: ['low', 'medium', 'high'],
+                default_reasoning_mode: 'medium',
+                supports_attachments: true,
+                plan_label: 'Ultra',
+                locked: true,
+                allowed_tariffs: ['Ultra']
+              }
+            ]
+          : []
+        return [
+          ...primeModels,
+          ...providers.flatMap((p) =>
+            p.models.map((m) => ({
+              provider_id: p.id,
+              provider_name: p.name,
+              model_id: m.id,
+              ...m
+            }))
+          )
+        ]
+      }
       if (operation === 'agent') return { mode: preferences.agentMode || 'general', model: { name: 'GPT-5.4' } }
       if (operation === 'agentWorkers') return { workers }
       if (operation === 'agentWorkerMessages') return { messages: workerMessages[args?.workerSessionId] || [] }

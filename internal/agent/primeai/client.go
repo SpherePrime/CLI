@@ -44,11 +44,13 @@ func WithLimitsStore(store *LimitsStore) ClientOption {
 }
 
 type Client struct {
-	baseURL      func() string
-	accountToken func() string
-	httpClient   *http.Client
-	session      *SessionManager
-	limits       *LimitsStore
+	baseURL       func() string
+	accountToken  func() string
+	httpClient    *http.Client
+	session       *SessionManager
+	limits        *LimitsStore
+	modelAccessMu sync.RWMutex
+	modelAccess   map[string]ModelAccess
 }
 
 func NewClient(accountToken func() string, opts ...ClientOption) *Client {
@@ -86,6 +88,42 @@ func (c *Client) Session() *SessionManager {
 
 func (c *Client) Limits() *LimitsStore {
 	return c.limits
+}
+
+func (c *Client) setModelAccess(access map[string]ModelAccess) {
+	cloned := make(map[string]ModelAccess, len(access))
+	for k, v := range access {
+		cloned[k] = v.Clone()
+	}
+	c.modelAccessMu.Lock()
+	c.modelAccess = cloned
+	c.modelAccessMu.Unlock()
+}
+
+func (c *Client) ModelAccess(modelID string) (ModelAccess, bool) {
+	c.modelAccessMu.RLock()
+	defer c.modelAccessMu.RUnlock()
+	if c.modelAccess == nil {
+		return ModelAccess{}, false
+	}
+	access, ok := c.modelAccess[modelID]
+	if !ok {
+		return ModelAccess{}, false
+	}
+	return access.Clone(), true
+}
+
+func (c *Client) ModelAccessMap() map[string]ModelAccess {
+	c.modelAccessMu.RLock()
+	defer c.modelAccessMu.RUnlock()
+	if len(c.modelAccess) == 0 {
+		return map[string]ModelAccess{}
+	}
+	out := make(map[string]ModelAccess, len(c.modelAccess))
+	for k, v := range c.modelAccess {
+		out[k] = v.Clone()
+	}
+	return out
 }
 
 func (c *Client) doWithSession(ctx context.Context, buildReq func(context.Context) (*http.Request, error)) (*http.Response, error) {
