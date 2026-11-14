@@ -203,7 +203,7 @@ func (s *Status) primeAILimitsSection(label lipgloss.Style, width int) []string 
 		if w == nil {
 			return
 		}
-		if w.LimitTokens <= 0 && w.LimitRequests <= 0 && w.Percent <= 0 && w.ResetInSeconds <= 0 {
+		if w.LimitTokens <= 0 && w.Percent <= 0 && w.ResetInSeconds <= 0 {
 			lines = append(lines, row(s.com.L(key), s.com.L("primeai.unlimited")))
 			return
 		}

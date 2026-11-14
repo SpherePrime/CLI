@@ -231,7 +231,7 @@ describe('PrimeLimitsWidget and PrimeLimitsDetails', () => {
     expect(critical).toContain('100%')
   })
 
-  it('renders PrimeLimitsDetails with progressbars, zero-limit state, refresh state and cache note', () => {
+  it('renders PrimeLimitsDetails with percentages only, zero-limit state, refresh state and without cache notice', () => {
     const markup = renderToStaticMarkup(
       <I18nProvider language="ru">
         <PrimeLimitsDetails
@@ -258,8 +258,12 @@ describe('PrimeLimitsWidget and PrimeLimitsDetails', () => {
     expect(markup).toContain('aria-valuenow="29"')
     expect(markup).toContain('5-часовой лимит')
     expect(markup).toContain('Недельный лимит')
+    expect(markup).toContain('29%')
     expect(markup).toContain('Без лимита')
-    expect(markup).toContain('Учёт кэша: 15%')
+    expect(markup).not.toContain('ток.')
+    expect(markup).not.toContain('запр.')
+    expect(markup).not.toContain('Кэш не расходует лимит')
+    expect(markup).not.toContain('Учёт кэша')
     expect(markup).toContain('disabled=""')
     expect(markup).toContain('aria-busy="true"')
     expect(markup).toContain('Обновляем…')

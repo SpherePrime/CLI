@@ -191,15 +191,15 @@ export function installPreviewHost() {
             fiveHour: {
               usedTokens: 500_000,
               limitTokens: 500_000,
-              usedRequests: 120,
-              limitRequests: 120,
+              usedRequests: 0,
+              limitRequests: 0,
               percent: 100
             },
             weekly: {
               usedTokens: 4_750_000,
               limitTokens: 5_000_000,
-              usedRequests: 950,
-              limitRequests: 1000,
+              usedRequests: 0,
+              limitRequests: 0,
               percent: 95
             }
           }
@@ -208,15 +208,15 @@ export function installPreviewHost() {
               fiveHour: {
                 usedTokens: 410_000,
                 limitTokens: 500_000,
-                usedRequests: 98,
-                limitRequests: 120,
+                usedRequests: 0,
+                limitRequests: 0,
                 percent: 82
               },
               weekly: {
                 usedTokens: 3_200_000,
                 limitTokens: 5_000_000,
-                usedRequests: 640,
-                limitRequests: 1000,
+                usedRequests: 0,
+                limitRequests: 0,
                 percent: 64
               }
             }
@@ -224,15 +224,15 @@ export function installPreviewHost() {
               fiveHour: {
                 usedTokens: 142_500,
                 limitTokens: 500_000,
-                usedRequests: 18,
-                limitRequests: 120,
+                usedRequests: 0,
+                limitRequests: 0,
                 percent: 28.5
               },
               weekly: {
                 usedTokens: 710_000,
                 limitTokens: 5_000_000,
-                usedRequests: 86,
-                limitRequests: 1000,
+                usedRequests: 0,
+                limitRequests: 0,
                 percent: 14.2
               }
             }

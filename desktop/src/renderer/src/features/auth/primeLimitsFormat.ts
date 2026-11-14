@@ -17,7 +17,7 @@ export function getLimitLevel(percent: number | undefined): LimitLevel {
 }
 
 export function isUnlimitedLimitWindow(window?: PrimeAILimitWindow): boolean {
-  return Boolean(window && window.limitTokens === 0 && window.limitRequests === 0)
+  return Boolean(window && window.limitTokens <= 0)
 }
 
 export function getHighestLimitPercent(limits: PrimeAILimits): number {

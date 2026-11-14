@@ -140,7 +140,7 @@ func PrimeAILimitsInfo(t *styles.Styles, tr i18n.Translator, limits *primeai.Lim
 			return ""
 		}
 		label := tr.Label(labelKey)
-		if w.LimitTokens <= 0 && w.LimitRequests <= 0 && w.Percent <= 0 && w.ResetInSeconds <= 0 {
+		if w.LimitTokens <= 0 && w.Percent <= 0 && w.ResetInSeconds <= 0 {
 			line := fmt.Sprintf("  %s: %s", label, tr.Label("primeai.unlimited"))
 			return t.ModelInfo.MaxContext.Render(ansi.Truncate(line, max(1, width), "…"))
 		}

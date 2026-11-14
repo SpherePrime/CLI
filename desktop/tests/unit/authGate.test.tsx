@@ -214,7 +214,7 @@ describe('auth gate and account UI', () => {
     expect(ruMarkup).toContain('14%')
     expect(ruMarkup).toContain('Сброс через 3ч 12м')
     expect(ruMarkup).toContain('Сброс через 4д 6ч')
-    expect(ruMarkup).toContain('Кэш не расходует лимит')
+    expect(ruMarkup).not.toContain('Кэш не расходует лимит')
     expect(ruMarkup).toContain('Обновить')
 
     const enMarkup = renderAccountCard(
@@ -227,7 +227,7 @@ describe('auth gate and account UI', () => {
     expect(enMarkup).toContain('Weekly limit')
     expect(enMarkup).toContain('Resets in 3h 12m')
     expect(enMarkup).toContain('Resets in 4d 6h')
-    expect(enMarkup).toContain('Cache weight: 25%')
+    expect(enMarkup).not.toContain('Cache weight')
     expect(enMarkup).toContain('Refresh')
     expect(enMarkup).not.toContain('5-часовой лимит')
   })

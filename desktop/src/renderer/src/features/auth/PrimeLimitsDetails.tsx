@@ -5,7 +5,6 @@ import {
   clampLimitPercent,
   formatResetCountdown,
   formatUpdatedTimestamp,
-  formatWindowUsage,
   getLimitLevel,
   isUnlimitedLimitWindow
 } from './primeLimitsFormat'
@@ -17,12 +16,11 @@ function LimitWindowRow({
   label: string
   windowData: PrimeAILimitWindow
 }) {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const unlimited = isUnlimitedLimitWindow(windowData)
   const percent = unlimited ? 0 : clampLimitPercent(windowData.percent)
   const roundedPercent = Math.round(percent)
   const level = unlimited ? 'normal' : getLimitLevel(percent)
-  const usageText = formatWindowUsage(windowData, t, locale)
   const resetText = formatResetCountdown(windowData, t)
 
   return (
@@ -48,10 +46,11 @@ function LimitWindowRow({
           style={{ width: `${percent}%` }}
         />
       </div>
-      <div className="prime-limits-row-meta">
-        <span className="prime-limits-usage">{usageText}</span>
-        {resetText && <span className="prime-limits-reset">{resetText}</span>}
-      </div>
+      {resetText && (
+        <div className="prime-limits-row-meta">
+          <span className="prime-limits-reset">{resetText}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -69,12 +68,6 @@ export function PrimeLimitsDetails({
 }) {
   const { t, locale } = useI18n()
   const updatedTime = formatUpdatedTimestamp(limits?.updatedAt, locale)
-  const cacheLabel =
-    limits && limits.available
-      ? limits.cacheWeightPercent === 0
-        ? t('Кэш не расходует лимит')
-        : t('Учёт кэша: {percent}%', { percent: limits.cacheWeightPercent })
-      : ''
 
   return (
     <div className={`prime-limits-panel is-${variant}`}>
@@ -124,14 +117,13 @@ export function PrimeLimitsDetails({
               <span>{limits.error}</span>
             </p>
           )}
-          <div className="prime-limits-footer">
-            {cacheLabel && <span>{cacheLabel}</span>}
-            {updatedTime && (
+          {updatedTime && (
+            <div className="prime-limits-footer">
               <span className="prime-limits-updated">
                 {t('Обновлено в {time}', { time: updatedTime })}
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </>
       ) : limits.error ? (
         <p className="prime-limits-error" role="alert">
