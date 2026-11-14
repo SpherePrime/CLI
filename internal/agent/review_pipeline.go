@@ -37,7 +37,7 @@ Review depth for this task: %s (it follows the selected reasoning level). For ev
 const lightReviewPolicy = `
 
 <review_policy>
-Review depth for this task: light (a low reasoning level is selected). Do not launch review agents unless the user asks for a review. When the code agents finish, check the integrated result yourself in one pass: build and the relevant tests once, the main flow through its real surface, and for visible work one browser_run (in Desktop) or Playwright / Chrome / browser MCP check (in CLI) or app check with a desktop and a phone screenshot plus a close-up of anything that looks off. Send only critical problems back to the author with agent_message; do not run a second full pass.
+Review depth for this task: light (a low reasoning level is selected). Do not launch review agents unless the user asks for a review. When the code agents finish, check the integrated result yourself in one pass: build and the relevant tests once, the main flow through its real surface, and for visible work one browser_run (in Desktop) or Playwright / Chrome via our prime-designer skill (in CLI) or app check with a desktop and a phone screenshot plus a close-up of anything that looks off. Send only critical problems back to the author with agent_message; do not run a second full pass.
 </review_policy>
 `
 
