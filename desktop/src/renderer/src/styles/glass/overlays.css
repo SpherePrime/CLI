@@ -1,10 +1,35 @@
 .prime-popover,
 .file-context-menu,
-.select-options {
+.select-options,
+.composer .suggestions {
   background: var(--glass-overlay);
   border-color: var(--glass-edge-strong);
   box-shadow: var(--glass-rim), var(--glass-shadow-float);
   backdrop-filter: var(--glass-blur-strong);
+}
+.composer .suggestions {
+  border-radius: 14px;
+  padding: 6px;
+}
+.composer .suggestions > button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  gap: 10px;
+}
+.composer .suggestions > button strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.composer .suggestions > button[aria-selected='true'],
+.composer .suggestions > button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+}
+.composer .suggestions > button[aria-selected='true'] strong {
+  color: var(--accent);
 }
 .prime-popover button:hover:not(:disabled),
 .file-context-menu button:hover:not(:disabled),

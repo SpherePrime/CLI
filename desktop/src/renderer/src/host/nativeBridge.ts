@@ -1,5 +1,6 @@
 import type { DesktopApi, DesktopEvent, Operation } from '../../../shared/contracts'
 import { hostMethods } from '../../../shared/hostMethods'
+import { translate } from '../../../shared/localization'
 import { operationRoute } from '../../../shared/operations'
 
 export type NativeInvoke = <T>(command: string, args: Record<string, unknown>) => Promise<T>
@@ -34,7 +35,9 @@ export async function createNativeBridge(invoke: NativeInvoke, listen: NativeLis
           if (error instanceof Error) throw error
           const message =
             typeof error === 'string' ? error : (error as { message?: string })?.message
-          throw new Error(message || 'Ошибка нативного приложения')
+          const language =
+            typeof document !== 'undefined' && document.documentElement?.lang === 'en' ? 'en' : 'ru'
+          throw new Error(message || translate(language, 'Ошибка нативного приложения'))
         })
       }
     ])

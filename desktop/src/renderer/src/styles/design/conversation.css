@@ -190,6 +190,8 @@
   }
   .composer-options {
     flex: 1 1 100%;
+    flex-wrap: wrap;
+    overflow: visible;
   }
   .composer-actions {
     flex: 1 1 100%;

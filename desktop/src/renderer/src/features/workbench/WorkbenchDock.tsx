@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { PanelBoundary } from '../../components/PanelBoundary'
 import {
   AppWindow,
@@ -27,6 +27,11 @@ import { AutomationPanel } from '../automations/AutomationPanel'
 import type { AutomationRequest } from '../../../../shared/automations'
 import { openWorkbenchRun } from './openRun'
 import { realSessionId } from '../../../../shared/pendingSession'
+import {
+  clampWorkbenchHeight,
+  defaultWorkbenchHeight,
+  workbenchHeightBounds
+} from './workbenchHeight'
 
 export type WorkbenchView =
   | 'terminal'
@@ -36,7 +41,7 @@ export type WorkbenchView =
   | 'github'
   | 'windows'
 
-const minimumConversation = 180
+const minimumConversation = 120
 
 export function WorkbenchDock({
   workspace: w,
@@ -54,10 +59,25 @@ export function WorkbenchDock({
   close: () => void
 }) {
   const { t } = useI18n()
-  const [height, setHeight] = useState(() => Math.round(Math.min(340, window.innerHeight * 0.42)))
+  const [height, setHeight] = useState(() =>
+    clampWorkbenchHeight(w.preferences.workbenchHeight ?? defaultWorkbenchHeight(window.innerHeight))
+  )
   const [availableHeight, setAvailableHeight] = useState(340)
   const [headerHost, setHeaderHost] = useState<HTMLDivElement | null>(null)
   const dock = useRef<HTMLElement>(null)
+  const dragging = useRef(false)
+  useEffect(() => {
+    if (dragging.current || typeof w.preferences.workbenchHeight !== 'number') return
+    setHeight(clampWorkbenchHeight(w.preferences.workbenchHeight))
+  }, [w.preferences.workbenchHeight])
+  const persistHeight = useCallback(
+    (next: number) => {
+      void w
+        .savePreferences({ workbenchHeight: clampWorkbenchHeight(next) })
+        .catch(w.errorHandler)
+    },
+    [w.savePreferences, w.errorHandler]
+  )
   useLayoutEffect(() => {
     const element = dock.current
     const parent = element?.parentElement
@@ -76,16 +96,25 @@ export function WorkbenchDock({
             minimumConversation
         )
       )
-    const observer = new ResizeObserver(measure)
+    let frame = 0
+    const scheduleMeasure = () => {
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        measure()
+      })
+    }
+    const observer = new ResizeObserver(scheduleMeasure)
     observer.observe(parent)
     fixed().forEach((item) => observer.observe(item))
     const changes = new MutationObserver(() => {
       fixed().forEach((item) => observer.observe(item))
-      measure()
+      scheduleMeasure()
     })
     changes.observe(parent, { childList: true })
     measure()
     return () => {
+      if (frame) cancelAnimationFrame(frame)
       observer.disconnect()
       changes.disconnect()
     }
@@ -115,11 +144,22 @@ export function WorkbenchDock({
     (request: TeamRequest) => window.prime.team(workspaceId, request),
     [workspaceId]
   )
+  const maxAllowed = Math.max(
+    workbenchHeightBounds.min,
+    Math.min(workbenchHeightBounds.max, Math.round(availableHeight))
+  )
+  const clampedHeight = clampWorkbenchHeight(height, availableHeight)
+  const renderedHeight =
+    availableHeight >= workbenchHeightBounds.min
+      ? clampedHeight
+      : Math.max(48, Math.round(availableHeight))
+  const minBound = Math.min(workbenchHeightBounds.min, renderedHeight)
+  const maxBound = Math.max(renderedHeight, maxAllowed)
   return (
     <section
       ref={dock}
       className={`workbench-dock ${expanded ? 'expanded' : ''}`}
-      style={expanded ? undefined : { height: Math.min(height, availableHeight) }}
+      style={expanded ? undefined : { height: renderedHeight }}
       aria-label={t('Инструменты проекта')}
     >
       {!expanded && (
@@ -128,30 +168,48 @@ export function WorkbenchDock({
           role="separator"
           aria-orientation="horizontal"
           aria-label={t('Высота панели инструментов')}
+          aria-valuemin={minBound}
+          aria-valuemax={maxBound}
+          aria-valuenow={renderedHeight}
           tabIndex={0}
           onKeyDown={(event) => {
-            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-              event.preventDefault()
-              setHeight((value) =>
-                Math.max(
-                  140,
-                  Math.min(availableHeight, value + (event.key === 'ArrowUp' ? 20 : -20))
-                )
-              )
-            }
+            if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+            event.preventDefault()
+            const step = event.shiftKey ? 50 : 20
+            const raw =
+              event.key === 'Home'
+                ? workbenchHeightBounds.min
+                : event.key === 'End'
+                  ? maxAllowed
+                  : clampedHeight + (event.key === 'ArrowUp' ? step : -step)
+            const next = clampWorkbenchHeight(raw, availableHeight)
+            setHeight(next)
+            persistHeight(next)
           }}
           onPointerDown={(event) => {
             event.preventDefault()
+            const target = event.currentTarget
+            const pointerId = event.pointerId
+            target.setPointerCapture?.(pointerId)
+            dragging.current = true
             const start = event.clientY
-            const initial = height
-            const move = (pointer: PointerEvent) =>
-              setHeight(Math.max(140, Math.min(availableHeight, initial + start - pointer.clientY)))
+            const initial = clampedHeight
+            let latest = initial
+            const move = (pointer: PointerEvent) => {
+              latest = clampWorkbenchHeight(initial + start - pointer.clientY, availableHeight)
+              setHeight(latest)
+            }
             const stop = () => {
+              dragging.current = false
               window.removeEventListener('pointermove', move)
               window.removeEventListener('pointerup', stop)
+              window.removeEventListener('pointercancel', stop)
+              if (target.hasPointerCapture?.(pointerId)) target.releasePointerCapture(pointerId)
+              if (latest !== initial) persistHeight(latest)
             }
             window.addEventListener('pointermove', move)
             window.addEventListener('pointerup', stop)
+            window.addEventListener('pointercancel', stop)
           }}
         />
       )}

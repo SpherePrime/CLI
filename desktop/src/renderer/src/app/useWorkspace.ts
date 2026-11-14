@@ -54,7 +54,8 @@ export function useWorkspace() {
     pinned: [],
     drafts: {},
     sidebarWidth: 256,
-    inspectorWidth: 350
+    inspectorWidth: 350,
+    workbenchHeight: 340
   })
   const [projectCreationOpen, setProjectCreationOpen] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])

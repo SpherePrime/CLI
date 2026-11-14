@@ -2,10 +2,11 @@ import { shortcutLabel } from '../../../../shared/keybindings'
 import { useShortcuts } from '../shortcuts/shortcutStore'
 import { useI18n } from '../../i18n'
 import '../../styles/jobs.css'
-import { FolderOpen, Settings2, Puzzle, TerminalSquare, ListChecks, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Settings2, Puzzle, TerminalSquare, ListChecks } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
 import { SidebarChats } from './SidebarChats'
+
 export function Sidebar({
   workspace: w,
   onSettings,
@@ -24,8 +25,11 @@ export function Sidebar({
   const { t } = useI18n()
   const shortcuts = useShortcuts()
   const [activeJobs, setActiveJobs] = useState(0)
+  const footerRef = useRef<HTMLElement>(null)
   useEffect(() => {
     if (w.info.runtime !== 'ready') return
+    const footer = footerRef.current
+    if (!footer || getComputedStyle(footer).display === 'none') return
     const load = () =>
       void window.prime
         .jobs({ action: 'list' })
@@ -37,7 +41,7 @@ export function Sidebar({
         .catch(() => {})
     load()
     const timer = setInterval(() => {
-      if (!document.hidden) load()
+      if (!document.hidden && getComputedStyle(footer).display !== 'none') load()
     }, 5000)
     return () => clearInterval(timer)
   }, [w.info.runtime])
@@ -46,7 +50,7 @@ export function Sidebar({
       <div className="sidebar-scroll">
         <SidebarChats workspace={w} onRemote={onRemote} />
       </div>
-      <footer className="sidebar-footer">
+      <footer ref={footerRef} className="sidebar-footer">
         <button onClick={onJobs} className="sidebar-jobs">
           <ListChecks size={16} />
           {t('Фоновые задачи')}

@@ -103,7 +103,7 @@ export const MessageItem = memo(function MessageItem({
             return (
               <div className="tool-part" key={index}>
                 {part.type === 'tool_call' && part.data?.name === 'agent' ? (
-                  <AgentCard part={part} messageId={message.id} />
+                  <AgentCard part={part} messageId={message.id} sessionId={message.session_id} />
                 ) : (
                   <ToolCard part={part} />
                 )}

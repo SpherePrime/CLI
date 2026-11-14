@@ -4,7 +4,10 @@ import { resolve } from 'node:path'
 
 export default defineConfig(({ command }) => ({
   root: resolve(import.meta.dirname, 'src/renderer'),
-  define: { 'import.meta.env.VITE_NATIVE_HOST': JSON.stringify('true') },
+  define: {
+    'import.meta.env.VITE_NATIVE_HOST': JSON.stringify('true'),
+    'import.meta.env.VITE_PREVIEW_HOST': JSON.stringify('false')
+  },
   plugins: [
     react(),
     {

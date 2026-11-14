@@ -22,6 +22,7 @@ import { useConversation } from '../voice/useConversation'
 import { ConversationCall, ConversationCallPill } from '../voice/ConversationCall'
 import { createPortal } from 'react-dom'
 import { clipboardImages, imageUploads } from './pasteImages'
+import { applyFileSuggestion, nextSuggestionIndex, type FileSuggestion } from './suggestions'
 import { AudioLines } from 'lucide-react'
 import '../../styles/attachments.css'
 
@@ -41,7 +42,8 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const composerRoot = useRef<HTMLDivElement>(null)
   const mode = w.preferences.agentMode || 'general'
   const projectReady = w.project?.connection === 'ready'
-  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [suggestions, setSuggestions] = useState<FileSuggestion[]>([])
+  const [suggestionIndex, setSuggestionIndex] = useState(0)
   const [command, setCommand] = useState<any>(null)
   const textarea = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
@@ -172,8 +174,21 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         )
         .catch(w.errorHandler)
       setAttachments([])
+      setSuggestions([])
+      setSuggestionIndex(0)
     }
   }, [key])
+  useEffect(() => {
+    if (!suggestions.length) return
+    const pointer = (event: PointerEvent) => {
+      if (!composerRoot.current?.contains(event.target as Node)) {
+        setSuggestions([])
+        setSuggestionIndex(0)
+      }
+    }
+    document.addEventListener('pointerdown', pointer)
+    return () => document.removeEventListener('pointerdown', pointer)
+  }, [suggestions.length])
   useEffect(() => {
     const timer = setTimeout(() => {
       void w.savePreferences({ drafts: { [key]: text } })
@@ -326,23 +341,32 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       window.removeEventListener('keydown', handler)
       window.removeEventListener('pointerdown', pointerHandler, true)
     }
-  }, [w.busy, w.session?.id, recording, conversation.state])
+  }, [w.project?.id, w.busy, w.session?.id, recording, conversation.state])
+  function applySuggestion(file: string) {
+    setText((current) => applyFileSuggestion(current, file))
+    setSuggestions([])
+    setSuggestionIndex(0)
+    textarea.current?.focus()
+  }
   async function change(value: string) {
     setText(value)
     if (/@[^\s]*$/.test(value) && w.project && w.project.kind !== 'chat') {
       const query = value.split('@').pop()!.toLowerCase()
       const files = await window.prime.files(w.project.id).catch(() => [])
-      setSuggestions(
-        files
-          .filter((file) => file.name.toLowerCase().includes(query))
-          .slice(0, 8)
-          .map((file) => ({
-            label: '@' + file.path,
-            description: file.directory ? t('Папка') : t('Файл'),
-            file: file.path
-          }))
-      )
-    } else setSuggestions([])
+      const next = files
+        .filter((file) => file.name.toLowerCase().includes(query))
+        .slice(0, 8)
+        .map((file) => ({
+          label: '@' + file.path,
+          description: file.directory ? t('Папка') : t('Файл'),
+          file: file.path
+        }))
+      setSuggestions(next)
+      setSuggestionIndex(0)
+    } else {
+      setSuggestions([])
+      setSuggestionIndex(0)
+    }
   }
   const voiceActive = recording || transcribing
   const hasDraft = Boolean(text.trim()) || attachments.length > 0
@@ -425,6 +449,32 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           aria-label={t('Сообщение Prime')}
           disabled={w.loading || sending}
           onKeyDown={(event) => {
+            if (suggestions.length > 0 && !event.nativeEvent.isComposing) {
+              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault()
+                setSuggestionIndex((index) =>
+                  nextSuggestionIndex(
+                    index,
+                    suggestions.length,
+                    event.key as 'ArrowUp' | 'ArrowDown'
+                  )
+                )
+                return
+              }
+              if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Tab') {
+                event.preventDefault()
+                const picked = suggestions[suggestionIndex] || suggestions[0]
+                if (picked) applySuggestion(picked.file)
+                return
+              }
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                event.stopPropagation()
+                setSuggestions([])
+                setSuggestionIndex(0)
+                return
+              }
+            }
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault()
               void submit()
@@ -432,14 +482,15 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           }}
         />
         {suggestions.length > 0 && (
-          <div className="suggestions">
-            {suggestions.map((item) => (
+          <div className="suggestions" role="listbox" aria-label={t('Файлы')}>
+            {suggestions.map((item, index) => (
               <button
                 key={item.label}
-                onClick={async () => {
-                  if (item.file) setText(text.replace(/@[^\s]*$/, `@${item.file} `))
-                  setSuggestions([])
-                }}
+                type="button"
+                role="option"
+                aria-selected={index === suggestionIndex}
+                onMouseEnter={() => setSuggestionIndex(index)}
+                onClick={() => applySuggestion(item.file)}
               >
                 <strong>{item.label}</strong>
                 <small>{item.description}</small>

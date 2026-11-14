@@ -530,18 +530,42 @@ dialog.modal.settings-modal {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .settings-modal .settings-layout > nav {
     width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--glass-edge);
+    padding: 10px 12px;
+    gap: 4px;
+  }
+  .settings-modal .settings-layout > nav button {
+    min-height: 36px;
+    padding: 5px 10px 5px 6px;
+  }
+  .settings-modal .settings-layout > nav button.active {
+    box-shadow:
+      inset 0 0 0 1px var(--glass-edge),
+      inset 0 -2px 0 var(--accent);
   }
   .settings-modal .settings-body {
-    padding: 22px 18px 28px;
+    padding: 22px 20px 28px;
   }
-  .settings-body .theme-options {
-    grid-template-columns: 1fr;
+}
+@media (max-width: 640px) {
+  .settings-modal .settings-body {
+    padding: 18px 14px 24px;
   }
+  .settings-body .theme-options,
   .settings-body .density-options {
     grid-template-columns: 1fr;
+  }
+  .settings-body .info-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px 12px;
+  }
+  .settings-body .info-list dd {
+    margin-bottom: 8px;
+    overflow-wrap: anywhere;
   }
 }
 :root[data-theme='light'] .settings-body .setting-toggle input[type='checkbox']::after {

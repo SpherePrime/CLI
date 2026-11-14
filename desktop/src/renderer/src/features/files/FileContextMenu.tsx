@@ -16,8 +16,12 @@ export function FileContextMenu({
   close: () => void
 }) {
   const menu = useRef<HTMLDivElement>(null)
+  const trigger = useRef<HTMLElement | null>(null)
   const [position, setPosition] = useState({ left: x, top: y })
   useLayoutEffect(() => {
+    if (!trigger.current && document.activeElement instanceof HTMLElement) {
+      trigger.current = document.activeElement
+    }
     const rect = menu.current?.getBoundingClientRect()
     if (!rect) return
     setPosition({
@@ -33,7 +37,10 @@ export function FileContextMenu({
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
+        event.stopPropagation()
+        event.stopImmediatePropagation()
         close()
+        trigger.current?.focus()
       }
     }
     document.addEventListener('pointerdown', pointer, true)

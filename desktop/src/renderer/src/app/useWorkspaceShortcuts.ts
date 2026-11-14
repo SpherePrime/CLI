@@ -1,7 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Workspace } from './useWorkspace'
 import { matchesPointerShortcut, matchesShortcut } from '../../../shared/keybindings'
 import { getShortcuts } from '../features/shortcuts/shortcutStore'
+
+export function stepZoom(value: number, delta: number) {
+  return Math.round(Math.max(0.8, Math.min(2, value + delta)) * 10) / 10
+}
 
 export function useWorkspaceShortcuts({
   workspace: w,
@@ -18,8 +22,26 @@ export function useWorkspaceShortcuts({
   openSearch: () => void
   setZoom: React.Dispatch<React.SetStateAction<number>>
 }) {
+  const latest = useRef({
+    workspace: w,
+    setModal,
+    toggleTerminal,
+    toggleFocus,
+    openSearch,
+    setZoom
+  })
+  latest.current = {
+    workspace: w,
+    setModal,
+    toggleTerminal,
+    toggleFocus,
+    openSearch,
+    setZoom
+  }
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      const current = latest.current
       const shortcuts = getShortcuts()
       const dialogOpen = Boolean(document.querySelector('dialog[open]'))
       const run = (action: () => void) => {
@@ -28,39 +50,38 @@ export function useWorkspaceShortcuts({
       }
       if (matchesShortcut(event, shortcuts.commands))
         return run(() => {
-          if (!dialogOpen) setModal('commands')
+          if (!dialogOpen) current.setModal('commands')
         })
       if (dialogOpen || event.defaultPrevented) return
-      if (matchesShortcut(event, shortcuts.terminal) && w.project) return run(toggleTerminal)
-      if (matchesShortcut(event, shortcuts.focus)) return run(toggleFocus)
+      if (matchesShortcut(event, shortcuts.terminal) && current.workspace.project)
+        return run(current.toggleTerminal)
+      if (matchesShortcut(event, shortcuts.focus)) return run(current.toggleFocus)
       if (
         matchesShortcut(event, shortcuts.chatSearch) &&
-        w.messages.length &&
+        current.workspace.messages.length &&
         !(event.target as HTMLElement).closest('.file-editor, .terminal-panel')
       )
-        return run(openSearch)
-      if (matchesShortcut(event, shortcuts.settings)) return run(() => setModal('settings'))
+        return run(current.openSearch)
+      if (matchesShortcut(event, shortcuts.settings)) return run(() => current.setModal('settings'))
       if (matchesShortcut(event, shortcuts.models))
         return run(() => window.dispatchEvent(new Event('prime:models')))
       if (matchesShortcut(event, shortcuts.newChat))
         return run(() => {
-          if (w.project) void w.createSession()
+          if (current.workspace.project) void current.workspace.createSession()
         })
       if (matchesShortcut(event, shortcuts.zoomIn))
-        return run(() => setZoom((value) => Math.min(2, value + 0.1)))
+        return run(() => current.setZoom((value) => stepZoom(value, 0.1)))
       if (matchesShortcut(event, shortcuts.zoomOut))
-        return run(() => setZoom((value) => Math.max(0.8, value - 0.1)))
-      if (matchesShortcut(event, shortcuts.zoomReset)) return run(() => setZoom(1))
+        return run(() => current.setZoom((value) => stepZoom(value, -0.1)))
+      if (matchesShortcut(event, shortcuts.zoomReset)) return run(() => current.setZoom(1))
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  })
+  }, [])
+
   useEffect(() => {
-    // Mouse bindings: back/forward side buttons (and any button with
-    // modifiers) fire no keyboard events at all, so they are routed from
-    // pointer events. A bare left click is not intercepted, it just runs
-    // the bound action next to the click's own behavior.
     const pointerHandler = (event: PointerEvent) => {
+      const current = latest.current
       const shortcuts = getShortcuts()
       const dialogOpen = Boolean(document.querySelector('dialog[open]'))
       const run = (action: () => void) => {
@@ -69,31 +90,33 @@ export function useWorkspaceShortcuts({
       }
       if (matchesPointerShortcut(event, shortcuts.commands))
         return run(() => {
-          if (!dialogOpen) setModal('commands')
+          if (!dialogOpen) current.setModal('commands')
         })
       if (dialogOpen) return
-      if (matchesPointerShortcut(event, shortcuts.terminal) && w.project) return run(toggleTerminal)
-      if (matchesPointerShortcut(event, shortcuts.focus)) return run(toggleFocus)
+      if (matchesPointerShortcut(event, shortcuts.terminal) && current.workspace.project)
+        return run(current.toggleTerminal)
+      if (matchesPointerShortcut(event, shortcuts.focus)) return run(current.toggleFocus)
       if (
         matchesPointerShortcut(event, shortcuts.chatSearch) &&
-        w.messages.length &&
+        current.workspace.messages.length &&
         !(event.target as HTMLElement).closest('.file-editor, .terminal-panel')
       )
-        return run(openSearch)
-      if (matchesPointerShortcut(event, shortcuts.settings)) return run(() => setModal('settings'))
+        return run(current.openSearch)
+      if (matchesPointerShortcut(event, shortcuts.settings))
+        return run(() => current.setModal('settings'))
       if (matchesPointerShortcut(event, shortcuts.models))
         return run(() => window.dispatchEvent(new Event('prime:models')))
       if (matchesPointerShortcut(event, shortcuts.newChat))
         return run(() => {
-          if (w.project) void w.createSession()
+          if (current.workspace.project) void current.workspace.createSession()
         })
       if (matchesPointerShortcut(event, shortcuts.zoomIn))
-        return run(() => setZoom((value) => Math.min(2, value + 0.1)))
+        return run(() => current.setZoom((value) => stepZoom(value, 0.1)))
       if (matchesPointerShortcut(event, shortcuts.zoomOut))
-        return run(() => setZoom((value) => Math.max(0.8, value - 0.1)))
-      if (matchesPointerShortcut(event, shortcuts.zoomReset)) return run(() => setZoom(1))
+        return run(() => current.setZoom((value) => stepZoom(value, -0.1)))
+      if (matchesPointerShortcut(event, shortcuts.zoomReset)) return run(() => current.setZoom(1))
     }
     window.addEventListener('pointerdown', pointerHandler, true)
     return () => window.removeEventListener('pointerdown', pointerHandler, true)
-  })
+  }, [])
 }

@@ -43,6 +43,8 @@ describe('native host bridge', () => {
     })
     invoke.mockRejectedValueOnce({ code: 'not_available', message: 'Недоступно' })
     await expect(bridge.api.browserState()).rejects.toThrow('Недоступно')
+    invoke.mockRejectedValueOnce({})
+    await expect(bridge.api.browserState()).rejects.toThrow('Ошибка нативного приложения')
     bridge.dispose()
   })
 

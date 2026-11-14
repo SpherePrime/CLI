@@ -18,7 +18,18 @@ export function ConversationSearch({
 }) {
   const { t } = useI18n()
   return (
-    <div className="conversation-search" role="search" aria-label={t('Поиск в чате')}>
+    <div
+      className="conversation-search"
+      role="search"
+      aria-label={t('Поиск в чате')}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          event.stopPropagation()
+          close()
+        }
+      }}
+    >
       <Search size={16} />
       <input
         autoFocus
@@ -27,10 +38,6 @@ export function ConversationSearch({
         placeholder={t('Найти в сообщениях…')}
         onChange={(event) => change(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            event.stopPropagation()
-            close()
-          }
           if (event.key === 'Enter') {
             event.preventDefault()
             move(event.shiftKey ? -1 : 1)

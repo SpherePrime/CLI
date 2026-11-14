@@ -15,6 +15,7 @@ import { ProjectCard } from './ProjectCard'
 import { DeleteProjectDialog } from './DeleteProjectDialog'
 import { notifyWarning } from '../notifications/notifications'
 import { SidebarSession } from './SidebarSession'
+import { handleContextMenuKeyDown } from './contextMenuEscape'
 import './projectNavigation.css'
 import './projectReorder.css'
 
@@ -56,13 +57,13 @@ export function SidebarChats({
       setMenu(null)
     }
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenu(null)
+      handleContextMenuKeyDown(event, () => setMenu(null))
     }
     document.addEventListener('pointerdown', pointer)
-    document.addEventListener('keydown', key)
+    document.addEventListener('keydown', key, true)
     return () => {
       document.removeEventListener('pointerdown', pointer)
-      document.removeEventListener('keydown', key)
+      document.removeEventListener('keydown', key, true)
     }
   }, [menu])
   const needle = search.trim().toLocaleLowerCase()

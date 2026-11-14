@@ -96,6 +96,7 @@ export type Preferences = {
   drafts: Record<string, string>
   sidebarWidth: number
   inspectorWidth: number
+  workbenchHeight?: number
   density?: 'comfortable' | 'compact'
   reduceMotion?: boolean
   sidebarVisible?: boolean

@@ -13,6 +13,8 @@ function ToastCard({ toast, openProviders }: { toast: Toast; openProviders: () =
   const [expanded, setExpanded] = useState(false)
   const remaining = useRef(lifetime)
   const started = useRef(Date.now())
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(copiedTimer.current), [])
   useEffect(() => {
     if (paused) {
       remaining.current -= Date.now() - started.current
@@ -30,7 +32,9 @@ function ToastCard({ toast, openProviders }: { toast: Toast; openProviders: () =
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false)
+      }}
     >
       <span className="toast-icon">
         <AlertTriangle size={16} />
@@ -55,9 +59,16 @@ function ToastCard({ toast, openProviders }: { toast: Toast; openProviders: () =
             </button>
           )}
           <button
-            onClick={() =>
-              void navigator.clipboard.writeText(toast.message).then(() => setCopied(true))
-            }
+            onClick={() => {
+              void navigator.clipboard
+                ?.writeText(toast.message)
+                .then(() => {
+                  setCopied(true)
+                  clearTimeout(copiedTimer.current)
+                  copiedTimer.current = setTimeout(() => setCopied(false), 1500)
+                })
+                .catch(() => {})
+            }}
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? t('Скопировано') : t('Копировать')}

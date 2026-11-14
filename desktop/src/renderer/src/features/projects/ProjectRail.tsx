@@ -21,6 +21,7 @@ export function ProjectRail({
   onJobs,
   onTools,
   onPlugins,
+  compact = false,
   expanded = false,
   onToggle
 }: {
@@ -31,6 +32,7 @@ export function ProjectRail({
   onJobs: () => void
   onTools: () => void
   onPlugins: () => void
+  compact?: boolean
   expanded?: boolean
   onToggle?: () => void
 }) {
@@ -38,6 +40,11 @@ export function ProjectRail({
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
+  const wasCompact = useRef(compact)
+  useEffect(() => {
+    if (wasCompact.current && !compact) setOpen(false)
+    wasCompact.current = compact
+  }, [compact])
   useEffect(() => {
     setOpen(false)
   }, [w.project?.id, w.session?.id])
@@ -75,7 +82,7 @@ export function ProjectRail({
     <div className="project-rail" ref={root}>
       <button
         ref={trigger}
-        className={`icon ${open || expanded ? 'active-control' : ''}`}
+        className={`icon ${open || expanded ? 'active' : ''}`}
         title={t('Панель проектов')}
         aria-label={t('Панель проектов')}
         aria-expanded={open || expanded}

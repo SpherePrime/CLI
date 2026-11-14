@@ -22,8 +22,10 @@
   cursor: ns-resize;
   background: transparent;
 }
-.workbench-divider:hover {
-  background: color-mix(in srgb, var(--accent) 50%, transparent);
+.workbench-divider:hover,
+.workbench-divider:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .workbench-navigation {
   display: flex;
@@ -96,8 +98,13 @@
   overflow: auto;
   justify-content: flex-start;
 }
+.main-workspace:has(> .workbench-dock:not(.expanded)) > .approvals {
+  max-height: min(170px, 24vh);
+}
 .main-workspace[data-workbench-expanded='true'] > .welcome,
 .main-workspace[data-workbench-expanded='true'] > .conversation-panel,
+.main-workspace[data-workbench-expanded='true'] > .panel-failure,
+.main-workspace[data-workbench-expanded='true'] > .approvals,
 .main-workspace[data-workbench-expanded='true'] > .composer-area {
   display: none;
 }

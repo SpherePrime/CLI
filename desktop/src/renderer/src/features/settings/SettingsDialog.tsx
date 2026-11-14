@@ -5,7 +5,7 @@ import { ProviderSettings } from './ProviderSettings'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { PrimeLogo } from '../../components/PrimeLogo'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import {
   Check,
   Boxes,
@@ -26,6 +26,7 @@ import { VoiceSettings } from './VoiceSettings'
 import { SudoSettings } from './SudoSettings'
 import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
+
 export function SettingsDialog({
   workspace: w,
   close,
@@ -37,8 +38,9 @@ export function SettingsDialog({
 }) {
   const { t, language } = useI18n()
   const [tab, setTab] = useState(initial)
-  const [status, setStatus] = useState('')
-  const [scope] = useState(0)
+  const [updateStatus, setUpdateStatus] = useState('')
+  const languageLabelId = useId()
+  const themeLabelId = useId()
   const tabs = [
     { id: 'appearance', label: t('Интерфейс'), icon: Monitor },
     { id: 'shortcuts', label: t('Горячие клавиши'), icon: Keyboard },
@@ -62,7 +64,7 @@ export function SettingsDialog({
               aria-current={tab === item.id ? 'page' : undefined}
               onClick={() => {
                 setTab(item.id)
-                setStatus('')
+                setUpdateStatus('')
               }}
             >
               <span className="settings-nav-icon" aria-hidden="true">
@@ -80,24 +82,29 @@ export function SettingsDialog({
               <h3>{t('Ваше рабочее пространство')}</h3>
               <p className="muted">{t('Оформление приложения сохраняется на этом устройстве.')}</p>
               <section className="settings-card">
-                <label className="form-label">
-                  {t('Язык интерфейса')}
+                <div className="form-label">
+                  <span id={languageLabelId}>{t('Язык интерфейса')}</span>
                   <Select
                     label={t('Язык интерфейса')}
+                    labelledBy={languageLabelId}
                     value={language}
                     onChange={(value) => {
-                      void w.savePreferences({ language: value as 'ru' | 'en' })
+                      void w
+                        .savePreferences({ language: value as 'ru' | 'en' })
+                        .catch(w.errorHandler)
                     }}
                     options={[
                       { value: 'ru', label: t('Русский') },
                       { value: 'en', label: t('Английский') }
                     ]}
                   />
-                </label>
+                </div>
               </section>
               <section className="settings-card">
-                <label className="form-label">{t('Цветовая тема')}</label>
-                <div className="theme-options">
+                <div className="form-label" id={themeLabelId}>
+                  {t('Цветовая тема')}
+                </div>
+                <div className="theme-options" role="group" aria-labelledby={themeLabelId}>
                   {(
                     [
                       { id: 'dark', label: t('Тёмная'), icon: Moon },
@@ -108,7 +115,10 @@ export function SettingsDialog({
                     <button
                       key={theme.id}
                       className={w.preferences.theme === theme.id ? 'selected' : ''}
-                      onClick={() => void w.savePreferences({ theme: theme.id })}
+                      aria-pressed={w.preferences.theme === theme.id}
+                      onClick={() =>
+                        void w.savePreferences({ theme: theme.id }).catch(w.errorHandler)
+                      }
                     >
                       <span className={`theme-preview ${theme.id}`} aria-hidden="true">
                         <i />
@@ -175,7 +185,7 @@ export function SettingsDialog({
             </>
           )}
           {tab === 'shortcuts' && <ShortcutSettings workspace={w} />}
-          {tab === 'providers' && <ProviderSettings workspace={w} scope={scope} />}
+          {tab === 'providers' && <ProviderSettings workspace={w} scope={0} />}
           {tab === 'advanced' && <PrimeSettings workspace={w} />}
           {(['mcp', 'lsp', 'skills'] as const).map(
             (kind) => tab === kind && <IntegrationSettings key={kind} kind={kind} workspace={w} />
@@ -208,13 +218,17 @@ export function SettingsDialog({
               </dl>
               <button
                 onClick={async () => {
-                  const result = await window.prime.update('check')
-                  setStatus(
-                    result.message ||
-                      (result.state === 'current'
-                        ? t('Установлена актуальная версия')
-                        : t('Обновление: {value0}', { value0: result.version || result.state }))
-                  )
+                  try {
+                    const result = await window.prime.update('check')
+                    setUpdateStatus(
+                      result.message ||
+                        (result.state === 'current'
+                          ? t('Установлена актуальная версия')
+                          : t('Обновление: {value0}', { value0: result.version || result.state }))
+                    )
+                  } catch (error) {
+                    w.errorHandler(error)
+                  }
                 }}
               >
                 <Download size={15} /> {t('Проверить обновления')}
@@ -223,15 +237,12 @@ export function SettingsDialog({
                 {t('Обновления Prime Desktop загружаются из GitHub Releases.')}
               </p>
               {w.info.error && <pre>{w.info.error}</pre>}
+              {updateStatus && (
+                <p className="settings-status" role="status">
+                  {updateStatus}
+                </p>
+              )}
             </>
-          )}
-          {status && (
-            <p
-              className={`settings-status ${status === t('Сохранено') ? 'success' : ''}`}
-              role="status"
-            >
-              {status}
-            </p>
           )}
         </div>
       </div>

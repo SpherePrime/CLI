@@ -8,7 +8,7 @@ import { useDocuments } from '../features/files/useDocuments'
 import { StartupScreen } from '../components/StartupScreen'
 import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
-import { I18nProvider, useI18n } from '../i18n'
+import { I18nProvider, translate, useI18n } from '../i18n'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ToastStack } from '../features/notifications/ToastStack'
 import { notifyError } from '../features/notifications/notifications'
@@ -35,17 +35,27 @@ import { applyShortcuts } from '../features/shortcuts/shortcutStore'
 import { openAgentEvent, type AgentRequest } from '../features/agents/openAgent'
 import { isForViewedChat, useBrowserView } from '../features/browser/useBrowserView'
 import { isInspectorOpen, shouldActivateBrowserTab } from '../features/browser/browserActivation'
+import { realSessionId } from '../../../shared/pendingSession'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
 export function App() {
   const w = useWorkspace()
+  const languageRef = useRef(w.preferences.language)
+  languageRef.current = w.preferences.language
   useEffect(() => {
     const handleHostError = (event: Event) => {
       const detail: unknown = (event as CustomEvent<unknown>).detail
-      w.errorHandler(detail instanceof Error ? detail : new Error(
-        typeof detail === 'string' ? detail : (detail as { message?: string })?.message || 'Ошибка окна'
-      ))
+      w.errorHandler(
+        detail instanceof Error
+          ? detail
+          : new Error(
+              typeof detail === 'string'
+                ? detail
+                : (detail as { message?: string })?.message ||
+                    translate(languageRef.current, 'Ошибка окна')
+            )
+      )
     }
     window.addEventListener('prime:host-error', handleHostError)
     return () => window.removeEventListener('prime:host-error', handleHostError)
@@ -110,10 +120,15 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const showInspector = inspector && !focusMode
   const showEditor = documents.documents.length > 0 && !focusMode
   useEffect(() => setSearchOpen(false), [w.session?.id])
-  function setCollapsed(which: 'sidebar' | 'inspector', value: boolean) {
+  function setCollapsed(which: 'sidebar' | 'inspector', value: boolean, persist = false) {
     setCollapsedState((current) =>
       current[which] === value ? current : { ...current, [which]: value }
     )
+    if (persist) {
+      void w
+        .savePreferences({ [which === 'sidebar' ? 'sidebarVisible' : 'inspectorVisible']: !value })
+        .catch(w.errorHandler)
+    }
   }
   function toggleSidebar() {
     if (focusMode) return setFocusMode(false)
@@ -123,10 +138,10 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         ...value,
         inspector: Math.min(value.inspector, layout.inspectorWithSidebarMax)
       }))
-      setCollapsed('sidebar', false)
+      setCollapsed('sidebar', false, true)
       return
     }
-    setCollapsed('sidebar', !collapsed.sidebar)
+    setCollapsed('sidebar', !collapsed.sidebar, true)
   }
   function keepSidebarBesideInspector() {
     const current = layoutRef.current
@@ -145,7 +160,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       return
     }
     if (collapsed.inspector) keepSidebarBesideInspector()
-    setCollapsed('inspector', !collapsed.inspector)
+    setCollapsed('inspector', !collapsed.inspector, true)
   }
   function openTools(view: WorkbenchView) {
     setWorkbenchView(view)
@@ -189,13 +204,22 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [appRequest, setAppRequest] = useState(0)
   const viewedChat = useBrowserView(w.session, inspectorOpen)
   const [agentRequest, setAgentRequest] = useState<AgentRequest>()
+  const sessionRef = useRef(w.session)
+  sessionRef.current = w.session
+  useEffect(() => {
+    setAgentRequest(undefined)
+  }, [w.session?.id])
   useEffect(() => {
     const open = (event: Event) => {
-      const workerId = (event as CustomEvent<{ workerId?: string }>).detail?.workerId
-      if (!workerId) return
+      const detail = (event as CustomEvent<{ workerId?: string; sessionId?: string }>).detail
+      if (!detail?.workerId) return
       setFocusMode(false)
       setInspector(true)
-      setAgentRequest((current) => ({ workerId, sequence: (current?.sequence || 0) + 1 }))
+      setAgentRequest((current) => ({
+        workerId: detail.workerId!,
+        sessionId: detail.sessionId ?? realSessionId(sessionRef.current),
+        sequence: (current?.sequence || 0) + 1
+      }))
     }
     window.addEventListener(openAgentEvent, open)
     return () => window.removeEventListener(openAgentEvent, open)
@@ -270,6 +294,16 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   useEffect(() => {
     setWidths({ sidebar: w.preferences.sidebarWidth, inspector: w.preferences.inspectorWidth })
   }, [w.preferences.sidebarWidth, w.preferences.inspectorWidth])
+  useEffect(() => {
+    setCollapsedState((current) => ({
+      sidebar:
+        w.preferences.sidebarVisible === undefined ? current.sidebar : !w.preferences.sidebarVisible,
+      inspector:
+        w.preferences.inspectorVisible === undefined
+          ? current.inspector
+          : !w.preferences.inspectorVisible
+    }))
+  }, [w.preferences.sidebarVisible, w.preferences.inspectorVisible])
   useWorkspaceShortcuts({
     workspace: w,
     setModal,
@@ -352,6 +386,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               onJobs={() => setModal('jobs')}
               onTools={() => openTools(workbenchView)}
               onPlugins={() => setModal('plugins')}
+              compact={layout.compact}
               expanded={layout.sidebarOpen}
               onToggle={layout.compact ? undefined : toggleSidebar}
             >
@@ -364,7 +399,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           </>
         )}
         <main className="main-workspace" data-workbench-expanded={workbench && workbenchExpanded}>
-          <PanelBoundary resetKey={w.session?.id}>
+          <PanelBoundary resetKey={w.session?.id} compact={layout.compact}>
             {isEmpty ? (
               <Welcome workspace={w} openCommands={() => setModal('commands')} />
             ) : (
@@ -414,7 +449,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               expanded={layout.inspectorOpen}
               setExpanded={(open) => {
                 if (open) keepSidebarBesideInspector()
-                setCollapsed('inspector', !open)
+                setCollapsed('inspector', !open, true)
               }}
               workspace={w}
               openDocument={documents.open}
@@ -429,9 +464,36 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             <div
               className="resizer editor-divider"
               role="separator"
+              aria-orientation="vertical"
               aria-label={t('Ширина редактора')}
+              aria-valuemin={10}
+              aria-valuemax={90}
+              aria-valuenow={Math.round((editorFraction / (1 + editorFraction)) * 100)}
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+                event.preventDefault()
+                const editorWidth =
+                  shell.current?.querySelector<HTMLElement>('.file-editor')?.offsetWidth
+                const mainWidth =
+                  shell.current?.querySelector<HTMLElement>('.main-workspace')?.offsetWidth
+                if (!editorWidth || !mainWidth) return
+                const available = editorWidth + mainWidth
+                const step = event.shiftKey ? 50 : 10
+                const targetWidth =
+                  event.key === 'Home'
+                    ? 300
+                    : event.key === 'End'
+                      ? available - 300
+                      : editorWidth + (event.key === 'ArrowLeft' ? step : -step)
+                const width = Math.max(300, Math.min(available - 300, targetWidth))
+                setEditorFraction(width / Math.max(300, available - width))
+              }}
               onPointerDown={(event) => {
                 event.preventDefault()
+                const target = event.currentTarget
+                const pointerId = event.pointerId
+                target.setPointerCapture?.(pointerId)
                 const start = event.clientX
                 const editorWidth =
                   shell.current!.querySelector<HTMLElement>('.file-editor')!.offsetWidth
@@ -448,9 +510,12 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 const stop = () => {
                   window.removeEventListener('pointermove', move)
                   window.removeEventListener('pointerup', stop)
+                  window.removeEventListener('pointercancel', stop)
+                  if (target.hasPointerCapture?.(pointerId)) target.releasePointerCapture(pointerId)
                 }
                 window.addEventListener('pointermove', move)
                 window.addEventListener('pointerup', stop)
+                window.addEventListener('pointercancel', stop)
               }}
             />
             <Suspense fallback={<div className="editor-loading">{t('Открываем редактор…')}</div>}>

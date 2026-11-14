@@ -205,6 +205,12 @@ function TerminalWorkspace({ workspaceId, api, subscribe, onError, theme, header
                   <button
                     className="terminal-handover"
                     disabled={busy}
+                    title={
+                      current.owner === 'agent' ? t('Вернуть управление') : t('Передать агенту')
+                    }
+                    aria-label={
+                      current.owner === 'agent' ? t('Вернуть управление') : t('Передать агенту')
+                    }
                     onClick={() =>
                       void act(() =>
                         api({

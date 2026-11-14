@@ -90,6 +90,13 @@
   transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
+  .settings-body,
+  .project-flyout,
+  .inspector-rail.panel-open > .inspector-content,
+  .inspector-rail.panel-open > .inspector-header,
+  .app-shell > .inspector-panel > .inspector-content > * {
+    animation: none;
+  }
   .project-rail > .icon,
   .inspector-rail .inspector-tabs > button,
   .starter-grid button,

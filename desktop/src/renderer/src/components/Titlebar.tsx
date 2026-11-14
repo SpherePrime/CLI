@@ -19,9 +19,11 @@ export function Titlebar({ children }: { children?: ReactNode }) {
       ) : (
         <div className="titlebar-drag" />
       )}
-      <div className="titlebar-window-space">
-        {import.meta.env.VITE_NATIVE_HOST === 'true' && <NativeWindowControls />}
-      </div>
+      {import.meta.env.VITE_NATIVE_HOST === 'true' && (
+        <div className="titlebar-window-space">
+          <NativeWindowControls />
+        </div>
+      )}
     </div>
   )
 }

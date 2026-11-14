@@ -52,7 +52,7 @@
   top: 0;
   bottom: 0;
   left: 48px;
-  width: min(300px, calc(100vw - 112px));
+  width: min(300px, calc(100vw / var(--layout-zoom, 1) - 112px));
   z-index: 12;
   border-right: 1px solid var(--border);
   box-shadow: 12px 0 40px #0004;
@@ -103,17 +103,19 @@
 .inspector-rail > .inspector-header,
 .inspector-rail > .inspector-content,
 .inspector-rail > .inspector-browser,
+.inspector-rail > .panel-failure,
 .inspector-rail > .inspector-footer {
   display: none;
 }
 .inspector-rail.panel-open > .inspector-header,
 .inspector-rail.panel-open > .inspector-content:not([hidden]),
 .inspector-rail.panel-open > .inspector-browser,
+.inspector-rail.panel-open > .panel-failure,
 .inspector-rail.panel-open > .inspector-footer {
   display: flex;
   position: absolute;
   right: 47px;
-  width: min(440px, calc(100vw / var(--layout-zoom, 1) - 96px));
+  width: min(440px, calc(100vw / var(--layout-zoom, 1) - 128px));
   background: var(--sidebar);
   border-left: 1px solid var(--border);
   box-shadow: -12px 0 40px #0003;
@@ -124,13 +126,15 @@
   min-height: 44px;
 }
 .inspector-rail.panel-open > .inspector-content,
-.inspector-rail.panel-open > .inspector-browser {
+.inspector-rail.panel-open > .inspector-browser,
+.inspector-rail.panel-open > .panel-failure {
   top: 44px;
   bottom: 0;
   flex-direction: column;
   overflow: auto;
 }
-.inspector-rail.panel-open:has(.inspector-footer) > .inspector-content {
+.inspector-rail.panel-open:has(.inspector-footer) > .inspector-content,
+.inspector-rail.panel-open:has(.inspector-footer) > .panel-failure {
   bottom: 40px;
 }
 .inspector-rail.panel-open > .inspector-footer {
@@ -185,17 +189,27 @@
   }
   .composer-area,
   .has-editor .composer-area {
-    padding: 10px 12px 12px;
+    padding: 8px 10px 10px;
   }
   .composer-options {
     flex-basis: 100%;
   }
   .composer-toolbar {
     gap: 4px;
+    padding-inline: 8px;
   }
-  .model-control {
-    flex: 1;
-    max-width: calc(100% - 44px);
+  .composer-actions {
+    gap: 2px;
+  }
+  .composer-actions .context-ring {
+    padding-inline: 5px;
+    gap: 4px;
+  }
+  .model-control,
+  .composer-actions .model-control {
+    flex: 1 1 auto;
+    max-width: none;
+    padding-inline: 6px;
   }
   .permission-trigger > span {
     display: none;
@@ -208,14 +222,42 @@
   .statusbar > span:last-child {
     display: none;
   }
+  .workbench-head {
+    gap: 4px;
+    padding: 6px 8px;
+  }
+  .workbench-tabs {
+    gap: 2px;
+  }
   .workbench-tabs button {
     font-size: 0;
     gap: 0;
-    padding: 8px;
+    padding: 5px;
   }
   .workbench-tabs button svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
+  }
+}
+@container conversation (max-width: 340px) {
+  .composer-toolbar {
+    padding-inline: 6px;
+  }
+  .composer-actions .icon:not(.send) {
+    width: 26px;
+    height: 26px;
+  }
+  .composer-actions .send {
+    width: 30px;
+    height: 30px;
+  }
+  .composer-actions .context-ring {
+    padding-inline: 4px;
+    font-size: 11px;
+  }
+  .composer-actions .model-control {
+    padding-inline: 4px;
+    font-size: 11.5px;
   }
 }
 @container conversation (max-width: 260px) {

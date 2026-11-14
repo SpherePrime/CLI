@@ -231,6 +231,7 @@
 .terminal-bar .terminal-tabs {
   flex: 1;
   min-width: 0;
+  overflow-x: auto;
   gap: 4px;
   padding: 0;
   border: 0;
@@ -238,6 +239,7 @@
   scrollbar-width: none;
 }
 .terminal-bar .terminal-tab-wrap {
+  max-width: 100%;
   border: 1px solid transparent;
   border-radius: 8px;
   padding-right: 2px;
@@ -292,5 +294,21 @@
 @media (max-width: 760px) {
   .terminal-bar .terminal-owner {
     display: none;
+  }
+}
+@container dock (max-width: 460px) {
+  .terminal-bar {
+    gap: 6px;
+    padding: 5px 8px;
+  }
+  .terminal-bar .terminal-tab {
+    max-width: 112px;
+    padding: 5px 4px 5px 8px;
+  }
+  .terminal-bar .terminal-handover > span {
+    display: none;
+  }
+  .terminal-bar .terminal-handover {
+    padding: 5px 7px;
   }
 }

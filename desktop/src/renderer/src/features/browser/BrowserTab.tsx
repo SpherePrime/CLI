@@ -39,7 +39,7 @@ export function BrowserTab({
   useEffect(() => {
     if (!picking) return
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') void window.prime.browserPickCancel()
+      if (event.key === 'Escape') void window.prime.browserPickCancel().catch(() => {})
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
@@ -52,7 +52,7 @@ export function BrowserTab({
     return () => {
       owner.dispose()
       pickedAttachments.current = null
-      void window.prime.browserPickCancel()
+      void window.prime.browserPickCancel().catch(() => {})
     }
   }, [])
   const pick = async () => {
@@ -79,12 +79,15 @@ export function BrowserTab({
   const stateLoadedRef = useRef(false)
   const syncRef = useRef<() => void>(() => {})
   useEffect(() => {
-    void window.prime.browserState().then((value) => {
-      stateLoadedRef.current = true
-      setState(value)
-      setAddress(value.url)
-      syncRef.current()
-    })
+    void window.prime
+      .browserState()
+      .then((value) => {
+        stateLoadedRef.current = true
+        setState(value)
+        setAddress(value.url)
+        syncRef.current()
+      })
+      .catch((reason) => setError(String(reason?.message || reason).replace(/^.*Error: /, '')))
     return window.prime.onEvent((event) => {
       if (event.type !== 'browser' || event.payload?.action !== 'state') return
       const { action: _action, ...next } = event.payload
@@ -114,8 +117,8 @@ export function BrowserTab({
         const next = hidden ? 'hidden' : JSON.stringify(rect)
         if (next === applied) return
         applied = next
-        if (hidden) void window.prime.browserHide()
-        else void window.prime.browserShow(rect)
+        if (hidden) void window.prime.browserHide().catch(() => {})
+        else void window.prime.browserShow(rect).catch(() => {})
       })
     }
     syncRef.current = sync
@@ -136,7 +139,7 @@ export function BrowserTab({
       resize.disconnect()
       overlays.disconnect()
       window.removeEventListener('resize', sync)
-      void window.prime.browserHide()
+      void window.prime.browserHide().catch(() => {})
     }
   }, [])
   useEffect(() => {
@@ -151,7 +154,10 @@ export function BrowserTab({
       .catch((reason) => setError(String(reason?.message || reason).replace(/^.*Error: /, '')))
   }
   const command = (name: 'back' | 'forward' | 'reload' | 'fit') =>
-    void window.prime.browserCommand(name).then(setState)
+    void window.prime
+      .browserCommand(name)
+      .then(setState)
+      .catch((reason) => setError(String(reason?.message || reason).replace(/^.*Error: /, '')))
   return (
     <div className="browser-tab">
       <BrowserTabs

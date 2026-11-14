@@ -59,6 +59,31 @@
     inset 0 1px #ffffff40,
     0 4px 14px var(--glow-soft);
 }
+@container dock (max-width: 460px) {
+  .workbench-navigation {
+    min-height: 40px;
+    padding-inline: 6px;
+    gap: 4px;
+  }
+  .workbench-tabs {
+    padding: 2px;
+    gap: 1px;
+  }
+  .workbench-tabs button {
+    min-height: 26px;
+    min-width: 24px;
+    padding: 4px;
+    gap: 0;
+  }
+  .workbench-tabs button svg {
+    width: 15px;
+    height: 15px;
+  }
+  .workbench-terminal-actions button:not(.icon) {
+    min-height: 28px;
+    padding: 4px 7px;
+  }
+}
 
 .empty-state-icon {
   border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--glass-edge));

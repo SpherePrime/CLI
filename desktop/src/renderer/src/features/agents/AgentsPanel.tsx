@@ -10,7 +10,17 @@ import type { AgentRequest } from './openAgent'
 import { realSessionId } from '../../../../shared/pendingSession'
 import './agents.css'
 
+const maxConsumedRequests = 200
 const consumedRequests = new Set<number>()
+
+function markConsumed(sequence: number) {
+  consumedRequests.add(sequence)
+  while (consumedRequests.size > maxConsumedRequests) {
+    const oldest = consumedRequests.values().next().value
+    if (oldest === undefined) break
+    consumedRequests.delete(oldest)
+  }
+}
 
 export function AgentsPanel({
   workspace,
@@ -28,13 +38,15 @@ export function AgentsPanel({
         <p>{t('Откройте чат, чтобы увидеть его агентов')}</p>
       </div>
     )
+  const scopedRequest =
+    request && (!request.sessionId || request.sessionId === sessionId) ? request : undefined
   return (
     <AgentTeam
       key={`${workspace.project.id}:${sessionId}`}
       projectId={workspace.project.id}
       sessionId={sessionId}
       disabled={!!workspace.config.options?.disable_multi_agent}
-      request={request}
+      request={scopedRequest}
     />
   )
 }
@@ -51,12 +63,16 @@ function AgentTeam({
   request?: AgentRequest
 }) {
   const { t } = useI18n()
-  const [selected, setSelected] = useState(() => (request && !consumedRequests.has(request.sequence) ? request.workerId : ''))
+  const [selected, setSelected] = useState(() => {
+    if (!request || consumedRequests.has(request.sequence)) return ''
+    markConsumed(request.sequence)
+    return request.workerId
+  })
   useEffect(() => {
     if (!request?.workerId || consumedRequests.has(request.sequence)) return
-    consumedRequests.add(request.sequence)
+    markConsumed(request.sequence)
     setSelected(request.workerId)
-  }, [request?.sequence])
+  }, [request?.sequence, request?.workerId])
   const load = useCallback(async () => {
     const result = await window.prime.call(projectId, 'agentWorkers', { sessionId })
     const workers = (result.workers || []) as AgentWorker[]

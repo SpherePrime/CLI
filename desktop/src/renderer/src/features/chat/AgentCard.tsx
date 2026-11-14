@@ -20,10 +20,12 @@ function backgroundLaunch(metadata: unknown, content: unknown) {
 
 export function AgentCard({
   part,
-  messageId
+  messageId,
+  sessionId
 }: {
   part: Message['parts'][number]
   messageId: string
+  sessionId?: string
 }) {
   const { t } = useI18n()
   const data = part.data
@@ -51,7 +53,7 @@ export function AgentCard({
       className={`tool-card agent-card ${failed ? 'tool-error' : ''}`}
       disabled={!workerId}
       title={t('Открыть чат агента')}
-      onClick={() => openAgent(workerId)}
+      onClick={() => openAgent(workerId, sessionId)}
     >
       <span className="tool-icon">
         <Bot size={15} />

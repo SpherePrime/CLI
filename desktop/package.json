@@ -23,6 +23,7 @@
     "native:prepare": "node scripts/build-desktop-engine.mjs && npm run native:ui",
     "native:ui": "tsc --noEmit && vite build --config vite.native.config.ts",
     "native:ui:dev": "vite --config vite.native.config.ts",
+    "ui:preview": "vite --config vite.preview.config.ts",
     "native:dev:prepare": "node scripts/build-desktop-engine.mjs && npm run native:ui:dev",
     "setup:ui": "vite build --config installer/vite.config.ts",
     "setup:ui:dev": "vite --config installer/vite.config.ts"

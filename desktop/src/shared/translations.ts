@@ -1518,5 +1518,10 @@ Object.assign(english, {
   'Проверка в ширине {value0} px': 'Testing at {value0} px width',
   'Страница проверяется в фоне в запрошенной ширине, чтобы интерфейс не скакал.':
     'The page is tested in the background at the requested width to keep the interface stable.',
-  'Показать по ширине панели': 'Fit to panel width'
+  'Показать по ширине панели': 'Fit to panel width',
+  'Ошибка окна': 'Window error',
+  'Ошибка нативного приложения': 'Native application error',
+  'Предпросмотр интерфейса': 'UI Preview',
+  'Локальный предпросмотр: изменения сохраняются только в памяти вкладки.':
+    'Local UI preview: changes are kept in tab memory only.'
 })

@@ -96,7 +96,8 @@
   border-color: var(--ui-border);
   box-shadow: var(--ui-overlay-shadow);
 }
-.inspector-panel .panel-title {
+.inspector-panel .panel-title,
+.inspector-rail.panel-open .panel-title {
   min-height: 30px;
   padding: 0 4px 8px 8px;
   margin-bottom: 6px;
@@ -107,6 +108,9 @@
   font-weight: 600;
   letter-spacing: 0.9px;
   text-transform: uppercase;
+}
+.inspector-rail.panel-open > .inspector-content {
+  padding: 12px 12px 16px;
 }
 .tree-file {
   border-radius: 7px;

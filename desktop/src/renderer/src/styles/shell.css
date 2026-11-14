@@ -242,6 +242,19 @@
   }
 }
 @container conversation (max-width: 540px) {
+  .composer-toolbar {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .composer-options {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  .composer-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
   .composer-options .project-picker-trigger > span {
     display: none;
   }
@@ -249,7 +262,22 @@
     display: none;
   }
   .model-control {
-    max-width: 130px;
+    max-width: 160px;
+    margin-right: auto;
+  }
+}
+@container conversation (max-width: 440px) {
+  .approvals {
+    padding-inline: 12px;
+  }
+  .approval-card {
+    padding: 13px;
+  }
+  .approval-actions {
+    justify-content: stretch;
+  }
+  .approval-actions button {
+    flex: 1 1 auto;
   }
 }
 @container conversation (max-width: 420px) {
@@ -269,7 +297,9 @@
 .workbench-navigation > .workbench-tabs {
   flex: 1 1 auto;
   min-width: 0;
-  mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, #000 calc(100% - 10px), transparent);
 }
 .workbench-navigation-actions {
   flex-shrink: 0;
@@ -286,7 +316,28 @@
   }
 }
 @container dock (max-width: 460px) {
+  .workbench-navigation {
+    gap: 6px;
+    padding: 5px 6px;
+  }
+  .workbench-navigation > .workbench-tabs {
+    mask-image: none;
+  }
+  .workbench-tabs {
+    padding: 2px;
+    gap: 2px;
+  }
+  .workbench-tabs button {
+    min-height: 28px;
+    padding: 5px 6px;
+  }
   .workbench-tabs button[aria-selected='true'] > span {
+    display: none;
+  }
+  .workbench-terminal-actions .terminal-new {
+    padding: 4px 7px;
+  }
+  .workbench-terminal-actions .terminal-new > span {
     display: none;
   }
 }
@@ -309,6 +360,9 @@
   .topbar-search kbd {
     display: none;
   }
+  .workspace-topbar .header-actions {
+    margin-left: 0;
+  }
   .titlebar-brand > span {
     display: none;
   }
@@ -325,6 +379,17 @@
 @media (max-width: 520px) {
   .topbar-divider {
     display: none;
+  }
+  .workspace-topbar {
+    gap: 3px;
+    padding: 0 6px 0 2px;
+  }
+  .workspace-topbar .icon {
+    width: 28px;
+    height: 28px;
+  }
+  .titlebar-brand {
+    padding: 0 4px 0 10px;
   }
 }
 
@@ -376,6 +441,7 @@
     flex-direction: column;
   }
   .settings-modal .settings-layout > nav {
+    width: auto;
     display: flex;
     flex-direction: row;
     gap: 4px;
@@ -573,11 +639,12 @@ dialog.modal,
 .inspector-rail.panel-open > .inspector-header,
 .inspector-rail.panel-open > .inspector-content:not([hidden]),
 .inspector-rail.panel-open > .inspector-browser,
+.inspector-rail.panel-open > .panel-failure,
 .inspector-rail.panel-open > .inspector-footer {
   right: calc(100% + var(--panel-gutter, 8px));
   border: 1px solid var(--panel-border);
   border-left: 1px solid var(--panel-border);
-  box-shadow: -16px 0 40px #0004;
+  box-shadow: var(--ui-overlay-shadow);
 }
 .inspector-rail.panel-open > .inspector-header {
   top: -1px;
@@ -585,12 +652,14 @@ dialog.modal,
   border-radius: var(--panel-radius) var(--panel-radius) 0 0;
 }
 .inspector-rail.panel-open > .inspector-content,
-.inspector-rail.panel-open > .inspector-browser {
+.inspector-rail.panel-open > .inspector-browser,
+.inspector-rail.panel-open > .panel-failure {
   bottom: -1px;
   border-top: 0;
   border-radius: 0 0 var(--panel-radius) var(--panel-radius);
 }
-.inspector-rail.panel-open:has(.inspector-footer) > .inspector-content {
+.inspector-rail.panel-open:has(.inspector-footer) > .inspector-content,
+.inspector-rail.panel-open:has(.inspector-footer) > .panel-failure {
   bottom: 39px;
   border-bottom: 0;
   border-radius: 0;
@@ -604,7 +673,7 @@ dialog.modal,
   top: -1px;
   bottom: -1px;
   left: calc(100% + var(--panel-gutter, 8px));
-  box-shadow: 16px 0 40px #0004;
+  box-shadow: var(--ui-overlay-shadow);
 }
 
 .app-shell .sidebar .sidebar-footer {
@@ -616,12 +685,15 @@ dialog.modal,
   padding-top: 6px;
 }
 .inspector-rail.panel-open > .inspector-content,
-.inspector-rail.panel-open > .inspector-browser {
+.inspector-rail.panel-open > .inspector-browser,
+.inspector-rail.panel-open > .panel-failure {
   top: -1px;
+  padding-top: 12px;
   border-top: 1px solid var(--panel-border);
   border-radius: var(--panel-radius);
 }
-.inspector-rail.panel-open:has(.inspector-footer) > .inspector-content {
+.inspector-rail.panel-open:has(.inspector-footer) > .inspector-content,
+.inspector-rail.panel-open:has(.inspector-footer) > .panel-failure {
   border-radius: var(--panel-radius) var(--panel-radius) 0 0;
 }
 

@@ -38,6 +38,9 @@ async function start() {
   if (import.meta.env.VITE_NATIVE_HOST === 'true') {
     const { installNativeHost } = await import('./host/installNativeHost')
     await installNativeHost()
+  } else if (import.meta.env.VITE_PREVIEW_HOST === 'true') {
+    const { installPreviewHost } = await import('./host/installPreviewHost')
+    installPreviewHost()
   }
   createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

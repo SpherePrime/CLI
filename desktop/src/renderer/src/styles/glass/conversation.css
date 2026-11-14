@@ -104,8 +104,35 @@
   border: 1px solid var(--glass-edge);
   border-radius: 6px;
 }
+.markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 10px;
+}
+.markdown th {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  font-weight: 600;
+}
 .tool-card > summary:hover {
   background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.tool-card summary small {
+  font-size: 10px;
+}
+.approval-card {
+  border-radius: 14px;
+}
+.approval-card code {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  margin-top: 2px;
+  padding: 3px 8px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 7px;
+  background: var(--glass-inset);
+  color: var(--secondary);
 }
 
 .working-label,

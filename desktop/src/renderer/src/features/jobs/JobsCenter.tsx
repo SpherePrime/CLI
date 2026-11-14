@@ -109,15 +109,19 @@ export function JobsCenter({
       return
     }
     close()
-    if (job.sessionId) {
-      const sessions: Session[] = await window.prime.call(project.id, 'sessions')
-      const session = sessions.find((item) => item.id === job.sessionId)
-      if (session) await w.openSession(project, session, sessions)
-      else if (w.project?.id !== project.id) await w.selectProject(project)
-    } else {
-      if (w.project?.id !== project.id) await w.selectProject(project)
-      if (job.kind === 'terminal' || job.kind === 'app')
-        openTools(job.kind === 'app' ? 'launch' : 'terminal')
+    try {
+      if (job.sessionId) {
+        const sessions: Session[] = await window.prime.call(project.id, 'sessions')
+        const session = sessions.find((item) => item.id === job.sessionId)
+        if (session) await w.openSession(project, session, sessions)
+        else if (w.project?.id !== project.id) await w.selectProject(project)
+      } else {
+        if (w.project?.id !== project.id) await w.selectProject(project)
+        if (job.kind === 'terminal' || job.kind === 'app')
+          openTools(job.kind === 'app' ? 'launch' : 'terminal')
+      }
+    } catch (error) {
+      w.errorHandler(error)
     }
   }
   const stop = async (job: Job) => {

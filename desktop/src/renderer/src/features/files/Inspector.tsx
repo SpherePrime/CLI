@@ -284,110 +284,114 @@ export function Inspector({
     else setExpanded(true)
   }
   const body = (
-    <PanelBoundary resetKey={tab}>
+    <>
       {browserVisited && (
         <div className="inspector-browser" hidden={tab !== 'browser'}>
-          <BrowserTab
-            workspace={w}
-            onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
-          />
+          <PanelBoundary resetKey="browser" compact={compact}>
+            <BrowserTab
+              workspace={w}
+              onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
+            />
+          </PanelBoundary>
         </div>
       )}
       <div
         className={`inspector-content ${tab === 'agents' ? 'agents-content' : ''}`}
         hidden={tab === 'browser'}
       >
-        {tab === 'agents' && <AgentsPanel workspace={w} request={agentRequest} />}
-        {tab === 'app' && w.project && (
-          <AppTestingPanel
-            workspace={w}
-            workspaceId={w.project.id}
-            sessionId={realSessionId(w.session)}
-            onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
-            onError={w.errorHandler}
-          />
-        )}
-        {tab === 'files' && (
-          <>
-            <div className="panel-title">
-              <span>{projectName(w.project) || t('ПРОЕКТ')}</span>
-              <button
-                className="icon small"
-                title={t('Обновить дерево')}
-                aria-label={t('Обновить дерево')}
-                onClick={() => setTreeKey((key) => key + 1)}
-              >
-                <RefreshCw size={13} />
-              </button>
-            </div>
-            {w.project ? (
-              <div className="file-tree-area" onContextMenu={(event) => showMenu(event, null)}>
-                <Tree
-                  key={w.project.id}
-                  refresh={treeKey}
-                  workspaceId={w.project.id}
-                  opened={opened}
-                  onToggle={toggleFolder}
-                  onFile={openFile}
-                  onMenu={showMenu}
-                  onError={setError}
-                />
-              </div>
-            ) : (
-              <div className="panel-empty">
-                <FolderOpen size={28} />
-                <p>{t('Файлы выбранного проекта')}</p>
-              </div>
-            )}
-          </>
-        )}
-        {tab === 'changes' && (
-          <>
-            {w.project && (
-              <details className="inspector-history">
-                <summary>{t('История коммитов')}</summary>
-                <GitHistoryPanel key={w.project.id} workspaceId={w.project.id} />
-              </details>
-            )}
-            <p className="panel-help">
-              {source === 'git'
-                ? t('Все изменения проекта относительно Git HEAD.')
-                : t('Изменения файлов в истории текущего чата. Файлы уже записаны на диск.')}
-            </p>
-            <Select
-              label={t('Источник сравнения')}
-              value={source}
-              onChange={(value) => setSource(value as 'session' | 'git')}
-              options={[
-                { value: 'session', label: t('История сессии') },
-                { value: 'git', label: t('Сравнить с Git HEAD') }
-              ]}
+        <PanelBoundary resetKey={tab} compact={compact}>
+          {tab === 'agents' && <AgentsPanel workspace={w} request={agentRequest} />}
+          {tab === 'app' && w.project && (
+            <AppTestingPanel
+              workspace={w}
+              workspaceId={w.project.id}
+              sessionId={realSessionId(w.session)}
+              onSend={(prompt, attachmentIds) => w.send(prompt, attachmentIds)}
+              onError={w.errorHandler}
             />
-            <button className="quiet" onClick={() => setTreeKey((key) => key + 1)}>
-              <RefreshCw size={13} />
-              {t('Обновить')}
-            </button>
-            {gitError && source === 'git' && <p className="error-text">{gitError}</p>}
-            {(source === 'git'
-              ? changes.map((item) => item.path)
-              : [...new Set(history.map((item) => item.path))]
-            ).map((path) => (
-              <button className="tree-file" key={path} onClick={() => void diffFile(path)}>
-                <FileDiff size={14} />
-                <span title={path}>{path}</span>
-                {source === 'git' && (
-                  <small>{changes.find((item) => item.path === path)?.status}</small>
-                )}
-              </button>
-            ))}
-            {!(source === 'git' ? changes : history).length && !gitError && (
-              <div className="panel-empty">
-                <FileDiff size={28} />
-                <p>{t('Изменения появятся после редактирования файлов')}</p>
+          )}
+          {tab === 'files' && (
+            <>
+              <div className="panel-title">
+                <span>{projectName(w.project) || t('ПРОЕКТ')}</span>
+                <button
+                  className="icon small"
+                  title={t('Обновить дерево')}
+                  aria-label={t('Обновить дерево')}
+                  onClick={() => setTreeKey((key) => key + 1)}
+                >
+                  <RefreshCw size={13} />
+                </button>
               </div>
-            )}
-          </>
-        )}
+              {w.project ? (
+                <div className="file-tree-area" onContextMenu={(event) => showMenu(event, null)}>
+                  <Tree
+                    key={w.project.id}
+                    refresh={treeKey}
+                    workspaceId={w.project.id}
+                    opened={opened}
+                    onToggle={toggleFolder}
+                    onFile={openFile}
+                    onMenu={showMenu}
+                    onError={setError}
+                  />
+                </div>
+              ) : (
+                <div className="panel-empty">
+                  <FolderOpen size={28} />
+                  <p>{t('Файлы выбранного проекта')}</p>
+                </div>
+              )}
+            </>
+          )}
+          {tab === 'changes' && (
+            <>
+              {w.project && (
+                <details className="inspector-history">
+                  <summary>{t('История коммитов')}</summary>
+                  <GitHistoryPanel key={w.project.id} workspaceId={w.project.id} />
+                </details>
+              )}
+              <p className="panel-help">
+                {source === 'git'
+                  ? t('Все изменения проекта относительно Git HEAD.')
+                  : t('Изменения файлов в истории текущего чата. Файлы уже записаны на диск.')}
+              </p>
+              <Select
+                label={t('Источник сравнения')}
+                value={source}
+                onChange={(value) => setSource(value as 'session' | 'git')}
+                options={[
+                  { value: 'session', label: t('История сессии') },
+                  { value: 'git', label: t('Сравнить с Git HEAD') }
+                ]}
+              />
+              <button className="quiet" onClick={() => setTreeKey((key) => key + 1)}>
+                <RefreshCw size={13} />
+                {t('Обновить')}
+              </button>
+              {gitError && source === 'git' && <p className="error-text">{gitError}</p>}
+              {(source === 'git'
+                ? changes.map((item) => item.path)
+                : [...new Set(history.map((item) => item.path))]
+              ).map((path) => (
+                <button className="tree-file" key={path} onClick={() => void diffFile(path)}>
+                  <FileDiff size={14} />
+                  <span title={path}>{path}</span>
+                  {source === 'git' && (
+                    <small>{changes.find((item) => item.path === path)?.status}</small>
+                  )}
+                </button>
+              ))}
+              {!(source === 'git' ? changes : history).length && !gitError && (
+                <div className="panel-empty">
+                  <FileDiff size={28} />
+                  <p>{t('Изменения появятся после редактирования файлов')}</p>
+                </div>
+              )}
+            </>
+          )}
+        </PanelBoundary>
       </div>
       {menu && w.project && (
         <FileContextMenu x={menu.x} y={menu.y} items={menuItems(menu.entry)} close={closeMenu} />
@@ -426,7 +430,7 @@ export function Inspector({
           </button>
         </div>
       )}
-    </PanelBoundary>
+    </>
   )
   return (
     <>

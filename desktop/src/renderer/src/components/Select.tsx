@@ -7,12 +7,14 @@ export function Select({
   onChange,
   options,
   label,
+  labelledBy,
   disabled = false
 }: {
   value: string
   onChange: (value: string) => void
   options: { value: string; label: string }[]
   label: string
+  labelledBy?: string
   disabled?: boolean
 }) {
   const anchor = useRef<HTMLButtonElement>(null)
@@ -34,7 +36,8 @@ export function Select({
         type="button"
         className="prime-select"
         role="combobox"
-        aria-label={label}
+        aria-label={labelledBy ? undefined : label}
+        aria-labelledby={labelledBy}
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
         aria-haspopup="listbox"
