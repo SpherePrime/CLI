@@ -314,19 +314,27 @@ type teamNoticeClaim struct {
 func (c *coordinator) collectTeamNotices(root string) (string, []teamNoticeClaim) {
 	var reports []string
 	var claims []teamNoticeClaim
+	hasApprovedReview := false
 	for _, job := range c.registrySnapshot() {
 		job.mu.Lock()
 		ready := job.rootSessionID == root && job.wake && !job.seen && !jobActive(job.status)
 		if ready {
 			claims = append(claims, teamNoticeClaim{job: job, generation: job.generation})
 			reports = append(reports, fmt.Sprintf("Agent %s (%s, id %s) finished with status %s.\n%s", job.name, job.agent, job.id, job.status, job.output))
+			if job.agent == config.AgentReview && job.status == "done" && reviewApproved(job.output) {
+				hasApprovedReview = true
+			}
 		}
 		job.mu.Unlock()
 	}
 	if len(reports) == 0 {
 		return "", nil
 	}
-	return "Automatic team notice with new results from your agents:\n\n" + strings.Join(reports, "\n\n---\n\n") + "\n\nIntegrate these results and assign follow-up or review work if needed. Agents with status error or canceled have stopped: do not keep waiting for them. Diagnose the failure, continue their work yourself or give an agent a new assignment. Results you already handled are not repeated here. If nothing remains to do, finish with a one-line status without restating earlier reports.", claims
+	footer := "\n\nIntegrate these results and assign follow-up or review work if needed. Agents with status error or canceled have stopped: do not keep waiting for them. Diagnose the failure, continue their work yourself or give an agent a new assignment. Results you already handled are not repeated here. If nothing remains to do, finish with a one-line status without restating earlier reports."
+	if hasApprovedReview {
+		footer += " Parts with VERDICT: APPROVED are already verified: do NOT re-run their tests, builds, linters, or browser/app checks unless you modify files yourself afterwards."
+	}
+	return "Automatic team notice with new results from your agents:\n\n" + strings.Join(reports, "\n\n---\n\n") + footer, claims
 }
 
 func (c *coordinator) workerContext() context.Context {

@@ -26,6 +26,7 @@ func TestStrictReviewBlockOnlyForDesktopMaxCoordinator(t *testing.T) {
 	require.Contains(t, block, "checked in the browser without launching the native app")
 	require.NotContains(t, block, "scaffolding, components and styling")
 	require.Contains(t, block, "an APPROVED part is verified")
+	require.Contains(t, block, "do NOT re-run tests, builds, linters, or browser/app checks or screenshots for APPROVED parts")
 	require.NotContains(t, block, "final check of the integrated whole")
 	require.Empty(t, reviewPolicyBlock(false, config.ReasoningModeMax))
 	require.NotContains(t, reviewPolicyBlock(true, config.ReasoningModeHigh), "<strict_review_pipeline>")
@@ -52,6 +53,7 @@ func TestReviewPolicyFollowsReasoningLevel(t *testing.T) {
 	thorough := reviewPolicyBlock(true, config.ReasoningModeXHigh)
 	require.Contains(t, thorough, "Review depth for this task: thorough")
 	require.Contains(t, thorough, "reviewer=<that name>")
+	require.Contains(t, thorough, "do NOT re-run tests, builds, linters, or browser/app checks on APPROVED parts")
 
 	require.Equal(t, reviewDepthLight, reviewDepthFor(config.ReasoningModeOff))
 	require.Equal(t, reviewDepthQuick, reviewDepthFor(""))

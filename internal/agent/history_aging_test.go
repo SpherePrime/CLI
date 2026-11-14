@@ -120,3 +120,35 @@ func TestAgingDropsOldMediaInBatches(t *testing.T) {
 		require.True(t, isMedia)
 	}
 }
+
+func TestAgingPreservesProtectedSkillViews(t *testing.T) {
+	store := agingStore(t)
+	skillBody := strings.Repeat("skill guidance line\n", 900)
+	normalBody := strings.Repeat("normal output line\n", 200)
+
+	var messages []fantasy.Message
+	messages = append(messages, agingTurn(0, "view", `{"file_path":"prime://skills/prime-designer/SKILL.md"}`, skillBody)...)
+	messages = append(messages, agingTurn(1, "view", `{"file_path":"prime://skills/prime-designer/references/quality-gate.md"}`, skillBody)...)
+	messages = append(messages, agingTurn(2, "view", `{"file_path":"/Users/dev/.config/prime/skills/custom/SKILL.md"}`, skillBody)...)
+	messages = append(messages, agingTurn(3, "view", `{"file_path":"skills/local-skill/references/guide.md"}`, skillBody)...)
+	messages = append(messages, agingTurn(4, "view", `{"file_path":"main.go"}`, normalBody)...)
+	messages = append(messages, agingTurn(5, "bash", `{"command":"go test"}`, normalBody)...)
+	for i := 6; i < 11; i++ {
+		messages = append(messages, agingTurn(i, "bash", `{"command":"echo ok"}`, "ok")...)
+	}
+
+	aged := ageToolHistory(context.Background(), "scope", store, messages, defaultHistoryAgingPolicy())
+
+	require.Equal(t, skillBody, resultText(t, aged[2]))
+	require.Equal(t, skillBody, resultText(t, aged[5]))
+	require.Equal(t, skillBody, resultText(t, aged[8]))
+	require.Equal(t, skillBody, resultText(t, aged[11]))
+
+	require.Contains(t, resultText(t, aged[14]), "Earlier result of view")
+	require.Contains(t, resultText(t, aged[17]), "Earlier result of bash")
+
+	require.True(t, isProtectedSkillView("view", `{"file_path":"C:\\Users\\dev\\SKILL.md"}`))
+	require.True(t, isProtectedSkillView("view", `{"path":"SKILL.md"}`))
+	require.False(t, isProtectedSkillView("view", `{"file_path":"/repo/my-skills/README.md"}`))
+	require.False(t, isProtectedSkillView("bash", `{"file_path":"prime://skills/prime-designer/SKILL.md"}`))
+}

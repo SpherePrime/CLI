@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/SpherePrime/CLI/internal/skills"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
@@ -100,6 +101,9 @@ func ageToolHistory(ctx context.Context, scope string, store toolArtifactStore, 
 					continue
 				}
 				if !old {
+					continue
+				}
+				if isProtectedSkillView(call.Name, call.Input) {
 					continue
 				}
 				stale := call.Path != "" && call.Name == "view" && modifiedAfter[call.Path] > i
@@ -229,6 +233,24 @@ func callFilePath(input string) string {
 		return arguments.FilePath
 	}
 	return arguments.Path
+}
+
+func isProtectedSkillView(callName, rawInput string) bool {
+	if callName != "view" {
+		return false
+	}
+	p := strings.TrimSpace(callFilePath(rawInput))
+	if p == "" {
+		return false
+	}
+	if strings.HasPrefix(p, skills.BuiltinPrefix) {
+		return true
+	}
+	normalized := strings.ToLower(strings.ReplaceAll(p, "\\", "/"))
+	if normalized == "skill.md" || strings.HasSuffix(normalized, "/skill.md") {
+		return true
+	}
+	return strings.HasPrefix(normalized, "skills/") || strings.Contains(normalized, "/skills/")
 }
 
 func modifiesFile(name string) bool {

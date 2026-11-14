@@ -11,13 +11,13 @@ const NoteHeader = "<chat_goal>"
 
 const qualityBar = "The result must be a complete, production-ready product: every requested feature works end to end, no placeholders, stubs, TODOs or mock data, errors and edge cases are handled, the interface is clean and consistent, and build, tests and linters pass."
 
-const acceptanceSteps = "Final acceptance: re-check everything from scratch like a strict QA engineer and senior reviewer. Build and run the real product (websites in the built-in browser with browser_* tools, native desktop apps with app_* tools), walk through every user flow including empty, invalid and error states by actually clicking and typing, check layout at different sizes with overview screenshots and close-ups of every component, run all tests and linters, and review the full diff for bugs, dead code and inconsistencies."
+const acceptanceSteps = "Final acceptance: check integration and any unreviewed changes across the whole product like a strict QA engineer and senior reviewer. Stages or parts already verified with VERDICT: APPROVED by a review agent (and unmodified after review) do NOT need to be re-tested or re-checked from scratch. For unreviewed changes or integration edits, build and run the real product (websites in the built-in browser with browser_* tools, native desktop apps with app_* tools), walk through every affected user flow including empty, invalid and error states by actually clicking and typing, check layout at different sizes with overview screenshots and close-ups, run relevant tests and linters, and review the diff for bugs, dead code and inconsistencies."
 
 func ContinuationPrompt(progress Progress) string {
 	if progress.Finished() {
 		return fmt.Sprintf("Goal mode: all %d stages in todos are completed. %s %s If you find any problem or anything below this bar, add stages for the fixes to todos, fix them and repeat the acceptance pass. Call %s only when a full acceptance pass finds nothing left to improve. Do not ask the user whether to continue.", progress.Total, acceptanceSteps, qualityBar, CompleteToolName)
 	}
-	return fmt.Sprintf("Goal mode: continue with the next stage (%d of %d done). Next: %s. Finish it completely, verify it (tests, build, and run it: browser_* for web, app_* for native apps), fix what the check reveals, mark it completed in todos, then move on. Do not ask the user whether to continue.", progress.Completed, progress.Total, progress.Next)
+	return fmt.Sprintf("Goal mode: continue with the next stage (%d of %d done). Next: %s. Finish it completely, verify it via a review agent (VERDICT: APPROVED) or directly if unreviewed (tests, build, and run it: browser_* for web, app_* for native apps) without re-checking already APPROVED unmodified parts, fix what the check reveals, mark it completed in todos, then move on. Do not ask the user whether to continue.", progress.Completed, progress.Total, progress.Next)
 }
 
 func Note(current Goal, progress Progress) string {
@@ -37,7 +37,7 @@ func Note(current Goal, progress Progress) string {
 		}
 		builder.WriteString(" Resume from this point; do not redo completed stages.\n")
 	}
-	builder.WriteString("Rules: work through every stage without stopping; verify each stage before marking it completed; never end a turn with \"stage done, continue?\" — move on to the next stage yourself. ")
+	builder.WriteString("Rules: work through every stage without stopping; verify each stage (via a review agent's VERDICT: APPROVED or directly when no reviewer is used, without re-checking already APPROVED unmodified parts) before marking it completed; never end a turn with \"stage done, continue?\" — move on to the next stage yourself. ")
 	builder.WriteString(acceptanceSteps)
 	fmt.Fprintf(&builder, " Fix everything it finds and repeat until a pass is clean, then call %s with a short summary of what was delivered and how it was verified. Stop to ask the user only if you are truly blocked.\n", CompleteToolName)
 	builder.WriteString("</chat_goal>")

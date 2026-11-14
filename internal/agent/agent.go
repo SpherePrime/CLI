@@ -179,6 +179,7 @@ type sessionAgent struct {
 	tools              *csync.Slice[fantasy.AgentTool]
 
 	isSubAgent           bool
+	agent                config.Agent
 	sessions             session.Service
 	messages             message.Service
 	dataDir              string
@@ -246,6 +247,7 @@ type SessionAgentOptions struct {
 	SystemPromptPrefix   string
 	SystemPrompt         string
 	IsSubAgent           bool
+	Agent                config.Agent
 	DisableAutoSummarize bool
 	// AutoSummarizePercent is the global default: how full the context window
 	// has to be before a turn is compacted. The zero value is not usable:
@@ -277,6 +279,7 @@ func NewSessionAgent(
 		systemPromptPrefix:   csync.NewValue(opts.SystemPromptPrefix),
 		systemPrompt:         csync.NewValue(opts.SystemPrompt),
 		isSubAgent:           opts.IsSubAgent,
+		agent:                opts.Agent,
 		sessions:             opts.Sessions,
 		messages:             opts.Messages,
 		dataDir:              opts.DataDir,
@@ -724,7 +727,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	}
 	systemPrompt := a.systemPrompt.Get()
 	promptPrefix := a.systemPromptPrefix.Get()
-	systemPrompt += mcpInstructionsBlock(connectedMCPInstructions(mcp.GetStates()))
+	systemPrompt += mcpInstructionsBlock(connectedMCPInstructions(mcp.GetStates(), a.agent))
 	systemPrompt += visualCheckBlock(!a.isSubAgent && largeModel.CatwalkCfg.SupportsImages)
 	systemPrompt += reviewPolicyBlock(!a.isSubAgent && hasAgentTool(agentTools), coordinatorReasoningMode(ctx, largeModel.ModelCfg))
 

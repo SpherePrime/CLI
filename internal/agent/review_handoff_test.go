@@ -255,3 +255,48 @@ func TestReviewRoundLimit(t *testing.T) {
 
 	require.Nil(t, c.reviewRoute(&agentJob{agent: config.AgentReview, author: "a", reviewRound: 1}, "done", "VERDICT: APPROVED\nDEFECTS: none"))
 }
+
+func TestCollectTeamNoticesIncludesApprovedReminder(t *testing.T) {
+	c := &coordinator{
+		agentJobs: map[string]*agentJob{
+			"rev-approved": {
+				id:            "rev-approved",
+				name:          "ui-review",
+				agent:         config.AgentReview,
+				rootSessionID: "root-1",
+				wake:          true,
+				status:        "done",
+				output:        "VERDICT: APPROVED\nSCORE: 10/10\nDEFECTS: none",
+			},
+			"code-only": {
+				id:            "code-only",
+				name:          "api",
+				agent:         config.AgentCode,
+				rootSessionID: "root-2",
+				wake:          true,
+				status:        "done",
+				output:        "implemented api",
+			},
+			"rev-changes": {
+				id:            "rev-changes",
+				name:          "api-review",
+				agent:         config.AgentReview,
+				rootSessionID: "root-3",
+				wake:          true,
+				status:        "done",
+				output:        "VERDICT: CHANGES_REQUIRED\nDEFECTS:\n- [major] fails",
+			},
+		},
+	}
+
+	approvedNotice, claims := c.collectTeamNotices("root-1")
+	require.Len(t, claims, 1)
+	require.Contains(t, approvedNotice, "Parts with VERDICT: APPROVED are already verified")
+	require.Contains(t, approvedNotice, "do NOT re-run their tests, builds, linters, or browser/app checks")
+
+	codeNotice, _ := c.collectTeamNotices("root-2")
+	require.NotContains(t, codeNotice, "Parts with VERDICT: APPROVED are already verified")
+
+	changesNotice, _ := c.collectTeamNotices("root-3")
+	require.NotContains(t, changesNotice, "Parts with VERDICT: APPROVED are already verified")
+}

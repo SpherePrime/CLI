@@ -10,10 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/internal/filetracker"
+	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/skills"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
@@ -320,6 +322,45 @@ func TestReadBuiltinFile(t *testing.T) {
 		}, nil)
 		require.NoError(t, err)
 		require.NotContains(t, resp.Content, "     1|")
+		require.NotContains(t, resp.Content, "File has more lines")
+	})
+
+	t.Run("ignores limit on full read for prime-config and prime-designer", func(t *testing.T) {
+		t.Parallel()
+
+		for _, tc := range []struct {
+			builtinPath string
+			fsPath      string
+		}{
+			{
+				builtinPath: "prime://skills/prime-config/SKILL.md",
+				fsPath:      "builtin/prime-config/SKILL.md",
+			},
+			{
+				builtinPath: "prime://skills/prime-designer/SKILL.md",
+				fsPath:      "builtin/prime-designer/SKILL.md",
+			},
+			{
+				builtinPath: "prime://skills/prime-designer/references/quality-gate.md",
+				fsPath:      "builtin/prime-designer/references/quality-gate.md",
+			},
+		} {
+			raw, err := skills.BuiltinFS().ReadFile(tc.fsPath)
+			require.NoError(t, err)
+
+			resp, err := readBuiltinFile(ViewParams{
+				FilePath: tc.builtinPath,
+				Offset:   0,
+				Limit:    200,
+			}, nil)
+			require.NoError(t, err)
+			require.False(t, resp.IsError)
+			require.NotContains(t, resp.Content, "File has more lines")
+
+			var meta ViewResponseMetadata
+			require.NoError(t, json.Unmarshal([]byte(resp.Metadata), &meta))
+			require.Equal(t, string(raw), meta.Content)
+		}
 	})
 }
 
@@ -375,4 +416,161 @@ func TestReadBuiltinSkillGivesDiskDirectoryForResources(t *testing.T) {
 	resp, err = readBuiltinFile(ViewParams{FilePath: "prime://skills/prime-config/SKILL.md"}, nil)
 	require.NoError(t, err)
 	require.NotContains(t, resp.Content, "<skill_directory>")
+}
+
+type denyRecordingPermissionService struct {
+	*mockViewPermissionService
+	called bool
+}
+
+func (d *denyRecordingPermissionService) Request(context.Context, permission.CreatePermissionRequest) (bool, error) {
+	d.called = true
+	return false, nil
+}
+
+func TestViewToolReadsLocalSkillsCompletely(t *testing.T) {
+	makeSkillContent := func(totalLines int, longLineLen int) string {
+		lines := make([]string, totalLines)
+		lines[0] = "---"
+		lines[1] = "name: custom-skill"
+		lines[2] = "description: Test skill"
+		lines[3] = "---"
+		lines[4] = strings.Repeat("L", longLineLen)
+		for i := 5; i < totalLines; i++ {
+			lines[i] = fmt.Sprintf("instruction line %d", i+1)
+		}
+		return strings.Join(lines, "\n")
+	}
+
+	t.Run("project SKILL.md and skills directory references ignore limit and long line cap", func(t *testing.T) {
+		workingDir := t.TempDir()
+		skillDir := filepath.Join(workingDir, "skills", "custom-skill")
+		refsDir := filepath.Join(skillDir, "references")
+		require.NoError(t, os.MkdirAll(refsDir, 0o755))
+
+		skillContent := makeSkillContent(260, MaxLineLength+500)
+		skillPath := filepath.Join(skillDir, "SKILL.md")
+		require.NoError(t, os.WriteFile(skillPath, []byte(skillContent), 0o644))
+
+		refContent := makeSkillContent(260, MaxLineLength+300)
+		refPath := filepath.Join(refsDir, "guide.md")
+		require.NoError(t, os.WriteFile(refPath, []byte(refContent), 0o644))
+
+		tool := newViewToolForTest(workingDir)
+		ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
+
+		for _, tc := range []struct {
+			path    string
+			content string
+		}{
+			{skillPath, skillContent},
+			{refPath, refContent},
+		} {
+			resp := runViewTool(t, tool, ctx, ViewParams{
+				FilePath: tc.path,
+				Offset:   0,
+				Limit:    200,
+			})
+			require.False(t, resp.IsError)
+			require.NotContains(t, resp.Content, "File has more lines")
+			require.NotContains(t, resp.Content, "...")
+
+			var meta ViewResponseMetadata
+			require.NoError(t, json.Unmarshal([]byte(resp.Metadata), &meta))
+			require.Equal(t, tc.content, meta.Content)
+		}
+	})
+
+	t.Run("env var expanded skillsPaths skips permission and reads full large skill", func(t *testing.T) {
+		workingDir := t.TempDir()
+		skillsRoot := t.TempDir()
+		skillDir := filepath.Join(skillsRoot, "env-skill")
+		require.NoError(t, os.MkdirAll(skillDir, 0o755))
+
+		skillContent := makeSkillContent(300, MaxViewSize+1024)
+		skillPath := filepath.Join(skillDir, "SKILL.md")
+		require.NoError(t, os.WriteFile(skillPath, []byte(skillContent), 0o644))
+
+		t.Setenv("PRIME_TEST_SKILLS_DIR", skillsRoot)
+		perms := &denyRecordingPermissionService{
+			mockViewPermissionService: &mockViewPermissionService{
+				Broker: pubsub.NewBroker[permission.PermissionRequest](),
+			},
+		}
+		tool := NewViewTool(nil, perms, mockFileTracker{}, nil, workingDir, "$PRIME_TEST_SKILLS_DIR")
+		ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
+
+		resp := runViewTool(t, tool, ctx, ViewParams{
+			FilePath: skillPath,
+			Offset:   0,
+			Limit:    200,
+		})
+		require.False(t, resp.IsError)
+		require.False(t, perms.called)
+		require.NotContains(t, resp.Content, "File has more lines")
+
+		var meta ViewResponseMetadata
+		require.NoError(t, json.Unmarshal([]byte(resp.Metadata), &meta))
+		require.Equal(t, skillContent, meta.Content)
+	})
+
+	t.Run("tilde expanded skillsPaths skips permission and reads full skill", func(t *testing.T) {
+		require.Equal(t, filepath.Join(home.Dir(), "custom-skills"), expandSkillsPath("~/custom-skills"))
+
+		if home.Dir() == "" {
+			t.Skip("no home directory")
+		}
+		skillsRoot, err := os.MkdirTemp(home.Dir(), "prime-view-skill-test-*")
+		if err != nil {
+			t.Skipf("home directory not writable: %v", err)
+		}
+		t.Cleanup(func() { _ = os.RemoveAll(skillsRoot) })
+
+		skillDir := filepath.Join(skillsRoot, "tilde-skill")
+		require.NoError(t, os.MkdirAll(skillDir, 0o755))
+
+		skillContent := makeSkillContent(260, MaxLineLength+400)
+		skillPath := filepath.Join(skillDir, "SKILL.md")
+		require.NoError(t, os.WriteFile(skillPath, []byte(skillContent), 0o644))
+
+		workingDir := t.TempDir()
+		perms := &denyRecordingPermissionService{
+			mockViewPermissionService: &mockViewPermissionService{
+				Broker: pubsub.NewBroker[permission.PermissionRequest](),
+			},
+		}
+		tool := NewViewTool(nil, perms, mockFileTracker{}, nil, workingDir, home.Short(skillsRoot))
+		ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
+
+		resp := runViewTool(t, tool, ctx, ViewParams{
+			FilePath: skillPath,
+			Offset:   0,
+			Limit:    200,
+		})
+		require.False(t, resp.IsError)
+		require.False(t, perms.called)
+
+		var meta ViewResponseMetadata
+		require.NoError(t, json.Unmarshal([]byte(resp.Metadata), &meta))
+		require.Equal(t, skillContent, meta.Content)
+	})
+
+	t.Run("outside SKILL.md not in skillsPaths still requires permission", func(t *testing.T) {
+		workingDir := t.TempDir()
+		outsideDir := t.TempDir()
+		skillPath := filepath.Join(outsideDir, "SKILL.md")
+		require.NoError(t, os.WriteFile(skillPath, []byte("outside"), 0o644))
+
+		perms := &denyRecordingPermissionService{
+			mockViewPermissionService: &mockViewPermissionService{
+				Broker: pubsub.NewBroker[permission.PermissionRequest](),
+			},
+		}
+		tool := NewViewTool(nil, perms, mockFileTracker{}, nil, workingDir)
+		ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
+
+		resp := runViewTool(t, tool, ctx, ViewParams{FilePath: skillPath})
+		require.True(t, perms.called)
+		require.True(t, resp.IsError)
+	})
 }

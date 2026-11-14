@@ -1,1 +1,1 @@
-Read a file by path with line numbers; supports offset and line limit (default {{ .DefaultReadLimit }}, max {{ .MaxViewSizeKB }}KB returned file content section); renders images (PNG, JPEG, GIF, WebP); use ls for directories.
+Read a file by path with line numbers; supports offset and line limit (default {{ .DefaultReadLimit }}, max {{ .MaxViewSizeKB }}KB returned file content section). Skills (SKILL.md and prime://skills/...) are always read in full without line or size limits — omit limit when reading skills. Renders images (PNG, JPEG, GIF, WebP); use ls for directories.

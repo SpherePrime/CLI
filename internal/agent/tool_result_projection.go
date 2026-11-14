@@ -44,15 +44,19 @@ func (a *sessionAgent) toolScope(sessionID string) string {
 }
 
 func projectToolMessages(ctx context.Context, scope string, store toolArtifactStore, messages []fantasy.Message) []fantasy.Message {
-	callNames := toolCallNames(messages)
+	calls := agedCalls(messages)
 	projected := ageToolHistory(ctx, scope, store, cloneFantasyMessages(messages), defaultHistoryAgingPolicy())
 	for i := range projected {
 		for j, part := range projected[i].Content {
 			result, ok := part.(fantasy.ToolResultPart)
-			if !ok || inlineDocumentedTool(callNames[result.ToolCallID]) {
+			if !ok {
 				continue
 			}
-			name := callNames[result.ToolCallID]
+			call := calls[result.ToolCallID]
+			if inlineDocumentedTool(call.Name) || isProtectedSkillView(call.Name, call.Input) {
+				continue
+			}
+			name := call.Name
 			switch output := result.Output.(type) {
 			case fantasy.ToolResultOutputContentText:
 				compacted := compactToolOutput(name, output.Text)

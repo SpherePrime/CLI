@@ -8,6 +8,9 @@ You are summarizing a conversation to preserve context for continuing work later
 
 - What task is being worked on (exact user request)
 - Current progress and what's been completed
+- Active team assignments (agent names, roles, job IDs, linked reviewers, and owned files)
+- Parts that already received VERDICT: APPROVED from a review agent (name each part, reviewer, score/verdict, and files so the resumed coordinator does NOT re-verify, re-test, or re-screenshot them unless modified afterwards)
+- Team delegation rules to preserve: code agents write code only and must NOT run tests, builds, linters, dev servers, browsers, or audit scripts; review agents (or the coordinator when no reviewer is used) perform verification
 - What's being worked on right now (incomplete work)
 - What remains to be done (specific next steps, not vague)
 
@@ -39,9 +42,9 @@ You are summarizing a conversation to preserve context for continuing work later
 
 Be specific. Don't write "implement authentication" - write:
 
-1. Add JWT middleware to src/middleware/auth.js:15
-2. Update login handler in src/routes/user.js:45 to return token
-3. Test with: npm test -- auth.test.js
+1. Assign code agent auth-backend (linked to reviewer auth-review, code only with no self-testing) to add JWT middleware in src/middleware/auth.js:15 and update login handler in src/routes/user.js:45 to return token
+2. Skip re-verifying or re-testing parts already marked VERDICT: APPROVED by a review agent unless modified afterwards
+3. Verify only unreviewed integration edits via the linked review agent (or directly in the coordinator when no reviewer is used), e.g. checking auth integration with `npm test -- auth.test.js`
 
 **Tone**: Write as if briefing a teammate taking over mid-task. Include everything they'd need to continue without asking questions. No emojis ever.
 

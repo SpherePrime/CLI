@@ -75,6 +75,8 @@ func TestDriverContinuesWhileStagesRemain(t *testing.T) {
 	require.Contains(t, prompt, CompleteToolName)
 	require.Contains(t, prompt, "Final acceptance")
 	require.Contains(t, prompt, "browser_*")
+	require.Contains(t, prompt, "VERDICT: APPROVED")
+	require.Contains(t, prompt, "do NOT need to be re-tested or re-checked from scratch")
 }
 
 func TestDriverStopsWithoutGoalPlanOrAfterAchievement(t *testing.T) {
@@ -119,4 +121,5 @@ func TestNoteAsksQuestionsBeforePlanningAndResumesAfter(t *testing.T) {
 	resumed := Note(activeGoal, ProgressOf(todos(session.TodoStatusCompleted, session.TodoStatusPending)))
 	require.Contains(t, resumed, "1 of 2")
 	require.Contains(t, resumed, "Resume from this point")
+	require.Contains(t, resumed, "without re-checking already APPROVED unmodified parts")
 }

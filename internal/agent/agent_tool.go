@@ -100,6 +100,7 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 			}
 			if name == config.AgentCode {
 				sp.Reviewer = strings.TrimSpace(params.Reviewer)
+				sp.Prompt = appendCodeAgentRuntimeRule(sp.Prompt, sp.Reviewer)
 			}
 
 			// Background mode returns as soon as the sub-session exists; the
@@ -161,4 +162,12 @@ func (c *coordinator) agentToolDescription() string {
 	}
 
 	return agentToolDescription + "\n\nAvailable agents:\n" + strings.Join(lines, "\n")
+}
+
+func appendCodeAgentRuntimeRule(prompt, reviewer string) string {
+	verifier := "The coordinator or a review agent"
+	if reviewer != "" {
+		verifier = "Review agent " + reviewer
+	}
+	return strings.TrimRight(prompt, "\r\n") + "\n\nRuntime restriction: you are a code agent — write code only. Do NOT run tests, builds, typechecks, linters, dev servers, browsers, app checks or audit scripts, even if verification criteria appear in the task text above. " + verifier + " will build, run and verify your work."
 }

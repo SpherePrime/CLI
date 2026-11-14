@@ -53,6 +53,12 @@ func TestRolePromptsDescribeTheirJob(t *testing.T) {
 	code := renderRolePrompt(t, codePrompt)
 	require.Contains(t, code, "checking it is not your job")
 	require.Contains(t, code, "Do not run tests, builds, linters")
+	require.Contains(t, code, "audit scripts")
+	require.Contains(t, code, "This rule overrides any verification")
+	require.Contains(t, code, "AGENTS.md")
+	require.Contains(t, code, "prime-designer")
+	require.Contains(t, code, "read_instruction")
+	require.Contains(t, code, "If you are a code agent, loading a workflow (such as verification) never authorizes or asks you to run tests, builds, linters, servers or browsers yourself")
 	require.Contains(t, code, "STATUS: WAITING")
 	require.Contains(t, code, "do not message the reviewer yourself")
 	require.Contains(t, code, "agree shared interfaces")
@@ -68,5 +74,20 @@ func TestCoderPromptDelegatesByDefault(t *testing.T) {
 	require.Contains(t, got, "empty or new project")
 	require.Contains(t, got, "vertical slices, never by layer")
 	require.Contains(t, got, "Agents talk to each other directly with agent_message")
+	require.Contains(t, got, "Pass verification requirements only to review agents")
+	require.Contains(t, got, "never ask a code agent to run tests, builds, linters, dev servers or browsers")
 	require.NotContains(t, got, "Handle small tasks yourself")
+	require.NotContains(t, got, "provide the goal, context, restrictions and required verification")
+}
+
+func TestAgentToolAndSummaryPromptsPreserveDelegationAndApprovedRules(t *testing.T) {
+	require.Contains(t, agentToolDescription, "Send verification requirements only to review agents")
+	require.Contains(t, agentToolDescription, "never ask a code agent to run tests, builds, linters, dev servers or browsers")
+	require.NotContains(t, agentToolDescription, "paths, constraints, and verification requirements")
+
+	summary := string(summaryPrompt)
+	require.Contains(t, summary, "Active team assignments")
+	require.Contains(t, summary, "VERDICT: APPROVED")
+	require.Contains(t, summary, "code agents write code only and must NOT run tests, builds, linters, dev servers, browsers, or audit scripts")
+	require.NotContains(t, summary, "3. Test with: npm test -- auth.test.js")
 }

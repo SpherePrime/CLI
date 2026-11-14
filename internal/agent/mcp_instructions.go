@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
+	"github.com/SpherePrime/CLI/internal/config"
 )
 
 type mcpInstruction struct {
@@ -12,9 +13,12 @@ type mcpInstruction struct {
 	Text   string
 }
 
-func connectedMCPInstructions(states map[string]mcp.ClientInfo) []mcpInstruction {
+func connectedMCPInstructions(states map[string]mcp.ClientInfo, agent config.Agent) []mcpInstruction {
 	var instructions []mcpInstruction
 	for name, server := range states {
+		if !agentAllowsMCPServer(agent, name) {
+			continue
+		}
 		if server.State != mcp.StateConnected || server.Client == nil {
 			continue
 		}

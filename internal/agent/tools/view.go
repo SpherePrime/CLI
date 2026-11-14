@@ -20,6 +20,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/filepathext"
 	"github.com/SpherePrime/CLI/internal/filetracker"
+	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/internal/skills"
@@ -48,7 +49,7 @@ func viewDescription() string {
 type ViewParams struct {
 	FilePath string `json:"file_path" description:"The path to the file to read"`
 	Offset   int    `json:"offset,omitempty" description:"The line number to start reading from (0-based)"`
-	Limit    int    `json:"limit,omitempty" description:"The number of lines to read (defaults to 200)"`
+	Limit    int    `json:"limit,omitempty" description:"The number of lines to read (defaults to 200; omit when reading skills — SKILL.md and prime://skills/... are always read in full)"`
 }
 
 type ViewPermissionsParams struct {
@@ -124,9 +125,14 @@ func NewViewTool(
 				return fantasy.ToolResponse{}, fmt.Errorf("error resolving file path: %w", err)
 			}
 
+			if params.Offset < 0 {
+				params.Offset = 0
+			}
+
 			relPath, err := filepath.Rel(absWorkingDir, absFilePath)
 			isOutsideWorkDir := err != nil || strings.HasPrefix(relPath, "..")
-			isSkillFile := isInSkillsPath(absFilePath, skillsPaths)
+			inConfiguredSkills := isInSkillsPath(absFilePath, skillsPaths)
+			isSkillFile := inConfiguredSkills || isSkillMarkdownFile(absFilePath)
 
 			sessionID := GetSessionFromContext(ctx)
 			if sessionID == "" {
@@ -134,7 +140,7 @@ func NewViewTool(
 			}
 
 			// Request permission for files outside working directory, unless it's a skill file.
-			if isOutsideWorkDir && !isSkillFile {
+			if isOutsideWorkDir && !inConfiguredSkills {
 				granted, permReqErr := permissions.Request(
 					ctx,
 					permission.CreatePermissionRequest{
@@ -192,15 +198,6 @@ func NewViewTool(
 				return fantasy.NewTextErrorResponse(fmt.Sprintf("Path is a directory, not a file: %s", filePath)), nil
 			}
 
-			// Set default limit if not provided (no limit for SKILL.md files)
-			if params.Limit <= 0 {
-				if isSkillFile {
-					params.Limit = 1000000 // Effectively no limit for skill files
-				} else {
-					params.Limit = DefaultReadLimit
-				}
-			}
-
 			isSupportedImage, mimeType := getImageMimeType(filePath)
 			if isSupportedImage {
 				if fileInfo.Size() > MaxViewSize {
@@ -228,12 +225,19 @@ func NewViewTool(
 				return fantasy.NewImageResponse(imageData, mimeType), nil
 			}
 
-			// Read the file content
+			limit := params.Limit
 			maxContentSize := MaxViewSize
+			maxLineLength := MaxLineLength
 			if isSkillFile {
+				if params.Offset <= 0 || limit <= 0 {
+					limit = 0
+				}
 				maxContentSize = 0
+				maxLineLength = 0
+			} else if limit <= 0 {
+				limit = DefaultReadLimit
 			}
-			content, hasMore, err := readTextFile(filePath, params.Offset, params.Limit, maxContentSize)
+			content, hasMore, err := readTextFileWithMaxLineLength(filePath, params.Offset, limit, maxContentSize, maxLineLength)
 			if err != nil {
 				var tooLarge contentTooLargeError
 				if errors.As(err, &tooLarge) {
@@ -306,6 +310,10 @@ func addLineNumbers(content string, startLine int) string {
 }
 
 func readTextFile(filePath string, offset, limit, maxContentSize int) (string, bool, error) {
+	return readTextFileWithMaxLineLength(filePath, offset, limit, maxContentSize, MaxLineLength)
+}
+
+func readTextFileWithMaxLineLength(filePath string, offset, limit, maxContentSize, maxLineLength int) (string, bool, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", false, err
@@ -325,20 +333,24 @@ func readTextFile(filePath string, offset, limit, maxContentSize int) (string, b
 		skipped++
 	}
 
-	lines := make([]string, 0, min(limit, DefaultReadLimit))
+	initialCap := DefaultReadLimit
+	if limit > 0 {
+		initialCap = min(limit, DefaultReadLimit)
+	}
+	lines := make([]string, 0, initialCap)
 	contentSize := 0
 
-	for len(lines) < limit {
+	for limit <= 0 || len(lines) < limit {
 		lineText, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
 			return "", false, err
 		}
 		lineText = strings.TrimSuffix(lineText, "\n")
 		lineText = strings.TrimSuffix(lineText, "\r")
-		if len(lineText) > MaxLineLength {
+		if maxLineLength > 0 && len(lineText) > maxLineLength {
 			// Truncate at a rune boundary to avoid splitting
 			// multi-byte characters.
-			lineText = strings.ToValidUTF8(lineText[:MaxLineLength], "") + "..."
+			lineText = strings.ToValidUTF8(lineText[:maxLineLength], "") + "..."
 		}
 		projectedSize := contentSize + len(lineText)
 		if len(lines) > 0 {
@@ -356,7 +368,7 @@ func readTextFile(filePath string, offset, limit, maxContentSize int) (string, b
 
 	// Peek one more line only when we filled the limit.
 	hasMore := false
-	if len(lines) == limit {
+	if limit > 0 && len(lines) == limit {
 		lineText, peekErr := reader.ReadString('\n')
 		hasMore = len(lineText) > 0 || peekErr == nil
 	}
@@ -422,7 +434,12 @@ func isInSkillsPath(filePath string, skillsPaths []string) bool {
 	}
 
 	for _, skillsPath := range skillsPaths {
-		absSkillsPath, err := filepath.Abs(skillsPath)
+		expandedPath := expandSkillsPath(skillsPath)
+		if expandedPath == "" {
+			continue
+		}
+
+		absSkillsPath, err := filepath.Abs(expandedPath)
 		if err != nil {
 			continue
 		}
@@ -433,11 +450,36 @@ func isInSkillsPath(filePath string, skillsPaths []string) bool {
 		}
 
 		relPath, err := filepath.Rel(evalSkillsPath, evalFilePath)
-		if err == nil && !strings.HasPrefix(relPath, "..") {
+		if err == nil && relPath != ".." && !strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
 			return true
 		}
 	}
 
+	return false
+}
+
+func expandSkillsPath(skillsPath string) string {
+	trimmed := strings.TrimSpace(skillsPath)
+	if trimmed == "" {
+		return ""
+	}
+	expanded := os.ExpandEnv(trimmed)
+	if expanded == "" {
+		return ""
+	}
+	return filepath.Clean(home.Long(expanded))
+}
+
+func isSkillMarkdownFile(filePath string) bool {
+	if strings.EqualFold(filepath.Base(filePath), skills.SkillFileName) {
+		return true
+	}
+	dir := filepath.ToSlash(filepath.Dir(filepath.Clean(filePath)))
+	for part := range strings.SplitSeq(dir, "/") {
+		if strings.EqualFold(part, "skills") {
+			return true
+		}
+	}
 	return false
 }
 
@@ -456,18 +498,14 @@ func readBuiltinFile(params ViewParams, skillTracker *skills.Tracker) (fantasy.T
 		return fantasy.NewTextErrorResponse("File content is not valid UTF-8"), nil
 	}
 
-	limit := params.Limit
-	if limit <= 0 {
-		limit = 1000000 // Effectively no limit for skill files.
-	}
-
 	lines := strings.Split(content, "\n")
-	offset := min(params.Offset, len(lines))
+	offset := min(max(params.Offset, 0), len(lines))
 	lines = lines[offset:]
 
-	hasMore := len(lines) > limit
-	if hasMore {
-		lines = lines[:limit]
+	hasMore := false
+	if params.Offset > 0 && params.Limit > 0 && len(lines) > params.Limit {
+		lines = lines[:params.Limit]
+		hasMore = true
 	}
 
 	output := "<file>\n"

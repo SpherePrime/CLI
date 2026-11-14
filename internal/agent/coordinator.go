@@ -956,6 +956,7 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 		SystemPromptPrefix:   largeProviderCfg.SystemPromptPrefix,
 		SystemPrompt:         "",
 		IsSubAgent:           isSubAgent,
+		Agent:                agent,
 		DisableAutoSummarize: c.cfg.Config().Options.DisableAutoSummarize,
 		AutoSummarizePercent: c.cfg.Config().Options.GetAutoSummarizePercent(),
 		IsYolo:               c.permissions.SkipRequests(),
@@ -1189,19 +1190,13 @@ func (c *coordinator) appendSmartSearchTools(allTools []fantasy.AgentTool, agent
 // agentAllowsMCPTool reports whether an agent may call an MCP tool, applying
 // the same AllowedMCP gating that buildTools uses for the tool palette itself.
 func agentAllowsMCPTool(agent config.Agent, tool *tools.Tool) bool {
-	if roleDeniesMCP(agent, tool.MCP()) {
+	if !agentAllowsMCPServer(agent, tool.MCP()) {
 		return false
 	}
 	if agent.AllowedMCP == nil {
 		return true
 	}
-	if len(agent.AllowedMCP) == 0 {
-		return false
-	}
-	allowed, ok := agent.AllowedMCP[tool.MCP()]
-	if !ok {
-		return false
-	}
+	allowed := agent.AllowedMCP[tool.MCP()]
 	return len(allowed) == 0 || slices.Contains(allowed, tool.MCPToolName())
 }
 
