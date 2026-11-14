@@ -52,8 +52,8 @@ export function buildModelGroups(
   }
   const groups: ModelGroup[] = []
   for (const [kind, references, limit] of [
-    ['recent', recent, 8],
-    ['favorites', favorites, 100]
+    ['favorites', favorites, 100],
+    ['recent', recent, 8]
   ] as const) {
     const group: ModelGroup = { id: kind, kind, name: '', models: [] }
     for (const reference of uniqueReferences(references || [], limit)) {
@@ -61,22 +61,22 @@ export function buildModelGroups(
       const model = available.get(identity)
       if (model) {
         group.models.push(model)
-        available.delete(identity)
       }
     }
     if (group.models.length) groups.push(group)
   }
   const providers = new Map<string, ModelGroup>()
   for (const model of available.values()) {
-    let group = providers.get(model.provider_id)
+    const providerKey = model.provider_id || 'unknown'
+    let group = providers.get(providerKey)
     if (!group) {
       group = {
-        id: JSON.stringify(['provider', model.provider_id]),
+        id: JSON.stringify(['provider', providerKey]),
         kind: 'provider',
-        name: model.provider_name || model.provider_id,
+        name: model.provider_name || model.provider_id || providerKey,
         models: []
       }
-      providers.set(model.provider_id, group)
+      providers.set(providerKey, group)
       groups.push(group)
     }
     group.models.push(model)

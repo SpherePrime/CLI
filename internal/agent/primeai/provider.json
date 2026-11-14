@@ -1,19 +1,19 @@
 {
   "name": "PrimeAI",
   "id": "primeai",
-  "api_endpoint": "https://sphereprime.online/api/plugin",
+  "api_endpoint": "https://sphereprime.online/api/prime",
   "type": "primeai",
   "default_large_model_id": "__primeai_auto__",
   "default_small_model_id": "__primeai_auto__",
   "models": [
     {
       "id": "__primeai_auto__",
-      "name": "Автоматически (наилучший пинг)",
+      "name": "Автоматически",
       "cost_per_1m_in": 0,
       "cost_per_1m_out": 0,
       "cost_per_1m_in_cached": 0,
       "cost_per_1m_out_cached": 0,
-      "context_window": 200000,
+      "context_window": 270000,
       "default_max_tokens": 16384,
       "can_reason": true,
       "reasoning_levels": [

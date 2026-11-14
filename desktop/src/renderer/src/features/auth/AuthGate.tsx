@@ -66,6 +66,7 @@ export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: Au
   }
 
   const hasError = Boolean(account.error || account.networkError)
+  const isBusy = Boolean(account.waiting || account.checking)
   const stepOneState: StepState =
     account.signedIn || account.waiting || account.checking || account.hasStoredSession
       ? 'done'
@@ -129,12 +130,26 @@ export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: Au
               : t('Для продолжения подтвердите вход через Google.')
 
   return (
-    <main className="auth-gate" aria-label={t('Вход в аккаунт Prime')}>
+    <main
+      className={`auth-gate${isBusy ? ' is-busy' : ''}${hasError ? ' is-error' : ''}`}
+      aria-label={t('Вход в аккаунт Prime')}
+    >
+      <div className="auth-gate-backdrop" aria-hidden="true">
+        <div className="auth-gate-grid" />
+        <div className="auth-gate-orb auth-gate-orb-copper" />
+        <div className="auth-gate-orb auth-gate-orb-slate" />
+      </div>
+
       <div className="auth-gate-stage">
         <section className="auth-gate-editorial">
           <div className="auth-gate-brand-row">
             <span className="auth-gate-mark" aria-hidden="true">
-              <PrimeLogo />
+              <span className="auth-gate-mark-aura" />
+              <span className="auth-gate-ring auth-gate-ring-outer" />
+              <span className="auth-gate-ring auth-gate-ring-inner" />
+              <span className="auth-gate-mark-core">
+                <PrimeLogo />
+              </span>
             </span>
             <span className="auth-gate-eyebrow">PRIME ACCOUNT</span>
           </div>
@@ -148,7 +163,10 @@ export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: Au
             {t('Авторизация синхронизируется с Prime CLI на этом устройстве.')}
           </p>
 
-          <ol className="auth-flow-rail" aria-label={t('Этапы входа')}>
+          <ol
+            className={`auth-flow-rail${isBusy ? ' is-busy' : ''}`}
+            aria-label={t('Этапы входа')}
+          >
             {steps.map((step) => (
               <li key={step.index} className={`auth-flow-step is-${step.state}`}>
                 <span className="auth-flow-node" aria-hidden="true">
@@ -163,7 +181,10 @@ export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: Au
           </ol>
         </section>
 
-        <section className="auth-gate-card" aria-labelledby="auth-gate-card-title">
+        <section
+          className={`auth-gate-card${isBusy ? ' is-busy' : ''}${hasError ? ' is-error' : ''}`}
+          aria-labelledby="auth-gate-card-title"
+        >
           <div className="auth-gate-card-head">
             <h2 id="auth-gate-card-title">{t('Войдите, чтобы начать')}</h2>
             <p>{t('Используйте аккаунт Google, чтобы открыть рабочее пространство Prime.')}</p>
@@ -172,6 +193,15 @@ export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: Au
           <div className="auth-gate-actions">
             {account.waiting ? (
               <>
+                <div className="auth-gate-wait-beacon" aria-hidden="true">
+                  <span className="auth-gate-wait-badge">
+                    <span className="auth-gate-wait-ring" />
+                    <GoogleMark />
+                  </span>
+                  <span className="auth-gate-wait-track">
+                    <span className="auth-gate-wait-sweep" />
+                  </span>
+                </div>
                 <button
                   type="button"
                   className="auth-gate-cancel"
@@ -243,7 +273,11 @@ export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: Au
                 disabled={account.checking}
                 onClick={() => void onLogin()}
               >
-                <GoogleMark />
+                {account.checking ? (
+                  <RefreshCw size={16} className="spin" aria-hidden="true" />
+                ) : (
+                  <GoogleMark />
+                )}
                 <span>
                   {account.checking ? t('Проверяем сессию…') : t('Войти через Google')}
                 </span>
@@ -254,7 +288,7 @@ export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: Au
           <p className="auth-gate-status" role="status" aria-live="polite">
             <span
               className={`auth-gate-status-dot ${
-                account.waiting || account.checking ? 'is-busy' : hasError ? 'is-error' : ''
+                isBusy ? 'is-busy' : hasError ? 'is-error' : ''
               }`}
               aria-hidden="true"
             />

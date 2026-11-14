@@ -16,7 +16,7 @@ const (
 	Name                = "primeai"
 	DisplayName         = "PrimeAI"
 	AutomaticModelID    = "__primeai_auto__"
-	AutomaticModelName  = "Автоматически (наилучший пинг)"
+	AutomaticModelName  = "Автоматически"
 	defaultBaseURL      = "https://sphereprime.online"
 	TypeProviderOptions = "primeai.options"
 )
@@ -40,12 +40,40 @@ func BaseURL() string {
 
 func normalizeBaseURL(raw string) string {
 	trimmed := strings.TrimRight(strings.TrimSpace(raw), "/")
-	trimmed = strings.TrimSuffix(trimmed, "/api/plugin")
-	trimmed = strings.TrimRight(trimmed, "/")
+	for {
+		next := trimmed
+		for _, suffix := range []string{"/api/prime", "/api/plugin", "/v1"} {
+			next = strings.TrimSuffix(next, suffix)
+		}
+		next = strings.TrimRight(next, "/")
+		if next == trimmed {
+			break
+		}
+		trimmed = next
+	}
 	if trimmed == "" {
 		return defaultBaseURL
 	}
 	return trimmed
+}
+
+func IsLegacyBaseURL(raw string) bool {
+	trimmed := strings.TrimRight(strings.TrimSpace(raw), "/")
+	if trimmed == "" {
+		return false
+	}
+	base := BaseURL()
+	if trimmed == defaultBaseURL || trimmed == base {
+		return true
+	}
+	for _, root := range []string{defaultBaseURL, base} {
+		for _, suffix := range []string{"/v1", "/api/plugin"} {
+			if trimmed == root+suffix {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func Embedded() catwalk.Provider {
@@ -53,7 +81,7 @@ func Embedded() catwalk.Provider {
 	if err := json.Unmarshal(embedded, &provider); err != nil {
 		slog.Error("Could not use embedded PrimeAI provider data", "err", err)
 	}
-	provider.APIEndpoint = BaseURL() + "/api/plugin"
+	provider.APIEndpoint = BaseURL() + "/api/prime"
 	return provider
 }
 
@@ -100,13 +128,20 @@ type Limits struct {
 }
 
 type PublicModel struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	RouteCount     int      `json:"routeCount"`
-	Kind           string   `json:"kind"`
-	SupportsVision bool     `json:"supportsVision,omitempty"`
-	PriceIn        *float64 `json:"priceIn,omitempty"`
-	PriceOut       *float64 `json:"priceOut,omitempty"`
+	ID                     string   `json:"id"`
+	Name                   string   `json:"name"`
+	RouteCount             int      `json:"routeCount"`
+	Kind                   string   `json:"kind"`
+	SupportsVision         bool     `json:"supportsVision,omitempty"`
+	SupportsAttachments    bool     `json:"supportsAttachments,omitempty"`
+	ContextWindow          int64    `json:"contextWindow,omitempty"`
+	MaxContextLength       int64    `json:"maxContextLength,omitempty"`
+	DefaultMaxTokens       int64    `json:"defaultMaxTokens,omitempty"`
+	MaxOutputTokens        int64    `json:"maxOutputTokens,omitempty"`
+	ReasoningEfforts       []string `json:"reasoningEfforts,omitempty"`
+	DefaultReasoningEffort string   `json:"defaultReasoningEffort,omitempty"`
+	PriceIn                *float64 `json:"priceIn,omitempty"`
+	PriceOut               *float64 `json:"priceOut,omitempty"`
 }
 
 type RouterImageURL struct {

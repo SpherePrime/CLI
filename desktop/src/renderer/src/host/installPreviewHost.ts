@@ -680,7 +680,15 @@ export function installPreviewHost() {
       }
       if (operation === 'config') return config
       if (operation === 'providers') return providers
-      if (operation === 'models') return providers.flatMap((p) => p.models.map((m) => ({ provider: p.id, ...m })))
+      if (operation === 'models')
+        return providers.flatMap((p) =>
+          p.models.map((m) => ({
+            provider_id: p.id,
+            provider_name: p.name,
+            model_id: m.id,
+            ...m
+          }))
+        )
       if (operation === 'agent') return { mode: preferences.agentMode || 'general', model: { name: 'GPT-5.4' } }
       if (operation === 'agentWorkers') return { workers }
       if (operation === 'agentWorkerMessages') return { messages: workerMessages[args?.workerSessionId] || [] }

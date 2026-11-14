@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -83,6 +84,8 @@ func (s *primeaiSync) fetch(ctx context.Context) {
 	cached, _, cachedErr := s.cache.Get()
 	if cached.ID == "" || cachedErr != nil {
 		cached = primeai.Embedded()
+	} else {
+		cached = sanitizePrimeAIProvider(cached)
 	}
 
 	result, err := s.client.Get(ctx)
@@ -130,4 +133,25 @@ func (r realPrimeAIClient) Get(ctx context.Context) (catwalk.Provider, error) {
 		base.Models = models
 	}
 	return base, nil
+}
+
+func sanitizePrimeAIProvider(provider catwalk.Provider) catwalk.Provider {
+	if provider.ID == "" {
+		return primeai.Embedded()
+	}
+	if strings.TrimSpace(provider.APIEndpoint) == "" || primeai.IsLegacyBaseURL(provider.APIEndpoint) {
+		provider.APIEndpoint = primeai.BaseURL() + "/api/prime"
+	}
+	for i, model := range provider.Models {
+		if model.ID == primeai.AutomaticModelID {
+			if model.Name == "" || model.Name == "Автоматически (наилучший пинг)" {
+				model.Name = primeai.AutomaticModelName
+			}
+			if model.ContextWindow == 0 || model.ContextWindow == 200000 {
+				model.ContextWindow = 270000
+			}
+			provider.Models[i] = model
+		}
+	}
+	return provider
 }

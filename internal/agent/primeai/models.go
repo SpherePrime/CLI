@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 )
@@ -25,7 +26,7 @@ func BuildAutomaticModel(models []catwalk.Model) catwalk.Model {
 	return catwalk.Model{
 		ID:                     AutomaticModelID,
 		Name:                   AutomaticModelName,
-		ContextWindow:          200000,
+		ContextWindow:          270000,
 		DefaultMaxTokens:       16384,
 		CanReason:              true,
 		ReasoningLevels:        []string{"low", "medium", "high"},
@@ -62,17 +63,26 @@ func MapPublicModels(models []PublicModel) []catwalk.Model {
 		if pm.PriceOut != nil {
 			priceOut = *pm.PriceOut
 		}
+		reasoningLevels := make([]string, 0, len(pm.ReasoningEfforts))
+		for _, effort := range pm.ReasoningEfforts {
+			if trimmed := strings.TrimSpace(effort); trimmed != "" {
+				reasoningLevels = append(reasoningLevels, trimmed)
+			}
+		}
+		if len(reasoningLevels) == 0 {
+			reasoningLevels = []string{"low", "medium", "high"}
+		}
 		mapped = append(mapped, catwalk.Model{
 			ID:                     pm.ID,
 			Name:                   cmp.Or(pm.Name, pm.ID),
 			CostPer1MIn:            priceIn,
 			CostPer1MOut:           priceOut,
-			ContextWindow:          200000,
-			DefaultMaxTokens:       16384,
+			ContextWindow:          cmp.Or(pm.ContextWindow, pm.MaxContextLength, 270000),
+			DefaultMaxTokens:       cmp.Or(pm.DefaultMaxTokens, pm.MaxOutputTokens, 16384),
 			CanReason:              true,
-			ReasoningLevels:        []string{"low", "medium", "high"},
-			DefaultReasoningEffort: "medium",
-			SupportsImages:         pm.SupportsVision,
+			ReasoningLevels:        reasoningLevels,
+			DefaultReasoningEffort: cmp.Or(strings.TrimSpace(pm.DefaultReasoningEffort), "medium"),
+			SupportsImages:         pm.SupportsVision || pm.SupportsAttachments,
 		})
 	}
 	return WithAutomaticModel(mapped)

@@ -236,12 +236,19 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 	}
 
 	for _, p := range knownProviders {
+		if p.ID == catwalk.InferenceProvider(primeai.Name) {
+			p = sanitizePrimeAIProvider(p)
+		}
 		knownProviderNames[string(p.ID)] = true
 		config, configExists := c.Providers.Get(string(p.ID))
 		// if the user configured a known provider we need to allow it to override a couple of parameters
 		if configExists {
 			if config.BaseURL != "" {
-				p.APIEndpoint = config.BaseURL
+				if p.ID == catwalk.InferenceProvider(primeai.Name) && primeai.IsLegacyBaseURL(config.BaseURL) {
+					p.APIEndpoint = primeai.BaseURL() + "/api/prime"
+				} else {
+					p.APIEndpoint = config.BaseURL
+				}
 			}
 			if config.APIKey != "" {
 				p.APIKey = config.APIKey
@@ -266,6 +273,15 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 						continue
 					}
 					seen[model.ID] = true
+					if p.ID == catwalk.InferenceProvider(primeai.Name) && model.ID == primeai.AutomaticModelID {
+						cm := catwalkModels[model.ID]
+						if model.Name == "" || model.Name == "Автоматически (наилучший пинг)" {
+							model.Name = cmp.Or(cm.Name, primeai.AutomaticModelName)
+						}
+						if model.ContextWindow == 0 || model.ContextWindow == 200000 {
+							model.ContextWindow = cmp.Or(cm.ContextWindow, int64(270000))
+						}
+					}
 					if model.Name == "" {
 						if cm, ok := catwalkModels[model.ID]; ok && cm.Name != "" {
 							model.Name = cm.Name

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -268,9 +269,7 @@ func (s *ConfigStore) EnsurePrimeAI(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if provider.ID == "" {
-		provider = primeai.Embedded()
-	}
+	provider = sanitizePrimeAIProvider(provider)
 
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
@@ -293,9 +292,13 @@ func (s *ConfigStore) EnsurePrimeAI(ctx context.Context) error {
 		pc := existing
 		pc.ID = string(provider.ID)
 		pc.Name = provider.Name
-		pc.BaseURL = provider.APIEndpoint
+		if strings.TrimSpace(pc.BaseURL) == "" || primeai.IsLegacyBaseURL(pc.BaseURL) {
+			pc.BaseURL = provider.APIEndpoint
+		}
 		pc.Type = provider.Type
-		pc.Models = provider.Models
+		autoDiscover := true
+		pc.AutoDiscoverModels = &autoDiscover
+		pc.Models = mergePrimeAIModels(pc.Models, provider.Models)
 		if pc.ExtraParams == nil {
 			pc.ExtraParams = make(map[string]string)
 		}
@@ -311,6 +314,34 @@ func (s *ConfigStore) EnsurePrimeAI(ctx context.Context) error {
 	UpdateProviderInList(provider)
 	s.SetupAgents()
 	return nil
+}
+
+func mergePrimeAIModels(existing, fresh []catwalk.Model) []catwalk.Model {
+	if len(fresh) > 1 || len(existing) <= 1 {
+		return slices.Clone(fresh)
+	}
+	if len(fresh) == 0 {
+		return existing
+	}
+	autoFresh := fresh[0]
+	merged := slices.Clone(existing)
+	hasAuto := false
+	for i, m := range merged {
+		if m.ID == primeai.AutomaticModelID {
+			hasAuto = true
+			if m.Name == "" || m.Name == "Автоматически (наилучший пинг)" {
+				m.Name = autoFresh.Name
+			}
+			if m.ContextWindow == 0 || m.ContextWindow == 200000 {
+				m.ContextWindow = autoFresh.ContextWindow
+			}
+			merged[i] = m
+		}
+	}
+	if !hasAuto && autoFresh.ID == primeai.AutomaticModelID {
+		merged = append([]catwalk.Model{autoFresh}, merged...)
+	}
+	return merged
 }
 
 // SetupAgents configures the coder and task agents on the config.

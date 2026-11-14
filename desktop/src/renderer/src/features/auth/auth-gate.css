@@ -1,5 +1,9 @@
 .auth-gate {
-  --auth-ease: var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1));
+  --auth-ease: var(--ease-out-quart, cubic-bezier(0.22, 1, 0.36, 1));
+  --rail-pad-x: 18px;
+  --rail-pad-y: 16px;
+  position: relative;
+  isolation: isolate;
   height: calc(100dvh - var(--titlebar-height, var(--topbar-height, 48px)));
   min-height: calc(100dvh - var(--titlebar-height, var(--topbar-height, 48px)));
   overflow-y: auto;
@@ -10,14 +14,99 @@
   background: var(--bg);
 }
 
+.auth-gate-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-gate-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--border) 42%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--border) 42%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 48px 48px;
+  opacity: 0.46;
+  mask-image: radial-gradient(ellipse 76% 72% at 50% 46%, #000 18%, transparent 82%);
+  -webkit-mask-image: radial-gradient(ellipse 76% 72% at 50% 46%, #000 18%, transparent 82%);
+}
+
+:root[data-theme='light'] .auth-gate-grid {
+  opacity: 0.54;
+}
+
+.auth-gate-orb {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.auth-gate-orb-copper {
+  width: clamp(320px, 46vw, 580px);
+  aspect-ratio: 1;
+  top: -16%;
+  left: -8%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-strong) 22%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 8%, transparent) 44%,
+    transparent 72%
+  );
+  animation: auth-orb-drift-a 20s ease-in-out infinite alternate;
+}
+
+.auth-gate-orb-slate {
+  width: clamp(300px, 42vw, 540px);
+  aspect-ratio: 1;
+  bottom: -18%;
+  right: -7%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--secondary) 16%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 6%, transparent) 46%,
+    transparent 74%
+  );
+  animation: auth-orb-drift-b 24s ease-in-out infinite alternate;
+}
+
+:root[data-theme='light'] .auth-gate-orb-copper {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-strong) 14%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 6%, transparent) 44%,
+    transparent 72%
+  );
+}
+
+:root[data-theme='light'] .auth-gate-orb-slate {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--secondary) 11%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 4%, transparent) 46%,
+    transparent 74%
+  );
+}
+
 .auth-gate-stage {
+  position: relative;
+  z-index: 1;
   width: min(980px, 100%);
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   align-items: center;
   gap: clamp(24px, 4vw, 56px);
-  animation: auth-stage-in 260ms var(--auth-ease) both;
 }
 
 .auth-gate-editorial {
@@ -32,22 +121,80 @@
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  animation: auth-rise-in 380ms var(--auth-ease) both;
 }
 
 .auth-gate-mark {
-  width: 44px;
-  height: 44px;
+  position: relative;
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
-  border-radius: 13px;
-  background: var(--accent-bg);
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
   flex-shrink: 0;
 }
 
+.auth-gate-mark-aura {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-strong) 34%, transparent) 0%,
+    transparent 72%
+  );
+  animation: auth-aura-breathe 3.8s ease-in-out infinite;
+}
+
+.auth-gate-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.auth-gate-ring-outer {
+  inset: 0;
+  border: 1px dashed color-mix(in srgb, var(--accent) 36%, transparent);
+  animation: auth-orbit 18s linear infinite;
+}
+
+.auth-gate-ring-inner {
+  inset: 6px;
+  border: 1px solid transparent;
+  border-top-color: color-mix(in srgb, var(--accent-strong) 68%, transparent);
+  border-right-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  animation: auth-orbit-reverse 11s linear infinite;
+}
+
+.auth-gate.is-busy .auth-gate-ring-outer {
+  animation-duration: 7.5s;
+}
+
+.auth-gate.is-busy .auth-gate-ring-inner {
+  animation-duration: 4.5s;
+}
+
+.auth-gate-mark-core {
+  position: relative;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--accent-bg) 90%, var(--surface)),
+    var(--surface)
+  );
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  box-shadow:
+    inset 0 1px color-mix(in srgb, #ffffff 14%, transparent),
+    0 4px 12px color-mix(in srgb, var(--accent-strong) 18%, transparent);
+}
+
 .auth-gate-mark .prime-logo {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   color: var(--accent-strong);
 }
 
@@ -70,6 +217,7 @@
   letter-spacing: -0.03em;
   color: var(--text);
   text-wrap: balance;
+  animation: auth-rise-in 420ms var(--auth-ease) 55ms both;
 }
 
 .auth-gate-heading-accent {
@@ -84,28 +232,71 @@
   line-height: 1.6;
   color: var(--secondary);
   text-wrap: pretty;
+  animation: auth-rise-in 420ms var(--auth-ease) 105ms both;
 }
 
 .auth-flow-rail {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   min-width: 0;
   margin: 8px 0 0;
-  padding: 16px 18px;
+  padding: var(--rail-pad-y) var(--rail-pad-x);
   list-style: none;
   display: grid;
   gap: 14px;
   border-radius: 16px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   border: 1px solid var(--ui-border, var(--border));
+  animation: auth-rise-in 440ms var(--auth-ease) 150ms both;
+}
+
+.auth-flow-rail::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--rail-pad-x) + 13px);
+  top: 0;
+  width: 2px;
+  height: 54px;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent-strong) 85%, #ffffff) 50%,
+    transparent 100%
+  );
+  opacity: 0.55;
+  animation: auth-rail-pulse 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.auth-flow-rail.is-busy::before {
+  opacity: 0.95;
+  animation-duration: 1.45s;
 }
 
 .auth-flow-step {
   position: relative;
+  z-index: 1;
   min-width: 0;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
   align-items: start;
   gap: 12px;
+  animation: auth-rise-in 380ms var(--auth-ease) both;
+}
+
+.auth-flow-step:nth-child(1) {
+  animation-delay: 170ms;
+}
+
+.auth-flow-step:nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.auth-flow-step:nth-child(3) {
+  animation-delay: 270ms;
 }
 
 .auth-flow-step:not(:last-child)::after {
@@ -116,6 +307,7 @@
   bottom: -12px;
   width: 1px;
   background: var(--border);
+  z-index: 0;
 }
 
 .auth-flow-step.is-done:not(:last-child)::after {
@@ -127,6 +319,8 @@
 }
 
 .auth-flow-node {
+  position: relative;
+  z-index: 1;
   width: 28px;
   height: 28px;
   display: grid;
@@ -140,15 +334,17 @@
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   transition:
-    background 180ms var(--auth-ease),
-    border-color 180ms var(--auth-ease),
-    color 180ms var(--auth-ease);
+    background 220ms var(--auth-ease),
+    border-color 220ms var(--auth-ease),
+    color 220ms var(--auth-ease),
+    box-shadow 220ms var(--auth-ease);
 }
 
 .auth-flow-step.is-active .auth-flow-node {
   background: var(--accent-bg);
   border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
   color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-strong) 12%, transparent);
 }
 
 .auth-flow-step.is-done .auth-flow-node {
@@ -206,6 +402,8 @@
 }
 
 .auth-gate-card {
+  position: relative;
+  overflow: hidden;
   min-width: 0;
   width: 100%;
   padding: clamp(22px, 3vw, 32px);
@@ -213,11 +411,37 @@
   flex-direction: column;
   gap: 20px;
   border-radius: 20px;
-  background: var(--surface);
-  border: 1px solid var(--ui-border, var(--border));
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 16%);
   box-shadow:
-    var(--ui-shadow, 0 12px 32px #00000018),
-    inset 0 1px var(--ui-highlight, #ffffff08);
+    var(--ui-shadow, 0 16px 40px #00000024),
+    inset 0 1px var(--ui-highlight, #ffffff12);
+  animation: auth-rise-in 440ms var(--auth-ease) 90ms both;
+}
+
+.auth-gate-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 52%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent) 76%, #ffffff) 50%,
+    transparent 100%
+  );
+  opacity: 0.72;
+  animation: auth-specular-sweep 6.4s var(--auth-ease) infinite;
+}
+
+.auth-gate-card.is-busy::before {
+  opacity: 0.96;
+  animation-duration: 2.1s;
 }
 
 .auth-gate-card-head {
@@ -249,30 +473,132 @@
   gap: 10px;
 }
 
+.auth-gate-wait-beacon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-bg) 52%, var(--raised));
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+}
+
+.auth-gate-wait-badge {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-strong) 16%, var(--surface));
+  color: var(--accent-strong);
+  flex-shrink: 0;
+}
+
+.auth-gate-wait-badge .auth-google-mark {
+  width: 14px;
+  height: 14px;
+}
+
+.auth-gate-wait-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color: var(--accent-strong);
+  border-right-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  animation: auth-orbit 1.15s linear infinite;
+}
+
+.auth-gate-wait-track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.auth-gate-wait-sweep {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent-strong) 50%,
+    var(--accent) 100%
+  );
+  animation: auth-wait-sweep 1.5s var(--auth-ease) infinite;
+}
+
 .auth-gate-primary {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   min-height: 44px;
   padding: 10px 16px;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  background: var(--accent-strong);
-  border: 1px solid transparent;
+  background: linear-gradient(
+    180deg,
+    var(--accent-strong) 0%,
+    color-mix(in srgb, var(--accent-strong) 92%, #000000) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
   color: var(--on-accent);
+  box-shadow:
+    inset 0 1px color-mix(in srgb, #ffffff 26%, transparent),
+    0 6px 18px color-mix(in srgb, var(--accent-strong) 22%, transparent);
   transition:
-    background 160ms var(--auth-ease),
+    background 180ms var(--auth-ease),
+    box-shadow 180ms var(--auth-ease),
     transform 120ms var(--auth-ease),
     opacity 160ms var(--auth-ease);
 }
 
+.auth-gate-primary::before {
+  content: '';
+  position: absolute;
+  inset: -4px auto -4px 0;
+  width: 44%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, #ffffff 30%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-140%) skewX(-18deg);
+  transition: transform 560ms var(--auth-ease);
+}
+
 .auth-gate-primary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent-strong) 88%, var(--text));
+  box-shadow:
+    inset 0 1px color-mix(in srgb, #ffffff 30%, transparent),
+    0 10px 24px color-mix(in srgb, var(--accent-strong) 28%, transparent);
+  transform: translateY(-1px);
+}
+
+.auth-gate-primary:hover:not(:disabled)::before {
+  transform: translateX(280%) skewX(-18deg);
 }
 
 .auth-gate-primary:active:not(:disabled),
 .auth-gate-cancel:active:not(:disabled),
 .auth-gate-secondary:active:not(:disabled) {
   transform: scale(0.985);
+}
+
+.auth-gate-primary:focus-visible,
+.auth-gate-cancel:focus-visible,
+.auth-gate-secondary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .auth-google-mark {
@@ -356,6 +682,7 @@
 }
 
 .auth-gate-status-dot {
+  position: relative;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -366,6 +693,15 @@
 .auth-gate-status-dot.is-busy {
   background: var(--accent-strong);
   animation: auth-pulse 1.6s ease-in-out infinite;
+}
+
+.auth-gate-status-dot.is-busy::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 70%, transparent);
+  animation: auth-sonar 1.6s var(--auth-ease) infinite;
 }
 
 .auth-gate-status-dot.is-error {
@@ -895,18 +1231,104 @@
   }
 
   .auth-flow-rail {
-    padding: 14px;
+    --rail-pad-x: 14px;
+    --rail-pad-y: 14px;
+    padding: var(--rail-pad-y) var(--rail-pad-x);
   }
 }
 
-@keyframes auth-stage-in {
+@keyframes auth-rise-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes auth-orb-drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(42px, 28px, 0) scale(1.08);
+  }
+}
+
+@keyframes auth-orb-drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-38px, -24px, 0) scale(1.06);
+  }
+}
+
+@keyframes auth-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes auth-orbit-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes auth-aura-breathe {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes auth-rail-pulse {
+  0% {
+    transform: translateY(-60px);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(240px);
+    opacity: 0;
+  }
+}
+
+@keyframes auth-specular-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  45%,
+  100% {
+    transform: translateX(240%);
+  }
+}
+
+@keyframes auth-wait-sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(260%);
   }
 }
 
@@ -916,15 +1338,58 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.4;
+    opacity: 0.45;
   }
 }
 
-:root[data-motion='reduced'] .auth-gate-stage,
-:root[data-motion='reduced'] .auth-gate-status-dot.is-busy {
+@keyframes auth-sonar {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.78;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+:root[data-motion='reduced'] .auth-gate-orb,
+:root[data-motion='reduced'] .auth-gate-brand-row,
+:root[data-motion='reduced'] .auth-gate-mark-aura,
+:root[data-motion='reduced'] .auth-gate-ring,
+:root[data-motion='reduced'] .auth-gate-heading,
+:root[data-motion='reduced'] .auth-gate-lead,
+:root[data-motion='reduced'] .auth-flow-rail,
+:root[data-motion='reduced'] .auth-flow-rail::before,
+:root[data-motion='reduced'] .auth-flow-step,
+:root[data-motion='reduced'] .auth-gate-card,
+:root[data-motion='reduced'] .auth-gate-card::before,
+:root[data-motion='reduced'] .auth-gate-wait-ring,
+:root[data-motion='reduced'] .auth-gate-wait-sweep,
+:root[data-motion='reduced'] .auth-gate-status-dot.is-busy,
+:root[data-motion='reduced'] .auth-gate-status-dot.is-busy::after,
+:root[data-motion='reduced'] .auth-gate .spin {
   animation: none;
 }
 
+:root[data-motion='reduced'] .auth-flow-rail::before,
+:root[data-motion='reduced'] .auth-gate-status-dot.is-busy::after {
+  opacity: 0;
+}
+
+:root[data-motion='reduced'] .auth-gate-card::before {
+  transform: translateX(46%);
+}
+
+:root[data-motion='reduced'] .auth-gate-wait-sweep {
+  transform: translateX(65%);
+}
+
+:root[data-motion='reduced'] .auth-gate-primary::before {
+  display: none;
+}
+
+:root[data-motion='reduced'] .auth-gate-primary:hover:not(:disabled),
 :root[data-motion='reduced'] .auth-gate-primary:active:not(:disabled),
 :root[data-motion='reduced'] .auth-gate-cancel:active:not(:disabled),
 :root[data-motion='reduced'] .auth-gate-secondary:active:not(:disabled) {
@@ -932,11 +1397,43 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-gate-stage,
-  .auth-gate-status-dot.is-busy {
+  .auth-gate-orb,
+  .auth-gate-brand-row,
+  .auth-gate-mark-aura,
+  .auth-gate-ring,
+  .auth-gate-heading,
+  .auth-gate-lead,
+  .auth-flow-rail,
+  .auth-flow-rail::before,
+  .auth-flow-step,
+  .auth-gate-card,
+  .auth-gate-card::before,
+  .auth-gate-wait-ring,
+  .auth-gate-wait-sweep,
+  .auth-gate-status-dot.is-busy,
+  .auth-gate-status-dot.is-busy::after,
+  .auth-gate .spin {
     animation: none;
   }
 
+  .auth-flow-rail::before,
+  .auth-gate-status-dot.is-busy::after {
+    opacity: 0;
+  }
+
+  .auth-gate-card::before {
+    transform: translateX(46%);
+  }
+
+  .auth-gate-wait-sweep {
+    transform: translateX(65%);
+  }
+
+  .auth-gate-primary::before {
+    display: none;
+  }
+
+  .auth-gate-primary:hover:not(:disabled),
   .auth-gate-primary:active:not(:disabled),
   .auth-gate-cancel:active:not(:disabled),
   .auth-gate-secondary:active:not(:disabled) {

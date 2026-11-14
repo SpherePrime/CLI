@@ -31,7 +31,7 @@ func (p ProviderEdit) Validate() error {
 		return fmt.Errorf("Нужен HTTP/HTTPS адрес API")
 	}
 	switch p.Type {
-	case "openai", "openai-compat", "anthropic", "ollama":
+	case "openai", "openai-compat", "anthropic", "ollama", "primeai":
 	default:
 		return fmt.Errorf("unsupported provider type")
 	}

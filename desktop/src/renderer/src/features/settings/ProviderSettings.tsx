@@ -223,7 +223,8 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
                 { value: 'openai-compat', label: t('Совместимый с OpenAI') },
                 { value: 'openai', label: 'OpenAI' },
                 { value: 'anthropic', label: 'Anthropic' },
-                { value: 'ollama', label: 'Ollama' }
+                { value: 'ollama', label: 'Ollama' },
+                { value: 'primeai', label: 'PrimeAI' }
               ]}
             />
           </label>

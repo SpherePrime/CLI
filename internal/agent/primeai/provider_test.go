@@ -318,8 +318,67 @@ func TestStreamAndGenerate_SSEAnd401Retry(t *testing.T) {
 
 	emb := Embedded()
 	require.Equal(t, catwalk.InferenceProvider(Name), emb.ID)
+	require.Equal(t, BaseURL()+"/api/prime", emb.APIEndpoint)
 	require.NotEmpty(t, emb.Models)
 	require.Equal(t, AutomaticModelID, emb.Models[0].ID)
+	require.Equal(t, "Автоматически", emb.Models[0].Name)
+	require.Equal(t, int64(270000), emb.Models[0].ContextWindow)
+}
+
+func TestMapPublicModels_PreservesArbitraryCapabilitiesAndAutoContext(t *testing.T) {
+	t.Parallel()
+
+	models := MapPublicModels([]PublicModel{
+		{
+			ID:                     "antigravity/gemini-3.5-flash-lite",
+			Name:                   "Gemini 3.5 Flash Lite",
+			Kind:                   "text",
+			ContextWindow:          1048576,
+			DefaultMaxTokens:       65536,
+			SupportsAttachments:    true,
+			ReasoningEfforts:       []string{"low", "high"},
+			DefaultReasoningEffort: "high",
+		},
+		{
+			ID:               "codex/gpt-6.1-sol",
+			MaxContextLength: 256000,
+			MaxOutputTokens:  32768,
+			SupportsVision:   false,
+		},
+	})
+
+	require.Len(t, models, 3)
+	require.Equal(t, AutomaticModelID, models[0].ID)
+	require.Equal(t, "Автоматически", models[0].Name)
+	require.Equal(t, int64(270000), models[0].ContextWindow)
+	require.True(t, models[0].SupportsImages)
+
+	require.Equal(t, "antigravity/gemini-3.5-flash-lite", models[1].ID)
+	require.Equal(t, "Gemini 3.5 Flash Lite", models[1].Name)
+	require.Equal(t, int64(1048576), models[1].ContextWindow)
+	require.Equal(t, int64(65536), models[1].DefaultMaxTokens)
+	require.True(t, models[1].SupportsImages)
+	require.Equal(t, []string{"low", "high"}, models[1].ReasoningLevels)
+	require.Equal(t, "high", models[1].DefaultReasoningEffort)
+
+	require.Equal(t, "codex/gpt-6.1-sol", models[2].ID)
+	require.Equal(t, "codex/gpt-6.1-sol", models[2].Name)
+	require.Equal(t, int64(256000), models[2].ContextWindow)
+	require.Equal(t, int64(32768), models[2].DefaultMaxTokens)
+	require.False(t, models[2].SupportsImages)
+	require.Equal(t, []string{"low", "medium", "high"}, models[2].ReasoningLevels)
+	require.Equal(t, "medium", models[2].DefaultReasoningEffort)
+}
+
+func TestNormalizeBaseURL_StripsSuffixes(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "https://sphereprime.online", normalizeBaseURL("https://sphereprime.online/v1"))
+	require.Equal(t, "https://sphereprime.online", normalizeBaseURL("https://sphereprime.online/v1/"))
+	require.Equal(t, "https://sphereprime.online", normalizeBaseURL("https://sphereprime.online/api/plugin/"))
+	require.Equal(t, "https://sphereprime.online", normalizeBaseURL("https://sphereprime.online/api/prime/"))
+	require.Equal(t, "https://sphereprime.online", normalizeBaseURL("https://sphereprime.online/api/prime/v1/"))
+	require.Equal(t, defaultBaseURL, normalizeBaseURL(" /v1 "))
 }
 
 func TestStream_LimitExceeded429UpdatesCache(t *testing.T) {

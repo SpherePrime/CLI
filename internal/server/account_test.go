@@ -172,13 +172,13 @@ func TestAccountLimitsEndpoints(t *testing.T) {
 				"token":  rawAcctToken,
 				"user":   map[string]string{"email": "limits@sphereprime.ru"},
 			})
-		case r.URL.Path == "/api/plugin/session":
+		case r.URL.Path == "/api/prime/session":
 			require.Equal(t, "Bearer "+rawAcctToken, r.Header.Get("Authorization"))
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"token":     rawSessToken,
 				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
 			})
-		case r.URL.Path == "/api/plugin/limits":
+		case r.URL.Path == "/api/prime/limits":
 			require.Equal(t, "Bearer "+rawSessToken, r.Header.Get("Authorization"))
 			limitsCalls++
 			pct := 25.0 * float64(limitsCalls)

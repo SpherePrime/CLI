@@ -127,7 +127,9 @@ export function ModelPicker({
                 ) : group.kind === 'favorites' ? (
                   <Star size={16} aria-hidden="true" />
                 ) : (
-                  <span className="provider-monogram">{group.name.slice(0, 1).toUpperCase()}</span>
+                  <span className="provider-monogram">
+                    {(group.name || group.id || '?').slice(0, 1).toUpperCase()}
+                  </span>
                 )}
                 {groupName}
               </div>
@@ -144,7 +146,7 @@ export function ModelPicker({
                     disabled={saving || w.busy}
                     favoriteDisabled={saving || (!favorite && favorites.length >= 100)}
                     showProvider={group.kind !== 'provider'}
-                    key={modelIdentity(reference)}
+                    key={`${group.id}:${modelIdentity(reference)}`}
                     toggleFavorite={async () => {
                       setSaving(true)
                       setError('')

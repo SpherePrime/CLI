@@ -75,12 +75,12 @@ func TestProviders_PrependsPrimeAIWhenSignedIn(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/plugin/session":
+		case "/api/prime/session":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"token":     "sess_cfg",
 				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
 			})
-		case "/api/plugin/models":
+		case "/api/prime/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{"id": "claude-sonnet", "name": "Claude Sonnet", "routeCount": 1, "kind": "text"},

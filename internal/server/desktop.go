@@ -1,16 +1,20 @@
 package server
 
 import (
-	"github.com/SpherePrime/CLI/internal/config"
-	"github.com/SpherePrime/CLI/internal/permission"
-	"github.com/SpherePrime/CLI/internal/proto"
-	"github.com/SpherePrime/CLI/internal/question"
-	"github.com/SpherePrime/CLI/internal/shell"
+	"context"
 	"net/http"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/SpherePrime/CLI/internal/agent/primeai"
+	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/permission"
+	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/question"
+	"github.com/SpherePrime/CLI/internal/shell"
 )
 
 func (c *controllerV1) handleGetCapabilities(w http.ResponseWriter, r *http.Request) {
@@ -83,10 +87,35 @@ func (c *controllerV1) handleGetRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *controllerV1) handleGetModelCapabilities(w http.ResponseWriter, r *http.Request) {
-	cfg, err := c.backend.GetWorkspaceConfig(r.PathValue("id"))
+	ws, err := c.backend.GetWorkspace(r.PathValue("id"))
 	if err != nil {
 		c.handleError(w, r, err)
 		return
+	}
+	var cfg *config.Config
+	if ws.Cfg != nil {
+		cfg = ws.Cfg.Config()
+		if cfg != nil && !cfg.Options.DisableDefaultProviders {
+			p, ok := cfg.Providers.Get(primeai.Name)
+			needsPrimeRefresh := !ok || (!p.Disable && len(p.Models) <= 1)
+			var acctToken string
+			if svc := c.accountService(); svc != nil {
+				acctToken = svc.Token()
+			}
+			if needsPrimeRefresh && acctToken != "" {
+				refreshCtx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+				_ = ws.Cfg.EnsurePrimeAI(refreshCtx)
+				cancel()
+				cfg = ws.Cfg.Config()
+			}
+		}
+	}
+	if cfg == nil {
+		cfg, err = c.backend.GetWorkspaceConfig(r.PathValue("id"))
+		if err != nil {
+			c.handleError(w, r, err)
+			return
+		}
 	}
 	models := []proto.ModelCapabilities{}
 	for providerID, provider := range cfg.Providers.Seq2() {

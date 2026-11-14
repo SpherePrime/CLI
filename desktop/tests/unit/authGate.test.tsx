@@ -140,6 +140,27 @@ describe('auth gate and account UI', () => {
     expect(markup).not.toContain('Войти через Google')
   })
 
+  it('marks decorative backdrop and waiting beacon as aria-hidden while toggling busy state', () => {
+    const idleMarkup = renderGate(makeAccount())
+    expect(idleMarkup).toContain('auth-gate-backdrop')
+    expect(idleMarkup).toContain('auth-gate-ring-outer')
+    expect(idleMarkup).toContain('auth-gate-ring-inner')
+    expect(idleMarkup).not.toContain('auth-gate-wait-beacon')
+    expect(idleMarkup).not.toContain('auth-flow-rail is-busy')
+
+    const waitingMarkup = renderGate(
+      makeAccount({
+        waiting: true,
+        loginUrl: 'https://vpn.sphereprime.ru/auth/google?app_hash=desktop_abc'
+      })
+    )
+    expect(waitingMarkup).toContain('auth-flow-rail is-busy')
+    expect(waitingMarkup).toContain('auth-gate-card is-busy')
+    expect(waitingMarkup).toContain('auth-gate-wait-beacon')
+    expect(waitingMarkup).not.toContain('Пропустить')
+    expect(waitingMarkup).not.toContain('Skip')
+  })
+
   it('renders AccountCard with user email, shared CLI badge and sign-out button', () => {
     const markup = renderAccountCard(
       makeAccount({
