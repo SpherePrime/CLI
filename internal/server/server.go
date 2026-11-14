@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/backend"
 	"github.com/SpherePrime/CLI/internal/config"
 )
@@ -95,7 +96,12 @@ type Server struct {
 	ln net.Listener
 
 	backend *backend.Backend
+	account *account.Service
 	logger  *slog.Logger
+}
+
+func (s *Server) Account() *account.Service {
+	return s.account
 }
 
 // SetLogger sets the logger for the server.
@@ -124,6 +130,7 @@ func NewServer(cfg *config.ConfigStore, network, address string) *Server {
 	s := new(Server)
 	s.Addr = address
 	s.network = network
+	s.account = account.NewService()
 
 	// The backend is created with a shutdown callback that triggers
 	// a graceful server shutdown (e.g. when the last workspace is
@@ -151,7 +158,10 @@ func (s *Server) installHandler() {
 	var p http.Protocols
 	p.SetHTTP1(true)
 	p.SetUnencryptedHTTP2(true)
-	c := &controllerV1{backend: s.backend, server: s}
+	if s.account == nil {
+		s.account = account.NewService()
+	}
+	c := &controllerV1{backend: s.backend, server: s, account: s.account}
 	mux := http.NewServeMux()
 	for _, e := range c.endpoints() {
 		mux.HandleFunc(e.Method()+" "+e.Path(), e.Handler())
@@ -201,6 +211,9 @@ func (s *Server) closeListener() {
 // Close force closes all listeners and connections.
 func (s *Server) Close() error {
 	defer func() { s.closeListener() }()
+	if s.account != nil {
+		s.account.Close()
+	}
 	return s.h.Close()
 }
 
@@ -208,6 +221,9 @@ func (s *Server) Close() error {
 // connections.
 func (s *Server) Shutdown(ctx context.Context) error {
 	defer func() { s.closeListener() }()
+	if s.account != nil {
+		s.account.Close()
+	}
 	return s.h.Shutdown(ctx)
 }
 

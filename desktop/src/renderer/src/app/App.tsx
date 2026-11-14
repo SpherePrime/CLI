@@ -8,6 +8,7 @@ import { useDocuments } from '../features/files/useDocuments'
 import { StartupScreen } from '../components/StartupScreen'
 import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
+import { AuthGate } from '../features/auth/AuthGate'
 import { I18nProvider, translate, useI18n } from '../i18n'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ToastStack } from '../features/notifications/ToastStack'
@@ -75,14 +76,35 @@ export function App() {
   useEffect(() => {
     if (ready || failed) setStarted(true)
   }, [ready, failed])
+  const runtimeReady = w.info.runtime === 'ready'
+  const showAuthGate = runtimeReady && w.accountLoaded && !w.account.signedIn
+  const canEnterWorkspace = w.accountLoaded && w.account.signedIn
   return (
     <I18nProvider language={w.preferences.language}>
-      <StartupScreen ready={ready} failed={failed}>
-        <WorkspaceView workspace={w} />
-      </StartupScreen>
+      {showAuthGate ? (
+        <>
+          <Titlebar />
+          <AuthGate
+            account={w.account}
+            onLogin={w.loginAccount}
+            onCancelLogin={() => w.logoutAccount().catch(() => {})}
+            onRetryRestore={w.retryAccountRestore}
+          />
+        </>
+      ) : (
+        <StartupScreen
+          ready={canEnterWorkspace && ready}
+          failed={failed && (!runtimeReady || canEnterWorkspace)}
+        >
+          {canEnterWorkspace || (failed && !runtimeReady) ? <WorkspaceView workspace={w} /> : null}
+        </StartupScreen>
+      )}
       <UpdateScreen
         ready={
-          Boolean(w.project) && w.project?.connection === 'ready' && w.info.runtime === 'ready'
+          w.account.signedIn &&
+          Boolean(w.project) &&
+          w.project?.connection === 'ready' &&
+          runtimeReady
         }
         busy={w.busy || Boolean(w.info.automationCounts?.activeCount)}
         terminals={w.info.terminalCount || 0}

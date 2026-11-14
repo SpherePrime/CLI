@@ -137,6 +137,7 @@ prime --continue
 
 		com := common.DefaultCommon(ws)
 		model := ui.New(com, sessionID, continueLast)
+		defer model.CloseAccountService()
 
 		inputFilter := ui.NewFilter()
 		var env uv.Environ = os.Environ()

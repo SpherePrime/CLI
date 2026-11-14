@@ -1525,3 +1525,49 @@ Object.assign(english, {
   'Локальный предпросмотр: изменения сохраняются только в памяти вкладки.':
     'Local UI preview: changes are kept in tab memory only.'
 })
+
+Object.assign(english, {
+  'Один аккаунт Prime.': 'One Prime account.',
+  'Весь рабочий процесс.': 'Your entire workflow.',
+  'Авторизация синхронизируется с Prime CLI на этом устройстве.':
+    'Authentication stays synced with Prime CLI on this device.',
+  'Браузер Google': 'Google browser',
+  Подтверждение: 'Verification',
+  'Сессия активна': 'Session active',
+  'Откроется окно входа Google': 'Opens Google sign-in',
+  'Страница входа открыта в браузере': 'Sign-in page opened in browser',
+  'Проверка сохранённой сессии': 'Checking saved session',
+  'Ожидаем подтверждение в браузере': 'Waiting for browser approval',
+  'Требуется повторная проверка': 'Verification retry needed',
+  'Доступ к Desktop и CLI': 'Access to Desktop and CLI',
+  'Вход подтверждён': 'Sign-in confirmed',
+  'Войдите, чтобы начать': 'Sign in to get started',
+  'Используйте аккаунт Google, чтобы открыть рабочее пространство Prime.':
+    'Use your Google account to unlock the Prime workspace.',
+  'Войти через Google': 'Sign in with Google',
+  'Проверяем сессию…': 'Checking session…',
+  'Отменить вход': 'Cancel sign-in',
+  'Открыть ссылку снова': 'Open link again',
+  'Скопировать ссылку': 'Copy link',
+  'Ссылка скопирована': 'Link copied',
+  'Не удалось скопировать ссылку': 'Could not copy the link',
+  'Повторить проверку': 'Retry verification',
+  'Войти заново': 'Sign in again',
+  'Ожидаем подтверждение входа в браузере…': 'Waiting for sign-in confirmation in your browser…',
+  'Не удалось проверить сессию из-за ошибки сети. Повторите проверку или войдите заново.':
+    'Could not verify the session due to a network error. Retry verification or sign in again.',
+  'Для продолжения подтвердите вход через Google.': 'Sign in with Google to continue.',
+  'Сессия не подтверждена — проверьте соединение.':
+    'Session could not be verified — check your connection.',
+  'Этапы входа': 'Sign-in steps',
+  'Вход в аккаунт Prime': 'Sign in to Prime',
+  Аккаунт: 'Account',
+  'Аккаунт Prime': 'Prime Account',
+  'Единая авторизация для Prime Desktop и Prime CLI на этом устройстве.':
+    'Unified sign-in for Prime Desktop and Prime CLI on this device.',
+  'Единая сессия с CLI': 'Shared session with CLI',
+  'Выйти из аккаунта': 'Sign out',
+  'Выходим…': 'Signing out…',
+  'Аккаунт подключён': 'Account connected',
+  'Текущий аккаунт': 'Current account'
+})

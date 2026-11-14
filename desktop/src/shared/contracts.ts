@@ -1,4 +1,15 @@
 export type Json = any
+export type AccountAction = 'status' | 'restore' | 'login' | 'logout'
+export type AccountState = {
+  signedIn: boolean
+  waiting: boolean
+  checking: boolean
+  email: string
+  loginUrl: string
+  error: string
+  networkError: boolean
+  hasStoredSession: boolean
+}
 export type BrowserState = {
   url: string
   title: string
@@ -272,6 +283,7 @@ export interface DesktopApi {
   browserOpenExternal(): Promise<void>
   browserView(sessionId?: string | null, inspectorOpen?: boolean): Promise<BrowserState>
   update(action: 'check' | 'install', force?: boolean): Promise<Json>
+  account(action: AccountAction): Promise<AccountState>
   onEvent(listener: (event: DesktopEvent) => void): () => void
 }
 declare global {

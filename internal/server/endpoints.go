@@ -22,6 +22,34 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 		apigen.Post("/v1/workspaces/{id}/stt/remove").Summary("Remove an installed STT model").Tags("stt").PathParam("id", "Workspace ID").Accepts(proto.SttModelRequest{}).Fails(400, 404).Handle(c.handleSttRemove),
 		apigen.Post("/v1/workspaces/{id}/stt/select").Summary("Choose the STT engine and model").Tags("stt").PathParam("id", "Workspace ID").Accepts(proto.SttModelRequest{}).Responds(proto.SttSelection{}).Fails(400, 404).Handle(c.handleSttSelect),
 		apigen.Post("/v1/workspaces/{id}/config/reasoning").Summary("Set selected model reasoning mode").Tags("config").PathParam("id", "Workspace ID").Fails(400, 404).Handle(c.handlePostReasoning),
+		apigen.Get("/v1/account").
+			Summary("Get Prime account state").
+			Tags("account").
+			Responds(proto.AccountState{}).
+			Fails(503).
+			Handle(c.handleGetAccount),
+
+		apigen.Post("/v1/account/restore").
+			Summary("Restore Prime account session").
+			Tags("account").
+			Responds(proto.AccountState{}).
+			Fails(503).
+			Handle(c.handlePostAccountRestore),
+
+		apigen.Post("/v1/account/login").
+			Summary("Start Prime account Google OAuth login").
+			Tags("account").
+			Responds(proto.AccountState{}).
+			Fails(500, 503).
+			Handle(c.handlePostAccountLogin),
+
+		apigen.Post("/v1/account/logout").
+			Summary("Log out or cancel Prime account login").
+			Tags("account").
+			Responds(proto.AccountState{}).
+			Fails(503).
+			Handle(c.handlePostAccountLogout),
+
 		apigen.Get("/v1/capabilities").Summary("Desktop protocol capabilities").Tags("system").Responds(proto.DesktopCapabilities{}).Handle(c.handleGetCapabilities),
 		apigen.Get("/v1/workspaces/{id}/pending").Summary("Pending permissions and question").Tags("desktop").PathParam("id", "Workspace ID").Fails(404).Handle(c.handleGetPending),
 		apigen.Get("/v1/workspaces/{id}/runs").Summary("Workspace run registry").Tags("agent").PathParam("id", "Workspace ID").Responds([]proto.RunRecord{}).Fails(404).Handle(c.handleGetRuns),

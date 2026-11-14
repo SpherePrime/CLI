@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -10,11 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/client"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/event"
 	"github.com/SpherePrime/CLI/internal/format"
 	"github.com/SpherePrime/CLI/internal/herdr"
+	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/internal/session"
@@ -90,6 +93,10 @@ prime run --continue "Follow up on your last response"
 
 		if prompt == "" {
 			return fmt.Errorf("no prompt provided")
+		}
+
+		if err := requirePrimeAccount(ctx); err != nil {
+			return err
 		}
 
 		event.SetNonInteractive(true)
@@ -173,6 +180,23 @@ func init() {
 	runCmd.Flags().StringP("session", "s", "", "Continue a previous session by ID")
 	runCmd.Flags().BoolP("continue", "C", false, "Continue the most recent session")
 	runCmd.MarkFlagsMutuallyExclusive("session", "continue")
+}
+
+func requirePrimeAccount(ctx context.Context) error {
+	svc := account.NewService()
+	defer svc.Close()
+	return checkPrimeAccount(ctx, svc)
+}
+
+func checkPrimeAccount(ctx context.Context, svc *account.Service) error {
+	st := svc.Restore(ctx)
+	if st.SignedIn {
+		return nil
+	}
+	if st.NetworkError {
+		return errors.New("prime account session check failed due to a network or server error; retry or run 'prime login' or 'prime' to sign in")
+	}
+	return errors.New(strings.TrimSuffix(i18n.New(i18n.En).Label("auth.run_required"), "."))
 }
 
 // runNonInteractive executes the agent via the server and streams output

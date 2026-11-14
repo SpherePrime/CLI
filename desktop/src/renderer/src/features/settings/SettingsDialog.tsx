@@ -20,10 +20,12 @@ import {
   Download,
   AudioLines,
   Keyboard,
-  KeyRound
+  KeyRound,
+  UserRound
 } from 'lucide-react'
 import { VoiceSettings } from './VoiceSettings'
 import { SudoSettings } from './SudoSettings'
+import { AccountCard } from '../auth/AccountCard'
 import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
 
@@ -42,6 +44,7 @@ export function SettingsDialog({
   const languageLabelId = useId()
   const themeLabelId = useId()
   const tabs = [
+    { id: 'account', label: t('Аккаунт'), icon: UserRound },
     { id: 'appearance', label: t('Интерфейс'), icon: Monitor },
     { id: 'shortcuts', label: t('Горячие клавиши'), icon: Keyboard },
     { id: 'providers', label: t('Провайдеры'), icon: Server },
@@ -75,6 +78,13 @@ export function SettingsDialog({
           ))}
         </nav>
         <div className="settings-body" key={tab}>
+          {tab === 'account' && (
+            <AccountCard
+              account={w.account}
+              onLogout={w.logoutAccount}
+              onAfterLogout={close}
+            />
+          )}
           {tab === 'voice' && <VoiceSettings workspace={w} />}
           {tab === 'sudo' && <SudoSettings />}
           {tab === 'appearance' && (

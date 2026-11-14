@@ -26,11 +26,12 @@ const statusDialogMaxWidth = 56
 
 // StatusData holds the information shown in the status dialog.
 type StatusData struct {
-	Session  *session.Session
-	MCPStates map[string]mcp.ClientInfo
-	LSPStates map[string]workspace.LSPClientInfo
-	LSPDiags  map[string]lsp.DiagnosticCounts
-	Skills    []skills.CatalogEntry
+	AccountEmail string
+	Session      *session.Session
+	MCPStates    map[string]mcp.ClientInfo
+	LSPStates    map[string]workspace.LSPClientInfo
+	LSPDiags     map[string]lsp.DiagnosticCounts
+	Skills       []skills.CatalogEntry
 }
 
 // Status is a read-only dialog showing session usage and server states.
@@ -156,7 +157,15 @@ func (s *Status) contentLines(width int) []string {
 	section := t.Dialog.PrimaryText
 	label := t.Dialog.ListItem.InfoBlurred
 
+	accountEmail := s.data.AccountEmail
+	if accountEmail == "" {
+		accountEmail = s.com.L("auth.not_signed_in")
+	}
+
 	lines := []string{
+		section.Render(s.com.L("auth.account_label")),
+		label.Render(ansi.Truncate(accountEmail, max(1, width), "…")),
+		"",
 		section.Render(s.com.L("status.usage")),
 	}
 	lines = append(lines, s.usageSection(label, width)...)

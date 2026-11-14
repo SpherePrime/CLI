@@ -461,6 +461,22 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             let force = args.get(1).and_then(Value::as_bool).unwrap_or(false);
             crate::updater::handle(app, &state, action, force)
         }
+        "account" => {
+            let action = string(args, 0)?;
+            let (http_method, route) = match action {
+                "status" => ("GET", "/v1/account"),
+                "restore" => ("POST", "/v1/account/restore"),
+                "login" => ("POST", "/v1/account/login"),
+                "logout" => ("POST", "/v1/account/logout"),
+                _ => {
+                    return Err(HostError::new(
+                        "INVALID_ARGUMENT",
+                        "Unknown account action",
+                    ))
+                }
+            };
+            state.require_engine()?.request(http_method, route, None)
+        }
         "openExternal" => {
             let url = url::Url::parse(string(args, 0)?)
                 .map_err(|error| HostError::new("INVALID_URL", error.to_string()))?;

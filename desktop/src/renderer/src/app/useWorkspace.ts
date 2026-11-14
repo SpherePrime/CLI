@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
+  AccountState,
   Json,
   ChatReasoningMode,
   Message,
@@ -30,6 +31,24 @@ import { reconcileObservedBusy, type ObservedBusy } from './sessionBusy'
 
 const resolvedLimit = 1000
 
+const initialAccountState: AccountState = {
+  signedIn: false,
+  waiting: false,
+  checking: true,
+  email: '',
+  loginUrl: '',
+  error: '',
+  networkError: false,
+  hasStoredSession: false
+}
+
+function cleanHostError(error: unknown) {
+  return String((error as Error)?.message || error).replace(
+    /^Error invoking remote method '[^']+': Error: /,
+    ''
+  )
+}
+
 function upsertSession(items: Session[], session: Session) {
   return [session, ...items.filter((item) => item.id !== session.id)]
 }
@@ -47,6 +66,10 @@ export function useWorkspace() {
   const [info, setInfo] = useState<Json>({ runtime: 'starting' })
   const [startupReady, setStartupReady] = useState(false)
   const startupRestore = useRef<Promise<void> | null>(null)
+  const restoreWorkspaceRef = useRef<(() => Promise<void>) | null>(null)
+  const [account, setAccount] = useState<AccountState>(initialAccountState)
+  const [accountLoaded, setAccountLoaded] = useState(false)
+  const accountRestoreRef = useRef<Promise<AccountState> | null>(null)
   const [preferences, setPreferences] = useState<Preferences>({
     theme: 'dark',
     language: 'ru',
@@ -383,11 +406,45 @@ export function useWorkspace() {
         })
       return startupRestore.current
     }
+    restoreWorkspaceRef.current = restore
+    function restoreAccount(): Promise<AccountState> {
+      if (!accountRestoreRef.current) {
+        accountRestoreRef.current = window.prime
+          .account('restore')
+          .then((next) => {
+            setAccount(next)
+            setAccountLoaded(true)
+            return next
+          })
+          .catch((err) => {
+            const fallback: AccountState = {
+              signedIn: false,
+              waiting: false,
+              checking: false,
+              email: '',
+              loginUrl: '',
+              error: cleanHostError(err),
+              networkError: false,
+              hasStoredSession: false
+            }
+            setAccount(fallback)
+            setAccountLoaded(true)
+            return fallback
+          })
+          .finally(() => {
+            accountRestoreRef.current = null
+          })
+      }
+      return accountRestoreRef.current
+    }
     void window.prime
       .info()
       .then(async (value) => {
         setInfo(value)
-        if (value.runtime === 'ready') await restore()
+        if (value.runtime === 'ready') {
+          const verified = await restoreAccount()
+          if (verified.signedIn) await restore()
+        }
       })
       .catch(errorHandler)
     void window.prime.preferences().then(setPreferences).catch(errorHandler)
@@ -507,7 +564,11 @@ export function useWorkspace() {
         }))
         if (event.payload.status === 'ready') {
           setObservedBusy(null)
-          void restore().catch(errorHandler)
+          void restoreAccount()
+            .then((verified) => {
+              if (verified.signedIn) return restore()
+            })
+            .catch(errorHandler)
         }
         return
       }
@@ -1096,7 +1157,77 @@ export function useWorkspace() {
     }
     void refreshLight().catch(errorHandler)
   }
+  useEffect(() => {
+    if (info.runtime !== 'ready' || !accountLoaded || !account.signedIn || startupReady) return
+    void restoreWorkspaceRef.current?.().catch(errorHandler)
+  }, [info.runtime, accountLoaded, account.signedIn, startupReady, errorHandler])
+  useEffect(() => {
+    if (info.runtime !== 'ready' || !accountLoaded || account.signedIn) return
+    let active = true
+    let inFlight = false
+    const poll = () => {
+      if (inFlight) return
+      inFlight = true
+      void window.prime
+        .account('status')
+        .then((next) => {
+          if (active) setAccount(next)
+        })
+        .catch(() => {})
+        .finally(() => {
+          inFlight = false
+        })
+    }
+    const timer = setInterval(poll, 1000)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [info.runtime, accountLoaded, account.signedIn])
+  const loginAccount = useCallback(async () => {
+    setAccount((current) => ({ ...current, checking: true, error: '', networkError: false }))
+    try {
+      const next = await window.prime.account('login')
+      setAccount(next)
+      return next
+    } catch (err) {
+      setAccount((current) => ({
+        ...current,
+        checking: false,
+        waiting: false,
+        error: cleanHostError(err)
+      }))
+      return null
+    }
+  }, [])
+  const logoutAccount = useCallback(async () => {
+    const next = await window.prime.account('logout')
+    setAccount(next)
+    setAccountLoaded(true)
+    return next
+  }, [])
+  const retryAccountRestore = useCallback(async () => {
+    setAccount((current) => ({ ...current, checking: true, error: '' }))
+    try {
+      const next = await window.prime.account('restore')
+      setAccount(next)
+      setAccountLoaded(true)
+      return next
+    } catch (err) {
+      setAccount((current) => ({
+        ...current,
+        checking: false,
+        error: cleanHostError(err)
+      }))
+      return null
+    }
+  }, [])
   return {
+    account,
+    accountLoaded,
+    loginAccount,
+    logoutAccount,
+    retryAccountRestore,
     retrying: Boolean(retryNotice && retryNotice.sessionId === session?.id),
     agentContext: agentContext.context,
     updateAgentContext: agentContext.updateContext,

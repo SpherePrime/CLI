@@ -35,7 +35,7 @@ func (m *UI) shimmerActive() bool {
 		return false
 	}
 	switch m.state {
-	case uiOnboarding, uiInitialize, uiLanding, uiChat:
+	case uiAuthGate, uiOnboarding, uiInitialize, uiLanding, uiChat:
 		return true
 	default:
 		return false

@@ -33,6 +33,7 @@ import './styles/dictation.css'
 import './styles/design/index.css'
 import './styles/glass/index.css'
 import './styles/max-reasoning.css'
+import './features/auth/auth-gate.css'
 
 async function start() {
   if (import.meta.env.VITE_NATIVE_HOST === 'true') {

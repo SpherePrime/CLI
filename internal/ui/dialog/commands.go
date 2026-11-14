@@ -755,6 +755,9 @@ func (c *Commands) defaultCommands() []*CommandItem {
 
 	commands = append(
 		commands,
+		NewCommandItem(c.com.Styles, "logout", c.com.L("auth.logout_command"), "", ActionLogoutAccount{}).
+			WithDescription(c.com.L("auth.logout_desc")).
+			WithAliases("logout", "signout", "account", "выйти из аккаунта", "аккаунт"),
 		NewCommandItem(c.com.Styles, "quit", c.com.L("cmd.quit"), "ctrl+c", tea.QuitMsg{}).WithAliases("exit"),
 	)
 

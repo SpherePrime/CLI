@@ -21,6 +21,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/agent"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
@@ -112,6 +113,7 @@ const (
 	uiInitialize
 	uiLanding
 	uiChat
+	uiAuthGate
 )
 
 type uiInputMode uint8
@@ -459,10 +461,27 @@ type UI struct {
 		index    int
 		draft    string
 	}
+
+	accountSvc         *account.Service
+	authState          account.State
+	authCopied         bool
+	authPostLoginState uiState
+	authDeferredInit   bool
+	authGen            uint64
+	authPollGen        uint64
+	authSyncSeq        uint64
 }
 
 // New creates a new instance of the [UI] model.
 func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
+	return NewWithAccountService(com, initialSessionID, continueLast, account.NewService())
+}
+
+// NewWithAccountService creates a new instance of the [UI] model with the given account service.
+func NewWithAccountService(com *common.Common, initialSessionID string, continueLast bool, accountSvc *account.Service) *UI {
+	if accountSvc == nil {
+		accountSvc = account.NewService()
+	}
 	// Editor components
 	ta := textarea.New()
 	ta.SetStyles(com.Styles.Editor.Textarea)
@@ -580,13 +599,19 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	ui.onboarding.yesInitializeSelected = true
 
 	desiredState := uiLanding
-	desiredFocus := uiFocusEditor
 	if n, _ := com.Workspace.ProjectNeedsInitialization(); n {
 		desiredState = uiInitialize
 	}
 
+	ui.accountSvc = accountSvc
+	ui.authState = account.State{Checking: true}
+	ui.authPostLoginState = desiredState
+	ui.authDeferredInit = true
+	ui.authGen = 1
+	ui.textarea.Blur()
+
 	// set initial state
-	ui.setState(desiredState, desiredFocus)
+	ui.setState(uiAuthGate, uiFocusNone)
 
 	opts := com.Config().Options
 
@@ -604,6 +629,31 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 
 // Init initializes the UI model.
 func (m *UI) Init() tea.Cmd {
+	var cmds []tea.Cmd
+	if m.accountSvc != nil {
+		if cmd := m.restoreAccountCmd(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		if m.state == uiAuthGate {
+			if cmd := m.scheduleAuthPollTick(); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		} else if cmd := m.scheduleAuthSyncTick(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
+	if m.state != uiAuthGate {
+		m.authDeferredInit = false
+		cmds = append(cmds, m.deferredInitCmds()...)
+	}
+	// Put the wordmark in motion before the first message arrives.
+	if cmd := m.ensureShimmerClock(); cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+	return tea.Batch(cmds...)
+}
+
+func (m *UI) deferredInitCmds() []tea.Cmd {
 	var cmds []tea.Cmd
 	if m.state == uiOnboarding {
 		if cmd := m.openModelsDialog(); cmd != nil {
@@ -647,11 +697,7 @@ func (m *UI) Init() tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 	cmds = append(cmds, m.checkPendingMCPAuth())
-	// Put the wordmark in motion before the first message arrives.
-	if cmd := m.ensureShimmerClock(); cmd != nil {
-		cmds = append(cmds, cmd)
-	}
-	return tea.Batch(cmds...)
+	return cmds
 }
 
 // loadInitialSession loads the initial session if one was specified on startup.
@@ -763,6 +809,10 @@ func (m *UI) shouldSendNotification() bool {
 
 // setState changes the UI state and focus.
 func (m *UI) setState(state uiState, focus uiFocusState) {
+	if m.accountSvc != nil && !m.authState.SignedIn && state != uiAuthGate {
+		state = uiAuthGate
+		focus = uiFocusNone
+	}
 	if state == uiLanding {
 		// Always turn off compact mode when going to landing
 		m.isCompact = false
@@ -826,6 +876,20 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Update terminal capabilities
 	m.caps.Update(msg)
 	switch msg := msg.(type) {
+	case authStateMsg:
+		cmds = append(cmds, m.handleAuthStateMsg(msg)...)
+	case authPollTickMsg:
+		if m.state == uiAuthGate && msg.gen == m.authPollGen && m.accountSvc != nil {
+			cmds = append(cmds, m.syncAccountStateCmd(), m.scheduleAuthPollTick())
+		}
+	case authSyncTickMsg:
+		if m.state != uiAuthGate && msg.seq == m.authSyncSeq && m.accountSvc != nil {
+			cmds = append(cmds, m.syncAccountStateCmd(), m.scheduleAuthSyncTick())
+		}
+	case authOpenURLResultMsg:
+		if msg.Err != nil {
+			cmds = append(cmds, util.ReportWarn(msg.Err.Error()))
+		}
 	case tea.EnvMsg:
 		// Is this Windows Terminal?
 		if !m.sendProgressBar {
@@ -878,6 +942,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 	case loadSessionMsg:
+		if m.state == uiAuthGate {
+			break
+		}
 		if m.forceCompactMode || m.designHidesSidebar() {
 			m.isCompact = true
 		}
@@ -954,6 +1021,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.applyModeSwitch(msg)...)
 
 	case sendMessageMsg:
+		if m.state == uiAuthGate {
+			break
+		}
 		cmds = append(cmds, m.sendMessage(msg.Content, msg.Attachments...))
 
 	case userCommandsLoadedMsg:
@@ -970,6 +1040,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case mcpStateChangedMsg:
 		m.mcpStates = msg.states
+		if m.state == uiAuthGate {
+			break
+		}
 		// Auto-open the MCP auth dialog if any servers need authentication.
 		if cmd := m.openMCPAuthDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -1100,6 +1173,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, handleMCPResourcesEvent(m.com.Workspace, msg.Payload.Name)
 		}
 	case pubsub.Event[permission.PermissionRequest]:
+		if m.state == uiAuthGate {
+			break
+		}
 		if cmd := m.openPermissionsDialog(msg.Payload); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -1112,6 +1188,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case pubsub.Event[permission.PermissionNotification]:
 		m.handlePermissionNotification(msg.Payload)
 	case pubsub.Event[question.Request]:
+		if m.state == uiAuthGate {
+			break
+		}
 		m.openBatchFormDialog(msg.Payload)
 		m.chat.ScrollToBottom()
 		if cmd := m.sendNotification(notification.Notification{
@@ -1155,6 +1234,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Handle delayed single-click action (e.g., expansion).
 		m.chat.HandleDelayedClick(msg)
 	case tea.MouseClickMsg:
+		if m.state == uiAuthGate {
+			return m, tea.Batch(cmds...)
+		}
 		// Pass mouse events to dialogs first if any are open.
 		if m.dialog.HasDialogs() {
 			if cmd := m.handleDialogMsg(msg); cmd != nil {
@@ -1246,6 +1328,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.MouseMotionMsg:
+		if m.state == uiAuthGate {
+			return m, tea.Batch(cmds...)
+		}
 		// Pass mouse events to dialogs first if any are open.
 		if m.dialog.HasDialogs() {
 			m.dialog.Update(msg)
@@ -1315,6 +1400,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.MouseReleaseMsg:
+		if m.state == uiAuthGate {
+			return m, tea.Batch(cmds...)
+		}
 		// Pass mouse events to dialogs first if any are open.
 		if m.dialog.HasDialogs() {
 			m.dialog.Update(msg)
@@ -1365,6 +1453,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case common.CoalescedWheelMsg:
+		if m.state == uiAuthGate {
+			return m, tea.Batch(cmds...)
+		}
 		// Route wheel events to active inline editor only when the
 		// mouse is over the editor area, so scrolling over the chat
 		// still scrolls the chat.
@@ -2427,6 +2518,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		// terminal is gone.
 		m.abortVoiceCapture()
 		cmds = append(cmds, tea.Quit)
+	case dialog.ActionLogoutAccount:
+		m.dialog.CloseAllDialogs()
+		cmds = append(cmds, m.logoutAccount())
 	case dialog.ActionEnableDockerMCP:
 		m.dialog.CloseDialog(dialog.CommandsID)
 		cmds = append(cmds, m.enableDockerMCP)
@@ -3066,6 +3160,10 @@ func (m *UI) openAuthenticationDialogWithMethod(provider catwalk.Provider, model
 }
 
 func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
+	if m.state == uiAuthGate {
+		return m.updateAuthGate(msg)
+	}
+
 	var cmds []tea.Cmd
 
 	handleGlobalKeys := func(msg tea.KeyPressMsg) bool {
@@ -3316,6 +3414,9 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 
 				value = strings.TrimSpace(value)
+				if !m.bangMode && value == "/logout" {
+					return m.logoutAccount()
+				}
 				if value == "exit" || value == "quit" {
 					return m.openQuitDialog()
 				}
@@ -3673,6 +3774,13 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	screen.Clear(scr)
 
 	switch m.state {
+	case uiAuthGate:
+		if layout.header.Dy() > 0 {
+			m.drawHeader(scr, layout.header)
+		}
+		main := uv.NewStyledString(m.authGateView())
+		main.Draw(scr, layout.main)
+
 	case uiOnboarding:
 		m.drawHeader(scr, layout.header)
 
@@ -3749,7 +3857,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	m.status.Draw(scr, layout.status)
 
 	// Draw completions popup if open
-	if !isOnboarding && m.completionsOpen && m.completions.HasItems() {
+	if !isOnboarding && m.state != uiAuthGate && m.completionsOpen && m.completions.HasItems() {
 		w, h := m.completions.Size()
 		x := m.completionsPositionStart.X
 		y := m.completionsPositionStart.Y - h
@@ -3963,6 +4071,8 @@ func (m *UI) ShortHelp() []key.Binding {
 	}
 
 	switch m.state {
+	case uiAuthGate:
+		return m.authGateHelpBindings()
 	case uiInitialize:
 		binds = append(binds, k.Quit)
 	case uiChat:
@@ -4079,6 +4189,8 @@ func (m *UI) FullHelp() [][]key.Binding {
 	}
 
 	switch m.state {
+	case uiAuthGate:
+		return [][]key.Binding{m.authGateHelpBindings()}
 	case uiInitialize:
 		binds = append(binds,
 			[]key.Binding{
@@ -4474,7 +4586,7 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 	// area actually gave up.
 	helpRect.Min.Y = appRect.Max.Y
 
-	if slices.Contains([]uiState{uiOnboarding, uiInitialize, uiLanding}, m.state) {
+	if slices.Contains([]uiState{uiAuthGate, uiOnboarding, uiInitialize, uiLanding}, m.state) {
 		// extra padding on left and right for these states
 		appRect = insetLeft(appRect, appMargin)
 		appRect = insetRight(appRect, appMargin)
@@ -4487,6 +4599,19 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 
 	// Handle different app states
 	switch m.state {
+	case uiAuthGate:
+		headerHeight := landingHeaderHeight
+		if area.Dy() < 18 {
+			headerHeight = 0
+		}
+		var headerRect, mainRect image.Rectangle
+		layout.Vertical(
+			layout.Len(headerHeight),
+			layout.Fill(1),
+		).Split(appRect).Assign(&headerRect, &mainRect)
+		uiLayout.header = headerRect
+		uiLayout.main = mainRect
+
 	case uiOnboarding, uiInitialize:
 		// Layout
 		//
@@ -5235,6 +5360,9 @@ func (m *UI) sendMessage(content string, attachments ...message.Attachment) tea.
 
 // sendMessageInternal can hide a generated continuation from the chat.
 func (m *UI) sendMessageInternal(content string, hidden bool, attachments ...message.Attachment) tea.Cmd {
+	if m.state == uiAuthGate {
+		return nil
+	}
 	if err := m.com.Workspace.AgentReadyErr(); err != nil {
 		return util.ReportError(err)
 	}
@@ -5312,6 +5440,9 @@ func (m *UI) runShellCommand(command string) tea.Cmd {
 // execution. isFirstMessage indicates the command is the first user message
 // in a newly created session, which triggers title generation.
 func (m *UI) runShellCommandInternal(command string, isFirstMessage bool) tea.Cmd {
+	if m.state == uiAuthGate {
+		return nil
+	}
 	var cmds []tea.Cmd
 	if !m.hasSession() {
 		newSession, err := m.com.Workspace.CreateSession(context.Background(), m.com.L("sessions.new_title"))
@@ -5456,6 +5587,9 @@ func (m *UI) cancelAgent() tea.Cmd {
 
 // openDialog opens a dialog by its ID.
 func (m *UI) openDialog(id string) tea.Cmd {
+	if m.state == uiAuthGate {
+		return nil
+	}
 	var cmds []tea.Cmd
 	switch id {
 	case dialog.SessionsID:
@@ -5611,16 +5745,20 @@ func (m *UI) buildStatusData() dialog.StatusData {
 	skillEntries, _ := m.com.Workspace.ListSkills(context.Background())
 
 	return dialog.StatusData{
-		Session:   session,
-		MCPStates: m.mcpStates,
-		LSPStates: m.lspStates,
-		LSPDiags:  diags,
-		Skills:    skillEntries,
+		AccountEmail: m.authState.Email,
+		Session:      session,
+		MCPStates:    m.mcpStates,
+		LSPStates:    m.lspStates,
+		LSPDiags:     diags,
+		Skills:       skillEntries,
 	}
 }
 
 // openModelsDialog opens the models dialog.
 func (m *UI) openModelsDialog() tea.Cmd {
+	if m.state == uiAuthGate {
+		return nil
+	}
 	if m.dialog.ContainsDialog(dialog.ModelsID) {
 		// Bring to front
 		m.dialog.BringToFront(dialog.ModelsID)
@@ -5666,6 +5804,9 @@ func (m *UI) openModelsConfigDialog() tea.Cmd {
 
 // openCommandsDialog opens the commands dialog.
 func (m *UI) openCommandsDialog() tea.Cmd {
+	if m.state == uiAuthGate {
+		return nil
+	}
 	if m.dialog.ContainsDialog(dialog.CommandsID) {
 		// Bring to front
 		m.dialog.BringToFront(dialog.CommandsID)
@@ -5854,6 +5995,9 @@ func (m *UI) openKeybindingsDialog() tea.Cmd {
 // it brings it to the front. Otherwise, it will list all the sessions and open
 // the dialog.
 func (m *UI) openSessionsDialog() tea.Cmd {
+	if m.state == uiAuthGate {
+		return nil
+	}
 	if m.dialog.ContainsDialog(dialog.SessionsID) {
 		// Bring to front
 		m.dialog.BringToFront(dialog.SessionsID)
@@ -6269,6 +6413,9 @@ func (m *UI) checkBangModeAfterPaste() {
 
 // handlePasteMsg handles a paste message.
 func (m *UI) handlePasteMsg(msg tea.PasteMsg) tea.Cmd {
+	if m.state == uiAuthGate {
+		return nil
+	}
 	// Normalize \r\n before the textarea sanitizer sees it.
 	msg.Content = strings.ReplaceAll(msg.Content, "\r\n", "\n")
 

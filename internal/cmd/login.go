@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
+	"time"
 
+	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/login"
 	"github.com/SpherePrime/CLI/internal/oauth/copilot"
@@ -19,12 +22,15 @@ var loginCmd = &cobra.Command{
 	Aliases: []string{"auth"},
 	Use:     "login [platform]",
 	Short:   "Login Prime to a platform",
-	Long: `Login Prime to a specified platform.
-The platform should be provided as an argument.
-Available platforms are: hyper, copilot, openai.`,
+	Long: `Login to your Prime account or a specified model platform.
+If no platform is provided, authenticates your Prime account via Google.
+Available platforms are: prime, hyper, copilot, openai.`,
 	Example: `
-# Authenticate with Hyper
+# Authenticate your Prime account
 prime login
+
+# Authenticate with Hyper
+prime login hyper
 
 # Authenticate with GitHub Copilot
 prime login copilot
@@ -33,9 +39,11 @@ prime login copilot
 prime login openai
 
 # Force re-authentication even if already logged in
-prime login -f copilot
+prime login -f
   `,
 	ValidArgs: []cobra.Completion{
+		"prime",
+		"account",
 		"hyper",
 		"copilot",
 		"github",
@@ -45,17 +53,24 @@ prime login -f copilot
 	},
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		provider := "prime"
+		if len(args) > 0 {
+			provider = args[0]
+		}
+		force, _ := cmd.Flags().GetBool("force")
+
+		if provider == "prime" || provider == "account" {
+			svc := account.NewService()
+			defer svc.Close()
+			return loginPrimeAccount(getLoginContext(), svc, cmd.OutOrStdout(), force)
+		}
+
 		ws, cleanup, err := setupWorkspaceWithProgressBar(cmd)
 		if err != nil {
 			return err
 		}
 		defer cleanup()
 
-		provider := "hyper"
-		if len(args) > 0 {
-			provider = args[0]
-		}
-		force, _ := cmd.Flags().GetBool("force")
 		switch provider {
 		case "hyper":
 			return loginHyper(ws, force)
@@ -67,6 +82,60 @@ prime login -f copilot
 			return fmt.Errorf("unknown platform: %s", args[0])
 		}
 	},
+}
+
+func loginPrimeAccount(ctx context.Context, svc *account.Service, out io.Writer, force bool) error {
+	if out == nil {
+		out = os.Stdout
+	}
+	if !force {
+		st := svc.Restore(ctx)
+		if st.SignedIn {
+			if st.Email != "" {
+				fmt.Fprintf(out, "You are already logged in to Prime as %s.\n", st.Email)
+			} else {
+				fmt.Fprintln(out, "You are already logged in to Prime.")
+			}
+			fmt.Fprintln(out, "Use --force to re-authenticate.")
+			return nil
+		}
+	}
+
+	st, err := svc.StartLogin(ctx)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(out, "Open this URL in your browser to sign in to Prime:\n\n  %s\n\nWaiting for confirmation...\n", st.LoginURL)
+	if st.Error != "" {
+		fmt.Fprintf(out, "Note: %s\n", st.Error)
+	}
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			cur := svc.State(ctx)
+			if cur.SignedIn {
+				if cur.Email != "" {
+					fmt.Fprintf(out, "\nYou're now signed in to Prime as %s!\n", cur.Email)
+				} else {
+					fmt.Fprintln(out, "\nYou're now signed in to Prime!")
+				}
+				return nil
+			}
+			if !cur.Waiting {
+				if cur.Error != "" {
+					return errors.New(cur.Error)
+				}
+				return errors.New("authentication failed")
+			}
+		}
+	}
 }
 
 func init() {

@@ -9,7 +9,8 @@ import {
   PanelRightOpen,
   Search,
   TextSearch,
-  TerminalSquare
+  TerminalSquare,
+  UserRound
 } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { ChatActions } from '../features/chat/ChatActions'
@@ -116,6 +117,20 @@ export function WorkspaceTopbar({
           onClick={toggleInspector}
         >
           {inspectorVisible ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}
+        </button>
+        <button
+          type="button"
+          className="topbar-account"
+          title={w.account.email ? `${t('Аккаунт')}: ${w.account.email}` : t('Аккаунт')}
+          aria-label={w.account.email ? `${t('Аккаунт')}: ${w.account.email}` : t('Аккаунт')}
+          onClick={() =>
+            window.dispatchEvent(
+              new CustomEvent('prime:open-settings', { detail: { tab: 'account' } })
+            )
+          }
+        >
+          <UserRound size={14} aria-hidden="true" />
+          {w.account.email && <span className="topbar-account-email">{w.account.email}</span>}
         </button>
       </div>
     </header>

@@ -172,6 +172,8 @@ ActionSelectReasoningEffort struct {
 	ActionRefreshStatus struct{}
 	// ActionRestartSystems is a message to restart SKILLs, MCPs, and LSPs.
 	ActionRestartSystems struct{}
+	// ActionLogoutAccount signs out of the current Prime account.
+	ActionLogoutAccount struct{}
 )
 
 // Messages for MCP OAuth authentication dialog.

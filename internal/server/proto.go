@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/backend"
 	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/session"
@@ -15,6 +16,7 @@ import (
 type controllerV1 struct {
 	backend *backend.Backend
 	server  *Server
+	account *account.Service
 }
 
 // handleGetHealth checks server health.

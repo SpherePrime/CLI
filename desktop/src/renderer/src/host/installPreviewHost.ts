@@ -1,4 +1,11 @@
-import type { DesktopApi, DesktopEvent, Preferences, Project, Session } from '../../../shared/contracts'
+import type {
+  AccountState,
+  DesktopApi,
+  DesktopEvent,
+  Preferences,
+  Project,
+  Session
+} from '../../../shared/contracts'
 import { notifyWarning } from '../features/notifications/notifications'
 import {
   createClosedProjectSessions,
@@ -100,6 +107,73 @@ export function installPreviewHost() {
   let remoteState = createPreviewRemote()
   let browserState = createPreviewBrowserState()
   let browserLogs = createPreviewBrowserLogs()
+
+  const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const authMode = search?.get('auth') || ''
+  let storedAuth = ''
+  try {
+    storedAuth = typeof localStorage !== 'undefined' ? localStorage.getItem('prime:preview-auth') || '' : ''
+  } catch {}
+  if (authMode === 'signed-in') {
+    try {
+      localStorage.removeItem('prime:preview-auth')
+    } catch {}
+  }
+  const initialSignedOut = authMode !== 'signed-in' && (authMode === 'signed-out' || storedAuth === 'signed-out')
+  const previewLoginUrl = 'https://vpn.sphereprime.ru/auth/google?app_hash=desktop_preview_demo_hash'
+  let previewNetworkError = authMode === 'network-error'
+  let previewLoginTimer: ReturnType<typeof setTimeout> | null = null
+  let accountState: AccountState =
+    authMode === 'waiting'
+      ? {
+          signedIn: false,
+          waiting: true,
+          checking: false,
+          email: '',
+          loginUrl: previewLoginUrl,
+          error: '',
+          networkError: false,
+          hasStoredSession: false
+        }
+      : previewNetworkError
+        ? {
+            signedIn: false,
+            waiting: false,
+            checking: false,
+            email: '',
+            loginUrl: '',
+            error: 'Не удалось проверить сессию из-за ошибки сети. Повторите проверку или войдите заново.',
+            networkError: true,
+            hasStoredSession: true
+          }
+        : initialSignedOut
+          ? {
+              signedIn: false,
+              waiting: false,
+              checking: false,
+              email: '',
+              loginUrl: '',
+              error: '',
+              networkError: false,
+              hasStoredSession: false
+            }
+          : {
+              signedIn: true,
+              waiting: false,
+              checking: false,
+              email: 'preview@sphereprime.ru',
+              loginUrl: '',
+              error: '',
+              networkError: false,
+              hasStoredSession: true
+            }
+
+  const clearPreviewLoginTimer = () => {
+    if (previewLoginTimer) {
+      clearTimeout(previewLoginTimer)
+      previewLoginTimer = null
+    }
+  }
 
   const api: DesktopApi = {
     async automation(_workspaceId, request) {
@@ -560,6 +634,74 @@ export function installPreviewHost() {
     },
     async update() {
       return { state: 'current', version: '0.4.105' }
+    },
+    async account(action) {
+      if (action === 'status') return { ...accountState }
+      if (action === 'restore') {
+        if (previewNetworkError) {
+          accountState = {
+            ...accountState,
+            signedIn: false,
+            waiting: false,
+            checking: false,
+            networkError: true,
+            hasStoredSession: true,
+            error: 'Не удалось проверить сессию из-за ошибки сети. Повторите проверку или войдите заново.'
+          }
+          return { ...accountState }
+        }
+        accountState = { ...accountState, checking: false }
+        return { ...accountState }
+      }
+      if (action === 'login') {
+        clearPreviewLoginTimer()
+        previewNetworkError = false
+        accountState = {
+          signedIn: false,
+          waiting: true,
+          checking: false,
+          email: '',
+          loginUrl: previewLoginUrl,
+          error: '',
+          networkError: false,
+          hasStoredSession: false
+        }
+        if (authMode !== 'waiting' && authMode !== 'manual') {
+          previewLoginTimer = setTimeout(() => {
+            previewLoginTimer = null
+            try {
+              localStorage.removeItem('prime:preview-auth')
+            } catch {}
+            accountState = {
+              signedIn: true,
+              waiting: false,
+              checking: false,
+              email: 'preview@sphereprime.ru',
+              loginUrl: '',
+              error: '',
+              networkError: false,
+              hasStoredSession: true
+            }
+          }, 2500)
+        }
+        return { ...accountState }
+      }
+      clearPreviewLoginTimer()
+      previewNetworkError = false
+      try {
+        localStorage.setItem('prime:preview-auth', 'signed-out')
+      } catch {}
+      accountState = {
+        signedIn: false,
+        waiting: false,
+        checking: false,
+        email: '',
+        loginUrl: '',
+        error: '',
+        networkError: false,
+        hasStoredSession: false
+      }
+      return { ...accountState }
     },
     onEvent(listener) {
       listeners.add(listener)
