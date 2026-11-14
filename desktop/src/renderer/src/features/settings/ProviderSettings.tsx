@@ -139,41 +139,55 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
         </button>
       </div>
       <div className="provider-cards">
-        {Object.entries(w.config.providers || {}).map(([id, provider]: [string, any]) => (
-          <div
-            className={`provider-card ${editing && providerId === id ? 'selected' : ''}`}
-            key={id}
-          >
-            <Server size={19} />
-            <div>
-              <strong>{provider.name || id}</strong>
-              <small>{provider.base_url}</small>
-              <small>{t('Моделей: {count}', { count: provider.models?.length || 0 })}</small>
-            </div>
-            <button className="quiet" onClick={() => load(id, provider)}>
-              {t('Изменить')}
-            </button>
-            <button
-              className={removing === id ? 'danger' : 'quiet'}
-              onClick={() => {
-                if (removing !== id) {
-                  setRemoving(id)
-                  return
-                }
-                void w
-                  .call('configRemove', { key: `providers.${id}`, scope })
-                  .then(w.refresh)
-                  .then(() => {
-                    setRemoving('')
-                    if (providerId === id) setEditing(false)
-                  })
-                  .catch(w.errorHandler)
-              }}
+        {Object.entries(w.config.providers || {}).map(([id, provider]: [string, any]) => {
+          const isBuiltinPrime = id === 'primeai' || provider?.type === 'primeai'
+          if (isBuiltinPrime) {
+            return (
+              <div className="provider-card" key={id}>
+                <Server size={19} />
+                <div>
+                  <strong>{provider.name || 'PrimeAI'}</strong>
+                  <small>{t('Встроенный провайдер (аккаунт Prime)')}</small>
+                </div>
+              </div>
+            )
+          }
+          return (
+            <div
+              className={`provider-card ${editing && providerId === id ? 'selected' : ''}`}
+              key={id}
             >
-              {removing === id ? t('Подтвердить') : t('Удалить')}
-            </button>
-          </div>
-        ))}
+              <Server size={19} />
+              <div>
+                <strong>{provider.name || id}</strong>
+                <small>{provider.base_url}</small>
+                <small>{t('Моделей: {count}', { count: provider.models?.length || 0 })}</small>
+              </div>
+              <button className="quiet" onClick={() => load(id, provider)}>
+                {t('Изменить')}
+              </button>
+              <button
+                className={removing === id ? 'danger' : 'quiet'}
+                onClick={() => {
+                  if (removing !== id) {
+                    setRemoving(id)
+                    return
+                  }
+                  void w
+                    .call('configRemove', { key: `providers.${id}`, scope })
+                    .then(w.refresh)
+                    .then(() => {
+                      setRemoving('')
+                      if (providerId === id) setEditing(false)
+                    })
+                    .catch(w.errorHandler)
+                }}
+              >
+                {removing === id ? t('Подтвердить') : t('Удалить')}
+              </button>
+            </div>
+          )
+        })}
       </div>
       {!Object.keys(w.config.providers || {}).length && !editing && (
         <p className="muted">{t('Добавьте подключение к сервису или локальному серверу.')}</p>
@@ -223,8 +237,7 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
                 { value: 'openai-compat', label: t('Совместимый с OpenAI') },
                 { value: 'openai', label: 'OpenAI' },
                 { value: 'anthropic', label: 'Anthropic' },
-                { value: 'ollama', label: 'Ollama' },
-                { value: 'primeai', label: 'PrimeAI' }
+                { value: 'ollama', label: 'Ollama' }
               ]}
             />
           </label>

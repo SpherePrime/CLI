@@ -121,6 +121,35 @@ describe('prime limits formatting helpers', () => {
     ).toBe('Resets in 4d 6h')
 
     expect(
+      formatResetCountdown(
+        {
+          usedTokens: 0,
+          limitTokens: 500000,
+          usedRequests: 0,
+          limitRequests: 120,
+          percent: 0,
+          resetInSeconds: 5 * 3600
+        },
+        tRu
+      )
+    ).toBe('')
+
+    expect(
+      formatResetCountdown(
+        {
+          usedTokens: 0,
+          limitTokens: 500000,
+          usedRequests: 0,
+          limitRequests: 120,
+          percent: 0,
+          resetAt: new Date(Date.now() + 3600_000).toISOString(),
+          resetInSeconds: 0
+        },
+        tEn
+      )
+    ).toBe('')
+
+    expect(
       formatWindowUsage(
         {
           usedTokens: 0,

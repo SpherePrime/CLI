@@ -874,6 +874,7 @@ Object.assign(english, {
   'Провайдеры и модели': 'Providers and models',
   'Ваши подключения Prime доступны во всех чатах.':
     'Your Prime connections are available across chats.',
+  'Встроенный провайдер (аккаунт Prime)': 'Built-in provider (Prime Account)',
   'Добавить провайдера': 'Add provider',
   'Моделей: {count}': 'Models: {count}',
   'Добавьте подключение к сервису или локальному серверу.':

@@ -4,6 +4,7 @@ import type { AccountState, PrimeAILimits } from '../../src/shared/contracts'
 import { I18nProvider } from '../../src/renderer/src/i18n'
 import { AuthGate } from '../../src/renderer/src/features/auth/AuthGate'
 import { AccountCard } from '../../src/renderer/src/features/auth/AccountCard'
+import { ProviderSettings } from '../../src/renderer/src/features/settings/ProviderSettings'
 import {
   createNativeBridge,
   type NativeInvoke,
@@ -266,5 +267,48 @@ describe('auth gate and account UI', () => {
     expect(markup).toContain('role="alert"')
     expect(markup).toContain('Сервис лимитов временно недоступен')
     expect(markup).toContain('Обновить')
+  })
+
+  it('hides PrimeAI models and editor controls in ProviderSettings while keeping custom providers editable', () => {
+    const fakeWorkspace = {
+      config: {
+        providers: {
+          primeai: {
+            id: 'primeai',
+            name: 'PrimeAI',
+            type: 'primeai',
+            base_url: 'https://sphereprime.online/api/prime',
+            models: [
+              { id: '__primeai_auto__', name: 'Автоматически' },
+              { id: 'antigravity/gemini-3-flash', name: 'Gemini 3 Flash' }
+            ]
+          },
+          myapi: {
+            id: 'myapi',
+            name: 'MyAPI',
+            type: 'openai-compat',
+            base_url: 'https://example.test/v1',
+            models: [{ id: 'custom-model', name: 'Custom Model' }]
+          }
+        }
+      },
+      call: vi.fn(),
+      refresh: vi.fn(),
+      errorHandler: vi.fn()
+    } as any
+
+    const markup = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <ProviderSettings workspace={fakeWorkspace} scope={0} />
+      </I18nProvider>
+    )
+    expect(markup).toContain('PrimeAI')
+    expect(markup).toContain('Встроенный провайдер (аккаунт Prime)')
+    expect(markup).not.toContain('Gemini 3 Flash')
+    expect(markup).not.toContain('antigravity/gemini-3-flash')
+    expect(markup).not.toContain('Моделей: 2')
+    expect(markup).toContain('MyAPI')
+    expect(markup).toContain('Моделей: 1')
+    expect(markup).toContain('Изменить')
   })
 })

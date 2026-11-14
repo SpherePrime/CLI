@@ -71,6 +71,7 @@ export function formatResetCountdown(
   t: LimitTranslator
 ): string {
   if (!window) return ''
+  if (window.usedTokens <= 0 && clampLimitPercent(window.percent) <= 0) return ''
   let seconds = Number.isFinite(window.resetInSeconds) ? Math.floor(window.resetInSeconds) : 0
   if (seconds <= 0 && window.resetAt) {
     const parsed = Date.parse(window.resetAt)

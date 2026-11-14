@@ -173,9 +173,33 @@ pub fn dispatch(
             let mut results = Vec::new();
             for element in elements {
                 let mut result = json!({"element":element});
-                let rect = &element["rect"];
-                let clip = json!({"x":rect["x"].as_f64().unwrap_or(0.0).max(0.0), "y":rect["y"].as_f64().unwrap_or(0.0).max(0.0), "width":rect["width"].as_f64().unwrap_or(1.0).max(1.0), "height":rect["height"].as_f64().unwrap_or(1.0).max(1.0), "scale":1});
-                if let Ok(image) = platform::screenshot(&view, Some(clip)) {
+                let rect = element.get("captureRect").unwrap_or(&element["rect"]);
+                let raw_x = rect["x"].as_f64().filter(|value| value.is_finite()).unwrap_or(0.0);
+                let raw_y = rect["y"].as_f64().filter(|value| value.is_finite()).unwrap_or(0.0);
+                let raw_w = rect["width"].as_f64().filter(|value| value.is_finite()).unwrap_or(1.0).max(1.0);
+                let raw_h = rect["height"].as_f64().filter(|value| value.is_finite()).unwrap_or(1.0).max(1.0);
+                let page_w = rect["pageWidth"].as_f64().filter(|value| value.is_finite() && *value >= 1.0).unwrap_or((raw_x.max(0.0) + raw_w).max(1.0));
+                let page_h = rect["pageHeight"].as_f64().filter(|value| value.is_finite() && *value >= 1.0).unwrap_or((raw_y.max(0.0) + raw_h).max(1.0));
+                let clip_rect = shot_view::bounded(
+                    &scenario_parse::Clip { x: raw_x, y: raw_y, width: raw_w, height: raw_h },
+                    page_w,
+                    page_h,
+                )
+                .unwrap_or(scenario_parse::Clip {
+                    x: raw_x.max(0.0).floor(),
+                    y: raw_y.max(0.0).floor(),
+                    width: raw_w.ceil(),
+                    height: raw_h.ceil(),
+                });
+                let scale = shot_view::output_scale(clip_rect.width, clip_rect.height, 1.0, 8000.0);
+                let doc_clip = json!({
+                    "x": clip_rect.x,
+                    "y": clip_rect.y,
+                    "width": clip_rect.width,
+                    "height": clip_rect.height,
+                    "scale": scale
+                });
+                if let Ok(image) = platform::screenshot_document(&view, doc_clip) {
                     let encoded = image["data"].as_str().ok_or("Invalid browser image")?;
                     let bytes = base64::engine::general_purpose::STANDARD
                         .decode(encoded)

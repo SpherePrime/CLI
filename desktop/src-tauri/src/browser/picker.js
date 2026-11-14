@@ -39,6 +39,8 @@ new Promise((resolve) => {
   const placeSelected = () => selected.forEach((item) => place(item.marker, item.element.getBoundingClientRect()))
   const describe = (element) => {
     const rect = element.getBoundingClientRect()
+    const root = document.documentElement
+    const body = document.body
     const computed = getComputedStyle(element)
     const styles = {}
     for (const name of ['display', 'position', 'width', 'height', 'margin', 'padding', 'color', 'background-color', 'font-family', 'font-size', 'font-weight', 'line-height', 'border', 'border-radius', 'box-shadow', 'gap', 'flex-direction', 'justify-content', 'align-items'])
@@ -50,6 +52,14 @@ new Promise((resolve) => {
       html: element.outerHTML.slice(0, 3000),
       url: location.href,
       rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+      captureRect: {
+        x: rect.left + window.scrollX,
+        y: rect.top + window.scrollY,
+        width: rect.width,
+        height: rect.height,
+        pageWidth: Math.max(root.scrollWidth, body ? body.scrollWidth : 0, innerWidth),
+        pageHeight: Math.max(root.scrollHeight, body ? body.scrollHeight : 0, innerHeight)
+      },
       styles
     }
   }
@@ -74,6 +84,10 @@ new Promise((resolve) => {
     label.remove()
     selected.forEach((item) => item.marker.remove())
     delete window.__primePicker
+    if (value) {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve(value)))
+      return
+    }
     resolve(value)
   }
   const done = () => finish(selected.length ? selected.map((item) => describe(item.element)) : null)
