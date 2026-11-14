@@ -88,12 +88,12 @@ pub fn open(
         let _ = engine.request("DELETE", &format!("/v1/clients/{client}"), None);
         return Err(error);
     }
+    state.terminals.reopen_workspace(id);
     state
         .projects
         .lock()
         .unwrap()
         .insert(id.into(), project.clone());
-    state.terminals.reopen_workspace(id);
     let mut settings = state.settings.lock().unwrap();
     let mut recent = settings.get()["recent"]
         .as_array()
@@ -367,11 +367,15 @@ mod tests {
     use super::*;
     use crate::{engine::Engine, state::AppState};
 
-    fn test_state(directory: &std::path::Path) -> (AppState, std::sync::Arc<Engine>) {
+    fn test_state(directory: &std::path::Path) -> Option<(AppState, std::sync::Arc<Engine>)> {
+        if crate::engine_resource::resolve(None).is_err() {
+            eprintln!("skipping: native engine library is not built for this platform");
+            return None;
+        }
         let state = AppState::new(directory.to_path_buf()).unwrap();
         let engine = Engine::load(directory).unwrap();
         state.engine.lock().unwrap().instance = Some(engine.clone());
-        (state, engine)
+        Some((state, engine))
     }
 
     fn project_path(root: &std::path::Path) -> String {
@@ -417,7 +421,9 @@ mod tests {
     fn deleting_a_closed_project_removes_its_chats() {
         let directory = tempfile::tempdir().unwrap();
         let root = tempfile::tempdir().unwrap();
-        let (state, engine) = test_state(directory.path());
+        let Some((state, engine)) = test_state(directory.path()) else {
+            return;
+        };
         let path = project_path(root.path());
         let (_, client) = start_workspace(&state, &engine, &path);
         engine
@@ -441,7 +447,9 @@ mod tests {
     fn deleting_an_open_project_removes_its_chats() {
         let directory = tempfile::tempdir().unwrap();
         let root = tempfile::tempdir().unwrap();
-        let (state, engine) = test_state(directory.path());
+        let Some((state, engine)) = test_state(directory.path()) else {
+            return;
+        };
         let path = project_path(root.path());
         let (id, client) = start_workspace(&state, &engine, &path);
         state.projects.lock().unwrap().insert(
@@ -465,7 +473,9 @@ mod tests {
     #[test]
     fn deleting_a_missing_project_still_clears_its_entry() {
         let directory = tempfile::tempdir().unwrap();
-        let (state, _engine) = test_state(directory.path());
+        let Some((state, _engine)) = test_state(directory.path()) else {
+            return;
+        };
         let path = "C:/prime/missing/project";
         state
             .settings

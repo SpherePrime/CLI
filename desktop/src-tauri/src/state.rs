@@ -37,11 +37,13 @@ pub struct AppState {
     pub project_open: Mutex<()>,
 }
 
-pub struct EngineStatus {
-    pub instance: Option<Arc<Engine>>,
+pub struct EngineSlot<T> {
+    pub instance: Option<T>,
     pub error: Option<String>,
     pub starting: bool,
 }
+
+pub type EngineStatus = EngineSlot<Arc<Engine>>;
 
 impl AppState {
     pub fn new(directory: PathBuf) -> HostResult<Self> {

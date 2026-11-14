@@ -107,11 +107,14 @@ impl LaunchManager {
             }
         });
         let on_url: UrlHandler = Arc::new(move |url| {
-            if let Some(state) = app.try_state::<crate::state::AppState>() {
-                if state.browser.navigate(&app, &url, None).is_ok() {
-                    state.browser.reveal(&app, None, None, false, None);
+            let app = app.clone();
+            std::thread::spawn(move || {
+                if let Some(state) = app.try_state::<crate::state::AppState>() {
+                    if state.browser.navigate(&app, &url, None).is_ok() {
+                        state.browser.reveal(&app, None, None, false, None);
+                    }
                 }
-            }
+            });
         });
         self.dispatch(terminals, workspace, cwd, request, emit, on_url)
     }
@@ -244,22 +247,18 @@ impl LaunchManager {
                 }
             }
         });
-        let terminal = terminals.create(
-            workspace,
-            cwd,
-            TerminalOptions {
-                cols: Some(120.0),
-                rows: Some(30.0),
-                title: Some(config.name),
-                ..Default::default()
-            },
-            terminal_emit,
-        )?;
+        let terminal_id = uuid::Uuid::new_v4().to_string();
+        let command = if cfg!(windows) {
+            powershell_command(&config.command)
+        } else {
+            config.command
+        };
+        let title = config.name;
         self.state.lock().unwrap().processes.insert(
             key.clone(),
             LaunchProcess {
                 config_id: config.id,
-                terminal_id: terminal.id.clone(),
+                terminal_id: terminal_id.clone(),
                 status: "running".into(),
                 started_at: SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -272,15 +271,30 @@ impl LaunchManager {
                 buffer: String::new(),
             },
         );
-        let command = if cfg!(windows) {
-            powershell_command(&config.command)
-        } else {
-            config.command
+        let terminal = match terminals.create_with_id(
+            workspace,
+            cwd,
+            TerminalOptions {
+                cols: Some(120.0),
+                rows: Some(30.0),
+                title: Some(title),
+                ..Default::default()
+            },
+            terminal_emit,
+            terminal_id,
+        ) {
+            Ok(terminal) => terminal,
+            Err(error) => {
+                self.state.lock().unwrap().processes.remove(&key);
+                return Err(error);
+            }
         };
-        let result = terminals.find(workspace, &terminal.id)?.write(
-            &format!("{command}{}", if cfg!(windows) { "\r" } else { "\n" }),
-            "user",
-        );
+        let result = terminals.find(workspace, &terminal.id).and_then(|session| {
+            session.write(
+                &format!("{command}{}", if cfg!(windows) { "\r" } else { "\n" }),
+                "user",
+            )
+        });
         if let Err(error) = result {
             self.state.lock().unwrap().processes.remove(&key);
             let _ = terminals.close_one(workspace, &terminal.id);

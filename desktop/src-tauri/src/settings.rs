@@ -47,6 +47,10 @@ impl Settings {
                 "inspectorWidth" => value
                     .as_f64()
                     .is_some_and(|value| (260.0..=10000.0).contains(&value)),
+                "workbenchHeight" => value
+                    .as_f64()
+                    .is_some_and(|value| (140.0..=1200.0).contains(&value)),
+                "workbenchOpen" => value.is_boolean(),
                 "recent" | "pinned" => value
                     .as_array()
                     .is_some_and(|items| items.len() <= 1000 && items.iter().all(Value::is_string)),
@@ -121,5 +125,15 @@ mod tests {
         assert_eq!(settings.get()["inspectorWidth"], 1200.0);
         let persisted = Settings::load(directory.path()).unwrap().get();
         assert_eq!(persisted["inspectorWidth"], 1200.0);
+        assert!(settings.update(&json!({"workbenchHeight":139.0})).is_err());
+        assert!(settings.update(&json!({"workbenchHeight":1201.0})).is_err());
+        assert!(settings.update(&json!({"workbenchHeight":"300"})).is_err());
+        assert!(settings.update(&json!({"workbenchOpen":"yes"})).is_err());
+        settings
+            .update(&json!({"workbenchHeight":340.0,"workbenchOpen":true}))
+            .unwrap();
+        let persisted = Settings::load(directory.path()).unwrap().get();
+        assert_eq!(persisted["workbenchHeight"], 340.0);
+        assert_eq!(persisted["workbenchOpen"], true);
     }
 }

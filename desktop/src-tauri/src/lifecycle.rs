@@ -49,20 +49,11 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         let state = handle.state::<crate::state::AppState>();
         let result =
             crate::engine::Engine::load_bundled(&state.directory, Some(&resources), state.isolated);
-        if state.closing.load(Ordering::Acquire) {
-            if let Ok(engine) = result {
-                engine.close();
-            }
+        let Some(payload) = install_engine_result(&state.closing, &state.engine, result, |engine| {
+            engine.close();
+        }) else {
             return;
-        }
-        let mut status = state.engine.lock().unwrap();
-        match result {
-            Ok(engine) => status.instance = Some(engine),
-            Err(error) => status.error = Some(error.message),
-        }
-        status.starting = false;
-        let payload = serde_json::json!({"status":if status.instance.is_some(){"ready"}else{"error"},"error":status.error,"version":{"version":"Go ABI 1","transport":"in-process"}});
-        drop(status);
+        };
         crate::events::emit(&handle, "", "runtime", payload);
         if state.require_engine().is_ok() {
             state.automations.start(handle.clone());
@@ -70,6 +61,50 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     });
     Ok(())
+}
+
+fn install_engine_result<T, F>(
+    closing: &std::sync::atomic::AtomicBool,
+    engine: &std::sync::Mutex<crate::state::EngineSlot<T>>,
+    result: crate::error::HostResult<T>,
+    close_engine: F,
+) -> Option<serde_json::Value>
+where
+    F: FnOnce(T),
+{
+    let mut status = engine.lock().unwrap();
+    if closing.load(Ordering::Acquire) {
+        status.starting = false;
+        drop(status);
+        if let Ok(instance) = result {
+            close_engine(instance);
+        }
+        return None;
+    }
+    match result {
+        Ok(instance) => status.instance = Some(instance),
+        Err(error) => status.error = Some(error.message),
+    }
+    status.starting = false;
+    Some(serde_json::json!({
+        "status": if status.instance.is_some() { "ready" } else { "error" },
+        "error": status.error,
+        "version": { "version": "Go ABI 1", "transport": "in-process" }
+    }))
+}
+
+fn take_engine_for_shutdown<T, F>(
+    closing: &std::sync::atomic::AtomicBool,
+    engine: &std::sync::Mutex<crate::state::EngineSlot<T>>,
+    close_engine: F,
+) where
+    F: FnOnce(T),
+{
+    closing.store(true, Ordering::Release);
+    let instance = engine.lock().unwrap().instance.take();
+    if let Some(instance) = instance {
+        close_engine(instance);
+    }
 }
 
 pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
@@ -153,15 +188,84 @@ pub fn shutdown(app: &tauri::AppHandle, state: &crate::state::AppState) {
     state.teams.stop();
     state.windows.shutdown(&app);
     state.speech.shutdown();
-    let engine = state.engine.lock().unwrap().instance.clone();
-    if let Some(engine) = engine {
+    take_engine_for_shutdown(&state.closing, &state.engine, |engine| {
         engine.close();
-    }
+    });
     state.automations.shutdown();
     state.teams.shutdown();
     let _ = state.terminals.shutdown();
     state.remotes.shutdown();
     if let Some(server) = app.try_state::<crate::browser::mcp::Server>() {
         server.shutdown();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::EngineSlot;
+    use std::sync::{
+        atomic::{AtomicBool, AtomicUsize},
+        Arc, Barrier, Mutex,
+    };
+
+    #[test]
+    fn engine_load_closes_instance_when_closing_set_before_lock() {
+        let closing = AtomicBool::new(false);
+        let engine = Mutex::new(EngineSlot::<Arc<AtomicBool>> {
+            instance: None,
+            error: None,
+            starting: true,
+        });
+        let loaded = Arc::new(AtomicBool::new(false));
+        closing.store(true, Ordering::Release);
+        let payload = install_engine_result(&closing, &engine, Ok(loaded.clone()), |instance| {
+            instance.store(true, Ordering::Release);
+        });
+        assert!(payload.is_none());
+        assert!(loaded.load(Ordering::Acquire));
+        let status = engine.lock().unwrap();
+        assert!(status.instance.is_none());
+        assert!(!status.starting);
+    }
+
+    #[test]
+    fn engine_load_and_shutdown_race_closes_exactly_once() {
+        for _ in 0..64 {
+            let closing = Arc::new(AtomicBool::new(false));
+            let engine = Arc::new(Mutex::new(EngineSlot::<Arc<AtomicUsize>> {
+                instance: None,
+                error: None,
+                starting: true,
+            }));
+            let closes = Arc::new(AtomicUsize::new(0));
+            let barrier = Arc::new(Barrier::new(2));
+
+            let loader_closing = closing.clone();
+            let loader_engine = engine.clone();
+            let loader_closes = closes.clone();
+            let loader_barrier = barrier.clone();
+            let loader = std::thread::spawn(move || {
+                loader_barrier.wait();
+                install_engine_result(&loader_closing, &loader_engine, Ok(loader_closes), |instance| {
+                    instance.fetch_add(1, Ordering::AcqRel);
+                });
+            });
+
+            let shutdown_closing = closing.clone();
+            let shutdown_engine = engine.clone();
+            let shutdown_barrier = barrier.clone();
+            let stopper = std::thread::spawn(move || {
+                shutdown_barrier.wait();
+                take_engine_for_shutdown(&shutdown_closing, &shutdown_engine, |instance| {
+                    instance.fetch_add(1, Ordering::AcqRel);
+                });
+            });
+
+            loader.join().unwrap();
+            stopper.join().unwrap();
+            assert_eq!(closes.load(Ordering::Acquire), 1);
+            assert!(engine.lock().unwrap().instance.is_none());
+        }
     }
 }

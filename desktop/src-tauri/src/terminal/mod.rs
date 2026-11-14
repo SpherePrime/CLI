@@ -196,6 +196,7 @@ impl TerminalManager {
         }
     }
 
+    #[cfg(test)]
     fn create(
         &self,
         workspace: &str,
@@ -206,6 +207,17 @@ impl TerminalManager {
         self.create_owned(workspace, cwd, options, emit, "user")
     }
 
+    pub(super) fn create_with_id(
+        &self,
+        workspace: &str,
+        cwd: &Path,
+        options: TerminalOptions,
+        emit: Emitter,
+        id: String,
+    ) -> HostResult<TerminalSnapshot> {
+        self.create_owned_with_id(workspace, cwd, options, emit, "user", id)
+    }
+
     fn create_owned(
         &self,
         workspace: &str,
@@ -213,6 +225,25 @@ impl TerminalManager {
         options: TerminalOptions,
         emit: Emitter,
         owner: &str,
+    ) -> HostResult<TerminalSnapshot> {
+        self.create_owned_with_id(
+            workspace,
+            cwd,
+            options,
+            emit,
+            owner,
+            uuid::Uuid::new_v4().to_string(),
+        )
+    }
+
+    fn create_owned_with_id(
+        &self,
+        workspace: &str,
+        cwd: &Path,
+        options: TerminalOptions,
+        emit: Emitter,
+        owner: &str,
+        id: String,
     ) -> HostResult<TerminalSnapshot> {
         let mut manager = self.state.lock().unwrap();
         if manager.disposed || manager.closed_workspaces.contains(workspace) {
@@ -298,7 +329,7 @@ impl TerminalManager {
                     .into_owned()
             });
         let snapshot = TerminalSnapshot {
-            id: uuid::Uuid::new_v4().to_string(),
+            id,
             workspace_id: workspace.into(),
             title,
             shell,
