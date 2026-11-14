@@ -80,7 +80,7 @@ func MapPublicModels(models []PublicModel) []catwalk.Model {
 
 func (c *Client) FetchModels(ctx context.Context) ([]catwalk.Model, error) {
 	resp, err := c.doWithSession(ctx, func(reqCtx context.Context) (*http.Request, error) {
-		req, reqErr := http.NewRequestWithContext(reqCtx, http.MethodGet, c.base()+"/api/plugin/models", nil)
+		req, reqErr := http.NewRequestWithContext(reqCtx, http.MethodGet, c.base()+"/api/prime/models", nil)
 		if reqErr != nil {
 			return nil, reqErr
 		}

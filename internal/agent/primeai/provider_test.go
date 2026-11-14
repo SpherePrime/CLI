@@ -24,7 +24,7 @@ func TestSessionManager_SingleFlightRefreshAndInvalidate(t *testing.T) {
 	acctToken := "acct_token_1"
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/api/plugin/session", r.URL.Path)
+		require.Equal(t, "/api/prime/session", r.URL.Path)
 		require.Equal(t, http.MethodPost, r.Method)
 		n := sessionCalls.Add(1)
 		mu.Lock()
@@ -96,14 +96,14 @@ func TestFetchModels_PrependsAutoAndRetries401(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/plugin/session":
+		case "/api/prime/session":
 			require.Equal(t, "Bearer acct_secret", r.Header.Get("Authorization"))
 			n := sessionSeq.Add(1)
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"token":     "sess_tok_" + string(rune('0'+n)),
 				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
 			})
-		case "/api/plugin/models":
+		case "/api/prime/models":
 			call := modelsCalls.Add(1)
 			if call == 1 {
 				w.WriteHeader(http.StatusUnauthorized)
@@ -146,12 +146,12 @@ func TestFetchLimits_CacheAndListener(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/plugin/session":
+		case "/api/prime/session":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"token":     "sess_lim",
 				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
 			})
-		case "/api/plugin/limits":
+		case "/api/prime/limits":
 			require.Equal(t, "Bearer sess_lim", r.Header.Get("Authorization"))
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"planName":           "Pro",
@@ -219,13 +219,13 @@ func TestStreamAndGenerate_SSEAnd401Retry(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/plugin/session":
+		case "/api/prime/session":
 			n := sessionSeq.Add(1)
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"token":     "sess_chat_" + string(rune('0'+n)),
 				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
 			})
-		case "/api/plugin/chat/completions":
+		case "/api/prime/chat/completions":
 			call := chatCalls.Add(1)
 			if call == 1 {
 				w.WriteHeader(http.StatusUnauthorized)
@@ -327,12 +327,12 @@ func TestStream_LimitExceeded429UpdatesCache(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/plugin/session":
+		case "/api/prime/session":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"token":     "sess_429",
 				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
 			})
-		case "/api/plugin/chat/completions":
+		case "/api/prime/chat/completions":
 			w.WriteHeader(http.StatusTooManyRequests)
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"code":           "PLUGIN_LIMIT_EXCEEDED",

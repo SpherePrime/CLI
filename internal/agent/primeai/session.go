@@ -159,7 +159,7 @@ func (m *SessionManager) Get(ctx context.Context) (string, error) {
 }
 
 func (m *SessionManager) exchange(ctx context.Context, acctToken string) (string, time.Time, error) {
-	endpoint := normalizeBaseURL(m.baseURL()) + "/api/plugin/session"
+	endpoint := normalizeBaseURL(m.baseURL()) + "/api/prime/session"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("build session request: %w", err)

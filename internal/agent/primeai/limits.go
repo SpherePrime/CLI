@@ -251,7 +251,7 @@ func (c *Client) FetchLimits(ctx context.Context) (Limits, error) {
 	}
 
 	resp, err := c.doWithSession(ctx, func(reqCtx context.Context) (*http.Request, error) {
-		req, reqErr := http.NewRequestWithContext(reqCtx, http.MethodGet, c.base()+"/api/plugin/limits", nil)
+		req, reqErr := http.NewRequestWithContext(reqCtx, http.MethodGet, c.base()+"/api/prime/limits", nil)
 		if reqErr != nil {
 			return nil, reqErr
 		}

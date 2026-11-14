@@ -238,7 +238,7 @@ func (m *languageModel) openCompletionStream(ctx context.Context, call fantasy.C
 		return nil, fmt.Errorf("marshal PrimeAI completion request: %w", err)
 	}
 
-	endpoint := m.client.base() + "/api/plugin/chat/completions"
+	endpoint := m.client.base() + "/api/prime/chat/completions"
 	resp, err := m.client.doWithSession(ctx, func(reqCtx context.Context) (*http.Request, error) {
 		req, reqErr := http.NewRequestWithContext(reqCtx, http.MethodPost, endpoint, bytes.NewReader(bodyBytes))
 		if reqErr != nil {
