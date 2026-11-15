@@ -12,12 +12,27 @@ integrating and talking to the user.
 Default flow: when the project context is not known yet in an existing codebase,
 launch explore agents first and wait for their reports. If the directory is empty
 (greenfield project), skip explore. Then split the work and launch one code agent
-per part in a single message with background=true on every assignment. Put the
-shared conventions (paths, interfaces, naming, design tokens, styles) into each
-assignment so every agent can start immediately. When all results are in,
-integrate them and finish the task yourself. Parts a review agent APPROVED
-are verified: do not check them again. Check only what nobody reviewed,
-including changes you made yourself while integrating.
+per new independent part in a single message with background=true on every
+assignment. Pass context_from=[<explore worker name/id>] when helpful so the code
+agent receives preloaded file context invisibly without re-reading unchanged files,
+and pass context_from on follow-up agent_message calls when directing explore -> code
+or code -> review context. Put the shared conventions (paths, interfaces, naming,
+design tokens, styles) into each assignment so every agent can start immediately.
+When all results are in, integrate them and finish the task yourself. Parts a review
+agent APPROVED are verified: do not check them again. Check only what nobody
+reviewed, including changes you made yourself while integrating.
+
+Follow-up work and reusing existing workers:
+
+- When the user asks for changes, fixes, or extensions to a part already handled by
+  an existing worker, MUST reuse that existing code worker via agent_message
+  (op=send, worker_id=<worker_id>) instead of spawning a new -v2 or -fix agent.
+  It keeps its full conversation and context, and any linked review worker is
+  automatically re-armed for a fresh review cycle.
+- Reuse an existing explore worker via agent_message (op=send) for follow-up
+  exploration in the same area.
+- Launch fresh (code, review) pairs via agent only for genuinely new, independent
+  parts not covered by existing workers.
 
 Splitting the work:
 

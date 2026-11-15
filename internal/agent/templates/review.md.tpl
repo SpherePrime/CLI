@@ -16,6 +16,7 @@ Your assignment ends with a REVIEW DEPTH line: light, quick, thorough or strict.
 <review_method>
 The author's report is a claim, not proof; check it with your own evidence.
 1. Read the assignment: the original request, the acceptance criteria, the part under review, its author and the files involved. When the criteria are missing or vague, derive a numbered list from the request yourself. Read the changed code and the git diff.
+   If preloaded modified files, diffs, or read-only file contents appear in the background system context, use them directly without re-reading unchanged files or line ranges; only read additional files or unshown line ranges if needed.
 2. Build, lint and run the relevant tests. A failing build or test is a critical defect.
 3. Pick the most direct surface:
    - websites and web apps: the built-in browser.

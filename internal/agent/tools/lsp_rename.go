@@ -77,23 +77,14 @@ func NewRenameTool(
 
 			affectedFiles := collectAffectedFiles(edit)
 
-			if files != nil && sessionID != "" {
-				for _, path := range affectedFiles {
-					content, err := os.ReadFile(path)
-					if err != nil {
-						slog.Warn("Failed to read file for version tracking", "path", path, "error", err)
-						continue
-					}
-					if _, err := files.CreateVersion(ctx, sessionID, path, string(content)); err != nil {
-						slog.Warn("Failed to create file version", "path", path, "error", err)
-					}
-				}
-			}
+			recordAffectedFileVersions(ctx, files, sessionID, affectedFiles, "before rename")
 
 			encoding := resolved.client.GetOffsetEncoding()
 			if err := lsputil.ApplyWorkspaceEdit(*edit, encoding); err != nil {
 				return fantasy.NewTextErrorResponse(fmt.Sprintf("failed to apply rename edits: %s", err)), nil
 			}
+
+			recordAffectedFileVersions(ctx, files, sessionID, affectedFiles, "after rename")
 
 			if filetracker != nil && sessionID != "" {
 				for _, path := range affectedFiles {
@@ -117,4 +108,20 @@ func NewRenameTool(
 			return fantasy.NewTextResponse(text), nil
 		},
 	)
+}
+
+func recordAffectedFileVersions(ctx context.Context, files history.Service, sessionID string, affectedFiles []string, stage string) {
+	if files == nil || sessionID == "" {
+		return
+	}
+	for _, path := range affectedFiles {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			slog.Warn("Failed to read file for version tracking", "stage", stage, "path", path, "error", err)
+			continue
+		}
+		if _, err := files.CreateVersion(ctx, sessionID, path, string(content)); err != nil {
+			slog.Warn("Failed to create file version", "stage", stage, "path", path, "error", err)
+		}
+	}
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
@@ -385,5 +386,190 @@ func TestSendAgentWorkerMessageByName(t *testing.T) {
 	third := <-calls
 	require.Contains(t, third.Prompt, "work with at sign")
 	require.True(t, job.wait(t.Context(), time.Second))
+}
+
+func TestHistoricalWorkerReviewerAndHiddenTaskFiltering(t *testing.T) {
+	env := testEnv(t)
+	c := newJobCoordinator(t, env)
+	parent, err := env.sessions.Create(t.Context(), "parent")
+	require.NoError(t, err)
+
+	parentMsg, err := env.messages.Create(t.Context(), parent.ID, message.CreateMessageParams{
+		Role: message.Assistant,
+		Parts: []message.ContentPart{
+			message.ToolCall{
+				ID:       "call-code-1",
+				Name:     AgentToolName,
+				Input:    `{"name":"auth","agent":"code","prompt":"build auth","reviewer":"auth-review"}`,
+				Finished: true,
+			},
+			message.ToolCall{
+				ID:       "call-rev-1",
+				Name:     AgentToolName,
+				Input:    `{"name":"auth-review","agent":"review","prompt":"review auth"}`,
+				Finished: true,
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	codeID := env.sessions.CreateAgentToolSessionID(parentMsg.ID, "call-code-1")
+	_, err = env.sessions.CreateTaskSession(t.Context(), codeID, parent.ID, "Agent Session: code | auth")
+	require.NoError(t, err)
+	_, err = env.messages.Create(t.Context(), codeID, message.CreateMessageParams{
+		Role:  message.User,
+		Parts: []message.ContentPart{message.TextContent{Text: "internal hidden prompt", Hidden: true}},
+	})
+	require.NoError(t, err)
+	_, err = env.messages.Create(t.Context(), codeID, message.CreateMessageParams{
+		Role:  message.User,
+		Parts: []message.ContentPart{message.TextContent{Text: "build auth feature"}},
+	})
+	require.NoError(t, err)
+	_, err = env.messages.Create(t.Context(), codeID, message.CreateMessageParams{
+		Role:  message.Assistant,
+		Parts: []message.ContentPart{message.TextContent{Text: "built auth"}},
+	})
+	require.NoError(t, err)
+
+	revID := env.sessions.CreateAgentToolSessionID(parentMsg.ID, "call-rev-1")
+	_, err = env.sessions.CreateTaskSession(t.Context(), revID, parent.ID, "Agent Session: review | auth-review")
+	require.NoError(t, err)
+
+	workers, err := c.AgentWorkers(t.Context(), parent.ID)
+	require.NoError(t, err)
+	require.Len(t, workers, 2)
+
+	byID := map[string]AgentWorker{}
+	for _, w := range workers {
+		byID[w.ID] = w
+	}
+	require.Equal(t, "auth-review", byID[codeID].Reviewer)
+	require.Equal(t, "build auth feature", byID[codeID].Task)
+	require.Equal(t, "idle", byID[codeID].Status)
+	require.Equal(t, "", byID[revID].Reviewer)
+	require.Equal(t, "idle", byID[revID].Status)
+}
+
+func TestFollowUpToHistoricalCodeWorkerRoutesToHistoricalReviewer(t *testing.T) {
+	env := testEnv(t)
+	parent, err := env.sessions.Create(t.Context(), "parent")
+	require.NoError(t, err)
+
+	parentMsg, err := env.messages.Create(t.Context(), parent.ID, message.CreateMessageParams{
+		Role: message.Assistant,
+		Parts: []message.ContentPart{
+			message.ToolCall{
+				ID:       "call-code",
+				Name:     AgentToolName,
+				Input:    `{"name":"ui","agent":"code","prompt":"build button","reviewer":"ui-review"}`,
+				Finished: true,
+			},
+			message.ToolCall{
+				ID:       "call-rev",
+				Name:     AgentToolName,
+				Input:    `{"name":"ui-review","agent":"review","prompt":"review button"}`,
+				Finished: true,
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	codeID := env.sessions.CreateAgentToolSessionID(parentMsg.ID, "call-code")
+	_, err = env.sessions.CreateTaskSession(t.Context(), codeID, parent.ID, "Agent Session: code | ui")
+	require.NoError(t, err)
+	_, err = env.messages.Create(t.Context(), codeID, message.CreateMessageParams{
+		Role:  message.User,
+		Parts: []message.ContentPart{message.TextContent{Text: "build button"}},
+	})
+	require.NoError(t, err)
+	_, err = env.messages.Create(t.Context(), codeID, message.CreateMessageParams{
+		Role:  message.Assistant,
+		Parts: []message.ContentPart{message.TextContent{Text: "built button"}},
+	})
+	require.NoError(t, err)
+
+	revID := env.sessions.CreateAgentToolSessionID(parentMsg.ID, "call-rev")
+	_, err = env.sessions.CreateTaskSession(t.Context(), revID, parent.ID, "Agent Session: review | ui-review")
+	require.NoError(t, err)
+	_, err = env.messages.Create(t.Context(), revID, message.CreateMessageParams{
+		Role:  message.User,
+		Parts: []message.ContentPart{message.TextContent{Text: "review button"}},
+	})
+	require.NoError(t, err)
+	_, err = env.messages.Create(t.Context(), revID, message.CreateMessageParams{
+		Role:  message.Assistant,
+		Parts: []message.ContentPart{message.TextContent{Text: "VERDICT: APPROVED\nDEFECTS: none"}},
+	})
+	require.NoError(t, err)
+
+	c := newJobCoordinator(t, env)
+	c.cfg.Config().SetupAgents()
+
+	codeGate := make(chan struct{})
+	codeCalls := make(chan SessionAgentCall, 2)
+	revCalls := make(chan SessionAgentCall, 2)
+	c.subAgents = map[string]SessionAgent{
+		config.AgentCode: newMockAgent("job-provider", 1024, func(ctx context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+			codeCalls <- call
+			<-codeGate
+			return agentResultWithText("updated button color to blue"), nil
+		}),
+		config.AgentReview: newMockAgent("job-provider", 1024, func(ctx context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+			revCalls <- call
+			return agentResultWithText("VERDICT: APPROVED\nDEFECTS: none"), nil
+		}),
+	}
+	wakes := make(chan string, 2)
+	c.backgroundWakeRunner = func(_ context.Context, sessionID, prompt string) {
+		wakes <- sessionID + "\n" + prompt
+	}
+
+	_, err = c.SendAgentWorkerMessage(t.Context(), parent.ID, codeID, "change button color to blue")
+	require.NoError(t, err)
+
+	codeCall := <-codeCalls
+	require.Equal(t, codeID, codeCall.SessionID)
+	require.Contains(t, codeCall.Prompt, "change button color to blue")
+
+	codeJob := c.findJob(codeID)
+	require.NotNil(t, codeJob)
+	codeJob.mu.Lock()
+	require.Equal(t, "ui-review", codeJob.reviewer)
+	require.True(t, codeJob.hasRun)
+	codeJob.mu.Unlock()
+
+	revJob := c.findJob(revID)
+	require.NotNil(t, revJob)
+	revJob.mu.Lock()
+	require.Equal(t, "waiting", revJob.status)
+	require.True(t, revJob.awaitHandoff)
+	require.Equal(t, 0, revJob.reviewRound)
+	require.Equal(t, codeID, revJob.author)
+	require.True(t, revJob.hasRun)
+	revJob.mu.Unlock()
+
+	close(codeGate)
+	revCall := <-revCalls
+	require.Equal(t, revID, revCall.SessionID)
+	require.Contains(t, revCall.Prompt, "Automatic review handoff")
+	require.Contains(t, revCall.Prompt, "updated button color to blue")
+
+	select {
+	case wake := <-wakes:
+		require.Contains(t, wake, parent.ID)
+		require.Contains(t, wake, revID)
+		require.Contains(t, wake, "VERDICT: APPROVED")
+	case <-time.After(2 * time.Second):
+		t.Fatal("expected wake after historical reviewer approved follow-up")
+	}
+
+	revJob.mu.Lock()
+	require.Equal(t, 1, revJob.reviewRound)
+	revJob.mu.Unlock()
+
+	workers, err := c.AgentWorkers(t.Context(), parent.ID)
+	require.NoError(t, err)
+	require.Len(t, workers, 2)
 }
 

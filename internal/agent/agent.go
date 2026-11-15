@@ -88,6 +88,7 @@ type SessionAgentCall struct {
 	Prompt            string
 	TeamNote          string
 	GoalNote          string
+	ContextNote       string
 	KeepTodos         bool
 	ProviderOptions   fantasy.ProviderOptions
 	Attachments       []message.Attachment
@@ -943,6 +944,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			}
 			prepared.Messages = withTeamNote(prepared.Messages, call.TeamNote)
 			prepared.Messages = withGoalNote(prepared.Messages, call.GoalNote)
+			prepared.Messages = withContextNote(prepared.Messages, call.ContextNote)
 
 			prepared.Messages = a.workaroundProviderMediaLimitations(prepared.Messages, largeModel)
 

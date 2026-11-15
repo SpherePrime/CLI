@@ -2139,6 +2139,8 @@ type subAgentParams struct {
 	Dormant      bool
 	AwaitHandoff bool
 	Reviewer     string
+	ContextFrom  []string
+	ContextNote  string
 }
 
 // callTopK returns topK for use on fantasy.Call.TopK, suppressing it for

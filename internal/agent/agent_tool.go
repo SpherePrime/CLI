@@ -26,8 +26,9 @@ type AgentParams struct {
 	Prompt string `json:"prompt" description:"What the agent has to accomplish, stated as a complete task with its own context and a concrete deliverable. It cannot see this conversation, so anything it needs must be in here."`
 	Agent  string `json:"agent,omitempty" description:"Which configured agent to run. Omit to use the default agent."`
 	Background     bool   `json:"background,omitempty" description:"Return immediately with a job id and let the agent keep running; its result arrives as a team notice. Omit to wait for the result now."`
-	WaitForMessage bool   `json:"wait_for_message,omitempty" description:"Register the agent without starting it. It makes no model calls until a message arrives (agent_message or an automatic review handoff), then starts with this assignment plus that message. Implies background."`
-	Reviewer       string `json:"reviewer,omitempty" description:"Code agents only: name of the review agent for this part. When this agent finishes, its report is handed to that reviewer automatically, and the reviewer's CHANGES_REQUIRED report comes back to this agent automatically."`
+	WaitForMessage bool     `json:"wait_for_message,omitempty" description:"Register the agent without starting it. It makes no model calls until a message arrives (agent_message or an automatic review handoff), then starts with this assignment plus that message. Implies background."`
+	Reviewer       string   `json:"reviewer,omitempty" description:"Code agents only: name of the review agent for this part. When this agent finishes, its report is handed to that reviewer automatically, and the reviewer's CHANGES_REQUIRED report comes back to this agent automatically."`
+	ContextFrom    []string `json:"context_from,omitempty" description:"Optional worker names or IDs whose read/edited file context should be preloaded invisibly in background system context (for example, an explore worker for a code agent)."`
 }
 
 const (
@@ -97,6 +98,7 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 				SessionTitle:   title,
 				Dormant:        dormant,
 				AwaitHandoff:   awaitHandoff,
+				ContextFrom:    params.ContextFrom,
 			}
 			if name == config.AgentCode {
 				sp.Reviewer = strings.TrimSpace(params.Reviewer)

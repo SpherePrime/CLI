@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -97,6 +98,35 @@ func (c *coordinator) reviewRoute(job *agentJob, status, output string) *reviewR
 	return nil
 }
 
+func (c *coordinator) prepareLinkedReviewerForFollowUp(ctx context.Context, codeJob *agentJob) {
+	codeJob.mu.Lock()
+	codeID := codeJob.id
+	codeSessionID := codeJob.sessionID
+	reviewerRef := strings.TrimSpace(codeJob.reviewer)
+	codeJob.mu.Unlock()
+	if reviewerRef == "" {
+		return
+	}
+	revWorker, err := c.teamWorker(ctx, codeSessionID, reviewerRef)
+	if err != nil {
+		return
+	}
+	revJob, err := c.ensureWorkerJob(ctx, revWorker)
+	if err != nil {
+		return
+	}
+	revJob.mu.Lock()
+	revJob.reviewRound = 0
+	revJob.author = codeID
+	revJob.seen = false
+	if revJob.status != "running" && revJob.status != "queued" {
+		revJob.status = "waiting"
+		revJob.awaitHandoff = true
+		revJob.updatedAt = time.Now()
+	}
+	revJob.mu.Unlock()
+}
+
 func (c *coordinator) deliverReviewRoute(job *agentJob, route *reviewRouteAction) bool {
 	if route.target == "" {
 		return true
@@ -122,7 +152,9 @@ func criticalOnlyReport(report string) string {
 
 func authorHandoffText(name, id, report string) string {
 	return fmt.Sprintf(`Automatic review handoff: author %s (worker id %s) finished its part and the work is ready for review. Review it now as your assignment describes.
-If you already reviewed this part, this is a re-review: check only your previous defects, the author's changes for them and regressions those changes caused, not the whole part again.
+If this is an initial review, review the full part against the assignment and acceptance criteria.
+If this is a fix-loop re-review after your CHANGES_REQUIRED verdict, check only your previous defects, the author's fixes for them, and any regressions those changes caused.
+If a new follow-up user change arrived after an earlier review/approval, review the follow-up changes, updated criteria, and any regressions they caused without re-reviewing unrelated untouched parts.
 Your final answer is routed automatically: CHANGES_REQUIRED goes back to this author for fixes, APPROVED goes to the coordinator. Do not send the report with agent_message.
 
 Author report:

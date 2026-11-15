@@ -300,3 +300,97 @@ func TestCollectTeamNoticesIncludesApprovedReminder(t *testing.T) {
 	changesNotice, _ := c.collectTeamNotices("root-3")
 	require.NotContains(t, changesNotice, "Parts with VERDICT: APPROVED are already verified")
 }
+
+func TestFollowUpCodeMessageRearmsLinkedReviewerAndRunsFreshCycle(t *testing.T) {
+	env := testEnv(t)
+	c := newJobCoordinator(t, env)
+	parent, err := env.sessions.Create(t.Context(), "parent")
+	require.NoError(t, err)
+
+	followUpGate := make(chan struct{})
+	authorCalls := 0
+	var authorMu sync.Mutex
+	var authorPrompts []string
+	authorAgent := newMockAgent("job-provider", 1024, func(_ context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+		authorMu.Lock()
+		authorCalls++
+		turn := authorCalls
+		authorPrompts = append(authorPrompts, call.Prompt)
+		authorMu.Unlock()
+		switch turn {
+		case 1:
+			return agentResultWithText("built the page"), nil
+		case 2:
+			<-followUpGate
+			return agentResultWithText("added dark mode toggle"), nil
+		default:
+			return agentResultWithText("fixed toggle contrast"), nil
+		}
+	})
+
+	reviewScript := &scriptedAgent{replies: []string{
+		"VERDICT: APPROVED\nDEFECTS: none",
+		"VERDICT: CHANGES_REQUIRED\nDEFECTS:\n- [major] toggle contrast too low",
+		"VERDICT: APPROVED\nDEFECTS: none",
+	}}
+	reviewJob, err := c.startAgentJob(t.Context(), subAgentParams{
+		Agent:          newMockAgent("job-provider", 1024, reviewScript.run),
+		SessionID:      parent.ID,
+		AgentMessageID: "m",
+		ToolCallID:     "rev",
+		Prompt:         "review the page",
+		SessionTitle:   "Agent Session: review | page-review",
+		Dormant:        true,
+	}, config.AgentReview)
+	require.NoError(t, err)
+
+	authorJob, err := c.startAgentJob(t.Context(), subAgentParams{
+		Agent:          authorAgent,
+		SessionID:      parent.ID,
+		AgentMessageID: "m",
+		ToolCallID:     "code",
+		Prompt:         "build the page",
+		SessionTitle:   "Agent Session: code | page",
+		Reviewer:       "page-review",
+	}, config.AgentCode)
+	require.NoError(t, err)
+
+	waitUntil(t, func() bool { return len(reviewScript.calls()) == 1 && jobStatus(reviewJob) == "done" })
+	reviewJob.mu.Lock()
+	require.Equal(t, 1, reviewJob.reviewRound)
+	reviewJob.mu.Unlock()
+
+	_, err = c.SendAgentWorkerMessage(t.Context(), parent.ID, authorJob.id, "add dark mode toggle")
+	require.NoError(t, err)
+
+	reviewJob.mu.Lock()
+	require.Equal(t, 0, reviewJob.reviewRound)
+	require.Equal(t, authorJob.id, reviewJob.author)
+	require.Equal(t, "waiting", reviewJob.status)
+	require.True(t, reviewJob.awaitHandoff)
+	require.False(t, reviewJob.seen)
+	reviewJob.mu.Unlock()
+
+	revSnapshot, err := c.SendAgentWorkerMessage(t.Context(), parent.ID, "page-review", "verify dark mode contrast")
+	require.NoError(t, err)
+	require.Equal(t, "waiting", revSnapshot.Status)
+	time.Sleep(30 * time.Millisecond)
+	require.Len(t, reviewScript.calls(), 1)
+
+	close(followUpGate)
+	waitUntil(t, func() bool { return len(reviewScript.calls()) == 3 && jobStatus(reviewJob) == "done" })
+
+	reviewCalls := reviewScript.calls()
+	require.Contains(t, reviewCalls[1], "verify dark mode contrast")
+	require.Contains(t, reviewCalls[1], "added dark mode toggle")
+	require.Contains(t, reviewCalls[2], "fixed toggle contrast")
+
+	reviewJob.mu.Lock()
+	require.Equal(t, 2, reviewJob.reviewRound)
+	require.Equal(t, authorJob.id, reviewJob.author)
+	reviewJob.mu.Unlock()
+
+	workers, err := c.AgentWorkers(t.Context(), parent.ID)
+	require.NoError(t, err)
+	require.Len(t, workers, 2)
+}

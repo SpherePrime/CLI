@@ -151,18 +151,8 @@ func NewReplaceSymbolTool(
 				}
 			}
 
-			if files != nil && sessionID != "" {
-				if _, err := files.CreateVersion(ctx, sessionID, params.FilePath, string(content)); err != nil {
-					slog.Warn("Failed to create file version before replace", "path", params.FilePath, "error", err)
-				}
-			}
-
-			if err := os.WriteFile(params.FilePath, []byte(newContent), 0o644); err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
-			}
-
-			if filetracker != nil && sessionID != "" {
-				filetracker.RecordRead(ctx, sessionID, params.FilePath)
+			if err := writeReplacedFile(ctx, files, filetracker, sessionID, params.FilePath, string(content), newContent); err != nil {
+				return fantasy.ToolResponse{}, err
 			}
 
 			notifyLSPs(ctx, lspManager, params.FilePath)
@@ -189,6 +179,29 @@ func NewReplaceSymbolTool(
 			return resp, nil
 		},
 	)
+}
+
+func writeReplacedFile(ctx context.Context, files history.Service, tracker filetracker.Service, sessionID, filePath, oldContent, newContent string) error {
+	if files != nil && sessionID != "" {
+		if _, err := files.CreateVersion(ctx, sessionID, filePath, oldContent); err != nil {
+			slog.Warn("Failed to create file version before replace", "path", filePath, "error", err)
+		}
+	}
+
+	if err := os.WriteFile(filePath, []byte(newContent), 0o644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	if files != nil && sessionID != "" {
+		if _, err := files.CreateVersion(ctx, sessionID, filePath, newContent); err != nil {
+			slog.Warn("Failed to create file version after replace", "path", filePath, "error", err)
+		}
+	}
+
+	if tracker != nil && sessionID != "" {
+		tracker.RecordRead(ctx, sessionID, filePath)
+	}
+	return nil
 }
 
 // findSymbolByName searches for a symbol by name in the document symbol tree.

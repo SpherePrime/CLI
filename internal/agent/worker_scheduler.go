@@ -133,6 +133,30 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 			model = tuned
 			params.ModelOverride = &tuned
 		}
+		switch job.agent {
+		case config.AgentCode:
+			params.ContextNote = c.buildWorkerContextNote(ctx, job, nil)
+		case config.AgentReview:
+			job.mu.Lock()
+			authorID := job.author
+			job.mu.Unlock()
+			var authorJob *agentJob
+			if authorID != "" {
+				authorJob = c.findJob(authorID)
+				if authorJob == nil {
+					if authorWorker, err := c.teamWorker(ctx, job.rootSessionID, authorID); err == nil {
+						authorJob = &agentJob{
+							id:            authorWorker.ID,
+							sessionID:     authorWorker.SessionID,
+							rootSessionID: authorWorker.RootSessionID,
+							agent:         authorWorker.Agent,
+							name:          authorWorker.Name,
+						}
+					}
+				}
+			}
+			params.ContextNote = c.buildWorkerContextNote(ctx, job, authorJob)
+		}
 		status, output := c.runAgentJob(job, ctx, params, job.sessionID, model, callMaxOutputTokens(model, provider.Type), provider)
 		job.mu.Lock()
 		if len(job.pending) > 0 && ctx.Err() == nil && !job.stopping {

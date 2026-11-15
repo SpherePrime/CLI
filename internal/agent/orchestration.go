@@ -2,11 +2,13 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/session"
 )
@@ -20,6 +22,7 @@ type AgentWorker struct {
 	Agent           string `json:"agent"`
 	Task            string `json:"task"`
 	Status          string `json:"status"`
+	Reviewer        string `json:"reviewer,omitempty"`
 	StartedAt       int64  `json:"started_at"`
 	UpdatedAt       int64  `json:"updated_at"`
 }
@@ -49,7 +52,7 @@ func (c *coordinator) teamRoot(ctx context.Context, sessionID string) (string, e
 func (j *agentJob) worker() AgentWorker {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	return AgentWorker{ID: j.id, SessionID: j.sessionID, ParentSessionID: j.parentSessionID, RootSessionID: j.rootSessionID, Name: j.name, Agent: j.agent, Task: j.prompt, Status: j.status, StartedAt: j.startedAt.Unix(), UpdatedAt: j.updatedAt.Unix()}
+	return AgentWorker{ID: j.id, SessionID: j.sessionID, ParentSessionID: j.parentSessionID, RootSessionID: j.rootSessionID, Name: j.name, Agent: j.agent, Task: j.prompt, Status: j.status, Reviewer: j.reviewer, StartedAt: j.startedAt.Unix(), UpdatedAt: j.updatedAt.Unix()}
 }
 
 func (c *coordinator) AgentWorkers(ctx context.Context, sessionID string) ([]AgentWorker, error) {
@@ -102,7 +105,8 @@ func (c *coordinator) AgentWorkers(ctx context.Context, sessionID string) ([]Age
 			continue
 		}
 		role, name := historicalWorkerTitle(s.Title)
-		worker := AgentWorker{ID: s.ID, SessionID: s.ID, ParentSessionID: s.ParentSessionID, RootSessionID: root, Name: name, Agent: role, Status: "idle", StartedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt}
+		reviewer := c.historicalWorkerReviewer(ctx, s, root)
+		worker := AgentWorker{ID: s.ID, SessionID: s.ID, ParentSessionID: s.ParentSessionID, RootSessionID: root, Name: name, Agent: role, Status: "idle", Reviewer: reviewer, StartedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt}
 		if c.messages != nil {
 			history, err := c.messages.List(ctx, s.ID)
 			if err != nil {
@@ -110,7 +114,11 @@ func (c *coordinator) AgentWorkers(ctx context.Context, sessionID string) ([]Age
 			}
 			for _, entry := range history {
 				if entry.Role == message.User {
-					worker.Task = entry.Content().Text
+					content := entry.Content()
+					if content.Hidden {
+						continue
+					}
+					worker.Task = content.Text
 					break
 				}
 			}
@@ -122,6 +130,52 @@ func (c *coordinator) AgentWorkers(ctx context.Context, sessionID string) ([]Age
 	}
 	sortWorkers(workers)
 	return workers, nil
+}
+
+func (c *coordinator) historicalWorkerReviewer(ctx context.Context, s session.Session, root string) string {
+	if c.messages == nil {
+		return ""
+	}
+	messageID, toolCallID, ok := c.sessions.ParseAgentToolSessionID(s.ID)
+	if !ok || toolCallID == "" {
+		return ""
+	}
+	if messageID != "" {
+		if msg, err := c.messages.Get(ctx, messageID); err == nil {
+			if reviewer := findAgentToolReviewer(msg, toolCallID); reviewer != "" {
+				return reviewer
+			}
+		}
+	}
+	for i, parentID := range []string{s.ParentSessionID, root} {
+		if parentID == "" || (i == 1 && parentID == s.ParentSessionID) {
+			continue
+		}
+		msgs, err := c.messages.List(ctx, parentID)
+		if err != nil {
+			continue
+		}
+		for _, msg := range msgs {
+			if reviewer := findAgentToolReviewer(msg, toolCallID); reviewer != "" {
+				return reviewer
+			}
+		}
+	}
+	return ""
+}
+
+func findAgentToolReviewer(msg message.Message, toolCallID string) string {
+	for _, tc := range msg.ToolCalls() {
+		if tc.ID != toolCallID || (tc.Name != AgentToolName && tc.Name != "") {
+			continue
+		}
+		var params AgentParams
+		if err := json.Unmarshal([]byte(tc.Input), &params); err != nil {
+			return ""
+		}
+		return strings.TrimSpace(params.Reviewer)
+	}
+	return ""
 }
 
 func historicalWorkerTitle(title string) (string, string) {
@@ -170,6 +224,43 @@ func (c *coordinator) SendAgentWorkerMessage(ctx context.Context, source, worker
 	return c.sendWorkerMessage(ctx, source, workerID, text, nil, false)
 }
 
+func (c *coordinator) ensureWorkerJob(ctx context.Context, worker AgentWorker) (*agentJob, error) {
+	if job := c.findJob(worker.ID); job != nil {
+		return job, nil
+	}
+	a, err := c.SubAgent(worker.Agent)
+	if err != nil {
+		return nil, err
+	}
+	c.jobMu.Lock()
+	defer c.jobMu.Unlock()
+	if job := c.agentJobs[worker.ID]; job != nil {
+		return job, nil
+	}
+	job := &agentJob{
+		id:              worker.ID,
+		sessionID:       worker.SessionID,
+		parentSessionID: worker.ParentSessionID,
+		rootSessionID:   worker.RootSessionID,
+		agent:           worker.Agent,
+		name:            worker.Name,
+		prompt:          worker.Task,
+		status:          worker.Status,
+		reviewer:        worker.Reviewer,
+		startedAt:       time.Unix(worker.StartedAt, 0),
+		updatedAt:       time.Now(),
+		hasRun:          true,
+		wake:            true,
+		done:            make(chan struct{}),
+		params:          subAgentParams{Agent: a, SessionID: worker.ParentSessionID, Reviewer: worker.Reviewer},
+	}
+	if c.agentJobs == nil {
+		c.agentJobs = map[string]*agentJob{}
+	}
+	c.agentJobs[job.id] = job
+	return job, nil
+}
+
 func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, text string, prepare func(*agentJob), handoff bool) (AgentWorker, error) {
 	if strings.TrimSpace(text) == "" {
 		return AgentWorker{}, errors.New("message text is required")
@@ -184,22 +275,9 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 	if source == worker.SessionID {
 		return AgentWorker{}, errors.New("cannot send a worker a message from itself")
 	}
-	job := c.findJob(worker.ID)
-	if job == nil {
-		a, err := c.SubAgent(worker.Agent)
-		if err != nil {
-			return AgentWorker{}, err
-		}
-		c.jobMu.Lock()
-		job = c.agentJobs[worker.ID]
-		if job == nil {
-			job = &agentJob{id: worker.ID, sessionID: worker.SessionID, parentSessionID: worker.ParentSessionID, rootSessionID: worker.RootSessionID, agent: worker.Agent, name: worker.Name, prompt: worker.Task, status: worker.Status, startedAt: time.Unix(worker.StartedAt, 0), updatedAt: time.Now(), hasRun: true, params: subAgentParams{Agent: a, SessionID: worker.ParentSessionID}}
-			if c.agentJobs == nil {
-				c.agentJobs = map[string]*agentJob{}
-			}
-			c.agentJobs[job.id] = job
-		}
-		c.jobMu.Unlock()
+	job, err := c.ensureWorkerJob(ctx, worker)
+	if err != nil {
+		return AgentWorker{}, err
 	}
 	senderLabel := source
 	if source == worker.RootSessionID {
@@ -211,6 +289,17 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 		} else {
 			senderLabel = fmt.Sprintf("id: %s (role: %s)", sender.ID, sender.Agent)
 		}
+	}
+	job.mu.Lock()
+	if job.stopping {
+		job.mu.Unlock()
+		return AgentWorker{}, errors.New("agent worker is stopping")
+	}
+	shouldPrepareFollowUp := !handoff && job.agent == config.AgentCode && job.reviewer != "" && job.status != "running" && job.status != "queued" && !(job.status == "waiting" && job.awaitHandoff)
+	job.mu.Unlock()
+	if shouldPrepareFollowUp {
+		c.snapshotWorkerWatermark(ctx, job)
+		c.prepareLinkedReviewerForFollowUp(ctx, job)
 	}
 	job.mu.Lock()
 	if job.stopping {

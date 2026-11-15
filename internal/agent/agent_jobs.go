@@ -42,10 +42,16 @@ type agentJob struct {
 	generation      uint64
 	hasRun          bool
 	queuedAt        time.Time
-	reviewer        string
-	author          string
-	reviewRound     int
-	awaitHandoff    bool
+	reviewer                string
+	author                  string
+	reviewRound             int
+	awaitHandoff            bool
+	contextFrom             []string
+	contextMsgWatermark     int
+	contextHistoryWatermark int
+	contextMsgSeen          map[string]bool
+	contextHistorySeen      map[string]bool
+	contextConsumed         map[string]int
 
 	mu       sync.Mutex
 	status   string // "waiting", "queued", "running", "done", "error", "canceled"
@@ -220,6 +226,7 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		cancel:          cancel,
 		done:            make(chan struct{}),
 		reviewer:        strings.TrimSpace(params.Reviewer),
+		contextFrom:     append([]string(nil), params.ContextFrom...),
 	}
 	if params.Dormant {
 		job.status = "waiting"
@@ -281,6 +288,7 @@ func (c *coordinator) invokeSubAgent(ctx context.Context, params subAgentParams,
 			ModelOverride:     params.ModelOverride,
 			SessionID:         sessionID,
 			Prompt:            prompt,
+			ContextNote:       params.ContextNote,
 			HiddenUserMessage: hidden,
 			MaxOutputTokens:   maxTokens,
 			ProviderOptions:   getProviderOptions(model, providerCfg),
