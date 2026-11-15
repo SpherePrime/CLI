@@ -362,19 +362,6 @@ export function ProviderSettings({ workspace: w, scope }: { workspace: Workspace
         </div>
       )}
       {status && <p role="status">{status}</p>}
-      <button
-        className="quiet"
-        disabled={!w.project}
-        onClick={() =>
-          void w
-            .call('importCopilot')
-            .then(w.refresh)
-            .then(() => setStatus(t('Учётные данные Copilot импортированы')))
-            .catch(w.errorHandler)
-        }
-      >
-        {t('Импортировать авторизацию Copilot')}
-      </button>
     </>
   )
 }

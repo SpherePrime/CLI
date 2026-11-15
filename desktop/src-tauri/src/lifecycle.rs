@@ -30,6 +30,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     if let Err(error) = crate::tray::create(app.handle()) {
         eprintln!("Tray unavailable: {error}");
     }
+    crate::discord::start();
     if let Err(error) = app
         .state::<crate::state::AppState>()
         .windows

@@ -5,6 +5,7 @@ mod browser;
 mod commands;
 mod console;
 mod computer;
+mod discord;
 mod engine;
 mod engine_resource;
 mod error;

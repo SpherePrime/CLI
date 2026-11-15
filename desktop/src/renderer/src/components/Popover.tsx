@@ -30,7 +30,17 @@ export function Popover({
 }) {
   const panel = useRef<HTMLDivElement>(null)
   const [placement, setPlacement] = useState<'above' | 'below'>('above')
-  const [position, setPosition] = useState({ left: 0, top: 0, maxHeight: 400 })
+  const [position, setPosition] = useState(() => {
+    const rect = anchor.current?.getBoundingClientRect()
+    if (!rect) return { left: 0, top: 0, maxHeight: 400 }
+    const above = rect.top > window.innerHeight - rect.bottom
+    const preferred = align === 'end' ? rect.right - width : rect.left
+    return {
+      left: Math.max(12, Math.min(preferred, window.innerWidth - width - 12)),
+      top: above ? Math.max(12, rect.top - 400 - 8) : rect.bottom + 8,
+      maxHeight: above ? rect.top - 20 : window.innerHeight - rect.bottom - 20
+    }
+  })
   const popoverId = useMemo(() => nextPopoverId++, [])
   const closeRef = useRef(close)
   closeRef.current = close
