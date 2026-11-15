@@ -48,6 +48,7 @@ export function WorkspaceTopbar({
 }) {
   const { t } = useI18n()
   const shortcuts = useShortcuts()
+  const isDesigner = w.project?.kind === 'designer'
   const reconnecting = w.project?.connection === 'reconnecting'
   const ready = w.info.runtime === 'ready' && !reconnecting
   const status = reconnecting
@@ -96,29 +97,33 @@ export function WorkspaceTopbar({
           </button>
         )}
         <ChatActions workspace={w} focusMode={focusMode} toggleFocus={toggleFocus} />
-        <span className="topbar-divider" />
-        <button
-          className={`icon ${toolsOpen ? 'active-control' : ''}`}
-          title={`${t('Терминал проекта')} · ${shortcutLabel(shortcuts.terminal)}`}
-          aria-label={t('Терминал проекта')}
-          aria-expanded={toolsOpen}
-          disabled={!w.project}
-          onClick={toggleTools}
-        >
-          <TerminalSquare size={17} />
-        </button>
-        <button
-          className={`icon ${inspectorVisible ? 'active-control' : ''}`}
-          title={t('Рабочая область')}
-          aria-label={
-            inspectorVisible ? t('Скрыть рабочую область') : t('Показать рабочую область')
-          }
-          aria-pressed={inspectorVisible}
-          data-inspector-toggle
-          onClick={toggleInspector}
-        >
-          {inspectorVisible ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}
-        </button>
+        {!isDesigner && (
+          <>
+            <span className="topbar-divider" />
+            <button
+              className={`icon ${toolsOpen ? 'active-control' : ''}`}
+              title={`${t('Терминал проекта')} · ${shortcutLabel(shortcuts.terminal)}`}
+              aria-label={t('Терминал проекта')}
+              aria-expanded={toolsOpen}
+              disabled={!w.project}
+              onClick={toggleTools}
+            >
+              <TerminalSquare size={17} />
+            </button>
+            <button
+              className={`icon ${inspectorVisible ? 'active-control' : ''}`}
+              title={t('Рабочая область')}
+              aria-label={
+                inspectorVisible ? t('Скрыть рабочую область') : t('Показать рабочую область')
+              }
+              aria-pressed={inspectorVisible}
+              data-inspector-toggle
+              onClick={toggleInspector}
+            >
+              {inspectorVisible ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}
+            </button>
+          </>
+        )}
         <PrimeLimitsWidget
           limits={w.primeLimits}
           onRefresh={() => w.refreshPrimeLimits(true)}

@@ -37,6 +37,8 @@ import { openAgentEvent, type AgentRequest } from '../features/agents/openAgent'
 import { isForViewedChat, useBrowserView } from '../features/browser/useBrowserView'
 import { isInspectorOpen, shouldActivateBrowserTab } from '../features/browser/browserActivation'
 import { realSessionId } from '../../../shared/pendingSession'
+import { DesignHandoffDialog } from '../features/designer/DesignHandoffDialog'
+import { extractDesignFromMessage, type DesignPayload } from '../features/designer/designHandoff'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -138,10 +140,22 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [workbench, setWorkbench] = useState(false)
   const [workbenchExpanded, setWorkbenchExpanded] = useState(false)
   const [workbenchView, setWorkbenchView] = useState<WorkbenchView>('terminal')
+  const [pendingDesign, setPendingDesign] = useState<DesignPayload | null>(null)
+  const isDesigner = w.project?.kind === 'designer'
+  const isDesignerRef = useRef(isDesigner)
+  isDesignerRef.current = isDesigner
   const showSidebar = !focusMode
-  const showInspector = inspector && !focusMode
-  const showEditor = documents.documents.length > 0 && !focusMode
+  const showInspector = inspector && !focusMode && !isDesigner
+  const showEditor = documents.documents.length > 0 && !focusMode && !isDesigner
   useEffect(() => setSearchOpen(false), [w.session?.id])
+  useEffect(() => {
+    if (isDesigner) {
+      setCompactPanelOpen(false)
+      setWorkbench(false)
+    } else {
+      setPendingDesign(null)
+    }
+  }, [isDesigner])
   function setCollapsed(which: 'sidebar' | 'inspector', value: boolean, persist = false) {
     setCollapsedState((current) =>
       current[which] === value ? current : { ...current, [which]: value }
@@ -175,6 +189,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     )
   }
   function toggleInspector() {
+    if (isDesignerRef.current) return
     if (focusMode) return setFocusMode(false)
     setInspector(true)
     if (layout.compact) {
@@ -185,11 +200,13 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     setCollapsed('inspector', !collapsed.inspector, true)
   }
   function openTools(view: WorkbenchView) {
+    if (isDesignerRef.current) return
     setWorkbenchView(view)
     setWorkbench(true)
     setFocusMode(false)
   }
   function toggleTerminal() {
+    if (isDesignerRef.current) return
     setWorkbench((value) => (workbenchView === 'terminal' ? !value : true))
     setWorkbenchView('terminal')
   }
@@ -334,7 +351,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     openSearch: () => setSearchOpen(true),
     setZoom
   })
-  const projectName = w.project?.kind === 'chat' ? t('Личные чаты') : projectLabel(w.project)
+  const projectName = isDesigner
+    ? t('Дизайнер')
+    : w.project?.kind === 'chat'
+      ? t('Личные чаты')
+      : projectLabel(w.project)
   const isEmpty = !w.messages.length && !w.busy && w.messagesReady
   const quickActions = useQuickActions({
     workspace: w,
@@ -345,7 +366,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
     toggleFocus,
     sidebarVisible: !collapsed.sidebar,
     toggleSidebar,
-    inspectorVisible: inspectorOpen,
+    inspectorVisible: isDesigner ? false : inspectorOpen,
     toggleInspector
   })
   const sidebarPanel = (
@@ -361,6 +382,13 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   return (
     <>
       {w.projectCreationOpen && <CreateProjectDialog workspace={w} />}
+      {pendingDesign && (
+        <DesignHandoffDialog
+          workspace={w}
+          design={pendingDesign}
+          close={() => setPendingDesign(null)}
+        />
+      )}
       <ToastStack openProviders={() => setModal('providers')} />
       <Titlebar>
         <WorkspaceTopbar
@@ -368,13 +396,13 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           projectName={projectName || ''}
           sidebarVisible={showSidebar && layout.sidebarOpen}
           toggleSidebar={toggleSidebar}
-          inspectorVisible={inspectorOpen}
+          inspectorVisible={isDesigner ? false : inspectorOpen}
           toggleInspector={toggleInspector}
           focusMode={focusMode}
           toggleFocus={toggleFocus}
           searchOpen={searchOpen}
           toggleSearch={() => setSearchOpen((value) => !value)}
-          toolsOpen={workbench}
+          toolsOpen={workbench && !isDesigner}
           toggleTools={toggleTerminal}
           openCommands={() => setModal('commands')}
         />
@@ -382,7 +410,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       <ProjectLockBanner />
       <div
         ref={shell}
-        className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''} ${layout.compact ? 'compact-layout' : ''}`}
+        className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''} ${isDesigner ? 'designer-mode' : ''} ${layout.compact ? 'compact-layout' : ''}`}
         style={
           {
             '--sidebar-width': widths.sidebar + 'px',
@@ -420,7 +448,10 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             )}
           </>
         )}
-        <main className="main-workspace" data-workbench-expanded={workbench && workbenchExpanded}>
+        <main
+          className="main-workspace"
+          data-workbench-expanded={workbench && !isDesigner && workbenchExpanded}
+        >
           <PanelBoundary resetKey={w.session?.id} compact={layout.compact}>
             {isEmpty ? (
               <Welcome workspace={w} openCommands={() => setModal('commands')} />
@@ -441,12 +472,18 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                   w.permissions.some((item) => item.session_id === w.session?.id) ||
                   w.questions.some((item) => item.session_id === w.session?.id)
                 }
+                onImplementDesign={
+                  isDesigner
+                    ? (message, allMessages) =>
+                        setPendingDesign(extractDesignFromMessage(message, allMessages))
+                    : undefined
+                }
               />
             )}
           </PanelBoundary>
           <Approvals workspace={w} />
           <Composer workspace={w} />
-          {workbench && (
+          {workbench && !isDesigner && (
             <WorkbenchDock
               view={workbenchView}
               setView={setWorkbenchView}
@@ -541,7 +578,11 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               }}
             />
             <Suspense fallback={<div className="editor-loading">{t('Открываем редактор…')}</div>}>
-              <FileEditor state={documents} theme={w.preferences.theme} enabled={!focusMode} />
+              <FileEditor
+                state={documents}
+                theme={w.preferences.theme}
+                enabled={!focusMode && !isDesigner}
+              />
             </Suspense>
           </>
         )}

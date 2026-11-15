@@ -14,6 +14,7 @@ import {
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
+import { DesignerWelcome } from '../designer/DesignerWelcome'
 
 export function Welcome({
   workspace: w,
@@ -24,6 +25,9 @@ export function Welcome({
 }) {
   const { t } = useI18n()
   const shortcuts = useShortcuts()
+  if (w.project?.kind === 'designer') {
+    return <DesignerWelcome workspace={w} openCommands={openCommands} />
+  }
   const hasFolder = Boolean(w.project && w.project.kind !== 'chat')
   const projectTitle = projectName(w.project)
   const starters = hasFolder

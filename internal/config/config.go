@@ -64,9 +64,10 @@ const (
 
 	// The rest are workers. The model decides when to call one, hands it a
 	// self-contained job, and gets an answer back.
-	AgentCode string = "code" // edits and runs things
-	AgentTask string = "task" // reads only: search and investigation
-	AgentPlan string = "plan" // reads only: analysis and plans
+	AgentCode     string = "code" // edits and runs things
+	AgentTask     string = "task" // reads only: search and investigation
+	AgentPlan     string = "plan" // reads only: analysis and plans
+	AgentDesigner string = "designer"
 
 	// LegacyAgentCoder is what the main agent was called before it was
 	// renamed to general. Existing configs carry per-agent settings under
@@ -1440,6 +1441,15 @@ func (c *Config) SetupAgents() {
 			AllowedTools: resolvePlanTools(allowedTools),
 			// NO MCPs or LSPs by default
 			AllowedMCP: map[string][]string{},
+		},
+
+		AgentDesigner: {
+			ID:           AgentDesigner,
+			Name:         "Designer",
+			Description:  "Visual and UI/UX design assistant focused on concepting and image generation.",
+			Model:        SelectedModelTypeLarge,
+			AllowedTools: filterSlice(allowedTools, []string{"generate_image", "question", "fetch"}, true),
+			AllowedMCP:   map[string][]string{},
 		},
 	}
 	maps.Copy(agents, teamRoleAgents(allowedTools, c.Options.ContextPaths))

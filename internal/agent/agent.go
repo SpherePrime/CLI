@@ -727,9 +727,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	}
 	systemPrompt := a.systemPrompt.Get()
 	promptPrefix := a.systemPromptPrefix.Get()
-	systemPrompt += mcpInstructionsBlock(connectedMCPInstructions(mcp.GetStates(), a.agent))
-	systemPrompt += visualCheckBlock(!a.isSubAgent && largeModel.CatwalkCfg.SupportsImages)
-	systemPrompt += reviewPolicyBlock(!a.isSubAgent && hasAgentTool(agentTools), coordinatorReasoningMode(ctx, largeModel.ModelCfg))
+	if a.agent.ID != config.AgentDesigner {
+		systemPrompt += mcpInstructionsBlock(connectedMCPInstructions(mcp.GetStates(), a.agent))
+		systemPrompt += visualCheckBlock(!a.isSubAgent && largeModel.CatwalkCfg.SupportsImages)
+		systemPrompt += reviewPolicyBlock(!a.isSubAgent && hasAgentTool(agentTools), coordinatorReasoningMode(ctx, largeModel.ModelCfg))
+	}
 
 	if len(agentTools) > 0 {
 		// Add Anthropic caching to the last tool.
@@ -1745,7 +1747,7 @@ func (a *sessionAgent) preparePrompt(msgs []message.Message, supportsImages bool
 
 func (a *sessionAgent) prepareSessionPrompt(msgs []message.Message, supportsImages bool, opts preparePromptOptions, attachments ...message.Attachment) ([]fantasy.Message, []fantasy.FilePart) {
 	var history []fantasy.Message
-	if !a.isSubAgent && !opts.hasTodos {
+	if !a.isSubAgent && !opts.hasTodos && a.agent.ID != config.AgentDesigner {
 		history = append(history, fantasy.NewUserMessage(
 			fmt.Sprintf(
 				"<system_reminder>%s</system_reminder>",

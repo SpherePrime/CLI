@@ -44,6 +44,8 @@ var (
 	ErrServerNotIdle           = errors.New("server is hosting live workspaces")
 	ErrClientRetired           = errors.New("client has been retired")
 	ErrChannelOptInMismatch    = errors.New("requested channels differ from the existing workspace; channels are an explicit opt-in and are not shared across duplicate creates")
+	ErrWorkspaceKindMismatch       = errors.New("requested workspace kind conflicts with existing workspace")
+	ErrAgentNotAllowedForWorkspace = errors.New("agent not allowed for workspace kind")
 )
 
 // DefaultCreateGrace is the window in which a client must open an SSE
@@ -179,6 +181,7 @@ type Workspace struct {
 	*app.App
 	ID     string
 	Path   string
+	Kind   string
 	Cfg    *config.ConfigStore
 	Env    []string
 	Skills *skills.Manager
@@ -410,6 +413,10 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 				b.mu.Unlock()
 				return nil, proto.Workspace{}, ErrChannelOptInMismatch
 			}
+			if (ws.Kind == "designer") != (args.Kind == "designer") {
+				b.mu.Unlock()
+				return nil, proto.Workspace{}, ErrWorkspaceKindMismatch
+			}
 			logFirstWinsMismatch(ws, args)
 			b.registerClient(ws, clientID)
 			b.mu.Unlock()
@@ -491,18 +498,24 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 		return nil, proto.Workspace{}, fmt.Errorf("failed to create app workspace: %w", err)
 	}
 
+	mainAgent := ""
+	if args.Kind == "designer" {
+		mainAgent = config.AgentDesigner
+	}
 	wsCtx, wsCancel := context.WithCancel(b.ctx)
 	ws := &Workspace{
 		runStore:     runStore,
 		App:          appWorkspace,
 		ID:           id,
 		Path:         args.Path,
+		Kind:         args.Kind,
 		Cfg:          cfg,
 		Env:          args.Env,
 		Skills:       skillsMgr,
 		resolvedPath: key,
 		ctx:          wsCtx,
 		cancel:       wsCancel,
+		mainAgent:    mainAgent,
 		clients:      make(map[string]*clientState),
 	}
 
@@ -529,6 +542,11 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 				b.mu.Unlock()
 				ws.invokeShutdown()
 				return nil, proto.Workspace{}, ErrChannelOptInMismatch
+			}
+			if (existing.Kind == "designer") != (args.Kind == "designer") {
+				b.mu.Unlock()
+				ws.invokeShutdown()
+				return nil, proto.Workspace{}, ErrWorkspaceKindMismatch
 			}
 			logFirstWinsMismatch(existing, args)
 			b.registerClient(existing, clientID)
@@ -1124,6 +1142,7 @@ func workspaceToProto(ws *Workspace) proto.Workspace {
 	out := proto.Workspace{
 		ID:       ws.ID,
 		Path:     ws.Path,
+		Kind:     ws.Kind,
 		YOLO:     ws.Cfg.Overrides().SkipPermissionRequests,
 		Channels: ws.Cfg.Overrides().EnabledChannels,
 		DataDir:  cfg.Options.DataDirectory,
@@ -1152,6 +1171,7 @@ func logFirstWinsMismatch(existing *Workspace, args proto.Workspace) {
 	existingYOLO := existing.Cfg.Overrides().SkipPermissionRequests
 	existingChannels := existing.Cfg.Overrides().EnabledChannels
 	if existingYOLO == args.YOLO &&
+		existing.Kind == args.Kind &&
 		existingCfg.Options.Debug == args.Debug &&
 		existingCfg.Options.DataDirectory == args.DataDir &&
 		stringSlicesEqual(existing.Env, args.Env) &&
@@ -1162,6 +1182,8 @@ func logFirstWinsMismatch(existing *Workspace, args proto.Workspace) {
 		"Workspace flag mismatch on duplicate create; first wins",
 		"workspace_id", existing.ID,
 		"path", existing.Path,
+		"existing_kind", existing.Kind,
+		"requested_kind", args.Kind,
 		"existing_yolo", existingYOLO,
 		"requested_yolo", args.YOLO,
 		"existing_debug", existingCfg.Options.Debug,

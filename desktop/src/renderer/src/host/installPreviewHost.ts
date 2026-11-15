@@ -15,6 +15,7 @@ import {
   createPreviewBrowserLogs,
   createPreviewBrowserState,
   createPreviewConfig,
+  createPreviewDesignerProject,
   createPreviewFileContents,
   createPreviewFiles,
   createPreviewJobs,
@@ -27,7 +28,8 @@ import {
   createPreviewSessions,
   createPreviewTeams,
   createPreviewTerminal,
-  createPreviewWorkers
+  createPreviewWorkers,
+  previewDesignPngBase64
 } from './previewHostData'
 
 export function installPreviewHost() {
@@ -41,6 +43,26 @@ export function installPreviewHost() {
   const sessionsByProject = createPreviewSessions()
   const closedSessions = createClosedProjectSessions()
   const messagesBySession = createPreviewMessages()
+  const workspaceModes = new Map<string, string>([['ws-designer', 'designer']])
+  const previewAttachments = new Map<
+    string,
+    { id: string; name: string; size: number; mimeType: string; base64: string; preview: string }
+  >()
+  const nextAvailablePreviewName = (baseName: string) => {
+    const taken = new Set(
+      [
+        ...projects.filter((item) => item.kind === 'project').map((item) => item.path),
+        ...preferences.recent
+      ]
+        .map((item) => item.split(/[\\/]/).pop()?.toLowerCase() || '')
+        .filter(Boolean)
+    )
+    const trimmed = baseName.trim() || 'Новый проект'
+    if (!taken.has(trimmed.toLowerCase())) return trimmed
+    let index = 1
+    while (taken.has(`${trimmed} ${index}`.toLowerCase())) index++
+    return `${trimmed} ${index}`
+  }
   const workers = createPreviewWorkers()
   const workerMessages: Record<string, any[]> = {
     'worker-sess-1': [
@@ -536,19 +558,37 @@ export function installPreviewHost() {
     async openChat() {
       return projects.find((item) => item.kind === 'chat') || projects[0]
     },
+    async openDesigner() {
+      const existing = projects.find((item) => item.kind === 'designer')
+      if (existing) return existing
+      const created = createPreviewDesignerProject()
+      projects = [...projects, created]
+      sessionsByProject[created.id] = sessionsByProject[created.id] || []
+      workspaceModes.set(created.id, 'designer')
+      return created
+    },
     async projectCreationBase() {
       return 'C:\\Users\\demo\\Projects'
     },
+    async projectCreationNextName(defaultName) {
+      return nextAvailablePreviewName(defaultName)
+    },
     async createProject(name) {
+      const resolvedName = nextAvailablePreviewName(name)
+      const path = `C:\\Users\\demo\\Projects\\${resolvedName}`
       const created: Project = {
         id: `ws-${Date.now()}`,
         kind: 'project',
-        path: `C:\\Users\\demo\\Projects\\${name}`,
+        path,
         clientId: 'preview-client',
         connection: 'ready'
       }
       projects = [...projects, created]
       sessionsByProject[created.id] = []
+      preferences = {
+        ...preferences,
+        recent: [path, ...preferences.recent.filter((item) => item !== path)]
+      }
       return created
     },
     async openProject(path) {
@@ -641,32 +681,91 @@ export function installPreviewHost() {
         permissions = permissions.filter((item) => item.id !== args?.permission?.id)
         return { ok: true }
       }
+      if (operation === 'mode') {
+        const ws = projects.find((item) => item.id === workspaceId)
+        const requested = String(args?.mode || 'general')
+        if (ws?.kind === 'designer') {
+          if (requested !== 'designer') throw new Error('Designer workspace requires designer mode')
+        } else if (requested === 'designer') {
+          throw new Error('Designer mode is only available in designer workspace')
+        }
+        workspaceModes.set(workspaceId, requested)
+        return { mode: requested }
+      }
       if (operation === 'send') {
+        const ws = projects.find((item) => item.id === workspaceId)
         const sessionId = args?.sessionId
+        const attachmentIds = Array.isArray(args?.attachmentIds) ? (args.attachmentIds as string[]) : []
+        const attachmentParts = attachmentIds
+          .map((id) => previewAttachments.get(id))
+          .filter((item): item is NonNullable<typeof item> => Boolean(item))
+          .map((item) => ({
+            type: 'binary',
+            data: {
+              mime_type: item.mimeType,
+              data: item.base64,
+              path: item.name
+            }
+          }))
         const userMsg = {
           id: `msg-u-${Date.now()}`,
           session_id: sessionId,
           role: 'user',
           created_at: Math.floor(Date.now() / 1000),
-          parts: [{ type: 'text', data: { text: args?.prompt || '' } }]
+          parts: [{ type: 'text', data: { text: args?.prompt || '' } }, ...attachmentParts]
         }
         messagesBySession[sessionId] = [...(messagesBySession[sessionId] || []), userMsg]
         emit({ workspaceId, type: 'message', payload: { action: 'created', data: userMsg } })
         setTimeout(() => {
+          const isDesignerWs = ws?.kind === 'designer'
+          const replyParts: any[] = isDesignerWs
+            ? [
+                {
+                  type: 'tool_call',
+                  data: {
+                    id: `call-gen-${Date.now()}`,
+                    name: 'generate_image',
+                    input: { prompt: String(args?.prompt || '').slice(0, 120) },
+                    result: {
+                      content: 'Generated concept.png',
+                      mime_type: 'image/png',
+                      data: previewDesignPngBase64,
+                      images: [
+                        {
+                          data: previewDesignPngBase64,
+                          mime_type: 'image/png',
+                          path: 'concept.png'
+                        }
+                      ],
+                      is_error: false
+                    }
+                  }
+                },
+                {
+                  type: 'text',
+                  data: {
+                    text: `### Дизайн-концепт готов\n\nПроработана визуальная иерархия, акценты и адаптивная сетка по запросу:\n\n> ${String(args?.prompt || '').slice(0, 140)}`
+                  }
+                },
+                { type: 'finish', data: { reason: 'stop' } }
+              ]
+            : [
+                {
+                  type: 'text',
+                  data: {
+                    text: attachmentParts.length
+                      ? `Дизайн и прикреплённые макеты (${attachmentParts.length}) приняты в работу в проекте. Начинаю реализацию.`
+                      : `Готово! Получен запрос в режиме предпросмотра:\n\n> ${String(args?.prompt || '').slice(0, 140)}`
+                  }
+                },
+                { type: 'finish', data: { reason: 'stop' } }
+              ]
           const reply = {
             id: `msg-a-${Date.now()}`,
             session_id: sessionId,
             role: 'assistant',
             created_at: Math.floor(Date.now() / 1000),
-            parts: [
-              {
-                type: 'text',
-                data: {
-                  text: `Готово! Получен запрос в режиме предпросмотра:\n\n> ${String(args?.prompt || '').slice(0, 140)}`
-                }
-              },
-              { type: 'finish', data: { reason: 'stop' } }
-            ]
+            parts: replyParts
           }
           messagesBySession[sessionId] = [...(messagesBySession[sessionId] || []), reply]
           emit({ workspaceId, type: 'message', payload: { action: 'created', data: reply } })
@@ -739,7 +838,15 @@ export function installPreviewHost() {
           )
         ]
       }
-      if (operation === 'agent') return { mode: preferences.agentMode || 'general', model: { name: 'GPT-5.4' } }
+      if (operation === 'agent') {
+        const ws = projects.find((item) => item.id === workspaceId)
+        return {
+          mode:
+            workspaceModes.get(workspaceId) ||
+            (ws?.kind === 'designer' ? 'designer' : preferences.agentMode || 'general'),
+          model: { name: 'GPT-5.4' }
+        }
+      }
       if (operation === 'agentWorkers') return { workers }
       if (operation === 'agentWorkerMessages') return { messages: workerMessages[args?.workerSessionId] || [] }
       if (operation === 'agentWorkerSend') {
@@ -793,10 +900,42 @@ export function installPreviewHost() {
     async attachments() {
       return []
     },
-    async importImages() {
-      return []
+    async importImages(images) {
+      return images.map((image, index) => {
+        let binary = ''
+        for (let offset = 0; offset < image.data.length; offset += 32768) {
+          binary += String.fromCharCode(...image.data.subarray(offset, offset + 32768))
+        }
+        const base64 = btoa(binary)
+        const mimeType = image.name.toLowerCase().endsWith('.jpg') || image.name.toLowerCase().endsWith('.jpeg')
+          ? 'image/jpeg'
+          : image.name.toLowerCase().endsWith('.webp')
+            ? 'image/webp'
+            : image.name.toLowerCase().endsWith('.gif')
+              ? 'image/gif'
+              : 'image/png'
+        const id = `att-preview-${Date.now()}-${index}`
+        const preview = `data:${mimeType};base64,${base64}`
+        previewAttachments.set(id, {
+          id,
+          name: image.name,
+          size: image.data.length,
+          mimeType,
+          base64,
+          preview
+        })
+        return {
+          id,
+          name: image.name,
+          size: image.data.length,
+          mimeType,
+          preview
+        }
+      })
     },
-    async releaseAttachments() {},
+    async releaseAttachments(ids) {
+      for (const id of ids) previewAttachments.delete(id)
+    },
     async preferences(patch) {
       if (patch) {
         preferences = {

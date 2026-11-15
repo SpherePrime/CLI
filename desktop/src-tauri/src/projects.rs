@@ -19,8 +19,13 @@ fn data_directory(state: &AppState, path: &str) -> HostResult<Option<PathBuf>> {
     Ok(Some(dunce::canonicalize(directory)?))
 }
 
-fn workspace_request(path: &str, client: &str, data_directory: Option<PathBuf>) -> Value {
-    let mut request = json!({"path":path,"client_id":client,"channels":[]});
+fn workspace_request(
+    path: &str,
+    client: &str,
+    data_directory: Option<PathBuf>,
+    kind: &str,
+) -> Value {
+    let mut request = json!({"path":path,"client_id":client,"channels":[],"kind":kind});
     if let Some(directory) = data_directory {
         request["data_dir"] = json!(directory);
     }
@@ -35,7 +40,7 @@ pub fn sessions(state: &AppState, path: &str) -> HostResult<Value> {
     let workspace = engine.request(
         "POST",
         "/v1/workspaces",
-        Some(workspace_request(&path, &client, data_directory)),
+        Some(workspace_request(&path, &client, data_directory, "project")),
     )?;
     let result = workspace["id"]
         .as_str()
@@ -78,7 +83,7 @@ pub fn open(
     let workspace = engine.request(
         "POST",
         "/v1/workspaces",
-        Some(workspace_request(&path, &client, data_directory)),
+        Some(workspace_request(&path, &client, data_directory, kind)),
     )?;
     let id = workspace["id"]
         .as_str()
@@ -104,7 +109,11 @@ pub fn open(
         recent.insert(0, json!(path));
         recent.truncate(64);
     }
-    settings.update(&json!({"recent":recent,"activeProject":path}))?;
+    if kind == "designer" {
+        settings.update(&json!({"recent":recent}))?;
+    } else {
+        settings.update(&json!({"recent":recent,"activeProject":path}))?;
+    }
     events::emit(app, id, "connection", json!("ready"));
     Ok(project)
 }
@@ -243,7 +252,7 @@ fn delete_project_chats(
             .request(
                 "POST",
                 "/v1/workspaces",
-                Some(workspace_request(&local_path, &client, data_directory)),
+                Some(workspace_request(&local_path, &client, data_directory, "project")),
             )
             .map_err(|error| error.message)?,
     };
@@ -395,6 +404,7 @@ mod tests {
                     path,
                     &client,
                     data_directory(state, path).unwrap(),
+                    "project",
                 )),
             )
             .unwrap();
@@ -529,4 +539,8 @@ pub fn chats_directory(state: &AppState) -> PathBuf {
         }
     }
     state.directory.join("Chats")
+}
+
+pub fn designer_directory(state: &AppState) -> PathBuf {
+    state.directory.join("Designer")
 }

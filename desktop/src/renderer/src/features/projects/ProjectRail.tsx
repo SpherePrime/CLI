@@ -4,6 +4,7 @@ import {
   FolderOpen,
   ListTodo,
   MessageSquare,
+  Palette,
   Plus,
   Puzzle,
   Settings2,
@@ -78,11 +79,13 @@ export function ProjectRail({
       document.removeEventListener('keydown', keyboard)
     }
   }, [open])
+  const isDesigner = w.project?.kind === 'designer'
+  const isPersonalChat = w.project?.kind === 'chat'
   return (
     <div className="project-rail" ref={root}>
       <button
         ref={trigger}
-        className={`icon ${open || expanded ? 'active' : ''}`}
+        className={`icon ${open || (expanded && !isDesigner && !isPersonalChat) ? 'active' : ''}`}
         title={t('Панель проектов')}
         aria-label={t('Панель проектов')}
         aria-expanded={open || expanded}
@@ -100,13 +103,24 @@ export function ProjectRail({
         <Plus size={19} />
       </button>
       <button
-        className="icon"
+        className={`icon ${isPersonalChat ? 'active' : ''}`}
         title={t('Чат без проекта')}
         aria-label={t('Чат без проекта')}
+        aria-pressed={isPersonalChat}
         disabled={w.info.runtime !== 'ready'}
         onClick={() => void w.openChat()}
       >
         <MessageSquare size={18} />
+      </button>
+      <button
+        className={`icon ${isDesigner ? 'active' : ''}`}
+        title={t('Дизайнер')}
+        aria-label={t('Дизайнер')}
+        aria-pressed={isDesigner}
+        disabled={w.info.runtime !== 'ready'}
+        onClick={() => void w.openDesigner()}
+      >
+        <Palette size={18} />
       </button>
       <button
         className="icon"
@@ -130,7 +144,7 @@ export function ProjectRail({
         className="icon"
         title={t('Инструменты проекта')}
         aria-label={t('Инструменты проекта')}
-        disabled={!w.project}
+        disabled={!w.project || isDesigner}
         onClick={onTools}
       >
         <TerminalSquare size={18} />

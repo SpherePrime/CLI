@@ -29,7 +29,8 @@ import '../../styles/attachments.css'
 export function Composer({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
   const shortcuts = useShortcuts()
-  const key = `${!w.project || w.project.kind === 'chat' ? 'chat' : w.project.path}:${w.session?.id || 'new'}`
+  const isDesigner = w.project?.kind === 'designer'
+  const key = `${!w.project || w.project.kind === 'chat' ? 'chat' : isDesigner ? 'designer' : w.project.path}:${w.session?.id || 'new'}`
   const [text, setText] = useState(() => w.preferences.drafts[key] || '')
   const [attachments, setAttachments] = useState<any[]>([])
   const inFlightAttachments = useRef<string[]>([])
@@ -40,7 +41,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const [callOpen, setCallOpen] = useState(false)
   const [callHost, setCallHost] = useState<Element | null>(null)
   const composerRoot = useRef<HTMLDivElement>(null)
-  const mode = w.preferences.agentMode || 'general'
+  const mode = w.preferences.agentMode === 'plan' ? 'plan' : 'general'
   const projectReady = w.project?.connection === 'ready'
   const [suggestions, setSuggestions] = useState<FileSuggestion[]>([])
   const [suggestionIndex, setSuggestionIndex] = useState(0)
@@ -197,8 +198,8 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   }, [text, key])
   useEffect(() => {
     if (!w.project || !projectReady) return
-    void w.call('mode', { mode }).catch(() => {})
-  }, [w.project?.id, projectReady, mode])
+    void w.call('mode', { mode: isDesigner ? 'designer' : mode }).catch(() => {})
+  }, [w.project?.id, projectReady, isDesigner, mode])
   useEffect(() => {
     if (textarea.current) {
       textarea.current.style.height = 'auto'
@@ -350,7 +351,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   }
   async function change(value: string) {
     setText(value)
-    if (/@[^\s]*$/.test(value) && w.project && w.project.kind !== 'chat') {
+    if (/@[^\s]*$/.test(value) && w.project && w.project.kind !== 'chat' && !isDesigner) {
       const query = value.split('@').pop()!.toLowerCase()
       const files = await window.prime.files(w.project.id).catch(() => [])
       const next = files
@@ -444,7 +445,11 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           onChange={(event) => void change(event.target.value)}
           onPaste={(event) => void paste(event)}
           placeholder={
-            recording ? t('Запись голоса… Alt+V, чтобы остановить') : t('Напишите сообщение…')
+            recording
+              ? t('Запись голоса… Alt+V, чтобы остановить')
+              : isDesigner
+                ? t('Опишите дизайн, интерфейс или визуальную концепцию…')
+                : t('Напишите сообщение…')
           }
           aria-label={t('Сообщение Prime')}
           disabled={w.loading || sending}
@@ -510,7 +515,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               <Paperclip size={17} />
             </button>
             <span className="toolbar-divider" />
-            <ProjectPicker workspace={w} />
+            {!isDesigner && <ProjectPicker workspace={w} />}
             <PermissionMenu
               skip={w.skipPermissions}
               disabled={!w.project}
@@ -518,22 +523,25 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               onChange={w.setPermissionMode}
               onError={w.errorHandler}
             />
-            <Select
-              label={t('Режим агента')}
-              value={mode}
-              disabled={w.busy || !w.project}
-              options={[
-                { value: 'general', label: t('Работа') },
-                { value: 'plan', label: t('План') }
-              ]}
-              onChange={(value) => {
-                void w
-                  .call('mode', { mode: value })
-                  .then(() => w.savePreferences({ agentMode: value as 'general' | 'plan' }))
-                  .catch(w.errorHandler)
-              }}
-            />
-            <GoalButton workspace={w} />
+            {!isDesigner && (
+              <Select
+                label={t('Режим агента')}
+                value={mode}
+                disabled={w.busy || !w.project}
+                options={[
+                  { value: 'general', label: t('Работа') },
+                  { value: 'plan', label: t('План') }
+                ]}
+                onChange={(value) => {
+                  const next = value === 'plan' ? 'plan' : 'general'
+                  void w
+                    .call('mode', { mode: next })
+                    .then(() => w.savePreferences({ agentMode: next }))
+                    .catch(w.errorHandler)
+                }}
+              />
+            )}
+            {!isDesigner && <GoalButton workspace={w} />}
           </div>
           <div className="composer-actions">
             <ModelControl workspace={w} />

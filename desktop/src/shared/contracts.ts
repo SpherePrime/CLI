@@ -105,7 +105,7 @@ export type Project = {
     user: string
     root: string
   }
-  kind?: 'chat' | 'project'
+  kind?: 'chat' | 'project' | 'designer'
   id: string
   path: string
   clientId: string
@@ -259,7 +259,9 @@ export interface DesktopApi {
   projects(): Promise<Project[]>
   projectSessions(paths: string[]): Promise<Record<string, Session[]>>
   openChat(): Promise<Project>
+  openDesigner(): Promise<Project>
   projectCreationBase(): Promise<string>
+  projectCreationNextName(defaultName: string): Promise<string>
   createProject(name: string): Promise<Project>
   openProject(path?: string): Promise<Project | null>
   cancelProjectWait(): Promise<void>

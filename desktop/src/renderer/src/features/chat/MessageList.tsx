@@ -29,7 +29,8 @@ export function MessageList({
   historyTiming,
   loadHistory,
   searchMessages,
-  revealMessage
+  revealMessage,
+  onImplementDesign
 }: {
   messages: Message[]
   busy: boolean
@@ -45,6 +46,7 @@ export function MessageList({
   loadHistory?: (direction: PageDirection) => Promise<void>
   searchMessages?: (query: string) => Promise<{ matches: string[]; total: number }>
   revealMessage?: (id: string) => Promise<void>
+  onImplementDesign?: (message: Message, allMessages: Message[]) => void
 }) {
   const viewport = useRef<HTMLDivElement>(null)
   const { t } = useI18n()
@@ -330,6 +332,11 @@ export function MessageList({
                     fresh={fresh}
                     live={busy && last}
                     matched={message.id === matchId}
+                    onImplementDesign={
+                      onImplementDesign && isEndOfTurn(visible, row.index, busy)
+                        ? (target) => onImplementDesign(target, visible)
+                        : undefined
+                    }
                   />
                   {durationTime !== undefined && (
                     <div className="working completed-working">

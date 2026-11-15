@@ -15,6 +15,7 @@ import (
 type Workspace struct {
 	ID       string         `json:"id"`
 	Path     string         `json:"path"`
+	Kind     string         `json:"kind,omitempty"`
 	YOLO     bool           `json:"yolo,omitempty"`
 	Debug    bool           `json:"debug,omitempty"`
 	DataDir  string         `json:"data_dir,omitempty"`

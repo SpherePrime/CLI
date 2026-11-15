@@ -1596,3 +1596,61 @@ Object.assign(english, {
   'Доступно в подписке: {plan}': 'Available with {plan} subscription',
   'Модель недоступна на текущем тарифе': 'This model is locked on your current plan'
 })
+
+Object.assign(english, {
+  Дизайнер: 'Designer',
+  ДИЗАЙНЕР: 'DESIGNER',
+  'Новый дизайн': 'New design',
+  'Поиск дизайн-чатов': 'Search design chats',
+  'Найти дизайн-чат…': 'Find a design chat…',
+  'Дизайн-чаты не найдены': 'No matching design chats',
+  'Создайте первый дизайн-чат для концептов и макетов':
+    'Create your first design chat for concepts and mockups',
+  'Создать первый дизайн-чат': 'Create the first design chat',
+  'Вернуться к проектам': 'Back to projects',
+  'СТУДИЯ ДИЗАЙНА': 'DESIGN STUDIO',
+  'От идеи до макета.': 'From idea to mockup.',
+  'И сразу в код.': 'Straight into code.',
+  'Продумывайте интерфейсы, визуальные системы и иллюстрации в отдельном пространстве.':
+    'Design interfaces, visual systems and illustrations in a dedicated space.',
+  'Любая модель может обсуждать концепцию и генерировать изображения через':
+    'Any model can discuss concepts and generate images using',
+  'Готовый вариант можно в один клик передать в проект.':
+    'Send any finished concept to a project in one click.',
+  'Главный экран сайта': 'Website hero section',
+  'Композиция, типографика и акценты': 'Composition, typography and accents',
+  'Спроектируй главный экран (hero) современного сайта: продумай композицию, палитру, типографику и сгенерируй визуальный концепт через generate_image для: ':
+    'Design a modern website hero section: plan the composition, palette and typography, and generate a visual concept with generate_image for: ',
+  'Интерфейс дашборда': 'Dashboard interface',
+  'Сетка виджетов и состояния данных': 'Widget grid and data states',
+  'Разработай UI-концепт дашборда: иерархию блоков, компоненты, палитру и визуальный макет через generate_image для: ':
+    'Design a dashboard UI concept: block hierarchy, components, palette and a visual mockup with generate_image for: ',
+  'Мобильный экран': 'Mobile screen',
+  'Навигация, карточки и сценарии': 'Navigation, cards and user flows',
+  'Спроектируй мобильный экран приложения с акцентом на эргономику и чистую иерархию и сгенерируй концепт через generate_image для: ':
+    'Design a mobile app screen focused on ergonomics and clear hierarchy, and generate a concept with generate_image for: ',
+  'Фирменный стиль и арт': 'Brand style & artwork',
+  'Палитра, образы и иллюстрации': 'Palette, visual language and illustrations',
+  'Предложи визуальное направление, палитру и сгенерируй иллюстрацию через generate_image для: ':
+    'Propose a visual direction and palette, and generate an illustration with generate_image for: ',
+  'Опишите дизайн, интерфейс или визуальную концепцию…':
+    'Describe a design, interface or visual concept…',
+  'Сделать этот дизайн': 'Build this design',
+  'Выберите проект, в котором агент создаст новый чат и начнёт реализацию этого дизайна.':
+    'Choose a project where the agent will open a new chat and start implementing this design.',
+  'Макетов: {count}': 'Mockups: {count}',
+  'Текстовая спецификация дизайна будет передана в выбранный проект.':
+    'The text design specification will be sent to the selected project.',
+  'Макет дизайна {index}': 'Design mockup {index}',
+  'Найти проект…': 'Find a project…',
+  'Подходящие проекты не найдены': 'No matching projects found',
+  'Нет доступных проектов. Создайте новый проект или откройте папку.':
+    'No projects available. Create a new project or open a folder.',
+  'Передаём дизайн в проект…': 'Sending design to project…',
+  'Создастся новый чат в режиме «Работа» с описанием и прикреплёнными макетами.':
+    'Creates a new chat in Work mode with the specification and attached mockups.',
+  'Не удалось передать дизайн в выбранный проект.':
+    'Could not send the design to the selected project.',
+  'Реализация дизайна': 'Design implementation'
+})
+

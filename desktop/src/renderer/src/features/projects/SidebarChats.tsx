@@ -1,7 +1,7 @@
 import { sessionTitle } from '../../../../shared/sessionTitle'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Search, Server, X, Pin, Plus, MessagesSquare, FolderOpen } from 'lucide-react'
+import { Search, Server, X, Pin, Plus, MessagesSquare, FolderOpen, Palette } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Project, Session } from '../../../../shared/contracts'
 import type { Workspace } from '../../app/useWorkspace'
@@ -18,6 +18,7 @@ import { SidebarSession } from './SidebarSession'
 import { handleContextMenuKeyDown } from './contextMenuEscape'
 import './projectNavigation.css'
 import './projectReorder.css'
+import '../designer/designer.css'
 
 export function SidebarChats({
   workspace: w,
@@ -68,13 +69,17 @@ export function SidebarChats({
   }, [menu])
   const needle = search.trim().toLocaleLowerCase()
   const personal = w.projects.find((project) => project.kind === 'chat')
-  const folders = w.projects.filter((project) => project.kind !== 'chat')
+  const designer = w.projects.find((project) => project.kind === 'designer')
+  const folders = w.projects.filter(
+    (project) => project.kind !== 'chat' && project.kind !== 'designer'
+  )
+  const isDesignerView = w.project?.kind === 'designer'
   const projectLabel = (project: Project) =>
     project.remote
       ? `${project.remote.name} · ${project.remote.root.split('/').pop() || '/'}`
       : project.path.split(/[\\/]/).pop()
   const projectPaths = orderedProjectPaths(
-    w.preferences.recent,
+    w.preferences.recent.filter((path) => path !== 'chat' && path !== designer?.path),
     folders.map((project) => project.path),
     w.preferences.projectOrder
   ).filter((path) => !removedPaths.includes(path))
@@ -306,148 +311,236 @@ export function SidebarChats({
       onMenu={() => {}}
     />
   )
+  const designerProject = w.project?.kind === 'designer' ? w.project : designer
+  const designerSessions = designerProject ? sessionsOf(designerProject) : []
+  const filteredDesignerSessions = designerSessions.filter(matching)
+  const backToProjects = async () => {
+    const regular = folders[0]
+    if (regular) {
+      await w.selectProject(regular)
+      return
+    }
+    const recentPath = w.preferences.recent.find(
+      (path) => path && path !== 'chat' && path !== designer?.path
+    )
+    if (recentPath) {
+      await w.openProject(recentPath)
+      return
+    }
+    await w.openChat()
+  }
   return (
     <>
-      <div className="section-caption navigation-caption">
-        <span>
-          {t('ПРОЕКТЫ')} <b>{projectPaths.length}</b>
-        </span>
-        <span className="section-caption-actions">
-          <button className="icon small" aria-label={t('Открыть папку')} title={t('Открыть папку')}
-            onClick={() => void w.openFolder()} disabled={w.loading || w.info.runtime !== 'ready'}>
+      {isDesignerView && designerProject ? (
+        <>
+          <div className="section-caption navigation-caption designer-sidebar-head">
+            <span>
+              <Palette size={13} />
+              {t('ДИЗАЙНЕР')} <b>{designerSessions.length}</b>
+            </span>
+            <span className="section-caption-actions">
+              <button
+                className="icon small"
+                aria-label={t('Новый дизайн')}
+                title={t('Новый дизайн')}
+                onClick={() => void w.newDesignerChat()}
+                disabled={w.loading || w.info.runtime !== 'ready'}
+              >
+                <Plus size={14} />
+              </button>
+            </span>
+          </div>
+          <div className="project-search-box">
+            <Search size={14} />
+            <input
+              aria-label={t('Поиск дизайн-чатов')}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t('Найти дизайн-чат…')}
+            />
+            {search && (
+              <button
+                className="icon small"
+                aria-label={t('Закрыть поиск')}
+                onClick={() => setSearch('')}
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="designer-sidebar-list">
+            {filteredDesignerSessions.map((session) =>
+              renderSession(designerProject, session, true)
+            )}
+          </div>
+          {needle && !filteredDesignerSessions.length && (
+            <div className="sidebar-empty">{t('Дизайн-чаты не найдены')}</div>
+          )}
+          {!needle && !designerSessions.length && (
+            <div className="designer-sidebar-empty">
+              <p>{t('Создайте первый дизайн-чат для концептов и макетов')}</p>
+              <button
+                className="personal-empty-chat"
+                onClick={() => void w.newDesignerChat()}
+              >
+                <Plus size={14} />
+                {t('Создать первый дизайн-чат')}
+              </button>
+            </div>
+          )}
+          <button
+            type="button"
+            className="designer-sidebar-back"
+            onClick={() => void backToProjects()}
+          >
             <FolderOpen size={14} />
+            <span>{t('Вернуться к проектам')}</span>
           </button>
-          <button
-            className="icon small"
-            aria-label={t('Новый проект')}
-            title={t('Новый проект')}
-            onClick={() => void w.openProject()}
-            disabled={w.loading || w.info.runtime !== 'ready'}
-          >
-            <Plus size={14} />
-          </button>
-          <button
-            className="icon small"
-            aria-label={t('SSH-серверы')}
-            title={t('SSH-серверы')}
-            onClick={onRemote}
-            disabled={w.info.runtime !== 'ready'}
-          >
-            <Server size={14} />
-          </button>
-        </span>
-      </div>
-      <div className="project-search-box">
-        <Search size={14} />
-        <input
-          aria-label={t('Поиск проектов и чатов')}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={t('Найти проект или чат…')}
-        />
-        {search && (
-          <button
-            className="icon small"
-            aria-label={t('Закрыть поиск')}
-            onClick={() => setSearch('')}
-          >
-            <X size={12} />
-          </button>
-        )}
-      </div>
-      <div className="project-card-list">
-        {visited.map((entry) => {
-          const closed = typeof entry === 'string'
-          const project = closed ? undefined : entry
-          const path = closed ? entry : project!.path
-          const name = project ? projectLabel(project) || path : path.split(/[\\/]/).pop() || path
-          const subtitle = project?.remote
-            ? `${project.remote.user}@${project.remote.host}`
-            : path.replace(/[\\/][^\\/]+[\\/]?$/, '') || path
-          const open = Boolean(needle || expanded[project ? project.id : path])
-          const closedChats = closedSessionsOf(path)
-          return (
-            <ProjectCard
-              key={path}
-              name={name}
-              path={path}
-              subtitle={closed ? t('Не открыт') : subtitle}
-              active={project?.id === w.project?.id}
-              open={open}
-              closed={closed}
-              remote={Boolean(project?.remote)}
-              ready={project?.connection === 'ready'}
-              count={project ? sessionsOf(project).length : closedChats.length}
-              headingProps={reorder.headingProps(path)}
-              buttonProps={reorder.buttonProps(path)}
-              onToggle={() => toggle(project ? project.id : path, open)}
-              onClose={() => setDeletingPath(path)}
-              onNewChat={() => void (project ? createProjectChat(project) : w.openProjectNewChat(path))}
-            >
-              {project ? (
-                sessionsOf(project).length ? (
-                  renderSessions(project)
-                ) : (
-                  <button
-                    className="project-empty-chat"
-                    onClick={() => void createProjectChat(project)}
-                  >
-                    <Plus size={13} />
-                    {t('Создать первый чат')}
-                  </button>
-                )
-              ) : (
-                <>
-                  {closedChats.length ? (
-                    closedChats
-                      .filter((session) => !needle || matching(session))
-                      .map((session) => renderClosedSession(path, session))
+        </>
+      ) : (
+        <>
+          <div className="section-caption navigation-caption">
+            <span>
+              {t('ПРОЕКТЫ')} <b>{projectPaths.length}</b>
+            </span>
+            <span className="section-caption-actions">
+              <button className="icon small" aria-label={t('Открыть папку')} title={t('Открыть папку')}
+                onClick={() => void w.openFolder()} disabled={w.loading || w.info.runtime !== 'ready'}>
+                <FolderOpen size={14} />
+              </button>
+              <button
+                className="icon small"
+                aria-label={t('Новый проект')}
+                title={t('Новый проект')}
+                onClick={() => void w.openProject()}
+                disabled={w.loading || w.info.runtime !== 'ready'}
+              >
+                <Plus size={14} />
+              </button>
+              <button
+                className="icon small"
+                aria-label={t('SSH-серверы')}
+                title={t('SSH-серверы')}
+                onClick={onRemote}
+                disabled={w.info.runtime !== 'ready'}
+              >
+                <Server size={14} />
+              </button>
+            </span>
+          </div>
+          <div className="project-search-box">
+            <Search size={14} />
+            <input
+              aria-label={t('Поиск проектов и чатов')}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t('Найти проект или чат…')}
+            />
+            {search && (
+              <button
+                className="icon small"
+                aria-label={t('Закрыть поиск')}
+                onClick={() => setSearch('')}
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="project-card-list">
+            {visited.map((entry) => {
+              const closed = typeof entry === 'string'
+              const project = closed ? undefined : entry
+              const path = closed ? entry : project!.path
+              const name = project ? projectLabel(project) || path : path.split(/[\\/]/).pop() || path
+              const subtitle = project?.remote
+                ? `${project.remote.user}@${project.remote.host}`
+                : path.replace(/[\\/][^\\/]+[\\/]?$/, '') || path
+              const open = Boolean(needle || expanded[project ? project.id : path])
+              const closedChats = closedSessionsOf(path)
+              return (
+                <ProjectCard
+                  key={path}
+                  name={name}
+                  path={path}
+                  subtitle={closed ? t('Не открыт') : subtitle}
+                  active={project?.id === w.project?.id}
+                  open={open}
+                  closed={closed}
+                  remote={Boolean(project?.remote)}
+                  ready={project?.connection === 'ready'}
+                  count={project ? sessionsOf(project).length : closedChats.length}
+                  headingProps={reorder.headingProps(path)}
+                  buttonProps={reorder.buttonProps(path)}
+                  onToggle={() => toggle(project ? project.id : path, open)}
+                  onClose={() => setDeletingPath(path)}
+                  onNewChat={() => void (project ? createProjectChat(project) : w.openProjectNewChat(path))}
+                >
+                  {project ? (
+                    sessionsOf(project).length ? (
+                      renderSessions(project)
+                    ) : (
+                      <button
+                        className="project-empty-chat"
+                        onClick={() => void createProjectChat(project)}
+                      >
+                        <Plus size={13} />
+                        {t('Создать первый чат')}
+                      </button>
+                    )
                   ) : (
-                    <button
-                      className="project-empty-chat"
-                      onClick={() => void w.openProjectNewChat(path)}
-                    >
-                      <Plus size={13} />
-                      {t('Создать первый чат')}
-                    </button>
+                    <>
+                      {closedChats.length ? (
+                        closedChats
+                          .filter((session) => !needle || matching(session))
+                          .map((session) => renderClosedSession(path, session))
+                      ) : (
+                        <button
+                          className="project-empty-chat"
+                          onClick={() => void w.openProjectNewChat(path)}
+                        >
+                          <Plus size={13} />
+                          {t('Создать первый чат')}
+                        </button>
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            </ProjectCard>
-          )
-        })}
-      </div>
-      {needle && !visited.length && !recentChats.length && (
-        <div className="sidebar-empty">{t('Проекты и чаты не найдены')}</div>
-      )}
-      <section className="personal-chat-section" aria-label={t('Личные чаты')}>
-        <div className="section-caption navigation-caption recent-caption">
-          <span>
-            <MessagesSquare size={13} />
-            {t('ЛИЧНЫЕ ЧАТЫ')}
-            <b>{personal ? sessionsOf(personal).length : 0}</b>
-          </span>
-          <button
-            className="icon small"
-            aria-label={t('Новый личный чат')}
-            title={t('Новый личный чат')}
-            disabled={w.loading || w.info.runtime !== 'ready'}
-            onClick={() => void createProjectChat()}
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-        <p className="personal-chat-hint">{t('Без проекта')}</p>
-        {recentChats.map(({ project, session }) => renderSession(project, session, true))}
-        {!needle && !recentChats.length && (
-          <button className="personal-empty-chat" onClick={() => void createProjectChat()}>
-            <Plus size={14} />
-            {t('Начать личный чат')}
-          </button>
-        )}
-      </section>
-      {!w.projects.length && !visited.length && (
-        <div className="sidebar-empty">{t('Откройте папку, чтобы начать работу с проектом')}</div>
+                </ProjectCard>
+              )
+            })}
+          </div>
+          {needle && !visited.length && !recentChats.length && (
+            <div className="sidebar-empty">{t('Проекты и чаты не найдены')}</div>
+          )}
+          <section className="personal-chat-section" aria-label={t('Личные чаты')}>
+            <div className="section-caption navigation-caption recent-caption">
+              <span>
+                <MessagesSquare size={13} />
+                {t('ЛИЧНЫЕ ЧАТЫ')}
+                <b>{personal ? sessionsOf(personal).length : 0}</b>
+              </span>
+              <button
+                className="icon small"
+                aria-label={t('Новый личный чат')}
+                title={t('Новый личный чат')}
+                disabled={w.loading || w.info.runtime !== 'ready'}
+                onClick={() => void createProjectChat()}
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+            <p className="personal-chat-hint">{t('Без проекта')}</p>
+            {recentChats.map(({ project, session }) => renderSession(project, session, true))}
+            {!needle && !recentChats.length && (
+              <button className="personal-empty-chat" onClick={() => void createProjectChat()}>
+                <Plus size={14} />
+                {t('Начать личный чат')}
+              </button>
+            )}
+          </section>
+          {!w.projects.length && !visited.length && (
+            <div className="sidebar-empty">{t('Откройте папку, чтобы начать работу с проектом')}</div>
+          )}
+        </>
       )}
       {menu &&
         menuSession &&

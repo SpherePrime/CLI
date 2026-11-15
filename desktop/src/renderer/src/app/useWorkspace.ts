@@ -29,6 +29,13 @@ import { updateHistoryMessage, type MessagePage } from '../features/chat/message
 import { queueMessageEvent, type SequencedMessageEvent } from '../features/chat/messageEvents'
 import { createResourceRefresh, resourceEvents, resourceOperations } from './resourceRefresh'
 import { reconcileObservedBusy, type ObservedBusy } from './sessionBusy'
+import {
+  base64ToUint8Array,
+  buildDesignImplementationPrompt,
+  isRegularProject,
+  isSupportedUploadImage,
+  type DesignPayload
+} from '../features/designer/designHandoff'
 
 const resolvedLimit = 1000
 
@@ -389,7 +396,12 @@ export function useWorkspace() {
       if (!opened.length) opened = [await window.prime.openChat()]
       setProjects(opened)
       if (opened.length && !current.current.project) {
-        const restored = opened.find((item) => item.path === saved.activeProject) || opened[0]
+        const restored =
+          opened.find(
+            (item) => item.path === saved.activeProject && item.kind !== 'designer'
+          ) ||
+          opened.find((item) => item.kind !== 'designer') ||
+          opened[0]
         current.current.project = restored
         setProject(restored)
         const existing: Session[] = await window.prime.call(restored.id, 'sessions')
@@ -878,6 +890,24 @@ export function useWorkspace() {
       errorHandler(error)
     }
   }
+  async function openDesigner() {
+    try {
+      const opened = await window.prime.openDesigner()
+      void window.prime.projects().then(setProjects).catch(errorHandler)
+      await selectProject(opened)
+      const [existing, saved] = await Promise.all([
+        window.prime.call(opened.id, 'sessions') as Promise<Session[]>,
+        window.prime.preferences()
+      ])
+      const selected =
+        existing.find(
+          (item) => item.id === (opened.currentSessionId || saved.activeSessions?.[opened.path])
+        ) || [...existing].sort((a, b) => (b.updated_at || 0) - (a.updated_at || 0))[0]
+      if (selected) await selectSession(selected)
+    } catch (error) {
+      errorHandler(error)
+    }
+  }
   // Creates the chat in the engine and swaps the placeholder the UI already
   // shows for the real session. A chat the user discarded meanwhile is removed
   // again instead of appearing in the sidebar.
@@ -887,7 +917,7 @@ export function useWorkspace() {
   ): Promise<Session | null> {
     try {
       const created = (await window.prime.call(project.id, 'createSession', {
-        title: translate(language.current, 'Новый чат')
+        title: placeholder.title || translate(language.current, 'Новый чат')
       })) as Session
       if (discardedSessions.current.delete(placeholder.id)) {
         void window.prime
@@ -971,8 +1001,29 @@ export function useWorkspace() {
       if (pendingChatOpen.current === opening) pendingChatOpen.current = null
     }
   }
+  async function createDesignerChat(): Promise<Session | null> {
+    const opening = (async () => {
+      const opened = await window.prime.openDesigner()
+      void window.prime.projects().then(setProjects).catch(errorHandler)
+      if (current.current.project?.id !== opened.id) await selectProject(opened)
+      return opened
+    })()
+    pendingChatOpen.current = opening
+    try {
+      return startSession(
+        await opening,
+        newPendingSession(translate(language.current, 'Новый дизайн'))
+      )
+    } catch (error) {
+      errorHandler(error)
+      return null
+    } finally {
+      if (pendingChatOpen.current === opening) pendingChatOpen.current = null
+    }
+  }
   async function createSession() {
     const open = current.current.project
+    if (open?.kind === 'designer') return createDesignerChat()
     const target = open ?? projects.find((item) => item.kind === 'chat') ?? null
     if (!target) return createPersonalChat()
     // A chat in a project that is not the open one still needs that project's
@@ -1034,16 +1085,22 @@ export function useWorkspace() {
         setObservedBusy(null)
         setBusy(true)
       }
-      if (prompt.startsWith('!'))
+      if (prompt.startsWith('!') && targetProject.kind !== 'designer')
         setPendingShell({ projectId: targetProject.id, sessionId: selected.id })
-      if (prompt.startsWith('!'))
+      if (prompt.startsWith('!') && targetProject.kind !== 'designer')
         await window.prime.call(targetProject.id, 'shell', {
           sessionId: selected.id,
           command: prompt.slice(1).trim()
         })
       else {
+        const targetMode =
+          targetProject.kind === 'designer'
+            ? 'designer'
+            : latestPreferences.agentMode === 'plan'
+              ? 'plan'
+              : 'general'
         await window.prime
-          .call(targetProject.id, 'mode', { mode: latestPreferences.agentMode || 'general' })
+          .call(targetProject.id, 'mode', { mode: targetMode })
           .catch(() => {})
         await window.prime.call(targetProject.id, 'send', {
           sessionId: selected.id,
@@ -1075,6 +1132,88 @@ export function useWorkspace() {
       return false
     } finally {
       if (prompt.startsWith('!')) setPendingShell(null)
+    }
+  }
+  async function implementDesign(
+    target: { path?: string; project?: Project },
+    design: DesignPayload
+  ): Promise<boolean> {
+    let attachmentIds: string[] = []
+    try {
+      let targetProject: Project | null = null
+      if (target.project) {
+        if (!isRegularProject(target.project)) return false
+        targetProject = target.project
+        if (current.current.project?.id !== targetProject.id) {
+          await selectProject(targetProject)
+        }
+      } else if (target.path) {
+        const existing = projects.find((item) => item.path === target.path)
+        if (existing) {
+          if (!isRegularProject(existing)) return false
+          targetProject = existing
+          if (current.current.project?.id !== targetProject.id) {
+            await selectProject(targetProject)
+          }
+        } else {
+          setLoading(true)
+          try {
+            const opened = await window.prime.openProject(target.path)
+            if (!isRegularProject(opened)) return false
+            targetProject = opened
+            void window.prime.projects().then(setProjects).catch(errorHandler)
+            void window.prime.preferences().then(setPreferences).catch(errorHandler)
+            await selectProject(opened)
+          } finally {
+            setLoading(false)
+          }
+        }
+      }
+      if (!targetProject || !isRegularProject(targetProject)) return false
+
+      const sessionTitleText =
+        design.title.trim() || translate(language.current, 'Реализация дизайна')
+      const createdSession = (await window.prime.call(targetProject.id, 'createSession', {
+        title: sessionTitleText
+      })) as Session | null
+      if (!createdSession) return false
+
+      setSessions((items) => upsertSession(items, createdSession))
+      showSession(targetProject, createdSession)
+      void window.prime
+        .call(targetProject.id, 'currentSession', { sessionId: createdSession.id })
+        .catch(errorHandler)
+
+      if (design.images.length > 0) {
+        const uploads = design.images
+          .filter(isSupportedUploadImage)
+          .slice(0, 10)
+          .map((image) => ({
+            name: image.name,
+            data: base64ToUint8Array(image.base64)
+          }))
+          .filter((upload) => upload.data.length > 0)
+        if (uploads.length > 0) {
+          const imported = await window.prime.importImages(uploads)
+          attachmentIds = imported.map((item) => item.id)
+        }
+      }
+
+      const latestPreferences = await window.prime.preferences()
+      if (latestPreferences.agentMode && latestPreferences.agentMode !== 'general') {
+        await savePreferences({ agentMode: 'general' })
+      }
+      await window.prime.call(targetProject.id, 'mode', { mode: 'general' }).catch(() => {})
+
+      const prompt = buildDesignImplementationPrompt(design)
+      return await send(prompt, attachmentIds)
+    } catch (error) {
+      errorHandler(error)
+      return false
+    } finally {
+      if (attachmentIds.length > 0) {
+        void window.prime.releaseAttachments(attachmentIds).catch(() => {})
+      }
     }
   }
   // Stops the run of the chat the user is looking at. A chat that is still a
@@ -1377,6 +1516,9 @@ export function useWorkspace() {
     refresh,
     openChat,
     newPersonalChat: createPersonalChat,
+    openDesigner,
+    newDesignerChat: createDesignerChat,
+    implementDesign,
     openProject,
     projectCreationOpen,
     closeProjectCreation: () => setProjectCreationOpen(false),

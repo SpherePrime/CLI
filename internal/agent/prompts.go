@@ -26,6 +26,9 @@ var explorePromptTmpl []byte
 //go:embed templates/review.md.tpl
 var reviewPromptTmpl []byte
 
+//go:embed templates/designer.md.tpl
+var designerPromptTmpl []byte
+
 //go:embed templates/initialize.md.tpl
 var initializePromptTmpl []byte
 
@@ -70,6 +73,10 @@ func explorePrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 
 func reviewPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
 	return prompt.NewPrompt("review", string(reviewPromptTmpl)+string(instructionRoutingTmpl), opts...)
+}
+
+func designerPrompt(opts ...prompt.Option) (*prompt.Prompt, error) {
+	return prompt.NewPrompt("designer", string(designerPromptTmpl), opts...)
 }
 
 func InitializePrompt(cfg *config.ConfigStore) (string, error) {

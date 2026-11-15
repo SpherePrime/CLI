@@ -809,6 +809,10 @@ func (c *controllerV1) handleError(w http.ResponseWriter, r *http.Request, err e
 		status = http.StatusNotFound
 	case errors.Is(err, backend.ErrAgentNotInitialized):
 		status = http.StatusBadRequest
+	case errors.Is(err, backend.ErrAgentNotAllowedForWorkspace):
+		status = http.StatusBadRequest
+	case errors.Is(err, backend.ErrWorkspaceKindMismatch):
+		status = http.StatusConflict
 	case errors.Is(err, backend.ErrAgentBusy):
 		// Switching the main agent mid-run could strand the run's
 		// queued prompts on the previous agent; mirror the TUI's

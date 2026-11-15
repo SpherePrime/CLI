@@ -186,9 +186,21 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             let documents = app.path().document_dir().map_err(|error| HostError::new("DOCUMENTS_UNAVAILABLE", error.to_string()))?;
             Ok(json!(documents.join("Prime")))
         }
+        "projectCreationNextName" => {
+            let documents = app.path().document_dir().map_err(|error| HostError::new("DOCUMENTS_UNAVAILABLE", error.to_string()))?;
+            let next = crate::project_creation::next_available_name(&documents, string(args, 0)?).map_err(|error| {
+                let code = match error.kind() {
+                    std::io::ErrorKind::InvalidInput => "INVALID_PROJECT_NAME",
+                    std::io::ErrorKind::PermissionDenied => "PROJECT_ACCESS_DENIED",
+                    _ => "PROJECT_CREATE_FAILED",
+                };
+                HostError::new(code, code)
+            })?;
+            Ok(json!(next))
+        }
         "createProject" => {
             let documents = app.path().document_dir().map_err(|error| HostError::new("DOCUMENTS_UNAVAILABLE", error.to_string()))?;
-            let path = crate::project_creation::create_directory(&documents, string(args, 0)?).map_err(|error| {
+            let path = crate::project_creation::create_directory_auto(&documents, string(args, 0)?).map_err(|error| {
                 let code = match error.kind() {
                     std::io::ErrorKind::AlreadyExists => "PROJECT_EXISTS",
                     std::io::ErrorKind::InvalidInput => "INVALID_PROJECT_NAME",
@@ -234,6 +246,11 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             let path = crate::projects::chats_directory(&state);
             std::fs::create_dir_all(&path)?;
             crate::projects::open(app, &state, path, "chat")
+        }
+        "openDesigner" => {
+            let path = crate::projects::designer_directory(&state);
+            std::fs::create_dir_all(&path)?;
+            crate::projects::open(app, &state, path, "designer")
         }
         "deleteProject" => crate::projects::delete_project(app, &state, string(args, 0)?),
         "windows" => state
@@ -601,7 +618,7 @@ mod manifest_tests {
     const MANIFEST: &str = include_str!("../../src/shared/hostMethods.json");
     const SOURCE: &str = include_str!("commands.rs");
 
-    const BROWSER_PREFIX_METHODS: [&str; 11] = [
+    const BROWSER_PREFIX_METHODS: [&str; 12] = [
         "browserShow",
         "browserHide",
         "browserTab",

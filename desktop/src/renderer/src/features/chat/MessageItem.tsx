@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { ArrowUpRight, Check, Copy, Sparkles } from 'lucide-react'
 import { MessageAttachment } from './MessageAttachment'
 import { MarkdownText } from './MarkdownText'
 import { PrimeLogo } from '../../components/PrimeLogo'
@@ -10,25 +10,46 @@ import { ReasoningBlock } from './ReasoningBlock'
 import { useI18n } from '../../i18n'
 import type { Message } from '../../../../shared/contracts'
 import { textContent, visibleMessageText } from '../../../../shared/messages'
+import '../designer/designer.css'
 
 export const MessageItem = memo(function MessageItem({
   message,
   continued,
   fresh,
   live,
-  matched
+  matched,
+  onImplementDesign
 }: {
   message: Message
   continued: boolean
   fresh: boolean
   live: boolean
   matched: boolean
+  onImplementDesign?: (message: Message) => void
 }) {
   const { t, locale } = useI18n()
   const [copied, setCopied] = useState(false)
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const text = textContent(message)
+  const hasImages = (message.parts || []).some((part) => {
+    if (
+      part.type === 'image_url' &&
+      typeof part.data?.url === 'string' &&
+      part.data.url.startsWith('data:')
+    ) {
+      return true
+    }
+    if (part.type === 'binary') {
+      const mime = part.data?.mime_type ?? part.data?.MIMEType ?? ''
+      return typeof mime === 'string' && mime.startsWith('image/')
+    }
+    if (part.type === 'tool_call' || part.type === 'tool_result') {
+      const result = part.type === 'tool_result' ? part.data : (part.data?.result as unknown)
+      return collectToolImages(result).length > 0
+    }
+    return false
+  })
   if (message.is_summary_message) {
     const finish = (message.parts || []).find((part) => part.type === 'finish')
     if (finish) return null
@@ -134,6 +155,22 @@ export const MessageItem = memo(function MessageItem({
           return null
         })}
       </div>
+      {message.role === 'assistant' &&
+        onImplementDesign &&
+        !live &&
+        (Boolean(text.trim()) || hasImages) && (
+          <div className="message-design-actions">
+            <button
+              type="button"
+              className="design-handoff-trigger"
+              onClick={() => onImplementDesign(message)}
+            >
+              <Sparkles size={14} aria-hidden="true" />
+              <span>{t('Сделать этот дизайн')}</span>
+              <ArrowUpRight size={14} aria-hidden="true" />
+            </button>
+          </div>
+        )}
       {text && message.role === 'user' && (
         <button
           className="copy-message icon"

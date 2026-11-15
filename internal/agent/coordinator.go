@@ -303,6 +303,16 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 		}
 	}
 
+	if designerCfg, ok := c.cfg.Config().Agents[config.AgentDesigner]; ok {
+		if designerSystemPrompt, perr := designerPrompt(prompt.WithWorkingDir(c.cfg.WorkingDir())); perr != nil {
+			slog.Warn("Designer agent not registered", "error", perr)
+		} else if designerAgent, berr := c.buildAgent(ctx, designerSystemPrompt, designerCfg, false); berr != nil {
+			slog.Warn("Designer agent not registered", "error", berr)
+		} else {
+			c.agents[config.AgentDesigner] = designerAgent
+		}
+	}
+
 	c.mainAgent = agent
 	c.mainAgentName = config.AgentGeneral
 	return c, nil
@@ -1116,30 +1126,32 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		}
 	}
 
-	for _, tool := range tools.GetMCPTools(c.permissions, c.cfg, c.cfg.WorkingDir(), c.wakeOnMCPJob) {
-		if roleDeniesMCP(agent, tool.MCP()) {
-			continue
-		}
-		if agent.AllowedMCP == nil {
-			// No MCP restrictions
-			filteredTools = append(filteredTools, tool)
-			continue
-		}
-		if len(agent.AllowedMCP) == 0 {
-			// No MCPs allowed
-			slog.Debug("No MCPs allowed", "tool", tool.Name(), "agent", agent.Name)
-			break
-		}
-
-		for mcp, tools := range agent.AllowedMCP {
-			if mcp != tool.MCP() {
+	if agent.ID != config.AgentDesigner {
+		for _, tool := range tools.GetMCPTools(c.permissions, c.cfg, c.cfg.WorkingDir(), c.wakeOnMCPJob) {
+			if roleDeniesMCP(agent, tool.MCP()) {
 				continue
 			}
-			if len(tools) == 0 || slices.Contains(tools, tool.MCPToolName()) {
+			if agent.AllowedMCP == nil {
+				// No MCP restrictions
 				filteredTools = append(filteredTools, tool)
+				continue
+			}
+			if len(agent.AllowedMCP) == 0 {
+				// No MCPs allowed
+				slog.Debug("No MCPs allowed", "tool", tool.Name(), "agent", agent.Name)
 				break
 			}
-			slog.Debug("MCP not allowed", "tool", tool.Name(), "agent", agent.Name)
+
+			for mcp, tools := range agent.AllowedMCP {
+				if mcp != tool.MCP() {
+					continue
+				}
+				if len(tools) == 0 || slices.Contains(tools, tool.MCPToolName()) {
+					filteredTools = append(filteredTools, tool)
+					break
+				}
+				slog.Debug("MCP not allowed", "tool", tool.Name(), "agent", agent.Name)
+			}
 		}
 	}
 	slices.SortFunc(filteredTools, func(a, b fantasy.AgentTool) int {
@@ -1921,9 +1933,14 @@ func (c *coordinator) updateAgentModels(ctx context.Context, agent SessionAgent,
 	// mode is toggled rather than on the next session.
 	promptOpts := []prompt.Option{prompt.WithWorkingDir(c.cfg.WorkingDir())}
 	var p *prompt.Prompt
-	if name == config.AgentPlan {
+	switch name {
+	case config.AgentPlan:
 		p, err = planPrompt(promptOpts...)
-	} else {
+	case config.AgentDesigner:
+		p, err = designerPrompt(promptOpts...)
+	case config.AgentTask:
+		p, err = taskPrompt(promptOpts...)
+	default:
 		p, err = coderPrompt(promptOpts...)
 	}
 	if err != nil {

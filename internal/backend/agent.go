@@ -124,6 +124,16 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		return err
 	}
 
+	ws.agentInitMu.Lock()
+	if ws.Kind != "designer" && ws.mainAgent == config.AgentDesigner {
+		ws.agentInitMu.Unlock()
+		return fmt.Errorf("%w: designer agent is only available in designer workspaces", ErrAgentNotAllowedForWorkspace)
+	}
+	if ws.Kind == "designer" && ws.mainAgent == "" {
+		ws.mainAgent = config.AgentDesigner
+	}
+	ws.agentInitMu.Unlock()
+
 	coord := ws.Coordinator()
 	if coord == nil {
 		if err := b.ensureAgent(ws); err != nil {
@@ -219,6 +229,12 @@ func (b *Backend) ensureAgent(ws *Workspace) error {
 	ws.runMu.Unlock()
 	if closing {
 		return ErrWorkspaceClosing
+	}
+	if ws.Kind != "designer" && ws.mainAgent == config.AgentDesigner {
+		return fmt.Errorf("%w: designer agent is only available in designer workspaces", ErrAgentNotAllowedForWorkspace)
+	}
+	if ws.Kind == "designer" && ws.mainAgent == "" {
+		ws.mainAgent = config.AgentDesigner
 	}
 	if ws.Coordinator() != nil {
 		return nil
@@ -332,6 +348,12 @@ func (b *Backend) InitAgent(ctx context.Context, workspaceID string, interactive
 	if closing {
 		return ErrWorkspaceClosing
 	}
+	if ws.Kind != "designer" && ws.mainAgent == config.AgentDesigner {
+		return fmt.Errorf("%w: designer agent is only available in designer workspaces", ErrAgentNotAllowedForWorkspace)
+	}
+	if ws.Kind == "designer" && ws.mainAgent == "" {
+		ws.mainAgent = config.AgentDesigner
+	}
 	if ws.Coordinator() != nil {
 		return ws.UpdateAgentModel(ctx)
 	}
@@ -352,6 +374,16 @@ func (b *Backend) UpdateAgent(ctx context.Context, workspaceID string) error {
 	return ws.UpdateAgentModel(ctx)
 }
 
+func validateWorkspaceAgent(ws *Workspace, agentID string) error {
+	if agentID == config.AgentDesigner && ws.Kind != "designer" {
+		return fmt.Errorf("%w: designer agent is only available in designer workspaces", ErrAgentNotAllowedForWorkspace)
+	}
+	if ws.Kind == "designer" && agentID != config.AgentDesigner {
+		return fmt.Errorf("%w: designer workspace only supports designer agent", ErrAgentNotAllowedForWorkspace)
+	}
+	return nil
+}
+
 // SetMainAgent switches the workspace's active agent (coder or plan). It
 // is rejected while the agent is running so a switch can never strand a
 // run's queued prompts on the previous agent — the same protection the
@@ -364,12 +396,15 @@ func (b *Backend) SetMainAgent(workspaceID, agentID string) error {
 
 	ws.agentInitMu.Lock()
 	defer ws.agentInitMu.Unlock()
+	if err := validateWorkspaceAgent(ws, agentID); err != nil {
+		return err
+	}
 	coord := ws.Coordinator()
 	if coord == nil {
 		if ws.Cfg == nil {
 			return ErrAgentNotInitialized
 		}
-		if agentID != config.AgentGeneral && agentID != config.AgentPlan && agentID != config.AgentTask {
+		if agentID != config.AgentGeneral && agentID != config.AgentPlan && agentID != config.AgentTask && agentID != config.AgentDesigner {
 			return fmt.Errorf("main agent not found: %s", agentID)
 		}
 		if _, ok := ws.Cfg.Config().Agents[agentID]; !ok {

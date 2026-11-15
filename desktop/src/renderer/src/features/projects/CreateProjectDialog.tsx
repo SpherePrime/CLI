@@ -14,6 +14,7 @@ export function CreateProjectDialog({ workspace: w }: { workspace: Workspace }) 
   const [pending, setPending] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const submitting = useRef(false)
+  const edited = useRef(false)
   const [previousFocus] = useState(() => typeof document === 'undefined' ? null : document.activeElement)
   useEffect(() => () => {
     queueMicrotask(() => {
@@ -22,11 +23,19 @@ export function CreateProjectDialog({ workspace: w }: { workspace: Workspace }) 
   }, [previousFocus])
   useEffect(() => {
     let active = true
+    const defaultName = t('Новый проект')
     window.prime.projectCreationBase().then((value) => {
       if (active) setBase(value)
     }).catch(() => {
       if (active) setError(t('Не удалось определить папку «Документы»'))
     })
+    window.prime.projectCreationNextName?.(defaultName).then((nextName) => {
+      if (!active || edited.current || !nextName) return
+      setName(nextName)
+      queueMicrotask(() => {
+        if (active && !edited.current) input.current?.select()
+      })
+    }).catch(() => {})
     input.current?.select()
     return () => { active = false }
   }, [])
@@ -61,7 +70,7 @@ export function CreateProjectDialog({ workspace: w }: { workspace: Workspace }) 
         <label htmlFor="project-creation-name">{t('Название проекта')}</label>
         <input ref={input} id="project-creation-name" value={name} disabled={pending} autoComplete="off" spellCheck={false}
           aria-invalid={Boolean(invalid)} aria-describedby="project-creation-validation project-creation-path"
-          onChange={(event) => { setName(event.target.value); setError('') }} />
+          onChange={(event) => { edited.current = true; setName(event.target.value); setError('') }} />
         <div id="project-creation-validation" className="project-creation-validation" aria-live="polite">{invalid ? t(invalid) : t('Отдельная папка. Существующие файлы останутся нетронутыми.')}</div>
         <div className="project-creation-location"><span>{t('Расположение')}</span><output id="project-creation-path" aria-live="polite">{base ? projectCreationPath(base, name) : t('Определяем папку «Документы»…')}</output></div>
         {error && <p className="project-creation-error" role="alert">{error}</p>}

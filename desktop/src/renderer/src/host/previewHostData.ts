@@ -67,6 +67,181 @@ export function createPreviewPreferences(): Preferences {
   }
 }
 
+function buildPreviewMockupPngBase64(): string {
+  const width = 160
+  const height = 100
+  const rowSize = 1 + width * 3
+  const raw = new Uint8Array(height * rowSize)
+
+  for (let y = 0; y < height; y++) {
+    const rowStart = y * rowSize
+    raw[rowStart] = 0
+    for (let x = 0; x < width; x++) {
+      let r = 21
+      let g = 22
+      let b = 24
+
+      if (y < 14) {
+        r = 27
+        g = 28
+        b = 31
+        if (x >= 12 && x <= 16 && y >= 5 && y <= 9) {
+          r = 255
+          g = 131
+          b = 79
+        }
+      } else if (x >= 12 && x <= 46 && y >= 24 && y <= 29) {
+        r = 60
+        g = 43
+        b = 36
+      } else if (x >= 12 && x <= 78 && y >= 35 && y <= 42) {
+        r = 245
+        g = 243
+        b = 238
+      } else if (x >= 12 && x <= 64 && y >= 46 && y <= 53) {
+        r = 255
+        g = 173
+        b = 133
+      } else if (
+        (x >= 12 && x <= 74 && y >= 59 && y <= 62) ||
+        (x >= 12 && x <= 58 && y >= 66 && y <= 69)
+      ) {
+        r = 150
+        g = 151
+        b = 146
+      } else if (x >= 12 && x <= 52 && y >= 76 && y <= 87) {
+        r = 255
+        g = 131
+        b = 79
+      } else if (x >= 88 && x <= 148 && y >= 22 && y <= 87) {
+        const isBorder = x === 88 || x === 148 || y === 22 || y === 87
+        if (isBorder) {
+          r = 56
+          g = 58
+          b = 64
+        } else {
+          r = 34
+          g = 35
+          b = 39
+          if (x >= 96 && x <= 132 && y >= 30 && y <= 34) {
+            r = 245
+            g = 243
+            b = 238
+          } else if (x >= 96 && x <= 104 && y >= 54 && y <= 78) {
+            r = 56
+            g = 58
+            b = 64
+          } else if (x >= 108 && x <= 116 && y >= 46 && y <= 78) {
+            r = 255
+            g = 173
+            b = 133
+          } else if (x >= 120 && x <= 128 && y >= 60 && y <= 78) {
+            r = 56
+            g = 58
+            b = 64
+          } else if (x >= 132 && x <= 140 && y >= 40 && y <= 78) {
+            r = 255
+            g = 131
+            b = 79
+          }
+        }
+      }
+
+      const offset = rowStart + 1 + x * 3
+      raw[offset] = r
+      raw[offset + 1] = g
+      raw[offset + 2] = b
+    }
+  }
+
+  let s1 = 1
+  let s2 = 0
+  for (let i = 0; i < raw.length; i++) {
+    s1 = (s1 + raw[i]) % 65521
+    s2 = (s2 + s1) % 65521
+  }
+  const adler = ((s2 << 16) | s1) >>> 0
+
+  const zlib = new Uint8Array(2 + 5 + raw.length + 4)
+  zlib[0] = 0x78
+  zlib[1] = 0x01
+  zlib[2] = 0x01
+  const len = raw.length
+  const nlen = ~len & 0xffff
+  zlib[3] = len & 0xff
+  zlib[4] = (len >>> 8) & 0xff
+  zlib[5] = nlen & 0xff
+  zlib[6] = (nlen >>> 8) & 0xff
+  zlib.set(raw, 7)
+  const adlerOffset = 7 + raw.length
+  zlib[adlerOffset] = (adler >>> 24) & 0xff
+  zlib[adlerOffset + 1] = (adler >>> 16) & 0xff
+  zlib[adlerOffset + 2] = (adler >>> 8) & 0xff
+  zlib[adlerOffset + 3] = adler & 0xff
+
+  const crcTable = new Uint32Array(256)
+  for (let i = 0; i < 256; i++) {
+    let c = i
+    for (let k = 0; k < 8; k++) c = (c & 1) !== 0 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    crcTable[i] = c >>> 0
+  }
+
+  const chunk = (type: string, data: Uint8Array) => {
+    const out = new Uint8Array(12 + data.length)
+    const view = new DataView(out.buffer)
+    view.setUint32(0, data.length, false)
+    for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i)
+    out.set(data, 8)
+    let crc = 0xffffffff
+    for (let i = 4; i < 8 + data.length; i++) {
+      crc = crcTable[(crc ^ out[i]) & 0xff] ^ (crc >>> 8)
+    }
+    view.setUint32(8 + data.length, (crc ^ 0xffffffff) >>> 0, false)
+    return out
+  }
+
+  const ihdr = new Uint8Array(13)
+  const ihdrView = new DataView(ihdr.buffer)
+  ihdrView.setUint32(0, width, false)
+  ihdrView.setUint32(4, height, false)
+  ihdr[8] = 8
+  ihdr[9] = 2
+
+  const sig = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])
+  const ihdrChunk = chunk('IHDR', ihdr)
+  const idatChunk = chunk('IDAT', zlib)
+  const iendChunk = chunk('IEND', new Uint8Array(0))
+
+  const png = new Uint8Array(sig.length + ihdrChunk.length + idatChunk.length + iendChunk.length)
+  let pos = 0
+  for (const part of [sig, ihdrChunk, idatChunk, iendChunk]) {
+    png.set(part, pos)
+    pos += part.length
+  }
+
+  if (typeof btoa === 'function') {
+    let binary = ''
+    for (let offset = 0; offset < png.length; offset += 32768) {
+      binary += String.fromCharCode(...png.subarray(offset, offset + 32768))
+    }
+    return btoa(binary)
+  }
+  return Buffer.from(png).toString('base64')
+}
+
+export const previewDesignPngBase64 = buildPreviewMockupPngBase64()
+
+export function createPreviewDesignerProject(): Project {
+  return {
+    id: 'ws-designer',
+    kind: 'designer',
+    path: 'C:\\Users\\demo\\AppData\\Local\\Prime\\Designer',
+    clientId: 'preview-client',
+    connection: 'ready',
+    currentSessionId: 'sess-design-1'
+  }
+}
+
 export function createPreviewProjects(): Project[] {
   return [
     {
@@ -77,6 +252,7 @@ export function createPreviewProjects(): Project[] {
       connection: 'ready',
       currentSessionId: 'sess-chat-1'
     },
+    createPreviewDesignerProject(),
     {
       id: 'ws-prime',
       kind: 'project',
@@ -169,6 +345,20 @@ export function createPreviewSessions(): Record<string, Session[]> {
         title: 'Чеклист производительности UI',
         created_at: nowSec - 14000,
         updated_at: nowSec - 11000
+      }
+    ],
+    'ws-designer': [
+      {
+        id: 'sess-design-1',
+        title: 'Концепт лендинга Prime Cloud',
+        created_at: nowSec - 4200,
+        updated_at: nowSec - 900
+      },
+      {
+        id: 'sess-design-2',
+        title: 'Мобильный экран аналитики',
+        created_at: nowSec - 10800,
+        updated_at: nowSec - 7200
       }
     ]
   }
@@ -300,6 +490,95 @@ export function createPreviewMessages(): Record<string, Message[]> {
             type: 'text',
             data: {
               text: 'Поток событий работает стабильно, средняя задержка менее `12 ms`.'
+            }
+          },
+          { type: 'finish', data: { reason: 'stop' } }
+        ]
+      }
+    ],
+    'sess-design-1': [
+      {
+        id: 'msg-design-u1',
+        session_id: 'sess-design-1',
+        role: 'user',
+        created_at: nowSec - 1000,
+        parts: [
+          {
+            type: 'text',
+            data: {
+              text: 'Спроектируй главный экран лендинга для облачной платформы: тёплая тёмная палитра, чёткая иерархия и визуальный концепт.'
+            }
+          }
+        ]
+      },
+      {
+        id: 'msg-design-a1',
+        session_id: 'sess-design-1',
+        role: 'assistant',
+        created_at: nowSec - 950,
+        parts: [
+          {
+            type: 'tool_call',
+            data: {
+              id: 'call-gen-1',
+              name: 'generate_image',
+              input: {
+                prompt: 'Minimalist warm dark SaaS hero mockup with terracotta accent card and clean typography'
+              },
+              result: {
+                content: 'Generated hero-concept.png',
+                mime_type: 'image/png',
+                data: previewDesignPngBase64,
+                images: [
+                  {
+                    data: previewDesignPngBase64,
+                    mime_type: 'image/png',
+                    path: 'hero-concept.png'
+                  }
+                ],
+                is_error: false
+              }
+            }
+          },
+          {
+            type: 'text',
+            data: {
+              text: [
+                '### Концепт главного экрана Prime Cloud',
+                '',
+                '- **Палитра:** графитовый фон `#151618`, карточки `#222327`, тёплый акцент `#ff834f` для основного CTA.',
+                '- **Композиция:** левая колонка с крупным заголовком, подзаголовком и двумя кнопками действий; справа — интерактивная карточка телеметрии.',
+                '- **Типографика:** выразительный заголовок без засечек с плотным трекингом и моноширинные метки для метрик.'
+              ].join('\n')
+            }
+          },
+          { type: 'finish', data: { reason: 'stop' } }
+        ]
+      }
+    ],
+    'sess-design-2': [
+      {
+        id: 'msg-design-u2',
+        session_id: 'sess-design-2',
+        role: 'user',
+        created_at: nowSec - 7500,
+        parts: [
+          {
+            type: 'text',
+            data: { text: 'Сделай концепт мобильного экрана аналитики с карточками ключевых метрик.' }
+          }
+        ]
+      },
+      {
+        id: 'msg-design-a2',
+        session_id: 'sess-design-2',
+        role: 'assistant',
+        created_at: nowSec - 7450,
+        parts: [
+          {
+            type: 'text',
+            data: {
+              text: '### Мобильный экран аналитики\n\nКомпактная верхняя сводка, два KPI-блока в сетке 2×1 и прокручиваемая лента событий с быстрыми фильтрами.'
             }
           },
           { type: 'finish', data: { reason: 'stop' } }

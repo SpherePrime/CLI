@@ -13,17 +13,20 @@ export function ProjectPicker({ workspace: w }: { workspace: Workspace }) {
   const folders = w.projects.filter(
     (project) =>
       project.kind !== 'chat' &&
+      project.kind !== 'designer' &&
       (!needle ||
         project.path.toLocaleLowerCase().includes(needle) ||
         (project.remote?.name || '').toLocaleLowerCase().includes(needle))
   )
   const recents = w.preferences.recent
-    .filter((path) => !w.projects.some((project) => project.path === path))
+    .filter((path) => path !== 'chat' && !w.projects.some((project) => project.path === path))
     .filter((path) => !needle || path.toLocaleLowerCase().includes(needle))
     .slice(0, 8)
   const personal = w.projects.find((project) => project.kind === 'chat')
   const currentProject =
-    w.project && w.project.kind !== 'chat' && w.session ? w.project : null
+    w.project && w.project.kind !== 'chat' && w.project.kind !== 'designer' && w.session
+      ? w.project
+      : null
   const projectLabel = currentProject
     ? currentProject.remote
       ? `${currentProject.remote.name} · ${currentProject.remote.root.split('/').pop() || '/'}`
