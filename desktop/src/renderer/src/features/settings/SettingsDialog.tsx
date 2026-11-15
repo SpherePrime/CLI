@@ -5,7 +5,7 @@ import { ProviderSettings } from './ProviderSettings'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { PrimeLogo } from '../../components/PrimeLogo'
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import {
   Check,
   Boxes,
@@ -18,6 +18,7 @@ import {
   Sun,
   Moon,
   Download,
+  RefreshCw,
   AudioLines,
   Keyboard,
   KeyRound,
@@ -28,6 +29,8 @@ import { SudoSettings } from './SudoSettings'
 import { AccountCard } from '../auth/AccountCard'
 import { Modal } from '../../components/Modal'
 import type { Workspace } from '../../app/useWorkspace'
+import type { UpdateStatus } from '../../../../shared/updates'
+import { flushDrafts } from '../../host/flushDrafts'
 
 export function SettingsDialog({
   workspace: w,
@@ -41,8 +44,42 @@ export function SettingsDialog({
   const { t, language } = useI18n()
   const [tab, setTab] = useState(initial)
   const [updateStatus, setUpdateStatus] = useState('')
+  const [updatePayload, setUpdatePayload] = useState<UpdateStatus | null>(null)
+  const [installingUpdate, setInstallingUpdate] = useState(false)
   const languageLabelId = useId()
   const themeLabelId = useId()
+  useEffect(() => {
+    let alive = true
+    const apply = (value: UpdateStatus) => {
+      if (!alive) return
+      setUpdatePayload(value)
+      if (value.state === 'downloaded') {
+        setUpdateStatus(t('Новая версия загружена. Перезапустите Prime, чтобы установить её.'))
+      } else if (value.state === 'downloading') {
+        const pct = Math.round(value.percent || 0)
+        setUpdateStatus(`${t('Загружаем обновление')} (${pct}%)`)
+      } else if (value.state === 'installing') {
+        setUpdateStatus(t('Перезапускаем Prime'))
+      } else if (value.state === 'current') {
+        setUpdateStatus(t('Установлена актуальная версия'))
+      } else if (value.state === 'error' && value.message) {
+        setUpdateStatus(value.message)
+      }
+    }
+    const unsubscribe = window.prime.onEvent((event) => {
+      if (event.type === 'update') apply(event.payload as UpdateStatus)
+    })
+    void window.prime
+      .info()
+      .then((info) => {
+        if (info.update) apply(info.update as UpdateStatus)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+      unsubscribe()
+    }
+  }, [t])
   const tabs = [
     { id: 'account', label: t('Аккаунт'), icon: UserRound },
     { id: 'appearance', label: t('Интерфейс'), icon: Monitor },
@@ -228,23 +265,57 @@ export function SettingsDialog({
                 <dt>{t('Соединение')}</dt>
                 <dd>{w.info.host === 'tauri' ? 'Rust / Go · in-process' : 'Windows named pipe'}</dd>
               </dl>
-              <button
-                onClick={async () => {
-                  try {
-                    const result = await window.prime.update('check')
-                    setUpdateStatus(
-                      result.message ||
-                        (result.state === 'current'
-                          ? t('Установлена актуальная версия')
-                          : t('Обновление: {value0}', { value0: result.version || result.state }))
-                    )
-                  } catch (error) {
-                    w.errorHandler(error)
-                  }
-                }}
-              >
-                <Download size={15} /> {t('Проверить обновления')}
-              </button>
+              {updatePayload?.state === 'downloaded' ? (
+                <button
+                  className="primary"
+                  disabled={installingUpdate}
+                  onClick={async () => {
+                    setInstallingUpdate(true)
+                    try {
+                      await flushDrafts()
+                      const force = w.busy || Boolean(w.info.automationCounts?.activeCount) || (w.info.terminalCount || 0) > 0
+                      await window.prime.update('install', force)
+                    } catch (error) {
+                      w.errorHandler(error)
+                    } finally {
+                      setInstallingUpdate(false)
+                    }
+                  }}
+                >
+                  <RefreshCw size={15} />{' '}
+                  {w.busy || Boolean(w.info.automationCounts?.activeCount) || (w.info.terminalCount || 0) > 0
+                    ? t('Остановить задачи и перезапустить')
+                    : t('Перезапустить')}
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
+                    try {
+                      const result = (await window.prime.update('check')) as UpdateStatus
+                      setUpdatePayload(result)
+                      setUpdateStatus(
+                        result.message ||
+                          (result.state === 'current'
+                            ? t('Установлена актуальная версия')
+                            : result.state === 'downloaded'
+                              ? t('Новая версия загружена. Перезапустите Prime, чтобы установить её.')
+                              : t('Обновление: {value0}', { value0: result.version || result.state }))
+                      )
+                    } catch (error) {
+                      try {
+                        const info = await window.prime.info()
+                        if (info.update) {
+                          setUpdatePayload(info.update as UpdateStatus)
+                          return
+                        }
+                      } catch {}
+                      w.errorHandler(error)
+                    }
+                  }}
+                >
+                  <Download size={15} /> {t('Проверить обновления')}
+                </button>
+              )}
               <p className="muted small-text">
                 {t('Обновления Prime Desktop загружаются из GitHub Releases.')}
               </p>

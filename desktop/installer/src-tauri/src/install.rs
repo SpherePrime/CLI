@@ -68,10 +68,58 @@ pub fn run(app: &AppHandle, directory: &str) -> InstallStatus {
     }
 }
 
+fn wait_for_app_exit(timeout: std::time::Duration) -> bool {
+    let deadline = std::time::Instant::now() + timeout;
+    while processes::app_running() {
+        if std::time::Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+    true
+}
+
+fn verify_installed_files(directory: &str) -> Result<(), String> {
+    #[cfg(not(target_os = "linux"))]
+    {
+        let root = Path::new(directory);
+        if !root.join(EXECUTABLE).is_file() || !root.join(ENGINE).is_file() {
+            return Err("Файлы приложения не найдены".into());
+        }
+    }
+    #[cfg(target_os = "linux")]
+    crate::linux::verify(directory)?;
+    Ok(())
+}
+
+pub fn run_silent_update(relaunch: bool) -> Result<(), String> {
+    let directory = current_install().unwrap_or_else(default_directory);
+    validate_directory(&directory)?;
+    payload::verify()?;
+    if !wait_for_app_exit(std::time::Duration::from_secs(15)) {
+        return Err(
+            "Закройте Prime Desktop перед установкой, чтобы сохранить ваши задачи и изменения."
+                .into(),
+        );
+    }
+    #[cfg(not(target_os = "linux"))]
+    remove_legacy_installs()?;
+    #[cfg(not(target_os = "linux"))]
+    run_payload(&directory)?;
+    #[cfg(target_os = "linux")]
+    crate::linux::install(&directory)?;
+    verify_installed_files(&directory)?;
+    let _ = assets::ensure(&assets::model_directory(), &AtomicBool::new(false), |_| {});
+    if relaunch {
+        launch(&directory)?;
+    }
+    Ok(())
+}
+
 fn install(app: &AppHandle, directory: &str) -> Result<Option<String>, String> {
     publish(app, InstallStatus::phase("preparing", directory));
     payload::verify()?;
-    if processes::app_running() {
+    if !wait_for_app_exit(std::time::Duration::from_secs(3)) {
         return Err(
             "Закройте Prime Desktop перед установкой, чтобы сохранить ваши задачи и изменения."
                 .into(),
@@ -85,14 +133,7 @@ fn install(app: &AppHandle, directory: &str) -> Result<Option<String>, String> {
     #[cfg(target_os = "linux")]
     crate::linux::install(directory)?;
     publish(app, InstallStatus::phase("verifying", directory));
-    #[cfg(not(target_os = "linux"))]
-    let root = Path::new(directory);
-    #[cfg(not(target_os = "linux"))]
-    if !root.join(EXECUTABLE).is_file() || !root.join(ENGINE).is_file() {
-        return Err("Файлы приложения не найдены".into());
-    }
-    #[cfg(target_os = "linux")]
-    crate::linux::verify(directory)?;
+    verify_installed_files(directory)?;
     Ok(prepare_voice(app, directory))
 }
 

@@ -44,13 +44,33 @@ fn status(app: &tauri::AppHandle, payload: Value) {
     events::emit(app, "", "update", payload);
 }
 
+fn error_payload(message: impl Into<String>, version: Option<&str>) -> Value {
+    let mut payload = json!({"state":"error","message":message.into()});
+    if let Some(version) = version {
+        payload["version"] = Value::String(version.to_string());
+    }
+    payload
+}
+
+fn current_status_version() -> Option<String> {
+    STATUS
+        .lock()
+        .unwrap()
+        .as_ref()
+        .and_then(|value| value.get("version"))
+        .and_then(Value::as_str)
+        .map(str::to_string)
+}
+
 fn check(app: &tauri::AppHandle, _state: &AppState) -> HostResult<Value> {
     if UPDATE_IN_PROGRESS.swap(true, Ordering::AcqRel) {
         return Err(HostError::new("UPDATE_BUSY", "Обновление уже выполняется"));
     }
     if DOWNLOADED.lock().unwrap().is_some() {
+        let current = snapshot();
+        status(app, current.clone());
         UPDATE_IN_PROGRESS.store(false, Ordering::Release);
-        return Ok(snapshot());
+        return Ok(current);
     }
     let handle = app.clone();
     let result = tauri::async_runtime::block_on(async move {
@@ -121,13 +141,20 @@ fn check(app: &tauri::AppHandle, _state: &AppState) -> HostResult<Value> {
                 Ok(json!({"state":"downloaded","version":version}))
             }
             Err(error) => {
-                status(&app, json!({"state":"error","message":error.to_string()}));
+                status(
+                    &app,
+                    error_payload(error.to_string(), Some(version.as_str())),
+                );
                 Err(HostError::new("UPDATE_INSTALL", error.to_string()))
             }
         }
     });
     if let Err(error) = &result {
-        status(app, json!({"state":"error","message":error.message}));
+        let known_version = current_status_version();
+        status(
+            app,
+            error_payload(&error.message, known_version.as_deref()),
+        );
     }
     UPDATE_IN_PROGRESS.store(false, Ordering::Release);
     result
@@ -150,12 +177,13 @@ fn install(app: &tauri::AppHandle, state: &AppState, force: bool) -> HostResult<
         }
         require_idle(state)?;
         let (release, bytes) = DOWNLOADED.lock().unwrap().take().unwrap();
-        status(app, json!({"state":"installing","version":release.version}));
+        let version = release.version.clone();
+        status(app, json!({"state":"installing","version":version}));
         state.closing.store(true, Ordering::Release);
         crate::lifecycle::shutdown(app, state);
         if let Err(error) = release.install(&bytes) {
             let message = format!("{error}. Restart the application before continuing");
-            status(app, json!({"state":"error","message":message}));
+            status(app, error_payload(&message, Some(version.as_str())));
             return Err(HostError::new("UPDATE_INSTALL", message));
         }
         app.restart();
@@ -260,4 +288,21 @@ fn require_idle(state: &AppState) -> HostResult<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::error_payload;
+
+    #[test]
+    fn error_payload_preserves_version_when_present() {
+        let with_version = error_payload("download failed", Some("0.4.115"));
+        assert_eq!(with_version["state"], "error");
+        assert_eq!(with_version["version"], "0.4.115");
+        assert_eq!(with_version["message"], "download failed");
+
+        let without_version = error_payload("network error", None);
+        assert_eq!(without_version["state"], "error");
+        assert!(without_version.get("version").is_none());
+    }
 }

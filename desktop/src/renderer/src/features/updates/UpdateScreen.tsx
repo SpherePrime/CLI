@@ -7,6 +7,12 @@ import { flushDrafts } from '../../host/flushDrafts'
 
 const recheckInterval = 60 * 60 * 1000
 
+export function shouldShowUpdateScreen(ready: boolean, status: UpdateStatus) {
+  if (!ready) return false
+  if (!status.version && status.state !== 'error') return false
+  return ['available', 'downloading', 'downloaded', 'installing', 'error'].includes(status.state)
+}
+
 export function UpdateScreen({
   ready,
   busy,
@@ -63,12 +69,7 @@ export function UpdateScreen({
   const downloaded = status.state === 'downloaded'
   const failed = status.state === 'error'
   const installing = status.state === 'installing'
-  if (
-    !ready ||
-    !status.version ||
-    !['available', 'downloading', 'downloaded', 'installing', 'error'].includes(status.state)
-  )
-    return null
+  if (!shouldShowUpdateScreen(ready, status)) return null
   const percent = Math.round(status.percent || 0)
   const megabytes = (bytes?: number) => ((bytes || 0) / 1024 / 1024).toFixed(1)
   return (
@@ -94,7 +95,9 @@ export function UpdateScreen({
           </span>
         </div>
         <div className="update-copy" role="status" aria-live="polite">
-          <span className="update-eyebrow">PRIME DESKTOP · {status.version}</span>
+          <span className="update-eyebrow">
+            {status.version ? `PRIME DESKTOP · ${status.version}` : 'PRIME DESKTOP'}
+          </span>
           <h2>
             {downloaded
               ? t('Необходимо перезапустить приложение')

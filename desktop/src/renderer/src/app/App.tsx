@@ -102,12 +102,7 @@ export function App() {
         </StartupScreen>
       )}
       <UpdateScreen
-        ready={
-          w.account.signedIn &&
-          Boolean(w.project) &&
-          w.project?.connection === 'ready' &&
-          runtimeReady
-        }
+        ready={w.account.signedIn && runtimeReady}
         busy={w.busy || Boolean(w.info.automationCounts?.activeCount)}
         terminals={w.info.terminalCount || 0}
       />

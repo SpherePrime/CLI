@@ -103,7 +103,39 @@ fn setup_close(app: AppHandle, state: State<'_, SetupState>) {
     }
 }
 
+fn parse_silent_update_args(args: &[String]) -> Option<bool> {
+    let silent = args.iter().any(|arg| {
+        matches!(
+            arg.to_ascii_lowercase().as_str(),
+            "/update" | "/s" | "--update" | "--silent"
+        )
+    });
+    if !silent {
+        return None;
+    }
+    let suppress_relaunch = args.iter().any(|arg| {
+        matches!(
+            arg.to_ascii_lowercase().as_str(),
+            "/no-relaunch" | "--no-relaunch"
+        )
+    });
+    Some(!suppress_relaunch)
+}
+
+fn silent_update_args() -> Option<bool> {
+    let args: Vec<String> = std::env::args_os()
+        .skip(1)
+        .map(|arg| arg.to_string_lossy().into_owned())
+        .collect();
+    parse_silent_update_args(&args)
+}
+
 pub fn run() {
+    if let Some(relaunch) = silent_update_args() {
+        if install::run_silent_update(relaunch).is_ok() {
+            return;
+        }
+    }
     tauri::Builder::default()
         .manage(SetupState {
             status: Mutex::new(InstallStatus::ready()),
@@ -124,4 +156,16 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("failed to start Prime Desktop setup");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_silent_update_args;
+
+    #[test]
+    fn detects_silent_update_flags() {
+        assert_eq!(parse_silent_update_args(&[]), None);
+        assert_eq!(parse_silent_update_args(&["/S".into(), "/UPDATE".into()]), Some(true));
+        assert_eq!(parse_silent_update_args(&["--update".into(), "--no-relaunch".into()]), Some(false));
+    }
 }
