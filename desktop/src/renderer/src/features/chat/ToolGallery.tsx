@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ArrowUpRight, Sparkles } from 'lucide-react'
 import { ImageLightbox } from '../../components/ImageLightbox'
 import { useI18n } from '../../i18n'
 
@@ -37,7 +38,17 @@ export function toolImageCaptions(result: any): string[] {
   return [...content.matchAll(screenshotLine)].map((match) => `${match[1]} · ${match[2]}px`)
 }
 
-export function ToolGallery({ images, captions = [] }: { images: ToolImage[]; captions?: string[] }) {
+export function ToolGallery({
+  images,
+  captions = [],
+  onImplementImage,
+  implementLabel
+}: {
+  images: ToolImage[]
+  captions?: string[]
+  onImplementImage?: (image: ToolImage) => void
+  implementLabel?: string
+}) {
   const { t } = useI18n()
   const [zoomed, setZoomed] = useState(-1)
   if (!images.length) return null
@@ -47,20 +58,46 @@ export function ToolGallery({ images, captions = [] }: { images: ToolImage[]; ca
   const current = images[zoomed]
   return (
     <>
-      <div className={`tool-gallery ${multi ? 'multi' : ''}`}>
+      <div
+        className={[
+          'tool-gallery',
+          multi ? 'multi' : '',
+          onImplementImage ? 'has-actions' : ''
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         {multi && <div className="tool-gallery-count">{t('Снимков: {count}', { count: images.length })}</div>}
-        {images.map((image, index) => (
-          <button
-            key={index}
-            className="tool-image"
-            onClick={() => setZoomed(index)}
-            aria-label={label(index) || t('Изображение')}
-            title={label(index)}
-          >
-            <img src={source(image)} alt={label(index)} loading="lazy" decoding="async" />
-            {multi && label(index) && <span className="tool-image-caption">{label(index)}</span>}
-          </button>
-        ))}
+        {images.map((image, index) => {
+          const preview = (
+            <button
+              key={onImplementImage ? undefined : index}
+              type="button"
+              className="tool-image"
+              onClick={() => setZoomed(index)}
+              aria-label={label(index) || t('Изображение')}
+              title={label(index)}
+            >
+              <img src={source(image)} alt={label(index)} loading="lazy" decoding="async" />
+              {multi && label(index) && <span className="tool-image-caption">{label(index)}</span>}
+            </button>
+          )
+          if (!onImplementImage) return preview
+          return (
+            <div key={index} className="tool-gallery-item">
+              {preview}
+              <button
+                type="button"
+                className="design-handoff-trigger photo-design-trigger"
+                onClick={() => onImplementImage(image)}
+              >
+                <Sparkles size={13} aria-hidden="true" />
+                <span>{implementLabel || t('Сделать этот дизайн')}</span>
+                <ArrowUpRight size={13} aria-hidden="true" />
+              </button>
+            </div>
+          )
+        })}
       </div>
       {current && (
         <ImageLightbox

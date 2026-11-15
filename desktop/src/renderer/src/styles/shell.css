@@ -18,13 +18,17 @@
   min-width: 0;
   height: 100%;
   display: flex;
+  overflow: hidden;
 }
 .titlebar-window-space {
+  position: relative;
+  z-index: 3;
   flex-shrink: 0;
   height: 100%;
   width: calc(100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, calc(100% - 138px)));
   min-width: 138px;
   max-width: 50%;
+  pointer-events: auto;
   -webkit-app-region: no-drag;
 }
 .app-shell {
@@ -34,6 +38,7 @@
 .workspace-topbar {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -156,6 +161,7 @@
     position: absolute;
     left: 50%;
     translate: -50% 0;
+    z-index: 1;
     width: clamp(220px, 24vw, 300px);
     margin-left: 0;
   }

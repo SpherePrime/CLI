@@ -166,15 +166,21 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         .catch(w.errorHandler)
     }
   }
-  function toggleSidebar() {
-    if (focusMode) return setFocusMode(false)
-    if (layout.compact) return window.dispatchEvent(new Event('prime:projects-flyout'))
+  function expandSidebar() {
+    if (focusMode) setFocusMode(false)
     if (!layout.sidebarOpen) {
       setWidths((value) => ({
         ...value,
         inspector: Math.min(value.inspector, layout.inspectorWithSidebarMax)
       }))
       setCollapsed('sidebar', false, true)
+    }
+  }
+  function toggleSidebar() {
+    if (focusMode) return setFocusMode(false)
+    if (layout.compact) return window.dispatchEvent(new Event('prime:projects-flyout'))
+    if (!layout.sidebarOpen) {
+      expandSidebar()
       return
     }
     setCollapsed('sidebar', !collapsed.sidebar, true)
@@ -439,6 +445,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               compact={layout.compact}
               expanded={layout.sidebarOpen}
               onToggle={layout.compact ? undefined : toggleSidebar}
+              onExpandSidebar={layout.compact ? undefined : expandSidebar}
             >
               {sidebarPanel}
             </ProjectRail>
@@ -474,8 +481,10 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
                 }
                 onImplementDesign={
                   isDesigner
-                    ? (message, allMessages) =>
-                        setPendingDesign(extractDesignFromMessage(message, allMessages))
+                    ? (message, allMessages, preferredImage) =>
+                        setPendingDesign(
+                          extractDesignFromMessage(message, allMessages, preferredImage)
+                        )
                     : undefined
                 }
               />

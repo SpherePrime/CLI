@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
+import { pickReturnProjectTarget } from '../designer/designHandoff'
 
 export function ProjectRail({
   workspace: w,
@@ -24,7 +25,8 @@ export function ProjectRail({
   onPlugins,
   compact = false,
   expanded = false,
-  onToggle
+  onToggle,
+  onExpandSidebar
 }: {
   workspace: Workspace
   children: ReactNode
@@ -36,19 +38,37 @@ export function ProjectRail({
   compact?: boolean
   expanded?: boolean
   onToggle?: () => void
+  onExpandSidebar?: () => void
 }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
+  const [reopenTick, setReopenTick] = useState(0)
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const wasCompact = useRef(compact)
+  const prevSelection = useRef({ projectId: w.project?.id, sessionId: w.session?.id })
+  const reopenFlyoutRef = useRef(false)
+  const switchingFromDesignerRef = useRef(false)
   useEffect(() => {
-    if (wasCompact.current && !compact) setOpen(false)
+    if (wasCompact.current && !compact) {
+      reopenFlyoutRef.current = false
+      setOpen(false)
+    }
     wasCompact.current = compact
   }, [compact])
   useEffect(() => {
-    setOpen(false)
-  }, [w.project?.id, w.session?.id])
+    const changed =
+      prevSelection.current.projectId !== w.project?.id ||
+      prevSelection.current.sessionId !== w.session?.id
+    prevSelection.current = { projectId: w.project?.id, sessionId: w.session?.id }
+    if (reopenFlyoutRef.current && w.project?.kind !== 'designer') {
+      if (!switchingFromDesignerRef.current) reopenFlyoutRef.current = false
+      setOpen(true)
+      return
+    }
+    if (!switchingFromDesignerRef.current) reopenFlyoutRef.current = false
+    if (changed) setOpen(false)
+  }, [w.project?.id, w.session?.id, w.project?.kind, reopenTick])
   useEffect(() => {
     const toggle = () => setOpen((value) => !value)
     window.addEventListener('prime:projects-flyout', toggle)
@@ -62,13 +82,16 @@ export function ProjectRail({
         !root.current?.contains(target) &&
         !target.closest?.('[data-projects-toggle]') &&
         !target.closest?.('.prime-popover, .file-context-menu, .context-menu, .select-options, dialog')
-      )
+      ) {
+        reopenFlyoutRef.current = false
         setOpen(false)
+      }
     }
     const keyboard = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return
       if (document.querySelector('dialog[open]')) return
       event.preventDefault()
+      reopenFlyoutRef.current = false
       setOpen(false)
       trigger.current?.focus()
     }
@@ -81,6 +104,42 @@ export function ProjectRail({
   }, [open])
   const isDesigner = w.project?.kind === 'designer'
   const isPersonalChat = w.project?.kind === 'chat'
+  const handleProjectsClick = async () => {
+    if (!isDesigner) {
+      reopenFlyoutRef.current = false
+      if (onToggle) onToggle()
+      else setOpen((value) => !value)
+      return
+    }
+    const isCompact = compact || !onToggle
+    if (!isCompact) {
+      if (onExpandSidebar) onExpandSidebar()
+      else if (!expanded) onToggle()
+    } else {
+      reopenFlyoutRef.current = true
+      switchingFromDesignerRef.current = true
+    }
+    try {
+      const target = pickReturnProjectTarget(
+        w.projects,
+        w.preferences.recent,
+        w.project?.kind,
+        w.preferences.activeProject
+      )
+      if (target?.kind === 'project') {
+        await w.selectProject(target.project)
+      } else if (target?.kind === 'path') {
+        await w.openProject(target.path)
+      } else {
+        await w.openChat()
+      }
+    } finally {
+      if (isCompact) {
+        switchingFromDesignerRef.current = false
+        setReopenTick((tick) => tick + 1)
+      }
+    }
+  }
   return (
     <div className="project-rail" ref={root}>
       <button
@@ -89,7 +148,7 @@ export function ProjectRail({
         title={t('Панель проектов')}
         aria-label={t('Панель проектов')}
         aria-expanded={open || expanded}
-        onClick={() => (onToggle ? onToggle() : setOpen(!open))}
+        onClick={() => void handleProjectsClick()}
       >
         <FolderOpen size={19} />
       </button>
@@ -167,6 +226,7 @@ export function ProjectRail({
             title={t('Закрыть')}
             aria-label={t('Закрыть')}
             onClick={() => {
+              reopenFlyoutRef.current = false
               setOpen(false)
               trigger.current?.focus()
             }}

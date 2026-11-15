@@ -28,6 +28,7 @@ export function useDocuments(onError: (error: unknown) => void) {
   )
   useEffect(() => {
     void window.prime.editorDirty(dirty)
+    if (import.meta.env.VITE_NATIVE_HOST === 'true') return
     const prevent = (event: BeforeUnloadEvent) => {
       if (dirty) {
         event.preventDefault()

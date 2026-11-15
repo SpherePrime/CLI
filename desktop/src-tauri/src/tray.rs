@@ -211,7 +211,7 @@ pub fn request_quit(app: AppHandle) {
                 "Keep working"
             };
             let reasons = busy_reason_text(&busy_reasons(&state), ru);
-            let answer = rfd::MessageDialog::new()
+            let mut dialog = rfd::MessageDialog::new()
                 .set_title("Prime Desktop")
                 .set_description(if ru {
                     format!("Остановить и выйти? Будут остановлены: {reasons}.")
@@ -221,8 +221,13 @@ pub fn request_quit(app: AppHandle) {
                 .set_buttons(rfd::MessageButtons::OkCancelCustom(
                     stop.into(),
                     keep.into(),
-                ))
-                .show();
+                ));
+            if let Some(window) = app.get_window("main") {
+                if window.is_visible().unwrap_or(false) {
+                    dialog = dialog.set_parent(&window);
+                }
+            }
+            let answer = dialog.show();
             if !quit_confirmed(&answer, stop) {
                 return;
             }

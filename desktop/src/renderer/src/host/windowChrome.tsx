@@ -7,7 +7,7 @@ import { useI18n } from '../i18n'
 import './windowChrome.css'
 
 function action(value: string) {
-  void invoke('desktop_window', { action: value }).catch((error) =>
+  return invoke('desktop_window', { action: value }).catch((error) =>
     window.dispatchEvent(new CustomEvent('prime:host-error', { detail: error }))
   )
 }
@@ -15,29 +15,52 @@ function action(value: string) {
 export function dragNativeWindow(event: MouseEvent<HTMLElement>) {
   if (shouldIgnoreNativeDrag(event.target as Element, event.button)) return
   event.preventDefault()
-  action(event.detail === 2 ? 'maximize' : 'drag')
+  void action(event.detail === 2 ? 'maximize' : 'drag')
 }
 
 export function NativeWindowControls() {
   const { t } = useI18n()
   const closingRef = useRef(false)
-  useEffect(() => window.prime.onEvent(event => {
-    if (event.type === 'beforeClose') {
-      closingRef.current = true
-      void Promise.race([
-        flushDrafts(),
-        new Promise((resolve) => setTimeout(resolve, 600))
-      ])
-        .catch(() => {})
-        .finally(() => {
-          invoke('desktop_window', { action: 'confirm_close' }).catch(() => {})
-        })
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        closingRef.current = false
+      }
     }
-  }), [])
+    const handleFocus = () => {
+      closingRef.current = false
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    const unsubscribe = window.prime.onEvent((event) => {
+      if (event.type === 'beforeClose') {
+        closingRef.current = true
+        void Promise.race([
+          flushDrafts(),
+          new Promise((resolve) => setTimeout(resolve, 600))
+        ])
+          .catch(() => {})
+          .finally(() => {
+            void invoke('desktop_window', { action: 'confirm_close' })
+              .catch(() => {})
+              .finally(() => {
+                closingRef.current = false
+              })
+          })
+      }
+    })
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+      unsubscribe()
+    }
+  }, [])
   const handleClose = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
     if (closingRef.current) {
-      action('confirm_close')
+      void action('confirm_close').finally(() => {
+        closingRef.current = false
+      })
       return
     }
     closingRef.current = true
@@ -47,32 +70,37 @@ export function NativeWindowControls() {
     ])
       .catch(() => {})
       .finally(() => {
-        action('confirm_close')
+        void action('confirm_close').finally(() => {
+          closingRef.current = false
+        })
       })
   }
   return (
     <div className="native-window-controls" onMouseDown={(event) => event.stopPropagation()}>
       <button
+        type="button"
         aria-label={t('Свернуть')}
         title={t('Свернуть')}
         onClick={(event) => {
           event.stopPropagation()
-          action('minimize')
+          void action('minimize')
         }}
       >
         <Minus size={14} />
       </button>
       <button
+        type="button"
         aria-label={t('Развернуть')}
         title={t('Развернуть')}
         onClick={(event) => {
           event.stopPropagation()
-          action('maximize')
+          void action('maximize')
         }}
       >
         <Square size={12} />
       </button>
       <button
+        type="button"
         className="native-window-close"
         aria-label={t('Закрыть')}
         title={t('Закрыть')}

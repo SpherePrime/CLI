@@ -1,11 +1,16 @@
 .native-window-controls {
+  position: relative;
+  z-index: 1;
   display: flex;
   height: 100%;
   width: 138px;
   margin-left: auto;
+  pointer-events: auto;
   -webkit-app-region: no-drag;
 }
 .native-window-controls button {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 46px;
@@ -15,6 +20,7 @@
   border-radius: 0;
   background: transparent;
   color: var(--text);
+  pointer-events: auto;
   -webkit-app-region: no-drag;
 }
 .native-window-controls button:hover {

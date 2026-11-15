@@ -8,12 +8,22 @@ pub fn desktop_window(app:tauri::AppHandle,webview:tauri::Webview,action:String)
     let result=match action.as_str() {
         "minimize"=>window.minimize(),
         "maximize"=>window.is_maximized().and_then(|maximized|if maximized{window.unmaximize()}else{window.maximize()}),
-        "close"=>window.close(),
+        "close"=>{
+            let window=window.clone();
+            std::thread::spawn(move || {
+                let _ = window.close();
+            });
+            Ok(())
+        },
         "confirm_close"=>{
             let state = app.state::<crate::state::AppState>();
             state.close_in_progress.store(false, std::sync::atomic::Ordering::Release);
             state.close_ready.store(true, std::sync::atomic::Ordering::Release);
-            window.close()
+            let window=window.clone();
+            std::thread::spawn(move || {
+                let _ = window.close();
+            });
+            Ok(())
         },
         "drag"=>window.start_dragging(),
         _=>return Err(HostError::new("INVALID_ARGUMENT","Unknown window action"))

@@ -6,7 +6,7 @@ export function MessageAttachment({ data }: { data: Record<string, any> }) {
   const mime = data.mime_type ?? data.MIMEType ?? ''
   const content = data.data ?? data.Data
   const name = data.path ?? data.Path ?? t('Вложенное изображение')
-  if (/^image\/(png|jpeg|gif|webp)$/.test(mime) && typeof content === 'string')
+  if (/^image\/(png|jpeg|jpg|gif|webp)$/i.test(mime) && typeof content === 'string')
     return (
       <div className="attachment-note">
         <img src={`data:${mime};base64,${content}`} alt={name} loading="lazy" />

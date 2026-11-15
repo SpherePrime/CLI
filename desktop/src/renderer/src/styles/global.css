@@ -1142,6 +1142,18 @@ kbd {
 .tool-gallery .tool-image {
   padding: 0;
   width: auto;
+  border-radius: 8px;
+}
+.tool-gallery-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.tool-gallery .tool-gallery-item .tool-image {
+  max-width: 100%;
 }
 .tool-gallery img {
   max-width: min(340px, 100%);
@@ -1155,6 +1167,13 @@ kbd {
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
   gap: 6px;
   max-width: 560px;
+}
+.tool-gallery.multi.has-actions {
+  grid-template-columns: repeat(auto-fill, minmax(min(185px, 100%), 1fr));
+  gap: 10px;
+}
+.tool-gallery.multi .tool-gallery-item {
+  align-items: stretch;
 }
 .tool-gallery-count {
   grid-column: 1 / -1;

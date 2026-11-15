@@ -1465,7 +1465,7 @@ input[type='number'] {
 
 .update-screen {
   position: fixed;
-  inset: 40px 0 0;
+  inset: var(--topbar-height, 44px) 0 0;
   z-index: 150;
   display: grid;
   place-items: center;

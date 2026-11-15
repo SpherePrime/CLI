@@ -4,6 +4,7 @@ import { consolidateToolMessages } from '../../../../shared/toolMessages'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { Message } from '../../../../shared/contracts'
+import type { PreferredDesignImage } from '../designer/designHandoff'
 import { MessageItem } from './MessageItem'
 import { WorkingIndicator } from './WorkingIndicator'
 import { reuseUnchanged } from './stableMessages'
@@ -46,7 +47,11 @@ export function MessageList({
   loadHistory?: (direction: PageDirection) => Promise<void>
   searchMessages?: (query: string) => Promise<{ matches: string[]; total: number }>
   revealMessage?: (id: string) => Promise<void>
-  onImplementDesign?: (message: Message, allMessages: Message[]) => void
+  onImplementDesign?: (
+    message: Message,
+    allMessages: Message[],
+    preferredImage?: PreferredDesignImage
+  ) => void
 }) {
   const viewport = useRef<HTMLDivElement>(null)
   const { t } = useI18n()
@@ -333,8 +338,9 @@ export function MessageList({
                     live={busy && last}
                     matched={message.id === matchId}
                     onImplementDesign={
-                      onImplementDesign && isEndOfTurn(visible, row.index, busy)
-                        ? (target) => onImplementDesign(target, visible)
+                      onImplementDesign
+                        ? (target, preferredImage) =>
+                            onImplementDesign(target, visible, preferredImage)
                         : undefined
                     }
                   />

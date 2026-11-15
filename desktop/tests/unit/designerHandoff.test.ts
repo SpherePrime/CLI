@@ -3,11 +3,15 @@ import type { Message, Project } from '../../src/shared/contracts'
 import {
   base64ToUint8Array,
   buildDesignImplementationPrompt,
+  canImplementMessagePhoto,
+  extractBinaryImage,
   extractDesignFromMessage,
   filterRegularProjects,
   filterRegularRecentPaths,
   formatDesignPreviewText,
-  isRegularProject
+  isRegularProject,
+  parseDataImageUrl,
+  pickReturnProjectTarget
 } from '../../src/renderer/src/features/designer/designHandoff'
 import { previewDesignPngBase64 } from '../../src/renderer/src/host/previewHostData'
 
@@ -134,5 +138,135 @@ describe('designer handoff helpers', () => {
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
     expect(view.getUint32(16, false)).toBe(160)
     expect(view.getUint32(20, false)).toBe(100)
+  })
+
+  it('prioritizes and deduplicates preferredImage in extractDesignFromMessage', () => {
+    const pngA = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+    const pngB = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+
+    const messages: Message[] = [
+      {
+        id: 'u1',
+        session_id: 's1',
+        role: 'user',
+        parts: [{ type: 'text', data: { text: 'Сравни два варианта экрана' } }]
+      },
+      {
+        id: 'a1',
+        session_id: 's1',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool_call',
+            data: {
+              id: 'tc1',
+              name: 'generate_image',
+              result: {
+                mime_type: 'image/png',
+                data: pngA,
+                images: [
+                  { mime_type: 'image/png', data: pngA, path: 'variant-a.png' },
+                  { mime_type: 'image/png', data: pngB, path: 'variant-b.png' }
+                ]
+              }
+            }
+          },
+          {
+            type: 'text',
+            data: { text: '### Варианты концепта\n\nВыбери предпочтительный макет.' }
+          }
+        ]
+      }
+    ]
+
+    const prioritizedB = extractDesignFromMessage(messages[1], messages, {
+      mimeType: 'image/png',
+      base64: pngB,
+      name: 'variant-b.png'
+    })
+    expect(prioritizedB.images.map((item) => item.name)).toEqual([
+      'variant-b.png',
+      'design-mockup-2.png'
+    ])
+    expect(prioritizedB.images.map((item) => item.base64)).toEqual([pngB, pngA])
+    expect(prioritizedB.text).toContain('Выбери предпочтительный макет.')
+
+    const fallbackInvalid = extractDesignFromMessage(messages[1], messages, {
+      mimeType: 'text/plain',
+      base64: 'SGVsbG8='
+    })
+    expect(fallbackInvalid.images.map((item) => item.base64)).toEqual([pngA, pngB])
+  })
+
+  it('restricts photo handoff actions to non-live assistant messages with valid image parts', () => {
+    expect(canImplementMessagePhoto('assistant', false, true)).toBe(true)
+    expect(canImplementMessagePhoto('assistant', true, true)).toBe(false)
+    expect(canImplementMessagePhoto('assistant', false, false)).toBe(false)
+    expect(canImplementMessagePhoto('user', false, true)).toBe(false)
+    expect(canImplementMessagePhoto('tool', false, true)).toBe(false)
+
+    expect(parseDataImageUrl('data:image/png;base64,AAA=')).toEqual({
+      mimeType: 'image/png',
+      base64: 'AAA='
+    })
+    expect(parseDataImageUrl('https://example.com/design.png')).toBeNull()
+    expect(parseDataImageUrl('data:text/plain;base64,SGVsbG8=')).toBeNull()
+
+    expect(
+      extractBinaryImage({ mime_type: 'image/webp', data: 'UklGRg==', path: '/tmp/mockup.webp' })
+    ).toEqual({
+      mimeType: 'image/webp',
+      base64: 'UklGRg==',
+      name: 'mockup.webp'
+    })
+    expect(extractBinaryImage({ mime_type: 'application/pdf', data: 'JVBERi0=' })).toBeNull()
+  })
+
+  it('selects the regular project target when returning from designer or chat', () => {
+    const chat: Project = { id: '1', kind: 'chat', path: 'chat', clientId: 'c1', connection: 'ready' }
+    const designer: Project = {
+      id: '2',
+      kind: 'designer',
+      path: 'C:\\Users\\demo\\Designer',
+      clientId: 'c1',
+      connection: 'ready'
+    }
+    const app: Project = {
+      id: '3',
+      kind: 'project',
+      path: 'C:\\Users\\demo\\app',
+      clientId: 'c1',
+      connection: 'ready'
+    }
+    const second: Project = {
+      id: '4',
+      kind: 'project',
+      path: 'C:\\Users\\demo\\second',
+      clientId: 'c1',
+      connection: 'ready'
+    }
+
+    expect(pickReturnProjectTarget([chat, designer, app, second], [], 'designer', second.path)).toEqual({
+      kind: 'project',
+      project: second
+    })
+    expect(pickReturnProjectTarget([chat, designer, app, second], [], 'designer', designer.path)).toEqual({
+      kind: 'project',
+      project: app
+    })
+    expect(pickReturnProjectTarget([chat, designer, app], [], 'designer')).toEqual({
+      kind: 'project',
+      project: app
+    })
+    expect(
+      pickReturnProjectTarget([chat, designer], ['chat', designer.path, 'C:\\Users\\demo\\closed'], 'designer')
+    ).toEqual({
+      kind: 'path',
+      path: 'C:\\Users\\demo\\closed'
+    })
+    expect(pickReturnProjectTarget([chat, designer], ['chat', designer.path], 'designer')).toEqual({
+      kind: 'chat'
+    })
+    expect(pickReturnProjectTarget([chat, designer], ['chat', designer.path], 'chat')).toBeNull()
   })
 })

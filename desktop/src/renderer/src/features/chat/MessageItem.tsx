@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, Check, Copy, Sparkles } from 'lucide-react'
 import { MessageAttachment } from './MessageAttachment'
 import { MarkdownText } from './MarkdownText'
@@ -10,6 +10,12 @@ import { ReasoningBlock } from './ReasoningBlock'
 import { useI18n } from '../../i18n'
 import type { Message } from '../../../../shared/contracts'
 import { textContent, visibleMessageText } from '../../../../shared/messages'
+import {
+  canImplementMessagePhoto,
+  extractBinaryImage,
+  parseDataImageUrl,
+  type PreferredDesignImage
+} from '../designer/designHandoff'
 import '../designer/designer.css'
 
 export const MessageItem = memo(function MessageItem({
@@ -25,31 +31,18 @@ export const MessageItem = memo(function MessageItem({
   fresh: boolean
   live: boolean
   matched: boolean
-  onImplementDesign?: (message: Message) => void
+  onImplementDesign?: (message: Message, preferredImage?: PreferredDesignImage) => void
 }) {
   const { t, locale } = useI18n()
   const [copied, setCopied] = useState(false)
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const text = textContent(message)
-  const hasImages = (message.parts || []).some((part) => {
-    if (
-      part.type === 'image_url' &&
-      typeof part.data?.url === 'string' &&
-      part.data.url.startsWith('data:')
-    ) {
-      return true
-    }
-    if (part.type === 'binary') {
-      const mime = part.data?.mime_type ?? part.data?.MIMEType ?? ''
-      return typeof mime === 'string' && mime.startsWith('image/')
-    }
-    if (part.type === 'tool_call' || part.type === 'tool_result') {
-      const result = part.type === 'tool_result' ? part.data : (part.data?.result as unknown)
-      return collectToolImages(result).length > 0
-    }
-    return false
-  })
+  const canImplementPhoto = canImplementMessagePhoto(
+    message.role,
+    live,
+    Boolean(onImplementDesign)
+  )
   if (message.is_summary_message) {
     const finish = (message.parts || []).find((part) => part.type === 'finish')
     if (finish) return null
@@ -128,7 +121,21 @@ export const MessageItem = memo(function MessageItem({
                 ) : (
                   <ToolCard part={part} />
                 )}
-                <ToolGallery images={images} captions={toolImageCaptions(result)} />
+                <ToolGallery
+                  images={images}
+                  captions={toolImageCaptions(result)}
+                  implementLabel={t('Сделать этот дизайн')}
+                  onImplementImage={
+                    canImplementPhoto && onImplementDesign
+                      ? (image) =>
+                          onImplementDesign(message, {
+                            mimeType: image.mime_type,
+                            base64: image.data,
+                            name: image.path
+                          })
+                      : undefined
+                  }
+                />
               </div>
             )
           }
@@ -140,37 +147,61 @@ export const MessageItem = memo(function MessageItem({
                   : part.data.message || t('Ошибка выполнения')}
               </div>
             )
-          if (part.type === 'image_url')
-            return (
-              <div key={index} className="attachment-note">
+          if (part.type === 'image_url') {
+            const url = part.data?.url
+            const isDataUrl = typeof url === 'string' && url.startsWith('data:')
+            const preferred = isDataUrl ? parseDataImageUrl(url) : null
+            const attachment = (
+              <div className="attachment-note">
                 {t('Изображение:')}{' '}
-                {part.data.url?.startsWith('data:') ? (
-                  <img src={part.data.url} alt={t('Вложенное изображение')} />
-                ) : (
-                  part.data.url
-                )}
+                {isDataUrl ? <img src={url} alt={t('Вложенное изображение')} /> : url}
               </div>
             )
-          if (part.type === 'binary') return <MessageAttachment key={index} data={part.data} />
+            if (!canImplementPhoto || !onImplementDesign || !preferred) {
+              return <Fragment key={index}>{attachment}</Fragment>
+            }
+            return (
+              <div key={index} className="photo-attachment-block">
+                {attachment}
+                <div className="photo-design-actions">
+                  <button
+                    type="button"
+                    className="design-handoff-trigger photo-design-trigger"
+                    onClick={() => onImplementDesign(message, preferred)}
+                  >
+                    <Sparkles size={13} aria-hidden="true" />
+                    <span>{t('Сделать этот дизайн')}</span>
+                    <ArrowUpRight size={13} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            )
+          }
+          if (part.type === 'binary') {
+            const preferred = extractBinaryImage(part.data)
+            if (!canImplementPhoto || !onImplementDesign || !preferred) {
+              return <MessageAttachment key={index} data={part.data} />
+            }
+            return (
+              <div key={index} className="photo-attachment-block">
+                <MessageAttachment data={part.data} />
+                <div className="photo-design-actions">
+                  <button
+                    type="button"
+                    className="design-handoff-trigger photo-design-trigger"
+                    onClick={() => onImplementDesign(message, preferred)}
+                  >
+                    <Sparkles size={13} aria-hidden="true" />
+                    <span>{t('Сделать этот дизайн')}</span>
+                    <ArrowUpRight size={13} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            )
+          }
           return null
         })}
       </div>
-      {message.role === 'assistant' &&
-        onImplementDesign &&
-        !live &&
-        (Boolean(text.trim()) || hasImages) && (
-          <div className="message-design-actions">
-            <button
-              type="button"
-              className="design-handoff-trigger"
-              onClick={() => onImplementDesign(message)}
-            >
-              <Sparkles size={14} aria-hidden="true" />
-              <span>{t('Сделать этот дизайн')}</span>
-              <ArrowUpRight size={14} aria-hidden="true" />
-            </button>
-          </div>
-        )}
       {text && message.role === 'user' && (
         <button
           className="copy-message icon"

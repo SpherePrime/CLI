@@ -9,6 +9,12 @@ export type DesignImage = {
   base64: string
 }
 
+export type PreferredDesignImage = {
+  mimeType: string
+  base64: string
+  name?: string
+}
+
 export type DesignPayload = {
   title: string
   text: string
@@ -29,6 +35,29 @@ export function filterRegularProjects(projects: Project[]): Project[] {
 export function filterRegularRecentPaths(recent: string[], projects: Project[]): string[] {
   const knownPaths = new Set(projects.map((project) => project.path))
   return recent.filter((path) => path && path !== 'chat' && !knownPaths.has(path))
+}
+
+export type ReturnProjectTarget =
+  | { kind: 'project'; project: Project }
+  | { kind: 'path'; path: string }
+  | { kind: 'chat' }
+  | null
+
+export function pickReturnProjectTarget(
+  projects: Project[],
+  recent: string[],
+  currentKind?: Project['kind'],
+  activeProject?: string
+): ReturnProjectTarget {
+  const regular =
+    (activeProject
+      ? projects.find((project) => project.path === activeProject && isRegularProject(project))
+      : undefined) || filterRegularProjects(projects)[0]
+  if (regular) return { kind: 'project', project: regular }
+  const recentPath = filterRegularRecentPaths(recent, projects)[0]
+  if (recentPath) return { kind: 'path', path: recentPath }
+  if (currentKind === 'designer') return { kind: 'chat' }
+  return null
 }
 
 function extensionForMime(mimeType: string): string {
@@ -113,9 +142,49 @@ function deriveDesignTitle(text: string, promptMessage?: Message): string {
   return 'Реализация дизайна'
 }
 
+export function canImplementMessagePhoto(
+  role: Message['role'],
+  live: boolean,
+  hasHandler: boolean
+): boolean {
+  return role === 'assistant' && !live && hasHandler
+}
+
+export function parseDataImageUrl(url: unknown): PreferredDesignImage | null {
+  if (typeof url !== 'string') return null
+  const trimmed = url.trim()
+  if (!trimmed.startsWith('data:')) return null
+  const match = dataImageUrlPattern.exec(trimmed)
+  if (!match) return null
+  const base64 = match[2].replace(/\s+/g, '')
+  if (!base64) return null
+  return {
+    mimeType: match[1].toLowerCase(),
+    base64
+  }
+}
+
+export function extractBinaryImage(
+  data: Record<string, unknown> | undefined
+): PreferredDesignImage | null {
+  if (!data) return null
+  const mime = data.mime_type ?? data.MIMEType ?? ''
+  const raw = data.data ?? data.Data ?? ''
+  const path = data.path ?? data.Path
+  if (typeof mime !== 'string' || typeof raw !== 'string') return null
+  const normalized = normalizeImageEntry(raw, mime, typeof path === 'string' ? path : undefined, 0)
+  if (!normalized) return null
+  return {
+    mimeType: normalized.mimeType,
+    base64: normalized.base64,
+    name: typeof path === 'string' && path.trim() ? normalized.name : undefined
+  }
+}
+
 export function extractDesignFromMessage(
   message: Message,
-  allMessages?: Message[]
+  allMessages?: Message[],
+  preferredImage?: PreferredDesignImage
 ): DesignPayload {
   const { turnMessages, promptMessage } = collectTurnMessages(message, allMessages)
   const textBlocks: string[] = []
@@ -127,6 +196,10 @@ export function extractDesignFromMessage(
     if (!normalized || seenImages.has(normalized.base64)) return
     seenImages.add(normalized.base64)
     images.push(normalized)
+  }
+
+  if (preferredImage) {
+    pushImage(preferredImage.base64, preferredImage.mimeType, preferredImage.name)
   }
 
   for (const item of turnMessages) {

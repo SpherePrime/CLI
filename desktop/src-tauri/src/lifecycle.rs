@@ -108,60 +108,116 @@ fn take_engine_for_shutdown<T, F>(
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum CloseStep {
+    IgnoreDuplicateDirtyPrompt,
+    PromptDirty,
+    WaitBeforeCloseInFlight,
+    EmitBeforeClose,
+    HideToTray,
+    AllowClose,
+}
+
+fn next_close_step(
+    editor_dirty: &std::sync::atomic::AtomicBool,
+    dirty_dialog_open: &std::sync::atomic::AtomicBool,
+    quitting: &std::sync::atomic::AtomicBool,
+    close_ready: &std::sync::atomic::AtomicBool,
+    close_in_progress: &std::sync::atomic::AtomicBool,
+) -> CloseStep {
+    if editor_dirty.load(Ordering::Relaxed) {
+        close_ready.store(false, Ordering::Release);
+        if dirty_dialog_open.swap(true, Ordering::AcqRel) {
+            CloseStep::IgnoreDuplicateDirtyPrompt
+        } else {
+            CloseStep::PromptDirty
+        }
+    } else if !quitting.load(Ordering::Acquire) && !close_ready.swap(false, Ordering::AcqRel) {
+        if close_in_progress.swap(true, Ordering::AcqRel) {
+            CloseStep::WaitBeforeCloseInFlight
+        } else {
+            CloseStep::EmitBeforeClose
+        }
+    } else if crate::tray::should_hide_to_tray(quitting.load(Ordering::Acquire)) {
+        CloseStep::HideToTray
+    } else {
+        CloseStep::AllowClose
+    }
+}
+
 pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
     if window.label() != "main" {
         return;
     }
     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         let state = window.state::<crate::state::AppState>();
-        if state.editor_dirty.load(Ordering::Relaxed) {
-            api.prevent_close();
-            let window = window.clone();
-            std::thread::spawn(move || {
-                let result = rfd::MessageDialog::new()
-                    .set_title("Несохранённые изменения")
-                    .set_description("Закрыть приложение и потерять несохранённые изменения?")
-                    .set_buttons(rfd::MessageButtons::YesNo)
-                    .show();
-                if matches!(result, rfd::MessageDialogResult::Yes | rfd::MessageDialogResult::Ok) {
-                    let state = window.state::<crate::state::AppState>();
-                    state.editor_dirty.store(false, Ordering::Relaxed);
-                    state.quitting.store(true, Ordering::Release);
-                    state.close_ready.store(true, Ordering::Release);
-                    state.close_in_progress.store(false, Ordering::Release);
-                    let _ = window.close();
-                }
-            });
-        } else if !state.quitting.load(Ordering::Acquire)
-            && !state.close_ready.swap(false, Ordering::AcqRel)
-        {
-            api.prevent_close();
-            if state.close_in_progress.swap(true, Ordering::AcqRel) {
-                return;
+        match next_close_step(
+            &state.editor_dirty,
+            &state.dirty_dialog_open,
+            &state.quitting,
+            &state.close_ready,
+            &state.close_in_progress,
+        ) {
+            CloseStep::IgnoreDuplicateDirtyPrompt | CloseStep::WaitBeforeCloseInFlight => {
+                api.prevent_close();
             }
-            crate::events::emit(
-                window.app_handle(),
-                "",
-                "beforeClose",
-                serde_json::Value::Null,
-            );
-            let window_clone = window.clone();
-            let generation = state.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(600));
-                let state = window_clone.state::<crate::state::AppState>();
-                if state.close_generation.load(Ordering::Acquire) == generation {
-                    state.close_in_progress.store(false, Ordering::Release);
-                    state.close_ready.store(true, Ordering::Release);
-                    let _ = window_clone.close();
-                }
-            });
-        } else if crate::tray::should_hide_to_tray(state.quitting.load(Ordering::Acquire)) {
-            api.prevent_close();
-            state.close_in_progress.store(false, Ordering::Release);
-            state.close_generation.fetch_add(1, Ordering::SeqCst);
-            let _ = window.hide();
-            crate::tray::hide_to_tray(window.app_handle());
+            CloseStep::PromptDirty => {
+                api.prevent_close();
+                let window = window.clone();
+                std::thread::spawn(move || {
+                    struct DirtyDialogReset<'a>(&'a std::sync::atomic::AtomicBool);
+                    impl Drop for DirtyDialogReset<'_> {
+                        fn drop(&mut self) {
+                            self.0.store(false, Ordering::Release);
+                        }
+                    }
+                    let state = window.state::<crate::state::AppState>();
+                    let _reset = DirtyDialogReset(&state.dirty_dialog_open);
+                    let result = rfd::MessageDialog::new()
+                        .set_title("Несохранённые изменения")
+                        .set_description("Закрыть приложение и потерять несохранённые изменения?")
+                        .set_buttons(rfd::MessageButtons::YesNo)
+                        .set_parent(&window)
+                        .show();
+                    drop(_reset);
+                    if matches!(result, rfd::MessageDialogResult::Yes | rfd::MessageDialogResult::Ok)
+                    {
+                        state.editor_dirty.store(false, Ordering::Relaxed);
+                        state.quitting.store(true, Ordering::Release);
+                        state.close_ready.store(true, Ordering::Release);
+                        state.close_in_progress.store(false, Ordering::Release);
+                        let _ = window.close();
+                    }
+                });
+            }
+            CloseStep::EmitBeforeClose => {
+                api.prevent_close();
+                crate::events::emit(
+                    window.app_handle(),
+                    "",
+                    "beforeClose",
+                    serde_json::Value::Null,
+                );
+                let window_clone = window.clone();
+                let generation = state.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(600));
+                    let state = window_clone.state::<crate::state::AppState>();
+                    if state.close_generation.load(Ordering::Acquire) == generation {
+                        state.close_in_progress.store(false, Ordering::Release);
+                        state.close_ready.store(true, Ordering::Release);
+                        let _ = window_clone.close();
+                    }
+                });
+            }
+            CloseStep::HideToTray => {
+                api.prevent_close();
+                state.close_in_progress.store(false, Ordering::Release);
+                state.close_generation.fetch_add(1, Ordering::SeqCst);
+                let _ = window.hide();
+                crate::tray::hide_to_tray(window.app_handle());
+            }
+            CloseStep::AllowClose => {}
         }
     }
 }
@@ -268,5 +324,105 @@ mod tests {
             assert_eq!(closes.load(Ordering::Acquire), 1);
             assert!(engine.lock().unwrap().instance.is_none());
         }
+    }
+
+    #[test]
+    fn dirty_dialog_open_prevents_stacked_prompts_and_resets() {
+        let editor_dirty = AtomicBool::new(true);
+        let dirty_dialog_open = AtomicBool::new(false);
+        let quitting = AtomicBool::new(false);
+        let close_ready = AtomicBool::new(true);
+        let close_in_progress = AtomicBool::new(false);
+
+        assert_eq!(
+            next_close_step(
+                &editor_dirty,
+                &dirty_dialog_open,
+                &quitting,
+                &close_ready,
+                &close_in_progress
+            ),
+            CloseStep::PromptDirty
+        );
+        assert!(dirty_dialog_open.load(Ordering::Acquire));
+        assert!(!close_ready.load(Ordering::Acquire));
+        assert_eq!(
+            next_close_step(
+                &editor_dirty,
+                &dirty_dialog_open,
+                &quitting,
+                &close_ready,
+                &close_in_progress
+            ),
+            CloseStep::IgnoreDuplicateDirtyPrompt
+        );
+
+        dirty_dialog_open.store(false, Ordering::Release);
+        assert_eq!(
+            next_close_step(
+                &editor_dirty,
+                &dirty_dialog_open,
+                &quitting,
+                &close_ready,
+                &close_in_progress
+            ),
+            CloseStep::PromptDirty
+        );
+    }
+
+    #[test]
+    fn close_ready_hides_to_tray_and_subsequent_close_emits_before_close() {
+        let editor_dirty = AtomicBool::new(false);
+        let dirty_dialog_open = AtomicBool::new(false);
+        let quitting = AtomicBool::new(false);
+        let close_ready = AtomicBool::new(true);
+        let close_in_progress = AtomicBool::new(false);
+
+        assert_eq!(
+            next_close_step(
+                &editor_dirty,
+                &dirty_dialog_open,
+                &quitting,
+                &close_ready,
+                &close_in_progress
+            ),
+            CloseStep::HideToTray
+        );
+        assert!(!close_ready.load(Ordering::Acquire));
+
+        assert_eq!(
+            next_close_step(
+                &editor_dirty,
+                &dirty_dialog_open,
+                &quitting,
+                &close_ready,
+                &close_in_progress
+            ),
+            CloseStep::EmitBeforeClose
+        );
+        assert!(close_in_progress.load(Ordering::Acquire));
+
+        assert_eq!(
+            next_close_step(
+                &editor_dirty,
+                &dirty_dialog_open,
+                &quitting,
+                &close_ready,
+                &close_in_progress
+            ),
+            CloseStep::WaitBeforeCloseInFlight
+        );
+
+        quitting.store(true, Ordering::Release);
+        assert_eq!(
+            next_close_step(
+                &editor_dirty,
+                &dirty_dialog_open,
+                &quitting,
+                &close_ready,
+                &close_in_progress
+            ),
+            CloseStep::AllowClose
+        );
     }
 }

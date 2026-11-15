@@ -130,6 +130,20 @@ func TestDesignerPromptOmitsCodingGitReviewAndDesktopTesting(t *testing.T) {
 				require.Contains(t, out, "prime://settings/providers")
 			}
 
+			for _, required := range []string{
+				"<workflow>",
+				"broad or open-ended design request",
+				"calling the `question` tool",
+				"single_choice",
+				"multi_choice",
+				"curated creative options",
+				"Proactively propose strong aesthetic directions",
+				"max 5 choices per question",
+				"max 5 questions per batch",
+			} {
+				require.Contains(t, out, required)
+			}
+
 			for _, forbidden := range []string{
 				"SECRET_PROJECT_INSTRUCTIONS",
 				"<task_instructions>",

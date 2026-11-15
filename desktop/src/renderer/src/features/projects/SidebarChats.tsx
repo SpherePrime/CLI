@@ -314,21 +314,6 @@ export function SidebarChats({
   const designerProject = w.project?.kind === 'designer' ? w.project : designer
   const designerSessions = designerProject ? sessionsOf(designerProject) : []
   const filteredDesignerSessions = designerSessions.filter(matching)
-  const backToProjects = async () => {
-    const regular = folders[0]
-    if (regular) {
-      await w.selectProject(regular)
-      return
-    }
-    const recentPath = w.preferences.recent.find(
-      (path) => path && path !== 'chat' && path !== designer?.path
-    )
-    if (recentPath) {
-      await w.openProject(recentPath)
-      return
-    }
-    await w.openChat()
-  }
   return (
     <>
       {isDesignerView && designerProject ? (
@@ -388,14 +373,6 @@ export function SidebarChats({
               </button>
             </div>
           )}
-          <button
-            type="button"
-            className="designer-sidebar-back"
-            onClick={() => void backToProjects()}
-          >
-            <FolderOpen size={14} />
-            <span>{t('Вернуться к проектам')}</span>
-          </button>
         </>
       ) : (
         <>
