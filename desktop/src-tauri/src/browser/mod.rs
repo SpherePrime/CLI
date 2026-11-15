@@ -81,6 +81,12 @@ pub fn dispatch(
             state.attach(app)?;
             Ok(Value::Null)
         }
+        "browserPreview" => {
+            let (_, view) = state.target(app, None)?;
+            let shot = platform::screenshot(&view, None)?;
+            let data = shot["data"].as_str().unwrap_or_default();
+            Ok(json!(format!("data:image/png;base64,{}", data)))
+        }
         "browserTab" => {
             match argument(args, 0)? {
                 "new" => {

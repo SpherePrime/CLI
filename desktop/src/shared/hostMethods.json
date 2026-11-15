@@ -50,6 +50,7 @@
   "browserCommand": true,
   "browserOpenExternal": true,
   "browserView": true,
+  "browserPreview": true,
   "update": true,
   "account": true
 }

@@ -824,6 +824,9 @@ export function installPreviewHost() {
     async openWith() {},
     async browserShow() {},
     async browserHide() {},
+    async browserPreview() {
+      return ''
+    },
     async browserTab(_action, _id, url) {
       if (url) browserState = { ...browserState, url }
       return browserState

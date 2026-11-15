@@ -306,6 +306,7 @@ export interface DesktopApi {
   browserCommand(command: 'back' | 'forward' | 'reload' | 'fit'): Promise<BrowserState>
   browserOpenExternal(): Promise<void>
   browserView(sessionId?: string | null, inspectorOpen?: boolean): Promise<BrowserState>
+  browserPreview?(): Promise<string>
   update(action: 'check' | 'install', force?: boolean): Promise<Json>
   account(action: 'status' | 'restore' | 'login' | 'logout'): Promise<AccountState>
   account(action: 'limits' | 'refreshLimits'): Promise<PrimeAILimits>

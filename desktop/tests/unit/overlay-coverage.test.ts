@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  clipRectAgainstOverlays,
   isOverlayCovering,
   rectsOverlap,
   type OverlayQueryRoot
@@ -30,10 +29,9 @@ describe('overlayCoverage', () => {
       querySelectorAll: () => []
     }
     expect(isOverlayCovering(browserRect, root)).toBe(true)
-    expect(clipRectAgainstOverlays(browserRect, root)).toBe(null)
   })
 
-  it('returns false and keeps full rect when popover does not overlap browser rect', () => {
+  it('returns false when popover does not overlap browser rect', () => {
     const root: OverlayQueryRoot = {
       querySelector: () => null,
       querySelectorAll: () => [
@@ -50,10 +48,9 @@ describe('overlayCoverage', () => {
       ]
     }
     expect(isOverlayCovering(browserRect, root)).toBe(false)
-    expect(clipRectAgainstOverlays(browserRect, root)).toEqual(browserRect)
   })
 
-  it('clips rect top and keeps page visible when top popover overlaps browser rect', () => {
+  it('returns true when top popover overlaps browser rect', () => {
     const root: OverlayQueryRoot = {
       querySelector: () => null,
       querySelectorAll: () => [
@@ -69,10 +66,7 @@ describe('overlayCoverage', () => {
         }
       ]
     }
-    const clipped = clipRectAgainstOverlays(browserRect, root)
-    expect(clipped).not.toBe(null)
-    expect(clipped?.y).toBe(244)
-    expect(clipped?.height).toBe(browserRect.height - (244 - browserRect.y))
+    expect(isOverlayCovering(browserRect, root)).toBe(true)
   })
 
   it('returns false when query root has no overlays', () => {
@@ -81,6 +75,5 @@ describe('overlayCoverage', () => {
       querySelectorAll: () => []
     }
     expect(isOverlayCovering(browserRect, root)).toBe(false)
-    expect(clipRectAgainstOverlays(browserRect, root)).toEqual(browserRect)
   })
 })

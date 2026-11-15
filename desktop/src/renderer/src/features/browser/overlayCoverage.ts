@@ -47,47 +47,19 @@ export function isFullScreenOverlayOpen(root?: OverlayQueryRoot | null): boolean
   return Boolean(target.querySelector(fullScreenOverlaySelector))
 }
 
-export function clipRectAgainstOverlays(
-  rect: RectBounds,
-  root?: OverlayQueryRoot | null
-): RectBounds | null {
-  const target = root ?? (typeof document !== 'undefined' ? (document as unknown as OverlayQueryRoot) : null)
-  if (!target) return rect
-  if (target.querySelector(fullScreenOverlaySelector)) return null
-
-  let current = { ...rect }
-  const elements = target.querySelectorAll(localizedOverlaySelector)
-  for (let i = 0; i < elements.length; i++) {
-    const el = elements[i]
-    const box = el.getBoundingClientRect()
-    if (!rectsOverlap(current, box)) continue
-
-    if (box.top <= current.y && box.bottom > current.y) {
-      const topCut = Math.round(box.bottom - current.y) + 4
-      current.y += topCut
-      current.height -= topCut
-    } else if (box.bottom >= current.y + current.height && box.top < current.y + current.height) {
-      const bottomCut = Math.round((current.y + current.height) - box.top) + 4
-      current.height -= bottomCut
-    } else if (box.left <= current.x && box.right > current.x) {
-      const leftCut = Math.round(box.right - current.x) + 4
-      current.x += leftCut
-      current.width -= leftCut
-    } else if (box.right >= current.x + current.width && box.left < current.x + current.width) {
-      const rightCut = Math.round((current.x + current.width) - box.left) + 4
-      current.width -= rightCut
-    }
-  }
-
-  if (current.width < 100 || current.height < 100) {
-    return null
-  }
-  return current
-}
-
 export function isOverlayCovering(
   rect: RectBounds,
   root?: OverlayQueryRoot | null
 ): boolean {
-  return clipRectAgainstOverlays(rect, root) === null
+  const target = root ?? (typeof document !== 'undefined' ? (document as unknown as OverlayQueryRoot) : null)
+  if (!target) return false
+  if (target.querySelector(fullScreenOverlaySelector)) return true
+
+  const elements = target.querySelectorAll(localizedOverlaySelector)
+  for (let i = 0; i < elements.length; i++) {
+    const el = elements[i]
+    const box = el.getBoundingClientRect()
+    if (rectsOverlap(rect, box)) return true
+  }
+  return false
 }

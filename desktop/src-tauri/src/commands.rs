@@ -613,6 +613,7 @@ mod manifest_tests {
         "browserPick",
         "browserLogs",
         "browserView",
+        "browserPreview",
     ];
 
     const EXPLICIT_UNSUPPORTED: [&str; 2] = ["windowDimmed", "update"];
