@@ -6,7 +6,6 @@
   "identifier": "io.sphereprime.native-preview",
   "build": {
     "frontendDist": "../out/native-renderer",
-    "devUrl": "http://127.0.0.1:5173",
     "beforeDevCommand": "npm run native:dev:prepare",
     "beforeBuildCommand": "npm run native:prepare"
   },
