@@ -4,7 +4,7 @@ import type { BrowserState, PickedElementResult } from '../../../../shared/contr
 import { ElementPick } from './ElementPick'
 import { BrowserTabs } from './BrowserTabs'
 import { visibleRect } from './visibleRect'
-import { isFullScreenOverlayOpen } from './overlayCoverage'
+import { isOverlayCovering } from './overlayCoverage'
 import { PickedAttachments } from './pickedAttachments'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
@@ -72,6 +72,8 @@ export function BrowserTab({
     }
   }
   const viewport = useRef<HTMLDivElement>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [covered, setCovered] = useState(false)
   const [state, setState] = useState<BrowserState>(emptyState)
   const [address, setAddress] = useState('')
   const [editing, setEditing] = useState(false)
@@ -112,8 +114,14 @@ export function BrowserTab({
       frame = requestAnimationFrame(() => {
         if (!stateLoadedRef.current) return
         const rect = visibleRect(element)
-        const modalOpen = isFullScreenOverlayOpen()
-        const hidden = modalOpen || !rect || !stateUrlRef.current
+        const isCovered = rect ? isOverlayCovering(rect) : false
+        setCovered(isCovered)
+        if (isCovered && !previewUrl) {
+          void window.prime.browserPreview?.()
+            .then((url) => { if (typeof url === 'string') setPreviewUrl(url) })
+            .catch(() => {})
+        }
+        const hidden = isCovered || !rect || !stateUrlRef.current
         const next = hidden ? 'hidden' : JSON.stringify(rect)
         if (next === applied) return
         applied = next
@@ -131,7 +139,7 @@ export function BrowserTab({
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['open', 'class', 'hidden']
+      attributeFilter: ['open', 'class', 'hidden', 'style']
     })
     window.addEventListener('resize', sync)
     return () => {
@@ -145,6 +153,17 @@ export function BrowserTab({
   useEffect(() => {
     syncRef.current()
   }, [state.url])
+  useEffect(() => {
+    if (state.loading || !state.url || state.url === 'about:blank') return
+    const timer = setTimeout(() => {
+      void window.prime.browserPreview?.()
+        .then((url) => {
+          if (typeof url === 'string') setPreviewUrl(url)
+        })
+        .catch(() => {})
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [state.loading, state.url])
   const navigate = (value: string) => {
     setEditing(false)
     setError('')
@@ -270,6 +289,23 @@ export function BrowserTab({
         />
       )}
       <div ref={viewport} className="browser-viewport">
+        {covered && previewUrl && (
+          <img
+            src={previewUrl}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'top left',
+              pointerEvents: 'none',
+              zIndex: 1
+            }}
+          />
+        )}
         {!state.url && (
           <div className="browser-empty">
             <Globe size={30} />
