@@ -34,7 +34,34 @@ export function Popover({
     const rect = anchor.current?.getBoundingClientRect()
     if (!rect) return { left: 0, top: 0, maxHeight: 400 }
     const above = rect.top > window.innerHeight - rect.bottom
-    const preferred = align === 'end' ? rect.right - width : rect.left
+    let preferred = align === 'end' ? rect.right - width : rect.left
+
+    const browserEl = typeof document !== 'undefined' ? (document.querySelector('.browser-viewport') as HTMLElement | null) : null
+    if (browserEl) {
+      const bRect = browserEl.getBoundingClientRect()
+      if (bRect.width > 0 && bRect.height > 0) {
+        const popoverTop = above ? Math.max(12, rect.top - 400 - 8) : rect.bottom + 8
+        const popoverBottom = popoverTop + 400
+        const popoverLeft = Math.max(12, Math.min(preferred, window.innerWidth - width - 12))
+        const popoverRight = popoverLeft + width
+
+        const collides = !(
+          popoverRight <= bRect.left ||
+          popoverLeft >= bRect.right ||
+          popoverBottom <= bRect.top ||
+          popoverTop >= bRect.bottom
+        )
+
+        if (collides) {
+          if (bRect.left >= width + 24) {
+            preferred = bRect.left - width - 12
+          } else if (window.innerWidth - bRect.right >= width + 24) {
+            preferred = bRect.right + 12
+          }
+        }
+      }
+    }
+
     return {
       left: Math.max(12, Math.min(preferred, window.innerWidth - width - 12)),
       top: above ? Math.max(12, rect.top - 400 - 8) : rect.bottom + 8,
@@ -69,7 +96,34 @@ export function Popover({
         panel.current?.scrollHeight || 400,
         above ? rect.top - 20 : window.innerHeight - rect.bottom - 20
       )
-      const preferred = align === 'end' ? rect.right - width : rect.left
+      let preferred = align === 'end' ? rect.right - width : rect.left
+
+      const browserEl = document.querySelector('.browser-viewport') as HTMLElement | null
+      if (browserEl) {
+        const bRect = browserEl.getBoundingClientRect()
+        if (bRect.width > 0 && bRect.height > 0) {
+          const popoverTop = above ? Math.max(12, rect.top - height - 8) : rect.bottom + 8
+          const popoverBottom = popoverTop + height
+          const popoverLeft = Math.max(12, Math.min(preferred, window.innerWidth - width - 12))
+          const popoverRight = popoverLeft + width
+
+          const collides = !(
+            popoverRight <= bRect.left ||
+            popoverLeft >= bRect.right ||
+            popoverBottom <= bRect.top ||
+            popoverTop >= bRect.bottom
+          )
+
+          if (collides) {
+            if (bRect.left >= width + 24) {
+              preferred = bRect.left - width - 12
+            } else if (window.innerWidth - bRect.right >= width + 24) {
+              preferred = bRect.right + 12
+            }
+          }
+        }
+      }
+
       setPosition({
         left: Math.max(12, Math.min(preferred, window.innerWidth - width - 12)),
         top: above ? Math.max(12, rect.top - height - 8) : rect.bottom + 8,
