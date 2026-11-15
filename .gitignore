@@ -62,6 +62,7 @@ CHATS.md
 /.workbench-*
 /desktop/tests/e2e/.workbench-*
 /desktop/src-tauri/target/
+/desktop/src-tauri/target-build/
 /desktop/src-tauri/gen/
 /desktop/installer/src-tauri/gen/
 /desktop/installer/src-tauri/target/

@@ -4,7 +4,7 @@ import type { BrowserState, PickedElementResult } from '../../../../shared/contr
 import { ElementPick } from './ElementPick'
 import { BrowserTabs } from './BrowserTabs'
 import { visibleRect } from './visibleRect'
-import { isOverlayCovering } from './overlayCoverage'
+import { clipRectAgainstOverlays } from './overlayCoverage'
 import { PickedAttachments } from './pickedAttachments'
 import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
@@ -111,9 +111,9 @@ export function BrowserTab({
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         if (!stateLoadedRef.current) return
-        const rect = visibleRect(element)
-        const covered = rect ? isOverlayCovering(rect) : false
-        const hidden = covered || !rect || !stateUrlRef.current
+        const rawRect = visibleRect(element)
+        const rect = rawRect ? clipRectAgainstOverlays(rawRect) : null
+        const hidden = !rect || !stateUrlRef.current
         const next = hidden ? 'hidden' : JSON.stringify(rect)
         if (next === applied) return
         applied = next
