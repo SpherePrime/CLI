@@ -198,9 +198,10 @@ func TestBuildExploreToCodeContext_MergesDedupsAndTruncates(t *testing.T) {
 	codeJob := &agentJob{
 		id: "code-1", agent: config.AgentCode, sessionID: codeSess.ID,
 		parentSessionID: root.ID, rootSessionID: root.ID, name: "impl",
+		prompt: "Update app.go and tracked.go",
 	}
 
-	note := c.buildWorkerContextNote(t.Context(), codeJob, nil)
+	note := c.buildWorkerContextNote(t.Context(), codeJob, nil, codeJob.prompt)
 	require.Contains(t, note, workerContextHeader)
 	require.Contains(t, note, "app.go (lines 1-12)")
 	require.Contains(t, note, "line 2 updated-on-disk")
@@ -210,11 +211,12 @@ func TestBuildExploreToCodeContext_MergesDedupsAndTruncates(t *testing.T) {
 	require.NotContains(t, note, "busy.go")
 
 	// Second build without new explore sources or context_from produces nothing.
-	require.Empty(t, c.buildWorkerContextNote(t.Context(), codeJob, nil))
+	require.Empty(t, c.buildWorkerContextNote(t.Context(), codeJob, nil, ""))
 
 	// Explicit context_from targets a specific worker even on follow-up.
 	c.applyContextSources(codeJob, []string{"scout-a"})
-	explicitNote := c.buildWorkerContextNote(t.Context(), codeJob, nil)
+	c.applyContextFiles(codeJob, []string{"app.go"})
+	explicitNote := c.buildWorkerContextNote(t.Context(), codeJob, nil, "follow up")
 	require.Contains(t, explicitNote, "app.go (lines 1-8)")
 	require.NotContains(t, explicitNote, "tracked.go")
 }
@@ -249,10 +251,13 @@ func TestBuildExploreToCodeContext_EnforcesBudget(t *testing.T) {
 	}
 	c.jobMu.Unlock()
 
-	codeJob := &agentJob{id: "code-big", agent: config.AgentCode, sessionID: "code-big-s", rootSessionID: root.ID}
-	note := c.buildWorkerContextNote(t.Context(), codeJob, nil)
+	codeJob := &agentJob{
+		id: "code-big", agent: config.AgentCode, sessionID: "code-big-s", rootSessionID: root.ID,
+		contextFiles: []string{"large_0.txt", "large_1.txt", "large_2.txt", "large_3.txt"},
+	}
+	note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "")
 	require.NotEmpty(t, note)
-	require.LessOrEqual(t, len(note), exploreContextBudgetBytes+1024)
+	require.LessOrEqual(t, len(note), exploreContextBudgetBytes)
 	require.Contains(t, note, "Additional read files omitted due to size budget:")
 	require.Contains(t, note, filepath.Base(paths[3]))
 }
@@ -304,7 +309,7 @@ func TestBuildCodeToReviewContext_DiffAndWatermarkDelta(t *testing.T) {
 	recordViewCall(t, env, codeSess.ID, "r1", readOnlyPath, 0, 50)
 	recordViewCall(t, env, codeSess.ID, "r2", editedPath, 0, 50)
 
-	round1Note := c.buildWorkerContextNote(t.Context(), reviewJob, authorJob)
+	round1Note := c.buildWorkerContextNote(t.Context(), reviewJob, authorJob, "")
 	require.Contains(t, round1Note, workerContextHeader)
 	require.Contains(t, round1Note, "### Modified: handler.go")
 	require.Contains(t, round1Note, `-func Handle() string { return "old" }`)
@@ -322,7 +327,7 @@ func TestBuildCodeToReviewContext_DiffAndWatermarkDelta(t *testing.T) {
 	require.NoError(t, err)
 	recordViewCall(t, env, codeSess.ID, "r3", laterReadPath, 0, 50)
 
-	round2Note := c.buildWorkerContextNote(t.Context(), reviewJob, authorJob)
+	round2Note := c.buildWorkerContextNote(t.Context(), reviewJob, authorJob, "")
 	require.Contains(t, round2Note, "### Modified: handler.go")
 	require.Contains(t, round2Note, `-func Handle() string { return "round1" }`)
 	require.Contains(t, round2Note, `+func Handle() string { return "round2" }`)
@@ -332,7 +337,7 @@ func TestBuildCodeToReviewContext_DiffAndWatermarkDelta(t *testing.T) {
 
 	// Follow-up watermark snapshot suppresses prior edits until a follow-up edit occurs.
 	c.snapshotWorkerWatermark(t.Context(), authorJob)
-	require.Empty(t, c.buildWorkerContextNote(t.Context(), reviewJob, authorJob))
+	require.Empty(t, c.buildWorkerContextNote(t.Context(), reviewJob, authorJob, ""))
 }
 
 func TestBuildCodeToReviewContext_NewLowerVersionFileInRound2(t *testing.T) {
@@ -366,7 +371,7 @@ func TestBuildCodeToReviewContext_NewLowerVersionFileInRound2(t *testing.T) {
 	_, err = env.history.CreateVersion(t.Context(), codeSess.ID, fileA, "package main\nfunc A() int { return 2 }\n")
 	require.NoError(t, err)
 
-	r1 := c.buildWorkerContextNote(t.Context(), reviewJob, authorJob)
+	r1 := c.buildWorkerContextNote(t.Context(), reviewJob, authorJob, "")
 	require.Contains(t, r1, "### Modified: a.go")
 	require.Contains(t, r1, `-func A() int { return 0 }`)
 	require.Contains(t, r1, `+func A() int { return 2 }`)
@@ -380,7 +385,7 @@ func TestBuildCodeToReviewContext_NewLowerVersionFileInRound2(t *testing.T) {
 	_, err = env.history.CreateVersion(t.Context(), codeSess.ID, fileB, fileBContent)
 	require.NoError(t, err)
 
-	r2 := c.buildWorkerContextNote(t.Context(), reviewJob, authorJob)
+	r2 := c.buildWorkerContextNote(t.Context(), reviewJob, authorJob, "")
 	require.Contains(t, r2, "### Modified: b.go")
 	require.Contains(t, r2, `+func B() string { return "new" }`)
 	require.NotContains(t, r2, "a.go")
@@ -443,7 +448,7 @@ func TestExecuteWorker_WiresContextNoteForCodeAndReview(t *testing.T) {
 		SessionID:      root.ID,
 		AgentMessageID: "m1",
 		ToolCallID:     "code-call",
-		Prompt:         "update Run",
+		Prompt:         "update Run in service.go",
 		SessionTitle:   "Agent Session: code | impl",
 		Reviewer:       "rev",
 	}, config.AgentCode)
@@ -468,4 +473,221 @@ func TestExecuteWorker_WiresContextNoteForCodeAndReview(t *testing.T) {
 	require.Contains(t, reviewCall.ContextNote, `+func Run() { println("ok") }`)
 	require.True(t, codeJob.wait(t.Context(), 3*time.Second))
 	require.True(t, revJob.wait(t.Context(), 3*time.Second))
+}
+
+func setupExploreReadsFixture(t *testing.T, relPaths []string) (fakeEnv, *coordinator, string, string) {
+	t.Helper()
+	env := testEnv(t)
+	c := newJobCoordinator(t, env)
+	c.history = env.history
+	c.filetracker = *env.filetracker
+
+	root, err := env.sessions.Create(t.Context(), "root")
+	require.NoError(t, err)
+	expSess, err := env.sessions.CreateTaskSession(t.Context(), "exp-filter", root.ID, "Agent Session: explore | exp")
+	require.NoError(t, err)
+
+	for i, rel := range relPaths {
+		abs := filepath.Join(env.workingDir, filepath.FromSlash(rel))
+		require.NoError(t, os.MkdirAll(filepath.Dir(abs), 0o755))
+		require.NoError(t, os.WriteFile(abs, fmt.Appendf(nil, "content of %s\n", rel), 0o644))
+		recordViewCall(t, env, expSess.ID, fmt.Sprintf("view-%d", i), abs, 0, 20)
+	}
+
+	c.jobMu.Lock()
+	c.agentJobs["exp-filter"] = &agentJob{
+		id: "exp-filter", agent: config.AgentExplore, sessionID: expSess.ID,
+		parentSessionID: root.ID, rootSessionID: root.ID, name: "exp", status: "done",
+	}
+	c.jobMu.Unlock()
+
+	return env, c, root.ID, expSess.ID
+}
+
+func TestBuildExploreToCodeContext_FiltersOnlyTargetedFiles(t *testing.T) {
+	files := []string{"a.go", "b.go", "c.go", "pkg/one.go", "pkg/two.go", "other/three.go"}
+
+	t.Run("explicit context_files excludes unrelated files even if named in prompt", func(t *testing.T) {
+		_, c, rootID, _ := setupExploreReadsFixture(t, files)
+		codeJob := &agentJob{
+			id: "code-1", agent: config.AgentCode, sessionID: "code-s-1",
+			rootSessionID: rootID, contextFiles: []string{"a.go"},
+		}
+		note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "Update a.go to match b.go and c.go")
+		require.Contains(t, note, "### a.go (lines 1-1)")
+		require.Contains(t, note, "content of a.go")
+		require.NotContains(t, note, "b.go")
+		require.NotContains(t, note, "c.go")
+		require.NotContains(t, note, "pkg/one.go")
+		require.NotContains(t, note, "other/three.go")
+	})
+
+	t.Run("prompt filename with backticks and line suffix", func(t *testing.T) {
+		_, c, rootID, _ := setupExploreReadsFixture(t, files)
+		codeJob := &agentJob{
+			id: "code-2", agent: config.AgentCode, sessionID: "code-s-2",
+			rootSessionID: rootID,
+		}
+		note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "Fix issue in `a.go:42` and clean up logic.")
+		require.Contains(t, note, "### a.go (lines 1-1)")
+		require.NotContains(t, note, "b.go")
+		require.NotContains(t, note, "c.go")
+	})
+
+	t.Run("directory prefix in context_files", func(t *testing.T) {
+		_, c, rootID, _ := setupExploreReadsFixture(t, files)
+		codeJob := &agentJob{
+			id: "code-3", agent: config.AgentCode, sessionID: "code-s-3",
+			rootSessionID: rootID, contextFiles: []string{"pkg/"},
+		}
+		note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "Update pkg handlers")
+		require.Contains(t, note, "pkg/one.go")
+		require.Contains(t, note, "pkg/two.go")
+		require.NotContains(t, note, "a.go")
+		require.NotContains(t, note, "b.go")
+		require.NotContains(t, note, "other/three.go")
+	})
+
+	t.Run("directory segment without trailing slash in context_files", func(t *testing.T) {
+		_, c, rootID, _ := setupExploreReadsFixture(t, files)
+		codeJob := &agentJob{
+			id: "code-4", agent: config.AgentCode, sessionID: "code-s-4",
+			rootSessionID: rootID, contextFiles: []string{"pkg"},
+		}
+		note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "Update pkg handlers")
+		require.Contains(t, note, "pkg/one.go")
+		require.Contains(t, note, "pkg/two.go")
+		require.NotContains(t, note, "other/three.go")
+	})
+}
+
+func TestBuildExploreToCodeContext_AmbiguousBasenameVsSpecificSuffixPath(t *testing.T) {
+	files := []string{"desktop/src/App.tsx", "mobile/src/App.tsx", "desktop/src/Other.tsx"}
+
+	t.Run("specific path in prompt does not match sibling basename", func(t *testing.T) {
+		_, c, rootID, _ := setupExploreReadsFixture(t, files)
+		codeJob := &agentJob{
+			id: "code-1", agent: config.AgentCode, sessionID: "code-s-1",
+			rootSessionID: rootID,
+		}
+		note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "Update `desktop/src/App.tsx#L10` layout")
+		require.Contains(t, note, "desktop/src/App.tsx")
+		require.NotContains(t, note, "mobile/src/App.tsx")
+		require.NotContains(t, note, "Other.tsx")
+	})
+
+	t.Run("markdown link with basename and specific path keeps only specific path", func(t *testing.T) {
+		_, c, rootID, _ := setupExploreReadsFixture(t, files)
+		codeJob := &agentJob{
+			id: "code-2", agent: config.AgentCode, sessionID: "code-s-2",
+			rootSessionID: rootID,
+		}
+		note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "Update [App.tsx](desktop/src/App.tsx)")
+		require.Contains(t, note, "desktop/src/App.tsx")
+		require.NotContains(t, note, "mobile/src/App.tsx")
+	})
+
+	t.Run("bare basename in prompt matches matching basename files", func(t *testing.T) {
+		_, c, rootID, _ := setupExploreReadsFixture(t, files)
+		codeJob := &agentJob{
+			id: "code-3", agent: config.AgentCode, sessionID: "code-s-3",
+			rootSessionID: rootID,
+		}
+		note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "Update App.tsx")
+		require.Contains(t, note, "desktop/src/App.tsx")
+		require.Contains(t, note, "mobile/src/App.tsx")
+		require.NotContains(t, note, "Other.tsx")
+	})
+
+	t.Run("suffix path in context_files matches suffix", func(t *testing.T) {
+		_, c, rootID, _ := setupExploreReadsFixture(t, files)
+		codeJob := &agentJob{
+			id: "code-4", agent: config.AgentCode, sessionID: "code-s-4",
+			rootSessionID: rootID, contextFiles: []string{"src/App.tsx"},
+		}
+		note := c.buildWorkerContextNote(t.Context(), codeJob, nil, "Update component")
+		require.Contains(t, note, "desktop/src/App.tsx")
+		require.Contains(t, note, "mobile/src/App.tsx")
+		require.NotContains(t, note, "Other.tsx")
+	})
+}
+
+func TestBuildExploreToCodeContext_ReturnsEmptyWhenNoTargetsMatch(t *testing.T) {
+	_, c, rootID, _ := setupExploreReadsFixture(t, []string{"a.go", "b.go", "c.go"})
+
+	codeJob := &agentJob{
+		id: "code-none", agent: config.AgentCode, sessionID: "code-s-none",
+		rootSessionID: rootID,
+	}
+	require.Empty(t, c.buildWorkerContextNote(t.Context(), codeJob, nil, "Implement the new authentication handler"))
+
+	codeJobMissing := &agentJob{
+		id: "code-missing", agent: config.AgentCode, sessionID: "code-s-missing",
+		rootSessionID: rootID, contextFrom: []string{"exp"},
+	}
+	require.Empty(t, c.buildWorkerContextNote(t.Context(), codeJobMissing, nil, "Edit nonexistent.go"))
+}
+
+func TestExecuteWorker_FollowUpAgentMessageContextFiles(t *testing.T) {
+	env, c, rootID, _ := setupExploreReadsFixture(t, []string{"a.go", "b.go", "c.go"})
+
+	codeCalls := make(chan SessionAgentCall, 2)
+	codeAgent := newMockAgent("job-provider", 1024, func(_ context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+		codeCalls <- call
+		return agentResultWithText("done"), nil
+	})
+	c.subAgents = map[string]SessionAgent{
+		config.AgentCode: codeAgent,
+	}
+
+	codeJob, err := c.startAgentJob(t.Context(), subAgentParams{
+		Agent:          codeAgent,
+		SessionID:      rootID,
+		AgentMessageID: "m1",
+		ToolCallID:     "code-call",
+		Prompt:         "Implement feature in a.go",
+		SessionTitle:   "Agent Session: code | impl",
+		ContextFiles:   []string{"a.go"},
+	}, config.AgentCode)
+	require.NoError(t, err)
+
+	var firstCall SessionAgentCall
+	select {
+	case firstCall = <-codeCalls:
+	case <-time.After(3 * time.Second):
+		t.Fatal("timed out waiting for initial code worker call")
+	}
+	require.Contains(t, firstCall.ContextNote, "### a.go (lines 1-1)")
+	require.NotContains(t, firstCall.ContextNote, "b.go")
+	require.NotContains(t, firstCall.ContextNote, "c.go")
+	require.True(t, codeJob.wait(t.Context(), 3*time.Second))
+
+	msgInput, err := json.Marshal(agentMessageParams{
+		Op:           "send",
+		WorkerID:     codeJob.id,
+		Text:         "Now update the helper",
+		ContextFrom:  []string{"exp"},
+		ContextFiles: []string{"b.go"},
+	})
+	require.NoError(t, err)
+	ctx := context.WithValue(t.Context(), tools.SessionIDContextKey, rootID)
+	resp, err := c.agentMessageTool().Run(ctx, fantasy.ToolCall{
+		ID:    "msg-1",
+		Name:  AgentMessageToolName,
+		Input: string(msgInput),
+	})
+	require.NoError(t, err)
+	require.False(t, resp.IsError)
+
+	var followUpCall SessionAgentCall
+	select {
+	case followUpCall = <-codeCalls:
+	case <-time.After(3 * time.Second):
+		t.Fatal("timed out waiting for follow-up code worker call")
+	}
+	require.Contains(t, followUpCall.ContextNote, "### b.go (lines 1-1)")
+	require.NotContains(t, followUpCall.ContextNote, "a.go")
+	require.NotContains(t, followUpCall.ContextNote, "c.go")
+	require.True(t, codeJob.wait(t.Context(), 3*time.Second))
+	_ = env
 }

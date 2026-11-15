@@ -7,6 +7,7 @@ import (
 	"io"
 	"maps"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -24,6 +25,8 @@ import (
 
 const (
 	workerContextHeader       = "Background file context from team:"
+	omittedReadHeader         = "\nAdditional read files omitted due to size budget:\n"
+	omittedModifiedHeader     = "\nAdditional modified files omitted due to size budget:\n"
 	exploreContextBudgetBytes = 64 * 1024
 	reviewContextBudgetBytes  = 96 * 1024
 	maxFallbackReadLines      = 400
@@ -33,6 +36,19 @@ const (
 type lineRange struct {
 	start int
 	end   int
+}
+
+type contextSection struct {
+	displayPath string
+	text        string
+}
+
+type targetFileSpec struct {
+	rawNorm      string
+	resolvedNorm string
+	hasSlash     bool
+	isDir        bool
+	baseNorm     string
 }
 
 type modifiedFileContext struct {
@@ -86,6 +102,29 @@ func (c *coordinator) applyContextSources(job *agentJob, sources []string) {
 	}
 }
 
+func (c *coordinator) applyContextFiles(job *agentJob, files []string) {
+	if job == nil || len(files) == 0 {
+		return
+	}
+	job.mu.Lock()
+	defer job.mu.Unlock()
+	seen := make(map[string]struct{}, len(job.contextFiles))
+	for _, existing := range job.contextFiles {
+		seen[existing] = struct{}{}
+	}
+	for _, raw := range files {
+		file := strings.TrimSpace(raw)
+		if file == "" {
+			continue
+		}
+		if _, ok := seen[file]; ok {
+			continue
+		}
+		seen[file] = struct{}{}
+		job.contextFiles = append(job.contextFiles, file)
+	}
+}
+
 func (c *coordinator) snapshotWorkerWatermark(ctx context.Context, job *agentJob) {
 	if c == nil || job == nil {
 		return
@@ -126,13 +165,13 @@ func (c *coordinator) snapshotWorkerWatermark(ctx context.Context, job *agentJob
 	job.mu.Unlock()
 }
 
-func (c *coordinator) buildWorkerContextNote(ctx context.Context, job *agentJob, authorJob *agentJob) string {
+func (c *coordinator) buildWorkerContextNote(ctx context.Context, job *agentJob, authorJob *agentJob, runPrompt string) string {
 	if c == nil || job == nil {
 		return ""
 	}
 	switch job.agent {
 	case config.AgentCode:
-		return c.buildExploreToCodeContext(ctx, job)
+		return c.buildExploreToCodeContext(ctx, job, runPrompt)
 	case config.AgentReview:
 		if authorJob == nil {
 			return ""
@@ -143,12 +182,15 @@ func (c *coordinator) buildWorkerContextNote(ctx context.Context, job *agentJob,
 	}
 }
 
-func (c *coordinator) buildExploreToCodeContext(ctx context.Context, job *agentJob) string {
+func (c *coordinator) buildExploreToCodeContext(ctx context.Context, job *agentJob, runPrompt string) string {
 	job.mu.Lock()
 	explicit := append([]string(nil), job.contextFrom...)
 	job.contextFrom = nil
+	explicitFiles := append([]string(nil), job.contextFiles...)
+	job.contextFiles = nil
 	rootSessionID := job.rootSessionID
 	codeSessionID := job.sessionID
+	jobPrompt := job.prompt
 	consumed := maps.Clone(job.contextConsumed)
 	job.mu.Unlock()
 
@@ -165,12 +207,12 @@ func (c *coordinator) buildExploreToCodeContext(ctx context.Context, job *agentJ
 	for _, srcSessionID := range sourceSessions {
 		fileRanges, paths, msgCount := c.collectSessionReadFiles(ctx, srcSessionID)
 		newCounts[srcSessionID] = msgCount
-		for _, path := range paths {
-			if !seenPath[path] {
-				seenPath[path] = true
-				orderedPaths = append(orderedPaths, path)
+		for _, p := range paths {
+			if !seenPath[p] {
+				seenPath[p] = true
+				orderedPaths = append(orderedPaths, p)
 			}
-			mergedRanges[path] = append(mergedRanges[path], fileRanges[path]...)
+			mergedRanges[p] = append(mergedRanges[p], fileRanges[p]...)
 		}
 	}
 
@@ -178,17 +220,265 @@ func (c *coordinator) buildExploreToCodeContext(ctx context.Context, job *agentJ
 	if job.contextConsumed == nil {
 		job.contextConsumed = map[string]int{}
 	}
-	for sid, count := range newCounts {
-		job.contextConsumed[sid] = count
-	}
+	maps.Copy(job.contextConsumed, newCounts)
 	job.mu.Unlock()
 
+	orderedPaths = c.filterExplorePathsForCode(orderedPaths, explicitFiles, runPrompt, jobPrompt)
 	if len(orderedPaths) == 0 {
 		return ""
 	}
 
 	intro := workerContextHeader + "\nPreloaded read-only file contents from exploration (current on-disk state). Use these directly without re-reading unchanged ranges:\n\n"
 	return c.formatReadSections(intro, orderedPaths, mergedRanges, exploreContextBudgetBytes)
+}
+
+func (c *coordinator) filterExplorePathsForCode(orderedPaths, explicitFiles []string, runPrompt, jobPrompt string) []string {
+	if len(orderedPaths) == 0 {
+		return nil
+	}
+
+	var specs []targetFileSpec
+	for _, raw := range explicitFiles {
+		if spec, ok := c.parseTargetFileSpec(raw, true); ok {
+			specs = append(specs, spec)
+		}
+	}
+	if len(specs) == 0 {
+		promptText := runPrompt
+		if strings.TrimSpace(promptText) == "" {
+			promptText = jobPrompt
+		}
+		specs = c.extractPromptFileSpecs(promptText)
+	}
+	if len(specs) == 0 {
+		return nil
+	}
+
+	type candidatePath struct {
+		orig         string
+		resolvedNorm string
+		displayNorm  string
+		displayDir   string
+		baseNorm     string
+	}
+	candidates := make([]candidatePath, len(orderedPaths))
+	for i, p := range orderedPaths {
+		resolved := p
+		if c != nil {
+			if r := c.resolveContextPath(p); r != "" {
+				resolved = r
+			}
+		}
+		display := p
+		if c != nil {
+			display = c.displayContextPath(p)
+		}
+		resolvedNorm := strings.ToLower(filepath.ToSlash(filepath.Clean(resolved)))
+		displayNorm := strings.ToLower(filepath.ToSlash(filepath.Clean(display)))
+		displayDir := path.Dir(displayNorm)
+		if displayDir == "." {
+			displayDir = ""
+		}
+		candidates[i] = candidatePath{
+			orig:         p,
+			resolvedNorm: resolvedNorm,
+			displayNorm:  displayNorm,
+			displayDir:   displayDir,
+			baseNorm:     strings.ToLower(filepath.Base(p)),
+		}
+	}
+
+	matched := make([]bool, len(candidates))
+	qualifiedBases := make(map[string]bool)
+
+	for _, spec := range specs {
+		for i, cand := range candidates {
+			exact := cand.displayNorm == spec.rawNorm ||
+				cand.resolvedNorm == spec.rawNorm ||
+				(spec.resolvedNorm != "" && cand.resolvedNorm == spec.resolvedNorm)
+			suffix := spec.hasSlash && (strings.HasSuffix(cand.displayNorm, "/"+spec.rawNorm) || strings.HasSuffix(cand.resolvedNorm, "/"+spec.rawNorm))
+			dirPrefix := spec.isDir && (strings.HasPrefix(cand.displayNorm, spec.rawNorm+"/") ||
+				(spec.resolvedNorm != "" && strings.HasPrefix(cand.resolvedNorm, spec.resolvedNorm+"/")) ||
+				(cand.displayDir != "" && (cand.displayDir == spec.rawNorm ||
+					strings.HasPrefix(cand.displayDir, spec.rawNorm+"/") ||
+					strings.HasSuffix(cand.displayDir, "/"+spec.rawNorm) ||
+					strings.Contains(cand.displayDir, "/"+spec.rawNorm+"/"))))
+			if exact || suffix || dirPrefix {
+				matched[i] = true
+				if spec.hasSlash || spec.isDir || exact {
+					qualifiedBases[cand.baseNorm] = true
+				}
+			}
+		}
+	}
+
+	for _, spec := range specs {
+		if spec.hasSlash || spec.isDir || qualifiedBases[spec.baseNorm] {
+			continue
+		}
+		for i, cand := range candidates {
+			if cand.baseNorm == spec.baseNorm {
+				matched[i] = true
+			}
+		}
+	}
+
+	var filtered []string
+	for i, cand := range candidates {
+		if matched[i] {
+			filtered = append(filtered, cand.orig)
+		}
+	}
+	return filtered
+}
+
+func (c *coordinator) extractPromptFileSpecs(prompt string) []targetFileSpec {
+	if strings.TrimSpace(prompt) == "" {
+		return nil
+	}
+	fields := strings.FieldsFunc(prompt, func(r rune) bool {
+		switch r {
+		case ' ', '\t', '\r', '\n', ',', ';', '(', ')', '[', ']', '<', '>', '{', '}', '|':
+			return true
+		default:
+			return false
+		}
+	})
+	specs := make([]targetFileSpec, 0, len(fields))
+	seen := make(map[string]struct{}, len(fields))
+	for _, field := range fields {
+		spec, ok := c.parseTargetFileSpec(field, false)
+		if !ok {
+			continue
+		}
+		key := spec.rawNorm
+		if spec.isDir {
+			key += "/"
+		}
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		specs = append(specs, spec)
+	}
+	return specs
+}
+
+func (c *coordinator) parseTargetFileSpec(raw string, isExplicit bool) (targetFileSpec, bool) {
+	s := strings.TrimSpace(raw)
+	if !isExplicit {
+		s = strings.Trim(s, "\"'`*_")
+		s = strings.TrimRight(s, ".,:;!?")
+		s = strings.TrimRight(s, "\"'`*_")
+		if strings.Contains(s, "://") {
+			return targetFileSpec{}, false
+		}
+		s = stripLineRangeSuffix(s)
+		s = strings.TrimRight(s, ".,:;!?\"'`*_")
+		s = strings.TrimLeft(s, "\"'`*_")
+	} else {
+		s = strings.Trim(s, "\"'`")
+	}
+	if s == "" {
+		return targetFileSpec{}, false
+	}
+
+	s = strings.ReplaceAll(s, "\\", "/")
+	hasTrailingSlash := strings.HasSuffix(s, "/")
+	for strings.HasPrefix(s, "./") {
+		s = strings.TrimPrefix(s, "./")
+	}
+	s = strings.TrimRight(s, "/")
+	if s == "" || s == "." || s == ".." {
+		return targetFileSpec{}, false
+	}
+
+	cleaned := path.Clean(s)
+	if cleaned == "." || cleaned == ".." {
+		return targetFileSpec{}, false
+	}
+	base := path.Base(cleaned)
+	hasSlash := strings.Contains(cleaned, "/") || hasTrailingSlash
+	if !isExplicit && !hasSlash && !hasFileExtension(base) {
+		return targetFileSpec{}, false
+	}
+
+	isDir := hasTrailingSlash
+	if isExplicit && !isDir && path.Ext(base) == "" {
+		isDir = true
+	}
+
+	var resolvedNorm string
+	if c != nil {
+		if resolved := c.resolveContextPath(cleaned); resolved != "" {
+			resolvedNorm = strings.ToLower(filepath.ToSlash(filepath.Clean(resolved)))
+		}
+	}
+
+	return targetFileSpec{
+		rawNorm:      strings.ToLower(cleaned),
+		resolvedNorm: resolvedNorm,
+		hasSlash:     strings.Contains(cleaned, "/"),
+		isDir:        isDir,
+		baseNorm:     strings.ToLower(base),
+	}, true
+}
+
+func stripLineRangeSuffix(s string) string {
+	lastSlash := max(strings.LastIndexByte(s, '/'), strings.LastIndexByte(s, '\\'))
+	tail := s[lastSlash+1:]
+	if hashOffset := strings.IndexByte(tail, '#'); hashOffset >= 0 {
+		frag := tail[hashOffset+1:]
+		if len(frag) > 0 && ((frag[0] >= '0' && frag[0] <= '9') || ((frag[0] == 'L' || frag[0] == 'l') && len(frag) > 1 && frag[1] >= '0' && frag[1] <= '9')) {
+			s = s[:lastSlash+1+hashOffset]
+			tail = s[lastSlash+1:]
+		}
+	}
+	if colonOffset := strings.IndexByte(tail, ':'); colonOffset >= 0 {
+		suffix := tail[colonOffset+1:]
+		if isLineSuffix(suffix) {
+			s = s[:lastSlash+1+colonOffset]
+		}
+	}
+	return s
+}
+
+func isLineSuffix(suffix string) bool {
+	if suffix == "" || suffix[0] < '0' || suffix[0] > '9' {
+		return false
+	}
+	for i := 0; i < len(suffix); i++ {
+		ch := suffix[i]
+		if (ch >= '0' && ch <= '9') || ch == ':' || ch == '-' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func hasFileExtension(name string) bool {
+	dot := strings.LastIndexByte(name, '.')
+	if dot < 0 || dot == len(name)-1 {
+		return false
+	}
+	ext := name[dot+1:]
+	if len(ext) > 16 {
+		return false
+	}
+	hasLetter := false
+	for i := 0; i < len(ext); i++ {
+		ch := ext[i]
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+			hasLetter = true
+			continue
+		}
+		if (ch >= '0' && ch <= '9') || ch == '_' || ch == '-' {
+			continue
+		}
+		return false
+	}
+	return hasLetter
 }
 
 func (c *coordinator) resolveExploreSources(
@@ -411,72 +701,88 @@ func (c *coordinator) buildCodeToReviewContext(ctx context.Context, authorJob *a
 		return ""
 	}
 
-	var out strings.Builder
-	out.WriteString(workerContextHeader)
-	out.WriteString("\nPreloaded modified files, unified diffs from baseline, and read-only context from the author (current on-disk state). Use these directly instead of re-reading unchanged files/ranges:\n")
-
+	intro := workerContextHeader + "\nPreloaded modified files, unified diffs from baseline, and read-only context from the author (current on-disk state). Use these directly instead of re-reading unchanged files/ranges:\n"
 	budget := reviewContextBudgetBytes
-	var omittedModified []string
-	wroteAny := false
+	used := len(intro)
 
+	var includedModified []contextSection
+	var omittedModified []string
 	for _, path := range modifiedOrder {
 		mod := modifiedMap[path]
-		section := c.formatModifiedSection(mod, budget-out.Len())
+		display := c.displayContextPath(path)
+		reserved := omittedSectionLen(omittedModifiedHeader, omittedModified)
+		section := c.formatModifiedSection(mod, budget-used-reserved)
 		if section == "" {
-			omittedModified = append(omittedModified, c.displayContextPath(path))
+			omittedModified = append(omittedModified, display)
 			continue
 		}
-		if out.Len()+len(section) > budget {
-			omittedModified = append(omittedModified, c.displayContextPath(path))
+		if used+len(section)+reserved > budget {
+			omittedModified = append(omittedModified, display)
 			continue
 		}
-		out.WriteString(section)
-		wroteAny = true
+		includedModified = append(includedModified, contextSection{displayPath: display, text: section})
+		used += len(section)
 	}
 
+	sectionHeader := "\n## Read-only context files\n"
+	var includedReads []contextSection
 	var omittedReads []string
-	if len(readOnlyPaths) > 0 {
-		sectionHeader := "\n## Read-only context files\n"
-		wroteReadHeader := false
-		for _, path := range readOnlyPaths {
-			ranges := mergeLineRanges(readRanges[path])
-			block := c.formatFileRangesBlock(path, ranges)
-			if block == "" {
-				continue
-			}
-			needed := len(block)
-			if !wroteReadHeader {
-				needed += len(sectionHeader)
-			}
-			if out.Len()+needed > budget {
-				omittedReads = append(omittedReads, c.displayContextPath(path))
-				continue
-			}
-			if !wroteReadHeader {
-				out.WriteString(sectionHeader)
-				wroteReadHeader = true
-			}
-			out.WriteString(block)
-			wroteAny = true
+	for _, path := range readOnlyPaths {
+		ranges := mergeLineRanges(readRanges[path])
+		block := c.formatFileRangesBlock(path, ranges)
+		if block == "" {
+			continue
 		}
+		display := c.displayContextPath(path)
+		needed := len(block)
+		if len(includedReads) == 0 {
+			needed += len(sectionHeader)
+		}
+		reserved := omittedSectionLen(omittedModifiedHeader, omittedModified) + omittedSectionLen(omittedReadHeader, omittedReads)
+		if used+needed+reserved > budget {
+			omittedReads = append(omittedReads, display)
+			continue
+		}
+		includedReads = append(includedReads, contextSection{displayPath: display, text: block})
+		used += needed
 	}
 
-	if len(omittedModified) > 0 {
-		out.WriteString("\nAdditional modified files omitted due to size budget:\n")
-		for _, p := range omittedModified {
-			fmt.Fprintf(&out, "- %s\n", p)
-		}
-	}
-	if len(omittedReads) > 0 {
-		out.WriteString("\nAdditional read files omitted due to size budget:\n")
-		for _, p := range omittedReads {
-			fmt.Fprintf(&out, "- %s\n", p)
-		}
-	}
-
-	if !wroteAny && len(omittedModified) == 0 && len(omittedReads) == 0 {
+	if len(includedModified) == 0 && len(includedReads) == 0 && len(omittedModified) == 0 && len(omittedReads) == 0 {
 		return ""
 	}
+
+	totalFooterLen := func() int {
+		return omittedSectionLen(omittedModifiedHeader, omittedModified) + omittedSectionLen(omittedReadHeader, omittedReads)
+	}
+	for len(includedReads) > 0 && used+totalFooterLen() > budget {
+		last := includedReads[len(includedReads)-1]
+		includedReads = includedReads[:len(includedReads)-1]
+		used -= len(last.text)
+		if len(includedReads) == 0 {
+			used -= len(sectionHeader)
+		}
+		omittedReads = append([]string{last.displayPath}, omittedReads...)
+	}
+	for len(includedModified) > 0 && used+totalFooterLen() > budget {
+		last := includedModified[len(includedModified)-1]
+		includedModified = includedModified[:len(includedModified)-1]
+		used -= len(last.text)
+		omittedModified = append([]string{last.displayPath}, omittedModified...)
+	}
+
+	var out strings.Builder
+	out.WriteString(intro)
+	for _, sec := range includedModified {
+		out.WriteString(sec.text)
+	}
+	if len(includedReads) > 0 {
+		out.WriteString(sectionHeader)
+		for _, sec := range includedReads {
+			out.WriteString(sec.text)
+		}
+	}
+	writeOmittedSection(&out, omittedModifiedHeader, omittedModified, budget-out.Len())
+	writeOmittedSection(&out, omittedReadHeader, omittedReads, budget-out.Len())
 	return out.String()
 }
 
@@ -687,34 +993,75 @@ func mergeLineRanges(ranges []lineRange) []lineRange {
 }
 
 func (c *coordinator) formatReadSections(intro string, orderedPaths []string, rangesByPath map[string][]lineRange, budget int) string {
-	var out strings.Builder
-	out.WriteString(intro)
-	baseLen := out.Len()
+	var included []contextSection
 	var omitted []string
+	used := len(intro)
 
-	for _, path := range orderedPaths {
-		merged := mergeLineRanges(rangesByPath[path])
-		block := c.formatFileRangesBlock(path, merged)
+	for _, p := range orderedPaths {
+		merged := mergeLineRanges(rangesByPath[p])
+		block := c.formatFileRangesBlock(p, merged)
 		if block == "" {
 			continue
 		}
-		if out.Len()+len(block) > budget {
-			omitted = append(omitted, c.displayContextPath(path))
+		display := c.displayContextPath(p)
+		if used+len(block)+omittedSectionLen(omittedReadHeader, omitted) > budget {
+			omitted = append(omitted, display)
 			continue
 		}
-		out.WriteString(block)
+		included = append(included, contextSection{displayPath: display, text: block})
+		used += len(block)
 	}
 
-	if out.Len() == baseLen && len(omitted) == 0 {
+	if len(included) == 0 && len(omitted) == 0 {
 		return ""
 	}
-	if len(omitted) > 0 {
-		out.WriteString("\nAdditional read files omitted due to size budget:\n")
-		for _, p := range omitted {
-			fmt.Fprintf(&out, "- %s\n", p)
-		}
+
+	for len(included) > 0 && used+omittedSectionLen(omittedReadHeader, omitted) > budget {
+		last := included[len(included)-1]
+		included = included[:len(included)-1]
+		used -= len(last.text)
+		omitted = append([]string{last.displayPath}, omitted...)
 	}
+
+	var out strings.Builder
+	out.WriteString(intro)
+	for _, sec := range included {
+		out.WriteString(sec.text)
+	}
+	writeOmittedSection(&out, omittedReadHeader, omitted, budget-out.Len())
 	return out.String()
+}
+
+func omittedSectionLen(header string, paths []string) int {
+	if len(paths) == 0 {
+		return 0
+	}
+	n := len(header)
+	for _, p := range paths {
+		n += 2 + len(p) + 1
+	}
+	return n
+}
+
+func writeOmittedSection(out *strings.Builder, header string, paths []string, maxLen int) {
+	if len(paths) == 0 || maxLen < len(header) {
+		return
+	}
+	out.WriteString(header)
+	remaining := maxLen - len(header)
+	for i, p := range paths {
+		line := "- " + p + "\n"
+		if len(line) <= remaining {
+			out.WriteString(line)
+			remaining -= len(line)
+			continue
+		}
+		more := fmt.Sprintf("- ... and %d more\n", len(paths)-i)
+		if len(more) <= remaining {
+			out.WriteString(more)
+		}
+		break
+	}
 }
 
 func (c *coordinator) formatFileRangesBlock(path string, ranges []lineRange) string {

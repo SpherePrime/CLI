@@ -47,6 +47,7 @@ type agentJob struct {
 	reviewRound             int
 	awaitHandoff            bool
 	contextFrom             []string
+	contextFiles            []string
 	contextMsgWatermark     int
 	contextHistoryWatermark int
 	contextMsgSeen          map[string]bool
@@ -227,6 +228,7 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		done:            make(chan struct{}),
 		reviewer:        strings.TrimSpace(params.Reviewer),
 		contextFrom:     append([]string(nil), params.ContextFrom...),
+		contextFiles:    append([]string(nil), params.ContextFiles...),
 	}
 	if params.Dormant {
 		job.status = "waiting"

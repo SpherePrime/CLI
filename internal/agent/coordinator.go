@@ -2140,6 +2140,7 @@ type subAgentParams struct {
 	AwaitHandoff bool
 	Reviewer     string
 	ContextFrom  []string
+	ContextFiles []string
 	ContextNote  string
 }
 

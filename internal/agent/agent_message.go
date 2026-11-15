@@ -16,8 +16,9 @@ const AgentMessageToolName = "agent_message"
 type agentMessageParams struct {
 	Op          string   `json:"op,omitempty" description:"list (team roster) or send"`
 	WorkerID    string   `json:"worker_id,omitempty" description:"Worker ID, session ID or peer name; use parent to send a progress report or request another assignment from the primary chat"`
-	Text        string   `json:"text,omitempty" description:"Self-contained message, findings, or follow-up assignment"`
-	ContextFrom []string `json:"context_from,omitempty" description:"Optional worker names or IDs whose read/edited file context should be preloaded invisibly in background system context for the target worker."`
+	Text         string   `json:"text,omitempty" description:"Self-contained message, findings, or follow-up assignment"`
+	ContextFrom  []string `json:"context_from,omitempty" description:"Optional worker names or IDs whose read/edited file context should be preloaded invisibly in background system context for the target worker."`
+	ContextFiles []string `json:"context_files,omitempty" description:"Optional target file paths or directory prefixes that the target code worker will modify, so only their preloaded explore contents are injected in background system context."`
 }
 
 func (c *coordinator) agentMessageTool() fantasy.AgentTool {
@@ -63,10 +64,11 @@ func (c *coordinator) agentMessageTool() fantasy.AgentTool {
 			}()
 			return fantasy.NewTextResponse("Message queued for primary chat."), nil
 		}
-		if len(params.ContextFrom) > 0 {
-			if target, err := c.teamWorker(ctx, source, params.WorkerID); err == nil {
+		if len(params.ContextFrom) > 0 || len(params.ContextFiles) > 0 {
+			if target, err := c.teamWorker(ctx, source, params.WorkerID); err == nil && target.SessionID != source {
 				if job, err := c.ensureWorkerJob(ctx, target); err == nil {
 					c.applyContextSources(job, params.ContextFrom)
+					c.applyContextFiles(job, params.ContextFiles)
 				}
 			}
 		}

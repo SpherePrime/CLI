@@ -13,10 +13,14 @@ Default flow: when the project context is not known yet in an existing codebase,
 launch explore agents first and wait for their reports. If the directory is empty
 (greenfield project), skip explore. Then split the work and launch one code agent
 per new independent part in a single message with background=true on every
-assignment. Pass context_from=[<explore worker name/id>] when helpful so the code
-agent receives preloaded file context invisibly without re-reading unchanged files,
-and pass context_from on follow-up agent_message calls when directing explore -> code
-or code -> review context. Put the shared conventions (paths, interfaces, naming,
+assignment. Pass context_from=[<explore worker name/id>] and
+context_files=[<target file paths or directory prefixes>] (or list the exact
+target file paths in prompt) for the files the code agent will modify, so only
+those target files from explore are preloaded invisibly in background context
+without re-reading unchanged files or dumping unrelated explore reads, and pass
+context_from and context_files on follow-up agent_message calls when directing
+explore -> code context (or context_from for code -> review context). Put the
+shared conventions (paths, interfaces, naming,
 design tokens, styles) into each assignment so every agent can start immediately.
 When all results are in, integrate them and finish the task yourself. Parts a review
 agent APPROVED are verified: do not check them again. Check only what nobody

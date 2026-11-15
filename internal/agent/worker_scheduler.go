@@ -135,7 +135,7 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 		}
 		switch job.agent {
 		case config.AgentCode:
-			params.ContextNote = c.buildWorkerContextNote(ctx, job, nil)
+			params.ContextNote = c.buildWorkerContextNote(ctx, job, nil, params.Prompt)
 		case config.AgentReview:
 			job.mu.Lock()
 			authorID := job.author
@@ -155,7 +155,7 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 					}
 				}
 			}
-			params.ContextNote = c.buildWorkerContextNote(ctx, job, authorJob)
+			params.ContextNote = c.buildWorkerContextNote(ctx, job, authorJob, params.Prompt)
 		}
 		status, output := c.runAgentJob(job, ctx, params, job.sessionID, model, callMaxOutputTokens(model, provider.Type), provider)
 		job.mu.Lock()
