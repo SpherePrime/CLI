@@ -205,11 +205,13 @@ func mcpResponse(ctx context.Context, result mcp.ToolResult) (response fantasy.T
 		if result.Type == "image" && len(result.Images) > 1 {
 			payloads := make([]fantasy.ImagePayload, 0, len(result.Images))
 			for _, image := range result.Images {
-				payloads = append(payloads, fantasy.ImagePayload{Data: image.Data, MediaType: image.MediaType})
+				fittedData, fittedMediaType := fitImageForModel(image.Data, image.MediaType)
+				payloads = append(payloads, fantasy.ImagePayload{Data: fittedData, MediaType: fittedMediaType})
 			}
 			response = fantasy.NewImagesResponse(payloads, result.Content)
 		} else if result.Type == "image" {
-			response = fantasy.NewImageResponse(result.Data, result.MediaType)
+			fittedData, fittedMediaType := fitImageForModel(result.Data, result.MediaType)
+			response = fantasy.NewImageResponse(fittedData, fittedMediaType)
 		} else {
 			response = fantasy.NewMediaResponse(result.Data, result.MediaType)
 		}

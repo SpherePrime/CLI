@@ -1129,6 +1129,7 @@ if not defined TAURI_SIGNING_PRIVATE_KEY if not exist "!KEY_FILE!" (
     echo        Use --no-desktop to release the CLI only.
     exit /b 1
 )
+node "%ROOT%\desktop\scripts\updater-key.mjs" --check || exit /b 1
 set "DESKTOP_RELEASE=1"
 exit /b 0
 

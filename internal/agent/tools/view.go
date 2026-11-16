@@ -200,10 +200,6 @@ func NewViewTool(
 
 			isSupportedImage, mimeType := getImageMimeType(filePath)
 			if isSupportedImage {
-				if fileInfo.Size() > MaxViewSize {
-					return fantasy.NewTextErrorResponse(fmt.Sprintf("Image file is too large (%d bytes). Maximum size is %d bytes",
-						fileInfo.Size(), MaxViewSize)), nil
-				}
 				if !GetSupportsImagesFromContext(ctx) {
 					modelName := GetModelNameFromContext(ctx)
 					return fantasy.NewTextErrorResponse(fmt.Sprintf("This model (%s) does not support image data.", modelName)), nil
@@ -221,6 +217,7 @@ func NewViewTool(
 				// on mismatch, so prefer the sniffed type whenever
 				// it identifies a supported image format.
 				mimeType = sniffImageMimeType(imageData, mimeType)
+				imageData, mimeType = fitImageForModel(imageData, mimeType)
 
 				return fantasy.NewImageResponse(imageData, mimeType), nil
 			}

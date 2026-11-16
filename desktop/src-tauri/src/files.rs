@@ -108,10 +108,6 @@ pub fn read(root: &Path, relative: &str) -> HostResult<Value> {
     if !path.is_file() {
         return Err(HostError::new("INVALID_FILE", "Select a file"));
     }
-    if path.metadata()?.len() > 2 * 1024 * 1024 {
-        return Err(HostError::new("FILE_TOO_LARGE", "File exceeds 2 MiB"));
-    }
-    let bytes = fs::read(&path)?;
     let extension = path
         .extension()
         .and_then(|value| value.to_str())
@@ -124,6 +120,10 @@ pub fn read(root: &Path, relative: &str) -> HostResult<Value> {
         "gif" => Some("image/gif"),
         _ => None,
     };
+    if mime.is_none() && path.metadata()?.len() > 2 * 1024 * 1024 {
+        return Err(HostError::new("FILE_TOO_LARGE", "File exceeds 2 MiB"));
+    }
+    let bytes = fs::read(&path)?;
     if let Some(mime) = mime {
         return Ok(
             json!({"path":relative,"name":path.file_name().unwrap().to_string_lossy(),"image":format!("data:{mime};base64,{}",base64::engine::general_purpose::STANDARD.encode(&bytes))}),
@@ -248,5 +248,27 @@ mod tests {
             fs::read_to_string(root.path().join("file.txt")).unwrap(),
             "external edit"
         );
+    }
+
+    #[test]
+    fn large_image_files_can_be_read_without_size_limit() {
+        let root = tempfile::tempdir().unwrap();
+        let data = vec![0x89u8; 2 * 1024 * 1024 + 1024];
+        fs::write(root.path().join("large.png"), &data).unwrap();
+        let result = read(root.path(), "large.png").unwrap();
+        assert_eq!(result["name"], "large.png");
+        assert!(result["image"]
+            .as_str()
+            .unwrap()
+            .starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn large_text_files_still_exceed_limit() {
+        let root = tempfile::tempdir().unwrap();
+        let data = vec![b'a'; 2 * 1024 * 1024 + 1024];
+        fs::write(root.path().join("large.txt"), &data).unwrap();
+        let error = read(root.path(), "large.txt").unwrap_err();
+        assert_eq!(error.code, "FILE_TOO_LARGE");
     }
 }

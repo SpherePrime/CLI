@@ -1,15 +1,20 @@
 package tools
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/filetracker"
 	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/internal/permission"
@@ -156,22 +161,200 @@ func TestViewToolBlocksOversizedReturnedSections(t *testing.T) {
 	require.Contains(t, resp.Content, "Content section is too large")
 }
 
-func TestViewToolBlocksOversizedImages(t *testing.T) {
+func TestViewToolAllowsOversizedImages(t *testing.T) {
 	t.Parallel()
 
-	workingDir := t.TempDir()
-	filePath := filepath.Join(workingDir, "large.png")
-	require.NoError(t, os.WriteFile(filePath, []byte(strings.Repeat("a", MaxViewSize+1)), 0o644))
-
-	tool := newViewToolForTest(workingDir)
 	ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
 	ctx = context.WithValue(ctx, SupportsImagesContextKey, true)
-	resp := runViewTool(t, tool, ctx, ViewParams{
-		FilePath: filePath,
+
+	t.Run("valid PNG larger than MaxViewSize", func(t *testing.T) {
+		t.Parallel()
+
+		workingDir := t.TempDir()
+		filePath := filepath.Join(workingDir, "medium.png")
+		pngBytes := encodeTestPNG(t, 280, 280, png.NoCompression, false)
+		require.Greater(t, len(pngBytes), MaxViewSize)
+		require.LessOrEqual(t, len(pngBytes), maxModelImageRawBytes)
+		require.NoError(t, os.WriteFile(filePath, pngBytes, 0o644))
+
+		tool := newViewToolForTest(workingDir)
+		resp := runViewTool(t, tool, ctx, ViewParams{FilePath: filePath})
+		require.False(t, resp.IsError)
+		require.Equal(t, "image", resp.Type)
+		require.Equal(t, "image/png", resp.MediaType)
+		require.Equal(t, pngBytes, resp.Data)
 	})
 
-	require.True(t, resp.IsError)
-	require.Contains(t, resp.Content, "Image file is too large")
+	t.Run("valid PNG larger than 3 MiB is fitted", func(t *testing.T) {
+		t.Parallel()
+
+		workingDir := t.TempDir()
+		filePath := filepath.Join(workingDir, "large.png")
+		pngBytes := encodeTestPNG(t, 1200, 1200, png.NoCompression, false)
+		require.Greater(t, len(pngBytes), maxModelImageRawBytes)
+		require.NoError(t, os.WriteFile(filePath, pngBytes, 0o644))
+
+		tool := newViewToolForTest(workingDir)
+		resp := runViewTool(t, tool, ctx, ViewParams{FilePath: filePath})
+		require.False(t, resp.IsError)
+		require.Equal(t, "image", resp.Type)
+		require.NotEmpty(t, resp.Data)
+		require.LessOrEqual(t, len(resp.Data), maxModelImageRawBytes)
+
+		cfg, _, err := image.DecodeConfig(bytes.NewReader(resp.Data))
+		require.NoError(t, err)
+		require.LessOrEqual(t, cfg.Width, maxModelImageDimension)
+		require.LessOrEqual(t, cfg.Height, maxModelImageDimension)
+	})
+
+	t.Run("dummy oversized image bytes fall back untouched", func(t *testing.T) {
+		t.Parallel()
+
+		workingDir := t.TempDir()
+		filePath := filepath.Join(workingDir, "dummy.png")
+		dummyBytes := bytes.Repeat([]byte("a"), MaxViewSize+1)
+		require.NoError(t, os.WriteFile(filePath, dummyBytes, 0o644))
+
+		tool := newViewToolForTest(workingDir)
+		resp := runViewTool(t, tool, ctx, ViewParams{FilePath: filePath})
+		require.False(t, resp.IsError)
+		require.NotContains(t, resp.Content, "Image file is too large")
+		require.Equal(t, "image", resp.Type)
+		require.Equal(t, "image/png", resp.MediaType)
+		require.Equal(t, dummyBytes, resp.Data)
+	})
+}
+
+func TestFitImageForModel(t *testing.T) {
+	t.Parallel()
+
+	t.Run("keeps image within byte and dimension limits untouched", func(t *testing.T) {
+		t.Parallel()
+
+		smallPNG := encodeTestPNG(t, 64, 48, png.DefaultCompression, false)
+		require.LessOrEqual(t, len(smallPNG), maxModelImageRawBytes)
+
+		gotBytes, gotMime := fitImageForModel(smallPNG, "image/png")
+		require.Equal(t, "image/png", gotMime)
+		require.Equal(t, smallPNG, gotBytes)
+	})
+
+	t.Run("resizes image exceeding maxModelImageDimension", func(t *testing.T) {
+		t.Parallel()
+
+		widePNG := encodeTestPNG(t, maxModelImageDimension+500, 100, png.DefaultCompression, false)
+		require.LessOrEqual(t, len(widePNG), maxModelImageRawBytes)
+
+		gotBytes, gotMime := fitImageForModel(widePNG, "image/png")
+		require.Equal(t, "image/png", gotMime)
+		require.LessOrEqual(t, len(gotBytes), maxModelImageRawBytes)
+
+		cfg, format, err := image.DecodeConfig(bytes.NewReader(gotBytes))
+		require.NoError(t, err)
+		require.Equal(t, "png", format)
+		require.LessOrEqual(t, cfg.Width, maxModelImageDimension)
+		require.LessOrEqual(t, cfg.Height, maxModelImageDimension)
+		require.Equal(t, 2048, cfg.Width)
+	})
+
+	t.Run("falls back to JPEG when incompressible transparent PNG exceeds maxModelImageRawBytes", func(t *testing.T) {
+		t.Parallel()
+
+		noisyPNG := encodeTestPNG(t, 1400, 1400, png.BestSpeed, true)
+		require.Greater(t, len(noisyPNG), maxModelImageRawBytes)
+
+		gotBytes, gotMime := fitImageForModel(noisyPNG, "image/png")
+		require.Equal(t, "image/jpeg", gotMime)
+		require.NotEmpty(t, gotBytes)
+		require.LessOrEqual(t, len(gotBytes), maxModelImageRawBytes)
+
+		cfg, format, err := image.DecodeConfig(bytes.NewReader(gotBytes))
+		require.NoError(t, err)
+		require.Equal(t, "jpeg", format)
+		require.Equal(t, 1400, cfg.Width)
+		require.Equal(t, 1400, cfg.Height)
+	})
+}
+
+func TestMCPResponseFitsImages(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.WithValue(context.Background(), SupportsImagesContextKey, true)
+	oversizedPNG := encodeTestPNG(t, 1200, 1200, png.NoCompression, false)
+	require.Greater(t, len(oversizedPNG), maxModelImageRawBytes)
+
+	t.Run("single image", func(t *testing.T) {
+		t.Parallel()
+
+		resp := mcpResponse(ctx, mcp.ToolResult{
+			Type:      "image",
+			Data:      oversizedPNG,
+			MediaType: "image/png",
+		})
+		require.False(t, resp.IsError)
+		require.Equal(t, "image", resp.Type)
+		require.NotEmpty(t, resp.Data)
+		require.LessOrEqual(t, len(resp.Data), maxModelImageRawBytes)
+	})
+
+	t.Run("multiple images", func(t *testing.T) {
+		t.Parallel()
+
+		resp := mcpResponse(ctx, mcp.ToolResult{
+			Type: "image",
+			Images: []mcp.ToolImage{
+				{Data: oversizedPNG, MediaType: "image/png"},
+				{Data: oversizedPNG, MediaType: "image/png"},
+			},
+		})
+		require.False(t, resp.IsError)
+		require.Equal(t, "image", resp.Type)
+		require.Len(t, resp.Images, 2)
+		for _, img := range resp.Images {
+			require.NotEmpty(t, img.Data)
+			require.LessOrEqual(t, len(img.Data), maxModelImageRawBytes)
+		}
+		require.LessOrEqual(t, len(resp.Data), maxModelImageRawBytes)
+	})
+}
+
+func encodeTestPNG(t *testing.T, width, height int, level png.CompressionLevel, noisy bool) []byte {
+	t.Helper()
+
+	img := image.NewNRGBA(image.Rect(0, 0, width, height))
+	if noisy {
+		state := uint32(0x12345678)
+		for y := range height {
+			rowStart := y * img.Stride
+			for x := range width {
+				state ^= state << 13
+				state ^= state >> 17
+				state ^= state << 5
+				offset := rowStart + x*4
+				img.Pix[offset] = uint8(state)
+				img.Pix[offset+1] = uint8(state >> 8)
+				img.Pix[offset+2] = uint8(state >> 16)
+				img.Pix[offset+3] = uint8(128 + (state>>24)%128)
+			}
+		}
+	} else {
+		fill := color.NRGBA{R: 60, G: 140, B: 220, A: 255}
+		for y := range height {
+			rowStart := y * img.Stride
+			for x := range width {
+				offset := rowStart + x*4
+				img.Pix[offset] = fill.R
+				img.Pix[offset+1] = fill.G
+				img.Pix[offset+2] = fill.B
+				img.Pix[offset+3] = fill.A
+			}
+		}
+	}
+
+	var buf bytes.Buffer
+	encoder := png.Encoder{CompressionLevel: level}
+	require.NoError(t, encoder.Encode(&buf, img))
+	return buf.Bytes()
 }
 
 func TestReadTextFileEnforcesMaxContentSize(t *testing.T) {

@@ -34,26 +34,59 @@ fn replace(connection: &Connection, source: &Path, target: &Path) -> HostResult<
     Ok(())
 }
 
-pub fn bytes(connection: &Connection, relative: &str, limit: u64) -> HostResult<Vec<u8>> {
+fn image_mime_for_path(relative: &str) -> Option<&'static str> {
+    let name = relative.rsplit('/').next().unwrap_or(relative);
+    let extension = Path::new(name)
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    match extension.as_str() {
+        "png" => Some("image/png"),
+        "jpg" | "jpeg" => Some("image/jpeg"),
+        "webp" => Some("image/webp"),
+        "gif" => Some("image/gif"),
+        _ => None,
+    }
+}
+
+fn read_limit_for_path(relative: &str) -> Option<u64> {
+    if image_mime_for_path(relative).is_some() {
+        None
+    } else {
+        Some(LIMIT)
+    }
+}
+
+fn read_bytes(connection: &Connection, relative: &str, limit: Option<u64>) -> HostResult<Vec<u8>> {
     let path = connection.resolve(relative, false)?;
     let metadata = connection.sftp.stat(&path).map_err(failure)?;
     if !metadata.is_file() {
         return Err(HostError::new("REMOTE_FILE", "remote.notFile"));
     }
-    if metadata.size.is_some_and(|size| size > limit) {
-        return Err(HostError::new("REMOTE_FILE", "remote.fileTooLarge"));
+    if let Some(limit) = limit {
+        if metadata.size.is_some_and(|size| size > limit) {
+            return Err(HostError::new("REMOTE_FILE", "remote.fileTooLarge"));
+        }
     }
+    let mut file = connection.sftp.open(&path).map_err(failure)?;
     let mut bytes = Vec::new();
-    connection
-        .sftp
-        .open(&path)
-        .map_err(failure)?
-        .take(limit + 1)
-        .read_to_end(&mut bytes)?;
-    if bytes.len() as u64 > limit {
-        return Err(HostError::new("REMOTE_FILE", "remote.fileTooLarge"));
+    match limit {
+        Some(limit) => {
+            file.take(limit.saturating_add(1)).read_to_end(&mut bytes)?;
+            if bytes.len() as u64 > limit {
+                return Err(HostError::new("REMOTE_FILE", "remote.fileTooLarge"));
+            }
+        }
+        None => {
+            file.read_to_end(&mut bytes)?;
+        }
     }
     Ok(bytes)
+}
+
+pub fn bytes(connection: &Connection, relative: &str, limit: u64) -> HostResult<Vec<u8>> {
+    read_bytes(connection, relative, Some(limit))
 }
 
 pub fn list(connection: &Connection, relative: &str) -> HostResult<Value> {
@@ -122,16 +155,9 @@ pub fn list(connection: &Connection, relative: &str) -> HostResult<Value> {
 }
 
 pub fn read(connection: &Connection, relative: &str) -> HostResult<Value> {
-    let bytes = bytes(connection, relative, LIMIT)?;
+    let mime = image_mime_for_path(relative);
+    let bytes = read_bytes(connection, relative, read_limit_for_path(relative))?;
     let name = relative.rsplit('/').next().unwrap_or(relative);
-    let extension = name.rsplit('.').next().unwrap_or("").to_lowercase();
-    let mime = match extension.as_str() {
-        "png" => Some("image/png"),
-        "jpg" | "jpeg" => Some("image/jpeg"),
-        "webp" => Some("image/webp"),
-        "gif" => Some("image/gif"),
-        _ => None,
-    };
     if let Some(mime) = mime {
         return Ok(
             json!({"path":relative,"name":name,"image":format!("data:{mime};base64,{}",base64::engine::general_purpose::STANDARD.encode(&bytes))}),
@@ -328,4 +354,25 @@ pub fn download_url(connection: &Connection, relative: &str, source: &str) -> Ho
         ));
     }
     Ok(json!({"path":relative,"downloaded":true}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn image_mime_and_read_limit_depend_on_extension() {
+        assert_eq!(image_mime_for_path("photo.png"), Some("image/png"));
+        assert_eq!(image_mime_for_path("dir/PHOTO.JPG"), Some("image/jpeg"));
+        assert_eq!(image_mime_for_path("pic.jpeg"), Some("image/jpeg"));
+        assert_eq!(image_mime_for_path("anim.webp"), Some("image/webp"));
+        assert_eq!(image_mime_for_path("loop.gif"), Some("image/gif"));
+        assert_eq!(image_mime_for_path("notes.txt"), None);
+        assert_eq!(image_mime_for_path("dir/png"), None);
+
+        assert_eq!(read_limit_for_path("photo.png"), None);
+        assert_eq!(read_limit_for_path("dir/PHOTO.JPG"), None);
+        assert_eq!(read_limit_for_path("notes.txt"), Some(LIMIT));
+        assert_eq!(read_limit_for_path("dir/png"), Some(LIMIT));
+    }
 }
