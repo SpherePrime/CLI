@@ -103,10 +103,23 @@ fn revision(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
+pub use crate::media::video_mime_for_path;
+
 pub fn read(root: &Path, relative: &str) -> HostResult<Value> {
     let path = scoped_path(root, relative, false)?;
     if !path.is_file() {
         return Err(HostError::new("INVALID_FILE", "Select a file"));
+    }
+    let name = path.file_name().unwrap().to_string_lossy();
+    if let Some(mime) = video_mime_for_path(&path) {
+        return Ok(json!({
+            "path": relative,
+            "name": name,
+            "video": {
+                "path": relative,
+                "mime": mime
+            }
+        }));
     }
     let extension = path
         .extension()
@@ -126,7 +139,7 @@ pub fn read(root: &Path, relative: &str) -> HostResult<Value> {
     let bytes = fs::read(&path)?;
     if let Some(mime) = mime {
         return Ok(
-            json!({"path":relative,"name":path.file_name().unwrap().to_string_lossy(),"image":format!("data:{mime};base64,{}",base64::engine::general_purpose::STANDARD.encode(&bytes))}),
+            json!({"path":relative,"name":name,"image":format!("data:{mime};base64,{}",base64::engine::general_purpose::STANDARD.encode(&bytes))}),
         );
     }
     if bytes.contains(&0) {
@@ -270,5 +283,19 @@ mod tests {
         fs::write(root.path().join("large.txt"), &data).unwrap();
         let error = read(root.path(), "large.txt").unwrap_err();
         assert_eq!(error.code, "FILE_TOO_LARGE");
+    }
+
+    #[test]
+    fn video_files_return_metadata_without_size_or_binary_errors() {
+        let root = tempfile::tempdir().unwrap();
+        let mut data = vec![0u8; 2 * 1024 * 1024 + 1024];
+        data[4..12].copy_from_slice(b"ftypmp42");
+        fs::write(root.path().join("render.mp4"), &data).unwrap();
+        let result = read(root.path(), "render.mp4").unwrap();
+        assert_eq!(result["path"], "render.mp4");
+        assert_eq!(result["name"], "render.mp4");
+        assert_eq!(result["video"]["path"], "render.mp4");
+        assert_eq!(result["video"]["mime"], "video/mp4");
+        assert!(result.get("content").is_none());
     }
 }

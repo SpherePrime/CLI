@@ -56,3 +56,21 @@ func TestRemoteWorkspacePromptUsesRemoteTarget(t *testing.T) {
 	require.NotContains(t, text, "LOCAL_PROXY_ONLY_INSTRUCTIONS")
 	require.NotContains(t, text, root)
 }
+
+func TestRemoteWorkspaceToolsGuardCopiedPlaceholders(t *testing.T) {
+	coord := newGateTestCoordinator(t, true)
+	require.NoError(t, coord.readyWg.Wait())
+	coord.cfg.Config().Options.RemoteWorkspace = &config.RemoteWorkspace{Host: "host", User: "dev", Root: "/srv/project"}
+	built, err := coord.buildTools(context.Background(), coord.cfg.Config().Agents[config.AgentGeneral], false)
+	require.NoError(t, err)
+	fetchTool := builtToolByName(t, built, "fetch")
+	require.NotNil(t, fetchTool)
+	response, err := fetchTool.Run(context.Background(), fantasy.ToolCall{
+		ID:    "fetch-1",
+		Name:  "fetch",
+		Input: `{"url":"` + agedPlaceholder(2048) + `"}`,
+	})
+	require.NoError(t, err)
+	require.True(t, response.IsError)
+	require.Contains(t, response.Content, "placeholder")
+}

@@ -282,6 +282,7 @@ export interface DesktopApi {
   ): Promise<{ revision: string }>
   editorDirty(dirty: boolean): Promise<void>
   readFile(workspaceId: string, path: string): Promise<Json>
+  mediaUrl(workspaceId: string, path: string): Promise<{ url: string; mime?: string; name?: string }>
   diff(
     workspaceId: string,
     sessionId: string,

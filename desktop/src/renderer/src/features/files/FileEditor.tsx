@@ -8,6 +8,7 @@ import { Modal } from '../../components/Modal'
 import { useI18n } from '../../i18n'
 import { monaco, languageFor } from './monaco'
 import type { Documents } from './useDocuments'
+import { WorkspaceVideo } from '../chat/video/WorkspaceVideo'
 
 export default function FileEditor({
   state,
@@ -61,7 +62,7 @@ export default function FileEditor({
   }, [document, state.save, enabled])
   useEffect(() => {
     const ids = state.documents
-      .filter((item) => !item.image && item.original === undefined)
+      .filter((item) => !item.image && !item.video && item.original === undefined)
       .map((item) => modelUri(item.workspaceId, item.path).toString())
     for (const uri of opened.current)
       if (!ids.includes(uri)) monaco.editor.getModel(monaco.Uri.parse(uri))?.dispose()
@@ -75,7 +76,7 @@ export default function FileEditor({
   )
   if (!document) return null
   const dirty = document.content !== document.savedContent
-  const readOnly = Boolean(document.image) || document.original !== undefined
+  const readOnly = Boolean(document.image) || Boolean(document.video) || document.original !== undefined
   return (
     <section className="file-editor" aria-label={t('Редактор файлов')}>
       <div className="editor-tabs" role="tablist" aria-label={t('Открытые файлы')}>
@@ -132,6 +133,15 @@ export default function FileEditor({
           <div className="editor-image">
             <img src={document.image} alt={document.name} />
           </div>
+        ) : document.video ? (
+          <div className="editor-video">
+            <WorkspaceVideo
+              src={document.video.path}
+              title={document.name}
+              mime={document.video.mime}
+              variant="editor"
+            />
+          </div>
         ) : (
           <CodeEditor
             workspaceId={document.workspaceId}
@@ -149,7 +159,7 @@ export default function FileEditor({
       <div className="editor-status">
         <span>{readOnly ? t('Только чтение') : dirty ? t('Не сохранено') : t('Сохранено')}</span>
         <span>
-          {languageFor(document.path)} · UTF-8
+          {document.video ? document.video.mime : `${languageFor(document.path)} · UTF-8`}
           {!readOnly && ` · ${position.line}:${position.column}`}
         </span>
       </div>

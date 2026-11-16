@@ -4,6 +4,7 @@ import type { Message } from '../../../../shared/contracts'
 import { workerActive, workerStatusLabels, type AgentWorker } from '../../../../shared/agents'
 import { useI18n } from '../../i18n'
 import { MessageList } from '../chat/MessageList'
+import { WorkspaceMediaProvider } from '../chat/WorkspaceMediaContext'
 import { reuseUnchanged } from '../chat/stableMessages'
 import { useAgentPolling } from './useAgentPolling'
 
@@ -137,7 +138,9 @@ export function WorkerConversation({
           {t('Загрузка…')}
         </p>
       ) : history.value.length ? (
-        <MessageList messages={history.value} busy={worker.status === 'running'} />
+        <WorkspaceMediaProvider workspaceId={projectId}>
+          <MessageList messages={history.value} busy={worker.status === 'running'} />
+        </WorkspaceMediaProvider>
       ) : (
         <div className="agents-empty">
           <p>{t('Сообщений пока нет')}</p>

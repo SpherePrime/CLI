@@ -13,7 +13,7 @@ import (
 var agedPlaceholderPattern = regexp.MustCompile(`\[\d+ bytes omitted from an earlier call\]|\[history placeholder: \d+ bytes removed`)
 
 func agedPlaceholder(size int) string {
-	return fmt.Sprintf("[history placeholder: %d bytes removed from this old call, not real content]", size)
+	return fmt.Sprintf("[history placeholder: %d bytes removed from this old call, not real content; write full content instead]", size)
 }
 
 // placeholderGuardTool refuses calls that copy an aged placeholder into their
@@ -43,6 +43,11 @@ func (g *placeholderGuardTool) SetProviderOptions(opts fantasy.ProviderOptions) 
 
 func (g *placeholderGuardTool) Run(ctx context.Context, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
 	if match := agedPlaceholderPattern.FindString(call.Input); match != "" {
+		if call.Name == AgentToolName {
+			return fantasy.NewTextErrorResponse(fmt.Sprintf(
+				"Rejected: the arguments contain %q. That text is a placeholder for content trimmed from an old call in the conversation history, not real data, so no agent was launched. Write the complete real assignment prompt directly instead of copying placeholders from history.",
+				match)), nil
+		}
 		return fantasy.NewTextErrorResponse(fmt.Sprintf(
 			"Rejected: the arguments contain %q. That text is a placeholder for content trimmed from an old call in the conversation history, not real data, so nothing was executed. Send the complete real content instead. If you need the current content of a file, read it first.",
 			match)), nil

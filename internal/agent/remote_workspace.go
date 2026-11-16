@@ -46,5 +46,5 @@ func (c *coordinator) buildRemoteWorkspaceTools(agent config.Agent, isSubAgent b
 	slices.SortFunc(available, func(a, b fantasy.AgentTool) int {
 		return strings.Compare(a.Info().Name, b.Info().Name)
 	})
-	return available
+	return wrapToolsWithPlaceholderGuard(available)
 }

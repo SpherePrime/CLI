@@ -231,6 +231,9 @@ function buildPreviewMockupPngBase64(): string {
 
 export const previewDesignPngBase64 = buildPreviewMockupPngBase64()
 
+export const previewDemoVideoDataUrl =
+  'data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAASwEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHWTbuMU6uEElTDZ1OsggEyTbuMU6uEHFO7a1OsggRi7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsCrXsYMPQkBNgIxMYXZmNjMuMS4xMDJXQYxMYXZmNjMuMS4xMDJEiYhAn0AAAAAAABZUrmvXrgEAAAAAAABO14EBc8WINLYKXHkNqYqcgQAitZyDdW5kiIEAhoVWX1ZQOIOBASPjg4QF9eEA4JCwgaC6gVqagQJVsIRVuYEBVe6BAOwBAAAAAAAAAgAAElTDZ/pzc59jwIBnyJlFo4dFTkNPREVSRIeMTGF2ZjYzLjEuMTAyc3PVY8CLY8WINLYKXHkNqYpnyKBFo4dFTkNPREVSRIeTTGF2YzYzLjEuMTAyIGxpYnZweGfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDIuMDAwMDAwMDAwAB9DtnVCq+eBAKPAgQAAgHAFAJ0BKqAAWgAARwiFhYiFhIgCAgJ08kDnhDqqTXcQ6qk13EOqpNdxDqqTXcQ6qk13EN4A/v90WNZDMKOYgQBkABECAAEQEAAYABhYL/QACICBAAAAo5iBAMgAEQIAARAQABgAGFgv9AAIgIEAAACjmIEBLAARAgABEBAAGAAYWC/0AAiAgQAAAKOYgQGQABECAAEQEAAYABhYL/QACICBAAAAo8CBAfSAcAUAnQEqoABaAABHCIWFiIWEiAICAnTyQOeEOqpNdxDqqTXcQ6qk13EOqpNdxDqqTXcQ3gD+/3RY1kMwo5iBAlgAEQIAARAQABgAGFgv9AAIgIEAAACjmIECvAARAgABEBAAGAAYWC/0AAiAgQAAAKOYgQMgABECAAEQEAAYABhYL/QACICBAAAAo5iBA4QAEQIAARAQABgAGFgv9AAIgIEAAACjwIED6IBwBQCdASqgAFoAAEcIhYWIhYSIAgICdPJA54Q6qk13EOqpNdxDqqTXcQ6qk13EOqpNdxDeAP7/dFjWQzCjmIEETAARAgABEBAAGAAYWC/0AAiAgQAAAKOYgQSwABECAAEQEAAYABhYL/QACICBAAAAo5iBBRQAEQIAARAQABgAGFgv9AAIgIEAAACjmIEFeAARAgABEBAAGAAYWC/0AAiAgQAAAKPAgQXcgHAFAJ0BKqAAWgAARwiFhYiFhIgCAgJ08kDnhDqqTXcQ6qk13EOqpNdxDqqTXcQ6qk13EN4A/v90WNZDMKOYgQZAABECAAEQEAAYABhYL/QACICBAAAAo5iBBqQAEQIAARAQABgAGFgv9AAIgIEAAACjmIEHCAARAgABEBAAGAAYWC/0AAiAgQAAAKOYgQdsABECAAEQEAAYABhYL/QACICBAAAAHFO7a8m7j7OBALeK94EB8YIBsfCBA7uQs4IB9LeK94EB8YIBsfCBrbuRs4ID6LeL94EB8YIBsfCCAVe7kbOCBdy3i/eBAfGCAbHwggIB'
+
 export function createPreviewDesignerProject(): Project {
   return {
     id: 'ws-designer',
@@ -461,7 +464,9 @@ export function createPreviewMessages(): Record<string, Message[]> {
                 '| `SettingsDialog` | Единый брейкпоинт навигации `860px` | `761–860px` |',
                 '| `Inspector` | Flyout fallback для `PanelBoundary` | `< 1050px` |',
                 '',
-                '> Подсказка: используйте перетаскивание разделителя или клавиши `↑` / `↓` в фокусе разделителя.'
+                '> Подсказка: используйте перетаскивание разделителя или клавиши `↑` / `↓` в фокусе разделителя.',
+                '',
+                '![Финальный рендер](out/demo.mp4)'
               ].join('\n')
             }
           },
@@ -620,11 +625,13 @@ export function createPreviewWorkers(): AgentWorker[] {
 export function createPreviewFiles(): Record<string, PreviewFileEntry[]> {
   return {
     '': [
+      { path: 'out', name: 'out', directory: true },
       { path: 'src', name: 'src', directory: true },
       { path: 'package.json', name: 'package.json', directory: false },
       { path: 'README.md', name: 'README.md', directory: false },
       { path: 'tsconfig.json', name: 'tsconfig.json', directory: false }
     ],
+    out: [{ path: 'out/demo.mp4', name: 'demo.mp4', directory: false }],
     src: [
       { path: 'src/app', name: 'app', directory: true },
       { path: 'src/components', name: 'components', directory: true },
@@ -644,8 +651,16 @@ export function createPreviewFiles(): Record<string, PreviewFileEntry[]> {
   }
 }
 
-export function createPreviewFileContents(): Record<string, { content: string; revision: string }> {
+export function createPreviewFileContents(): Record<
+  string,
+  { content: string; revision: string; video?: { path: string; mime: string } }
+> {
   return {
+    'out/demo.mp4': {
+      revision: 'rev-1',
+      content: '',
+      video: { path: 'out/demo.mp4', mime: 'video/mp4' }
+    },
     'package.json': {
       revision: 'rev-1',
       content: JSON.stringify(

@@ -431,6 +431,9 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             args.get(1).and_then(Value::as_str).unwrap_or(""),
         ),
         "readFile" => crate::files::read(&state.root(string(args, 0)?)?, string(args, 1)?),
+        "mediaUrl" => state
+            .media
+            .resolve(&state, string(args, 0)?, string(args, 1)?),
         "saveFile" => {
             let _guard = state.file_writes.lock().unwrap();
             crate::files::save(

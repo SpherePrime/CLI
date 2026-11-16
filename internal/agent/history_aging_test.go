@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
@@ -97,9 +98,25 @@ func TestAgingShrinksLongCallArguments(t *testing.T) {
 	var decoded map[string]string
 	require.NoError(t, json.Unmarshal([]byte(shrunk), &decoded))
 	require.Equal(t, "a.go", decoded["file_path"])
-	require.Equal(t, agedPlaceholder(5000), decoded["content"])
+	expectedPrefix := utf8SafePrefix(content, agingCallPreviewBytes)
+	expectedPlaceholder := agedPlaceholder(len(content) - len(expectedPrefix))
+	require.True(t, strings.HasPrefix(decoded["content"], expectedPrefix+"\n"))
+	require.Contains(t, decoded["content"], expectedPlaceholder)
+	require.Less(t, len(decoded["content"]), len(content)/4)
 	require.True(t, agedPlaceholderPattern.MatchString(decoded["content"]))
 	require.Equal(t, `{"a":"<b>"}`, shrinkCallInput(`{"a":"<b>"}`))
+
+	multiByte := strings.Repeat("я", 1000)
+	mbInput, err := json.Marshal(map[string]string{"prompt": multiByte})
+	require.NoError(t, err)
+	mbShrunk := shrinkCallInput(string(mbInput))
+	var mbDecoded map[string]string
+	require.NoError(t, json.Unmarshal([]byte(mbShrunk), &mbDecoded))
+	require.True(t, utf8.ValidString(mbDecoded["prompt"]))
+	mbPrefix := utf8SafePrefix(multiByte, agingCallPreviewBytes)
+	require.True(t, strings.HasPrefix(mbDecoded["prompt"], mbPrefix+"\n"))
+	require.Contains(t, mbDecoded["prompt"], agedPlaceholder(len(multiByte)-len(mbPrefix)))
+	require.True(t, agedPlaceholderPattern.MatchString(mbDecoded["prompt"]))
 }
 
 func TestAgingDropsOldMediaInBatches(t *testing.T) {

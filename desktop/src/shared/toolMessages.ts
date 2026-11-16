@@ -1,6 +1,30 @@
 import type { Message } from './contracts'
 
-type Part = Message['parts'][number]
+type MessagePart = Message['parts'][number]
+type Part = MessagePart
+
+export function hasAgentJobId(metadata: unknown): boolean {
+  let value: unknown = metadata
+  if (typeof metadata === 'string') {
+    if (!metadata) return false
+    try {
+      value = JSON.parse(metadata)
+    } catch {
+      return false
+    }
+  }
+  if (!value || typeof value !== 'object') return false
+  return Boolean((value as { job_id?: unknown }).job_id)
+}
+
+function isFailedAgentLaunch(part: MessagePart, result: any): boolean {
+  return (
+    part.type === 'tool_call' &&
+    part.data?.name === 'agent' &&
+    Boolean(result?.is_error) &&
+    !hasAgentJobId(result?.metadata)
+  )
+}
 
 export const hiddenToolNames = new Set(['search_instructions', 'read_instruction', 'todos'])
 
@@ -50,7 +74,12 @@ export function consolidateToolMessages(messages: Message[]): Message[] {
         continue
       }
       if (results.has(part)) {
-        parts.push({ ...part, data: { ...part.data, result: results.get(part) } })
+        const result = results.get(part)
+        if (isFailedAgentLaunch(part, result)) {
+          changed = true
+          continue
+        }
+        parts.push({ ...part, data: { ...part.data, result } })
         changed = true
         continue
       }

@@ -50,8 +50,26 @@ fn image_mime_for_path(relative: &str) -> Option<&'static str> {
     }
 }
 
+pub fn video_mime_for_path(relative: &str) -> Option<&'static str> {
+    let name = relative.rsplit('/').next().unwrap_or(relative);
+    crate::media::video_mime_for_path(Path::new(name))
+}
+
+fn video_read_metadata(relative: &str) -> Option<Value> {
+    let mime = video_mime_for_path(relative)?;
+    let name = relative.rsplit('/').next().unwrap_or(relative);
+    Some(json!({
+        "path": relative,
+        "name": name,
+        "video": {
+            "path": relative,
+            "mime": mime
+        }
+    }))
+}
+
 fn read_limit_for_path(relative: &str) -> Option<u64> {
-    if image_mime_for_path(relative).is_some() {
+    if image_mime_for_path(relative).is_some() || video_mime_for_path(relative).is_some() {
         None
     } else {
         Some(LIMIT)
@@ -87,6 +105,47 @@ fn read_bytes(connection: &Connection, relative: &str, limit: Option<u64>) -> Ho
 
 pub fn bytes(connection: &Connection, relative: &str, limit: u64) -> HostResult<Vec<u8>> {
     read_bytes(connection, relative, Some(limit))
+}
+
+pub fn read_to_cache(connection: &Connection, relative: &str, target: &Path) -> HostResult<u64> {
+    let path = connection.resolve(relative, false)?;
+    let metadata = connection.sftp.stat(&path).map_err(failure)?;
+    if !metadata.is_file() {
+        return Err(HostError::new("NOT_FOUND", "Media file not found"));
+    }
+    if metadata.size == Some(0) {
+        return Err(HostError::new("EMPTY_MEDIA", "Media file is empty"));
+    }
+    if target.is_file() {
+        if let Ok(local_meta) = target.metadata() {
+            if local_meta.len() > 0 && metadata.size == Some(local_meta.len()) {
+                return Ok(local_meta.len());
+            }
+        }
+    }
+    let parent = target
+        .parent()
+        .ok_or_else(|| HostError::new("IO_ERROR", "Invalid cache target"))?;
+    std::fs::create_dir_all(parent)?;
+    let mut remote_file = connection.sftp.open(&path).map_err(failure)?;
+    let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
+    let mut buffer = [0u8; 64 * 1024];
+    let mut written: u64 = 0;
+    loop {
+        let count = remote_file.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        temporary.write_all(&buffer[..count])?;
+        written += count as u64;
+    }
+    if written == 0 {
+        return Err(HostError::new("EMPTY_MEDIA", "Media file is empty"));
+    }
+    temporary.flush()?;
+    temporary.as_file().sync_all()?;
+    temporary.persist(target).map_err(|error| error.error)?;
+    Ok(written)
 }
 
 pub fn list(connection: &Connection, relative: &str) -> HostResult<Value> {
@@ -155,6 +214,14 @@ pub fn list(connection: &Connection, relative: &str) -> HostResult<Value> {
 }
 
 pub fn read(connection: &Connection, relative: &str) -> HostResult<Value> {
+    if let Some(video) = video_read_metadata(relative) {
+        let path = connection.resolve(relative, false)?;
+        let metadata = connection.sftp.stat(&path).map_err(failure)?;
+        if !metadata.is_file() {
+            return Err(HostError::new("REMOTE_FILE", "remote.notFile"));
+        }
+        return Ok(video);
+    }
     let mime = image_mime_for_path(relative);
     let bytes = read_bytes(connection, relative, read_limit_for_path(relative))?;
     let name = relative.rsplit('/').next().unwrap_or(relative);
@@ -374,5 +441,23 @@ mod tests {
         assert_eq!(read_limit_for_path("dir/PHOTO.JPG"), None);
         assert_eq!(read_limit_for_path("notes.txt"), Some(LIMIT));
         assert_eq!(read_limit_for_path("dir/png"), Some(LIMIT));
+    }
+
+    #[test]
+    fn video_mime_and_metadata_cover_supported_extensions() {
+        assert_eq!(video_mime_for_path("clip.mp4"), Some("video/mp4"));
+        assert_eq!(video_mime_for_path("dir/CLIP.M4V"), Some("video/x-m4v"));
+        assert_eq!(video_mime_for_path("movie.webm"), Some("video/webm"));
+        assert_eq!(video_mime_for_path("take.mov"), Some("video/quicktime"));
+        assert_eq!(video_mime_for_path("stream.ogv"), Some("video/ogg"));
+        assert_eq!(video_mime_for_path("notes.txt"), None);
+
+        assert_eq!(read_limit_for_path("clip.mp4"), None);
+        let metadata = video_read_metadata("out/demo.mp4").unwrap();
+        assert_eq!(metadata["path"], "out/demo.mp4");
+        assert_eq!(metadata["name"], "demo.mp4");
+        assert_eq!(metadata["video"]["path"], "out/demo.mp4");
+        assert_eq!(metadata["video"]["mime"], "video/mp4");
+        assert!(metadata.get("content").is_none());
     }
 }

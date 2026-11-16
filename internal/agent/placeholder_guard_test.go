@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
@@ -29,6 +30,7 @@ func TestPlaceholderGuardRejectsCopiedPlaceholders(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, response.IsError)
 		require.Contains(t, response.Content, "placeholder")
+		require.Contains(t, response.Content, "read it first")
 	}
 	require.Zero(t, inner.calls)
 
@@ -36,4 +38,28 @@ func TestPlaceholderGuardRejectsCopiedPlaceholders(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, response.IsError)
 	require.Equal(t, 1, inner.calls)
+}
+
+func TestPlaceholderGuardRejectsPreviewWithPlaceholder(t *testing.T) {
+	inner := &recordingTool{}
+	guarded := wrapToolsWithPlaceholderGuard([]fantasy.AgentTool{inner})[0]
+	input := `{"file_path":"src/app.js","content":"` + strings.Repeat("x", 20) + `\n` + agedPlaceholder(15808) + `"}`
+	response, err := guarded.Run(context.Background(), fantasy.ToolCall{Name: "write", Input: input})
+	require.NoError(t, err)
+	require.True(t, response.IsError)
+	require.Contains(t, response.Content, "placeholder")
+	require.Contains(t, response.Content, "read it first")
+	require.Zero(t, inner.calls)
+}
+
+func TestPlaceholderGuardTailorsAgentErrorMessage(t *testing.T) {
+	inner := &recordingTool{}
+	guarded := wrapToolsWithPlaceholderGuard([]fantasy.AgentTool{inner})[0]
+	input := `{"name":"Worker","prompt":"Task prefix\n` + agedPlaceholder(2400) + `"}`
+	response, err := guarded.Run(context.Background(), fantasy.ToolCall{Name: AgentToolName, Input: input})
+	require.NoError(t, err)
+	require.True(t, response.IsError)
+	require.Contains(t, response.Content, "assignment prompt")
+	require.NotContains(t, response.Content, "read it first")
+	require.Zero(t, inner.calls)
 }

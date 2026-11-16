@@ -152,7 +152,7 @@ pub fn run(
         }
         "ssh_read_file" => {
             let mut file = files::read(&connection, string(args, "path")?)?;
-            if file.get("image").is_some() {
+            if file.get("image").is_some() || file.get("video").is_some() {
                 return Ok(file);
             }
             let offset = args["offset"].as_u64().unwrap_or(0).min(usize::MAX as u64) as usize;

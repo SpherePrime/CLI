@@ -35,6 +35,7 @@
   "saveFile": true,
   "editorDirty": true,
   "readFile": true,
+  "mediaUrl": true,
   "diff": true,
   "attachments": true,
   "preferences": true,

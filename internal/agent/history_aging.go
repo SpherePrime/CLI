@@ -20,6 +20,7 @@ const (
 	agingFailureMinBytes    = 4096
 	agingFailureKeepBytes   = 2048
 	agingCallStringMinBytes = 1024
+	agingCallPreviewBytes   = 160
 	agingPreviewRunes       = 160
 	agingKeepMedia          = 2
 	agingMediaBatch         = 5
@@ -332,7 +333,12 @@ func shrinkJSONStrings(value any) (any, bool) {
 		if len(v) < agingCallStringMinBytes {
 			return v, false
 		}
-		return agedPlaceholder(len(v)), true
+		prefix := utf8SafePrefix(v, agingCallPreviewBytes)
+		omitted := len(v) - len(prefix)
+		if prefix == "" {
+			return agedPlaceholder(omitted), true
+		}
+		return prefix + "\n" + agedPlaceholder(omitted), true
 	case map[string]any:
 		changed := false
 		for key, item := range v {

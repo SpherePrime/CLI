@@ -6,6 +6,10 @@ import { PrimeLogo } from '../../components/PrimeLogo'
 import { ToolCard } from './ToolCard'
 import { AgentCard } from './AgentCard'
 import { collectToolImages, ToolGallery, toolImageCaptions } from './ToolGallery'
+import { ToolVideos } from './video/ToolVideos'
+import { VideoPlayer } from './video/VideoPlayer'
+import { WorkspaceVideo } from './video/WorkspaceVideo'
+import { fileNameFromPath, isVideoUrl } from './video/videoMedia'
 import { ReasoningBlock } from './ReasoningBlock'
 import { useI18n } from '../../i18n'
 import type { Message } from '../../../../shared/contracts'
@@ -136,6 +140,7 @@ export const MessageItem = memo(function MessageItem({
                       : undefined
                   }
                 />
+                <ToolVideos result={result} />
               </div>
             )
           }
@@ -149,6 +154,19 @@ export const MessageItem = memo(function MessageItem({
             )
           if (part.type === 'image_url') {
             const url = part.data?.url
+            if (typeof url === 'string' && /^data:video\//i.test(url)) {
+              return <VideoPlayer key={index} src={url} title={t('Видео')} variant="chat" />
+            }
+            if (typeof url === 'string' && isVideoUrl(url)) {
+              return (
+                <WorkspaceVideo
+                  key={index}
+                  src={url}
+                  title={fileNameFromPath(url) || t('Видео')}
+                  variant="chat"
+                />
+              )
+            }
             const isDataUrl = typeof url === 'string' && url.startsWith('data:')
             const preferred = isDataUrl ? parseDataImageUrl(url) : null
             const attachment = (

@@ -8,6 +8,7 @@ export type EditorDocument = {
   savedContent: string
   revision: string
   image?: string
+  video?: { path: string; mime: string }
   original?: string
   source?: string
 }
@@ -24,7 +25,11 @@ export function useDocuments(onError: (error: unknown) => void) {
   }
   const sequence = useRef(0)
   const dirty = documents.some(
-    (item) => !item.image && item.original === undefined && item.content !== item.savedContent
+    (item) =>
+      !item.image &&
+      !item.video &&
+      item.original === undefined &&
+      item.content !== item.savedContent
   )
   useEffect(() => {
     void window.prime.editorDirty(dirty)
@@ -56,6 +61,7 @@ export function useDocuments(onError: (error: unknown) => void) {
         savedContent: data.after ?? data.content ?? '',
         revision: data.revision || '',
         image: data.image,
+        video: data.video,
         original: data.before,
         source: data.source
       }
@@ -70,7 +76,9 @@ export function useDocuments(onError: (error: unknown) => void) {
   }
   async function save(id: string) {
     const document = latest.current.find((item) => item.id === id)
-    if (!document || document.image || document.original !== undefined) return false
+    if (!document || document.image || document.video || document.original !== undefined) {
+      return false
+    }
     if (pending.current.has(id)) return false
     pending.current.add(id)
     setSaving(true)

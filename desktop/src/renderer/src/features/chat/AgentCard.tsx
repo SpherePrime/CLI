@@ -1,5 +1,6 @@
 import { Bot, Check, ChevronRight, LoaderCircle, Users, X } from 'lucide-react'
 import type { Message } from '../../../../shared/contracts'
+import { hasAgentJobId } from '../../../../shared/toolMessages'
 import { useI18n } from '../../i18n'
 import { agentWorkerId, openAgent } from '../agents/openAgent'
 import './agentCard.css'
@@ -37,6 +38,7 @@ export function AgentCard({
     .replace(/\s+/g, ' ')
     .trim()
   const failed = Boolean(result?.is_error)
+  if (failed && !hasAgentJobId(result?.metadata)) return null
   const launched = result !== undefined && backgroundLaunch(result?.metadata, result?.content)
   const finished = result !== undefined && !launched
   const workerId = data.id ? agentWorkerId(messageId, String(data.id)) : ''

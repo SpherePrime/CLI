@@ -16,6 +16,7 @@ import { notifyError } from '../features/notifications/notifications'
 import { useWorkspace, type Workspace } from './useWorkspace'
 import { Sidebar } from '../features/projects/Sidebar'
 import { HistoryMessageList } from '../features/chat/HistoryMessageList'
+import { WorkspaceMediaProvider } from '../features/chat/WorkspaceMediaContext'
 import { Composer } from '../features/chat/Composer'
 import { Approvals } from '../features/approvals/Approvals'
 import { Inspector } from '../features/files/Inspector'
@@ -420,7 +421,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
         />
       </Titlebar>
       <ProjectLockBanner />
-      <div
+      <WorkspaceMediaProvider workspaceId={w.project?.id || ''}>
+        <div
         ref={shell}
         className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''} ${isDesigner ? 'designer-mode' : ''} ${layout.compact ? 'compact-layout' : ''}`}
         style={
@@ -626,7 +628,8 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             <JobsCenter workspace={w} close={() => setModal('')} openTools={openTools} />
           )}
         </PanelBoundary>
-      </div>
+        </div>
+      </WorkspaceMediaProvider>
     </>
   )
 }

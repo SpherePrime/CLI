@@ -29,8 +29,15 @@ import {
   createPreviewTeams,
   createPreviewTerminal,
   createPreviewWorkers,
+  previewDemoVideoDataUrl,
   previewDesignPngBase64
 } from './previewHostData'
+import {
+  fileNameFromPath,
+  isDirectMediaUrl,
+  isVideoPath,
+  videoMimeFromPath
+} from '../features/chat/video/videoMedia'
 
 export function installPreviewHost() {
   const listeners = new Set<(event: DesktopEvent) => void>()
@@ -887,7 +894,32 @@ export function installPreviewHost() {
     },
     async editorDirty() {},
     async readFile(_workspaceId, path) {
+      if (isVideoPath(path)) {
+        return {
+          path,
+          name: fileNameFromPath(path),
+          video: { path, mime: videoMimeFromPath(path) || 'video/mp4' }
+        }
+      }
       return fileContents[path] || { content: `// ${path}\n`, revision: 'rev-1' }
+    },
+    async mediaUrl(_workspaceId, path) {
+      const trimmed = String(path || '').trim()
+      if (isDirectMediaUrl(trimmed)) {
+        return {
+          url: trimmed,
+          mime: videoMimeFromPath(trimmed),
+          name: fileNameFromPath(trimmed)
+        }
+      }
+      if (isVideoPath(trimmed)) {
+        return {
+          url: previewDemoVideoDataUrl,
+          mime: videoMimeFromPath(trimmed) || 'video/mp4',
+          name: fileNameFromPath(trimmed)
+        }
+      }
+      return { url: trimmed, name: fileNameFromPath(trimmed) }
     },
     async diff(_workspaceId, _sessionId, path) {
       const current = fileContents[path]?.content || ''

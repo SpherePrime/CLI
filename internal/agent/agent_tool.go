@@ -133,14 +133,20 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 			}
 			if !job.wait(ctx, 0) {
 				_ = c.StopAgentWorker(context.Background(), sessionID, job.id)
-				return fantasy.NewTextErrorResponse(ctx.Err().Error()), nil
+				return fantasy.WithResponseMetadata(
+					fantasy.NewTextErrorResponse(ctx.Err().Error()),
+					backgroundAgentMetadata{JobID: job.id},
+				), nil
 			}
 			job.mu.Lock()
 			job.seen = true
 			status, output := job.status, job.output
 			job.mu.Unlock()
 			if status != "done" {
-				return fantasy.NewTextErrorResponse(output), nil
+				return fantasy.WithResponseMetadata(
+					fantasy.NewTextErrorResponse(output),
+					backgroundAgentMetadata{JobID: job.id},
+				), nil
 			}
 			return fantasy.NewTextResponse(output), nil
 		},

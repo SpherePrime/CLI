@@ -1655,3 +1655,16 @@ Object.assign(english, {
   'Реализация дизайна': 'Design implementation'
 })
 
+Object.assign(english, {
+  Видео: 'Video',
+  Воспроизвести: 'Play',
+  Пауза: 'Pause',
+  'Включить звук': 'Unmute',
+  'Выключить звук': 'Mute',
+  'Перемотка видео': 'Seek video',
+  'Скорость воспроизведения': 'Playback speed',
+  'Открыть видео на весь экран': 'Open video fullscreen',
+  'Закрыть видео': 'Close video',
+  'Не удалось загрузить видео': 'Failed to load video'
+})
+
