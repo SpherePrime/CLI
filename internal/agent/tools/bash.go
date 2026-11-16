@@ -47,6 +47,7 @@ type BashResponseMetadata struct {
 	ExitCode         int    `json:"exit_code"`
 	Interrupted      bool   `json:"interrupted"`
 	Background       bool   `json:"background,omitempty"`
+	AutoBackground   bool   `json:"auto_background,omitempty"`
 	ShellID          string `json:"shell_id,omitempty"`
 }
 
@@ -408,6 +409,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 				Description:      params.Description,
 				WorkingDirectory: bgShell.WorkingDir,
 				Background:       true,
+				AutoBackground:   true,
 				ShellID:          bgShell.ID,
 			}
 			response := fmt.Sprintf("Command is taking longer than expected and has been moved to background.\n\nBackground shell ID: %s\n\n%s", bgShell.ID, backgroundJobNotice)

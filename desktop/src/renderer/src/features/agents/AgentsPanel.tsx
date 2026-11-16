@@ -1,33 +1,27 @@
-import { useCallback, useEffect, useState } from 'react'
-import { ChevronRight, RefreshCw, Users } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ChevronRight, LoaderCircle, RefreshCw, Users } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import type { AgentWorker } from '../../../../shared/agents'
-import { workerActive, workerStatusLabels } from '../../../../shared/agents'
+import { workerStatusLabels } from '../../../../shared/agents'
 import { useI18n } from '../../i18n'
 import { useAgentPolling } from './useAgentPolling'
 import { WorkerConversation } from './WorkerConversation'
-import type { AgentRequest } from './openAgent'
+import {
+  agentRosterPollInterval,
+  scopeAgentRequest,
+  type AgentRequest
+} from './openAgent'
 import { realSessionId } from '../../../../shared/pendingSession'
 import './agents.css'
 
-const maxConsumedRequests = 200
-const consumedRequests = new Set<number>()
-
-function markConsumed(sequence: number) {
-  consumedRequests.add(sequence)
-  while (consumedRequests.size > maxConsumedRequests) {
-    const oldest = consumedRequests.values().next().value
-    if (oldest === undefined) break
-    consumedRequests.delete(oldest)
-  }
-}
-
 export function AgentsPanel({
   workspace,
-  request
+  request,
+  onConsumeAgentRequest
 }: {
   workspace: Workspace
   request?: AgentRequest
+  onConsumeAgentRequest?: (sequence: number) => void
 }) {
   const { t } = useI18n()
   const sessionId = realSessionId(workspace.session)
@@ -38,8 +32,7 @@ export function AgentsPanel({
         <p>{t('Откройте чат, чтобы увидеть его агентов')}</p>
       </div>
     )
-  const scopedRequest =
-    request && (!request.sessionId || request.sessionId === sessionId) ? request : undefined
+  const scopedRequest = scopeAgentRequest(request, sessionId)
   return (
     <AgentTeam
       key={`${workspace.project.id}:${sessionId}`}
@@ -47,6 +40,7 @@ export function AgentsPanel({
       sessionId={sessionId}
       disabled={!!workspace.config.options?.disable_multi_agent}
       request={scopedRequest}
+      onConsumeAgentRequest={onConsumeAgentRequest}
     />
   )
 }
@@ -55,24 +49,24 @@ function AgentTeam({
   projectId,
   sessionId,
   disabled,
-  request
+  request,
+  onConsumeAgentRequest
 }: {
   projectId: string
   sessionId: string
   disabled: boolean
   request?: AgentRequest
+  onConsumeAgentRequest?: (sequence: number) => void
 }) {
   const { t } = useI18n()
-  const [selected, setSelected] = useState(() => {
-    if (!request || consumedRequests.has(request.sequence)) return ''
-    markConsumed(request.sequence)
-    return request.workerId
-  })
+  const [selected, setSelected] = useState(() => request?.workerId || '')
+  const selectedRef = useRef(selected)
+  selectedRef.current = selected
   useEffect(() => {
-    if (!request?.workerId || consumedRequests.has(request.sequence)) return
-    markConsumed(request.sequence)
+    if (!request?.workerId) return
     setSelected(request.workerId)
-  }, [request?.sequence, request?.workerId])
+    onConsumeAgentRequest?.(request.sequence)
+  }, [request?.sequence, request?.workerId, onConsumeAgentRequest])
   const load = useCallback(async () => {
     const result = await window.prime.call(projectId, 'agentWorkers', { sessionId })
     const workers = (result.workers || []) as AgentWorker[]
@@ -80,9 +74,12 @@ function AgentTeam({
   }, [projectId, sessionId])
   const roster = useAgentPolling(
     load,
-    (workers) => (workers.some(workerActive) ? 1000 : 3000),
+    (workers) => agentRosterPollInterval(workers, selectedRef.current),
     [] as AgentWorker[]
   )
+  useEffect(() => {
+    if (selected && !roster.value.some((item) => item.id === selected)) roster.refresh()
+  }, [selected])
   const worker = roster.value.find((item) => item.id === selected)
   if (worker)
     return (
@@ -96,6 +93,44 @@ function AgentTeam({
         refreshRoster={roster.refresh}
         rosterError={roster.error}
       />
+    )
+  if (selected)
+    return (
+      <section className="agents-panel agent-conversation" aria-label={t('Агент')}>
+        <header className="agent-chat-header">
+          <button
+            className="icon small"
+            aria-label={t('К списку агентов')}
+            title={t('К списку агентов')}
+            onClick={() => setSelected('')}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div className="agent-chat-name">
+            <strong>{t('Агент')}</strong>
+          </div>
+          <button
+            className="icon small"
+            aria-label={t('Обновить')}
+            title={t('Обновить')}
+            onClick={roster.refresh}
+          >
+            <RefreshCw size={14} />
+          </button>
+        </header>
+        {roster.error && (
+          <div className="agent-error" role="alert">
+            <span>{roster.error}</span>
+            <button className="quiet" onClick={roster.refresh}>
+              {t('Повторить')}
+            </button>
+          </div>
+        )}
+        <div className="agents-empty" role="status">
+          <LoaderCircle size={20} className="spin" />
+          <span>{t('Запуск агента…')}</span>
+        </div>
+      </section>
     )
   return (
     <section className="agents-panel" aria-label={t('Агенты')}>

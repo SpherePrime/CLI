@@ -118,3 +118,24 @@ func TestFastMCPCallReturnsInline(t *testing.T) {
 	require.Equal(t, "slow result", response.Content)
 	require.False(t, strings.Contains(response.Metadata, "background"))
 }
+
+func TestSessionHasRunningMCPJobs(t *testing.T) {
+	require.False(t, SessionHasRunningMCPJobs(""))
+	require.False(t, SessionHasRunningMCPJobs("missing-session"))
+
+	release := make(chan struct{})
+	tool, _ := slowMCPTool(t, release)
+	ctx := context.WithValue(context.Background(), SessionIDContextKey, "mcp-sess")
+	response, err := tool.Run(ctx, fantasy.ToolCall{ID: "call", Name: tool.Name(), Input: `{}`})
+	require.NoError(t, err)
+	metadata := mcpJobMetadata(t, response)
+
+	require.True(t, SessionHasRunningMCPJobs("mcp-sess"))
+	require.True(t, MCPJobIsRunning(metadata.JobID))
+	require.False(t, SessionHasRunningMCPJobs("other-sess"))
+
+	close(release)
+	require.Eventually(t, func() bool {
+		return !SessionHasRunningMCPJobs("mcp-sess") && !MCPJobIsRunning(metadata.JobID)
+	}, 2*time.Second, 10*time.Millisecond)
+}

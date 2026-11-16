@@ -53,7 +53,8 @@ export function Inspector({
   setExpanded,
   browserRequest = 0,
   appRequest = 0,
-  agentRequest
+  agentRequest,
+  onConsumeAgentRequest
 }: {
   workspace: Workspace
   openDocument: (workspaceId: string, path: string, diff?: any) => Promise<void>
@@ -65,6 +66,7 @@ export function Inspector({
   browserRequest?: number
   appRequest?: number
   agentRequest?: AgentRequest
+  onConsumeAgentRequest?: (sequence: number) => void
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('files')
@@ -88,6 +90,7 @@ export function Inspector({
       if (
         !panel.current?.contains(target) &&
         !target.closest?.('[data-inspector-toggle]') &&
+        !target.closest?.('.agent-card') &&
         !target.closest?.('.prime-popover, .file-context-menu, .context-menu, .select-options, dialog')
       )
         setPanelOpen(false)
@@ -300,7 +303,13 @@ export function Inspector({
         hidden={tab === 'browser'}
       >
         <PanelBoundary resetKey={tab} compact={compact}>
-          {tab === 'agents' && <AgentsPanel workspace={w} request={agentRequest} />}
+          {tab === 'agents' && (
+            <AgentsPanel
+              workspace={w}
+              request={agentRequest}
+              onConsumeAgentRequest={onConsumeAgentRequest}
+            />
+          )}
           {tab === 'app' && w.project && (
             <AppTestingPanel
               workspace={w}

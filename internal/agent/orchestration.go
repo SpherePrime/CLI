@@ -252,6 +252,7 @@ func (c *coordinator) ensureWorkerJob(ctx context.Context, worker AgentWorker) (
 		hasRun:          true,
 		wake:            true,
 		done:            make(chan struct{}),
+		wakeCh:          make(chan struct{}, 1),
 		params:          subAgentParams{Agent: a, SessionID: worker.ParentSessionID, Reviewer: worker.Reviewer},
 	}
 	if c.agentJobs == nil {
@@ -321,6 +322,14 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 		job.cancel = cancel
 		job.stopping = false
 		job.done = make(chan struct{})
+		if job.wakeCh == nil {
+			job.wakeCh = make(chan struct{}, 1)
+		} else {
+			select {
+			case <-job.wakeCh:
+			default:
+			}
+		}
 		job.status = "queued"
 		job.queuedAt = time.Now()
 		job.seen = false

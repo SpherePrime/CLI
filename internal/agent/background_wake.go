@@ -49,19 +49,58 @@ var backgroundWakeIdlePoll = 500 * time.Millisecond
 // wake-up is skipped only when the agent already read the job's final output
 // through job_output. Callbacks run detached: the tool call that spawned the
 // watcher is long gone by the time a long job finishes.
+func (c *coordinator) incPendingWake(sessionID string) {
+	c.wakeMu.Lock()
+	if c.pendingWakes == nil {
+		c.pendingWakes = make(map[string]int)
+	}
+	c.pendingWakes[sessionID]++
+	c.wakeMu.Unlock()
+}
+
+func (c *coordinator) decPendingWake(sessionID string) {
+	c.wakeMu.Lock()
+	if c.pendingWakes != nil {
+		if c.pendingWakes[sessionID] <= 1 {
+			delete(c.pendingWakes, sessionID)
+		} else {
+			c.pendingWakes[sessionID]--
+		}
+	}
+	c.wakeMu.Unlock()
+}
+
+func (c *coordinator) hasPendingWake(sessionID string) bool {
+	if sessionID == "" {
+		return false
+	}
+	c.wakeMu.Lock()
+	defer c.wakeMu.Unlock()
+	return c.pendingWakes[sessionID] > 0
+}
+
 func (c *coordinator) wakeOnBackgroundJob(sessionID, shellID, description, command string, exitCode int, output string) {
 	if sessionID == "" {
 		return
 	}
 	prompt := backgroundJobWakePrompt(shellID, description, command, exitCode, output)
 	ctx := message.WithHiddenUserMessage(context.Background())
+	c.incPendingWake(sessionID)
 	go func() {
-		for c.currentAgent().IsSessionBusy(sessionID) {
+		defer c.decPendingWake(sessionID)
+		for c.isSessionAgentBusy(sessionID) {
+			if c.workerContext().Err() != nil {
+				return
+			}
 			time.Sleep(backgroundWakeIdlePoll)
 		}
 		if backgroundJobResultSeen(shellID) {
 			slog.Debug("Background job wake-up skipped: agent already read the result",
 				"session_id", sessionID, "shell_id", shellID)
+			return
+		}
+		if job := c.findJobBySessionID(sessionID); job != nil {
+			_ = job.enqueuePending(prompt)
 			return
 		}
 		runner := c.backgroundWakeRunner
@@ -98,11 +137,20 @@ func (c *coordinator) wakeOnMCPJob(sessionID, jobID, toolName, status, output st
 	}
 	prompt := mcpJobWakePrompt(jobID, toolName, status, output)
 	ctx := message.WithHiddenUserMessage(context.Background())
+	c.incPendingWake(sessionID)
 	go func() {
-		for c.currentAgent().IsSessionBusy(sessionID) {
+		defer c.decPendingWake(sessionID)
+		for c.isSessionAgentBusy(sessionID) {
+			if c.workerContext().Err() != nil {
+				return
+			}
 			time.Sleep(backgroundWakeIdlePoll)
 		}
 		if tools.MCPJobResultSeen(jobID) {
+			return
+		}
+		if job := c.findJobBySessionID(sessionID); job != nil {
+			_ = job.enqueuePending(prompt)
 			return
 		}
 		runner := c.backgroundWakeRunner

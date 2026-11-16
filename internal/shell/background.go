@@ -170,6 +170,19 @@ func (m *BackgroundShellManager) List() []string {
 	return ids
 }
 
+func (m *BackgroundShellManager) RunningForSession(sessionID string) []*BackgroundShell {
+	if sessionID == "" {
+		return nil
+	}
+	var running []*BackgroundShell
+	for s := range m.shells.Seq() {
+		if s.SessionID == sessionID && !s.IsDone() {
+			running = append(running, s)
+		}
+	}
+	return running
+}
+
 // Cleanup removes completed jobs that have been finished for more than the retention period
 func (m *BackgroundShellManager) Cleanup() int {
 	now := time.Now().Unix()

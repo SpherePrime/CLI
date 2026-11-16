@@ -10,7 +10,7 @@ import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
 import { AuthGate } from '../features/auth/AuthGate'
 import { I18nProvider, translate, useI18n } from '../i18n'
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ToastStack } from '../features/notifications/ToastStack'
 import { notifyError } from '../features/notifications/notifications'
 import { useWorkspace, type Workspace } from './useWorkspace'
@@ -33,7 +33,11 @@ import { usePanelResize } from './usePanelResize'
 import { useWorkspaceShortcuts } from './useWorkspaceShortcuts'
 import { useModalWindowChrome } from './useModalWindowChrome'
 import { applyShortcuts } from '../features/shortcuts/shortcutStore'
-import { openAgentEvent, type AgentRequest } from '../features/agents/openAgent'
+import {
+  consumeAgentRequestState,
+  openAgentEvent,
+  type AgentRequest
+} from '../features/agents/openAgent'
 import { isForViewedChat, useBrowserView } from '../features/browser/useBrowserView'
 import { isInspectorOpen, shouldActivateBrowserTab } from '../features/browser/browserActivation'
 import { realSessionId } from '../../../shared/pendingSession'
@@ -244,6 +248,12 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [appRequest, setAppRequest] = useState(0)
   const viewedChat = useBrowserView(w.session, inspectorOpen)
   const [agentRequest, setAgentRequest] = useState<AgentRequest>()
+  const agentSequenceRef = useRef(0)
+  const consumeAgentRequest = useCallback(
+    (sequence: number) =>
+      setAgentRequest((current) => consumeAgentRequestState(current, sequence)),
+    []
+  )
   const sessionRef = useRef(w.session)
   sessionRef.current = w.session
   useEffect(() => {
@@ -255,11 +265,12 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       if (!detail?.workerId) return
       setFocusMode(false)
       setInspector(true)
-      setAgentRequest((current) => ({
-        workerId: detail.workerId!,
+      agentSequenceRef.current += 1
+      setAgentRequest({
+        workerId: detail.workerId,
         sessionId: detail.sessionId ?? realSessionId(sessionRef.current),
-        sequence: (current?.sequence || 0) + 1
-      }))
+        sequence: agentSequenceRef.current
+      })
     }
     window.addEventListener(openAgentEvent, open)
     return () => window.removeEventListener(openAgentEvent, open)
@@ -519,6 +530,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               browserRequest={browserRequest}
               appRequest={appRequest}
               agentRequest={agentRequest}
+              onConsumeAgentRequest={consumeAgentRequest}
             />
           </>
         )}

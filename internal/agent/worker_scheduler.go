@@ -168,6 +168,33 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 			job.mu.Unlock()
 			continue
 		}
+		if status == "done" && ctx.Err() == nil && !job.stopping {
+			job.mu.Unlock()
+			waitForBg := c.shouldWaitForSubagentBackgroundJobs(ctx, job, output)
+			if waitForBg && c.waitForSubagentBackgroundJobs(ctx, job) {
+				job.mu.Lock()
+				if len(job.pending) > 0 && ctx.Err() == nil && !job.stopping {
+					job.status = "queued"
+					job.queuedAt = time.Now()
+					job.generation++
+					runGeneration = job.generation
+					job.seen = false
+					job.mu.Unlock()
+					continue
+				}
+				job.mu.Unlock()
+			}
+			job.mu.Lock()
+			if len(job.pending) > 0 && ctx.Err() == nil && !job.stopping {
+				job.status = "queued"
+				job.queuedAt = time.Now()
+				job.generation++
+				runGeneration = job.generation
+				job.seen = false
+				job.mu.Unlock()
+				continue
+			}
+		}
 		if job.stopping {
 			job.pending = nil
 			status = "canceled"

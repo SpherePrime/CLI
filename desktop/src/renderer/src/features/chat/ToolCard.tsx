@@ -2,18 +2,11 @@ import { useState } from 'react'
 import { Check, ChevronDown, Clock3, LoaderCircle, Terminal, X } from 'lucide-react'
 import { toolTitle } from './toolTitle'
 import { hidesToolOutput } from './hiddenToolOutput'
+import { backgroundJob } from './backgroundJob'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
 
-function backgroundJob(metadata: unknown) {
-  if (typeof metadata !== 'string' || !metadata) return ''
-  try {
-    const value = JSON.parse(metadata)
-    return value?.background && typeof value.job_id === 'string' ? value.job_id : ''
-  } catch {
-    return ''
-  }
-}
+export { backgroundJob }
 
 function parameters(value: unknown) {
   if (typeof value !== 'string') return value

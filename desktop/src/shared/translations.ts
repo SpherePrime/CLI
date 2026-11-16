@@ -29,6 +29,7 @@ export const english: Record<string, string> = {
   'Команда текущего чата. Выберите агента, чтобы открыть его переписку.':
     'This chat’s team. Select an agent to open its conversation.',
   'Запуск новых агентов отключён в настройках.': 'New agent launches are disabled in settings.',
+  'Запуск агента…': 'Starting agent…',
   'В этом чате пока нет агентов': 'No agents in this chat yet',
   'Для больших задач главный агент запускает агентов параллельно.':
     'For large tasks the primary agent runs agents in parallel.',

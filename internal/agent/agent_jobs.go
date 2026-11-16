@@ -60,6 +60,7 @@ type agentJob struct {
 	cancel   context.CancelFunc
 	stopping bool
 	done     chan struct{}
+	wakeCh   chan struct{}
 }
 
 func (j *agentJob) finish(status, output string) {
@@ -102,6 +103,23 @@ func (j *agentJob) closeDoneLocked() {
 	default:
 		close(j.done)
 	}
+}
+
+func (j *agentJob) enqueuePending(prompt string) bool {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	if j.stopping || j.status == "done" || j.status == "error" || j.status == "canceled" {
+		return false
+	}
+	j.pending = append(j.pending, prompt)
+	j.updatedAt = time.Now()
+	if j.wakeCh != nil {
+		select {
+		case j.wakeCh <- struct{}{}:
+		default:
+		}
+	}
+	return true
 }
 
 // snapshot is a point-in-time read of the job state, safe from any goroutine.
@@ -226,6 +244,7 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		wake:            wake,
 		cancel:          cancel,
 		done:            make(chan struct{}),
+		wakeCh:          make(chan struct{}, 1),
 		reviewer:        strings.TrimSpace(params.Reviewer),
 		contextFrom:     append([]string(nil), params.ContextFrom...),
 		contextFiles:    append([]string(nil), params.ContextFiles...),
@@ -476,4 +495,21 @@ func (c *coordinator) findJob(id string) *agentJob {
 	c.jobMu.Lock()
 	defer c.jobMu.Unlock()
 	return c.agentJobs[id]
+}
+
+func (c *coordinator) findJobBySessionID(sessionID string) *agentJob {
+	if sessionID == "" {
+		return nil
+	}
+	c.jobMu.Lock()
+	defer c.jobMu.Unlock()
+	if job := c.agentJobs[sessionID]; job != nil && job.sessionID == sessionID {
+		return job
+	}
+	for _, job := range c.agentJobs {
+		if job.sessionID == sessionID {
+			return job
+		}
+	}
+	return nil
 }

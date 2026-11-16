@@ -195,6 +195,8 @@ type coordinator struct {
 	// backgroundWakeRunner, when set by tests, replaces the run dispatch
 	// behind background job wake-ups.
 	backgroundWakeRunner func(ctx context.Context, sessionID, prompt string)
+	wakeMu               sync.Mutex
+	pendingWakes         map[string]int
 }
 
 // CoordinatorOptions holds the dependencies for NewCoordinator. Using a
@@ -1918,13 +1920,23 @@ func (c *coordinator) IsBusy() bool {
 }
 
 func (c *coordinator) IsSessionBusy(sessionID string) bool {
-	if c.currentAgent().IsSessionBusy(sessionID) || c.backgroundAgentsBusy(sessionID) {
+	if c.isSessionAgentBusy(sessionID) {
+		return true
+	}
+	return c.backgroundAgentsBusy(sessionID)
+}
+
+func (c *coordinator) isSessionAgentBusy(sessionID string) bool {
+	if a := c.currentAgent(); a != nil && a.IsSessionBusy(sessionID) {
 		return true
 	}
 	for _, agent := range c.cachedSubAgents() {
-		if agent.IsSessionBusy(sessionID) {
+		if agent != nil && agent.IsSessionBusy(sessionID) {
 			return true
 		}
+	}
+	if job := c.findJobBySessionID(sessionID); job != nil && job.params.Agent != nil && job.params.Agent.IsSessionBusy(sessionID) {
+		return true
 	}
 	return false
 }

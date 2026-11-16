@@ -327,3 +327,39 @@ func TestBackgroundShell_WaitContext_Canceled(t *testing.T) {
 
 	require.False(t, bgShell.WaitContext(ctx))
 }
+
+func TestBackgroundShellManager_RunningForSession(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	workingDir := t.TempDir()
+	manager := newBackgroundShellManager()
+
+	require.Nil(t, manager.RunningForSession(""))
+
+	s1, err := manager.Start(ctx, workingDir, nil, sleepCommand(10), "s1", BackgroundOwnership{SessionID: "sess-a"})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = manager.Kill(s1.ID) })
+
+	s2, err := manager.Start(ctx, workingDir, nil, sleepCommand(10), "s2", BackgroundOwnership{SessionID: "sess-b"})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = manager.Kill(s2.ID) })
+
+	s3, err := manager.Start(ctx, workingDir, nil, "echo done", "s3", BackgroundOwnership{SessionID: "sess-a"})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = manager.Kill(s3.ID) })
+	s3.Wait()
+
+	runningA := manager.RunningForSession("sess-a")
+	require.Len(t, runningA, 1)
+	require.Equal(t, s1.ID, runningA[0].ID)
+
+	runningB := manager.RunningForSession("sess-b")
+	require.Len(t, runningB, 1)
+	require.Equal(t, s2.ID, runningB[0].ID)
+
+	require.Empty(t, manager.RunningForSession("sess-none"))
+
+	require.NoError(t, manager.Kill(s1.ID))
+	require.Empty(t, manager.RunningForSession("sess-a"))
+}

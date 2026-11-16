@@ -97,6 +97,12 @@ func TestBashTool_WakesOnAutoBackgroundCompletion(t *testing.T) {
 	require.False(t, resp.IsError)
 	require.Contains(t, resp.Content, "moved to background")
 
+	var meta BashResponseMetadata
+	require.NoError(t, json.Unmarshal([]byte(resp.Metadata), &meta))
+	require.True(t, meta.Background)
+	require.True(t, meta.AutoBackground)
+	require.NotEmpty(t, meta.ShellID)
+
 	record := waitForWake(t, &wakes, &mu)
 	require.Equal(t, "auto-wake-session", record.sessionID)
 	require.Equal(t, 0, record.exitCode)

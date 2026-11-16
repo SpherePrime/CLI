@@ -157,6 +157,50 @@ func MCPJobResultSeen(jobID string) bool {
 	return job.seen
 }
 
+func MCPJobIsRunning(jobID string) bool {
+	if jobID == "" {
+		return false
+	}
+	job, ok := mcpJobs.Get(jobID)
+	if !ok {
+		return false
+	}
+	job.mu.Lock()
+	defer job.mu.Unlock()
+	return job.status == "running"
+}
+
+func MCPJobPendingWake(jobID string) bool {
+	if jobID == "" {
+		return false
+	}
+	job, ok := mcpJobs.Get(jobID)
+	if !ok {
+		return false
+	}
+	job.mu.Lock()
+	defer job.mu.Unlock()
+	return job.status == "running" || (!job.killed && !job.seen)
+}
+
+func SessionHasRunningMCPJobs(sessionID string) bool {
+	if sessionID == "" {
+		return false
+	}
+	for _, job := range mcpJobs.Seq2() {
+		if job.sessionID != sessionID {
+			continue
+		}
+		job.mu.Lock()
+		running := job.status == "running"
+		job.mu.Unlock()
+		if running {
+			return true
+		}
+	}
+	return false
+}
+
 func sessionMCPJobs(sessionID string) []*mcpJob {
 	var jobs []*mcpJob
 	for _, job := range mcpJobs.Seq2() {
