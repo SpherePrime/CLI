@@ -34,7 +34,7 @@ func (m *mockSessionAgent) BeginAccepted(sessionID string) *AcceptedRun {
 }
 
 func (m *mockSessionAgent) Model() Model                        { return m.model }
-func (m *mockSessionAgent) SetModels(large, small Model)        {}
+func (m *mockSessionAgent) SetModels(large, small Model)        { m.model = large }
 func (m *mockSessionAgent) SetTools(tools []fantasy.AgentTool)  {}
 func (m *mockSessionAgent) SetSystemPrompt(systemPrompt string) {}
 func (m *mockSessionAgent) Cancel(sessionID string) {
@@ -389,6 +389,70 @@ func TestRunSubAgent(t *testing.T) {
 		updated, err := env.sessions.Get(t.Context(), parentSession.ID)
 		require.NoError(t, err)
 		assert.InDelta(t, 0.05, updated.Cost, 1e-9)
+	})
+
+	t.Run("honors sessionModel for root and nested child sessions", func(t *testing.T) {
+		env := testEnv(t)
+		coord := newTestCoordinator(t, env, providerID, providerCfg)
+
+		const sessionProviderID = "session-provider"
+		coord.cfg.Config().Providers.Set(sessionProviderID, config.ProviderConfig{
+			ID:      sessionProviderID,
+			Name:    "Session Provider",
+			Type:    openaicompat.Name,
+			BaseURL: "http://127.0.0.1:9/v1",
+			APIKey:  "test-key",
+			Models: []catwalk.Model{
+				{ID: "session-model", Name: "Session Model", DefaultMaxTokens: 2048},
+			},
+		})
+
+		rootSession, err := env.sessions.Create(t.Context(), "Root")
+		require.NoError(t, err)
+		childSession, err := env.sessions.CreateTaskSession(t.Context(), "child-tool-id", rootSession.ID, "Child")
+		require.NoError(t, err)
+
+		coord.cfg.Config().SessionModels = map[string]config.SelectedModel{
+			rootSession.ID: {
+				Provider: sessionProviderID,
+				Model:    "session-model",
+			},
+		}
+
+		var overrides []*Model
+		agent := newMockAgent(providerID, 4096, func(_ context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+			overrides = append(overrides, call.ModelOverride)
+			return agentResultWithText("ok"), nil
+		})
+
+		resp, err := coord.runSubAgent(t.Context(), subAgentParams{
+			Agent:          agent,
+			SessionID:      rootSession.ID,
+			AgentMessageID: "msg-root",
+			ToolCallID:     "call-root",
+			Prompt:         "test root",
+			SessionTitle:   "Root Sub",
+		})
+		require.NoError(t, err)
+		require.False(t, resp.IsError)
+
+		resp, err = coord.runSubAgent(t.Context(), subAgentParams{
+			Agent:          agent,
+			SessionID:      childSession.ID,
+			AgentMessageID: "msg-child",
+			ToolCallID:     "call-child",
+			Prompt:         "test child",
+			SessionTitle:   "Child Sub",
+		})
+		require.NoError(t, err)
+		require.False(t, resp.IsError)
+
+		require.Len(t, overrides, 2)
+		for _, ov := range overrides {
+			require.NotNil(t, ov)
+			assert.Equal(t, sessionProviderID, ov.ModelCfg.Provider)
+			assert.Equal(t, "session-model", ov.ModelCfg.Model)
+		}
 	})
 }
 

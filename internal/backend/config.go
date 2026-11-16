@@ -95,6 +95,7 @@ func (b *Backend) UpdatePreferredModel(workspaceID string, scope config.Scope, m
 	if err := ws.Cfg.UpdatePreferredModel(scope, modelType, model); err != nil {
 		return err
 	}
+	b.forgetSubAgents(ws, scope == config.ScopeGlobal)
 	publishConfigChanged(ws)
 	return nil
 }
@@ -124,8 +125,30 @@ func (b *Backend) UpdateSessionModel(workspaceID, sessionID string, model *confi
 			return err
 		}
 	}
+	b.forgetSubAgents(ws, model != nil)
 	publishConfigChanged(ws)
 	return nil
+}
+
+// forgetSubAgents clears cached sub-agents on the target workspace's
+// coordinator (and on all open workspaces when a global model change occurs).
+func (b *Backend) forgetSubAgents(ws *Workspace, includeAll bool) {
+	if ws != nil {
+		if coord := ws.Coordinator(); coord != nil {
+			coord.ForgetSubAgents()
+		}
+	}
+	if !includeAll || b.workspaces == nil {
+		return
+	}
+	for _, opened := range b.workspaces.Seq2() {
+		if opened == nil || opened == ws {
+			continue
+		}
+		if coord := opened.Coordinator(); coord != nil {
+			coord.ForgetSubAgents()
+		}
+	}
 }
 
 // SetCompactMode sets the compact mode setting and persists it.

@@ -2,13 +2,16 @@ package backend
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/pubsub"
+	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
@@ -204,4 +207,95 @@ func TestPublishConfigChanged_NilWorkspaceSafe(t *testing.T) {
 	t.Parallel()
 	require.NotPanics(t, func() { publishConfigChanged(nil) })
 	require.NotPanics(t, func() { publishConfigChanged(&Workspace{}) })
+}
+
+type forgetTrackingCoordinator struct {
+	blockingCoordinator
+	forgetCalls atomic.Int32
+}
+
+func (c *forgetTrackingCoordinator) ForgetSubAgents() {
+	c.forgetCalls.Add(1)
+}
+
+func insertConfiguredWorkspace(t *testing.T, b *Backend, coord *forgetTrackingCoordinator) *Workspace {
+	t.Helper()
+	dir := t.TempDir()
+	primeJSON := `{
+  "options": {"disable_default_providers": true, "disable_provider_auto_update": true},
+  "providers": {
+    "codex": {
+      "id": "codex", "name": "Codex", "type": "openai-compat",
+      "base_url": "http://127.0.0.1:9/v1", "api_key": "k1", "discover_models": false,
+      "models": [{"id": "gpt-6.1-sol", "name": "GPT 6.1 Sol"}]
+    },
+    "antigravity": {
+      "id": "antigravity", "name": "Antigravity", "type": "openai-compat",
+      "base_url": "http://127.0.0.1:9/v1", "api_key": "k2", "discover_models": false,
+      "models": [{"id": "gemini-4-hydrogen", "name": "Gemini 4 Hydrogen", "can_reason": true, "reasoning_levels": ["low", "medium", "high"]}]
+    }
+  }
+}`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "prime.json"), []byte(primeJSON), 0o644))
+	cfg, err := config.Init(dir, "", false)
+	require.NoError(t, err)
+
+	ws := insertRunCompleteWorkspace(t, b, context.Background(), coord)
+	ws.Cfg = cfg
+	return ws
+}
+
+func TestUpdatePreferredModel_ForgetsSubAgents(t *testing.T) {
+	xdgIsolated(t)
+	t.Setenv("PRIME_GLOBAL_CONFIG", t.TempDir())
+	t.Setenv("PRIME_GLOBAL_DATA", t.TempDir())
+
+	b, _ := newTestBackend(t)
+	c1 := &forgetTrackingCoordinator{}
+	c2 := &forgetTrackingCoordinator{}
+	ws1 := insertConfiguredWorkspace(t, b, c1)
+	_ = insertConfiguredWorkspace(t, b, c2)
+
+	// Workspace-scoped update only drops cached sub-agents on ws1.
+	require.NoError(t, b.UpdatePreferredModel(ws1.ID, config.ScopeWorkspace, config.SelectedModelTypeLarge, config.SelectedModel{
+		Provider: "codex",
+		Model:    "gpt-6.1-sol",
+	}))
+	require.Equal(t, int32(1), c1.forgetCalls.Load())
+	require.Equal(t, int32(0), c2.forgetCalls.Load())
+
+	// Global update drops cached sub-agents across open workspaces.
+	require.NoError(t, b.UpdatePreferredModel(ws1.ID, config.ScopeGlobal, config.SelectedModelTypeLarge, config.SelectedModel{
+		Provider:      "antigravity",
+		Model:         "gemini-4-hydrogen",
+		ReasoningMode: config.ReasoningModeHigh,
+	}))
+	require.Equal(t, int32(2), c1.forgetCalls.Load())
+	require.Equal(t, int32(1), c2.forgetCalls.Load())
+}
+
+func TestUpdateSessionModel_ForgetsSubAgents(t *testing.T) {
+	xdgIsolated(t)
+	t.Setenv("PRIME_GLOBAL_CONFIG", t.TempDir())
+	t.Setenv("PRIME_GLOBAL_DATA", t.TempDir())
+
+	b, _ := newTestBackend(t)
+	c1 := &forgetTrackingCoordinator{}
+	c2 := &forgetTrackingCoordinator{}
+	ws1 := insertConfiguredWorkspace(t, b, c1)
+	_ = insertConfiguredWorkspace(t, b, c2)
+
+	selected := config.SelectedModel{
+		Provider:      "antigravity",
+		Model:         "gemini-4-hydrogen",
+		ReasoningMode: config.ReasoningModeHigh,
+	}
+	require.NoError(t, b.UpdateSessionModel(ws1.ID, "chat-1", &selected))
+	require.Equal(t, int32(1), c1.forgetCalls.Load())
+	require.Equal(t, int32(1), c2.forgetCalls.Load())
+
+	// Clearing a session model only updates workspace-local session_models.
+	require.NoError(t, b.UpdateSessionModel(ws1.ID, "chat-1", nil))
+	require.Equal(t, int32(2), c1.forgetCalls.Load())
+	require.Equal(t, int32(1), c2.forgetCalls.Load())
 }

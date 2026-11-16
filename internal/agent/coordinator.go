@@ -141,6 +141,7 @@ type Coordinator interface {
 	Summarize(context.Context, string) error
 	Model() Model
 	UpdateModels(ctx context.Context) error
+	ForgetSubAgents()
 	GenerateTitle(ctx context.Context, sessionID, prompt string)
 }
 
@@ -393,6 +394,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	// its model settings, and the model refresh below must all target the
 	// same agent even if SetMainAgent swaps the main agent mid-flight.
 	agent, agentName := c.activeAgent()
+	c.ForgetSubAgents()
 	if err := c.updateAgentModels(ctx, agent, agentName); err != nil {
 		return nil, fmt.Errorf("failed to update models: %w", err)
 	}
@@ -1230,6 +1232,8 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool, age
 		// models so the whole agent runs on the selected one.
 		largeModelCfg = *override
 		smallModelCfg = *override
+	} else if agent.Model == config.SelectedModelTypeSmall {
+		largeModelCfg = smallModelCfg
 	}
 
 	largeProviderCfg, ok := cfg.Providers.Get(largeModelCfg.Provider)
@@ -1789,7 +1793,12 @@ func (c *coordinator) SubAgent(name string) (SessionAgent, error) {
 	c.subAgentMu.Lock()
 	defer c.subAgentMu.Unlock()
 	if agent, ok := c.subAgents[name]; ok {
-		return agent, nil
+		cachedCfg := agent.Model().ModelCfg
+		target, hasTarget := subAgentTargetModel(cfg, agentCfg)
+		if cachedCfg.Provider == "" || cachedCfg.Model == "" || !hasTarget || sameSelectedModel(cachedCfg, target) {
+			return agent, nil
+		}
+		delete(c.subAgents, name)
 	}
 
 	prompt, err := subAgentPrompt(name, prompt.WithWorkingDir(c.cfg.WorkingDir()))
@@ -1800,8 +1809,36 @@ func (c *coordinator) SubAgent(name string) (SessionAgent, error) {
 	if err != nil {
 		return nil, err
 	}
+	if c.subAgents == nil {
+		c.subAgents = make(map[string]SessionAgent)
+	}
 	c.subAgents[name] = agent
 	return agent, nil
+}
+
+func subAgentTargetModel(cfg *config.Config, agentCfg config.Agent) (config.SelectedModel, bool) {
+	if agentCfg.ModelOverride != nil {
+		return *agentCfg.ModelOverride, true
+	}
+	if cfg == nil {
+		return config.SelectedModel{}, false
+	}
+	targetType := agentCfg.Model
+	if targetType == "" {
+		targetType = config.SelectedModelTypeLarge
+	}
+	target, ok := cfg.Models[targetType]
+	return target, ok && target.Provider != "" && target.Model != ""
+}
+
+func sameSelectedModel(a, b config.SelectedModel) bool {
+	return a.Provider == b.Provider &&
+		a.Model == b.Model &&
+		a.ReasoningMode == b.ReasoningMode &&
+		a.ReasoningEffort == b.ReasoningEffort &&
+		a.Think == b.Think &&
+		a.ContextWindow == b.ContextWindow &&
+		a.MaxTokens == b.MaxTokens
 }
 
 // SubAgentNames lists the configured agents the agent tool may target, in a
@@ -1837,11 +1874,8 @@ func (c *coordinator) SubAgentModel(name string) string {
 	if !ok {
 		return ""
 	}
-	selected := cfg.Models[config.SelectedModelTypeLarge]
-	if agentCfg.ModelOverride != nil {
-		selected = *agentCfg.ModelOverride
-	}
-	if selected.Model == "" {
+	selected, ok := subAgentTargetModel(cfg, agentCfg)
+	if !ok {
 		return ""
 	}
 	if m := cfg.GetModel(selected.Provider, selected.Model); m != nil && m.Name != "" {
@@ -2172,11 +2206,28 @@ func (c *coordinator) runSubAgent(ctx context.Context, params subAgentParams) (f
 		params.SessionSetup(session.ID)
 	}
 
+	rootSessionID := params.SessionID
+	if root, err := c.teamRoot(ctx, params.SessionID); err == nil && root != "" {
+		rootSessionID = root
+	}
+
 	// Get model configuration
 	model := params.Agent.Model()
+	if params.ModelOverride != nil {
+		model = *params.ModelOverride
+	} else if selected := c.sessionModel(ctx, rootSessionID); selected != nil {
+		model = *selected
+		params.ModelOverride = selected
+	}
 	providerCfg, ok := c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
 	if !ok {
 		return fantasy.ToolResponse{}, errModelProviderNotConfigured
+	}
+	if tuned, overridden, err := c.teamWorkerModel(ctx, rootSessionID, model, providerCfg); err != nil {
+		slog.Warn("Agent keeps its own reasoning level", "session", session.ID, "error", err)
+	} else if overridden {
+		model = tuned
+		params.ModelOverride = &tuned
 	}
 	maxTokens := callMaxOutputTokens(model, providerCfg.Type)
 
