@@ -1129,6 +1129,15 @@ Object.assign(english, {
     'Check the address, port, user and absolute Linux path.',
   'Не удалось подключиться. Проверьте адрес сервера и способ входа.':
     'Connection failed. Check the server address and authentication method.',
+  'Не удалось согласовать параметры SSH-подключения с сервером.':
+    'Failed to negotiate SSH connection parameters with the server.',
+  'Не удалось войти на сервер. Проверьте логин, пароль или ключ.':
+    'Failed to sign in to the server. Check your username, password, or key.',
+  'SSH-агент недоступен или не содержит подходящий ключ.':
+    'The SSH agent is unavailable or does not contain a matching key.',
+  'На сервере недоступна подсистема SFTP.': 'The SFTP subsystem is unavailable on the server.',
+  'Защищённое хранилище ОС недоступно. Пароль не сохранён.':
+    'OS-protected storage is unavailable. The password has not been saved.',
   'Соединение с сервером потеряно. Подключитесь снова.':
     'The server connection was lost. Reconnect to continue.',
   'Введите пароль для подключения.': 'Enter a password to connect.',

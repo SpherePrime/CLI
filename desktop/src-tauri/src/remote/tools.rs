@@ -242,22 +242,10 @@ pub fn run(
             if pattern.is_empty() || pattern.len() > 4096 {
                 return Err(HostError::new("INVALID_ARGUMENT", "Invalid search pattern"));
             }
-            let quoted = super::connection::shell_quote(pattern);
             let command = if name == "ssh_search" {
-                format!("if command -v rg >/dev/null 2>&1; then rg -n --no-heading --color never -m 100 -- {quoted} .; else grep -RInI -m 100 --exclude-dir=.git --exclude-dir=node_modules -- {quoted} .; fi")
+                build_ssh_search_command(pattern)
             } else {
-                let find = if pattern.contains('/') {
-                    format!(
-                        "-path {}",
-                        super::connection::shell_quote(&format!(
-                            "./{}",
-                            pattern.trim_start_matches("./")
-                        ))
-                    )
-                } else {
-                    format!("-name {quoted}")
-                };
-                format!("if command -v rg >/dev/null 2>&1; then rg --files --hidden -g '!.git' -g {quoted} -- .; else find . -type d \\( -name .git -o -name node_modules \\) -prune -o -type f {find} -print; fi")
+                build_ssh_glob_command(pattern)
             };
             connection.execute(&command, args["path"].as_str().unwrap_or(""), 30)
         }
@@ -299,5 +287,73 @@ pub fn run(
             Ok(json!({"path":args["localPath"],"bytes":bytes.len()}))
         }
         _ => Err(HostError::unsupported(name)),
+    }
+}
+
+const REMOTE_SKIP_DIRS: [&str; 11] = [
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "target",
+    ".next",
+    ".turbo",
+    ".venv",
+    "__pycache__",
+    "vendor",
+    ".prime",
+];
+
+fn build_ssh_search_command(pattern: &str) -> String {
+    let quoted = super::connection::shell_quote(pattern);
+    let grep_excludes = REMOTE_SKIP_DIRS
+        .iter()
+        .map(|dir| format!("--exclude-dir={dir}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    format!(
+        "if command -v rg >/dev/null 2>&1; then rg -n --no-heading --color never -m 100 -- {quoted} .; else grep -RInI -m 100 {grep_excludes} -- {quoted} .; fi"
+    )
+}
+
+fn build_ssh_glob_command(pattern: &str) -> String {
+    let quoted = super::connection::shell_quote(pattern);
+    let find = if pattern.contains('/') {
+        format!(
+            "-path {}",
+            super::connection::shell_quote(&format!("./{}", pattern.trim_start_matches("./")))
+        )
+    } else {
+        format!("-name {quoted}")
+    };
+    let find_prunes = REMOTE_SKIP_DIRS
+        .iter()
+        .map(|dir| format!("-name {dir}"))
+        .collect::<Vec<_>>()
+        .join(" -o ");
+    format!(
+        "if command -v rg >/dev/null 2>&1; then rg --files --hidden -g '!.git' -g {quoted} -- .; else find . -type d \\( {find_prunes} \\) -prune -o -type f {find} -print | head -n 200; fi"
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ssh_search_and_glob_skip_heavy_directories_and_cap_find_output() {
+        let search = build_ssh_search_command("hello");
+        let glob = build_ssh_glob_command("*.rs");
+        for dir in REMOTE_SKIP_DIRS {
+            assert!(
+                search.contains(&format!("--exclude-dir={dir}")),
+                "missing --exclude-dir={dir}"
+            );
+            assert!(
+                glob.contains(&format!("-name {dir}")),
+                "missing -name {dir} in find prune"
+            );
+        }
+        assert!(glob.ends_with("| head -n 200; fi"));
     }
 }

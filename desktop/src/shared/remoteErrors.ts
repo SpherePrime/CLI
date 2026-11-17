@@ -8,6 +8,7 @@ export const remoteErrors: Record<string, string> = {
   'remote.historyInvalidDestination':
     'Не удалось безопасно сохранить историю SSH-проекта на этом компьютере.',
   'remote.secureStorageUnavailable': 'Защищённое хранилище ОС недоступно. Пароль не сохранён.',
+  'remote.credentialsUnavailable': 'Защищённое хранилище ОС недоступно. Пароль не сохранён.',
   'remote.credentialsCorrupt': 'Хранилище SSH-паролей повреждено. Исходный файл сохранён.',
   'remote.credentialsUnreadable':
     'Не удалось расшифровать SSH-пароль. Введите его заново или удалите сохранённый пароль.',
@@ -19,6 +20,10 @@ export const remoteErrors: Record<string, string> = {
     'Хранилище серверов повреждено. Изменения заблокированы, исходный файл сохранён.',
   'remote.invalidProfile': 'Проверьте адрес, порт, пользователя и абсолютный путь Linux.',
   'remote.connectionFailed': 'Не удалось подключиться. Проверьте адрес сервера и способ входа.',
+  'remote.handshakeFailed': 'Не удалось согласовать параметры SSH-подключения с сервером.',
+  'remote.authFailed': 'Не удалось войти на сервер. Проверьте логин, пароль или ключ.',
+  'remote.agentUnavailable': 'SSH-агент недоступен или не содержит подходящий ключ.',
+  'remote.sftpFailed': 'На сервере недоступна подсистема SFTP.',
   'remote.connectionLost': 'Соединение с сервером потеряно. Подключитесь снова.',
   'remote.credentialsRequired': 'Введите пароль для подключения.',
   'remote.invalidKey': 'Не удалось прочитать приватный ключ. Максимальный размер — 1 MiB.',

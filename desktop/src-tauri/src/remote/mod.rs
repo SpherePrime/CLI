@@ -1,6 +1,7 @@
 mod connection;
 pub mod files;
 pub mod forward;
+mod runtime;
 mod store;
 pub mod terminal;
 pub mod tools;
@@ -206,6 +207,14 @@ pub fn file_call(
     let path = args.get(1).and_then(Value::as_str).unwrap_or("");
     match method {
         "files" => files::list(&connection, path),
+        "searchFiles" => files::search(
+            &connection,
+            path,
+            args.get(2)
+                .and_then(Value::as_u64)
+                .map(|value| value as usize)
+                .unwrap_or(50),
+        ),
         "readFile" => files::read(&connection, path),
         "saveFile" => files::save(
             &connection,
@@ -313,10 +322,16 @@ mod tests {
             vec![0, 1, 2, 255]
         );
         assert!(files::upload(&connection, &name, b"replace", false).is_err());
-        connection
-            .sftp
-            .unlink(&connection.resolve(&name, false).unwrap())
-            .unwrap();
+        runtime::block_on(
+            connection.sftp.remove_file(
+                connection
+                    .resolve(&name, false)
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/"),
+            ),
+        )
+        .unwrap();
         connection.close();
     }
 
@@ -688,6 +703,12 @@ impl RemoteManager {
                 );
             }
             Err(error) => {
+                if !error.message.starts_with("remote.") {
+                    eprintln!(
+                        "SSH connection failed for {} ({}:{}): {}",
+                        profile.name, profile.host, profile.port, error.message
+                    );
+                }
                 state.statuses.insert(
                     id.into(),
                     ConnectionStatus {

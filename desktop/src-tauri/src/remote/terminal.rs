@@ -1,20 +1,22 @@
 use super::connection::{shell_quote, Connection};
+use super::runtime;
 use crate::error::{HostError, HostResult};
+use russh::ChannelMsg;
 use serde_json::{json, Value};
 use std::{
     collections::HashMap,
-    io::{Read, Write},
-    sync::{mpsc, Arc, Mutex},
+    sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+use tokio::sync::{mpsc, oneshot};
 
 pub type Emitter = Arc<dyn Fn(&str, Value) + Send + Sync>;
 const OUTPUT_LIMIT: usize = 2 * 1024 * 1024;
 
 enum Input {
-    Write(String, mpsc::Sender<HostResult<()>>),
-    Resize(u32, u32, mpsc::Sender<HostResult<()>>),
-    Close(mpsc::Sender<HostResult<()>>),
+    Write(String, oneshot::Sender<HostResult<()>>),
+    Resize(u32, u32, oneshot::Sender<HostResult<()>>),
+    Close(oneshot::Sender<HostResult<()>>),
 }
 
 struct Journal {
@@ -27,7 +29,7 @@ struct Journal {
 pub struct Terminal {
     profile: String,
     journal: Mutex<Journal>,
-    input: mpsc::Sender<Input>,
+    input: mpsc::UnboundedSender<Input>,
     emit: Emitter,
 }
 
@@ -63,10 +65,6 @@ impl Terminal {
         if shell.is_empty() || shell.contains('\0') || shell.len() > 4096 {
             return Err(HostError::new("INVALID_ARGUMENT", "Invalid remote shell"));
         }
-        let mut channel = connection.session.channel_session().map_err(ssh_error)?;
-        channel
-            .request_pty("xterm-256color", None, Some((cols, rows, 0, 0)))
-            .map_err(ssh_error)?;
         let mut command = format!(
             "cd {} && exec {}",
             shell_quote(&connection.root),
@@ -92,10 +90,10 @@ impl Terminal {
         } else {
             command.push_str(" -l");
         }
-        channel.exec(&command).map_err(ssh_error)?;
-        connection.session.set_blocking(false);
+        let channel = connection.open_pty_channel(cols, rows, &command)?;
+        let (mut reader, writer) = channel.split();
         let id = uuid::Uuid::new_v4().to_string();
-        let (input, receiver) = mpsc::channel();
+        let (input, mut receiver) = mpsc::unbounded_channel();
         let terminal = Arc::new(Self {
             profile: connection.profile.id.clone(),
             journal: Mutex::new(Journal {
@@ -108,68 +106,70 @@ impl Terminal {
             emit,
         });
         let worker = terminal.clone();
-        std::thread::spawn(move || {
+        runtime::runtime().spawn(async move {
             let mut closed = false;
-            let mut buffer = [0u8; 8192];
+            let mut exit_code: Option<u32> = None;
             loop {
-                while let Ok(input) = receiver.try_recv() {
-                    match input {
-                        Input::Write(data, response) => {
-                            connection.session.set_blocking(true);
-                            let result = channel
-                                .write_all(data.as_bytes())
-                                .and_then(|_| channel.flush())
-                                .map_err(HostError::from);
-                            connection.session.set_blocking(false);
-                            let _ = response.send(result);
+                tokio::select! {
+                    input = receiver.recv() => {
+                        match input {
+                            Some(Input::Write(data, response)) => {
+                                let result = writer
+                                    .data_bytes(data.into_bytes())
+                                    .await
+                                    .map_err(ssh_error);
+                                let _ = response.send(result);
+                            }
+                            Some(Input::Resize(cols, rows, response)) => {
+                                let result = writer
+                                    .window_change(cols, rows, 0, 0)
+                                    .await
+                                    .map_err(ssh_error);
+                                let _ = response.send(result);
+                            }
+                            Some(Input::Close(response)) => {
+                                let _ = writer.eof().await;
+                                let _ = writer.close().await;
+                                connection.close_async().await;
+                                closed = true;
+                                let _ = response.send(Ok(()));
+                                break;
+                            }
+                            None => break,
                         }
-                        Input::Resize(cols, rows, response) => {
-                            connection.session.set_blocking(true);
-                            let result = channel
-                                .request_pty_size(cols, rows, None, None)
-                                .map_err(ssh_error);
-                            connection.session.set_blocking(false);
-                            let _ = response.send(result);
-                        }
-                        Input::Close(response) => {
-                            connection.session.set_blocking(true);
-                            let _ = channel.close();
-                            connection.close();
-                            closed = true;
-                            let _ = response.send(Ok(()));
-                            break;
+                    }
+                    message = reader.wait() => {
+                        match message {
+                            Some(ChannelMsg::Data { data }) => {
+                                worker.append(&data, false);
+                            }
+                            Some(ChannelMsg::ExtendedData { data, .. }) => {
+                                worker.append(&data, false);
+                            }
+                            Some(ChannelMsg::ExitStatus { exit_status }) => {
+                                exit_code = Some(exit_status);
+                            }
+                            Some(ChannelMsg::ExitSignal { .. }) => {
+                                if exit_code.is_none() {
+                                    exit_code = Some(255);
+                                }
+                            }
+                            None => break,
+                            Some(_) => {}
                         }
                     }
                 }
-                if closed {
-                    break;
-                }
-                match channel.read(&mut buffer) {
-                    Ok(count) if count > 0 => worker.append(&buffer[..count], false),
-                    Ok(_) => {}
-                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
-                    Err(error) => {
-                        worker.append(
-                            format!("\r\nSSH terminal error: {error}\r\n").as_bytes(),
-                            false,
-                        );
-                        break;
-                    }
-                }
-                if channel.eof() {
-                    break;
-                }
-                std::thread::sleep(Duration::from_millis(5));
             }
             worker.append(&[], true);
-            let mut journal = worker.journal.lock().unwrap();
-            journal.snapshot["sequence"] =
-                json!(journal.snapshot["sequence"].as_u64().unwrap() + 1);
-            journal.snapshot["status"] = json!(if closed { "closed" } else { "exited" });
-            let exit = channel.exit_status().unwrap_or(255);
-            journal.snapshot["exitCode"] = json!(exit);
-            let snapshot = journal.snapshot.clone();
-            drop(journal);
+            let exit = exit_code.unwrap_or(255);
+            let snapshot = {
+                let mut journal = worker.journal.lock().unwrap();
+                journal.snapshot["sequence"] =
+                    json!(journal.snapshot["sequence"].as_u64().unwrap() + 1);
+                journal.snapshot["status"] = json!(if closed { "closed" } else { "exited" });
+                journal.snapshot["exitCode"] = json!(exit);
+                journal.snapshot.clone()
+            };
             (worker.emit)(
                 workspace_id(&snapshot),
                 json!({"action":"exit","id":snapshot["id"],"exitCode":exit,"sequence":snapshot["sequence"]}),
@@ -178,7 +178,7 @@ impl Terminal {
                 workspace_id(&snapshot),
                 json!({"action":"state","terminal":snapshot}),
             );
-            connection.close();
+            connection.close_async().await;
         });
         terminal.emit_state();
         Ok(terminal)
@@ -212,6 +212,7 @@ impl Terminal {
     pub fn snapshot(&self) -> Value {
         self.journal.lock().unwrap().snapshot.clone()
     }
+
     fn emit_state(&self) {
         let snapshot = self.snapshot();
         (self.emit)(
@@ -219,19 +220,24 @@ impl Terminal {
             json!({"action":"state","terminal":snapshot}),
         );
     }
+
     pub fn read(&self) -> Value {
         let journal = self.journal.lock().unwrap();
         json!({"terminal":journal.snapshot,"output":journal.output,"sequence":journal.snapshot["sequence"],"truncated":journal.truncated})
     }
 
-    fn send(&self, build: impl FnOnce(mpsc::Sender<HostResult<()>>) -> Input) -> HostResult<()> {
-        let (response, receiver) = mpsc::channel();
+    fn send(&self, build: impl FnOnce(oneshot::Sender<HostResult<()>>) -> Input) -> HostResult<()> {
+        let (response, receiver) = oneshot::channel();
         self.input
             .send(build(response))
             .map_err(|_| HostError::new("TERMINAL_EXITED", "SSH terminal has exited"))?;
-        receiver
-            .recv_timeout(Duration::from_secs(20))
-            .map_err(|_| HostError::new("TERMINAL_TIMEOUT", "SSH terminal did not respond"))?
+        runtime::block_on(async move {
+            match tokio::time::timeout(Duration::from_secs(20), receiver).await {
+                Ok(Ok(result)) => result,
+                Ok(Err(_)) => Err(HostError::new("TERMINAL_EXITED", "SSH terminal has exited")),
+                Err(_) => Err(HostError::new("TERMINAL_TIMEOUT", "SSH terminal did not respond")),
+            }
+        })
     }
 
     fn write(&self, data: &str, source: &str, report: bool) -> HostResult<()> {
@@ -282,7 +288,8 @@ impl Terminal {
 fn workspace_id(snapshot: &Value) -> &str {
     snapshot["workspaceId"].as_str().unwrap()
 }
-fn ssh_error(error: ssh2::Error) -> HostError {
+
+fn ssh_error(error: russh::Error) -> HostError {
     HostError::new("SSH_TERMINAL", error.to_string())
 }
 
@@ -473,6 +480,7 @@ impl Terminals {
                 .remove(terminal.snapshot()["id"].as_str().unwrap());
         }
     }
+
     pub fn close_profile(&self, profile: &str) {
         let workspaces = self
             .items
