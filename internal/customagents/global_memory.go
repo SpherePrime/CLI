@@ -363,7 +363,7 @@ func (g *GlobalMemoryStore) FormatFrozenSnapshot(ctx context.Context) (string, s
 	userChars := utf8.RuneCountInString(user)
 
 	var b strings.Builder
-	b.WriteString("<hermes_memory>\n")
+	b.WriteString("<prime_memory>\n")
 	fmt.Fprintf(&b, "<memory chars=\"%d/%d\">\n", memChars, g.memoryLimit)
 	if strings.TrimSpace(mem) != "" {
 		b.WriteString(strings.TrimSpace(mem))
@@ -376,7 +376,7 @@ func (g *GlobalMemoryStore) FormatFrozenSnapshot(ctx context.Context) (string, s
 		b.WriteByte('\n')
 	}
 	b.WriteString("</user_profile>\n")
-	b.WriteString("</hermes_memory>")
+	b.WriteString("</prime_memory>")
 
 	return b.String(), strings.TrimSpace(soul)
 }

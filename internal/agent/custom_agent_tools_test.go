@@ -267,8 +267,8 @@ func TestCustomAgentsIndexNoteAndRoleGating(t *testing.T) {
 	coord := &coordinator{customAgents: svc}
 
 	emptyNote := coord.customAgentsIndexNote(t.Context())
-	require.Contains(t, emptyNote, "<hermes_identity>")
-	require.Contains(t, emptyNote, "<hermes_memory>")
+	require.Contains(t, emptyNote, "<prime_identity>")
+	require.Contains(t, emptyNote, "<prime_memory>")
 	require.Contains(t, emptyNote, customAgentsIndexHeader)
 	require.Contains(t, emptyNote, "(no active custom agents yet)")
 	require.Contains(t, emptyNote, CustomAgentSwarmToolName)
@@ -635,8 +635,8 @@ func TestCoordinatorCustomAgentsGating(t *testing.T) {
 	_, err = coord.Run(t.Context(), sess.ID, "hello")
 	require.NoError(t, err)
 	require.Len(t, recordedCalls, 1)
-	require.Contains(t, recordedCalls[0].CustomAgentsNote, "<hermes_identity>")
-	require.Contains(t, recordedCalls[0].CustomAgentsNote, "<hermes_memory>")
+	require.Contains(t, recordedCalls[0].CustomAgentsNote, "<prime_identity>")
+	require.Contains(t, recordedCalls[0].CustomAgentsNote, "<prime_memory>")
 	require.Contains(t, recordedCalls[0].CustomAgentsNote, "<custom_agents_index>")
 	require.Contains(t, recordedCalls[0].CustomAgentsNote, "active-worker")
 
@@ -819,7 +819,7 @@ func TestSessionAgentCustomAgentsNoteInjectionGate(t *testing.T) {
 		_, runErr := sa.Run(t.Context(), SessionAgentCall{
 			SessionID:        sess.ID,
 			Prompt:           "hi",
-			CustomAgentsNote: "<hermes_identity>\nbase\n</hermes_identity>",
+			CustomAgentsNote: "<prime_identity>\nbase\n</prime_identity>",
 		})
 		require.NoError(t, runErr)
 		mdl.mu.Lock()
@@ -834,7 +834,7 @@ func TestSessionAgentCustomAgentsNoteInjectionGate(t *testing.T) {
 				continue
 			}
 			for _, p := range m.Content {
-				if tp, ok := fantasy.AsMessagePart[fantasy.TextPart](p); ok && strings.Contains(tp.Text, "<hermes_identity>") {
+				if tp, ok := fantasy.AsMessagePart[fantasy.TextPart](p); ok && strings.Contains(tp.Text, "<prime_identity>") {
 					return true
 				}
 			}

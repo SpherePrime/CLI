@@ -776,15 +776,15 @@ func jsonToolResponse(v any) (fantasy.ToolResponse, error) {
 }
 
 const (
-	hermesIdentityHeader    = "<hermes_identity>"
-	hermesMemoryHeader      = "<hermes_memory>"
+	hermesIdentityHeader    = "<prime_identity>"
+	hermesMemoryHeader      = "<prime_memory>"
 	customAgentsIndexHeader = "<custom_agents_index>"
 )
 
 func formatHermesRuntimeNote(soulSnapshot, memSnapshot string, agents []customagents.CustomAgent) string {
 	var sections []string
 	if trimmedSoul := strings.TrimSpace(soulSnapshot); trimmedSoul != "" {
-		sections = append(sections, hermesIdentityHeader+"\n"+trimmedSoul+"\n</hermes_identity>")
+		sections = append(sections, hermesIdentityHeader+"\n"+trimmedSoul+"\n</prime_identity>")
 	}
 	if trimmedMem := strings.TrimSpace(memSnapshot); trimmedMem != "" {
 		sections = append(sections, trimmedMem)

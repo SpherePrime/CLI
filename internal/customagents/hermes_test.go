@@ -126,7 +126,7 @@ func TestGlobalMemorySecurityAndSoulIsolation(t *testing.T) {
 	require.Equal(t, utf8.RuneCountInString("Direct style"), saved.UserChars)
 
 	memBlock, soulBlock := gm.FormatFrozenSnapshot(ctx)
-	require.Contains(t, memBlock, "<hermes_memory>")
+	require.Contains(t, memBlock, "<prime_memory>")
 	require.Contains(t, memBlock, `<memory chars="17/2200">`)
 	require.Contains(t, memBlock, "Repo uses Go 1.24")
 	require.Contains(t, memBlock, `<user_profile chars="12/1375">`)
@@ -304,7 +304,7 @@ func TestStrictVerifyGateAndMigration(t *testing.T) {
 	require.Equal(t, RunPassed, run.Status)
 	require.Equal(t, 2, run.Attempt)
 	require.Equal(t, "PASS", run.VerifierVerdict)
-	require.Contains(t, capturedMemorySnapshot, "<hermes_memory>")
+	require.Contains(t, capturedMemorySnapshot, "<prime_memory>")
 	require.Contains(t, capturedMemorySnapshot, "Always include file paths")
 	require.Contains(t, capturedMemorySnapshot, "<soul>")
 	require.Contains(t, capturedVerifierPrompt, "Критерии приёмки (строгий режим)")

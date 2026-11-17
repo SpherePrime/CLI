@@ -462,7 +462,7 @@ func buildCustomAgentSystemPrompt(req customagents.ExecuteRequest, workDir strin
 		if b.Len() > 0 {
 			b.WriteString("\n\n")
 		}
-		if strings.Contains(trimmedMem, "<agent_memory>") || strings.Contains(trimmedMem, "<hermes_memory>") || strings.Contains(trimmedMem, "<soul>") {
+		if strings.Contains(trimmedMem, "<agent_memory>") || strings.Contains(trimmedMem, "<prime_memory>") || strings.Contains(trimmedMem, "<soul>") {
 			b.WriteString(trimmedMem)
 		} else {
 			b.WriteString("<agent_memory>\n")
