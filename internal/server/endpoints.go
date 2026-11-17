@@ -740,5 +740,5 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			PathParam("id", "Workspace ID").
 			Fails(404, 500).
 			Handle(c.handlePostWorkspaceMCPDisableDocker),
-	}, c.agentWorkerEndpoints()...)
+	}, append(c.agentWorkerEndpoints(), c.customAgentEndpoints()...)...)
 }

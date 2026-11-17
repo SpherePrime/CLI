@@ -63,8 +63,9 @@ function LaunchWorkspace({ root, api, terminal, subscribe, theme, onError, onDia
     void refresh()
     return subscribe((event) => {
       if (
-        (event.type === 'launch' && event.payload?.root === root) ||
-        (event.type === 'browser' && event.payload?.action === 'log')
+        'type' in event &&
+        ((event.type === 'launch' && event.payload?.root === root) ||
+          (event.type === 'browser' && event.payload?.action === 'log'))
       )
         void refresh()
     })

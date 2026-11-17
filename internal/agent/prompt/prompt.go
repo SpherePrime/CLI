@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"text/template"
 	"time"
@@ -45,6 +46,7 @@ type PromptDat struct {
 	Desktop            bool
 	DesignSkill        string
 	ImageGeneration    bool
+	WebSearch          bool
 }
 
 type ContextFile struct {
@@ -189,6 +191,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 			Platform:   "linux",
 			Date:       p.now().Format("1/2/2006"),
 			Desktop:    os.Getenv("PRIME_DESKTOP") == "1",
+			WebSearch:  webSearchAvailable(cfg),
 		}
 		for _, files := range loadContextFiles(cfg.Options.GlobalContextPaths, store) {
 			data.GlobalContextFiles = append(data.GlobalContextFiles, files...)
@@ -247,6 +250,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, store *
 		Desktop:          os.Getenv("PRIME_DESKTOP") == "1",
 		DesignSkill:      designSkillLocation(allSkills),
 		ImageGeneration:  imageGenerationAvailable(cfg),
+		WebSearch:        webSearchAvailable(cfg),
 	}
 	if isGit {
 		var err error
@@ -328,5 +332,16 @@ func (p *Prompt) Name() string {
 
 func imageGenerationAvailable(cfg *config.Config) bool {
 	_, ok := cfg.ProviderImageModel()
+	return ok
+}
+
+func webSearchAvailable(cfg *config.Config) bool {
+	if cfg == nil {
+		return false
+	}
+	if cfg.Options != nil && slices.Contains(cfg.Options.DisabledTools, "web_search") {
+		return false
+	}
+	_, ok := cfg.ProviderWebSearchModel()
 	return ok
 }

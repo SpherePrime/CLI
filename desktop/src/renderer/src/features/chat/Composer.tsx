@@ -83,6 +83,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     () =>
       window.prime.onEvent((event) => {
         if (
+          'type' in event &&
           event.workspaceId === w.project?.id &&
           event.type === 'windows' &&
           event.payload?.request

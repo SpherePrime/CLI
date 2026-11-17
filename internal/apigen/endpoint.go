@@ -108,6 +108,10 @@ func Put(path string) endpointBuilder {
 	return endpointBuilder{Endpoint{method: http.MethodPut, path: path}}
 }
 
+func Patch(path string) endpointBuilder {
+	return endpointBuilder{Endpoint{method: http.MethodPatch, path: path}}
+}
+
 // Delete begins a DELETE endpoint for path.
 func Delete(path string) endpointBuilder {
 	return endpointBuilder{Endpoint{method: http.MethodDelete, path: path}}

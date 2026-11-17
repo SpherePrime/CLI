@@ -13,6 +13,12 @@ import type { LaunchResponse } from '../../../shared/launch'
 import type { RemoteSnapshot } from '../../../shared/remote'
 import type { TeamResponse } from '../../../shared/teams'
 import type { TerminalSnapshot } from '../../../shared/terminal'
+import type {
+  BlackboardEntry,
+  CustomAgent,
+  CustomAgentRun,
+  ModelOption
+} from '../../../shared/customAgents'
 
 export type PreviewFileEntry = {
   path: string
@@ -973,4 +979,344 @@ export function createPreviewBrowserState(): BrowserState {
 
 export function createPreviewBrowserLogs(): BrowserLog[] {
   return []
+}
+
+export function createPreviewCustomAgents(): CustomAgent[] {
+  const now = Math.floor(Date.now() / 1000)
+  return [
+    {
+      id: 'agent-orchestrator',
+      slug: 'main-orchestrator',
+      name: 'Главный координатор',
+      description: 'Декомпозирует сложные задачи, создаёт специализированных агентов и ведёт общую доску.',
+      role: 'orchestrator',
+      system_prompt:
+        'Ты главный координатор агентной студии. Разбивай задачи на шаги, назначай исполнителей и контролируй приёмку.',
+      memory: '# Память координатора\n\n- Все релизные проверки проходят через Строгого верификатора.\n- Для мониторинга используется интервал 15 минут.',
+      model_mode: 'auto',
+      provider_id: '',
+      model_id: '',
+      reasoning_mode: '',
+      auto_model_hint: 'flagship',
+      allowed_tools: ['custom_agents', 'blackboard', 'bash', 'read'],
+      workspace_path: '',
+      enabled: true,
+      created_by: 'system',
+      trigger_type: 'manual',
+      interval_minutes: 0,
+      cron_expr: '',
+      monitor_kind: '',
+      monitor_target: '',
+      monitor_last_hash: '',
+      monitor_last_snapshot: '',
+      acceptance_criteria: 'Чёткий план, зафиксированные решения на доске и подтверждённая готовность цепочки.',
+      deterministic_checks: [],
+      verifier_agent_id: 'agent-strict-verifier',
+      next_agent_id: '',
+      max_rework_attempts: 3,
+      status: 'idle',
+      last_error: '',
+      last_run_at: now - 1800,
+      next_run_at: 0,
+      created_at: now - 86400,
+      updated_at: now - 1800
+    },
+    {
+      id: 'agent-release-monitor',
+      slug: 'release-monitor',
+      name: 'Монитор релизов',
+      description: 'Отслеживает новые теги и публикации релизов, фиксирует изменения и передаёт сводку на проверку.',
+      role: 'worker',
+      system_prompt:
+        'Сравни изменения с предыдущим снимком, выдели версию, ключевые правки и риск регрессий в JSON.',
+      memory: '# Память монитора\n\n- Последний подтверждённый тег: v0.4.118.',
+      model_mode: 'auto',
+      provider_id: '',
+      model_id: '',
+      reasoning_mode: '',
+      auto_model_hint: '',
+      allowed_tools: ['fetch', 'read'],
+      workspace_path: 'C:\\Users\\demo\\Projects\\prime-desktop',
+      enabled: true,
+      created_by: 'user',
+      trigger_type: 'monitor',
+      interval_minutes: 15,
+      cron_expr: '',
+      monitor_kind: 'http',
+      monitor_target: 'https://api.github.com/repos/SpherePrime/CLI/releases/latest',
+      monitor_last_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      monitor_last_snapshot: '{"tag_name":"v0.4.118","draft":false,"prerelease":false}',
+      acceptance_criteria: 'Сводка должна содержать номер версии, список изменений и оценку рисков в формате JSON.',
+      deterministic_checks: [
+        {
+          id: 'chk-json',
+          kind: 'json_fields',
+          target: 'output',
+          pattern: 'version,summary,risk_level',
+          expected: '',
+          required: true
+        }
+      ],
+      verifier_agent_id: 'agent-strict-verifier',
+      next_agent_id: 'agent-orchestrator',
+      max_rework_attempts: 3,
+      status: 'monitoring',
+      last_error: '',
+      last_run_at: now - 420,
+      next_run_at: now + 480,
+      created_at: now - 43200,
+      updated_at: now - 420
+    },
+    {
+      id: 'agent-strict-verifier',
+      slug: 'strict-verifier',
+      name: 'Строгий верификатор',
+      description: 'Независимо проверяет результаты исполнителей по критериям приёмки и детерминированным правилам.',
+      role: 'verifier',
+      system_prompt:
+        'Проверяй каждый критерий приёмки без допущений. Начинай ответ с VERDICT: PASS или VERDICT: FAIL.',
+      memory: '# Память верификатора\n\n- Отклонять неполные JSON-отчёты и неподтверждённые факты.',
+      model_mode: 'auto',
+      provider_id: '',
+      model_id: '',
+      reasoning_mode: '',
+      auto_model_hint: 'reasoning',
+      allowed_tools: ['read'],
+      workspace_path: '',
+      enabled: true,
+      created_by: 'system',
+      trigger_type: 'manual',
+      interval_minutes: 0,
+      cron_expr: '',
+      monitor_kind: '',
+      monitor_target: '',
+      monitor_last_hash: '',
+      monitor_last_snapshot: '',
+      acceptance_criteria: '',
+      deterministic_checks: [],
+      verifier_agent_id: '',
+      next_agent_id: '',
+      max_rework_attempts: 1,
+      status: 'idle',
+      last_error: '',
+      last_run_at: now - 410,
+      next_run_at: 0,
+      created_at: now - 86400,
+      updated_at: now - 410
+    }
+  ]
+}
+
+export function createPreviewCustomAgentRuns(): CustomAgentRun[] {
+  const now = Math.floor(Date.now() / 1000)
+  return [
+    {
+      id: 'crun-101',
+      agent_id: 'agent-release-monitor',
+      agent_name: 'Монитор релизов',
+      agent_role: 'worker',
+      chain_id: 'chain-release-101',
+      parent_run_id: '',
+      trigger_reason: 'schedule:monitor',
+      input_prompt: 'Проанализируй обновление тега v0.4.118 и подготовь отчёт.',
+      status: 'passed',
+      attempt: 1,
+      resolved_provider: 'openai',
+      resolved_model: 'gpt-5.4',
+      resolved_reasoning: 'high',
+      auto_model_reason: 'Автовыбор (reasoning): заданы критерии приёмки и детерминированная проверка JSON.',
+      output_text: JSON.stringify(
+        {
+          version: 'v0.4.118',
+          summary: 'Обновлена панель инструментов, исправлен отклик инспектора и стабильность терминала.',
+          risk_level: 'low'
+        },
+        null,
+        2
+      ),
+      verifier_verdict: 'PASS',
+      verifier_feedback: 'VERDICT: PASS\nВсе обязательные поля присутствуют, оценка риска обоснована диффом.',
+      deterministic_report: '[PASS] chk-json (json_fields): валидный JSON, поля version, summary, risk_level найдены',
+      monitor_diff: '--- previous\n+++ current\n- "tag_name": "v0.4.117"\n+ "tag_name": "v0.4.118"',
+      steps: [
+        {
+          kind: 'monitor',
+          title: 'Обнаружены изменения',
+          detail: 'Обновлён тег v0.4.117 -> v0.4.118',
+          status: 'ok',
+          timestamp: now - 425
+        },
+        {
+          kind: 'execute',
+          title: 'Формирование отчёта',
+          detail: 'Подготовлена структурированная сводка изменений',
+          status: 'ok',
+          timestamp: now - 420
+        },
+        {
+          kind: 'deterministic_check',
+          title: 'Детерминированные проверки пройдены',
+          detail: '[PASS] chk-json (json_fields)',
+          status: 'ok',
+          timestamp: now - 418
+        },
+        {
+          kind: 'verifier',
+          title: 'Верификация пройдена',
+          detail: 'VERDICT: PASS',
+          status: 'ok',
+          timestamp: now - 415
+        }
+      ],
+      error: '',
+      started_at: now - 430,
+      finished_at: now - 415
+    },
+    {
+      id: 'crun-100',
+      agent_id: 'agent-release-monitor',
+      agent_name: 'Монитор релизов',
+      agent_role: 'worker',
+      chain_id: 'chain-release-100',
+      parent_run_id: '',
+      trigger_reason: 'manual',
+      input_prompt: 'Проверь состояние сборки и составь отчёт готовности.',
+      status: 'failed',
+      attempt: 2,
+      resolved_provider: 'openai',
+      resolved_model: 'gpt-5.4',
+      resolved_reasoning: 'high',
+      auto_model_reason: 'Автовыбор (reasoning): проверка с критериями приёмки.',
+      output_text: '{"version":"v0.4.117","summary":"Черновая сборка без проверки рисков"}',
+      verifier_verdict: 'FAIL',
+      verifier_feedback: 'VERDICT: FAIL\n1. Отсутствует обязательное поле risk_level.\n2. Не приведён перечень изменённых модулей.',
+      deterministic_report: '[FAIL] chk-json (json_fields): отсутствуют поля: risk_level',
+      monitor_diff: '--- previous\n+++ current\n- "draft": true\n+ "draft": false',
+      steps: [
+        {
+          kind: 'execute',
+          title: 'Попытка #1',
+          detail: 'Сформирован черновик отчёта',
+          status: 'ok',
+          timestamp: now - 3600
+        },
+        {
+          kind: 'deterministic_check',
+          title: 'Детерминированные проверки не пройдены',
+          detail: '[FAIL] chk-json (json_fields): отсутствуют поля: risk_level',
+          status: 'failed',
+          timestamp: now - 3590
+        },
+        {
+          kind: 'verifier',
+          title: 'Верификатор отклонил попытку #2',
+          detail: 'VERDICT: FAIL — отсутствуют обязательные поля',
+          status: 'failed',
+          timestamp: now - 3580
+        }
+      ],
+      error: 'отклонено верификатором: отсутствуют поля risk_level',
+      started_at: now - 3620,
+      finished_at: now - 3580
+    }
+  ]
+}
+
+export function createPreviewBlackboard(): BlackboardEntry[] {
+  const now = Math.floor(Date.now() / 1000)
+  return [
+    {
+      id: 'bb-101',
+      chain_id: 'chain-release-101',
+      run_id: 'crun-101',
+      from_agent_id: 'agent-release-monitor',
+      from_agent_name: 'Монитор релизов',
+      to_agent_id: 'agent-orchestrator',
+      topic: 'handoff',
+      payload: 'Обнаружен релиз v0.4.118, JSON-отчёт прошёл строгую верификацию (PASS).',
+      status: 'open',
+      created_at: now - 414
+    },
+    {
+      id: 'bb-102',
+      chain_id: 'chain-release-101',
+      run_id: 'crun-101',
+      from_agent_id: 'agent-orchestrator',
+      from_agent_name: 'Главный координатор',
+      to_agent_id: 'agent-release-monitor',
+      topic: 'directive',
+      payload: 'Сохраняй историю тегов в MEMORY.md для сравнения следующих публикаций.',
+      status: 'consumed',
+      created_at: now - 1700
+    }
+  ]
+}
+
+export function createPreviewCustomAgentModels(): ModelOption[] {
+  return [
+    {
+      provider_id: 'openai',
+      provider_name: 'OpenAI',
+      model_id: 'gpt-5.4-mini',
+      name: 'GPT-5.4 Mini',
+      tier: 'fast',
+      can_reason: true,
+      reasoning_modes: ['off', 'low', 'medium'],
+      reasoning_levels: ['low', 'medium'],
+      default_reasoning_mode: 'low',
+      context_window: 128000,
+      cost_per_1m_in: 0.4,
+      cost_per_1m_out: 1.6,
+      locked: false,
+      plan_label: 'Standard'
+    },
+    {
+      provider_id: 'openai',
+      provider_name: 'OpenAI',
+      model_id: 'gpt-5.4',
+      name: 'GPT-5.4',
+      tier: 'reasoning',
+      can_reason: true,
+      reasoning_modes: ['off', 'low', 'medium', 'high', 'max'],
+      reasoning_levels: ['low', 'medium', 'high', 'max'],
+      default_reasoning_mode: 'high',
+      context_window: 200000,
+      cost_per_1m_in: 3.0,
+      cost_per_1m_out: 12.0,
+      locked: false,
+      plan_label: 'Pro'
+    },
+    {
+      provider_id: 'anthropic',
+      provider_name: 'Anthropic',
+      model_id: 'claude-sonnet-4',
+      name: 'Claude Sonnet 4',
+      tier: 'balanced',
+      can_reason: true,
+      reasoning_modes: ['off', 'low', 'medium', 'high'],
+      reasoning_levels: ['low', 'medium', 'high'],
+      default_reasoning_mode: 'medium',
+      context_window: 200000,
+      cost_per_1m_in: 3.0,
+      cost_per_1m_out: 15.0,
+      locked: false,
+      plan_label: 'Pro'
+    },
+    {
+      provider_id: 'anthropic',
+      provider_name: 'Anthropic',
+      model_id: 'claude-opus-4.5',
+      name: 'Claude Opus 4.5',
+      tier: 'flagship',
+      can_reason: true,
+      reasoning_modes: ['off', 'low', 'medium', 'high', 'max'],
+      reasoning_levels: ['low', 'medium', 'high', 'max'],
+      default_reasoning_mode: 'high',
+      context_window: 200000,
+      cost_per_1m_in: 15.0,
+      cost_per_1m_out: 75.0,
+      locked: false,
+      plan_label: 'Ultra'
+    }
+  ]
 }

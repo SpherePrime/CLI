@@ -55,5 +55,6 @@
   "browserView": true,
   "browserPreview": true,
   "update": true,
-  "account": true
+  "account": true,
+  "customAgents": true
 }

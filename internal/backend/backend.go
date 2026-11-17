@@ -18,6 +18,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/app"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/internal/customagents"
 	"github.com/SpherePrime/CLI/internal/db"
 	"github.com/SpherePrime/CLI/internal/plugins"
 	"github.com/SpherePrime/CLI/internal/proto"
@@ -134,12 +135,13 @@ type Backend struct {
 	retired map[string]struct{}
 	mu      sync.Mutex
 
-	cfg         *config.ConfigStore
-	ctx         context.Context
-	shutdownFn  ShutdownFunc
-	createGrace time.Duration
-	lingerDelay time.Duration
-	detachGrace time.Duration
+	cfg          *config.ConfigStore
+	ctx          context.Context
+	shutdownFn   ShutdownFunc
+	createGrace  time.Duration
+	lingerDelay  time.Duration
+	detachGrace  time.Duration
+	customAgents *customagents.Service
 
 	// AttachmentRoot is the trusted directory disk-backed attachments
 	// resolve from. Empty disables attachment file references entirely.
@@ -347,6 +349,24 @@ func (b *Backend) SetDetachGrace(d time.Duration) {
 // SetIdleShutdownDelay overrides how long the server lingers after its
 // last workspace is released before shutting down. A value <= 0 restores
 // the shut-down-immediately behavior. Intended for tests.
+func (b *Backend) SetCustomAgents(svc *customagents.Service) {
+	b.mu.Lock()
+	b.customAgents = svc
+	b.mu.Unlock()
+	for _, ws := range b.workspaces.Seq2() {
+		if ws.App != nil {
+			ws.App.SetCustomAgents(svc)
+		}
+	}
+}
+
+func (b *Backend) CustomAgents() *customagents.Service {
+	b.mu.Lock()
+	svc := b.customAgents
+	b.mu.Unlock()
+	return svc
+}
+
 func (b *Backend) SetIdleShutdownDelay(d time.Duration) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -497,6 +517,7 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 		}
 		return nil, proto.Workspace{}, fmt.Errorf("failed to create app workspace: %w", err)
 	}
+	appWorkspace.SetCustomAgents(b.CustomAgents())
 
 	mainAgent := ""
 	if args.Kind == "designer" {

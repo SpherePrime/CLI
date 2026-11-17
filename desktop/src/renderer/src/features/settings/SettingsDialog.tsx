@@ -67,7 +67,7 @@ export function SettingsDialog({
       }
     }
     const unsubscribe = window.prime.onEvent((event) => {
-      if (event.type === 'update') apply(event.payload as UpdateStatus)
+      if ('type' in event && event.type === 'update') apply(event.payload as UpdateStatus)
     })
     void window.prime
       .info()

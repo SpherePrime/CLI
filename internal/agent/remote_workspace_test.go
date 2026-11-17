@@ -8,6 +8,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/agent/prompt"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
@@ -73,4 +74,29 @@ func TestRemoteWorkspaceToolsGuardCopiedPlaceholders(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, response.IsError)
 	require.Contains(t, response.Content, "placeholder")
+}
+
+func TestRemoteWorkspaceIncludesWebSearchWhenProviderSupportsIt(t *testing.T) {
+	coord := newGateTestCoordinator(t, true)
+	require.NoError(t, coord.readyWg.Wait())
+	coord.cfg.Config().Options.RemoteWorkspace = &config.RemoteWorkspace{Host: "host", User: "dev", Root: "/srv/project"}
+
+	pCfg, ok := coord.cfg.Config().Providers.Get("mock")
+	require.True(t, ok)
+	pCfg.Models = append(pCfg.Models, catwalk.Model{
+		ID:      "mock-search",
+		Name:    "Mock Search",
+		Options: catwalk.ModelOptions{ProviderOptions: map[string]any{"web_search": true}},
+	})
+	coord.cfg.Config().Providers.Set("mock", pCfg)
+
+	built, err := coord.buildTools(context.Background(), coord.cfg.Config().Agents[config.AgentGeneral], false)
+	require.NoError(t, err)
+	require.Contains(t, toolNamesOf(built), "web_search")
+
+	p, err := coderPrompt(prompt.WithWorkingDir(coord.cfg.WorkingDir()))
+	require.NoError(t, err)
+	text, err := p.Build(context.Background(), "mock", "mock-model", coord.cfg)
+	require.NoError(t, err)
+	require.Contains(t, text, "web_search is available")
 }

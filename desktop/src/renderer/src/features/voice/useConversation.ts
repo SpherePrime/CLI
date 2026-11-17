@@ -248,7 +248,7 @@ export function useConversation(w: Workspace) {
 
   useEffect(() => {
     return window.prime.onEvent((event) => {
-      if (event.type === 'speech') setPreparing(event.payload as SpeechStatus)
+      if ('type' in event && event.type === 'speech') setPreparing(event.payload as SpeechStatus)
     })
   }, [])
 

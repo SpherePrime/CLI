@@ -53,7 +53,7 @@ function TeamWorkspace({ root, api, subscribe, onError, onOpenChat }: Props) {
     mounted.current = true
     void refresh()
     const unsubscribe = subscribe((event) => {
-      if (event.type === 'team' && event.payload?.root === root) void refresh()
+      if ('type' in event && event.type === 'team' && event.payload?.root === root) void refresh()
     })
     const timer = setInterval(() => setNow(Date.now()), 1000)
     return () => {

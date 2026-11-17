@@ -9,7 +9,8 @@ export function ProjectLockBanner() {
   useEffect(
     () =>
       window.prime.onEvent((event) => {
-        if (event.type === 'projectLock') setPath(event.payload?.waiting ? String(event.payload.path) : '')
+        if ('type' in event && event.type === 'projectLock')
+          setPath(event.payload?.waiting ? String(event.payload.path) : '')
       }),
     []
   )

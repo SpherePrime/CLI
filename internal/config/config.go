@@ -1319,6 +1319,7 @@ func allToolNames() []string {
 		"lsp_replace_symbol",
 		"fetch",
 		"agentic_fetch",
+		"web_search",
 		"generate_image",
 		"glob",
 		"grep",

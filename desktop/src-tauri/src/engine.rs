@@ -328,6 +328,96 @@ impl Engine {
         Ok(())
     }
 
+    pub fn subscribe_custom_agents(self: &Arc<Self>, app: tauri::AppHandle) -> HostResult<()> {
+        let key = "__custom_agents__".to_string();
+        let id = self.start("GET", "/v1/custom-agents/events", None)?;
+        let ready = (|| {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+            loop {
+                if self.closed.load(Ordering::Acquire) || std::time::Instant::now() >= deadline {
+                    return Err(HostError::new(
+                        "ENGINE_EVENTS",
+                        "Custom agents event subscription did not become ready",
+                    ));
+                }
+                let Some(event) = self.next(id, 100)? else {
+                    continue;
+                };
+                match event["type"].as_str().unwrap_or("") {
+                    "headers" if event["status"].as_u64() == Some(200) => return Ok(()),
+                    "headers" | "error" | "complete" => {
+                        return Err(HostError::new(
+                            "ENGINE_EVENTS",
+                            format!("Custom agents event subscription failed: {event}"),
+                        ))
+                    }
+                    _ => {}
+                }
+            }
+        })();
+        if let Err(error) = ready {
+            unsafe {
+                (self.cancel)(self.handle, id);
+                (self.release)(self.handle, id);
+            }
+            return Err(error);
+        }
+        if let Some(previous) = self.subscriptions.lock().unwrap().insert(key.clone(), id) {
+            unsafe {
+                (self.cancel)(self.handle, previous);
+            }
+        }
+        let engine = self.clone();
+        std::thread::spawn(move || {
+            let mut pending = String::new();
+            loop {
+                if engine.subscriptions.lock().unwrap().get(&key) != Some(&id) {
+                    break;
+                }
+                let event = match engine.next(id, 25) {
+                    Ok(Some(value)) => value,
+                    Ok(None) => continue,
+                    Err(_) => break,
+                };
+                match event["type"].as_str().unwrap_or("") {
+                    "data" => {
+                        pending.push_str(event["data"].as_str().unwrap_or(""));
+                        while let Some(boundary) = pending.find("\n\n") {
+                            let frame = pending[..boundary].to_string();
+                            pending.drain(..boundary + 2);
+                            let mut data = Vec::new();
+                            for line in frame.lines() {
+                                if let Some(value) = line.strip_prefix("data:") {
+                                    data.push(value.trim_start());
+                                }
+                            }
+                            if !data.is_empty() {
+                                if let Ok(value) = serde_json::from_str::<Value>(&data.join("\n")) {
+                                    events::emit(&app, "", "customAgents", crate::redact::value(value));
+                                }
+                            }
+                        }
+                        if pending.len() > 8 * 1024 * 1024 {
+                            break;
+                        }
+                    }
+                    "error" | "complete" => break,
+                    "headers" if event["status"].as_u64().unwrap_or(200) >= 400 => break,
+                    _ => {}
+                }
+            }
+            unsafe {
+                (engine.cancel)(engine.handle, id);
+                (engine.release)(engine.handle, id);
+            }
+            let mut subscriptions = engine.subscriptions.lock().unwrap();
+            if subscriptions.get(&key) == Some(&id) {
+                subscriptions.remove(&key);
+            }
+        });
+        Ok(())
+    }
+
     pub fn unsubscribe(&self, workspace: &str) {
         if let Some(id) = self.subscriptions.lock().unwrap().remove(workspace) {
             unsafe {

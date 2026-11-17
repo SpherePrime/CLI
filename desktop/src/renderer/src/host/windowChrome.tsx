@@ -33,7 +33,7 @@ export function NativeWindowControls() {
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('focus', handleFocus)
     const unsubscribe = window.prime.onEvent((event) => {
-      if (event.type === 'beforeClose') {
+      if ('type' in event && event.type === 'beforeClose') {
         closingRef.current = true
         void Promise.race([
           flushDrafts(),

@@ -75,7 +75,7 @@ export function RemotePanel({ api, subscribe, onError, onOpenProject, chooseKey 
         if (mounted.current) setError(remoteError(failure, t))
       })
     const unsubscribe = subscribe((event) => {
-      if (event.type === 'remote') {
+      if ('type' in event && event.type === 'remote') {
         version.current++
         setSnapshot(event.payload as RemoteSnapshot)
       }

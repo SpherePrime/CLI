@@ -30,7 +30,8 @@ export function WorkspaceTopbar({
   toggleSearch,
   toolsOpen,
   toggleTools,
-  openCommands
+  openCommands,
+  customAgentsOpen = false
 }: {
   workspace: Workspace
   projectName: string
@@ -45,6 +46,7 @@ export function WorkspaceTopbar({
   toolsOpen: boolean
   toggleTools: () => void
   openCommands: () => void
+  customAgentsOpen?: boolean
 }) {
   const { t } = useI18n()
   const shortcuts = useShortcuts()
@@ -58,20 +60,28 @@ export function WorkspaceTopbar({
       : t('Запускаем Prime')
   return (
     <header className="workspace-topbar">
-      <button
-        className="icon"
-        title={sidebarVisible ? t('Скрыть проекты') : t('Показать проекты')}
-        aria-label={t('Панель проектов')}
-        data-projects-toggle
-        onClick={toggleSidebar}
-      >
-        {sidebarVisible ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
-      </button>
+      {!customAgentsOpen && (
+        <button
+          className="icon"
+          title={sidebarVisible ? t('Скрыть проекты') : t('Показать проекты')}
+          aria-label={t('Панель проектов')}
+          data-projects-toggle
+          onClick={toggleSidebar}
+        >
+          {sidebarVisible ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+        </button>
+      )}
       <div className="breadcrumbs" title={status}>
         <span className={`dot ${ready ? 'green' : 'amber'}`} aria-hidden="true" />
-        <span className="breadcrumb-project">{projectName || t('Рабочее пространство')}</span>
-        <ChevronRight size={13} />
-        <strong>{sessionTitle(w.session?.title, t('Новый чат'))}</strong>
+        {customAgentsOpen ? (
+          <strong>{t('Свои агенты')}</strong>
+        ) : (
+          <>
+            <span className="breadcrumb-project">{projectName || t('Рабочее пространство')}</span>
+            <ChevronRight size={13} />
+            <strong>{sessionTitle(w.session?.title, t('Новый чат'))}</strong>
+          </>
+        )}
         {!ready && <span className="topbar-status amber-text">{status}</span>}
       </div>
       <button
@@ -85,7 +95,7 @@ export function WorkspaceTopbar({
         <kbd>{shortcutLabel(shortcuts.commands)}</kbd>
       </button>
       <div className="header-actions">
-        {w.messages.length > 0 && (
+        {!customAgentsOpen && w.messages.length > 0 && (
           <button
             className={`icon ${searchOpen ? 'active-control' : ''}`}
             title={`${t('Поиск в чате')} · ${shortcutLabel(shortcuts.chatSearch)}`}
@@ -96,8 +106,10 @@ export function WorkspaceTopbar({
             <TextSearch size={17} />
           </button>
         )}
-        <ChatActions workspace={w} focusMode={focusMode} toggleFocus={toggleFocus} />
-        {!isDesigner && (
+        {!customAgentsOpen && (
+          <ChatActions workspace={w} focusMode={focusMode} toggleFocus={toggleFocus} />
+        )}
+        {!customAgentsOpen && !isDesigner && (
           <>
             <span className="topbar-divider" />
             <button

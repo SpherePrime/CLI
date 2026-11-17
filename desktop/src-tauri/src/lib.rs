@@ -5,6 +5,7 @@ mod browser;
 mod commands;
 mod console;
 mod computer;
+mod custom_agents;
 mod discord;
 mod engine;
 mod engine_resource;

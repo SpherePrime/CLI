@@ -63,6 +63,7 @@ function AutomationWorkspace({ root, api, subscribe, onError, onOpenRun }: Props
     void refresh()
     const unsubscribe = subscribe((event) => {
       if (
+        'type' in event &&
         event.type === 'automation' &&
         (!event.payload?.root || rootKey(event.payload.root) === rootKey(canonicalRoot.current))
       )

@@ -16,6 +16,8 @@ import (
 	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/backend"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/customagents"
+	"github.com/SpherePrime/CLI/internal/pubsub"
 )
 
 // maxUnixSocketPathLen is the maximum length of a Unix domain socket
@@ -95,9 +97,12 @@ type Server struct {
 	h  *http.Server
 	ln net.Listener
 
-	backend *backend.Backend
-	account *account.Service
-	logger  *slog.Logger
+	backend           *backend.Backend
+	account           *account.Service
+	customAgents      *customagents.Service
+	customAgentEvents *pubsub.Broker[customagents.Event]
+	customAgentStore  *customagents.Store
+	logger            *slog.Logger
 }
 
 func (s *Server) Account() *account.Service {
@@ -143,6 +148,7 @@ func NewServer(cfg *config.ConfigStore, network, address string) *Server {
 			}
 		}()
 	})
+	s.initCustomAgents(context.Background(), cfg)
 	s.installHandler()
 	if network == "tcp" {
 		s.h.Addr = address
@@ -161,7 +167,13 @@ func (s *Server) installHandler() {
 	if s.account == nil {
 		s.account = account.NewService()
 	}
-	c := &controllerV1{backend: s.backend, server: s, account: s.account}
+	c := &controllerV1{
+		backend:           s.backend,
+		server:            s,
+		account:           s.account,
+		customAgents:      s.customAgents,
+		customAgentEvents: s.customAgentEvents,
+	}
 	mux := http.NewServeMux()
 	for _, e := range c.endpoints() {
 		mux.HandleFunc(e.Method()+" "+e.Path(), e.Handler())
@@ -211,6 +223,7 @@ func (s *Server) closeListener() {
 // Close force closes all listeners and connections.
 func (s *Server) Close() error {
 	defer func() { s.closeListener() }()
+	s.stopCustomAgents()
 	if s.account != nil {
 		s.account.Close()
 	}
@@ -221,6 +234,7 @@ func (s *Server) Close() error {
 // connections.
 func (s *Server) Shutdown(ctx context.Context) error {
 	defer func() { s.closeListener() }()
+	s.stopCustomAgents()
 	if s.account != nil {
 		s.account.Close()
 	}

@@ -9,9 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"maps"
 	"net/http"
-	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -26,18 +24,15 @@ import (
 	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/customagents"
 	"github.com/SpherePrime/CLI/internal/discover"
-	"github.com/SpherePrime/CLI/internal/event"
 	"github.com/SpherePrime/CLI/internal/filetracker"
 	"github.com/SpherePrime/CLI/internal/goal"
 	"github.com/SpherePrime/CLI/internal/history"
 	"github.com/SpherePrime/CLI/internal/hooks"
-	"github.com/SpherePrime/CLI/internal/log"
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/oauth"
-	"github.com/SpherePrime/CLI/internal/oauth/copilot"
-	openaioauth "github.com/SpherePrime/CLI/internal/oauth/openai"
 	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/internal/question"
@@ -55,7 +50,6 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openaicompat"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openrouter"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/vercel"
-	openaisdk "github.com/SpherePrime/CLI/vendordeps/openai/openai-go/v3/option"
 	"github.com/SpherePrime/CLI/vendordeps/qjebbs/go-jsons"
 )
 
@@ -157,6 +151,7 @@ type coordinator struct {
 	lspManager  *lsp.Manager
 	notify      pubsub.Publisher[notify.Notification]
 	runComplete pubsub.Publisher[notify.RunComplete]
+	customAgents *customagents.Service
 	interactive bool
 
 	// agentMu guards mainAgent and mainAgentName: SetMainAgent runs on
@@ -213,9 +208,10 @@ type CoordinatorOptions struct {
 	Goals       goal.Store
 	LSPManager  *lsp.Manager
 	Notify      pubsub.Publisher[notify.Notification]
-	RunComplete pubsub.Publisher[notify.RunComplete]
-	Skills      *skills.Manager
-	Interactive bool
+	RunComplete  pubsub.Publisher[notify.RunComplete]
+	Skills       *skills.Manager
+	CustomAgents *customagents.Service
+	Interactive  bool
 }
 
 func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, error) {
@@ -244,6 +240,7 @@ func NewCoordinator(ctx context.Context, opts CoordinatorOptions) (Coordinator, 
 		lspManager:      opts.LSPManager,
 		notify:          opts.Notify,
 		runComplete:     opts.RunComplete,
+		customAgents:    opts.CustomAgents,
 		agents:          make(map[string]SessionAgent),
 		subAgents:       make(map[string]SessionAgent),
 		agentJobs:       make(map[string]*agentJob),
@@ -448,8 +445,12 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	// same correlator.
 	runID := RunIDFromContext(ctx)
 	teamNote := ""
+	customAgentsNote := ""
 	if !message.HiddenUserMessage(ctx) {
 		teamNote = c.teamNote(ctx, sessionID)
+		if agentName != config.AgentDesigner {
+			customAgentsNote = c.customAgentsIndexNote(ctx)
+		}
 	}
 	goalNote, goalActive := c.goalNote(ctx, sessionID)
 	run := func() (*fantasy.AgentResult, error) {
@@ -460,6 +461,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			Prompt:            prompt,
 			TeamNote:          teamNote,
 			GoalNote:          goalNote,
+			CustomAgentsNote:  customAgentsNote,
 			KeepTodos:         goalActive,
 			HiddenUserMessage: message.HiddenUserMessage(ctx),
 			Attachments:       attachments,
@@ -1082,6 +1084,18 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		tools.NewImageGenTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Resolver(), nil, func() (config.ProviderImageModel, bool) { return c.cfg.Config().ProviderImageModel() }),
 	)
 
+	if slices.Contains(agent.AllowedTools, tools.WebSearchToolName) {
+		if _, ok := c.cfg.Config().ProviderWebSearchModel(); ok {
+			allTools = append(allTools, tools.NewWebSearchTool(nil, tools.WebSearchOptions{
+				Permissions:   c.permissions,
+				WorkingDir:    c.cfg.WorkingDir(),
+				Resolver:      c.cfg.Resolver(),
+				ProviderModel: func() (config.ProviderWebSearchModel, bool) { return c.cfg.Config().ProviderWebSearchModel() },
+				SubAgent:      false,
+			}))
+		}
+	}
+
 	// The sudo tool only makes sense on Linux hosts where root commands can
 	// actually run; on other platforms the agent keeps using bash alone.
 	if runtime.GOOS == "linux" {
@@ -1155,6 +1169,14 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 					break
 				}
 				slog.Debug("MCP not allowed", "tool", tool.Name(), "agent", agent.Name)
+			}
+		}
+	}
+	if !isSubAgent && agent.ID != config.AgentDesigner && c.customAgents != nil {
+		disabledTools := c.cfg.Config().Options.DisabledTools
+		for _, tool := range NewCustomAgentChatTools(c.customAgents) {
+			if !slices.Contains(disabledTools, tool.Info().Name) {
+				filteredTools = append(filteredTools, tool)
 			}
 		}
 	}
@@ -1392,335 +1414,19 @@ func applyModelOverrides(m catwalk.Model, cfg config.SelectedModel) catwalk.Mode
 	return m
 }
 
-func (c *coordinator) buildAnthropicProvider(baseURL, apiKey string, headers map[string]string, providerID string) (fantasy.Provider, error) {
-	var opts []anthropic.Option
-
-	switch {
-	case strings.HasPrefix(apiKey, "Bearer "):
-		// NOTE: Prevent the SDK from picking up the API key from env.
-		os.Setenv("ANTHROPIC_API_KEY", "")
-		headers["Authorization"] = apiKey
-	case providerID == string(catwalk.InferenceProviderMiniMax) || providerID == string(catwalk.InferenceProviderMiniMaxChina):
-		// NOTE: Prevent the SDK from picking up the API key from env.
-		os.Setenv("ANTHROPIC_API_KEY", "")
-		headers["Authorization"] = "Bearer " + apiKey
-	case apiKey != "":
-		// X-Api-Key header
-		opts = append(opts, anthropic.WithAPIKey(apiKey))
-	}
-
-	if len(headers) > 0 {
-		opts = append(opts, anthropic.WithHeaders(headers))
-	}
-
-	if baseURL != "" {
-		opts = append(opts, anthropic.WithBaseURL(baseURL))
-	}
-
-	if c.cfg.Config().Options.Debug {
-		httpClient := log.NewHTTPClient()
-		opts = append(opts, anthropic.WithHTTPClient(httpClient))
-	}
-	return anthropic.New(opts...)
-}
-
-func (c *coordinator) buildOpenaiProvider(baseURL, apiKey string, headers map[string]string, token *oauth.Token) (fantasy.Provider, error) {
-	opts := []openai.Option{
-		openai.WithAPIKey(apiKey),
-		openai.WithUseResponsesAPI(),
-	}
-	var httpClient *http.Client
-	if c.cfg.Config().Options.Debug {
-		httpClient = log.NewHTTPClient()
-	}
-	if token != nil {
-		// ChatGPT OAuth: requests go through the Codex backend, which
-		// expects account headers and rejects some request fields, so
-		// they pass through the Codex transport.
-		if httpClient == nil {
-			httpClient = &http.Client{}
-		}
-		httpClient.Transport = &openaioauth.Transport{
-			Base:  httpClient.Transport,
-			Token: token,
-		}
-	}
-	opts = append(opts, openai.WithHTTPClient(withStreamActivityTransport(httpClient)))
-	if len(headers) > 0 {
-		opts = append(opts, openai.WithHeaders(headers))
-	}
-	if baseURL != "" {
-		opts = append(opts, openai.WithBaseURL(baseURL))
-	}
-	return openai.New(opts...)
-}
-
-func (c *coordinator) buildOpenrouterProvider(_, apiKey string, headers map[string]string) (fantasy.Provider, error) {
-	opts := []openrouter.Option{
-		openrouter.WithAPIKey(apiKey),
-	}
-	if c.cfg.Config().Options.Debug {
-		httpClient := log.NewHTTPClient()
-		opts = append(opts, openrouter.WithHTTPClient(httpClient))
-	}
-	if len(headers) > 0 {
-		opts = append(opts, openrouter.WithHeaders(headers))
-	}
-	return openrouter.New(opts...)
-}
-
-func (c *coordinator) buildVercelProvider(_, apiKey string, headers map[string]string) (fantasy.Provider, error) {
-	opts := []vercel.Option{
-		vercel.WithAPIKey(apiKey),
-	}
-	if c.cfg.Config().Options.Debug {
-		httpClient := log.NewHTTPClient()
-		opts = append(opts, vercel.WithHTTPClient(httpClient))
-	}
-	if len(headers) > 0 {
-		opts = append(opts, vercel.WithHeaders(headers))
-	}
-	return vercel.New(opts...)
-}
-
-func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers map[string]string, extraBody map[string]any, providerID string, isSubAgent bool) (fantasy.Provider, error) {
-	opts := []openaicompat.Option{
-		openaicompat.WithBaseURL(baseURL),
-		openaicompat.WithAPIKey(apiKey),
-	}
-
-	// Set HTTP client based on provider and debug mode.
-	var httpClient *http.Client
-	switch providerID {
-	case string(catwalk.InferenceProviderCopilot):
-		opts = append(
-			opts,
-			openaicompat.WithUseResponsesAPI(),
-			openaicompat.WithResponsesAPIFunc(func(modelID string) bool {
-				return copilotResponsesModels[modelID]
-			}),
-		)
-		httpClient = copilot.NewClient(isSubAgent, c.cfg.Config().Options.Debug)
-
-	case string(catwalk.InferenceProviderOpenCodeGo), string(catwalk.InferenceProviderOpenCodeZen):
-		opts = append(
-			opts,
-			openaicompat.WithUseResponsesAPI(),
-			openaicompat.WithResponsesAPIFunc(isOpenCodeResponsesModel),
-		)
-		// Mirror opencode native's keyless free-tier request shape so
-		// the public endpoint authorizes anonymous calls.
-		if apiKey == "" {
-			apiKey = "public"
-		}
-		opts = append(opts, openaicompat.WithUserAgent("opencode/prime"))
-
-	case hyper.Name:
-		// Hyper may route requests through a Prism model; capture the
-		// router headers so the UI can show which model answered.
-		opts = append(
-			opts,
-			openaicompat.WithLanguageModelOptions(
-				openai.WithLanguageModelHeaderFunc(hyper.HeaderFunc),
-			),
-		)
-	}
-	if httpClient == nil && c.cfg.Config().Options.Debug {
-		httpClient = log.NewHTTPClient()
-	}
-	if providerCfg, ok := c.cfg.Config().Providers.Get(providerID); ok {
-		httpClient = withGatewayCapabilities(httpClient, providerCfg.Models)
-	}
-	opts = append(opts, openaicompat.WithHTTPClient(withStreamActivityTransport(httpClient)))
-
-	if len(headers) > 0 {
-		opts = append(opts, openaicompat.WithHeaders(headers))
-	}
-
-	for extraKey, extraValue := range extraBody {
-		opts = append(opts, openaicompat.WithSDKOptions(openaisdk.WithJSONSet(extraKey, extraValue)))
-	}
-
-	return openaicompat.New(opts...)
-}
-
-func (c *coordinator) buildAzureProvider(baseURL, apiKey string, headers map[string]string, options map[string]string) (fantasy.Provider, error) {
-	opts := []azure.Option{
-		azure.WithBaseURL(baseURL),
-		azure.WithAPIKey(apiKey),
-		azure.WithUseResponsesAPI(),
-	}
-	if c.cfg.Config().Options.Debug {
-		httpClient := log.NewHTTPClient()
-		opts = append(opts, azure.WithHTTPClient(httpClient))
-	}
-	if options == nil {
-		options = make(map[string]string)
-	}
-	if apiVersion, ok := options["apiVersion"]; ok {
-		opts = append(opts, azure.WithAPIVersion(apiVersion))
-	}
-	if len(headers) > 0 {
-		opts = append(opts, azure.WithHeaders(headers))
-	}
-
-	return azure.New(opts...)
-}
-
-func (c *coordinator) buildBedrockProvider(apiKey string, headers map[string]string, providerID string) (fantasy.Provider, error) {
-	var opts []bedrock.Option
-	if c.cfg.Config().Options.Debug {
-		httpClient := log.NewHTTPClient()
-		opts = append(opts, bedrock.WithHTTPClient(httpClient))
-	}
-	if len(headers) > 0 {
-		opts = append(opts, bedrock.WithHeaders(headers))
-	}
-
-	switch {
-	case apiKey != "":
-		opts = append(opts, bedrock.WithAPIKey(apiKey))
-	case os.Getenv("AWS_BEARER_TOKEN_BEDROCK") != "":
-		opts = append(opts, bedrock.WithAPIKey(os.Getenv("AWS_BEARER_TOKEN_BEDROCK")))
-	default:
-		// Skip, let the SDK do authentication.
-	}
-
-	switch providerID {
-	case string(catwalk.InferenceProviderBedrockEurope):
-		opts = append(opts, bedrock.WithRegion("eu-west-1"))
-	default:
-		opts = append(opts, bedrock.WithRegion("us-east-1"))
-	}
-
-	return bedrock.New(opts...)
-}
-
-func (c *coordinator) buildGoogleProvider(baseURL, apiKey string, headers map[string]string) (fantasy.Provider, error) {
-	opts := []google.Option{
-		google.WithBaseURL(baseURL),
-		google.WithGeminiAPIKey(apiKey),
-	}
-	if c.cfg.Config().Options.Debug {
-		httpClient := log.NewHTTPClient()
-		opts = append(opts, google.WithHTTPClient(httpClient))
-	}
-	if len(headers) > 0 {
-		opts = append(opts, google.WithHeaders(headers))
-	}
-	return google.New(opts...)
-}
-
-func (c *coordinator) buildGoogleVertexProvider(headers map[string]string, options map[string]string) (fantasy.Provider, error) {
-	opts := []google.Option{}
-	if c.cfg.Config().Options.Debug {
-		httpClient := log.NewHTTPClient()
-		opts = append(opts, google.WithHTTPClient(httpClient))
-	}
-	if len(headers) > 0 {
-		opts = append(opts, google.WithHeaders(headers))
-	}
-
-	project := options["project"]
-	location := options["location"]
-
-	opts = append(opts, google.WithVertex(project, location))
-
-	return google.New(opts...)
-}
-
-func (c *coordinator) isAnthropicThinking(model config.SelectedModel) bool {
-	if model.HasExplicitReasoningMode() {
-		return model.IsReasoningEnabled()
-	}
-	opts, err := anthropic.ParseOptions(model.ProviderOptions)
-	return err == nil && opts.Thinking != nil
-}
-
 func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model config.SelectedModel, isSubAgent bool) (fantasy.Provider, error) {
-	headers := maps.Clone(providerCfg.ExtraHeaders)
-	if headers == nil {
-		headers = make(map[string]string)
-	}
+	return buildProviderForConfig(c.cfg, providerCfg, model, isSubAgent)
+}
 
-	// handle special headers for anthropic
-	if providerCfg.Type == anthropic.Name && c.isAnthropicThinking(model) {
-		if v, ok := headers["anthropic-beta"]; ok {
-			headers["anthropic-beta"] = v + ",interleaved-thinking-2025-05-14"
-		} else {
-			headers["anthropic-beta"] = "interleaved-thinking-2025-05-14"
-		}
+func (c *coordinator) customAgentsIndexNote(ctx context.Context) string {
+	if c.customAgents == nil || c.customAgents.Store() == nil {
+		return ""
 	}
-
-	apiKey, _ := c.cfg.Resolve(providerCfg.APIKey)
-	baseURL, _ := c.cfg.Resolve(providerCfg.BaseURL)
-
-	switch providerCfg.ID {
-	case string(catwalk.InferenceProviderOpenCodeGo), string(catwalk.InferenceProviderOpenCodeZen):
-		// Mirror opencode native's keyless free-tier request shape:
-		// the public sentinel key plus the opencode client User-Agent
-		// authorize anonymous calls on OpenCode's endpoint.
-		if apiKey == "" {
-			apiKey = "public"
-		}
-		if isOpenCodeMessagesModel(providerCfg.ID, model.Model) {
-			baseURL = strings.TrimSuffix(baseURL, "/v1")
-			headers["User-Agent"] = "opencode/prime"
-			return c.buildAnthropicProvider(baseURL, apiKey, headers, providerCfg.ID)
-		}
-		headers["User-Agent"] = "opencode/prime"
+	agents, err := c.customAgents.Store().ListAgents(ctx)
+	if err != nil || len(agents) == 0 {
+		return ""
 	}
-
-	switch providerCfg.Type {
-	case openai.Name:
-		// A ChatGPT login is the provider's single credential: every
-		// request goes through the Codex backend with the OAuth token.
-		token := providerCfg.OAuthToken
-		if token != nil {
-			baseURL = openaioauth.CodexBaseURL
-			apiKey = token.AccessToken
-			headers["originator"] = "prime"
-			if token.AccountID != "" {
-				headers["chatgpt-account-id"] = token.AccountID
-			}
-		}
-		return c.buildOpenaiProvider(baseURL, apiKey, headers, token)
-	case anthropic.Name:
-		return c.buildAnthropicProvider(baseURL, apiKey, headers, providerCfg.ID)
-	case openrouter.Name:
-		return c.buildOpenrouterProvider(baseURL, apiKey, headers)
-	case vercel.Name:
-		return c.buildVercelProvider(baseURL, apiKey, headers)
-	case azure.Name:
-		return c.buildAzureProvider(baseURL, apiKey, headers, providerCfg.ExtraParams)
-	case bedrock.Name:
-		return c.buildBedrockProvider(apiKey, headers, providerCfg.ID)
-	case google.Name:
-		return c.buildGoogleProvider(baseURL, apiKey, headers)
-	case "google-vertex":
-		return c.buildGoogleVertexProvider(headers, providerCfg.ExtraParams)
-	case primeai.Name:
-		return primeai.NewProvider(primeai.WithProviderBaseURL(baseURL))
-	case openaicompat.Name, hyper.Name:
-		switch providerCfg.ID {
-		case hyper.Name:
-			baseURL = hyper.BaseURL() + "/v1"
-			headers["x-prime-id"] = event.GetID()
-		case string(catwalk.InferenceProviderZAI):
-			if providerCfg.ExtraBody == nil {
-				providerCfg.ExtraBody = map[string]any{}
-			}
-			providerCfg.ExtraBody["tool_stream"] = true
-		}
-		return c.buildOpenaiCompatProvider(baseURL, apiKey, headers, providerCfg.ExtraBody, providerCfg.ID, isSubAgent)
-	default:
-		// Known custom providers (litellm, llamacpp, lmstudio, ollama,
-		// omlx) are openai-compat under the hood.
-		if discover.IsKnownCustomProvider(string(providerCfg.Type)) {
-			return c.buildOpenaiCompatProvider(baseURL, apiKey, headers, providerCfg.ExtraBody, providerCfg.ID, isSubAgent)
-		}
-		return nil, fmt.Errorf("provider type not supported: %q", providerCfg.Type)
-	}
+	return formatCustomAgentsIndex(agents)
 }
 
 func isExactoSupported(modelID string) bool {

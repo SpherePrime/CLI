@@ -8,6 +8,7 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/agent/prompt"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
@@ -128,4 +129,103 @@ func TestCoderPromptListsPrimeDesignerSkill(t *testing.T) {
 
 	smart := renderCoderPrompt(t, true)
 	require.Contains(t, smart, "read prime://skills/prime-designer/SKILL.md before planning")
+}
+
+func TestCoderPromptWebSearchGuidance(t *testing.T) {
+	t.Parallel()
+
+	for _, withWebSearch := range []bool{false, true} {
+		name := "without_web_search"
+		if withWebSearch {
+			name = "with_web_search"
+		}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			env := testEnv(t)
+			cfg := renderPromptConfig(t, env, false)
+			if withWebSearch {
+				pCfg, ok := cfg.Config().Providers.Get("mock")
+				require.True(t, ok)
+				pCfg.Models = append(pCfg.Models, catwalk.Model{
+					ID:      "mock-search",
+					Name:    "Mock Search",
+					Options: catwalk.ModelOptions{ProviderOptions: map[string]any{"web_search": true}},
+				})
+				cfg.Config().Providers.Set("mock", pCfg)
+			}
+
+			p, err := coderPrompt(prompt.WithWorkingDir(env.workingDir))
+			require.NoError(t, err)
+
+			out, err := p.Build(context.Background(), "mock", "mock-model", cfg)
+			require.NoError(t, err)
+
+			if withWebSearch {
+				require.Contains(t, out, "web_search is available")
+				require.Contains(t, out, "provider's web search capability")
+			} else {
+				require.Contains(t, out, "For web research, use agentic_fetch when available; fetch reads a specific URL.")
+				require.NotContains(t, out, "web_search is available")
+			}
+		})
+	}
+
+	t.Run("disabled_web_search_tool", func(t *testing.T) {
+		t.Parallel()
+
+		env := testEnv(t)
+		cfg := renderPromptConfig(t, env, false)
+		pCfg, ok := cfg.Config().Providers.Get("mock")
+		require.True(t, ok)
+		pCfg.Models = append(pCfg.Models, catwalk.Model{
+			ID:      "mock-search",
+			Name:    "Mock Search",
+			Options: catwalk.ModelOptions{ProviderOptions: map[string]any{"web_search": true}},
+		})
+		cfg.Config().Providers.Set("mock", pCfg)
+		cfg.Config().Options.DisabledTools = []string{"web_search"}
+		cfg.SetupAgents()
+
+		p, err := coderPrompt(prompt.WithWorkingDir(env.workingDir))
+		require.NoError(t, err)
+
+		out, err := p.Build(context.Background(), "mock", "mock-model", cfg)
+		require.NoError(t, err)
+		require.Contains(t, out, "For web research, use agentic_fetch when available; fetch reads a specific URL.")
+		require.NotContains(t, out, "web_search is available")
+	})
+}
+
+func TestBuildToolsGatingForWebSearch(t *testing.T) {
+	t.Parallel()
+
+	coord := newGateTestCoordinator(t, true)
+	require.NoError(t, coord.readyWg.Wait())
+
+	// Without a web search model on any provider, web_search is omitted.
+	built, err := coord.buildTools(context.Background(), coord.cfg.Config().Agents[config.AgentGeneral], false)
+	require.NoError(t, err)
+	require.NotContains(t, toolNamesOf(built), "web_search")
+
+	// Add a web search model to the mock provider: web_search is now exposed.
+	pCfg, ok := coord.cfg.Config().Providers.Get("mock")
+	require.True(t, ok)
+	pCfg.Models = append(pCfg.Models, catwalk.Model{
+		ID:      "mock-search",
+		Name:    "Mock Search",
+		Options: catwalk.ModelOptions{ProviderOptions: map[string]any{"web_search": true}},
+	})
+	coord.cfg.Config().Providers.Set("mock", pCfg)
+
+	built, err = coord.buildTools(context.Background(), coord.cfg.Config().Agents[config.AgentGeneral], false)
+	require.NoError(t, err)
+	require.Contains(t, toolNamesOf(built), "web_search")
+
+	// Disabling web_search via DisabledTools hides it even when provider supports it.
+	coord.cfg.Config().Options.DisabledTools = []string{"web_search"}
+	coord.cfg.SetupAgents()
+	built, err = coord.buildTools(context.Background(), coord.cfg.Config().Agents[config.AgentGeneral], false)
+	require.NoError(t, err)
+	require.NotContains(t, toolNamesOf(built), "web_search")
 }

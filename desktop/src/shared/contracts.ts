@@ -113,7 +113,9 @@ export type Project = {
   currentSessionId?: string
   channels?: string[]
 }
-export type DesktopEvent = { workspaceId: string; type: string; payload: Json }
+export type DesktopEvent =
+  | { workspaceId: string; type: string; payload: Json }
+  | { workspaceId: string; kind: 'customAgents'; data: import('./customAgents').CustomAgentEvent }
 export type ChatReasoningMode = 'off' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'default'
 export type Preferences = {
   theme: 'dark' | 'light' | 'system'
@@ -314,6 +316,7 @@ export interface DesktopApi {
   account(action: 'status' | 'restore' | 'login' | 'logout'): Promise<AccountState>
   account(action: 'limits' | 'refreshLimits'): Promise<PrimeAILimits>
   account(action: AccountAction): Promise<AccountState | PrimeAILimits>
+  customAgents(request: import('./customAgents').CustomAgentsRequest): Promise<any>
   onEvent(listener: (event: DesktopEvent) => void): () => void
 }
 declare global {

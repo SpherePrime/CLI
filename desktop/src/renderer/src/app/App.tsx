@@ -1,6 +1,6 @@
 import { PanelBoundary } from '../components/PanelBoundary'
 import { CreateProjectDialog } from '../features/projects/CreateProjectDialog'
-import { chatCenterShift, panelGeometry, panelGutter } from './panelGeometry'
+import { chatCenterShift, panelGeometry, panelGutter, railWidth } from './panelGeometry'
 import { useLayoutWidth } from './useLayoutWidth'
 import { ProjectRail } from '../features/projects/ProjectRail'
 import { projectName as projectLabel } from '../features/projects/projectName'
@@ -44,6 +44,7 @@ import { isInspectorOpen, shouldActivateBrowserTab } from '../features/browser/b
 import { realSessionId } from '../../../shared/pendingSession'
 import { DesignHandoffDialog } from '../features/designer/DesignHandoffDialog'
 import { extractDesignFromMessage, type DesignPayload } from '../features/designer/designHandoff'
+import { CustomAgentsView } from '../features/customAgents/CustomAgentsView'
 
 const FileEditor = lazy(() => import('../features/files/FileEditor'))
 
@@ -141,12 +142,15 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const [workbenchExpanded, setWorkbenchExpanded] = useState(false)
   const [workbenchView, setWorkbenchView] = useState<WorkbenchView>('terminal')
   const [pendingDesign, setPendingDesign] = useState<DesignPayload | null>(null)
+  const [activeView, setActiveView] = useState<'workspace' | 'custom-agents'>('workspace')
+  const isCustomAgents = activeView === 'custom-agents'
   const isDesigner = w.project?.kind === 'designer'
   const isDesignerRef = useRef(isDesigner)
   isDesignerRef.current = isDesigner
-  const showSidebar = !focusMode
-  const showInspector = inspector && !focusMode && !isDesigner
-  const showEditor = documents.documents.length > 0 && !focusMode && !isDesigner
+  const showSidebar = !focusMode && !isCustomAgents
+  const showRail = !focusMode || isCustomAgents
+  const showInspector = inspector && !focusMode && !isDesigner && !isCustomAgents
+  const showEditor = documents.documents.length > 0 && !focusMode && !isDesigner && !isCustomAgents
   useEffect(() => setSearchOpen(false), [w.session?.id])
   useEffect(() => {
     if (isDesigner) {
@@ -279,6 +283,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   useEffect(
     () =>
       window.prime.onEvent((event) => {
+        if (!('type' in event)) return
         if (
           event.type === 'workbench' &&
           event.payload?.action === 'activate' &&
@@ -370,9 +375,51 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       ? t('Личные чаты')
       : projectLabel(w.project)
   const isEmpty = !w.messages.length && !w.busy && w.messagesReady
+  const navWorkspace: Workspace = {
+    ...w,
+    selectProject: async (selected) => {
+      setActiveView('workspace')
+      return w.selectProject(selected)
+    },
+    openProject: async (path) => {
+      setActiveView('workspace')
+      return w.openProject(path)
+    },
+    openProjectNewChat: async (path) => {
+      setActiveView('workspace')
+      return w.openProjectNewChat(path)
+    },
+    openRemote: async (profileId) => {
+      setActiveView('workspace')
+      return w.openRemote(profileId)
+    },
+    createSession: async () => {
+      setActiveView('workspace')
+      return w.createSession()
+    },
+    selectSession: async (selected) => {
+      setActiveView('workspace')
+      return w.selectSession(selected)
+    },
+    openSession: async (target, selected, known) => {
+      setActiveView('workspace')
+      return w.openSession(target, selected, known)
+    },
+    openChat: async () => {
+      setActiveView('workspace')
+      return w.openChat()
+    },
+    openDesigner: async () => {
+      setActiveView('workspace')
+      return w.openDesigner()
+    }
+  }
   const quickActions = useQuickActions({
-    workspace: w,
-    openTools,
+    workspace: navWorkspace,
+    openTools: (view) => {
+      setActiveView('workspace')
+      openTools(view)
+    },
     setModal,
     openSearch: () => setSearchOpen(true),
     focusMode,
@@ -384,20 +431,23 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   })
   const sidebarPanel = (
     <Sidebar
-      workspace={w}
+      workspace={navWorkspace}
       onSettings={() => setModal('settings')}
       onPlugins={() => setModal('plugins')}
       onRemote={() => setModal('remote')}
       onJobs={() => setModal('jobs')}
-      onWorkbench={() => openTools(workbenchView)}
+      onWorkbench={() => {
+        setActiveView('workspace')
+        openTools(workbenchView)
+      }}
     />
   )
   return (
     <>
-      {w.projectCreationOpen && <CreateProjectDialog workspace={w} />}
+      {w.projectCreationOpen && <CreateProjectDialog workspace={navWorkspace} />}
       {pendingDesign && (
         <DesignHandoffDialog
-          workspace={w}
+          workspace={navWorkspace}
           design={pendingDesign}
           close={() => setPendingDesign(null)}
         />
@@ -405,7 +455,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       <ToastStack openProviders={() => setModal('providers')} />
       <Titlebar>
         <WorkspaceTopbar
-          workspace={w}
+          workspace={navWorkspace}
           projectName={projectName || ''}
           sidebarVisible={showSidebar && layout.sidebarOpen}
           toggleSidebar={toggleSidebar}
@@ -418,13 +468,14 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
           toolsOpen={workbench && !isDesigner}
           toggleTools={toggleTerminal}
           openCommands={() => setModal('commands')}
+          customAgentsOpen={isCustomAgents}
         />
       </Titlebar>
       <ProjectLockBanner />
       <WorkspaceMediaProvider workspaceId={w.project?.id || ''}>
         <div
         ref={shell}
-        className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''} ${isDesigner ? 'designer-mode' : ''} ${layout.compact ? 'compact-layout' : ''}`}
+        className={`app-shell ${showSidebar ? '' : 'hide-sidebar'} ${showInspector ? '' : 'hide-inspector'} ${showEditor ? 'has-editor' : ''} ${focusMode ? 'focus-mode' : ''} ${isDesigner ? 'designer-mode' : ''} ${isCustomAgents ? 'custom-agents-mode' : ''} ${layout.compact ? 'compact-layout' : ''}`}
         style={
           {
             '--sidebar-width': widths.sidebar + 'px',
@@ -433,175 +484,201 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
             '--center-shift': centerShift + 'px',
             '--layout-zoom': zoom,
             zoom,
-            gridTemplateColumns:
-              layout.columns +
-              (showEditor && !layout.compact
-                ? ` ${panelGutter}px minmax(0, var(--editor-fraction))`
-                : '')
+            gridTemplateColumns: isCustomAgents
+              ? `${railWidth + panelGutter}px minmax(0, 1fr)`
+              : layout.columns +
+                (showEditor && !layout.compact
+                  ? ` ${panelGutter}px minmax(0, var(--editor-fraction))`
+                  : '')
           } as React.CSSProperties
         }
       >
-        {showSidebar && (
+        {showRail && (
           <>
             <ProjectRail
-              workspace={w}
+              workspace={navWorkspace}
               onCommands={() => setModal('commands')}
               onSettings={() => setModal('settings')}
               onJobs={() => setModal('jobs')}
-              onTools={() => openTools(workbenchView)}
+              onTools={() => {
+                setActiveView('workspace')
+                openTools(workbenchView)
+              }}
               onPlugins={() => setModal('plugins')}
+              customAgentsOpen={isCustomAgents}
+              onCustomAgents={() =>
+                setActiveView((current) => (current === 'custom-agents' ? 'workspace' : 'custom-agents'))
+              }
               compact={layout.compact}
-              expanded={layout.sidebarOpen}
-              onToggle={layout.compact ? undefined : toggleSidebar}
+              expanded={!isCustomAgents && layout.sidebarOpen}
+              onToggle={
+                layout.compact
+                  ? undefined
+                  : () => {
+                      if (isCustomAgents) {
+                        setActiveView('workspace')
+                        expandSidebar()
+                      } else {
+                        toggleSidebar()
+                      }
+                    }
+              }
               onExpandSidebar={layout.compact ? undefined : expandSidebar}
             >
               {sidebarPanel}
             </ProjectRail>
-            {layout.sidebarOpen && sidebarPanel}
-            {layout.sidebarResizable && (
+            {showSidebar && layout.sidebarOpen && sidebarPanel}
+            {showSidebar && layout.sidebarResizable && (
               <div {...panels.separator('sidebar', t('Ширина панели проектов'), layout.sidebar)} />
             )}
           </>
         )}
-        <main
-          className="main-workspace"
-          data-workbench-expanded={workbench && !isDesigner && workbenchExpanded}
-        >
-          <PanelBoundary resetKey={w.session?.id} compact={layout.compact}>
-            {isEmpty ? (
-              <Welcome workspace={w} openCommands={() => setModal('commands')} />
-            ) : (
-              <HistoryMessageList
-                key={w.session?.id || 'new'}
-                history={w.history}
-                busy={w.busy}
-                retrying={w.retrying && w.busy}
-                historyLoading={Boolean(w.history.loading) || (!w.messagesReady && !w.history.error)}
-                historyError={w.history.error}
-                loadHistory={w.loadHistory}
-                searchMessages={w.searchMessages}
-                revealMessage={w.revealMessage}
-                searchOpen={searchOpen}
-                closeSearch={() => setSearchOpen(false)}
-                waiting={
-                  w.permissions.some((item) => item.session_id === w.session?.id) ||
-                  w.questions.some((item) => item.session_id === w.session?.id)
-                }
-                onImplementDesign={
-                  isDesigner
-                    ? (message, allMessages, preferredImage) =>
-                        setPendingDesign(
-                          extractDesignFromMessage(message, allMessages, preferredImage)
-                        )
-                    : undefined
-                }
-              />
-            )}
-          </PanelBoundary>
-          <Approvals workspace={w} />
-          <Composer workspace={w} />
-          {workbench && !isDesigner && (
-            <WorkbenchDock
-              view={workbenchView}
-              setView={setWorkbenchView}
-              workspace={w}
-              expanded={workbenchExpanded}
-              setExpanded={setWorkbenchExpanded}
-              close={() => setWorkbench(false)}
-            />
-          )}
-        </main>
-        {showInspector && (
+        {isCustomAgents ? (
+          <CustomAgentsView workspace={navWorkspace} />
+        ) : (
           <>
-            {layout.inspectorResizable && (
-              <div
-                {...panels.separator('inspector', t('Ширина рабочей области'), layout.inspector)}
-              />
+            <main
+              className="main-workspace"
+              data-workbench-expanded={workbench && !isDesigner && workbenchExpanded}
+            >
+              <PanelBoundary resetKey={w.session?.id} compact={layout.compact}>
+                {isEmpty ? (
+                  <Welcome workspace={w} openCommands={() => setModal('commands')} />
+                ) : (
+                  <HistoryMessageList
+                    key={w.session?.id || 'new'}
+                    history={w.history}
+                    busy={w.busy}
+                    retrying={w.retrying && w.busy}
+                    historyLoading={Boolean(w.history.loading) || (!w.messagesReady && !w.history.error)}
+                    historyError={w.history.error}
+                    loadHistory={w.loadHistory}
+                    searchMessages={w.searchMessages}
+                    revealMessage={w.revealMessage}
+                    searchOpen={searchOpen}
+                    closeSearch={() => setSearchOpen(false)}
+                    waiting={
+                      w.permissions.some((item) => item.session_id === w.session?.id) ||
+                      w.questions.some((item) => item.session_id === w.session?.id)
+                    }
+                    onImplementDesign={
+                      isDesigner
+                        ? (message, allMessages, preferredImage) =>
+                            setPendingDesign(
+                              extractDesignFromMessage(message, allMessages, preferredImage)
+                            )
+                        : undefined
+                    }
+                  />
+                )}
+              </PanelBoundary>
+              <Approvals workspace={w} />
+              <Composer workspace={w} />
+              {workbench && !isDesigner && (
+                <WorkbenchDock
+                  view={workbenchView}
+                  setView={setWorkbenchView}
+                  workspace={w}
+                  expanded={workbenchExpanded}
+                  setExpanded={setWorkbenchExpanded}
+                  close={() => setWorkbench(false)}
+                />
+              )}
+            </main>
+            {showInspector && (
+              <>
+                {layout.inspectorResizable && (
+                  <div
+                    {...panels.separator('inspector', t('Ширина рабочей области'), layout.inspector)}
+                  />
+                )}
+                <Inspector
+                  compact={layout.compact}
+                  compactOpen={compactPanelOpen}
+                  setCompactOpen={setCompactPanelOpen}
+                  expanded={layout.inspectorOpen}
+                  setExpanded={(open) => {
+                    if (open) keepSidebarBesideInspector()
+                    setCollapsed('inspector', !open, true)
+                  }}
+                  workspace={w}
+                  openDocument={documents.open}
+                  browserRequest={browserRequest}
+                  appRequest={appRequest}
+                  agentRequest={agentRequest}
+                  onConsumeAgentRequest={consumeAgentRequest}
+                />
+              </>
             )}
-            <Inspector
-              compact={layout.compact}
-              compactOpen={compactPanelOpen}
-              setCompactOpen={setCompactPanelOpen}
-              expanded={layout.inspectorOpen}
-              setExpanded={(open) => {
-                if (open) keepSidebarBesideInspector()
-                setCollapsed('inspector', !open, true)
-              }}
-              workspace={w}
-              openDocument={documents.open}
-              browserRequest={browserRequest}
-              appRequest={appRequest}
-              agentRequest={agentRequest}
-              onConsumeAgentRequest={consumeAgentRequest}
-            />
-          </>
-        )}
-        {documents.documents.length > 0 && (
-          <>
-            <div
-              className="resizer editor-divider"
-              role="separator"
-              aria-orientation="vertical"
-              aria-label={t('Ширина редактора')}
-              aria-valuemin={10}
-              aria-valuemax={90}
-              aria-valuenow={Math.round((editorFraction / (1 + editorFraction)) * 100)}
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-                event.preventDefault()
-                const editorWidth =
-                  shell.current?.querySelector<HTMLElement>('.file-editor')?.offsetWidth
-                const mainWidth =
-                  shell.current?.querySelector<HTMLElement>('.main-workspace')?.offsetWidth
-                if (!editorWidth || !mainWidth) return
-                const available = editorWidth + mainWidth
-                const step = event.shiftKey ? 50 : 10
-                const targetWidth =
-                  event.key === 'Home'
-                    ? 300
-                    : event.key === 'End'
-                      ? available - 300
-                      : editorWidth + (event.key === 'ArrowLeft' ? step : -step)
-                const width = Math.max(300, Math.min(available - 300, targetWidth))
-                setEditorFraction(width / Math.max(300, available - width))
-              }}
-              onPointerDown={(event) => {
-                event.preventDefault()
-                const target = event.currentTarget
-                const pointerId = event.pointerId
-                target.setPointerCapture?.(pointerId)
-                const start = event.clientX
-                const editorWidth =
-                  shell.current!.querySelector<HTMLElement>('.file-editor')!.offsetWidth
-                const available =
-                  editorWidth +
-                  shell.current!.querySelector<HTMLElement>('.main-workspace')!.offsetWidth
-                const move = (event: PointerEvent) => {
-                  const width = Math.max(
-                    300,
-                    Math.min(available - 300, editorWidth - (event.clientX - start) / zoom)
-                  )
-                  setEditorFraction(width / (available - width))
-                }
-                const stop = () => {
-                  window.removeEventListener('pointermove', move)
-                  window.removeEventListener('pointerup', stop)
-                  window.removeEventListener('pointercancel', stop)
-                  if (target.hasPointerCapture?.(pointerId)) target.releasePointerCapture(pointerId)
-                }
-                window.addEventListener('pointermove', move)
-                window.addEventListener('pointerup', stop)
-                window.addEventListener('pointercancel', stop)
-              }}
-            />
-            <Suspense fallback={<div className="editor-loading">{t('Открываем редактор…')}</div>}>
-              <FileEditor
-                state={documents}
-                theme={w.preferences.theme}
-                enabled={!focusMode && !isDesigner}
-              />
-            </Suspense>
+            {documents.documents.length > 0 && (
+              <>
+                <div
+                  className="resizer editor-divider"
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label={t('Ширина редактора')}
+                  aria-valuemin={10}
+                  aria-valuemax={90}
+                  aria-valuenow={Math.round((editorFraction / (1 + editorFraction)) * 100)}
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+                    event.preventDefault()
+                    const editorWidth =
+                      shell.current?.querySelector<HTMLElement>('.file-editor')?.offsetWidth
+                    const mainWidth =
+                      shell.current?.querySelector<HTMLElement>('.main-workspace')?.offsetWidth
+                    if (!editorWidth || !mainWidth) return
+                    const available = editorWidth + mainWidth
+                    const step = event.shiftKey ? 50 : 10
+                    const targetWidth =
+                      event.key === 'Home'
+                        ? 300
+                        : event.key === 'End'
+                          ? available - 300
+                          : editorWidth + (event.key === 'ArrowLeft' ? step : -step)
+                    const width = Math.max(300, Math.min(available - 300, targetWidth))
+                    setEditorFraction(width / Math.max(300, available - width))
+                  }}
+                  onPointerDown={(event) => {
+                    event.preventDefault()
+                    const target = event.currentTarget
+                    const pointerId = event.pointerId
+                    target.setPointerCapture?.(pointerId)
+                    const start = event.clientX
+                    const editorWidth =
+                      shell.current!.querySelector<HTMLElement>('.file-editor')!.offsetWidth
+                    const available =
+                      editorWidth +
+                      shell.current!.querySelector<HTMLElement>('.main-workspace')!.offsetWidth
+                    const move = (event: PointerEvent) => {
+                      const width = Math.max(
+                        300,
+                        Math.min(available - 300, editorWidth - (event.clientX - start) / zoom)
+                      )
+                      setEditorFraction(width / (available - width))
+                    }
+                    const stop = () => {
+                      window.removeEventListener('pointermove', move)
+                      window.removeEventListener('pointerup', stop)
+                      window.removeEventListener('pointercancel', stop)
+                      if (target.hasPointerCapture?.(pointerId))
+                        target.releasePointerCapture(pointerId)
+                    }
+                    window.addEventListener('pointermove', move)
+                    window.addEventListener('pointerup', stop)
+                    window.addEventListener('pointercancel', stop)
+                  }}
+                />
+                <Suspense fallback={<div className="editor-loading">{t('Открываем редактор…')}</div>}>
+                  <FileEditor
+                    state={documents}
+                    theme={w.preferences.theme}
+                    enabled={!focusMode && !isDesigner}
+                  />
+                </Suspense>
+              </>
+            )}
           </>
         )}
         <PanelBoundary resetKey={modal}>
@@ -610,6 +687,7 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
               actions={quickActions}
               sessions={w.sessions}
               selectSession={(session) => {
+                setActiveView('workspace')
                 void w.selectSession(session).catch(w.errorHandler)
               }}
               close={() => setModal('')}

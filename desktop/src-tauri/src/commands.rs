@@ -295,6 +295,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             state.teams.handle(&root, &request)
         }
         "jobs" => crate::jobs::handle(app, &state, args.first().unwrap_or(&Value::Null)),
+        "customAgents" => crate::custom_agents::handle(&state, args.first().unwrap_or(&Value::Null)),
         "openRemote" => crate::remote::open(app, string(args, 0)?),
         "remoteKey" => Ok(json!(rfd::FileDialog::new()
             .set_title("Выбрать приватный ключ SSH")

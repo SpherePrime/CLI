@@ -50,7 +50,7 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
     void window.prime.speech({ action: 'voices' }).then(setVoices).catch(report)
     void window.prime.speech({ action: 'status' }).then(setStatus).catch(report)
     const unsubscribe = window.prime.onEvent((event) => {
-      if (event.type === 'speech') setStatus(event.payload)
+      if ('type' in event && event.type === 'speech') setStatus(event.payload)
     })
     return () => {
       unsubscribe()

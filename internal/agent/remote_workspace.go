@@ -16,6 +16,17 @@ func (c *coordinator) buildRemoteWorkspaceTools(agent config.Agent, isSubAgent b
 		tools.NewSourcegraphTool(nil),
 		tools.NewMCPJobTool(c.cfg),
 	}
+	if slices.Contains(agent.AllowedTools, tools.WebSearchToolName) {
+		if _, ok := c.cfg.Config().ProviderWebSearchModel(); ok {
+			candidates = append(candidates, tools.NewWebSearchTool(nil, tools.WebSearchOptions{
+				Permissions:   c.permissions,
+				WorkingDir:    c.cfg.WorkingDir(),
+				Resolver:      c.cfg.Resolver(),
+				ProviderModel: func() (config.ProviderWebSearchModel, bool) { return c.cfg.Config().ProviderWebSearchModel() },
+				SubAgent:      false,
+			}))
+		}
+	}
 	if !isSubAgent && c.interactive {
 		candidates = append(candidates, tools.NewQuestionTool(c.questions))
 	}

@@ -97,6 +97,7 @@ export function TerminalView(props: Props) {
         const unsubscribe = latest.current.subscribe((event) => {
           if (
             disposed ||
+            !('type' in event) ||
             event.workspaceId !== props.terminal.workspaceId ||
             event.type !== 'terminal'
           )

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
+  Bot,
   Command,
   FolderOpen,
   ListTodo,
@@ -23,6 +24,8 @@ export function ProjectRail({
   onJobs,
   onTools,
   onPlugins,
+  customAgentsOpen = false,
+  onCustomAgents,
   compact = false,
   expanded = false,
   onToggle,
@@ -35,6 +38,8 @@ export function ProjectRail({
   onJobs: () => void
   onTools: () => void
   onPlugins: () => void
+  customAgentsOpen?: boolean
+  onCustomAgents?: () => void
   compact?: boolean
   expanded?: boolean
   onToggle?: () => void
@@ -144,7 +149,7 @@ export function ProjectRail({
     <div className="project-rail" ref={root}>
       <button
         ref={trigger}
-        className={`icon ${open || (expanded && !isDesigner && !isPersonalChat) ? 'active' : ''}`}
+        className={`icon ${!customAgentsOpen && (open || (expanded && !isDesigner && !isPersonalChat)) ? 'active' : ''}`}
         title={t('Панель проектов')}
         aria-label={t('Панель проектов')}
         aria-expanded={open || expanded}
@@ -162,24 +167,34 @@ export function ProjectRail({
         <Plus size={19} />
       </button>
       <button
-        className={`icon ${isPersonalChat ? 'active' : ''}`}
+        className={`icon ${!customAgentsOpen && isPersonalChat ? 'active' : ''}`}
         title={t('Чат без проекта')}
         aria-label={t('Чат без проекта')}
-        aria-pressed={isPersonalChat}
+        aria-pressed={!customAgentsOpen && isPersonalChat}
         disabled={w.info.runtime !== 'ready'}
         onClick={() => void w.openChat()}
       >
         <MessageSquare size={18} />
       </button>
       <button
-        className={`icon ${isDesigner ? 'active' : ''}`}
+        className={`icon ${!customAgentsOpen && isDesigner ? 'active' : ''}`}
         title={t('Дизайнер')}
         aria-label={t('Дизайнер')}
-        aria-pressed={isDesigner}
+        aria-pressed={!customAgentsOpen && isDesigner}
         disabled={w.info.runtime !== 'ready'}
         onClick={() => void w.openDesigner()}
       >
         <Palette size={18} />
+      </button>
+      <button
+        className={`icon ${customAgentsOpen ? 'active' : ''}`}
+        title={t('Свои агенты')}
+        aria-label={t('Свои агенты')}
+        aria-pressed={customAgentsOpen}
+        disabled={w.info.runtime !== 'ready'}
+        onClick={onCustomAgents}
+      >
+        <Bot size={18} />
       </button>
       <button
         className="icon"

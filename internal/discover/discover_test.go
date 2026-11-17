@@ -262,3 +262,31 @@ func TestDiscoverModels_MarksImageOutputModels(t *testing.T) {
 	}
 	require.Equal(t, map[string]bool{"relay/flash-image": true, "relay/painter": true, "relay/chat": false}, flags)
 }
+
+func TestDiscoverModels_MarksWebSearchModels(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data": [
+			{"id": "relay/search-existing", "supports_web_search": true},
+			{"id": "relay/search-new", "supports_web_search": true},
+			{"id": "relay/chat", "supports_web_search": false}
+		]}`))
+	}))
+	defer server.Close()
+
+	existing := catwalk.Model{ID: "relay/search-existing", Name: "Search Existing"}
+	models, err := DiscoverModels(context.Background(), Config{ID: "relay", BaseURL: server.URL + "/v1", ExistingModels: []catwalk.Model{existing}}, &mockResolver{})
+	require.NoError(t, err)
+	require.Len(t, models, 3)
+
+	flags := map[string]bool{}
+	for _, model := range models {
+		flag, _ := model.Options.ProviderOptions["web_search"].(bool)
+		flags[model.ID] = flag
+	}
+	require.Equal(t, map[string]bool{
+		"relay/search-existing": true,
+		"relay/search-new":      true,
+		"relay/chat":            false,
+	}, flags)
+}

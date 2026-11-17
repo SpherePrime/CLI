@@ -56,7 +56,10 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             return;
         };
         crate::events::emit(&handle, "", "runtime", payload);
-        if state.require_engine().is_ok() {
+        if let Ok(engine) = state.require_engine() {
+            if let Err(error) = engine.subscribe_custom_agents(handle.clone()) {
+                eprintln!("Custom agents events unavailable: {}", error.message);
+            }
             state.automations.start(handle.clone());
             state.teams.start(handle.clone());
         }

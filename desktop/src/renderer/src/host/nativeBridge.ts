@@ -12,7 +12,16 @@ export type NativeListen = (
 export async function createNativeBridge(invoke: NativeInvoke, listen: NativeListen) {
   const listeners = new Set<(event: DesktopEvent) => void>()
   const unlisten = await listen('prime:event', (event) => {
-    for (const listener of [...listeners]) listener(event.payload)
+    const incoming = event.payload as DesktopEvent & { type?: string; payload?: unknown }
+    const normalized: DesktopEvent =
+      incoming && incoming.type === 'customAgents' && !('kind' in incoming)
+        ? {
+            workspaceId: incoming.workspaceId || '',
+            kind: 'customAgents',
+            data: incoming.payload as import('../../../shared/customAgents').CustomAgentEvent
+          }
+        : event.payload
+    for (const listener of [...listeners]) listener(normalized)
   })
   const methods = Object.fromEntries(
     Object.keys(hostMethods).map((method) => [

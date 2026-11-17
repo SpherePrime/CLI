@@ -36,7 +36,7 @@ export function UpdateScreen({
       if (alive) setStatus(value)
     }
     const unsubscribe = window.prime.onEvent((event) => {
-      if (event.type === 'update') {
+      if ('type' in event && event.type === 'update') {
         received = true
         accept(event.payload as UpdateStatus)
       }

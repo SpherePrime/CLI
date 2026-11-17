@@ -1,1 +1,1 @@
-Fetch a URL or search the web using an AI sub-agent that can extract, summarize, and answer questions. Slower and costlier than fetch; use fetch for raw content or API responses.
+Fetch a URL or search the web using an AI sub-agent that can extract, summarize, and answer questions. Slower and costlier than direct tools: use fetch for raw URL content or API responses and web_search (when available) for simple web queries; reserve agentic_fetch for fetching/summarizing pages or multi-step research.

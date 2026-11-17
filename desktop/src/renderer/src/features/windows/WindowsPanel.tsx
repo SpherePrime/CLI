@@ -68,7 +68,8 @@ export function WindowsPanel({ workspaceId, sessionId, sessionTitle, onError }: 
     setState({ log: [] })
     void refresh()
     return window.prime.onEvent((event) => {
-      if (event.type === 'windows' && event.workspaceId === workspaceId) setState(event.payload)
+      if ('type' in event && event.type === 'windows' && event.workspaceId === workspaceId)
+        setState(event.payload)
     })
   }, [refresh, workspaceId])
   const select = async (item: WindowInfo) => {

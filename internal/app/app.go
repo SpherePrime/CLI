@@ -23,6 +23,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/clipboard"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/customagents"
 	"github.com/SpherePrime/CLI/internal/db"
 	"github.com/SpherePrime/CLI/internal/event"
 	"github.com/SpherePrime/CLI/internal/filetracker"
@@ -77,7 +78,8 @@ type App struct {
 
 	LSPManager *lsp.Manager
 
-	Skills *skills.Manager
+	Skills       *skills.Manager
+	customAgents *customagents.Service
 
 	config *config.ConfigStore
 
@@ -248,6 +250,20 @@ func (app *App) AgentNotifications() *pubsub.Broker[notify.Notification] {
 // coordinator could publish one of its own.
 func (app *App) RunCompletions() *pubsub.Broker[notify.RunComplete] {
 	return app.runCompletions
+}
+
+func (app *App) SetCustomAgents(svc *customagents.Service) {
+	if app == nil {
+		return
+	}
+	app.customAgents = svc
+}
+
+func (app *App) CustomAgents() *customagents.Service {
+	if app == nil {
+		return nil
+	}
+	return app.customAgents
 }
 
 // ReportCurrentSession tells herdr which session the user is now
@@ -845,9 +861,10 @@ func (app *App) initCoderAgent(ctx context.Context, interactive bool, mainAgent 
 		Goals:       app.Goals,
 		LSPManager:  app.LSPManager,
 		Notify:      app.agentNotifications,
-		RunComplete: app.runCompletions,
-		Skills:      app.Skills,
-		Interactive: interactive,
+		RunComplete:  app.runCompletions,
+		Skills:       app.Skills,
+		CustomAgents: app.customAgents,
+		Interactive:  interactive,
 	})
 	if err != nil {
 		slog.Error("Failed to create coder agent", "err", err)

@@ -84,6 +84,25 @@ func OpenReadOnly(dbPath string) (*sql.DB, error) {
 	return openDBReadOnly(dbPath)
 }
 
+func OpenFile(dbPath string) (*sql.DB, error) {
+	if dbPath == "" {
+		return nil, fmt.Errorf("database path is empty")
+	}
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0o700); err != nil {
+		return nil, fmt.Errorf("failed to create database directory: %w", err)
+	}
+	conn, err := openDB(dbPath)
+	if err != nil {
+		return nil, err
+	}
+	conn.SetMaxOpenConns(1)
+	if err := conn.PingContext(context.Background()); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	return conn, nil
+}
+
 // Connect opens a SQLite database connection for the given data
 // directory and runs migrations. If a connection to the same database
 // file already exists, the existing connection is returned with its

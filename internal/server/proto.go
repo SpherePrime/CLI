@@ -8,15 +8,19 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/backend"
+	"github.com/SpherePrime/CLI/internal/customagents"
 	"github.com/SpherePrime/CLI/internal/proto"
+	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/internal/session"
 	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 )
 
 type controllerV1 struct {
-	backend *backend.Backend
-	server  *Server
-	account *account.Service
+	backend           *backend.Backend
+	server            *Server
+	account           *account.Service
+	customAgents      *customagents.Service
+	customAgentEvents *pubsub.Broker[customagents.Event]
 }
 
 // handleGetHealth checks server health.

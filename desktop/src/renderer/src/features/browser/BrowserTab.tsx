@@ -91,7 +91,7 @@ export function BrowserTab({
       })
       .catch((reason) => setError(String(reason?.message || reason).replace(/^.*Error: /, '')))
     return window.prime.onEvent((event) => {
-      if (event.type !== 'browser' || event.payload?.action !== 'state') return
+      if (!('type' in event) || event.type !== 'browser' || event.payload?.action !== 'state') return
       const { action: _action, ...next } = event.payload
       stateLoadedRef.current = true
       setState(next)

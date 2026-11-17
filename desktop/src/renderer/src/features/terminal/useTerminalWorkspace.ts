@@ -33,6 +33,7 @@ export function useTerminalWorkspace(
     const unsubscribe = callbacks.current.subscribe((event) => {
       if (
         disposed ||
+        !('type' in event) ||
         event.workspaceId !== workspaceId ||
         event.type !== 'terminal' ||
         event.payload?.action !== 'state'

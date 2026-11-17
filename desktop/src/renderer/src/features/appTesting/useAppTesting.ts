@@ -67,7 +67,7 @@ export function useAppTesting(workspaceId: string, sessionId: string | undefined
     setSnapshot(null)
     void run({ action: 'state' })
     return window.prime.onEvent((event) => {
-      if (event.type !== 'appui' || event.workspaceId !== workspaceId || !event.payload) return
+      if (!('type' in event) || event.type !== 'appui' || event.workspaceId !== workspaceId || !event.payload) return
       if (event.payload.activate) return
       apply(event.payload as AppUiResponse)
     })

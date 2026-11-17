@@ -150,6 +150,7 @@ type modelsResponse struct {
 		DefaultReasoningEffort string         `json:"default_reasoning_effort"`
 		Gateway                map[string]any `json:"gateway"`
 		SupportsImageOutput    bool           `json:"supports_image_output"`
+		SupportsWebSearch      bool           `json:"supports_web_search"`
 		OutputModalities       []string       `json:"output_modalities"`
 	} `json:"data"`
 }
@@ -210,6 +211,9 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 			if imageOutput {
 				markImageOutput(&result[index])
 			}
+			if e.SupportsWebSearch {
+				markWebSearch(&result[index])
+			}
 			continue
 		}
 		maxOutputTokens := e.DefaultMaxTokens
@@ -232,6 +236,9 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 		if imageOutput {
 			markImageOutput(&model)
 		}
+		if e.SupportsWebSearch {
+			markWebSearch(&model)
+		}
 		model.CanReason = len(e.ReasoningEfforts) > 0
 		model.ReasoningLevels = e.ReasoningEfforts
 		model.DefaultReasoningEffort = e.DefaultReasoningEffort
@@ -246,4 +253,11 @@ func markImageOutput(model *catwalk.Model) {
 		model.Options.ProviderOptions = map[string]any{}
 	}
 	model.Options.ProviderOptions["image_output"] = true
+}
+
+func markWebSearch(model *catwalk.Model) {
+	if model.Options.ProviderOptions == nil {
+		model.Options.ProviderOptions = map[string]any{}
+	}
+	model.Options.ProviderOptions["web_search"] = true
 }

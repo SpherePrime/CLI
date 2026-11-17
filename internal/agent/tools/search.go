@@ -1,7 +1,9 @@
 package tools
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -251,4 +253,115 @@ func maybeDelaySearch() {
 		time.Sleep(minGap - elapsed)
 	}
 	lastSearchTime = time.Now()
+}
+
+type providerWebSearchRequest struct {
+	Model      string `json:"model"`
+	Query      string `json:"query"`
+	MaxResults int    `json:"max_results"`
+}
+
+type providerWebSearchResultItem struct {
+	Title   string `json:"title"`
+	URL     string `json:"url"`
+	Snippet string `json:"snippet"`
+}
+
+type providerWebSearchResponse struct {
+	Query   string                        `json:"query"`
+	Queries []string                      `json:"queries"`
+	Answer  string                        `json:"answer"`
+	Results []providerWebSearchResultItem `json:"results"`
+}
+
+func searchProvider(ctx context.Context, client *http.Client, target webSearchTarget, query string, maxResults int) (*providerWebSearchResponse, error) {
+	payload, err := json.Marshal(providerWebSearchRequest{
+		Model:      target.model,
+		Query:      query,
+		MaxResults: maxResults,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshal search request: %w", err)
+	}
+
+	endpoint := strings.TrimRight(target.baseURL, "/") + "/web_search"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("create search request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if target.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+target.apiKey)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("provider search request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2*1024*1024))
+	if err != nil {
+		return nil, fmt.Errorf("read provider search response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("provider search failed with status %d: %s", resp.StatusCode, summarizeErrorBody(string(body)))
+	}
+
+	var parsed providerWebSearchResponse
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return nil, fmt.Errorf("decode provider search response: %w", err)
+	}
+	return &parsed, nil
+}
+
+func formatProviderSearchResponse(resp *providerWebSearchResponse, maxResults int) string {
+	if resp == nil {
+		return "No results found. Try rephrasing your search."
+	}
+
+	results := resp.Results
+	if maxResults > 0 && len(results) > maxResults {
+		results = results[:maxResults]
+	}
+
+	answer := strings.TrimSpace(resp.Answer)
+	var queries []string
+	for _, q := range resp.Queries {
+		if trimmed := strings.TrimSpace(q); trimmed != "" {
+			queries = append(queries, trimmed)
+		}
+	}
+
+	if answer == "" && len(results) == 0 {
+		return "No results found. Try rephrasing your search."
+	}
+
+	var sb strings.Builder
+	if answer != "" {
+		sb.WriteString("Summary:\n")
+		sb.WriteString(answer)
+		sb.WriteString("\n\n")
+	}
+	if len(queries) > 0 {
+		fmt.Fprintf(&sb, "Search queries: %s\n\n", strings.Join(queries, ", "))
+	}
+	if len(results) > 0 {
+		fmt.Fprintf(&sb, "Found %d search results:\n\n", len(results))
+		for i, r := range results {
+			title := strings.TrimSpace(r.Title)
+			if title == "" {
+				title = strings.TrimSpace(r.URL)
+			}
+			fmt.Fprintf(&sb, "%d. %s\n", i+1, title)
+			if u := strings.TrimSpace(r.URL); u != "" {
+				fmt.Fprintf(&sb, "   URL: %s\n", u)
+			}
+			if snippet := strings.TrimSpace(r.Snippet); snippet != "" {
+				fmt.Fprintf(&sb, "   Summary: %s\n", snippet)
+			}
+			sb.WriteString("\n")
+		}
+	}
+	return strings.TrimSpace(sb.String()) + "\n"
 }

@@ -12,9 +12,13 @@ import { notifyWarning } from '../features/notifications/notifications'
 import {
   createClosedProjectSessions,
   createPreviewAutomations,
+  createPreviewBlackboard,
   createPreviewBrowserLogs,
   createPreviewBrowserState,
   createPreviewConfig,
+  createPreviewCustomAgentModels,
+  createPreviewCustomAgentRuns,
+  createPreviewCustomAgents,
   createPreviewDesignerProject,
   createPreviewFileContents,
   createPreviewFiles,
@@ -32,6 +36,12 @@ import {
   previewDemoVideoDataUrl,
   previewDesignPngBase64
 } from './previewHostData'
+import type {
+  BlackboardEntry,
+  CustomAgent,
+  CustomAgentRun,
+  CustomAgentsRequest
+} from '../../../shared/customAgents'
 import {
   fileNameFromPath,
   isDirectMediaUrl,
@@ -138,6 +148,11 @@ export function installPreviewHost() {
   let remoteState = createPreviewRemote()
   let browserState = createPreviewBrowserState()
   let browserLogs = createPreviewBrowserLogs()
+  let customAgents: CustomAgent[] = createPreviewCustomAgents()
+  let customAgentRuns: CustomAgentRun[] = createPreviewCustomAgentRuns()
+  let customBlackboard: BlackboardEntry[] = createPreviewBlackboard()
+  const customModels = createPreviewCustomAgentModels()
+  const customRunTimers = new Map<string, ReturnType<typeof setTimeout>[]>()
 
   const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
   const authMode = search?.get('auth') || ''
@@ -1020,6 +1035,382 @@ export function installPreviewHost() {
       return { state: 'current', version: '0.4.105' }
     },
     account,
+    async customAgents(request: CustomAgentsRequest) {
+      const nowSec = () => Math.floor(Date.now() / 1000)
+      const emitCustom = (
+        type: string,
+        agent_id: string,
+        run_id: string,
+        chain_id: string,
+        payload: any
+      ) => {
+        emit({
+          workspaceId: '',
+          kind: 'customAgents',
+          data: { type, agent_id, run_id, chain_id, payload, timestamp: nowSec() }
+        })
+      }
+      const slugify = (name: string, fallback: string) => {
+        const cleaned = name
+          .toLowerCase()
+          .replace(/[^a-z0-9а-яё]+/gi, '-')
+          .replace(/^-+|-+$/g, '')
+        return cleaned || fallback
+      }
+      if (request.action === 'list') {
+        return { agents: structuredClone(customAgents) }
+      }
+      if (request.action === 'get') {
+        const found = customAgents.find((item) => item.id === request.agentId)
+        if (!found) throw new Error('Агент не найден')
+        return structuredClone(found)
+      }
+      if (request.action === 'create') {
+        const now = nowSec()
+        const id = request.input.id?.trim() || `agent-${Date.now()}`
+        const name = request.input.name?.trim() || 'Новый агент'
+        const created: CustomAgent = {
+          id,
+          slug: request.input.slug?.trim() || slugify(name, id),
+          name,
+          description: request.input.description || '',
+          role: request.input.role || 'worker',
+          system_prompt: request.input.system_prompt || '',
+          memory: request.input.memory || '',
+          model_mode: request.input.model_mode || 'auto',
+          provider_id: request.input.provider_id || '',
+          model_id: request.input.model_id || '',
+          reasoning_mode: request.input.reasoning_mode || '',
+          auto_model_hint: request.input.auto_model_hint || '',
+          allowed_tools: request.input.allowed_tools || [],
+          workspace_path: request.input.workspace_path || '',
+          enabled: request.input.enabled ?? true,
+          created_by: request.input.created_by || 'user',
+          trigger_type: request.input.trigger_type || 'manual',
+          interval_minutes: request.input.interval_minutes || 0,
+          cron_expr: request.input.cron_expr || '',
+          monitor_kind: request.input.monitor_kind || '',
+          monitor_target: request.input.monitor_target || '',
+          monitor_last_hash: request.input.monitor_last_hash || '',
+          monitor_last_snapshot: request.input.monitor_last_snapshot || '',
+          acceptance_criteria: request.input.acceptance_criteria || '',
+          deterministic_checks: request.input.deterministic_checks || [],
+          verifier_agent_id: request.input.verifier_agent_id || '',
+          next_agent_id: request.input.next_agent_id || '',
+          max_rework_attempts: request.input.max_rework_attempts || 3,
+          status: request.input.enabled === false ? 'paused' : 'idle',
+          last_error: '',
+          last_run_at: 0,
+          next_run_at: 0,
+          created_at: now,
+          updated_at: now
+        }
+        customAgents = [...customAgents, created]
+        emitCustom('agent.created', created.id, '', '', structuredClone(created))
+        return structuredClone(created)
+      }
+      if (request.action === 'update') {
+        const index = customAgents.findIndex((item) => item.id === request.agentId)
+        if (index === -1) throw new Error('Агент не найден')
+        const current = customAgents[index]
+        const nextEnabled =
+          request.patch.enabled !== undefined ? request.patch.enabled : current.enabled
+        const nextStatus =
+          request.patch.enabled === false
+            ? 'paused'
+            : request.patch.enabled === true && current.status === 'paused'
+              ? 'idle'
+              : request.patch.status || current.status
+        const updated: CustomAgent = {
+          ...current,
+          ...request.patch,
+          id: current.id,
+          enabled: nextEnabled,
+          status: nextStatus,
+          updated_at: nowSec()
+        }
+        customAgents = customAgents.map((item) => (item.id === updated.id ? updated : item))
+        emitCustom('agent.status', updated.id, '', '', structuredClone(updated))
+        return structuredClone(updated)
+      }
+      if (request.action === 'delete') {
+        const exists = customAgents.some((item) => item.id === request.agentId)
+        customAgents = customAgents.filter((item) => item.id !== request.agentId)
+        return { deleted: exists }
+      }
+      if (request.action === 'probe') {
+        const index = customAgents.findIndex((item) => item.id === request.agentId)
+        if (index === -1) throw new Error('Агент не найден')
+        const agent = customAgents[index]
+        if (!agent.monitor_kind || !agent.monitor_target) {
+          return {
+            changed: false,
+            hash: agent.monitor_last_hash,
+            snapshot: agent.monitor_last_snapshot,
+            diff: '',
+            error: 'Не задан тип или цель мониторинга'
+          }
+        }
+        const nextVersion = agent.monitor_last_snapshot.includes('v0.4.118')
+          ? 'v0.4.119'
+          : 'v0.4.118'
+        const nextSnapshot =
+          agent.monitor_kind === 'http'
+            ? `{"tag_name":"${nextVersion}","draft":false,"checked_at":${nowSec()}}`
+            : `snapshot:${agent.monitor_target}:${nextVersion}`
+        const nextHash = Array.from(nextSnapshot)
+          .reduce((acc, ch) => (acc * 33 + ch.charCodeAt(0)) >>> 0, 5381)
+          .toString(16)
+          .padStart(16, '0')
+        const diff = `--- previous\n+++ current\n- ${agent.monitor_last_snapshot || '(пусто)'}\n+ ${nextSnapshot}`
+        const updated = {
+          ...agent,
+          monitor_last_hash: nextHash,
+          monitor_last_snapshot: nextSnapshot,
+          updated_at: nowSec()
+        }
+        customAgents = customAgents.map((item) => (item.id === updated.id ? updated : item))
+        emitCustom('agent.status', updated.id, '', '', structuredClone(updated))
+        return {
+          changed: nextHash !== agent.monitor_last_hash,
+          hash: nextHash,
+          snapshot: nextSnapshot,
+          diff,
+          error: ''
+        }
+      }
+      if (request.action === 'run') {
+        const agent = customAgents.find((item) => item.id === request.agentId)
+        if (!agent) throw new Error('Агент не найден')
+        const started = nowSec()
+        const chainId = request.chainId?.trim() || `chain-${Date.now()}`
+        const runId = `crun-${Date.now()}`
+        const chosen =
+          agent.model_mode === 'manual' && agent.model_id
+            ? customModels.find(
+                (m) => m.provider_id === agent.provider_id && m.model_id === agent.model_id
+              ) || customModels[1]
+            : agent.role === 'orchestrator'
+              ? customModels[3]
+              : agent.role === 'verifier' || agent.acceptance_criteria
+                ? customModels[1]
+                : customModels[0]
+        const resolvedReasoning =
+          agent.model_mode === 'manual' && agent.reasoning_mode
+            ? agent.reasoning_mode
+            : chosen.default_reasoning_mode || 'medium'
+        const autoReason =
+          agent.model_mode === 'manual'
+            ? `Выбрано вручную (рассуждения: ${resolvedReasoning}).`
+            : `Автовыбор (${chosen.tier}, рассуждения: ${resolvedReasoning}): подобрано под роль и критерии задачи.`
+        const initialRun: CustomAgentRun = {
+          id: runId,
+          agent_id: agent.id,
+          agent_name: agent.name,
+          agent_role: agent.role,
+          chain_id: chainId,
+          parent_run_id: '',
+          trigger_reason: request.triggerReason || 'manual',
+          input_prompt: request.prompt,
+          status: 'running',
+          attempt: 1,
+          resolved_provider: chosen.provider_id,
+          resolved_model: chosen.model_id,
+          resolved_reasoning: resolvedReasoning,
+          auto_model_reason: autoReason,
+          output_text: '',
+          verifier_verdict: '',
+          verifier_feedback: '',
+          deterministic_report: '',
+          monitor_diff: '',
+          steps: [
+            {
+              kind: 'execute',
+              title: 'Запуск задачи',
+              detail: request.prompt.slice(0, 120) || 'Выполнение по инструкции',
+              status: 'running',
+              timestamp: started
+            }
+          ],
+          error: '',
+          started_at: started,
+          finished_at: 0
+        }
+        customAgentRuns = [initialRun, ...customAgentRuns]
+        const finalizeRun = (): CustomAgentRun => {
+          const doneAt = nowSec()
+          const needsVerify =
+            agent.role !== 'verifier' &&
+            (Boolean(agent.acceptance_criteria.trim()) ||
+              agent.deterministic_checks.length > 0 ||
+              Boolean(agent.verifier_agent_id))
+          const outputText =
+            agent.role === 'orchestrator'
+              ? `Задача принята координатором:\n> ${request.prompt}\n\nПлан выполнен: требования зафиксированы на доске контекста, параметры моделей согласованы.`
+              : `Результат выполнения агента «${agent.name}»:\n\n${request.prompt ? `Запрос: ${request.prompt}\n` : ''}Статус: выполнено успешно.`
+          const completed: CustomAgentRun = {
+            ...initialRun,
+            status: 'passed',
+            output_text: outputText,
+            verifier_verdict: needsVerify ? 'PASS' : '',
+            verifier_feedback: needsVerify
+              ? 'VERDICT: PASS\nКритерии приёмки и структурные проверки выполнены.'
+              : '',
+            deterministic_report: agent.deterministic_checks.length
+              ? agent.deterministic_checks
+                  .map((chk) => `[PASS] ${chk.id || chk.kind} (${chk.kind}): проверка пройдена`)
+                  .join('\n')
+              : '',
+            steps: [
+              {
+                kind: 'execute',
+                title: 'Выполнение задачи',
+                detail: 'Сформирован итоговый ответ',
+                status: 'ok',
+                timestamp: doneAt
+              },
+              ...(needsVerify
+                ? [
+                    {
+                      kind: 'verifier',
+                      title: 'Верификация пройдена',
+                      detail: 'VERDICT: PASS',
+                      status: 'ok',
+                      timestamp: doneAt
+                    }
+                  ]
+                : [])
+            ],
+            finished_at: doneAt
+          }
+          customAgentRuns = customAgentRuns.map((r) => (r.id === runId ? completed : r))
+          const updatedAgent: CustomAgent = {
+            ...agent,
+            status: agent.enabled ? 'idle' : 'paused',
+            last_run_at: doneAt,
+            updated_at: doneAt
+          }
+          customAgents = customAgents.map((a) => (a.id === agent.id ? updatedAgent : a))
+          if (agent.next_agent_id) {
+            const handoff: BlackboardEntry = {
+              id: `bb-${Date.now()}`,
+              chain_id: chainId,
+              run_id: runId,
+              from_agent_id: agent.id,
+              from_agent_name: agent.name,
+              to_agent_id: agent.next_agent_id,
+              topic: 'handoff',
+              payload: outputText,
+              status: 'open',
+              created_at: doneAt
+            }
+            customBlackboard = [handoff, ...customBlackboard]
+            emitCustom('blackboard.posted', agent.id, runId, chainId, structuredClone(handoff))
+          }
+          emitCustom('agent.status', agent.id, '', '', structuredClone(updatedAgent))
+          emitCustom('run.passed', agent.id, runId, chainId, structuredClone(completed))
+          return completed
+        }
+        if (request.sync) {
+          const completed = finalizeRun()
+          return structuredClone(completed)
+        }
+        const runningAgent: CustomAgent = { ...agent, status: 'running', updated_at: started }
+        customAgents = customAgents.map((a) => (a.id === agent.id ? runningAgent : a))
+        emitCustom('agent.status', agent.id, '', '', structuredClone(runningAgent))
+        emitCustom('run.started', agent.id, runId, chainId, structuredClone(initialRun))
+        const t1 = setTimeout(() => {
+          const step = {
+            kind: 'execute',
+            title: 'Анализ и подготовка ответа',
+            detail: 'Обработка контекста и памяти агента',
+            status: 'ok',
+            timestamp: nowSec()
+          }
+          customAgentRuns = customAgentRuns.map((r) =>
+            r.id === runId ? { ...r, steps: [...r.steps, step] } : r
+          )
+          emitCustom('run.step', agent.id, runId, chainId, step)
+        }, 120)
+        const t2 = setTimeout(() => {
+          customRunTimers.delete(runId)
+          finalizeRun()
+        }, 280)
+        customRunTimers.set(runId, [t1, t2])
+        return structuredClone(initialRun)
+      }
+      if (request.action === 'cancelRun') {
+        const timers = customRunTimers.get(request.runId)
+        if (timers) {
+          for (const timer of timers) clearTimeout(timer)
+          customRunTimers.delete(request.runId)
+        }
+        const run = customAgentRuns.find((r) => r.id === request.runId)
+        if (!run) return { cancelled: false }
+        const cancelled: CustomAgentRun = {
+          ...run,
+          status: 'cancelled',
+          error: 'выполнение отменено',
+          finished_at: nowSec()
+        }
+        customAgentRuns = customAgentRuns.map((r) => (r.id === request.runId ? cancelled : r))
+        const agent = customAgents.find((a) => a.id === request.agentId)
+        if (agent) {
+          const nextAgent: CustomAgent = {
+            ...agent,
+            status: agent.enabled ? 'idle' : 'paused',
+            updated_at: nowSec()
+          }
+          customAgents = customAgents.map((a) => (a.id === nextAgent.id ? nextAgent : a))
+          emitCustom('agent.status', nextAgent.id, '', '', structuredClone(nextAgent))
+        }
+        emitCustom(
+          'run.cancelled',
+          request.agentId,
+          request.runId,
+          cancelled.chain_id,
+          structuredClone(cancelled)
+        )
+        return { cancelled: true }
+      }
+      if (request.action === 'runs') {
+        const filtered = request.agentId
+          ? customAgentRuns.filter((r) => r.agent_id === request.agentId)
+          : customAgentRuns
+        const sorted = [...filtered].sort((a, b) => b.started_at - a.started_at)
+        const limited = request.limit ? sorted.slice(0, request.limit) : sorted
+        return { runs: structuredClone(limited) }
+      }
+      if (request.action === 'blackboard') {
+        const filtered = request.chainId
+          ? customBlackboard.filter((b) => b.chain_id === request.chainId)
+          : customBlackboard
+        const sorted = [...filtered].sort((a, b) => b.created_at - a.created_at)
+        const limited = request.limit ? sorted.slice(0, request.limit) : sorted
+        return { entries: structuredClone(limited) }
+      }
+      if (request.action === 'postBlackboard') {
+        const entry: BlackboardEntry = {
+          id: `bb-${Date.now()}`,
+          chain_id: request.input.chain_id,
+          run_id: '',
+          from_agent_id: request.input.from_agent_id || '',
+          from_agent_name: request.input.from_agent_name || 'Пользователь',
+          to_agent_id: request.input.to_agent_id || '',
+          topic: request.input.topic,
+          payload: request.input.payload,
+          status: 'open',
+          created_at: nowSec()
+        }
+        customBlackboard = [entry, ...customBlackboard]
+        emitCustom('blackboard.posted', entry.from_agent_id, '', entry.chain_id, structuredClone(entry))
+        return structuredClone(entry)
+      }
+      if (request.action === 'models') {
+        return { models: structuredClone(customModels) }
+      }
+      return {}
+    },
     onEvent(listener) {
       listeners.add(listener)
       return () => {

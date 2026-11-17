@@ -477,6 +477,7 @@ export function useWorkspace() {
       }))
     })
     const unsubscribe = window.prime.onEvent((event) => {
+      if (!('type' in event)) return
       if (event.type !== 'message') history.flush()
       if (event.type === 'workbench' && event.payload?.action === 'contextChanged') {
         const { key, context } = event.payload

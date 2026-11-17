@@ -20,8 +20,10 @@ func NewInProcessWithOptions(ctx context.Context, cfg *config.ConfigStore, attac
 		backend: backend.New(ctx, cfg, nil),
 		account: account.NewService(),
 	}
+	s.initCustomAgents(ctx, cfg)
 	if ctx != nil {
 		context.AfterFunc(ctx, s.account.Close)
+		context.AfterFunc(ctx, s.stopCustomAgents)
 	}
 	s.backend.AttachmentRoot = attachmentRoot
 	s.installHandler()
