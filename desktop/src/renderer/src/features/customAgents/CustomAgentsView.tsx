@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bot, Plus, RefreshCw, SlidersHorizontal, Users } from 'lucide-react'
+import { Bot, Brain, Plus, RefreshCw, SlidersHorizontal, Users } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { EmptyState } from '../../components/EmptyState'
 import { useI18n } from '../../i18n'
@@ -7,6 +7,7 @@ import { AgentInspector } from './AgentInspector'
 import { AgentRoster } from './AgentRoster'
 import { AgentWorkspace } from './AgentWorkspace'
 import { CreateAgentDialog } from './CreateAgentDialog'
+import { GlobalMemoryDialog } from './GlobalMemoryDialog'
 import type { RoleFilter } from './presentation'
 import { useCustomAgents } from './useCustomAgents'
 import './customAgents.css'
@@ -19,6 +20,7 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
   const [query, setQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [createOpen, setCreateOpen] = useState(false)
+  const [memoryOpen, setMemoryOpen] = useState(false)
   const [mobilePane, setMobilePane] = useState<MobilePane>('workspace')
 
   const selected = state.selectedAgent
@@ -26,6 +28,27 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
 
   return (
     <div className="ca-studio" data-mobile-pane={mobilePane} aria-label={t('Свои агенты')}>
+      <header className="ca-studio-head">
+        <div className="ca-studio-head-title">
+          <h1>{t('Студия агентов')}</h1>
+          {state.globalMemory && (
+            <span className="ca-studio-mem-pill">
+              {`MEMORY ${state.globalMemory.memory_chars}/${state.globalMemory.memory_limit}`}
+            </span>
+          )}
+        </div>
+        <div className="ca-studio-head-actions">
+          <button
+            type="button"
+            className="ca-memory-trigger"
+            onClick={() => setMemoryOpen(true)}
+          >
+            <Brain size={14} aria-hidden="true" />
+            <span>{t('Память и личность')}</span>
+          </button>
+        </div>
+      </header>
+
       <div className="ca-mobile-tabs" role="tablist" aria-label={t('Панели студии')}>
         <button
           type="button"
@@ -107,6 +130,7 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
               onCancelRun={state.cancelRun}
               onProbe={state.probeAgent}
               onPostBlackboard={state.postBlackboard}
+              onDispatchSwarm={state.dispatchSwarm}
             />
           ) : (
             <div className="ca-workspace-empty">
@@ -162,6 +186,15 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
             })
           }}
           close={() => setCreateOpen(false)}
+        />
+      )}
+
+      {memoryOpen && (
+        <GlobalMemoryDialog
+          doc={state.globalMemory}
+          onLoad={state.loadGlobalMemory}
+          onSave={state.saveGlobalMemory}
+          close={() => setMemoryOpen(false)}
         />
       )}
     </div>

@@ -74,6 +74,7 @@ export interface CustomAgent {
   verifier_agent_id: string
   next_agent_id: string
   max_rework_attempts: number
+  strict_verify: boolean
   status: CustomAgentStatus
   last_error: string
   last_run_at: number
@@ -163,11 +164,91 @@ export interface CustomAgentEvent {
   timestamp: number
 }
 
+export interface GlobalMemoryDoc {
+  memory: string
+  user_profile: string
+  soul: string
+  memory_limit: number
+  user_limit: number
+  memory_chars: number
+  user_chars: number
+}
+
+export interface SwarmWorkerSpec {
+  agent_id?: string
+  slug?: string
+  name?: string
+  role?: CustomAgentRole | string
+  task?: string
+  prompt?: string
+  system_prompt?: string
+  model_mode?: CustomAgentModelMode | string
+  provider_id?: string
+  model_id?: string
+  reasoning_mode?: string
+  auto_model_hint?: string
+  allowed_tools?: string[]
+  workspace_path?: string
+  acceptance_criteria?: string
+  deterministic_checks?: DeterministicCheck[]
+  verifier_agent_id?: string
+  max_rework_attempts?: number
+  strict_verify?: boolean
+}
+
+export interface SwarmRequest {
+  goal: string
+  chain_id?: string
+  workers: SwarmWorkerSpec[]
+  acceptance_criteria?: string
+  deterministic_checks?: DeterministicCheck[]
+  verifier_agent_id?: string
+  synthesizer_agent_id?: string
+  max_rework_attempts?: number
+  persist_workers?: boolean
+  skip_verify?: boolean
+  skip_synthesize?: boolean
+}
+
+export interface SwarmWorkerResult {
+  agent_id: string
+  slug: string
+  name: string
+  task: string
+  run: CustomAgentRun
+  output: string
+  status: CustomAgentRunStatus | string
+  error?: string
+}
+
+export interface SwarmResult {
+  chain_id: string
+  goal: string
+  status: CustomAgentRunStatus | string
+  attempts: number
+  workers: SwarmWorkerResult[]
+  verifier_verdict: string
+  verifier_feedback: string
+  deterministic_report: string
+  final_output: string
+  synthesizer_run?: CustomAgentRun | null
+  blackboard?: BlackboardEntry[]
+  error?: string
+}
+
+export type CreateCustomAgentInput = Partial<CustomAgent> & {
+  strict_verify?: boolean
+}
+
+export type UpdateCustomAgentInput = Partial<CustomAgent> & {
+  strict_verify?: boolean
+}
+
 export type CustomAgentsRequest =
   | { action: 'list' }
   | { action: 'get'; agentId: string }
-  | { action: 'create'; input: Partial<CustomAgent> }
-  | { action: 'update'; agentId: string; patch: Partial<CustomAgent> }
+  | { action: 'create'; input: CreateCustomAgentInput }
+  | { action: 'update'; agentId: string; patch: UpdateCustomAgentInput }
   | { action: 'delete'; agentId: string }
   | {
       action: 'run'
@@ -194,3 +275,6 @@ export type CustomAgentsRequest =
       }
     }
   | { action: 'models' }
+  | { action: 'getGlobalMemory' }
+  | { action: 'saveGlobalMemory'; input: Partial<GlobalMemoryDoc> }
+  | { action: 'dispatchSwarm'; input: SwarmRequest }

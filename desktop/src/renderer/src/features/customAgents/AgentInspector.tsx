@@ -124,7 +124,8 @@ export function AgentInspector({
         deterministic_checks: draft.deterministic_checks,
         verifier_agent_id: draft.verifier_agent_id,
         next_agent_id: draft.next_agent_id,
-        max_rework_attempts: Math.max(1, Number(draft.max_rework_attempts) || 3)
+        max_rework_attempts: Math.max(1, Number(draft.max_rework_attempts) || 3),
+        strict_verify: draft.strict_verify
       })
     } catch (cause) {
       setSaveError(String((cause as Error)?.message || cause))
@@ -527,6 +528,24 @@ export function AgentInspector({
 
           <section className="ca-section">
             <h3>{t('Жёсткий контроль (Верификатор)')}</h3>
+            <div className="ca-toggle-row">
+              <div className="ca-toggle-copy">
+                <strong>{t('Строгая приёмка Verifier')}</strong>
+                <span className="ca-muted-note">
+                  {t('Проверять результат даже без списка критериев')}
+                </span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={draft.strict_verify}
+                aria-label={t('Строгая приёмка Verifier')}
+                className={`ca-switch ${draft.strict_verify ? 'on' : ''}`}
+                onClick={() => setDraft({ ...draft, strict_verify: !draft.strict_verify })}
+              >
+                <span className="ca-switch-thumb" />
+              </button>
+            </div>
             <label className="ca-field">
               <span>{t('Критерии приёмки')}</span>
               <textarea

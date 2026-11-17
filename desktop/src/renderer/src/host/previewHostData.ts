@@ -17,6 +17,7 @@ import type {
   BlackboardEntry,
   CustomAgent,
   CustomAgentRun,
+  GlobalMemoryDoc,
   ModelOption
 } from '../../../shared/customAgents'
 
@@ -1014,6 +1015,7 @@ export function createPreviewCustomAgents(): CustomAgent[] {
       verifier_agent_id: 'agent-strict-verifier',
       next_agent_id: '',
       max_rework_attempts: 3,
+      strict_verify: false,
       status: 'idle',
       last_error: '',
       last_run_at: now - 1800,
@@ -1060,6 +1062,7 @@ export function createPreviewCustomAgents(): CustomAgent[] {
       verifier_agent_id: 'agent-strict-verifier',
       next_agent_id: 'agent-orchestrator',
       max_rework_attempts: 3,
+      strict_verify: true,
       status: 'monitoring',
       last_error: '',
       last_run_at: now - 420,
@@ -1097,6 +1100,7 @@ export function createPreviewCustomAgents(): CustomAgent[] {
       verifier_agent_id: '',
       next_agent_id: '',
       max_rework_attempts: 1,
+      strict_verify: false,
       status: 'idle',
       last_error: '',
       last_run_at: now - 410,
@@ -1319,4 +1323,31 @@ export function createPreviewCustomAgentModels(): ModelOption[] {
       plan_label: 'Ultra'
     }
   ]
+}
+
+export function createPreviewGlobalMemory(): GlobalMemoryDoc {
+  const memory = [
+    '- Релизные отчёты проходят обязательную проверку через Строгого верификатора.',
+    '- Мониторинг релизов использует JSON со структурой: version, summary, risk_level.',
+    '- Общая память хранит только подтверждённые факты и решения цепочек.'
+  ].join('\n')
+  const user_profile = [
+    '- Язык интерфейса и отчётов: русский, кратко и по делу.',
+    '- Рабочая платформа: Windows 11, десктопное приложение + Go-сервис.',
+    '- Стиль: без лишней воды, чёткая фиксация проверяемых результатов.'
+  ].join('\n')
+  const soul = [
+    'Отвечай точно, кратко и по делу.',
+    'Опирайся только на проверенные данные, реальные файлы и результаты запусков.',
+    'Соблюдай границы рабочего пространства и принятые соглашения.'
+  ].join('\n')
+  return {
+    memory,
+    user_profile,
+    soul,
+    memory_limit: 2200,
+    user_limit: 1375,
+    memory_chars: Array.from(memory).length,
+    user_chars: Array.from(user_profile).length
+  }
 }

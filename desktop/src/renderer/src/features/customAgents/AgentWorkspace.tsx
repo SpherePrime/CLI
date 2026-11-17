@@ -3,8 +3,11 @@ import {
   Activity,
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   GitBranch,
   History,
+  Layers,
   MessageSquarePlus,
   Play,
   Radar,
@@ -17,7 +20,9 @@ import type {
   BlackboardEntry,
   CustomAgent,
   CustomAgentRun,
-  ProbeResult
+  ProbeResult,
+  SwarmRequest,
+  SwarmResult
 } from '../../../../shared/customAgents'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
@@ -46,7 +51,8 @@ export function AgentWorkspace({
   onRun,
   onCancelRun,
   onProbe,
-  onPostBlackboard
+  onPostBlackboard,
+  onDispatchSwarm
 }: {
   agent: CustomAgent
   agents: CustomAgent[]
@@ -73,6 +79,7 @@ export function AgentWorkspace({
     topic: string
     payload: string
   }) => Promise<BlackboardEntry>
+  onDispatchSwarm: (input: SwarmRequest) => Promise<SwarmResult>
 }) {
   const { t, locale } = useI18n()
   const [tab, setTab] = useState<CenterTab>('tasks')
@@ -87,12 +94,41 @@ export function AgentWorkspace({
   const [boardTopic, setBoardTopic] = useState('note')
   const [boardPayload, setBoardPayload] = useState('')
   const [postingBoard, setPostingBoard] = useState(false)
+  const [swarmOpen, setSwarmOpen] = useState(true)
+  const [swarmGoal, setSwarmGoal] = useState('')
+  const [swarmCriteria, setSwarmCriteria] = useState('')
+  const [swarmTasks, setSwarmTasks] = useState<Record<string, string>>(() => {
+    const initialId =
+      agent.role !== 'verifier'
+        ? agent.id
+        : agents.find((item) => item.role !== 'verifier')?.id || agent.id
+    return initialId ? { [initialId]: '' } : {}
+  })
+  const [swarmRunning, setSwarmRunning] = useState(false)
+  const [swarmError, setSwarmError] = useState('')
+  const [swarmResult, setSwarmResult] = useState<SwarmResult | null>(null)
   const [actionError, setActionError] = useState('')
 
   useEffect(() => {
     setProbeResult(null)
     setActionError('')
   }, [agent.id])
+
+  useEffect(() => {
+    setSwarmTasks((current) => {
+      const existingIds = new Set(agents.map((item) => item.id))
+      const filtered: Record<string, string> = {}
+      for (const [id, value] of Object.entries(current)) {
+        if (existingIds.has(id)) filtered[id] = value
+      }
+      if (Object.keys(filtered).length > 0) return filtered
+      const fallback =
+        agent.role !== 'verifier'
+          ? agent.id
+          : agents.find((item) => item.role !== 'verifier')?.id || agent.id
+      return fallback ? { [fallback]: '' } : {}
+    })
+  }, [agents, agent.id, agent.role])
 
   useEffect(() => {
     if (selectedChainId) setBoardChain(selectedChainId)
@@ -162,6 +198,45 @@ export function AgentWorkspace({
       setActionError(String((cause as Error)?.message || cause))
     } finally {
       setProbing(false)
+    }
+  }
+
+  const selectedSwarmAgents = useMemo(
+    () => agents.filter((item) => Object.prototype.hasOwnProperty.call(swarmTasks, item.id)),
+    [agents, swarmTasks]
+  )
+
+  const toggleSwarmAgent = (agentId: string) => {
+    setSwarmTasks((current) => {
+      if (Object.prototype.hasOwnProperty.call(current, agentId)) {
+        const next = { ...current }
+        delete next[agentId]
+        return next
+      }
+      return { ...current, [agentId]: '' }
+    })
+  }
+
+  const handleDispatchSwarm = async (event: React.FormEvent) => {
+    event.preventDefault()
+    const goal = swarmGoal.trim()
+    if (!goal || selectedSwarmAgents.length === 0 || swarmRunning) return
+    setSwarmRunning(true)
+    setSwarmError('')
+    try {
+      const result = await onDispatchSwarm({
+        goal,
+        acceptance_criteria: swarmCriteria.trim() || undefined,
+        workers: selectedSwarmAgents.map((item) => {
+          const task = swarmTasks[item.id]?.trim()
+          return task ? { agent_id: item.id, task } : { agent_id: item.id }
+        })
+      })
+      setSwarmResult(result)
+    } catch (cause) {
+      setSwarmError(String((cause as Error)?.message || cause))
+    } finally {
+      setSwarmRunning(false)
     }
   }
 
@@ -435,6 +510,212 @@ export function AgentWorkspace({
                 </div>
               )}
             </div>
+
+            <section className="ca-swarm-card" aria-label={t('Запустить рой (Swarm)')}>
+              <div className="ca-swarm-head">
+                <button
+                  type="button"
+                  className="ca-swarm-toggle"
+                  aria-expanded={swarmOpen}
+                  onClick={() => setSwarmOpen((prev) => !prev)}
+                >
+                  <Layers size={15} aria-hidden="true" />
+                  <strong>{t('Запустить рой (Swarm)')}</strong>
+                  <span className="ca-chip ca-chip-muted">
+                    {t('Агентов: {count}', { count: selectedSwarmAgents.length })}
+                  </span>
+                  {swarmOpen ? (
+                    <ChevronUp size={15} aria-hidden="true" />
+                  ) : (
+                    <ChevronDown size={15} aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+
+              {swarmOpen && (
+                <form className="ca-swarm-form" onSubmit={handleDispatchSwarm}>
+                  <label className="ca-field">
+                    <span>{t('Общая цель')}</span>
+                    <textarea
+                      rows={2}
+                      value={swarmGoal}
+                      onChange={(event) => setSwarmGoal(event.target.value)}
+                      placeholder={t('Опишите цель для параллельного выполнения агентами…')}
+                    />
+                  </label>
+
+                  <div className="ca-field">
+                    <span>{t('Участники роя (1+)')}</span>
+                    <div className="ca-swarm-picker" role="group" aria-label={t('Выбор агентов роя')}>
+                      {agents.map((item) => {
+                        const active = Object.prototype.hasOwnProperty.call(swarmTasks, item.id)
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={`ca-pill-btn ${active ? 'active' : ''}`}
+                            aria-pressed={active}
+                            onClick={() => toggleSwarmAgent(item.id)}
+                          >
+                            {item.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {selectedSwarmAgents.length > 0 && (
+                    <div className="ca-swarm-workers">
+                      {selectedSwarmAgents.map((item) => (
+                        <div key={item.id} className="ca-swarm-worker-row">
+                          <div className="ca-swarm-worker-meta">
+                            <strong>{item.name}</strong>
+                            <span className="ca-chip ca-chip-muted">
+                              {t(agentRoleLabel(item.role))}
+                            </span>
+                          </div>
+                          <input
+                            type="text"
+                            value={swarmTasks[item.id] ?? ''}
+                            onChange={(event) =>
+                              setSwarmTasks((current) => ({
+                                ...current,
+                                [item.id]: event.target.value
+                              }))
+                            }
+                            placeholder={t('Подзадача для {name} (необязательно)', {
+                              name: item.name
+                            })}
+                            aria-label={t('Подзадача для {name}', { name: item.name })}
+                          />
+                          <button
+                            type="button"
+                            className="icon small"
+                            aria-label={t('Убрать {name}', { name: item.name })}
+                            onClick={() => toggleSwarmAgent(item.id)}
+                          >
+                            <X size={13} aria-hidden="true" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <label className="ca-field">
+                    <span>{t('Критерии приёмки (необязательно)')}</span>
+                    <input
+                      type="text"
+                      value={swarmCriteria}
+                      onChange={(event) => setSwarmCriteria(event.target.value)}
+                      placeholder={t('Условия прохождения верификатора роя')}
+                    />
+                  </label>
+
+                  {swarmError && (
+                    <div className="ca-error-inline" role="alert">
+                      {swarmError}
+                    </div>
+                  )}
+
+                  <div className="ca-swarm-actions">
+                    <span className="ca-muted-note">
+                      {selectedSwarmAgents.length === 0
+                        ? t('Выберите минимум одного агента')
+                        : t('Параллельный запуск с авто-проверкой и синтезом')}
+                    </span>
+                    <button
+                      type="submit"
+                      className="primary"
+                      disabled={swarmRunning || !swarmGoal.trim() || selectedSwarmAgents.length === 0}
+                    >
+                      <Play size={14} aria-hidden="true" />
+                      <span>{swarmRunning ? t('Выполняется…') : t('Запустить рой')}</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {swarmResult && (
+                <div className="ca-swarm-result">
+                  <div className="ca-run-head">
+                    <div className="ca-run-head-left">
+                      <span
+                        className={`ca-status-badge tone-${runStatusMeta(swarmResult.status).tone}`}
+                      >
+                        <span className="ca-status-dot" aria-hidden="true" />
+                        {t(runStatusMeta(swarmResult.status).label)}
+                      </span>
+                      <span className="ca-chip ca-chip-muted">
+                        {t('Попыток: {count}', { count: swarmResult.attempts || 1 })}
+                      </span>
+                    </div>
+                    <code>{swarmResult.chain_id}</code>
+                  </div>
+
+                  {swarmResult.verifier_verdict && (
+                    <div
+                      className={`ca-verdict-banner ${swarmResult.verifier_verdict === 'PASS' ? 'pass' : 'fail'}`}
+                    >
+                      <div className="ca-verdict-head">
+                        {swarmResult.verifier_verdict === 'PASS' ? (
+                          <CheckCircle2 size={15} aria-hidden="true" />
+                        ) : (
+                          <TriangleAlert size={15} aria-hidden="true" />
+                        )}
+                        <strong>{`VERDICT: ${swarmResult.verifier_verdict}`}</strong>
+                      </div>
+                      {swarmResult.verifier_feedback && (
+                        <pre className="ca-verdict-text">{swarmResult.verifier_feedback}</pre>
+                      )}
+                    </div>
+                  )}
+
+                  {swarmResult.workers && swarmResult.workers.length > 0 && (
+                    <div className="ca-block">
+                      <span className="ca-block-label">{t('Воркеры роя')}</span>
+                      <div className="ca-swarm-results-grid">
+                        {swarmResult.workers.map((worker, index) => {
+                          const wMeta = runStatusMeta(worker.status)
+                          return (
+                            <article
+                              key={`${worker.agent_id}-${index}`}
+                              className="ca-swarm-worker-card"
+                            >
+                              <div className="ca-swarm-worker-card-head">
+                                <strong>{worker.name || worker.agent_id}</strong>
+                                <span className={`ca-status-badge tone-${wMeta.tone}`}>
+                                  <span className="ca-status-dot" aria-hidden="true" />
+                                  {t(wMeta.label)}
+                                </span>
+                              </div>
+                              {worker.task && <p className="ca-muted-note">{worker.task}</p>}
+                              {worker.error ? (
+                                <p className="ca-error-inline">{worker.error}</p>
+                              ) : worker.output ? (
+                                <pre className="ca-output-box">{worker.output}</pre>
+                              ) : null}
+                            </article>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {swarmResult.final_output && (
+                    <div className="ca-block">
+                      <span className="ca-block-label">{t('Итоговый синтез')}</span>
+                      <pre className="ca-output-box">{swarmResult.final_output}</pre>
+                    </div>
+                  )}
+
+                  {swarmResult.error && (
+                    <div className="ca-error-inline" role="alert">
+                      {swarmResult.error}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
 
             <div className="ca-board-section">
               <div className="ca-board-head">

@@ -16,7 +16,12 @@ import {
   runStatusMeta,
   triggerLabel
 } from '../../src/renderer/src/features/customAgents/presentation'
-import type { CustomAgent, ModelOption } from '../../src/shared/customAgents'
+import type {
+  CustomAgent,
+  GlobalMemoryDoc,
+  ModelOption,
+  SwarmResult
+} from '../../src/shared/customAgents'
 import type { DesktopEvent } from '../../src/shared/contracts'
 
 function setupPreview() {
@@ -158,6 +163,136 @@ describe('customAgents preview host', () => {
       vi.useRealTimers()
     }
   })
+
+  it('loads and saves global memory while enforcing character limits', async () => {
+    vi.useFakeTimers()
+    const env = setupPreview()
+    try {
+      const initial = (await env.prime.customAgents({
+        action: 'getGlobalMemory'
+      })) as GlobalMemoryDoc
+      expect(initial.memory_limit).toBe(2200)
+      expect(initial.user_limit).toBe(1375)
+      expect(initial.memory_chars).toBe(Array.from(initial.memory).length)
+      expect(initial.user_chars).toBe(Array.from(initial.user_profile).length)
+
+      const saved = (await env.prime.customAgents({
+        action: 'saveGlobalMemory',
+        input: {
+          memory: '- Новая заметка среды',
+          user_profile: '- Краткий стиль ответов',
+          soul: 'Чёткий рабочий тон'
+        }
+      })) as GlobalMemoryDoc
+      expect(saved.memory).toBe('- Новая заметка среды')
+      expect(saved.user_profile).toBe('- Краткий стиль ответов')
+      expect(saved.soul).toBe('Чёткий рабочий тон')
+      expect(saved.memory_chars).toBe(Array.from('- Новая заметка среды').length)
+      expect(saved.user_chars).toBe(Array.from('- Краткий стиль ответов').length)
+
+      await expect(
+        env.prime.customAgents({
+          action: 'saveGlobalMemory',
+          input: {
+            memory: 'x'.repeat(2201),
+            user_profile: saved.user_profile,
+            soul: saved.soul
+          }
+        })
+      ).rejects.toThrow(/2200/)
+
+      await expect(
+        env.prime.customAgents({
+          action: 'saveGlobalMemory',
+          input: {
+            memory: saved.memory,
+            user_profile: 'u'.repeat(1376),
+            soul: saved.soul
+          }
+        })
+      ).rejects.toThrow(/1375/)
+
+      const afterFailed = (await env.prime.customAgents({
+        action: 'getGlobalMemory'
+      })) as GlobalMemoryDoc
+      expect(afterFailed.memory).toBe('- Новая заметка среды')
+      expect(afterFailed.user_profile).toBe('- Краткий стиль ответов')
+    } finally {
+      env.restore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('dispatches parallel swarm, updates blackboard and runs, and supports strict_verify', async () => {
+    vi.useFakeTimers()
+    const env = setupPreview()
+    try {
+      const events: string[] = []
+      const unsub = env.prime.onEvent((event) => {
+        if ('kind' in event && event.kind === 'customAgents') events.push(event.data.type)
+      })
+
+      const strictWorker = (await env.prime.customAgents({
+        action: 'create',
+        input: {
+          name: 'Строгий исполнитель',
+          role: 'worker',
+          strict_verify: true
+        }
+      })) as CustomAgent
+      expect(strictWorker.strict_verify).toBe(true)
+
+      const strictRun = await env.prime.customAgents({
+        action: 'run',
+        agentId: strictWorker.id,
+        prompt: 'Проверь конфигурацию',
+        sync: true
+      })
+      expect(strictRun.verifier_verdict).toBe('PASS')
+
+      await expect(
+        env.prime.customAgents({
+          action: 'dispatchSwarm',
+          input: { goal: '', workers: [{ agent_id: strictWorker.id }] }
+        })
+      ).rejects.toThrow()
+
+      const swarm = (await env.prime.customAgents({
+        action: 'dispatchSwarm',
+        input: {
+          goal: 'Провести параллельный аудит релиза',
+          acceptance_criteria: 'Все подзадачи закрыты с подтверждением',
+          workers: [
+            { agent_id: 'agent-release-monitor', task: 'Проверить тег релиза' },
+            { agent_id: strictWorker.id, task: 'Проверить конфигурацию сборки' }
+          ]
+        }
+      })) as SwarmResult
+
+      expect(swarm.status).toBe('passed')
+      expect(swarm.verifier_verdict).toBe('PASS')
+      expect(swarm.workers).toHaveLength(2)
+      expect(swarm.workers.every((worker) => worker.status === 'passed')).toBe(true)
+      expect(swarm.final_output).toContain('Провести параллельный аудит релиза')
+      expect(events).toContain('swarm.started')
+      expect(events).toContain('swarm.completed')
+      expect(events).toContain('blackboard.posted')
+
+      const board = await env.prime.customAgents({
+        action: 'blackboard',
+        chainId: swarm.chain_id
+      })
+      const topics = board.entries.map((entry: { topic: string }) => entry.topic)
+      expect(topics).toContain('swarm.goal')
+      expect(topics).toContain('swarm.worker')
+      expect(topics).toContain('swarm.verdict')
+      expect(topics).toContain('swarm.final')
+      unsub()
+    } finally {
+      env.restore()
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('customAgents presentation helpers and nativeBridge normalization', () => {
@@ -261,6 +396,7 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
       verifier_agent_id: '',
       next_agent_id: '',
       max_rework_attempts: 3,
+      strict_verify: false,
       status: 'idle',
       last_error: '',
       last_run_at: 0,
@@ -271,6 +407,7 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
     const draft = buildAgentDraft(sample)
     expect(isAgentDraftDirty(sample, draft)).toBe(false)
     expect(isAgentDraftDirty(sample, { ...draft, name: 'Updated' })).toBe(true)
+    expect(isAgentDraftDirty(sample, { ...draft, strict_verify: true })).toBe(true)
   })
 
   it('forwards customAgents calls and normalizes native customAgents events', async () => {

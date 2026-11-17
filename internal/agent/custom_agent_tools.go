@@ -18,6 +18,7 @@ const (
 	CustomAgentUpdateToolName     = "custom_agent_update"
 	CustomAgentDeleteToolName     = "custom_agent_delete"
 	CustomAgentDispatchToolName   = "custom_agent_dispatch"
+	CustomAgentSwarmToolName      = "custom_agent_swarm"
 	CustomAgentRunsToolName       = "custom_agent_runs"
 	CustomAgentMemoryToolName     = "custom_agent_memory"
 	CustomAgentBlackboardToolName = "custom_agent_blackboard"
@@ -39,6 +40,7 @@ type customAgentSummary struct {
 	Description     string `json:"description,omitempty"`
 	VerifierAgentID string `json:"verifier_agent_id,omitempty"`
 	NextAgentID     string `json:"next_agent_id,omitempty"`
+	StrictVerify    bool   `json:"strict_verify,omitempty"`
 }
 
 type CustomAgentListParams struct{}
@@ -69,6 +71,7 @@ type CustomAgentCreateParams struct {
 	VerifierAgentID     string                            `json:"verifier_agent_id,omitempty" description:"Optional verifier agent ID"`
 	NextAgentID         string                            `json:"next_agent_id,omitempty" description:"Optional next agent ID for chained handoff"`
 	MaxReworkAttempts   int                               `json:"max_rework_attempts,omitempty" description:"Max rework attempts on verification failure"`
+	StrictVerify        bool                              `json:"strict_verify,omitempty" description:"Require verifier pass even without explicit acceptance criteria"`
 }
 
 type CustomAgentUpdateParams struct {
@@ -98,6 +101,7 @@ type CustomAgentUpdateParams struct {
 	VerifierAgentID     *string                            `json:"verifier_agent_id,omitempty" description:"Updated verifier agent ID"`
 	NextAgentID         *string                            `json:"next_agent_id,omitempty" description:"Updated next agent ID"`
 	MaxReworkAttempts   *int                               `json:"max_rework_attempts,omitempty" description:"Updated max rework attempts"`
+	StrictVerify        *bool                              `json:"strict_verify,omitempty" description:"Updated strict verification setting"`
 	Status              *string                            `json:"status,omitempty" description:"Updated status"`
 }
 
@@ -115,6 +119,20 @@ type CustomAgentDispatchParams struct {
 	Force   bool   `json:"force,omitempty" description:"Force execution even if monitor probe sees no change"`
 }
 
+type CustomAgentSwarmParams struct {
+	Goal                string                            `json:"goal" description:"Overall swarm goal"`
+	ChainID             string                            `json:"chain_id,omitempty" description:"Optional shared blackboard chain ID"`
+	Workers             []customagents.SwarmWorkerSpec    `json:"workers" description:"List of parallel workers to execute"`
+	AcceptanceCriteria  string                            `json:"acceptance_criteria,omitempty" description:"Acceptance criteria checked by verifier"`
+	DeterministicChecks []customagents.DeterministicCheck `json:"deterministic_checks,omitempty" description:"Deterministic checks to run on aggregated output"`
+	VerifierAgentID     string                            `json:"verifier_agent_id,omitempty" description:"Optional verifier agent ID"`
+	SynthesizerAgentID  string                            `json:"synthesizer_agent_id,omitempty" description:"Optional synthesizer agent ID"`
+	MaxReworkAttempts   int                               `json:"max_rework_attempts,omitempty" description:"Max rework attempts on verification failure"`
+	PersistWorkers      bool                              `json:"persist_workers,omitempty" description:"Persist ad-hoc workers into the custom agents store"`
+	SkipVerify          bool                              `json:"skip_verify,omitempty" description:"Skip verification stage"`
+	SkipSynthesize      bool                              `json:"skip_synthesize,omitempty" description:"Skip synthesis stage"`
+}
+
 type CustomAgentRunsParams struct {
 	AgentID string `json:"agent_id,omitempty" description:"Filter runs by agent ID"`
 	Slug    string `json:"slug,omitempty" description:"Filter runs by agent slug"`
@@ -122,10 +140,14 @@ type CustomAgentRunsParams struct {
 }
 
 type CustomAgentMemoryParams struct {
-	Op      string `json:"op,omitempty" description:"Operation: read, replace, or append (defaults to read)"`
-	AgentID string `json:"agent_id,omitempty" description:"Target agent ID (defaults to current bound agent)"`
-	Slug    string `json:"slug,omitempty" description:"Target agent slug"`
-	Content string `json:"content,omitempty" description:"Memory content for replace or append"`
+	Target     string                  `json:"target,omitempty" description:"Memory target: agent (default), memory/global_memory, or user/user_profile"`
+	Op         string                  `json:"op,omitempty" description:"Operation: read, add, patch, remove, replace, append (agent only), or batch"`
+	AgentID    string                  `json:"agent_id,omitempty" description:"Target agent ID when target is agent"`
+	Slug       string                  `json:"slug,omitempty" description:"Target agent slug when target is agent"`
+	Content    string                  `json:"content,omitempty" description:"Memory content for add, replace, or append"`
+	OldText    string                  `json:"old_text,omitempty" description:"Existing entry substring to match for patch or remove"`
+	NewText    string                  `json:"new_text,omitempty" description:"Replacement text for patch"`
+	Operations []customagents.MemoryOp `json:"operations,omitempty" description:"Batch of memory operations (add, patch, remove, replace)"`
 }
 
 type CustomAgentBlackboardParams struct {
@@ -159,6 +181,7 @@ func NewCustomAgentChatTools(svc *customagents.Service) []fantasy.AgentTool {
 		NewCustomAgentUpdateTool(svc),
 		NewCustomAgentDeleteTool(svc),
 		NewCustomAgentDispatchTool(svc),
+		NewCustomAgentSwarmTool(svc),
 		NewCustomAgentRunsTool(svc),
 		NewCustomAgentMemoryTool(svc, ""),
 		NewCustomAgentBlackboardTool(svc, chatBinding),
@@ -187,6 +210,7 @@ func NewCustomAgentRoleTools(svc *customagents.Service, agent customagents.Custo
 			NewCustomAgentCreateTool(svc),
 			NewCustomAgentUpdateTool(svc),
 			NewCustomAgentDispatchTool(svc),
+			NewCustomAgentSwarmTool(svc),
 			NewCustomAgentRunsTool(svc),
 		)
 	case customagents.RoleVerifier:
@@ -228,6 +252,7 @@ func NewCustomAgentListTool(svc *customagents.Service) fantasy.AgentTool {
 					Description:     a.Description,
 					VerifierAgentID: a.VerifierAgentID,
 					NextAgentID:     a.NextAgentID,
+					StrictVerify:    a.StrictVerify,
 				})
 			}
 			return jsonToolResponse(map[string]any{"agents": out})
@@ -297,6 +322,7 @@ func NewCustomAgentCreateTool(svc *customagents.Service) fantasy.AgentTool {
 				VerifierAgentID:     params.VerifierAgentID,
 				NextAgentID:         params.NextAgentID,
 				MaxReworkAttempts:   params.MaxReworkAttempts,
+				StrictVerify:        params.StrictVerify,
 			}
 			created, err := svc.Store().CreateAgent(ctx, agent)
 			if err != nil {
@@ -396,6 +422,9 @@ func NewCustomAgentUpdateTool(svc *customagents.Service) fantasy.AgentTool {
 			if params.MaxReworkAttempts != nil {
 				existing.MaxReworkAttempts = *params.MaxReworkAttempts
 			}
+			if params.StrictVerify != nil {
+				existing.StrictVerify = *params.StrictVerify
+			}
 			if params.Status != nil {
 				existing.Status = *params.Status
 			}
@@ -461,6 +490,35 @@ func NewCustomAgentDispatchTool(svc *customagents.Service) fantasy.AgentTool {
 	)
 }
 
+func NewCustomAgentSwarmTool(svc *customagents.Service) fantasy.AgentTool {
+	return fantasy.NewAgentTool(
+		CustomAgentSwarmToolName,
+		"Dispatch a parallel multi-worker swarm with shared blackboard, verification, rework loop, and synthesis.",
+		func(ctx context.Context, params CustomAgentSwarmParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			if svc == nil {
+				return fantasy.NewTextErrorResponse("custom agents service unavailable"), nil
+			}
+			res, err := svc.DispatchSwarm(ctx, customagents.SwarmRequest{
+				Goal:                params.Goal,
+				ChainID:             params.ChainID,
+				Workers:             params.Workers,
+				AcceptanceCriteria:  params.AcceptanceCriteria,
+				DeterministicChecks: params.DeterministicChecks,
+				VerifierAgentID:     params.VerifierAgentID,
+				SynthesizerAgentID:  params.SynthesizerAgentID,
+				MaxReworkAttempts:   params.MaxReworkAttempts,
+				PersistWorkers:      params.PersistWorkers,
+				SkipVerify:          params.SkipVerify,
+				SkipSynthesize:      params.SkipSynthesize,
+			})
+			if err != nil {
+				return fantasy.NewTextErrorResponse(err.Error()), nil
+			}
+			return jsonToolResponse(res)
+		},
+	)
+}
+
 func NewCustomAgentRunsTool(svc *customagents.Service) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
 		CustomAgentRunsToolName,
@@ -493,10 +551,17 @@ func NewCustomAgentRunsTool(svc *customagents.Service) fantasy.AgentTool {
 func NewCustomAgentMemoryTool(svc *customagents.Service, boundAgentID string) fantasy.AgentTool {
 	return fantasy.NewAgentTool(
 		CustomAgentMemoryToolName,
-		"Read, replace, or append to an agent's persistent MEMORY.md.",
+		"Read or update persistent memory: per-agent memory (target=\"agent\"), shared global MEMORY.md (target=\"memory\"), or user profile USER.md (target=\"user\").",
 		func(ctx context.Context, params CustomAgentMemoryParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
 			if svc == nil || svc.Store() == nil {
 				return fantasy.NewTextErrorResponse("custom agents service unavailable"), nil
+			}
+			normTarget, err := normalizeMemoryToolTarget(params.Target)
+			if err != nil {
+				return fantasy.NewTextErrorResponse(err.Error()), nil
+			}
+			if normTarget != "agent" {
+				return runGlobalMemoryToolOp(ctx, svc, normTarget, params)
 			}
 			targetID := strings.TrimSpace(params.AgentID)
 			if targetID == "" && strings.TrimSpace(params.Slug) != "" {
@@ -539,6 +604,97 @@ func NewCustomAgentMemoryTool(svc *customagents.Service, boundAgentID string) fa
 			}
 		},
 	)
+}
+
+func normalizeMemoryToolTarget(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "agent":
+		return "agent", nil
+	case "memory", "global_memory", "memory.md":
+		return "memory", nil
+	case "user", "user_profile", "user.md":
+		return "user", nil
+	default:
+		return "", fmt.Errorf("unsupported target %q: use agent, memory, or user", raw)
+	}
+}
+
+func runGlobalMemoryToolOp(ctx context.Context, svc *customagents.Service, normTarget string, params CustomAgentMemoryParams) (fantasy.ToolResponse, error) {
+	gm := svc.GlobalMemory()
+	if gm == nil {
+		return fantasy.NewTextErrorResponse("global memory unavailable"), nil
+	}
+	op := strings.ToLower(strings.TrimSpace(params.Op))
+	if op == "" {
+		if len(params.Operations) > 0 {
+			op = "batch"
+		} else {
+			op = "read"
+		}
+	}
+	switch op {
+	case "read":
+		doc, err := gm.GetDoc(ctx)
+		if err != nil {
+			return fantasy.NewTextErrorResponse(err.Error()), nil
+		}
+		if normTarget == "user" {
+			return jsonToolResponse(map[string]any{
+				"target":  "user",
+				"content": doc.UserProfile,
+				"chars":   doc.UserChars,
+				"limit":   doc.UserLimit,
+			})
+		}
+		return jsonToolResponse(map[string]any{
+			"target":  "memory",
+			"content": doc.Memory,
+			"chars":   doc.MemoryChars,
+			"limit":   doc.MemoryLimit,
+		})
+	case "add", "patch", "remove", "replace", "batch":
+		var ops []customagents.MemoryOp
+		if op == "batch" {
+			if len(params.Operations) == 0 {
+				return fantasy.NewTextErrorResponse("operations is required for batch op"), nil
+			}
+			ops = params.Operations
+		} else if len(params.Operations) > 0 {
+			ops = params.Operations
+		} else {
+			ops = []customagents.MemoryOp{{
+				Action:  op,
+				Content: params.Content,
+				OldText: params.OldText,
+				NewText: params.NewText,
+			}}
+		}
+		updated, err := gm.ApplyBatch(ctx, normTarget, ops)
+		if err != nil {
+			return fantasy.NewTextErrorResponse(err.Error()), nil
+		}
+		doc, docErr := gm.GetDoc(ctx)
+		if docErr != nil {
+			return jsonToolResponse(map[string]any{
+				"target":  normTarget,
+				"updated": true,
+				"content": updated,
+			})
+		}
+		chars, limit := doc.MemoryChars, doc.MemoryLimit
+		if normTarget == "user" {
+			chars, limit = doc.UserChars, doc.UserLimit
+		}
+		return jsonToolResponse(map[string]any{
+			"target":  normTarget,
+			"updated": true,
+			"content": updated,
+			"chars":   chars,
+			"limit":   limit,
+		})
+	default:
+		return fantasy.NewTextErrorResponse(fmt.Sprintf("unsupported op %q for target %q: use read, add, patch, remove, replace, or batch", params.Op, normTarget)), nil
+	}
 }
 
 func NewCustomAgentBlackboardTool(svc *customagents.Service, binding CustomAgentExecutionBinding) fantasy.AgentTool {
@@ -619,18 +775,32 @@ func jsonToolResponse(v any) (fantasy.ToolResponse, error) {
 	return fantasy.NewTextResponse(string(raw)), nil
 }
 
-const customAgentsIndexHeader = "<custom_agents_index>"
+const (
+	hermesIdentityHeader    = "<hermes_identity>"
+	hermesMemoryHeader      = "<hermes_memory>"
+	customAgentsIndexHeader = "<custom_agents_index>"
+)
+
+func formatHermesRuntimeNote(soulSnapshot, memSnapshot string, agents []customagents.CustomAgent) string {
+	var sections []string
+	if trimmedSoul := strings.TrimSpace(soulSnapshot); trimmedSoul != "" {
+		sections = append(sections, hermesIdentityHeader+"\n"+trimmedSoul+"\n</hermes_identity>")
+	}
+	if trimmedMem := strings.TrimSpace(memSnapshot); trimmedMem != "" {
+		sections = append(sections, trimmedMem)
+	}
+	sections = append(sections, formatCustomAgentsIndex(agents))
+	return strings.Join(sections, "\n\n")
+}
 
 func formatCustomAgentsIndex(agents []customagents.CustomAgent) string {
 	var b strings.Builder
+	b.WriteString(customAgentsIndexHeader)
+	b.WriteByte('\n')
 	activeCount := 0
 	for _, a := range agents {
 		if !a.Enabled {
 			continue
-		}
-		if activeCount == 0 {
-			b.WriteString(customAgentsIndexHeader)
-			b.WriteByte('\n')
 		}
 		activeCount++
 		desc := strings.Join(strings.Fields(a.Description), " ")
@@ -640,10 +810,12 @@ func formatCustomAgentsIndex(agents []customagents.CustomAgent) string {
 		fmt.Fprintf(&b, "%s | %s | %s | %s | %s | %s\n", a.Slug, a.Name, a.Role, a.Status, a.ModelMode, desc)
 	}
 	if activeCount == 0 {
-		return ""
+		b.WriteString("(no active custom agents yet)\n")
 	}
-	b.WriteString("Use custom_agent_list_models to inspect available models and reasoning modes, custom_agent_create to create persistent/background agents, or custom_agent_dispatch to delegate tasks.\n")
-	b.WriteString("Select an appropriate model and reasoning level for the task complexity, or leave model_mode=\"auto\".\n")
+	b.WriteString("Proactive coordination rules:\n")
+	b.WriteString("1. For codebase engineering in the current repo, continue using the native code-team (explore, code, review via agent) and base coder/file/bash tools as before.\n")
+	b.WriteString("2. For specialized tasks, ongoing monitoring, scheduled workflows, or multi-part autonomous work, proactively coordinate without waiting to be asked: dispatch matching active agents from <custom_agents_index> via custom_agent_dispatch, or inspect custom_agent_list_models, create specialized persistent agents (custom_agent_create with suitable model/reasoning or model_mode=\"auto\", strict_verify, acceptance_criteria), and launch custom_agent_swarm for parallel Blackboard + Verifier + Synthesis execution.\n")
+	b.WriteString("3. Persist durable cross-session facts to custom_agent_memory(target=\"memory\") and user preferences to custom_agent_memory(target=\"user\").\n")
 	b.WriteString("</custom_agents_index>")
 	return b.String()
 }
@@ -657,7 +829,11 @@ func withCustomAgentsNote(messages []fantasy.Message, note string) []fantasy.Mes
 			continue
 		}
 		for _, part := range entry.Content {
-			if text, ok := fantasy.AsMessagePart[fantasy.TextPart](part); ok && strings.HasPrefix(text.Text, customAgentsIndexHeader) {
+			if text, ok := fantasy.AsMessagePart[fantasy.TextPart](part); ok &&
+				(strings.HasPrefix(text.Text, hermesIdentityHeader) ||
+					strings.HasPrefix(text.Text, hermesMemoryHeader) ||
+					strings.HasPrefix(text.Text, customAgentsIndexHeader) ||
+					strings.Contains(text.Text, customAgentsIndexHeader)) {
 				return messages
 			}
 		}

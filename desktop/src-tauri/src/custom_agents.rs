@@ -166,6 +166,27 @@ pub fn build_route_and_body(
             Ok(("POST", "/v1/custom-agents/blackboard".to_string(), Some(input)))
         }
         "models" => Ok(("GET", "/v1/custom-agents/models".to_string(), None)),
+        "getGlobalMemory" => Ok(("GET", "/v1/custom-agents/global-memory".to_string(), None)),
+        "saveGlobalMemory" => {
+            let input = request
+                .get("input")
+                .or_else(|| request.get("doc"))
+                .cloned()
+                .unwrap_or_else(|| json!({}));
+            Ok((
+                "PUT",
+                "/v1/custom-agents/global-memory".to_string(),
+                Some(input),
+            ))
+        }
+        "dispatchSwarm" => {
+            let input = request
+                .get("input")
+                .or_else(|| request.get("request"))
+                .cloned()
+                .unwrap_or_else(|| json!({}));
+            Ok(("POST", "/v1/custom-agents/swarm".to_string(), Some(input)))
+        }
         _ => Err(HostError::new(
             "INVALID_ARGUMENT",
             format!("Unknown customAgents action: {action}"),
@@ -234,5 +255,36 @@ mod tests {
 
         let (method, route, _) = build_route_and_body(&json!({"action": "models"})).unwrap();
         assert_eq!((method, route.as_str()), ("GET", "/v1/custom-agents/models"));
+
+        let (method, route, body) =
+            build_route_and_body(&json!({"action": "getGlobalMemory"})).unwrap();
+        assert_eq!(
+            (method, route.as_str(), body),
+            ("GET", "/v1/custom-agents/global-memory", None)
+        );
+
+        let (method, route, body) = build_route_and_body(&json!({
+            "action": "saveGlobalMemory",
+            "input": {"memory": "m", "user_profile": "u", "soul": "s"}
+        }))
+        .unwrap();
+        assert_eq!(method, "PUT");
+        assert_eq!(route, "/v1/custom-agents/global-memory");
+        assert_eq!(
+            body.unwrap(),
+            json!({"memory": "m", "user_profile": "u", "soul": "s"})
+        );
+
+        let (method, route, body) = build_route_and_body(&json!({
+            "action": "dispatchSwarm",
+            "input": {"goal": "audit", "workers": [{"agent_id": "a1", "task": "check"}]}
+        }))
+        .unwrap();
+        assert_eq!(method, "POST");
+        assert_eq!(route, "/v1/custom-agents/swarm");
+        assert_eq!(
+            body.unwrap(),
+            json!({"goal": "audit", "workers": [{"agent_id": "a1", "task": "check"}]})
+        );
     }
 }

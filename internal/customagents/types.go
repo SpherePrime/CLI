@@ -80,6 +80,7 @@ type CustomAgent struct {
 	VerifierAgentID     string               `json:"verifier_agent_id"`
 	NextAgentID         string               `json:"next_agent_id"`
 	MaxReworkAttempts   int                  `json:"max_rework_attempts"`
+	StrictVerify        bool                 `json:"strict_verify"`
 	Status              string               `json:"status"`
 	LastError           string               `json:"last_error"`
 	LastRunAt           int64                `json:"last_run_at"`
@@ -216,4 +217,83 @@ type ModelCatalogSource interface {
 
 type EventSink interface {
 	Publish(event Event)
+}
+
+type GlobalMemoryDoc struct {
+	Memory      string `json:"memory"`
+	UserProfile string `json:"user_profile"`
+	Soul        string `json:"soul"`
+	MemoryLimit int    `json:"memory_limit"`
+	UserLimit   int    `json:"user_limit"`
+	MemoryChars int    `json:"memory_chars"`
+	UserChars   int    `json:"user_chars"`
+}
+
+type MemoryOp struct {
+	Action  string `json:"action"`
+	Content string `json:"content"`
+	OldText string `json:"old_text"`
+	NewText string `json:"new_text"`
+}
+
+type SwarmWorkerSpec struct {
+	AgentID             string               `json:"agent_id"`
+	Slug                string               `json:"slug"`
+	Name                string               `json:"name"`
+	Role                string               `json:"role"`
+	Task                string               `json:"task"`
+	Prompt              string               `json:"prompt"`
+	SystemPrompt        string               `json:"system_prompt"`
+	ModelMode           string               `json:"model_mode"`
+	ProviderID          string               `json:"provider_id"`
+	ModelID             string               `json:"model_id"`
+	ReasoningMode       string               `json:"reasoning_mode"`
+	AutoModelHint       string               `json:"auto_model_hint"`
+	AllowedTools        []string             `json:"allowed_tools"`
+	WorkspacePath       string               `json:"workspace_path"`
+	AcceptanceCriteria  string               `json:"acceptance_criteria"`
+	DeterministicChecks []DeterministicCheck `json:"deterministic_checks"`
+	VerifierAgentID     string               `json:"verifier_agent_id"`
+	MaxReworkAttempts   int                  `json:"max_rework_attempts"`
+	StrictVerify        bool                 `json:"strict_verify"`
+}
+
+type SwarmRequest struct {
+	Goal                string               `json:"goal"`
+	ChainID             string               `json:"chain_id"`
+	Workers             []SwarmWorkerSpec    `json:"workers"`
+	AcceptanceCriteria  string               `json:"acceptance_criteria"`
+	DeterministicChecks []DeterministicCheck `json:"deterministic_checks"`
+	VerifierAgentID     string               `json:"verifier_agent_id"`
+	SynthesizerAgentID  string               `json:"synthesizer_agent_id"`
+	MaxReworkAttempts   int                  `json:"max_rework_attempts"`
+	PersistWorkers      bool                 `json:"persist_workers"`
+	SkipVerify          bool                 `json:"skip_verify"`
+	SkipSynthesize      bool                 `json:"skip_synthesize"`
+}
+
+type SwarmWorkerResult struct {
+	AgentID string         `json:"agent_id"`
+	Slug    string         `json:"slug"`
+	Name    string         `json:"name"`
+	Task    string         `json:"task"`
+	Run     CustomAgentRun `json:"run"`
+	Output  string         `json:"output"`
+	Status  string         `json:"status"`
+	Error   string         `json:"error,omitempty"`
+}
+
+type SwarmResult struct {
+	ChainID             string              `json:"chain_id"`
+	Goal                string              `json:"goal"`
+	Status              string              `json:"status"`
+	Attempts            int                 `json:"attempts"`
+	Workers             []SwarmWorkerResult `json:"workers"`
+	VerifierVerdict     string              `json:"verifier_verdict"`
+	VerifierFeedback    string              `json:"verifier_feedback"`
+	DeterministicReport string              `json:"deterministic_report"`
+	FinalOutput         string              `json:"final_output"`
+	SynthesizerRun      *CustomAgentRun     `json:"synthesizer_run,omitempty"`
+	Blackboard          []BlackboardEntry   `json:"blackboard,omitempty"`
+	Error               string              `json:"error,omitempty"`
 }

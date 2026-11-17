@@ -69,6 +69,13 @@ func (s *Service) Store() *Store {
 	return s.store
 }
 
+func (s *Service) GlobalMemory() *GlobalMemoryStore {
+	if s.store == nil {
+		return nil
+	}
+	return s.store.GlobalMemory()
+}
+
 func (s *Service) ListAvailableModels(ctx context.Context) ([]ModelOption, error) {
 	if s.models == nil {
 		return nil, errors.New("каталог моделей не настроен")
@@ -346,7 +353,7 @@ func (s *Service) executeRun(ctx context.Context, agent CustomAgent, run CustomA
 	prompt := buildInitialPrompt(agent, req.Prompt, run.MonitorDiff)
 	run.InputPrompt = prompt
 
-	memorySnapshot, _ := s.store.ReadMemory(persistCtx, agent.ID)
+	memorySnapshot := s.buildMemorySnapshot(persistCtx, agent.ID)
 	blackboardContext := s.formatBlackboardContext(persistCtx, run.ChainID)
 
 	availableModels, err := s.models.ListAvailableModels(ctx)
@@ -374,7 +381,8 @@ func (s *Service) executeRun(ctx context.Context, agent CustomAgent, run CustomA
 	}
 
 	needsVerification := agent.Role != RoleVerifier &&
-		(len(agent.DeterministicChecks) > 0 ||
+		(agent.StrictVerify ||
+			len(agent.DeterministicChecks) > 0 ||
 			strings.TrimSpace(agent.AcceptanceCriteria) != "" ||
 			strings.TrimSpace(agent.VerifierAgentID) != "")
 
@@ -388,6 +396,9 @@ func (s *Service) executeRun(ctx context.Context, agent CustomAgent, run CustomA
 
 		run.Attempt = attempt
 		run.Status = RunRunning
+		run.VerifierVerdict = ""
+		run.VerifierFeedback = ""
+		run.DeterministicReport = ""
 		_ = s.store.UpdateRun(persistCtx, run)
 
 		agent.Status = StatusRunning
@@ -439,6 +450,62 @@ func (s *Service) executeRun(ctx context.Context, agent CustomAgent, run CustomA
 
 		run.OutputText = res.OutputText
 
+		if agent.Role != RoleVerifier {
+			if valErr := ValidateWorkerOutput(res.OutputText); valErr != nil {
+				guardFeedback := "Вывод исполнителя не прошёл проверку качества: " + valErr.Error()
+				run.VerifierVerdict = "FAIL"
+				run.VerifierFeedback = guardFeedback
+				run.Steps = append(run.Steps, RunStep{
+					Kind:      "output_guard",
+					Title:     "Проверка вывода не пройдена",
+					Detail:    valErr.Error(),
+					Status:    "failed",
+					Timestamp: time.Now().Unix(),
+				})
+				if attempt < maxAttempts {
+					run.Status = RunRework
+					_ = s.store.UpdateRun(persistCtx, run)
+					agent.Status = StatusRework
+					_ = s.store.UpdateAgentRuntimeState(persistCtx, agent)
+					s.publishStatus(agent)
+					s.publish(Event{
+						Type:      "run.rework",
+						AgentID:   agent.ID,
+						RunID:     run.ID,
+						ChainID:   run.ChainID,
+						Payload:   run,
+						Timestamp: time.Now().Unix(),
+					})
+					currentPrompt = fmt.Sprintf(
+						"%s\n\nПредыдущая попытка #%d отклонена проверкой качества вывода.\nЗамечания:\n%s\n\nИсправь все замечания и предоставь полный обновлённый результат без повторов.",
+						prompt, attempt, guardFeedback,
+					)
+					continue
+				}
+				now := time.Now().Unix()
+				run.Status = RunFailed
+				run.Error = "отклонено проверкой вывода: " + valErr.Error()
+				run.FinishedAt = now
+				_ = s.store.UpdateRun(persistCtx, run)
+
+				agent.Status = StatusError
+				agent.LastError = run.Error
+				agent.LastRunAt = now
+				agent.NextRunAt = computeNextRunAt(agent, now)
+				_ = s.store.UpdateAgentRuntimeState(persistCtx, agent)
+				s.publishStatus(agent)
+				s.publish(Event{
+					Type:      "run.failed",
+					AgentID:   agent.ID,
+					RunID:     run.ID,
+					ChainID:   run.ChainID,
+					Payload:   run,
+					Timestamp: now,
+				})
+				return run
+			}
+		}
+
 		if !needsVerification {
 			run.Status = RunPassed
 			break
@@ -487,7 +554,9 @@ func (s *Service) executeRun(ctx context.Context, agent CustomAgent, run CustomA
 				})
 			}
 
-			needsLLMVerifier := strings.TrimSpace(agent.AcceptanceCriteria) != "" || strings.TrimSpace(agent.VerifierAgentID) != ""
+			needsLLMVerifier := agent.StrictVerify ||
+				strings.TrimSpace(agent.AcceptanceCriteria) != "" ||
+				strings.TrimSpace(agent.VerifierAgentID) != ""
 			if !needsLLMVerifier {
 				verifiedOK = true
 				verifierFeedback = "Детерминированные проверки пройдены."
@@ -883,6 +952,8 @@ func buildVerifierPrompt(worker CustomAgent, taskPrompt, workerOutput, detReport
 	fmt.Fprintf(&b, "Исходная задача:\n%s\n\n", taskPrompt)
 	if strings.TrimSpace(worker.AcceptanceCriteria) != "" {
 		fmt.Fprintf(&b, "Критерии приёмки:\n%s\n\n", worker.AcceptanceCriteria)
+	} else if worker.StrictVerify {
+		fmt.Fprintf(&b, "%s\n\n", strictCompletenessChecklist())
 	}
 	if detReport != "" {
 		fmt.Fprintf(&b, "Отчёт детерминированных проверок:\n%s\n\n", detReport)
@@ -890,6 +961,25 @@ func buildVerifierPrompt(worker CustomAgent, taskPrompt, workerOutput, detReport
 	fmt.Fprintf(&b, "Результат исполнителя:\n%s\n\n", workerOutput)
 	b.WriteString("Вынеси строгий вердикт: начни ответ с 'VERDICT: PASS' или 'VERDICT: FAIL'.")
 	return b.String()
+}
+
+func (s *Service) buildMemorySnapshot(ctx context.Context, agentID string) string {
+	var parts []string
+	if s.store != nil && s.store.GlobalMemory() != nil {
+		memBlock, soulBlock := s.store.GlobalMemory().FormatFrozenSnapshot(ctx)
+		if strings.TrimSpace(soulBlock) != "" {
+			parts = append(parts, "<soul>\n"+soulBlock+"\n</soul>")
+		}
+		if strings.TrimSpace(memBlock) != "" {
+			parts = append(parts, memBlock)
+		}
+	}
+	if s.store != nil && strings.TrimSpace(agentID) != "" {
+		if agentMem, err := s.store.ReadMemory(ctx, agentID); err == nil && strings.TrimSpace(agentMem) != "" {
+			parts = append(parts, "<agent_memory>\n"+strings.TrimSpace(agentMem)+"\n</agent_memory>")
+		}
+	}
+	return strings.Join(parts, "\n\n")
 }
 
 func truncateText(s string, maxLen int) string {

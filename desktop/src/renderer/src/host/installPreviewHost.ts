@@ -19,6 +19,7 @@ import {
   createPreviewCustomAgentModels,
   createPreviewCustomAgentRuns,
   createPreviewCustomAgents,
+  createPreviewGlobalMemory,
   createPreviewDesignerProject,
   createPreviewFileContents,
   createPreviewFiles,
@@ -40,7 +41,10 @@ import type {
   BlackboardEntry,
   CustomAgent,
   CustomAgentRun,
-  CustomAgentsRequest
+  CustomAgentsRequest,
+  GlobalMemoryDoc,
+  SwarmResult,
+  SwarmWorkerResult
 } from '../../../shared/customAgents'
 import {
   fileNameFromPath,
@@ -151,6 +155,7 @@ export function installPreviewHost() {
   let customAgents: CustomAgent[] = createPreviewCustomAgents()
   let customAgentRuns: CustomAgentRun[] = createPreviewCustomAgentRuns()
   let customBlackboard: BlackboardEntry[] = createPreviewBlackboard()
+  let globalMemory: GlobalMemoryDoc = createPreviewGlobalMemory()
   const customModels = createPreviewCustomAgentModels()
   const customRunTimers = new Map<string, ReturnType<typeof setTimeout>[]>()
 
@@ -1098,6 +1103,7 @@ export function installPreviewHost() {
           verifier_agent_id: request.input.verifier_agent_id || '',
           next_agent_id: request.input.next_agent_id || '',
           max_rework_attempts: request.input.max_rework_attempts || 3,
+          strict_verify: request.input.strict_verify ?? false,
           status: request.input.enabled === false ? 'paused' : 'idle',
           last_error: '',
           last_run_at: 0,
@@ -1241,7 +1247,8 @@ export function installPreviewHost() {
           const doneAt = nowSec()
           const needsVerify =
             agent.role !== 'verifier' &&
-            (Boolean(agent.acceptance_criteria.trim()) ||
+            (Boolean(agent.strict_verify) ||
+              Boolean(agent.acceptance_criteria.trim()) ||
               agent.deterministic_checks.length > 0 ||
               Boolean(agent.verifier_agent_id))
           const outputText =
@@ -1408,6 +1415,259 @@ export function installPreviewHost() {
       }
       if (request.action === 'models') {
         return { models: structuredClone(customModels) }
+      }
+      if (request.action === 'getGlobalMemory') {
+        return structuredClone(globalMemory)
+      }
+      if (request.action === 'saveGlobalMemory') {
+        const input = request.input || {}
+        const memory = typeof input.memory === 'string' ? input.memory : globalMemory.memory
+        const user_profile =
+          typeof input.user_profile === 'string' ? input.user_profile : globalMemory.user_profile
+        const soul = typeof input.soul === 'string' ? input.soul : globalMemory.soul
+        const memory_chars = Array.from(memory).length
+        const user_chars = Array.from(user_profile).length
+        if (memory_chars > globalMemory.memory_limit) {
+          throw new Error(
+            `Превышен лимит MEMORY.md (${memory_chars} / ${globalMemory.memory_limit} символов)`
+          )
+        }
+        if (user_chars > globalMemory.user_limit) {
+          throw new Error(
+            `Превышен лимит USER.md (${user_chars} / ${globalMemory.user_limit} символов)`
+          )
+        }
+        globalMemory = {
+          ...globalMemory,
+          memory,
+          user_profile,
+          soul,
+          memory_chars,
+          user_chars
+        }
+        return structuredClone(globalMemory)
+      }
+      if (request.action === 'dispatchSwarm') {
+        const req = request.input
+        const goal = req.goal?.trim() || ''
+        if (!goal) {
+          throw new Error('Требуется цель роя')
+        }
+        const specs = Array.isArray(req.workers) ? req.workers : []
+        if (specs.length === 0) {
+          throw new Error('Требуется хотя бы один агент в рое')
+        }
+        const now = nowSec()
+        const stamp = Date.now()
+        const chainId = req.chain_id?.trim() || `swarm-${stamp}`
+        const createdBoard: BlackboardEntry[] = []
+        const pushBoard = (entry: BlackboardEntry) => {
+          createdBoard.push(entry)
+          customBlackboard = [entry, ...customBlackboard]
+          emitCustom('blackboard.posted', entry.from_agent_id, entry.run_id, chainId, structuredClone(entry))
+        }
+
+        pushBoard({
+          id: `bb-${stamp}-goal`,
+          chain_id: chainId,
+          run_id: '',
+          from_agent_id: 'swarm-coordinator',
+          from_agent_name: 'Координатор роя',
+          to_agent_id: '',
+          topic: 'swarm.goal',
+          payload: `Цель: ${goal}\nВоркеры: ${specs.length}`,
+          status: 'open',
+          created_at: now
+        })
+
+        emitCustom('swarm.started', '', '', chainId, { goal, workers: specs.length })
+
+        const workerResults: SwarmWorkerResult[] = specs.map((spec, index) => {
+          const matched =
+            (spec.agent_id && customAgents.find((a) => a.id === spec.agent_id)) ||
+            (spec.slug && customAgents.find((a) => a.slug === spec.slug)) ||
+            null
+          const agentId = matched?.id || spec.agent_id?.trim() || `swarm-worker-${index + 1}`
+          const slug = matched?.slug || spec.slug?.trim() || `swarm-worker-${index + 1}`
+          const name = matched?.name || spec.name?.trim() || slug
+          const role = matched?.role || spec.role || 'worker'
+          const task = spec.task?.trim() || spec.prompt?.trim() || goal
+          const chosen =
+            matched?.model_mode === 'manual' && matched.model_id
+              ? customModels.find(
+                  (m) => m.provider_id === matched.provider_id && m.model_id === matched.model_id
+                ) || customModels[1]
+              : role === 'orchestrator'
+                ? customModels[3]
+                : customModels[0]
+          const reasoning = matched?.reasoning_mode || chosen.default_reasoning_mode || 'medium'
+          const runId = `crun-${stamp}-w${index + 1}`
+          const output = `Воркер «${name}» выполнил подзадачу: ${task}`
+          const run: CustomAgentRun = {
+            id: runId,
+            agent_id: agentId,
+            agent_name: name,
+            agent_role: role,
+            chain_id: chainId,
+            parent_run_id: '',
+            trigger_reason: 'swarm:worker',
+            input_prompt: task,
+            status: 'passed',
+            attempt: 1,
+            resolved_provider: chosen.provider_id,
+            resolved_model: chosen.model_id,
+            resolved_reasoning: reasoning,
+            auto_model_reason: `Автовыбор (${chosen.tier}, рассуждения: ${reasoning}) для параллельного роя.`,
+            output_text: output,
+            verifier_verdict: '',
+            verifier_feedback: '',
+            deterministic_report: '',
+            monitor_diff: '',
+            steps: [
+              {
+                kind: 'execute',
+                title: 'Параллельное выполнение',
+                detail: task.slice(0, 120),
+                status: 'ok',
+                timestamp: now
+              }
+            ],
+            error: '',
+            started_at: now,
+            finished_at: now
+          }
+          customAgentRuns = [run, ...customAgentRuns]
+          emitCustom('run.passed', agentId, runId, chainId, structuredClone(run))
+
+          pushBoard({
+            id: `bb-${stamp}-w${index + 1}`,
+            chain_id: chainId,
+            run_id: runId,
+            from_agent_id: agentId,
+            from_agent_name: name,
+            to_agent_id: '',
+            topic: 'swarm.worker',
+            payload: output,
+            status: 'open',
+            created_at: now
+          })
+
+          return {
+            agent_id: agentId,
+            slug,
+            name,
+            task,
+            run,
+            output,
+            status: 'passed'
+          }
+        })
+
+        let verifierVerdict = ''
+        let verifierFeedback = ''
+        if (!req.skip_verify) {
+          const verifierAgent =
+            (req.verifier_agent_id && customAgents.find((a) => a.id === req.verifier_agent_id)) ||
+            customAgents.find((a) => a.role === 'verifier' && a.enabled) ||
+            null
+          verifierVerdict = 'PASS'
+          verifierFeedback = req.acceptance_criteria?.trim()
+            ? `VERDICT: PASS\nКритерии приёмки подтверждены для ${workerResults.length} воркеров.`
+            : `VERDICT: PASS\nРезультаты ${workerResults.length} воркеров проверены и согласованы.`
+          pushBoard({
+            id: `bb-${stamp}-verdict`,
+            chain_id: chainId,
+            run_id: '',
+            from_agent_id: verifierAgent?.id || 'swarm-verifier',
+            from_agent_name: verifierAgent?.name || 'Верификатор роя',
+            to_agent_id: '',
+            topic: 'swarm.verdict',
+            payload: verifierFeedback,
+            status: 'open',
+            created_at: now
+          })
+        }
+
+        let finalOutput = ''
+        let synthesizerRun: CustomAgentRun | null = null
+        if (req.skip_synthesize) {
+          finalOutput = workerResults.map((w) => `• ${w.name}: ${w.output}`).join('\n')
+        } else {
+          const synthAgent =
+            (req.synthesizer_agent_id &&
+              customAgents.find((a) => a.id === req.synthesizer_agent_id)) ||
+            customAgents.find((a) => a.role === 'orchestrator' && a.enabled) ||
+            null
+          finalOutput = [
+            `Итог роя по цели: ${goal}`,
+            '',
+            ...workerResults.map((w) => `- ${w.name}: ${w.output}`)
+          ].join('\n')
+          const synthId = `crun-${stamp}-synth`
+          const synthModel = customModels[3] || customModels[1]
+          synthesizerRun = {
+            id: synthId,
+            agent_id: synthAgent?.id || 'swarm-synthesizer',
+            agent_name: synthAgent?.name || 'Синтезатор роя',
+            agent_role: synthAgent?.role || 'orchestrator',
+            chain_id: chainId,
+            parent_run_id: '',
+            trigger_reason: 'swarm:synthesize',
+            input_prompt: goal,
+            status: 'passed',
+            attempt: 1,
+            resolved_provider: synthModel.provider_id,
+            resolved_model: synthModel.model_id,
+            resolved_reasoning: synthModel.default_reasoning_mode || 'high',
+            auto_model_reason: `Автовыбор (${synthModel.tier}) для синтеза результатов роя.`,
+            output_text: finalOutput,
+            verifier_verdict: verifierVerdict,
+            verifier_feedback: verifierFeedback,
+            deterministic_report: '',
+            monitor_diff: '',
+            steps: [
+              {
+                kind: 'execute',
+                title: 'Синтез результатов роя',
+                detail: `Объединено результатов: ${workerResults.length}`,
+                status: 'ok',
+                timestamp: now
+              }
+            ],
+            error: '',
+            started_at: now,
+            finished_at: now
+          }
+          customAgentRuns = [synthesizerRun, ...customAgentRuns]
+          pushBoard({
+            id: `bb-${stamp}-final`,
+            chain_id: chainId,
+            run_id: synthId,
+            from_agent_id: synthesizerRun.agent_id,
+            from_agent_name: synthesizerRun.agent_name,
+            to_agent_id: '',
+            topic: 'swarm.final',
+            payload: finalOutput,
+            status: 'open',
+            created_at: now
+          })
+        }
+
+        const swarmResult: SwarmResult = {
+          chain_id: chainId,
+          goal,
+          status: 'passed',
+          attempts: 1,
+          workers: workerResults,
+          verifier_verdict: verifierVerdict,
+          verifier_feedback: verifierFeedback,
+          deterministic_report: '',
+          final_output: finalOutput,
+          synthesizer_run: synthesizerRun,
+          blackboard: [...createdBoard].reverse()
+        }
+        emitCustom('swarm.completed', '', '', chainId, structuredClone(swarmResult))
+        return structuredClone(swarmResult)
       }
       return {}
     },

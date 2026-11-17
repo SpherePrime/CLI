@@ -320,6 +320,15 @@ func (e *CustomExecutor) Execute(ctx context.Context, req customagents.ExecuteRe
 	hist := newCustomHistoryService()
 	defer hist.Broker.Shutdown()
 
+	if strings.TrimSpace(req.MemorySnapshot) == "" {
+		if svc := e.service(); svc != nil && svc.GlobalMemory() != nil {
+			if doc, docErr := svc.GlobalMemory().GetDoc(ctx); docErr == nil && (strings.TrimSpace(doc.Memory) != "" || strings.TrimSpace(doc.UserProfile) != "") {
+				memBlock, _ := svc.GlobalMemory().FormatFrozenSnapshot(ctx)
+				req.MemorySnapshot = memBlock
+			}
+		}
+	}
+
 	agentTools := e.buildCustomAgentTools(req, model, workDir, perms, hist, ft)
 	sysPrompt := buildCustomAgentSystemPrompt(req, workDir)
 
@@ -449,13 +458,23 @@ func extractCustomAgentOutput(result *fantasy.AgentResult) string {
 func buildCustomAgentSystemPrompt(req customagents.ExecuteRequest, workDir string) string {
 	var b strings.Builder
 	b.WriteString(strings.TrimSpace(req.Agent.SystemPrompt))
-	if strings.TrimSpace(req.MemorySnapshot) != "" {
+	if trimmedMem := strings.TrimSpace(req.MemorySnapshot); trimmedMem != "" {
 		if b.Len() > 0 {
 			b.WriteString("\n\n")
 		}
-		b.WriteString("<agent_memory>\n")
-		b.WriteString(req.MemorySnapshot)
-		b.WriteString("\n</agent_memory>")
+		if strings.Contains(trimmedMem, "<agent_memory>") || strings.Contains(trimmedMem, "<hermes_memory>") || strings.Contains(trimmedMem, "<soul>") {
+			b.WriteString(trimmedMem)
+		} else {
+			b.WriteString("<agent_memory>\n")
+			b.WriteString(req.MemorySnapshot)
+			b.WriteString("\n</agent_memory>")
+		}
+	}
+	if req.Agent.StrictVerify && req.Agent.Role != customagents.RoleVerifier {
+		if b.Len() > 0 {
+			b.WriteString("\n\n")
+		}
+		b.WriteString("<execution_contract>\nStrict verification is enabled: cite verified file paths, command outcomes, and concrete evidence only.\n</execution_contract>")
 	}
 	if strings.TrimSpace(req.BlackboardContext) != "" {
 		if b.Len() > 0 {

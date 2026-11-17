@@ -21,8 +21,63 @@
 }
 
 .ca-studio svg,
-.ca-create-modal svg {
+.ca-create-modal svg,
+.ca-memory-modal svg {
   flex-shrink: 0;
+}
+
+.ca-studio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--ui-border, var(--border));
+  background: var(--glass-panel, var(--sidebar));
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.ca-studio-head-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ca-studio-head-title h1 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ca-studio-mem-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ca-studio-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ca-memory-trigger {
+  min-height: 30px;
+  padding: 5px 10px;
+  gap: 6px;
+  font-size: 12px;
+  background: var(--surface);
+  border-color: var(--ui-border, var(--border));
 }
 
 .ca-mobile-tabs {
@@ -889,9 +944,35 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
   font-size: 12px;
   color: var(--secondary);
+}
+
+.ca-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--ui-border, var(--border));
+  border-radius: 9px;
+  background: var(--bg);
+  min-width: 0;
+}
+
+.ca-toggle-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ca-toggle-copy strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .ca-checks-list {
@@ -1062,6 +1143,209 @@
   flex-wrap: wrap;
 }
 
+.ca-memory-form {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ca-memory-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ca-memory-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--secondary);
+}
+
+.ca-memory-tabs button.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.ca-counter-pill {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  background: var(--raised);
+  color: var(--secondary);
+}
+
+.ca-counter-pill.warn {
+  background: color-mix(in srgb, var(--amber) 18%, transparent);
+  color: var(--amber);
+}
+
+.ca-counter-pill.over {
+  background: color-mix(in srgb, var(--red) 18%, transparent);
+  color: var(--red);
+}
+
+.ca-memory-error {
+  margin: 0;
+}
+
+.ca-memory-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--secondary);
+}
+
+.ca-memory-field textarea {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  min-height: 200px;
+  resize: vertical;
+}
+
+.ca-swarm-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--ui-border, var(--border));
+  border-radius: 12px;
+  background: var(--surface);
+  min-width: 0;
+}
+
+.ca-swarm-head {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ca-swarm-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.ca-swarm-toggle:hover:not(:disabled) {
+  background: transparent;
+  color: var(--accent);
+}
+
+.ca-swarm-toggle svg:last-child {
+  margin-left: auto;
+  color: var(--secondary);
+}
+
+.ca-swarm-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--ui-border, var(--border));
+  min-width: 0;
+}
+
+.ca-swarm-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ca-swarm-workers {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ca-swarm-worker-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--ui-border, var(--border));
+  border-radius: 9px;
+  background: var(--bg);
+  min-width: 0;
+}
+
+.ca-swarm-worker-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ca-swarm-worker-meta strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ca-swarm-worker-row input {
+  min-width: 0;
+  width: 100%;
+}
+
+.ca-swarm-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ca-swarm-result {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ui-border, var(--border));
+  min-width: 0;
+}
+
+.ca-swarm-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.ca-swarm-worker-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 9px 10px;
+  border: 1px solid var(--ui-border, var(--border));
+  border-radius: 9px;
+  background: var(--bg);
+  min-width: 0;
+}
+
+.ca-swarm-worker-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 @media (max-width: 1320px) {
   .ca-grid {
     grid-template-columns: 248px minmax(0, 1fr) 320px;
@@ -1140,8 +1424,21 @@
 
   .ca-workspace-head,
   .ca-workspace-body,
-  .ca-inspector-scroll {
+  .ca-inspector-scroll,
+  .ca-studio-head {
     padding-inline: 12px;
+  }
+
+  .ca-swarm-worker-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ca-swarm-worker-meta {
+    grid-column: 1 / -1;
+  }
+
+  .ca-swarm-results-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

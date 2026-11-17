@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
   BlackboardEntry,
+  CreateCustomAgentInput,
   CustomAgent,
   CustomAgentEvent,
   CustomAgentRun,
   CustomAgentsRequest,
+  GlobalMemoryDoc,
   ModelOption,
-  ProbeResult
+  ProbeResult,
+  SwarmRequest,
+  SwarmResult,
+  UpdateCustomAgentInput
 } from '../../../../shared/customAgents'
 import type { DesktopEvent } from '../../../../shared/contracts'
 
@@ -40,6 +45,7 @@ export function useCustomAgents() {
   const [runs, setRuns] = useState<CustomAgentRun[]>([])
   const [blackboard, setBlackboard] = useState<BlackboardEntry[]>([])
   const [models, setModels] = useState<ModelOption[]>([])
+  const [globalMemory, setGlobalMemory] = useState<GlobalMemoryDoc | null>(null)
   const [selectedAgentId, setSelectedAgentId] = useState('')
   const [selectedChainId, setSelectedChainId] = useState('')
   const [loading, setLoading] = useState(true)
@@ -54,11 +60,12 @@ export function useCustomAgents() {
   const refresh = useCallback(async () => {
     setError('')
     try {
-      const [agentsRes, runsRes, boardRes, modelsRes] = await Promise.all([
+      const [agentsRes, runsRes, boardRes, modelsRes, memoryRes] = await Promise.all([
         call<{ agents?: CustomAgent[] }>({ action: 'list' }),
         call<{ runs?: CustomAgentRun[] }>({ action: 'runs', limit: 100 }),
         call<{ entries?: BlackboardEntry[] }>({ action: 'blackboard', limit: 100 }),
-        call<{ models?: ModelOption[] }>({ action: 'models' }).catch(() => ({ models: [] }))
+        call<{ models?: ModelOption[] }>({ action: 'models' }).catch(() => ({ models: [] })),
+        call<GlobalMemoryDoc>({ action: 'getGlobalMemory' }).catch(() => null)
       ])
       if (!mounted.current) return
       const nextAgents = Array.isArray(agentsRes?.agents) ? agentsRes.agents : []
@@ -66,6 +73,7 @@ export function useCustomAgents() {
       setRuns(Array.isArray(runsRes?.runs) ? runsRes.runs : [])
       setBlackboard(Array.isArray(boardRes?.entries) ? boardRes.entries : [])
       setModels(Array.isArray(modelsRes?.models) ? modelsRes.models : [])
+      if (memoryRes) setGlobalMemory(memoryRes)
       setSelectedAgentId((current) => {
         if (current && nextAgents.some((a) => a.id === current)) return current
         return nextAgents[0]?.id || ''
@@ -143,7 +151,7 @@ export function useCustomAgents() {
   }, [refresh])
 
   const createAgent = useCallback(
-    async (input: Partial<CustomAgent>) => {
+    async (input: CreateCustomAgentInput) => {
       setBusy(true)
       setError('')
       try {
@@ -163,7 +171,7 @@ export function useCustomAgents() {
   )
 
   const updateAgent = useCallback(
-    async (agentId: string, patch: Partial<CustomAgent>) => {
+    async (agentId: string, patch: UpdateCustomAgentInput) => {
       setBusy(true)
       setError('')
       try {
@@ -294,6 +302,72 @@ export function useCustomAgents() {
     [call]
   )
 
+  const loadGlobalMemory = useCallback(async () => {
+    const doc = await call<GlobalMemoryDoc>({ action: 'getGlobalMemory' })
+    if (mounted.current) setGlobalMemory(doc)
+    return doc
+  }, [call])
+
+  const saveGlobalMemory = useCallback(
+    async (input: Partial<GlobalMemoryDoc>) => {
+      setBusy(true)
+      try {
+        const saved = await call<GlobalMemoryDoc>({ action: 'saveGlobalMemory', input })
+        if (mounted.current) setGlobalMemory(saved)
+        return saved
+      } finally {
+        if (mounted.current) setBusy(false)
+      }
+    },
+    [call]
+  )
+
+  const dispatchSwarm = useCallback(
+    async (input: SwarmRequest) => {
+      setBusy(true)
+      setError('')
+      try {
+        const result = await call<SwarmResult>({ action: 'dispatchSwarm', input })
+        if (!mounted.current) return result
+        const workerRuns = (result.workers || [])
+          .map((worker) => worker.run)
+          .filter((run): run is CustomAgentRun => Boolean(run && run.id))
+        const allNewRuns = result.synthesizer_run
+          ? [result.synthesizer_run, ...workerRuns]
+          : workerRuns
+        if (allNewRuns.length > 0) {
+          setRuns((current) => allNewRuns.reduce((acc, run) => upsertRun(acc, run), current))
+        }
+        if (Array.isArray(result.blackboard) && result.blackboard.length > 0) {
+          setBlackboard((current) => {
+            const seen = new Set(result.blackboard!.map((entry) => entry.id))
+            return [...result.blackboard!, ...current.filter((item) => !seen.has(item.id))]
+          })
+        }
+        if (result.chain_id) {
+          setSelectedChainId(result.chain_id)
+        }
+        void Promise.all([
+          call<{ runs?: CustomAgentRun[] }>({ action: 'runs', limit: 100 }),
+          call<{ entries?: BlackboardEntry[] }>({ action: 'blackboard', limit: 100 })
+        ])
+          .then(([runsRes, boardRes]) => {
+            if (!mounted.current) return
+            if (Array.isArray(runsRes?.runs)) setRuns(runsRes.runs)
+            if (Array.isArray(boardRes?.entries)) setBlackboard(boardRes.entries)
+          })
+          .catch(() => {})
+        return result
+      } catch (cause) {
+        if (mounted.current) setError(cleanError(cause))
+        throw cause
+      } finally {
+        if (mounted.current) setBusy(false)
+      }
+    },
+    [call]
+  )
+
   const selectedAgent = useMemo(
     () => agents.find((item) => item.id === selectedAgentId) || null,
     [agents, selectedAgentId]
@@ -310,6 +384,7 @@ export function useCustomAgents() {
     agentRuns,
     blackboard,
     models,
+    globalMemory,
     selectedAgent,
     selectedAgentId,
     setSelectedAgentId,
@@ -326,6 +401,9 @@ export function useCustomAgents() {
     runAgent,
     cancelRun,
     probeAgent,
-    postBlackboard
+    postBlackboard,
+    loadGlobalMemory,
+    saveGlobalMemory,
+    dispatchSwarm
   }
 }

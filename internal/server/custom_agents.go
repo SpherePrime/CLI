@@ -18,6 +18,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/customagents"
 	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/vendordeps/google/uuid"
 )
 
 type customAgentsEventSink struct {
@@ -44,9 +45,13 @@ func (s *Server) initCustomAgents(ctx context.Context, cfg *config.ConfigStore) 
 		slog.Warn("Failed to open custom agents store", "error", err)
 		return
 	}
+	if gm := store.GlobalMemory(); gm != nil {
+		gm.SetUseConfigSoul(true)
+	}
 	if err := store.EnsureDefaults(ctx); err != nil {
 		slog.Warn("Failed to seed default custom agents", "error", err)
 	}
+	swarmCtx, swarmCancel := context.WithCancel(ctx)
 	broker := pubsub.NewBroker[customagents.Event]()
 	exec := agent.NewCustomExecutor(cfg, agent.WithAccountService(s.account))
 	svc := customagents.NewService(store, exec, exec, &customAgentsEventSink{broker: broker})
@@ -56,12 +61,17 @@ func (s *Server) initCustomAgents(ctx context.Context, cfg *config.ConfigStore) 
 	s.customAgents = svc
 	s.customAgentEvents = broker
 	s.customAgentStore = store
+	s.customAgentCtx = swarmCtx
+	s.customAgentCancel = swarmCancel
 	if s.backend != nil {
 		s.backend.SetCustomAgents(svc)
 	}
 }
 
 func (s *Server) stopCustomAgents() {
+	if s.customAgentCancel != nil {
+		s.customAgentCancel()
+	}
 	if s.customAgents != nil {
 		s.customAgents.Stop()
 	}
@@ -93,6 +103,18 @@ func (c *controllerV1) customAgentEventBroker() *pubsub.Broker[customagents.Even
 	return nil
 }
 
+func (c *controllerV1) customAgentServerContext() context.Context {
+	if c.server != nil && c.server.customAgentCtx != nil {
+		return c.server.customAgentCtx
+	}
+	return context.Background()
+}
+
+type customAgentSwarmHTTPRequest struct {
+	customagents.SwarmRequest
+	Async bool `json:"async,omitempty"`
+}
+
 func (c *controllerV1) customAgentEndpoints() []apigen.Endpoint {
 	return []apigen.Endpoint{
 		apigen.Get("/v1/custom-agents").Summary("List custom agents").Tags("custom-agents").Fails(500, 503).Handle(c.handleGetCustomAgents),
@@ -101,6 +123,9 @@ func (c *controllerV1) customAgentEndpoints() []apigen.Endpoint {
 		apigen.Get("/v1/custom-agents/runs").Summary("List custom agent runs").Tags("custom-agents").QueryParam("agent_id", "Filter by agent ID").QueryParam("limit", "Maximum number of runs").Fails(500, 503).Handle(c.handleGetCustomAgentRuns),
 		apigen.Get("/v1/custom-agents/blackboard").Summary("List custom agent blackboard entries").Tags("custom-agents").QueryParam("chain_id", "Filter by chain ID").QueryParam("limit", "Maximum number of entries").Fails(500, 503).Handle(c.handleGetCustomAgentBlackboard),
 		apigen.Post("/v1/custom-agents/blackboard").Summary("Post custom agent blackboard entry").Tags("custom-agents").Status(201).Fails(400, 500, 503).Handle(c.handlePostCustomAgentBlackboard),
+		apigen.Get("/v1/custom-agents/global-memory").Summary("Get custom agents global memory").Tags("custom-agents").Responds(customagents.GlobalMemoryDoc{}).Fails(500, 503).Handle(c.handleGetCustomAgentGlobalMemory),
+		apigen.Put("/v1/custom-agents/global-memory").Summary("Save custom agents global memory").Tags("custom-agents").Accepts(customagents.GlobalMemoryDoc{}).Responds(customagents.GlobalMemoryDoc{}).Fails(400, 500, 503).Handle(c.handlePutCustomAgentGlobalMemory),
+		apigen.Post("/v1/custom-agents/swarm").Summary("Dispatch custom agent swarm").Tags("custom-agents").Accepts(customAgentSwarmHTTPRequest{}).Responds(customagents.SwarmResult{}).Fails(400, 500, 503).Handle(c.handlePostCustomAgentSwarm),
 		apigen.Get("/v1/custom-agents/events").Summary("Stream custom agent events (SSE)").Tags("custom-agents").SSE().Fails(503).Handle(c.handleGetCustomAgentEvents),
 		apigen.Get("/v1/custom-agents/{agent_id}").Summary("Get custom agent").Tags("custom-agents").PathParam("agent_id", "Custom agent ID or slug").Fails(404, 500, 503).Handle(c.handleGetCustomAgent),
 		apigen.Patch("/v1/custom-agents/{agent_id}").Summary("Update custom agent").Tags("custom-agents").PathParam("agent_id", "Custom agent ID or slug").Fails(400, 404, 409, 500, 503).Handle(c.handlePatchCustomAgent),
@@ -173,6 +198,7 @@ func (c *controllerV1) handlePostCustomAgent(w http.ResponseWriter, r *http.Requ
 		VerifierAgentID     string                            `json:"verifier_agent_id"`
 		NextAgentID         string                            `json:"next_agent_id"`
 		MaxReworkAttempts   int                               `json:"max_rework_attempts"`
+		StrictVerify        bool                              `json:"strict_verify"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		jsonError(w, http.StatusBadRequest, "invalid request body")
@@ -220,6 +246,7 @@ func (c *controllerV1) handlePostCustomAgent(w http.ResponseWriter, r *http.Requ
 		VerifierAgentID:     req.VerifierAgentID,
 		NextAgentID:         req.NextAgentID,
 		MaxReworkAttempts:   req.MaxReworkAttempts,
+		StrictVerify:        req.StrictVerify,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint") {
@@ -412,6 +439,7 @@ func (c *controllerV1) handlePatchCustomAgent(w http.ResponseWriter, r *http.Req
 		VerifierAgentID     *string                            `json:"verifier_agent_id"`
 		NextAgentID         *string                            `json:"next_agent_id"`
 		MaxReworkAttempts   *int                               `json:"max_rework_attempts"`
+		StrictVerify        *bool                              `json:"strict_verify"`
 		Status              *string                            `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
@@ -495,6 +523,9 @@ func (c *controllerV1) handlePatchCustomAgent(w http.ResponseWriter, r *http.Req
 	}
 	if patch.MaxReworkAttempts != nil {
 		existing.MaxReworkAttempts = *patch.MaxReworkAttempts
+	}
+	if patch.StrictVerify != nil {
+		existing.StrictVerify = *patch.StrictVerify
 	}
 	if patch.Status != nil {
 		existing.Status = *patch.Status
@@ -668,6 +699,94 @@ func (c *controllerV1) handlePostCustomAgentRunCancel(w http.ResponseWriter, r *
 		return
 	}
 	jsonEncode(w, map[string]bool{"cancelled": true})
+}
+
+func (c *controllerV1) handleGetCustomAgentGlobalMemory(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil || svc.GlobalMemory() == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	doc, err := svc.GlobalMemory().GetDoc(r.Context())
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	jsonEncode(w, doc)
+}
+
+func (c *controllerV1) handlePutCustomAgentGlobalMemory(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil || svc.GlobalMemory() == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	var doc customagents.GlobalMemoryDoc
+	if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
+		jsonError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	saved, err := svc.GlobalMemory().SaveDoc(r.Context(), doc)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			jsonError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		jsonError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	jsonEncode(w, saved)
+}
+
+func (c *controllerV1) handlePostCustomAgentSwarm(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	var req customAgentSwarmHTTPRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if strings.TrimSpace(req.Goal) == "" {
+		jsonError(w, http.StatusBadRequest, "goal is required")
+		return
+	}
+	if len(req.Workers) == 0 {
+		jsonError(w, http.StatusBadRequest, "at least one worker is required")
+		return
+	}
+	if req.Async {
+		chainID := strings.TrimSpace(req.ChainID)
+		if chainID == "" {
+			chainID = "swarm-" + uuid.NewString()
+		}
+		req.SwarmRequest.ChainID = chainID
+		bgCtx := c.customAgentServerContext()
+		go func() {
+			_, _ = svc.DispatchSwarm(bgCtx, req.SwarmRequest)
+		}()
+		jsonEncodeStatus(w, http.StatusAccepted, map[string]any{
+			"chain_id": chainID,
+			"status":   customagents.RunRunning,
+		})
+		return
+	}
+	res, err := svc.DispatchSwarm(r.Context(), req.SwarmRequest)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			jsonError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if res.Status == "" {
+			jsonError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	jsonEncode(w, res)
 }
 
 func jsonEncodeStatus(w http.ResponseWriter, status int, v any) {

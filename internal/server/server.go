@@ -102,6 +102,8 @@ type Server struct {
 	customAgents      *customagents.Service
 	customAgentEvents *pubsub.Broker[customagents.Event]
 	customAgentStore  *customagents.Store
+	customAgentCtx    context.Context
+	customAgentCancel context.CancelFunc
 	logger            *slog.Logger
 }
 

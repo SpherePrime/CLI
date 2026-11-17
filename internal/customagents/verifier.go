@@ -12,7 +12,99 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
+
+const (
+	minRepeatBlockRunes = 60
+	minRepeatCount      = 4
+	repeatAnchorRunes   = 30
+)
+
+func ValidateWorkerOutput(output string) error {
+	trimmed := strings.TrimSpace(output)
+	if trimmed == "" {
+		return fmt.Errorf("пустой вывод исполнителя")
+	}
+
+	runes := []rune(trimmed)
+	if len(runes) < minRepeatBlockRunes*minRepeatCount {
+		return nil
+	}
+
+	const rhBase uint64 = 131
+	var pow uint64 = 1
+	for i := 0; i < repeatAnchorRunes-1; i++ {
+		pow *= rhBase
+	}
+
+	var h uint64
+	for i := 0; i < repeatAnchorRunes; i++ {
+		h = h*rhBase + uint64(runes[i])
+	}
+
+	anchors := make(map[uint64][]int, len(runes)/repeatAnchorRunes+1)
+	limit := len(runes) - repeatAnchorRunes
+	for i := 0; i <= limit; i++ {
+		if prevs, ok := anchors[h]; ok {
+			for _, prev := range prevs {
+				period := i - prev
+				if period < minRepeatBlockRunes {
+					continue
+				}
+				if !runesEqual(runes[prev:prev+repeatAnchorRunes], runes[i:i+repeatAnchorRunes]) {
+					continue
+				}
+				back := 0
+				for prev-back-1 >= 0 && runes[prev-back-1] == runes[i-back-1] {
+					back++
+				}
+				fwd := repeatAnchorRunes
+				for i+fwd < len(runes) && runes[prev+fwd] == runes[i+fwd] {
+					fwd++
+				}
+				matchLen := back + fwd
+				if matchLen >= (minRepeatCount-1)*period-2 {
+					start := prev - back
+					if start+period <= len(runes) {
+						block := strings.TrimSpace(string(runes[start : start+period]))
+						if utf8.RuneCountInString(block) >= minRepeatBlockRunes {
+							return fmt.Errorf("обнаружено циклическое повторение блока (%d символов, %d+ раз подряд)", utf8.RuneCountInString(block), minRepeatCount)
+						}
+					}
+				}
+			}
+		}
+		if i%repeatAnchorRunes == 0 {
+			anchors[h] = append(anchors[h], i)
+		}
+		if i < limit {
+			h = (h-uint64(runes[i])*pow)*rhBase + uint64(runes[i+repeatAnchorRunes])
+		}
+	}
+
+	return nil
+}
+
+func runesEqual(a, b []rune) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func strictCompletenessChecklist() string {
+	return `Критерии приёмки (строгий режим):
+1. Задача выполнена полностью, без пропусков, заглушек и незавершённых разделов.
+2. Все заявленные изменения, пути файлов, команды и результаты проверок подтверждены конкретными фактами в ответе.
+3. Отсутствуют противоречия, выдуманные данные и нерелевантный или повторяющийся текст.
+4. Ответ структурирован и напрямую отвечает на исходную задачу.`
+}
 
 func RunDeterministicChecks(ctx context.Context, checks []DeterministicCheck, outputText string, workDir string) (bool, string) {
 	if len(checks) == 0 {

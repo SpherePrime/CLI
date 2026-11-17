@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/SpherePrime/CLI/internal/config"
@@ -39,10 +40,11 @@ const (
 )
 
 type Store struct {
-	db          *sql.DB
-	dataDir     string
-	memoriesDir string
-	mu          sync.Mutex
+	db           *sql.DB
+	dataDir      string
+	memoriesDir  string
+	globalMemory *GlobalMemoryStore
+	mu           sync.Mutex
 }
 
 func DefaultDataDir() string {
@@ -70,10 +72,15 @@ func OpenStore(dataDir string) (*Store, error) {
 	}
 
 	return &Store{
-		db:          conn,
-		dataDir:     dataDir,
-		memoriesDir: memoriesDir,
+		db:           conn,
+		dataDir:      dataDir,
+		memoriesDir:  memoriesDir,
+		globalMemory: NewGlobalMemoryStore(dataDir, WithUseConfigSoul(!testing.Testing())),
 	}, nil
+}
+
+func (s *Store) GlobalMemory() *GlobalMemoryStore {
+	return s.globalMemory
 }
 
 func initStoreSchema(conn *sql.DB) error {
@@ -107,6 +114,7 @@ func initStoreSchema(conn *sql.DB) error {
 			verifier_agent_id TEXT NOT NULL DEFAULT '',
 			next_agent_id TEXT NOT NULL DEFAULT '',
 			max_rework_attempts INTEGER NOT NULL DEFAULT 3,
+			strict_verify INTEGER NOT NULL DEFAULT 0,
 			status TEXT NOT NULL DEFAULT 'idle',
 			last_error TEXT NOT NULL DEFAULT '',
 			last_run_at INTEGER NOT NULL DEFAULT 0,
@@ -162,6 +170,42 @@ func initStoreSchema(conn *sql.DB) error {
 		if _, err := conn.Exec(stmt); err != nil {
 			return err
 		}
+	}
+	if err := ensureCustomAgentsColumn(conn, "strict_verify", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ensureCustomAgentsColumn(conn *sql.DB, column, definition string) error {
+	rows, err := conn.Query(`PRAGMA table_info(custom_agents)`)
+	if err != nil {
+		return fmt.Errorf("inspect custom_agents schema: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			cid        int
+			name       string
+			colType    string
+			notNull    int
+			defaultVal sql.NullString
+			pk         int
+		)
+		if err := rows.Scan(&cid, &name, &colType, &notNull, &defaultVal, &pk); err != nil {
+			return fmt.Errorf("scan custom_agents column: %w", err)
+		}
+		if name == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	_, err = conn.Exec(fmt.Sprintf(`ALTER TABLE custom_agents ADD COLUMN %s %s`, column, definition))
+	if err != nil {
+		return fmt.Errorf("add column %s: %w", column, err)
 	}
 	return nil
 }
@@ -281,7 +325,7 @@ func (s *Store) CreateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 			trigger_type, interval_minutes, cron_expr,
 			monitor_kind, monitor_target, monitor_last_hash, monitor_last_snapshot,
 			acceptance_criteria, deterministic_checks, verifier_agent_id, next_agent_id,
-			max_rework_attempts, status, last_error, last_run_at, next_run_at,
+			max_rework_attempts, strict_verify, status, last_error, last_run_at, next_run_at,
 			created_at, updated_at
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?,
@@ -290,7 +334,7 @@ func (s *Store) CreateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 			?, ?, ?,
 			?, ?, ?, ?,
 			?, ?, ?, ?,
-			?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?,
 			?, ?
 		)`,
 		agent.ID, agent.Slug, agent.Name, agent.Description, agent.Role, agent.SystemPrompt, agent.Memory,
@@ -299,7 +343,7 @@ func (s *Store) CreateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 		agent.TriggerType, agent.IntervalMinutes, agent.CronExpr,
 		agent.MonitorKind, agent.MonitorTarget, agent.MonitorLastHash, agent.MonitorLastSnapshot,
 		agent.AcceptanceCriteria, string(checksJSON), agent.VerifierAgentID, agent.NextAgentID,
-		agent.MaxReworkAttempts, agent.Status, agent.LastError, agent.LastRunAt, agent.NextRunAt,
+		agent.MaxReworkAttempts, boolToInt(agent.StrictVerify), agent.Status, agent.LastError, agent.LastRunAt, agent.NextRunAt,
 		agent.CreatedAt, agent.UpdatedAt,
 	)
 	if err != nil {
@@ -392,7 +436,7 @@ func (s *Store) UpdateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 			trigger_type = ?, interval_minutes = ?, cron_expr = ?,
 			monitor_kind = ?, monitor_target = ?, monitor_last_hash = ?, monitor_last_snapshot = ?,
 			acceptance_criteria = ?, deterministic_checks = ?, verifier_agent_id = ?, next_agent_id = ?,
-			max_rework_attempts = ?, status = ?, last_error = ?, last_run_at = ?, next_run_at = ?,
+			max_rework_attempts = ?, strict_verify = ?, status = ?, last_error = ?, last_run_at = ?, next_run_at = ?,
 			updated_at = ?
 		WHERE id = ?`,
 		agent.Slug, agent.Name, agent.Description, agent.Role, agent.SystemPrompt, agent.Memory,
@@ -401,7 +445,7 @@ func (s *Store) UpdateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 		agent.TriggerType, agent.IntervalMinutes, agent.CronExpr,
 		agent.MonitorKind, agent.MonitorTarget, agent.MonitorLastHash, agent.MonitorLastSnapshot,
 		agent.AcceptanceCriteria, string(checksJSON), agent.VerifierAgentID, agent.NextAgentID,
-		agent.MaxReworkAttempts, agent.Status, agent.LastError, agent.LastRunAt, agent.NextRunAt,
+		agent.MaxReworkAttempts, boolToInt(agent.StrictVerify), agent.Status, agent.LastError, agent.LastRunAt, agent.NextRunAt,
 		agent.UpdatedAt, agent.ID,
 	)
 	if err != nil {
@@ -778,7 +822,7 @@ const selectAgentCols = `
 		trigger_type, interval_minutes, cron_expr,
 		monitor_kind, monitor_target, monitor_last_hash, monitor_last_snapshot,
 		acceptance_criteria, deterministic_checks, verifier_agent_id, next_agent_id,
-		max_rework_attempts, status, last_error, last_run_at, next_run_at,
+		max_rework_attempts, strict_verify, status, last_error, last_run_at, next_run_at,
 		created_at, updated_at
 	FROM custom_agents`
 
@@ -806,6 +850,7 @@ func scanAgentRow(scanner rowScanner) (CustomAgent, error) {
 	var toolsJSON string
 	var checksJSON string
 	var enabledInt int
+	var strictVerifyInt int
 
 	err := scanner.Scan(
 		&a.ID, &a.Slug, &a.Name, &a.Description, &a.Role, &a.SystemPrompt, &a.Memory,
@@ -814,13 +859,14 @@ func scanAgentRow(scanner rowScanner) (CustomAgent, error) {
 		&a.TriggerType, &a.IntervalMinutes, &a.CronExpr,
 		&a.MonitorKind, &a.MonitorTarget, &a.MonitorLastHash, &a.MonitorLastSnapshot,
 		&a.AcceptanceCriteria, &checksJSON, &a.VerifierAgentID, &a.NextAgentID,
-		&a.MaxReworkAttempts, &a.Status, &a.LastError, &a.LastRunAt, &a.NextRunAt,
+		&a.MaxReworkAttempts, &strictVerifyInt, &a.Status, &a.LastError, &a.LastRunAt, &a.NextRunAt,
 		&a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return CustomAgent{}, err
 	}
 	a.Enabled = enabledInt != 0
+	a.StrictVerify = strictVerifyInt != 0
 	if toolsJSON != "" {
 		if err := json.Unmarshal([]byte(toolsJSON), &a.AllowedTools); err != nil {
 			return CustomAgent{}, fmt.Errorf("unmarshal allowed_tools: %w", err)

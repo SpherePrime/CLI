@@ -264,6 +264,7 @@ export interface AgentDraft {
   verifier_agent_id: string
   next_agent_id: string
   max_rework_attempts: number
+  strict_verify: boolean
 }
 
 export function buildAgentDraft(agent: CustomAgent): AgentDraft {
@@ -289,7 +290,8 @@ export function buildAgentDraft(agent: CustomAgent): AgentDraft {
     deterministic_checks: structuredClone(agent.deterministic_checks || []),
     verifier_agent_id: agent.verifier_agent_id,
     next_agent_id: agent.next_agent_id,
-    max_rework_attempts: agent.max_rework_attempts || 3
+    max_rework_attempts: agent.max_rework_attempts || 3,
+    strict_verify: Boolean(agent.strict_verify)
   }
 }
 

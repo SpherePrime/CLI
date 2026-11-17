@@ -1423,10 +1423,14 @@ func (c *coordinator) customAgentsIndexNote(ctx context.Context) string {
 		return ""
 	}
 	agents, err := c.customAgents.Store().ListAgents(ctx)
-	if err != nil || len(agents) == 0 {
-		return ""
+	if err != nil {
+		agents = nil
 	}
-	return formatCustomAgentsIndex(agents)
+	var memSnapshot, soulSnapshot string
+	if gm := c.customAgents.GlobalMemory(); gm != nil {
+		memSnapshot, soulSnapshot = gm.FormatFrozenSnapshot(ctx)
+	}
+	return formatHermesRuntimeNote(soulSnapshot, memSnapshot, agents)
 }
 
 func isExactoSupported(modelID string) bool {

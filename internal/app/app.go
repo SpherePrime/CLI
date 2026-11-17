@@ -78,8 +78,9 @@ type App struct {
 
 	LSPManager *lsp.Manager
 
-	Skills       *skills.Manager
-	customAgents *customagents.Service
+	Skills         *skills.Manager
+	customAgents   *customagents.Service
+	customAgentsMu sync.Mutex
 
 	config *config.ConfigStore
 
@@ -256,14 +257,57 @@ func (app *App) SetCustomAgents(svc *customagents.Service) {
 	if app == nil {
 		return
 	}
+	app.customAgentsMu.Lock()
 	app.customAgents = svc
+	app.customAgentsMu.Unlock()
 }
 
 func (app *App) CustomAgents() *customagents.Service {
 	if app == nil {
 		return nil
 	}
-	return app.customAgents
+	app.customAgentsMu.Lock()
+	svc := app.customAgents
+	app.customAgentsMu.Unlock()
+	return svc
+}
+
+func (app *App) ensureLocalCustomAgents(ctx context.Context) {
+	if app == nil {
+		return
+	}
+	app.customAgentsMu.Lock()
+	defer app.customAgentsMu.Unlock()
+	if app.customAgents != nil {
+		return
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	store, err := customagents.OpenStore(customagents.DefaultDataDir())
+	if err != nil {
+		slog.Warn("Failed to open custom agents store", "error", err)
+		return
+	}
+	if gm := store.GlobalMemory(); gm != nil {
+		gm.SetUseConfigSoul(true)
+	}
+	if err := store.EnsureDefaults(ctx); err != nil {
+		slog.Warn("Failed to seed default custom agents", "error", err)
+	}
+	startCtx := app.globalCtx
+	if startCtx == nil {
+		startCtx = ctx
+	}
+	exec := agent.NewCustomExecutor(app.config)
+	svc := customagents.NewService(store, exec, exec, nil)
+	exec.SetService(svc)
+	svc.Start(startCtx)
+	app.customAgents = svc
+	app.cleanupFuncs = append(app.cleanupFuncs, func(context.Context) error {
+		svc.Stop()
+		return store.Close()
+	})
 }
 
 // ReportCurrentSession tells herdr which session the user is now
@@ -850,20 +894,21 @@ func (app *App) initCoderAgent(ctx context.Context, interactive bool, mainAgent 
 	if coderAgentCfg.ID == "" {
 		return fmt.Errorf("coder agent configuration is missing")
 	}
+	app.ensureLocalCustomAgents(ctx)
 	coord, err := agent.NewCoordinator(ctx, agent.CoordinatorOptions{
-		Config:      app.config,
-		Sessions:    app.Sessions,
-		Messages:    app.Messages,
-		Permissions: app.Permissions,
-		Questions:   app.Questions,
-		History:     app.History,
-		FileTracker: app.FileTracker,
-		Goals:       app.Goals,
-		LSPManager:  app.LSPManager,
-		Notify:      app.agentNotifications,
+		Config:       app.config,
+		Sessions:     app.Sessions,
+		Messages:     app.Messages,
+		Permissions:  app.Permissions,
+		Questions:    app.Questions,
+		History:      app.History,
+		FileTracker:  app.FileTracker,
+		Goals:        app.Goals,
+		LSPManager:   app.LSPManager,
+		Notify:       app.agentNotifications,
 		RunComplete:  app.runCompletions,
 		Skills:       app.Skills,
-		CustomAgents: app.customAgents,
+		CustomAgents: app.CustomAgents(),
 		Interactive:  interactive,
 	})
 	if err != nil {
@@ -960,7 +1005,10 @@ func (app *App) Shutdown() {
 	})
 
 	// Call all cleanup functions.
-	for _, cleanup := range app.cleanupFuncs {
+	app.customAgentsMu.Lock()
+	cleanups := append([]func(context.Context) error(nil), app.cleanupFuncs...)
+	app.customAgentsMu.Unlock()
+	for _, cleanup := range cleanups {
 		if cleanup != nil {
 			wg.Go(func() {
 				if err := cleanup(shutdownCtx); err != nil {
