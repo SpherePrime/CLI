@@ -3,6 +3,7 @@ package completions
 import (
 	"testing"
 
+	"github.com/SpherePrime/CLI/internal/fsext"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
@@ -105,4 +106,30 @@ func TestFilterPrefersPathSegmentExact(t *testing.T) {
 	first, ok := filtered[0].(*CompletionItem)
 	require.True(t, ok)
 	require.Equal(t, "internal/ui/chat/mcp.go", first.Text())
+}
+
+func TestNormalizeCompletionPath(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "internal/ui/completions.go", normalizeCompletionPath("./internal/ui/completions.go"))
+	require.Equal(t, "internal/ui/completions.go", normalizeCompletionPath(`.\internal\ui\completions.go`))
+	require.Equal(t, "main.go", normalizeCompletionPath("main.go"))
+}
+
+func TestCompletionValuesFromIndex(t *testing.T) {
+	t.Parallel()
+
+	entries := []fsext.IndexEntry{
+		{SlashPath: "z.go", IsDir: false},
+		{SlashPath: "pkg", IsDir: true},
+		{SlashPath: "pkg/a.go", IsDir: false},
+		{SlashPath: "pkg/sub/b.go", IsDir: false},
+	}
+
+	got := completionValuesFromIndex(entries, 2, 10)
+	require.Equal(t, []FileCompletionValue{
+		{Path: "pkg/"},
+		{Path: "pkg/a.go"},
+		{Path: "z.go"},
+	}, got)
 }

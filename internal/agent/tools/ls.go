@@ -168,64 +168,79 @@ func ListDirectoryTree(searchPath string, params LSParams, lsConfig config.ToolL
 	return output + "\n" + printTree(tree, searchPath), metadata, nil
 }
 
+type treeBuilderNode struct {
+	node     *TreeNode
+	children map[string]*treeBuilderNode
+}
+
+func isPathSep(b byte) bool {
+	return b == filepath.Separator || b == '/'
+}
+
 func createFileTree(sortedPaths []string, rootPath string) []*TreeNode {
-	root := []*TreeNode{}
-	pathMap := make(map[string]*TreeNode)
+	root := make([]*TreeNode, 0, min(len(sortedPaths), 64))
+	rootEntry := treeBuilderNode{
+		children: make(map[string]*treeBuilderNode),
+	}
 
 	for _, path := range sortedPaths {
-		relativePath := strings.TrimPrefix(path, rootPath)
-		parts := strings.Split(relativePath, string(filepath.Separator))
-		currentPath := ""
-		var parentPath string
+		rel := strings.TrimPrefix(path, rootPath)
+		hasTrailingSep := len(rel) > 0 && isPathSep(rel[len(rel)-1])
 
-		var cleanParts []string
-		for _, part := range parts {
-			if part != "" {
-				cleanParts = append(cleanParts, part)
-			}
+		for len(rel) > 0 && isPathSep(rel[0]) {
+			rel = rel[1:]
 		}
-		parts = cleanParts
-
-		if len(parts) == 0 {
+		for len(rel) > 0 && isPathSep(rel[len(rel)-1]) {
+			rel = rel[:len(rel)-1]
+		}
+		if rel == "" {
 			continue
 		}
 
-		for i, part := range parts {
-			if currentPath == "" {
-				currentPath = part
-			} else {
-				currentPath = filepath.Join(currentPath, part)
+		cur := &rootEntry
+		pos := 0
+		for pos < len(rel) {
+			segStart := pos
+			for pos < len(rel) && !isPathSep(rel[pos]) {
+				pos++
 			}
+			part := rel[segStart:pos]
+			for pos < len(rel) && isPathSep(rel[pos]) {
+				pos++
+			}
+			isLastPart := pos == len(rel)
 
-			if _, exists := pathMap[currentPath]; exists {
-				parentPath = currentPath
+			if child, exists := cur.children[part]; exists {
+				cur = child
 				continue
 			}
 
-			isLastPart := i == len(parts)-1
-			isDir := !isLastPart || strings.HasSuffix(relativePath, string(filepath.Separator))
+			isDir := !isLastPart || hasTrailingSep
 			nodeType := NodeTypeFile
 			if isDir {
 				nodeType = NodeTypeDirectory
 			}
 			newNode := &TreeNode{
 				Name:     part,
-				Path:     currentPath,
+				Path:     rel[:segStart+len(part)],
 				Type:     nodeType,
 				Children: []*TreeNode{},
 			}
+			entry := &treeBuilderNode{
+				node: newNode,
+			}
+			if cur.children == nil {
+				cur.children = make(map[string]*treeBuilderNode)
+			}
+			cur.children[part] = entry
 
-			pathMap[currentPath] = newNode
-
-			if i > 0 && parentPath != "" {
-				if parent, ok := pathMap[parentPath]; ok {
-					parent.Children = append(parent.Children, newNode)
-				}
-			} else {
+			if cur == &rootEntry {
 				root = append(root, newNode)
+			} else {
+				cur.node.Children = append(cur.node.Children, newNode)
 			}
 
-			parentPath = currentPath
+			cur = entry
 		}
 	}
 
@@ -235,9 +250,10 @@ func createFileTree(sortedPaths []string, rootPath string) []*TreeNode {
 func printTree(tree []*TreeNode, rootPath string) string {
 	var result strings.Builder
 
+	slashRoot := filepath.ToSlash(rootPath)
 	result.WriteString("- ")
-	result.WriteString(filepath.ToSlash(rootPath))
-	if rootPath[len(rootPath)-1] != '/' {
+	result.WriteString(slashRoot)
+	if len(slashRoot) == 0 || slashRoot[len(slashRoot)-1] != '/' {
 		result.WriteByte('/')
 	}
 	result.WriteByte('\n')
@@ -250,14 +266,15 @@ func printTree(tree []*TreeNode, rootPath string) string {
 }
 
 func printNode(builder *strings.Builder, node *TreeNode, level int) {
-	indent := strings.Repeat("  ", level)
-
-	nodeName := node.Name
-	if node.Type == NodeTypeDirectory {
-		nodeName = nodeName + "/"
+	for range level {
+		builder.WriteString("  ")
 	}
-
-	fmt.Fprintf(builder, "%s- %s\n", indent, nodeName)
+	builder.WriteString("- ")
+	builder.WriteString(node.Name)
+	if node.Type == NodeTypeDirectory {
+		builder.WriteByte('/')
+	}
+	builder.WriteByte('\n')
 
 	if node.Type == NodeTypeDirectory && len(node.Children) > 0 {
 		for _, child := range node.Children {

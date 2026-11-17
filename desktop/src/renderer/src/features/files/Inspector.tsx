@@ -27,6 +27,7 @@ import type { Workspace } from '../../app/useWorkspace'
 import { useI18n } from '../../i18n'
 import { FileContextMenu, type MenuItem } from './FileContextMenu'
 import { EntryDeleteDialog, EntryNameDialog } from './EntryDialogs'
+import { shouldRefreshTreeOnBusyChange } from './treeRefresh'
 import { BrowserTab } from '../browser/BrowserTab'
 import { notifyError } from '../notifications/notifications'
 import { AgentsPanel } from '../agents/AgentsPanel'
@@ -161,9 +162,21 @@ export function Inspector({
       current = false
     }
   }, [w.project?.id, w.busy, tab, source, treeKey])
+  const wasBusy = useRef(w.busy)
+  const busyWorkspace = useRef(w.project?.id)
   useEffect(() => {
-    setTreeKey((key) => key + 1)
-  }, [w.busy])
+    const previousBusy = wasBusy.current
+    const previousWorkspace = busyWorkspace.current
+    wasBusy.current = w.busy
+    busyWorkspace.current = w.project?.id
+    if (!shouldRefreshTreeOnBusyChange(previousBusy, w.busy, previousWorkspace, w.project?.id)) {
+      return
+    }
+    const timer = setTimeout(() => {
+      setTreeKey((key) => key + 1)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [w.busy, w.project?.id])
   useEffect(() => {
     const refresh = () => setTreeKey((key) => key + 1)
     window.addEventListener('prime:file-saved', refresh)

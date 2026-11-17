@@ -267,3 +267,16 @@ func TestGlobWithDoubleStar(t *testing.T) {
 		require.Equal(t, []string{oldestFile, middleDir, newestFile}, matches)
 	})
 }
+
+func TestSkipHidden(t *testing.T) {
+	t.Parallel()
+
+	require.False(t, SkipHidden("."))
+	require.False(t, SkipHidden(filepath.Join("src", "main.go")))
+	require.True(t, SkipHidden(".env"))
+	require.True(t, SkipHidden(filepath.Join("src", ".hidden")))
+	require.True(t, SkipHidden(filepath.Join("project", "node_modules", "pkg", "index.js")))
+	require.True(t, SkipHidden("repo/.git/config"))
+	require.True(t, SkipHidden(filepath.Join("repo", "target", "debug", "app")))
+	require.True(t, SkipHidden(filepath.Join("repo", "vendor", "lib.go")))
+}

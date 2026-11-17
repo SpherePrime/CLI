@@ -117,6 +117,86 @@ func TestMap_GetOrSet(t *testing.T) {
 	require.Equal(t, 1, m.Len())
 }
 
+func TestMap_GetOrSetCoalesced(t *testing.T) {
+	t.Parallel()
+
+	m := NewMap[string, int]()
+	const workers = 32
+	var calls atomic.Int32
+	started := make(chan struct{})
+	release := make(chan struct{})
+
+	var wg sync.WaitGroup
+	results := make([]int, workers)
+	wg.Add(workers)
+	for i := range workers {
+		go func(idx int) {
+			defer wg.Done()
+			if idx == 0 {
+				results[idx] = m.GetOrSetCoalesced("k", func() int {
+					calls.Add(1)
+					close(started)
+					<-release
+					return 77
+				})
+				return
+			}
+			<-started
+			results[idx] = m.GetOrSetCoalesced("k", func() int {
+				calls.Add(1)
+				return 999
+			})
+		}(i)
+	}
+
+	<-started
+	time.Sleep(10 * time.Millisecond)
+	close(release)
+	wg.Wait()
+
+	require.Equal(t, int32(1), calls.Load())
+	for _, v := range results {
+		require.Equal(t, 77, v)
+	}
+}
+
+func TestMap_GetOrSetCoalescedNested(t *testing.T) {
+	t.Parallel()
+
+	m := NewMap[string, string]()
+	other := NewMap[string, string]()
+
+	got := m.GetOrSetCoalesced("child", func() string {
+		parent := m.GetOrSetCoalesced("parent", func() string {
+			return other.GetOrSetCoalesced("leaf", func() string {
+				return "ok"
+			})
+		})
+		return parent + "-child"
+	})
+
+	require.Equal(t, "ok-child", got)
+	v, ok := m.Get("parent")
+	require.True(t, ok)
+	require.Equal(t, "ok", v)
+}
+
+func TestMap_GetOrSetCoalescedPanicRecovery(t *testing.T) {
+	t.Parallel()
+
+	m := NewMap[string, int]()
+	require.Panics(t, func() {
+		m.GetOrSetCoalesced("bad", func() int {
+			panic("boom")
+		})
+	})
+
+	got := m.GetOrSetCoalesced("bad", func() int {
+		return 123
+	})
+	require.Equal(t, 123, got)
+}
+
 func TestMap_Get(t *testing.T) {
 	t.Parallel()
 

@@ -21,6 +21,11 @@ describe('native host bridge', () => {
       method: 'files',
       args: ['workspace']
     })
+    await bridge.api.searchFiles('workspace', 'app', 50)
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
+      method: 'searchFiles',
+      args: ['workspace', 'app', 50]
+    })
     await bridge.api.call('workspace', 'config')
     expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
       method: 'call',

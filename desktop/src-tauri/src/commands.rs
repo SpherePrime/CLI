@@ -77,6 +77,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
     if matches!(
         method,
         "files"
+            | "searchFiles"
             | "readFile"
             | "saveFile"
             | "createEntry"
@@ -427,22 +428,36 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             .lock()
             .unwrap()
             .release(args.first().unwrap_or(&Value::Null)),
-        "files" => crate::files::list(
+        "files" => crate::files::list_cached(
+            &state.file_cache,
             &state.root(string(args, 0)?)?,
             args.get(1).and_then(Value::as_str).unwrap_or(""),
         ),
+        "searchFiles" => {
+            let root = state.root(string(args, 0)?)?;
+            let query = args.get(1).and_then(Value::as_str).unwrap_or("");
+            let limit = args
+                .get(2)
+                .and_then(Value::as_u64)
+                .map(|value| value as usize)
+                .unwrap_or(50);
+            crate::files::search_cached(&state.file_cache, &root, query, limit)
+        }
         "readFile" => crate::files::read(&state.root(string(args, 0)?)?, string(args, 1)?),
         "mediaUrl" => state
             .media
             .resolve(&state, string(args, 0)?, string(args, 1)?),
         "saveFile" => {
             let _guard = state.file_writes.lock().unwrap();
-            crate::files::save(
-                &state.root(string(args, 0)?)?,
+            let root = state.root(string(args, 0)?)?;
+            let result = crate::files::save(
+                &root,
                 string(args, 1)?,
                 string(args, 2)?,
                 string(args, 3)?,
-            )
+            )?;
+            state.file_cache.invalidate(&root);
+            Ok(result)
         }
         "createEntry" => {
             let root = state.root(string(args, 0)?)?;
@@ -463,6 +478,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                     ))
                 }
             }
+            state.file_cache.invalidate(&root);
             Ok(json!({"path":relative}))
         }
         "editorDirty" => {
@@ -539,6 +555,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
         "trashEntry" => {
             let root = state.root(string(args, 0)?)?;
             crate::files::trash(&root, string(args, 1)?)?;
+            state.file_cache.invalidate(&root);
             Ok(Value::Null)
         }
         "diff" if args.get(3).and_then(Value::as_str) == Some("session") => {

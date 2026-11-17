@@ -3,6 +3,7 @@ package fsext
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
@@ -119,4 +120,57 @@ func TestShouldExcludeFileCommonPatterns(t *testing.T) {
 	for _, dir := range commonIgnored {
 		require.True(t, ShouldExcludeFile(tempDir, dir), "Expected %s to be ignored by common patterns", filepath.Base(dir))
 	}
+}
+
+func TestDirectoryListerMatcherInheritance(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	subDir := filepath.Join(tempDir, "sub")
+	nestedDir := filepath.Join(subDir, "nested")
+	emptyIgnoreDir := filepath.Join(tempDir, "empty")
+
+	require.NoError(t, os.MkdirAll(nestedDir, 0o755))
+	require.NoError(t, os.MkdirAll(emptyIgnoreDir, 0o755))
+
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("*.log\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(subDir, ".gitignore"), []byte("!keep.log\n*.bak\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(emptyIgnoreDir, ".gitignore"), []byte(""), 0o644))
+
+	dl := NewDirectoryLister(tempDir)
+
+	rootEntry := dl.getCombinedMatcherEntry(tempDir)
+	subEntry := dl.getCombinedMatcherEntry(subDir)
+	nestedEntry := dl.getCombinedMatcherEntry(nestedDir)
+	emptyEntry := dl.getCombinedMatcherEntry(emptyIgnoreDir)
+
+	require.Same(t, rootEntry, emptyEntry)
+	require.NotSame(t, rootEntry, subEntry)
+	require.Same(t, subEntry, nestedEntry)
+
+	require.True(t, dl.shouldIgnore(filepath.Join(tempDir, "root.log"), nil, false))
+	require.False(t, dl.shouldIgnore(filepath.Join(subDir, "keep.log"), nil, false))
+	require.False(t, dl.shouldIgnore(filepath.Join(nestedDir, "keep.log"), nil, false))
+	require.True(t, dl.shouldIgnore(filepath.Join(nestedDir, "drop.log"), nil, false))
+	require.True(t, dl.shouldIgnore(filepath.Join(nestedDir, "old.bak"), nil, false))
+}
+
+func TestDirectoryListerConcurrentAccess(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	nested := filepath.Join(tempDir, "a", "b", "c")
+	require.NoError(t, os.MkdirAll(nested, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, ".gitignore"), []byte("*.tmp\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "a", ".primeignore"), []byte("*.secret\n"), 0o644))
+
+	dl := NewDirectoryLister(tempDir)
+	var wg sync.WaitGroup
+	for range 32 {
+		wg.Go(func() {
+			require.True(t, dl.shouldIgnore(filepath.Join(nested, "x.secret"), nil, false))
+			require.False(t, dl.shouldIgnore(filepath.Join(nested, "main.go"), nil, false))
+		})
+	}
+	wg.Wait()
 }

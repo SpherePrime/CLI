@@ -1,4 +1,7 @@
-use crate::error::{HostError, HostResult};
+use crate::{
+    error::{HostError, HostResult},
+    file_index::{build_gitignore, search_uncached, should_fast_skip, FileCache},
+};
 use base64::Engine;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -8,7 +11,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-pub fn scoped_path(root: &Path, relative: &str, create: bool) -> HostResult<PathBuf> {
+fn validate_relative(relative: &str) -> HostResult<&Path> {
     let relative = Path::new(relative);
     if relative
         .components()
@@ -19,6 +22,11 @@ pub fn scoped_path(root: &Path, relative: &str, create: bool) -> HostResult<Path
             "Path must stay inside the project",
         ));
     }
+    Ok(relative)
+}
+
+pub fn scoped_path(root: &Path, relative: &str, create: bool) -> HostResult<PathBuf> {
+    let relative = validate_relative(relative)?;
     let root = dunce::canonicalize(root)?;
     let target = root.join(relative);
     let resolved = if create && !target.exists() {
@@ -57,38 +65,72 @@ pub fn editor_url(target: &Path) -> HostResult<String> {
 }
 
 pub fn list(root: &Path, relative: &str) -> HostResult<Value> {
-    let directory = scoped_path(root, relative, false)?;
-    let root = &dunce::canonicalize(root)?;
-    let mut rules = ignore::gitignore::GitignoreBuilder::new(root);
-    for name in [".gitignore", ".primeignore"] {
-        rules.add(root.join(name));
+    list_inner(root, relative, None)
+}
+
+pub fn list_cached(cache: &FileCache, root: &Path, relative: &str) -> HostResult<Value> {
+    list_inner(root, relative, Some(cache))
+}
+
+pub fn search_files(root: &Path, query: &str, limit: usize) -> HostResult<Value> {
+    search_uncached(root, query, limit)
+}
+
+pub fn search_cached(
+    cache: &FileCache,
+    root: &Path,
+    query: &str,
+    limit: usize,
+) -> HostResult<Value> {
+    cache.search(root, query, limit)
+}
+
+fn list_inner(root: &Path, relative: &str, cache: Option<&FileCache>) -> HostResult<Value> {
+    let canonical_root = dunce::canonicalize(root)?;
+    let relative_path = validate_relative(relative)?;
+    let directory = dunce::canonicalize(canonical_root.join(relative_path))?;
+    if !directory.starts_with(&canonical_root) {
+        return Err(HostError::new(
+            "PATH_DENIED",
+            "Path leaves the project through a link",
+        ));
     }
-    let rules = rules
-        .build()
-        .map_err(|error| HostError::new("INVALID_IGNORE", error.to_string()))?;
+    let rules = match cache {
+        Some(cache) => cache.gitignore(&canonical_root)?,
+        None => build_gitignore(&canonical_root)?,
+    };
     let mut items = Vec::new();
     for entry in fs::read_dir(&directory)? {
         let entry = entry?;
         let name = entry.file_name().to_string_lossy().into_owned();
-        let directory = entry.file_type()?.is_dir();
-        if [".git", "node_modules", ".superpowers", ".env", ".env.local"].contains(&name.as_str())
-            || (entry.path().starts_with(root)
-                && rules
-                    .matched_path_or_any_parents(entry.path(), directory)
-                    .is_ignore())
+        let file_type = entry.file_type()?;
+        let is_dir = if file_type.is_symlink() {
+            let Ok(resolved) = dunce::canonicalize(entry.path()) else {
+                continue;
+            };
+            if !resolved.starts_with(&canonical_root) {
+                continue;
+            }
+            resolved.is_dir()
+        } else {
+            file_type.is_dir()
+        };
+        if should_fast_skip(&name, is_dir) {
+            continue;
+        }
+        let entry_path = entry.path();
+        if entry_path.starts_with(&canonical_root)
+            && rules
+                .matched_path_or_any_parents(&entry_path, is_dir)
+                .is_ignore()
         {
             continue;
         }
-        if scoped_path(
-            root,
-            &Path::new(relative).join(&name).to_string_lossy(),
-            false,
-        )
-        .is_err()
-        {
-            continue;
-        }
-        items.push(json!({"name": name, "path":Path::new(relative).join(&name).to_string_lossy(), "directory":directory}));
+        items.push(json!({
+            "name": name,
+            "path": relative_path.join(&name).to_string_lossy(),
+            "directory": is_dir
+        }));
     }
     items.sort_by(|left, right| {
         right["directory"]
@@ -297,5 +339,154 @@ mod tests {
         assert_eq!(result["video"]["path"], "render.mp4");
         assert_eq!(result["video"]["mime"], "video/mp4");
         assert!(result.get("content").is_none());
+    }
+
+    #[test]
+    fn listing_skips_fast_ignore_directories_and_secret_files() {
+        let root = tempfile::tempdir().unwrap();
+        for dir in [
+            "dist",
+            "build",
+            "target",
+            ".prime",
+            "__pycache__",
+            ".next",
+            ".nuxt",
+            ".turbo",
+            ".venv",
+            ".cache",
+            "vendor",
+            ".git",
+            "node_modules",
+            ".superpowers",
+            "src",
+        ] {
+            fs::create_dir_all(root.path().join(dir)).unwrap();
+        }
+        fs::write(root.path().join(".env"), "SECRET=1").unwrap();
+        fs::write(root.path().join(".env.local"), "SECRET=2").unwrap();
+        fs::write(root.path().join("README.md"), "# demo").unwrap();
+
+        let names: Vec<String> = list(root.path(), "")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["name"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(names, vec!["src", "README.md"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn listing_filters_escaping_symlinks_and_keeps_internal_symlinks() {
+        let outside = tempfile::tempdir().unwrap();
+        fs::write(outside.path().join("secret.txt"), "secret").unwrap();
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir_all(root.path().join("src")).unwrap();
+        fs::write(root.path().join("src").join("main.rs"), "fn main() {}").unwrap();
+        std::os::unix::fs::symlink(
+            outside.path().join("secret.txt"),
+            root.path().join("escape.txt"),
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(
+            root.path().join("src").join("main.rs"),
+            root.path().join("linked.rs"),
+        )
+        .unwrap();
+
+        let names: Vec<String> = list(root.path(), "")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["name"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(names, vec!["src", "linked.rs"]);
+    }
+
+    #[test]
+    fn cached_gitignore_invalidates_when_ignore_file_changes() {
+        let root = tempfile::tempdir().unwrap();
+        let cache = FileCache::new();
+        fs::write(root.path().join("keep.txt"), "").unwrap();
+        fs::write(root.path().join("ignored.log"), "").unwrap();
+
+        let initial: Vec<String> = list_cached(&cache, root.path(), "")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["name"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(initial, vec!["ignored.log", "keep.txt"]);
+
+        fs::write(root.path().join(".gitignore"), "*.log\n").unwrap();
+        cache.invalidate(root.path());
+
+        let after: Vec<String> = list_cached(&cache, root.path(), "")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["name"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(after, vec![".gitignore", "keep.txt"]);
+    }
+
+    #[test]
+    fn search_files_walks_subdirectories_respects_ignores_and_limits() {
+        let root = tempfile::tempdir().unwrap();
+        fs::write(root.path().join(".gitignore"), "*.tmp\n").unwrap();
+        fs::write(root.path().join(".primeignore"), "secret/\n").unwrap();
+        fs::create_dir_all(root.path().join("src").join("app")).unwrap();
+        fs::create_dir_all(root.path().join("src").join("components")).unwrap();
+        fs::create_dir_all(root.path().join("node_modules").join("pkg")).unwrap();
+        fs::create_dir_all(root.path().join("target").join("debug")).unwrap();
+        fs::create_dir_all(root.path().join("secret")).unwrap();
+
+        fs::write(root.path().join("README.md"), "readme").unwrap();
+        fs::write(root.path().join("src").join("app").join("App.tsx"), "").unwrap();
+        fs::write(
+            root.path().join("src").join("components").join("AppHeader.tsx"),
+            "",
+        )
+        .unwrap();
+        fs::write(root.path().join("scratch.tmp"), "").unwrap();
+        fs::write(root.path().join("secret").join("keys.txt"), "").unwrap();
+        fs::write(
+            root.path().join("node_modules").join("pkg").join("App.js"),
+            "",
+        )
+        .unwrap();
+        fs::write(root.path().join("target").join("debug").join("App"), "").unwrap();
+
+        let results = search_files(root.path(), "app", 10)
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .clone();
+        let paths: Vec<String> = results
+            .iter()
+            .map(|item| item["path"].as_str().unwrap().to_owned())
+            .collect();
+        assert!(paths.contains(&"src/app/App.tsx".to_string()));
+        assert!(paths.contains(&"src/components/AppHeader.tsx".to_string()));
+        assert!(!paths.iter().any(|path| path.contains("node_modules")));
+        assert!(!paths.iter().any(|path| path.contains("target")));
+        assert!(!paths.iter().any(|path| path.contains("secret")));
+        assert!(!paths.iter().any(|path| path.ends_with(".tmp")));
+
+        let limited = search_files(root.path(), "", 2).unwrap();
+        assert_eq!(limited.as_array().unwrap().len(), 2);
+
+        let cache = FileCache::new();
+        let cached_before = search_cached(&cache, root.path(), "brandnew", 10).unwrap();
+        assert!(cached_before.as_array().unwrap().is_empty());
+        fs::write(root.path().join("src").join("brandnew.ts"), "").unwrap();
+        cache.invalidate(root.path());
+        let cached_after = search_cached(&cache, root.path(), "brandnew", 10).unwrap();
+        assert_eq!(cached_after[0]["path"], "src/brandnew.ts");
     }
 }

@@ -217,6 +217,7 @@ func processMultiEditWithCreation(edit editContext, params MultiEditParams, call
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
 	}
+	fsext.InvalidateIndex(params.FilePath)
 
 	// Update file history
 	_, err = edit.files.Create(edit.ctx, sessionID, params.FilePath, "")

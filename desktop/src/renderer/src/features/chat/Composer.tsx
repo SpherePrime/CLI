@@ -22,7 +22,8 @@ import { useConversation } from '../voice/useConversation'
 import { ConversationCall, ConversationCallPill } from '../voice/ConversationCall'
 import { createPortal } from 'react-dom'
 import { clipboardImages, imageUploads } from './pasteImages'
-import { applyFileSuggestion, nextSuggestionIndex, type FileSuggestion } from './suggestions'
+import { applyFileSuggestion, nextSuggestionIndex } from './suggestions'
+import { useFileMentions } from './useFileMentions'
 import { AudioLines } from 'lucide-react'
 import '../../styles/attachments.css'
 
@@ -43,8 +44,19 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   const composerRoot = useRef<HTMLDivElement>(null)
   const mode = w.preferences.agentMode === 'plan' ? 'plan' : 'general'
   const projectReady = w.project?.connection === 'ready'
-  const [suggestions, setSuggestions] = useState<FileSuggestion[]>([])
-  const [suggestionIndex, setSuggestionIndex] = useState(0)
+  const {
+    suggestions,
+    suggestionIndex,
+    setSuggestionIndex,
+    updateMentions,
+    clearSuggestions
+  } = useFileMentions({
+    workspaceId: w.project?.id,
+    enabled: Boolean(w.project && w.project.kind !== 'chat' && !isDesigner),
+    fileLabel: t('Файл'),
+    directoryLabel: t('Папка'),
+    busy: w.busy
+  })
   const [command, setCommand] = useState<any>(null)
   const textarea = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
@@ -176,21 +188,19 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         )
         .catch(w.errorHandler)
       setAttachments([])
-      setSuggestions([])
-      setSuggestionIndex(0)
+      clearSuggestions()
     }
   }, [key])
   useEffect(() => {
     if (!suggestions.length) return
     const pointer = (event: PointerEvent) => {
       if (!composerRoot.current?.contains(event.target as Node)) {
-        setSuggestions([])
-        setSuggestionIndex(0)
+        clearSuggestions()
       }
     }
     document.addEventListener('pointerdown', pointer)
     return () => document.removeEventListener('pointerdown', pointer)
-  }, [suggestions.length])
+  }, [suggestions.length, clearSuggestions])
   useEffect(() => {
     const timer = setTimeout(() => {
       void w.savePreferences({ drafts: { [key]: text } })
@@ -271,7 +281,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           latest.current.startsWith(submittedText))
       ) {
         setText('')
-        setSuggestions([])
+        clearSuggestions()
       }
     }
     setSending(false)
@@ -346,29 +356,12 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   }, [w.project?.id, w.busy, w.session?.id, recording, conversation.state])
   function applySuggestion(file: string) {
     setText((current) => applyFileSuggestion(current, file))
-    setSuggestions([])
-    setSuggestionIndex(0)
+    clearSuggestions()
     textarea.current?.focus()
   }
-  async function change(value: string) {
+  function change(value: string) {
     setText(value)
-    if (/@[^\s]*$/.test(value) && w.project && w.project.kind !== 'chat' && !isDesigner) {
-      const query = value.split('@').pop()!.toLowerCase()
-      const files = await window.prime.files(w.project.id).catch(() => [])
-      const next = files
-        .filter((file) => file.name.toLowerCase().includes(query))
-        .slice(0, 8)
-        .map((file) => ({
-          label: '@' + file.path,
-          description: file.directory ? t('Папка') : t('Файл'),
-          file: file.path
-        }))
-      setSuggestions(next)
-      setSuggestionIndex(0)
-    } else {
-      setSuggestions([])
-      setSuggestionIndex(0)
-    }
+    updateMentions(value)
   }
   const voiceActive = recording || transcribing
   const hasDraft = Boolean(text.trim()) || attachments.length > 0
@@ -443,7 +436,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           hidden={voiceActive}
           ref={textarea}
           value={text}
-          onChange={(event) => void change(event.target.value)}
+          onChange={(event) => change(event.target.value)}
           onPaste={(event) => void paste(event)}
           placeholder={
             recording
@@ -476,8 +469,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
               if (event.key === 'Escape') {
                 event.preventDefault()
                 event.stopPropagation()
-                setSuggestions([])
-                setSuggestionIndex(0)
+                clearSuggestions()
                 return
               }
             }

@@ -22,38 +22,40 @@ type FileInfo struct {
 	ModTime time.Time
 }
 
+var commonIgnoredDirs = map[string]bool{
+	".prime":           true,
+	"node_modules":     true,
+	"vendor":           true,
+	"dist":             true,
+	"build":            true,
+	"target":           true,
+	".git":             true,
+	".idea":            true,
+	".vscode":          true,
+	"__pycache__":      true,
+	"bin":              true,
+	"obj":              true,
+	"out":              true,
+	"coverage":         true,
+	"logs":             true,
+	"generated":        true,
+	"bower_components": true,
+	"jspm_packages":    true,
+}
+
 func SkipHidden(path string) bool {
-	// Check for hidden files (starting with a dot)
 	base := filepath.Base(path)
 	if base != "." && strings.HasPrefix(base, ".") {
 		return true
 	}
 
-	commonIgnoredDirs := map[string]bool{
-		".prime":           true,
-		"node_modules":     true,
-		"vendor":           true,
-		"dist":             true,
-		"build":            true,
-		"target":           true,
-		".git":             true,
-		".idea":            true,
-		".vscode":          true,
-		"__pycache__":      true,
-		"bin":              true,
-		"obj":              true,
-		"out":              true,
-		"coverage":         true,
-		"logs":             true,
-		"generated":        true,
-		"bower_components": true,
-		"jspm_packages":    true,
-	}
-
-	parts := strings.SplitSeq(path, string(os.PathSeparator))
-	for part := range parts {
-		if commonIgnoredDirs[part] {
-			return true
+	start := 0
+	for i := 0; i <= len(path); i++ {
+		if i == len(path) || path[i] == '/' || (os.PathSeparator != '/' && path[i] == os.PathSeparator) {
+			if i > start && commonIgnoredDirs[path[start:i]] {
+				return true
+			}
+			start = i + 1
 		}
 	}
 	return false
@@ -103,9 +105,13 @@ func GlobGitignoreAwareCtx(ctx context.Context, pattern, cwd string, limit int) 
 }
 
 func globWithDoubleStar(ctx context.Context, pattern, searchPath string, limit int, gitignore bool) ([]string, bool, error) {
-	// Normalize pattern to forward slashes on Windows so their config can use
-	// backslashes
 	pattern = filepath.ToSlash(pattern)
+
+	if gitignore {
+		if results, truncated, handled, err := globFromIndex(ctx, pattern, searchPath, limit); handled {
+			return results, truncated, err
+		}
+	}
 
 	walker := NewFastGlobWalker(searchPath)
 	found := csync.NewSlice[FileInfo]()
@@ -176,6 +182,81 @@ func globWithDoubleStar(ctx context.Context, pattern, searchPath string, limit i
 		results[i] = m.Path
 	}
 	return results, truncated || errors.Is(err, filepath.SkipAll), nil
+}
+
+func globFromIndex(ctx context.Context, pattern, searchPath string, limit int) ([]string, bool, bool, error) {
+	info, statErr := os.Stat(searchPath)
+	if statErr != nil {
+		return nil, false, true, fmt.Errorf("fastwalk error: %w", statErr)
+	}
+	if !info.IsDir() {
+		return nil, false, false, nil
+	}
+
+	entries, slashSubPrefix, ok := defaultWorkspaceIndex.cachedSubtreeEntries(searchPath)
+	if !ok {
+		entries, ok = IndexEntries(ctx, searchPath)
+		if !ok {
+			return nil, false, false, nil
+		}
+	}
+
+	useToSlash := fastwalk.DefaultToSlash()
+	basePrefix, _ := buildOutputPrefix(searchPath, useToSlash)
+
+	var matches []FileInfo
+	if matched, err := doublestar.Match(pattern, "."); err == nil && matched {
+		rootOut := searchPath
+		if useToSlash {
+			rootOut = filepath.ToSlash(rootOut)
+		}
+		matches = append(matches, FileInfo{Path: rootOut, ModTime: info.ModTime()})
+	}
+
+	cancelled := false
+	for i := range entries {
+		if i&1023 == 0 && ctx.Err() != nil {
+			cancelled = true
+			break
+		}
+		entry := &entries[i]
+		relSlash := entry.SlashPath
+		relOut := entry.RelPath
+		if slashSubPrefix != "" {
+			var hasSub bool
+			relSlash, hasSub = strings.CutPrefix(entry.SlashPath, slashSubPrefix)
+			if !hasSub {
+				continue
+			}
+			if useToSlash {
+				relOut = relSlash
+			} else {
+				relOut = filepath.FromSlash(relSlash)
+			}
+		} else if useToSlash {
+			relOut = relSlash
+		}
+
+		matched, err := doublestar.Match(pattern, relSlash)
+		if err != nil || !matched {
+			continue
+		}
+		matches = append(matches, FileInfo{
+			Path:    basePrefix + relOut,
+			ModTime: entry.ModTime,
+		})
+	}
+
+	slices.SortFunc(matches, func(a, b FileInfo) int {
+		return b.ModTime.Compare(a.ModTime)
+	})
+	matches, truncated := truncate(matches, limit)
+
+	results := make([]string, len(matches))
+	for i, m := range matches {
+		results[i] = m.Path
+	}
+	return results, truncated || cancelled, true, nil
 }
 
 // ShouldExcludeFile checks if a file should be excluded from processing

@@ -276,6 +276,11 @@ export interface DesktopApi {
   deleteProject(path: string): Promise<Json>
   call(workspaceId: string, operation: Operation, args?: Json): Promise<Json>
   files(workspaceId: string, path?: string): Promise<Json[]>
+  searchFiles(
+    workspaceId: string,
+    query?: string,
+    limit?: number
+  ): Promise<{ name: string; path: string; directory: boolean }[]>
   saveFile(
     workspaceId: string,
     path: string,

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"log/slog"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -95,11 +96,6 @@ func NewGlobTool(workingDir string, cfg config.ToolGlob) fantasy.AgentTool {
 }
 
 func globFiles(ctx context.Context, pattern, searchPath string, limit int) ([]string, bool, error) {
-	// Scope the walk to the pattern's literal directory prefix. A pattern
-	// like "internal/agent/*.go" only needs to walk "internal/agent", so we
-	// start there instead of enumerating the entire tree and filtering.
-	// Patterns that begin with a wildcard (e.g. "**/foo.go") have no prefix
-	// and still walk from searchPath.
 	prefix, rest := filepathext.SplitGlobPrefix(pattern)
 	walkRoot := searchPath
 	walkPattern := pattern
@@ -107,13 +103,21 @@ func globFiles(ctx context.Context, pattern, searchPath string, limit int) ([]st
 		walkRoot = filepath.Join(searchPath, prefix)
 		walkPattern = rest
 	}
+	walkPattern = filepath.ToSlash(walkPattern)
 
 	cmdRg := getRgCmd(ctx, walkPattern)
 	if cmdRg != nil {
 		cmdRg.Dir = walkRoot
+		primeIgnorePath := filepath.Join(walkRoot, ".primeignore")
+		if _, err := os.Stat(primeIgnorePath); err == nil {
+			cmdRg.Args = append(cmdRg.Args, "--ignore-file", ".primeignore")
+		}
 		matches, err := runRipgrep(cmdRg, walkRoot, limit)
 		if err == nil {
 			return matches, len(matches) >= limit && limit > 0, nil
+		}
+		if ctx.Err() != nil {
+			return nil, false, ctx.Err()
 		}
 		slog.Warn("Ripgrep execution failed, falling back to doublestar", "error", err)
 	}
@@ -122,15 +126,6 @@ func globFiles(ctx context.Context, pattern, searchPath string, limit int) ([]st
 }
 
 func runRipgrep(cmd *exec.Cmd, searchRoot string, limit int) ([]string, error) {
-	// Stream ripgrep's stdout instead of buffering the whole file list.
-	// Over a huge root (e.g. $HOME) the full --files listing can be
-	// hundreds of MB; reading it all at once and then sorting allocated
-	// gigabytes. We read incrementally and stop once we have a bounded
-	// pool of candidates.
-	//
-	// We collect more than `limit` so the shortest-path preference below
-	// still has something to choose from, but the pool is capped so memory
-	// stays small (a few thousand paths) no matter how large the tree is.
 	candidatePool := max(limit*20, 1000)
 
 	stdout, err := cmd.StdoutPipe()
@@ -158,22 +153,22 @@ func runRipgrep(cmd *exec.Cmd, searchRoot string, limit int) ([]string, error) {
 			}
 		}
 		if err != nil {
-			break // EOF or read error; drain handled by Wait below.
+			break
 		}
 		if len(matches) >= candidatePool {
-			// Enough candidates; stop reading and let the process be
-			// killed by the command context / Wait. Draining the rest
-			// would just buffer paths we are going to discard.
 			break
 		}
 	}
 
-	// Close our end so ripgrep gets SIGPIPE and stops, then reap it.
+	earlyStopped := len(matches) >= candidatePool
 	_ = stdout.Close()
+	if earlyStopped && cmd.Process != nil {
+		_ = cmd.Process.Kill()
+	}
 	waitErr := cmd.Wait()
-	if waitErr != nil && len(matches) == 0 {
+	if !earlyStopped && waitErr != nil && len(matches) == 0 {
 		if ee, ok := waitErr.(*exec.ExitError); ok && ee.ExitCode() == 1 {
-			return nil, nil // No matches.
+			return nil, nil
 		}
 		return nil, fmt.Errorf("ripgrep: %w\n%s", waitErr, stderr.String())
 	}

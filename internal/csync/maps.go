@@ -7,10 +7,16 @@ import (
 	"sync"
 )
 
+type inflightCall[V any] struct {
+	wg  sync.WaitGroup
+	val V
+}
+
 // Map is a concurrent map implementation that provides thread-safe access.
 type Map[K comparable, V any] struct {
-	inner map[K]V
-	mu    sync.RWMutex
+	inner    map[K]V
+	inflight map[K]*inflightCall[V]
+	mu       sync.RWMutex
 }
 
 // NewMap creates a new thread-safe map with the specified key and value types.
@@ -44,6 +50,7 @@ func (m *Map[K, V]) Reset(input map[K]V) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.inner = input
+	m.inflight = nil
 }
 
 // Set sets the value for the specified key in the map.
@@ -51,6 +58,9 @@ func (m *Map[K, V]) Set(key K, value V) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.inner[key] = value
+	if m.inflight != nil {
+		delete(m.inflight, key)
+	}
 }
 
 // Del deletes the specified key from the map.
@@ -58,6 +68,9 @@ func (m *Map[K, V]) Del(key K) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.inner, key)
+	if m.inflight != nil {
+		delete(m.inflight, key)
+	}
 }
 
 // CompareAndDelete deletes the key only if the current value matches the
@@ -106,12 +119,72 @@ func (m *Map[K, V]) GetOrSet(key K, fn func() V) V {
 	return value
 }
 
+// GetOrSetCoalesced returns the cached value for key or executes fn once
+// without holding the map mutex, sharing the result with concurrent callers.
+func (m *Map[K, V]) GetOrSetCoalesced(key K, fn func() V) V {
+	m.mu.RLock()
+	if got, ok := m.inner[key]; ok {
+		m.mu.RUnlock()
+		return got
+	}
+	m.mu.RUnlock()
+
+	m.mu.Lock()
+	if got, ok := m.inner[key]; ok {
+		m.mu.Unlock()
+		return got
+	}
+	if call, ok := m.inflight[key]; ok {
+		m.mu.Unlock()
+		call.wg.Wait()
+		return call.val
+	}
+	call := &inflightCall[V]{}
+	call.wg.Add(1)
+	if m.inflight == nil {
+		m.inflight = make(map[K]*inflightCall[V])
+	}
+	m.inflight[key] = call
+	m.mu.Unlock()
+
+	completed := false
+	defer func() {
+		if !completed {
+			m.mu.Lock()
+			if m.inflight != nil && m.inflight[key] == call {
+				delete(m.inflight, key)
+			}
+			m.mu.Unlock()
+			call.wg.Done()
+		}
+	}()
+
+	value := fn()
+	completed = true
+
+	m.mu.Lock()
+	call.val = value
+	if m.inflight != nil && m.inflight[key] == call {
+		if m.inner == nil {
+			m.inner = make(map[K]V)
+		}
+		m.inner[key] = value
+		delete(m.inflight, key)
+	}
+	m.mu.Unlock()
+	call.wg.Done()
+	return value
+}
+
 // Take gets an item and then deletes it.
 func (m *Map[K, V]) Take(key K) (V, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	v, ok := m.inner[key]
 	delete(m.inner, key)
+	if m.inflight != nil {
+		delete(m.inflight, key)
+	}
 	return v, ok
 }
 
@@ -163,6 +236,7 @@ func (m *Map[K, V]) UnmarshalJSON(data []byte) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.inner = make(map[K]V)
+	m.inflight = nil
 	return json.Unmarshal(data, &m.inner)
 }
 

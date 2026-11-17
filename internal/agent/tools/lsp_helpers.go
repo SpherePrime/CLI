@@ -52,11 +52,9 @@ func resolveSymbol(ctx context.Context, lspManager *lsp.Manager, symbol, working
 func resolveSymbolResults(ctx context.Context, lspManager *lsp.Manager, symbol, workingDir string) ([]*resolvedSymbol, error) {
 	lspManager.Start(ctx, workingDir)
 
-	// Use word boundaries to avoid matching inside larger identifiers
-	// (e.g. "Bar" inside "myBar"). The symbol is already QuoteMeta'd
-	// so dots and other regex metacharacters are escaped.
 	pattern := `\b` + regexp.QuoteMeta(symbol) + `\b`
-	matches, _, err := searchFiles(ctx, pattern, workingDir, "", 100)
+	include := symbolSearchInclude(lspManager)
+	matches, _, err := searchFiles(ctx, pattern, workingDir, include, 100)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search for symbol: %w", err)
 	}
@@ -90,12 +88,178 @@ func resolveSymbolResults(ctx context.Context, lspManager *lsp.Manager, symbol, 
 	return results, nil
 }
 
+var lspLanguageExtensions = map[string][]string{
+	"abap":            {"abap"},
+	"bash":            {"sh", "bash"},
+	"bat":             {"bat"},
+	"bib":             {"bib", "bibtex"},
+	"bibtex":          {"bib", "bibtex"},
+	"c":               {"c", "h"},
+	"clojure":         {"clj", "cljs", "cljc"},
+	"coffeescript":    {"coffee"},
+	"cpp":             {"cpp", "cxx", "cc", "c++", "hpp", "hh", "hxx", "h++", "h"},
+	"cs":              {"cs"},
+	"csharp":          {"cs"},
+	"css":             {"css"},
+	"cuda":            {"cu", "cuh"},
+	"d":               {"d"},
+	"dart":            {"dart"},
+	"delphi":          {"pas", "pascal"},
+	"dockerfile":      nil,
+	"earthfile":       nil,
+	"eelixir":         {"eex", "leex"},
+	"elixir":          {"ex", "exs"},
+	"erlang":          {"erl", "hrl"},
+	"fish":            {"fish"},
+	"fsharp":          {"fs", "fsi", "fsx", "fsscript"},
+	"gitcommit":       nil,
+	"gitrebase":       nil,
+	"go":              {"go"},
+	"gomod":           {"mod"},
+	"gotmpl":          {"gotmpl", "tmpl"},
+	"gowork":          {"work"},
+	"groovy":          {"groovy"},
+	"handlebars":      {"hbs", "handlebars"},
+	"haskell":         {"hs", "lhs"},
+	"heex":            {"heex"},
+	"html":            {"html", "htm"},
+	"ini":             {"ini"},
+	"java":            {"java"},
+	"javascript":      {"js", "mjs", "cjs"},
+	"javascriptreact": {"jsx"},
+	"json":            {"json", "jsonc"},
+	"jsonc":           {"jsonc"},
+	"kotlin":          {"kt", "kts"},
+	"latex":           {"tex", "latex"},
+	"less":            {"less"},
+	"lua":             {"lua"},
+	"makefile":        nil,
+	"markdown":        {"md", "markdown"},
+	"objc":            {"m", "h"},
+	"objective-c":     {"m", "h"},
+	"objcpp":          {"mm", "h"},
+	"objective-cpp":   {"mm", "h"},
+	"ocaml":           {"ml", "mli"},
+	"pascal":          {"pas", "pascal"},
+	"perl":            {"pl", "pm"},
+	"perl6":           {"pm", "p6"},
+	"php":             {"php"},
+	"plaintex":        {"tex"},
+	"powershell":      {"ps1", "psm1"},
+	"proto":           {"proto"},
+	"pug":             {"pug", "jade"},
+	"python":          {"py", "pyi"},
+	"r":               {"r"},
+	"razor":           {"cshtml", "razor"},
+	"ruby":            {"rb", "erb"},
+	"rust":            {"rs"},
+	"sass":            {"sass"},
+	"scala":           {"scala", "sc"},
+	"scss":            {"scss"},
+	"sh":              {"sh"},
+	"shaderlab":       {"shader"},
+	"shellscript":     {"sh", "bash", "zsh", "ksh"},
+	"sql":             {"sql"},
+	"svelte":          {"svelte"},
+	"swift":           {"swift"},
+	"systemverilog":   {"sv", "svh"},
+	"templ":           {"templ"},
+	"terraform":       {"tf", "tfvars"},
+	"tex":             {"tex", "latex"},
+	"tiltfile":        nil,
+	"toml":            {"toml"},
+	"typescript":      {"ts", "mts", "cts"},
+	"typescriptreact": {"tsx"},
+	"verilog":         {"v", "vh"},
+	"vim":             {"vim"},
+	"vue":             {"vue"},
+	"xml":             {"xml"},
+	"xsl":             {"xsl"},
+	"yaml":            {"yaml", "yml"},
+	"zig":             {"zig", "zir"},
+}
+
+func symbolSearchInclude(lspManager *lsp.Manager) string {
+	if lspManager == nil {
+		return ""
+	}
+	clients := lspManager.Clients()
+	if clients == nil {
+		return ""
+	}
+	var fileTypeLists [][]string
+	for c := range clients.Seq() {
+		if c == nil || c.GetServerState() == lsp.StateDisabled {
+			continue
+		}
+		fileTypeLists = append(fileTypeLists, c.FileTypes())
+	}
+	return includeGlobFromFileTypes(fileTypeLists)
+}
+
+func includeGlobFromFileTypes(fileTypeLists [][]string) string {
+	if len(fileTypeLists) == 0 {
+		return ""
+	}
+	extSet := make(map[string]struct{})
+	for _, fileTypes := range fileTypeLists {
+		if len(fileTypes) == 0 {
+			return ""
+		}
+		for _, ft := range fileTypes {
+			ft = strings.TrimSpace(strings.ToLower(ft))
+			if ft == "" {
+				continue
+			}
+			if ext, hasDot := strings.CutPrefix(ft, "."); hasDot {
+				if ext == "" || strings.ContainsAny(ext, "*?{}[]/\\.") {
+					return ""
+				}
+				extSet[ext] = struct{}{}
+				continue
+			}
+			if exts, ok := lspLanguageExtensions[ft]; ok {
+				if len(exts) == 0 {
+					return ""
+				}
+				for _, ext := range exts {
+					extSet[ext] = struct{}{}
+				}
+				continue
+			}
+			if strings.ContainsAny(ft, "*?{}[]/\\.") {
+				return ""
+			}
+			extSet[ft] = struct{}{}
+		}
+	}
+	if len(extSet) == 0 {
+		return ""
+	}
+	exts := make([]string, 0, len(extSet))
+	for ext := range extSet {
+		exts = append(exts, ext)
+	}
+	slices.Sort(exts)
+	if len(exts) == 1 {
+		return "*." + exts[0]
+	}
+	return "*.{" + strings.Join(exts, ",") + "}"
+}
+
 // findLSPClient returns the first LSP client that handles the given file path.
 func findLSPClient(lspManager *lsp.Manager, filePath string) *lsp.Client {
+	if lspManager == nil {
+		return nil
+	}
+	clients := lspManager.Clients()
+	if clients == nil {
+		return nil
+	}
 	if abs, err := filepath.Abs(filePath); err == nil {
 		filePath = abs
 	}
-	for c := range lspManager.Clients().Seq() {
+	for c := range clients.Seq() {
 		if c.HandlesFile(filePath) {
 			return c
 		}

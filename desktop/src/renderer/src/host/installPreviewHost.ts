@@ -907,6 +907,17 @@ export function installPreviewHost() {
     async files(_workspaceId, path = '') {
       return filesTree[path] || []
     },
+    async searchFiles(_workspaceId, query = '', limit = 50) {
+      const all = Object.values(filesTree).flat()
+      const needle = String(query || '').trim().toLowerCase()
+      const filtered = needle
+        ? all.filter(
+            (item) =>
+              item.name.toLowerCase().includes(needle) || item.path.toLowerCase().includes(needle)
+          )
+        : all
+      return filtered.slice(0, Math.max(1, limit))
+    },
     async saveFile(_workspaceId, path, content) {
       const revision = `rev-${Date.now()}`
       fileContents[path] = { content, revision }

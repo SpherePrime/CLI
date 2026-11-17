@@ -2,6 +2,7 @@ package completions
 
 import (
 	"cmp"
+	"context"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -404,13 +405,44 @@ func (c *Completions) Render() string {
 	return c.list.List.Render()
 }
 
+func normalizeCompletionPath(path string) string {
+	return strings.TrimPrefix(filepath.ToSlash(path), "./")
+}
+
+func completionValuesFromIndex(entries []fsext.IndexEntry, depth, limit int) []FileCompletionValue {
+	paths := make([]string, 0, min(len(entries), max(limit, 64)))
+	for i := range entries {
+		entry := &entries[i]
+		if depth > 0 && strings.Count(entry.SlashPath, "/") >= depth {
+			continue
+		}
+		p := normalizeCompletionPath(entry.SlashPath)
+		if entry.IsDir && !strings.HasSuffix(p, "/") {
+			p += "/"
+		}
+		paths = append(paths, p)
+		if limit > 0 && len(paths) >= limit {
+			break
+		}
+	}
+	slices.Sort(paths)
+	result := make([]FileCompletionValue, len(paths))
+	for i, p := range paths {
+		result[i] = FileCompletionValue{Path: p}
+	}
+	return result
+}
+
 func loadFiles(depth, limit int) []FileCompletionValue {
+	if entries, ok := fsext.IndexEntries(context.Background(), "."); ok {
+		return completionValuesFromIndex(entries, depth, limit)
+	}
 	files, _, _ := fsext.ListDirectory(".", nil, depth, limit)
 	slices.Sort(files)
 	result := make([]FileCompletionValue, 0, len(files))
 	for _, file := range files {
 		result = append(result, FileCompletionValue{
-			Path: strings.TrimPrefix(file, "./"),
+			Path: normalizeCompletionPath(file),
 		})
 	}
 	return result

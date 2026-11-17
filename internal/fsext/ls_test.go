@@ -3,6 +3,7 @@ package fsext
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
@@ -45,6 +46,33 @@ func TestListDirectory(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, truncated)
 		require.Len(t, files, 2)
+	})
+	t.Run("depth 1 fast path", func(t *testing.T) {
+		files, truncated, err := ListDirectory(tmp, nil, 1, -1)
+		require.NoError(t, err)
+		require.False(t, truncated)
+		require.ElementsMatch(t, []string{
+			"regular.txt",
+			"subdir",
+		}, relPaths(t, files, tmp))
+		require.True(t, strings.HasSuffix(files[0], string(filepath.Separator)))
+	})
+	t.Run("depth 1 limit and truncation", func(t *testing.T) {
+		files, truncated, err := ListDirectory(tmp, nil, 1, 1)
+		require.NoError(t, err)
+		require.True(t, truncated)
+		require.Len(t, files, 1)
+		require.True(t, strings.HasSuffix(files[0], string(filepath.Separator)))
+	})
+	t.Run("depth 1 missing path", func(t *testing.T) {
+		_, _, err := ListDirectory(filepath.Join(tmp, "missing"), nil, 1, -1)
+		require.Error(t, err)
+	})
+	t.Run("depth 1 regular file", func(t *testing.T) {
+		files, truncated, err := ListDirectory(filepath.Join(tmp, "regular.txt"), nil, 1, -1)
+		require.NoError(t, err)
+		require.False(t, truncated)
+		require.Empty(t, files)
 	})
 }
 

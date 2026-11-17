@@ -32,6 +32,7 @@
   "deleteProject": true,
   "call": true,
   "files": true,
+  "searchFiles": true,
   "saveFile": true,
   "editorDirty": true,
   "readFile": true,

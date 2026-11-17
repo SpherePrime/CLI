@@ -164,6 +164,7 @@ func createNewFile(edit editContext, filePath, content string, call fantasy.Tool
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
 	}
+	fsext.InvalidateIndex(filePath)
 
 	// File can't be in the history so we create a new file history
 	_, err = edit.files.Create(edit.ctx, sessionID, filePath, "")
@@ -247,6 +248,7 @@ func commitFileChange(edit editContext, sessionID, filePath, oldContent, newCont
 	if err := os.WriteFile(filePath, []byte(newContent), 0o644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
+	fsext.InvalidateIndex(filePath)
 
 	file, err := edit.files.GetByPathAndSession(edit.ctx, filePath, sessionID)
 	if err != nil {

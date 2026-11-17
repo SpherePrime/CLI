@@ -12,6 +12,7 @@ mod engine_resource;
 mod error;
 mod event_batch;
 mod events;
+mod file_index;
 mod files;
 mod git;
 mod jobs;
