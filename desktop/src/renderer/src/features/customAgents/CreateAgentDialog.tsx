@@ -10,17 +10,22 @@ import { Modal } from '../../components/Modal'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { AGENT_PRESETS, type AgentPreset } from './presentation'
+import type { PendingWorkflowLink } from './WorkflowCanvas'
 
 export function CreateAgentDialog({
   agents,
   workspacePath,
+  pendingLink,
   onCreate,
+  onLinked,
   onDispatchOrchestrator,
   close
 }: {
   agents: CustomAgent[]
   workspacePath: string
+  pendingLink?: PendingWorkflowLink | null
   onCreate: (input: Partial<CustomAgent>) => Promise<CustomAgent>
+  onLinked?: (link: PendingWorkflowLink, targetId: string) => Promise<void>
   onDispatchOrchestrator: (orchestratorId: string, prompt: string) => Promise<void>
   close: () => void
 }) {
@@ -62,7 +67,7 @@ export function CreateAgentDialog({
     setSubmitting(true)
     setError('')
     try {
-      await onCreate({
+      const created = await onCreate({
         name: trimmedName,
         role,
         description: description.trim(),
@@ -78,6 +83,9 @@ export function CreateAgentDialog({
         workspace_path: bindWorkspace ? workspacePath : '',
         enabled: true
       })
+      if (pendingLink && onLinked) {
+        await onLinked(pendingLink, created.id)
+      }
       close()
     } catch (cause) {
       setError(String((cause as Error)?.message || cause))
@@ -123,6 +131,16 @@ export function CreateAgentDialog({
       initialFocus={nameRef}
     >
       <div className="ca-create-body">
+        {pendingLink && (
+          <div className="ca-info-banner">
+            {t('После создания узел будет подключён ({kind}) к «{name}»', {
+              kind: pendingLink.kind === 'next' ? t('Далее') : t('Проверка'),
+              name:
+                agents.find((a) => a.id === pendingLink.sourceId)?.name ||
+                pendingLink.sourceId
+            })}
+          </div>
+        )}
         <div className="ca-segmented" role="tablist" aria-label={t('Способ создания')}>
           <button
             type="button"

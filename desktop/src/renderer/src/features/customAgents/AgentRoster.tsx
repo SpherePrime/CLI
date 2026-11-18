@@ -1,4 +1,4 @@
-import { Plus, Search, X } from 'lucide-react'
+import { Bot, Plus, Search, ShieldCheck, Sparkles, X } from 'lucide-react'
 import type { CustomAgent, ModelOption } from '../../../../shared/customAgents'
 import { useI18n } from '../../i18n'
 import {
@@ -8,6 +8,12 @@ import {
   modelSummary,
   type RoleFilter
 } from './presentation'
+
+function RoleGlyph({ role }: { role: string }) {
+  if (role === 'orchestrator') return <Sparkles size={13} aria-hidden="true" />
+  if (role === 'verifier') return <ShieldCheck size={13} aria-hidden="true" />
+  return <Bot size={13} aria-hidden="true" />
+}
 
 export function AgentRoster({
   agents,
@@ -118,7 +124,8 @@ export function AgentRoster({
             return (
               <div
                 key={agent.id}
-                className={`ca-agent-item ${selected ? 'selected' : ''} ${agent.enabled ? '' : 'disabled'}`}
+                data-role={agent.role}
+                className={`ca-agent-item role-${agent.role} ${selected ? 'selected' : ''} ${agent.enabled ? '' : 'disabled'}`}
               >
                 <button
                   type="button"
@@ -127,19 +134,25 @@ export function AgentRoster({
                   className="ca-agent-select"
                   onClick={() => onSelect(agent.id)}
                 >
-                  <strong className="ca-agent-name" title={agent.name}>
-                    {agent.name}
-                  </strong>
+                  <div className="ca-agent-name-row">
+                    <span
+                      className={`ca-roster-role-icon role-${agent.role}`}
+                      title={t(agentRoleLabel(agent.role))}
+                    >
+                      <RoleGlyph role={agent.role} />
+                    </span>
+                    <strong className="ca-agent-name" title={agent.name}>
+                      {agent.name}
+                    </strong>
+                  </div>
                   <div className="ca-agent-meta-row">
                     <span className={`ca-status-badge tone-${status.tone}`}>
                       <span className="ca-status-dot" aria-hidden="true" />
                       {t(status.label)}
                     </span>
-                    <span className="ca-chip">{t(agentRoleLabel(agent.role))}</span>
                     <span className="ca-chip ca-chip-muted" title={model}>
                       {model === 'Авто' ? t('Авто') : model}
                     </span>
-                    <span className="ca-slug">/{agent.slug}</span>
                   </div>
                 </button>
                 <button

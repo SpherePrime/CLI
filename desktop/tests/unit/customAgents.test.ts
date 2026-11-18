@@ -1,3 +1,5 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { installPreviewHost } from '../../src/renderer/src/host/installPreviewHost'
 import {
@@ -5,6 +7,9 @@ import {
   type NativeInvoke,
   type NativeListen
 } from '../../src/renderer/src/host/nativeBridge'
+import { I18nProvider } from '../../src/renderer/src/i18n'
+import { AgentInspector } from '../../src/renderer/src/features/customAgents/AgentInspector'
+import { WorkflowCanvas } from '../../src/renderer/src/features/customAgents/WorkflowCanvas'
 import {
   agentRoleLabel,
   agentStatusMeta,
@@ -16,6 +21,17 @@ import {
   runStatusMeta,
   triggerLabel
 } from '../../src/renderer/src/features/customAgents/presentation'
+import {
+  buildBezierPath,
+  canConnectAgents,
+  computeAutoLayout,
+  getPortPoint,
+  loadSavedLayout,
+  mergeNodePositions,
+  saveLayout,
+  WORKFLOW_NODE_HEIGHT,
+  WORKFLOW_NODE_WIDTH
+} from '../../src/renderer/src/features/customAgents/workflowLayout'
 import type {
   CustomAgent,
   GlobalMemoryDoc,
@@ -49,8 +65,9 @@ describe('customAgents preview host', () => {
       })
 
       const listed = await env.prime.customAgents({ action: 'list' })
-      expect(listed.agents.length).toBeGreaterThanOrEqual(3)
+      expect(listed.agents.length).toBeGreaterThanOrEqual(4)
       expect(listed.agents.map((a: CustomAgent) => a.name)).toContain('Главный координатор')
+      expect(listed.agents.map((a: CustomAgent) => a.name)).toContain('Аналитик изменений')
 
       const created = await env.prime.customAgents({
         action: 'create',
@@ -408,6 +425,180 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
     expect(isAgentDraftDirty(sample, draft)).toBe(false)
     expect(isAgentDraftDirty(sample, { ...draft, name: 'Updated' })).toBe(true)
     expect(isAgentDraftDirty(sample, { ...draft, strict_verify: true })).toBe(true)
+    expect(isAgentDraftDirty(sample, { ...draft, enabled: false })).toBe(true)
+  })
+
+  it('computes topological DAG auto-layout, prevents cycles/self-links, and persists layout', () => {
+    const baseAgent = (overrides: Partial<CustomAgent>): CustomAgent => ({
+      id: 'a',
+      slug: 'a',
+      name: 'Agent',
+      description: '',
+      role: 'worker',
+      system_prompt: '',
+      memory: '',
+      model_mode: 'auto',
+      provider_id: '',
+      model_id: '',
+      reasoning_mode: '',
+      auto_model_hint: '',
+      allowed_tools: [],
+      workspace_path: '',
+      enabled: true,
+      created_by: 'user',
+      trigger_type: 'manual',
+      interval_minutes: 0,
+      cron_expr: '',
+      monitor_kind: '',
+      monitor_target: '',
+      monitor_last_hash: '',
+      monitor_last_snapshot: '',
+      acceptance_criteria: '',
+      deterministic_checks: [],
+      verifier_agent_id: '',
+      next_agent_id: '',
+      max_rework_attempts: 3,
+      strict_verify: false,
+      status: 'idle',
+      last_error: '',
+      last_run_at: 0,
+      next_run_at: 0,
+      created_at: 1,
+      updated_at: 1,
+      ...overrides
+    })
+
+    const n1 = baseAgent({
+      id: 'n1',
+      name: 'Монитор',
+      next_agent_id: 'n2',
+      verifier_agent_id: 'v1'
+    })
+    const n2 = baseAgent({
+      id: 'n2',
+      name: 'Аналитик',
+      next_agent_id: 'n3',
+      verifier_agent_id: 'v1'
+    })
+    const n3 = baseAgent({
+      id: 'n3',
+      name: 'Координатор',
+      role: 'orchestrator',
+      verifier_agent_id: 'v1'
+    })
+    const v1 = baseAgent({
+      id: 'v1',
+      name: 'Верификатор',
+      role: 'verifier'
+    })
+    const chain = [n1, n2, n3, v1]
+
+    const layout = computeAutoLayout(chain)
+    expect(layout.n1.x).toBeLessThan(layout.n2.x)
+    expect(layout.n2.x).toBeLessThan(layout.n3.x)
+    expect(layout.n3.x).toBeLessThan(layout.v1.x)
+
+    const nodes = Object.values(layout)
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const overlapX = Math.abs(nodes[i].x - nodes[j].x) < WORKFLOW_NODE_WIDTH
+        const overlapY = Math.abs(nodes[i].y - nodes[j].y) < WORKFLOW_NODE_HEIGHT
+        expect(overlapX && overlapY).toBe(false)
+      }
+    }
+
+    const merged = mergeNodePositions(chain, { n1: { x: 100, y: 120 } })
+    expect(merged.n1).toEqual({ x: 100, y: 120 })
+    expect(merged.n2).toBeDefined()
+    expect(merged.v1).toBeDefined()
+
+    const memStore = new Map<string, string>()
+    const mockStorage = {
+      getItem: (key: string) => memStore.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        memStore.set(key, value)
+      }
+    }
+    saveLayout({ n1: { x: 200, y: 80 } }, mockStorage)
+    expect(loadSavedLayout(mockStorage)).toEqual({ n1: { x: 200, y: 80 } })
+
+    expect(canConnectAgents(chain, 'n1', 'n1', 'next').ok).toBe(false)
+    expect(canConnectAgents(chain, 'n3', 'n1', 'next').ok).toBe(false)
+    expect(canConnectAgents(chain, 'n2', 'n1', 'next').ok).toBe(false)
+    expect(canConnectAgents(chain, 'n1', 'n3', 'next').ok).toBe(true)
+    expect(canConnectAgents(chain, 'n1', 'v1', 'verifier').ok).toBe(true)
+
+    const p1 = getPortPoint({ x: 50, y: 40 }, 'next')
+    const p2 = getPortPoint({ x: 380, y: 40 }, 'in')
+    const curve = buildBezierPath(p1.x, p1.y, p2.x, p2.y)
+    expect(curve.path.startsWith('M ')).toBe(true)
+    expect(curve.midX).toBe((p1.x + p2.x) / 2)
+  })
+
+  it('renders WorkflowCanvas nodes, Bezier wires, and 4-tab AgentInspector', async () => {
+    vi.useFakeTimers()
+    const env = setupPreview()
+    try {
+      const { agents } = await env.prime.customAgents({ action: 'list' })
+      const { models } = await env.prime.customAgents({ action: 'models' })
+
+      const canvasHtml = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { language: 'ru', children: null },
+          createElement(WorkflowCanvas, {
+            agents,
+            models,
+            selectedAgentId: agents[0].id,
+            onSelectAgent: () => {},
+            onRunAgent: () => {},
+            onUpdateAgent: async (_id, _patch) => agents[0],
+            onOpenCreate: () => {},
+            onOpenSwarm: () => {}
+          })
+        )
+      )
+      expect(canvasHtml).toContain('Новый узел')
+      expect(canvasHtml).toContain('Запустить рой (Swarm)')
+      expect(canvasHtml).toContain('Авто-раскладка')
+      expect(canvasHtml).toContain('Монитор релизов')
+      expect(canvasHtml).toContain('Аналитик изменений')
+      expect(canvasHtml).toContain('ca-wf-edge kind-next')
+      expect(canvasHtml).toContain('ca-wf-edge kind-verifier')
+
+      const inspectorHtml = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { language: 'ru', children: null },
+          createElement(AgentInspector, {
+            agent: agents[0],
+            agents,
+            models,
+            projects: [],
+            latestRun: null,
+            busy: false,
+            onSave: async () => agents[0],
+            onDelete: async () => ({ deleted: true }),
+            onProbe: async () => ({
+              changed: false,
+              hash: '',
+              snapshot: '',
+              diff: '',
+              error: ''
+            }),
+            onClose: () => {}
+          })
+        )
+      )
+      expect(inspectorHtml).toContain('Профиль')
+      expect(inspectorHtml).toContain('Модель')
+      expect(inspectorHtml).toContain('Триггер')
+      expect(inspectorHtml).toContain('Контроль')
+      expect(inspectorHtml).toContain('Скрыть параметры')
+    } finally {
+      env.restore()
+      vi.useRealTimers()
+    }
   })
 
   it('forwards customAgents calls and normalizes native customAgents events', async () => {

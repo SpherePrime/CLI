@@ -247,6 +247,7 @@ export interface AgentDraft {
   role: CustomAgentRole
   description: string
   workspace_path: string
+  enabled: boolean
   model_mode: CustomAgentModelMode
   provider_id: string
   model_id: string
@@ -274,6 +275,7 @@ export function buildAgentDraft(agent: CustomAgent): AgentDraft {
     role: agent.role,
     description: agent.description,
     workspace_path: agent.workspace_path,
+    enabled: Boolean(agent.enabled),
     model_mode: agent.model_mode || 'auto',
     provider_id: agent.provider_id,
     model_id: agent.model_id,
