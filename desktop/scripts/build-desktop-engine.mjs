@@ -14,12 +14,10 @@ const environment = { ...process.env, GOOS: targetOS, CGO_ENABLED: '1' }
 if (process.env.PRIME_NATIVE_CC) environment.CC = process.env.PRIME_NATIVE_CC
 mkdirSync(outputDir, { recursive: true })
 const libraryPath = resolve(outputDir, libraryName)
-if (!existsSync(libraryPath) || process.env.PRIME_REBUILD_ENGINE === '1') {
+if (!existsSync(libraryPath) || process.env.PRIME_REBUILD_ENGINE !== '0') {
   const result = spawnSync('go', ['build', '-buildmode=c-shared', '-trimpath', '-ldflags=-s -w', '-o', libraryPath, './cmd/desktop-engine'], { cwd: repositoryDir, env: environment, stdio: 'inherit' })
-  if (!existsSync(libraryPath)) {
-    if (result.error) throw result.error
-    if (result.status !== 0) process.exit(result.status || 1)
-  }
+  if (result.error) throw result.error
+  if (result.status !== 0) process.exit(result.status || 1)
 }
 if (!existsSync(libraryPath)) throw new Error('Native engine library was not produced')
 const hash = createHash('sha256')

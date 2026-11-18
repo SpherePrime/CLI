@@ -187,21 +187,26 @@ impl Engine {
                     _ => {}
                 }
             }
-            let value = if data.trim().is_empty() {
+            let trimmed = data.trim();
+            if status >= 400 {
+                let message = serde_json::from_str::<Value>(trimmed)
+                    .ok()
+                    .and_then(|value| value["error"].as_str().map(str::to_owned))
+                    .unwrap_or_else(|| {
+                        if trimmed.is_empty() {
+                            format!("Engine status {status}")
+                        } else {
+                            format!("Engine status {status}: {trimmed}")
+                        }
+                    });
+                return Err(HostError::new("ENGINE_HTTP", message));
+            }
+            let value = if trimmed.is_empty() {
                 Value::Null
             } else {
-                serde_json::from_str(&data)
+                serde_json::from_str(trimmed)
                     .map_err(|error| HostError::new("ENGINE_RESPONSE", error.to_string()))?
             };
-            if status >= 400 {
-                return Err(HostError::new(
-                    "ENGINE_HTTP",
-                    value["error"]
-                        .as_str()
-                        .map(str::to_owned)
-                        .unwrap_or_else(|| format!("Engine status {status}: {value}")),
-                ));
-            }
             Ok(value)
         })();
         unsafe {
@@ -504,6 +509,37 @@ mod tests {
         engine
             .request("DELETE", &format!("/v1/clients/{client}"), None)
             .unwrap();
+        engine.close();
+    }
+
+    #[test]
+    fn custom_agents_engine_round_trip_and_plain_text_error() {
+        let library = crate::engine_resource::resolve(None);
+        if library.is_err() {
+            eprintln!("skipping: native engine library is not built for this platform");
+            return;
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let engine = Engine::load(directory.path()).unwrap();
+
+        let listed = engine.request("GET", "/v1/custom-agents", None).unwrap();
+        let agents = listed["agents"].as_array().unwrap();
+        assert!(agents.len() >= 2, "{listed}");
+
+        let gm = engine
+            .request("GET", "/v1/custom-agents/global-memory", None)
+            .unwrap();
+        assert!(gm["memory_limit"].as_u64().unwrap_or(0) > 0, "{gm}");
+
+        let models = engine
+            .request("GET", "/v1/custom-agents/models", None)
+            .unwrap();
+        assert!(models["models"].is_array(), "{models}");
+
+        let missing = engine.request("GET", "/v1/does-not-exist", None).unwrap_err();
+        assert_eq!(missing.code, "ENGINE_HTTP");
+        assert!(missing.message.contains("404"), "{missing:?}");
+
         engine.close();
     }
 }
