@@ -20,8 +20,11 @@ use std::{
 };
 
 pub struct ClientHandler {
+    host: String,
+    port: u16,
     trusted: Option<String>,
     captured_fingerprint: Arc<Mutex<Option<String>>>,
+    accepted: Arc<Mutex<bool>>,
 }
 
 impl client::Handler for ClientHandler {
@@ -31,12 +34,14 @@ impl client::Handler for ClientHandler {
         &mut self,
         server_public_key: &PublicKeyOrCertificate,
     ) -> Result<bool, Self::Error> {
-        let fingerprint = server_public_key
-            .public_key()
-            .fingerprint(HashAlg::Sha256)
-            .to_string();
+        let public_key = server_public_key.public_key();
+        let fingerprint = public_key.fingerprint(HashAlg::Sha256).to_string();
         *self.captured_fingerprint.lock().unwrap() = Some(fingerprint.clone());
-        Ok(self.trusted.as_deref() == Some(fingerprint.as_str()))
+        let is_trusted = self.trusted.as_deref() == Some(fingerprint.as_str())
+            || super::known_hosts::check_user_known_hosts(&self.host, self.port, &public_key)
+                == super::known_hosts::KnownHostCheck::Matched;
+        *self.accepted.lock().unwrap() = is_trusted;
+        Ok(is_trusted)
     }
 }
 
@@ -76,6 +81,14 @@ pub(super) fn sftp_failure(error: SftpError) -> HostError {
 }
 
 pub fn handshake(profile: &Profile, trusted: Option<&str>) -> HostResult<Handshake> {
+    let (result, _) = handshake_with_fingerprint(profile, trusted)?;
+    Ok(result)
+}
+
+pub fn handshake_with_fingerprint(
+    profile: &Profile,
+    trusted: Option<&str>,
+) -> HostResult<(Handshake, Option<String>)> {
     runtime::block_on(async {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
         let addresses = match tokio::time::timeout_at(
@@ -127,9 +140,13 @@ pub fn handshake(profile: &Profile, trusted: Option<&str>) -> HostResult<Handsha
             ..Default::default()
         });
         let captured_fingerprint = Arc::new(Mutex::new(None));
+        let accepted = Arc::new(Mutex::new(false));
         let handler = ClientHandler {
+            host: profile.host.clone(),
+            port: profile.port,
             trusted: trusted.map(str::to_owned),
             captured_fingerprint: Arc::clone(&captured_fingerprint),
+            accepted: Arc::clone(&accepted),
         };
         let connect_result = tokio::time::timeout(
             Duration::from_secs(15),
@@ -138,22 +155,26 @@ pub fn handshake(profile: &Profile, trusted: Option<&str>) -> HostResult<Handsha
         .await;
 
         let captured = captured_fingerprint.lock().unwrap().clone();
-        if let Some(fp) = captured {
-            if trusted != Some(fp.as_str()) {
+        let is_accepted = *accepted.lock().unwrap();
+        if let Some(fp) = captured.as_ref() {
+            if !is_accepted {
                 if let Ok(Ok(session)) = connect_result {
                     let _ = session
                         .disconnect(Disconnect::ByApplication, "Host verification required", "")
                         .await;
                 }
-                return Ok(Handshake::Challenge(Challenge {
-                    fingerprint: fp,
-                    previous: trusted.map(str::to_owned),
-                }));
+                return Ok((
+                    Handshake::Challenge(Challenge {
+                        fingerprint: fp.clone(),
+                        previous: trusted.map(str::to_owned),
+                    }),
+                    None,
+                ));
             }
         }
 
         match connect_result {
-            Ok(Ok(session)) => Ok(Handshake::Trusted(session)),
+            Ok(Ok(session)) => Ok((Handshake::Trusted(session), captured)),
             Ok(Err(error)) => {
                 eprintln!(
                     "SSH handshake failed for {}:{}: {error}",

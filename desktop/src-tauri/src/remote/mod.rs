@@ -1,6 +1,7 @@
 mod connection;
 pub mod files;
 pub mod forward;
+mod known_hosts;
 mod runtime;
 mod store;
 pub mod terminal;
@@ -352,6 +353,104 @@ mod tests {
         vault::remove(&profile).unwrap();
         assert!(!vault::has(&profile));
     }
+
+    #[test]
+    fn import_legacy_preserves_host_fingerprints() {
+        let directory = tempfile::tempdir().unwrap();
+        let manager = RemoteManager::load(directory.path()).unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let fingerprint = format!("SHA256:{}", "a".repeat(43));
+        let saved = json!({
+            "version": 1,
+            "profiles": [{
+                "id": id,
+                "name": "Prod",
+                "host": "prod.example.com",
+                "port": 22,
+                "user": "deploy",
+                "root": "/srv/app",
+                "auth": "agent",
+                "runtime": "bundled"
+            }],
+            "hosts": {
+                "[prod.example.com]:22": fingerprint
+            }
+        });
+        let (imported, skipped) = manager.import_legacy(&saved).unwrap();
+        assert_eq!(imported, 1);
+        assert_eq!(skipped, 0);
+        let reloaded = Store::load(directory.path()).unwrap();
+        assert_eq!(
+            reloaded.value.hosts.get("[prod.example.com]:22").map(String::as_str),
+            Some(fingerprint.as_str())
+        );
+    }
+
+    #[test]
+    fn resolve_profile_id_handles_uuid_name_ambiguity_and_missing() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut store = Store::load(directory.path()).unwrap();
+        let first = serde_json::from_value::<Profile>(json!({
+            "name": "Staging Box",
+            "host": "stage1.example.com",
+            "port": 22,
+            "user": "ubuntu",
+            "root": "/srv",
+            "auth": "agent",
+            "runtime": "bundled"
+        }))
+        .unwrap()
+        .validate()
+        .unwrap();
+        let dup_a = serde_json::from_value::<Profile>(json!({
+            "name": "Worker",
+            "host": "w1.example.com",
+            "port": 22,
+            "user": "ubuntu",
+            "root": "/srv",
+            "auth": "agent",
+            "runtime": "bundled"
+        }))
+        .unwrap()
+        .validate()
+        .unwrap();
+        let dup_b = serde_json::from_value::<Profile>(json!({
+            "name": "worker",
+            "host": "w2.example.com",
+            "port": 22,
+            "user": "ubuntu",
+            "root": "/srv",
+            "auth": "agent",
+            "runtime": "bundled"
+        }))
+        .unwrap()
+        .validate()
+        .unwrap();
+        store
+            .persist(store::Saved {
+                version: 1,
+                profiles: vec![first.clone(), dup_a.clone(), dup_b.clone()],
+                hosts: HashMap::new(),
+            })
+            .unwrap();
+        let manager = RemoteManager::load(directory.path()).unwrap();
+
+        assert_eq!(manager.resolve_profile_id(&first.id).unwrap(), first.id);
+        assert_eq!(manager.resolve_profile_id("Staging Box").unwrap(), first.id);
+        assert_eq!(manager.resolve_profile_id("  staging box  ").unwrap(), first.id);
+        assert_eq!(manager.resolve_profile_id(&dup_a.id).unwrap(), dup_a.id);
+
+        let ambiguous = manager.resolve_profile_id("Worker").unwrap_err();
+        assert_eq!(ambiguous.code, "REMOTE_PROFILE");
+        assert_eq!(
+            ambiguous.message,
+            "Multiple SSH profiles match that name; specify profileId"
+        );
+
+        let missing = manager.resolve_profile_id("nonexistent").unwrap_err();
+        assert_eq!(missing.code, "REMOTE_PROFILE");
+        assert_eq!(missing.message, "remote.notFound");
+    }
 }
 
 pub struct RemoteManager {
@@ -420,10 +519,7 @@ impl RemoteManager {
                 continue;
             }
             if let Some(fingerprint) = hosts.get(&profile.host_id()) {
-                state
-                    .store
-                    .value
-                    .hosts
+                next.hosts
                     .entry(profile.host_id())
                     .or_insert_with(|| fingerprint.clone());
             }
@@ -478,6 +574,7 @@ impl RemoteManager {
     }
 
     pub fn snapshot(&self) -> Value {
+        self.prune_closed();
         let state = self.inner.lock().unwrap();
         let profiles =
             state
@@ -524,14 +621,129 @@ impl RemoteManager {
             .ok_or_else(|| HostError::new("REMOTE_PROFILE", "remote.notFound"))
     }
 
-    pub fn connection(&self, id: &str) -> HostResult<Arc<Mutex<Connection>>> {
-        self.inner
-            .lock()
-            .unwrap()
+    pub fn status(&self, id: &str) -> Option<ConnectionStatus> {
+        self.inner.lock().unwrap().statuses.get(id).cloned()
+    }
+
+    pub fn prune_closed(&self) {
+        let mut state = self.inner.lock().unwrap();
+        let closed_ids = state
             .connections
-            .get(id)
-            .cloned()
-            .ok_or_else(|| HostError::new("SSH_DISCONNECTED", "remote.notConnected"))
+            .iter()
+            .filter_map(|(id, connection)| {
+                connection
+                    .try_lock()
+                    .ok()
+                    .filter(|guard| guard.session.is_closed())
+                    .map(|_| id.clone())
+            })
+            .collect::<Vec<_>>();
+        for id in closed_ids {
+            state.connections.remove(&id);
+            state.statuses.insert(
+                id,
+                ConnectionStatus {
+                    status: "disconnected".into(),
+                    ..Default::default()
+                },
+            );
+        }
+    }
+
+    pub fn resolve_profile_id(&self, query: &str) -> HostResult<String> {
+        let state = self.inner.lock().unwrap();
+        let profiles = &state.store.value.profiles;
+        if let Some(profile) = profiles.iter().find(|profile| profile.id == query) {
+            return Ok(profile.id.clone());
+        }
+        let trimmed = query.trim();
+        if trimmed.is_empty() {
+            return Err(HostError::new("REMOTE_PROFILE", "remote.notFound"));
+        }
+        let mut matches = profiles
+            .iter()
+            .filter(|profile| profile.name.trim().eq_ignore_ascii_case(trimmed))
+            .map(|profile| profile.id.clone());
+        let Some(first) = matches.next() else {
+            return Err(HostError::new("REMOTE_PROFILE", "remote.notFound"));
+        };
+        if matches.next().is_some() {
+            return Err(HostError::new(
+                "REMOTE_PROFILE",
+                "Multiple SSH profiles match that name; specify profileId",
+            ));
+        }
+        Ok(first)
+    }
+
+    pub fn connection(&self, id: &str) -> HostResult<Arc<Mutex<Connection>>> {
+        let connection = {
+            self.inner
+                .lock()
+                .unwrap()
+                .connections
+                .get(id)
+                .cloned()
+                .ok_or_else(|| HostError::new("SSH_DISCONNECTED", "remote.notConnected"))?
+        };
+        if connection.lock().unwrap().session.is_closed() {
+            let mut state = self.inner.lock().unwrap();
+            if state
+                .connections
+                .get(id)
+                .is_some_and(|current| Arc::ptr_eq(current, &connection))
+            {
+                state.connections.remove(id);
+                state.statuses.insert(
+                    id.into(),
+                    ConnectionStatus {
+                        status: "disconnected".into(),
+                        ..Default::default()
+                    },
+                );
+            }
+            return Err(HostError::new("SSH_DISCONNECTED", "remote.notConnected"));
+        }
+        Ok(connection)
+    }
+
+    pub fn connect_or_wait(
+        &self,
+        app: &tauri::AppHandle,
+        id: &str,
+        credentials: Credentials,
+    ) -> HostResult<Value> {
+        if self.connection(id).is_ok() {
+            return Ok(self.snapshot());
+        }
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
+        loop {
+            if !self.inner.lock().unwrap().pending.contains(id) {
+                break;
+            }
+            if std::time::Instant::now() >= deadline {
+                return Ok(self.snapshot());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+        if self.connection(id).is_ok() {
+            return Ok(self.snapshot());
+        }
+        match self.connect(app, id, credentials) {
+            Ok(snapshot) => Ok(snapshot),
+            Err(error) if error.message == "remote.alreadyConnecting" => {
+                if self.connection(id).is_ok() {
+                    return Ok(self.snapshot());
+                }
+                while self.inner.lock().unwrap().pending.contains(id)
+                    && std::time::Instant::now() < deadline
+                {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+                Ok(self.snapshot())
+            }
+            Err(error) => Err(error),
+        }
     }
 
     pub fn dispatch(&self, app: &tauri::AppHandle, request: &Value) -> HostResult<Value> {
@@ -652,8 +864,10 @@ impl RemoteManager {
         };
         self.emit(app);
         let supplied = credentials.supplied();
-        let result: HostResult<Result<Connection, types::Challenge>> = (|| {
-            let session = match connection::handshake(&profile, trusted.as_deref())? {
+        let result: HostResult<Result<(Connection, Option<String>), types::Challenge>> = (|| {
+            let (handshake, verified_fp) =
+                connection::handshake_with_fingerprint(&profile, trusted.as_deref())?;
+            let session = match handshake {
                 Handshake::Challenge(challenge) => return Ok(Err(challenge)),
                 Handshake::Trusted(session) => session,
             };
@@ -668,19 +882,25 @@ impl RemoteManager {
             if supplied && vault::available() {
                 vault::save(&profile, &credentials)?;
             }
-            Ok(Ok(connection))
+            let pin_fp = verified_fp.filter(|fp| trusted.as_deref() != Some(fp.as_str()));
+            Ok(Ok((connection, pin_fp)))
         })();
         let mut state = self.inner.lock().unwrap();
         state.pending.remove(id);
         if state.generations.get(id) != Some(&generation) {
-            if let Ok(Ok(connection)) = result {
+            if let Ok(Ok((connection, _))) = result {
                 connection.close();
             }
             drop(state);
             return Ok(self.snapshot());
         }
         match result {
-            Ok(Ok(connection)) => {
+            Ok(Ok((connection, pin_fp))) => {
+                if let Some(fp) = pin_fp {
+                    let mut next = state.store.value.clone();
+                    next.hosts.insert(profile.host_id(), fp);
+                    let _ = state.store.persist(next);
+                }
                 state
                     .connections
                     .insert(id.into(), Arc::new(Mutex::new(connection)));

@@ -8,14 +8,14 @@ use std::io::Write;
 use tauri::Manager;
 
 fn schema(name: &str, description: &str, mut properties: Value, required: &[&str]) -> Value {
-    properties["profileId"] = json!({"type":"string","description":"Connected SSH profile ID. Omit in a remote workspace."});
+    properties["profileId"] = json!({"type":"string","description":"SSH profile ID or name. Omit in a remote workspace."});
     json!({"name":name,"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false}})
 }
 
 pub fn definitions() -> Vec<Value> {
     vec![
         schema("ssh_profiles", "List saved SSH profiles and connection status. Passwords and private key material are never returned.", json!({}), &[]),
-        schema("ssh_connect", "Connect a saved SSH profile using stored credentials or SSH agent. Unknown host keys require user verification in the SSH panel. Never request passwords in chat.", json!({}), &["profileId"]),
+        schema("ssh_connect", "Connect a saved SSH profile by profile ID or profile name using stored credentials or SSH agent and ~/.ssh/known_hosts. Returns status \"verifying\" when manual host verification is required in the SSH panel. Never request passwords in chat.", json!({}), &["profileId"]),
         schema("ssh_disconnect", "Disconnect a saved SSH profile only when requested.", json!({}), &["profileId"]),
         schema("ssh_exec", "Run a command in the selected SSH root. timeout is milliseconds, maximum 120000. Use SSH tools for remote workspace operations; no local execution fallback.", json!({"command":{"type":"string"},"description":{"type":"string"},"workingDir":{"type":"string"},"timeout":{"type":"integer","minimum":1,"maximum":120000}}), &["command"]),
         schema("ssh_list_files", "List files in a connected SSH root, respecting ignore rules and root boundaries.", json!({"path":{"type":"string"}}), &[]),
@@ -40,6 +40,38 @@ fn string<'a>(args: &'a Value, key: &str) -> HostResult<&'a str> {
         .ok_or_else(|| HostError::new("INVALID_ARGUMENT", format!("Expected {key}")))
 }
 
+fn connection_failure_result(
+    name: &str,
+    profile_id: &str,
+    status: Option<super::types::ConnectionStatus>,
+) -> HostResult<Value> {
+    match status {
+        Some(status) if status.status == "verifying" => {
+            if let Some(challenge) = status.challenge {
+                if name == "ssh_connect" {
+                    return Ok(json!({
+                        "id": profile_id,
+                        "status": "verifying",
+                        "challenge": challenge,
+                        "message": "Host key verification required in Prime Desktop SSH panel"
+                    }));
+                }
+            }
+            Err(HostError::new(
+                "SSH_HOST_KEY",
+                "Host key verification required in Prime Desktop SSH panel",
+            ))
+        }
+        Some(status) if status.status == "error" => Err(HostError::new(
+            "SSH_CONNECT",
+            status
+                .error
+                .unwrap_or_else(|| "remote.connectionFailed".to_owned()),
+        )),
+        _ => Err(HostError::new("SSH_DISCONNECTED", "remote.notConnected")),
+    }
+}
+
 pub fn run(
     app: &tauri::AppHandle,
     workspace_id: &str,
@@ -57,6 +89,7 @@ pub fn run(
         .and_then(|remote| remote["profileId"].as_str())
         .map(str::to_owned);
     if name == "ssh_profiles" {
+        state.remotes.prune_closed();
         let profiles = state.remotes.snapshot()["profiles"]
             .as_array()
             .cloned()
@@ -71,7 +104,10 @@ pub fn run(
     }
     if name == "ssh_forwards" {
         let forwards = state.remotes.forwards.list();
-        let profile = args["profileId"].as_str().or(scoped_profile.as_deref());
+        let profile = match args["profileId"].as_str() {
+            Some(requested) => Some(state.remotes.resolve_profile_id(requested)?),
+            None => scoped_profile,
+        };
         return Ok(if let Some(profile) = profile {
             json!(forwards
                 .as_array()
@@ -84,7 +120,7 @@ pub fn run(
             forwards
         });
     }
-    let profile = match (scoped_profile.as_deref(), args["profileId"].as_str()) {
+    let raw_profile = match (scoped_profile.as_deref(), args["profileId"].as_str()) {
         (_, Some(requested)) => requested,
         (Some(scoped), _) => scoped,
         _ => {
@@ -94,20 +130,32 @@ pub fn run(
             ))
         }
     };
+    let profile_id = state.remotes.resolve_profile_id(raw_profile)?;
     if name == "ssh_disconnect" {
-        super::detach(app, profile)?;
+        super::detach(app, &profile_id)?;
         return state
             .remotes
-            .dispatch(app, &json!({"action":"disconnect","id":profile}));
+            .dispatch(app, &json!({"action":"disconnect","id":profile_id}));
     }
-    if state.remotes.connection(profile).is_err() {
-        state
-            .remotes
-            .connect(app, profile, super::types::Credentials::default())?;
+    if state.remotes.connection(&profile_id).is_err() {
+        state.remotes.connect_or_wait(
+            app,
+            &profile_id,
+            super::types::Credentials::default(),
+        )?;
     }
-    let connection = state.remotes.connection(profile)?;
+    let connection = match state.remotes.connection(&profile_id) {
+        Ok(connection) => connection,
+        Err(_) => {
+            return connection_failure_result(
+                name,
+                &profile_id,
+                state.remotes.status(&profile_id),
+            );
+        }
+    };
     if name == "ssh_connect" {
-        return Ok(json!({"id":profile,"status":"connected"}));
+        return Ok(json!({"id":profile_id,"status":"connected"}));
     }
     if name == "ssh_forward_port" {
         let port = |key: &str, default: Option<u16>| -> HostResult<u16> {
@@ -121,7 +169,7 @@ pub fn run(
             }
         };
         return state.remotes.forward(
-            profile,
+            &profile_id,
             port("remotePort", None)?,
             port("localPort", Some(0))?,
             args["remoteHost"].as_str().unwrap_or("127.0.0.1"),
@@ -131,7 +179,7 @@ pub fn run(
         return state
             .remotes
             .forwards
-            .close_owned(profile, string(args, "id")?);
+            .close_owned(&profile_id, string(args, "id")?);
     }
     let connection = connection.lock().unwrap();
     match name {
@@ -355,5 +403,62 @@ mod tests {
             );
         }
         assert!(glob.ends_with("| head -n 200; fi"));
+    }
+
+    #[test]
+    fn ssh_connect_and_tool_error_surfacing_for_connection_statuses() {
+        let verifying = super::super::types::ConnectionStatus {
+            status: "verifying".into(),
+            error: None,
+            challenge: Some(super::super::types::Challenge {
+                fingerprint: "SHA256:testfp".into(),
+                previous: None,
+            }),
+        };
+
+        let connect_result =
+            connection_failure_result("ssh_connect", "prof-1", Some(verifying.clone())).unwrap();
+        assert_eq!(connect_result["id"], "prof-1");
+        assert_eq!(connect_result["status"], "verifying");
+        assert_eq!(connect_result["challenge"]["fingerprint"], "SHA256:testfp");
+        assert_eq!(
+            connect_result["message"],
+            "Host key verification required in Prime Desktop SSH panel"
+        );
+
+        let exec_err =
+            connection_failure_result("ssh_exec", "prof-1", Some(verifying)).unwrap_err();
+        assert_eq!(exec_err.code, "SSH_HOST_KEY");
+        assert_eq!(
+            exec_err.message,
+            "Host key verification required in Prime Desktop SSH panel"
+        );
+
+        let err_status = super::super::types::ConnectionStatus {
+            status: "error".into(),
+            error: Some("remote.authFailed".into()),
+            challenge: None,
+        };
+        let connect_err =
+            connection_failure_result("ssh_connect", "prof-1", Some(err_status)).unwrap_err();
+        assert_eq!(connect_err.code, "SSH_CONNECT");
+        assert_eq!(connect_err.message, "remote.authFailed");
+
+        let disconnected_err = connection_failure_result("ssh_exec", "prof-1", None).unwrap_err();
+        assert_eq!(disconnected_err.code, "SSH_DISCONNECTED");
+        assert_eq!(disconnected_err.message, "remote.notConnected");
+    }
+
+    #[test]
+    fn ssh_connect_definition_documents_name_known_hosts_and_verifying() {
+        let defs = definitions();
+        let ssh_connect = defs
+            .iter()
+            .find(|def| def["name"] == "ssh_connect")
+            .unwrap();
+        let description = ssh_connect["description"].as_str().unwrap();
+        assert!(description.contains("known_hosts"));
+        assert!(description.contains("verifying"));
+        assert!(description.contains("name"));
     }
 }
