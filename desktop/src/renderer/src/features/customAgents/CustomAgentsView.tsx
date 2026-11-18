@@ -1,5 +1,17 @@
 import { useState } from 'react'
-import { Bot, Brain, Plus, RefreshCw, SlidersHorizontal, Users } from 'lucide-react'
+import {
+  Activity,
+  Bot,
+  Brain,
+  GitBranch,
+  History,
+  Layers,
+  PanelLeft,
+  Plus,
+  RefreshCw,
+  SlidersHorizontal,
+  Users
+} from 'lucide-react'
 import type { SwarmResult } from '../../../../shared/customAgents'
 import type { Workspace } from '../../app/useWorkspace'
 import { EmptyState } from '../../components/EmptyState'
@@ -31,8 +43,9 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
   const [memoryOpen, setMemoryOpen] = useState(false)
   const [swarmOpen, setSwarmOpen] = useState(false)
   const [lastSwarmResult, setLastSwarmResult] = useState<SwarmResult | null>(null)
-  const [inspectorOpen, setInspectorOpen] = useState(true)
-  const [requestedTab, setRequestedTab] = useState<WorkspaceTab | undefined>(undefined)
+  const [rosterOpen, setRosterOpen] = useState(true)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('chain')
   const [requestedRunsSubTab, setRequestedRunsSubTab] = useState<RunsSubTab | undefined>(undefined)
   const [mobilePane, setMobilePane] = useState<MobilePane>('workspace')
 
@@ -44,21 +57,70 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
     setCreateOpen(true)
   }
 
+  const openSettingsForAgent = (agentId: string) => {
+    state.setSelectedAgentId(agentId)
+    setInspectorOpen(true)
+    setMobilePane('inspector')
+  }
+
   return (
     <div className="ca-studio" data-mobile-pane={mobilePane} aria-label={t('Свои агенты')}>
       <header className="ca-studio-head">
-        <div className="ca-studio-head-title">
+        <div className="ca-studio-head-left">
           <h1>{t('Студия агентов')}</h1>
+          <div className="ca-mode-tabs" role="tablist" aria-label={t('Режим студии')}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={workspaceTab === 'chain'}
+              className={workspaceTab === 'chain' ? 'active' : ''}
+              onClick={() => {
+                setWorkspaceTab('chain')
+                setMobilePane('workspace')
+              }}
+            >
+              <GitBranch size={13} aria-hidden="true" />
+              <span>{t('Цепочка')}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={workspaceTab === 'tasks'}
+              className={workspaceTab === 'tasks' ? 'active' : ''}
+              onClick={() => {
+                setWorkspaceTab('tasks')
+                setMobilePane('workspace')
+              }}
+            >
+              <Activity size={13} aria-hidden="true" />
+              <span>{t('Задачи и чат')}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={workspaceTab === 'runs'}
+              className={workspaceTab === 'runs' ? 'active' : ''}
+              onClick={() => {
+                setWorkspaceTab('runs')
+                setMobilePane('workspace')
+              }}
+            >
+              <History size={13} aria-hidden="true" />
+              <span>{t('Запуски и доска')}</span>
+              <span className="ca-tab-count">{state.runs.length}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="ca-studio-head-actions">
           {state.globalMemory && (
             <span className="ca-studio-mem-pill">
               {`MEMORY ${state.globalMemory.memory_chars}/${state.globalMemory.memory_limit}`}
             </span>
           )}
-        </div>
-        <div className="ca-studio-head-actions">
           <button
             type="button"
-            className="ca-memory-trigger"
+            className="ca-head-btn"
             onClick={() => setMemoryOpen(true)}
           >
             <Brain size={14} aria-hidden="true" />
@@ -66,12 +128,30 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
           </button>
           <button
             type="button"
-            className={`ca-inspector-toggle ${inspectorOpen ? 'active' : ''}`}
+            className="ca-head-btn"
+            onClick={() => setSwarmOpen(true)}
+          >
+            <Layers size={14} aria-hidden="true" />
+            <span>{t('Рой')}</span>
+          </button>
+          <button
+            type="button"
+            className={`ca-head-btn ca-roster-toggle ${rosterOpen ? 'active' : ''}`}
+            aria-pressed={rosterOpen}
+            onClick={() => setRosterOpen((prev) => !prev)}
+          >
+            <PanelLeft size={14} aria-hidden="true" />
+            <span>{t('Ростер')}</span>
+          </button>
+          <button
+            type="button"
+            className={`ca-head-btn ca-inspector-toggle ${inspectorOpen ? 'active' : ''}`}
             aria-pressed={inspectorOpen}
+            disabled={!selected}
             onClick={() => setInspectorOpen((prev) => !prev)}
           >
             <SlidersHorizontal size={14} aria-hidden="true" />
-            <span>{t('Параметры')}</span>
+            <span>{t('Настройки')}</span>
           </button>
         </div>
       </header>
@@ -109,7 +189,7 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
           }}
         >
           <SlidersHorizontal size={14} aria-hidden="true" />
-          <span>{t('Инспектор')}</span>
+          <span>{t('Настройки')}</span>
         </button>
       </div>
 
@@ -123,7 +203,9 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
         </div>
       )}
 
-      <div className={`ca-grid ${inspectorOpen ? '' : 'inspector-collapsed'}`}>
+      <div
+        className={`ca-grid ${rosterOpen ? '' : 'roster-collapsed'} ${inspectorOpen ? '' : 'inspector-collapsed'}`}
+      >
         <div className="ca-pane ca-pane-roster">
           <AgentRoster
             agents={state.agents}
@@ -155,10 +237,12 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
               allRuns={state.runs}
               blackboard={state.blackboard}
               selectedChainId={state.selectedChainId}
-              requestedTab={requestedTab}
+              tab={workspaceTab}
               requestedRunsSubTab={requestedRunsSubTab}
+              onTabChange={setWorkspaceTab}
               onSelectChainId={state.setSelectedChainId}
               onSelectAgent={state.setSelectedAgentId}
+              onConfigureAgent={openSettingsForAgent}
               onRun={state.runAgent}
               onCancelRun={state.cancelRun}
               onProbe={state.probeAgent}
@@ -185,28 +269,29 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
           )}
         </div>
 
-        {inspectorOpen && (
-          <div className="ca-pane ca-pane-inspector">
-            {selected ? (
-              <AgentInspector
-                agent={selected}
-                agents={state.agents}
-                models={state.models}
-                projects={workspace.projects}
-                latestRun={latestRun}
-                busy={state.busy}
-                onSave={state.updateAgent}
-                onDelete={state.deleteAgent}
-                onProbe={state.probeAgent}
-                onClose={() => setInspectorOpen(false)}
-              />
-            ) : (
-              <aside className="ca-inspector ca-inspector-empty">
-                <p className="ca-muted-note">{t('Выберите агента для настройки параметров.')}</p>
-              </aside>
-            )}
-          </div>
-        )}
+        <div className="ca-pane ca-pane-inspector">
+          {selected ? (
+            <AgentInspector
+              agent={selected}
+              agents={state.agents}
+              models={state.models}
+              projects={workspace.projects}
+              latestRun={latestRun}
+              busy={state.busy}
+              onSave={state.updateAgent}
+              onDelete={state.deleteAgent}
+              onProbe={state.probeAgent}
+              onClose={() => {
+                setInspectorOpen(false)
+                setMobilePane('workspace')
+              }}
+            />
+          ) : (
+            <aside className="ca-inspector ca-inspector-empty">
+              <p className="ca-muted-note">{t('Выберите агента для настройки параметров.')}</p>
+            </aside>
+          )}
+        </div>
       </div>
 
       {createOpen && (
@@ -225,6 +310,7 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
           }}
           onDispatchOrchestrator={async (orchestratorId, prompt) => {
             state.setSelectedAgentId(orchestratorId)
+            setWorkspaceTab('tasks')
             setMobilePane('workspace')
             await state.runAgent({
               agentId: orchestratorId,
@@ -260,8 +346,9 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
           }}
           onShowBoard={(chainId) => {
             state.setSelectedChainId(chainId)
-            setRequestedTab('runs')
+            setWorkspaceTab('runs')
             setRequestedRunsSubTab('board')
+            setMobilePane('workspace')
           }}
           close={() => setSwarmOpen(false)}
         />

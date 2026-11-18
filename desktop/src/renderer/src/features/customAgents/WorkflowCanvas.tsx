@@ -7,6 +7,7 @@ import {
   Minus,
   Play,
   Plus,
+  Settings2,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
@@ -27,13 +28,13 @@ import {
   buildBezierPath,
   canConnectAgents,
   computeAutoLayout,
+  computeFitViewport,
   getPortPoint,
   loadSavedLayout,
   mergeNodePositions,
   saveLayout,
-  WORKFLOW_NODE_HEIGHT,
-  WORKFLOW_NODE_WIDTH,
   type NodePosition,
+  type ViewportState,
   type WorkflowLinkKind
 } from './workflowLayout'
 
@@ -64,6 +65,7 @@ export function WorkflowCanvas({
   models,
   selectedAgentId,
   onSelectAgent,
+  onConfigureAgent,
   onRunAgent,
   onUpdateAgent,
   onOpenCreate,
@@ -73,6 +75,7 @@ export function WorkflowCanvas({
   models: ModelOption[]
   selectedAgentId: string
   onSelectAgent: (id: string) => void
+  onConfigureAgent: (id: string) => void
   onRunAgent: (agentId: string) => void
   onUpdateAgent: (agentId: string, patch: UpdateCustomAgentInput) => Promise<CustomAgent>
   onOpenCreate: (pendingLink?: PendingWorkflowLink) => void
@@ -80,34 +83,20 @@ export function WorkflowCanvas({
 }) {
   const { t } = useI18n()
   const stageRef = useRef<HTMLDivElement>(null)
+  const didInitialFitRef = useRef(false)
+
   const [positions, setPositions] = useState<Record<string, NodePosition>>(() =>
     mergeNodePositions(agents, loadSavedLayout())
   )
-  const [viewport, setViewport] = useState({ x: 24, y: 16, zoom: 1 })
-  const [dragNode, setDragNode] = useState<{
-    id: string
-    startX: number
-    startY: number
-    origX: number
-    origY: number
-    moved: boolean
-  } | null>(null)
-  const [panState, setPanState] = useState<{
-    startX: number
-    startY: number
-    origX: number
-    origY: number
-  } | null>(null)
-  const [wireDraft, setWireDraft] = useState<{
-    sourceId: string
+  const [viewport, setViewport] = useState<ViewportState>({ x: 24, y: 20, zoom: 1 })
+  const [gestureActive, setGestureActive] = useState(false)
+  const [isPanning, setIsPanning] = useState(false)
+  const [wirePreview, setWirePreview] = useState<{
     kind: WorkflowLinkKind
-    startClientX: number
-    startClientY: number
     x1: number
     y1: number
     x2: number
     y2: number
-    moved: boolean
   } | null>(null)
   const [portMenu, setPortMenu] = useState<{
     sourceId: string
@@ -122,152 +111,118 @@ export function WorkflowCanvas({
   } | null>(null)
   const [wireError, setWireError] = useState('')
 
+  const positionsRef = useRef(positions)
+  positionsRef.current = positions
+  const viewportRef = useRef(viewport)
+  viewportRef.current = viewport
+  const agentsRef = useRef(agents)
+  agentsRef.current = agents
+
+  const dragNodeRef = useRef<{
+    id: string
+    startX: number
+    startY: number
+    origX: number
+    origY: number
+    moved: boolean
+  } | null>(null)
+  const panStateRef = useRef<{
+    startX: number
+    startY: number
+    origX: number
+    origY: number
+  } | null>(null)
+  const wireDraftRef = useRef<{
+    sourceId: string
+    kind: WorkflowLinkKind
+    startClientX: number
+    startClientY: number
+    x1: number
+    y1: number
+    x2: number
+    y2: number
+    moved: boolean
+  } | null>(null)
+
+  const selectedAgent = useMemo(
+    () => agents.find((item) => item.id === selectedAgentId) || null,
+    [agents, selectedAgentId]
+  )
+
   useEffect(() => {
-    setPositions((current) => mergeNodePositions(agents, current))
+    setPositions((current) => {
+      const merged = mergeNodePositions(agents, current)
+      positionsRef.current = merged
+      return merged
+    })
   }, [agents])
+
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const tryFit = () => {
+      if (didInitialFitRef.current || agentsRef.current.length === 0) return
+      const rect = el.getBoundingClientRect()
+      if (rect.width > 40 && rect.height > 40) {
+        didInitialFitRef.current = true
+        const fitted = computeFitViewport(positionsRef.current, rect.width, rect.height)
+        viewportRef.current = fitted
+        setViewport(fitted)
+      }
+    }
+    tryFit()
+    const observer = new ResizeObserver(tryFit)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [agents.length])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setPortMenu(null)
         setSelectedEdge(null)
-        setWireDraft(null)
+        wireDraftRef.current = null
+        setWirePreview(null)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  const toCanvasCoords = (clientX: number, clientY: number): NodePosition => {
-    const rect = stageRef.current?.getBoundingClientRect()
-    if (!rect) return { x: 0, y: 0 }
-    return {
-      x: (clientX - rect.left - viewport.x) / viewport.zoom,
-      y: (clientY - rect.top - viewport.y) / viewport.zoom
-    }
-  }
-
   const openPortMenu = (
     sourceId: string,
     kind: WorkflowLinkKind,
     nodePos: NodePosition
   ) => {
+    const vp = viewportRef.current
     const anchorPt = getPortPoint(nodePos, kind)
-    const vx = anchorPt.x * viewport.zoom + viewport.x
-    const vy = anchorPt.y * viewport.zoom + viewport.y
+    const vx = anchorPt.x * vp.zoom + vp.x
+    const vy = anchorPt.y * vp.zoom + vp.y
     const rect = stageRef.current?.getBoundingClientRect()
     const stageW = rect?.width || 640
     const stageH = rect?.height || 480
-    const preferRight = vx + 12 + PORT_MENU_WIDTH <= stageW - 12
-    const rawX = preferRight ? vx + 12 : vx - PORT_MENU_WIDTH - 12
+    const preferRight = vx + 14 + PORT_MENU_WIDTH <= stageW - 12
+    const rawX = preferRight ? vx + 14 : vx - PORT_MENU_WIDTH - 14
     const clampedX = Math.round(
       Math.max(12, Math.min(rawX, Math.max(12, stageW - PORT_MENU_WIDTH - 12)))
     )
     const clampedY = Math.round(
-      Math.max(12, Math.min(vy - 18, Math.max(12, stageH - PORT_MENU_ESTIMATED_HEIGHT - 12)))
+      Math.max(
+        12,
+        Math.min(vy - 20, Math.max(12, stageH - PORT_MENU_ESTIMATED_HEIGHT - 12))
+      )
     )
     setWireError('')
     setSelectedEdge(null)
     setPortMenu({ sourceId, kind, x: clampedX, y: clampedY })
   }
 
-  useEffect(() => {
-    if (!dragNode && !panState && !wireDraft) return
-
-    const handleMove = (event: PointerEvent) => {
-      if (dragNode) {
-        const dx = (event.clientX - dragNode.startX) / viewport.zoom
-        const dy = (event.clientY - dragNode.startY) / viewport.zoom
-        const moved =
-          dragNode.moved ||
-          Math.abs(event.clientX - dragNode.startX) > 4 ||
-          Math.abs(event.clientY - dragNode.startY) > 4
-        if (moved && !dragNode.moved) {
-          setDragNode((prev) => (prev ? { ...prev, moved: true } : null))
-        }
-        setPositions((current) => ({
-          ...current,
-          [dragNode.id]: {
-            x: Math.round(dragNode.origX + dx),
-            y: Math.round(dragNode.origY + dy)
-          }
-        }))
-        return
-      }
-
-      if (panState) {
-        setViewport((current) => ({
-          ...current,
-          x: Math.round(panState.origX + (event.clientX - panState.startX)),
-          y: Math.round(panState.origY + (event.clientY - panState.startY))
-        }))
-        return
-      }
-
-      if (wireDraft) {
-        const pt = toCanvasCoords(event.clientX, event.clientY)
-        const moved =
-          wireDraft.moved ||
-          Math.hypot(
-            event.clientX - wireDraft.startClientX,
-            event.clientY - wireDraft.startClientY
-          ) > 5
-        setWireDraft((prev) =>
-          prev ? { ...prev, x2: pt.x, y2: pt.y, moved } : null
-        )
-      }
-    }
-
-    const handleUp = (event: PointerEvent) => {
-      if (dragNode) {
-        if (dragNode.moved) {
-          setPositions((current) => {
-            saveLayout(current)
-            return current
-          })
-        } else {
-          onSelectAgent(dragNode.id)
-        }
-        setDragNode(null)
-      }
-
-      if (panState) {
-        setPanState(null)
-      }
-
-      if (wireDraft) {
-        if (!wireDraft.moved) {
-          const sourcePos = positions[wireDraft.sourceId] || { x: 52, y: 72 }
-          openPortMenu(wireDraft.sourceId, wireDraft.kind, sourcePos)
-        } else {
-          const hit = document.elementFromPoint(event.clientX, event.clientY)
-          const targetEl = hit?.closest('[data-wf-in-node],[data-wf-node-id]')
-          const targetId =
-            targetEl?.getAttribute('data-wf-in-node') ||
-            targetEl?.getAttribute('data-wf-node-id') ||
-            ''
-          if (targetId) {
-            void commitConnection(wireDraft.sourceId, targetId, wireDraft.kind)
-          }
-        }
-        setWireDraft(null)
-      }
-    }
-
-    window.addEventListener('pointermove', handleMove)
-    window.addEventListener('pointerup', handleUp)
-    return () => {
-      window.removeEventListener('pointermove', handleMove)
-      window.removeEventListener('pointerup', handleUp)
-    }
-  })
-
   const commitConnection = async (
     sourceId: string,
     targetId: string,
     kind: WorkflowLinkKind
   ) => {
-    const check = canConnectAgents(agents, sourceId, targetId, kind)
+    const check = canConnectAgents(agentsRef.current, sourceId, targetId, kind)
     if (!check.ok) {
       setWireError(t(check.reason || 'Невозможно создать связь'))
       return
@@ -301,9 +256,132 @@ export function WorkflowCanvas({
     }
   }
 
+  useEffect(() => {
+    if (!gestureActive) return
+
+    const handleMove = (event: PointerEvent) => {
+      const drag = dragNodeRef.current
+      if (drag) {
+        const vp = viewportRef.current
+        const dx = (event.clientX - drag.startX) / vp.zoom
+        const dy = (event.clientY - drag.startY) / vp.zoom
+        if (
+          !drag.moved &&
+          (Math.abs(event.clientX - drag.startX) > 4 ||
+            Math.abs(event.clientY - drag.startY) > 4)
+        ) {
+          drag.moved = true
+        }
+        const nextPositions = {
+          ...positionsRef.current,
+          [drag.id]: {
+            x: Math.round(drag.origX + dx),
+            y: Math.round(drag.origY + dy)
+          }
+        }
+        positionsRef.current = nextPositions
+        setPositions(nextPositions)
+        return
+      }
+
+      const pan = panStateRef.current
+      if (pan) {
+        const nextVp: ViewportState = {
+          ...viewportRef.current,
+          x: Math.round(pan.origX + (event.clientX - pan.startX)),
+          y: Math.round(pan.origY + (event.clientY - pan.startY))
+        }
+        viewportRef.current = nextVp
+        setViewport(nextVp)
+        return
+      }
+
+      const wire = wireDraftRef.current
+      if (wire) {
+        const rect = stageRef.current?.getBoundingClientRect()
+        const vp = viewportRef.current
+        const pt = rect
+          ? {
+              x: (event.clientX - rect.left - vp.x) / vp.zoom,
+              y: (event.clientY - rect.top - vp.y) / vp.zoom
+            }
+          : { x: wire.x2, y: wire.y2 }
+        if (
+          !wire.moved &&
+          Math.hypot(
+            event.clientX - wire.startClientX,
+            event.clientY - wire.startClientY
+          ) > 5
+        ) {
+          wire.moved = true
+        }
+        wire.x2 = pt.x
+        wire.y2 = pt.y
+        if (wire.moved) {
+          setWirePreview({
+            kind: wire.kind,
+            x1: wire.x1,
+            y1: wire.y1,
+            x2: pt.x,
+            y2: pt.y
+          })
+        }
+      }
+    }
+
+    const handleUp = (event: PointerEvent) => {
+      const drag = dragNodeRef.current
+      if (drag) {
+        if (drag.moved) {
+          saveLayout(positionsRef.current)
+        } else {
+          onSelectAgent(drag.id)
+        }
+        dragNodeRef.current = null
+      }
+
+      if (panStateRef.current) {
+        panStateRef.current = null
+        setIsPanning(false)
+      }
+
+      const wire = wireDraftRef.current
+      if (wire) {
+        if (!wire.moved) {
+          const sourcePos = positionsRef.current[wire.sourceId] || { x: 48, y: 64 }
+          openPortMenu(wire.sourceId, wire.kind, sourcePos)
+        } else {
+          const hit = document.elementFromPoint(event.clientX, event.clientY)
+          const targetEl = hit?.closest('[data-wf-in-node],[data-wf-node-id]')
+          const targetId =
+            targetEl?.getAttribute('data-wf-in-node') ||
+            targetEl?.getAttribute('data-wf-node-id') ||
+            ''
+          if (targetId) {
+            void commitConnection(wire.sourceId, targetId, wire.kind)
+          }
+        }
+        wireDraftRef.current = null
+        setWirePreview(null)
+      }
+
+      setGestureActive(false)
+    }
+
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+    window.addEventListener('pointercancel', handleUp)
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+      window.removeEventListener('pointercancel', handleUp)
+    }
+  }, [gestureActive])
+
   const edges = useMemo<WorkflowEdge[]>(() => {
     const byId = new Map(agents.map((agent) => [agent.id, agent]))
     const list: WorkflowEdge[] = []
+    let skipLaneIndex = 0
     for (const agent of agents) {
       const fromPos = positions[agent.id]
       if (!fromPos) continue
@@ -312,7 +390,9 @@ export function WorkflowCanvas({
         if (toPos) {
           const p1 = getPortPoint(fromPos, 'next')
           const p2 = getPortPoint(toPos, 'in')
-          const curve = buildBezierPath(p1.x, p1.y, p2.x, p2.y)
+          const needsArc = p2.x <= p1.x + 24 || (p2.x - p1.x > 440 && Math.abs(p2.y - p1.y) < 128)
+          const laneOffset = needsArc ? skipLaneIndex++ * 22 : 0
+          const curve = buildBezierPath(p1.x, p1.y, p2.x, p2.y, { laneOffset })
           list.push({
             id: `${agent.id}:next:${agent.next_agent_id}`,
             sourceId: agent.id,
@@ -331,7 +411,9 @@ export function WorkflowCanvas({
         if (toPos) {
           const p1 = getPortPoint(fromPos, 'verifier')
           const p2 = getPortPoint(toPos, 'in')
-          const curve = buildBezierPath(p1.x, p1.y, p2.x, p2.y)
+          const needsArc = p2.x <= p1.x + 24 || (p2.x - p1.x > 440 && Math.abs(p2.y - p1.y) < 128)
+          const laneOffset = needsArc ? skipLaneIndex++ * 22 : 0
+          const curve = buildBezierPath(p1.x, p1.y, p2.x, p2.y, { laneOffset })
           list.push({
             id: `${agent.id}:verifier:${agent.verifier_agent_id}`,
             sourceId: agent.id,
@@ -361,51 +443,40 @@ export function WorkflowCanvas({
     )
   }, [edges, selectedEdge])
 
+  const fitCurrentNodes = (targetPositions: Record<string, NodePosition>) => {
+    const rect = stageRef.current?.getBoundingClientRect()
+    const fitted = computeFitViewport(
+      targetPositions,
+      rect?.width || 960,
+      rect?.height || 560
+    )
+    viewportRef.current = fitted
+    setViewport(fitted)
+  }
+
   const handleAutoLayout = () => {
     const next = computeAutoLayout(agents)
+    positionsRef.current = next
     setPositions(next)
     saveLayout(next)
-    setViewport({ x: 24, y: 16, zoom: 1 })
+    fitCurrentNodes(next)
     setPortMenu(null)
     setSelectedEdge(null)
   }
 
   const handleCenterView = () => {
-    const rect = stageRef.current?.getBoundingClientRect()
-    const coords = agents
-      .map((agent) => positions[agent.id])
-      .filter((pos): pos is NodePosition => Boolean(pos))
-    if (!rect || coords.length === 0) {
-      setViewport({ x: 24, y: 16, zoom: 1 })
-      return
-    }
-    const minX = Math.min(...coords.map((p) => p.x))
-    const minY = Math.min(...coords.map((p) => p.y))
-    const maxX = Math.max(...coords.map((p) => p.x + WORKFLOW_NODE_WIDTH))
-    const maxY = Math.max(...coords.map((p) => p.y + WORKFLOW_NODE_HEIGHT))
-    const contentW = Math.max(260, maxX - minX)
-    const contentH = Math.max(180, maxY - minY)
-    const pad = 48
-    const fitZoom = Math.min(
-      1.15,
-      Math.max(
-        0.5,
-        Math.min(
-          (rect.width - pad * 2) / contentW,
-          (rect.height - pad * 2) / contentH
-        )
-      )
-    )
-    const offsetX = Math.round((rect.width - contentW * fitZoom) / 2 - minX * fitZoom)
-    const offsetY = Math.round((rect.height - contentH * fitZoom) / 2 - minY * fitZoom)
-    setViewport({ x: offsetX, y: offsetY, zoom: Number(fitZoom.toFixed(2)) })
+    fitCurrentNodes(positionsRef.current)
   }
 
   const setZoom = (delta: number) => {
-    setViewport((current) => ({
-      ...current,
-      zoom: Number(Math.min(1.6, Math.max(0.45, current.zoom + delta)).toFixed(2))
-    }))
+    setViewport((current) => {
+      const next = {
+        ...current,
+        zoom: Number(Math.min(1.6, Math.max(0.45, current.zoom + delta)).toFixed(2))
+      }
+      viewportRef.current = next
+      return next
+    })
   }
 
   const roleIcon = (role: string) => {
@@ -433,30 +504,124 @@ export function WorkflowCanvas({
     )
   }, [agents, portMenu])
 
+  const startOutputPort = (
+    event: React.PointerEvent,
+    agentId: string,
+    kind: WorkflowLinkKind,
+    pos: NodePosition
+  ) => {
+    event.stopPropagation()
+    const origin = getPortPoint(pos, kind)
+    setSelectedEdge(null)
+    wireDraftRef.current = {
+      sourceId: agentId,
+      kind,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      x1: origin.x,
+      y1: origin.y,
+      x2: origin.x,
+      y2: origin.y,
+      moved: false
+    }
+    setGestureActive(true)
+  }
+
   return (
     <div className="ca-wf-viewport">
-      <div className="ca-wf-toolbar">
-        <button
-          type="button"
-          className="primary ca-wf-tool-btn"
-          onClick={() => onOpenCreate()}
-        >
-          <Plus size={14} aria-hidden="true" />
-          <span>{t('Новый узел')}</span>
-        </button>
-        <button
-          type="button"
-          className="ca-wf-tool-btn"
-          onClick={onOpenSwarm}
-        >
-          <Layers size={14} aria-hidden="true" />
-          <span>{t('Запустить рой (Swarm)')}</span>
-        </button>
+      <div className="ca-wf-hud-top">
+        <div className="ca-wf-toolbar">
+          <button
+            type="button"
+            className="primary ca-wf-tool-btn"
+            onClick={() => onOpenCreate()}
+          >
+            <Plus size={14} aria-hidden="true" />
+            <span>{t('Новый узел')}</span>
+          </button>
+          <button
+            type="button"
+            className="ca-wf-tool-btn"
+            onClick={onOpenSwarm}
+          >
+            <Layers size={14} aria-hidden="true" />
+            <span>{t('Запустить рой (Swarm)')}</span>
+          </button>
+        </div>
+
+        {selectedAgent && (
+          <div className="ca-wf-selected-pill">
+            <strong title={selectedAgent.name}>{selectedAgent.name}</strong>
+            <button
+              type="button"
+              className="ca-wf-pill-action primary"
+              onClick={() => onRunAgent(selectedAgent.id)}
+            >
+              <Play size={12} aria-hidden="true" />
+              <span>{t('Запустить')}</span>
+            </button>
+            <button
+              type="button"
+              className="ca-wf-pill-action"
+              onClick={() => onConfigureAgent(selectedAgent.id)}
+            >
+              <Settings2 size={12} aria-hidden="true" />
+              <span>{t('Настроить')}</span>
+            </button>
+          </div>
+        )}
+
+        {wireError && (
+          <div className="ca-wf-error" role="alert">
+            <TriangleAlert size={14} aria-hidden="true" />
+            <span>{wireError}</span>
+            <button
+              type="button"
+              className="icon small"
+              aria-label={t('Закрыть')}
+              onClick={() => setWireError('')}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div
         ref={stageRef}
-        className={`ca-wf-stage ${panState ? 'panning' : ''}`}
+        className={`ca-wf-stage ${isPanning ? 'panning' : ''}`}
+        onWheel={(event) => {
+          const rect = stageRef.current?.getBoundingClientRect()
+          if (!rect) return
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault()
+            const vp = viewportRef.current
+            const factor = event.deltaY < 0 ? 1.08 : 0.92
+            const nextZoom = Number(
+              Math.min(1.6, Math.max(0.45, vp.zoom * factor)).toFixed(2)
+            )
+            const cursorX = event.clientX - rect.left
+            const cursorY = event.clientY - rect.top
+            const worldX = (cursorX - vp.x) / vp.zoom
+            const worldY = (cursorY - vp.y) / vp.zoom
+            const nextVp = {
+              zoom: nextZoom,
+              x: Math.round(cursorX - worldX * nextZoom),
+              y: Math.round(cursorY - worldY * nextZoom)
+            }
+            viewportRef.current = nextVp
+            setViewport(nextVp)
+            return
+          }
+          const vp = viewportRef.current
+          const nextVp = {
+            ...vp,
+            x: Math.round(vp.x - event.deltaX),
+            y: Math.round(vp.y - event.deltaY)
+          }
+          viewportRef.current = nextVp
+          setViewport(nextVp)
+        }}
         onPointerDown={(event) => {
           const target = event.target as HTMLElement
           if (
@@ -468,12 +633,15 @@ export function WorkflowCanvas({
           }
           setPortMenu(null)
           setSelectedEdge(null)
-          setPanState({
+          const vp = viewportRef.current
+          panStateRef.current = {
             startX: event.clientX,
             startY: event.clientY,
-            origX: viewport.x,
-            origY: viewport.y
-          })
+            origX: vp.x,
+            origY: vp.y
+          }
+          setIsPanning(true)
+          setGestureActive(true)
         }}
       >
         <div className="ca-wf-zoom-bar" role="group" aria-label={t('Управление холстом')}>
@@ -490,7 +658,11 @@ export function WorkflowCanvas({
             type="button"
             className="ca-wf-zoom-readout"
             title={t('Сбросить масштаб')}
-            onClick={() => setViewport((current) => ({ ...current, zoom: 1 }))}
+            onClick={() => {
+              const next = { ...viewportRef.current, zoom: 1 }
+              viewportRef.current = next
+              setViewport(next)
+            }}
           >
             {`${Math.round(viewport.zoom * 100)}%`}
           </button>
@@ -522,21 +694,6 @@ export function WorkflowCanvas({
             <span>{t('Авто-раскладка')}</span>
           </button>
         </div>
-
-        {wireError && (
-          <div className="ca-wf-error" role="alert">
-            <TriangleAlert size={14} aria-hidden="true" />
-            <span>{wireError}</span>
-            <button
-              type="button"
-              className="icon small"
-              aria-label={t('Закрыть')}
-              onClick={() => setWireError('')}
-            >
-              <X size={12} aria-hidden="true" />
-            </button>
-          </div>
-        )}
 
         <div
           className="ca-wf-world"
@@ -603,17 +760,18 @@ export function WorkflowCanvas({
               )
             })}
 
-            {wireDraft && wireDraft.moved && (
+            {wirePreview && (
               <path
                 d={
                   buildBezierPath(
-                    wireDraft.x1,
-                    wireDraft.y1,
-                    wireDraft.x2,
-                    wireDraft.y2
+                    wirePreview.x1,
+                    wirePreview.y1,
+                    wirePreview.x2,
+                    wirePreview.y2,
+                    { skipArc: false }
                   ).path
                 }
-                className={`ca-wf-edge draft kind-${wireDraft.kind}`}
+                className={`ca-wf-edge draft kind-${wirePreview.kind}`}
               />
             )}
           </svg>
@@ -648,7 +806,7 @@ export function WorkflowCanvas({
           )}
 
           {agents.map((agent) => {
-            const pos = positions[agent.id] || { x: 52, y: 72 }
+            const pos = positions[agent.id] || { x: 48, y: 64 }
             const selected = agent.id === selectedAgentId
             const status = agentStatusMeta(agent.status)
             const model = modelSummary(agent, models)
@@ -660,8 +818,39 @@ export function WorkflowCanvas({
                 data-wf-node-id={agent.id}
                 className={`ca-wf-node role-${agent.role} ${selected ? 'selected' : ''} ${agent.enabled ? '' : 'disabled'}`}
                 style={{
-                  transform: `translate(${pos.x}px, ${pos.y}px)`,
-                  width: `${WORKFLOW_NODE_WIDTH}px`
+                  transform: `translate(${pos.x}px, ${pos.y}px)`
+                }}
+                onPointerDown={(event) => {
+                  if (
+                    (event.target as HTMLElement).closest(
+                      'button, input, select, textarea, .ca-wf-port-anchor'
+                    )
+                  ) {
+                    return
+                  }
+                  event.stopPropagation()
+                  setPortMenu(null)
+                  setSelectedEdge(null)
+                  dragNodeRef.current = {
+                    id: agent.id,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    origX: pos.x,
+                    origY: pos.y,
+                    moved: false
+                  }
+                  setGestureActive(true)
+                }}
+                onDoubleClick={(event) => {
+                  if (
+                    (event.target as HTMLElement).closest(
+                      'button, .ca-wf-port-anchor'
+                    )
+                  ) {
+                    return
+                  }
+                  onSelectAgent(agent.id)
+                  onConfigureAgent(agent.id)
                 }}
                 onClick={() => {
                   setPortMenu(null)
@@ -671,52 +860,53 @@ export function WorkflowCanvas({
               >
                 <div className="ca-wf-node-accent" />
 
-                <button
-                  type="button"
-                  data-wf-in-node={agent.id}
-                  className="ca-wf-port ca-wf-port-in"
-                  title={t('Вход узла')}
-                  aria-label={t('Вход узла {name}', { name: agent.name })}
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <span className="ca-wf-port-dot ca-wf-port-dot-in" />
-                </button>
+                <div className="ca-wf-port-anchor anchor-in">
+                  <button
+                    type="button"
+                    data-wf-in-node={agent.id}
+                    className="ca-wf-port ca-wf-port-in"
+                    title={t('Вход узла')}
+                    aria-label={t('Вход узла {name}', { name: agent.name })}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <span className="ca-wf-port-dot ca-wf-port-dot-in" />
+                  </button>
+                </div>
 
-                <header
-                  className="ca-wf-node-head"
-                  onPointerDown={(event) => {
-                    if ((event.target as HTMLElement).closest('button')) return
-                    event.stopPropagation()
-                    setPortMenu(null)
-                    setSelectedEdge(null)
-                    setDragNode({
-                      id: agent.id,
-                      startX: event.clientX,
-                      startY: event.clientY,
-                      origX: pos.x,
-                      origY: pos.y,
-                      moved: false
-                    })
-                  }}
-                >
+                <header className="ca-wf-node-head">
                   <span className="ca-wf-role-icon">{roleIcon(agent.role)}</span>
                   <div className="ca-wf-node-titles">
                     <strong title={agent.name}>{agent.name}</strong>
                     <span>{`@${agent.slug}`}</span>
                   </div>
-                  <button
-                    type="button"
-                    className="ca-wf-run-btn"
-                    title={t('Запустить {name}', { name: agent.name })}
-                    aria-label={t('Запустить {name}', { name: agent.name })}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onSelectAgent(agent.id)
-                      onRunAgent(agent.id)
-                    }}
-                  >
-                    <Play size={12} aria-hidden="true" />
-                  </button>
+                  <div className="ca-wf-node-actions">
+                    <button
+                      type="button"
+                      className="ca-wf-node-btn"
+                      title={t('Настроить {name}', { name: agent.name })}
+                      aria-label={t('Настроить {name}', { name: agent.name })}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onSelectAgent(agent.id)
+                        onConfigureAgent(agent.id)
+                      }}
+                    >
+                      <Settings2 size={12} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="ca-wf-node-btn ca-wf-run-btn"
+                      title={t('Запустить {name}', { name: agent.name })}
+                      aria-label={t('Запустить {name}', { name: agent.name })}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onSelectAgent(agent.id)
+                        onRunAgent(agent.id)
+                      }}
+                    >
+                      <Play size={12} aria-hidden="true" />
+                    </button>
+                  </div>
                 </header>
 
                 <div className="ca-wf-node-body">
@@ -743,73 +933,70 @@ export function WorkflowCanvas({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className="ca-wf-port ca-wf-port-out port-next"
-                  title={t('Выход: Далее')}
-                  aria-label={t('Подключить следующий узел от {name}', {
-                    name: agent.name
-                  })}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    if (event.detail === 0) {
-                      openPortMenu(agent.id, 'next', pos)
+                <div className="ca-wf-node-footer">
+                  <div
+                    className="ca-wf-port-row"
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) =>
+                      startOutputPort(event, agent.id, 'next', pos)
                     }
-                  }}
-                  onPointerDown={(event) => {
-                    event.stopPropagation()
-                    const origin = getPortPoint(pos, 'next')
-                    setSelectedEdge(null)
-                    setWireDraft({
-                      sourceId: agent.id,
-                      kind: 'next',
-                      startClientX: event.clientX,
-                      startClientY: event.clientY,
-                      x1: origin.x,
-                      y1: origin.y,
-                      x2: origin.x,
-                      y2: origin.y,
-                      moved: false
-                    })
-                  }}
-                >
-                  <span className="ca-wf-port-tag">{t('Далее')}</span>
-                  <span className="ca-wf-port-dot" />
-                </button>
+                  >
+                    <span>{t('Далее')}</span>
+                  </div>
+                  <div
+                    className="ca-wf-port-row"
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) =>
+                      startOutputPort(event, agent.id, 'verifier', pos)
+                    }
+                  >
+                    <span>{t('Проверка')}</span>
+                  </div>
+                </div>
 
-                <button
-                  type="button"
-                  className="ca-wf-port ca-wf-port-out port-verifier"
-                  title={t('Выход: Проверка')}
-                  aria-label={t('Подключить верификатор к {name}', {
-                    name: agent.name
-                  })}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    if (event.detail === 0) {
-                      openPortMenu(agent.id, 'verifier', pos)
+                <div className="ca-wf-port-anchor anchor-next">
+                  <button
+                    type="button"
+                    className="ca-wf-port ca-wf-port-out port-next"
+                    title={t('Выход: Далее')}
+                    aria-label={t('Подключить следующий узел от {name}', {
+                      name: agent.name
+                    })}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      if (event.detail === 0) {
+                        openPortMenu(agent.id, 'next', pos)
+                      }
+                    }}
+                    onPointerDown={(event) =>
+                      startOutputPort(event, agent.id, 'next', pos)
                     }
-                  }}
-                  onPointerDown={(event) => {
-                    event.stopPropagation()
-                    const origin = getPortPoint(pos, 'verifier')
-                    setSelectedEdge(null)
-                    setWireDraft({
-                      sourceId: agent.id,
-                      kind: 'verifier',
-                      startClientX: event.clientX,
-                      startClientY: event.clientY,
-                      x1: origin.x,
-                      y1: origin.y,
-                      x2: origin.x,
-                      y2: origin.y,
-                      moved: false
-                    })
-                  }}
-                >
-                  <span className="ca-wf-port-tag">{t('Проверка')}</span>
-                  <span className="ca-wf-port-dot" />
-                </button>
+                  >
+                    <span className="ca-wf-port-dot" />
+                  </button>
+                </div>
+
+                <div className="ca-wf-port-anchor anchor-verifier">
+                  <button
+                    type="button"
+                    className="ca-wf-port ca-wf-port-out port-verifier"
+                    title={t('Выход: Проверка')}
+                    aria-label={t('Подключить верификатор к {name}', {
+                      name: agent.name
+                    })}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      if (event.detail === 0) {
+                        openPortMenu(agent.id, 'verifier', pos)
+                      }
+                    }}
+                    onPointerDown={(event) =>
+                      startOutputPort(event, agent.id, 'verifier', pos)
+                    }
+                  >
+                    <span className="ca-wf-port-dot" />
+                  </button>
+                </div>
               </article>
             )
           })}

@@ -9,6 +9,7 @@ import {
 } from '../../src/renderer/src/host/nativeBridge'
 import { I18nProvider } from '../../src/renderer/src/i18n'
 import { AgentInspector } from '../../src/renderer/src/features/customAgents/AgentInspector'
+import { AgentWorkspace } from '../../src/renderer/src/features/customAgents/AgentWorkspace'
 import { WorkflowCanvas } from '../../src/renderer/src/features/customAgents/WorkflowCanvas'
 import {
   agentRoleLabel,
@@ -25,9 +26,13 @@ import {
   buildBezierPath,
   canConnectAgents,
   computeAutoLayout,
+  computeFitViewport,
   getPortPoint,
   loadSavedLayout,
   mergeNodePositions,
+  PORT_IN_OFFSET_Y,
+  PORT_NEXT_OFFSET_Y,
+  PORT_VERIFIER_OFFSET_Y,
   saveLayout,
   WORKFLOW_NODE_HEIGHT,
   WORKFLOW_NODE_WIDTH
@@ -528,14 +533,31 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
     expect(canConnectAgents(chain, 'n1', 'n3', 'next').ok).toBe(true)
     expect(canConnectAgents(chain, 'n1', 'v1', 'verifier').ok).toBe(true)
 
+    expect(WORKFLOW_NODE_WIDTH).toBe(256)
+    expect(WORKFLOW_NODE_HEIGHT).toBe(176)
+    expect(PORT_IN_OFFSET_Y).toBe(88)
+    expect(PORT_NEXT_OFFSET_Y).toBe(132)
+    expect(PORT_VERIFIER_OFFSET_Y).toBe(160)
+
     const p1 = getPortPoint({ x: 50, y: 40 }, 'next')
-    const p2 = getPortPoint({ x: 380, y: 40 }, 'in')
-    const curve = buildBezierPath(p1.x, p1.y, p2.x, p2.y)
-    expect(curve.path.startsWith('M ')).toBe(true)
-    expect(curve.midX).toBe((p1.x + p2.x) / 2)
+    const p2 = getPortPoint({ x: 418, y: 40 }, 'in')
+    expect(p1).toEqual({ x: 50 + 256, y: 40 + 132 })
+    expect(p2).toEqual({ x: 418, y: 40 + 88 })
+
+    const adjacentCurve = buildBezierPath(p1.x, p1.y, p2.x, p2.y)
+    expect(adjacentCurve.path.startsWith('M ')).toBe(true)
+    expect(adjacentCurve.midX).toBe((p1.x + p2.x) / 2)
+    expect(adjacentCurve.midY).toBe((p1.y + p2.y) / 2)
+
+    const longCurve = buildBezierPath(304, 200, 1152, 180, { laneOffset: 22 })
+    expect(longCurve.midY).toBeGreaterThan(200)
+
+    const fitted = computeFitViewport(layout, 960, 600)
+    expect(fitted.zoom).toBeGreaterThanOrEqual(0.45)
+    expect(fitted.zoom).toBeLessThanOrEqual(1)
   })
 
-  it('renders WorkflowCanvas nodes, Bezier wires, and 4-tab AgentInspector', async () => {
+  it('renders WorkflowCanvas 3-zone nodes, port anchors, AgentWorkspace modes, and 4-tab AgentInspector', async () => {
     vi.useFakeTimers()
     const env = setupPreview()
     try {
@@ -551,6 +573,7 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
             models,
             selectedAgentId: agents[0].id,
             onSelectAgent: () => {},
+            onConfigureAgent: () => {},
             onRunAgent: () => {},
             onUpdateAgent: async (_id, _patch) => agents[0],
             onOpenCreate: () => {},
@@ -563,8 +586,86 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
       expect(canvasHtml).toContain('Авто-раскладка')
       expect(canvasHtml).toContain('Монитор релизов')
       expect(canvasHtml).toContain('Аналитик изменений')
+      expect(canvasHtml).toContain('ca-wf-port-anchor anchor-in')
+      expect(canvasHtml).toContain('ca-wf-port-anchor anchor-next')
+      expect(canvasHtml).toContain('ca-wf-port-anchor anchor-verifier')
+      expect(canvasHtml).toContain('ca-wf-node-footer')
+      expect(canvasHtml).toContain('ca-wf-selected-pill')
       expect(canvasHtml).toContain('ca-wf-edge kind-next')
       expect(canvasHtml).toContain('ca-wf-edge kind-verifier')
+
+      const chainWorkspaceHtml = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { language: 'ru', children: null },
+          createElement(AgentWorkspace, {
+            agent: agents[0],
+            agents,
+            models,
+            runs: [],
+            allRuns: [],
+            blackboard: [],
+            selectedChainId: '',
+            tab: 'chain',
+            onTabChange: () => {},
+            onSelectChainId: () => {},
+            onSelectAgent: () => {},
+            onConfigureAgent: () => {},
+            onRun: async () => ({} as never),
+            onCancelRun: async () => ({}),
+            onProbe: async () => ({
+              changed: false,
+              hash: '',
+              snapshot: '',
+              diff: '',
+              error: ''
+            }),
+            onPostBlackboard: async () => ({} as never),
+            onUpdateAgent: async () => agents[0],
+            onOpenCreate: () => {},
+            onOpenSwarm: () => {}
+          })
+        )
+      )
+      expect(chainWorkspaceHtml).not.toContain('ca-workspace-head')
+      expect(chainWorkspaceHtml).toContain('ca-wf-viewport')
+
+      const tasksWorkspaceHtml = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { language: 'ru', children: null },
+          createElement(AgentWorkspace, {
+            agent: agents[0],
+            agents,
+            models,
+            runs: [],
+            allRuns: [],
+            blackboard: [],
+            selectedChainId: '',
+            tab: 'tasks',
+            onTabChange: () => {},
+            onSelectChainId: () => {},
+            onSelectAgent: () => {},
+            onConfigureAgent: () => {},
+            onRun: async () => ({} as never),
+            onCancelRun: async () => ({}),
+            onProbe: async () => ({
+              changed: false,
+              hash: '',
+              snapshot: '',
+              diff: '',
+              error: ''
+            }),
+            onPostBlackboard: async () => ({} as never),
+            onUpdateAgent: async () => agents[0],
+            onOpenCreate: () => {},
+            onOpenSwarm: () => {}
+          })
+        )
+      )
+      expect(tasksWorkspaceHtml).toContain('ca-workspace-head')
+      expect(tasksWorkspaceHtml).toContain('ca-workspace-col')
+      expect(tasksWorkspaceHtml).toContain('Настроить')
 
       const inspectorHtml = renderToStaticMarkup(
         createElement(

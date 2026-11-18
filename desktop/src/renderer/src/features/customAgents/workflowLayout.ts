@@ -5,19 +5,26 @@ export interface NodePosition {
   y: number
 }
 
+export interface ViewportState {
+  x: number
+  y: number
+  zoom: number
+}
+
 export type WorkflowLinkKind = 'next' | 'verifier'
 
-export const WORKFLOW_NODE_WIDTH = 264
-export const WORKFLOW_NODE_HEIGHT = 164
+export const WORKFLOW_NODE_WIDTH = 256
+export const WORKFLOW_NODE_HEIGHT = 176
 export const WORKFLOW_LAYOUT_STORAGE_KEY = 'prime.customAgents.layout.v1'
 
-const PORT_IN_OFFSET_Y = 94
-const PORT_NEXT_OFFSET_Y = 74
-const PORT_VERIFIER_OFFSET_Y = 114
-const COLUMN_GAP = 396
-const ROW_GAP = 212
-const ORIGIN_X = 52
-const ORIGIN_Y = 72
+export const PORT_IN_OFFSET_Y = 88
+export const PORT_NEXT_OFFSET_Y = 132
+export const PORT_VERIFIER_OFFSET_Y = 160
+
+const COLUMN_GAP = 368
+const ROW_GAP = 224
+const ORIGIN_X = 48
+const ORIGIN_Y = 64
 
 export function getPortPoint(
   pos: NodePosition,
@@ -36,17 +43,33 @@ export function buildBezierPath(
   x1: number,
   y1: number,
   x2: number,
-  y2: number
+  y2: number,
+  options?: { laneOffset?: number; skipArc?: boolean }
 ): { path: string; midX: number; midY: number } {
-  const dx =
-    x2 >= x1
-      ? Math.max(64, (x2 - x1) * 0.5)
-      : Math.max(100, Math.abs(x2 - x1) * 0.45 + 64)
-  const path = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`
+  const isBackward = x2 <= x1 + 24
+  const isLongSkip =
+    options?.skipArc ??
+    (x2 - x1 > COLUMN_GAP * 1.2 && Math.abs(y2 - y1) < 128)
+
+  if (!isBackward && !isLongSkip) {
+    const dx = Math.max(56, (x2 - x1) * 0.5)
+    const path = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`
+    return {
+      path,
+      midX: (x1 + x2) / 2,
+      midY: (y1 + y2) / 2
+    }
+  }
+
+  const lane = options?.laneOffset ?? 0
+  const dipY = Math.max(y1, y2) + 92 + lane
+  const c1x = x1 + (x2 >= x1 ? 92 : 84)
+  const c2x = x2 - (x2 >= x1 ? 92 : 84)
+  const path = `M ${x1} ${y1} C ${c1x} ${dipY}, ${c2x} ${dipY}, ${x2} ${y2}`
   return {
     path,
-    midX: (x1 + x2) / 2,
-    midY: (y1 + y2) / 2
+    midX: 0.125 * x1 + 0.375 * c1x + 0.375 * c2x + 0.125 * x2,
+    midY: 0.125 * y1 + 0.75 * dipY + 0.125 * y2
   }
 }
 
@@ -55,8 +78,16 @@ export function computeAutoLayout(agents: CustomAgent[]): Record<string, NodePos
   const byId = new Map(agents.map((agent) => [agent.id, agent]))
   const orderIndex = new Map(agents.map((agent, index) => [agent.id, index]))
   const ranks = new Map<string, number>()
+  const verifierIncomingCount = new Map<string, number>()
+
   for (const agent of agents) {
     ranks.set(agent.id, 0)
+    if (agent.verifier_agent_id && byId.has(agent.verifier_agent_id)) {
+      verifierIncomingCount.set(
+        agent.verifier_agent_id,
+        (verifierIncomingCount.get(agent.verifier_agent_id) || 0) + 1
+      )
+    }
   }
 
   const maxPasses = Math.max(1, agents.length)
@@ -109,13 +140,48 @@ export function computeAutoLayout(agents: CustomAgent[]): Record<string, NodePos
       return (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0)
     })
     bucket.forEach((agent, row) => {
+      const multiVerifierOffset =
+        bucket.length === 1 &&
+        agent.role === 'verifier' &&
+        (verifierIncomingCount.get(agent.id) || 0) >= 2
+          ? 72
+          : 0
       result[agent.id] = {
         x: ORIGIN_X + rank * COLUMN_GAP,
-        y: ORIGIN_Y + row * ROW_GAP
+        y: ORIGIN_Y + row * ROW_GAP + multiVerifierOffset
       }
     })
   }
   return result
+}
+
+export function computeFitViewport(
+  positions: Record<string, NodePosition>,
+  stageWidth: number,
+  stageHeight: number
+): ViewportState {
+  const coords = Object.values(positions)
+  if (coords.length === 0 || stageWidth <= 0 || stageHeight <= 0) {
+    return { x: 24, y: 20, zoom: 1 }
+  }
+  const minX = Math.min(...coords.map((p) => p.x))
+  const minY = Math.min(...coords.map((p) => p.y))
+  const maxX = Math.max(...coords.map((p) => p.x + WORKFLOW_NODE_WIDTH))
+  const maxY = Math.max(...coords.map((p) => p.y + WORKFLOW_NODE_HEIGHT))
+  const contentW = Math.max(WORKFLOW_NODE_WIDTH, maxX - minX)
+  const contentH = Math.max(WORKFLOW_NODE_HEIGHT, maxY - minY)
+  const padX = Math.min(48, Math.max(20, stageWidth * 0.06))
+  const padY = Math.min(64, Math.max(24, stageHeight * 0.1))
+  const usableW = Math.max(120, stageWidth - padX * 2)
+  const usableH = Math.max(120, stageHeight - padY * 2)
+  const zoom = Number(
+    Math.min(1, Math.max(0.45, Math.min(usableW / contentW, usableH / contentH))).toFixed(2)
+  )
+  const x = Math.round((stageWidth - contentW * zoom) / 2 - minX * zoom)
+  const y = Math.round(
+    Math.max(padY, (stageHeight - contentH * zoom) / 2) - minY * zoom
+  )
+  return { x, y, zoom }
 }
 
 function collidesWithPlaced(

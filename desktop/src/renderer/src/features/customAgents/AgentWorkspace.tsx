@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Activity,
   CheckCircle2,
-  GitBranch,
-  History,
   Layers,
   MessageSquarePlus,
   Play,
   Radar,
   Send,
+  Settings2,
   Square,
   TriangleAlert,
   X
@@ -46,10 +44,12 @@ export function AgentWorkspace({
   allRuns,
   blackboard,
   selectedChainId,
-  requestedTab,
+  tab,
   requestedRunsSubTab,
+  onTabChange,
   onSelectChainId,
   onSelectAgent,
+  onConfigureAgent,
   onRun,
   onCancelRun,
   onProbe,
@@ -65,10 +65,12 @@ export function AgentWorkspace({
   allRuns: CustomAgentRun[]
   blackboard: BlackboardEntry[]
   selectedChainId: string
-  requestedTab?: WorkspaceTab
+  tab: WorkspaceTab
   requestedRunsSubTab?: RunsSubTab
+  onTabChange: (tab: WorkspaceTab) => void
   onSelectChainId: (chainId: string) => void
   onSelectAgent: (agentId: string) => void
+  onConfigureAgent: (agentId: string) => void
   onRun: (params: {
     agentId: string
     prompt: string
@@ -91,7 +93,6 @@ export function AgentWorkspace({
   onOpenSwarm: () => void
 }) {
   const { t, locale } = useI18n()
-  const [tab, setTab] = useState<WorkspaceTab>('chain')
   const [runsSubTab, setRunsSubTab] = useState<RunsSubTab>('history')
   const [prompt, setPrompt] = useState('')
   const [forceRun, setForceRun] = useState(false)
@@ -114,10 +115,6 @@ export function AgentWorkspace({
   useEffect(() => {
     if (selectedChainId) setBoardChain(selectedChainId)
   }, [selectedChainId])
-
-  useEffect(() => {
-    if (requestedTab) setTab(requestedTab)
-  }, [requestedTab])
 
   useEffect(() => {
     if (requestedRunsSubTab) setRunsSubTab(requestedRunsSubTab)
@@ -213,6 +210,33 @@ export function AgentWorkspace({
 
   const hasMonitor = Boolean(agent.monitor_kind && agent.monitor_target)
 
+  if (tab === 'chain') {
+    return (
+      <section className="ca-workspace is-canvas" aria-label={t('Конструктор цепей')}>
+        {actionError && (
+          <div className="ca-error-banner ca-canvas-error" role="alert">
+            <TriangleAlert size={15} aria-hidden="true" />
+            <span>{actionError}</span>
+          </div>
+        )}
+        <WorkflowCanvas
+          agents={agents}
+          models={models}
+          selectedAgentId={agent.id}
+          onSelectAgent={onSelectAgent}
+          onConfigureAgent={onConfigureAgent}
+          onRunAgent={(targetId) => {
+            void handleDispatch(targetId, '')
+            onTabChange('tasks')
+          }}
+          onUpdateAgent={onUpdateAgent}
+          onOpenCreate={onOpenCreate}
+          onOpenSwarm={onOpenSwarm}
+        />
+      </section>
+    )
+  }
+
   return (
     <section className="ca-workspace" aria-label={t('Рабочая зона агента')}>
       <header className="ca-workspace-head">
@@ -229,6 +253,10 @@ export function AgentWorkspace({
         </div>
 
         <div className="ca-workspace-actions">
+          <button type="button" onClick={() => onConfigureAgent(agent.id)}>
+            <Settings2 size={14} aria-hidden="true" />
+            <span>{t('Настроить')}</span>
+          </button>
           {hasMonitor && (
             <button type="button" onClick={() => void handleProbe()} disabled={probing}>
               <Radar size={15} aria-hidden="true" />
@@ -257,40 +285,6 @@ export function AgentWorkspace({
           )}
         </div>
       </header>
-
-      <div className="ca-subtabs" role="tablist" aria-label={t('Разделы агента')}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'chain'}
-          className={tab === 'chain' ? 'active' : ''}
-          onClick={() => setTab('chain')}
-        >
-          <GitBranch size={14} aria-hidden="true" />
-          <span>{t('Конструктор цепей')}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'tasks'}
-          className={tab === 'tasks' ? 'active' : ''}
-          onClick={() => setTab('tasks')}
-        >
-          <Activity size={14} aria-hidden="true" />
-          <span>{t('Задачи и чат')}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'runs'}
-          className={tab === 'runs' ? 'active' : ''}
-          onClick={() => setTab('runs')}
-        >
-          <History size={14} aria-hidden="true" />
-          <span>{t('Запуски и доска')}</span>
-          <span className="ca-tab-count">{runs.length}</span>
-        </button>
-      </div>
 
       {actionError && (
         <div className="ca-error-banner" role="alert">
@@ -331,270 +325,256 @@ export function AgentWorkspace({
         </div>
       )}
 
-      <div className={`ca-workspace-body ${tab === 'chain' ? 'is-canvas' : ''}`}>
-        {tab === 'chain' && (
-          <WorkflowCanvas
-            agents={agents}
-            models={models}
-            selectedAgentId={agent.id}
-            onSelectAgent={onSelectAgent}
-            onRunAgent={(targetId) => {
-              void handleDispatch(targetId, '')
-              setTab('tasks')
-            }}
-            onUpdateAgent={onUpdateAgent}
-            onOpenCreate={onOpenCreate}
-            onOpenSwarm={onOpenSwarm}
-          />
-        )}
-
-        {tab === 'tasks' && (
-          <div className="ca-tasks-pane">
-            <form
-              className="ca-prompt-box"
-              onSubmit={(event) => {
-                event.preventDefault()
-                void handleDispatch(agent.id, prompt)
-              }}
-            >
-              <textarea
-                rows={3}
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                placeholder={
-                  agent.role === 'orchestrator'
-                    ? t('Поставьте задачу координатору или попросите создать нового агента…')
-                    : t('Введите задачу для агента или оставьте пустым для запуска по инструкции…')
-                }
-                aria-label={t('Задание агенту')}
-              />
-              <div className="ca-prompt-bar">
-                {hasMonitor ? (
-                  <label className="ca-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={forceRun}
-                      onChange={(event) => setForceRun(event.target.checked)}
-                    />
-                    <span>{t('Игнорировать кэш зонда')}</span>
-                  </label>
-                ) : (
-                  <span className="ca-muted-note">{triggerLabel(agent)}</span>
-                )}
-                <button type="submit" className="primary" disabled={dispatching}>
-                  <Send size={14} aria-hidden="true" />
-                  <span>{dispatching ? t('Отправка…') : t('Отправить')}</span>
-                </button>
-              </div>
-            </form>
-
-            {agent.role === 'orchestrator' && (
-              <div className="ca-quick-chips" role="group" aria-label={t('Быстрые шаблоны')}>
-                {ORCHESTRATOR_QUICK_PROMPTS.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    className="ca-chip-btn"
-                    onClick={() => setPrompt(chip)}
-                  >
-                    {t(chip)}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {latestRun ? (
-              <RunTraceCard
-                run={latestRun}
-                locale={locale}
-                t={t}
-                onCancel={() => void onCancelRun(agent.id, latestRun.id)}
-              />
-            ) : (
-              <div className="ca-empty-card">
-                <p>{t('Запусков пока не было. Отправьте задачу выше или нажмите «Запустить».')}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === 'runs' && (
-          <div className="ca-history-pane">
-            <div className="ca-runs-topbar">
-              <div className="ca-segmented ca-runs-switch" role="tablist" aria-label={t('Режим просмотров')}>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={runsSubTab === 'history'}
-                  className={runsSubTab === 'history' ? 'active' : ''}
-                  onClick={() => setRunsSubTab('history')}
-                >
-                  {t('История запусков')}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={runsSubTab === 'board'}
-                  className={runsSubTab === 'board' ? 'active' : ''}
-                  onClick={() => setRunsSubTab('board')}
-                >
-                  {t('Общая доска (Blackboard)')}
-                </button>
-              </div>
-
-              <button type="button" className="ca-mini-btn" onClick={onOpenSwarm}>
-                <Layers size={13} aria-hidden="true" />
-                <span>{t('Запустить рой (Swarm)')}</span>
-              </button>
-            </div>
-
-            {runsSubTab === 'history' ? (
-              <>
-                <div className="ca-history-toolbar">
-                  <div className="ca-segmented" role="group" aria-label={t('Фильтр истории')}>
-                    <button
-                      type="button"
-                      className={historyScope === 'agent' ? 'active' : ''}
-                      aria-pressed={historyScope === 'agent'}
-                      onClick={() => setHistoryScope('agent')}
-                    >
-                      {t('Этот агент')}
-                    </button>
-                    <button
-                      type="button"
-                      className={historyScope === 'all' ? 'active' : ''}
-                      aria-pressed={historyScope === 'all'}
-                      onClick={() => setHistoryScope('all')}
-                    >
-                      {t('Все агенты')}
-                    </button>
-                  </div>
-                  <span className="ca-muted-note">
-                    {t('Показано: {count}', { count: visibleHistory.length })}
-                  </span>
-                </div>
-
-                {visibleHistory.length === 0 ? (
-                  <div className="ca-empty-card">
-                    <p>{t('История запусков пуста')}</p>
-                  </div>
-                ) : (
-                  <div className="ca-runs-list">
-                    {visibleHistory.map((run) => (
-                      <RunTraceCard
-                        key={run.id}
-                        run={run}
-                        showAgentName={historyScope === 'all'}
-                        locale={locale}
-                        t={t}
-                        onCancel={() => void onCancelRun(run.agent_id, run.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="ca-board-section">
-                <div className="ca-board-head">
-                  <h3>{t('Общая доска (Blackboard)')}</h3>
-                  <div className="ca-board-filter">
-                    <Select
-                      value={selectedChainId}
-                      onChange={onSelectChainId}
-                      label={t('Фильтр цепочки')}
-                      options={[
-                        { value: '', label: t('Все цепочки') },
-                        ...chainIds.map((id) => ({ value: id, label: id }))
-                      ]}
-                    />
-                  </div>
-                </div>
-
-                <form className="ca-board-form" onSubmit={handlePostBoard}>
-                  <div className="ca-board-form-row">
-                    <label className="ca-field">
-                      <span>{t('ID цепочки')}</span>
+      <div className="ca-workspace-body">
+        <div className="ca-workspace-col">
+          {tab === 'tasks' && (
+            <div className="ca-tasks-pane">
+              <form
+                className="ca-prompt-box"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  void handleDispatch(agent.id, prompt)
+                }}
+              >
+                <textarea
+                  rows={3}
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  placeholder={
+                    agent.role === 'orchestrator'
+                      ? t('Поставьте задачу координатору или попросите создать нового агента…')
+                      : t('Введите задачу для агента или оставьте пустым для запуска по инструкции…')
+                  }
+                  aria-label={t('Задание агенту')}
+                />
+                <div className="ca-prompt-bar">
+                  {hasMonitor ? (
+                    <label className="ca-checkbox">
                       <input
-                        type="text"
-                        value={boardChain}
-                        onChange={(event) => setBoardChain(event.target.value)}
-                        placeholder={t('ID цепочки (авто)')}
+                        type="checkbox"
+                        checked={forceRun}
+                        onChange={(event) => setForceRun(event.target.checked)}
                       />
+                      <span>{t('Игнорировать кэш зонда')}</span>
                     </label>
-                    <label className="ca-field">
-                      <span>{t('Получатель')}</span>
+                  ) : (
+                    <span className="ca-muted-note">{triggerLabel(agent)}</span>
+                  )}
+                  <button type="submit" className="primary" disabled={dispatching}>
+                    <Send size={14} aria-hidden="true" />
+                    <span>{dispatching ? t('Отправка…') : t('Отправить')}</span>
+                  </button>
+                </div>
+              </form>
+
+              {agent.role === 'orchestrator' && (
+                <div className="ca-quick-chips" role="group" aria-label={t('Быстрые шаблоны')}>
+                  {ORCHESTRATOR_QUICK_PROMPTS.map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      className="ca-chip-btn"
+                      onClick={() => setPrompt(chip)}
+                    >
+                      {t(chip)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {latestRun ? (
+                <RunTraceCard
+                  run={latestRun}
+                  locale={locale}
+                  t={t}
+                  onCancel={() => void onCancelRun(agent.id, latestRun.id)}
+                />
+              ) : (
+                <div className="ca-empty-card">
+                  <p>{t('Запусков пока не было. Отправьте задачу выше или нажмите «Запустить».')}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'runs' && (
+            <div className="ca-history-pane">
+              <div className="ca-runs-topbar">
+                <div className="ca-segmented ca-runs-switch" role="tablist" aria-label={t('Режим просмотров')}>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={runsSubTab === 'history'}
+                    className={runsSubTab === 'history' ? 'active' : ''}
+                    onClick={() => setRunsSubTab('history')}
+                  >
+                    {t('История запусков')}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={runsSubTab === 'board'}
+                    className={runsSubTab === 'board' ? 'active' : ''}
+                    onClick={() => setRunsSubTab('board')}
+                  >
+                    {t('Общая доска (Blackboard)')}
+                  </button>
+                </div>
+
+                <button type="button" className="ca-mini-btn" onClick={onOpenSwarm}>
+                  <Layers size={13} aria-hidden="true" />
+                  <span>{t('Запустить рой (Swarm)')}</span>
+                </button>
+              </div>
+
+              {runsSubTab === 'history' ? (
+                <>
+                  <div className="ca-history-toolbar">
+                    <div className="ca-segmented" role="group" aria-label={t('Фильтр истории')}>
+                      <button
+                        type="button"
+                        className={historyScope === 'agent' ? 'active' : ''}
+                        aria-pressed={historyScope === 'agent'}
+                        onClick={() => setHistoryScope('agent')}
+                      >
+                        {t('Этот агент')}
+                      </button>
+                      <button
+                        type="button"
+                        className={historyScope === 'all' ? 'active' : ''}
+                        aria-pressed={historyScope === 'all'}
+                        onClick={() => setHistoryScope('all')}
+                      >
+                        {t('Все агенты')}
+                      </button>
+                    </div>
+                    <span className="ca-muted-note">
+                      {t('Показано: {count}', { count: visibleHistory.length })}
+                    </span>
+                  </div>
+
+                  {visibleHistory.length === 0 ? (
+                    <div className="ca-empty-card">
+                      <p>{t('История запусков пуста')}</p>
+                    </div>
+                  ) : (
+                    <div className="ca-runs-list">
+                      {visibleHistory.map((run) => (
+                        <RunTraceCard
+                          key={run.id}
+                          run={run}
+                          showAgentName={historyScope === 'all'}
+                          locale={locale}
+                          t={t}
+                          onCancel={() => void onCancelRun(run.agent_id, run.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="ca-board-section">
+                  <div className="ca-board-head">
+                    <h3>{t('Общая доска (Blackboard)')}</h3>
+                    <div className="ca-board-filter">
                       <Select
-                        value={boardTo}
-                        onChange={setBoardTo}
-                        label={t('Получатель')}
+                        value={selectedChainId}
+                        onChange={onSelectChainId}
+                        label={t('Фильтр цепочки')}
                         options={[
-                          { value: '', label: t('Всем в цепочке') },
-                          ...agents.map((item) => ({ value: item.id, label: item.name }))
+                          { value: '', label: t('Все цепочки') },
+                          ...chainIds.map((id) => ({ value: id, label: id }))
                         ]}
                       />
-                    </label>
+                    </div>
+                  </div>
+
+                  <form className="ca-board-form" onSubmit={handlePostBoard}>
+                    <div className="ca-board-form-row">
+                      <label className="ca-field">
+                        <span>{t('ID цепочки')}</span>
+                        <input
+                          type="text"
+                          value={boardChain}
+                          onChange={(event) => setBoardChain(event.target.value)}
+                          placeholder={t('ID цепочки (авто)')}
+                        />
+                      </label>
+                      <label className="ca-field">
+                        <span>{t('Получатель')}</span>
+                        <Select
+                          value={boardTo}
+                          onChange={setBoardTo}
+                          label={t('Получатель')}
+                          options={[
+                            { value: '', label: t('Всем в цепочке') },
+                            ...agents.map((item) => ({ value: item.id, label: item.name }))
+                          ]}
+                        />
+                      </label>
+                      <label className="ca-field">
+                        <span>{t('Тема')}</span>
+                        <input
+                          type="text"
+                          value={boardTopic}
+                          onChange={(event) => setBoardTopic(event.target.value)}
+                          placeholder={t('Тема')}
+                        />
+                      </label>
+                    </div>
                     <label className="ca-field">
-                      <span>{t('Тема')}</span>
-                      <input
-                        type="text"
-                        value={boardTopic}
-                        onChange={(event) => setBoardTopic(event.target.value)}
-                        placeholder={t('Тема')}
+                      <span>{t('Сообщение')}</span>
+                      <textarea
+                        rows={2}
+                        value={boardPayload}
+                        onChange={(event) => setBoardPayload(event.target.value)}
+                        placeholder={t('Сообщение на доску контекста…')}
                       />
                     </label>
-                  </div>
-                  <label className="ca-field">
-                    <span>{t('Сообщение')}</span>
-                    <textarea
-                      rows={2}
-                      value={boardPayload}
-                      onChange={(event) => setBoardPayload(event.target.value)}
-                      placeholder={t('Сообщение на доску контекста…')}
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    className="primary"
-                    disabled={postingBoard || !boardPayload.trim()}
-                  >
-                    <MessageSquarePlus size={14} aria-hidden="true" />
-                    <span>{t('Опубликовать')}</span>
-                  </button>
-                </form>
+                    <button
+                      type="submit"
+                      className="primary"
+                      disabled={postingBoard || !boardPayload.trim()}
+                    >
+                      <MessageSquarePlus size={14} aria-hidden="true" />
+                      <span>{t('Опубликовать')}</span>
+                    </button>
+                  </form>
 
-                <div className="ca-board-list">
-                  {visibleBoard.length === 0 ? (
-                    <div className="ca-empty-compact">{t('На доске пока нет записей')}</div>
-                  ) : (
-                    visibleBoard.map((entry) => {
-                      const targetAgent = agents.find((a) => a.id === entry.to_agent_id)
-                      return (
-                        <article key={entry.id} className="ca-board-card">
-                          <div className="ca-board-card-head">
-                            <strong>
-                              {entry.from_agent_name || entry.from_agent_id || t('Система')}
-                              {' → '}
-                              {targetAgent?.name || entry.to_agent_id || t('Все')}
-                            </strong>
-                            <span className="ca-chip">{entry.topic || 'note'}</span>
-                            <span className="ca-chip ca-chip-muted">{entry.status}</span>
-                            <span className="ca-time">
-                              {formatTimestamp(entry.created_at, locale)}
-                            </span>
-                          </div>
-                          <p className="ca-board-payload">{entry.payload}</p>
-                          <div className="ca-board-card-foot">
-                            <code>{entry.chain_id}</code>
-                          </div>
-                        </article>
-                      )
-                    })
-                  )}
+                  <div className="ca-board-list">
+                    {visibleBoard.length === 0 ? (
+                      <div className="ca-empty-compact">{t('На доске пока нет записей')}</div>
+                    ) : (
+                      visibleBoard.map((entry) => {
+                        const targetAgent = agents.find((a) => a.id === entry.to_agent_id)
+                        return (
+                          <article key={entry.id} className="ca-board-card">
+                            <div className="ca-board-card-head">
+                              <strong>
+                                {entry.from_agent_name || entry.from_agent_id || t('Система')}
+                                {' → '}
+                                {targetAgent?.name || entry.to_agent_id || t('Все')}
+                              </strong>
+                              <span className="ca-chip">{entry.topic || 'note'}</span>
+                              <span className="ca-chip ca-chip-muted">{entry.status}</span>
+                              <span className="ca-time">
+                                {formatTimestamp(entry.created_at, locale)}
+                              </span>
+                            </div>
+                            <p className="ca-board-payload">{entry.payload}</p>
+                            <div className="ca-board-card-foot">
+                              <code>{entry.chain_id}</code>
+                            </div>
+                          </article>
+                        )
+                      })
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </section>
   )
