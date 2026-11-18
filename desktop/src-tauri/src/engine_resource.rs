@@ -26,7 +26,14 @@ fn verify(path: &Path) -> HostResult<()> {
     let os = if cfg!(target_os = "macos") { "darwin" } else { std::env::consts::OS };
     let arch = match std::env::consts::ARCH { "x86_64" => "amd64", "aarch64" => "arm64", other => other };
     if manifest["abi"] != 1 || manifest["version"] != env!("CARGO_PKG_VERSION") || manifest["os"] != os || manifest["arch"] != arch || manifest["library"].as_str() != path.file_name().and_then(|name|name.to_str()) {
-        return Err(HostError::new("ENGINE_MANIFEST", "Bundled native engine does not match this application"));
+        return Err(HostError::new(
+            "ENGINE_MANIFEST",
+            format!(
+                "Bundled native engine does not match this application (app {}, engine {})",
+                env!("CARGO_PKG_VERSION"),
+                manifest["version"].as_str().unwrap_or("unknown")
+            ),
+        ));
     }
     let mut file = std::fs::File::open(path)?;
     let mut hash = Sha256::new();

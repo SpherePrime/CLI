@@ -11,8 +11,6 @@ use tauri::{AppHandle, Emitter, Manager};
 
 #[cfg(not(target_os = "linux"))]
 const EXECUTABLE: &str = "PrimeDesktop.exe";
-#[cfg(not(target_os = "linux"))]
-const ENGINE: &str = "engine/prime_desktop_engine.dll";
 
 #[cfg(not(target_os = "linux"))]
 pub fn default_directory() -> String {
@@ -81,12 +79,7 @@ fn wait_for_app_exit(timeout: std::time::Duration) -> bool {
 
 fn verify_installed_files(directory: &str) -> Result<(), String> {
     #[cfg(not(target_os = "linux"))]
-    {
-        let root = Path::new(directory);
-        if !root.join(EXECUTABLE).is_file() || !root.join(ENGINE).is_file() {
-            return Err("Файлы приложения не найдены".into());
-        }
-    }
+    crate::verify::verify_installed(directory, env!("CARGO_PKG_VERSION"))?;
     #[cfg(target_os = "linux")]
     crate::linux::verify(directory)?;
     Ok(())
@@ -104,6 +97,7 @@ pub fn run_silent_update(relaunch: bool) -> Result<(), String> {
     }
     #[cfg(not(target_os = "linux"))]
     remove_legacy_installs()?;
+    crate::verify::wait_for_writable(&directory, std::time::Duration::from_secs(10))?;
     #[cfg(not(target_os = "linux"))]
     run_payload(&directory)?;
     #[cfg(target_os = "linux")]
@@ -128,6 +122,7 @@ fn install(app: &AppHandle, directory: &str) -> Result<Option<String>, String> {
     publish(app, InstallStatus::phase("installing", directory));
     #[cfg(not(target_os = "linux"))]
     remove_legacy_installs()?;
+    crate::verify::wait_for_writable(directory, std::time::Duration::from_secs(10))?;
     #[cfg(not(target_os = "linux"))]
     run_payload(directory)?;
     #[cfg(target_os = "linux")]

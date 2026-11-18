@@ -16,6 +16,7 @@ mod processes {
 #[cfg(not(target_os = "linux"))]
 mod registry;
 mod status;
+mod verify;
 mod voice;
 
 use status::{InstallStatus, SetupInfo};
