@@ -3,6 +3,7 @@ import type {
   OrchestratorPhase,
   OrchestratorRoleConfig
 } from '../../../../shared/contracts'
+import { reasoningLabel } from './reasoning'
 import { findCapability, type ModelCapability } from './useModelCapabilities'
 
 export type OrchestratorRole = 'planner' | 'executor'
@@ -87,6 +88,13 @@ export function compactModelLabel(name: string): string {
   const trimmed = name.trim()
   if (!trimmed) return ''
   return trimmed.replace(/^Claude\s+/i, '').replace(/^Gemini\s+/i, '')
+}
+
+export function compactReasoningLabel(mode: string, t: (key: string) => string): string {
+  if (mode === 'off') return t('Выкл')
+  if (mode === 'xhigh') return t('Оч. выс.')
+  if (mode === 'max') return t('Макс.')
+  return reasoningLabel(mode, t)
 }
 
 export function orchestratorPhaseLabel(

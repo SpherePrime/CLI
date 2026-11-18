@@ -1,7 +1,7 @@
-import { Compass, Cpu } from 'lucide-react'
+import { ChevronRight, Compass, Cpu } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { reasoningLabel } from './reasoning'
-import type { OrchestratorRole } from './orchestrator'
+import { compactReasoningLabel, type OrchestratorRole } from './orchestrator'
 
 export interface RoleSummary {
   name: string
@@ -46,87 +46,89 @@ export function OrchestratorSettings({
 
   return (
     <div className="orchestrator-settings">
-      <div className={`orchestrator-toggle-card${enabled ? ' is-active' : ''}`}>
-        <div className="orchestrator-toggle-copy">
+      <button
+        type="button"
+        className={`orchestrator-toggle-row${enabled ? ' is-active' : ''}`}
+        role="switch"
+        aria-checked={enabled}
+        disabled={disabled}
+        onClick={() => onToggleEnabled(!enabled)}
+      >
+        <span className="orchestrator-toggle-copy">
           <strong>{t('Режим Оркестратора')}</strong>
-          <p>{t('Планировщик исследует и проверяет без правок, исполнитель пишет код')}</p>
-        </div>
-        <button
-          type="button"
-          className={`orchestrator-switch${enabled ? ' checked' : ''}`}
-          role="switch"
-          aria-checked={enabled}
-          aria-label={t('Режим Оркестратора')}
-          disabled={disabled}
-          onClick={() => onToggleEnabled(!enabled)}
-        >
+          <span>{t('Планировщик проверяет, исполнитель пишет код')}</span>
+        </span>
+        <span className={`orchestrator-switch${enabled ? ' checked' : ''}`} aria-hidden="true">
           <span className="orchestrator-switch-thumb" />
-        </button>
-      </div>
+        </span>
+      </button>
 
-      <div className="orchestrator-roles">
-        {roles.map(({ id, title, icon: Icon, summary }) => (
-          <div className="orchestrator-role-card" key={id}>
-            <div className="orchestrator-role-head">
-              <div className="orchestrator-role-title">
-                <Icon size={14} aria-hidden="true" />
-                <span>{title}</span>
-              </div>
-              <button
-                type="button"
-                className="orchestrator-pick-btn"
-                disabled={disabled}
-                onClick={() => onPickModel(id)}
-              >
-                {t('Выбрать модель')}
-              </button>
-            </div>
-            <div className="orchestrator-role-model">
-              <strong>{summary.name || t('Модель не выбрана')}</strong>
-              {summary.provider && <small>{summary.provider}</small>}
-            </div>
-            {summary.reasoningOptions.length > 0 && (
-              <div
-                className="orchestrator-reasoning-pills"
-                role="group"
-                aria-label={`${title}: ${t('Уровень размышлений')}`}
-              >
-                {summary.reasoningOptions.map((level) => {
-                  const active = summary.reasoning === level
-                  return (
-                    <button
-                      key={level}
-                      type="button"
-                      className={`orchestrator-pill${active ? ' active' : ''}`}
-                      aria-pressed={active}
-                      disabled={disabled || !summary.hasModel}
-                      onClick={() => onChangeReasoning(id, level)}
-                    >
-                      {reasoningLabel(level, t)}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {roles.map(({ id, title, icon: Icon, summary }) => (
+        <div className="orchestrator-role-section" key={id}>
+          <button
+            type="button"
+            className="orchestrator-role-trigger"
+            disabled={disabled}
+            onClick={() => onPickModel(id)}
+          >
+            <span className="orchestrator-role-kicker">
+              <Icon size={13} aria-hidden="true" />
+              <span>{title}</span>
+            </span>
+            <span className="orchestrator-role-main">
+              <span className="orchestrator-role-model">
+                <strong>{summary.name || t('Модель не выбрана')}</strong>
+                {summary.provider && <small>{summary.provider}</small>}
+              </span>
+              <ChevronRight size={14} className="orchestrator-role-chevron" aria-hidden="true" />
+            </span>
+          </button>
 
-      <div className="orchestrator-review-row">
-        <div className="orchestrator-review-copy">
-          <strong id="orchestrator-final-review-label">{t('Финальная проверка плана')}</strong>
-          <small>{t('Планировщик проверяет изменения перед завершением')}</small>
+          {summary.reasoningOptions.length > 0 && (
+            <div
+              className="segmented orchestrator-reasoning-segmented"
+              role="group"
+              aria-label={`${title}: ${t('Уровень размышлений')}`}
+            >
+              {summary.reasoningOptions.map((level) => {
+                const active = summary.reasoning === level
+                const fullLabel = reasoningLabel(level, t)
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    className={active ? 'active' : ''}
+                    aria-label={fullLabel}
+                    aria-pressed={active}
+                    title={fullLabel}
+                    disabled={disabled || !summary.hasModel}
+                    onClick={() => onChangeReasoning(id, level)}
+                  >
+                    {compactReasoningLabel(level, t)}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
+      ))}
+
+      <div className="orchestrator-review-section">
         <button
           type="button"
-          className={`orchestrator-switch${finalReview ? ' checked' : ''}`}
+          className="orchestrator-review-row"
           role="switch"
           aria-checked={finalReview}
-          aria-labelledby="orchestrator-final-review-label"
           disabled={disabled}
           onClick={() => onToggleFinalReview(!finalReview)}
         >
-          <span className="orchestrator-switch-thumb" />
+          <span className="orchestrator-review-copy">
+            <strong>{t('Финальная проверка')}</strong>
+            <span>{t('перед ответом')}</span>
+          </span>
+          <span className={`orchestrator-switch${finalReview ? ' checked' : ''}`} aria-hidden="true">
+            <span className="orchestrator-switch-thumb" />
+          </span>
         </button>
       </div>
     </div>

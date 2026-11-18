@@ -74,7 +74,7 @@ export function ModelPicker({
   return (
     <Popover anchor={anchor} close={close} width={420} align="end" label={t('Выбрать модель')}>
       {kind === 'orchestrator' && pickingRole ? (
-        <div className="orchestrator-back-bar">
+        <div className="model-picker-heading orchestrator-picking-heading">
           <button
             type="button"
             className="orchestrator-back-btn"
@@ -86,7 +86,7 @@ export function ModelPicker({
           >
             <ArrowLeft size={14} aria-hidden="true" />
             <span>
-              {t('Назад к настройкам оркестратора')} ·{' '}
+              {t('Назад')} ·{' '}
               {pickingRole === 'planner' ? t('Выбор планировщика') : t('Выбор исполнителя')}
             </span>
           </button>

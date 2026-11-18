@@ -1896,7 +1896,14 @@ Object.assign(english, {
   'Планировщик проверяет изменения перед завершением':
     'Planner reviews changes before finishing',
   'Двухэтапное выполнение': 'Two-stage execution',
-  'Настроить оркестратор': 'Configure orchestrator'
+  'Настроить оркестратор': 'Configure orchestrator',
+  'Планировщик проверяет, исполнитель пишет код': 'Planner verifies, executor writes code',
+  'перед ответом': 'before reply',
+  'План → Код': 'Plan → Code',
+  Настроить: 'Configure',
+  Выкл: 'Off',
+  'Оч. выс.': 'X-High',
+  'Макс.': 'Max'
 })
 
 
