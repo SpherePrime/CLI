@@ -40,6 +40,9 @@ const (
 	CheckRegex      = "regex"
 	CheckJSONFields = "json_fields"
 	CheckFileExists = "file_exists"
+
+	EventWorkflowUpdated = "workflow_updated"
+	EventWorkflowDeleted = "workflow_deleted"
 )
 
 type DeterministicCheck struct {
@@ -66,6 +69,7 @@ type CustomAgent struct {
 	AutoModelHint       string               `json:"auto_model_hint"`
 	AllowedTools        []string             `json:"allowed_tools"`
 	WorkspacePath       string               `json:"workspace_path"`
+	WorkflowID          string               `json:"workflow_id"`
 	Enabled             bool                 `json:"enabled"`
 	CreatedBy           string               `json:"created_by"`
 	TriggerType         string               `json:"trigger_type"`
@@ -170,12 +174,14 @@ type ProbeResult struct {
 }
 
 type Event struct {
-	Type      string `json:"type"`
-	AgentID   string `json:"agent_id"`
-	RunID     string `json:"run_id"`
-	ChainID   string `json:"chain_id"`
-	Payload   any    `json:"payload"`
-	Timestamp int64  `json:"timestamp"`
+	Type       string          `json:"type"`
+	AgentID    string          `json:"agent_id"`
+	RunID      string          `json:"run_id"`
+	ChainID    string          `json:"chain_id"`
+	WorkflowID string          `json:"workflow_id,omitempty"`
+	Workflow   *CustomWorkflow `json:"workflow,omitempty"`
+	Payload    any             `json:"payload"`
+	Timestamp  int64           `json:"timestamp"`
 }
 
 type ExecuteRequest struct {
@@ -296,4 +302,96 @@ type SwarmResult struct {
 	SynthesizerRun      *CustomAgentRun     `json:"synthesizer_run,omitempty"`
 	Blackboard          []BlackboardEntry   `json:"blackboard,omitempty"`
 	Error               string              `json:"error,omitempty"`
+}
+
+type CustomWorkflow struct {
+	ID           string `json:"id"`
+	Slug         string `json:"slug"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	Enabled      bool   `json:"enabled"`
+	CreatedBy    string `json:"created_by"`
+	EntryAgentID string `json:"entry_agent_id"`
+	LayoutJSON   string `json:"layout_json"`
+	CreatedAt    int64  `json:"created_at"`
+	UpdatedAt    int64  `json:"updated_at"`
+}
+
+type CreateWorkflowInput struct {
+	Slug         string `json:"slug"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	Enabled      *bool  `json:"enabled"`
+	CreatedBy    string `json:"created_by"`
+	EntryAgentID string `json:"entry_agent_id"`
+	LayoutJSON   string `json:"layout_json"`
+}
+
+type UpdateWorkflowPatch struct {
+	Name         *string `json:"name"`
+	Description  *string `json:"description"`
+	Enabled      *bool   `json:"enabled"`
+	EntryAgentID *string `json:"entry_agent_id"`
+	LayoutJSON   *string `json:"layout_json"`
+}
+
+type CreateAgentInput struct {
+	ID                  string               `json:"id"`
+	Slug                string               `json:"slug"`
+	Name                string               `json:"name"`
+	Description         string               `json:"description"`
+	Role                string               `json:"role"`
+	SystemPrompt        string               `json:"system_prompt"`
+	Memory              string               `json:"memory"`
+	ModelMode           string               `json:"model_mode"`
+	ProviderID          string               `json:"provider_id"`
+	ModelID             string               `json:"model_id"`
+	ReasoningMode       string               `json:"reasoning_mode"`
+	AutoModelHint       string               `json:"auto_model_hint"`
+	AllowedTools        []string             `json:"allowed_tools"`
+	WorkspacePath       string               `json:"workspace_path"`
+	WorkflowID          string               `json:"workflow_id"`
+	Enabled             *bool                `json:"enabled"`
+	CreatedBy           string               `json:"created_by"`
+	TriggerType         string               `json:"trigger_type"`
+	IntervalMinutes     int                  `json:"interval_minutes"`
+	CronExpr            string               `json:"cron_expr"`
+	MonitorKind         string               `json:"monitor_kind"`
+	MonitorTarget       string               `json:"monitor_target"`
+	AcceptanceCriteria  string               `json:"acceptance_criteria"`
+	DeterministicChecks []DeterministicCheck `json:"deterministic_checks"`
+	VerifierAgentID     string               `json:"verifier_agent_id"`
+	NextAgentID         string               `json:"next_agent_id"`
+	MaxReworkAttempts   int                  `json:"max_rework_attempts"`
+	StrictVerify        bool                 `json:"strict_verify"`
+}
+
+type UpdateAgentPatch struct {
+	Slug                *string               `json:"slug"`
+	Name                *string               `json:"name"`
+	Description         *string               `json:"description"`
+	Role                *string               `json:"role"`
+	SystemPrompt        *string               `json:"system_prompt"`
+	Memory              *string               `json:"memory"`
+	ModelMode           *string               `json:"model_mode"`
+	ProviderID          *string               `json:"provider_id"`
+	ModelID             *string               `json:"model_id"`
+	ReasoningMode       *string               `json:"reasoning_mode"`
+	AutoModelHint       *string               `json:"auto_model_hint"`
+	AllowedTools        *[]string             `json:"allowed_tools"`
+	WorkspacePath       *string               `json:"workspace_path"`
+	WorkflowID          *string               `json:"workflow_id"`
+	Enabled             *bool                 `json:"enabled"`
+	TriggerType         *string               `json:"trigger_type"`
+	IntervalMinutes     *int                  `json:"interval_minutes"`
+	CronExpr            *string               `json:"cron_expr"`
+	MonitorKind         *string               `json:"monitor_kind"`
+	MonitorTarget       *string               `json:"monitor_target"`
+	AcceptanceCriteria  *string               `json:"acceptance_criteria"`
+	DeterministicChecks *[]DeterministicCheck `json:"deterministic_checks"`
+	VerifierAgentID     *string               `json:"verifier_agent_id"`
+	NextAgentID         *string               `json:"next_agent_id"`
+	MaxReworkAttempts   *int                  `json:"max_rework_attempts"`
+	StrictVerify        *bool                 `json:"strict_verify"`
+	Status              *string               `json:"status"`
 }

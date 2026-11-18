@@ -187,6 +187,55 @@ pub fn build_route_and_body(
                 .unwrap_or_else(|| json!({}));
             Ok(("POST", "/v1/custom-agents/swarm".to_string(), Some(input)))
         }
+        "listWorkflows" => Ok(("GET", "/v1/custom-agents/workflows".to_string(), None)),
+        "createWorkflow" => {
+            let input = request
+                .get("input")
+                .cloned()
+                .unwrap_or_else(|| json!({}));
+            Ok(("POST", "/v1/custom-agents/workflows".to_string(), Some(input)))
+        }
+        "updateWorkflow" => {
+            let workflow_id = validate_segment(
+                request.get("workflowId").and_then(Value::as_str),
+                "workflowId",
+            )?;
+            let patch = request
+                .get("patch")
+                .cloned()
+                .unwrap_or_else(|| json!({}));
+            Ok((
+                "PATCH",
+                format!("/v1/custom-agents/workflows/{workflow_id}"),
+                Some(patch),
+            ))
+        }
+        "deleteWorkflow" => {
+            let workflow_id = validate_segment(
+                request.get("workflowId").and_then(Value::as_str),
+                "workflowId",
+            )?;
+            let route = match request.get("deleteAgents").and_then(Value::as_bool) {
+                Some(flag) => format!("/v1/custom-agents/workflows/{workflow_id}?delete_agents={flag}"),
+                None => format!("/v1/custom-agents/workflows/{workflow_id}"),
+            };
+            Ok(("DELETE", route, None))
+        }
+        "runWorkflow" => {
+            let workflow_id = validate_segment(
+                request.get("workflowId").and_then(Value::as_str),
+                "workflowId",
+            )?;
+            let mut body = serde_json::Map::new();
+            if let Some(prompt) = request.get("prompt").and_then(Value::as_str) {
+                body.insert("prompt".to_string(), json!(prompt));
+            }
+            Ok((
+                "POST",
+                format!("/v1/custom-agents/workflows/{workflow_id}/run"),
+                Some(Value::Object(body)),
+            ))
+        }
         _ => Err(HostError::new(
             "INVALID_ARGUMENT",
             format!("Unknown customAgents action: {action}"),
@@ -286,5 +335,52 @@ mod tests {
             body.unwrap(),
             json!({"goal": "audit", "workers": [{"agent_id": "a1", "task": "check"}]})
         );
+
+        let (method, route, body) =
+            build_route_and_body(&json!({"action": "listWorkflows"})).unwrap();
+        assert_eq!(
+            (method, route.as_str(), body),
+            ("GET", "/v1/custom-agents/workflows", None)
+        );
+
+        let (method, route, body) = build_route_and_body(&json!({
+            "action": "createWorkflow",
+            "input": {"name": "Release Flow"}
+        }))
+        .unwrap();
+        assert_eq!(method, "POST");
+        assert_eq!(route, "/v1/custom-agents/workflows");
+        assert_eq!(body.unwrap(), json!({"name": "Release Flow"}));
+
+        let (method, route, body) = build_route_and_body(&json!({
+            "action": "updateWorkflow",
+            "workflowId": "wf-1",
+            "patch": {"name": "Updated Flow"}
+        }))
+        .unwrap();
+        assert_eq!(method, "PATCH");
+        assert_eq!(route, "/v1/custom-agents/workflows/wf-1");
+        assert_eq!(body.unwrap(), json!({"name": "Updated Flow"}));
+
+        let (method, route, body) = build_route_and_body(&json!({
+            "action": "deleteWorkflow",
+            "workflowId": "wf-1",
+            "deleteAgents": true
+        }))
+        .unwrap();
+        assert_eq!(
+            (method, route.as_str(), body),
+            ("DELETE", "/v1/custom-agents/workflows/wf-1?delete_agents=true", None)
+        );
+
+        let (method, route, body) = build_route_and_body(&json!({
+            "action": "runWorkflow",
+            "workflowId": "wf-1",
+            "prompt": "start"
+        }))
+        .unwrap();
+        assert_eq!(method, "POST");
+        assert_eq!(route, "/v1/custom-agents/workflows/wf-1/run");
+        assert_eq!(body.unwrap(), json!({"prompt": "start"}));
     }
 }

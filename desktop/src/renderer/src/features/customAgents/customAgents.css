@@ -23,14 +23,17 @@
 .ca-studio svg,
 .ca-create-modal svg,
 .ca-memory-modal svg,
-.ca-swarm-modal svg {
+.ca-swarm-modal svg,
+.ca-workflow-modal svg {
   flex-shrink: 0;
 }
 
 .ca-studio .icon.small,
 .ca-create-modal .icon.small,
 .ca-memory-modal .icon.small,
-.ca-swarm-modal .icon.small {
+.ca-swarm-modal .icon.small,
+.ca-workflow-modal .icon.small,
+.ca-swarm-worker-row button {
   width: 24px;
   height: 24px;
   min-width: 24px;
@@ -126,6 +129,65 @@
   background: var(--accent-bg);
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.ca-wf-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--ui-border, var(--border));
+  background: color-mix(in srgb, var(--surface) 62%, var(--bg));
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.ca-wf-bar-left,
+.ca-wf-bar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+.ca-wf-bar-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--secondary);
+}
+
+.ca-wf-switcher {
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.ca-wf-switcher .prime-select {
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.ca-wf-delete-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 14px;
+  background: color-mix(in srgb, var(--red) 10%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--red) 35%, var(--border));
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.ca-wf-delete-copy {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
 }
 
 .ca-mobile-tabs {
@@ -328,6 +390,45 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.ca-roster-scope button {
+  min-height: 26px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+}
+
+.ca-roster-group-label {
+  padding: 6px 4px 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+}
+
+.ca-agent-item-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ca-roster-attach-btn {
+  min-height: 24px;
+  padding: 2px 7px;
+  gap: 4px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ca-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
 }
 
@@ -1622,6 +1723,12 @@
   white-space: nowrap;
 }
 
+.ca-wf-pill-action.is-start {
+  background: color-mix(in srgb, var(--green) 16%, var(--surface));
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 45%, var(--border));
+}
+
 .ca-wf-tool-btn {
   min-height: 30px;
   padding: 5px 10px;
@@ -1803,6 +1910,10 @@
   opacity: 0.72;
 }
 
+.ca-wf-node.external {
+  border-style: dashed;
+}
+
 .ca-wf-node-accent {
   height: 4px;
   border-radius: 11px 11px 0 0;
@@ -1858,12 +1969,29 @@
   flex: 1;
 }
 
-.ca-wf-node-titles strong {
+.ca-wf-node-title-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.ca-wf-node-title-row strong {
   font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.ca-wf-start-badge {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+  font-size: 9.5px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .ca-wf-node-titles span {
@@ -2053,6 +2181,64 @@
   color: var(--accent);
 }
 
+.ca-wf-empty-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 64px 16px 24px;
+  overflow-y: auto;
+}
+
+.ca-wf-empty-hero {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid var(--ui-border, var(--border));
+  background: var(--surface);
+  box-shadow: var(--ui-shadow);
+  text-align: center;
+}
+
+.ca-wf-empty-hero h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ca-wf-starters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ca-wf-starter-btn {
+  justify-content: flex-start;
+  min-height: 38px;
+  padding: 8px 11px;
+  gap: 8px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.ca-wf-starter-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.ca-wf-attach-row {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ui-border, var(--border));
+  text-align: left;
+}
+
 @media (max-width: 1320px) {
   .ca-grid {
     grid-template-columns: 224px minmax(0, 1fr) 340px;
@@ -2080,6 +2266,13 @@
 }
 
 @media (max-width: 960px) {
+  .ca-studio {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
   .ca-mobile-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -2098,6 +2291,7 @@
   .ca-grid.roster-collapsed,
   .ca-grid.inspector-collapsed,
   .ca-grid.roster-collapsed.inspector-collapsed {
+    flex: 1 0 auto;
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2119,9 +2313,30 @@
   .ca-studio[data-mobile-pane='inspector'] .ca-grid .ca-pane-inspector {
     display: flex;
   }
+
+  .ca-wf-viewport {
+    min-height: 440px;
+  }
+
+  .ca-wf-stage {
+    min-height: 360px;
+  }
 }
 
 @media (max-width: 640px) {
+  .ca-wf-viewport {
+    min-height: 460px;
+  }
+
+  .ca-wf-stage {
+    min-height: 360px;
+  }
+
+  .ca-wf-empty-wrap {
+    height: auto;
+    min-height: 360px;
+    padding: 16px;
+  }
   .ca-wf-hud-top {
     position: static;
     padding: 10px 12px 8px;
@@ -2177,8 +2392,23 @@
   .ca-workspace-head,
   .ca-workspace-body,
   .ca-inspector-scroll,
-  .ca-studio-head {
+  .ca-studio-head,
+  .ca-wf-bar {
     padding-inline: 12px;
+  }
+
+  .ca-wf-switcher {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  .ca-wf-starters-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ca-wf-empty-wrap {
+    padding-top: 16px;
   }
 
   .ca-swarm-worker-row {

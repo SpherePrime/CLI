@@ -4,7 +4,8 @@ import type {
   CustomAgent,
   CustomAgentModelMode,
   CustomAgentRole,
-  CustomAgentTriggerType
+  CustomAgentTriggerType,
+  CustomWorkflow
 } from '../../../../shared/customAgents'
 import { Modal } from '../../components/Modal'
 import { Select } from '../../components/Select'
@@ -14,6 +15,8 @@ import type { PendingWorkflowLink } from './WorkflowCanvas'
 
 export function CreateAgentDialog({
   agents,
+  workflows,
+  activeWorkflowId,
   workspacePath,
   pendingLink,
   onCreate,
@@ -22,6 +25,8 @@ export function CreateAgentDialog({
   close
 }: {
   agents: CustomAgent[]
+  workflows: CustomWorkflow[]
+  activeWorkflowId: string
   workspacePath: string
   pendingLink?: PendingWorkflowLink | null
   onCreate: (input: Partial<CustomAgent>) => Promise<CustomAgent>
@@ -37,6 +42,7 @@ export function CreateAgentDialog({
   const [description, setDescription] = useState(AGENT_PRESETS[1].description)
   const [triggerType, setTriggerType] = useState<CustomAgentTriggerType>(AGENT_PRESETS[1].trigger_type)
   const [modelMode, setModelMode] = useState<CustomAgentModelMode>('auto')
+  const [workflowId, setWorkflowId] = useState(activeWorkflowId || 'default')
   const [systemPrompt, setSystemPrompt] = useState(AGENT_PRESETS[1].system_prompt)
   const [bindWorkspace, setBindWorkspace] = useState(Boolean(workspacePath))
   const [orchestratorPrompt, setOrchestratorPrompt] = useState('')
@@ -81,6 +87,7 @@ export function CreateAgentDialog({
         acceptance_criteria: preset?.acceptance_criteria || '',
         deterministic_checks: preset?.deterministic_checks || [],
         workspace_path: bindWorkspace ? workspacePath : '',
+        workflow_id: workflowId || 'default',
         enabled: true
       })
       if (pendingLink && onLinked) {
@@ -244,6 +251,18 @@ export function CreateAgentDialog({
                 />
               </label>
             </div>
+
+            {workflows.length > 0 && (
+              <label className="ca-field">
+                <span>{t('Цепочка')}</span>
+                <Select
+                  value={workflowId}
+                  onChange={setWorkflowId}
+                  label={t('Цепочка')}
+                  options={workflows.map((wf) => ({ value: wf.id, label: wf.name }))}
+                />
+              </label>
+            )}
 
             <label className="ca-field">
               <span>{t('Описание')}</span>

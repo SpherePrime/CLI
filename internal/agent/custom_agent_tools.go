@@ -19,6 +19,7 @@ const (
 	CustomAgentDeleteToolName     = "custom_agent_delete"
 	CustomAgentDispatchToolName   = "custom_agent_dispatch"
 	CustomAgentSwarmToolName      = "custom_agent_swarm"
+	CustomAgentWorkflowToolName   = "custom_agent_workflow"
 	CustomAgentRunsToolName       = "custom_agent_runs"
 	CustomAgentMemoryToolName     = "custom_agent_memory"
 	CustomAgentBlackboardToolName = "custom_agent_blackboard"
@@ -40,6 +41,7 @@ type customAgentSummary struct {
 	Description     string `json:"description,omitempty"`
 	VerifierAgentID string `json:"verifier_agent_id,omitempty"`
 	NextAgentID     string `json:"next_agent_id,omitempty"`
+	WorkflowID      string `json:"workflow_id,omitempty"`
 	StrictVerify    bool   `json:"strict_verify,omitempty"`
 }
 
@@ -60,6 +62,7 @@ type CustomAgentCreateParams struct {
 	AutoModelHint       string                            `json:"auto_model_hint,omitempty" description:"Optional tier hint for auto selection: fast, balanced, reasoning, or flagship"`
 	AllowedTools        []string                          `json:"allowed_tools,omitempty" description:"Optional list of allowed standard tool names"`
 	WorkspacePath       string                            `json:"workspace_path,omitempty" description:"Optional workspace directory path"`
+	WorkflowID          string                            `json:"workflow_id,omitempty" description:"Optional workflow ID or slug to assign this agent to"`
 	Enabled             *bool                             `json:"enabled,omitempty" description:"Whether the agent is enabled (defaults to true)"`
 	TriggerType         string                            `json:"trigger_type,omitempty" description:"Trigger type: manual, interval, cron, event, or monitor"`
 	IntervalMinutes     int                               `json:"interval_minutes,omitempty" description:"Interval in minutes for interval or monitor triggers"`
@@ -90,6 +93,7 @@ type CustomAgentUpdateParams struct {
 	AutoModelHint       *string                            `json:"auto_model_hint,omitempty" description:"Updated auto model tier hint"`
 	AllowedTools        *[]string                          `json:"allowed_tools,omitempty" description:"Updated allowed tools list"`
 	WorkspacePath       *string                            `json:"workspace_path,omitempty" description:"Updated workspace path"`
+	WorkflowID          *string                            `json:"workflow_id,omitempty" description:"Updated workflow ID or slug"`
 	Enabled             *bool                              `json:"enabled,omitempty" description:"Enable or disable the agent"`
 	TriggerType         *string                            `json:"trigger_type,omitempty" description:"Updated trigger type"`
 	IntervalMinutes     *int                               `json:"interval_minutes,omitempty" description:"Updated interval minutes"`
@@ -131,6 +135,19 @@ type CustomAgentSwarmParams struct {
 	PersistWorkers      bool                              `json:"persist_workers,omitempty" description:"Persist ad-hoc workers into the custom agents store"`
 	SkipVerify          bool                              `json:"skip_verify,omitempty" description:"Skip verification stage"`
 	SkipSynthesize      bool                              `json:"skip_synthesize,omitempty" description:"Skip synthesis stage"`
+}
+
+type CustomAgentWorkflowParams struct {
+	Op           string  `json:"op,omitempty" description:"Operation: list, create, update, delete, or run (defaults to list)"`
+	WorkflowID   string  `json:"workflow_id,omitempty" description:"Workflow ID or slug for update, delete, or run"`
+	Name         *string `json:"name,omitempty" description:"Workflow display name"`
+	Slug         string  `json:"slug,omitempty" description:"Optional unique workflow slug"`
+	Description  *string `json:"description,omitempty" description:"Workflow description"`
+	Enabled      *bool   `json:"enabled,omitempty" description:"Whether the workflow is enabled"`
+	EntryAgentID *string `json:"entry_agent_id,omitempty" description:"Entry agent ID or slug for the workflow"`
+	LayoutJSON   *string `json:"layout_json,omitempty" description:"Optional JSON map of agent_id to {x, y} canvas coordinates"`
+	DeleteAgents bool    `json:"delete_agents,omitempty" description:"When deleting a workflow, also delete its agents if true"`
+	Prompt       string  `json:"prompt,omitempty" description:"Optional initial prompt when op is run"`
 }
 
 type CustomAgentRunsParams struct {
@@ -182,6 +199,7 @@ func NewCustomAgentChatTools(svc *customagents.Service) []fantasy.AgentTool {
 		NewCustomAgentDeleteTool(svc),
 		NewCustomAgentDispatchTool(svc),
 		NewCustomAgentSwarmTool(svc),
+		NewCustomAgentWorkflowTool(svc),
 		NewCustomAgentRunsTool(svc),
 		NewCustomAgentMemoryTool(svc, ""),
 		NewCustomAgentBlackboardTool(svc, chatBinding),
@@ -211,6 +229,7 @@ func NewCustomAgentRoleTools(svc *customagents.Service, agent customagents.Custo
 			NewCustomAgentUpdateTool(svc),
 			NewCustomAgentDispatchTool(svc),
 			NewCustomAgentSwarmTool(svc),
+			NewCustomAgentWorkflowTool(svc),
 			NewCustomAgentRunsTool(svc),
 		)
 	case customagents.RoleVerifier:
@@ -252,6 +271,7 @@ func NewCustomAgentListTool(svc *customagents.Service) fantasy.AgentTool {
 					Description:     a.Description,
 					VerifierAgentID: a.VerifierAgentID,
 					NextAgentID:     a.NextAgentID,
+					WorkflowID:      a.WorkflowID,
 					StrictVerify:    a.StrictVerify,
 				})
 			}
@@ -297,6 +317,7 @@ func NewCustomAgentCreateTool(svc *customagents.Service) fantasy.AgentTool {
 			if params.Enabled != nil {
 				enabled = *params.Enabled
 			}
+			workflowID := resolveWorkflowIDParam(ctx, svc, params.WorkflowID)
 			agent := customagents.CustomAgent{
 				Slug:                slug,
 				Name:                name,
@@ -310,6 +331,7 @@ func NewCustomAgentCreateTool(svc *customagents.Service) fantasy.AgentTool {
 				AutoModelHint:       params.AutoModelHint,
 				AllowedTools:        params.AllowedTools,
 				WorkspacePath:       params.WorkspacePath,
+				WorkflowID:          workflowID,
 				Enabled:             enabled,
 				CreatedBy:           "ai",
 				TriggerType:         params.TriggerType,
@@ -383,6 +405,9 @@ func NewCustomAgentUpdateTool(svc *customagents.Service) fantasy.AgentTool {
 			}
 			if params.WorkspacePath != nil {
 				existing.WorkspacePath = *params.WorkspacePath
+			}
+			if params.WorkflowID != nil {
+				existing.WorkflowID = resolveWorkflowIDParam(ctx, svc, *params.WorkflowID)
 			}
 			if params.Enabled != nil {
 				existing.Enabled = *params.Enabled
@@ -517,6 +542,100 @@ func NewCustomAgentSwarmTool(svc *customagents.Service) fantasy.AgentTool {
 			return jsonToolResponse(res)
 		},
 	)
+}
+
+func NewCustomAgentWorkflowTool(svc *customagents.Service) fantasy.AgentTool {
+	return fantasy.NewAgentTool(
+		CustomAgentWorkflowToolName,
+		"Manage separate named custom-agent workflows (list, create, update, delete, run). When assembling a multi-step agent pipeline or recurring workflow for a specific topic, first create a named workflow (op=\"create\"), then create/link agents with that workflow_id (next_agent_id, verifier_agent_id, entry_agent_id), and optionally set clean left-to-right coordinates in layout_json so it looks neat in the visual canvas.",
+		func(ctx context.Context, params CustomAgentWorkflowParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			if svc == nil || svc.Store() == nil {
+				return fantasy.NewTextErrorResponse("custom agents service unavailable"), nil
+			}
+			op := strings.ToLower(strings.TrimSpace(params.Op))
+			if op == "" {
+				op = "list"
+			}
+			wfKey := strings.TrimSpace(params.WorkflowID)
+			if wfKey == "" {
+				wfKey = strings.TrimSpace(params.Slug)
+			}
+			switch op {
+			case "list":
+				workflows, err := svc.ListWorkflows(ctx)
+				if err != nil {
+					return fantasy.NewTextErrorResponse(err.Error()), nil
+				}
+				return jsonToolResponse(map[string]any{"workflows": workflows})
+			case "create":
+				wf, err := svc.CreateWorkflow(ctx, customagents.CreateWorkflowInput{
+					Slug:         strings.TrimSpace(params.Slug),
+					Name:         derefOptionalString(params.Name),
+					Description:  derefOptionalString(params.Description),
+					Enabled:      params.Enabled,
+					CreatedBy:    "ai",
+					EntryAgentID: derefOptionalString(params.EntryAgentID),
+					LayoutJSON:   derefOptionalString(params.LayoutJSON),
+				})
+				if err != nil {
+					return fantasy.NewTextErrorResponse(err.Error()), nil
+				}
+				return jsonToolResponse(wf)
+			case "update":
+				if wfKey == "" {
+					return fantasy.NewTextErrorResponse("workflow_id or slug is required"), nil
+				}
+				wf, err := svc.UpdateWorkflow(ctx, wfKey, customagents.UpdateWorkflowPatch{
+					Name:         params.Name,
+					Description:  params.Description,
+					Enabled:      params.Enabled,
+					EntryAgentID: params.EntryAgentID,
+					LayoutJSON:   params.LayoutJSON,
+				})
+				if err != nil {
+					return fantasy.NewTextErrorResponse(err.Error()), nil
+				}
+				return jsonToolResponse(wf)
+			case "delete":
+				if wfKey == "" {
+					return fantasy.NewTextErrorResponse("workflow_id or slug is required"), nil
+				}
+				if err := svc.DeleteWorkflow(ctx, wfKey, params.DeleteAgents); err != nil {
+					return fantasy.NewTextErrorResponse(err.Error()), nil
+				}
+				return jsonToolResponse(map[string]any{"deleted": true, "workflow_id": wfKey, "delete_agents": params.DeleteAgents})
+			case "run":
+				if wfKey == "" {
+					return fantasy.NewTextErrorResponse("workflow_id or slug is required"), nil
+				}
+				run, err := svc.RunWorkflow(ctx, wfKey, params.Prompt)
+				if err != nil {
+					return fantasy.NewTextErrorResponse(err.Error()), nil
+				}
+				return jsonToolResponse(run)
+			default:
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("unsupported op %q: use list, create, update, delete, or run", params.Op)), nil
+			}
+		},
+	)
+}
+
+func derefOptionalString(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
+}
+
+func resolveWorkflowIDParam(ctx context.Context, svc *customagents.Service, raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" || svc == nil {
+		return ""
+	}
+	if wf, err := svc.GetWorkflow(ctx, trimmed); err == nil && wf.ID != "" {
+		return wf.ID
+	}
+	return trimmed
 }
 
 func NewCustomAgentRunsTool(svc *customagents.Service) fantasy.AgentTool {
@@ -781,7 +900,7 @@ const (
 	customAgentsIndexHeader = "<custom_agents_index>"
 )
 
-func formatHermesRuntimeNote(soulSnapshot, memSnapshot string, agents []customagents.CustomAgent) string {
+func formatHermesRuntimeNote(soulSnapshot, memSnapshot string, workflows []customagents.CustomWorkflow, agents []customagents.CustomAgent) string {
 	var sections []string
 	if trimmedSoul := strings.TrimSpace(soulSnapshot); trimmedSoul != "" {
 		sections = append(sections, hermesIdentityHeader+"\n"+trimmedSoul+"\n</prime_identity>")
@@ -789,14 +908,35 @@ func formatHermesRuntimeNote(soulSnapshot, memSnapshot string, agents []customag
 	if trimmedMem := strings.TrimSpace(memSnapshot); trimmedMem != "" {
 		sections = append(sections, trimmedMem)
 	}
-	sections = append(sections, formatCustomAgentsIndex(agents))
+	sections = append(sections, formatCustomAgentsIndex(workflows, agents))
 	return strings.Join(sections, "\n\n")
 }
 
-func formatCustomAgentsIndex(agents []customagents.CustomAgent) string {
+func formatCustomAgentsIndex(workflows []customagents.CustomWorkflow, agents []customagents.CustomAgent) string {
 	var b strings.Builder
 	b.WriteString(customAgentsIndexHeader)
 	b.WriteByte('\n')
+	b.WriteString("Workflows:\n")
+	activeWorkflows := 0
+	for _, wf := range workflows {
+		if !wf.Enabled {
+			continue
+		}
+		activeWorkflows++
+		desc := strings.Join(strings.Fields(wf.Description), " ")
+		if len([]rune(desc)) > 120 {
+			desc = string([]rune(desc)[:120]) + "..."
+		}
+		entry := strings.TrimSpace(wf.EntryAgentID)
+		if entry == "" {
+			entry = "-"
+		}
+		fmt.Fprintf(&b, "%s | %s | %s | %s\n", wf.Slug, wf.Name, entry, desc)
+	}
+	if activeWorkflows == 0 {
+		b.WriteString("(no active workflows yet)\n")
+	}
+	b.WriteString("Agents:\n")
 	activeCount := 0
 	for _, a := range agents {
 		if !a.Enabled {
@@ -814,7 +954,7 @@ func formatCustomAgentsIndex(agents []customagents.CustomAgent) string {
 	}
 	b.WriteString("Proactive coordination rules:\n")
 	b.WriteString("1. For codebase engineering in the current repo, continue using the native code-team (explore, code, review via agent) and base coder/file/bash tools as before.\n")
-	b.WriteString("2. For specialized tasks, ongoing monitoring, scheduled workflows, or multi-part autonomous work, proactively coordinate without waiting to be asked: dispatch matching active agents from <custom_agents_index> via custom_agent_dispatch, or inspect custom_agent_list_models, create specialized persistent agents (custom_agent_create with suitable model/reasoning or model_mode=\"auto\", strict_verify, acceptance_criteria), and launch custom_agent_swarm for parallel Blackboard + Verifier + Synthesis execution.\n")
+	b.WriteString("2. For specialized tasks, ongoing monitoring, scheduled workflows, or multi-part autonomous work, proactively coordinate without waiting to be asked: group new multi-step pipelines into named workflows via custom_agent_workflow (and set workflow_id on custom_agent_create/custom_agent_update), dispatch matching active agents or workflows via custom_agent_dispatch / custom_agent_workflow(op=\"run\"), or inspect custom_agent_list_models, create specialized persistent agents (custom_agent_create with suitable model/reasoning or model_mode=\"auto\", strict_verify, acceptance_criteria), and launch custom_agent_swarm for parallel Blackboard + Verifier + Synthesis execution.\n")
 	b.WriteString("3. Persist durable cross-session facts to custom_agent_memory(target=\"memory\") and user preferences to custom_agent_memory(target=\"user\").\n")
 	b.WriteString("</custom_agents_index>")
 	return b.String()

@@ -1,5 +1,10 @@
-import { Bot, Plus, Search, ShieldCheck, Sparkles, X } from 'lucide-react'
-import type { CustomAgent, ModelOption } from '../../../../shared/customAgents'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Bot, Link2, Plus, Search, ShieldCheck, Sparkles, X } from 'lucide-react'
+import type {
+  CustomAgent,
+  CustomWorkflow,
+  ModelOption
+} from '../../../../shared/customAgents'
 import { useI18n } from '../../i18n'
 import {
   agentRoleLabel,
@@ -17,6 +22,8 @@ function RoleGlyph({ role }: { role: string }) {
 
 export function AgentRoster({
   agents,
+  workflows,
+  activeWorkflowId,
   models,
   selectedId,
   query,
@@ -26,9 +33,12 @@ export function AgentRoster({
   onQueryChange,
   onRoleFilterChange,
   onToggleEnabled,
+  onAttachToWorkflow,
   onOpenCreate
 }: {
   agents: CustomAgent[]
+  workflows: CustomWorkflow[]
+  activeWorkflowId: string
   models: ModelOption[]
   selectedId: string
   query: string
@@ -38,10 +48,36 @@ export function AgentRoster({
   onQueryChange: (query: string) => void
   onRoleFilterChange: (role: RoleFilter) => void
   onToggleEnabled: (agent: CustomAgent) => void
+  onAttachToWorkflow: (agentId: string) => void
   onOpenCreate: () => void
 }) {
   const { t } = useI18n()
+  const autoScopedRef = useRef(workflows.length > 1)
+  const [scope, setScope] = useState<'workflow' | 'all'>(() =>
+    workflows.length > 1 ? 'workflow' : 'all'
+  )
+
+  useEffect(() => {
+    if (workflows.length > 1 && !autoScopedRef.current) {
+      autoScopedRef.current = true
+      setScope('workflow')
+    }
+  }, [workflows.length])
+
+  const workflowNames = useMemo(
+    () => new Map(workflows.map((wf) => [wf.id, wf.name])),
+    [workflows]
+  )
+
   const filtered = filterCustomAgents(agents, query, roleFilter)
+  const inWorkflow = filtered.filter(
+    (agent) => (agent.workflow_id || 'default') === activeWorkflowId
+  )
+  const outsideWorkflow = filtered.filter(
+    (agent) => (agent.workflow_id || 'default') !== activeWorkflowId
+  )
+  const visibleList = scope === 'workflow' ? inWorkflow : [...inWorkflow, ...outsideWorkflow]
+
   const roles: { id: RoleFilter; label: string }[] = [
     { id: 'all', label: t('Все') },
     { id: 'orchestrator', label: t('Координатор') },
@@ -49,12 +85,89 @@ export function AgentRoster({
     { id: 'verifier', label: t('Верификаторы') }
   ]
 
+  const renderItem = (agent: CustomAgent, isExternal: boolean) => {
+    const status = agentStatusMeta(agent.status)
+    const model = modelSummary(agent, models)
+    const selected = agent.id === selectedId
+    const sourceWorkflowName = workflowNames.get(agent.workflow_id || 'default')
+
+    return (
+      <div
+        key={agent.id}
+        data-role={agent.role}
+        className={`ca-agent-item role-${agent.role} ${selected ? 'selected' : ''} ${agent.enabled ? '' : 'disabled'}`}
+      >
+        <button
+          type="button"
+          role="option"
+          aria-selected={selected}
+          className="ca-agent-select"
+          onClick={() => onSelect(agent.id)}
+        >
+          <div className="ca-agent-name-row">
+            <span
+              className={`ca-roster-role-icon role-${agent.role}`}
+              title={t(agentRoleLabel(agent.role))}
+            >
+              <RoleGlyph role={agent.role} />
+            </span>
+            <strong className="ca-agent-name" title={agent.name}>
+              {agent.name}
+            </strong>
+          </div>
+          <div className="ca-agent-meta-row">
+            <span className={`ca-status-badge tone-${status.tone}`}>
+              <span className="ca-status-dot" aria-hidden="true" />
+              {t(status.label)}
+            </span>
+            <span className="ca-chip ca-chip-muted" title={model}>
+              {model === 'Авто' ? t('Авто') : model}
+            </span>
+            {isExternal && sourceWorkflowName && (
+              <span className="ca-chip ca-chip-muted" title={sourceWorkflowName}>
+                {sourceWorkflowName}
+              </span>
+            )}
+          </div>
+        </button>
+        <div className="ca-agent-item-controls">
+          {isExternal && (
+            <button
+              type="button"
+              className="ca-roster-attach-btn"
+              title={t('Перенести в текущую цепь')}
+              onClick={() => onAttachToWorkflow(agent.id)}
+            >
+              <Link2 size={11} aria-hidden="true" />
+              <span>{t('В эту цепь')}</span>
+            </button>
+          )}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={agent.enabled}
+            aria-label={
+              agent.enabled
+                ? t('Отключить агента {name}', { name: agent.name })
+                : t('Включить агента {name}', { name: agent.name })
+            }
+            title={agent.enabled ? t('Выключить') : t('Включить')}
+            className={`ca-switch ${agent.enabled ? 'on' : ''}`}
+            onClick={() => onToggleEnabled(agent)}
+          >
+            <span className="ca-switch-thumb" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <aside className="ca-roster" aria-label={t('Список агентов')}>
       <header className="ca-pane-head">
         <div className="ca-pane-title-row">
-          <h2>{t('Свои агенты')}</h2>
-          <span className="ca-count">{agents.length}</span>
+          <h2>{t('Узлы и агенты')}</h2>
+          <span className="ca-count">{visibleList.length}</span>
         </div>
         <button
           type="button"
@@ -67,6 +180,25 @@ export function AgentRoster({
       </header>
 
       <div className="ca-roster-controls">
+        <div className="ca-segmented ca-roster-scope" role="group" aria-label={t('Фильтр цепочки')}>
+          <button
+            type="button"
+            className={scope === 'workflow' ? 'active' : ''}
+            aria-pressed={scope === 'workflow'}
+            onClick={() => setScope('workflow')}
+          >
+            {t('Эта цепь')}
+          </button>
+          <button
+            type="button"
+            className={scope === 'all' ? 'active' : ''}
+            aria-pressed={scope === 'all'}
+            onClick={() => setScope('all')}
+          >
+            {t('Все агенты')}
+          </button>
+        </div>
+
         <label className="ca-search-box">
           <Search size={14} aria-hidden="true" />
           <input
@@ -106,73 +238,37 @@ export function AgentRoster({
       <div className="ca-roster-list" role="listbox" aria-label={t('Агенты')}>
         {loading && agents.length === 0 ? (
           <div className="ca-empty-compact">{t('Загружаем агентов…')}</div>
-        ) : filtered.length === 0 ? (
+        ) : visibleList.length === 0 ? (
           <div className="ca-empty-compact">
-            <p>{agents.length === 0 ? t('Агентов пока нет') : t('Ничего не найдено')}</p>
-            {agents.length === 0 && (
+            <p>
+              {scope === 'workflow' && agents.length > 0
+                ? t('В этой цепочке пока нет узлов')
+                : agents.length === 0
+                  ? t('Агентов пока нет')
+                  : t('Ничего не найдено')}
+            </p>
+            <div className="ca-empty-actions">
+              {scope === 'workflow' && outsideWorkflow.length > 0 && (
+                <button type="button" onClick={() => setScope('all')}>
+                  {t('Показать всех')}
+                </button>
+              )}
               <button type="button" onClick={onOpenCreate}>
                 <Plus size={14} />
                 {t('Создать агента')}
               </button>
-            )}
+            </div>
           </div>
+        ) : scope === 'workflow' ? (
+          inWorkflow.map((agent) => renderItem(agent, false))
         ) : (
-          filtered.map((agent) => {
-            const status = agentStatusMeta(agent.status)
-            const model = modelSummary(agent, models)
-            const selected = agent.id === selectedId
-            return (
-              <div
-                key={agent.id}
-                data-role={agent.role}
-                className={`ca-agent-item role-${agent.role} ${selected ? 'selected' : ''} ${agent.enabled ? '' : 'disabled'}`}
-              >
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  className="ca-agent-select"
-                  onClick={() => onSelect(agent.id)}
-                >
-                  <div className="ca-agent-name-row">
-                    <span
-                      className={`ca-roster-role-icon role-${agent.role}`}
-                      title={t(agentRoleLabel(agent.role))}
-                    >
-                      <RoleGlyph role={agent.role} />
-                    </span>
-                    <strong className="ca-agent-name" title={agent.name}>
-                      {agent.name}
-                    </strong>
-                  </div>
-                  <div className="ca-agent-meta-row">
-                    <span className={`ca-status-badge tone-${status.tone}`}>
-                      <span className="ca-status-dot" aria-hidden="true" />
-                      {t(status.label)}
-                    </span>
-                    <span className="ca-chip ca-chip-muted" title={model}>
-                      {model === 'Авто' ? t('Авто') : model}
-                    </span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={agent.enabled}
-                  aria-label={
-                    agent.enabled
-                      ? t('Отключить агента {name}', { name: agent.name })
-                      : t('Включить агента {name}', { name: agent.name })
-                  }
-                  title={agent.enabled ? t('Выключить') : t('Включить')}
-                  className={`ca-switch ${agent.enabled ? 'on' : ''}`}
-                  onClick={() => onToggleEnabled(agent)}
-                >
-                  <span className="ca-switch-thumb" />
-                </button>
-              </div>
-            )
-          })
+          <>
+            {inWorkflow.map((agent) => renderItem(agent, false))}
+            {outsideWorkflow.length > 0 && (
+              <div className="ca-roster-group-label">{t('Другие цепочки')}</div>
+            )}
+            {outsideWorkflow.map((agent) => renderItem(agent, true))}
+          </>
         )}
       </div>
     </aside>

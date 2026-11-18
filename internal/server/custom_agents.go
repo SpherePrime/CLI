@@ -126,6 +126,12 @@ func (c *controllerV1) customAgentEndpoints() []apigen.Endpoint {
 		apigen.Get("/v1/custom-agents/global-memory").Summary("Get custom agents global memory").Tags("custom-agents").Responds(customagents.GlobalMemoryDoc{}).Fails(500, 503).Handle(c.handleGetCustomAgentGlobalMemory),
 		apigen.Put("/v1/custom-agents/global-memory").Summary("Save custom agents global memory").Tags("custom-agents").Accepts(customagents.GlobalMemoryDoc{}).Responds(customagents.GlobalMemoryDoc{}).Fails(400, 500, 503).Handle(c.handlePutCustomAgentGlobalMemory),
 		apigen.Post("/v1/custom-agents/swarm").Summary("Dispatch custom agent swarm").Tags("custom-agents").Accepts(customAgentSwarmHTTPRequest{}).Responds(customagents.SwarmResult{}).Fails(400, 500, 503).Handle(c.handlePostCustomAgentSwarm),
+		apigen.Get("/v1/custom-agents/workflows").Summary("List custom agent workflows").Tags("custom-agents").Fails(500, 503).Handle(c.handleGetCustomAgentWorkflows),
+		apigen.Post("/v1/custom-agents/workflows").Summary("Create custom agent workflow").Tags("custom-agents").Accepts(customagents.CreateWorkflowInput{}).Responds(customagents.CustomWorkflow{}).Status(201).Fails(400, 409, 500, 503).Handle(c.handlePostCustomAgentWorkflow),
+		apigen.Get("/v1/custom-agents/workflows/{workflow_id}/detail").Summary("Get custom agent workflow").Tags("custom-agents").PathParam("workflow_id", "Workflow ID or slug").Responds(customagents.CustomWorkflow{}).Fails(404, 500, 503).Handle(c.handleGetCustomAgentWorkflow),
+		apigen.Patch("/v1/custom-agents/workflows/{workflow_id}").Summary("Update custom agent workflow").Tags("custom-agents").PathParam("workflow_id", "Workflow ID or slug").Accepts(customagents.UpdateWorkflowPatch{}).Responds(customagents.CustomWorkflow{}).Fails(400, 404, 409, 500, 503).Handle(c.handlePatchCustomAgentWorkflow),
+		apigen.Delete("/v1/custom-agents/workflows/{workflow_id}").Summary("Delete custom agent workflow").Tags("custom-agents").PathParam("workflow_id", "Workflow ID or slug").QueryParam("delete_agents", "Delete agents belonging to the workflow").Fails(400, 404, 500, 503).Handle(c.handleDeleteCustomAgentWorkflow),
+		apigen.Post("/v1/custom-agents/workflows/{workflow_id}/run").Summary("Run custom agent workflow").Tags("custom-agents").PathParam("workflow_id", "Workflow ID or slug").Responds(customagents.CustomAgentRun{}).Status(202).Fails(400, 404, 409, 500, 503).Handle(c.handlePostCustomAgentWorkflowRun),
 		apigen.Get("/v1/custom-agents/events").Summary("Stream custom agent events (SSE)").Tags("custom-agents").SSE().Fails(503).Handle(c.handleGetCustomAgentEvents),
 		apigen.Get("/v1/custom-agents/{agent_id}").Summary("Get custom agent").Tags("custom-agents").PathParam("agent_id", "Custom agent ID or slug").Fails(404, 500, 503).Handle(c.handleGetCustomAgent),
 		apigen.Patch("/v1/custom-agents/{agent_id}").Summary("Update custom agent").Tags("custom-agents").PathParam("agent_id", "Custom agent ID or slug").Fails(400, 404, 409, 500, 503).Handle(c.handlePatchCustomAgent),
@@ -186,6 +192,7 @@ func (c *controllerV1) handlePostCustomAgent(w http.ResponseWriter, r *http.Requ
 		AutoModelHint       string                            `json:"auto_model_hint"`
 		AllowedTools        []string                          `json:"allowed_tools"`
 		WorkspacePath       string                            `json:"workspace_path"`
+		WorkflowID          string                            `json:"workflow_id"`
 		Enabled             *bool                             `json:"enabled"`
 		CreatedBy           string                            `json:"created_by"`
 		TriggerType         string                            `json:"trigger_type"`
@@ -234,6 +241,7 @@ func (c *controllerV1) handlePostCustomAgent(w http.ResponseWriter, r *http.Requ
 		AutoModelHint:       req.AutoModelHint,
 		AllowedTools:        req.AllowedTools,
 		WorkspacePath:       req.WorkspacePath,
+		WorkflowID:          resolveWorkflowIDForHTTP(r.Context(), svc, req.WorkflowID),
 		Enabled:             enabled,
 		CreatedBy:           createdBy,
 		TriggerType:         req.TriggerType,
@@ -428,6 +436,7 @@ func (c *controllerV1) handlePatchCustomAgent(w http.ResponseWriter, r *http.Req
 		AutoModelHint       *string                            `json:"auto_model_hint"`
 		AllowedTools        *[]string                          `json:"allowed_tools"`
 		WorkspacePath       *string                            `json:"workspace_path"`
+		WorkflowID          *string                            `json:"workflow_id"`
 		Enabled             *bool                              `json:"enabled"`
 		TriggerType         *string                            `json:"trigger_type"`
 		IntervalMinutes     *int                               `json:"interval_minutes"`
@@ -485,6 +494,9 @@ func (c *controllerV1) handlePatchCustomAgent(w http.ResponseWriter, r *http.Req
 	}
 	if patch.WorkspacePath != nil {
 		existing.WorkspacePath = *patch.WorkspacePath
+	}
+	if patch.WorkflowID != nil {
+		existing.WorkflowID = resolveWorkflowIDForHTTP(r.Context(), svc, *patch.WorkflowID)
 	}
 	if patch.Enabled != nil {
 		existing.Enabled = *patch.Enabled
@@ -787,6 +799,174 @@ func (c *controllerV1) handlePostCustomAgentSwarm(w http.ResponseWriter, r *http
 		return
 	}
 	jsonEncode(w, res)
+}
+
+func resolveWorkflowIDForHTTP(ctx context.Context, svc *customagents.Service, raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" || svc == nil {
+		return ""
+	}
+	if wf, err := svc.GetWorkflow(ctx, trimmed); err == nil && wf.ID != "" {
+		return wf.ID
+	}
+	return trimmed
+}
+
+func (c *controllerV1) handleGetCustomAgentWorkflows(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil || svc.Store() == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	workflows, err := svc.ListWorkflows(r.Context())
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if workflows == nil {
+		workflows = []customagents.CustomWorkflow{}
+	}
+	jsonEncode(w, map[string]any{"workflows": workflows})
+}
+
+func (c *controllerV1) handlePostCustomAgentWorkflow(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil || svc.Store() == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	var input customagents.CreateWorkflowInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		jsonError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if strings.TrimSpace(input.CreatedBy) == "" {
+		input.CreatedBy = "user"
+	}
+	created, err := svc.CreateWorkflow(r.Context(), input)
+	if err != nil {
+		switch {
+		case strings.Contains(err.Error(), "UNIQUE constraint"):
+			jsonError(w, http.StatusConflict, err.Error())
+		case strings.Contains(err.Error(), "workflow name or slug is required"),
+			strings.Contains(err.Error(), "layout_json"):
+			jsonError(w, http.StatusBadRequest, err.Error())
+		default:
+			jsonError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	jsonEncodeStatus(w, http.StatusCreated, created)
+}
+
+func (c *controllerV1) handleGetCustomAgentWorkflow(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil || svc.Store() == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	wf, err := svc.GetWorkflow(r.Context(), r.PathValue("workflow_id"))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			jsonError(w, http.StatusNotFound, "custom workflow not found")
+			return
+		}
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	jsonEncode(w, wf)
+}
+
+func (c *controllerV1) handlePatchCustomAgentWorkflow(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil || svc.Store() == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	var patch customagents.UpdateWorkflowPatch
+	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+		jsonError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	updated, err := svc.UpdateWorkflow(r.Context(), r.PathValue("workflow_id"), patch)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			jsonError(w, http.StatusNotFound, "custom workflow not found")
+		case strings.Contains(err.Error(), "UNIQUE constraint"):
+			jsonError(w, http.StatusConflict, err.Error())
+		case strings.Contains(err.Error(), "workflow name cannot be empty"),
+			strings.Contains(err.Error(), "layout_json"):
+			jsonError(w, http.StatusBadRequest, err.Error())
+		default:
+			jsonError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	jsonEncode(w, updated)
+}
+
+func (c *controllerV1) handleDeleteCustomAgentWorkflow(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil || svc.Store() == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	deleteAgents := false
+	if raw := strings.TrimSpace(r.URL.Query().Get("delete_agents")); raw != "" {
+		parsed, parseErr := strconv.ParseBool(raw)
+		if parseErr != nil {
+			jsonError(w, http.StatusBadRequest, "invalid delete_agents parameter")
+			return
+		}
+		deleteAgents = parsed
+	}
+	if err := svc.DeleteWorkflow(r.Context(), r.PathValue("workflow_id"), deleteAgents); err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			jsonError(w, http.StatusNotFound, "custom workflow not found")
+		case strings.Contains(err.Error(), "cannot delete default workflow"):
+			jsonError(w, http.StatusBadRequest, err.Error())
+		default:
+			jsonError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	jsonEncode(w, map[string]bool{"deleted": true})
+}
+
+func (c *controllerV1) handlePostCustomAgentWorkflowRun(w http.ResponseWriter, r *http.Request) {
+	svc := c.customAgentsService()
+	if svc == nil || svc.Store() == nil {
+		jsonError(w, http.StatusServiceUnavailable, "custom agents service unavailable")
+		return
+	}
+	var req struct {
+		Prompt string `json:"prompt"`
+	}
+	if r.Body != nil {
+		if decErr := json.NewDecoder(r.Body).Decode(&req); decErr != nil && !errors.Is(decErr, io.EOF) {
+			jsonError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+	}
+	run, err := svc.RunWorkflow(r.Context(), r.PathValue("workflow_id"), req.Prompt)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			jsonError(w, http.StatusNotFound, "custom workflow not found")
+		case strings.Contains(err.Error(), "уже выполняется"):
+			jsonError(w, http.StatusConflict, err.Error())
+		case strings.Contains(err.Error(), "отключён"),
+			strings.Contains(err.Error(), "нет агентов"),
+			strings.Contains(err.Error(), "нет активных агентов"):
+			jsonError(w, http.StatusBadRequest, err.Error())
+		default:
+			jsonError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	jsonEncodeStatus(w, http.StatusAccepted, run)
 }
 
 func jsonEncodeStatus(w http.ResponseWriter, status int, v any) {

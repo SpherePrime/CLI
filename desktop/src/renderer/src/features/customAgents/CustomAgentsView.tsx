@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Activity,
   Bot,
@@ -7,14 +7,17 @@ import {
   History,
   Layers,
   PanelLeft,
+  Pencil,
+  Play,
   Plus,
   RefreshCw,
   SlidersHorizontal,
+  Trash2,
   Users
 } from 'lucide-react'
-import type { SwarmResult } from '../../../../shared/customAgents'
+import type { CustomWorkflow, SwarmResult } from '../../../../shared/customAgents'
 import type { Workspace } from '../../app/useWorkspace'
-import { EmptyState } from '../../components/EmptyState'
+import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { AgentInspector } from './AgentInspector'
 import { AgentRoster } from './AgentRoster'
@@ -24,8 +27,9 @@ import {
   type WorkspaceTab
 } from './AgentWorkspace'
 import { CreateAgentDialog } from './CreateAgentDialog'
+import { CreateWorkflowDialog } from './CreateWorkflowDialog'
 import { GlobalMemoryDialog } from './GlobalMemoryDialog'
-import type { RoleFilter } from './presentation'
+import type { AgentPreset, RoleFilter } from './presentation'
 import { SwarmDialog } from './SwarmDialog'
 import { useCustomAgents } from './useCustomAgents'
 import type { PendingWorkflowLink } from './WorkflowCanvas'
@@ -40,6 +44,10 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [createOpen, setCreateOpen] = useState(false)
   const [pendingLink, setPendingLink] = useState<PendingWorkflowLink | null>(null)
+  const [workflowDialogMode, setWorkflowDialogMode] = useState<'closed' | 'create' | 'edit'>('closed')
+  const [confirmDeleteWorkflow, setConfirmDeleteWorkflow] = useState(false)
+  const [deleteWorkflowAgents, setDeleteWorkflowAgents] = useState(false)
+  const [runningWorkflow, setRunningWorkflow] = useState(false)
   const [memoryOpen, setMemoryOpen] = useState(false)
   const [swarmOpen, setSwarmOpen] = useState(false)
   const [lastSwarmResult, setLastSwarmResult] = useState<SwarmResult | null>(null)
@@ -51,6 +59,19 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
 
   const selected = state.selectedAgent
   const latestRun = state.agentRuns[0] || null
+  const activeWorkflow = state.activeWorkflow
+  const activeWorkflowId = activeWorkflow?.id || state.activeWorkflowId || 'default'
+
+  const workflowNodeCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const agent of state.agents) {
+      const wfId = agent.workflow_id || 'default'
+      counts.set(wfId, (counts.get(wfId) || 0) + 1)
+    }
+    return counts
+  }, [state.agents])
+
+  const activeWorkflowAgentsCount = workflowNodeCounts.get(activeWorkflowId) || 0
 
   const openCreateDialog = (link?: PendingWorkflowLink) => {
     setPendingLink(link || null)
@@ -62,6 +83,42 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
     setInspectorOpen(true)
     setMobilePane('inspector')
   }
+
+  const handleQuickCreateStarter = async (preset: AgentPreset) => {
+    const created = await state.createAgent({
+      name: preset.name,
+      role: preset.role,
+      description: preset.description,
+      trigger_type: preset.trigger_type,
+      interval_minutes: preset.interval_minutes,
+      monitor_kind: preset.monitor_kind,
+      monitor_target: preset.monitor_target,
+      auto_model_hint: preset.auto_model_hint,
+      system_prompt: preset.system_prompt,
+      acceptance_criteria: preset.acceptance_criteria,
+      deterministic_checks: preset.deterministic_checks,
+      workspace_path: workspace.project?.kind === 'project' ? workspace.project.path : '',
+      workflow_id: activeWorkflowId,
+      enabled: true
+    })
+    if (activeWorkflow && !activeWorkflow.entry_agent_id) {
+      await state.updateWorkflow(activeWorkflow.id, { entry_agent_id: created.id })
+    }
+  }
+
+  const handleRunWorkflow = async () => {
+    if (!activeWorkflow || runningWorkflow || activeWorkflowAgentsCount === 0) return
+    setRunningWorkflow(true)
+    try {
+      await state.runWorkflow(activeWorkflow.id)
+      setWorkspaceTab('tasks')
+      setMobilePane('workspace')
+    } finally {
+      setRunningWorkflow(false)
+    }
+  }
+
+  const canDeleteActiveWorkflow = Boolean(activeWorkflow && activeWorkflow.id !== 'default')
 
   return (
     <div className="ca-studio" data-mobile-pane={mobilePane} aria-label={t('Свои агенты')}>
@@ -156,6 +213,122 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
         </div>
       </header>
 
+      <div className="ca-wf-bar" aria-label={t('Управление цепочками')}>
+        <div className="ca-wf-bar-left">
+          <span className="ca-wf-bar-label">{t('Цепочка:')}</span>
+          <div className="ca-wf-switcher">
+            <Select
+              value={activeWorkflowId}
+              onChange={(value) => {
+                state.setActiveWorkflowId(value)
+                setConfirmDeleteWorkflow(false)
+              }}
+              label={t('Активная цепочка')}
+              options={
+                state.workflows.length > 0
+                  ? state.workflows.map((wf) => ({
+                      value: wf.id,
+                      label: `${wf.name} (${workflowNodeCounts.get(wf.id) || 0})`
+                    }))
+                  : [{ value: 'default', label: `${t('Основная цепочка')} (${activeWorkflowAgentsCount})` }]
+              }
+            />
+          </div>
+          <button
+            type="button"
+            className="ca-head-btn"
+            onClick={() => {
+              setConfirmDeleteWorkflow(false)
+              setWorkflowDialogMode('create')
+            }}
+          >
+            <Plus size={14} aria-hidden="true" />
+            <span>{t('Новая цепочка')}</span>
+          </button>
+        </div>
+
+        <div className="ca-wf-bar-actions">
+          {activeWorkflow && (
+            <>
+              <button
+                type="button"
+                className="primary ca-head-btn"
+                disabled={runningWorkflow || state.busy || activeWorkflowAgentsCount === 0}
+                onClick={() => void handleRunWorkflow()}
+              >
+                <Play size={13} aria-hidden="true" />
+                <span>{runningWorkflow ? t('Запуск…') : t('Запустить цепь')}</span>
+              </button>
+              <button
+                type="button"
+                className="ca-head-btn"
+                title={t('Переименовать цепочку')}
+                aria-label={t('Переименовать цепочку')}
+                onClick={() => {
+                  setConfirmDeleteWorkflow(false)
+                  setWorkflowDialogMode('edit')
+                }}
+              >
+                <Pencil size={13} aria-hidden="true" />
+                <span>{t('Переименовать')}</span>
+              </button>
+              {canDeleteActiveWorkflow && !confirmDeleteWorkflow && (
+                <button
+                  type="button"
+                  className="danger ca-head-btn"
+                  title={t('Удалить цепочку')}
+                  aria-label={t('Удалить цепочку')}
+                  onClick={() => {
+                    setDeleteWorkflowAgents(false)
+                    setConfirmDeleteWorkflow(true)
+                  }}
+                >
+                  <Trash2 size={13} aria-hidden="true" />
+                  <span>{t('Удалить')}</span>
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {confirmDeleteWorkflow && activeWorkflow && canDeleteActiveWorkflow && (
+        <div className="ca-wf-delete-banner" role="alert">
+          <div className="ca-wf-delete-copy">
+            <strong>{t('Удалить цепочку «{name}»?', { name: activeWorkflow.name })}</strong>
+            {activeWorkflowAgentsCount > 0 && (
+              <label className="ca-checkbox">
+                <input
+                  type="checkbox"
+                  checked={deleteWorkflowAgents}
+                  onChange={(event) => setDeleteWorkflowAgents(event.target.checked)}
+                />
+                <span>
+                  {t('Также удалить агентов ({count})', { count: activeWorkflowAgentsCount })}
+                </span>
+              </label>
+            )}
+          </div>
+          <div className="ca-confirm-actions">
+            <button type="button" onClick={() => setConfirmDeleteWorkflow(false)}>
+              {t('Отмена')}
+            </button>
+            <button
+              type="button"
+              className="danger"
+              disabled={state.busy}
+              onClick={() => {
+                void state
+                  .deleteWorkflow(activeWorkflow.id, deleteWorkflowAgents)
+                  .then(() => setConfirmDeleteWorkflow(false))
+              }}
+            >
+              {t('Подтвердить')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="ca-mobile-tabs" role="tablist" aria-label={t('Панели студии')}>
         <button
           type="button"
@@ -209,6 +382,8 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
         <div className="ca-pane ca-pane-roster">
           <AgentRoster
             agents={state.agents}
+            workflows={state.workflows}
+            activeWorkflowId={activeWorkflowId}
             models={state.models}
             selectedId={state.selectedAgentId}
             query={query}
@@ -223,50 +398,47 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
             onToggleEnabled={(agent) => {
               void state.updateAgent(agent.id, { enabled: !agent.enabled })
             }}
+            onAttachToWorkflow={(agentId) => {
+              void state.updateAgent(agentId, { workflow_id: activeWorkflowId })
+            }}
             onOpenCreate={() => openCreateDialog()}
           />
         </div>
 
         <div className="ca-pane ca-pane-workspace">
-          {selected ? (
-            <AgentWorkspace
-              agent={selected}
-              agents={state.agents}
-              models={state.models}
-              runs={state.agentRuns}
-              allRuns={state.runs}
-              blackboard={state.blackboard}
-              selectedChainId={state.selectedChainId}
-              tab={workspaceTab}
-              requestedRunsSubTab={requestedRunsSubTab}
-              onTabChange={setWorkspaceTab}
-              onSelectChainId={state.setSelectedChainId}
-              onSelectAgent={state.setSelectedAgentId}
-              onConfigureAgent={openSettingsForAgent}
-              onRun={state.runAgent}
-              onCancelRun={state.cancelRun}
-              onProbe={state.probeAgent}
-              onPostBlackboard={state.postBlackboard}
-              onUpdateAgent={state.updateAgent}
-              onOpenCreate={openCreateDialog}
-              onOpenSwarm={() => setSwarmOpen(true)}
-            />
-          ) : (
-            <div className="ca-workspace-empty">
-              <EmptyState
-                icon={Bot}
-                title={t('Выберите или создайте агента')}
-                text={t(
-                  'Настройте автономного исполнителя, мониторинг изменений или координатора цепочек.'
-                )}
-                action={{
-                  label: t('Новый агент'),
-                  icon: Plus,
-                  onClick: () => openCreateDialog()
-                }}
-              />
-            </div>
-          )}
+          <AgentWorkspace
+            agent={selected}
+            agents={state.agents}
+            activeWorkflow={activeWorkflow}
+            models={state.models}
+            runs={state.agentRuns}
+            allRuns={state.runs}
+            blackboard={state.blackboard}
+            selectedChainId={state.selectedChainId}
+            tab={workspaceTab}
+            requestedRunsSubTab={requestedRunsSubTab}
+            onTabChange={setWorkspaceTab}
+            onSelectChainId={state.setSelectedChainId}
+            onSelectAgent={state.setSelectedAgentId}
+            onConfigureAgent={openSettingsForAgent}
+            onRun={state.runAgent}
+            onCancelRun={state.cancelRun}
+            onProbe={state.probeAgent}
+            onPostBlackboard={state.postBlackboard}
+            onUpdateAgent={state.updateAgent}
+            onSaveLayout={(workflowId, layoutJson) =>
+              state.updateWorkflow(workflowId, { layout_json: layoutJson })
+            }
+            onSetEntryAgent={(workflowId, agentId) =>
+              state.updateWorkflow(workflowId, { entry_agent_id: agentId })
+            }
+            onQuickCreateStarter={handleQuickCreateStarter}
+            onAttachExistingAgent={(agentId) =>
+              state.updateAgent(agentId, { workflow_id: activeWorkflowId })
+            }
+            onOpenCreate={openCreateDialog}
+            onOpenSwarm={() => setSwarmOpen(true)}
+          />
         </div>
 
         <div className="ca-pane ca-pane-inspector">
@@ -274,6 +446,8 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
             <AgentInspector
               agent={selected}
               agents={state.agents}
+              workflows={state.workflows}
+              activeWorkflow={activeWorkflow}
               models={state.models}
               projects={workspace.projects}
               latestRun={latestRun}
@@ -281,6 +455,7 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
               onSave={state.updateAgent}
               onDelete={state.deleteAgent}
               onProbe={state.probeAgent}
+              onUpdateWorkflow={state.updateWorkflow}
               onClose={() => {
                 setInspectorOpen(false)
                 setMobilePane('workspace')
@@ -297,6 +472,8 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
       {createOpen && (
         <CreateAgentDialog
           agents={state.agents}
+          workflows={state.workflows}
+          activeWorkflowId={activeWorkflowId}
           workspacePath={workspace.project?.kind === 'project' ? workspace.project.path : ''}
           pendingLink={pendingLink}
           onCreate={state.createAgent}
@@ -322,6 +499,17 @@ export function CustomAgentsView({ workspace }: { workspace: Workspace }) {
             setCreateOpen(false)
             setPendingLink(null)
           }}
+        />
+      )}
+
+      {workflowDialogMode !== 'closed' && (
+        <CreateWorkflowDialog
+          workflow={
+            workflowDialogMode === 'edit' ? (activeWorkflow as CustomWorkflow | null) : null
+          }
+          onCreate={state.createWorkflow}
+          onUpdate={state.updateWorkflow}
+          close={() => setWorkflowDialogMode('closed')}
         />
       )}
 

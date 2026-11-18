@@ -17,6 +17,7 @@ import type {
   BlackboardEntry,
   CustomAgent,
   CustomAgentRun,
+  CustomWorkflow,
   GlobalMemoryDoc,
   ModelOption
 } from '../../../shared/customAgents'
@@ -982,6 +983,36 @@ export function createPreviewBrowserLogs(): BrowserLog[] {
   return []
 }
 
+export function createPreviewCustomWorkflows(): CustomWorkflow[] {
+  const now = Math.floor(Date.now() / 1000)
+  return [
+    {
+      id: 'default',
+      slug: 'default',
+      name: 'Основная цепочка',
+      description: 'Базовая координация задач и строгая приёмка.',
+      enabled: true,
+      created_by: 'system',
+      entry_agent_id: 'agent-orchestrator',
+      layout_json: '',
+      created_at: now - 86400,
+      updated_at: now - 1800
+    },
+    {
+      id: 'wf-release-watch',
+      slug: 'release-watch',
+      name: 'Мониторинг релизов',
+      description: 'Отслеживание тегов релизов и разбор изменений.',
+      enabled: true,
+      created_by: 'user',
+      entry_agent_id: 'agent-release-monitor',
+      layout_json: '',
+      created_at: now - 43200,
+      updated_at: now - 420
+    }
+  ]
+}
+
 export function createPreviewCustomAgents(): CustomAgent[] {
   const now = Math.floor(Date.now() / 1000)
   return [
@@ -1001,6 +1032,7 @@ export function createPreviewCustomAgents(): CustomAgent[] {
       auto_model_hint: 'flagship',
       allowed_tools: ['custom_agents', 'blackboard', 'bash', 'read'],
       workspace_path: '',
+      workflow_id: 'default',
       enabled: true,
       created_by: 'system',
       trigger_type: 'manual',
@@ -1039,6 +1071,7 @@ export function createPreviewCustomAgents(): CustomAgent[] {
       auto_model_hint: '',
       allowed_tools: ['fetch', 'read'],
       workspace_path: 'C:\\Users\\demo\\Projects\\prime-desktop',
+      workflow_id: 'wf-release-watch',
       enabled: true,
       created_by: 'user',
       trigger_type: 'monitor',
@@ -1086,6 +1119,7 @@ export function createPreviewCustomAgents(): CustomAgent[] {
       auto_model_hint: 'balanced',
       allowed_tools: ['read', 'grep'],
       workspace_path: 'C:\\Users\\demo\\Projects\\prime-desktop',
+      workflow_id: 'wf-release-watch',
       enabled: true,
       created_by: 'user',
       trigger_type: 'event',
@@ -1098,7 +1132,7 @@ export function createPreviewCustomAgents(): CustomAgent[] {
       acceptance_criteria: 'Перечислены затронутые модули и проверены возможные регрессии.',
       deterministic_checks: [],
       verifier_agent_id: 'agent-strict-verifier',
-      next_agent_id: 'agent-orchestrator',
+      next_agent_id: '',
       max_rework_attempts: 3,
       strict_verify: false,
       status: 'idle',
@@ -1124,6 +1158,7 @@ export function createPreviewCustomAgents(): CustomAgent[] {
       auto_model_hint: 'reasoning',
       allowed_tools: ['read'],
       workspace_path: '',
+      workflow_id: 'default',
       enabled: true,
       created_by: 'system',
       trigger_type: 'manual',

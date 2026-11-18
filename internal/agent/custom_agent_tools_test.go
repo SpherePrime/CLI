@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/customagents"
@@ -93,6 +94,7 @@ func TestCustomAgentToolsLifecycleAndCatalog(t *testing.T) {
 		CustomAgentDeleteToolName,
 		CustomAgentDispatchToolName,
 		CustomAgentSwarmToolName,
+		CustomAgentWorkflowToolName,
 		CustomAgentRunsToolName,
 		CustomAgentMemoryToolName,
 		CustomAgentBlackboardToolName,
@@ -270,8 +272,10 @@ func TestCustomAgentsIndexNoteAndRoleGating(t *testing.T) {
 	require.Contains(t, emptyNote, "<prime_identity>")
 	require.Contains(t, emptyNote, "<prime_memory>")
 	require.Contains(t, emptyNote, customAgentsIndexHeader)
+	require.Contains(t, emptyNote, "(no active workflows yet)")
 	require.Contains(t, emptyNote, "(no active custom agents yet)")
 	require.Contains(t, emptyNote, CustomAgentSwarmToolName)
+	require.Contains(t, emptyNote, CustomAgentWorkflowToolName)
 
 	_, err := svc.Store().CreateAgent(t.Context(), customagents.CustomAgent{
 		Slug:        "paused-audit",
@@ -303,17 +307,37 @@ func TestCustomAgentsIndexNoteAndRoleGating(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	_, err = svc.CreateWorkflow(t.Context(), customagents.CreateWorkflowInput{
+		Slug:        "paused-wf",
+		Name:        "Paused Workflow",
+		Description: "Hidden while disabled",
+		Enabled:     new(false),
+	})
+	require.NoError(t, err)
+
+	wf, err := svc.CreateWorkflow(t.Context(), customagents.CreateWorkflowInput{
+		Slug:         "release-wf",
+		Name:         "Release Flow",
+		Description:  "Handles release checks",
+		EntryAgentID: "nightly-audit",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, wf.ID)
+
 	note := coord.customAgentsIndexNote(t.Context())
 	require.True(t, strings.HasPrefix(note, hermesIdentityHeader))
 	require.Contains(t, note, "Custom runtime identity")
 	require.Contains(t, note, "Remember repository layout")
 	require.Contains(t, note, "Concise replies")
+	require.Contains(t, note, "release-wf | Release Flow | nightly-audit | Handles release checks")
+	require.NotContains(t, note, "paused-wf")
 	require.Contains(t, note, "nightly-audit | Nightly Audit | worker | idle | auto | Line one line two")
 	require.NotContains(t, note, "paused-audit")
 	require.Contains(t, note, CustomAgentListModelsToolName)
 	require.Contains(t, note, CustomAgentCreateToolName)
 	require.Contains(t, note, CustomAgentDispatchToolName)
 	require.Contains(t, note, CustomAgentSwarmToolName)
+	require.Contains(t, note, CustomAgentWorkflowToolName)
 	require.Contains(t, note, CustomAgentMemoryToolName)
 
 	msgs := withCustomAgentsNote([]fantasy.Message{fantasy.NewUserMessage("hi")}, note)
@@ -337,6 +361,7 @@ func TestCustomAgentsIndexNoteAndRoleGating(t *testing.T) {
 		CustomAgentUpdateToolName,
 		CustomAgentDispatchToolName,
 		CustomAgentSwarmToolName,
+		CustomAgentWorkflowToolName,
 		CustomAgentRunsToolName,
 	}, toolNames(orchTools))
 }
@@ -589,6 +614,7 @@ func TestCoordinatorCustomAgentsGating(t *testing.T) {
 		CustomAgentDeleteToolName,
 		CustomAgentDispatchToolName,
 		CustomAgentSwarmToolName,
+		CustomAgentWorkflowToolName,
 		CustomAgentRunsToolName,
 		CustomAgentMemoryToolName,
 		CustomAgentBlackboardToolName,
@@ -845,6 +871,115 @@ func TestSessionAgentCustomAgentsNoteInjectionGate(t *testing.T) {
 	require.True(t, hasNote(runAndInspect(false, config.AgentGeneral)))
 	require.False(t, hasNote(runAndInspect(true, config.AgentGeneral)))
 	require.False(t, hasNote(runAndInspect(false, config.AgentDesigner)))
+}
+
+func TestCustomAgentWorkflowToolLifecycle(t *testing.T) {
+	t.Parallel()
+	svc := newTestCustomAgentsService(t)
+	ctx := t.Context()
+
+	wfTool := NewCustomAgentWorkflowTool(svc)
+	createTool := NewCustomAgentCreateTool(svc)
+	updateTool := NewCustomAgentUpdateTool(svc)
+
+	respCreateWF, err := wfTool.Run(ctx, fantasy.ToolCall{
+		ID:    "wf1",
+		Name:  CustomAgentWorkflowToolName,
+		Input: `{"op":"create","name":"Security Audit","slug":"security-audit","description":"Two-stage audit"}`,
+	})
+	require.NoError(t, err)
+	require.False(t, respCreateWF.IsError)
+	var createdWF customagents.CustomWorkflow
+	require.NoError(t, json.Unmarshal([]byte(respCreateWF.Content), &createdWF))
+	require.Equal(t, "security-audit", createdWF.Slug)
+	require.Equal(t, "ai", createdWF.CreatedBy)
+
+	respStep2, err := createTool.Run(ctx, fantasy.ToolCall{
+		ID:    "wf2",
+		Name:  CustomAgentCreateToolName,
+		Input: `{"name":"Step Two","slug":"wf-step-2","role":"worker","system_prompt":"Finalize.","workflow_id":"security-audit"}`,
+	})
+	require.NoError(t, err)
+	require.False(t, respStep2.IsError)
+	var step2 customagents.CustomAgent
+	require.NoError(t, json.Unmarshal([]byte(respStep2.Content), &step2))
+	require.Equal(t, createdWF.ID, step2.WorkflowID)
+
+	respStep1, err := createTool.Run(ctx, fantasy.ToolCall{
+		ID:   "wf3",
+		Name: CustomAgentCreateToolName,
+		Input: `{"name":"Step One","slug":"wf-step-1","role":"worker","system_prompt":"Collect.","next_agent_id":"` + step2.ID + `"}`,
+	})
+	require.NoError(t, err)
+	require.False(t, respStep1.IsError)
+	var step1 customagents.CustomAgent
+	require.NoError(t, json.Unmarshal([]byte(respStep1.Content), &step1))
+	require.Empty(t, step1.WorkflowID)
+
+	respAssign, err := updateTool.Run(ctx, fantasy.ToolCall{
+		ID:    "wf3b",
+		Name:  CustomAgentUpdateToolName,
+		Input: `{"id":"` + step1.ID + `","workflow_id":"` + createdWF.ID + `"}`,
+	})
+	require.NoError(t, err)
+	require.False(t, respAssign.IsError)
+	var assignedStep1 customagents.CustomAgent
+	require.NoError(t, json.Unmarshal([]byte(respAssign.Content), &assignedStep1))
+	require.Equal(t, createdWF.ID, assignedStep1.WorkflowID)
+
+	layoutStr := `{\"` + step1.ID + `\":{\"x\":100,\"y\":160},\"` + step2.ID + `\":{\"x\":420,\"y\":160}}`
+	respUpdateWF, err := wfTool.Run(ctx, fantasy.ToolCall{
+		ID:    "wf4",
+		Name:  CustomAgentWorkflowToolName,
+		Input: `{"op":"update","workflow_id":"security-audit","entry_agent_id":"` + step1.ID + `","layout_json":"` + layoutStr + `"}`,
+	})
+	require.NoError(t, err)
+	require.False(t, respUpdateWF.IsError)
+	var updatedWF customagents.CustomWorkflow
+	require.NoError(t, json.Unmarshal([]byte(respUpdateWF.Content), &updatedWF))
+	require.Equal(t, step1.ID, updatedWF.EntryAgentID)
+	require.Contains(t, updatedWF.LayoutJSON, step1.ID)
+
+	respListWF, err := wfTool.Run(ctx, fantasy.ToolCall{
+		ID:    "wf5",
+		Name:  CustomAgentWorkflowToolName,
+		Input: `{"op":"list"}`,
+	})
+	require.NoError(t, err)
+	require.False(t, respListWF.IsError)
+	require.Contains(t, respListWF.Content, "security-audit")
+
+	respRunWF, err := wfTool.Run(ctx, fantasy.ToolCall{
+		ID:    "wf6",
+		Name:  CustomAgentWorkflowToolName,
+		Input: `{"op":"run","workflow_id":"security-audit","prompt":"start audit"}`,
+	})
+	require.NoError(t, err)
+	require.False(t, respRunWF.IsError)
+	var wfRun customagents.CustomAgentRun
+	require.NoError(t, json.Unmarshal([]byte(respRunWF.Content), &wfRun))
+	require.Equal(t, step1.ID, wfRun.AgentID)
+	require.Equal(t, "workflow:security-audit", wfRun.TriggerReason)
+
+	require.Eventually(t, func() bool {
+		runs, listErr := svc.Store().ListRuns(ctx, step2.ID, 10)
+		return listErr == nil && len(runs) == 1 && runs[0].Status == customagents.RunPassed
+	}, 5*time.Second, 20*time.Millisecond)
+
+	respDelWF, err := wfTool.Run(ctx, fantasy.ToolCall{
+		ID:    "wf7",
+		Name:  CustomAgentWorkflowToolName,
+		Input: `{"op":"delete","workflow_id":"` + createdWF.ID + `","delete_agents":true}`,
+	})
+	require.NoError(t, err)
+	require.False(t, respDelWF.IsError)
+
+	_, getWFErr := svc.GetWorkflow(ctx, createdWF.ID)
+	require.Error(t, getWFErr)
+	_, getStep1Err := svc.Store().GetAgent(ctx, step1.ID)
+	require.Error(t, getStep1Err)
+	_, getStep2Err := svc.Store().GetAgent(ctx, step2.ID)
+	require.Error(t, getStep2Err)
 }
 
 func toolNames(list []fantasy.AgentTool) []string {

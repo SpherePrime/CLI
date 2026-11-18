@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Bot,
   Crosshair,
+  Flag,
   Layers,
   LayoutGrid,
   Minus,
   Play,
   Plus,
+  Radar,
   Settings2,
   ShieldCheck,
   Sparkles,
@@ -15,14 +17,18 @@ import {
 } from 'lucide-react'
 import type {
   CustomAgent,
+  CustomWorkflow,
   ModelOption,
   UpdateCustomAgentInput
 } from '../../../../shared/customAgents'
+import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import {
+  AGENT_PRESETS,
   agentStatusMeta,
   modelSummary,
-  triggerLabel
+  triggerLabel,
+  type AgentPreset
 } from './presentation'
 import {
   buildBezierPath,
@@ -30,9 +36,13 @@ import {
   computeAutoLayout,
   computeFitViewport,
   getPortPoint,
+  getScopedWorkflowAgents,
   loadSavedLayout,
   mergeNodePositions,
+  parseLayoutJson,
   saveLayout,
+  serializeLayoutJson,
+  WORKFLOW_LAYOUT_STORAGE_KEY,
   type NodePosition,
   type ViewportState,
   type WorkflowLinkKind
@@ -60,37 +70,83 @@ interface WorkflowEdge {
 const PORT_MENU_WIDTH = 224
 const PORT_MENU_ESTIMATED_HEIGHT = 248
 
+function workflowStorageKey(workflowId: string): string {
+  return `${WORKFLOW_LAYOUT_STORAGE_KEY}:${workflowId || 'default'}`
+}
+
 export function WorkflowCanvas({
   agents,
+  activeWorkflow = null,
   models,
   selectedAgentId,
   onSelectAgent,
   onConfigureAgent,
   onRunAgent,
   onUpdateAgent,
+  onSaveLayout,
+  onSetEntryAgent,
+  onQuickCreateStarter,
+  onAttachExistingAgent,
   onOpenCreate,
   onOpenSwarm
 }: {
   agents: CustomAgent[]
+  activeWorkflow?: CustomWorkflow | null
   models: ModelOption[]
   selectedAgentId: string
   onSelectAgent: (id: string) => void
   onConfigureAgent: (id: string) => void
   onRunAgent: (agentId: string) => void
   onUpdateAgent: (agentId: string, patch: UpdateCustomAgentInput) => Promise<CustomAgent>
+  onSaveLayout?: (workflowId: string, layoutJson: string) => Promise<unknown>
+  onSetEntryAgent?: (workflowId: string, agentId: string) => Promise<unknown>
+  onQuickCreateStarter?: (preset: AgentPreset) => Promise<unknown>
+  onAttachExistingAgent?: (agentId: string) => Promise<unknown>
   onOpenCreate: (pendingLink?: PendingWorkflowLink) => void
   onOpenSwarm: () => void
 }) {
   const { t } = useI18n()
   const stageRef = useRef<HTMLDivElement>(null)
-  const didInitialFitRef = useRef(false)
+  const didFitWorkflowRef = useRef<string>('')
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const activeWorkflowId = activeWorkflow?.id || 'default'
+
+  const { primaryIds, scopedAgents } = useMemo(
+    () =>
+      activeWorkflow
+        ? getScopedWorkflowAgents(agents, activeWorkflowId)
+        : {
+            primaryIds: new Set(agents.map((item) => item.id)),
+            scopedAgents: agents
+          },
+    [agents, activeWorkflow, activeWorkflowId]
+  )
+
+  const attachableAgents = useMemo(
+    () => agents.filter((item) => !primaryIds.has(item.id)),
+    [agents, primaryIds]
+  )
+
+  const computeInitialPositions = (
+    targetAgents: CustomAgent[],
+    wf: CustomWorkflow | null
+  ): Record<string, NodePosition> => {
+    const wfId = wf?.id || 'default'
+    const fromServer = parseLayoutJson(wf?.layout_json)
+    const fromLocal = loadSavedLayout(workflowStorageKey(wfId))
+    const seed = Object.keys(fromServer).length > 0 ? { ...fromLocal, ...fromServer } : fromLocal
+    return mergeNodePositions(targetAgents, seed)
+  }
 
   const [positions, setPositions] = useState<Record<string, NodePosition>>(() =>
-    mergeNodePositions(agents, loadSavedLayout())
+    computeInitialPositions(scopedAgents, activeWorkflow)
   )
   const [viewport, setViewport] = useState<ViewportState>({ x: 24, y: 20, zoom: 1 })
   const [gestureActive, setGestureActive] = useState(false)
   const [isPanning, setIsPanning] = useState(false)
+  const [creatingStarter, setCreatingStarter] = useState('')
+  const [attachValue, setAttachValue] = useState('')
   const [wirePreview, setWirePreview] = useState<{
     kind: WorkflowLinkKind
     x1: number
@@ -117,6 +173,10 @@ export function WorkflowCanvas({
   viewportRef.current = viewport
   const agentsRef = useRef(agents)
   agentsRef.current = agents
+  const scopedAgentsRef = useRef(scopedAgents)
+  scopedAgentsRef.current = scopedAgents
+  const activeWorkflowRef = useRef(activeWorkflow)
+  activeWorkflowRef.current = activeWorkflow
 
   const dragNodeRef = useRef<{
     id: string
@@ -145,26 +205,71 @@ export function WorkflowCanvas({
   } | null>(null)
 
   const selectedAgent = useMemo(
-    () => agents.find((item) => item.id === selectedAgentId) || null,
-    [agents, selectedAgentId]
+    () => scopedAgents.find((item) => item.id === selectedAgentId) || null,
+    [scopedAgents, selectedAgentId]
   )
 
+  const persistPositions = (
+    next: Record<string, NodePosition>,
+    immediate = false
+  ) => {
+    const wf = activeWorkflowRef.current
+    const wfId = wf?.id || 'default'
+    saveLayout(next, workflowStorageKey(wfId))
+    if (!wf || !onSaveLayout) return
+    const serialized = serializeLayoutJson(next)
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
+    if (immediate) {
+      void onSaveLayout(wf.id, serialized).catch(() => {})
+      return
+    }
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null
+      void onSaveLayout(wf.id, serialized).catch(() => {})
+    }, 350)
+  }
+
   useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    const next = computeInitialPositions(scopedAgents, activeWorkflow)
+    positionsRef.current = next
+    setPositions(next)
+    setPortMenu(null)
+    setSelectedEdge(null)
+    setWireError('')
+    didFitWorkflowRef.current = ''
+  }, [activeWorkflowId])
+
+  useEffect(() => {
+    const fromServer = parseLayoutJson(activeWorkflow?.layout_json)
     setPositions((current) => {
-      const merged = mergeNodePositions(agents, current)
+      const merged = mergeNodePositions(scopedAgents, { ...current, ...fromServer })
       positionsRef.current = merged
       return merged
     })
-  }, [agents])
+  }, [scopedAgents, activeWorkflow?.layout_json])
 
   useEffect(() => {
     const el = stageRef.current
     if (!el || typeof ResizeObserver === 'undefined') return
     const tryFit = () => {
-      if (didInitialFitRef.current || agentsRef.current.length === 0) return
+      if (
+        didFitWorkflowRef.current === activeWorkflowId ||
+        scopedAgentsRef.current.length === 0
+      ) {
+        return
+      }
       const rect = el.getBoundingClientRect()
       if (rect.width > 40 && rect.height > 40) {
-        didInitialFitRef.current = true
+        didFitWorkflowRef.current = activeWorkflowId
         const fitted = computeFitViewport(positionsRef.current, rect.width, rect.height)
         viewportRef.current = fitted
         setViewport(fitted)
@@ -174,7 +279,7 @@ export function WorkflowCanvas({
     const observer = new ResizeObserver(tryFit)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [agents.length])
+  }, [activeWorkflowId, scopedAgents.length])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -333,7 +438,7 @@ export function WorkflowCanvas({
       const drag = dragNodeRef.current
       if (drag) {
         if (drag.moved) {
-          saveLayout(positionsRef.current)
+          persistPositions(positionsRef.current, false)
         } else {
           onSelectAgent(drag.id)
         }
@@ -379,10 +484,11 @@ export function WorkflowCanvas({
   }, [gestureActive])
 
   const edges = useMemo<WorkflowEdge[]>(() => {
-    const byId = new Map(agents.map((agent) => [agent.id, agent]))
+    const byId = new Map(scopedAgents.map((agent) => [agent.id, agent]))
     const list: WorkflowEdge[] = []
     let skipLaneIndex = 0
-    for (const agent of agents) {
+    for (const agent of scopedAgents) {
+      if (!primaryIds.has(agent.id)) continue
       const fromPos = positions[agent.id]
       if (!fromPos) continue
       if (agent.next_agent_id && byId.has(agent.next_agent_id)) {
@@ -429,7 +535,7 @@ export function WorkflowCanvas({
       }
     }
     return list
-  }, [agents, positions])
+  }, [scopedAgents, primaryIds, positions])
 
   const activeEdgeOverlay = useMemo(() => {
     if (!selectedEdge) return null
@@ -455,10 +561,10 @@ export function WorkflowCanvas({
   }
 
   const handleAutoLayout = () => {
-    const next = computeAutoLayout(agents)
+    const next = computeAutoLayout(scopedAgents)
     positionsRef.current = next
     setPositions(next)
-    saveLayout(next)
+    persistPositions(next, true)
     fitCurrentNodes(next)
     setPortMenu(null)
     setSelectedEdge(null)
@@ -527,6 +633,26 @@ export function WorkflowCanvas({
     setGestureActive(true)
   }
 
+  const starterCards: { id: string; label: string; icon: typeof Radar }[] = [
+    { id: 'monitor', label: '+ Монитор / Триггер', icon: Radar },
+    { id: 'researcher', label: '+ Воркер', icon: Bot },
+    { id: 'orchestrator', label: '+ Координатор', icon: Sparkles },
+    { id: 'verifier', label: '+ Верификатор', icon: ShieldCheck }
+  ]
+
+  const handleStarter = async (presetId: string) => {
+    const preset = AGENT_PRESETS.find((item) => item.id === presetId)
+    if (!preset || !onQuickCreateStarter || creatingStarter) return
+    setCreatingStarter(presetId)
+    try {
+      await onQuickCreateStarter(preset)
+    } finally {
+      setCreatingStarter('')
+    }
+  }
+
+  const isEmptyWorkflow = scopedAgents.length === 0
+
   return (
     <div className="ca-wf-viewport">
       <div className="ca-wf-hud-top">
@@ -552,6 +678,27 @@ export function WorkflowCanvas({
         {selectedAgent && (
           <div className="ca-wf-selected-pill">
             <strong title={selectedAgent.name}>{selectedAgent.name}</strong>
+            {activeWorkflow && onSetEntryAgent && primaryIds.has(selectedAgent.id) && (
+              <button
+                type="button"
+                className={`ca-wf-pill-action ${activeWorkflow.entry_agent_id === selectedAgent.id ? 'is-start' : ''}`}
+                onClick={() =>
+                  void onSetEntryAgent(
+                    activeWorkflow.id,
+                    activeWorkflow.entry_agent_id === selectedAgent.id
+                      ? ''
+                      : selectedAgent.id
+                  )
+                }
+              >
+                <Flag size={12} aria-hidden="true" />
+                <span>
+                  {activeWorkflow.entry_agent_id === selectedAgent.id
+                    ? t('Старт')
+                    : t('Сделать стартом')}
+                </span>
+              </button>
+            )}
             <button
               type="button"
               className="ca-wf-pill-action primary"
@@ -626,7 +773,7 @@ export function WorkflowCanvas({
           const target = event.target as HTMLElement
           if (
             target.closest(
-              '.ca-wf-node, .ca-wf-zoom-bar, .ca-wf-port-menu, .ca-wf-edge-chip, .ca-wf-edge-hit, .ca-wf-error'
+              '.ca-wf-node, .ca-wf-zoom-bar, .ca-wf-port-menu, .ca-wf-edge-chip, .ca-wf-edge-hit, .ca-wf-error, .ca-wf-empty-hero'
             )
           ) {
             return
@@ -644,363 +791,425 @@ export function WorkflowCanvas({
           setGestureActive(true)
         }}
       >
-        <div className="ca-wf-zoom-bar" role="group" aria-label={t('Управление холстом')}>
-          <button
-            type="button"
-            className="icon small"
-            title={t('Уменьшить')}
-            aria-label={t('Уменьшить')}
-            onClick={() => setZoom(-0.15)}
-          >
-            <Minus size={13} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="ca-wf-zoom-readout"
-            title={t('Сбросить масштаб')}
-            onClick={() => {
-              const next = { ...viewportRef.current, zoom: 1 }
-              viewportRef.current = next
-              setViewport(next)
-            }}
-          >
-            {`${Math.round(viewport.zoom * 100)}%`}
-          </button>
-          <button
-            type="button"
-            className="icon small"
-            title={t('Увеличить')}
-            aria-label={t('Увеличить')}
-            onClick={() => setZoom(0.15)}
-          >
-            <Plus size={13} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="ca-wf-mini-action"
-            title={t('По центру')}
-            onClick={handleCenterView}
-          >
-            <Crosshair size={13} aria-hidden="true" />
-            <span>{t('По центру')}</span>
-          </button>
-          <button
-            type="button"
-            className="ca-wf-mini-action"
-            title={t('Авто-раскладка')}
-            onClick={handleAutoLayout}
-          >
-            <LayoutGrid size={13} aria-hidden="true" />
-            <span>{t('Авто-раскладка')}</span>
-          </button>
-        </div>
-
-        <div
-          className="ca-wf-world"
-          style={{
-            transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
-          }}
-        >
-          <svg className="ca-wf-svg" aria-hidden="true">
-            <defs>
-              <marker
-                id="ca-arrow-next"
-                markerWidth="8"
-                markerHeight="8"
-                refX="6"
-                refY="4"
-                orient="auto"
-              >
-                <path d="M 0 1 L 7 4 L 0 7 z" className="ca-wf-arrow-next" />
-              </marker>
-              <marker
-                id="ca-arrow-verifier"
-                markerWidth="8"
-                markerHeight="8"
-                refX="6"
-                refY="4"
-                orient="auto"
-              >
-                <path d="M 0 1 L 7 4 L 0 7 z" className="ca-wf-arrow-verifier" />
-              </marker>
-            </defs>
-
-            {edges.map((edge) => {
-              const isSelected =
-                selectedEdge?.sourceId === edge.sourceId &&
-                selectedEdge?.targetId === edge.targetId &&
-                selectedEdge?.kind === edge.kind
-              const isRelated =
-                edge.sourceId === selectedAgentId || edge.targetId === selectedAgentId
-              return (
-                <g key={edge.id}>
-                  <path
-                    d={edge.path}
-                    className="ca-wf-edge-hit"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      setPortMenu(null)
-                      setSelectedEdge({
-                        sourceId: edge.sourceId,
-                        targetId: edge.targetId,
-                        kind: edge.kind
-                      })
+        {isEmptyWorkflow ? (
+          <div className="ca-wf-empty-wrap">
+            <div className="ca-wf-empty-hero">
+              <h2>
+                {t('Пустая цепочка «{name}» — выберите стартовый узел', {
+                  name: activeWorkflow?.name || t('Новая цепочка')
+                })}
+              </h2>
+              <p className="ca-muted-note">
+                {t('Создайте первый узел в один клик или перенесите существующего агента.')}
+              </p>
+              <div className="ca-wf-starters-grid">
+                {starterCards.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="ca-wf-starter-btn"
+                      disabled={Boolean(creatingStarter)}
+                      onClick={() => void handleStarter(item.id)}
+                    >
+                      <Icon size={15} aria-hidden="true" />
+                      <span>{t(item.label)}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {attachableAgents.length > 0 && onAttachExistingAgent && (
+                <div className="ca-wf-attach-row">
+                  <span className="ca-muted-note">{t('Добавить существующего агента')}</span>
+                  <Select
+                    value={attachValue}
+                    onChange={(value) => {
+                      if (!value) return
+                      setAttachValue('')
+                      void onAttachExistingAgent(value)
                     }}
+                    label={t('Добавить существующего агента')}
+                    options={[
+                      { value: '', label: t('Выберите агента…') },
+                      ...attachableAgents.map((item) => ({
+                        value: item.id,
+                        label: item.name
+                      }))
+                    ]}
                   />
-                  <path
-                    d={edge.path}
-                    className={`ca-wf-edge kind-${edge.kind} ${isRelated ? 'related' : ''} ${isSelected ? 'selected' : ''}`}
-                    markerEnd={
-                      edge.kind === 'next'
-                        ? 'url(#ca-arrow-next)'
-                        : 'url(#ca-arrow-verifier)'
-                    }
-                  />
-                </g>
-              )
-            })}
-
-            {wirePreview && (
-              <path
-                d={
-                  buildBezierPath(
-                    wirePreview.x1,
-                    wirePreview.y1,
-                    wirePreview.x2,
-                    wirePreview.y2,
-                    { skipArc: false }
-                  ).path
-                }
-                className={`ca-wf-edge draft kind-${wirePreview.kind}`}
-              />
-            )}
-          </svg>
-
-          {activeEdgeOverlay && (
-            <div
-              className="ca-wf-edge-chip"
-              style={{
-                left: `${activeEdgeOverlay.midX}px`,
-                top: `${activeEdgeOverlay.midY}px`
-              }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <span>
-                {activeEdgeOverlay.kind === 'next' ? t('Далее') : t('Проверка')}
-              </span>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="ca-wf-zoom-bar" role="group" aria-label={t('Управление холстом')}>
               <button
                 type="button"
-                className="danger ca-wf-edge-del"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  void removeConnection(
-                    activeEdgeOverlay.sourceId,
-                    activeEdgeOverlay.kind
-                  )
+                className="icon small"
+                title={t('Уменьшить')}
+                aria-label={t('Уменьшить')}
+                onClick={() => setZoom(-0.15)}
+              >
+                <Minus size={13} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="ca-wf-zoom-readout"
+                title={t('Сбросить масштаб')}
+                onClick={() => {
+                  const next = { ...viewportRef.current, zoom: 1 }
+                  viewportRef.current = next
+                  setViewport(next)
                 }}
               >
-                <X size={12} aria-hidden="true" />
-                <span>{t('Удалить связь')}</span>
+                {`${Math.round(viewport.zoom * 100)}%`}
+              </button>
+              <button
+                type="button"
+                className="icon small"
+                title={t('Увеличить')}
+                aria-label={t('Увеличить')}
+                onClick={() => setZoom(0.15)}
+              >
+                <Plus size={13} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="ca-wf-mini-action"
+                title={t('По центру')}
+                onClick={handleCenterView}
+              >
+                <Crosshair size={13} aria-hidden="true" />
+                <span>{t('По центру')}</span>
+              </button>
+              <button
+                type="button"
+                className="ca-wf-mini-action"
+                title={t('Авто-раскладка')}
+                onClick={handleAutoLayout}
+              >
+                <LayoutGrid size={13} aria-hidden="true" />
+                <span>{t('Авто-раскладка')}</span>
               </button>
             </div>
-          )}
 
-          {agents.map((agent) => {
-            const pos = positions[agent.id] || { x: 48, y: 64 }
-            const selected = agent.id === selectedAgentId
-            const status = agentStatusMeta(agent.status)
-            const model = modelSummary(agent, models)
-            const hasTrigger = agent.trigger_type && agent.trigger_type !== 'manual'
+            <div
+              className="ca-wf-world"
+              style={{
+                transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+              }}
+            >
+              <svg className="ca-wf-svg" aria-hidden="true">
+                <defs>
+                  <marker
+                    id="ca-arrow-next"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="6"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <path d="M 0 1 L 7 4 L 0 7 z" className="ca-wf-arrow-next" />
+                  </marker>
+                  <marker
+                    id="ca-arrow-verifier"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="6"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <path d="M 0 1 L 7 4 L 0 7 z" className="ca-wf-arrow-verifier" />
+                  </marker>
+                </defs>
 
-            return (
-              <article
-                key={agent.id}
-                data-wf-node-id={agent.id}
-                className={`ca-wf-node role-${agent.role} ${selected ? 'selected' : ''} ${agent.enabled ? '' : 'disabled'}`}
-                style={{
-                  transform: `translate(${pos.x}px, ${pos.y}px)`
-                }}
-                onPointerDown={(event) => {
-                  if (
-                    (event.target as HTMLElement).closest(
-                      'button, input, select, textarea, .ca-wf-port-anchor'
-                    )
-                  ) {
-                    return
-                  }
-                  event.stopPropagation()
-                  setPortMenu(null)
-                  setSelectedEdge(null)
-                  dragNodeRef.current = {
-                    id: agent.id,
-                    startX: event.clientX,
-                    startY: event.clientY,
-                    origX: pos.x,
-                    origY: pos.y,
-                    moved: false
-                  }
-                  setGestureActive(true)
-                }}
-                onDoubleClick={(event) => {
-                  if (
-                    (event.target as HTMLElement).closest(
-                      'button, .ca-wf-port-anchor'
-                    )
-                  ) {
-                    return
-                  }
-                  onSelectAgent(agent.id)
-                  onConfigureAgent(agent.id)
-                }}
-                onClick={() => {
-                  setPortMenu(null)
-                  setSelectedEdge(null)
-                  onSelectAgent(agent.id)
-                }}
-              >
-                <div className="ca-wf-node-accent" />
+                {edges.map((edge) => {
+                  const isSelected =
+                    selectedEdge?.sourceId === edge.sourceId &&
+                    selectedEdge?.targetId === edge.targetId &&
+                    selectedEdge?.kind === edge.kind
+                  const isRelated =
+                    edge.sourceId === selectedAgentId || edge.targetId === selectedAgentId
+                  return (
+                    <g key={edge.id}>
+                      <path
+                        d={edge.path}
+                        className="ca-wf-edge-hit"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setPortMenu(null)
+                          setSelectedEdge({
+                            sourceId: edge.sourceId,
+                            targetId: edge.targetId,
+                            kind: edge.kind
+                          })
+                        }}
+                      />
+                      <path
+                        d={edge.path}
+                        className={`ca-wf-edge kind-${edge.kind} ${isRelated ? 'related' : ''} ${isSelected ? 'selected' : ''}`}
+                        markerEnd={
+                          edge.kind === 'next'
+                            ? 'url(#ca-arrow-next)'
+                            : 'url(#ca-arrow-verifier)'
+                        }
+                      />
+                    </g>
+                  )
+                })}
 
-                <div className="ca-wf-port-anchor anchor-in">
+                {wirePreview && (
+                  <path
+                    d={
+                      buildBezierPath(
+                        wirePreview.x1,
+                        wirePreview.y1,
+                        wirePreview.x2,
+                        wirePreview.y2,
+                        { skipArc: false }
+                      ).path
+                    }
+                    className={`ca-wf-edge draft kind-${wirePreview.kind}`}
+                  />
+                )}
+              </svg>
+
+              {activeEdgeOverlay && (
+                <div
+                  className="ca-wf-edge-chip"
+                  style={{
+                    left: `${activeEdgeOverlay.midX}px`,
+                    top: `${activeEdgeOverlay.midY}px`
+                  }}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <span>
+                    {activeEdgeOverlay.kind === 'next' ? t('Далее') : t('Проверка')}
+                  </span>
                   <button
                     type="button"
-                    data-wf-in-node={agent.id}
-                    className="ca-wf-port ca-wf-port-in"
-                    title={t('Вход узла')}
-                    aria-label={t('Вход узла {name}', { name: agent.name })}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <span className="ca-wf-port-dot ca-wf-port-dot-in" />
-                  </button>
-                </div>
-
-                <header className="ca-wf-node-head">
-                  <span className="ca-wf-role-icon">{roleIcon(agent.role)}</span>
-                  <div className="ca-wf-node-titles">
-                    <strong title={agent.name}>{agent.name}</strong>
-                    <span>{`@${agent.slug}`}</span>
-                  </div>
-                  <div className="ca-wf-node-actions">
-                    <button
-                      type="button"
-                      className="ca-wf-node-btn"
-                      title={t('Настроить {name}', { name: agent.name })}
-                      aria-label={t('Настроить {name}', { name: agent.name })}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onSelectAgent(agent.id)
-                        onConfigureAgent(agent.id)
-                      }}
-                    >
-                      <Settings2 size={12} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className="ca-wf-node-btn ca-wf-run-btn"
-                      title={t('Запустить {name}', { name: agent.name })}
-                      aria-label={t('Запустить {name}', { name: agent.name })}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onSelectAgent(agent.id)
-                        onRunAgent(agent.id)
-                      }}
-                    >
-                      <Play size={12} aria-hidden="true" />
-                    </button>
-                  </div>
-                </header>
-
-                <div className="ca-wf-node-body">
-                  <div className="ca-wf-node-row">
-                    <span className={`ca-status-badge tone-${status.tone}`}>
-                      <span className="ca-status-dot" aria-hidden="true" />
-                      {t(status.label)}
-                    </span>
-                    <span
-                      className={`ca-chip ${hasTrigger ? '' : 'ca-chip-muted'}`}
-                      title={triggerLabel(agent)}
-                    >
-                      {triggerLabel(agent)}
-                    </span>
-                  </div>
-
-                  <div className="ca-wf-node-row">
-                    <span className="ca-chip ca-chip-muted" title={model}>
-                      {model === 'Авто' ? t('Авто') : model}
-                    </span>
-                    <span className="ca-chip ca-chip-muted">
-                      {qualityBadge(agent)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="ca-wf-node-footer">
-                  <div
-                    className="ca-wf-port-row"
-                    onClick={(event) => event.stopPropagation()}
-                    onPointerDown={(event) =>
-                      startOutputPort(event, agent.id, 'next', pos)
-                    }
-                  >
-                    <span>{t('Далее')}</span>
-                  </div>
-                  <div
-                    className="ca-wf-port-row"
-                    onClick={(event) => event.stopPropagation()}
-                    onPointerDown={(event) =>
-                      startOutputPort(event, agent.id, 'verifier', pos)
-                    }
-                  >
-                    <span>{t('Проверка')}</span>
-                  </div>
-                </div>
-
-                <div className="ca-wf-port-anchor anchor-next">
-                  <button
-                    type="button"
-                    className="ca-wf-port ca-wf-port-out port-next"
-                    title={t('Выход: Далее')}
-                    aria-label={t('Подключить следующий узел от {name}', {
-                      name: agent.name
-                    })}
+                    className="danger ca-wf-edge-del"
                     onClick={(event) => {
                       event.stopPropagation()
-                      if (event.detail === 0) {
-                        openPortMenu(agent.id, 'next', pos)
-                      }
+                      void removeConnection(
+                        activeEdgeOverlay.sourceId,
+                        activeEdgeOverlay.kind
+                      )
                     }}
-                    onPointerDown={(event) =>
-                      startOutputPort(event, agent.id, 'next', pos)
-                    }
                   >
-                    <span className="ca-wf-port-dot" />
+                    <X size={12} aria-hidden="true" />
+                    <span>{t('Удалить связь')}</span>
                   </button>
                 </div>
+              )}
 
-                <div className="ca-wf-port-anchor anchor-verifier">
-                  <button
-                    type="button"
-                    className="ca-wf-port ca-wf-port-out port-verifier"
-                    title={t('Выход: Проверка')}
-                    aria-label={t('Подключить верификатор к {name}', {
-                      name: agent.name
-                    })}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      if (event.detail === 0) {
-                        openPortMenu(agent.id, 'verifier', pos)
-                      }
+              {scopedAgents.map((agent) => {
+                const pos = positions[agent.id] || { x: 48, y: 64 }
+                const selected = agent.id === selectedAgentId
+                const isEntry = activeWorkflow?.entry_agent_id === agent.id
+                const isExternal = !primaryIds.has(agent.id)
+                const status = agentStatusMeta(agent.status)
+                const model = modelSummary(agent, models)
+                const hasTrigger = agent.trigger_type && agent.trigger_type !== 'manual'
+
+                return (
+                  <article
+                    key={agent.id}
+                    data-wf-node-id={agent.id}
+                    className={`ca-wf-node role-${agent.role} ${selected ? 'selected' : ''} ${agent.enabled ? '' : 'disabled'} ${isExternal ? 'external' : ''}`}
+                    style={{
+                      transform: `translate(${pos.x}px, ${pos.y}px)`
                     }}
-                    onPointerDown={(event) =>
-                      startOutputPort(event, agent.id, 'verifier', pos)
-                    }
+                    onPointerDown={(event) => {
+                      if (
+                        (event.target as HTMLElement).closest(
+                          'button, input, select, textarea, .ca-wf-port-anchor'
+                        )
+                      ) {
+                        return
+                      }
+                      event.stopPropagation()
+                      setPortMenu(null)
+                      setSelectedEdge(null)
+                      dragNodeRef.current = {
+                        id: agent.id,
+                        startX: event.clientX,
+                        startY: event.clientY,
+                        origX: pos.x,
+                        origY: pos.y,
+                        moved: false
+                      }
+                      setGestureActive(true)
+                    }}
+                    onDoubleClick={(event) => {
+                      if (
+                        (event.target as HTMLElement).closest(
+                          'button, .ca-wf-port-anchor'
+                        )
+                      ) {
+                        return
+                      }
+                      onSelectAgent(agent.id)
+                      onConfigureAgent(agent.id)
+                    }}
+                    onClick={() => {
+                      setPortMenu(null)
+                      setSelectedEdge(null)
+                      onSelectAgent(agent.id)
+                    }}
                   >
-                    <span className="ca-wf-port-dot" />
-                  </button>
-                </div>
-              </article>
-            )
-          })}
-        </div>
+                    <div className="ca-wf-node-accent" />
+
+                    <div className="ca-wf-port-anchor anchor-in">
+                      <button
+                        type="button"
+                        data-wf-in-node={agent.id}
+                        className="ca-wf-port ca-wf-port-in"
+                        title={t('Вход узла')}
+                        aria-label={t('Вход узла {name}', { name: agent.name })}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <span className="ca-wf-port-dot ca-wf-port-dot-in" />
+                      </button>
+                    </div>
+
+                    <header className="ca-wf-node-head">
+                      <span className="ca-wf-role-icon">{roleIcon(agent.role)}</span>
+                      <div className="ca-wf-node-titles">
+                        <div className="ca-wf-node-title-row">
+                          <strong title={agent.name}>{agent.name}</strong>
+                          {isEntry && (
+                            <span className="ca-wf-start-badge">{t('Старт')}</span>
+                          )}
+                        </div>
+                        <span>{`@${agent.slug}`}</span>
+                      </div>
+                      <div className="ca-wf-node-actions">
+                        <button
+                          type="button"
+                          className="ca-wf-node-btn"
+                          title={t('Настроить {name}', { name: agent.name })}
+                          aria-label={t('Настроить {name}', { name: agent.name })}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            onSelectAgent(agent.id)
+                            onConfigureAgent(agent.id)
+                          }}
+                        >
+                          <Settings2 size={12} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="ca-wf-node-btn ca-wf-run-btn"
+                          title={t('Запустить {name}', { name: agent.name })}
+                          aria-label={t('Запустить {name}', { name: agent.name })}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            onSelectAgent(agent.id)
+                            onRunAgent(agent.id)
+                          }}
+                        >
+                          <Play size={12} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </header>
+
+                    <div className="ca-wf-node-body">
+                      <div className="ca-wf-node-row">
+                        <span className={`ca-status-badge tone-${status.tone}`}>
+                          <span className="ca-status-dot" aria-hidden="true" />
+                          {t(status.label)}
+                        </span>
+                        <span
+                          className={`ca-chip ${hasTrigger ? '' : 'ca-chip-muted'}`}
+                          title={triggerLabel(agent)}
+                        >
+                          {triggerLabel(agent)}
+                        </span>
+                      </div>
+
+                      <div className="ca-wf-node-row">
+                        <span className="ca-chip ca-chip-muted" title={model}>
+                          {model === 'Авто' ? t('Авто') : model}
+                        </span>
+                        <span className="ca-chip ca-chip-muted">
+                          {qualityBadge(agent)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="ca-wf-node-footer">
+                      <div
+                        className="ca-wf-port-row"
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDown={(event) =>
+                          startOutputPort(event, agent.id, 'next', pos)
+                        }
+                      >
+                        <span>{t('Далее')}</span>
+                      </div>
+                      <div
+                        className="ca-wf-port-row"
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDown={(event) =>
+                          startOutputPort(event, agent.id, 'verifier', pos)
+                        }
+                      >
+                        <span>{t('Проверка')}</span>
+                      </div>
+                    </div>
+
+                    <div className="ca-wf-port-anchor anchor-next">
+                      <button
+                        type="button"
+                        className="ca-wf-port ca-wf-port-out port-next"
+                        title={t('Выход: Далее')}
+                        aria-label={t('Подключить следующий узел от {name}', {
+                          name: agent.name
+                        })}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          if (event.detail === 0) {
+                            openPortMenu(agent.id, 'next', pos)
+                          }
+                        }}
+                        onPointerDown={(event) =>
+                          startOutputPort(event, agent.id, 'next', pos)
+                        }
+                      >
+                        <span className="ca-wf-port-dot" />
+                      </button>
+                    </div>
+
+                    <div className="ca-wf-port-anchor anchor-verifier">
+                      <button
+                        type="button"
+                        className="ca-wf-port ca-wf-port-out port-verifier"
+                        title={t('Выход: Проверка')}
+                        aria-label={t('Подключить верификатор к {name}', {
+                          name: agent.name
+                        })}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          if (event.detail === 0) {
+                            openPortMenu(agent.id, 'verifier', pos)
+                          }
+                        }}
+                        onPointerDown={(event) =>
+                          startOutputPort(event, agent.id, 'verifier', pos)
+                        }
+                      >
+                        <span className="ca-wf-port-dot" />
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </>
+        )}
 
         {portMenu && (
           <div

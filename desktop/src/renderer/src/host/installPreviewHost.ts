@@ -19,6 +19,7 @@ import {
   createPreviewCustomAgentModels,
   createPreviewCustomAgentRuns,
   createPreviewCustomAgents,
+  createPreviewCustomWorkflows,
   createPreviewGlobalMemory,
   createPreviewDesignerProject,
   createPreviewFileContents,
@@ -42,6 +43,7 @@ import type {
   CustomAgent,
   CustomAgentRun,
   CustomAgentsRequest,
+  CustomWorkflow,
   GlobalMemoryDoc,
   SwarmResult,
   SwarmWorkerResult
@@ -152,6 +154,7 @@ export function installPreviewHost() {
   let remoteState = createPreviewRemote()
   let browserState = createPreviewBrowserState()
   let browserLogs = createPreviewBrowserLogs()
+  let customWorkflows: CustomWorkflow[] = createPreviewCustomWorkflows()
   let customAgents: CustomAgent[] = createPreviewCustomAgents()
   let customAgentRuns: CustomAgentRun[] = createPreviewCustomAgentRuns()
   let customBlackboard: BlackboardEntry[] = createPreviewBlackboard()
@@ -1100,6 +1103,7 @@ export function installPreviewHost() {
           auto_model_hint: request.input.auto_model_hint || '',
           allowed_tools: request.input.allowed_tools || [],
           workspace_path: request.input.workspace_path || '',
+          workflow_id: request.input.workflow_id || 'default',
           enabled: request.input.enabled ?? true,
           created_by: request.input.created_by || 'user',
           trigger_type: request.input.trigger_type || 'manual',
@@ -1679,6 +1683,194 @@ export function installPreviewHost() {
         }
         emitCustom('swarm.completed', '', '', chainId, structuredClone(swarmResult))
         return structuredClone(swarmResult)
+      }
+      if (request.action === 'listWorkflows') {
+        return { workflows: structuredClone(customWorkflows) }
+      }
+      if (request.action === 'createWorkflow') {
+        const now = nowSec()
+        const name = request.input.name?.trim() || request.input.slug?.trim() || ''
+        if (!name) throw new Error('Требуется название цепочки')
+        const id = `wf-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+        const slug = request.input.slug?.trim() || slugify(name, id)
+        const created: CustomWorkflow = {
+          id,
+          slug,
+          name,
+          description: request.input.description || '',
+          enabled: request.input.enabled ?? true,
+          created_by: request.input.created_by || 'user',
+          entry_agent_id: request.input.entry_agent_id || '',
+          layout_json: request.input.layout_json || '',
+          created_at: now,
+          updated_at: now
+        }
+        customWorkflows = [...customWorkflows, created]
+        emit({
+          workspaceId: '',
+          kind: 'customAgents',
+          data: {
+            type: 'workflow_updated',
+            agent_id: '',
+            run_id: '',
+            chain_id: '',
+            workflow_id: created.id,
+            workflow: structuredClone(created),
+            payload: structuredClone(created),
+            timestamp: now
+          }
+        })
+        return structuredClone(created)
+      }
+      if (request.action === 'updateWorkflow') {
+        const idx = customWorkflows.findIndex(
+          (w) => w.id === request.workflowId || w.slug === request.workflowId
+        )
+        if (idx === -1) throw new Error('Цепочка не найдена')
+        const current = customWorkflows[idx]
+        const nextName =
+          request.patch.name !== undefined ? request.patch.name.trim() : current.name
+        if (!nextName) throw new Error('Название цепочки не может быть пустым')
+        const now = nowSec()
+        const updated: CustomWorkflow = {
+          ...current,
+          name: nextName,
+          description:
+            request.patch.description !== undefined
+              ? request.patch.description
+              : current.description,
+          enabled:
+            request.patch.enabled !== undefined ? request.patch.enabled : current.enabled,
+          entry_agent_id:
+            request.patch.entry_agent_id !== undefined
+              ? request.patch.entry_agent_id
+              : current.entry_agent_id,
+          layout_json:
+            request.patch.layout_json !== undefined
+              ? request.patch.layout_json
+              : current.layout_json,
+          updated_at: now
+        }
+        customWorkflows = customWorkflows.map((w) => (w.id === updated.id ? updated : w))
+        emit({
+          workspaceId: '',
+          kind: 'customAgents',
+          data: {
+            type: 'workflow_updated',
+            agent_id: '',
+            run_id: '',
+            chain_id: '',
+            workflow_id: updated.id,
+            workflow: structuredClone(updated),
+            payload: structuredClone(updated),
+            timestamp: now
+          }
+        })
+        return structuredClone(updated)
+      }
+      if (request.action === 'deleteWorkflow') {
+        const existing = customWorkflows.find(
+          (w) => w.id === request.workflowId || w.slug === request.workflowId
+        )
+        if (!existing) throw new Error('Цепочка не найдена')
+        if (existing.id === 'default') {
+          throw new Error('Базовую цепочку нельзя удалить')
+        }
+        const deleteAgents = Boolean(request.deleteAgents)
+        if (deleteAgents) {
+          customAgents = customAgents.filter(
+            (a) => (a.workflow_id || 'default') !== existing.id
+          )
+        } else {
+          customAgents = customAgents.map((a) =>
+            (a.workflow_id || 'default') === existing.id ? { ...a, workflow_id: '' } : a
+          )
+        }
+        customWorkflows = customWorkflows.filter((w) => w.id !== existing.id)
+        emit({
+          workspaceId: '',
+          kind: 'customAgents',
+          data: {
+            type: 'workflow_deleted',
+            agent_id: '',
+            run_id: '',
+            chain_id: '',
+            workflow_id: existing.id,
+            payload: { workflow_id: existing.id, delete_agents: deleteAgents },
+            timestamp: nowSec()
+          }
+        })
+        return { deleted: true }
+      }
+      if (request.action === 'runWorkflow') {
+        const wf = customWorkflows.find(
+          (w) => w.id === request.workflowId || w.slug === request.workflowId
+        )
+        if (!wf) throw new Error('Цепочка не найдена')
+        if (!wf.enabled) throw new Error(`Цепочка ${wf.slug} отключена`)
+        const wfAgents = customAgents.filter(
+          (a) => (a.workflow_id || 'default') === wf.id
+        )
+        if (wfAgents.length === 0) {
+          throw new Error(`В цепочке «${wf.name}» нет агентов для запуска`)
+        }
+        const incoming = new Set<string>()
+        for (const item of wfAgents) {
+          if (item.next_agent_id && item.next_agent_id !== item.id) {
+            incoming.add(item.next_agent_id)
+          }
+        }
+        const entry =
+          (wf.entry_agent_id &&
+            wfAgents.find(
+              (a) => a.id === wf.entry_agent_id || a.slug === wf.entry_agent_id
+            )) ||
+          wfAgents.find((a) => a.enabled && !incoming.has(a.id)) ||
+          wfAgents.find((a) => a.enabled) ||
+          wfAgents[0]
+        if (!entry.enabled) {
+          throw new Error(`Стартовый агент ${entry.name} отключён`)
+        }
+        const started = nowSec()
+        const chainId = `wf-${wf.slug}-${Date.now()}`
+        const runId = `crun-${Date.now()}`
+        const chosen = customModels[0]
+        const run: CustomAgentRun = {
+          id: runId,
+          agent_id: entry.id,
+          agent_name: entry.name,
+          agent_role: entry.role,
+          chain_id: chainId,
+          parent_run_id: '',
+          trigger_reason: `workflow:${wf.slug}`,
+          input_prompt: request.prompt || '',
+          status: 'passed',
+          attempt: 1,
+          resolved_provider: chosen.provider_id,
+          resolved_model: chosen.model_id,
+          resolved_reasoning: chosen.default_reasoning_mode || 'medium',
+          auto_model_reason: `Запуск цепочки «${wf.name}» со стартового узла «${entry.name}».`,
+          output_text: `Цепочка «${wf.name}» выполнена (старт: ${entry.name}).`,
+          verifier_verdict: entry.strict_verify ? 'PASS' : '',
+          verifier_feedback: entry.strict_verify ? 'VERDICT: PASS' : '',
+          deterministic_report: '',
+          monitor_diff: '',
+          steps: [
+            {
+              kind: 'execute',
+              title: `Старт цепочки «${wf.name}»`,
+              detail: entry.name,
+              status: 'ok',
+              timestamp: started
+            }
+          ],
+          error: '',
+          started_at: started,
+          finished_at: started
+        }
+        customAgentRuns = [run, ...customAgentRuns]
+        emitCustom('run.passed', entry.id, runId, chainId, structuredClone(run))
+        return structuredClone(run)
       }
       return {}
     },

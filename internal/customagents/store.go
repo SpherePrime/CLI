@@ -100,6 +100,7 @@ func initStoreSchema(conn *sql.DB) error {
 			auto_model_hint TEXT NOT NULL DEFAULT '',
 			allowed_tools TEXT NOT NULL DEFAULT '[]',
 			workspace_path TEXT NOT NULL DEFAULT '',
+			workflow_id TEXT NOT NULL DEFAULT '',
 			enabled INTEGER NOT NULL DEFAULT 1,
 			created_by TEXT NOT NULL DEFAULT 'user',
 			trigger_type TEXT NOT NULL DEFAULT 'manual',
@@ -159,6 +160,19 @@ func initStoreSchema(conn *sql.DB) error {
 			status TEXT NOT NULL DEFAULT 'open',
 			created_at INTEGER NOT NULL DEFAULT 0
 		);`,
+		`CREATE TABLE IF NOT EXISTS custom_workflows (
+			id TEXT PRIMARY KEY,
+			slug TEXT NOT NULL UNIQUE,
+			name TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			enabled INTEGER NOT NULL DEFAULT 1,
+			created_by TEXT NOT NULL DEFAULT 'user',
+			entry_agent_id TEXT NOT NULL DEFAULT '',
+			layout_json TEXT NOT NULL DEFAULT '{}',
+			created_at INTEGER NOT NULL DEFAULT 0,
+			updated_at INTEGER NOT NULL DEFAULT 0
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_custom_workflows_slug ON custom_workflows(slug);`,
 		`CREATE INDEX IF NOT EXISTS idx_custom_agents_slug ON custom_agents(slug);`,
 		`CREATE INDEX IF NOT EXISTS idx_custom_agents_enabled_next ON custom_agents(enabled, trigger_type, next_run_at);`,
 		`CREATE INDEX IF NOT EXISTS idx_custom_agent_runs_agent_started ON custom_agent_runs(agent_id, started_at DESC);`,
@@ -172,6 +186,12 @@ func initStoreSchema(conn *sql.DB) error {
 		}
 	}
 	if err := ensureCustomAgentsColumn(conn, "strict_verify", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureCustomAgentsColumn(conn, "workflow_id", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	if _, err := conn.Exec(`CREATE INDEX IF NOT EXISTS idx_custom_agents_workflow ON custom_agents(workflow_id);`); err != nil {
 		return err
 	}
 	return nil
@@ -218,22 +238,58 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) EnsureDefaults(ctx context.Context) error {
+	now := time.Now().Unix()
+	var wfCount int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM custom_workflows WHERE id = 'default' OR slug = 'default'`).Scan(&wfCount); err != nil {
+		return fmt.Errorf("count default workflow: %w", err)
+	}
+	if wfCount == 0 {
+		_, err := s.db.ExecContext(ctx, `
+			INSERT INTO custom_workflows (
+				id, slug, name, description, enabled, created_by, entry_agent_id, layout_json, created_at, updated_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			"default",
+			"default",
+			"Основная цепочка",
+			"Базовая цепочка координации и контроля качества",
+			1,
+			"system",
+			"agent-orchestrator",
+			"{}",
+			now,
+			now,
+		)
+		if err != nil {
+			return fmt.Errorf("seed default workflow: %w", err)
+		}
+	}
+
 	var count int
 	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM custom_agents`).Scan(&count); err != nil {
 		return fmt.Errorf("count custom agents: %w", err)
 	}
 	if count > 0 {
+		if _, err := s.db.ExecContext(ctx, `
+			UPDATE custom_agents
+			SET workflow_id = 'default'
+			WHERE workflow_id = ''
+			  AND (id IN ('agent-orchestrator', 'agent-strict-verifier')
+			       OR (created_by = 'system' AND slug IN ('orchestrator', 'strict-verifier')))`); err != nil {
+			return fmt.Errorf("assign default workflow to legacy agents: %w", err)
+		}
 		return nil
 	}
 
 	defaults := []CustomAgent{
 		{
+			ID:                "agent-orchestrator",
 			Slug:              "orchestrator",
 			Name:              "Главный координатор",
 			Description:       "Принимает задачи, создаёт специализированных агентов, подбирает модели и собирает результат",
 			Role:              RoleOrchestrator,
 			SystemPrompt:      defaultOrchestratorPrompt,
 			ModelMode:         ModelModeAuto,
+			WorkflowID:        "default",
 			Enabled:           true,
 			CreatedBy:         "system",
 			TriggerType:       TriggerManual,
@@ -241,12 +297,14 @@ func (s *Store) EnsureDefaults(ctx context.Context) error {
 			Status:            StatusIdle,
 		},
 		{
+			ID:                "agent-strict-verifier",
 			Slug:              "strict-verifier",
 			Name:              "Строгий верификатор",
 			Description:       "Проверяет результаты воркеров по жёстким критериям и отклоняет недоработки",
 			Role:              RoleVerifier,
 			SystemPrompt:      defaultVerifierPrompt,
 			ModelMode:         ModelModeAuto,
+			WorkflowID:        "default",
 			Enabled:           true,
 			CreatedBy:         "system",
 			TriggerType:       TriggerManual,
@@ -321,7 +379,7 @@ func (s *Store) CreateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 		INSERT INTO custom_agents (
 			id, slug, name, description, role, system_prompt, memory,
 			model_mode, provider_id, model_id, reasoning_mode, auto_model_hint,
-			allowed_tools, workspace_path, enabled, created_by,
+			allowed_tools, workspace_path, workflow_id, enabled, created_by,
 			trigger_type, interval_minutes, cron_expr,
 			monitor_kind, monitor_target, monitor_last_hash, monitor_last_snapshot,
 			acceptance_criteria, deterministic_checks, verifier_agent_id, next_agent_id,
@@ -330,7 +388,7 @@ func (s *Store) CreateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?,
-			?, ?, ?, ?,
+			?, ?, ?, ?, ?,
 			?, ?, ?,
 			?, ?, ?, ?,
 			?, ?, ?, ?,
@@ -339,7 +397,7 @@ func (s *Store) CreateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 		)`,
 		agent.ID, agent.Slug, agent.Name, agent.Description, agent.Role, agent.SystemPrompt, agent.Memory,
 		agent.ModelMode, agent.ProviderID, agent.ModelID, agent.ReasoningMode, agent.AutoModelHint,
-		string(toolsJSON), agent.WorkspacePath, boolToInt(agent.Enabled), agent.CreatedBy,
+		string(toolsJSON), agent.WorkspacePath, agent.WorkflowID, boolToInt(agent.Enabled), agent.CreatedBy,
 		agent.TriggerType, agent.IntervalMinutes, agent.CronExpr,
 		agent.MonitorKind, agent.MonitorTarget, agent.MonitorLastHash, agent.MonitorLastSnapshot,
 		agent.AcceptanceCriteria, string(checksJSON), agent.VerifierAgentID, agent.NextAgentID,
@@ -373,6 +431,27 @@ func (s *Store) ListAgents(ctx context.Context) ([]CustomAgent, error) {
 	rows, err := s.db.QueryContext(ctx, selectAgentCols+` ORDER BY created_at ASC, name ASC`)
 	if err != nil {
 		return nil, fmt.Errorf("list custom agents: %w", err)
+	}
+	defer rows.Close()
+
+	var agents []CustomAgent
+	for rows.Next() {
+		a, err := scanAgentRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		agents = append(agents, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return agents, nil
+}
+
+func (s *Store) ListAgentsByWorkflow(ctx context.Context, workflowID string) ([]CustomAgent, error) {
+	rows, err := s.db.QueryContext(ctx, selectAgentCols+` WHERE workflow_id = ? ORDER BY created_at ASC, name ASC`, workflowID)
+	if err != nil {
+		return nil, fmt.Errorf("list custom agents by workflow: %w", err)
 	}
 	defer rows.Close()
 
@@ -432,7 +511,7 @@ func (s *Store) UpdateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 		UPDATE custom_agents SET
 			slug = ?, name = ?, description = ?, role = ?, system_prompt = ?, memory = ?,
 			model_mode = ?, provider_id = ?, model_id = ?, reasoning_mode = ?, auto_model_hint = ?,
-			allowed_tools = ?, workspace_path = ?, enabled = ?, created_by = ?,
+			allowed_tools = ?, workspace_path = ?, workflow_id = ?, enabled = ?, created_by = ?,
 			trigger_type = ?, interval_minutes = ?, cron_expr = ?,
 			monitor_kind = ?, monitor_target = ?, monitor_last_hash = ?, monitor_last_snapshot = ?,
 			acceptance_criteria = ?, deterministic_checks = ?, verifier_agent_id = ?, next_agent_id = ?,
@@ -441,7 +520,7 @@ func (s *Store) UpdateAgent(ctx context.Context, agent CustomAgent) (CustomAgent
 		WHERE id = ?`,
 		agent.Slug, agent.Name, agent.Description, agent.Role, agent.SystemPrompt, agent.Memory,
 		agent.ModelMode, agent.ProviderID, agent.ModelID, agent.ReasoningMode, agent.AutoModelHint,
-		string(toolsJSON), agent.WorkspacePath, boolToInt(agent.Enabled), agent.CreatedBy,
+		string(toolsJSON), agent.WorkspacePath, agent.WorkflowID, boolToInt(agent.Enabled), agent.CreatedBy,
 		agent.TriggerType, agent.IntervalMinutes, agent.CronExpr,
 		agent.MonitorKind, agent.MonitorTarget, agent.MonitorLastHash, agent.MonitorLastSnapshot,
 		agent.AcceptanceCriteria, string(checksJSON), agent.VerifierAgentID, agent.NextAgentID,
@@ -818,7 +897,7 @@ const selectAgentCols = `
 	SELECT
 		id, slug, name, description, role, system_prompt, memory,
 		model_mode, provider_id, model_id, reasoning_mode, auto_model_hint,
-		allowed_tools, workspace_path, enabled, created_by,
+		allowed_tools, workspace_path, workflow_id, enabled, created_by,
 		trigger_type, interval_minutes, cron_expr,
 		monitor_kind, monitor_target, monitor_last_hash, monitor_last_snapshot,
 		acceptance_criteria, deterministic_checks, verifier_agent_id, next_agent_id,
@@ -855,7 +934,7 @@ func scanAgentRow(scanner rowScanner) (CustomAgent, error) {
 	err := scanner.Scan(
 		&a.ID, &a.Slug, &a.Name, &a.Description, &a.Role, &a.SystemPrompt, &a.Memory,
 		&a.ModelMode, &a.ProviderID, &a.ModelID, &a.ReasoningMode, &a.AutoModelHint,
-		&toolsJSON, &a.WorkspacePath, &enabledInt, &a.CreatedBy,
+		&toolsJSON, &a.WorkspacePath, &a.WorkflowID, &enabledInt, &a.CreatedBy,
 		&a.TriggerType, &a.IntervalMinutes, &a.CronExpr,
 		&a.MonitorKind, &a.MonitorTarget, &a.MonitorLastHash, &a.MonitorLastSnapshot,
 		&a.AcceptanceCriteria, &checksJSON, &a.VerifierAgentID, &a.NextAgentID,
@@ -959,4 +1038,315 @@ func nonNilSteps(in []RunStep) []RunStep {
 		return []RunStep{}
 	}
 	return in
+}
+
+const selectWorkflowCols = `
+	SELECT
+		id, slug, name, description, enabled, created_by, entry_agent_id, layout_json, created_at, updated_at
+	FROM custom_workflows`
+
+func scanWorkflowRow(scanner rowScanner) (CustomWorkflow, error) {
+	var wf CustomWorkflow
+	var enabledInt int
+	if err := scanner.Scan(
+		&wf.ID, &wf.Slug, &wf.Name, &wf.Description, &enabledInt,
+		&wf.CreatedBy, &wf.EntryAgentID, &wf.LayoutJSON, &wf.CreatedAt, &wf.UpdatedAt,
+	); err != nil {
+		return CustomWorkflow{}, err
+	}
+	wf.Enabled = enabledInt != 0
+	if strings.TrimSpace(wf.LayoutJSON) == "" {
+		wf.LayoutJSON = "{}"
+	}
+	return wf, nil
+}
+
+func validateLayoutJSON(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "{}", nil
+	}
+	var obj map[string]any
+	if err := json.Unmarshal([]byte(trimmed), &obj); err != nil || obj == nil {
+		return "", errors.New("layout_json must be a valid JSON object")
+	}
+	return trimmed, nil
+}
+
+func normalizeWorkflowSlug(slug, name, id string) string {
+	raw := strings.TrimSpace(slug)
+	if raw == "" {
+		raw = strings.TrimSpace(name)
+	}
+	raw = strings.ToLower(raw)
+	var b strings.Builder
+	lastDash := false
+	for _, r := range raw {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			lastDash = false
+		} else if !lastDash && b.Len() > 0 {
+			b.WriteByte('-')
+			lastDash = true
+		}
+	}
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		short := strings.TrimPrefix(id, "wf-")
+		if len(short) > 8 {
+			short = short[:8]
+		}
+		if short == "" {
+			short = uuid.NewString()[:8]
+		}
+		return "workflow-" + short
+	}
+	return out
+}
+
+func (s *Store) ListWorkflows(ctx context.Context) ([]CustomWorkflow, error) {
+	rows, err := s.db.QueryContext(ctx, selectWorkflowCols+` ORDER BY CASE WHEN id = 'default' THEN 0 ELSE 1 END, created_at ASC, name ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("list custom workflows: %w", err)
+	}
+	defer rows.Close()
+
+	var workflows []CustomWorkflow
+	for rows.Next() {
+		wf, err := scanWorkflowRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		workflows = append(workflows, wf)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return workflows, nil
+}
+
+func (s *Store) GetWorkflow(ctx context.Context, idOrSlug string) (CustomWorkflow, error) {
+	key := strings.TrimSpace(idOrSlug)
+	if key == "" {
+		return CustomWorkflow{}, errors.New("workflow id or slug is required")
+	}
+	wf, err := scanWorkflowRow(s.db.QueryRowContext(ctx, selectWorkflowCols+` WHERE id = ?`, key))
+	if err == nil {
+		return wf, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return CustomWorkflow{}, err
+	}
+	return scanWorkflowRow(s.db.QueryRowContext(ctx, selectWorkflowCols+` WHERE slug = ?`, key))
+}
+
+func (s *Store) CreateWorkflow(ctx context.Context, input CreateWorkflowInput) (CustomWorkflow, error) {
+	name := strings.TrimSpace(input.Name)
+	rawSlug := strings.TrimSpace(input.Slug)
+	if name == "" && rawSlug == "" {
+		return CustomWorkflow{}, errors.New("workflow name or slug is required")
+	}
+	if name == "" {
+		name = rawSlug
+	}
+	layoutJSON, err := validateLayoutJSON(input.LayoutJSON)
+	if err != nil {
+		return CustomWorkflow{}, err
+	}
+
+	now := time.Now().Unix()
+	id := "wf-" + uuid.NewString()
+	enabled := true
+	if input.Enabled != nil {
+		enabled = *input.Enabled
+	}
+	createdBy := strings.TrimSpace(input.CreatedBy)
+	if createdBy == "" {
+		createdBy = "user"
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	slug := normalizeWorkflowSlug(rawSlug, name, id)
+	if rawSlug == "" {
+		slug, err = s.ensureUniqueWorkflowSlugLocked(ctx, slug)
+		if err != nil {
+			return CustomWorkflow{}, err
+		}
+	}
+
+	wf := CustomWorkflow{
+		ID:           id,
+		Slug:         slug,
+		Name:         name,
+		Description:  input.Description,
+		Enabled:      enabled,
+		CreatedBy:    createdBy,
+		EntryAgentID: strings.TrimSpace(input.EntryAgentID),
+		LayoutJSON:   layoutJSON,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+		INSERT INTO custom_workflows (
+			id, slug, name, description, enabled, created_by, entry_agent_id, layout_json, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		wf.ID, wf.Slug, wf.Name, wf.Description, boolToInt(wf.Enabled),
+		wf.CreatedBy, wf.EntryAgentID, wf.LayoutJSON, wf.CreatedAt, wf.UpdatedAt,
+	)
+	if err != nil {
+		return CustomWorkflow{}, fmt.Errorf("insert custom workflow: %w", err)
+	}
+	return wf, nil
+}
+
+func (s *Store) ensureUniqueWorkflowSlugLocked(ctx context.Context, base string) (string, error) {
+	candidate := base
+	for i := 2; i <= 1000; i++ {
+		var count int
+		if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM custom_workflows WHERE slug = ?`, candidate).Scan(&count); err != nil {
+			return "", fmt.Errorf("check workflow slug uniqueness: %w", err)
+		}
+		if count == 0 {
+			return candidate, nil
+		}
+		candidate = fmt.Sprintf("%s-%d", base, i)
+	}
+	return base + "-" + uuid.NewString()[:8], nil
+}
+
+func (s *Store) UpdateWorkflow(ctx context.Context, id string, patch UpdateWorkflowPatch) (CustomWorkflow, error) {
+	existing, err := s.GetWorkflow(ctx, id)
+	if err != nil {
+		return CustomWorkflow{}, err
+	}
+
+	if patch.Name != nil {
+		trimmed := strings.TrimSpace(*patch.Name)
+		if trimmed == "" {
+			return CustomWorkflow{}, errors.New("workflow name cannot be empty")
+		}
+		existing.Name = trimmed
+	}
+	if patch.Description != nil {
+		existing.Description = *patch.Description
+	}
+	if patch.Enabled != nil {
+		existing.Enabled = *patch.Enabled
+	}
+	if patch.EntryAgentID != nil {
+		existing.EntryAgentID = strings.TrimSpace(*patch.EntryAgentID)
+	}
+	if patch.LayoutJSON != nil {
+		validated, err := validateLayoutJSON(*patch.LayoutJSON)
+		if err != nil {
+			return CustomWorkflow{}, err
+		}
+		existing.LayoutJSON = validated
+	}
+	existing.UpdatedAt = time.Now().Unix()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	res, err := s.db.ExecContext(ctx, `
+		UPDATE custom_workflows SET
+			name = ?, description = ?, enabled = ?, entry_agent_id = ?, layout_json = ?, updated_at = ?
+		WHERE id = ?`,
+		existing.Name, existing.Description, boolToInt(existing.Enabled),
+		existing.EntryAgentID, existing.LayoutJSON, existing.UpdatedAt, existing.ID,
+	)
+	if err != nil {
+		return CustomWorkflow{}, fmt.Errorf("update custom workflow: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return CustomWorkflow{}, err
+	}
+	if affected == 0 {
+		return CustomWorkflow{}, sql.ErrNoRows
+	}
+	return existing, nil
+}
+
+func (s *Store) DeleteWorkflow(ctx context.Context, id string, deleteAgents bool) error {
+	existing, err := s.GetWorkflow(ctx, id)
+	if err != nil {
+		return err
+	}
+	if existing.ID == "default" {
+		return errors.New("cannot delete default workflow")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin delete workflow tx: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	var deletedAgentIDs []string
+	if deleteAgents {
+		rows, err := tx.QueryContext(ctx, `SELECT id FROM custom_agents WHERE workflow_id = ?`, existing.ID)
+		if err != nil {
+			return fmt.Errorf("list workflow agents for delete: %w", err)
+		}
+		for rows.Next() {
+			var aid string
+			if err := rows.Scan(&aid); err != nil {
+				rows.Close()
+				return err
+			}
+			deletedAgentIDs = append(deletedAgentIDs, aid)
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return err
+		}
+		rows.Close()
+
+		for _, aid := range deletedAgentIDs {
+			if _, err := tx.ExecContext(ctx, `UPDATE custom_agents SET next_agent_id = '' WHERE next_agent_id = ?`, aid); err != nil {
+				return fmt.Errorf("clear next_agent_id references: %w", err)
+			}
+			if _, err := tx.ExecContext(ctx, `UPDATE custom_agents SET verifier_agent_id = '' WHERE verifier_agent_id = ?`, aid); err != nil {
+				return fmt.Errorf("clear verifier_agent_id references: %w", err)
+			}
+		}
+
+		if _, err := tx.ExecContext(ctx, `DELETE FROM custom_agents WHERE workflow_id = ?`, existing.ID); err != nil {
+			return fmt.Errorf("delete workflow agents: %w", err)
+		}
+	} else {
+		if _, err := tx.ExecContext(ctx, `UPDATE custom_agents SET workflow_id = '', updated_at = ? WHERE workflow_id = ?`, time.Now().Unix(), existing.ID); err != nil {
+			return fmt.Errorf("unassign workflow agents: %w", err)
+		}
+	}
+
+	res, err := tx.ExecContext(ctx, `DELETE FROM custom_workflows WHERE id = ?`, existing.ID)
+	if err != nil {
+		return fmt.Errorf("delete custom workflow: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit delete workflow tx: %w", err)
+	}
+
+	for _, aid := range deletedAgentIDs {
+		_ = os.Remove(s.memoryPath(aid))
+	}
+	return nil
 }

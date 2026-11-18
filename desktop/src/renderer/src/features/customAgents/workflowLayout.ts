@@ -230,14 +230,9 @@ export function mergeNodePositions(
   return merged
 }
 
-export function loadSavedLayout(
-  storage: Pick<Storage, 'getItem'> | null =
-    typeof localStorage !== 'undefined' ? localStorage : null
-): Record<string, NodePosition> {
-  if (!storage) return {}
+export function parseLayoutJson(raw?: string): Record<string, NodePosition> {
+  if (!raw || !raw.trim()) return {}
   try {
-    const raw = storage.getItem(WORKFLOW_LAYOUT_STORAGE_KEY)
-    if (!raw) return {}
     const parsed = JSON.parse(raw) as Record<string, unknown>
     if (!parsed || typeof parsed !== 'object') return {}
     const clean: Record<string, NodePosition> = {}
@@ -262,14 +257,61 @@ export function loadSavedLayout(
   }
 }
 
+export function serializeLayoutJson(
+  positions: Record<string, NodePosition>
+): string {
+  return JSON.stringify(positions)
+}
+
+export function getScopedWorkflowAgents(
+  allAgents: CustomAgent[],
+  workflowId: string
+): { primaryIds: Set<string>; scopedAgents: CustomAgent[] } {
+  const byId = new Map(allAgents.map((agent) => [agent.id, agent]))
+  const primaryAgents = allAgents.filter(
+    (agent) => (agent.workflow_id || 'default') === workflowId
+  )
+  const primaryIds = new Set(primaryAgents.map((agent) => agent.id))
+  const seen = new Set(primaryIds)
+  const scopedAgents = [...primaryAgents]
+
+  for (const agent of primaryAgents) {
+    for (const targetId of [agent.next_agent_id, agent.verifier_agent_id]) {
+      if (targetId && !seen.has(targetId)) {
+        const linked = byId.get(targetId)
+        if (linked) {
+          seen.add(targetId)
+          scopedAgents.push(linked)
+        }
+      }
+    }
+  }
+
+  return { primaryIds, scopedAgents }
+}
+
+export function loadSavedLayout(
+  storageKey = WORKFLOW_LAYOUT_STORAGE_KEY,
+  storage: Pick<Storage, 'getItem'> | null =
+    typeof localStorage !== 'undefined' ? localStorage : null
+): Record<string, NodePosition> {
+  if (!storage) return {}
+  try {
+    return parseLayoutJson(storage.getItem(storageKey) || '')
+  } catch {
+    return {}
+  }
+}
+
 export function saveLayout(
   positions: Record<string, NodePosition>,
+  storageKey = WORKFLOW_LAYOUT_STORAGE_KEY,
   storage: Pick<Storage, 'setItem'> | null =
     typeof localStorage !== 'undefined' ? localStorage : null
 ): void {
   if (!storage) return
   try {
-    storage.setItem(WORKFLOW_LAYOUT_STORAGE_KEY, JSON.stringify(positions))
+    storage.setItem(storageKey, serializeLayoutJson(positions))
   } catch {}
 }
 

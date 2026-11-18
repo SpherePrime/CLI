@@ -366,6 +366,10 @@ func TestCustomAgentsUnavailableServiceReturns503(t *testing.T) {
 	wSwarm := httptest.NewRecorder()
 	mux.ServeHTTP(wSwarm, httptest.NewRequest(http.MethodPost, "/v1/custom-agents/swarm", bytes.NewReader([]byte(`{"goal":"x","workers":[{"name":"w"}]}`))))
 	require.Equal(t, http.StatusServiceUnavailable, wSwarm.Code)
+
+	wWF := httptest.NewRecorder()
+	mux.ServeHTTP(wWF, httptest.NewRequest(http.MethodGet, "/v1/custom-agents/workflows", nil))
+	require.Equal(t, http.StatusServiceUnavailable, wWF.Code)
 }
 
 func TestCustomAgentsGlobalMemoryEndpoints(t *testing.T) {
@@ -518,4 +522,174 @@ func TestCustomAgentsSwarmEndpointsAndStrictVerify(t *testing.T) {
 		}
 		return false
 	}, 5*time.Second, 20*time.Millisecond)
+}
+
+func TestCustomAgentsWorkflowsEndpoints(t *testing.T) {
+	t.Parallel()
+	hs, svc := newTestCustomAgentsHTTPServer(t, &mockCustomAgentExecutor{})
+	require.NoError(t, svc.Store().EnsureDefaults(t.Context()))
+	client := hs.Client()
+
+	respListInit, err := client.Get(hs.URL + "/v1/custom-agents/workflows")
+	require.NoError(t, err)
+	defer respListInit.Body.Close()
+	require.Equal(t, http.StatusOK, respListInit.StatusCode)
+	var listInit struct {
+		Workflows []customagents.CustomWorkflow `json:"workflows"`
+	}
+	require.NoError(t, json.NewDecoder(respListInit.Body).Decode(&listInit))
+	require.Len(t, listInit.Workflows, 1)
+	require.Equal(t, "default", listInit.Workflows[0].ID)
+
+	respBadCreate, err := client.Post(hs.URL+"/v1/custom-agents/workflows", "application/json", bytes.NewReader([]byte(`{"description":"missing name"}`)))
+	require.NoError(t, err)
+	defer respBadCreate.Body.Close()
+	require.Equal(t, http.StatusBadRequest, respBadCreate.StatusCode)
+
+	createWFBody := []byte(`{"name":"Deploy Check","slug":"deploy-check","description":"Checks deploy readiness"}`)
+	respCreateWF, err := client.Post(hs.URL+"/v1/custom-agents/workflows", "application/json", bytes.NewReader(createWFBody))
+	require.NoError(t, err)
+	defer respCreateWF.Body.Close()
+	require.Equal(t, http.StatusCreated, respCreateWF.StatusCode)
+	var createdWF customagents.CustomWorkflow
+	require.NoError(t, json.NewDecoder(respCreateWF.Body).Decode(&createdWF))
+	require.Equal(t, "deploy-check", createdWF.Slug)
+	require.Equal(t, "user", createdWF.CreatedBy)
+
+	respGetWF, err := client.Get(hs.URL + "/v1/custom-agents/workflows/" + createdWF.Slug + "/detail")
+	require.NoError(t, err)
+	defer respGetWF.Body.Close()
+	require.Equal(t, http.StatusOK, respGetWF.StatusCode)
+	var fetchedWF customagents.CustomWorkflow
+	require.NoError(t, json.NewDecoder(respGetWF.Body).Decode(&fetchedWF))
+	require.Equal(t, createdWF.ID, fetchedWF.ID)
+
+	respMissingWF, err := client.Get(hs.URL + "/v1/custom-agents/workflows/does-not-exist/detail")
+	require.NoError(t, err)
+	defer respMissingWF.Body.Close()
+	require.Equal(t, http.StatusNotFound, respMissingWF.StatusCode)
+
+	createAgentBody, _ := json.Marshal(map[string]any{
+		"name":        "WF Worker",
+		"slug":        "wf-http-worker",
+		"workflow_id": createdWF.Slug,
+	})
+	respAgent, err := client.Post(hs.URL+"/v1/custom-agents", "application/json", bytes.NewReader(createAgentBody))
+	require.NoError(t, err)
+	defer respAgent.Body.Close()
+	require.Equal(t, http.StatusCreated, respAgent.StatusCode)
+	var wfAgent customagents.CustomAgent
+	require.NoError(t, json.NewDecoder(respAgent.Body).Decode(&wfAgent))
+	require.Equal(t, createdWF.ID, wfAgent.WorkflowID)
+
+	badLayoutReq, err := http.NewRequestWithContext(t.Context(), http.MethodPatch, hs.URL+"/v1/custom-agents/workflows/"+createdWF.ID, bytes.NewReader([]byte(`{"layout_json":"[]"}`)))
+	require.NoError(t, err)
+	badLayoutReq.Header.Set("Content-Type", "application/json")
+	respBadLayout, err := client.Do(badLayoutReq)
+	require.NoError(t, err)
+	defer respBadLayout.Body.Close()
+	require.Equal(t, http.StatusBadRequest, respBadLayout.StatusCode)
+
+	patchWFBody, _ := json.Marshal(map[string]any{
+		"entry_agent_id": wfAgent.ID,
+		"layout_json":    `{"` + wfAgent.ID + `":{"x":120,"y":160}}`,
+	})
+	patchWFReq, err := http.NewRequestWithContext(t.Context(), http.MethodPatch, hs.URL+"/v1/custom-agents/workflows/"+createdWF.ID, bytes.NewReader(patchWFBody))
+	require.NoError(t, err)
+	patchWFReq.Header.Set("Content-Type", "application/json")
+	respPatchWF, err := client.Do(patchWFReq)
+	require.NoError(t, err)
+	defer respPatchWF.Body.Close()
+	require.Equal(t, http.StatusOK, respPatchWF.StatusCode)
+	var patchedWF customagents.CustomWorkflow
+	require.NoError(t, json.NewDecoder(respPatchWF.Body).Decode(&patchedWF))
+	require.Equal(t, wfAgent.ID, patchedWF.EntryAgentID)
+	require.Contains(t, patchedWF.LayoutJSON, wfAgent.ID)
+
+	respRunWF, err := client.Post(hs.URL+"/v1/custom-agents/workflows/"+createdWF.Slug+"/run", "application/json", bytes.NewReader([]byte(`{"prompt":"verify deploy"}`)))
+	require.NoError(t, err)
+	defer respRunWF.Body.Close()
+	require.Equal(t, http.StatusAccepted, respRunWF.StatusCode)
+	var wfRun customagents.CustomAgentRun
+	require.NoError(t, json.NewDecoder(respRunWF.Body).Decode(&wfRun))
+	require.Equal(t, wfAgent.ID, wfRun.AgentID)
+	require.Equal(t, "workflow:deploy-check", wfRun.TriggerReason)
+
+	require.Eventually(t, func() bool {
+		r, getErr := svc.Store().GetRun(t.Context(), wfRun.ID)
+		return getErr == nil && r.Status == customagents.RunPassed
+	}, 5*time.Second, 20*time.Millisecond)
+
+	badDelReq, err := http.NewRequestWithContext(t.Context(), http.MethodDelete, hs.URL+"/v1/custom-agents/workflows/"+createdWF.ID+"?delete_agents=notabool", nil)
+	require.NoError(t, err)
+	respBadDel, err := client.Do(badDelReq)
+	require.NoError(t, err)
+	defer respBadDel.Body.Close()
+	require.Equal(t, http.StatusBadRequest, respBadDel.StatusCode)
+
+	delDefReq, err := http.NewRequestWithContext(t.Context(), http.MethodDelete, hs.URL+"/v1/custom-agents/workflows/default", nil)
+	require.NoError(t, err)
+	respDelDef, err := client.Do(delDefReq)
+	require.NoError(t, err)
+	defer respDelDef.Body.Close()
+	require.Equal(t, http.StatusBadRequest, respDelDef.StatusCode)
+
+	delKeepReq, err := http.NewRequestWithContext(t.Context(), http.MethodDelete, hs.URL+"/v1/custom-agents/workflows/"+createdWF.ID+"?delete_agents=false", nil)
+	require.NoError(t, err)
+	respDelKeep, err := client.Do(delKeepReq)
+	require.NoError(t, err)
+	defer respDelKeep.Body.Close()
+	require.Equal(t, http.StatusOK, respDelKeep.StatusCode)
+
+	keptAgent, err := svc.Store().GetAgent(t.Context(), wfAgent.ID)
+	require.NoError(t, err)
+	require.Empty(t, keptAgent.WorkflowID)
+
+	createWF2Resp, err := client.Post(hs.URL+"/v1/custom-agents/workflows", "application/json", bytes.NewReader([]byte(`{"name":"Temp Flow","slug":"temp-flow"}`)))
+	require.NoError(t, err)
+	defer createWF2Resp.Body.Close()
+	require.Equal(t, http.StatusCreated, createWF2Resp.StatusCode)
+	var wf2 customagents.CustomWorkflow
+	require.NoError(t, json.NewDecoder(createWF2Resp.Body).Decode(&wf2))
+
+	patchAgentBody, _ := json.Marshal(map[string]any{"workflow_id": wf2.Slug})
+	patchAgentReq, err := http.NewRequestWithContext(t.Context(), http.MethodPatch, hs.URL+"/v1/custom-agents/"+wfAgent.ID, bytes.NewReader(patchAgentBody))
+	require.NoError(t, err)
+	patchAgentReq.Header.Set("Content-Type", "application/json")
+	respPatchAgent, err := client.Do(patchAgentReq)
+	require.NoError(t, err)
+	defer respPatchAgent.Body.Close()
+	require.Equal(t, http.StatusOK, respPatchAgent.StatusCode)
+	var patchedAgent customagents.CustomAgent
+	require.NoError(t, json.NewDecoder(respPatchAgent.Body).Decode(&patchedAgent))
+	require.Equal(t, wf2.ID, patchedAgent.WorkflowID)
+
+	delCascadeReq, err := http.NewRequestWithContext(t.Context(), http.MethodDelete, hs.URL+"/v1/custom-agents/workflows/"+wf2.ID+"?delete_agents=true", nil)
+	require.NoError(t, err)
+	respDelCascade, err := client.Do(delCascadeReq)
+	require.NoError(t, err)
+	defer respDelCascade.Body.Close()
+	require.Equal(t, http.StatusOK, respDelCascade.StatusCode)
+
+	respDeletedAgent, err := client.Get(hs.URL + "/v1/custom-agents/" + wfAgent.ID)
+	require.NoError(t, err)
+	defer respDeletedAgent.Body.Close()
+	require.Equal(t, http.StatusNotFound, respDeletedAgent.StatusCode)
+
+	srv := &Server{}
+	srv.installHandler()
+	docsHS := httptest.NewServer(srv.Handler())
+	defer docsHS.Close()
+	specResp, err := docsHS.Client().Get(docsHS.URL + "/v1/docs/openapi.json")
+	require.NoError(t, err)
+	defer specResp.Body.Close()
+	require.Equal(t, http.StatusOK, specResp.StatusCode)
+	var spec struct {
+		Paths map[string]map[string]json.RawMessage `json:"paths"`
+	}
+	require.NoError(t, json.NewDecoder(specResp.Body).Decode(&spec))
+	require.Contains(t, spec.Paths, "/custom-agents/workflows")
+	require.Contains(t, spec.Paths, "/custom-agents/workflows/{workflow_id}")
+	require.Contains(t, spec.Paths, "/custom-agents/workflows/{workflow_id}/detail")
+	require.Contains(t, spec.Paths, "/custom-agents/workflows/{workflow_id}/run")
 }

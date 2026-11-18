@@ -6,10 +6,12 @@ import type {
   CustomAgentRole,
   CustomAgentRun,
   CustomAgentTriggerType,
+  CustomWorkflow,
   DeterministicCheck,
   DeterministicCheckKind,
   ModelOption,
-  ProbeResult
+  ProbeResult,
+  UpdateWorkflowPatch
 } from '../../../../shared/customAgents'
 import type { Project } from '../../../../shared/contracts'
 import { Select } from '../../components/Select'
@@ -25,6 +27,8 @@ type InspectorTab = 'profile' | 'model' | 'trigger' | 'control'
 export function AgentInspector({
   agent,
   agents,
+  workflows = [],
+  activeWorkflow = null,
   models,
   projects,
   latestRun,
@@ -32,10 +36,13 @@ export function AgentInspector({
   onSave,
   onDelete,
   onProbe,
+  onUpdateWorkflow,
   onClose
 }: {
   agent: CustomAgent
   agents: CustomAgent[]
+  workflows?: CustomWorkflow[]
+  activeWorkflow?: CustomWorkflow | null
   models: ModelOption[]
   projects: Project[]
   latestRun: CustomAgentRun | null
@@ -43,6 +50,7 @@ export function AgentInspector({
   onSave: (agentId: string, patch: Partial<CustomAgent>) => Promise<CustomAgent>
   onDelete: (agentId: string) => Promise<unknown>
   onProbe: (agentId: string) => Promise<ProbeResult>
+  onUpdateWorkflow?: (workflowId: string, patch: UpdateWorkflowPatch) => Promise<CustomWorkflow>
   onClose?: () => void
 }) {
   const { t } = useI18n()
@@ -113,6 +121,7 @@ export function AgentInspector({
         role: draft.role,
         description: draft.description,
         workspace_path: draft.workspace_path.trim(),
+        workflow_id: draft.workflow_id || 'default',
         enabled: draft.enabled,
         model_mode: draft.model_mode,
         provider_id: draft.provider_id,
@@ -282,6 +291,46 @@ export function AgentInspector({
                   <span className="ca-switch-thumb" />
                 </button>
               </div>
+
+              {activeWorkflow && onUpdateWorkflow && (
+                <div className="ca-toggle-row">
+                  <div className="ca-toggle-copy">
+                    <strong>{t('Точка входа цепочки')}</strong>
+                    <span className="ca-muted-note">
+                      {t('Запускается первым при старте «{name}»', {
+                        name: activeWorkflow.name
+                      })}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={activeWorkflow.entry_agent_id === agent.id}
+                    aria-label={t('Точка входа цепочки')}
+                    className={`ca-switch ${activeWorkflow.entry_agent_id === agent.id ? 'on' : ''}`}
+                    onClick={() =>
+                      void onUpdateWorkflow(activeWorkflow.id, {
+                        entry_agent_id:
+                          activeWorkflow.entry_agent_id === agent.id ? '' : agent.id
+                      })
+                    }
+                  >
+                    <span className="ca-switch-thumb" />
+                  </button>
+                </div>
+              )}
+
+              {workflows.length > 0 && (
+                <label className="ca-field">
+                  <span>{t('Цепочка')}</span>
+                  <Select
+                    value={draft.workflow_id || 'default'}
+                    onChange={(value) => setDraft({ ...draft, workflow_id: value })}
+                    label={t('Цепочка')}
+                    options={workflows.map((wf) => ({ value: wf.id, label: wf.name }))}
+                  />
+                </label>
+              )}
 
               <label className="ca-field">
                 <span>{t('Название')}</span>

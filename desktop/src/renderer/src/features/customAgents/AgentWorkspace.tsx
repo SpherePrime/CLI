@@ -15,9 +15,10 @@ import type {
   BlackboardEntry,
   CustomAgent,
   CustomAgentRun,
+  CustomWorkflow,
   ModelOption,
   ProbeResult,
-  UpdateCustomAgentInput
+  UpdateCustomAgentPatch
 } from '../../../../shared/customAgents'
 import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
@@ -29,7 +30,8 @@ import {
   isActiveRunStatus,
   ORCHESTRATOR_QUICK_PROMPTS,
   runStatusMeta,
-  triggerLabel
+  triggerLabel,
+  type AgentPreset
 } from './presentation'
 import { WorkflowCanvas, type PendingWorkflowLink } from './WorkflowCanvas'
 
@@ -39,6 +41,7 @@ export type RunsSubTab = 'history' | 'board'
 export function AgentWorkspace({
   agent,
   agents,
+  activeWorkflow = null,
   models,
   runs,
   allRuns,
@@ -55,11 +58,16 @@ export function AgentWorkspace({
   onProbe,
   onPostBlackboard,
   onUpdateAgent,
+  onSaveLayout,
+  onSetEntryAgent,
+  onQuickCreateStarter,
+  onAttachExistingAgent,
   onOpenCreate,
   onOpenSwarm
 }: {
-  agent: CustomAgent
+  agent: CustomAgent | null
   agents: CustomAgent[]
+  activeWorkflow?: CustomWorkflow | null
   models: ModelOption[]
   runs: CustomAgentRun[]
   allRuns: CustomAgentRun[]
@@ -88,7 +96,11 @@ export function AgentWorkspace({
     topic: string
     payload: string
   }) => Promise<BlackboardEntry>
-  onUpdateAgent: (agentId: string, patch: UpdateCustomAgentInput) => Promise<CustomAgent>
+  onUpdateAgent: (agentId: string, patch: UpdateCustomAgentPatch) => Promise<CustomAgent>
+  onSaveLayout?: (workflowId: string, layoutJson: string) => Promise<unknown>
+  onSetEntryAgent?: (workflowId: string, agentId: string) => Promise<unknown>
+  onQuickCreateStarter?: (preset: AgentPreset) => Promise<unknown>
+  onAttachExistingAgent?: (agentId: string) => Promise<unknown>
   onOpenCreate: (pendingLink?: PendingWorkflowLink) => void
   onOpenSwarm: () => void
 }) {
@@ -107,10 +119,12 @@ export function AgentWorkspace({
   const [postingBoard, setPostingBoard] = useState(false)
   const [actionError, setActionError] = useState('')
 
+  const agentId = agent?.id || ''
+
   useEffect(() => {
     setProbeResult(null)
     setActionError('')
-  }, [agent.id])
+  }, [agentId])
 
   useEffect(() => {
     if (selectedChainId) setBoardChain(selectedChainId)
@@ -120,7 +134,7 @@ export function AgentWorkspace({
     if (requestedRunsSubTab) setRunsSubTab(requestedRunsSubTab)
   }, [requestedRunsSubTab])
 
-  const statusMeta = agentStatusMeta(agent.status)
+  const statusMeta = agentStatusMeta(agent?.status || 'idle')
   const activeRun = useMemo(
     () => runs.find((run) => isActiveRunStatus(run.status)) || null,
     [runs]
@@ -169,7 +183,7 @@ export function AgentWorkspace({
   }
 
   const handleProbe = async () => {
-    if (probing) return
+    if (probing || !agent) return
     setProbing(true)
     setActionError('')
     try {
@@ -192,8 +206,8 @@ export function AgentWorkspace({
     try {
       await onPostBlackboard({
         chain_id: chainId,
-        from_agent_id: agent.id,
-        from_agent_name: agent.name,
+        from_agent_id: agent?.id || '',
+        from_agent_name: agent?.name || 'Пользователь',
         to_agent_id: boardTo,
         topic: boardTopic.trim() || 'note',
         payload
@@ -208,7 +222,7 @@ export function AgentWorkspace({
     }
   }
 
-  const hasMonitor = Boolean(agent.monitor_kind && agent.monitor_target)
+  const hasMonitor = Boolean(agent?.monitor_kind && agent?.monitor_target)
 
   if (tab === 'chain') {
     return (
@@ -221,8 +235,9 @@ export function AgentWorkspace({
         )}
         <WorkflowCanvas
           agents={agents}
+          activeWorkflow={activeWorkflow}
           models={models}
-          selectedAgentId={agent.id}
+          selectedAgentId={agentId}
           onSelectAgent={onSelectAgent}
           onConfigureAgent={onConfigureAgent}
           onRunAgent={(targetId) => {
@@ -230,9 +245,27 @@ export function AgentWorkspace({
             onTabChange('tasks')
           }}
           onUpdateAgent={onUpdateAgent}
+          onSaveLayout={onSaveLayout}
+          onSetEntryAgent={onSetEntryAgent}
+          onQuickCreateStarter={onQuickCreateStarter}
+          onAttachExistingAgent={onAttachExistingAgent}
           onOpenCreate={onOpenCreate}
           onOpenSwarm={onOpenSwarm}
         />
+      </section>
+    )
+  }
+
+  if (!agent) {
+    return (
+      <section className="ca-workspace" aria-label={t('Рабочая зона агента')}>
+        <div className="ca-workspace-body">
+          <div className="ca-workspace-col">
+            <div className="ca-empty-card">
+              <p>{t('Выберите агента или создайте стартовый узел в конструкторе цепочки.')}</p>
+            </div>
+          </div>
+        </div>
       </section>
     )
   }

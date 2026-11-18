@@ -60,6 +60,7 @@ export interface CustomAgent {
   auto_model_hint: string
   allowed_tools: string[]
   workspace_path: string
+  workflow_id?: string
   enabled: boolean
   created_by: string
   trigger_type: CustomAgentTriggerType
@@ -155,11 +156,44 @@ export interface ProbeResult {
   error: string
 }
 
+export interface CustomWorkflow {
+  id: string
+  slug: string
+  name: string
+  description: string
+  enabled: boolean
+  created_by: string
+  entry_agent_id: string
+  layout_json: string
+  created_at: number
+  updated_at: number
+}
+
+export interface CreateWorkflowInput {
+  slug?: string
+  name: string
+  description?: string
+  enabled?: boolean
+  created_by?: string
+  entry_agent_id?: string
+  layout_json?: string
+}
+
+export interface UpdateWorkflowPatch {
+  name?: string
+  description?: string
+  enabled?: boolean
+  entry_agent_id?: string
+  layout_json?: string
+}
+
 export interface CustomAgentEvent {
   type: string
   agent_id: string
   run_id: string
   chain_id: string
+  workflow_id?: string
+  workflow?: CustomWorkflow
   payload: any
   timestamp: number
 }
@@ -238,17 +272,21 @@ export interface SwarmResult {
 
 export type CreateCustomAgentInput = Partial<CustomAgent> & {
   strict_verify?: boolean
+  workflow_id?: string
 }
 
-export type UpdateCustomAgentInput = Partial<CustomAgent> & {
+export type UpdateCustomAgentPatch = Partial<CustomAgent> & {
   strict_verify?: boolean
+  workflow_id?: string
 }
+
+export type UpdateCustomAgentInput = UpdateCustomAgentPatch
 
 export type CustomAgentsRequest =
   | { action: 'list' }
   | { action: 'get'; agentId: string }
   | { action: 'create'; input: CreateCustomAgentInput }
-  | { action: 'update'; agentId: string; patch: UpdateCustomAgentInput }
+  | { action: 'update'; agentId: string; patch: UpdateCustomAgentPatch }
   | { action: 'delete'; agentId: string }
   | {
       action: 'run'
@@ -278,3 +316,8 @@ export type CustomAgentsRequest =
   | { action: 'getGlobalMemory' }
   | { action: 'saveGlobalMemory'; input: Partial<GlobalMemoryDoc> }
   | { action: 'dispatchSwarm'; input: SwarmRequest }
+  | { action: 'listWorkflows' }
+  | { action: 'createWorkflow'; input: CreateWorkflowInput }
+  | { action: 'updateWorkflow'; workflowId: string; patch: UpdateWorkflowPatch }
+  | { action: 'deleteWorkflow'; workflowId: string; deleteAgents?: boolean }
+  | { action: 'runWorkflow'; workflowId: string; prompt?: string }

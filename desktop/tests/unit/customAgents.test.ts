@@ -9,6 +9,7 @@ import {
 } from '../../src/renderer/src/host/nativeBridge'
 import { I18nProvider } from '../../src/renderer/src/i18n'
 import { AgentInspector } from '../../src/renderer/src/features/customAgents/AgentInspector'
+import { AgentRoster } from '../../src/renderer/src/features/customAgents/AgentRoster'
 import { AgentWorkspace } from '../../src/renderer/src/features/customAgents/AgentWorkspace'
 import { WorkflowCanvas } from '../../src/renderer/src/features/customAgents/WorkflowCanvas'
 import {
@@ -28,17 +29,21 @@ import {
   computeAutoLayout,
   computeFitViewport,
   getPortPoint,
+  getScopedWorkflowAgents,
   loadSavedLayout,
   mergeNodePositions,
+  parseLayoutJson,
   PORT_IN_OFFSET_Y,
   PORT_NEXT_OFFSET_Y,
   PORT_VERIFIER_OFFSET_Y,
   saveLayout,
+  serializeLayoutJson,
   WORKFLOW_NODE_HEIGHT,
   WORKFLOW_NODE_WIDTH
 } from '../../src/renderer/src/features/customAgents/workflowLayout'
 import type {
   CustomAgent,
+  CustomWorkflow,
   GlobalMemoryDoc,
   ModelOption,
   SwarmResult
@@ -315,6 +320,66 @@ describe('customAgents preview host', () => {
       vi.useRealTimers()
     }
   })
+
+  it('supports multi-workflow CRUD, layout_json persistence, running, and deletion in preview host', async () => {
+    vi.useFakeTimers()
+    const env = setupPreview()
+    try {
+      const events: string[] = []
+      const unsub = env.prime.onEvent((event) => {
+        if ('kind' in event && event.kind === 'customAgents') events.push(event.data.type)
+      })
+
+      const listed = (await env.prime.customAgents({
+        action: 'listWorkflows'
+      })) as { workflows: CustomWorkflow[] }
+      expect(listed.workflows.map((w) => w.id)).toContain('default')
+      expect(listed.workflows.map((w) => w.id)).toContain('wf-release-watch')
+
+      const created = (await env.prime.customAgents({
+        action: 'createWorkflow',
+        input: { name: 'Проверка безопасности', description: 'Отдельная цепь' }
+      })) as CustomWorkflow
+      expect(created.id).toBeTruthy()
+      expect(created.name).toBe('Проверка безопасности')
+      expect(events).toContain('workflow_updated')
+
+      const layoutJson = serializeLayoutJson({ 'agent-a': { x: 120, y: 96 } })
+      const updated = (await env.prime.customAgents({
+        action: 'updateWorkflow',
+        workflowId: created.id,
+        patch: { name: 'Аудит кода', layout_json: layoutJson }
+      })) as CustomWorkflow
+      expect(updated.name).toBe('Аудит кода')
+      expect(parseLayoutJson(updated.layout_json)).toEqual({
+        'agent-a': { x: 120, y: 96 }
+      })
+
+      const run = await env.prime.customAgents({
+        action: 'runWorkflow',
+        workflowId: 'wf-release-watch',
+        prompt: 'Проверь тег'
+      })
+      expect(run.status).toBe('passed')
+      expect(run.trigger_reason).toBe('workflow:release-watch')
+
+      await expect(
+        env.prime.customAgents({ action: 'deleteWorkflow', workflowId: 'default' })
+      ).rejects.toThrow()
+
+      const deleted = await env.prime.customAgents({
+        action: 'deleteWorkflow',
+        workflowId: created.id,
+        deleteAgents: false
+      })
+      expect(deleted.deleted).toBe(true)
+      expect(events).toContain('workflow_deleted')
+      unsub()
+    } finally {
+      env.restore()
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('customAgents presentation helpers and nativeBridge normalization', () => {
@@ -524,8 +589,23 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
         memStore.set(key, value)
       }
     }
-    saveLayout({ n1: { x: 200, y: 80 } }, mockStorage)
-    expect(loadSavedLayout(mockStorage)).toEqual({ n1: { x: 200, y: 80 } })
+    saveLayout({ n1: { x: 200, y: 80 } }, 'test.layout.key', mockStorage)
+    expect(loadSavedLayout('test.layout.key', mockStorage)).toEqual({
+      n1: { x: 200, y: 80 }
+    })
+
+    const scoped = getScopedWorkflowAgents(
+      [
+        { ...n1, workflow_id: 'wf-1' },
+        { ...n2, workflow_id: 'wf-1' },
+        { ...n3, workflow_id: 'default' },
+        { ...v1, workflow_id: 'default' }
+      ],
+      'wf-1'
+    )
+    expect(scoped.primaryIds.has('n1')).toBe(true)
+    expect(scoped.primaryIds.has('n2')).toBe(true)
+    expect(scoped.scopedAgents.map((a) => a.id)).toEqual(['n1', 'n2', 'v1', 'n3'])
 
     expect(canConnectAgents(chain, 'n1', 'n1', 'next').ok).toBe(false)
     expect(canConnectAgents(chain, 'n3', 'n1', 'next').ok).toBe(false)
@@ -562,7 +642,11 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
     const env = setupPreview()
     try {
       const { agents } = await env.prime.customAgents({ action: 'list' })
+      const { workflows } = (await env.prime.customAgents({
+        action: 'listWorkflows'
+      })) as { workflows: CustomWorkflow[] }
       const { models } = await env.prime.customAgents({ action: 'models' })
+      const releaseWf = workflows.find((w) => w.id === 'wf-release-watch') || workflows[0]
 
       const canvasHtml = renderToStaticMarkup(
         createElement(
@@ -570,8 +654,9 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
           { language: 'ru', children: null },
           createElement(WorkflowCanvas, {
             agents,
+            activeWorkflow: releaseWf,
             models,
-            selectedAgentId: agents[0].id,
+            selectedAgentId: 'agent-release-monitor',
             onSelectAgent: () => {},
             onConfigureAgent: () => {},
             onRunAgent: () => {},
@@ -586,6 +671,8 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
       expect(canvasHtml).toContain('Авто-раскладка')
       expect(canvasHtml).toContain('Монитор релизов')
       expect(canvasHtml).toContain('Аналитик изменений')
+      expect(canvasHtml).toContain('Строгий верификатор')
+      expect(canvasHtml).toContain('Старт')
       expect(canvasHtml).toContain('ca-wf-port-anchor anchor-in')
       expect(canvasHtml).toContain('ca-wf-port-anchor anchor-next')
       expect(canvasHtml).toContain('ca-wf-port-anchor anchor-verifier')
@@ -593,6 +680,98 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
       expect(canvasHtml).toContain('ca-wf-selected-pill')
       expect(canvasHtml).toContain('ca-wf-edge kind-next')
       expect(canvasHtml).toContain('ca-wf-edge kind-verifier')
+
+      const emptyWf: CustomWorkflow = {
+        id: 'wf-empty',
+        slug: 'empty',
+        name: 'Пустая ветка',
+        description: '',
+        enabled: true,
+        created_by: 'user',
+        entry_agent_id: '',
+        layout_json: '',
+        created_at: 1,
+        updated_at: 1
+      }
+      const emptyCanvasHtml = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { language: 'ru', children: null },
+          createElement(WorkflowCanvas, {
+            agents,
+            activeWorkflow: emptyWf,
+            models,
+            selectedAgentId: '',
+            onSelectAgent: () => {},
+            onConfigureAgent: () => {},
+            onRunAgent: () => {},
+            onUpdateAgent: async (_id, _patch) => agents[0],
+            onAttachExistingAgent: async () => {},
+            onOpenCreate: () => {},
+            onOpenSwarm: () => {}
+          })
+        )
+      )
+      expect(emptyCanvasHtml).toContain('Пустая цепочка «Пустая ветка»')
+      expect(emptyCanvasHtml).toContain('Монитор / Триггер')
+      expect(emptyCanvasHtml).toContain('Добавить существующего агента')
+
+      const rosterHtml = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { language: 'ru', children: null },
+          createElement(AgentRoster, {
+            agents,
+            workflows,
+            activeWorkflowId: 'wf-release-watch',
+            models,
+            selectedId: 'agent-release-monitor',
+            query: '',
+            roleFilter: 'all',
+            loading: false,
+            onSelect: () => {},
+            onQueryChange: () => {},
+            onRoleFilterChange: () => {},
+            onToggleEnabled: () => {},
+            onAttachToWorkflow: () => {},
+            onOpenCreate: () => {}
+          })
+        )
+      )
+      expect(rosterHtml).toContain('Эта цепь')
+      expect(rosterHtml).toContain('Все агенты')
+      expect(rosterHtml).toContain('Монитор релизов')
+
+      const inspectorHtml = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { language: 'ru', children: null },
+          createElement(AgentInspector, {
+            agent: agents[0],
+            agents,
+            workflows,
+            activeWorkflow: workflows[0],
+            models,
+            projects: [],
+            latestRun: null,
+            busy: false,
+            onSave: async () => agents[0],
+            onDelete: async () => ({ deleted: true }),
+            onProbe: async () => ({
+              changed: false,
+              hash: '',
+              snapshot: '',
+              diff: '',
+              error: ''
+            }),
+            onUpdateWorkflow: async () => workflows[0],
+            onClose: () => {}
+          })
+        )
+      )
+      expect(inspectorHtml).toContain('Точка входа цепочки')
+      expect(inspectorHtml).toContain('Цепочка')
+      expect(inspectorHtml).toContain('Профиль')
 
       const chainWorkspaceHtml = renderToStaticMarkup(
         createElement(
@@ -667,7 +846,7 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
       expect(tasksWorkspaceHtml).toContain('ca-workspace-col')
       expect(tasksWorkspaceHtml).toContain('Настроить')
 
-      const inspectorHtml = renderToStaticMarkup(
+      const inspectorCheckHtml = renderToStaticMarkup(
         createElement(
           I18nProvider,
           { language: 'ru', children: null },
@@ -691,11 +870,11 @@ describe('customAgents presentation helpers and nativeBridge normalization', () 
           })
         )
       )
-      expect(inspectorHtml).toContain('Профиль')
-      expect(inspectorHtml).toContain('Модель')
-      expect(inspectorHtml).toContain('Триггер')
-      expect(inspectorHtml).toContain('Контроль')
-      expect(inspectorHtml).toContain('Скрыть параметры')
+      expect(inspectorCheckHtml).toContain('Профиль')
+      expect(inspectorCheckHtml).toContain('Модель')
+      expect(inspectorCheckHtml).toContain('Триггер')
+      expect(inspectorCheckHtml).toContain('Контроль')
+      expect(inspectorCheckHtml).toContain('Скрыть параметры')
     } finally {
       env.restore()
       vi.useRealTimers()
