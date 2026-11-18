@@ -211,6 +211,7 @@ type Workspace interface {
 	Language() string
 	// Config mutations (proxied to server in client mode)
 	UpdatePreferredModel(scope config.Scope, modelType config.SelectedModelType, model config.SelectedModel) error
+	UpdateOrchestratorConfig(req proto.ConfigOrchestratorRequest) error
 	SetCompactMode(scope config.Scope, enabled bool) error
 	SetProviderAPIKey(scope config.Scope, providerID string, apiKey any) error
 	SetConfigField(scope config.Scope, key string, value any) error

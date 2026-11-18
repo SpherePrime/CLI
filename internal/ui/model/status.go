@@ -32,6 +32,7 @@ type Status struct {
 	// inputMode and yolo drive the mode badge shown before the help hints.
 	inputMode       uiInputMode
 	yolo            bool
+	orchestrator    bool
 	selectedModel   *workspace.AgentModel
 
 	// voiceBadge is the microphone indicator shown next to the mode badge,
@@ -63,6 +64,11 @@ func (s *Status) ClearInfoMsg() {
 func (s *Status) SetMode(mode uiInputMode, yolo bool) {
 	s.inputMode = mode
 	s.yolo = yolo
+}
+
+// SetOrchestrator sets whether Orchestrator mode is active for the current session.
+func (s *Status) SetOrchestrator(enabled bool) {
+	s.orchestrator = enabled
 }
 
 // SetVoiceBadge sets the microphone indicator shown before the help hints. An

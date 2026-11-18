@@ -1025,6 +1025,12 @@ type Config struct {
 	// without an entry run on the shared Models selection.
 	SessionModels map[string]SelectedModel `json:"session_models,omitempty" jsonschema:"description=Model selected for a specific chat, keyed by session ID"`
 
+	// Orchestrator configures Prime's native planner/executor orchestration mode.
+	Orchestrator OrchestratorConfig `json:"orchestrator,omitempty" jsonschema:"description=Orchestrator mode configuration"`
+
+	// SessionOrchestrator stores per-chat overrides for Orchestrator mode, keyed by session ID.
+	SessionOrchestrator map[string]bool `json:"session_orchestrator,omitempty" jsonschema:"description=Orchestrator mode override for a specific chat, keyed by session ID"`
+
 	// The providers that are configured
 	Providers *csync.Map[string, ProviderConfig] `json:"providers,omitempty" jsonschema:"description=AI provider configurations"`
 
@@ -1087,6 +1093,8 @@ func (c *Config) cloneForWrite() *Config {
 	nc.RecentModels = maps.Clone(c.RecentModels)
 	nc.ModelSettings = maps.Clone(c.ModelSettings)
 	nc.SessionModels = maps.Clone(c.SessionModels)
+	nc.SessionOrchestrator = maps.Clone(c.SessionOrchestrator)
+	nc.Orchestrator = c.Orchestrator.clone()
 	nc.MCP = maps.Clone(c.MCP)
 	if c.Options != nil {
 		opts := *c.Options

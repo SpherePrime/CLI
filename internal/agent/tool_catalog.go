@@ -35,7 +35,8 @@ func inlineDocumentedTool(name string) bool {
 	switch name {
 	case readToolDocumentationName, readToolResultName,
 		"search_skills", "search_tools", "search_mcp",
-		"search_instructions", "read_instruction":
+		"search_instructions", "read_instruction",
+		HandoffToExecutorToolName, EscalateToPlannerToolName:
 		return true
 	default:
 		return false

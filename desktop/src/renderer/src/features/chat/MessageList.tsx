@@ -3,7 +3,7 @@ import { useI18n } from '../../i18n'
 import { consolidateToolMessages } from '../../../../shared/toolMessages'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown } from 'lucide-react'
-import type { Message } from '../../../../shared/contracts'
+import type { Message, OrchestratorPhase } from '../../../../shared/contracts'
 import type { PreferredDesignImage } from '../designer/designHandoff'
 import { MessageItem } from './MessageItem'
 import { WorkingIndicator } from './WorkingIndicator'
@@ -316,6 +316,15 @@ export function MessageList({
               const durationTime = isEndOfTurn(visible, row.index, busy)
                 ? turnCompletedDuration(visible, row.index, timing.completed)
                 : undefined
+              let previousOrchestratorPhase: OrchestratorPhase | undefined
+              for (let i = row.index - 1; i >= 0; i--) {
+                const prev = visible[i]
+                if (prev.role === 'user') break
+                if (prev.role === 'assistant') {
+                  previousOrchestratorPhase = prev.orchestrator_phase
+                  break
+                }
+              }
               return (
                 <div
                   key={message.id}
@@ -337,6 +346,7 @@ export function MessageList({
                     fresh={fresh}
                     live={busy && last}
                     matched={message.id === matchId}
+                    previousOrchestratorPhase={previousOrchestratorPhase}
                     onImplementDesign={
                       onImplementDesign
                         ? (target, preferredImage) =>

@@ -163,6 +163,15 @@ type ShellCommand struct {
 
 func (ShellCommand) isPart() {}
 
+// OrchestratorStepMeta stores the Orchestrator phase ("plan", "execute",
+// "review") for an assistant message inside Parts so SQLite persists it
+// without schema migrations. Non-LLM metadata; ignored by ToAIMessage.
+type OrchestratorStepMeta struct {
+	Phase string `json:"phase"`
+}
+
+func (OrchestratorStepMeta) isPart() {}
+
 // HasShellCommand reports whether the message contains any ShellCommand parts.
 func (m *Message) HasShellCommand() bool {
 	for _, part := range m.Parts {
@@ -546,6 +555,35 @@ func (m *Message) AddImageURL(url, detail string) {
 
 func (m *Message) AddBinary(mimeType string, data []byte) {
 	m.Parts = append(m.Parts, BinaryContent{MIMEType: mimeType, Data: data})
+}
+
+// OrchestratorPhase returns the recorded Orchestrator phase ("plan",
+// "execute", or "review") for this message, or empty string when unset.
+func (m Message) OrchestratorPhase() string {
+	for _, part := range m.Parts {
+		if meta, ok := part.(OrchestratorStepMeta); ok {
+			return meta.Phase
+		}
+	}
+	return ""
+}
+
+// SetOrchestratorPhase records or clears the Orchestrator phase metadata
+// part on this message.
+func (m *Message) SetOrchestratorPhase(phase string) {
+	for i := len(m.Parts) - 1; i >= 0; i-- {
+		if _, ok := m.Parts[i].(OrchestratorStepMeta); ok {
+			if phase == "" {
+				m.Parts = slices.Delete(m.Parts, i, i+1)
+			} else {
+				m.Parts[i] = OrchestratorStepMeta{Phase: phase}
+			}
+			return
+		}
+	}
+	if phase != "" {
+		m.Parts = append(m.Parts, OrchestratorStepMeta{Phase: phase})
+	}
 }
 
 func PromptWithTextAttachments(prompt string, attachments []Attachment) string {

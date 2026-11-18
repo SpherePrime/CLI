@@ -78,6 +78,17 @@ func (s *Status) renderModeStates(width int) string {
 		formats[1] = append(formats[1], style.Render(compact))
 		formats[2] = append(formats[2], style.Render(minimal))
 	}
+	if s.orchestrator {
+		orchStyle := lipgloss.NewStyle().Foreground(s.com.Styles.Status.SuccessIndicator.GetForeground())
+		orchLabel := s.com.L("status.mode.orch")
+		if orchLabel == "" {
+			orchLabel = "orch"
+		}
+		orchRendered := orchStyle.Render(orchLabel)
+		formats[0] = append(formats[0], orchRendered)
+		formats[1] = append(formats[1], orchRendered)
+		formats[2] = append(formats[2], orchRendered)
+	}
 	for index, values := range formats {
 		separator := " · "
 		if index > 0 {

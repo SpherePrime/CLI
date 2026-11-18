@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -137,6 +138,10 @@ type SessionAgentCall struct {
 	// fantasy retries the stream transparently. Returning an error
 	// surfaces the original auth error without retry.
 	OnAuthRefresh func(ctx context.Context, err *fantasy.ProviderError) error
+
+	// Orchestrator configures multi-model plan/execute/review execution for
+	// this turn when Orchestrator mode is active.
+	Orchestrator *OrchestratorCallConfig
 }
 
 type SessionAgent interface {
@@ -786,16 +791,25 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	if call.GoalNote == "" {
 		agentTools = withoutGoalTools(agentTools)
 	}
+	var orch *orchestratorRuntime
+	if call.Orchestrator != nil && call.Orchestrator.Enabled {
+		orch = newOrchestratorRuntime(*call.Orchestrator)
+	}
 	largeModel := a.largeModel.Get()
 	if call.ModelOverride != nil {
 		largeModel = *call.ModelOverride
+	}
+	if orch != nil {
+		largeModel = orch.cfg.Planner.Model
 	}
 	systemPrompt := a.systemPrompt.Get()
 	promptPrefix := a.systemPromptPrefix.Get()
 	if a.agent.ID != config.AgentDesigner {
 		systemPrompt += mcpInstructionsBlock(connectedMCPInstructions(mcp.GetStates(), a.agent))
-		systemPrompt += visualCheckBlock(!a.isSubAgent && largeModel.CatwalkCfg.SupportsImages)
-		systemPrompt += reviewPolicyBlock(!a.isSubAgent && hasAgentTool(agentTools), coordinatorReasoningMode(ctx, largeModel.ModelCfg))
+		if orch == nil {
+			systemPrompt += visualCheckBlock(!a.isSubAgent && largeModel.CatwalkCfg.SupportsImages)
+			systemPrompt += reviewPolicyBlock(!a.isSubAgent && hasAgentTool(agentTools), coordinatorReasoningMode(ctx, largeModel.ModelCfg))
+		}
 	}
 
 	if len(agentTools) > 0 {
@@ -917,6 +931,10 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		hasTodos:  len(currentSession.Todos) > 0,
 		compacted: currentSession.SummaryMessageID != "",
 	}, call.Attachments...)
+	var historyAssistantModels []modelIdentity
+	if orch != nil {
+		historyAssistantModels = collectHistoryAssistantModels(msgs)
+	}
 
 	startTime := time.Now()
 	a.eventPromptSent(call.SessionID)
@@ -925,16 +943,21 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	var stepToolTokens int64
 	var shouldSummarize bool
 	var stoppedForRepeatedCalls bool
+	currentStepModel := largeModel
+	var currentStepPhase OrchestratorPhase
 	searchRecovery := emptySearchRecovery{}
 	sanitizedToolCalls := make(map[string]bool)
 	// Don't send MaxOutputTokens if 0 — some providers (e.g. LM Studio) reject it
 	var maxOutputTokens *int64
-	if call.MaxOutputTokens > 0 {
+	if orch == nil && call.MaxOutputTokens > 0 {
 		maxOutputTokens = &call.MaxOutputTokens
 	}
 	stopWhen := []fantasy.StopCondition{
 		func(_ []fantasy.StepResult) bool {
-			cw := int64(largeModel.CatwalkCfg.ContextWindow)
+			sessionLock.Lock()
+			activeModel := currentStepModel
+			sessionLock.Unlock()
+			cw := int64(activeModel.CatwalkCfg.ContextWindow)
 			// An unknown window means skip auto-summarize entirely, so
 			// custom and local models that never declared one are not
 			// truncated.
@@ -944,8 +967,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			// The per-model override recorded in the model settings
 			// dialog wins over the global default.
 			percent := a.autoSummarizePercent
-			if largeModel.ModelCfg.AutoSummarizePercent > 0 {
-				percent = largeModel.ModelCfg.AutoSummarizePercent
+			if activeModel.ModelCfg.AutoSummarizePercent > 0 {
+				percent = activeModel.ModelCfg.AutoSummarizePercent
 			}
 			tokens := currentSession.ContextTokens
 			if tokens <= 0 {
@@ -968,29 +991,110 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		stopWhen = append(stopWhen, fantasy.StepCountIs(call.MaxSteps))
 	}
 
+	var continueAfterStop func([]fantasy.StepResult, []fantasy.Message) (bool, []fantasy.Message)
+	if orch != nil {
+		continueAfterStop = orch.continueAfterStop
+	}
+	onAuthRefresh := call.OnAuthRefresh
+	if orch != nil && (call.OnAuthRefresh != nil || orch.cfg.Planner.OnAuthRefresh != nil || orch.cfg.Executor.OnAuthRefresh != nil) {
+		onAuthRefresh = func(refreshCtx context.Context, providerErr *fantasy.ProviderError) error {
+			roleCfg := orch.currentRoleConfig()
+			if roleCfg.OnAuthRefresh != nil {
+				return roleCfg.OnAuthRefresh(refreshCtx, providerErr)
+			}
+			if call.OnAuthRefresh != nil {
+				return call.OnAuthRefresh(refreshCtx, providerErr)
+			}
+			return nil
+		}
+	}
+
 	result, err = agent.Stream(genCtx, fantasy.AgentStreamCall{
-		Prompt:           message.PromptWithTextAttachments(call.Prompt, call.Attachments),
-		Files:            files,
-		Messages:         history,
-		Headers:          sessionHeaders(call.SessionID),
-		ProviderOptions:  call.ProviderOptions,
-		MaxOutputTokens:  maxOutputTokens,
-		TopP:             call.TopP,
-		Temperature:      call.Temperature,
-		PresencePenalty:  call.PresencePenalty,
-		TopK:             call.TopK,
-		FrequencyPenalty: call.FrequencyPenalty,
+		Prompt:            message.PromptWithTextAttachments(call.Prompt, call.Attachments),
+		Files:             files,
+		Messages:          history,
+		Headers:           sessionHeaders(call.SessionID),
+		ProviderOptions:   call.ProviderOptions,
+		MaxOutputTokens:   maxOutputTokens,
+		TopP:              call.TopP,
+		Temperature:       call.Temperature,
+		PresencePenalty:   call.PresencePenalty,
+		TopK:              call.TopK,
+		FrequencyPenalty:  call.FrequencyPenalty,
+		ContinueAfterStop: continueAfterStop,
 		PrepareStep: func(callContext context.Context, options fantasy.PrepareStepFunctionOptions) (_ context.Context, prepared fantasy.PrepareStepResult, err error) {
-			prepared.Messages = options.Messages
+			prepared.Messages = slices.Clone(options.Messages)
 			for i := range prepared.Messages {
 				prepared.Messages[i].ProviderOptions = nil
 			}
 
-			// Use latest tools (updated by SetTools when MCP tools change).
-			prepared.Tools = a.tools.Copy()
-			if call.GoalNote == "" {
-				prepared.Tools = withoutGoalTools(prepared.Tools)
+			// Drain queued follow-up prompts for this step. Calls covered
+			// by a cancel recorded while they sat in the queue are dropped:
+			// a cancel that arrived after a prompt was queued must not let
+			// it run as part of this step. Coverage is per-call by accept
+			// sequence so a follow-up queued after the cancel (higher seq)
+			// is not dropped. A dropped prompt carrying a RunID still gets
+			// its terminal cancelled RunComplete so a caller waiting on it
+			// does not hang. Uncanceled prompts without a RunID are folded
+			// into this turn; uncanceled prompts with a RunID are left
+			// queued so each runs as its own turn (with its own
+			// RunComplete) via the recursive run path below.
+			fold, canceledRunIDs := a.drainQueueForStep(call.SessionID)
+			a.publishCanceledQueueDrops(canceledRunIDs)
+			steeringCalls = append(steeringCalls, fold...)
+			hasNewSteering := false
+			for _, queued := range fold {
+				if queued.steering {
+					hasNewSteering = true
+				}
+				userMessage, createErr := a.createUserMessage(callContext, queued)
+				if createErr != nil {
+					return callContext, prepared, createErr
+				}
+				prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
 			}
+			if orch != nil && hasNewSteering {
+				orch.onSteeringMessage()
+			}
+
+			activeModel := largeModel
+			var stepPhase OrchestratorPhase
+			activePromptPrefix := promptPrefix
+
+			// Use latest tools (updated by SetTools when MCP tools change).
+			baseTools := a.tools.Copy()
+			if call.GoalNote == "" {
+				baseTools = withoutGoalTools(baseTools)
+			}
+			if orch != nil {
+				stepPhase = orch.currentPhase()
+				roleCfg := orch.currentRoleConfig()
+				activeModel = roleCfg.Model
+				if roleCfg.SystemPromptPrefix != "" || orch.cfg.Planner.SystemPromptPrefix != "" || orch.cfg.Executor.SystemPromptPrefix != "" {
+					activePromptPrefix = roleCfg.SystemPromptPrefix
+				}
+				prepared.Model = activeModel.Model
+				optsCopy := roleCfg.ProviderOptions
+				if optsCopy == nil {
+					optsCopy = fantasy.ProviderOptions{}
+				}
+				prepared.ProviderOptions = &optsCopy
+				if roleCfg.MaxOutputTokens > 0 {
+					mot := roleCfg.MaxOutputTokens
+					prepared.MaxOutputTokens = &mot
+				}
+				prepared.Messages = orch.sanitizeMessages(prepared.Messages, historyAssistantModels, activeModel)
+				stepBasePrompt := systemPrompt
+				if a.agent.ID != config.AgentDesigner {
+					stepBasePrompt += visualCheckBlock(!a.isSubAgent && activeModel.CatwalkCfg.SupportsImages)
+				}
+				prepared.Messages = setOrchestratorSystemPrompt(prepared.Messages, stepBasePrompt, orch.phaseSystemPrompt())
+				prepared.Tools = orch.filterTools(baseTools)
+				prepared.BeforeToolCall = orch.beforeToolCallGate()
+			} else {
+				prepared.Tools = baseTools
+			}
+
 			searchRecovery.prepare(options.Steps, &prepared)
 			selectedTools := smartToolSelection(prepared.Tools, options.Steps, prepared.Messages...)
 			presentation := presentMCPTools(selectedTools)
@@ -1016,29 +1120,14 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				}
 				definitions = append(definitions, definition)
 			}
+			if orch != nil && len(definitions) > 0 {
+				if ft, ok := definitions[len(definitions)-1].(fantasy.FunctionTool); ok && ft.ProviderOptions == nil {
+					ft.ProviderOptions = a.getCacheControlOptions()
+					definitions[len(definitions)-1] = ft
+				}
+			}
 			prepared.ToolDefinitions = definitions
 
-			// Drain queued follow-up prompts for this step. Calls covered
-			// by a cancel recorded while they sat in the queue are dropped:
-			// a cancel that arrived after a prompt was queued must not let
-			// it run as part of this step. Coverage is per-call by accept
-			// sequence so a follow-up queued after the cancel (higher seq)
-			// is not dropped. A dropped prompt carrying a RunID still gets
-			// its terminal cancelled RunComplete so a caller waiting on it
-			// does not hang. Uncanceled prompts without a RunID are folded
-			// into this turn; uncanceled prompts with a RunID are left
-			// queued so each runs as its own turn (with its own
-			// RunComplete) via the recursive run path below.
-			fold, canceledRunIDs := a.drainQueueForStep(call.SessionID)
-			a.publishCanceledQueueDrops(canceledRunIDs)
-			steeringCalls = append(steeringCalls, fold...)
-			for _, queued := range fold {
-				userMessage, createErr := a.createUserMessage(callContext, queued)
-				if createErr != nil {
-					return callContext, prepared, createErr
-				}
-				prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
-			}
 			if hasSteeringCall(steeringCalls) {
 				prepared.Messages = withSteeringInstruction(prepared.Messages)
 			}
@@ -1049,7 +1138,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				prepared.Messages = withCustomAgentsNote(prepared.Messages, call.CustomAgentsNote)
 			}
 
-			prepared.Messages = a.workaroundProviderMediaLimitations(prepared.Messages, largeModel)
+			prepared.Messages = a.workaroundProviderMediaLimitations(prepared.Messages, activeModel)
 
 			lastSystemRoleInx := 0
 			systemMessageUpdated := false
@@ -1067,8 +1156,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				}
 			}
 
-			if promptPrefix != "" {
-				prepared.Messages = append([]fantasy.Message{fantasy.NewSystemMessage(promptPrefix)}, prepared.Messages...)
+			if activePromptPrefix != "" {
+				prepared.Messages = append([]fantasy.Message{fantasy.NewSystemMessage(activePromptPrefix)}, prepared.Messages...)
 			}
 
 			store, storeErr := a.toolArtifactStore()
@@ -1082,22 +1171,28 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			sessionLock.Lock()
 			stepMessages = cloneFantasyMessages(prepared.Messages)
 			stepToolTokens = estimateToolDefinitionsTokens(definitions)
+			currentStepModel = activeModel
+			currentStepPhase = stepPhase
 			sessionLock.Unlock()
 			a.recordPreparedContext(call.SessionID, definitions, prepared.Messages)
 
+			initialParts := []message.ContentPart{}
+			if stepPhase != "" {
+				initialParts = append(initialParts, message.OrchestratorStepMeta{Phase: string(stepPhase)})
+			}
 			var assistantMsg message.Message
 			assistantMsg, err = a.messages.Create(callContext, call.SessionID, message.CreateMessageParams{
 				Role:     message.Assistant,
-				Parts:    []message.ContentPart{},
-				Model:    largeModel.ModelCfg.Model,
-				Provider: largeModel.ModelCfg.Provider,
+				Parts:    initialParts,
+				Model:    activeModel.ModelCfg.Model,
+				Provider: activeModel.ModelCfg.Provider,
 			})
 			if err != nil {
 				return callContext, prepared, err
 			}
 			callContext = context.WithValue(callContext, tools.MessageIDContextKey, assistantMsg.ID)
-			callContext = context.WithValue(callContext, tools.SupportsImagesContextKey, largeModel.CatwalkCfg.SupportsImages)
-			callContext = context.WithValue(callContext, tools.ModelNameContextKey, largeModel.CatwalkCfg.Name)
+			callContext = context.WithValue(callContext, tools.SupportsImagesContextKey, activeModel.CatwalkCfg.SupportsImages)
+			callContext = context.WithValue(callContext, tools.ModelNameContextKey, activeModel.CatwalkCfg.Name)
 			currentAssistant = &assistantMsg
 			return callContext, prepared, err
 		},
@@ -1133,7 +1228,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			// Strip leading newline from initial text content. This is is
 			// particularly important in non-interactive mode where leading
 			// newlines are very visible.
-			if len(currentAssistant.Parts) == 0 {
+			if !hasVisibleAssistantContent(currentAssistant.Parts) {
 				text = strings.TrimPrefix(text, "\n")
 			}
 
@@ -1175,8 +1270,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				})
 			}
 		},
-		OnAuthRefresh: call.OnAuthRefresh,
+		OnAuthRefresh: onAuthRefresh,
 		ModelProvider: func() fantasy.LanguageModel {
+			if orch != nil {
+				return orch.currentRoleConfig().Model.Model
+			}
 			m := a.largeModel.Get()
 			if call.ModelOverride != nil {
 				m = *call.ModelOverride
@@ -1260,6 +1358,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			currentAssistant.PrismHypercreditSavings, currentAssistant.PrismDollarSavings = extractPrismSavings(stepResult.ProviderMetadata)
 			sessionLock.Lock()
 			defer sessionLock.Unlock()
+			stepModel := currentStepModel
+			stepPhase := currentStepPhase
 
 			updatedSession, getSessionErr := a.sessions.Get(ctx, call.SessionID)
 			if getSessionErr != nil {
@@ -1273,7 +1373,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			} else if promptTokens > 0 {
 				a.recordContextCalibration(call.SessionID, usage, stepMessages, stepToolTokens)
 			}
-			a.updateSessionUsage(largeModel, &updatedSession, usage, a.openrouterCost(stepResult.ProviderMetadata), estimated)
+			a.updateSessionUsage(stepModel, &updatedSession, usage, a.openrouterCost(stepResult.ProviderMetadata), estimated)
 			if promptTokens == 0 {
 				estimatedInput := estimateMessageTokens(stepMessages) + stepToolTokens
 				updatedSession.ContextTokens = estimatedInput + usage.OutputTokens
@@ -1288,6 +1388,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				return sessionErr
 			}
 			currentSession = updatedSession
+			if orch != nil {
+				orch.onStepFinish(stepPhase, stepModel, stepResult, sanitizedToolCalls)
+			}
 			if a.dataDir != "" {
 				if stepErr := appendStepToContextSummary(a.dataDir, call.SessionID, stepResult.Messages); stepErr != nil {
 					slog.Warn("Failed to append step to context summary file", "error", stepErr, "session_id", call.SessionID)
@@ -1305,8 +1408,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	}
 
 	if err != nil {
-		isHyper := largeModel.ModelCfg.Provider == hyper.Name
-		isPrimeAI := largeModel.ModelCfg.Provider == primeai.Name
+		sessionLock.Lock()
+		errModel := currentStepModel
+		sessionLock.Unlock()
+		isHyper := errModel.ModelCfg.Provider == hyper.Name
+		isPrimeAI := errModel.ModelCfg.Provider == primeai.Name
 		isCancelErr := errors.Is(err, context.Canceled)
 		slog.Info("Agent stream returned error",
 			"error", err.Error(),
@@ -1364,7 +1470,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				currentAssistant.AddFinish(
 					message.FinishReasonError,
 					"Copilot model not enabled",
-					fmt.Sprintf("%q is not enabled in Copilot. Go to the following page to enable it. Then, wait 5 minutes before trying again. %s", largeModel.CatwalkCfg.Name, link),
+					fmt.Sprintf("%q is not enabled in Copilot. Go to the following page to enable it. Then, wait 5 minutes before trying again. %s", errModel.CatwalkCfg.Name, link),
 				)
 			} else {
 				currentAssistant.AddFinish(message.FinishReasonError, cmp.Or(stringext.Capitalize(providerErr.Title), defaultTitle), providerErr.Message)
@@ -2773,4 +2879,14 @@ func sanitizeToolInput(toolName, toolCallID, input string) (string, bool) {
 		return "{}", true
 	}
 	return input, false
+}
+
+func hasVisibleAssistantContent(parts []message.ContentPart) bool {
+	for _, part := range parts {
+		if _, isMeta := part.(message.OrchestratorStepMeta); isMeta {
+			continue
+		}
+		return true
+	}
+	return false
 }

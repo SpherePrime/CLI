@@ -1881,7 +1881,22 @@ Object.assign(english, {
   Тип: 'Type',
   Цель: 'Target',
   'Шаблон / поля': 'Pattern / fields',
-  'Выполнение прервано до получения результата': 'Execution interrupted before receiving a result'
+  'Выполнение прервано до получения результата': 'Execution interrupted before receiving a result',
+  Оркестратор: 'Orchestrator',
+  'Режим Оркестратора': 'Orchestrator mode',
+  'Планировщик исследует и проверяет без правок, исполнитель пишет код':
+    'Planner explores and verifies without edits, executor writes code',
+  Планировщик: 'Planner',
+  Исполнитель: 'Executor',
+  'Модель не выбрана': 'No model selected',
+  'Назад к настройкам оркестратора': 'Back to orchestrator settings',
+  'Выбор планировщика': 'Select planner',
+  'Выбор исполнителя': 'Select executor',
+  'Финальная проверка плана': 'Final plan review',
+  'Планировщик проверяет изменения перед завершением':
+    'Planner reviews changes before finishing',
+  'Двухэтапное выполнение': 'Two-stage execution',
+  'Настроить оркестратор': 'Configure orchestrator'
 })
 
 

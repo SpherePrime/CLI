@@ -156,6 +156,77 @@ func (b *Backend) UpdateSessionModel(workspaceID, sessionID string, model *confi
 	return nil
 }
 
+// UpdateOrchestratorConfig updates Orchestrator mode settings and persists them
+// to the config file.
+func (b *Backend) UpdateOrchestratorConfig(workspaceID string, req proto.ConfigOrchestratorRequest) error {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+	cfg := ws.Cfg.Config()
+	normalizeModel := func(role string, m *config.SelectedModel) (*config.SelectedModel, error) {
+		if m == nil {
+			return nil, nil
+		}
+		cp := *m
+		if cp.Provider == "" && cp.Model == "" {
+			return &cp, nil
+		}
+		if cp.Provider == "" || cp.Model == "" {
+			return nil, fmt.Errorf("%s model requires both provider and model", role)
+		}
+		if cp.ReasoningMode != "" {
+			catalogModel := cfg.GetModel(cp.Provider, cp.Model)
+			if catalogModel == nil {
+				return nil, fmt.Errorf("model %q not found", cp.Model)
+			}
+			normalized, err := config.NormalizeModelReasoningMode(*catalogModel, cp.ReasoningMode)
+			if err != nil {
+				return nil, err
+			}
+			cp.ReasoningMode = normalized
+		}
+		return &cp, nil
+	}
+
+	planner, err := normalizeModel("planner", req.Planner)
+	if err != nil {
+		return err
+	}
+	executor, err := normalizeModel("executor", req.Executor)
+	if err != nil {
+		return err
+	}
+
+	if req.SessionID != "" && req.Enabled != nil {
+		if err := ws.Cfg.UpdateOrchestratorConfig(config.ScopeWorkspace, req.SessionID, config.OrchestratorUpdate{
+			Enabled: req.Enabled,
+		}); err != nil {
+			return err
+		}
+	}
+
+	scoped := config.OrchestratorUpdate{
+		Planner:     planner,
+		Executor:    executor,
+		FinalReview: req.FinalReview,
+	}
+	if req.SessionID == "" {
+		scoped.Enabled = req.Enabled
+	}
+	if scoped.Enabled != nil || scoped.Planner != nil || scoped.Executor != nil || scoped.FinalReview != nil {
+		if err := ws.Cfg.UpdateOrchestratorConfig(req.Scope, "", scoped); err != nil {
+			return err
+		}
+	}
+
+	includeAll := req.Scope == config.ScopeGlobal &&
+		(planner != nil || executor != nil || req.FinalReview != nil || (req.SessionID == "" && req.Enabled != nil))
+	b.forgetSubAgents(ws, includeAll)
+	publishConfigChanged(ws)
+	return nil
+}
+
 // forgetSubAgents clears cached sub-agents on the target workspace's
 // coordinator (and on all open workspaces when a global model change occurs).
 func (b *Backend) forgetSubAgents(ws *Workspace, includeAll bool) {

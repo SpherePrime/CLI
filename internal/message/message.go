@@ -625,8 +625,9 @@ const (
 	binaryType       partType = "binary"
 	toolCallType     partType = "tool_call"
 	toolResultType   partType = "tool_result"
-	finishType       partType = "finish"
-	shellCommandType partType = "shell_command"
+	finishType           partType = "finish"
+	shellCommandType     partType = "shell_command"
+	orchestratorMetaType partType = "orchestrator_meta"
 )
 
 type partWrapper struct {
@@ -657,6 +658,8 @@ func marshalParts(parts []ContentPart) ([]byte, error) {
 			typ = finishType
 		case ShellCommand:
 			typ = shellCommandType
+		case OrchestratorStepMeta:
+			typ = orchestratorMetaType
 		default:
 			return nil, fmt.Errorf("unknown part type: %T", part)
 		}
@@ -715,6 +718,8 @@ func unmarshalPart(typ partType, data json.RawMessage) (ContentPart, error) {
 		return decodePart[Finish](data)
 	case shellCommandType:
 		return decodePart[ShellCommand](data)
+	case orchestratorMetaType:
+		return decodePart[OrchestratorStepMeta](data)
 	default:
 		return nil, fmt.Errorf("unknown part type: %s", typ)
 	}

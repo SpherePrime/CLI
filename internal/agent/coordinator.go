@@ -398,26 +398,107 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		return nil, fmt.Errorf("failed to update models: %w", err)
 	}
 
-	model := agent.Model()
-	if override := c.sessionModel(ctx, sessionID); override != nil {
-		model = *override
-	}
-	providerCfg, ok := c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
-	if !ok {
-		return nil, errModelProviderNotConfigured
-	}
-	model, err := c.applyRunReasoning(ctx, model, providerCfg)
-	if err != nil {
-		return nil, err
-	}
-	maxTokens := callMaxOutputTokens(model, providerCfg.Type)
+	var (
+		model       Model
+		providerCfg config.ProviderConfig
+		maxTokens   int64
+		mergedOptions fantasy.ProviderOptions
+		temp        *float64
+		topP        *float64
+		topK        *int64
+		freqPenalty *float64
+		presPenalty *float64
+		orchCall    *OrchestratorCallConfig
+		err         error
+	)
 
-	mergedOptions, temp, topP, topK, freqPenalty, presPenalty := mergeCallOptions(model, providerCfg)
+	if agentName == config.AgentGeneral && c.cfg.Config().IsOrchestratorEnabled(sessionID) {
+		cfg := c.cfg.Config()
+		plannerSel := cfg.ResolveOrchestratorPlanner(sessionID)
+		executorSel := cfg.ResolveOrchestratorExecutor()
 
-	if err := c.refreshTokenIfExpired(ctx, providerCfg); err != nil {
-		// NOTE(@dwertyfa288): We don't return here because the event handling to ask the user to reauthenticate
-		// depends on the flow below. If refresh fails, proceed with the token we have.
-		slog.Error("Failed to refresh OAuth2 token. Proceeding with existing token.", "error", err)
+		plannerModel, plannerProviderCfg, pErr := c.buildSelectedModel(ctx, plannerSel, false)
+		if pErr != nil {
+			return nil, pErr
+		}
+		plannerModel, pErr = c.applyRunReasoning(ctx, plannerModel, plannerProviderCfg)
+		if pErr != nil {
+			return nil, pErr
+		}
+		if rErr := c.refreshTokenIfExpired(ctx, plannerProviderCfg); rErr != nil {
+			slog.Error("Failed to refresh OAuth2 token for orchestrator planner. Proceeding with existing token.", "error", rErr)
+		}
+
+		executorModel, executorProviderCfg, eErr := c.buildSelectedModel(ctx, executorSel, false)
+		if eErr != nil {
+			return nil, eErr
+		}
+		executorModel, eErr = c.applyRunReasoning(ctx, executorModel, executorProviderCfg)
+		if eErr != nil {
+			return nil, eErr
+		}
+		if executorProviderCfg.ID != plannerProviderCfg.ID {
+			if rErr := c.refreshTokenIfExpired(ctx, executorProviderCfg); rErr != nil {
+				slog.Error("Failed to refresh OAuth2 token for orchestrator executor. Proceeding with existing token.", "error", rErr)
+			}
+		}
+
+		plannerOpts, pTemp, pTopP, pTopK, pFreq, pPres := mergeCallOptions(plannerModel, plannerProviderCfg)
+		plannerMaxTokens := callMaxOutputTokens(plannerModel, plannerProviderCfg.Type)
+		executorOpts, _, _, _, _, _ := mergeCallOptions(executorModel, executorProviderCfg)
+		executorMaxTokens := callMaxOutputTokens(executorModel, executorProviderCfg.Type)
+
+		orchCall = &OrchestratorCallConfig{
+			Enabled:            true,
+			FinalReviewEnabled: cfg.OrchestratorFinalReviewEnabled(),
+			Planner: OrchestratorRoleConfig{
+				Model:              plannerModel,
+				ProviderOptions:    plannerOpts,
+				SystemPromptPrefix: plannerProviderCfg.SystemPromptPrefix,
+				MaxOutputTokens:    plannerMaxTokens,
+				OnAuthRefresh:      c.makeAuthRefreshCallback(plannerProviderCfg),
+			},
+			Executor: OrchestratorRoleConfig{
+				Model:              executorModel,
+				ProviderOptions:    executorOpts,
+				SystemPromptPrefix: executorProviderCfg.SystemPromptPrefix,
+				MaxOutputTokens:    executorMaxTokens,
+				OnAuthRefresh:      c.makeAuthRefreshCallback(executorProviderCfg),
+			},
+		}
+
+		model = plannerModel
+		providerCfg = plannerProviderCfg
+		maxTokens = plannerMaxTokens
+		mergedOptions = plannerOpts
+		temp = pTemp
+		topP = pTopP
+		topK = pTopK
+		freqPenalty = pFreq
+		presPenalty = pPres
+	} else {
+		model = agent.Model()
+		if override := c.sessionModel(ctx, sessionID); override != nil {
+			model = *override
+		}
+		var ok bool
+		providerCfg, ok = c.cfg.Config().Providers.Get(model.ModelCfg.Provider)
+		if !ok {
+			return nil, errModelProviderNotConfigured
+		}
+		model, err = c.applyRunReasoning(ctx, model, providerCfg)
+		if err != nil {
+			return nil, err
+		}
+		maxTokens = callMaxOutputTokens(model, providerCfg.Type)
+
+		mergedOptions, temp, topP, topK, freqPenalty, presPenalty = mergeCallOptions(model, providerCfg)
+
+		if err := c.refreshTokenIfExpired(ctx, providerCfg); err != nil {
+			// NOTE(@dwertyfa288): We don't return here because the event handling to ask the user to reauthenticate
+			// depends on the flow below. If refresh fails, proceed with the token we have.
+			slog.Error("Failed to refresh OAuth2 token. Proceeding with existing token.", "error", err)
+		}
 	}
 
 	// Coalesce per-attempt RunComplete payloads so only the final
@@ -475,6 +556,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			OnComplete:        onComplete,
 			Accepted:          accept,
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
+			Orchestrator:      orchCall,
 		})
 	}
 	// continueRun replays the request with a different prompt and without the
@@ -498,6 +580,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			PresencePenalty:   presPenalty,
 			OnComplete:        onComplete,
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
+			Orchestrator:      orchCall,
 		})
 	}
 	beforeLoaded := c.skillTracker.LoadedNames()
@@ -555,11 +638,26 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	// retry means the user doesn't need to re-authenticate. AWS SSO is
 	// handled transparently inside OnAuthRefresh, so it needs no post-run
 	// notification here.
-	if originalErr != nil && isUnauthorized(originalErr) && c.notify != nil && (model.ModelCfg.Provider == hyper.Name || model.ModelCfg.Provider == primeai.Name) {
-		c.notify.Publish(pubsub.CreatedEvent, notify.Notification{
-			Type:       notify.TypeReAuthenticate,
-			ProviderID: model.ModelCfg.Provider,
-		})
+	if originalErr != nil && isUnauthorized(originalErr) && c.notify != nil {
+		notified := map[string]bool{}
+		for _, pid := range []string{model.ModelCfg.Provider} {
+			if pid == hyper.Name || pid == primeai.Name {
+				notified[pid] = true
+				c.notify.Publish(pubsub.CreatedEvent, notify.Notification{
+					Type:       notify.TypeReAuthenticate,
+					ProviderID: pid,
+				})
+			}
+		}
+		if orchCall != nil {
+			pid := orchCall.Executor.Model.ModelCfg.Provider
+			if (pid == hyper.Name || pid == primeai.Name) && !notified[pid] {
+				c.notify.Publish(pubsub.CreatedEvent, notify.Notification{
+					Type:       notify.TypeReAuthenticate,
+					ProviderID: pid,
+				})
+			}
+		}
 	}
 
 	if hasLatest && c.runComplete != nil {
@@ -1396,6 +1494,42 @@ func (c *coordinator) sessionModel(ctx context.Context, sessionID string) *Model
 		ModelCfg:   selected,
 		FlatRate:   providerCfg.FlatRate,
 	}
+}
+
+func (c *coordinator) buildSelectedModel(ctx context.Context, selected config.SelectedModel, isSubAgent bool) (Model, config.ProviderConfig, error) {
+	if selected.Provider == "" || selected.Model == "" {
+		return Model{}, config.ProviderConfig{}, errModelProviderNotConfigured
+	}
+	cfg := c.cfg.Config()
+	providerCfg, ok := cfg.Providers.Get(selected.Provider)
+	if !ok {
+		return Model{}, config.ProviderConfig{}, errModelProviderNotConfigured
+	}
+	provider, err := c.buildProvider(providerCfg, selected, isSubAgent)
+	if err != nil {
+		return Model{}, config.ProviderConfig{}, err
+	}
+	catalogModel := cfg.GetModel(selected.Provider, selected.Model)
+	if catalogModel == nil {
+		return Model{}, config.ProviderConfig{}, fmt.Errorf("model %q not found in provider %q", selected.Model, selected.Provider)
+	}
+	modelID := selected.Model
+	if selected.Provider == openrouter.Name && isExactoSupported(modelID) {
+		modelID += ":exacto"
+	}
+	languageModel, err := provider.LanguageModel(ctx, modelID)
+	if err != nil {
+		return Model{}, config.ProviderConfig{}, err
+	}
+	requestTimeout := cfg.Options.GetRequestTimeout()
+	languageModel = newRequestTimeoutModel(languageModel, requestTimeout)
+	languageModel = newReasoningCompatModel(newToolRoleCompatModel(newToolCallLeakModel(languageModel)))
+	return Model{
+		Model:      languageModel,
+		CatwalkCfg: applyModelOverrides(*catalogModel, selected),
+		ModelCfg:   selected,
+		FlatRate:   providerCfg.FlatRate,
+	}, providerCfg, nil
 }
 
 // applyModelOverrides copies per-selected-model overrides from the config

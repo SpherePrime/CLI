@@ -5,6 +5,7 @@ import type {
   ChatReasoningMode,
   Message,
   Operation,
+  OrchestratorRoleConfig,
   Preferences,
   PrimeAILimits,
   QueuedPrompt,
@@ -102,6 +103,7 @@ export function useWorkspace() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [session, setSession] = useState<Session | null>(null)
   const [draftReasoningMode, setDraftReasoningMode] = useState<ChatReasoningMode | null>(null)
+  const [draftOrchestrator, setDraftOrchestrator] = useState<boolean | null>(null)
   const history = useMessageHistory()
   const { messagesSessionId } = history
   const [permissions, setPermissions] = useState<Json[]>([])
@@ -137,6 +139,7 @@ export function useWorkspace() {
   const pendingSessions = useRef(new Map<string, Promise<Session | null>>())
   const pendingProjects = useRef(new Map<string, string>())
   const pendingReasoning = useRef(new Map<string, ChatReasoningMode>())
+  const pendingOrchestrator = useRef(new Map<string, boolean>())
   const discardedSessions = useRef(new Set<string>())
   const pendingChatOpen = useRef<Promise<Project> | null>(null)
   // A refresh that lands while a chat is still materializing must not drop its
@@ -799,6 +802,7 @@ export function useWorkspace() {
   }
   async function selectProject(selected: Project) {
     setDraftReasoningMode(null)
+    setDraftOrchestrator(null)
     current.current = { project: selected, session: null }
     setProject(selected)
     setSession(null)
@@ -854,6 +858,7 @@ export function useWorkspace() {
     const project = current.current.project
     if (!project) return
     setDraftReasoningMode(null)
+    setDraftOrchestrator(null)
     setPermissions([])
     setQuestions([])
     showSession(project, selected)
@@ -864,6 +869,7 @@ export function useWorkspace() {
   async function openSession(target: Project, selected: Session, known?: Session[]) {
     if (target.id === current.current.project?.id) return selectSession(selected)
     setDraftReasoningMode(null)
+    setDraftOrchestrator(null)
     setPermissions([])
     setQuestions([])
     showSession(target, selected, known)
@@ -949,6 +955,17 @@ export function useWorkspace() {
       void savePreferences({
         reasoningBySession: { [created.id]: reasoning || draftReasoningMode || reasoningFallback }
       }).catch(errorHandler)
+      const pendingOrch = pendingOrchestrator.current.get(placeholder.id)
+      const effectiveDraftOrch = pendingOrch !== undefined ? pendingOrch : draftOrchestrator
+      if (effectiveDraftOrch !== null) {
+        await window.prime
+          .call(project.id, 'orchestrator', {
+            sessionId: created.id,
+            enabled: effectiveDraftOrch
+          })
+          .catch(errorHandler)
+        void scheduleRefresh(false, true).catch(() => {})
+      }
       return created
     } catch (error) {
       setSessions((items) => items.filter((item) => item.id !== placeholder.id))
@@ -968,6 +985,7 @@ export function useWorkspace() {
     setQuestions([])
     showSession(project, placeholder)
     setDraftReasoningMode(null)
+    setDraftOrchestrator(null)
     const task = materializeSession(project, placeholder)
     pendingSessions.current.set(placeholder.id, task)
     pendingProjects.current.set(placeholder.id, project.id)
@@ -975,6 +993,7 @@ export function useWorkspace() {
       pendingSessions.current.delete(placeholder.id)
       pendingProjects.current.delete(placeholder.id)
       pendingReasoning.current.delete(placeholder.id)
+      pendingOrchestrator.current.delete(placeholder.id)
       discardedSessions.current.delete(placeholder.id)
     })
     return placeholder
@@ -1071,6 +1090,13 @@ export function useWorkspace() {
       if (!selected) return false
       if (!targetSession) {
         await savePreferences({ reasoningBySession: { [selected.id]: reasoningMode } })
+        if (draftOrchestrator !== null) {
+          await window.prime.call(targetProject.id, 'orchestrator', {
+            sessionId: selected.id,
+            enabled: draftOrchestrator
+          })
+          setDraftOrchestrator(null)
+        }
       }
       if (options.goal !== undefined)
         await window.prime.call(targetProject.id, 'setGoal', {
@@ -1281,6 +1307,45 @@ export function useWorkspace() {
       ...(materialized ? { reasoningBySession: { [materialized.id]: mode } } : {})
     })
   }
+  const realSessionIdForOrch = session && !isPendingSessionId(session.id) ? session.id : undefined
+  const sessionOrchestratorFlag = realSessionIdForOrch
+    ? config?.session_orchestrator?.[realSessionIdForOrch]
+    : undefined
+  const orchestratorEnabled = realSessionIdForOrch
+    ? sessionOrchestratorFlag !== undefined
+      ? Boolean(sessionOrchestratorFlag)
+      : Boolean(config?.orchestrator?.enabled)
+    : draftOrchestrator !== null
+      ? draftOrchestrator
+      : Boolean(config?.orchestrator?.enabled)
+  async function setOrchestrator(patch: OrchestratorPatch) {
+    const selected = current.current.session
+    const materialized = selected && !isPendingSessionId(selected.id) ? selected : null
+    if (patch.enabled !== undefined && !materialized) {
+      if (selected) pendingOrchestrator.current.set(selected.id, patch.enabled)
+      setDraftOrchestrator(patch.enabled)
+    }
+    const needsBackendCall =
+      Boolean(materialized) ||
+      patch.planner !== undefined ||
+      patch.executor !== undefined ||
+      patch.finalReview !== undefined ||
+      patch.scope !== undefined
+    if (needsBackendCall) {
+      await call('orchestrator', {
+        ...(materialized && patch.enabled !== undefined ? { sessionId: materialized.id } : {}),
+        ...(materialized && patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
+        ...(!materialized && patch.scope !== undefined && patch.enabled !== undefined
+          ? { enabled: patch.enabled }
+          : {}),
+        ...(patch.planner ? { planner: patch.planner } : {}),
+        ...(patch.executor ? { executor: patch.executor } : {}),
+        ...(patch.finalReview !== undefined ? { finalReview: patch.finalReview } : {}),
+        ...(patch.scope !== undefined ? { scope: patch.scope } : {})
+      })
+      await scheduleRefresh(false, true)
+    }
+  }
   async function deleteSession(id: string) {
     if (isPendingSessionId(id)) {
       // The engine has not created this chat yet; the background creation
@@ -1465,6 +1530,8 @@ export function useWorkspace() {
     setPermissionMode: chatPermissions.setSkip,
     reasoningMode,
     setReasoningMode,
+    orchestratorEnabled,
+    setOrchestrator,
     projects,
     project,
     sessions,
@@ -1543,3 +1610,10 @@ export function useWorkspace() {
 }
 export type Workspace = ReturnType<typeof useWorkspace>
 export type SendOptions = { goal?: string }
+export type OrchestratorPatch = {
+  enabled?: boolean
+  planner?: OrchestratorRoleConfig
+  executor?: OrchestratorRoleConfig
+  finalReview?: boolean
+  scope?: number
+}

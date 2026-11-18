@@ -41,6 +41,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/permission"
 	"github.com/SpherePrime/CLI/internal/projects"
+	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/internal/question"
 	"github.com/SpherePrime/CLI/internal/session"
@@ -2592,6 +2593,8 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 		cmds = append(cmds, m.handleSetAgentModel(msg))
 	case dialog.ActionClearAgentModel:
 		cmds = append(cmds, m.handleClearAgentModel(msg))
+	case dialog.ActionUpdateOrchestrator:
+		cmds = append(cmds, m.handleUpdateOrchestrator(msg))
 	case dialog.ActionOpenAgentModel:
 		if cmd := m.openAgentModelDialog(msg.AgentID); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -3002,6 +3005,33 @@ func (m *UI) handleClearAgentModel(msg dialog.ActionClearAgentModel) tea.Cmd {
 	})
 
 	return cmd
+}
+
+func (m *UI) handleUpdateOrchestrator(msg dialog.ActionUpdateOrchestrator) tea.Cmd {
+	if m.isAgentBusy() {
+		return util.ReportWarn("Agent is busy, please wait...")
+	}
+	req := proto.ConfigOrchestratorRequest{
+		Scope:       config.ScopeGlobal,
+		Enabled:     msg.Enabled,
+		Planner:     msg.Planner,
+		Executor:    msg.Executor,
+		FinalReview: msg.FinalReview,
+	}
+	if err := m.com.Workspace.UpdateOrchestratorConfig(req); err != nil {
+		return util.ReportError(err)
+	}
+	if md, ok := m.dialog.Dialog(dialog.ModelsID).(*dialog.Models); ok {
+		if err := md.Refresh(); err != nil {
+			return util.ReportError(err)
+		}
+	}
+	return m.updateAgentModelCmd(func() tea.Msg {
+		if err := m.com.Workspace.UpdateAgentModel(context.TODO()); err != nil {
+			return util.ReportError(err)
+		}
+		return util.NewInfoMsg(m.com.L("info.orchestrator_updated"))
+	})
 }
 
 func (m *UI) handleSelectModel(msg dialog.ActionSelectModel) tea.Cmd {
@@ -3914,6 +3944,15 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	// Add status and help layer
 	m.status.SetHideHelp(isOnboarding)
 	m.status.SetMode(m.mode, m.yoloModeCached())
+	sessionID := ""
+	if m.session != nil {
+		sessionID = m.session.ID
+	}
+	orchEnabled := false
+	if cfg := m.com.Config(); cfg != nil {
+		orchEnabled = cfg.IsOrchestratorEnabled(sessionID) && m.mode != uiInputModePlan
+	}
+	m.status.SetOrchestrator(orchEnabled)
 	m.status.SetModel(m.selectedLargeModel())
 	m.status.Draw(scr, layout.status)
 

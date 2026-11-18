@@ -294,6 +294,7 @@ func messageToProto(m message.Message) proto.Message {
 		CreatedAt:               m.CreatedAt,
 		UpdatedAt:               m.UpdatedAt,
 		IsSummaryMessage:        m.IsSummaryMessage,
+		OrchestratorPhase:       m.OrchestratorPhase(),
 	}
 
 	for _, p := range m.Parts {

@@ -111,6 +111,8 @@ type PrepareStepResult struct {
 	ToolDefinitions []Tool
 	BeforeToolCall  func(context.Context, ToolCall) error
 	Model           LanguageModel
+	ProviderOptions *ProviderOptions
+	MaxOutputTokens *int64
 	Messages        []Message
 	System          *string
 	ToolChoice      *ToolChoice
@@ -300,9 +302,10 @@ type AgentStreamCall struct {
 	// nil, the model captured at step preparation time is used.
 	ModelProvider func() LanguageModel
 
-	StopWhen       []StopCondition
-	PrepareStep    PrepareStepFunction
-	RepairToolCall RepairToolCallFunction
+	StopWhen          []StopCondition
+	PrepareStep       PrepareStepFunction
+	RepairToolCall    RepairToolCallFunction
+	ContinueAfterStop func(steps []StepResult, messages []Message) (bool, []Message)
 
 	// Agent-level callbacks
 	OnAgentStart  OnAgentStartFunc  // Called when agent starts
@@ -454,8 +457,11 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 	var steps []StepResult
 
 	for {
-		stepInputMessages := append(initialPrompt, responseMessages...)
+		stepInputMessages := make([]Message, 0, len(initialPrompt)+len(responseMessages))
+		stepInputMessages = append(stepInputMessages, initialPrompt...)
+		stepInputMessages = append(stepInputMessages, responseMessages...)
 		stepModel := a.settings.model
+		preparedModelSet := false
 		stepSystemPrompt := a.settings.systemPrompt
 		stepActiveTools := opts.ActiveTools
 		stepToolChoice := ToolChoiceAuto
@@ -466,6 +472,8 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 		stepTools := a.settings.tools
 		var stepDefinitions []Tool
 		var stepGate func(context.Context, ToolCall) error
+		var stepProviderOptions *ProviderOptions
+		var stepMaxOutputTokens *int64
 		if opts.PrepareStep != nil {
 			updatedCtx, prepared, err := opts.PrepareStep(ctx, PrepareStepFunctionOptions{
 				Model:      stepModel,
@@ -480,6 +488,8 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 			ctx = updatedCtx
 			stepDefinitions = prepared.ToolDefinitions
 			stepGate = prepared.BeforeToolCall
+			stepProviderOptions = prepared.ProviderOptions
+			stepMaxOutputTokens = prepared.MaxOutputTokens
 
 			// Apply prepared step modifications
 			if prepared.Messages != nil {
@@ -487,6 +497,7 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 			}
 			if prepared.Model != nil {
 				stepModel = prepared.Model
+				preparedModelSet = true
 			}
 			if prepared.System != nil {
 				stepSystemPrompt = *prepared.System
@@ -505,13 +516,14 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 
 		// Recreate prompt with potentially modified system prompt
 		if stepSystemPrompt != a.settings.systemPrompt {
-			stepPrompt, err := a.createPrompt(stepSystemPrompt, opts.Prompt, opts.Messages, opts.Files...)
-			if err != nil {
-				return nil, err
-			}
-			// Replace system message part, keep the rest
-			if len(stepInputMessages) > 0 && len(stepPrompt) > 0 {
-				stepInputMessages[0] = stepPrompt[0] // Replace system message
+			if stepSystemPrompt == "" {
+				if len(stepInputMessages) > 0 && stepInputMessages[0].Role == MessageRoleSystem {
+					stepInputMessages = stepInputMessages[1:]
+				}
+			} else if len(stepInputMessages) > 0 && stepInputMessages[0].Role == MessageRoleSystem {
+				stepInputMessages[0] = NewSystemMessage(stepSystemPrompt)
+			} else {
+				stepInputMessages = append([]Message{NewSystemMessage(stepSystemPrompt)}, stepInputMessages...)
 			}
 		}
 
@@ -543,13 +555,22 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 			// Re-read the model on each retry attempt so that
 			// OnAuthRefresh can swap in a model with fresh credentials.
 			retryModel := stepModel
-			if opts.ModelProvider != nil {
+			if !preparedModelSet && opts.ModelProvider != nil {
 				retryModel = opts.ModelProvider()
+			}
+
+			callProviderOptions := opts.ProviderOptions
+			if stepProviderOptions != nil {
+				callProviderOptions = *stepProviderOptions
+			}
+			callMaxOutputTokens := opts.MaxOutputTokens
+			if stepMaxOutputTokens != nil {
+				callMaxOutputTokens = stepMaxOutputTokens
 			}
 
 			return retryModel.Generate(ctx, Call{
 				Prompt:           stepInputMessages,
-				MaxOutputTokens:  opts.MaxOutputTokens,
+				MaxOutputTokens:  callMaxOutputTokens,
 				Temperature:      opts.Temperature,
 				TopP:             opts.TopP,
 				TopK:             opts.TopK,
@@ -559,7 +580,7 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 				ToolChoice:       &stepToolChoice,
 				UserAgent:        a.settings.userAgent,
 				Headers:          opts.Headers,
-				ProviderOptions:  opts.ProviderOptions,
+				ProviderOptions:  callProviderOptions,
 			})
 		})
 		if err != nil {
@@ -980,8 +1001,11 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 	}
 
 	for stepNumber := 0; ; stepNumber++ {
-		stepInputMessages := append(initialPrompt, responseMessages...)
+		stepInputMessages := make([]Message, 0, len(initialPrompt)+len(responseMessages))
+		stepInputMessages = append(stepInputMessages, initialPrompt...)
+		stepInputMessages = append(stepInputMessages, responseMessages...)
 		stepModel := a.settings.model
+		preparedModelSet := false
 		stepSystemPrompt := a.settings.systemPrompt
 		stepActiveTools := call.ActiveTools
 		stepToolChoice := ToolChoiceAuto
@@ -992,6 +1016,8 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 		stepTools := a.settings.tools
 		var stepDefinitions []Tool
 		var stepGate func(context.Context, ToolCall) error
+		var stepProviderOptions *ProviderOptions
+		var stepMaxOutputTokens *int64
 		// Apply step preparation if provided
 		if call.PrepareStep != nil {
 			updatedCtx, prepared, err := call.PrepareStep(ctx, PrepareStepFunctionOptions{
@@ -1007,12 +1033,15 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 			ctx = updatedCtx
 			stepDefinitions = prepared.ToolDefinitions
 			stepGate = prepared.BeforeToolCall
+			stepProviderOptions = prepared.ProviderOptions
+			stepMaxOutputTokens = prepared.MaxOutputTokens
 
 			if prepared.Messages != nil {
 				stepInputMessages = prepared.Messages
 			}
 			if prepared.Model != nil {
 				stepModel = prepared.Model
+				preparedModelSet = true
 			}
 			if prepared.System != nil {
 				stepSystemPrompt = *prepared.System
@@ -1031,12 +1060,14 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 
 		// Recreate prompt with potentially modified system prompt
 		if stepSystemPrompt != a.settings.systemPrompt {
-			stepPrompt, err := a.createPrompt(stepSystemPrompt, call.Prompt, call.Messages, call.Files...)
-			if err != nil {
-				return nil, err
-			}
-			if len(stepInputMessages) > 0 && len(stepPrompt) > 0 {
-				stepInputMessages[0] = stepPrompt[0]
+			if stepSystemPrompt == "" {
+				if len(stepInputMessages) > 0 && stepInputMessages[0].Role == MessageRoleSystem {
+					stepInputMessages = stepInputMessages[1:]
+				}
+			} else if len(stepInputMessages) > 0 && stepInputMessages[0].Role == MessageRoleSystem {
+				stepInputMessages[0] = NewSystemMessage(stepSystemPrompt)
+			} else {
+				stepInputMessages = append([]Message{NewSystemMessage(stepSystemPrompt)}, stepInputMessages...)
 			}
 		}
 
@@ -1076,6 +1107,12 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 			Headers:          call.Headers,
 			ProviderOptions:  call.ProviderOptions,
 		}
+		if stepProviderOptions != nil {
+			streamCall.ProviderOptions = *stepProviderOptions
+		}
+		if stepMaxOutputTokens != nil {
+			streamCall.MaxOutputTokens = stepMaxOutputTokens
+		}
 
 		// Execute step with retry logic wrapping both stream creation and processing
 		retryOptions := DefaultRetryOptions()
@@ -1090,7 +1127,7 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 			// Re-read the model on each retry attempt so that
 			// OnAuthRefresh can swap in a model with fresh credentials.
 			retryModel := stepModel
-			if call.ModelProvider != nil {
+			if !preparedModelSet && call.ModelProvider != nil {
 				retryModel = call.ModelProvider()
 			}
 
@@ -1128,7 +1165,19 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 
 		// Check stop conditions
 		shouldStop := isStopConditionMet(call.StopWhen, steps)
-		if shouldStop || !result.ShouldContinue {
+		if shouldStop {
+			break
+		}
+		if !result.ShouldContinue {
+			if opts.ContinueAfterStop != nil && result.StepResult.FinishReason == FinishReasonStop && len(result.StepResult.Content.ToolCalls()) == 0 {
+				allMessages := make([]Message, 0, len(initialPrompt)+len(responseMessages))
+				allMessages = append(allMessages, initialPrompt...)
+				allMessages = append(allMessages, responseMessages...)
+				if cont, extraMsgs := opts.ContinueAfterStop(steps, allMessages); cont {
+					responseMessages = append(responseMessages, extraMsgs...)
+					continue
+				}
+			}
 			break
 		}
 	}

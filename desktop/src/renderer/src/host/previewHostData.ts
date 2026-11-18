@@ -730,7 +730,17 @@ export function createPreviewConfig() {
       large: { provider: 'openai', model: 'gpt-5.4', context_window: 200000 },
       small: { provider: 'anthropic', model: 'claude-sonnet-4', context_window: 200000 }
     },
-    session_models: {},
+    session_models: {} as Record<string, { provider: string; model: string; context_window?: number }>,
+    orchestrator: {
+      enabled: false,
+      final_review: true
+    } as {
+      enabled?: boolean
+      planner?: { provider: string; model: string; reasoning_mode?: string }
+      executor?: { provider: string; model: string; reasoning_mode?: string }
+      final_review?: boolean
+    },
+    session_orchestrator: {} as Record<string, boolean>,
     options: {
       disable_multi_agent: false,
       smart_tools: true,

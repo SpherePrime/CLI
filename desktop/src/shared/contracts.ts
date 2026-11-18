@@ -78,12 +78,27 @@ export type Session = {
   updated_at?: number
   todos?: Json[]
 }
+export type OrchestratorPhase = 'plan' | 'execute' | 'review'
+export type OrchestratorRoleConfig = {
+  provider: string
+  model: string
+  reasoning_mode?: string
+}
+export type OrchestratorConfig = {
+  enabled?: boolean
+  planner?: OrchestratorRoleConfig
+  executor?: OrchestratorRoleConfig
+  final_review?: boolean
+}
 export type Message = {
   id: string
   session_id: string
   role: string
   parts: { type: string; data: Json }[]
   is_summary_message?: boolean
+  model?: string
+  provider?: string
+  orchestrator_phase?: OrchestratorPhase
   created_at?: number
   updated_at?: number
 }
@@ -189,6 +204,7 @@ export type Operation =
   | 'configSet'
   | 'configRemove'
   | 'model'
+  | 'orchestrator'
   | 'providerKey'
   | 'providerSave'
   | 'reasoning'

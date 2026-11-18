@@ -75,6 +75,15 @@ type ActionClearAgentModel struct {
 	AgentID string
 }
 
+// ActionUpdateOrchestrator updates Orchestrator mode settings from the
+// Models dialog without closing the dialog unless requested.
+type ActionUpdateOrchestrator struct {
+	Enabled     *bool
+	Planner     *config.SelectedModel
+	Executor    *config.SelectedModel
+	FinalReview *bool
+}
+
 // ActionSaveKeybindings asks the UI to persist a set of key remaps. Bindings
 // is the complete deviation set (name to key string, empty meaning unbound);
 // when it is nil the user returned everything to the defaults and the

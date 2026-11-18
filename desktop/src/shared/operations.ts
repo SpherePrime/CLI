@@ -91,6 +91,18 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
         model: args.model
       }
     ],
+    orchestrator: () => [
+      'POST',
+      'config/orchestrator',
+      {
+        scope: args.scope ?? 0,
+        session_id: args.sessionId || '',
+        ...(args.enabled !== undefined ? { enabled: args.enabled } : {}),
+        ...(args.planner ? { planner: args.planner } : {}),
+        ...(args.executor ? { executor: args.executor } : {}),
+        ...(args.finalReview !== undefined ? { final_review: args.finalReview } : {})
+      }
+    ],
     providerKey: () => [
       'POST',
       'config/provider-key',

@@ -413,3 +413,367 @@
   margin-top: 2px;
   font-size: 12px;
 }
+
+.model-control.is-orchestrator,
+.composer-actions .model-control.is-orchestrator {
+  overflow: hidden;
+  min-width: 0;
+}
+.model-control.is-orchestrator .model-control-name,
+.composer-actions .model-control.is-orchestrator .model-control-name {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.model-control.is-orchestrator .model-control-level,
+.composer-actions .model-control.is-orchestrator .model-control-level {
+  display: inline;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@container conversation (max-width: 540px) {
+  .composer-actions .model-control.is-orchestrator .model-control-name {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .composer-actions .model-control.is-orchestrator .model-control-level {
+    display: none;
+  }
+}
+
+.orchestrator-popover {
+  gap: 12px;
+  padding: 8px 6px 8px;
+}
+.orchestrator-popover-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.orchestrator-popover-head strong {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+.orchestrator-popover-head span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.orchestrator-popover-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.orchestrator-popover-role {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+}
+.orchestrator-popover-role-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--secondary);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.orchestrator-popover-role-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.orchestrator-popover-role-value strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.orchestrator-popover-role-value span {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.orchestrator-popover-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.orchestrator-popover-configure,
+.prime-popover .orchestrator-popover-configure {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--border));
+  border-radius: 8px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+}
+.prime-popover .orchestrator-popover-configure:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-bg) 82%, var(--accent) 18%);
+}
+.orchestrator-popover-disable {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 12px;
+}
+
+.orchestrator-back-bar {
+  padding: 4px 5px 8px;
+}
+.orchestrator-back-btn {
+  width: 100%;
+  min-height: 34px;
+  justify-content: flex-start;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+}
+.orchestrator-back-btn span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.orchestrator-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 5px 6px;
+}
+.orchestrator-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.orchestrator-toggle-card.is-active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--accent-bg) 36%, var(--bg));
+}
+.orchestrator-toggle-copy {
+  min-width: 0;
+}
+.orchestrator-toggle-copy strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.orchestrator-toggle-copy p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.orchestrator-switch,
+.prime-popover button.orchestrator-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  width: 40px;
+  height: 24px;
+  min-height: 24px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--raised);
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+.orchestrator-switch.checked,
+.prime-popover button.orchestrator-switch.checked,
+.prime-popover button.orchestrator-switch.checked:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.orchestrator-switch-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px #0004;
+  transition: transform 0.16s ease;
+}
+.orchestrator-switch.checked .orchestrator-switch-thumb {
+  transform: translateX(16px);
+}
+.orchestrator-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.orchestrator-role-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.orchestrator-role-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.orchestrator-role-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.orchestrator-pick-btn {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--raised);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+}
+.orchestrator-role-model {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.orchestrator-role-model strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+}
+.orchestrator-role-model small {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.orchestrator-reasoning-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.orchestrator-pill,
+.prime-popover button.orchestrator-pill {
+  min-height: 26px;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 11px;
+}
+.orchestrator-pill.active,
+.prime-popover button.orchestrator-pill.active,
+.prime-popover button.orchestrator-pill.active:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 500;
+}
+.orchestrator-review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.orchestrator-review-copy {
+  min-width: 0;
+}
+.orchestrator-review-copy strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.orchestrator-review-copy small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.orchestrator-phase-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin-bottom: 8px;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.orchestrator-phase-chip > svg {
+  flex-shrink: 0;
+}
+.orchestrator-phase-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.orchestrator-phase-chip.phase-plan {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent-bg) 55%, var(--surface));
+  color: var(--accent);
+}
+.orchestrator-phase-chip.phase-execute {
+  border-color: color-mix(in srgb, var(--amber) 34%, var(--border));
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+  color: var(--amber);
+}
+.orchestrator-phase-chip.phase-review {
+  border-color: color-mix(in srgb, var(--green) 36%, var(--border));
+  background: color-mix(in srgb, var(--green) 12%, var(--surface));
+  color: var(--green);
+}

@@ -417,6 +417,37 @@ func (w *AppWorkspace) UpdatePreferredModel(scope config.Scope, modelType config
 	return w.store.UpdatePreferredModel(scope, modelType, model)
 }
 
+func (w *AppWorkspace) UpdateOrchestratorConfig(req proto.ConfigOrchestratorRequest) error {
+	scope := req.Scope
+	if scope != config.ScopeGlobal && scope != config.ScopeWorkspace {
+		scope = config.ScopeGlobal
+	}
+	if req.SessionID != "" && req.Enabled != nil {
+		if err := w.store.UpdateOrchestratorConfig(config.ScopeWorkspace, req.SessionID, config.OrchestratorUpdate{
+			Enabled: req.Enabled,
+		}); err != nil {
+			return err
+		}
+	}
+	scoped := config.OrchestratorUpdate{
+		Planner:     req.Planner,
+		Executor:    req.Executor,
+		FinalReview: req.FinalReview,
+	}
+	if req.SessionID == "" {
+		scoped.Enabled = req.Enabled
+	}
+	if scoped.Enabled != nil || scoped.Planner != nil || scoped.Executor != nil || scoped.FinalReview != nil {
+		if err := w.store.UpdateOrchestratorConfig(scope, "", scoped); err != nil {
+			return err
+		}
+	}
+	if coord := w.app.Coordinator(); coord != nil {
+		coord.ForgetSubAgents()
+	}
+	return nil
+}
+
 func (w *AppWorkspace) SetCompactMode(scope config.Scope, enabled bool) error {
 	return w.store.SetCompactMode(scope, enabled)
 }

@@ -40,9 +40,12 @@ export function useModelCapabilities(workspace: Workspace) {
       .call('models')
       .then((result) => {
         const next: ModelCapability[] = Array.isArray(result) ? result : result?.models || []
-        const previous = capabilityCache.get(projectId)
         capabilityCache.set(projectId, next)
-        if (current && JSON.stringify(previous) !== JSON.stringify(next)) setModels(next)
+        if (current) {
+          setModels((previous) =>
+            JSON.stringify(previous) === JSON.stringify(next) ? previous : next
+          )
+        }
       })
       .catch((reason) => {
         if (current) setError(reason?.message || String(reason))

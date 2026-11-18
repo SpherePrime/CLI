@@ -1,8 +1,18 @@
 import { useRef, useState, type RefObject } from 'react'
-import { ChevronRight, RotateCcw, Zap } from 'lucide-react'
+import { ChevronRight, Compass, Cpu, RotateCcw, Zap } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import { useI18n } from '../../i18n'
 import { reasoningLabel, reasoningLevels } from './reasoning'
+
+export type ReasoningOrchestratorView = {
+  enabled: boolean
+  plannerName: string
+  plannerReasoning: string
+  executorName: string
+  executorReasoning: string
+  onOpenOrchestrator: () => void
+  onDisable: () => void
+}
 
 export function ReasoningPopover({
   anchor,
@@ -12,7 +22,8 @@ export function ReasoningPopover({
   disabled,
   onChange,
   onReset,
-  onOpenModels
+  onOpenModels,
+  orchestrator
 }: {
   anchor: RefObject<HTMLElement | null>
   close: () => void
@@ -22,6 +33,7 @@ export function ReasoningPopover({
   onChange: (mode: string) => void
   onReset: () => void
   onOpenModels: () => void
+  orchestrator?: ReasoningOrchestratorView
 }) {
   const { t } = useI18n()
   const [preview, setPreview] = useState<string | null>(null)
@@ -39,6 +51,60 @@ export function ReasoningPopover({
     setPreview(null)
     if (value !== mode) onChange(value)
   }
+
+  if (orchestrator?.enabled) {
+    return (
+      <Popover anchor={anchor} close={close} width={320} align="end" label={t('Режим Оркестратора')}>
+        <div className="reasoning-popover orchestrator-popover">
+          <div className="orchestrator-popover-head">
+            <strong>{t('Режим Оркестратора')}</strong>
+            <span>{t('Двухэтапное выполнение')}</span>
+          </div>
+          <div className="orchestrator-popover-roles">
+            <div className="orchestrator-popover-role">
+              <div className="orchestrator-popover-role-label">
+                <Compass size={13} aria-hidden="true" />
+                <span>{t('Планировщик')}</span>
+              </div>
+              <div className="orchestrator-popover-role-value">
+                <strong>{orchestrator.plannerName || t('Не выбрана')}</strong>
+                <span>{reasoningLabel(orchestrator.plannerReasoning, t)}</span>
+              </div>
+            </div>
+            <div className="orchestrator-popover-role">
+              <div className="orchestrator-popover-role-label">
+                <Cpu size={13} aria-hidden="true" />
+                <span>{t('Исполнитель')}</span>
+              </div>
+              <div className="orchestrator-popover-role-value">
+                <strong>{orchestrator.executorName || t('Не выбрана')}</strong>
+                <span>{reasoningLabel(orchestrator.executorReasoning, t)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="orchestrator-popover-actions">
+            <button
+              type="button"
+              className="orchestrator-popover-configure"
+              onClick={orchestrator.onOpenOrchestrator}
+            >
+              <span>{t('Настроить оркестратор')}</span>
+              <ChevronRight size={14} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="orchestrator-popover-disable"
+              disabled={disabled}
+              onClick={orchestrator.onDisable}
+            >
+              {t('Отключить')}
+            </button>
+          </div>
+        </div>
+      </Popover>
+    )
+  }
+
   return (
     <Popover anchor={anchor} close={close} width={300} align="end" label={t('Уровень размышлений')}>
       <div className="reasoning-popover">

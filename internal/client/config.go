@@ -61,6 +61,19 @@ func (c *Client) UpdatePreferredModel(ctx context.Context, id string, scope conf
 	return nil
 }
 
+// UpdateOrchestratorConfig updates Orchestrator mode settings on the server.
+func (c *Client) UpdateOrchestratorConfig(ctx context.Context, id string, req proto.ConfigOrchestratorRequest) error {
+	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/config/orchestrator", id), nil, jsonBody(req), http.Header{"Content-Type": []string{"application/json"}})
+	if err != nil {
+		return fmt.Errorf("failed to update orchestrator config: %w", err)
+	}
+	defer rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to update orchestrator config: status code %d", rsp.StatusCode)
+	}
+	return nil
+}
+
 // SetCompactMode sets compact mode on the server.
 func (c *Client) SetCompactMode(ctx context.Context, id string, scope config.Scope, enabled bool) error {
 	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/config/compact", id), nil, jsonBody(struct {

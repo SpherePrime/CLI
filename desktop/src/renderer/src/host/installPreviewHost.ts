@@ -748,6 +748,86 @@ export function installPreviewHost() {
         emit({ workspaceId, type: 'message', payload: { action: 'created', data: userMsg } })
         setTimeout(() => {
           const isDesignerWs = ws?.kind === 'designer'
+          const sessionOrchFlag = sessionId ? config.session_orchestrator?.[sessionId] : undefined
+          const orchEnabled =
+            !isDesignerWs &&
+            (sessionOrchFlag !== undefined
+              ? Boolean(sessionOrchFlag)
+              : Boolean(config.orchestrator?.enabled))
+          if (orchEnabled) {
+            const plannerModel =
+              config.orchestrator?.planner?.model ||
+              config.session_models?.[sessionId]?.model ||
+              config.models?.large?.model ||
+              'gpt-5.4'
+            const executorModel =
+              config.orchestrator?.executor?.model ||
+              config.models?.small?.model ||
+              config.models?.large?.model ||
+              'claude-sonnet-4'
+            const nowSec = Math.floor(Date.now() / 1000)
+            const planMsg = {
+              id: `msg-a-plan-${Date.now()}`,
+              session_id: sessionId,
+              role: 'assistant',
+              model: plannerModel,
+              orchestrator_phase: 'plan' as const,
+              created_at: nowSec,
+              parts: [
+                {
+                  type: 'text',
+                  data: {
+                    text: `План действий по запросу «${String(args?.prompt || '').slice(0, 80)}» подготовлен.`
+                  }
+                }
+              ]
+            }
+            const execMsg = {
+              id: `msg-a-exec-${Date.now() + 1}`,
+              session_id: sessionId,
+              role: 'assistant',
+              model: executorModel,
+              orchestrator_phase: 'execute' as const,
+              created_at: nowSec + 1,
+              parts: [
+                {
+                  type: 'text',
+                  data: {
+                    text: 'Изменения выполнены согласно плану.'
+                  }
+                },
+                ...(config.orchestrator?.final_review === false
+                  ? [{ type: 'finish', data: { reason: 'stop' } }]
+                  : [])
+              ]
+            }
+            const orchMessages: any[] = [planMsg, execMsg]
+            if (config.orchestrator?.final_review !== false) {
+              orchMessages.push({
+                id: `msg-a-rev-${Date.now() + 2}`,
+                session_id: sessionId,
+                role: 'assistant',
+                model: plannerModel,
+                orchestrator_phase: 'review' as const,
+                created_at: nowSec + 2,
+                parts: [
+                  {
+                    type: 'text',
+                    data: {
+                      text: 'Финальная проверка пройдена: всё соответствует плану.'
+                    }
+                  },
+                  { type: 'finish', data: { reason: 'stop' } }
+                ]
+              })
+            }
+            messagesBySession[sessionId] = [...(messagesBySession[sessionId] || []), ...orchMessages]
+            for (const msg of orchMessages) {
+              emit({ workspaceId, type: 'message', payload: { action: 'created', data: msg } })
+            }
+            emit({ workspaceId, type: 'run_complete', payload: { data: { session_id: sessionId } } })
+            return
+          }
           const replyParts: any[] = isDesignerWs
             ? [
                 {
@@ -808,6 +888,47 @@ export function installPreviewHost() {
         return { ok: true }
       }
       if (operation === 'config') return config
+      if (operation === 'model') {
+        const modelType = String(args?.modelType || 'large')
+        const model = args?.model
+        const sessionId = String(args?.sessionId || '')
+        if (sessionId && modelType === 'large' && model) {
+          config.session_models = { ...config.session_models, [sessionId]: model }
+        } else if (model && (modelType === 'large' || modelType === 'small')) {
+          config.models = { ...config.models, [modelType]: model }
+        }
+        return { ok: true }
+      }
+      if (operation === 'orchestrator') {
+        const prev = config.orchestrator || { enabled: false, final_review: true }
+        const nextOrch = { ...prev }
+        const sessionId = String(args?.sessionId || '')
+        if (args?.enabled !== undefined) {
+          if (sessionId) {
+            config.session_orchestrator = {
+              ...(config.session_orchestrator || {}),
+              [sessionId]: Boolean(args.enabled)
+            }
+          } else {
+            nextOrch.enabled = Boolean(args.enabled)
+          }
+        }
+        if (args?.planner) {
+          nextOrch.planner = { ...args.planner }
+        }
+        if (args?.executor) {
+          nextOrch.executor = { ...args.executor }
+        }
+        if (args?.finalReview !== undefined) {
+          nextOrch.final_review = Boolean(args.finalReview)
+        }
+        config.orchestrator = nextOrch
+        emit({ workspaceId, type: 'config_changed', payload: {} })
+        return {
+          orchestrator: nextOrch,
+          session_orchestrator: config.session_orchestrator || {}
+        }
+      }
       if (operation === 'providers') return providers
       if (operation === 'models') {
         const primeModels = accountState.signedIn

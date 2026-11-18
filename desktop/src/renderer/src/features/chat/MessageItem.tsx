@@ -1,5 +1,5 @@
 import { Fragment, memo, useEffect, useRef, useState } from 'react'
-import { ArrowUpRight, Check, Copy, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Check, CheckCircle2, Compass, Copy, Cpu, Sparkles } from 'lucide-react'
 import { MessageAttachment } from './MessageAttachment'
 import { MarkdownText } from './MarkdownText'
 import { PrimeLogo } from '../../components/PrimeLogo'
@@ -12,7 +12,8 @@ import { WorkspaceVideo } from './video/WorkspaceVideo'
 import { fileNameFromPath, isVideoUrl } from './video/videoMedia'
 import { ReasoningBlock } from './ReasoningBlock'
 import { useI18n } from '../../i18n'
-import type { Message } from '../../../../shared/contracts'
+import type { Message, OrchestratorPhase } from '../../../../shared/contracts'
+import { orchestratorPhaseLabel } from '../models/orchestrator'
 import { textContent, visibleMessageText } from '../../../../shared/messages'
 import {
   canImplementMessagePhoto,
@@ -28,6 +29,7 @@ export const MessageItem = memo(function MessageItem({
   fresh,
   live,
   matched,
+  previousOrchestratorPhase,
   onImplementDesign
 }: {
   message: Message
@@ -35,6 +37,7 @@ export const MessageItem = memo(function MessageItem({
   fresh: boolean
   live: boolean
   matched: boolean
+  previousOrchestratorPhase?: OrchestratorPhase
   onImplementDesign?: (message: Message, preferredImage?: PreferredDesignImage) => void
 }) {
   const { t, locale } = useI18n()
@@ -43,6 +46,8 @@ export const MessageItem = memo(function MessageItem({
   useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const text = textContent(message)
   const messageFinished = (message.parts || []).some((part) => part.type === 'finish')
+  const phase = message.role === 'assistant' ? message.orchestrator_phase : undefined
+  const showOrchestratorPhase = Boolean(phase && phase !== previousOrchestratorPhase)
   const canImplementPhoto = canImplementMessagePhoto(
     message.role,
     live,
@@ -99,6 +104,21 @@ export const MessageItem = memo(function MessageItem({
         </div>
       )}
       <div className="message-body">
+        {showOrchestratorPhase && phase && (
+          <div className={`orchestrator-phase-chip phase-${phase}`}>
+            {phase === 'plan' ? (
+              <Compass size={12} aria-hidden="true" />
+            ) : phase === 'execute' ? (
+              <Cpu size={12} aria-hidden="true" />
+            ) : (
+              <CheckCircle2 size={12} aria-hidden="true" />
+            )}
+            <span>
+              {orchestratorPhaseLabel(phase, t)}
+              {message.model ? ` · ${message.model}` : ''}
+            </span>
+          </div>
+        )}
         {(message.parts || []).map((part, index) => {
           if (part.type === 'text' && !part.data.hidden)
             return (

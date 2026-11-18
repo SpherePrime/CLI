@@ -12,6 +12,8 @@ import (
 	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/ui/common"
+	"github.com/SpherePrime/CLI/internal/ui/list"
+	"github.com/SpherePrime/CLI/internal/ui/styles"
 	"github.com/SpherePrime/CLI/internal/ui/util"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/help"
 	"github.com/SpherePrime/CLI/vendordeps/bubbles/v2/key"
@@ -20,6 +22,7 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 	"github.com/SpherePrime/CLI/vendordeps/lipgloss/v2"
+	"github.com/SpherePrime/CLI/vendordeps/sahilm/fuzzy"
 )
 
 // ModelType represents the type of model to select.
@@ -28,6 +31,15 @@ type ModelType int
 const (
 	ModelTypeLarge ModelType = iota
 	ModelTypeSmall
+	ModelTypeOrchestrator
+)
+
+type orchestratorPickRole uint8
+
+const (
+	orchestratorPickNone orchestratorPickRole = iota
+	orchestratorPickPlanner
+	orchestratorPickExecutor
 )
 
 // String returns the string representation of the [ModelType].
@@ -37,6 +49,8 @@ func (mt ModelType) String() string {
 		return "Large Task"
 	case ModelTypeSmall:
 		return "Small Task"
+	case ModelTypeOrchestrator:
+		return "Orchestrator"
 	default:
 		return "Unknown"
 	}
@@ -61,6 +75,8 @@ func (mt ModelType) Placeholder() string {
 		return largeModelInputPlaceholder
 	case ModelTypeSmall:
 		return smallModelInputPlaceholder
+	case ModelTypeOrchestrator:
+		return orchestratorMenuInputPlaceholder
 	default:
 		return ""
 	}
@@ -70,6 +86,7 @@ const (
 	onboardingModelInputPlaceholder = "Find your fave"
 	largeModelInputPlaceholder      = "Choose a model for large, complex tasks"
 	smallModelInputPlaceholder      = "Choose a model for small, simple tasks"
+	orchestratorMenuInputPlaceholder = "Select an Orchestrator option"
 )
 
 // ModelsID is the identifier for the model selection dialog.
@@ -87,6 +104,7 @@ type Models struct {
 	agentID string
 
 	modelType    ModelType
+	orchPickRole orchestratorPickRole
 	providers    []catwalk.Provider
 	accessLookup func(modelID string) (primeai.ModelAccess, bool)
 
@@ -202,6 +220,11 @@ func (m *Models) AgentID() string {
 	return m.agentID
 }
 
+// Refresh rebuilds the dialog's list items from the current configuration.
+func (m *Models) Refresh() error {
+	return m.setProviderItems()
+}
+
 type primeAIModelsRefreshedMsg struct{}
 
 func (m *Models) RefreshCmd() tea.Cmd {
@@ -260,6 +283,15 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.Close):
+			if m.modelType == ModelTypeOrchestrator && m.orchPickRole != orchestratorPickNone {
+				m.orchPickRole = orchestratorPickNone
+				m.input.SetValue("")
+				m.list.SetFilter("")
+				if err := m.setProviderItems(); err != nil {
+					return ActionCmd{util.ReportError(err)}
+				}
+				return nil
+			}
 			return ActionClose{}
 		case key.Matches(msg, m.keyMap.Previous):
 			m.list.Focus()
@@ -283,10 +315,35 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 			if m.isOnboarding {
 				break
 			}
-			if m.modelType == ModelTypeLarge {
-				m.modelType = ModelTypeSmall
+			m.orchPickRole = orchestratorPickNone
+			m.input.SetValue("")
+			m.list.SetFilter("")
+			if m.agentID != "" {
+				if m.modelType == ModelTypeLarge {
+					m.modelType = ModelTypeSmall
+				} else {
+					m.modelType = ModelTypeLarge
+				}
 			} else {
-				m.modelType = ModelTypeLarge
+				if msg.String() == "shift+tab" {
+					switch m.modelType {
+					case ModelTypeLarge:
+						m.modelType = ModelTypeOrchestrator
+					case ModelTypeSmall:
+						m.modelType = ModelTypeLarge
+					default:
+						m.modelType = ModelTypeSmall
+					}
+				} else {
+					switch m.modelType {
+					case ModelTypeLarge:
+						m.modelType = ModelTypeSmall
+					case ModelTypeSmall:
+						m.modelType = ModelTypeOrchestrator
+					default:
+						m.modelType = ModelTypeLarge
+					}
+				}
 			}
 			if err := m.setProviderItems(); err != nil {
 				return ActionCmd{util.ReportError(err)}
@@ -314,8 +371,23 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 // nothing to switch to. Shared by the enter key and by a click on a row.
 // isEdit is set when the user asked to re-authenticate rather than to switch.
 func (m *Models) activateModel(idx int, isEdit bool) Action {
+	if orchItem, ok := m.list.ItemAt(idx).(*orchestratorMenuItem); ok {
+		return m.activateOrchestratorMenuItem(orchItem)
+	}
+
 	// The "Default" row is not a model, it is the absence of a pin.
 	if _, ok := m.list.ItemAt(idx).(*agentDefaultItem); ok {
+		if m.modelType == ModelTypeOrchestrator && m.orchPickRole != orchestratorPickNone {
+			empty := config.SelectedModel{}
+			role := m.orchPickRole
+			m.orchPickRole = orchestratorPickNone
+			m.input.SetValue("")
+			m.list.SetFilter("")
+			if role == orchestratorPickPlanner {
+				return ActionUpdateOrchestrator{Planner: &empty}
+			}
+			return ActionUpdateOrchestrator{Executor: &empty}
+		}
 		if m.agentID == "" {
 			return nil
 		}
@@ -330,6 +402,18 @@ func (m *Models) activateModel(idx int, isEdit bool) Action {
 		return ActionCmd{Cmd: util.ReportWarn(m.lockedModelMessage(modelItem))}
 	}
 
+	if m.modelType == ModelTypeOrchestrator && m.orchPickRole != orchestratorPickNone {
+		sel := modelItem.SelectedModel()
+		role := m.orchPickRole
+		m.orchPickRole = orchestratorPickNone
+		m.input.SetValue("")
+		m.list.SetFilter("")
+		if role == orchestratorPickPlanner {
+			return ActionUpdateOrchestrator{Planner: &sel}
+		}
+		return ActionUpdateOrchestrator{Executor: &sel}
+	}
+
 	if m.agentID != "" {
 		return ActionSetAgentModel{
 			AgentID: m.agentID,
@@ -342,6 +426,36 @@ func (m *Models) activateModel(idx int, isEdit bool) Action {
 		Model:          modelItem.SelectedModel(),
 		ModelType:      modelItem.SelectedModelType(),
 		ReAuthenticate: isEdit,
+	}
+}
+
+func (m *Models) activateOrchestratorMenuItem(item *orchestratorMenuItem) Action {
+	cfg := m.com.Config()
+	switch item.id {
+	case orchMenuToggleID:
+		next := !cfg.IsOrchestratorEnabled("")
+		return ActionUpdateOrchestrator{Enabled: &next}
+	case orchMenuFinalReviewID:
+		next := !cfg.OrchestratorFinalReviewEnabled()
+		return ActionUpdateOrchestrator{FinalReview: &next}
+	case orchMenuPlannerID:
+		m.orchPickRole = orchestratorPickPlanner
+		m.input.SetValue("")
+		m.list.SetFilter("")
+		if err := m.setProviderItems(); err != nil {
+			return ActionCmd{util.ReportError(err)}
+		}
+		return nil
+	case orchMenuExecutorID:
+		m.orchPickRole = orchestratorPickExecutor
+		m.input.SetValue("")
+		m.list.SetFilter("")
+		if err := m.setProviderItems(); err != nil {
+			return ActionCmd{util.ReportError(err)}
+		}
+		return nil
+	default:
+		return nil
 	}
 }
 
@@ -380,18 +494,24 @@ func (m *Models) modelTypeRadioView() string {
 	textStyle := t.Radio.Label
 	largeRadioStyle := t.Radio.Off
 	smallRadioStyle := t.Radio.Off
-	if m.modelType == ModelTypeLarge {
+	orchRadioStyle := t.Radio.Off
+	switch m.modelType {
+	case ModelTypeLarge:
 		largeRadioStyle = t.Radio.On
-	} else {
+	case ModelTypeSmall:
 		smallRadioStyle = t.Radio.On
+	case ModelTypeOrchestrator:
+		orchRadioStyle = t.Radio.On
 	}
 
 	largeRadio := largeRadioStyle.Padding(0, 1).Render()
 	smallRadio := smallRadioStyle.Padding(0, 1).Render()
+	orchRadio := orchRadioStyle.Padding(0, 1).Render()
 
-	return fmt.Sprintf("%s%s  %s%s",
+	return fmt.Sprintf("%s%s %s%s %s%s",
 		largeRadio, textStyle.Render(ModelTypeLarge.String()),
-		smallRadio, textStyle.Render(ModelTypeSmall.String()))
+		smallRadio, textStyle.Render(ModelTypeSmall.String()),
+		orchRadio, textStyle.Render(ModelTypeOrchestrator.String()))
 }
 
 // Draw implements [Dialog].
@@ -498,9 +618,22 @@ func (m *Models) setProviderItems() error {
 	t := m.com.Styles
 	cfg := m.com.Config()
 
+	if m.modelType == ModelTypeOrchestrator && m.orchPickRole == orchestratorPickNone {
+		m.setOrchestratorMenuItems(cfg)
+		return nil
+	}
+
 	var selectedItemID string
 	selectedType := m.modelType.Config()
 	currentModel := cfg.Models[selectedType]
+	if m.modelType == ModelTypeOrchestrator {
+		switch m.orchPickRole {
+		case orchestratorPickPlanner:
+			currentModel = cfg.ResolveOrchestratorPlanner("")
+		case orchestratorPickExecutor:
+			currentModel = cfg.ResolveOrchestratorExecutor()
+		}
+	}
 	if m.agentID != "" {
 		if agent, ok := cfg.Agents[m.agentID]; ok && agent.ModelOverride != nil {
 			currentModel = *agent.ModelOverride
@@ -696,7 +829,26 @@ func (m *Models) setProviderItems() error {
 	// statement rather than a choice, which is the point: picking a model for
 	// it changes the session, and that should look different from pinning a
 	// worker.
-	if m.agentID != "" {
+	if m.modelType == ModelTypeOrchestrator && m.orchPickRole != orchestratorPickNone {
+		isCurrent := (m.orchPickRole == orchestratorPickPlanner && cfg.Orchestrator.Planner == nil) ||
+			(m.orchPickRole == orchestratorPickExecutor && cfg.Orchestrator.Executor == nil)
+		info := m.com.L("orch.default_executor_info")
+		if m.orchPickRole == orchestratorPickPlanner {
+			info = m.com.L("orch.default_planner_info")
+		}
+		defaultItem := NewAgentDefaultItem(
+			m.com.Styles,
+			m.com.L("orch.default_model_title"),
+			info,
+			isCurrent,
+		)
+		defaultGroup := NewModelGroup(m.com.Styles, m.com.L("orch.group"), false)
+		defaultGroup.AppendItems(defaultItem)
+		groups = append([]ModelGroup{defaultGroup}, groups...)
+		if isCurrent {
+			selectedItemID = DefaultAgentModelID
+		}
+	} else if m.agentID != "" {
 		agent, ok := cfg.Agents[m.agentID]
 		isCurrent := ok && agent.ModelOverride == nil
 		defaultItem := NewAgentDefaultItem(
@@ -728,10 +880,131 @@ func (m *Models) setProviderItems() error {
 
 	// Update placeholder based on model type
 	if !m.isOnboarding {
-		m.input.Placeholder = m.modelType.Placeholder()
+		switch {
+		case m.modelType == ModelTypeOrchestrator && m.orchPickRole == orchestratorPickPlanner:
+			m.input.Placeholder = m.com.L("orch.planner_placeholder")
+		case m.modelType == ModelTypeOrchestrator && m.orchPickRole == orchestratorPickExecutor:
+			m.input.Placeholder = m.com.L("orch.executor_placeholder")
+		default:
+			m.input.Placeholder = m.modelType.Placeholder()
+		}
 	}
 
 	return nil
+}
+
+const (
+	orchMenuToggleID      = "__orch_toggle__"
+	orchMenuPlannerID     = "__orch_planner__"
+	orchMenuExecutorID    = "__orch_executor__"
+	orchMenuFinalReviewID = "__orch_final_review__"
+)
+
+type orchestratorMenuItem struct {
+	*list.Versioned
+
+	t       *styles.Styles
+	id      string
+	title   string
+	info    string
+	m       fuzzy.Match
+	cache   map[int]string
+	focused bool
+}
+
+var _ ListItem = (*orchestratorMenuItem)(nil)
+
+func newOrchestratorMenuItem(t *styles.Styles, id, title, info string) *orchestratorMenuItem {
+	return &orchestratorMenuItem{
+		Versioned: list.NewVersioned(),
+		t:         t,
+		id:        id,
+		title:     title,
+		info:      info,
+		cache:     make(map[int]string),
+	}
+}
+
+func (i *orchestratorMenuItem) Finished() bool { return true }
+func (i *orchestratorMenuItem) ID() string     { return i.id }
+func (i *orchestratorMenuItem) Filter() string { return i.title }
+
+func (i *orchestratorMenuItem) Render(width int) string {
+	st := ListItemStyles{
+		ItemBlurred:     i.t.Dialog.NormalItem,
+		ItemFocused:     i.t.Dialog.SelectedItem,
+		InfoTextBlurred: i.t.Dialog.ListItem.InfoBlurred,
+		InfoTextFocused: i.t.Dialog.ListItem.InfoFocused,
+	}
+	return renderItem(st, i.title, i.info, i.focused, width, i.cache, &i.m)
+}
+
+func (i *orchestratorMenuItem) SetFocused(focused bool) {
+	if i.focused == focused {
+		return
+	}
+	i.cache = nil
+	i.focused = focused
+	if i.Versioned != nil {
+		i.Bump()
+	}
+}
+
+func (i *orchestratorMenuItem) SetMatch(fm fuzzy.Match) {
+	if sameFuzzyMatch(i.m, fm) {
+		return
+	}
+	i.cache = nil
+	i.m = fm
+	if i.Versioned != nil {
+		i.Bump()
+	}
+}
+
+func (m *Models) setOrchestratorMenuItems(cfg *config.Config) {
+	t := m.com.Styles
+	enabledStr := m.com.L("status.mode.off")
+	if cfg.IsOrchestratorEnabled("") {
+		enabledStr = m.com.L("status.mode.on")
+	}
+	finalReviewStr := m.com.L("status.mode.off")
+	if cfg.OrchestratorFinalReviewEnabled() {
+		finalReviewStr = m.com.L("status.mode.on")
+	}
+
+	plannerLabel := orchestratorModelLabel(cfg, cfg.ResolveOrchestratorPlanner(""), cfg.Orchestrator.Planner == nil)
+	executorLabel := orchestratorModelLabel(cfg, cfg.ResolveOrchestratorExecutor(), cfg.Orchestrator.Executor == nil)
+
+	group := NewModelGroup(t, m.com.L("orch.group"), cfg.IsOrchestratorEnabled(""))
+	group.AppendItems(
+		newOrchestratorMenuItem(t, orchMenuToggleID, m.com.L("orch.mode_title"), enabledStr),
+		newOrchestratorMenuItem(t, orchMenuPlannerID, m.com.L("orch.planner_title"), plannerLabel),
+		newOrchestratorMenuItem(t, orchMenuExecutorID, m.com.L("orch.executor_title"), executorLabel),
+		newOrchestratorMenuItem(t, orchMenuFinalReviewID, m.com.L("orch.final_review_title"), finalReviewStr),
+	)
+
+	m.list.SetGroups(group)
+	m.list.SelectFirst()
+	m.list.ScrollToTop()
+	if !m.isOnboarding {
+		m.input.Placeholder = m.com.L("orch.menu_placeholder")
+	}
+}
+
+func orchestratorModelLabel(cfg *config.Config, sel config.SelectedModel, isAuto bool) string {
+	if sel.Provider == "" || sel.Model == "" {
+		return "not set"
+	}
+	name := sel.Model
+	if cfg != nil {
+		if cm := cfg.GetModel(sel.Provider, sel.Model); cm != nil && cm.Name != "" {
+			name = cm.Name
+		}
+	}
+	if isAuto {
+		return name + " (auto)"
+	}
+	return name
 }
 
 func modelKey(providerID, modelID string) string {

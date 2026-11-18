@@ -558,6 +558,14 @@ func (w *ClientWorkspace) UpdatePreferredModel(scope config.Scope, modelType con
 	return err
 }
 
+func (w *ClientWorkspace) UpdateOrchestratorConfig(req proto.ConfigOrchestratorRequest) error {
+	err := w.client.UpdateOrchestratorConfig(context.Background(), w.workspaceID(), req)
+	if err == nil {
+		w.refreshWorkspace()
+	}
+	return err
+}
+
 func (w *ClientWorkspace) SetCompactMode(scope config.Scope, enabled bool) error {
 	err := w.client.SetCompactMode(context.Background(), w.workspaceID(), scope, enabled)
 	if err == nil {
@@ -1377,6 +1385,9 @@ func protoToMessage(m proto.Message) message.Message {
 		CreatedAt:               m.CreatedAt,
 		UpdatedAt:               m.UpdatedAt,
 		IsSummaryMessage:        m.IsSummaryMessage,
+	}
+	if m.OrchestratorPhase != "" {
+		msg.SetOrchestratorPhase(m.OrchestratorPhase)
 	}
 
 	for _, p := range m.Parts {

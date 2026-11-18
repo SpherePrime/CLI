@@ -1,0 +1,570 @@
+package agent
+
+import (
+	"context"
+	"fmt"
+	"slices"
+	"strings"
+	"sync"
+
+	"github.com/SpherePrime/CLI/internal/agent/tools"
+	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
+)
+
+// OrchestratorPhase represents the active phase of a multi-model Orchestrator turn.
+type OrchestratorPhase string
+
+const (
+	OrchestratorPhasePlan    OrchestratorPhase = "plan"
+	OrchestratorPhaseExecute OrchestratorPhase = "execute"
+	OrchestratorPhaseReview  OrchestratorPhase = "review"
+)
+
+const (
+	// HandoffToExecutorToolName is the virtual tool used by the Planner/Reviewer
+	// to hand an approved plan to the Executor model.
+	HandoffToExecutorToolName = "handoff_to_executor"
+	// EscalateToPlannerToolName is the virtual tool used by the Executor to
+	// return control to the Planner when blocked or when re-planning is needed.
+	EscalateToPlannerToolName = "escalate_to_planner"
+
+	maxOrchestratorEscalations  = 3
+	maxOrchestratorReviewRounds = 2
+	maxOrchestratorFailureRun   = 2
+)
+
+// OrchestratorRoleConfig holds the resolved model and call configuration for
+// either the Planner/Reviewer role or the Executor role.
+type OrchestratorRoleConfig struct {
+	Model              Model
+	ProviderOptions    fantasy.ProviderOptions
+	SystemPromptPrefix string
+	MaxOutputTokens    int64
+	OnAuthRefresh      func(context.Context, *fantasy.ProviderError) error
+}
+
+// OrchestratorCallConfig configures per-turn Orchestrator mode execution on
+// [SessionAgentCall].
+type OrchestratorCallConfig struct {
+	Enabled            bool
+	FinalReviewEnabled bool
+	Planner            OrchestratorRoleConfig
+	Executor           OrchestratorRoleConfig
+}
+
+type handoffToExecutorParams struct {
+	Plan               string   `json:"plan" description:"Concrete step-by-step implementation plan for the executor"`
+	TargetFiles        []string `json:"target_files,omitempty" description:"Target file paths to inspect or modify"`
+	VerificationChecks []string `json:"verification_checks,omitempty" description:"Checks or commands the executor should run to verify the work"`
+	EscalationTriggers []string `json:"escalation_triggers,omitempty" description:"Conditions under which the executor should escalate back to the planner"`
+}
+
+type escalateToPlannerParams struct {
+	Reason    string `json:"reason" description:"Why execution is blocked or requires re-planning"`
+	Attempted string `json:"attempted,omitempty" description:"What has been attempted so far"`
+	Blocker   string `json:"blocker,omitempty" description:"Specific error, conflict, or missing information"`
+}
+
+type modelIdentity struct {
+	provider string
+	model    string
+}
+
+func modelIdentityOf(m Model) modelIdentity {
+	p := m.ModelCfg.Provider
+	id := m.ModelCfg.Model
+	if p == "" && m.Model != nil {
+		p = m.Model.Provider()
+	}
+	if id == "" && m.Model != nil {
+		id = m.Model.Model()
+	}
+	return modelIdentity{provider: p, model: id}
+}
+
+type orchestratorRuntime struct {
+	mu                      sync.Mutex
+	cfg                     OrchestratorCallConfig
+	phase                   OrchestratorPhase
+	plan                    string
+	targetFiles             []string
+	verificationChecks      []string
+	escalationTriggers      []string
+	pendingPlanReason       string
+	escalations             int
+	consecutiveToolFailures int
+	lastFailureDetail       string
+	executeSteps            int
+	madeMutations           bool
+	reviewRounds            int
+	stepAssistantModels     []modelIdentity
+	handoffTool             fantasy.AgentTool
+	escalateTool            fantasy.AgentTool
+}
+
+func newOrchestratorRuntime(cfg OrchestratorCallConfig) *orchestratorRuntime {
+	rt := &orchestratorRuntime{
+		cfg:   cfg,
+		phase: OrchestratorPhasePlan,
+	}
+	rt.handoffTool = rt.buildHandoffTool()
+	rt.escalateTool = rt.buildEscalateTool()
+	return rt
+}
+
+func (o *orchestratorRuntime) buildHandoffTool() fantasy.AgentTool {
+	return fantasy.NewAgentTool(
+		HandoffToExecutorToolName,
+		"Hand off a concrete implementation plan from the read-only Planner/Reviewer to the Executor model. Use this only when edits, file writes, or shell commands are required. For pure questions or read-only analysis, answer directly without calling this tool.",
+		func(_ context.Context, params handoffToExecutorParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			if strings.TrimSpace(params.Plan) == "" {
+				return fantasy.NewTextErrorResponse("plan is required and must be non-empty"), nil
+			}
+			o.mu.Lock()
+			defer o.mu.Unlock()
+			if o.phase == OrchestratorPhaseExecute {
+				return fantasy.NewTextErrorResponse("handoff_to_executor is only available in plan or review phase"), nil
+			}
+			o.plan = strings.TrimSpace(params.Plan)
+			o.targetFiles = slices.Clone(params.TargetFiles)
+			o.verificationChecks = slices.Clone(params.VerificationChecks)
+			o.escalationTriggers = slices.Clone(params.EscalationTriggers)
+			o.pendingPlanReason = ""
+			o.consecutiveToolFailures = 0
+			o.lastFailureDetail = ""
+			o.phase = OrchestratorPhaseExecute
+			return fantasy.NewTextResponse("Plan handed off to Executor. Execution phase begins on the next step."), nil
+		},
+	)
+}
+
+func (o *orchestratorRuntime) buildEscalateTool() fantasy.AgentTool {
+	return fantasy.NewAgentTool(
+		EscalateToPlannerToolName,
+		"Escalate back to the Planner model when blocked, when requirements are ambiguous, when repeated failures occur, or when an escalation trigger is hit.",
+		func(_ context.Context, params escalateToPlannerParams, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			if strings.TrimSpace(params.Reason) == "" {
+				return fantasy.NewTextErrorResponse("reason is required and must be non-empty"), nil
+			}
+			o.mu.Lock()
+			defer o.mu.Unlock()
+			if o.escalations >= maxOrchestratorEscalations {
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("Escalation limit reached (%d per turn). Complete what is possible or report the blocker clearly to the user.", maxOrchestratorEscalations)), nil
+			}
+			o.escalations++
+			o.phase = OrchestratorPhasePlan
+			o.consecutiveToolFailures = 0
+			o.lastFailureDetail = ""
+			var sb strings.Builder
+			fmt.Fprintf(&sb, "Executor escalated to Planner.\nReason: %s", strings.TrimSpace(params.Reason))
+			if s := strings.TrimSpace(params.Attempted); s != "" {
+				fmt.Fprintf(&sb, "\nAttempted: %s", s)
+			}
+			if s := strings.TrimSpace(params.Blocker); s != "" {
+				fmt.Fprintf(&sb, "\nBlocker: %s", s)
+			}
+			o.pendingPlanReason = sb.String()
+			return fantasy.NewTextResponse("Escalated to Planner. Re-planning starts on the next step."), nil
+		},
+	)
+}
+
+func (o *orchestratorRuntime) currentPhase() OrchestratorPhase {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return o.phase
+}
+
+func (o *orchestratorRuntime) currentRoleConfig() OrchestratorRoleConfig {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.phase == OrchestratorPhaseExecute {
+		return o.cfg.Executor
+	}
+	return o.cfg.Planner
+}
+
+func (o *orchestratorRuntime) onSteeringMessage() {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.phase != OrchestratorPhasePlan {
+		o.phase = OrchestratorPhasePlan
+		o.consecutiveToolFailures = 0
+		o.lastFailureDetail = ""
+		o.pendingPlanReason = "The user sent a mid-turn steering instruction while execution/review was in progress. Re-evaluate the plan around the user's new instruction before making further changes."
+	}
+}
+
+func (o *orchestratorRuntime) filterTools(all []fantasy.AgentTool) []fantasy.AgentTool {
+	phase := o.currentPhase()
+	filtered := make([]fantasy.AgentTool, 0, len(all)+1)
+	if phase == OrchestratorPhaseExecute {
+		for _, t := range all {
+			name := t.Info().Name
+			if name == HandoffToExecutorToolName || name == EscalateToPlannerToolName {
+				continue
+			}
+			filtered = append(filtered, t)
+		}
+		filtered = append(filtered, o.escalateTool)
+		return filtered
+	}
+
+	// Plan and Review phases: strictly read-only tools + handoff_to_executor.
+	for _, t := range all {
+		name := t.Info().Name
+		if name == HandoffToExecutorToolName || name == EscalateToPlannerToolName {
+			continue
+		}
+		if isOrchestratorReadOnlyTool(name) {
+			filtered = append(filtered, t)
+		}
+	}
+	filtered = append(filtered, o.handoffTool)
+	return filtered
+}
+
+func (o *orchestratorRuntime) beforeToolCallGate() func(context.Context, fantasy.ToolCall) error {
+	return func(_ context.Context, call fantasy.ToolCall) error {
+		phase := o.currentPhase()
+		if phase == OrchestratorPhaseExecute {
+			if call.Name == HandoffToExecutorToolName {
+				return fmt.Errorf("tool %q is not allowed in orchestrator %s phase", call.Name, phase)
+			}
+			return nil
+		}
+		if !isOrchestratorReadOnlyTool(call.Name) && call.Name != HandoffToExecutorToolName {
+			return fmt.Errorf("tool %q is disabled in orchestrator %s phase (read-only)", call.Name, phase)
+		}
+		return nil
+	}
+}
+
+func (o *orchestratorRuntime) phaseSystemPrompt() string {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	switch o.phase {
+	case OrchestratorPhaseExecute:
+		var sb strings.Builder
+		sb.WriteString("<orchestrator_role>You are the Orchestrator EXECUTOR phase. Follow the approved plan below accurately, execute required changes and verification checks, and report concrete results. If you hit an escalation trigger or get blocked after investigation, call `escalate_to_planner` instead of guessing.</orchestrator_role>\n")
+		sb.WriteString("<orchestrator_plan>\n")
+		sb.WriteString(o.plan)
+		if len(o.targetFiles) > 0 {
+			sb.WriteString("\n\nTarget files:\n- ")
+			sb.WriteString(strings.Join(o.targetFiles, "\n- "))
+		}
+		if len(o.verificationChecks) > 0 {
+			sb.WriteString("\n\nVerification checks:\n- ")
+			sb.WriteString(strings.Join(o.verificationChecks, "\n- "))
+		}
+		if len(o.escalationTriggers) > 0 {
+			sb.WriteString("\n\nEscalation triggers:\n- ")
+			sb.WriteString(strings.Join(o.escalationTriggers, "\n- "))
+		}
+		sb.WriteString("\n</orchestrator_plan>")
+		return sb.String()
+
+	case OrchestratorPhaseReview:
+		var sb strings.Builder
+		sb.WriteString("<orchestrator_role>You are the Orchestrator REVIEW phase (read-only). Verify the Executor's work against the user request and the plan below using read-only tools. Do not fabricate checks you did not inspect. If everything is complete and verified, deliver a concise, accurate final response directly to the user without calling `handoff_to_executor`. If fixes or missing steps remain, call `handoff_to_executor` with a targeted follow-up plan.</orchestrator_role>")
+		if o.plan != "" {
+			sb.WriteString("\n<orchestrator_plan>\n")
+			sb.WriteString(o.plan)
+			if len(o.verificationChecks) > 0 {
+				sb.WriteString("\n\nVerification checks:\n- ")
+				sb.WriteString(strings.Join(o.verificationChecks, "\n- "))
+			}
+			sb.WriteString("\n</orchestrator_plan>")
+		}
+		return sb.String()
+
+	default:
+		var sb strings.Builder
+		sb.WriteString("<orchestrator_role>You are the Orchestrator PLANNER phase (read-only). You only have read-only tools in this phase.\n")
+		sb.WriteString("- If the user is asking a pure question, explanation, or read-only analysis/review that requires NO file edits, writes, or shell commands, answer directly and do NOT call `handoff_to_executor`.\n")
+		sb.WriteString("- Otherwise, explore read-only as needed, design a concrete step-by-step plan with target_files, verification_checks, and escalation_triggers, and call `handoff_to_executor` to hand control to the Executor.</orchestrator_role>")
+		if o.pendingPlanReason != "" {
+			sb.WriteString("\n<orchestrator_escalation>\n")
+			sb.WriteString(o.pendingPlanReason)
+			sb.WriteString("\n</orchestrator_escalation>")
+		}
+		return sb.String()
+	}
+}
+
+func (o *orchestratorRuntime) reviewTriggerText() string {
+	return "<orchestrator_review_request>Execution has finished. Verify the resulting changes and tool outputs against the plan using read-only tools. Either deliver the final response directly to the user, or call `handoff_to_executor` if fixes are still needed.</orchestrator_review_request>"
+}
+
+func (o *orchestratorRuntime) onStepFinish(stepPhase OrchestratorPhase, stepModel Model, stepResult fantasy.StepResult, sanitizedToolCalls map[string]bool) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	id := modelIdentityOf(stepModel)
+	for _, m := range stepResult.Messages {
+		if m.Role == fantasy.MessageRoleAssistant {
+			o.stepAssistantModels = append(o.stepAssistantModels, id)
+		}
+	}
+
+	if stepPhase != OrchestratorPhaseExecute {
+		return
+	}
+
+	o.executeSteps++
+
+	for _, tc := range stepResult.Content.ToolCalls() {
+		if isOrchestratorMutationTool(tc.ToolName) {
+			o.madeMutations = true
+			break
+		}
+	}
+
+	// Track consecutive tool failures across execute steps. Any non-error
+	// tool result resets the consecutive failure counter.
+	for _, tr := range stepResult.Content.ToolResults() {
+		if tr.ToolName == HandoffToExecutorToolName || tr.ToolName == EscalateToPlannerToolName {
+			continue
+		}
+		isErr := tr.Result.GetType() == fantasy.ToolResultContentTypeError ||
+			tr.Outcome == fantasy.ToolOutcomeFailure ||
+			sanitizedToolCalls[tr.ToolCallID]
+		if !isErr {
+			o.consecutiveToolFailures = 0
+			o.lastFailureDetail = ""
+			continue
+		}
+		if isOrchestratorFailureTrackedTool(tr.ToolName) {
+			o.consecutiveToolFailures++
+			o.lastFailureDetail = formatOrchestratorToolFailure(tr)
+		}
+	}
+
+	if o.phase == OrchestratorPhaseExecute && o.consecutiveToolFailures >= maxOrchestratorFailureRun {
+		if o.escalations < maxOrchestratorEscalations {
+			o.escalations++
+			o.phase = OrchestratorPhasePlan
+			o.consecutiveToolFailures = 0
+			o.pendingPlanReason = fmt.Sprintf(
+				"Automatic escalation after %d consecutive tool failures in execute phase (%s). Re-evaluate the approach and produce a revised plan.",
+				maxOrchestratorFailureRun,
+				o.lastFailureDetail,
+			)
+		}
+	}
+}
+
+func (o *orchestratorRuntime) continueAfterStop(_ []fantasy.StepResult, _ []fantasy.Message) (bool, []fantasy.Message) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	if !o.cfg.FinalReviewEnabled || o.phase != OrchestratorPhaseExecute {
+		return false, nil
+	}
+	if !o.madeMutations && o.executeSteps < 2 {
+		return false, nil
+	}
+	if o.reviewRounds >= maxOrchestratorReviewRounds {
+		return false, nil
+	}
+
+	o.phase = OrchestratorPhaseReview
+	o.reviewRounds++
+	o.consecutiveToolFailures = 0
+	return true, []fantasy.Message{
+		fantasy.NewUserMessage(o.reviewTriggerText()),
+	}
+}
+
+func (o *orchestratorRuntime) sanitizeMessages(messages []fantasy.Message, historyProducers []modelIdentity, activeModel Model) []fantasy.Message {
+	o.mu.Lock()
+	stepProducers := slices.Clone(o.stepAssistantModels)
+	o.mu.Unlock()
+
+	allProducers := make([]modelIdentity, 0, len(historyProducers)+len(stepProducers))
+	allProducers = append(allProducers, historyProducers...)
+	allProducers = append(allProducers, stepProducers...)
+
+	activeID := modelIdentityOf(activeModel)
+	out := make([]fantasy.Message, 0, len(messages))
+	assistantIdx := 0
+
+	for _, msg := range messages {
+		if msg.Role != fantasy.MessageRoleAssistant {
+			out = append(out, msg)
+			continue
+		}
+		var producer modelIdentity
+		hasProducer := assistantIdx < len(allProducers)
+		if hasProducer {
+			producer = allProducers[assistantIdx]
+		}
+		assistantIdx++
+
+		if hasProducer && producer == activeID {
+			out = append(out, msg)
+			continue
+		}
+
+		cleaned, keep := stripCrossModelAssistantParts(msg)
+		if keep {
+			out = append(out, cleaned)
+		}
+	}
+	return out
+}
+
+func stripCrossModelAssistantParts(msg fantasy.Message) (fantasy.Message, bool) {
+	newContent := make([]fantasy.MessagePart, 0, len(msg.Content))
+	for _, part := range msg.Content {
+		switch p := part.(type) {
+		case fantasy.ReasoningPart:
+			// Drop reasoning text and provider-specific signatures
+			// (Anthropic signature, Google ThoughtSignature, OpenAI
+			// ResponsesData) when replaying to a different model.
+			continue
+		case fantasy.TextPart:
+			p.ProviderOptions = nil
+			newContent = append(newContent, p)
+		case fantasy.ToolCallPart:
+			p.ProviderOptions = nil
+			newContent = append(newContent, p)
+		case fantasy.FilePart:
+			p.ProviderOptions = nil
+			newContent = append(newContent, p)
+		case fantasy.ToolResultPart:
+			p.ProviderOptions = nil
+			newContent = append(newContent, p)
+		default:
+			newContent = append(newContent, part)
+		}
+	}
+	if len(newContent) == 0 {
+		return fantasy.Message{}, false
+	}
+	msg.Content = newContent
+	msg.ProviderOptions = nil
+	return msg, true
+}
+
+func setOrchestratorSystemPrompt(messages []fantasy.Message, baseSystemPrompt, phasePrompt string) []fantasy.Message {
+	fullSystem := combineSystemPrompts(baseSystemPrompt, phasePrompt)
+	out := slices.Clone(messages)
+	if fullSystem == "" {
+		return out
+	}
+	if len(out) > 0 && out[0].Role == fantasy.MessageRoleSystem {
+		out[0] = fantasy.NewSystemMessage(fullSystem)
+		return out
+	}
+	return append([]fantasy.Message{fantasy.NewSystemMessage(fullSystem)}, out...)
+}
+
+func combineSystemPrompts(base, extra string) string {
+	base = strings.TrimSpace(base)
+	extra = strings.TrimSpace(extra)
+	switch {
+	case base == "":
+		return extra
+	case extra == "":
+		return base
+	default:
+		return base + "\n\n" + extra
+	}
+}
+
+func collectHistoryAssistantModels(msgs []message.Message) []modelIdentity {
+	var out []modelIdentity
+	for _, m := range msgs {
+		if len(m.Parts) == 0 {
+			continue
+		}
+		if m.Role == message.Assistant && len(m.ToolCalls()) == 0 && m.Content().Text == "" && m.ReasoningContent().String() == "" {
+			continue
+		}
+		if m.Role == message.Tool {
+			continue
+		}
+		if m.Role == message.Assistant {
+			out = append(out, modelIdentity{provider: m.Provider, model: m.Model})
+		}
+	}
+	return out
+}
+
+func isOrchestratorReadOnlyTool(name string) bool {
+	switch name {
+	case tools.ViewToolName,
+		tools.GlobToolName,
+		tools.GrepToolName,
+		tools.LSToolName,
+		tools.SymbolsToolName,
+		tools.DiagnosticsToolName,
+		tools.DefinitionToolName,
+		tools.ReferencesToolName,
+		tools.CallHierarchyToolName,
+		tools.SourcegraphToolName,
+		tools.QuestionToolName,
+		tools.SearchInstructionsToolName,
+		tools.ReadInstructionToolName,
+		tools.WebSearchToolName,
+		tools.WebFetchToolName,
+		tools.FetchToolName,
+		tools.AgenticFetchToolName,
+		tools.TodosToolName,
+		tools.PrimeInfoToolName,
+		tools.PrimeLogsToolName,
+		"search_skills",
+		"search_tools",
+		"search_mcp",
+		tools.ListMCPResourcesToolName,
+		tools.ReadMCPResourceToolName,
+		readToolDocumentationName,
+		readToolResultName,
+		HandoffToExecutorToolName:
+		return true
+	default:
+		return false
+	}
+}
+
+func isOrchestratorMutationTool(name string) bool {
+	if name == HandoffToExecutorToolName || name == EscalateToPlannerToolName {
+		return false
+	}
+	switch name {
+	case tools.WriteToolName,
+		tools.EditToolName,
+		tools.MultiEditToolName,
+		tools.BashToolName,
+		tools.SudoToolName,
+		tools.RenameToolName,
+		tools.ReplaceSymbolToolName,
+		tools.ImageGenToolName,
+		tools.DownloadToolName,
+		AgentToolName:
+		return true
+	default:
+		return !isOrchestratorReadOnlyTool(name)
+	}
+}
+
+func isOrchestratorFailureTrackedTool(name string) bool {
+	if name == HandoffToExecutorToolName || name == EscalateToPlannerToolName {
+		return false
+	}
+	return !isOrchestratorReadOnlyTool(name)
+}
+
+func formatOrchestratorToolFailure(tr fantasy.ToolResultContent) string {
+	errMsg := "tool error"
+	if e, ok := fantasy.AsToolResultOutputType[fantasy.ToolResultOutputContentError](tr.Result); ok && e.Error != nil {
+		errMsg = strings.TrimSpace(e.Error.Error())
+	}
+	if len(errMsg) > 160 {
+		errMsg = errMsg[:160] + "..."
+	}
+	return fmt.Sprintf("last tool %q: %s", tr.ToolName, errMsg)
+}

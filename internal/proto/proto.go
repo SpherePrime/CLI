@@ -380,3 +380,14 @@ func (i *LSPClientInfo) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+// ConfigOrchestratorRequest represents a request to update Orchestrator mode settings.
+type ConfigOrchestratorRequest struct {
+	Scope       config.Scope          `json:"scope"`
+	SessionID   string                `json:"session_id,omitempty"`
+	Enabled     *bool                 `json:"enabled,omitempty"`
+	Planner     *config.SelectedModel `json:"planner,omitempty"`
+	Executor    *config.SelectedModel `json:"executor,omitempty"`
+	FinalReview *bool                 `json:"final_review,omitempty"`
+}
+
