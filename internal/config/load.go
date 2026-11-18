@@ -543,7 +543,7 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			BaseURL:        pc.BaseURL,
 			APIKey:         pc.APIKey,
 			ExtraHeaders:   pc.ExtraHeaders,
-			ExistingModels: pc.Models,
+			ExistingModels: slices.Clone(pc.Models),
 		}
 		providerType := cmp.Or(pc.Type, catwalk.TypeOpenAICompat)
 		cacheKey := discoveryCacheKey(cfg, providerType)
@@ -554,9 +554,14 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			continue
 		}
 		if wantsDiscovery && len(pc.Models) > 0 {
-			// The stored models are usable, so the refresh runs in the
-			// background and this load keeps them.
-			refreshDiscoveryInBackground(cacheKey, cfg, providerType, resolver)
+			targetID := id
+			refreshDiscoveryInBackgroundWithCallback(cacheKey, cfg, providerType, resolver, func(models []catwalk.Model) {
+				if store != nil {
+					store.applyBackgroundDiscoveredModels(c, targetID, models)
+					return
+				}
+				applyDiscoveredModelsToConfig(c, targetID, models)
+			})
 			continue
 		}
 		wg.Go(func() {

@@ -589,6 +589,18 @@ func (e *CustomExecutor) newCustomAgenticFetchTool(
 	globCfg config.ToolGlob,
 	grepCfg config.ToolGrep,
 ) fantasy.AgentTool {
+	return e.newCustomAgenticFetchToolWithTimeout(model, dataDir, perms, ft, globCfg, grepCfg, agenticFetchTimeout)
+}
+
+func (e *CustomExecutor) newCustomAgenticFetchToolWithTimeout(
+	model Model,
+	dataDir string,
+	perms permission.Service,
+	ft filetracker.Service,
+	globCfg config.ToolGlob,
+	grepCfg config.ToolGrep,
+	timeout time.Duration,
+) fantasy.AgentTool {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConns = 100
 	transport.MaxIdleConnsPerHost = 10
@@ -605,6 +617,9 @@ func (e *CustomExecutor) newCustomAgenticFetchTool(
 			if params.Prompt == "" {
 				return fantasy.NewTextErrorResponse("prompt is required"), nil
 			}
+			fetchCtx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+
 			tmpBase := dataDir
 			if tmpBase == "" {
 				tmpBase = os.TempDir()
@@ -617,8 +632,11 @@ func (e *CustomExecutor) newCustomAgenticFetchTool(
 
 			var fullPrompt string
 			if params.URL != "" {
-				content, fetchErr := tools.FetchURLAndConvert(ctx, client, params.URL)
+				content, fetchErr := tools.FetchURLAndConvert(fetchCtx, client, params.URL)
 				if fetchErr != nil {
+					if errors.Is(fetchCtx.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
+						return fantasy.NewTextErrorResponse(fmt.Sprintf("agentic_fetch timed out after %s while fetching %s", timeout, params.URL)), nil
+					}
 					return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to fetch URL: %s", fetchErr)), nil
 				}
 				if len(content) > tools.LargeContentThreshold {
@@ -644,8 +662,11 @@ func (e *CustomExecutor) newCustomAgenticFetchTool(
 			if err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("error creating prompt: %s", err)
 			}
-			systemPrompt, err := promptTemplate.Build(ctx, model.Model.Provider(), model.Model.Model(), e.cfg)
+			systemPrompt, err := promptTemplate.Build(fetchCtx, model.Model.Provider(), model.Model.Model(), e.cfg)
 			if err != nil {
+				if errors.Is(fetchCtx.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("agentic_fetch timed out after %s", timeout)), nil
+				}
 				return fantasy.ToolResponse{}, fmt.Errorf("error building system prompt: %s", err)
 			}
 
@@ -670,8 +691,14 @@ func (e *CustomExecutor) newCustomAgenticFetchTool(
 				fantasy.WithUserAgent(userAgent),
 				fantasy.WithRepairToolCall(repairToolCall),
 			)
-			res, err := fetchAgent.Generate(ctx, fantasy.AgentCall{Prompt: fullPrompt})
+			res, err := fetchAgent.Generate(fetchCtx, fantasy.AgentCall{
+				Prompt:   fullPrompt,
+				StopWhen: []fantasy.StopCondition{fantasy.StepCountIs(agenticFetchMaxSteps)},
+			})
 			if err != nil {
+				if errors.Is(fetchCtx.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("agentic_fetch timed out after %s", timeout)), nil
+				}
 				return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to generate response: %s", err)), nil
 			}
 			text := extractCustomAgentOutput(res)

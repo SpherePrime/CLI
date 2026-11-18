@@ -17,7 +17,12 @@ function parameters(value: unknown) {
   }
 }
 
-export function ToolCard({ part }: { part: Message['parts'][number] }) {
+export type ToolCardProps = {
+  part: Message['parts'][number]
+  messageFinished?: boolean
+}
+
+export function ToolCard({ part, messageFinished = false }: ToolCardProps) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const data = part.data
@@ -27,8 +32,9 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
   const input = parameters(data.input)
   const command = isShell ? data.command : typeof input?.command === 'string' ? input.command : null
   const description = typeof input?.description === 'string' ? input.description : ''
-  const completed = isShell || result !== undefined
-  const failed = Boolean(result?.is_error || (isShell && data.exit_code))
+  const interrupted = !isShell && result === undefined && Boolean(messageFinished)
+  const completed = isShell || result !== undefined || interrupted
+  const failed = Boolean(result?.is_error || (isShell && data.exit_code) || interrupted)
   const output = isShell ? data.output : result?.content
   const outputHidden = !isShell && !failed && hidesToolOutput(String(data.name || ''), input)
   const job = isShell ? '' : backgroundJob(result?.metadata)
@@ -93,11 +99,13 @@ export function ToolCard({ part }: { part: Message['parts'][number] }) {
         <section className="tool-section tool-output">
           <h4>{t('Вывод')}</h4>
           <pre>
-            {typeof output === 'string'
-              ? output || t('Без вывода')
-              : output === undefined
-                ? t('Без вывода')
-                : JSON.stringify(output, null, 2)}
+            {interrupted
+              ? t('Выполнение прервано до получения результата')
+              : typeof output === 'string'
+                ? output || t('Без вывода')
+                : output === undefined
+                  ? t('Без вывода')
+                  : JSON.stringify(output, null, 2)}
           </pre>
         </section>
       )}

@@ -99,6 +99,7 @@ type SessionAgentCall struct {
 	TopK              *int64
 	FrequencyPenalty  *float64
 	PresencePenalty   *float64
+	MaxSteps          int
 	NonInteractive    bool
 	// OnComplete, when non-nil, replaces the default RunComplete
 	// publish path: the inner Run hands the terminal payload to this
@@ -571,6 +572,68 @@ func (a *sessionAgent) persistCanceledTurn(ctx context.Context, call SessionAgen
 	return a.messages.Update(writeCtx, assistant)
 }
 
+func (a *sessionAgent) reconcileOrphanedToolCalls(ctx context.Context, assistant *message.Message, canceled bool) error {
+	if assistant == nil {
+		return nil
+	}
+	toolCalls := assistant.ToolCalls()
+	if len(toolCalls) == 0 {
+		return nil
+	}
+	msgs, err := a.messages.List(ctx, assistant.SessionID)
+	if err != nil {
+		return err
+	}
+	existingResults := make(map[string]bool)
+	for _, msg := range msgs {
+		if msg.Role != message.Tool {
+			continue
+		}
+		for _, tr := range msg.ToolResults() {
+			existingResults[tr.ToolCallID] = true
+		}
+	}
+	updatedAssistant := false
+	for _, tc := range toolCalls {
+		if !tc.Finished {
+			tc.Finished = true
+			if strings.TrimSpace(tc.Input) == "" {
+				tc.Input = "{}"
+			}
+			assistant.AddToolCall(tc)
+			updatedAssistant = true
+		}
+		if existingResults[tc.ID] {
+			continue
+		}
+		content := "There was an error while executing the tool"
+		if canceled {
+			content = "Error: user cancelled assistant tool calling"
+		}
+		if _, err := a.messages.Create(ctx, assistant.SessionID, message.CreateMessageParams{
+			Role: message.Tool,
+			Parts: []message.ContentPart{
+				message.ToolResult{
+					ToolCallID: tc.ID,
+					Name:       tc.Name,
+					Content:    content,
+					IsError:    true,
+				},
+			},
+		}); err != nil {
+			return err
+		}
+		existingResults[tc.ID] = true
+	}
+	if updatedAssistant {
+		assistant.FinishThinking()
+		if err := a.messages.Update(ctx, *assistant); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // publishRunComplete emits the authoritative terminal event for a turn.
 // It honors the per-call OnComplete hook when set (so the coordinator can
 // coalesce retries) and otherwise falls back to the RunComplete broker.
@@ -869,6 +932,42 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	if call.MaxOutputTokens > 0 {
 		maxOutputTokens = &call.MaxOutputTokens
 	}
+	stopWhen := []fantasy.StopCondition{
+		func(_ []fantasy.StepResult) bool {
+			cw := int64(largeModel.CatwalkCfg.ContextWindow)
+			// An unknown window means skip auto-summarize entirely, so
+			// custom and local models that never declared one are not
+			// truncated.
+			if cw <= 0 || a.disableAutoSummarize {
+				return false
+			}
+			// The per-model override recorded in the model settings
+			// dialog wins over the global default.
+			percent := a.autoSummarizePercent
+			if largeModel.ModelCfg.AutoSummarizePercent > 0 {
+				percent = largeModel.ModelCfg.AutoSummarizePercent
+			}
+			tokens := currentSession.ContextTokens
+			if tokens <= 0 {
+				tokens = currentSession.CompletionTokens + currentSession.PromptTokens
+			}
+			// Compact once the measured request context reaches the configured
+			// threshold, leaving (100 - percent) of the window free.
+			if shouldAutoSummarize(cw, percent, tokens) {
+				shouldSummarize = true
+				return true
+			}
+			return false
+		},
+		func(steps []fantasy.StepResult) bool {
+			stoppedForRepeatedCalls = hasPollingCalls(steps) || (!hasRepeatedEmptySearches(steps) && hasRepeatedToolCalls(steps, loopDetectionWindowSize, loopDetectionMaxRepeats))
+			return stoppedForRepeatedCalls
+		},
+	}
+	if call.MaxSteps > 0 {
+		stopWhen = append(stopWhen, fantasy.StepCountIs(call.MaxSteps))
+	}
+
 	result, err = agent.Stream(genCtx, fantasy.AgentStreamCall{
 		Prompt:           message.PromptWithTextAttachments(call.Prompt, call.Attachments),
 		Files:            files,
@@ -1196,38 +1295,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			}
 			return a.messages.Update(genCtx, *currentAssistant)
 		},
-		StopWhen: []fantasy.StopCondition{
-			func(_ []fantasy.StepResult) bool {
-				cw := int64(largeModel.CatwalkCfg.ContextWindow)
-				// An unknown window means skip auto-summarize entirely, so
-				// custom and local models that never declared one are not
-				// truncated.
-				if cw <= 0 || a.disableAutoSummarize {
-					return false
-				}
-				// The per-model override recorded in the model settings
-				// dialog wins over the global default.
-				percent := a.autoSummarizePercent
-				if largeModel.ModelCfg.AutoSummarizePercent > 0 {
-					percent = largeModel.ModelCfg.AutoSummarizePercent
-				}
-				tokens := currentSession.ContextTokens
-				if tokens <= 0 {
-					tokens = currentSession.CompletionTokens + currentSession.PromptTokens
-				}
-				// Compact once the measured request context reaches the configured
-				// threshold, leaving (100 - percent) of the window free.
-				if shouldAutoSummarize(cw, percent, tokens) {
-					shouldSummarize = true
-					return true
-				}
-				return false
-			},
-			func(steps []fantasy.StepResult) bool {
-				stoppedForRepeatedCalls = hasPollingCalls(steps) || (!hasRepeatedEmptySearches(steps) && hasRepeatedToolCalls(steps, loopDetectionWindowSize, loopDetectionMaxRepeats))
-				return stoppedForRepeatedCalls
-			},
-		},
+		StopWhen: stopWhen,
 	})
 
 	a.eventPromptResponded(call.SessionID, time.Since(startTime).Truncate(time.Second))
@@ -1271,59 +1339,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		defer cleanupCancel()
 		// Ensure we finish thinking on error to close the reasoning state.
 		currentAssistant.FinishThinking()
-		toolCalls := currentAssistant.ToolCalls()
-		// INFO: we use the cleanup context here because the genCtx has been cancelled.
-		msgs, createErr := a.messages.List(cleanupCtx, currentAssistant.SessionID)
-		if createErr != nil {
-			return nil, createErr
-		}
-		for _, tc := range toolCalls {
-			if !tc.Finished {
-				tc.Finished = true
-				tc.Input = "{}"
-				currentAssistant.AddToolCall(tc)
-				updateErr := a.messages.Update(cleanupCtx, *currentAssistant)
-				if updateErr != nil {
-					return nil, updateErr
-				}
-			}
-
-			found := false
-			for _, msg := range msgs {
-				if msg.Role == message.Tool {
-					for _, tr := range msg.ToolResults() {
-						if tr.ToolCallID == tc.ID {
-							found = true
-							break
-						}
-					}
-				}
-				if found {
-					break
-				}
-			}
-			if found {
-				continue
-			}
-			content := "There was an error while executing the tool"
-			if isCancelErr {
-				content = "Error: user cancelled assistant tool calling"
-			}
-			toolResult := message.ToolResult{
-				ToolCallID: tc.ID,
-				Name:       tc.Name,
-				Content:    content,
-				IsError:    true,
-			}
-			_, createErr = a.messages.Create(cleanupCtx, currentAssistant.SessionID, message.CreateMessageParams{
-				Role: message.Tool,
-				Parts: []message.ContentPart{
-					toolResult,
-				},
-			})
-			if createErr != nil {
-				return nil, createErr
-			}
+		if reconcileErr := a.reconcileOrphanedToolCalls(cleanupCtx, currentAssistant, isCancelErr); reconcileErr != nil {
+			return nil, reconcileErr
 		}
 		var fantasyErr *fantasy.Error
 		var providerErr *fantasy.ProviderError
@@ -1367,6 +1384,15 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			return nil, updateErr
 		}
 		return nil, err
+	}
+
+	if currentAssistant != nil && len(currentAssistant.ToolCalls()) > 0 {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		reconcileErr := a.reconcileOrphanedToolCalls(cleanupCtx, currentAssistant, false)
+		cleanupCancel()
+		if reconcileErr != nil {
+			return nil, reconcileErr
+		}
 	}
 
 	if shouldSummarize {

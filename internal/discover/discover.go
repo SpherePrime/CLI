@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net"
 	"net/http"
 	"slices"
@@ -194,6 +195,8 @@ func DiscoverModels(ctx context.Context, cfg Config, resolver Resolver) ([]catwa
 			continue
 		}
 		existing[model.ID] = len(result)
+		model.Options.ProviderOptions = maps.Clone(model.Options.ProviderOptions)
+		model.ReasoningLevels = slices.Clone(model.ReasoningLevels)
 		result = append(result, model)
 	}
 

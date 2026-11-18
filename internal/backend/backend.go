@@ -539,6 +539,7 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 		mainAgent:    mainAgent,
 		clients:      make(map[string]*clientState),
 	}
+	b.bindBackgroundDiscovery(ws)
 
 	b.mu.Lock()
 	// Re-check admission: the client may have retired while the slow

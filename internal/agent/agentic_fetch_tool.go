@@ -51,7 +51,16 @@ func validateAgenticFetchParams(ctx context.Context, params tools.AgenticFetchPa
 //go:embed templates/agentic_fetch_prompt.md.tpl
 var agenticFetchPromptTmpl []byte
 
-func (c *coordinator) agenticFetchTool(_ context.Context, client *http.Client) (fantasy.AgentTool, error) {
+const (
+	agenticFetchTimeout  = 90 * time.Second
+	agenticFetchMaxSteps = 8
+)
+
+func (c *coordinator) agenticFetchTool(ctx context.Context, client *http.Client) (fantasy.AgentTool, error) {
+	return c.agenticFetchToolWithTimeout(ctx, client, agenticFetchTimeout)
+}
+
+func (c *coordinator) agenticFetchToolWithTimeout(_ context.Context, client *http.Client, timeout time.Duration) (fantasy.AgentTool, error) {
 	if client == nil {
 		transport := http.DefaultTransport.(*http.Transport).Clone()
 		transport.MaxIdleConns = 100
@@ -100,7 +109,17 @@ func (c *coordinator) agenticFetchTool(_ context.Context, client *http.Client) (
 				return tools.NewPermissionDeniedResponse(), nil
 			}
 
-			tmpDir, err := os.MkdirTemp(c.cfg.Config().Options.DataDirectory, "prime-fetch-*")
+			fetchCtx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+
+			tmpBase := c.cfg.Config().Options.DataDirectory
+			if tmpBase == "" {
+				tmpBase = os.TempDir()
+			}
+			if err := os.MkdirAll(tmpBase, 0o755); err != nil {
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to create temporary directory: %s", err)), nil
+			}
+			tmpDir, err := os.MkdirTemp(tmpBase, "prime-fetch-*")
 			if err != nil {
 				return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to create temporary directory: %s", err)), nil
 			}
@@ -110,8 +129,11 @@ func (c *coordinator) agenticFetchTool(_ context.Context, client *http.Client) (
 
 			if params.URL != "" {
 				// URL mode: fetch the URL content first.
-				content, err := tools.FetchURLAndConvert(ctx, client, params.URL)
+				content, err := tools.FetchURLAndConvert(fetchCtx, client, params.URL)
 				if err != nil {
+					if errors.Is(fetchCtx.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
+						return fantasy.NewTextErrorResponse(fmt.Sprintf("agentic_fetch timed out after %s while fetching %s", timeout, params.URL)), nil
+					}
 					return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to fetch URL: %s", err)), nil
 				}
 
@@ -148,13 +170,19 @@ func (c *coordinator) agenticFetchTool(_ context.Context, client *http.Client) (
 				return fantasy.ToolResponse{}, fmt.Errorf("error creating prompt: %s", err)
 			}
 
-			_, small, err := c.buildAgentModels(ctx, true, config.Agent{Model: config.SelectedModelTypeSmall})
+			_, small, err := c.buildAgentModels(fetchCtx, true, config.Agent{Model: config.SelectedModelTypeSmall})
 			if err != nil {
+				if errors.Is(fetchCtx.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("agentic_fetch timed out after %s", timeout)), nil
+				}
 				return fantasy.ToolResponse{}, fmt.Errorf("error building models: %s", err)
 			}
 
-			systemPrompt, err := promptTemplate.Build(ctx, small.Model.Provider(), small.Model.Model(), c.cfg)
+			systemPrompt, err := promptTemplate.Build(fetchCtx, small.Model.Provider(), small.Model.Model(), c.cfg)
 			if err != nil {
+				if errors.Is(fetchCtx.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("agentic_fetch timed out after %s", timeout)), nil
+				}
 				return fantasy.ToolResponse{}, fmt.Errorf("error building system prompt: %s", err)
 			}
 
@@ -198,17 +226,23 @@ func (c *coordinator) agenticFetchTool(_ context.Context, client *http.Client) (
 				Tools:                fetchTools,
 			})
 
-			return c.runSubAgent(ctx, subAgentParams{
-				Agent:          agent,
-				SessionID:      validationResult.SessionID,
-				AgentMessageID: validationResult.AgentMessageID,
-				ToolCallID:     call.ID,
-				Prompt:         fullPrompt,
-				SessionTitle:   "Fetch Analysis",
+			resp, err := c.runSubAgent(fetchCtx, subAgentParams{
+				Agent:               agent,
+				SessionID:           validationResult.SessionID,
+				AgentMessageID:      validationResult.AgentMessageID,
+				ToolCallID:          call.ID,
+				Prompt:              fullPrompt,
+				SessionTitle:        "Fetch Analysis",
+				MaxSteps:            agenticFetchMaxSteps,
+				DisableAutoContinue: true,
 				SessionSetup: func(sessionID string) {
 					c.permissions.AutoApproveSession(sessionID)
 				},
 			})
+			if errors.Is(fetchCtx.Err(), context.DeadlineExceeded) && ctx.Err() == nil && (err != nil || resp.IsError) {
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("agentic_fetch timed out after %s", timeout)), nil
+			}
+			return resp, err
 		},
 	), nil
 }

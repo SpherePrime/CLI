@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -294,4 +295,78 @@ func TestWebSearchTool_ReturnsCombinedErrorWhenProviderAndFallbackFail(t *testin
 	require.True(t, resp.IsError)
 	require.Contains(t, resp.Content, "provider error")
 	require.Contains(t, resp.Content, "fallback error")
+}
+
+func TestMaybeDelaySearch_AbortsOnCancelWithoutHoldingLock(t *testing.T) {
+	lastSearchMu.Lock()
+	lastSearchTime = time.Now()
+	lastSearchMu.Unlock()
+
+	bgDone := make(chan error, 1)
+	go func() {
+		bgDone <- maybeDelaySearch(context.Background())
+	}()
+
+	canceledCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	start := time.Now()
+	err := maybeDelaySearch(canceledCtx)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Less(t, time.Since(start), 150*time.Millisecond)
+
+	timeoutCtx, cancelTimeout := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancelTimeout()
+	start = time.Now()
+	err = maybeDelaySearch(timeoutCtx)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Less(t, time.Since(start), 150*time.Millisecond)
+
+	require.NoError(t, <-bgDone)
+}
+
+func TestWebSearchTool_SkipsFallbackWhenContextTimedOutOrCanceled(t *testing.T) {
+	lastSearchMu.Lock()
+	lastSearchTime = time.Now()
+	lastSearchMu.Unlock()
+
+	var ddgCalled atomic.Bool
+	ddgSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		ddgCalled.Store(true)
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(ddgSrv.Close)
+	origDDG := ddgLiteEndpoint
+	ddgLiteEndpoint = ddgSrv.URL + "/lite/?q="
+	t.Cleanup(func() { ddgLiteEndpoint = origDDG })
+
+	done := make(chan struct{})
+	providerSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-r.Context().Done():
+		case <-done:
+		}
+	}))
+	t.Cleanup(func() {
+		close(done)
+		providerSrv.CloseClientConnections()
+		providerSrv.Close()
+	})
+
+	tool := NewWebSearchTool(providerSrv.Client(), WebSearchOptions{
+		ProviderModel: func() (config.ProviderWebSearchModel, bool) {
+			return config.ProviderWebSearchModel{BaseURL: providerSrv.URL, Model: "m"}, true
+		},
+		SubAgent: true,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	resp, err := runWebSearchTool(t, ctx, tool, WebSearchParams{Query: "timeout query"})
+	require.NoError(t, err)
+	require.True(t, resp.IsError)
+	require.False(t, ddgCalled.Load(), "DuckDuckGo fallback must not run when ctx timed out")
+	require.Less(t, time.Since(start), 300*time.Millisecond)
 }

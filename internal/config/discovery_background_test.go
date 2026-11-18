@@ -2,8 +2,11 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -189,4 +192,92 @@ func TestRefreshDiscoveryInBackgroundKeepsCacheOnFailure(t *testing.T) {
 			}, 300*time.Millisecond, 20*time.Millisecond, "a failed refresh must not populate the cache")
 		})
 	}
+}
+
+func TestBackgroundDiscoveryUpdatesLiveProvidersAndWebSearchModel(t *testing.T) {
+	var (
+		releaseOnce sync.Once
+		release     = make(chan struct{})
+	)
+	releaseRefresh := func() { releaseOnce.Do(func() { close(release) }) }
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-release
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data": [{"id": "stored-model", "supports_web_search": true}]}`))
+	}))
+	t.Cleanup(func() {
+		releaseRefresh()
+		server.Close()
+	})
+
+	dir := t.TempDir()
+	providersPath := filepath.Join(dir, providersSectionFile)
+	require.NoError(t, os.WriteFile(providersPath, []byte(`{"providers":{"relay":{"id":"relay","type":"openai-compat","discover_models":true,"models":[{"id":"stored-model","name":"Stored"}]}}}`), 0o600))
+
+	discoverTrue := true
+	cfg := &Config{
+		Providers: csync.NewMapFrom(map[string]ProviderConfig{
+			"relay": {
+				ID:                 "relay",
+				Type:               catwalk.TypeOpenAICompat,
+				APIKey:             "test-key",
+				BaseURL:            server.URL + "/v1",
+				Models:             []catwalk.Model{{ID: "stored-model", Name: "Stored"}},
+				AutoDiscoverModels: &discoverTrue,
+			},
+		}),
+	}
+	cfg.setDefaults(dir, "")
+
+	store := &ConfigStore{
+		config:         cfg,
+		globalDataPath: filepath.Join(dir, "prime.json"),
+		loadedPaths:    []string{providersPath},
+	}
+	store.captureStalenessSnapshot([]string{providersPath})
+
+	var hookCalls atomic.Int64
+	store.SetOnBackgroundDiscovery(func() {
+		hookCalls.Add(1)
+	})
+
+	env := env.NewFromMap(map[string]string{})
+	resolver := NewShellVariableResolver(env)
+	require.NoError(t, cfg.configureProviders(context.Background(), store, env, resolver, []catwalk.Provider{}))
+
+	_, ok := cfg.ProviderWebSearchModel()
+	require.False(t, ok)
+
+	releaseRefresh()
+
+	require.Eventually(t, func() bool {
+		wsModel, found := cfg.ProviderWebSearchModel()
+		return found && wsModel.ProviderID == "relay" && wsModel.Model == "stored-model"
+	}, 5*time.Second, 20*time.Millisecond, "background discovery must update live Config.Providers and ProviderWebSearchModel")
+
+	require.Eventually(t, func() bool {
+		return hookCalls.Load() == 1
+	}, 5*time.Second, 20*time.Millisecond, "background discovery hook must fire when web_search capability is added")
+
+	require.Eventually(t, func() bool {
+		data, err := os.ReadFile(providersPath)
+		if err != nil {
+			return false
+		}
+		var doc map[string]any
+		if err := json.Unmarshal(data, &doc); err != nil {
+			return false
+		}
+		models, _ := doc["providers"].(map[string]any)["relay"].(map[string]any)["models"].([]any)
+		if len(models) != 1 {
+			return false
+		}
+		opts, _ := models[0].(map[string]any)["options"].(map[string]any)
+		provOpts, _ := opts["provider_options"].(map[string]any)
+		flag, _ := provOpts["web_search"].(bool)
+		return flag
+	}, 5*time.Second, 20*time.Millisecond, "background discovery must persist updated model capabilities to providers.json")
+
+	require.False(t, store.ConfigStaleness().Dirty, "staleness snapshot must stay clean after background persistence")
 }

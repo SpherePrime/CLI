@@ -201,13 +201,13 @@ export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
     }
   if (/^web_?search$/.test(tool))
     return { icon: Globe, label: t('Поиск в интернете'), detail: text(input?.query) }
-  if (/^agentic_?fetch$/.test(tool))
-    return {
-      icon: Globe,
-      label: t('Анализ страницы'),
-      detail: text(input?.url) || text(input?.prompt)
-    }
-  if (/^fetch$|^download$/.test(tool))
+  if (/^agentic_?fetch$/.test(tool)) {
+    const url = text(input?.url)
+    return url
+      ? { icon: Globe, label: t('Анализ страницы'), detail: url }
+      : { icon: Globe, label: t('Поиск в интернете'), detail: text(input?.prompt) }
+  }
+  if (/^(?:web_?)?fetch$|^download$/.test(tool))
     return { icon: Download, label: t('Загрузка'), detail: text(input?.url) }
   if (/^task$/.test(tool))
     return {

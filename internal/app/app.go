@@ -187,9 +187,24 @@ func newApplication(ctx context.Context, conn *sql.DB, store *config.ConfigStore
 	dataDir := cfg.Options.DataDirectory
 	app.cleanupFuncs = append(
 		app.cleanupFuncs,
+		func(context.Context) error {
+			store.SetOnBackgroundDiscovery(nil)
+			return nil
+		},
 		func(context.Context) error { return db.Release(dataDir) },
 		func(ctx context.Context) error { return mcp.Close(ctx) },
 	)
+
+	store.SetOnBackgroundDiscovery(func() {
+		if app.Coordinator() == nil || app.globalCtx.Err() != nil {
+			return
+		}
+		updateCtx, cancel := context.WithTimeout(app.globalCtx, 15*time.Second)
+		defer cancel()
+		if err := app.UpdateAgentModel(updateCtx); err != nil {
+			slog.Warn("Failed to refresh agent after background model discovery", "error", err)
+		}
+	})
 
 	// TODO: remove the concept of agent config, most likely.
 	if !cfg.IsConfigured() {

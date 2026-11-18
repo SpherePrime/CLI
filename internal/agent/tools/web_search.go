@@ -35,6 +35,8 @@ type WebSearchOptions struct {
 	SubAgent      bool
 }
 
+const defaultWebSearchTimeout = 35 * time.Second
+
 type webSearchDescriptionData struct {
 	GhAvailable    bool
 	ProviderSearch bool
@@ -150,6 +152,12 @@ func NewWebSearchTool(client *http.Client, opts ...WebSearchOptions) fantasy.Age
 				}
 			}
 
+			if deadline, ok := ctx.Deadline(); !ok || time.Until(deadline) > defaultWebSearchTimeout {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, defaultWebSearchTimeout)
+				defer cancel()
+			}
+
 			target, configured, err := resolveWebSearchTarget(opt.Resolver, opt.ProviderModel)
 			if err != nil {
 				return fantasy.NewTextErrorResponse(err.Error()), nil
@@ -160,9 +168,14 @@ func NewWebSearchTool(client *http.Client, opts ...WebSearchOptions) fantasy.Age
 					slog.Debug("Provider web search completed", "query", params.Query, "model", target.model, "results", len(providerResp.Results))
 					return fantasy.NewTextResponse(formatProviderSearchResponse(providerResp, maxResults)), nil
 				}
+				if ctx.Err() != nil {
+					return fantasy.NewTextErrorResponse("Failed to search: " + providerErr.Error()), nil
+				}
 
 				slog.Warn("Provider web search failed, falling back to DuckDuckGo", "query", params.Query, "model", target.model, "err", providerErr)
-				maybeDelaySearch()
+				if delayErr := maybeDelaySearch(ctx); delayErr != nil {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to search: provider error (%v); fallback aborted (%v)", providerErr, delayErr)), nil
+				}
 				results, ddgErr := searchDuckDuckGo(ctx, client, params.Query, maxResults)
 				slog.Debug("Fallback web search completed", "query", params.Query, "results", len(results), "err", ddgErr)
 				if ddgErr != nil {
@@ -171,7 +184,9 @@ func NewWebSearchTool(client *http.Client, opts ...WebSearchOptions) fantasy.Age
 				return fantasy.NewTextResponse(formatSearchResults(results)), nil
 			}
 
-			maybeDelaySearch()
+			if err := maybeDelaySearch(ctx); err != nil {
+				return fantasy.NewTextErrorResponse("Failed to search: " + err.Error()), nil
+			}
 			results, err := searchDuckDuckGo(ctx, client, params.Query, maxResults)
 			slog.Debug("Web search completed", "query", params.Query, "results", len(results), "err", err)
 			if err != nil {

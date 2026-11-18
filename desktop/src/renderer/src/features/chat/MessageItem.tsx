@@ -42,6 +42,7 @@ export const MessageItem = memo(function MessageItem({
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const text = textContent(message)
+  const messageFinished = (message.parts || []).some((part) => part.type === 'finish')
   const canImplementPhoto = canImplementMessagePhoto(
     message.role,
     live,
@@ -123,7 +124,7 @@ export const MessageItem = memo(function MessageItem({
                 {part.type === 'tool_call' && part.data?.name === 'agent' ? (
                   <AgentCard part={part} messageId={message.id} sessionId={message.session_id} />
                 ) : (
-                  <ToolCard part={part} />
+                  <ToolCard part={part} messageFinished={messageFinished} />
                 )}
                 <ToolGallery
                   images={images}

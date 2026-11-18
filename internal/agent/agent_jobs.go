@@ -318,12 +318,13 @@ func (c *coordinator) invokeSubAgent(ctx context.Context, params subAgentParams,
 			TopK:              callTopK(providerCfg, model.ModelCfg.TopK),
 			FrequencyPenalty:  model.ModelCfg.FrequencyPenalty,
 			PresencePenalty:   model.ModelCfg.PresencePenalty,
+			MaxSteps:          params.MaxSteps,
 			NonInteractive:    true,
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
 		})
 	}
 	result, err := run(params.Prompt, false)
-	for attempt := 0; autoContinueEnabled(c.cfg.Config(), ctx, err, attempt); attempt++ {
+	for attempt := 0; !params.DisableAutoContinue && autoContinueEnabled(c.cfg.Config(), ctx, err, attempt); attempt++ {
 		slog.Info("Continuing agent after provider error",
 			"session", sessionID,
 			"attempt", attempt+1,

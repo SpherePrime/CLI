@@ -138,6 +138,28 @@ type ConfigStore struct {
 	// on the next wait.
 	authSignalMu sync.Mutex
 	authSignals  map[string]chan struct{}
+
+	discoveryHookMu       sync.Mutex
+	onBackgroundDiscovery func()
+}
+
+func (s *ConfigStore) SetOnBackgroundDiscovery(fn func()) {
+	if s == nil {
+		return
+	}
+	s.discoveryHookMu.Lock()
+	s.onBackgroundDiscovery = fn
+	s.discoveryHookMu.Unlock()
+}
+
+func (s *ConfigStore) backgroundDiscoveryHook() func() {
+	if s == nil {
+		return nil
+	}
+	s.discoveryHookMu.Lock()
+	fn := s.onBackgroundDiscovery
+	s.discoveryHookMu.Unlock()
+	return fn
 }
 
 // Config returns the pure-data config struct (read-only after load).

@@ -1880,7 +1880,8 @@ Object.assign(english, {
   Сообщение: 'Message',
   Тип: 'Type',
   Цель: 'Target',
-  'Шаблон / поля': 'Pattern / fields'
+  'Шаблон / поля': 'Pattern / fields',
+  'Выполнение прервано до получения результата': 'Execution interrupted before receiving a result'
 })
 
 

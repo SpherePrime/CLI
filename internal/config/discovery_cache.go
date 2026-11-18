@@ -60,6 +60,10 @@ var refreshInFlight sync.Map
 // identity resolver, and it leaves the cache untouched unless it finds
 // models, so the next load retries after a failure.
 func refreshDiscoveryInBackground(key string, cfg discover.Config, providerType catwalk.Type, resolver VariableResolver) {
+	refreshDiscoveryInBackgroundWithCallback(key, cfg, providerType, resolver, nil)
+}
+
+func refreshDiscoveryInBackgroundWithCallback(key string, cfg discover.Config, providerType catwalk.Type, resolver VariableResolver, onDiscovered func([]catwalk.Model)) {
 	if _, loaded := refreshInFlight.LoadOrStore(key, struct{}{}); loaded {
 		return
 	}
@@ -93,5 +97,8 @@ func refreshDiscoveryInBackground(key string, cfg discover.Config, providerType 
 			return
 		}
 		storeDiscovery(key, models)
+		if onDiscovered != nil {
+			onDiscovered(models)
+		}
 	}()
 }

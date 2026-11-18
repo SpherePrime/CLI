@@ -144,3 +144,102 @@ func TestFlushDiscoveredModelsWithoutPathsIsNoop(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, entries)
 }
+
+func TestDiscoveredModelsDifferDetectsMetadataAndCapabilities(t *testing.T) {
+	base := []catwalk.Model{
+		{
+			ID:               "m1",
+			ContextWindow:    128000,
+			DefaultMaxTokens: 8192,
+			SupportsImages:   true,
+			CanReason:        true,
+			ReasoningLevels:  []string{"low", "high"},
+			DefaultReasoningEffort: "low",
+			Options: catwalk.ModelOptions{
+				ProviderOptions: map[string]any{"web_search": false},
+			},
+		},
+	}
+
+	require.False(t, discoveredModelsDiffer(base, []catwalk.Model{
+		{
+			ID:                     "m1",
+			ContextWindow:          128000,
+			DefaultMaxTokens:       8192,
+			SupportsImages:         true,
+			CanReason:              true,
+			ReasoningLevels:        []string{"low", "high"},
+			DefaultReasoningEffort: "low",
+			Options: catwalk.ModelOptions{
+				ProviderOptions: map[string]any{"web_search": false},
+			},
+		},
+	}))
+
+	withWebSearch := []catwalk.Model{base[0]}
+	withWebSearch[0].Options.ProviderOptions = map[string]any{"web_search": true}
+	require.True(t, discoveredModelsDiffer(base, withWebSearch))
+
+	withoutOptions := []catwalk.Model{base[0]}
+	withoutOptions[0].Options.ProviderOptions = nil
+	require.True(t, discoveredModelsDiffer(withoutOptions, withWebSearch))
+
+	diffWindow := []catwalk.Model{base[0]}
+	diffWindow[0].ContextWindow = 200000
+	require.True(t, discoveredModelsDiffer(base, diffWindow))
+
+	diffMaxTokens := []catwalk.Model{base[0]}
+	diffMaxTokens[0].DefaultMaxTokens = 16384
+	require.True(t, discoveredModelsDiffer(base, diffMaxTokens))
+
+	diffImages := []catwalk.Model{base[0]}
+	diffImages[0].SupportsImages = false
+	require.True(t, discoveredModelsDiffer(base, diffImages))
+
+	diffReason := []catwalk.Model{base[0]}
+	diffReason[0].CanReason = false
+	require.True(t, discoveredModelsDiffer(base, diffReason))
+
+	diffLevels := []catwalk.Model{base[0]}
+	diffLevels[0].ReasoningLevels = []string{"low", "medium", "high"}
+	require.True(t, discoveredModelsDiffer(base, diffLevels))
+
+	diffEffort := []catwalk.Model{base[0]}
+	diffEffort[0].DefaultReasoningEffort = "high"
+	require.True(t, discoveredModelsDiffer(base, diffEffort))
+}
+
+func TestFlushDiscoveredModelsPersistsWebSearchOption(t *testing.T) {
+	dir := t.TempDir()
+	server := discoveryServer(t, `{"data": [{"id": "m1", "supports_web_search": true}]}`)
+
+	cfg := &Config{
+		Providers: csync.NewMapFrom(map[string]ProviderConfig{
+			"custom": {
+				APIKey:  "test-key",
+				BaseURL: server.URL + "/v1",
+			},
+		}),
+	}
+	cfg.setDefaults("/tmp", "")
+
+	store := &ConfigStore{config: cfg, globalDataPath: filepath.Join(dir, "prime.json")}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, providersSectionFile), []byte(`{"providers":{"custom":{"id":"custom","type":"openai-compat","discover_models":true}}}`), 0o600))
+
+	env := env.NewFromMap(map[string]string{})
+	resolver := NewShellVariableResolver(env)
+	require.NoError(t, cfg.configureProviders(context.Background(), store, env, resolver, []catwalk.Provider{}))
+	store.flushDiscoveredModels()
+
+	data, err := os.ReadFile(filepath.Join(dir, providersSectionFile))
+	require.NoError(t, err)
+	var document map[string]any
+	require.NoError(t, json.Unmarshal(data, &document))
+	models := document["providers"].(map[string]any)["custom"].(map[string]any)["models"].([]any)
+	require.Len(t, models, 1)
+	modelObj := models[0].(map[string]any)
+	require.Equal(t, "m1", modelObj["id"])
+	opts := modelObj["options"].(map[string]any)
+	providerOpts := opts["provider_options"].(map[string]any)
+	require.Equal(t, true, providerOpts["web_search"])
+}

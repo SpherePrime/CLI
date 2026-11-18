@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
 
 	"github.com/SpherePrime/CLI/internal/agent"
 	mcptools "github.com/SpherePrime/CLI/internal/agent/tools/mcp"
@@ -34,6 +36,30 @@ func publishConfigChanged(ws *Workspace) {
 	ws.SendEvent(pubsub.Event[proto.ConfigChanged]{
 		Type:    pubsub.UpdatedEvent,
 		Payload: proto.ConfigChanged{WorkspaceID: ws.ID},
+	})
+}
+
+func (b *Backend) bindBackgroundDiscovery(ws *Workspace) {
+	if ws == nil || ws.Cfg == nil {
+		return
+	}
+	ws.Cfg.SetOnBackgroundDiscovery(func() {
+		if ws.ctx == nil || ws.ctx.Err() != nil {
+			return
+		}
+		if ws.Coordinator() != nil {
+			updateCtx, cancel := context.WithTimeout(ws.ctx, 15*time.Second)
+			if err := ws.UpdateAgentModel(updateCtx); err != nil {
+				slog.Warn("Failed to refresh agent after background model discovery", "error", err)
+			}
+			cancel()
+		}
+		if ws.ctx.Err() == nil && ws.App != nil {
+			ws.SendEvent(pubsub.Event[proto.ConfigChanged]{
+				Type:    pubsub.UpdatedEvent,
+				Payload: proto.ConfigChanged{WorkspaceID: ws.ID},
+			})
+		}
 	})
 }
 
