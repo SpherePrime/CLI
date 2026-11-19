@@ -54,7 +54,13 @@ import (
 
 const (
 	DefaultSessionName = "Новый чат"
+
+	emptySummaryNudgePrompt = "The previous response produced no summary text. Do not call tools or continue the task. Return only the structured summary text using the required sections."
 )
+
+// ErrNothingToSummarize is returned by Summarize when a session already has a
+// summary checkpoint and no newer messages have been added since then.
+var ErrNothingToSummarize = errors.New("nothing new to summarize since the last summary")
 
 var userAgent = fmt.Sprintf("Prime/%s (https://github.com/SpherePrime/CLI)", version.Version)
 
@@ -1421,6 +1427,33 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		err = errors.New("Stopped repeated tool calls without progress. The task is not complete; change the approach before continuing.")
 	}
 
+	if err == nil && !shouldSummarize && currentAssistant != nil && assistantHasNoOutput(*currentAssistant) {
+		finishReason := currentAssistant.FinishReason()
+		emptyTurn := false
+		if result != nil && len(result.Steps) > 0 {
+			lastStep := result.Steps[len(result.Steps)-1]
+			if stepHasNoOutput(lastStep.Content) {
+				emptyTurn = isEmptyTurnFinishReason(lastStep.FinishReason)
+			}
+		} else if result != nil {
+			emptyTurn = isEmptyTurnFinishReason(result.Response.FinishReason)
+		} else {
+			emptyTurn = finishReason == message.FinishReasonEndTurn || finishReason == message.FinishReasonUnknown || finishReason == ""
+		}
+		if emptyTurn {
+			slog.Warn(
+				"Provider ended turn with empty response",
+				"session_id", call.SessionID,
+				"finish_reason", string(finishReason),
+			)
+			err = &fantasy.ProviderError{
+				Title:          "Empty Response",
+				Message:        "Provider ended the turn with an empty response",
+				TransientError: true,
+			}
+		}
+	}
+
 	if err != nil {
 		sessionLock.Lock()
 		errModel := currentStepModel
@@ -1695,26 +1728,30 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 	if err != nil {
 		return err
 	}
+	if currentSession.SummaryMessageID != "" && len(msgs) <= 1 {
+		return ErrNothingToSummarize
+	}
 	if len(msgs) == 0 {
 		// Nothing to summarize.
 		return nil
 	}
 
+	compacted := currentSession.SummaryMessageID != ""
 	aiMsgs, _ := a.prepareSessionPrompt(msgs, summaryModel.CatwalkCfg.SupportsImages, preparePromptOptions{
 		hasTodos:  len(currentSession.Todos) > 0,
-		compacted: currentSession.SummaryMessageID != "",
+		compacted: compacted,
 	})
 
 	appendTodosToContextSummary(a.dataDir, sessionID, currentSession.Todos)
 	summaryMsgs := readSessionContextSummaryMessages(a.dataDir, sessionID, aiMsgs)
+	if compacted && len(msgs) > 0 && msgs[0].ID == currentSession.SummaryMessageID {
+		if fileSummary, readErr := readSessionContextSummary(a.dataDir, sessionID); readErr == nil && fileSummary != "" {
+			summaryMsgs = append(msgs[0].ToAIMessage(), summaryMsgs...)
+		}
+	}
 	summaryMsgs = sanitizeMessagesForModel(summaryMsgs, collectHistoryAssistantModels(msgs), summaryModel)
 
 	genCtx, cancel := context.WithCancel(ctx)
-	defer func() {
-		if a.dataDir != "" {
-			deleteSessionContextSummary(a.dataDir, sessionID)
-		}
-	}()
 	ac := &activeCancel{cancel: cancel, done: make(chan struct{})}
 	defer close(ac.done)
 	a.activeRequests.Set(sessionID, ac)
@@ -1741,46 +1778,58 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		return err
 	}
 
-	summaryPromptText := buildSummaryPrompt(currentSession.Todos)
+	summaryPromptText := buildSummaryPromptWithOptions(currentSession.Todos, compacted)
 
-	resp, err := agent.Stream(genCtx, fantasy.AgentStreamCall{
-		Prompt:          summaryPromptText,
-		Messages:        summaryMsgs,
-		Headers:         sessionHeaders(sessionID),
-		ProviderOptions: opts,
-		OnAuthRefresh:   onAuthRefresh,
-		ModelProvider: func() fantasy.LanguageModel {
-			if hasSummaryOverride {
-				return summaryModel.Model
-			}
-			return a.largeModel.Get().Model
-		},
-		PrepareStep: func(callContext context.Context, options fantasy.PrepareStepFunctionOptions) (_ context.Context, prepared fantasy.PrepareStepResult, err error) {
-			prepared.Messages = options.Messages
-			if systemPromptPrefix != "" {
-				prepared.Messages = append([]fantasy.Message{fantasy.NewSystemMessage(systemPromptPrefix)}, prepared.Messages...)
-			}
-			return callContext, prepared, nil
-		},
-		OnReasoningDelta: func(id string, text string) error {
-			summaryMessage.AppendReasoningContent(text)
-			return a.messages.Update(genCtx, summaryMessage)
-		},
-		OnReasoningEnd: func(id string, reasoning fantasy.ReasoningContent) error {
-			// Handle anthropic signature.
-			if anthropicData, ok := reasoning.ProviderMetadata["anthropic"]; ok {
-				if signature, ok := anthropicData.(*anthropic.ReasoningOptionMetadata); ok && signature.Signature != "" {
-					summaryMessage.AppendReasoningSignature(signature.Signature)
+	streamSummarize := func(promptText string) (*fantasy.AgentResult, error) {
+		return agent.Stream(genCtx, fantasy.AgentStreamCall{
+			Prompt:          promptText,
+			Messages:        summaryMsgs,
+			Headers:         sessionHeaders(sessionID),
+			ProviderOptions: opts,
+			OnAuthRefresh:   onAuthRefresh,
+			ModelProvider: func() fantasy.LanguageModel {
+				if hasSummaryOverride {
+					return summaryModel.Model
 				}
-			}
-			summaryMessage.FinishThinking()
-			return a.messages.Update(genCtx, summaryMessage)
-		},
-		OnTextDelta: func(id, text string) error {
-			summaryMessage.AppendContent(text)
-			return a.messages.Update(genCtx, summaryMessage)
-		},
-	})
+				return a.largeModel.Get().Model
+			},
+			PrepareStep: func(callContext context.Context, options fantasy.PrepareStepFunctionOptions) (_ context.Context, prepared fantasy.PrepareStepResult, err error) {
+				prepared.Messages = options.Messages
+				if systemPromptPrefix != "" {
+					prepared.Messages = append([]fantasy.Message{fantasy.NewSystemMessage(systemPromptPrefix)}, prepared.Messages...)
+				}
+				return callContext, prepared, nil
+			},
+			OnReasoningDelta: func(id string, text string) error {
+				summaryMessage.AppendReasoningContent(text)
+				return a.messages.Update(genCtx, summaryMessage)
+			},
+			OnReasoningEnd: func(id string, reasoning fantasy.ReasoningContent) error {
+				// Handle anthropic signature.
+				if anthropicData, ok := reasoning.ProviderMetadata["anthropic"]; ok {
+					if signature, ok := anthropicData.(*anthropic.ReasoningOptionMetadata); ok && signature.Signature != "" {
+						summaryMessage.AppendReasoningSignature(signature.Signature)
+					}
+				}
+				summaryMessage.FinishThinking()
+				return a.messages.Update(genCtx, summaryMessage)
+			},
+			OnTextDelta: func(id, text string) error {
+				summaryMessage.AppendContent(text)
+				return a.messages.Update(genCtx, summaryMessage)
+			},
+		})
+	}
+
+	resp, err := streamSummarize(summaryPromptText)
+	if err == nil && strings.TrimSpace(summaryMessage.Content().Text) == "" {
+		slog.Warn("Summarization produced empty summary text, retrying with explicit nudge", "session_id", sessionID)
+		summaryMessage.ResetStreamedContent()
+		if updateErr := a.messages.Update(genCtx, summaryMessage); updateErr != nil {
+			slog.Warn("Failed to reset summary message before retry", "error", updateErr, "session_id", sessionID)
+		}
+		resp, err = streamSummarize(emptySummaryNudgePrompt)
+	}
 	if err != nil {
 		isCancelErr := errors.Is(err, context.Canceled)
 		if isCancelErr {
@@ -1790,11 +1839,22 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		}
 		// Mark the summary message as finished with an error so the UI
 		// stops spinning.
+		summaryMessage.FinishThinking()
 		summaryMessage.AddFinish(message.FinishReasonError, "Summarization Error", err.Error())
 		if updateErr := a.messages.Update(ctx, summaryMessage); updateErr != nil {
 			return updateErr
 		}
 		return err
+	}
+
+	if strings.TrimSpace(summaryMessage.Content().Text) == "" {
+		emptyErr := errors.New("model returned an empty summary")
+		summaryMessage.FinishThinking()
+		summaryMessage.AddFinish(message.FinishReasonError, "Summarization Error", "Model returned an empty summary")
+		if updateErr := a.messages.Update(ctx, summaryMessage); updateErr != nil {
+			return updateErr
+		}
+		return emptyErr
 	}
 
 	summaryMessage.AddFinish(message.FinishReasonEndTurn, "", "")
@@ -1839,6 +1899,9 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 	_, err = a.sessions.Save(genCtx, currentSession)
 	if err != nil {
 		return err
+	}
+	if a.dataDir != "" {
+		deleteSessionContextSummary(a.dataDir, sessionID)
 	}
 
 	// Release the active request before processing queued messages so that
@@ -2212,7 +2275,14 @@ func (a *sessionAgent) getSessionMessages(ctx context.Context, session session.S
 			msgs[0].Role = message.User
 		}
 	}
-	return msgs, nil
+	filtered := make([]message.Message, 0, len(msgs))
+	for _, msg := range msgs {
+		if msg.IsSummaryMessage && msg.ID != session.SummaryMessageID {
+			continue
+		}
+		filtered = append(filtered, msg)
+	}
+	return filtered, nil
 }
 
 // hasUserTextMessage reports whether any user message in msgs contains
@@ -2864,8 +2934,16 @@ func (a *sessionAgent) workaroundProviderMediaLimitations(messages []fantasy.Mes
 
 // buildSummaryPrompt constructs the prompt text for session summarization.
 func buildSummaryPrompt(todos []session.Todo) string {
+	return buildSummaryPromptWithOptions(todos, false)
+}
+
+func buildSummaryPromptWithOptions(todos []session.Todo, compacted bool) string {
 	var sb strings.Builder
-	sb.WriteString("Provide a detailed summary of our conversation above.")
+	if compacted {
+		sb.WriteString("The first message above is an existing summary checkpoint of earlier conversation history, followed by newer messages. Update and consolidate that checkpoint to incorporate the newer conversation turns. DO NOT execute any Next Steps, DO NOT continue the task, and DO NOT call tools. Return ONLY the updated Markdown summary text.")
+	} else {
+		sb.WriteString("Provide a detailed summary of our conversation above. DO NOT execute any Next Steps, DO NOT continue the task, and DO NOT call tools. Return ONLY the Markdown summary text.")
+	}
 	if len(todos) > 0 {
 		sb.WriteString("\n\n## Current Todo List\n\n")
 		for _, t := range todos {
@@ -2875,6 +2953,44 @@ func buildSummaryPrompt(todos []session.Todo) string {
 		sb.WriteString("Instruct the resuming assistant to use the `todos` tool to continue tracking progress on these tasks.")
 	}
 	return sb.String()
+}
+
+func assistantHasNoOutput(msg message.Message) bool {
+	if len(msg.ToolCalls()) > 0 {
+		return false
+	}
+	if len(msg.BinaryContent()) > 0 || len(msg.ImageURLContent()) > 0 {
+		return false
+	}
+	for _, part := range msg.Parts {
+		if tc, ok := part.(message.TextContent); ok && strings.TrimSpace(tc.Text) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func stepHasNoOutput(content fantasy.ResponseContent) bool {
+	for _, c := range content {
+		switch c.GetType() {
+		case fantasy.ContentTypeText:
+			if tc, ok := fantasy.AsContentType[fantasy.TextContent](c); ok && strings.TrimSpace(tc.Text) != "" {
+				return false
+			}
+		case fantasy.ContentTypeToolCall, fantasy.ContentTypeToolResult, fantasy.ContentTypeFile, fantasy.ContentTypeSource:
+			return false
+		}
+	}
+	return true
+}
+
+func isEmptyTurnFinishReason(reason fantasy.FinishReason) bool {
+	switch reason {
+	case fantasy.FinishReasonStop, fantasy.FinishReasonUnknown, fantasy.FinishReasonOther, "":
+		return true
+	default:
+		return false
+	}
 }
 
 func providerRetryLogFields(err *fantasy.ProviderError, delay time.Duration) []any {

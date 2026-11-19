@@ -20,6 +20,7 @@ export function conversationTiming(messages: Message[]) {
   let startedAt: number | null = null
   const completed = new Map<string, number>()
   for (const message of messages) {
+    if (message.is_summary_message) continue
     if (!['user', 'assistant'].includes(message.role)) continue
     if (message.role === 'user') {
       if (!isConversationPrompt(message)) continue
@@ -39,10 +40,11 @@ export function conversationTiming(messages: Message[]) {
 
 export function isEndOfTurn(messages: Message[], index: number, busy: boolean): boolean {
   const current = messages[index]
-  if (!current || current.role !== 'assistant') return false
+  if (!current || current.role !== 'assistant' || current.is_summary_message) return false
 
   for (let i = index + 1; i < messages.length; i++) {
     const next = messages[i]
+    if (next.is_summary_message) continue
     if (next.role === 'user' && isConversationPrompt(next)) {
       return true
     }
@@ -59,11 +61,14 @@ export function turnCompletedDuration(
   index: number,
   completedMap: Map<string, number>
 ): number | undefined {
-  const direct = completedMap.get(messages[index]?.id)
+  const current = messages[index]
+  if (!current || current.is_summary_message) return undefined
+  const direct = completedMap.get(current.id)
   if (direct !== undefined) return direct
 
   for (let i = index - 1; i >= 0; i--) {
     const prev = messages[i]
+    if (prev.is_summary_message) continue
     if (prev.role === 'user' && isConversationPrompt(prev)) break
     const prevTime = completedMap.get(prev.id)
     if (prevTime !== undefined) return prevTime

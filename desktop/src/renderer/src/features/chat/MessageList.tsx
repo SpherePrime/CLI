@@ -67,13 +67,7 @@ export function MessageList({
     }
   }, [messages, historyTiming])
   const visible = useMemo(
-    () =>
-      (stable.current = reuseUnchanged(
-        stable.current,
-        consolidateToolMessages(messages).filter(
-          (message) => !message.is_summary_message || !(message.parts || []).some((part) => part.type === 'finish')
-        )
-      )),
+    () => (stable.current = reuseUnchanged(stable.current, consolidateToolMessages(messages))),
     [messages]
   )
   const [query, setQuery] = useState('')
@@ -306,8 +300,10 @@ export function MessageList({
               const message = visible[row.index]
               const previous = visible[row.index - 1]
               const continued =
+                !message.is_summary_message &&
                 message.role !== 'user' &&
                 previous !== undefined &&
+                !previous.is_summary_message &&
                 previous.role !== 'user' &&
                 !isEndOfTurn(visible, row.index - 1, busy)
               const fresh =
@@ -319,6 +315,7 @@ export function MessageList({
               let previousOrchestratorPhase: OrchestratorPhase | undefined
               for (let i = row.index - 1; i >= 0; i--) {
                 const prev = visible[i]
+                if (prev.is_summary_message) continue
                 if (prev.role === 'user') break
                 if (prev.role === 'assistant') {
                   previousOrchestratorPhase = prev.orchestrator_phase

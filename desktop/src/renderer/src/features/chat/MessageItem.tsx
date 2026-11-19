@@ -1,5 +1,15 @@
 import { Fragment, memo, useEffect, useRef, useState } from 'react'
-import { ArrowUpRight, Check, CheckCircle2, Compass, Copy, Cpu, Sparkles } from 'lucide-react'
+import {
+  AlertCircle,
+  Archive,
+  ArrowUpRight,
+  Check,
+  CheckCircle2,
+  Compass,
+  Copy,
+  Cpu,
+  Sparkles
+} from 'lucide-react'
 import { MessageAttachment } from './MessageAttachment'
 import { MarkdownText } from './MarkdownText'
 import { PrimeLogo } from '../../components/PrimeLogo'
@@ -45,7 +55,8 @@ export const MessageItem = memo(function MessageItem({
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const text = textContent(message)
-  const messageFinished = (message.parts || []).some((part) => part.type === 'finish')
+  const parts = message.parts || []
+  const messageFinished = parts.some((part) => part.type === 'finish')
   const phase = message.role === 'assistant' ? message.orchestrator_phase : undefined
   const showOrchestratorPhase = Boolean(phase && phase !== previousOrchestratorPhase)
   const canImplementPhoto = canImplementMessagePhoto(
@@ -54,25 +65,49 @@ export const MessageItem = memo(function MessageItem({
     Boolean(onImplementDesign)
   )
   if (message.is_summary_message) {
-    const finish = (message.parts || []).find((part) => part.type === 'finish')
-    if (finish) return null
+    const finish = parts.find((part) => part.type === 'finish')
+    const isError = finish?.data?.reason === 'error'
     return (
       <article
         className={`message assistant summary-message ${fresh ? 'fresh' : ''} ${matched ? 'search-match' : ''}`}
       >
         <div className="message-body">
-          <div className="compaction-progress" role="status">
-            <span className="working-orb" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-            <span>{t('Автоматическое сжатие контекста, это может занять несколько минут…')}</span>
-          </div>
+          {!finish ? (
+            <div className="compaction-progress" role="status">
+              <span className="working-orb" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span>{t('Автоматическое сжатие контекста, это может занять несколько минут…')}</span>
+            </div>
+          ) : isError ? (
+            <div className="compaction-status is-error" role="status">
+              <AlertCircle size={13} aria-hidden="true" />
+              <span>{finish.data?.message || t('Не удалось сжать контекст')}</span>
+            </div>
+          ) : (
+            <div className="compaction-status is-done" role="status">
+              <span className="compaction-status-pill">
+                <Archive size={13} aria-hidden="true" />
+                <span>{t('Контекст сжат')}</span>
+              </span>
+            </div>
+          )}
         </div>
       </article>
     )
   }
+  const hasVisibleContent =
+    Boolean(visibleMessageText(text, message.role).trim()) ||
+    parts.some(
+      (part) =>
+        (part.type === 'reasoning' && Boolean(part.data?.thinking)) ||
+        ['tool_call', 'tool_result', 'shell_command', 'image_url', 'binary'].includes(part.type) ||
+        (part.type === 'finish' && ['error', 'canceled'].includes(part.data?.reason))
+    )
+  const showEmptyAssistantNote =
+    message.role === 'assistant' && messageFinished && !hasVisibleContent
   return (
     <article
       className={`message ${message.role} ${continued ? 'continued' : ''} ${fresh ? 'fresh' : ''} ${matched ? 'search-match' : ''}`}
@@ -240,6 +275,9 @@ export const MessageItem = memo(function MessageItem({
           }
           return null
         })}
+        {showEmptyAssistantNote && (
+          <div className="finish-note">{t('Модель завершила ответ без текста')}</div>
+        )}
       </div>
       {text && message.role === 'user' && (
         <button

@@ -583,6 +583,9 @@
   margin-top: 2px;
   font-size: 12px;
 }
+.context-popover .error-text {
+  margin: 0;
+}
 
 .model-control.is-orchestrator,
 .composer-actions .model-control.is-orchestrator {

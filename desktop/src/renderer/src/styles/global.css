@@ -1355,6 +1355,54 @@ dialog.image-lightbox.gallery {
   font-size: 12px;
   color: var(--secondary);
 }
+.compaction-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+.compaction-status.is-done {
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.compaction-status.is-done::before,
+.compaction-status.is-done::after {
+  content: '';
+  flex: 1;
+  min-width: 12px;
+  height: 1px;
+  background: var(--border);
+}
+.compaction-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--secondary);
+}
+.compaction-status-pill svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.compaction-status.is-error {
+  padding: 8px 11px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--red) 35%, var(--border));
+  background: color-mix(in srgb, var(--red) 8%, var(--surface));
+  color: var(--red);
+  overflow-wrap: anywhere;
+}
+.compaction-status.is-error svg {
+  flex-shrink: 0;
+}
 .working {
   display: flex;
   align-items: center;

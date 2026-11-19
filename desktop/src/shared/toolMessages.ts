@@ -90,7 +90,10 @@ export function consolidateToolMessages(messages: Message[]): Message[] {
       }
       parts.push(part)
     }
-    if (!parts.some(visiblePart)) continue
+    const keepEmpty =
+      Boolean(message.is_summary_message) ||
+      (message.role === 'assistant' && parts.some((part) => part.type === 'finish'))
+    if (!keepEmpty && !parts.some(visiblePart)) continue
     displayed.push(changed ? { ...message, parts } : message)
   }
   return displayed

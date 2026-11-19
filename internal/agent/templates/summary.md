@@ -2,6 +2,8 @@ You are summarizing a conversation to preserve context for continuing work later
 
 **Critical**: This summary will be the ONLY context available when the conversation resumes. Assume all previous messages will be lost. Be thorough.
 
+**Do NOT execute any Next Steps, do NOT continue the task, and do NOT call any tools.** Output ONLY the structured Markdown summary using the sections below.
+
 **Required sections**:
 
 ## Current State

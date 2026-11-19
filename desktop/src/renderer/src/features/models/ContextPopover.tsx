@@ -73,8 +73,12 @@ export function ContextPopover({
   const [data, setData] = useState<Breakdown | null>(null)
   const [error, setError] = useState('')
   const [compacting, setCompacting] = useState(false)
+  const [compactError, setCompactError] = useState('')
   const sessionId = realSessionId(w.session)
   const tokens = (w.session?.prompt_tokens || 0) + (w.session?.completion_tokens || 0)
+  useEffect(() => {
+    setCompactError('')
+  }, [sessionId])
   useEffect(() => {
     let current = true
     if (!sessionId) return
@@ -116,8 +120,12 @@ export function ContextPopover({
     if (!capacity || !estimated) return 0
     return ((category.tokens / estimated) * (total / capacity)) * 100
   }
+  const handleClose = () => {
+    setCompactError('')
+    close()
+  }
   return (
-    <Popover anchor={anchor} close={close} width={340} align="end" label={t('Контекст')}>
+    <Popover anchor={anchor} close={handleClose} width={340} align="end" label={t('Контекст')}>
       <div className="context-popover">
         <div className="context-popover-head">
           <strong>{t('Контекст')}</strong>
@@ -201,18 +209,33 @@ export function ContextPopover({
           className="context-compact"
           disabled={!sessionId || w.busy || compacting || !total}
           onClick={() => {
+            setCompactError('')
             setCompacting(true)
             void w
               .call('summarize', { sessionId })
-              .then(w.refresh)
-              .then(close)
-              .catch(w.errorHandler)
+              .then(() => {
+                handleClose()
+                void w.refresh().catch(w.errorHandler)
+              })
+              .catch((err) => {
+                const message = String((err as Error)?.message || err).replace(
+                  /^Error invoking remote method '[^']+': Error: /,
+                  ''
+                )
+                setCompactError(message || t('Не удалось сжать контекст'))
+                w.errorHandler(err)
+              })
               .finally(() => setCompacting(false))
           }}
         >
           {compacting ? <LoaderCircle size={14} className="spin" /> : <Archive size={14} />}
           {t('Сжать контекст сейчас')}
         </button>
+        {compactError && (
+          <p className="error-text" role="alert">
+            {compactError}
+          </p>
+        )}
       </div>
     </Popover>
   )

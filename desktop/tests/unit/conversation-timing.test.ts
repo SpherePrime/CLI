@@ -10,9 +10,10 @@ function message(
   id: string,
   role: string,
   created_at: number,
-  parts: { type: string; data: any }[]
+  parts: { type: string; data: any }[],
+  extra: Partial<Message> = {}
 ): Message {
-  return { id, session_id: 'session', role, created_at, parts }
+  return { id, session_id: 'session', role, created_at, parts, ...extra }
 }
 
 const text = (value: string, hidden = false) => ({
@@ -90,5 +91,20 @@ describe('conversationTiming', () => {
     ]
     expect(isEndOfTurn(messages, 1, true)).toBe(true)
     expect(isEndOfTurn(messages, 3, true)).toBe(false)
+  })
+
+  it('ignores summary messages in timing, end-of-turn detection, and completed duration lookup', () => {
+    const messages = [
+      message('u1', 'user', 100, [text('start')]),
+      message('a1', 'assistant', 110, [finish('end_turn', 120)]),
+      message('s1', 'assistant', 121, [finish('end_turn', 180)], { is_summary_message: true })
+    ]
+    const timing = conversationTiming(messages)
+    expect(timing.completed.get('a1')).toBe(20)
+    expect(timing.completed.has('s1')).toBe(false)
+    expect(isEndOfTurn(messages, 1, false)).toBe(true)
+    expect(isEndOfTurn(messages, 2, false)).toBe(false)
+    expect(turnCompletedDuration(messages, 1, timing.completed)).toBe(20)
+    expect(turnCompletedDuration(messages, 2, timing.completed)).toBeUndefined()
   })
 })
