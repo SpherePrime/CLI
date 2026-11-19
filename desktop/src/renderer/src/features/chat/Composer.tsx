@@ -15,7 +15,7 @@ import { Select } from '../../components/Select'
 import { ProjectPicker } from './ProjectPicker'
 import { useI18n } from '../../i18n'
 import { CommandRunner } from './CommandRunner'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ArrowUp, Mic, Paperclip, Square, X, LoaderCircle } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import { useVoice } from '../plugins/useVoice'
@@ -212,12 +212,6 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     if (!w.project || !projectReady) return
     void w.call('mode', { mode: isDesigner ? 'designer' : mode }).catch(() => {})
   }, [w.project?.id, projectReady, isDesigner, mode])
-  useEffect(() => {
-    if (textarea.current) {
-      textarea.current.style.height = 'auto'
-      textarea.current.style.height = Math.min(220, textarea.current.scrollHeight) + 'px'
-    }
-  }, [text])
   async function submit() {
     if (sending || importing || submitting.current) return
     submitting.current = true
@@ -365,6 +359,33 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     updateMentions(value)
   }
   const voiceActive = recording || transcribing
+  function syncTextareaHeight() {
+    const el = textarea.current
+    if (!el || el.hidden) return
+    if (!el.value) {
+      el.style.height = ''
+      return
+    }
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(220, el.scrollHeight)}px`
+  }
+  useLayoutEffect(() => {
+    syncTextareaHeight()
+  }, [text, voiceActive])
+  useEffect(() => {
+    const el = textarea.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    let previousWidth = el.clientWidth
+    const observer = new ResizeObserver(() => {
+      if (el.hidden) return
+      const width = el.clientWidth
+      if (width === previousWidth) return
+      previousWidth = width
+      syncTextareaHeight()
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
   const hasDraft = Boolean(text.trim()) || attachments.length > 0
   const stopLabel = hasDraft
     ? t('Остановить текущий ответ и отправить это сообщение')
@@ -434,6 +455,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           />
         )}
         <textarea
+          rows={1}
           hidden={voiceActive}
           ref={textarea}
           value={text}

@@ -181,6 +181,8 @@
   container-name: composer;
 }
 .composer-toolbar {
+  width: 100%;
+  box-sizing: border-box;
   flex-wrap: nowrap;
   align-items: center;
   gap: 6px 8px;
@@ -189,7 +191,7 @@
   flex: 1 1 auto;
   flex-wrap: nowrap;
   align-items: center;
-  min-width: min-content;
+  min-width: 0;
   overflow: visible;
 }
 .composer-options > * {
@@ -200,8 +202,7 @@
   min-width: 34px;
   max-width: 150px;
 }
-.composer-options .project-picker-trigger > svg,
-.composer-actions .model-control > * {
+.composer-options .project-picker-trigger > svg {
   flex-shrink: 0;
 }
 .composer-options .project-picker-trigger > span {
@@ -213,6 +214,7 @@
 .composer-actions {
   margin-left: auto;
   flex: 0 1 auto;
+  justify-content: flex-end;
   max-width: 100%;
   min-width: 0;
   gap: 4px;
@@ -223,14 +225,17 @@
 .composer-actions .model-control {
   flex: 0 1 auto;
   min-width: 84px;
-  max-width: min(260px, 100%);
+  max-width: min(380px, 100%);
 }
-.composer-actions .model-control-name {
-  flex-shrink: 1;
+.composer-actions .model-control .model-control-name {
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.composer-actions .model-control .model-control-level {
+  flex-shrink: 0;
 }
 @container composer (max-width: 820px) {
   .composer-options .project-picker-trigger {

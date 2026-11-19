@@ -124,6 +124,7 @@
     inset 0 1px var(--ui-highlight);
 }
 .composer textarea {
+  min-height: 54px;
   padding: 20px 20px 14px;
   font-size: 14px;
   line-height: 1.65;

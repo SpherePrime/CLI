@@ -160,13 +160,13 @@
 .composer-options {
   flex: 1 1 auto;
   flex-wrap: nowrap;
-  min-width: min-content;
+  min-width: 0;
 }
 .composer-actions {
   margin-left: auto;
 }
 .model-control {
-  max-width: min(260px, 100%);
+  max-width: min(380px, 100%);
   flex: 0 1 auto;
 }
 .model-control-name {

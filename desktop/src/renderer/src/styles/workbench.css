@@ -215,7 +215,7 @@
   box-shadow: var(--panel-shadow);
 }
 .composer textarea {
-  min-height: 82px;
+  min-height: 54px;
   padding: 18px 18px 12px;
   font-size: 14px;
 }
@@ -337,7 +337,7 @@
   line-height: 1.7;
 }
 :root[data-density='compact'] .composer textarea {
-  min-height: 64px;
+  min-height: 44px;
   font-size: 13px;
 }
 :root[data-density='compact'] .composer-area {

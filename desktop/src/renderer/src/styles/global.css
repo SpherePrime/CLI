@@ -808,7 +808,7 @@ kbd {
   display: block;
   width: 100%;
   padding: 17px 17px 12px;
-  min-height: 70px;
+  min-height: 48px;
   resize: none;
   font-size: 13px;
   line-height: 1.6;
