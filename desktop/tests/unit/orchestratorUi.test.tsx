@@ -15,7 +15,7 @@ import {
   roleReasoningOptions
 } from '../../src/renderer/src/features/models/orchestrator'
 import { ModelControl } from '../../src/renderer/src/features/models/ModelControl'
-import { OrchestratorDefaultRow } from '../../src/renderer/src/features/models/ModelPickerRow'
+import { ModelPickerRow, OrchestratorDefaultRow } from '../../src/renderer/src/features/models/ModelPickerRow'
 import { OrchestratorSettings } from '../../src/renderer/src/features/models/OrchestratorSettings'
 import { MessageItem } from '../../src/renderer/src/features/chat/MessageItem'
 import { installPreviewHost } from '../../src/renderer/src/host/installPreviewHost'
@@ -188,6 +188,62 @@ describe('OrchestratorSettings UI', () => {
     expect(html).toContain('Финальная проверка')
     expect(html).toContain('перед ответом')
     expect(html).toContain('aria-checked="true"')
+    expect(html).toContain('orchestrator-toggle-row is-active')
+  })
+
+  it('renders model picker row indicator, context pill, and reasoning badge cleanly', () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <ModelPickerRow
+          model={{
+            provider_id: 'openai',
+            provider_name: 'OpenAI',
+            model_id: 'gpt-5.4',
+            name: 'GPT-5.4',
+            context_window: 1049000,
+            can_reason: true
+          }}
+          active={true}
+          favorite={false}
+          disabled={false}
+          favoriteDisabled={false}
+          showProvider={true}
+          select={vi.fn()}
+          toggleFavorite={vi.fn()}
+        />
+      </I18nProvider>
+    )
+    expect(html).toContain('model-picker-indicator is-active')
+    expect(html).toContain('model-context-pill')
+    expect(html).toContain('1049k')
+    expect(html).toContain('model-reason-badge')
+    expect(html).toContain('Поддерживает размышления')
+
+    const enHtml = renderToStaticMarkup(
+      <I18nProvider language="en">
+        <ModelPickerRow
+          model={{
+            provider_id: 'anthropic',
+            provider_name: 'Anthropic',
+            model_id: 'claude-sonnet-4',
+            name: 'Claude Sonnet 4',
+            context_window: 256000,
+            can_reason: true
+          }}
+          active={false}
+          favorite={true}
+          disabled={false}
+          favoriteDisabled={false}
+          showProvider={false}
+          select={vi.fn()}
+          toggleFavorite={vi.fn()}
+        />
+      </I18nProvider>
+    )
+    expect(enHtml).toContain('model-picker-indicator')
+    expect(enHtml).not.toContain('model-picker-indicator is-active')
+    expect(enHtml).toContain('256k')
+    expect(enHtml).toContain('Supports reasoning')
   })
 
   it('renders auto badge on default roles and auto-reset option rows in both locales', () => {
@@ -237,6 +293,7 @@ describe('OrchestratorSettings UI', () => {
     expect(ruAutoActiveHtml).toContain('По умолчанию (авто)')
     expect(ruAutoActiveHtml).toContain('Использует модель чата / основную · GPT-5.4')
     expect(ruAutoActiveHtml).toContain('aria-selected="true"')
+    expect(ruAutoActiveHtml).toContain('model-picker-indicator is-active')
 
     const enAutoInactiveHtml = renderToStaticMarkup(
       <I18nProvider language="en">

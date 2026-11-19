@@ -7,6 +7,13 @@
   box-shadow: var(--glass-rim), var(--glass-shadow-float);
   backdrop-filter: var(--glass-blur-strong);
 }
+.prime-popover.model-picker-popover {
+  background: color-mix(in srgb, var(--surface) 96%, var(--bg));
+  border-color: var(--glass-edge-strong);
+  box-shadow: var(--glass-rim), var(--glass-shadow-float);
+  overflow: hidden;
+  padding: 8px;
+}
 .composer .suggestions {
   border-radius: 14px;
   padding: 6px;
@@ -35,6 +42,32 @@
 .file-context-menu button:hover:not(:disabled),
 .select-options button:hover:not(:disabled) {
   background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+.prime-popover.model-picker-popover .model-picker-tab.active,
+.prime-popover.model-picker-popover .model-picker-tab.active:hover:not(:disabled) {
+  background: var(--raised);
+  color: var(--text);
+}
+.prime-popover.model-picker-popover .model-picker-tab.is-orchestrator-tab:not(.active),
+.prime-popover.model-picker-popover .model-picker-tab.is-orchestrator-tab:not(.active):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-bg) 52%, transparent);
+  color: var(--accent);
+}
+.prime-popover.model-picker-popover .model-picker-tab.is-orchestrator-tab.active,
+.prime-popover.model-picker-popover .model-picker-tab.is-orchestrator-tab.active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-bg) 85%, var(--surface));
+  color: var(--accent);
+}
+.prime-popover.model-picker-popover .model-picker-orch-pill,
+.prime-popover.model-picker-popover .model-picker-orch-pill:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-bg) 88%, var(--surface));
+  color: var(--accent);
+}
+.prime-popover.model-picker-popover .model-picker-select:hover:not(:disabled) {
+  background: transparent;
+}
+.prime-popover.model-picker-popover .picker-footer {
+  background: color-mix(in srgb, var(--surface) 96%, var(--bg));
 }
 
 dialog.modal {

@@ -19,7 +19,8 @@ export function Popover({
   children,
   width = 360,
   label,
-  align = 'start'
+  align = 'start',
+  className
 }: {
   anchor: RefObject<HTMLElement | null>
   close: () => void
@@ -27,6 +28,7 @@ export function Popover({
   width?: number
   label?: string
   align?: 'start' | 'end'
+  className?: string
 }) {
   const panel = useRef<HTMLDivElement>(null)
   const [placement, setPlacement] = useState<'above' | 'below'>('above')
@@ -117,7 +119,7 @@ export function Popover({
   return createPortal(
     <div
       ref={panel}
-      className="prime-popover"
+      className={className ? `prime-popover ${className}` : 'prime-popover'}
       data-placement={placement}
       aria-label={label}
       style={{ ...position, width: Math.min(width, window.innerWidth - 24) }}

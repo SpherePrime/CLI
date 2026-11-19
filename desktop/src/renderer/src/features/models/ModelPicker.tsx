@@ -1,5 +1,5 @@
 import { useRef, useState, type RefObject } from 'react'
-import { ArrowLeft, Clock3, Search, Plus, Sparkles, Star } from 'lucide-react'
+import { ArrowLeft, Clock3, GitBranch, Search, Plus, Sparkles, Star, Zap } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
@@ -103,7 +103,14 @@ export function ModelPicker({
   }
 
   return (
-    <Popover anchor={anchor} close={close} width={420} align="end" label={t('Выбрать модель')}>
+    <Popover
+      anchor={anchor}
+      close={close}
+      width={456}
+      align="end"
+      label={t('Выбрать модель')}
+      className="model-picker-popover"
+    >
       {kind === 'orchestrator' && pickingRole ? (
         <div className="model-picker-heading orchestrator-picking-heading">
           <button
@@ -124,34 +131,52 @@ export function ModelPicker({
         </div>
       ) : (
         <div className="model-picker-heading">
-          <strong>{t('Выбрать модель')}</strong>
-          <div className="segmented" role="tablist" aria-label={t('Режим выбора модели')}>
+          <div className="model-picker-top">
+            <strong>{t('Выбрать модель')}</strong>
+            {w.orchestratorEnabled && (
+              <button
+                type="button"
+                className={`model-picker-orch-pill${kind === 'orchestrator' ? ' active' : ''}`}
+                onClick={() => switchTab('orchestrator')}
+              >
+                <span className="model-picker-orch-dot" aria-hidden="true" />
+                <span>{t('Оркестратор вкл')}</span>
+              </button>
+            )}
+          </div>
+          <div className="model-picker-tabs" role="tablist" aria-label={t('Режим выбора модели')}>
             <button
               type="button"
               role="tab"
               aria-selected={kind === 'large'}
-              className={kind === 'large' ? 'active' : ''}
+              className={`model-picker-tab${kind === 'large' ? ' active' : ''}`}
               onClick={() => switchTab('large')}
             >
-              {t('Основная')}
+              <Sparkles size={14} aria-hidden="true" />
+              <span>{t('Основная')}</span>
             </button>
             <button
               type="button"
               role="tab"
               aria-selected={kind === 'small'}
-              className={kind === 'small' ? 'active' : ''}
+              className={`model-picker-tab${kind === 'small' ? ' active' : ''}`}
               onClick={() => switchTab('small')}
             >
-              {t('Быстрая')}
+              <Zap size={14} aria-hidden="true" />
+              <span>{t('Быстрая')}</span>
             </button>
             <button
               type="button"
               role="tab"
               aria-selected={kind === 'orchestrator'}
-              className={kind === 'orchestrator' ? 'active' : ''}
+              className={`model-picker-tab is-orchestrator-tab${kind === 'orchestrator' ? ' active' : ''}`}
               onClick={() => switchTab('orchestrator')}
             >
-              {t('Оркестратор')}
+              <GitBranch size={14} aria-hidden="true" />
+              <span>{t('Оркестратор')}</span>
+              {w.orchestratorEnabled && (
+                <span className="model-picker-tab-dot" aria-hidden="true" />
+              )}
             </button>
           </div>
         </div>
@@ -349,7 +374,7 @@ export function ModelPicker({
               )
             })}
           </div>
-          <button className="picker-footer" onClick={setup}>
+          <button type="button" className="picker-footer" onClick={setup}>
             <Plus size={15} />
             {t('Подключить провайдера')}
           </button>

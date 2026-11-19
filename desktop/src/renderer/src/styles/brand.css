@@ -304,6 +304,11 @@
   color: var(--text);
   font-size: 13px;
 }
+.prime-popover.model-picker-popover {
+  overflow: hidden;
+  padding: 8px;
+  background: var(--surface);
+}
 .prime-select {
   width: 100%;
   min-width: 0;
@@ -346,39 +351,52 @@
 }
 .model-picker-heading {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 9px 12px;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.model-picker-heading strong {
-  font-size: 13px;
-  white-space: nowrap;
-}
-.model-picker-heading .segmented {
-  margin: 0;
-  gap: 2px;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 4px 4px 10px;
+  gap: 10px;
   flex-shrink: 0;
 }
-.model-picker-heading .segmented button {
-  flex: 0 0 auto;
-  padding: 5px 8px;
-  font-size: 11px;
+.model-picker-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+}
+.model-picker-heading strong {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 .model-search {
-  margin: 0 5px 6px;
+  min-height: 36px;
+  margin: 0 2px 8px;
+  padding: 0 11px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
   flex-shrink: 0;
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+.model-search:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 .model-search input {
   min-width: 0;
+  font-size: 12.5px;
 }
 .model-picker-list {
-  min-height: 50px;
-  max-height: 300px;
-  overflow: auto;
-  flex: 1;
+  min-height: 0;
+  max-height: 312px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  padding: 0 2px;
 }
 .model-picker-list > button {
   display: flex;
@@ -427,15 +445,21 @@
   background: var(--bg);
 }
 .picker-footer {
-  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  background: var(--surface);
   border: 0;
   border-top: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: 9px;
   justify-content: flex-start;
-  padding: 12px 10px;
-  margin-top: 5px;
+  padding: 10px 12px;
+  margin-top: 6px;
   color: var(--secondary);
   font-size: 12px;
+  font-weight: 500;
   flex-shrink: 0;
 }
 .picker-note {

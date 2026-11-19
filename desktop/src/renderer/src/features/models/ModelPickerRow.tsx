@@ -1,7 +1,15 @@
-import { Check, Lock, Star } from 'lucide-react'
+import { Brain, Check, Lock, Star } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { ModelCapability } from './useModelCapabilities'
 import type { OrchestratorRole } from './orchestrator'
+
+function PickerIndicator({ active }: { active: boolean }) {
+  return (
+    <span className={`model-picker-indicator${active ? ' is-active' : ''}`} aria-hidden="true">
+      {active ? <Check size={12} strokeWidth={2.5} /> : <span className="model-picker-dot" />}
+    </span>
+  )
+}
 
 export function OrchestratorDefaultRow({
   role,
@@ -34,6 +42,7 @@ export function OrchestratorDefaultRow({
           if (!disabled) onSelect()
         }}
       >
+        <PickerIndicator active={active} />
         <span className="model-description">
           <span className="model-picker-title-row">
             <strong>{t('По умолчанию (авто)')}</strong>
@@ -42,7 +51,6 @@ export function OrchestratorDefaultRow({
             <small>{detail}</small>
           </span>
         </span>
-        {active && <Check size={16} aria-hidden="true" />}
       </button>
     </div>
   )
@@ -84,6 +92,7 @@ export function ModelPickerRow({
       title={isLocked ? lockTitle : undefined}
     >
       <button
+        type="button"
         className="model-picker-select"
         role="option"
         aria-selected={active}
@@ -95,6 +104,7 @@ export function ModelPickerRow({
           if (!disabled && !isLocked) select()
         }}
       >
+        <PickerIndicator active={active} />
         <span className="model-description">
           <span className="model-picker-title-row">
             <strong>{model.name || model.model_id}</strong>
@@ -105,16 +115,29 @@ export function ModelPickerRow({
               </span>
             )}
           </span>
-          <span className="model-picker-detail">
-            {showProvider && <small>{model.provider_name || model.provider_id}</small>}
-            {model.context_window ? (
-              <small>{Math.round(model.context_window / 1000)}k</small>
-            ) : null}
-          </span>
+          {(showProvider || model.context_window || model.can_reason) && (
+            <span className="model-picker-detail">
+              {showProvider && <small>{model.provider_name || model.provider_id}</small>}
+              {model.context_window ? (
+                <span className="model-context-pill">
+                  {Math.round(model.context_window / 1000)}k
+                </span>
+              ) : null}
+              {model.can_reason && (
+                <span
+                  className="model-reason-badge"
+                  title={t('Поддерживает размышления')}
+                  aria-hidden="true"
+                >
+                  <Brain size={12} />
+                </span>
+              )}
+            </span>
+          )}
         </span>
-        {active && <Check size={16} aria-hidden="true" />}
       </button>
       <button
+        type="button"
         className={`model-picker-favorite${favorite ? ' active' : ''}`}
         aria-label={favoriteLabel}
         title={favoriteLabel}
