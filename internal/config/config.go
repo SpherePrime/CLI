@@ -547,6 +547,7 @@ type Options struct {
 	// a typo leaves the default binding in place instead of silently doing
 	// nothing. Run "prime keys" to print the current names and their bindings.
 	KeyBindings map[string]string `json:"keybindings,omitempty" jsonschema:"description=Remap a key to a different action by name\\, such as {\"chat.new_session\": \"ctrl+alt+n\"}. Several keys can be listed separated by a comma. An empty value unbinds the action. Run prime keys for the full list.,example=chat.new_session:ctrl+alt+n,example=editor.send_message:enter"`
+	GameDev     bool              `json:"game_dev,omitempty" jsonschema:"description=Enable GameDev mode requiring automated playthrough test bots for game tasks,default=false"`
 }
 
 // DefaultRequestTimeout bounds each LLM API request when the user has not
@@ -1031,6 +1032,10 @@ type Config struct {
 	// SessionOrchestrator stores per-chat overrides for Orchestrator mode, keyed by session ID.
 	SessionOrchestrator map[string]bool `json:"session_orchestrator,omitempty" jsonschema:"description=Orchestrator mode override for a specific chat, keyed by session ID"`
 
+	SessionGameDev map[string]bool `json:"session_game_dev,omitempty" jsonschema:"description=GameDev mode override for a specific chat, keyed by session ID"`
+
+	gameDevOverride *bool
+
 	// The providers that are configured
 	Providers *csync.Map[string, ProviderConfig] `json:"providers,omitempty" jsonschema:"description=AI provider configurations"`
 
@@ -1094,6 +1099,11 @@ func (c *Config) cloneForWrite() *Config {
 	nc.ModelSettings = maps.Clone(c.ModelSettings)
 	nc.SessionModels = maps.Clone(c.SessionModels)
 	nc.SessionOrchestrator = maps.Clone(c.SessionOrchestrator)
+	nc.SessionGameDev = maps.Clone(c.SessionGameDev)
+	if c.gameDevOverride != nil {
+		v := *c.gameDevOverride
+		nc.gameDevOverride = &v
+	}
 	nc.Orchestrator = c.Orchestrator.clone()
 	nc.MCP = maps.Clone(c.MCP)
 	if c.Options != nil {

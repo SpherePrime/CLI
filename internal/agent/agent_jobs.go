@@ -46,6 +46,7 @@ type agentJob struct {
 	author                  string
 	reviewRound             int
 	awaitHandoff            bool
+	gameDev                 bool
 	contextFrom             []string
 	contextFiles            []string
 	contextMsgWatermark     int
@@ -246,6 +247,7 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		done:            make(chan struct{}),
 		wakeCh:          make(chan struct{}, 1),
 		reviewer:        strings.TrimSpace(params.Reviewer),
+		gameDev:         params.GameDev,
 		contextFrom:     append([]string(nil), params.ContextFrom...),
 		contextFiles:    append([]string(nil), params.ContextFiles...),
 	}
@@ -320,6 +322,7 @@ func (c *coordinator) invokeSubAgent(ctx context.Context, params subAgentParams,
 			PresencePenalty:   model.ModelCfg.PresencePenalty,
 			MaxSteps:          params.MaxSteps,
 			NonInteractive:    true,
+			GameDev:           params.GameDev,
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
 		})
 	}

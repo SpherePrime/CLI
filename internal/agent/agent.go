@@ -142,6 +142,7 @@ type SessionAgentCall struct {
 	// Orchestrator configures multi-model plan/execute/review execution for
 	// this turn when Orchestrator mode is active.
 	Orchestrator *OrchestratorCallConfig
+	GameDev      bool
 }
 
 type SessionAgent interface {
@@ -809,6 +810,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		if orch == nil {
 			systemPrompt += visualCheckBlock(!a.isSubAgent && largeModel.CatwalkCfg.SupportsImages)
 			systemPrompt += reviewPolicyBlock(!a.isSubAgent && hasAgentTool(agentTools), coordinatorReasoningMode(ctx, largeModel.ModelCfg))
+			systemPrompt += gameDevPromptBlockWithDelegation(a.agent.ID, call.GameDev, !a.isSubAgent && hasAgentTool(agentTools))
 		}
 	}
 

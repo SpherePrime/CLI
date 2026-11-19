@@ -479,6 +479,9 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 
 	cfg.Overrides().SkipPermissionRequests = args.YOLO
 	cfg.Overrides().EnabledChannels = args.Channels
+	if args.GameDev != nil {
+		cfg.OverrideGameDev(*args.GameDev)
+	}
 
 	dataDir := cfg.Config().Options.DataDirectory
 	if err := createDotPrimeDir(dataDir); err != nil {
@@ -1172,6 +1175,10 @@ func workspaceToProto(ws *Workspace) proto.Workspace {
 		Config:   cfg,
 		Env:      ws.Env,
 		Version:  version.Version,
+	}
+	if ov := ws.Cfg.Overrides().GameDev; ov != nil {
+		v := *ov
+		out.GameDev = &v
 	}
 	if ws.Skills != nil {
 		out.Skills = skillStatesToProto(ws.Skills.States())

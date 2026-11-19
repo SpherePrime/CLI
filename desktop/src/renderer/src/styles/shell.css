@@ -227,27 +227,17 @@
 }
 @container conversation (max-width: 920px) {
   .composer-options .project-picker-trigger {
-    max-width: 150px;
+    max-width: 140px;
+  }
+  .composer-options .permission-trigger > span,
+  .composer-options .permission-trigger > .menu-chevron {
+    display: none;
   }
   .composer-actions .model-control-level {
     display: none;
   }
 }
 @container conversation (max-width: 780px) {
-  .composer-options .permission-trigger > span,
-  .composer-options .permission-trigger > .menu-chevron {
-    display: none;
-  }
-}
-@container conversation (max-width: 640px) {
-  .composer-actions .model-control {
-    flex-shrink: 1;
-  }
-  .composer-options .toolbar-divider {
-    display: none;
-  }
-}
-@container conversation (max-width: 540px) {
   .composer-toolbar {
     flex-wrap: wrap;
     row-gap: 6px;
@@ -261,6 +251,14 @@
     flex: 1 1 100%;
     justify-content: flex-end;
   }
+  .composer-actions .model-control {
+    flex-shrink: 1;
+  }
+  .composer-options .toolbar-divider {
+    display: none;
+  }
+}
+@container conversation (max-width: 540px) {
   .composer-options .project-picker-trigger > span {
     display: none;
   }
@@ -270,6 +268,22 @@
   .model-control {
     max-width: 160px;
     margin-right: auto;
+  }
+}
+@container conversation (max-width: 340px) {
+  .composer-actions {
+    gap: 2px;
+  }
+  .composer-actions .context-meter {
+    padding: 0 5px 0 4px;
+    gap: 4px;
+  }
+  .composer-actions .model-control {
+    padding-inline: 5px;
+  }
+  .composer .composer-actions .send {
+    width: 30px;
+    height: 30px;
   }
 }
 @container conversation (max-width: 440px) {

@@ -179,6 +179,7 @@ type coordinator struct {
 	teamNoticeMu      sync.Mutex
 	teamNoticePending map[string]bool
 	teamReasoning     sync.Map
+	teamGameDev       sync.Map
 
 	// Skills discovery results (session-start snapshot).
 	allSkills    []*skills.Skill // Pre-filter: all discovered after dedup.
@@ -366,6 +367,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		return nil, err
 	}
 	ctx = c.withTeamReasoning(ctx, sessionID)
+	gameDevEnabled := c.resolveRunGameDev(ctx, sessionID)
 
 	// MCP servers connect asynchronously (see mcp.Initialize).
 	//
@@ -454,6 +456,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		orchCall = &OrchestratorCallConfig{
 			Enabled:            true,
 			FinalReviewEnabled: cfg.OrchestratorFinalReviewEnabled(),
+			GameDev:            gameDevEnabled,
 			Planner: OrchestratorRoleConfig{
 				Model:              plannerModel,
 				ProviderOptions:    plannerOpts,
@@ -572,6 +575,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			Accepted:          accept,
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
 			Orchestrator:      orchCall,
+			GameDev:           gameDevEnabled,
 		})
 	}
 	// continueRun replays the request with a different prompt and without the
@@ -596,6 +600,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			OnComplete:        onComplete,
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
 			Orchestrator:      orchCall,
+			GameDev:           gameDevEnabled,
 		})
 	}
 	beforeLoaded := c.skillTracker.LoadedNames()
@@ -2094,6 +2099,36 @@ type subAgentParams struct {
 	ContextNote         string
 	MaxSteps            int
 	DisableAutoContinue bool
+	GameDev             bool
+}
+
+func (c *coordinator) resolveRunGameDev(ctx context.Context, sessionID string) bool {
+	if override, ok := GameDevFromContext(ctx); ok {
+		c.teamGameDev.Store(sessionID, override)
+		return override
+	}
+	c.teamGameDev.Delete(sessionID)
+	if c.cfg != nil {
+		return c.cfg.IsGameDevEnabled(sessionID)
+	}
+	return false
+}
+
+func (c *coordinator) isGameDevEnabled(ctx context.Context, sessionID string) bool {
+	if override, ok := GameDevFromContext(ctx); ok {
+		return override
+	}
+	root := sessionID
+	if r, err := c.teamRoot(ctx, sessionID); err == nil && r != "" {
+		root = r
+	}
+	if stored, ok := c.teamGameDev.Load(root); ok {
+		return stored.(bool)
+	}
+	if c.cfg != nil {
+		return c.cfg.IsGameDevEnabled(root)
+	}
+	return false
 }
 
 // callTopK returns topK for use on fantasy.Call.TopK, suppressing it for

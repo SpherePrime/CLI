@@ -5,6 +5,7 @@ import {
   Command,
   Download,
   Focus,
+  Gamepad2,
   PanelLeftOpen,
   PanelRightOpen,
   Plus,
@@ -76,6 +77,15 @@ export function useQuickActions({
       icon: Clock3,
       disabled: !w.project,
       run: () => openTools('automations')
+    },
+    {
+      id: 'gamedev',
+      label: w.gameDevEnabled ? t('Выключить режим GameDev') : t('Включить режим GameDev'),
+      icon: Gamepad2,
+      disabled: !w.project || w.project.kind === 'designer' || w.busy,
+      run: () => {
+        void w.setGameDev(!w.gameDevEnabled).catch(w.errorHandler)
+      }
     },
     {
       id: 'new',

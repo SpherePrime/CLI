@@ -138,7 +138,13 @@ prime run --continue "Follow up on your last response"
 				slog.SetDefault(slog.New(log.New(os.Stderr)))
 			}
 
-			return runNonInteractive(ctx, c, ws, prompt, largeModel, smallModel, reasoningEffort, quiet || verbose, sessionID, useLast)
+			runCtx := ctx
+			if cmd.Flags().Changed("gamedev") {
+				gameDev, _ := cmd.Flags().GetBool("gamedev")
+				runCtx = client.WithGameDev(runCtx, gameDev)
+			}
+
+			return runNonInteractive(runCtx, c, ws, prompt, largeModel, smallModel, reasoningEffort, quiet || verbose, sessionID, useLast)
 		}
 
 		ws, cleanup, err := setupLocalWorkspace(cmd)

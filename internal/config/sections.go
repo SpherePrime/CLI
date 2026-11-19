@@ -73,7 +73,7 @@ func sectionFileFor(key string) string {
 		return pluginsSectionFile
 	case "lsp":
 		return lspSectionFile
-	case "options", "tools", "permissions", "hooks", "env":
+	case "options", "tools", "permissions", "hooks", "env", "session_game_dev":
 		return optionsSectionFile
 	default:
 		// Everything else, including the editor-facing $schema pointer, stays

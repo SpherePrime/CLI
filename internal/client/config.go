@@ -74,6 +74,18 @@ func (c *Client) UpdateOrchestratorConfig(ctx context.Context, id string, req pr
 	return nil
 }
 
+func (c *Client) UpdateGameDevConfig(ctx context.Context, id string, req proto.ConfigGameDevRequest) error {
+	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/config/gamedev", id), nil, jsonBody(req), http.Header{"Content-Type": []string{"application/json"}})
+	if err != nil {
+		return fmt.Errorf("failed to update gamedev config: %w", err)
+	}
+	defer rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to update gamedev config: status code %d", rsp.StatusCode)
+	}
+	return nil
+}
+
 // SetCompactMode sets compact mode on the server.
 func (c *Client) SetCompactMode(ctx context.Context, id string, scope config.Scope, enabled bool) error {
 	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/config/compact", id), nil, jsonBody(struct {

@@ -17,6 +17,7 @@ type Workspace struct {
 	Path     string         `json:"path"`
 	Kind     string         `json:"kind,omitempty"`
 	YOLO     bool           `json:"yolo,omitempty"`
+	GameDev  *bool          `json:"game_dev,omitempty"`
 	Debug    bool           `json:"debug,omitempty"`
 	DataDir  string         `json:"data_dir,omitempty"`
 	Version  string         `json:"version,omitempty"`
@@ -145,6 +146,7 @@ func (a AgentInfo) IsZero() bool {
 type AgentMessage struct {
 	ReasoningMode     string       `json:"reasoning_mode,omitempty"`
 	HiddenUserMessage bool         `json:"hidden_user_message,omitempty"`
+	GameDev           *bool        `json:"game_dev,omitempty"`
 	SessionID         string       `json:"session_id"`
 	RunID             string       `json:"run_id,omitempty"`
 	Prompt            string       `json:"prompt"`
@@ -389,5 +391,11 @@ type ConfigOrchestratorRequest struct {
 	Planner     *config.SelectedModel `json:"planner,omitempty"`
 	Executor    *config.SelectedModel `json:"executor,omitempty"`
 	FinalReview *bool                 `json:"final_review,omitempty"`
+}
+
+type ConfigGameDevRequest struct {
+	Scope     config.Scope `json:"scope,omitempty"`
+	SessionID string       `json:"session_id,omitempty"`
+	Enabled   bool         `json:"enabled"`
 }
 

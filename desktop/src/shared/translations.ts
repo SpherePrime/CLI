@@ -1965,4 +1965,12 @@ Object.assign(english, {
   'Закрывает проброс': 'Closes forward'
 })
 
+Object.assign(english, {
+  GameDev: 'GameDev',
+  'Включить режим GameDev': 'Enable GameDev mode',
+  'Выключить режим GameDev': 'Disable GameDev mode',
+  'Режим GameDev: добавляет автотест-ботов для прохождения игры, поиска багов и проверки баланса сложности':
+    'GameDev mode: adds automated playthrough test bots for bugs and difficulty balance'
+})
+
 

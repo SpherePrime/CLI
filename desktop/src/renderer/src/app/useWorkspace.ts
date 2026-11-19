@@ -10,7 +10,8 @@ import type {
   PrimeAILimits,
   QueuedPrompt,
   Project,
-  Session
+  Session,
+  WorkspaceConfig
 } from '../../../shared/contracts'
 import { translate } from '../i18n'
 import { useAgentContext } from '../features/context/useAgentContext'
@@ -23,6 +24,7 @@ import {
   pendingSessionsOfProject
 } from '../../../shared/pendingSession'
 import { recordRecentModel } from '../features/models/modelPreferences'
+import { resolveGameDevEnabled } from '../features/chat/gamedev'
 import { useChatPermissions } from '../features/chat/useChatPermissions'
 import { watchProjectSessions } from '../features/projects/projectSessionEvents'
 import { useMessageHistory } from '../features/chat/useMessageHistory'
@@ -104,12 +106,13 @@ export function useWorkspace() {
   const [session, setSession] = useState<Session | null>(null)
   const [draftReasoningMode, setDraftReasoningMode] = useState<ChatReasoningMode | null>(null)
   const [draftOrchestrator, setDraftOrchestrator] = useState<boolean | null>(null)
+  const [draftGameDev, setDraftGameDev] = useState<boolean | null>(null)
   const history = useMessageHistory()
   const { messagesSessionId } = history
   const [permissions, setPermissions] = useState<Json[]>([])
   const [questions, setQuestions] = useState<Json[]>([])
-  const [config, setConfig] = useState<Json>({})
-  const configRef = useRef<Json>(config)
+  const [config, setConfig] = useState<WorkspaceConfig>({})
+  const configRef = useRef<WorkspaceConfig>(config)
   configRef.current = config
   const [agent, setAgent] = useState<Json>({})
   const [queue, setQueue] = useState<QueuedPrompt[]>([])
@@ -142,6 +145,7 @@ export function useWorkspace() {
   const pendingProjects = useRef(new Map<string, string>())
   const pendingReasoning = useRef(new Map<string, ChatReasoningMode>())
   const pendingOrchestrator = useRef(new Map<string, boolean>())
+  const pendingGameDev = useRef(new Map<string, boolean>())
   const discardedSessions = useRef(new Set<string>())
   const pendingChatOpen = useRef<Promise<Project> | null>(null)
   // A refresh that lands while a chat is still materializing must not drop its
@@ -808,6 +812,7 @@ export function useWorkspace() {
   async function selectProject(selected: Project) {
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
+    setDraftGameDev(null)
     current.current = { project: selected, session: null }
     setProject(selected)
     setSession(null)
@@ -864,6 +869,7 @@ export function useWorkspace() {
     if (!project) return
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
+    setDraftGameDev(null)
     setPermissions([])
     setQuestions([])
     showSession(project, selected)
@@ -875,6 +881,7 @@ export function useWorkspace() {
     if (target.id === current.current.project?.id) return selectSession(selected)
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
+    setDraftGameDev(null)
     setPermissions([])
     setQuestions([])
     showSession(target, selected, known)
@@ -948,6 +955,8 @@ export function useWorkspace() {
         )
       const pendingOrch = pendingOrchestrator.current.get(placeholder.id)
       const effectiveDraftOrch = pendingOrch !== undefined ? pendingOrch : draftOrchestrator
+      const pendingGd = pendingGameDev.current.get(placeholder.id)
+      const effectiveDraftGameDev = pendingGd !== undefined ? pendingGd : draftGameDev
       if (effectiveDraftOrch !== null && current.current.project?.id === project.id) {
         const nextSessionOrch = {
           ...(configRef.current?.session_orchestrator || {}),
@@ -957,11 +966,28 @@ export function useWorkspace() {
           ...configRef.current,
           session_orchestrator: nextSessionOrch
         }
-        setConfig((currentConfig: Json) => ({
+        setConfig((currentConfig) => ({
           ...currentConfig,
           session_orchestrator: {
             ...(currentConfig?.session_orchestrator || {}),
             [created.id]: effectiveDraftOrch
+          }
+        }))
+      }
+      if (effectiveDraftGameDev !== null && current.current.project?.id === project.id) {
+        const nextSessionGameDev = {
+          ...(configRef.current?.session_game_dev || {}),
+          [created.id]: effectiveDraftGameDev
+        }
+        configRef.current = {
+          ...configRef.current,
+          session_game_dev: nextSessionGameDev
+        }
+        setConfig((currentConfig) => ({
+          ...currentConfig,
+          session_game_dev: {
+            ...(currentConfig?.session_game_dev || {}),
+            [created.id]: effectiveDraftGameDev
           }
         }))
       }
@@ -973,7 +999,7 @@ export function useWorkspace() {
         void window.prime
           .call(project.id, 'currentSession', { sessionId: created.id })
           .catch(errorHandler)
-        if (effectiveDraftOrch === null) {
+        if (effectiveDraftOrch === null && effectiveDraftGameDev === null) {
           void scheduleRefresh(false, false).catch(() => {})
         }
       }
@@ -988,6 +1014,16 @@ export function useWorkspace() {
             enabled: effectiveDraftOrch
           })
           .catch(errorHandler)
+      }
+      if (effectiveDraftGameDev !== null) {
+        await window.prime
+          .call(project.id, 'gamedev', {
+            sessionId: created.id,
+            enabled: effectiveDraftGameDev
+          })
+          .catch(errorHandler)
+      }
+      if (effectiveDraftOrch !== null || effectiveDraftGameDev !== null) {
         await scheduleRefresh(false, true).catch(() => {})
       }
       return created
@@ -1010,6 +1046,7 @@ export function useWorkspace() {
     showSession(project, placeholder)
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
+    setDraftGameDev(null)
     const task = materializeSession(project, placeholder)
     pendingSessions.current.set(placeholder.id, task)
     pendingProjects.current.set(placeholder.id, project.id)
@@ -1018,6 +1055,7 @@ export function useWorkspace() {
       pendingProjects.current.delete(placeholder.id)
       pendingReasoning.current.delete(placeholder.id)
       pendingOrchestrator.current.delete(placeholder.id)
+      pendingGameDev.current.delete(placeholder.id)
       discardedSessions.current.delete(placeholder.id)
     })
     return placeholder
@@ -1113,6 +1151,7 @@ export function useWorkspace() {
       }
       if (!selected) return false
       let effectiveDraftOrchestrator: boolean | null = null
+      let effectiveDraftGameDev: boolean | null = null
       if (!targetSession) {
         await savePreferences({ reasoningBySession: { [selected.id]: reasoningMode } })
         if (draftOrchestrator !== null) {
@@ -1125,7 +1164,7 @@ export function useWorkspace() {
                 [selected.id]: draftOrchestrator
               }
             }
-            setConfig((currentConfig: Json) => ({
+            setConfig((currentConfig) => ({
               ...currentConfig,
               session_orchestrator: {
                 ...(currentConfig?.session_orchestrator || {}),
@@ -1138,6 +1177,30 @@ export function useWorkspace() {
             enabled: draftOrchestrator
           })
           setDraftOrchestrator(null)
+        }
+        if (draftGameDev !== null) {
+          effectiveDraftGameDev = draftGameDev
+          if (current.current.project?.id === targetProject.id) {
+            configRef.current = {
+              ...configRef.current,
+              session_game_dev: {
+                ...(configRef.current?.session_game_dev || {}),
+                [selected.id]: draftGameDev
+              }
+            }
+            setConfig((currentConfig) => ({
+              ...currentConfig,
+              session_game_dev: {
+                ...(currentConfig?.session_game_dev || {}),
+                [selected.id]: draftGameDev
+              }
+            }))
+          }
+          await window.prime.call(targetProject.id, 'gamedev', {
+            sessionId: selected.id,
+            enabled: draftGameDev
+          })
+          setDraftGameDev(null)
         }
       }
       if (options.goal !== undefined)
@@ -1180,11 +1243,16 @@ export function useWorkspace() {
               ? Boolean(sessionOrchFlag)
               : Boolean(activeConfig?.orchestrator?.enabled)
         const orchestratorActive = targetMode === 'general' && effectiveOrchestratorEnabled
+        const effectiveGameDevEnabled =
+          effectiveDraftGameDev !== null
+            ? effectiveDraftGameDev
+            : resolveGameDevEnabled(activeConfig, selected.id)
         await window.prime.call(targetProject.id, 'send', {
           sessionId: selected.id,
           runId,
           prompt: preparedPrompt,
           ...(orchestratorActive ? {} : { reasoningMode }),
+          ...(targetProject.kind !== 'designer' ? { gameDev: effectiveGameDevEnabled } : {}),
           attachmentIds
         })
         if (usedModel?.provider && usedModel?.model) {
@@ -1202,7 +1270,7 @@ export function useWorkspace() {
         setSessions((items) => upsertSession(items, selected!))
         await selectSession(selected)
       }
-      if (effectiveDraftOrchestrator !== null) {
+      if (effectiveDraftOrchestrator !== null || effectiveDraftGameDev !== null) {
         void scheduleRefresh(false, true).catch(errorHandler)
       } else {
         void refreshLight().catch(errorHandler)
@@ -1401,6 +1469,40 @@ export function useWorkspace() {
       await scheduleRefresh(false, true)
     }
   }
+  const realSessionIdForGameDev =
+    session && !isPendingSessionId(session.id) ? session.id : undefined
+  const gameDevEnabled = resolveGameDevEnabled(config, realSessionIdForGameDev, draftGameDev)
+  async function setGameDev(enabled: boolean) {
+    const selected = current.current.session
+    const materialized = selected && !isPendingSessionId(selected.id) ? selected : null
+    if (!materialized) {
+      if (selected) pendingGameDev.current.set(selected.id, enabled)
+      setDraftGameDev(enabled)
+      return
+    }
+    const previousConfig = configRef.current
+    const optimisticConfig: WorkspaceConfig = {
+      ...previousConfig,
+      session_game_dev: {
+        ...(previousConfig?.session_game_dev || {}),
+        [materialized.id]: enabled
+      }
+    }
+    configRef.current = optimisticConfig
+    setConfig(optimisticConfig)
+    try {
+      await call('gamedev', {
+        scope: 0,
+        sessionId: materialized.id,
+        enabled
+      })
+      await scheduleRefresh(false, true)
+    } catch (error) {
+      configRef.current = previousConfig
+      setConfig(previousConfig)
+      throw error
+    }
+  }
   async function deleteSession(id: string) {
     if (isPendingSessionId(id)) {
       // The engine has not created this chat yet; the background creation
@@ -1587,6 +1689,8 @@ export function useWorkspace() {
     setReasoningMode,
     orchestratorEnabled,
     setOrchestrator,
+    gameDevEnabled,
+    setGameDev,
     projects,
     project,
     sessions,

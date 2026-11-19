@@ -91,6 +91,25 @@ export type OrchestratorConfig = {
   executor?: OrchestratorRoleConfig
   final_review?: boolean
 }
+export type WorkspaceConfig = {
+  options?: {
+    game_dev?: boolean
+    [key: string]: Json
+  }
+  orchestrator?: OrchestratorConfig
+  session_orchestrator?: Record<string, boolean>
+  session_game_dev?: Record<string, boolean>
+  [key: string]: Json
+}
+export type SendOperationArgs = {
+  sessionId: string
+  runId?: string
+  reasoningMode?: ChatReasoningMode
+  prompt: string
+  attachments?: string[]
+  attachmentIds?: string[]
+  gameDev?: boolean
+}
 export type Message = {
   id: string
   session_id: string
@@ -206,6 +225,7 @@ export type Operation =
   | 'configRemove'
   | 'model'
   | 'orchestrator'
+  | 'gamedev'
   | 'providerKey'
   | 'providerSave'
   | 'reasoning'

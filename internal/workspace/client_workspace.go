@@ -88,6 +88,7 @@ func NewClientWorkspace(c *client.Client, ws proto.Workspace) *ClientWorkspace {
 	if ws.Config != nil {
 		ws.Config.SetupAgents()
 		ws.Config.NormalizeOptions()
+		ws.Config.SetGameDevOverride(ws.GameDev)
 	}
 	states := protoToSkillStates(ws.Skills)
 	mgr := skills.NewManager(nil, nil, states, skills.WithGlobalMirror())
@@ -114,6 +115,7 @@ func (w *ClientWorkspace) refreshWorkspace() {
 	if updated.Config != nil {
 		updated.Config.SetupAgents()
 		updated.Config.NormalizeOptions()
+		updated.Config.SetGameDevOverride(updated.GameDev)
 	}
 	w.mu.Lock()
 	w.ws = *updated
@@ -560,6 +562,14 @@ func (w *ClientWorkspace) UpdatePreferredModel(scope config.Scope, modelType con
 
 func (w *ClientWorkspace) UpdateOrchestratorConfig(req proto.ConfigOrchestratorRequest) error {
 	err := w.client.UpdateOrchestratorConfig(context.Background(), w.workspaceID(), req)
+	if err == nil {
+		w.refreshWorkspace()
+	}
+	return err
+}
+
+func (w *ClientWorkspace) UpdateGameDevConfig(req proto.ConfigGameDevRequest) error {
+	err := w.client.UpdateGameDevConfig(context.Background(), w.workspaceID(), req)
 	if err == nil {
 		w.refreshWorkspace()
 	}

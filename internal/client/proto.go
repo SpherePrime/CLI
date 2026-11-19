@@ -525,14 +525,32 @@ func (c *Client) SetMainAgent(ctx context.Context, id, agentID string) error {
 // for completion detection. Pass "" when the caller does not need
 // to distinguish its own turn's terminal event from any concurrent
 // turn on the same session (e.g. interactive TUI usage).
+type gameDevContextKey struct{}
+
+func WithGameDev(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, gameDevContextKey{}, enabled)
+}
+
+func GameDevFromContext(ctx context.Context) (bool, bool) {
+	if ctx == nil {
+		return false, false
+	}
+	v, ok := ctx.Value(gameDevContextKey{}).(bool)
+	return v, ok
+}
+
 func (c *Client) SendMessage(ctx context.Context, id string, sessionID, runID, prompt string, attachments ...message.Attachment) error {
-	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/agent", id), nil, jsonBody(proto.AgentMessage{
+	msg := proto.AgentMessage{
 		HiddenUserMessage: message.HiddenUserMessage(ctx),
 		SessionID:         sessionID,
 		RunID:             runID,
 		Prompt:            prompt,
 		Attachments:       proto.AttachmentsFromMessage(attachments),
-	}), http.Header{"Content-Type": []string{"application/json"}})
+	}
+	if gameDev, ok := GameDevFromContext(ctx); ok {
+		msg.GameDev = &gameDev
+	}
+	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/agent", id), nil, jsonBody(msg), http.Header{"Content-Type": []string{"application/json"}})
 	if err != nil {
 		return fmt.Errorf("failed to send message to agent: %w", err)
 	}

@@ -40,7 +40,8 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
         run_id: args.runId,
         reasoning_mode: args.reasoningMode,
         prompt: args.prompt,
-        attachments: args.attachments || []
+        attachments: args.attachments || [],
+        ...(args.gameDev !== undefined ? { game_dev: Boolean(args.gameDev) } : {})
       }
     ],
     cancel: () => ['POST', `agent/sessions/${sid}/cancel`],
@@ -101,6 +102,15 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
         ...(args.planner ? { planner: args.planner } : {}),
         ...(args.executor ? { executor: args.executor } : {}),
         ...(args.finalReview !== undefined ? { final_review: args.finalReview } : {})
+      }
+    ],
+    gamedev: () => [
+      'POST',
+      'config/gamedev',
+      {
+        scope: args.scope ?? 0,
+        ...(args.sessionId ? { session_id: args.sessionId } : {}),
+        enabled: Boolean(args.enabled)
       }
     ],
     providerKey: () => [

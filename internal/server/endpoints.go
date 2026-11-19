@@ -566,6 +566,14 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(400, 404, 500).
 			Handle(c.handlePostWorkspaceConfigOrchestrator),
 
+		apigen.Post("/v1/workspaces/{id}/config/gamedev").
+			Summary("Update GameDev mode configuration").
+			Tags("config").
+			PathParam("id", "Workspace ID").
+			Accepts(proto.ConfigGameDevRequest{}).
+			Fails(400, 404, 500).
+			Handle(c.handlePostWorkspaceConfigGameDev),
+
 		apigen.Post("/v1/workspaces/{id}/config/compact").
 			Summary("Set compact mode").
 			Tags("config").

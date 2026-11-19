@@ -119,6 +119,7 @@ type (
 	ActionToggleTransparentBackground struct{}
 	ActionToggleMouseSupport          struct{}
 	ActionToggleSmartTools            struct{}
+	ActionToggleGameDev               struct{}
 	ActionToggleAutoContinue          struct{}
 	ActionInitializeProject           struct{}
 	ActionSwitchProject               struct {

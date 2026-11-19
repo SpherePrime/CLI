@@ -934,6 +934,26 @@ export function installPreviewHost() {
           session_orchestrator: config.session_orchestrator || {}
         }
       }
+      if (operation === 'gamedev') {
+        const sessionId = String(args?.sessionId || '')
+        const enabled = Boolean(args?.enabled)
+        if (sessionId) {
+          config.session_game_dev = {
+            ...(config.session_game_dev || {}),
+            [sessionId]: enabled
+          }
+        } else {
+          config.options = {
+            ...(config.options || {}),
+            game_dev: enabled
+          }
+        }
+        emit({ workspaceId, type: 'config_changed', payload: {} })
+        return {
+          game_dev: Boolean(config.options?.game_dev),
+          session_game_dev: config.session_game_dev || {}
+        }
+      }
       if (operation === 'providers') return providers
       if (operation === 'models') {
         const primeModels = accountState.signedIn

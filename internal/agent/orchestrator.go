@@ -56,6 +56,7 @@ type OrchestratorRoleConfig struct {
 type OrchestratorCallConfig struct {
 	Enabled            bool
 	FinalReviewEnabled bool
+	GameDev            bool
 	Planner            OrchestratorRoleConfig
 	Executor           OrchestratorRoleConfig
 }
@@ -293,6 +294,9 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 		sb.WriteString("<orchestrator_plan>\n")
 		sb.WriteString(formatOrchestratorPlanDetails(o.plan, o.targetFiles, o.verificationChecks, o.escalationTriggers))
 		sb.WriteString("\n</orchestrator_plan>")
+		if o.cfg.GameDev {
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Write and run automated playthrough test bots (headless simulation or automated player agents) that play through the game from start to finish / across key game loops to detect bugs, crashes, and softlocks and to verify difficulty balance.\n</gamedev_mode>")
+		}
 		return sb.String()
 
 	case OrchestratorPhaseReview:
@@ -311,6 +315,9 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 			sb.WriteString(formatOrchestratorPlanDetails(o.plan, o.targetFiles, o.verificationChecks, nil))
 			sb.WriteString("\n</orchestrator_plan>")
 		}
+		if o.cfg.GameDev {
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Verify that automated playthrough test bots exist for touched game flows, ran cleanly without bugs, crashes, or softlocks, and confirm difficulty and balance tuning before concluding.\n</gamedev_mode>")
+		}
 		return sb.String()
 
 	default:
@@ -328,6 +335,9 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 			sb.WriteString("\n<orchestrator_escalation>\n")
 			sb.WriteString(o.pendingPlanReason)
 			sb.WriteString("\n</orchestrator_escalation>")
+		}
+		if o.cfg.GameDev {
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Include automated playthrough test bots (playing through the game to detect bugs, crashes, and softlocks and to verify difficulty balance) in your plan and `verification_checks`.\n</gamedev_mode>")
 		}
 		return sb.String()
 	}

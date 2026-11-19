@@ -89,6 +89,17 @@ func (s *Status) renderModeStates(width int) string {
 		formats[1] = append(formats[1], orchRendered)
 		formats[2] = append(formats[2], orchRendered)
 	}
+	if s.gameDev {
+		gdStyle := lipgloss.NewStyle().Foreground(s.com.Styles.Status.SuccessIndicator.GetForeground())
+		gdLabel := s.com.L("status.mode.gamedev")
+		if gdLabel == "" {
+			gdLabel = "gamedev"
+		}
+		gdRendered := gdStyle.Render(gdLabel)
+		formats[0] = append(formats[0], gdRendered)
+		formats[1] = append(formats[1], gdRendered)
+		formats[2] = append(formats[2], gdRendered)
+	}
 	for index, values := range formats {
 		separator := " · "
 		if index > 0 {

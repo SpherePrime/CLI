@@ -251,9 +251,10 @@ func (c *coordinator) ensureWorkerJob(ctx context.Context, worker AgentWorker) (
 		updatedAt:       time.Now(),
 		hasRun:          true,
 		wake:            true,
+		gameDev:         c.isGameDevEnabled(ctx, worker.RootSessionID),
 		done:            make(chan struct{}),
 		wakeCh:          make(chan struct{}, 1),
-		params:          subAgentParams{Agent: a, SessionID: worker.ParentSessionID, Reviewer: worker.Reviewer},
+		params:          subAgentParams{Agent: a, SessionID: worker.ParentSessionID, Reviewer: worker.Reviewer, GameDev: c.isGameDevEnabled(ctx, worker.RootSessionID)},
 	}
 	if c.agentJobs == nil {
 		c.agentJobs = map[string]*agentJob{}
@@ -309,6 +310,14 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 	}
 	if prepare != nil {
 		prepare(job)
+	}
+	if override, ok := GameDevFromContext(ctx); ok {
+		job.gameDev = override
+		job.params.GameDev = override
+	} else if !handoff {
+		enabled := c.isGameDevEnabled(ctx, worker.RootSessionID)
+		job.gameDev = enabled
+		job.params.GameDev = enabled
 	}
 	job.pending = append(job.pending, fmt.Sprintf("Message from team member %s:\n%s", senderLabel, text))
 	job.updatedAt = time.Now()

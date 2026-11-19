@@ -101,6 +101,7 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 		}
 		job.mu.Lock()
 		params := job.params
+		params.GameDev = job.gameDev || c.isGameDevEnabled(ctx, job.rootSessionID)
 		if len(job.pending) > 0 {
 			pending := strings.Join(job.pending, "\n\n")
 			if !job.hasRun {

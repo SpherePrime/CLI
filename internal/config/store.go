@@ -63,6 +63,7 @@ type fileSnapshot struct {
 // the lifetime of the process (or workspace).
 type RuntimeOverrides struct {
 	SkipPermissionRequests bool
+	GameDev                *bool
 	// EnabledChannels lists the MCP servers opted in as channels for this
 	// session (via the --channels flag). A server present in MCP config only
 	// pushes channel events when it also appears here. Entries may be written
@@ -1638,6 +1639,13 @@ func (s *ConfigStore) reloadFromDiskLocked(ctx context.Context) error {
 	// mid-session. An external edit to the config still takes effect for any
 	// model type this instance never chose.
 	maps.Copy(cfg.Models, overrides.Models)
+	if overrides.GameDev != nil {
+		cfg.SetGameDevOverride(overrides.GameDev)
+		if cfg.Options == nil {
+			cfg.Options = &Options{}
+		}
+		cfg.Options.GameDev = *overrides.GameDev
+	}
 
 	// Reconfigure providers
 	env := env.New()

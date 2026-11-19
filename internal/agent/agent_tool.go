@@ -101,6 +101,7 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 				AwaitHandoff:   awaitHandoff,
 				ContextFrom:    params.ContextFrom,
 				ContextFiles:   params.ContextFiles,
+				GameDev:        c.isGameDevEnabled(ctx, sessionID),
 			}
 			if name == config.AgentCode {
 				sp.Reviewer = strings.TrimSpace(params.Reviewer)

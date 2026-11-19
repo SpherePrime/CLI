@@ -278,6 +278,9 @@ func (b *Backend) runAgent(ws *Workspace, coord agent.Coordinator, msg proto.Age
 	defer accept.Close()
 
 	ctx := agent.WithReasoningMode(ws.ctx, msg.ReasoningMode)
+	if msg.GameDev != nil {
+		ctx = agent.WithGameDev(ctx, *msg.GameDev)
+	}
 	if msg.HiddenUserMessage {
 		ctx = message.WithHiddenUserMessage(ctx)
 	}

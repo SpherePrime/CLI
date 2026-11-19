@@ -227,6 +227,24 @@ func (b *Backend) UpdateOrchestratorConfig(workspaceID string, req proto.ConfigO
 	return nil
 }
 
+func (b *Backend) UpdateGameDevConfig(workspaceID string, req proto.ConfigGameDevRequest) error {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return err
+	}
+	scope := req.Scope
+	if req.SessionID != "" {
+		scope = config.ScopeWorkspace
+	} else if scope != config.ScopeGlobal && scope != config.ScopeWorkspace {
+		scope = config.ScopeGlobal
+	}
+	if err := ws.Cfg.UpdateGameDevConfig(scope, req.SessionID, req.Enabled); err != nil {
+		return err
+	}
+	publishConfigChanged(ws)
+	return nil
+}
+
 // forgetSubAgents clears cached sub-agents on the target workspace's
 // coordinator (and on all open workspaces when a global model change occurs).
 func (b *Backend) forgetSubAgents(ws *Workspace, includeAll bool) {
