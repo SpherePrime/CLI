@@ -1,11 +1,18 @@
 import {
+  AlertTriangle,
+  ArrowRightLeft,
+  Brain,
+  ClipboardList,
+  Cpu,
   Download,
   FileCode2,
   FilePen,
   FilePlus2,
   FolderTree,
+  GitBranch,
   Globe,
   HelpCircle,
+  History,
   Image,
   Info,
   ListChecks,
@@ -14,9 +21,14 @@ import {
   Plug,
   ScrollText,
   Search,
+  Send,
+  ShieldAlert,
   Sparkles,
   Target,
   Terminal,
+  UserCog,
+  UserMinus,
+  UserPlus,
   Users,
   Waypoints,
   Wrench,
@@ -38,8 +50,49 @@ function text(value: unknown) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''
 }
 
-// Exact labels win over the regex fallbacks below, so names like
-// search_instructions do not get swallowed by the generic code search rule.
+function humanizeSegment(value: unknown) {
+  if (typeof value !== 'string') return ''
+  return value.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function humanizeToolName(raw: string) {
+  const normalized = humanizeSegment(raw)
+  if (!normalized) return ''
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+const memoryOps: Record<string, string> = {
+  read: 'чтение',
+  write: 'запись',
+  add: 'добавление',
+  append: 'дополнение',
+  replace: 'замена',
+  edit: 'правка',
+  patch: 'правка',
+  remove: 'удаление',
+  delete: 'удаление',
+  batch: 'пакетное обновление'
+}
+
+function memoryOpLabel(op: string, t: Translate) {
+  if (!op) return ''
+  const key = memoryOps[op]
+  return key ? t(key) : humanizeSegment(op)
+}
+
+function handoffDetail(input: any) {
+  if (typeof input?.plan === 'string') {
+    const firstLine = input.plan.split(/\r?\n/).find((line: string) => line.trim())
+    const summary = text(firstLine)
+    if (summary) return summary.slice(0, 120)
+  }
+  if (Array.isArray(input?.target_files)) {
+    const files = input.target_files.map((item: unknown) => fileName(item)).filter(Boolean)
+    if (files.length > 0) return files.join(', ').slice(0, 120)
+  }
+  return ''
+}
+
 const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
   agent: (input, t) => ({
     icon: Sparkles,
@@ -110,6 +163,95 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
     label: t('Переименование символа'),
     detail: text(input?.symbol)
   }),
+  lsp_replace_symbol: (input, t) => ({
+    icon: FilePen,
+    label: t('Замена символа'),
+    detail: text(input?.symbol) || fileName(input?.file_path || input?.path || input?.filePath)
+  }),
+  custom_agent_memory: (input, t) => {
+    const rawTarget = text(input?.target).toLowerCase()
+    const target =
+      rawTarget === 'user' || rawTarget === 'user_profile'
+        ? t('Профиль пользователя')
+        : rawTarget === 'memory' || rawTarget === 'global_memory'
+          ? t('Общая память')
+          : text(input?.slug || input?.agent_id)
+    const op = memoryOpLabel(text(input?.op).toLowerCase(), t)
+    return {
+      icon: Brain,
+      label: t('Память агентов'),
+      detail: [target, op].filter(Boolean).join(' · ')
+    }
+  },
+  custom_agent_list: (_input, t) => ({
+    icon: Users,
+    label: t('Список агентов'),
+    detail: ''
+  }),
+  custom_agent_list_models: (_input, t) => ({
+    icon: Cpu,
+    label: t('Модели агентов'),
+    detail: ''
+  }),
+  custom_agent_create: (input, t) => ({
+    icon: UserPlus,
+    label: t('Создание агента'),
+    detail: text(input?.name) || text(input?.slug)
+  }),
+  custom_agent_update: (input, t) => ({
+    icon: UserCog,
+    label: t('Обновление агента'),
+    detail: text(input?.name) || text(input?.slug) || text(input?.id)
+  }),
+  custom_agent_delete: (input, t) => ({
+    icon: UserMinus,
+    label: t('Удаление агента'),
+    detail: text(input?.slug) || text(input?.id)
+  }),
+  custom_agent_dispatch: (input, t) => ({
+    icon: Send,
+    label: t('Запуск агента'),
+    detail: [text(input?.slug || input?.agent_id), text(input?.prompt).slice(0, 100)]
+      .filter(Boolean)
+      .join(' · ')
+  }),
+  custom_agent_swarm: (input, t) => ({
+    icon: Network,
+    label: t('Рой агентов'),
+    detail: text(input?.goal).slice(0, 140)
+  }),
+  custom_agent_workflow: (input, t) => ({
+    icon: GitBranch,
+    label: t('Цепочка агентов'),
+    detail: [text(input?.name || input?.slug || input?.workflow_id), text(input?.op)]
+      .filter(Boolean)
+      .join(' · ')
+  }),
+  custom_agent_runs: (input, t) => ({
+    icon: History,
+    label: t('История запусков'),
+    detail: text(input?.slug || input?.agent_id)
+  }),
+  custom_agent_blackboard: (input, t) => ({
+    icon: ClipboardList,
+    label: t('Доска координации'),
+    detail: [text(input?.topic), text(input?.op)].filter(Boolean).join(' · ')
+  }),
+  handoff_to_executor: (input, t) => ({
+    icon: ArrowRightLeft,
+    label: t('Передача исполнителю'),
+    detail: handoffDetail(input)
+  }),
+  escalate_to_planner: (input, t) => ({
+    icon: AlertTriangle,
+    label: t('Возврат планировщику'),
+    detail: text(input?.reason).slice(0, 140)
+  }),
+  sudo: (input, t) => ({
+    icon: ShieldAlert,
+    label: t('Команда администратора'),
+    detail: text(input?.description) || text(input?.command)
+  }),
   list_mcp_resources: (_input, t) => ({ icon: Plug, label: t('Ресурсы MCP'), detail: '' }),
   read_mcp_resource: (input, t) => ({
     icon: Plug,
@@ -161,8 +303,16 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
 export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
   const tool = name.toLowerCase()
   const path = input?.file_path || input?.path || input?.filePath
-  if (tool === 'mcp_call' && typeof input?.tool === 'string' && input.tool.startsWith('mcp_')) {
-    return toolTitle(input.tool, input.arguments ?? {}, t)
+  if (tool === 'mcp_call') {
+    if (typeof input?.tool === 'string' && input.tool.toLowerCase().startsWith('mcp_')) {
+      return toolTitle(input.tool, input.arguments ?? {}, t)
+    }
+    const server = humanizeSegment(input?.server)
+    return {
+      icon: Plug,
+      label: server ? `MCP · ${server}` : t('Вызов MCP'),
+      detail: humanizeSegment(text(input?.tool))
+    }
   }
   if (tool.startsWith('mcp_')) {
     const bridge = /^mcp_(?:browser|project|terminal|git|ssh|windows|apps|prime-desktop(?:-[a-z]+)?(?:-\d+)?)_(.+)$/.exec(tool)
@@ -171,12 +321,17 @@ export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
         desktopToolTitle(bridge[1], input, t) ?? {
           icon: Wrench,
           label: t('Prime Desktop'),
-          detail: bridge[1].replaceAll('_', ' ')
+          detail: humanizeSegment(bridge[1])
         }
       )
     }
     const [, server = '', ...rest] = name.split('_')
-    return { icon: Plug, label: `MCP · ${server}`, detail: rest.join('_') }
+    const formattedServer = humanizeSegment(server)
+    return {
+      icon: Plug,
+      label: formattedServer ? `MCP · ${formattedServer}` : t('Вызов MCP'),
+      detail: humanizeSegment(rest.join('_'))
+    }
   }
   const desktop = desktopToolTitle(tool, input, t)
   if (desktop) return desktop
@@ -216,6 +371,6 @@ export function toolTitle(name: string, input: any, t: Translate): ToolTitle {
       detail: text(input?.description) || text(input?.prompt)
     }
   if (/todo/.test(tool)) return { icon: ListChecks, label: t('План задач'), detail: '' }
-  if (/lsp_/.test(tool)) return { icon: Wrench, label: `LSP · ${tool.slice(4)}`, detail: '' }
-  return { icon: Wrench, label: name || t('Инструмент'), detail: '' }
+  if (/lsp_/.test(tool)) return { icon: Wrench, label: `LSP · ${humanizeSegment(tool.slice(4))}`, detail: '' }
+  return { icon: Wrench, label: humanizeToolName(name) || t('Инструмент'), detail: '' }
 }

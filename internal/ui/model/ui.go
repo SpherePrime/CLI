@@ -1192,7 +1192,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if cmd := m.sendNotification(notification.Notification{
 			Title:   "Prime is waiting...",
-			Message: fmt.Sprintf("Permission required to execute \"%s\"", msg.Payload.ToolName),
+			Message: fmt.Sprintf("Permission required to execute \"%s\"", chat.FormatToolDisplayName(msg.Payload.ToolName)),
 		}); cmd != nil {
 			cmds = append(cmds, cmd)
 		}

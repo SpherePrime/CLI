@@ -29,12 +29,46 @@ func NewMCPToolMessageItem(
 // MCPToolRenderContext renders bash tool messages.
 type MCPToolRenderContext struct{}
 
-// RenderTool implements the [ToolRenderer] interface.
-func (b *MCPToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
-	cappedWidth := cappedMessageWidth(width)
+func formatMCPToolTitle(sty *styles.Styles, opts *ToolRenderOpts) string {
+	if opts.ToolCall.Name == "mcp_call" {
+		var input struct {
+			Server string `json:"server"`
+			Tool   string `json:"tool"`
+		}
+		if json.Unmarshal([]byte(opts.ToolCall.Input), &input) == nil {
+			if input.Server != "" && input.Tool != "" {
+				mcpName := sty.Tool.MCPName.Render(humanizedToolName(input.Server))
+				toolName := sty.Tool.MCPToolName.Render(humanizedToolName(input.Tool))
+				return fmt.Sprintf("%s %s %s", mcpName, sty.Tool.MCPArrow.String(), toolName)
+			}
+			if input.Tool != "" {
+				if parts := strings.SplitN(input.Tool, "_", 3); len(parts) == 3 && strings.HasPrefix(input.Tool, "mcp_") {
+					mcpName := sty.Tool.MCPName.Render(humanizedToolName(parts[1]))
+					toolName := sty.Tool.MCPToolName.Render(humanizedToolName(parts[2]))
+					return fmt.Sprintf("%s %s %s", mcpName, sty.Tool.MCPArrow.String(), toolName)
+				}
+				return fmt.Sprintf(
+					"%s %s %s",
+					sty.Tool.MCPName.Render(prettifyToolName(opts.ToolCall.Name)),
+					sty.Tool.MCPArrow.String(),
+					sty.Tool.MCPToolName.Render(humanizedToolName(input.Tool)),
+				)
+			}
+			if input.Server != "" {
+				return fmt.Sprintf(
+					"%s %s %s",
+					sty.Tool.MCPName.Render(humanizedToolName(input.Server)),
+					sty.Tool.MCPArrow.String(),
+					sty.Tool.MCPToolName.Render(prettifyToolName(opts.ToolCall.Name)),
+				)
+			}
+		}
+		return prettifyToolName(opts.ToolCall.Name)
+	}
+
 	toolNameParts := strings.SplitN(opts.ToolCall.Name, "_", 3)
 	if len(toolNameParts) != 3 {
-		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid tool name"}, cappedWidth)
+		return prettifyToolName(opts.ToolCall.Name)
 	}
 	mcpName := humanizedToolName(toolNameParts[1])
 	toolName := humanizedToolName(toolNameParts[2])
@@ -42,7 +76,12 @@ func (b *MCPToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *T
 	mcpName = sty.Tool.MCPName.Render(mcpName)
 	toolName = sty.Tool.MCPToolName.Render(toolName)
 
-	name := fmt.Sprintf("%s %s %s", mcpName, sty.Tool.MCPArrow.String(), toolName)
+	return fmt.Sprintf("%s %s %s", mcpName, sty.Tool.MCPArrow.String(), toolName)
+}
+
+func (b *MCPToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
+	cappedWidth := cappedMessageWidth(width)
+	name := formatMCPToolTitle(sty, opts)
 
 	if opts.IsPending() {
 		return pendingTool(sty, name, opts.Anim, opts.Compact)

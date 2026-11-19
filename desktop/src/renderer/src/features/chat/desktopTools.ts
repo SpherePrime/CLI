@@ -49,6 +49,30 @@ const actions: Record<string, string> = {
   browser_back: 'Назад',
   browser_evaluate: 'Выполняет скрипт',
   browser_health: 'Проверяет отклик страницы',
+  browser_resize: 'Меняет ширину окна',
+  app_launch: 'Запускает приложение',
+  app_targets: 'Список окон приложений',
+  app_attach: 'Подключается к окну',
+  app_close: 'Закрывает приложение',
+  app_output: 'Читает вывод приложения',
+  app_snapshot: 'Снимок интерфейса',
+  app_find: 'Ищет элемент',
+  app_wait: 'Ожидает элемент',
+  app_audit: 'Аудит макета',
+  app_check: 'Записывает проверку',
+  app_click: 'Нажимает на элемент',
+  app_type: 'Вводит текст',
+  app_set_value: 'Устанавливает значение',
+  app_toggle: 'Переключает элемент',
+  app_select: 'Выбирает элемент',
+  app_focus: 'Фокус на элементе',
+  app_scroll: 'Прокручивает область',
+  app_expand: 'Раскрывает элемент',
+  app_press_key: 'Нажимает клавишу',
+  app_screenshot: 'Снимок элемента',
+  app_test_explore: 'Авто-обход интерфейса',
+  app_test_list: 'Список сценариев',
+  app_test_run: 'Запускает сценарий',
   terminal_list: 'Список терминалов',
   terminal_read: 'Читает вывод',
   terminal_write: 'Вводит команду',
@@ -87,6 +111,8 @@ const actions: Record<string, string> = {
   github_pull: 'Просматривает pull request',
   github_diff: 'Читает изменения',
   github_failed_logs: 'Читает логи ошибок',
+  github_create_pull: 'Создаёт pull request',
+  github_comment: 'Комментирует pull request',
   ssh_profiles: 'Список серверов',
   ssh_connect: 'Подключается к серверу',
   ssh_disconnect: 'Отключается от сервера',
@@ -99,6 +125,11 @@ const actions: Record<string, string> = {
   ssh_glob: 'Ищет файлы',
   ssh_download: 'Скачивает файл на сервер',
   ssh_upload_file: 'Загружает файл на сервер',
+  ssh_create_entry: 'Создаёт файл или папку',
+  ssh_download_file: 'Скачивает файл',
+  ssh_forward_port: 'Пробрасывает порт',
+  ssh_forwards: 'Активные пробросы',
+  ssh_close_forward: 'Закрывает проброс',
   window_list: 'Список окон',
   window_request_access: 'Запрашивает доступ к окну',
   window_view: 'Смотрит окно',
@@ -140,7 +171,7 @@ export function desktopToolTitle(tool: string, input: any, t: Translate) {
   const actionKey = screenshotAction(tool, input)
   const action = actions[actionKey]
     ? t(actions[actionKey])
-    : tool.slice(group.prefix.length).replaceAll('_', ' ')
+    : tool.slice(group.prefix.length).replace(/[_-]+/g, ' ').trim()
   const value = detailKeys
     .map((key) => input?.[key])
     .find((item) => typeof item === 'string' && item.trim())

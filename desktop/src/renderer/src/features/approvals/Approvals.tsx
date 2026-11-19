@@ -2,6 +2,7 @@ import { Select } from '../../components/Select'
 import { useI18n } from '../../i18n'
 import { useCallback, useState } from 'react'
 import { ShieldQuestion, CircleHelp, Check, X } from 'lucide-react'
+import { toolTitle } from '../chat/toolTitle'
 import type { Workspace } from '../../app/useWorkspace'
 import type { AgentWorker } from '../../../../shared/agents'
 import { useAgentPolling } from '../agents/useAgentPolling'
@@ -84,6 +85,7 @@ function Permission({
   const { t } = useI18n()
   const [pending, setPending] = useState(false)
   const [done, setDone] = useState(false)
+  const title = toolTitle(String(permission.tool_name || ''), permission.params ?? {}, t)
   async function respond(action: string) {
     setPending(true)
     try {
@@ -102,11 +104,11 @@ function Permission({
         <ShieldQuestion size={18} /> {t('Разрешить действие?')}
       </h3>
       {workerName && <p className="muted">{t('Агент: {name}', { name: workerName })}</p>}
-      <p>{permission.description || permission.tool_name}</p>
+      <p>{permission.description || title.label}</p>
       {permission.path && <code>{permission.path}</code>}
       <details>
         <summary>
-          {t('Параметры ·')} {permission.tool_name}
+          {t('Параметры ·')} {title.label}
         </summary>
         <pre>{JSON.stringify(permission.params, null, 2)}</pre>
       </details>

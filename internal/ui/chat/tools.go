@@ -286,6 +286,8 @@ func NewToolMessageItem(
 	default:
 		if IsDockerMCPTool(toolCall.Name) {
 			item = NewDockerMCPToolMessageItem(sty, toolCall, result, canceled)
+		} else if toolCall.Name == "mcp_call" || toolCall.Name == tools.MCPJobToolName {
+			item = NewGenericToolMessageItem(sty, toolCall, result, canceled)
 		} else if strings.HasPrefix(toolCall.Name, "mcp_") {
 			item = NewMCPToolMessageItem(sty, toolCall, result, canceled)
 		} else {
@@ -1693,11 +1695,102 @@ func (t *baseToolMessageItem) formatAgentResultForCopy() string {
 	return result.String()
 }
 
-// prettifyToolName returns a human-readable name for tool names.
+func FormatToolDisplayName(name string) string {
+	if name != "mcp_call" && strings.HasPrefix(name, "mcp_") {
+		parts := strings.SplitN(name, "_", 3)
+		if len(parts) == 3 {
+			mcpName := humanizedToolName(parts[1])
+			toolName := humanizedToolName(parts[2])
+			return fmt.Sprintf("%s %s %s", mcpName, styles.ArrowRightIcon, toolName)
+		}
+	}
+	return prettifyToolName(name)
+}
+
 func prettifyToolName(name string) string {
 	switch name {
 	case agent.AgentToolName:
 		return "Agent"
+	case agent.CustomAgentMemoryToolName:
+		return "Agent Memory"
+	case agent.CustomAgentListToolName:
+		return "List Agents"
+	case agent.CustomAgentListModelsToolName:
+		return "Agent Models"
+	case agent.CustomAgentCreateToolName:
+		return "Create Agent"
+	case agent.CustomAgentUpdateToolName:
+		return "Update Agent"
+	case agent.CustomAgentDeleteToolName:
+		return "Delete Agent"
+	case agent.CustomAgentDispatchToolName:
+		return "Dispatch Agent"
+	case agent.CustomAgentSwarmToolName:
+		return "Agent Swarm"
+	case agent.CustomAgentWorkflowToolName:
+		return "Agent Workflow"
+	case agent.CustomAgentRunsToolName:
+		return "Agent Runs"
+	case agent.CustomAgentBlackboardToolName:
+		return "Agent Blackboard"
+	case agent.HandoffToExecutorToolName:
+		return "Handoff to Executor"
+	case agent.EscalateToPlannerToolName:
+		return "Escalate to Planner"
+	case agent.AgentJobsToolName:
+		return "Agent Jobs"
+	case agent.AgentMessageToolName:
+		return "Agent Message"
+	case tools.GoalCompleteToolName:
+		return "Goal Complete"
+	case tools.PrimeInfoToolName:
+		return "Prime Info"
+	case tools.PrimeLogsToolName:
+		return "Prime Logs"
+	case tools.MCPJobToolName:
+		return "MCP Job"
+	case "mcp_call":
+		return "MCP Call"
+	case tools.ImageGenToolName:
+		return "Generate Image"
+	case tools.ListMCPResourcesToolName:
+		return "MCP Resources"
+	case tools.ReadMCPResourceToolName:
+		return "Read MCP Resource"
+	case tools.SearchInstructionsToolName:
+		return "Search Instructions"
+	case tools.ReadInstructionToolName:
+		return "Read Instruction"
+	case "search_skills":
+		return "Search Skills"
+	case "search_mcp":
+		return "Search MCP"
+	case "search_tools":
+		return "Search Tools"
+	case "read_tool_documentation":
+		return "Tool Documentation"
+	case "read_tool_result":
+		return "Full Tool Result"
+	case tools.SudoToolName:
+		return "Sudo"
+	case tools.QuestionToolName:
+		return "Question"
+	case tools.DiagnosticsToolName:
+		return "Diagnostics"
+	case tools.ReferencesToolName:
+		return "Find References"
+	case tools.DefinitionToolName:
+		return "Find Definition"
+	case tools.RenameToolName:
+		return "Rename Symbol"
+	case tools.ReplaceSymbolToolName:
+		return "Replace Symbol"
+	case tools.CallHierarchyToolName:
+		return "Call Hierarchy"
+	case tools.SymbolsToolName:
+		return "List Symbols"
+	case tools.LSPRestartToolName:
+		return "Restart LSP"
 	case tools.BashToolName:
 		return "Bash"
 	case tools.JobOutputToolName:

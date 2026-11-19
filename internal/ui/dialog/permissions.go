@@ -13,9 +13,8 @@ import (
 	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/fsext"
 	"github.com/SpherePrime/CLI/internal/permission"
-	"github.com/SpherePrime/CLI/internal/stringext"
+	"github.com/SpherePrime/CLI/internal/ui/chat"
 	"github.com/SpherePrime/CLI/internal/ui/common"
-	"github.com/SpherePrime/CLI/internal/ui/styles"
 	uv "github.com/SpherePrime/CLI/vendordeps/dwertyfa288/ultraviolet"
 )
 
@@ -545,26 +544,7 @@ func (p *Permissions) renderKeyValue(key, value string, width int) string {
 }
 
 func (p *Permissions) renderToolName(width int) string {
-	toolName := p.permission.ToolName
-
-	// Check if this is an MCP tool (format: mcp_<mcpname>_<toolname>).
-	if strings.HasPrefix(toolName, "mcp_") {
-		parts := strings.SplitN(toolName, "_", 3)
-		if len(parts) == 3 {
-			mcpName := prettyName(parts[1])
-			toolPart := prettyName(parts[2])
-			toolName = fmt.Sprintf("%s %s %s", mcpName, styles.ArrowRightIcon, toolPart)
-		}
-	}
-
-	return p.renderKeyValue("Tool", toolName, width)
-}
-
-// prettyName converts snake_case or kebab-case to Title Case.
-func prettyName(name string) string {
-	name = strings.ReplaceAll(name, "_", " ")
-	name = strings.ReplaceAll(name, "-", " ")
-	return stringext.Capitalize(name)
+	return p.renderKeyValue("Tool", chat.FormatToolDisplayName(p.permission.ToolName), width)
 }
 
 func (p *Permissions) renderContent(width int) string {
