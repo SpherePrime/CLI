@@ -445,6 +445,10 @@ func (o *orchestratorRuntime) sanitizeMessages(messages []fantasy.Message, histo
 	allProducers = append(allProducers, historyProducers...)
 	allProducers = append(allProducers, stepProducers...)
 
+	return sanitizeMessagesForModel(messages, allProducers, activeModel)
+}
+
+func sanitizeMessagesForModel(messages []fantasy.Message, producers []modelIdentity, activeModel Model) []fantasy.Message {
 	activeID := modelIdentityOf(activeModel)
 	out := make([]fantasy.Message, 0, len(messages))
 	assistantIdx := 0
@@ -455,9 +459,9 @@ func (o *orchestratorRuntime) sanitizeMessages(messages []fantasy.Message, histo
 			continue
 		}
 		var producer modelIdentity
-		hasProducer := assistantIdx < len(allProducers)
+		hasProducer := assistantIdx < len(producers)
 		if hasProducer {
-			producer = allProducers[assistantIdx]
+			producer = producers[assistantIdx]
 		}
 		assistantIdx++
 
@@ -472,6 +476,31 @@ func (o *orchestratorRuntime) sanitizeMessages(messages []fantasy.Message, histo
 		}
 	}
 	return out
+}
+
+type summarizeModelContextKey struct{}
+
+type summarizeModelOverride struct {
+	model              Model
+	systemPromptPrefix string
+}
+
+func withSummarizeModel(ctx context.Context, model Model, systemPromptPrefix string) context.Context {
+	return context.WithValue(ctx, summarizeModelContextKey{}, summarizeModelOverride{
+		model:              model,
+		systemPromptPrefix: systemPromptPrefix,
+	})
+}
+
+func summarizeModelFromContext(ctx context.Context) (Model, string, bool) {
+	if ctx == nil {
+		return Model{}, "", false
+	}
+	override, ok := ctx.Value(summarizeModelContextKey{}).(summarizeModelOverride)
+	if !ok || override.model.Model == nil {
+		return Model{}, "", false
+	}
+	return override.model, override.systemPromptPrefix, true
 }
 
 func stripCrossModelAssistantParts(msg fantasy.Message) (fantasy.Message, bool) {

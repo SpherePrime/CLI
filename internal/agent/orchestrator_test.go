@@ -1517,3 +1517,266 @@ func TestOrchestrator_PerRoleSamplingIsolation(t *testing.T) {
 		require.InDelta(t, 0.2, *recorded.Orchestrator.Executor.Temperature, 0.0001)
 	})
 }
+
+type summarizeCapturingAgent struct {
+	*mockSessionAgent
+	summarizeFn func(context.Context, string, fantasy.ProviderOptions, func(context.Context, *fantasy.ProviderError) error) error
+}
+
+func (a *summarizeCapturingAgent) Summarize(ctx context.Context, sessionID string, opts fantasy.ProviderOptions, onAuthRefresh func(context.Context, *fantasy.ProviderError) error) error {
+	return a.summarizeFn(ctx, sessionID, opts, onAuthRefresh)
+}
+
+func TestOrchestrator_SummarizeUsesPlannerAndSanitizesCrossModelHistory(t *testing.T) {
+	t.Run("sessionAgent.Summarize uses override model and strips cross-model reasoning", func(t *testing.T) {
+		env := testEnv(t)
+
+		planner := &scriptedOrchestratorModel{
+			provider: "anthropic",
+			modelID:  "planner-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+					return textStopParts("Compacted summary.", fantasy.Usage{InputTokens: 200, OutputTokens: 50, TotalTokens: 250}), nil
+				},
+			},
+		}
+		executor := &scriptedOrchestratorModel{
+			provider: "openai",
+			modelID:  "executor-model",
+		}
+
+		sa := testSessionAgent(env, executor, executor, "base system")
+		sess, err := env.sessions.Create(t.Context(), "orch-summarize")
+		require.NoError(t, err)
+
+		_, err = env.messages.Create(t.Context(), sess.ID, message.CreateMessageParams{
+			Role:  message.User,
+			Parts: []message.ContentPart{message.TextContent{Text: "Build feature"}},
+		})
+		require.NoError(t, err)
+
+		_, err = env.messages.Create(t.Context(), sess.ID, message.CreateMessageParams{
+			Role:     message.Assistant,
+			Provider: "openai",
+			Model:    "executor-model",
+			Parts: []message.ContentPart{
+				message.ReasoningContent{
+					Thinking:         "executor secret reasoning",
+					ThoughtSignature: "exec-sig",
+					ResponsesData:    &openai.ResponsesReasoningMetadata{ItemID: "rs_exec"},
+				},
+				message.TextContent{Text: "Executor implemented part A."},
+			},
+		})
+		require.NoError(t, err)
+
+		_, err = env.messages.Create(t.Context(), sess.ID, message.CreateMessageParams{
+			Role:     message.Assistant,
+			Provider: "anthropic",
+			Model:    "planner-model",
+			Parts: []message.ContentPart{
+				message.ReasoningContent{
+					Thinking:  "planner own reasoning",
+					Signature: "planner-sig",
+				},
+				message.TextContent{Text: "Planner reviewed part A."},
+			},
+		})
+		require.NoError(t, err)
+
+		plannerModel := Model{
+			Model:      planner,
+			CatwalkCfg: defaultTestCatwalkModel("planner-model"),
+			ModelCfg: config.SelectedModel{
+				Provider: "anthropic",
+				Model:    "planner-model",
+			},
+		}
+
+		ctx := withSummarizeModel(t.Context(), plannerModel, "planner-system-prefix")
+		require.NoError(t, sa.Summarize(ctx, sess.ID, nil, nil))
+		require.Equal(t, 1, planner.callCount())
+		require.Equal(t, 0, executor.callCount())
+
+		recorded := planner.callAt(0)
+		require.Contains(t, systemPromptTextInCall(recorded), "planner-system-prefix")
+
+		var assistantTexts []string
+		var reasoningTexts []string
+		for _, msg := range recorded.Prompt {
+			if msg.Role != fantasy.MessageRoleAssistant {
+				continue
+			}
+			for _, part := range msg.Content {
+				switch p := part.(type) {
+				case fantasy.ReasoningPart:
+					reasoningTexts = append(reasoningTexts, p.Text)
+				case fantasy.TextPart:
+					assistantTexts = append(assistantTexts, p.Text)
+					if p.Text == "Executor implemented part A." {
+						require.Nil(t, p.ProviderOptions)
+					}
+				}
+			}
+		}
+		require.Equal(t, []string{"Executor implemented part A.", "Planner reviewed part A."}, assistantTexts)
+		require.Equal(t, []string{"planner own reasoning"}, reasoningTexts)
+
+		msgs, err := env.messages.List(t.Context(), sess.ID)
+		require.NoError(t, err)
+		last := msgs[len(msgs)-1]
+		require.True(t, last.IsSummaryMessage)
+		require.Equal(t, "planner-model", last.Model)
+		require.Equal(t, "anthropic", last.Provider)
+	})
+
+	t.Run("coordinator.Summarize routes through Planner model with role reasoning", func(t *testing.T) {
+		env := testEnv(t)
+		cfg, err := config.Init(env.workingDir, "", false)
+		require.NoError(t, err)
+		cfg.Config().Options.DisableDefaultProviders = true
+		cfg.Config().Providers.Reset(map[string]config.ProviderConfig{})
+		cfg.Config().Providers.Set("mock-p", config.ProviderConfig{
+			ID:                 "mock-p",
+			Name:               "Mock Provider",
+			Type:               openaicompat.Name,
+			BaseURL:            "http://127.0.0.1:0/v1",
+			APIKey:             "test",
+			SystemPromptPrefix: "planner-prefix",
+			Models: []catwalk.Model{
+				{
+					ID:               "planner-m",
+					Name:             "Planner Model",
+					DefaultMaxTokens: 4096,
+					CanReason:        true,
+					ReasoningLevels:  []string{"low", "medium", "high"},
+				},
+				{
+					ID:               "executor-m",
+					Name:             "Executor Model",
+					DefaultMaxTokens: 4096,
+				},
+			},
+		})
+		cfg.OverridePreferredModel(config.SelectedModelTypeLarge, config.SelectedModel{Provider: "mock-p", Model: "executor-m"})
+		cfg.OverridePreferredModel(config.SelectedModelTypeSmall, config.SelectedModel{Provider: "mock-p", Model: "executor-m"})
+		cfg.SetupAgents()
+		cfg.Config().Orchestrator = config.OrchestratorConfig{
+			Enabled:  true,
+			Planner:  &config.SelectedModel{Provider: "mock-p", Model: "planner-m"},
+			Executor: &config.SelectedModel{Provider: "mock-p", Model: "executor-m"},
+		}
+
+		coord := &coordinator{
+			cfg:          cfg,
+			sessions:     env.sessions,
+			messages:     env.messages,
+			permissions:  env.permissions,
+			history:      env.history,
+			filetracker:  *env.filetracker,
+			skillTracker: skills.NewTracker(nil),
+			agents:       make(map[string]SessionAgent),
+			subAgents:    make(map[string]SessionAgent),
+			agentJobs:    make(map[string]*agentJob),
+		}
+
+		var gotCtx context.Context
+		var gotOpts fantasy.ProviderOptions
+		mockGen := &summarizeCapturingAgent{
+			mockSessionAgent: newMockAgent("mock-p", 4096, nil),
+			summarizeFn: func(ctx context.Context, _ string, opts fantasy.ProviderOptions, _ func(context.Context, *fantasy.ProviderError) error) error {
+				gotCtx = ctx
+				gotOpts = opts
+				return nil
+			},
+		}
+		coord.agents[config.AgentGeneral] = mockGen
+		coord.mainAgent = mockGen
+		coord.mainAgentName = config.AgentGeneral
+
+		sess, err := env.sessions.Create(t.Context(), "coord-summarize")
+		require.NoError(t, err)
+
+		require.NoError(t, coord.Summarize(t.Context(), sess.ID))
+		overrideModel, overridePrefix, ok := summarizeModelFromContext(gotCtx)
+		require.True(t, ok)
+		require.Equal(t, "planner-m", overrideModel.ModelCfg.Model)
+		require.Equal(t, config.ReasoningModeHigh, overrideModel.ModelCfg.ReasoningMode)
+		require.Equal(t, "planner-prefix", overridePrefix)
+
+		pOpts, ok := gotOpts[openaicompat.Name].(*openaicompat.ProviderOptions)
+		require.True(t, ok)
+		require.NotNil(t, pOpts.ReasoningEffort)
+		require.Equal(t, "high", string(*pOpts.ReasoningEffort))
+	})
+}
+
+func TestOrchestrator_StopWhenChecksNextRoleWindowAndCompactsWithPlanner(t *testing.T) {
+	env := testEnv(t)
+
+	planner := &scriptedOrchestratorModel{
+		provider: "anthropic",
+		modelID:  "planner-200k",
+		steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+			func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+				payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Apply edit"})
+				return toolCallParts("h1", HandoffToExecutorToolName, string(payload), fantasy.Usage{
+					InputTokens:  75_000,
+					OutputTokens: 5_000,
+					TotalTokens:  80_000,
+				}), nil
+			},
+			func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+				require.Contains(t, systemPromptTextInCall(call), "summarizing")
+				return textStopParts("Compacted context.", fantasy.Usage{InputTokens: 500, OutputTokens: 100, TotalTokens: 600}), nil
+			},
+			func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+				payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Apply edit after compaction"})
+				return toolCallParts("h2", HandoffToExecutorToolName, string(payload), fantasy.Usage{
+					InputTokens:  1_000,
+					OutputTokens: 100,
+					TotalTokens:  1_100,
+				}), nil
+			},
+		},
+	}
+
+	executor := &scriptedOrchestratorModel{
+		provider: "openai",
+		modelID:  "executor-100k",
+		steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+			func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+				rawPrompt, _ := json.Marshal(call.Prompt)
+				require.Contains(t, string(rawPrompt), "Compacted context.")
+				return textStopParts("Executed on compacted context.", fantasy.Usage{InputTokens: 1_200, OutputTokens: 100, TotalTokens: 1_300}), nil
+			},
+		},
+	}
+
+	viewTool := fantasy.NewAgentTool("view", "view", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		return fantasy.NewTextResponse("ok"), nil
+	})
+	sa := testSessionAgent(env, executor, executor, "base system", viewTool)
+	sess, err := env.sessions.Create(t.Context(), "next-role-window")
+	require.NoError(t, err)
+
+	plannerCatwalk := defaultTestCatwalkModel("planner-200k")
+	plannerCatwalk.ContextWindow = 200_000
+	executorCatwalk := defaultTestCatwalkModel("executor-100k")
+	executorCatwalk.ContextWindow = 100_000
+
+	orch := makeOrchestratorModelsConfig(planner, executor, plannerCatwalk, executorCatwalk, false)
+	res, err := sa.Run(t.Context(), SessionAgentCall{
+		SessionID:    sess.ID,
+		Prompt:       "Run edit",
+		Orchestrator: orch,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Executed on compacted context.", res.Response.Content.Text())
+	require.Equal(t, 3, planner.callCount())
+	require.Equal(t, 1, executor.callCount())
+
+	updatedSess, err := env.sessions.Get(t.Context(), sess.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, updatedSess.SummaryMessageID)
+}

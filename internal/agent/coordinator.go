@@ -602,7 +602,15 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	result, originalErr := run()
 	recoverFromOverflow := func(stepPrompt string) {
 		if isContextOverflowError(originalErr) && !c.cfg.Config().Options.DisableAutoSummarize {
-			if summarizeErr := agent.Summarize(ctx, sessionID, mergedOptions, c.makeAuthRefreshCallback(providerCfg)); summarizeErr != nil {
+			summarizeCtx := ctx
+			summarizeOpts := mergedOptions
+			summarizeAuthRefresh := c.makeAuthRefreshCallback(providerCfg)
+			if orchCall != nil {
+				summarizeCtx = withSummarizeModel(ctx, orchCall.Planner.Model, orchCall.Planner.SystemPromptPrefix)
+				summarizeOpts = orchCall.Planner.ProviderOptions
+				summarizeAuthRefresh = orchCall.Planner.OnAuthRefresh
+			}
+			if summarizeErr := agent.Summarize(summarizeCtx, sessionID, summarizeOpts, summarizeAuthRefresh); summarizeErr != nil {
 				slog.Warn("Failed to summarize after context overflow", "error", summarizeErr, "session_id", sessionID)
 			} else {
 				result, originalErr = continueRun(contextOverflowContinuation(stepPrompt))
@@ -1892,8 +1900,29 @@ func (c *coordinator) QueuedPromptsList(sessionID string) []string {
 }
 
 func (c *coordinator) Summarize(ctx context.Context, sessionID string) error {
-	agent := c.currentAgent()
-	providerCfg, ok := c.cfg.Config().Providers.Get(agent.Model().ModelCfg.Provider)
+	agent, agentName := c.activeAgent()
+	cfg := c.cfg.Config()
+	if agentName == config.AgentGeneral && cfg.IsOrchestratorEnabled(sessionID) {
+		plannerSel := cfg.ResolveOrchestratorPlanner(sessionID)
+		if catModel := cfg.GetModel(plannerSel.Provider, plannerSel.Model); catModel != nil && catModel.CanReason {
+			if !plannerSel.HasExplicitReasoningMode() || plannerSel.EffectiveReasoningMode() == config.ReasoningModeOff {
+				plannerSel.ReasoningMode = config.ResolveOrchestratorRoleReasoning("planner", plannerSel, *catModel)
+				plannerSel.ReasoningEffort = ""
+			}
+		}
+		plannerModel, plannerProviderCfg, err := c.buildSelectedModel(ctx, plannerSel, false)
+		if err != nil {
+			return err
+		}
+		plannerModel = resolveOrchestratorRoleModel("planner", plannerModel)
+		if err := c.refreshTokenIfExpired(ctx, plannerProviderCfg); err != nil {
+			slog.Error("Failed to refresh OAuth2 token before orchestrator summarize. Proceeding with existing token.", "error", err)
+		}
+		summarizeCtx := withSummarizeModel(ctx, plannerModel, plannerProviderCfg.SystemPromptPrefix)
+		return agent.Summarize(summarizeCtx, sessionID, getProviderOptions(plannerModel, plannerProviderCfg), c.makeAuthRefreshCallback(plannerProviderCfg))
+	}
+
+	providerCfg, ok := cfg.Providers.Get(agent.Model().ModelCfg.Provider)
 	if !ok {
 		return errModelProviderNotConfigured
 	}
@@ -1902,8 +1931,6 @@ func (c *coordinator) Summarize(ctx context.Context, sessionID string) error {
 		slog.Error("Failed to refresh OAuth2 token before summarize. Proceeding with existing token.", "error", err)
 	}
 
-	// Auth failures during summarize flow through fantasy's OnAuthRefresh,
-	// the same path used by regular turns.
 	return agent.Summarize(ctx, sessionID, getProviderOptions(agent.Model(), providerCfg), c.makeAuthRefreshCallback(providerCfg))
 }
 

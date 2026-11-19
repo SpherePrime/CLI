@@ -954,31 +954,37 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	}
 	stopWhen := []fantasy.StopCondition{
 		func(_ []fantasy.StepResult) bool {
+			if a.disableAutoSummarize {
+				return false
+			}
 			sessionLock.Lock()
 			activeModel := currentStepModel
 			sessionLock.Unlock()
-			cw := int64(activeModel.CatwalkCfg.ContextWindow)
-			// An unknown window means skip auto-summarize entirely, so
-			// custom and local models that never declared one are not
-			// truncated.
-			if cw <= 0 || a.disableAutoSummarize {
-				return false
-			}
-			// The per-model override recorded in the model settings
-			// dialog wins over the global default.
-			percent := a.autoSummarizePercent
-			if activeModel.ModelCfg.AutoSummarizePercent > 0 {
-				percent = activeModel.ModelCfg.AutoSummarizePercent
-			}
 			tokens := currentSession.ContextTokens
 			if tokens <= 0 {
 				tokens = currentSession.CompletionTokens + currentSession.PromptTokens
 			}
-			// Compact once the measured request context reaches the configured
-			// threshold, leaving (100 - percent) of the window free.
-			if shouldAutoSummarize(cw, percent, tokens) {
+			shouldTriggerForModel := func(m Model) bool {
+				cw := int64(m.CatwalkCfg.ContextWindow)
+				if cw <= 0 {
+					return false
+				}
+				percent := a.autoSummarizePercent
+				if m.ModelCfg.AutoSummarizePercent > 0 {
+					percent = m.ModelCfg.AutoSummarizePercent
+				}
+				return shouldAutoSummarize(cw, percent, tokens)
+			}
+			if shouldTriggerForModel(activeModel) {
 				shouldSummarize = true
 				return true
+			}
+			if orch != nil {
+				nextModel := orch.currentRoleConfig().Model
+				if shouldTriggerForModel(nextModel) {
+					shouldSummarize = true
+					return true
+				}
 			}
 			return false
 		},
@@ -1509,7 +1515,15 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 
 	if shouldSummarize {
 		a.activeRequests.Del(call.SessionID)
-		if summarizeErr := a.Summarize(genCtx, call.SessionID, call.ProviderOptions, call.OnAuthRefresh); summarizeErr != nil {
+		summarizeCtx := genCtx
+		summarizeOpts := call.ProviderOptions
+		summarizeAuthRefresh := call.OnAuthRefresh
+		if orch != nil {
+			summarizeCtx = withSummarizeModel(genCtx, orch.cfg.Planner.Model, orch.cfg.Planner.SystemPromptPrefix)
+			summarizeOpts = orch.cfg.Planner.ProviderOptions
+			summarizeAuthRefresh = orch.cfg.Planner.OnAuthRefresh
+		}
+		if summarizeErr := a.Summarize(summarizeCtx, call.SessionID, summarizeOpts, summarizeAuthRefresh); summarizeErr != nil {
 			return nil, summarizeErr
 		}
 		// If the agent wasn't done...
@@ -1663,9 +1677,13 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		return ErrSessionBusy
 	}
 
-	// Copy mutable fields under lock to avoid races with SetModels.
-	largeModel := a.largeModel.Get()
+	summaryModel := a.largeModel.Get()
 	systemPromptPrefix := a.systemPromptPrefix.Get()
+	_, _, hasSummaryOverride := summarizeModelFromContext(ctx)
+	if overrideModel, overridePrefix, ok := summarizeModelFromContext(ctx); ok {
+		summaryModel = overrideModel
+		systemPromptPrefix = overridePrefix
+	}
 
 	currentSession, err := a.sessions.Get(ctx, sessionID)
 	if err != nil {
@@ -1680,13 +1698,14 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		return nil
 	}
 
-	aiMsgs, _ := a.prepareSessionPrompt(msgs, largeModel.CatwalkCfg.SupportsImages, preparePromptOptions{
+	aiMsgs, _ := a.prepareSessionPrompt(msgs, summaryModel.CatwalkCfg.SupportsImages, preparePromptOptions{
 		hasTodos:  len(currentSession.Todos) > 0,
 		compacted: currentSession.SummaryMessageID != "",
 	})
 
 	appendTodosToContextSummary(a.dataDir, sessionID, currentSession.Todos)
 	summaryMsgs := readSessionContextSummaryMessages(a.dataDir, sessionID, aiMsgs)
+	summaryMsgs = sanitizeMessagesForModel(summaryMsgs, collectHistoryAssistantModels(msgs), summaryModel)
 
 	genCtx, cancel := context.WithCancel(ctx)
 	defer func() {
@@ -1706,14 +1725,14 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 	}()
 
 	agent := fantasy.NewAgent(
-		largeModel.Model,
+		summaryModel.Model,
 		fantasy.WithSystemPrompt(string(summaryPrompt)),
 		fantasy.WithUserAgent(userAgent),
 	)
 	summaryMessage, err := a.messages.Create(ctx, sessionID, message.CreateMessageParams{
 		Role:             message.Assistant,
-		Model:            largeModel.ModelCfg.Model,
-		Provider:         largeModel.ModelCfg.Provider,
+		Model:            summaryModel.ModelCfg.Model,
+		Provider:         summaryModel.ModelCfg.Provider,
 		IsSummaryMessage: true,
 	})
 	if err != nil {
@@ -1729,6 +1748,9 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		ProviderOptions: opts,
 		OnAuthRefresh:   onAuthRefresh,
 		ModelProvider: func() fantasy.LanguageModel {
+			if hasSummaryOverride {
+				return summaryModel.Model
+			}
 			return a.largeModel.Get().Model
 		},
 		PrepareStep: func(callContext context.Context, options fantasy.PrepareStepFunctionOptions) (_ context.Context, prepared fantasy.PrepareStepResult, err error) {
@@ -1792,7 +1814,7 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		extractHyperCredits(step.ProviderMetadata)
 	}
 
-	a.updateSessionUsage(largeModel, &currentSession, resp.TotalUsage, openrouterCost, false)
+	a.updateSessionUsage(summaryModel, &currentSession, resp.TotalUsage, openrouterCost, false)
 
 	// Just in case, get just the last usage info.
 	usage := resp.Response.Usage
