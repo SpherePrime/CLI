@@ -155,11 +155,12 @@
   display: none;
 }
 .composer-toolbar {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .composer-options {
-  flex: 1 1 180px;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: min-content;
 }
 .composer-actions {
   margin-left: auto;
