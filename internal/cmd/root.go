@@ -80,6 +80,7 @@ func init() {
 		providerCmd,
 		uninstallCmd,
 		updateCmd,
+		acpCmd,
 	)
 }
 
