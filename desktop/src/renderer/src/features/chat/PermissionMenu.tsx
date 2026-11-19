@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown, LoaderCircle, ShieldCheck, ShieldOff } from 'lucide-react'
+import { Check, LoaderCircle, ShieldCheck, ShieldOff } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import { useI18n } from '../../i18n'
 export function PermissionMenu({
@@ -20,24 +20,28 @@ export function PermissionMenu({
   const [saving, setSaving] = useState(false)
   const anchor = useRef<HTMLButtonElement>(null)
   useEffect(() => setOpen(false), [contextKey])
+  const modeLabel = skip ? t('Полный доступ') : t('С подтверждением')
+  const triggerLabel = `${t('Режим доступа')}: ${modeLabel}`
   return (
     <>
       <button
         ref={anchor}
+        type="button"
         className={`permission-trigger ${skip ? 'unrestricted' : ''}`}
-        aria-label={t('Режим доступа')}
+        aria-label={triggerLabel}
+        title={triggerLabel}
         aria-haspopup="menu"
         aria-expanded={open}
         disabled={disabled || saving}
         aria-busy={saving}
         onClick={() => setOpen(!open)}
       >
-        {skip ? <ShieldOff size={15} /> : <ShieldCheck size={15} />}
-        <span>{skip ? t('Полный доступ') : t('С подтверждением')}</span>
         {saving ? (
-          <LoaderCircle className="spin" size={11} aria-hidden="true" />
+          <LoaderCircle className="spin" size={15} aria-hidden="true" />
+        ) : skip ? (
+          <ShieldOff size={15} aria-hidden="true" />
         ) : (
-          <ChevronDown className="menu-chevron" size={11} aria-hidden="true" />
+          <ShieldCheck size={15} aria-hidden="true" />
         )}
       </button>
       {open && (

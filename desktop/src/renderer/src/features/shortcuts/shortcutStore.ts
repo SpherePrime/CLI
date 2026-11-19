@@ -22,6 +22,7 @@ export function useShortcuts() {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
+    getShortcuts,
     getShortcuts
   )
 }

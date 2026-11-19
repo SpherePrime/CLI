@@ -1967,10 +1967,24 @@ Object.assign(english, {
 
 Object.assign(english, {
   GameDev: 'GameDev',
+  'Режим GameDev': 'GameDev mode',
+  'Включён': 'Enabled',
+  'Выключен': 'Disabled',
   'Включить режим GameDev': 'Enable GameDev mode',
   'Выключить режим GameDev': 'Disable GameDev mode',
   'Режим GameDev: добавляет автотест-ботов для прохождения игры, поиска багов и проверки баланса сложности':
-    'GameDev mode: adds automated playthrough test bots for bugs and difficulty balance'
+    'GameDev mode: adds automated playthrough test bots for bugs and difficulty balance',
+  'Добавляет в инструкции тестирования создание и запуск ботов для прохождения игры.':
+    'Adds instructions to create and run automated playthrough bots during testing.',
+  'Тестовые боты': 'Test bots',
+  'Автоматически проходят игровые сценарии и уровни.':
+    'Automatically play through game scenarios and levels.',
+  'Поиск багов': 'Bug detection',
+  'Выявляют софтлоки, краши и ошибки логики.': 'Detect softlocks, crashes and logic bugs.',
+  'Проверка сложности': 'Difficulty check',
+  'Оценивают баланс и проходимость игры.': 'Evaluate game balance and playability.',
+  'Когда режим выключен, инструкции для игр не добавляются в промпт.':
+    'When disabled, no game instructions are added to the prompt.'
 })
 
 

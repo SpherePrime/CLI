@@ -4,6 +4,8 @@ import { I18nProvider } from '../../src/renderer/src/i18n'
 import { operationRoute } from '../../src/shared/operations'
 import { resolveGameDevEnabled } from '../../src/renderer/src/features/chat/gamedev'
 import { GameDevButton } from '../../src/renderer/src/features/chat/GameDevButton'
+import { GameDevPanel } from '../../src/renderer/src/features/chat/GameDevPanel'
+import { useQuickActions } from '../../src/renderer/src/app/useQuickActions'
 import { installPreviewHost } from '../../src/renderer/src/host/installPreviewHost'
 import { createPreviewConfig } from '../../src/renderer/src/host/previewHostData'
 import type { DesktopEvent, WorkspaceConfig } from '../../src/shared/contracts'
@@ -12,6 +14,7 @@ function createWorkspaceMock(overrides: {
   gameDevEnabled?: boolean
   busy?: boolean
   hasProject?: boolean
+  projectKind?: 'project' | 'chat' | 'designer'
 } = {}) {
   return {
     project:
@@ -22,17 +25,51 @@ function createWorkspaceMock(overrides: {
             path: '/tmp/ws-1',
             clientId: 'c-1',
             connection: 'ready',
-            kind: 'project' as const
+            kind: overrides.projectKind ?? ('project' as const)
           },
     session: {
       id: 'sess-1',
       title: 'Test'
     },
+    messages: [],
     busy: overrides.busy ?? false,
+    info: { runtime: 'ready' },
     gameDevEnabled: overrides.gameDevEnabled ?? false,
     setGameDev: vi.fn().mockResolvedValue(undefined),
+    createSession: vi.fn(),
+    openProject: vi.fn(),
+    savePreferences: vi.fn(),
     errorHandler: vi.fn()
   } as any
+}
+
+function QuickActionsProbe({
+  workspace,
+  onTrigger
+}: {
+  workspace: any
+  onTrigger?: (run: () => void) => void
+}) {
+  const actions = useQuickActions({
+    workspace,
+    openTools: vi.fn(),
+    setModal: vi.fn(),
+    openSearch: vi.fn(),
+    focusMode: false,
+    toggleFocus: vi.fn(),
+    sidebarVisible: true,
+    toggleSidebar: vi.fn(),
+    inspectorVisible: true,
+    toggleInspector: vi.fn()
+  })
+  const action = actions.find((item) => item.id === 'gamedev')
+  if (action && onTrigger) onTrigger(action.run)
+  return (
+    <div
+      data-label={action?.label || ''}
+      data-disabled={String(Boolean(action?.disabled))}
+    />
+  )
 }
 
 describe('gamedev operation routes', () => {
@@ -109,38 +146,44 @@ describe('resolveGameDevEnabled', () => {
   })
 })
 
-describe('GameDevButton UI', () => {
-  it('renders inactive and active states with aria-pressed and Russian labels', () => {
+describe('GameDevButton and GameDevPanel UI', () => {
+  it('renders dialog trigger chip in inactive and active states without auto-toggling', () => {
+    const inactiveWs = createWorkspaceMock({ gameDevEnabled: false })
     const inactiveHtml = renderToStaticMarkup(
       <I18nProvider language="ru">
-        <GameDevButton workspace={createWorkspaceMock({ gameDevEnabled: false })} />
+        <GameDevButton workspace={inactiveWs} />
       </I18nProvider>
     )
     expect(inactiveHtml).toContain('class="gamedev-chip "')
-    expect(inactiveHtml).toContain('aria-pressed="false"')
-    expect(inactiveHtml).toContain('aria-label="Включить режим GameDev"')
+    expect(inactiveHtml).toContain('aria-haspopup="dialog"')
+    expect(inactiveHtml).toContain('aria-expanded="false"')
+    expect(inactiveHtml).toContain('data-active="false"')
+    expect(inactiveHtml).toContain('aria-label="Режим GameDev: Выключен"')
     expect(inactiveHtml).toContain('GameDev')
     expect(inactiveHtml).toContain('автотест-ботов')
     expect(inactiveHtml).not.toContain('disabled=""')
+    expect(inactiveWs.setGameDev).not.toHaveBeenCalled()
 
+    const activeWs = createWorkspaceMock({ gameDevEnabled: true })
     const activeHtml = renderToStaticMarkup(
       <I18nProvider language="ru">
-        <GameDevButton workspace={createWorkspaceMock({ gameDevEnabled: true })} />
+        <GameDevButton workspace={activeWs} />
       </I18nProvider>
     )
     expect(activeHtml).toContain('gamedev-chip is-active')
-    expect(activeHtml).toContain('aria-pressed="true"')
-    expect(activeHtml).toContain('aria-label="Выключить режим GameDev"')
+    expect(activeHtml).toContain('data-active="true"')
+    expect(activeHtml).toContain('aria-label="Режим GameDev: Включён"')
+    expect(activeWs.setGameDev).not.toHaveBeenCalled()
   })
 
-  it('disables toggle when busy or without an open project and translates to English', () => {
+  it('disables trigger when busy or without an open project and translates to English', () => {
     const busyHtml = renderToStaticMarkup(
       <I18nProvider language="en">
         <GameDevButton workspace={createWorkspaceMock({ busy: true })} />
       </I18nProvider>
     )
     expect(busyHtml).toContain('disabled=""')
-    expect(busyHtml).toContain('aria-label="Enable GameDev mode"')
+    expect(busyHtml).toContain('aria-label="GameDev mode: Disabled"')
     expect(busyHtml).toContain('automated playthrough test bots')
 
     const noProjectHtml = renderToStaticMarkup(
@@ -149,7 +192,82 @@ describe('GameDevButton UI', () => {
       </I18nProvider>
     )
     expect(noProjectHtml).toContain('disabled=""')
-    expect(noProjectHtml).toContain('aria-label="Disable GameDev mode"')
+    expect(noProjectHtml).toContain('aria-label="GameDev mode: Enabled"')
+  })
+
+  it('renders GameDevPanel explanation, status pill, and footer buttons in Russian and English', () => {
+    const offRuHtml = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <GameDevPanel enabled={false} saving={false} onClose={vi.fn()} onToggle={vi.fn()} />
+      </I18nProvider>
+    )
+    expect(offRuHtml).toContain('Режим GameDev')
+    expect(offRuHtml).toContain('Выключен')
+    expect(offRuHtml).toContain('Тестовые боты')
+    expect(offRuHtml).toContain('Поиск багов')
+    expect(offRuHtml).toContain('Проверка сложности')
+    expect(offRuHtml).toContain('Когда режим выключен, инструкции для игр не добавляются в промпт.')
+    expect(offRuHtml).toContain('class="quiet"')
+    expect(offRuHtml).toContain('Закрыть')
+    expect(offRuHtml).toContain('class="primary"')
+    expect(offRuHtml).toContain('Включить')
+
+    const onRuHtml = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <GameDevPanel enabled={true} saving={false} onClose={vi.fn()} onToggle={vi.fn()} />
+      </I18nProvider>
+    )
+    expect(onRuHtml).toContain('gamedev-status-pill is-active')
+    expect(onRuHtml).toContain('Включён')
+    expect(onRuHtml).toContain('class="quiet danger"')
+    expect(onRuHtml).toContain('Выключить')
+
+    const enHtml = renderToStaticMarkup(
+      <I18nProvider language="en">
+        <GameDevPanel enabled={false} saving={false} onClose={vi.fn()} onToggle={vi.fn()} />
+      </I18nProvider>
+    )
+    expect(enHtml).toContain('GameDev mode')
+    expect(enHtml).toContain('Disabled')
+    expect(enHtml).toContain('Test bots')
+    expect(enHtml).toContain('Bug detection')
+    expect(enHtml).toContain('Difficulty check')
+    expect(enHtml).toContain('Close')
+    expect(enHtml).toContain('Enable')
+  })
+})
+
+describe('useQuickActions gamedev toggle', () => {
+  it('exposes enable/disable label, toggles state, and disables in designer or busy', () => {
+    const wsOff = createWorkspaceMock({ gameDevEnabled: false })
+    let runEnable: (() => void) | undefined
+    const htmlOff = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <QuickActionsProbe workspace={wsOff} onTrigger={(run) => (runEnable = run)} />
+      </I18nProvider>
+    )
+    expect(htmlOff).toContain('data-label="Включить режим GameDev"')
+    expect(htmlOff).toContain('data-disabled="false"')
+    runEnable?.()
+    expect(wsOff.setGameDev).toHaveBeenCalledWith(true)
+
+    const wsOn = createWorkspaceMock({ gameDevEnabled: true })
+    let runDisable: (() => void) | undefined
+    const htmlOn = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <QuickActionsProbe workspace={wsOn} onTrigger={(run) => (runDisable = run)} />
+      </I18nProvider>
+    )
+    expect(htmlOn).toContain('data-label="Выключить режим GameDev"')
+    runDisable?.()
+    expect(wsOn.setGameDev).toHaveBeenCalledWith(false)
+
+    const htmlDesigner = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <QuickActionsProbe workspace={createWorkspaceMock({ projectKind: 'designer' })} />
+      </I18nProvider>
+    )
+    expect(htmlDesigner).toContain('data-disabled="true"')
   })
 })
 
