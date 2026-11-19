@@ -109,6 +109,8 @@ export function useWorkspace() {
   const [permissions, setPermissions] = useState<Json[]>([])
   const [questions, setQuestions] = useState<Json[]>([])
   const [config, setConfig] = useState<Json>({})
+  const configRef = useRef<Json>(config)
+  configRef.current = config
   const [agent, setAgent] = useState<Json>({})
   const [queue, setQueue] = useState<QueuedPrompt[]>([])
   const [resources, setResources] = useState<Json>({ mcp: {}, lsp: {}, skills: [] })
@@ -293,7 +295,10 @@ export function useWorkspace() {
             : undefined
       })
       if (values.sessions) setSessions(withPendingSessions(values.sessions, project.id))
-      if (values.config) setConfig(values.config)
+      if (values.config) {
+        configRef.current = values.config
+        setConfig(values.config)
+      }
       if (values.agent) setAgent(values.agent)
       if (heavy)
         setResources({
@@ -941,6 +946,25 @@ export function useWorkspace() {
             created
           )
         )
+      const pendingOrch = pendingOrchestrator.current.get(placeholder.id)
+      const effectiveDraftOrch = pendingOrch !== undefined ? pendingOrch : draftOrchestrator
+      if (effectiveDraftOrch !== null && current.current.project?.id === project.id) {
+        const nextSessionOrch = {
+          ...(configRef.current?.session_orchestrator || {}),
+          [created.id]: effectiveDraftOrch
+        }
+        configRef.current = {
+          ...configRef.current,
+          session_orchestrator: nextSessionOrch
+        }
+        setConfig((currentConfig: Json) => ({
+          ...currentConfig,
+          session_orchestrator: {
+            ...(currentConfig?.session_orchestrator || {}),
+            [created.id]: effectiveDraftOrch
+          }
+        }))
+      }
       if (current.current.session?.id === placeholder.id) {
         current.current = { project, session: created }
         setSession(created)
@@ -949,14 +973,14 @@ export function useWorkspace() {
         void window.prime
           .call(project.id, 'currentSession', { sessionId: created.id })
           .catch(errorHandler)
-        void scheduleRefresh(false, false).catch(() => {})
+        if (effectiveDraftOrch === null) {
+          void scheduleRefresh(false, false).catch(() => {})
+        }
       }
       const reasoning = pendingReasoning.current.get(placeholder.id)
       void savePreferences({
         reasoningBySession: { [created.id]: reasoning || draftReasoningMode || reasoningFallback }
       }).catch(errorHandler)
-      const pendingOrch = pendingOrchestrator.current.get(placeholder.id)
-      const effectiveDraftOrch = pendingOrch !== undefined ? pendingOrch : draftOrchestrator
       if (effectiveDraftOrch !== null) {
         await window.prime
           .call(project.id, 'orchestrator', {
@@ -964,7 +988,7 @@ export function useWorkspace() {
             enabled: effectiveDraftOrch
           })
           .catch(errorHandler)
-        void scheduleRefresh(false, true).catch(() => {})
+        await scheduleRefresh(false, true).catch(() => {})
       }
       return created
     } catch (error) {
@@ -1088,9 +1112,27 @@ export function useWorkspace() {
         })
       }
       if (!selected) return false
+      let effectiveDraftOrchestrator: boolean | null = null
       if (!targetSession) {
         await savePreferences({ reasoningBySession: { [selected.id]: reasoningMode } })
         if (draftOrchestrator !== null) {
+          effectiveDraftOrchestrator = draftOrchestrator
+          if (current.current.project?.id === targetProject.id) {
+            configRef.current = {
+              ...configRef.current,
+              session_orchestrator: {
+                ...(configRef.current?.session_orchestrator || {}),
+                [selected.id]: draftOrchestrator
+              }
+            }
+            setConfig((currentConfig: Json) => ({
+              ...currentConfig,
+              session_orchestrator: {
+                ...(currentConfig?.session_orchestrator || {}),
+                [selected.id]: draftOrchestrator
+              }
+            }))
+          }
           await window.prime.call(targetProject.id, 'orchestrator', {
             sessionId: selected.id,
             enabled: draftOrchestrator
@@ -1129,11 +1171,20 @@ export function useWorkspace() {
         await window.prime
           .call(targetProject.id, 'mode', { mode: targetMode })
           .catch(() => {})
+        const activeConfig = configRef.current
+        const sessionOrchFlag = activeConfig?.session_orchestrator?.[selected.id]
+        const effectiveOrchestratorEnabled =
+          effectiveDraftOrchestrator !== null
+            ? effectiveDraftOrchestrator
+            : sessionOrchFlag !== undefined
+              ? Boolean(sessionOrchFlag)
+              : Boolean(activeConfig?.orchestrator?.enabled)
+        const orchestratorActive = targetMode === 'general' && effectiveOrchestratorEnabled
         await window.prime.call(targetProject.id, 'send', {
           sessionId: selected.id,
           runId,
           prompt: preparedPrompt,
-          reasoningMode,
+          ...(orchestratorActive ? {} : { reasoningMode }),
           attachmentIds
         })
         if (usedModel?.provider && usedModel?.model) {
@@ -1151,7 +1202,11 @@ export function useWorkspace() {
         setSessions((items) => upsertSession(items, selected!))
         await selectSession(selected)
       }
-      void refreshLight().catch(errorHandler)
+      if (effectiveDraftOrchestrator !== null) {
+        void scheduleRefresh(false, true).catch(errorHandler)
+      } else {
+        void refreshLight().catch(errorHandler)
+      }
       return true
     } catch (error) {
       errorHandler(error)

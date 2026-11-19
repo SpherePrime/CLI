@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/i18n"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/ui/attachments"
 	"github.com/SpherePrime/CLI/internal/ui/common"
@@ -280,7 +281,7 @@ func ShouldShowAssistantInfo(msg *message.Message) bool {
 	if finishData == nil {
 		return false
 	}
-	return finishData.Reason == message.FinishReasonEndTurn || msg.PrismModelName != ""
+	return finishData.Reason == message.FinishReasonEndTurn || msg.PrismModelName != "" || msg.OrchestratorPhase() != ""
 }
 
 // AssistantInfoItem renders model info and response time after assistant completes.
@@ -372,6 +373,10 @@ func (a *AssistantInfoItem) renderContent(width int) string {
 		mainModelName = model.Name
 	}
 	modelFormatted := a.sty.Messages.AssistantInfoModel.Render(mainModelName)
+	if phase := a.message.OrchestratorPhase(); phase != "" {
+		phaseBadge := a.sty.Messages.AssistantInfoProvider.Render(fmt.Sprintf("[%s]", orchestratorPhaseLabel(a.cfg, phase)))
+		modelFormatted = fmt.Sprintf("%s %s", phaseBadge, modelFormatted)
+	}
 	// A Prism-routed turn shows the model that actually served the
 	// request, with the arrow and any savings suffix subdued.
 	if a.message.PrismModelName != "" {
@@ -436,6 +441,24 @@ func formatHypercreditSavings(v float64) string {
 		return fmt.Sprintf("%.0f", v)
 	}
 	return fmt.Sprintf("%.1f", v)
+}
+
+func orchestratorPhaseLabel(cfg *config.Config, phase string) string {
+	locale := i18n.En
+	if cfg != nil && cfg.Options != nil && cfg.Options.Language != "" {
+		locale = cfg.Options.Language
+	}
+	tr := i18n.New(locale)
+	switch phase {
+	case "plan":
+		return tr.Label("orch.phase.plan")
+	case "execute":
+		return tr.Label("orch.phase.execute")
+	case "review":
+		return tr.Label("orch.phase.review")
+	default:
+		return phase
+	}
 }
 
 // ExtractMessageItems extracts [MessageItem]s from a [message.Message]. It

@@ -40,13 +40,59 @@ export function resolveRoleConfig(
   if (role === 'planner') {
     const fallback = sessionModel ?? config?.models?.large
     return fallback?.provider && fallback?.model
-      ? { provider: fallback.provider, model: fallback.model }
+      ? {
+          provider: fallback.provider,
+          model: fallback.model,
+          ...(fallback.context_window ? { context_window: fallback.context_window } : {})
+        }
       : undefined
   }
   const fallback = config?.models?.small ?? config?.models?.large
   return fallback?.provider && fallback?.model
-    ? { provider: fallback.provider, model: fallback.model }
+    ? {
+        provider: fallback.provider,
+        model: fallback.model,
+        ...(fallback.context_window ? { context_window: fallback.context_window } : {})
+      }
     : undefined
+}
+
+export function hasExplicitRoleOverride(config: any, role: OrchestratorRole): boolean {
+  const explicit = role === 'planner' ? config?.orchestrator?.planner : config?.orchestrator?.executor
+  return Boolean(explicit?.provider && explicit?.model)
+}
+
+export function isOrchestratorActive(
+  orchestratorEnabled: boolean,
+  agentMode?: string,
+  projectKind?: string
+): boolean {
+  return Boolean(orchestratorEnabled) && agentMode !== 'plan' && projectKind !== 'designer'
+}
+
+export function resolveContextWindow({
+  orchestratorActive,
+  plannerRef,
+  plannerCapability,
+  selected,
+  capability
+}: {
+  orchestratorActive: boolean
+  plannerRef?: { context_window?: number }
+  plannerCapability?: ModelCapability
+  selected?: { context_window?: number }
+  capability?: ModelCapability
+}): number {
+  if (orchestratorActive) {
+    return (
+      plannerRef?.context_window ||
+      plannerCapability?.context_window ||
+      selected?.context_window ||
+      capability?.context_window ||
+      0
+    )
+  }
+  return selected?.context_window || capability?.context_window || 0
 }
 
 export function resolveRoleReasoning(

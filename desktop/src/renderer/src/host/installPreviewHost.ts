@@ -748,9 +748,12 @@ export function installPreviewHost() {
         emit({ workspaceId, type: 'message', payload: { action: 'created', data: userMsg } })
         setTimeout(() => {
           const isDesignerWs = ws?.kind === 'designer'
+          const currentMode =
+            workspaceModes.get(workspaceId) ||
+            (isDesignerWs ? 'designer' : preferences.agentMode || 'general')
           const sessionOrchFlag = sessionId ? config.session_orchestrator?.[sessionId] : undefined
           const orchEnabled =
-            !isDesignerWs &&
+            currentMode === 'general' &&
             (sessionOrchFlag !== undefined
               ? Boolean(sessionOrchFlag)
               : Boolean(config.orchestrator?.enabled))
@@ -914,10 +917,12 @@ export function installPreviewHost() {
           }
         }
         if (args?.planner) {
-          nextOrch.planner = { ...args.planner }
+          if (!args.planner.provider && !args.planner.model) delete nextOrch.planner
+          else nextOrch.planner = { ...args.planner }
         }
         if (args?.executor) {
-          nextOrch.executor = { ...args.executor }
+          if (!args.executor.provider && !args.executor.model) delete nextOrch.executor
+          else nextOrch.executor = { ...args.executor }
         }
         if (args?.finalReview !== undefined) {
           nextOrch.final_review = Boolean(args.finalReview)

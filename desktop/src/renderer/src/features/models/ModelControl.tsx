@@ -9,7 +9,12 @@ import { ModelPicker, type ModelPickerTab } from './ModelPicker'
 import { ReasoningPopover } from './ReasoningPopover'
 import { currentReasoningMode, reasoningLabel } from './reasoning'
 import { findCapability, useModelCapabilities } from './useModelCapabilities'
-import { compactModelLabel, resolveRoleDisplay } from './orchestrator'
+import {
+  compactModelLabel,
+  isOrchestratorActive,
+  resolveContextWindow,
+  resolveRoleDisplay
+} from './orchestrator'
 import { realSessionId } from '../../../../shared/pendingSession'
 import type { ChatReasoningMode } from '../../../../shared/contracts'
 
@@ -36,12 +41,22 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
     capability?.name || selected?.model || w.agent?.model?.name || t('Выбрать модель')
   const plannerDisplay = resolveRoleDisplay('planner', w.config, sessionId, models)
   const executorDisplay = resolveRoleDisplay('executor', w.config, sessionId, models)
-  const orchestratorActive = w.orchestratorEnabled
+  const orchestratorActive = isOrchestratorActive(
+    w.orchestratorEnabled,
+    w.preferences?.agentMode,
+    w.project?.kind
+  )
   const plannerShort = compactModelLabel(plannerDisplay.name) || t('Планировщик')
   const executorShort = compactModelLabel(executorDisplay.name) || t('Исполнитель')
   const orchestratorPairLabel = `${plannerShort} → ${executorShort}`
   const contextUsed = (w.session?.prompt_tokens || 0) + (w.session?.completion_tokens || 0)
-  const contextWindow = selected?.context_window || capability?.context_window || 0
+  const contextWindow = resolveContextWindow({
+    orchestratorActive,
+    plannerRef: plannerDisplay.ref,
+    plannerCapability: plannerDisplay.capability,
+    selected,
+    capability
+  })
   useEffect(() => {
     const toggle = () => {
       setPickerInitialTab('large')

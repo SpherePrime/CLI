@@ -12,11 +12,13 @@ import (
 
 	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/message"
+	"github.com/SpherePrime/CLI/internal/skills"
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/anthropic"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/google"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openai"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openaicompat"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
@@ -776,4 +778,742 @@ func TestOrchestrator_PerStepUsageCostAndMetadataAttribution(t *testing.T) {
 		{provider: "openai", model: "cheap-executor", phase: "execute"},
 		{provider: "anthropic", model: "expensive-planner", phase: "review"},
 	}, got)
+}
+
+func TestOrchestrator_SubagentToolsExcludedAndBlocked(t *testing.T) {
+	env := testEnv(t)
+	var writeCalled atomic.Bool
+	var bashCalled atomic.Bool
+
+	planner := &scriptedOrchestratorModel{
+		provider: "anthropic",
+		modelID:  "planner-model",
+		steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+			func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+				names := toolNamesInCall(call)
+				require.NotContains(t, names, AgentToolName)
+				require.NotContains(t, names, AgentJobsToolName)
+				require.NotContains(t, names, AgentMessageToolName)
+				require.Contains(t, names, HandoffToExecutorToolName)
+				payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Implement directly"})
+				return toolCallParts("h1", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+			},
+			func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+				names := toolNamesInCall(call)
+				require.NotContains(t, names, AgentToolName)
+				require.NotContains(t, names, AgentJobsToolName)
+				require.NotContains(t, names, AgentMessageToolName)
+				return textStopParts("Verified.", fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+			},
+		},
+	}
+	executor := &scriptedOrchestratorModel{
+		provider: "openai",
+		modelID:  "executor-model",
+		steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+			func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+				names := toolNamesInCall(call)
+				require.NotContains(t, names, AgentToolName)
+				require.NotContains(t, names, AgentJobsToolName)
+				require.NotContains(t, names, AgentMessageToolName)
+				require.Contains(t, names, "write")
+				require.Contains(t, names, "bash")
+				sys := systemPromptTextInCall(call)
+				require.Contains(t, sys, "overrides any coordinator or subagent-delegation instructions")
+				return toolCallParts("w1", "write", `{}`, fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+			},
+			func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+				return toolCallParts("b1", "bash", `{}`, fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+			},
+			func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+				return textStopParts("Done directly.", fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+			},
+		},
+	}
+
+	agentTool := fantasy.NewAgentTool(AgentToolName, "spawn", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		return fantasy.NewTextResponse("should not run"), nil
+	})
+	agentJobsTool := fantasy.NewAgentTool(AgentJobsToolName, "jobs", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		return fantasy.NewTextResponse("should not run"), nil
+	})
+	agentMessageTool := fantasy.NewAgentTool(AgentMessageToolName, "msg", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		return fantasy.NewTextResponse("should not run"), nil
+	})
+	writeTool := fantasy.NewAgentTool("write", "write", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		writeCalled.Store(true)
+		return fantasy.NewTextResponse("wrote"), nil
+	})
+	bashTool := fantasy.NewAgentTool("bash", "bash", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		bashCalled.Store(true)
+		return fantasy.NewTextResponse("ran"), nil
+	})
+	viewTool := fantasy.NewAgentTool("view", "view", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+		return fantasy.NewTextResponse("viewed"), nil
+	})
+
+	orchCfg := makeOrchestratorModelsConfig(planner, executor, defaultTestCatwalkModel("planner-model"), defaultTestCatwalkModel("executor-model"), true)
+	rt := newOrchestratorRuntime(*orchCfg)
+	gate := rt.beforeToolCallGate()
+	for _, blocked := range []string{AgentToolName, AgentJobsToolName, AgentMessageToolName} {
+		err := gate(t.Context(), fantasy.ToolCall{Name: blocked})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "disabled in orchestrator mode; execute directly instead of spawning subagents")
+	}
+	rt.mu.Lock()
+	rt.phase = OrchestratorPhaseExecute
+	rt.mu.Unlock()
+	for _, blocked := range []string{AgentToolName, AgentJobsToolName, AgentMessageToolName} {
+		err := gate(t.Context(), fantasy.ToolCall{Name: blocked})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "disabled in orchestrator mode; execute directly instead of spawning subagents")
+	}
+	require.NoError(t, gate(t.Context(), fantasy.ToolCall{Name: "write"}))
+	require.NoError(t, gate(t.Context(), fantasy.ToolCall{Name: "bash"}))
+
+	sa := testSessionAgent(env, planner, executor, "base system", agentTool, agentJobsTool, agentMessageTool, writeTool, bashTool, viewTool)
+	sess, err := env.sessions.Create(t.Context(), "subagent-blocked")
+	require.NoError(t, err)
+
+	res, err := sa.Run(t.Context(), SessionAgentCall{
+		SessionID:    sess.ID,
+		Prompt:       "Implement and test",
+		Orchestrator: orchCfg,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Verified.", res.Response.Content.Text())
+	require.True(t, writeCalled.Load())
+	require.True(t, bashCalled.Load())
+}
+
+func TestOrchestrator_ProgressCheckInTriggersAndCapsAtThree(t *testing.T) {
+	t.Run("wraps up directly on progress check-in", func(t *testing.T) {
+		env := testEnv(t)
+		var reviewNoteSeen atomic.Bool
+
+		planner := &scriptedOrchestratorModel{
+			provider: "anthropic",
+			modelID:  "planner-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Run long batch"})
+					return toolCallParts("h1", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					sys := systemPromptTextInCall(call)
+					require.Contains(t, sys, "REVIEW phase")
+					require.Contains(t, sys, "<orchestrator_review_note>")
+					require.Contains(t, sys, "Progress check-in (1/3)")
+					reviewNoteSeen.Store(true)
+					return textStopParts("Progress looks complete, wrapping up.", fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+			},
+		}
+
+		execSteps := make([]func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error), 0, maxOrchestratorStepsBeforeCheckIn)
+		for i := range maxOrchestratorStepsBeforeCheckIn {
+			idx := i
+			execSteps = append(execSteps, func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+				return toolCallParts(fmt.Sprintf("w-%d", idx), "write", fmt.Sprintf(`{"step":%d}`, idx), fantasy.Usage{InputTokens: 5, OutputTokens: 5}), nil
+			})
+		}
+		executor := &scriptedOrchestratorModel{
+			provider: "openai",
+			modelID:  "executor-model",
+			steps:    execSteps,
+		}
+
+		writeTool := fantasy.NewAgentTool("write", "write", func(context.Context, struct{ Step int }, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse("ok"), nil
+		})
+		viewTool := fantasy.NewAgentTool("view", "view", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse("ok"), nil
+		})
+
+		sa := testSessionAgent(env, planner, executor, "base system", writeTool, viewTool)
+		sess, err := env.sessions.Create(t.Context(), "checkin-wrapup")
+		require.NoError(t, err)
+
+		orch := makeOrchestratorModelsConfig(planner, executor, defaultTestCatwalkModel("planner-model"), defaultTestCatwalkModel("executor-model"), true)
+		res, err := sa.Run(t.Context(), SessionAgentCall{
+			SessionID:    sess.ID,
+			Prompt:       "Do long task",
+			Orchestrator: orch,
+		})
+		require.NoError(t, err)
+		require.True(t, reviewNoteSeen.Load())
+		require.Equal(t, "Progress looks complete, wrapping up.", res.Response.Content.Text())
+		require.Equal(t, 2, planner.callCount())
+		require.Equal(t, maxOrchestratorStepsBeforeCheckIn, executor.callCount())
+	})
+
+	t.Run("hands back on check-in and caps at three check-ins while preserving final review", func(t *testing.T) {
+		env := testEnv(t)
+
+		planner := &scriptedOrchestratorModel{
+			provider: "anthropic",
+			modelID:  "planner-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+					payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Phase 1"})
+					return toolCallParts("h0", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					require.Contains(t, systemPromptTextInCall(call), "Progress check-in (1/3)")
+					payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Phase 2"})
+					return toolCallParts("h1", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					require.Contains(t, systemPromptTextInCall(call), "Progress check-in (2/3)")
+					payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Phase 3"})
+					return toolCallParts("h2", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					require.Contains(t, systemPromptTextInCall(call), "Progress check-in (3/3)")
+					payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Phase 4"})
+					return toolCallParts("h3", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					sys := systemPromptTextInCall(call)
+					require.Contains(t, sys, "REVIEW phase")
+					require.NotContains(t, sys, "<orchestrator_review_note>")
+					return textStopParts("Final review verified all phases.", fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+			},
+		}
+
+		totalToolSteps := maxOrchestratorStepsBeforeCheckIn*maxOrchestratorProgressCheckIns + 10
+		execSteps := make([]func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error), 0, totalToolSteps+1)
+		for i := range totalToolSteps {
+			idx := i
+			execSteps = append(execSteps, func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+				return toolCallParts(fmt.Sprintf("w-%d", idx), "write", fmt.Sprintf(`{"step":%d}`, idx), fantasy.Usage{InputTokens: 5, OutputTokens: 5}), nil
+			})
+		}
+		execSteps = append(execSteps, func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+			return textStopParts("All 34 steps complete.", fantasy.Usage{InputTokens: 5, OutputTokens: 5}), nil
+		})
+
+		executor := &scriptedOrchestratorModel{
+			provider: "openai",
+			modelID:  "executor-model",
+			steps:    execSteps,
+		}
+
+		writeTool := fantasy.NewAgentTool("write", "write", func(context.Context, struct{ Step int }, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse("ok"), nil
+		})
+		viewTool := fantasy.NewAgentTool("view", "view", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse("ok"), nil
+		})
+
+		sa := testSessionAgent(env, planner, executor, "base system", writeTool, viewTool)
+		sess, err := env.sessions.Create(t.Context(), "checkin-cap")
+		require.NoError(t, err)
+
+		orch := makeOrchestratorModelsConfig(planner, executor, defaultTestCatwalkModel("planner-model"), defaultTestCatwalkModel("executor-model"), true)
+		res, err := sa.Run(t.Context(), SessionAgentCall{
+			SessionID:    sess.ID,
+			Prompt:       "Run huge task",
+			Orchestrator: orch,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "Final review verified all phases.", res.Response.Content.Text())
+		require.Equal(t, 5, planner.callCount())
+		require.Equal(t, totalToolSteps+1, executor.callCount())
+	})
+}
+
+func TestOrchestrator_ReplanIncludesPreviousPlanAfterEscalationAndSteering(t *testing.T) {
+	t.Run("after escalation", func(t *testing.T) {
+		env := testEnv(t)
+		planner := &scriptedOrchestratorModel{
+			provider: "anthropic",
+			modelID:  "planner-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+					payload, _ := json.Marshal(handoffToExecutorParams{
+						Plan:               "Migrate config parser",
+						TargetFiles:        []string{"internal/config/load.go"},
+						VerificationChecks: []string{"go test ./internal/config"},
+						EscalationTriggers: []string{"schema mismatch"},
+					})
+					return toolCallParts("h1", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					sys := systemPromptTextInCall(call)
+					require.Contains(t, sys, "<previous_orchestrator_plan>")
+					require.Contains(t, sys, "Migrate config parser")
+					require.Contains(t, sys, "internal/config/load.go")
+					require.Contains(t, sys, "go test ./internal/config")
+					require.Contains(t, sys, "schema mismatch")
+					require.Contains(t, sys, "<orchestrator_escalation>")
+					return textStopParts("Replanned around schema mismatch.", fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+			},
+		}
+		executor := &scriptedOrchestratorModel{
+			provider: "openai",
+			modelID:  "executor-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+					payload, _ := json.Marshal(escalateToPlannerParams{
+						Reason:  "schema mismatch in config loader",
+						Blocker: "unexpected field type",
+					})
+					return toolCallParts("e1", EscalateToPlannerToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+			},
+		}
+
+		viewTool := fantasy.NewAgentTool("view", "view", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse("ok"), nil
+		})
+		sa := testSessionAgent(env, planner, executor, "base system", viewTool)
+		sess, err := env.sessions.Create(t.Context(), "replan-escalation")
+		require.NoError(t, err)
+
+		orch := makeOrchestratorModelsConfig(planner, executor, defaultTestCatwalkModel("planner-model"), defaultTestCatwalkModel("executor-model"), false)
+		res, err := sa.Run(t.Context(), SessionAgentCall{
+			SessionID:    sess.ID,
+			Prompt:       "Migrate config",
+			Orchestrator: orch,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "Replanned around schema mismatch.", res.Response.Content.Text())
+	})
+
+	t.Run("after mid-turn steering", func(t *testing.T) {
+		env := testEnv(t)
+		entered := make(chan struct{})
+		release := make(chan struct{})
+
+		planner := &scriptedOrchestratorModel{
+			provider: "anthropic",
+			modelID:  "planner-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+					payload, _ := json.Marshal(handoffToExecutorParams{
+						Plan:               "Use Postgres backend",
+						TargetFiles:        []string{"db/store.go"},
+						VerificationChecks: []string{"go test ./db"},
+					})
+					return toolCallParts("h1", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					sys := systemPromptTextInCall(call)
+					require.Contains(t, sys, "<previous_orchestrator_plan>")
+					require.Contains(t, sys, "Use Postgres backend")
+					require.Contains(t, sys, "db/store.go")
+					require.Contains(t, sys, "<orchestrator_escalation>")
+					require.Contains(t, sys, "steering")
+					return textStopParts("Switched plan to SQLite.", fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+			},
+		}
+		executor := &scriptedOrchestratorModel{
+			provider: "openai",
+			modelID:  "executor-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+					return toolCallParts("wait-1", "bash", `{}`, fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+			},
+		}
+
+		slowBashTool := fantasy.NewAgentTool("bash", "slow command", func(ctx context.Context, _ struct{}, _ fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			close(entered)
+			select {
+			case <-release:
+				return fantasy.NewTextResponse("done"), nil
+			case <-ctx.Done():
+				return fantasy.ToolResponse{}, ctx.Err()
+			}
+		})
+		viewTool := fantasy.NewAgentTool("view", "view", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse("ok"), nil
+		})
+
+		sa := testSessionAgent(env, planner, executor, "base system", slowBashTool, viewTool).(*sessionAgent)
+		sess, err := env.sessions.Create(t.Context(), "replan-steering")
+		require.NoError(t, err)
+
+		orch := makeOrchestratorModelsConfig(planner, executor, defaultTestCatwalkModel("planner-model"), defaultTestCatwalkModel("executor-model"), false)
+		doneCh := make(chan *fantasy.AgentResult, 1)
+		errCh := make(chan error, 1)
+		go func() {
+			r, runErr := sa.Run(t.Context(), SessionAgentCall{
+				SessionID:    sess.ID,
+				Prompt:       "Implement storage",
+				Orchestrator: orch,
+			})
+			doneCh <- r
+			errCh <- runErr
+		}()
+
+		select {
+		case <-entered:
+		case <-time.After(5 * time.Second):
+			t.Fatal("executor tool never started")
+		}
+
+		_, err = sa.Run(t.Context(), SessionAgentCall{
+			SessionID: sess.ID,
+			Prompt:    "use SQLite instead",
+		})
+		require.NoError(t, err)
+		entries := sa.QueueEntries(sess.ID)
+		require.Len(t, entries, 1)
+		steerDone, err := sa.RunQueuedNow(t.Context(), sess.ID, entries[0].ID)
+		require.NoError(t, err)
+
+		close(release)
+		require.NoError(t, <-errCh)
+		res := <-doneCh
+		<-steerDone
+
+		require.Equal(t, "Switched plan to SQLite.", res.Response.Content.Text())
+	})
+}
+
+func TestOrchestrator_CoordinatorPreservesRoleReasoningAndSkipsTeamNote(t *testing.T) {
+	t.Parallel()
+
+	t.Run("configured reasoning modes are not overwritten by WithReasoningMode off", func(t *testing.T) {
+		env := testEnv(t)
+		cfg, err := config.Init(env.workingDir, "", false)
+		require.NoError(t, err)
+		cfg.Config().Options.DisableDefaultProviders = true
+		cfg.Config().Providers.Reset(map[string]config.ProviderConfig{})
+		cfg.Config().Providers.Set("mock-p", config.ProviderConfig{
+			ID:      "mock-p",
+			Name:    "Mock Provider",
+			Type:    openaicompat.Name,
+			BaseURL: "http://127.0.0.1:0/v1",
+			APIKey:  "test",
+			Models: []catwalk.Model{
+				{
+					ID:               "planner-m",
+					Name:             "Planner Model",
+					DefaultMaxTokens: 4096,
+					CanReason:        true,
+					ReasoningLevels:  []string{"none", "low", "medium", "high"},
+				},
+				{
+					ID:               "executor-m",
+					Name:             "Executor Model",
+					DefaultMaxTokens: 4096,
+					CanReason:        true,
+					ReasoningLevels:  []string{"none", "low", "medium", "high"},
+				},
+			},
+		})
+		cfg.OverridePreferredModel(config.SelectedModelTypeLarge, config.SelectedModel{Provider: "mock-p", Model: "planner-m"})
+		cfg.OverridePreferredModel(config.SelectedModelTypeSmall, config.SelectedModel{Provider: "mock-p", Model: "executor-m"})
+		cfg.SetupAgents()
+		cfg.Config().Orchestrator = config.OrchestratorConfig{
+			Enabled: true,
+			Planner: &config.SelectedModel{
+				Provider:      "mock-p",
+				Model:         "planner-m",
+				ReasoningMode: config.ReasoningModeHigh,
+			},
+			Executor: &config.SelectedModel{
+				Provider:      "mock-p",
+				Model:         "executor-m",
+				ReasoningMode: config.ReasoningModeLow,
+			},
+		}
+
+		coord := &coordinator{
+			cfg:          cfg,
+			sessions:     env.sessions,
+			messages:     env.messages,
+			permissions:  env.permissions,
+			history:      env.history,
+			filetracker:  *env.filetracker,
+			skillTracker: skills.NewTracker(nil),
+			agents:       make(map[string]SessionAgent),
+			subAgents:    make(map[string]SessionAgent),
+			agentJobs:    make(map[string]*agentJob),
+		}
+
+		var recorded SessionAgentCall
+		mockGen := newMockAgent("mock-p", 4096, func(_ context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+			recorded = call
+			return agentResultWithText("ok"), nil
+		})
+		coord.agents[config.AgentGeneral] = mockGen
+		coord.mainAgent = mockGen
+		coord.mainAgentName = config.AgentGeneral
+
+		sess, err := env.sessions.Create(t.Context(), "orch-reasoning")
+		require.NoError(t, err)
+		coord.agentJobs["job-1"] = &agentJob{
+			id:              "job-1",
+			name:            "helper",
+			agent:           config.AgentCode,
+			parentSessionID: sess.ID,
+			rootSessionID:   sess.ID,
+			hasRun:          true,
+		}
+
+		ctx := WithReasoningMode(t.Context(), config.ReasoningModeOff)
+		_, err = coord.Run(ctx, sess.ID, "hello")
+		require.NoError(t, err)
+		require.NotNil(t, recorded.Orchestrator)
+		require.Equal(t, config.ReasoningModeHigh, recorded.Orchestrator.Planner.Model.ModelCfg.ReasoningMode)
+		require.Equal(t, config.ReasoningModeLow, recorded.Orchestrator.Executor.Model.ModelCfg.ReasoningMode)
+		require.Empty(t, recorded.TeamNote)
+
+		pOpts, ok := recorded.Orchestrator.Planner.ProviderOptions[openaicompat.Name].(*openaicompat.ProviderOptions)
+		require.True(t, ok)
+		require.NotNil(t, pOpts.ReasoningEffort)
+		require.Equal(t, "high", string(*pOpts.ReasoningEffort))
+
+		eOpts, ok := recorded.Orchestrator.Executor.ProviderOptions[openaicompat.Name].(*openaicompat.ProviderOptions)
+		require.True(t, ok)
+		require.NotNil(t, eOpts.ReasoningEffort)
+		require.Equal(t, "low", string(*eOpts.ReasoningEffort))
+	})
+
+	t.Run("applies default high to capable planner and medium to capable executor when unset", func(t *testing.T) {
+		env := testEnv(t)
+		cfg, err := config.Init(env.workingDir, "", false)
+		require.NoError(t, err)
+		cfg.Config().Options.DisableDefaultProviders = true
+		cfg.Config().Providers.Reset(map[string]config.ProviderConfig{})
+		cfg.Config().Providers.Set("mock-p", config.ProviderConfig{
+			ID:      "mock-p",
+			Name:    "Mock Provider",
+			Type:    openaicompat.Name,
+			BaseURL: "http://127.0.0.1:0/v1",
+			APIKey:  "test",
+			Models: []catwalk.Model{
+				{
+					ID:               "planner-m",
+					Name:             "Planner Model",
+					DefaultMaxTokens: 4096,
+					CanReason:        true,
+					ReasoningLevels:  []string{"low", "medium", "high"},
+				},
+				{
+					ID:               "executor-m",
+					Name:             "Executor Model",
+					DefaultMaxTokens: 4096,
+					CanReason:        true,
+					ReasoningLevels:  []string{"low", "medium", "high"},
+				},
+			},
+		})
+		cfg.OverridePreferredModel(config.SelectedModelTypeLarge, config.SelectedModel{Provider: "mock-p", Model: "planner-m"})
+		cfg.OverridePreferredModel(config.SelectedModelTypeSmall, config.SelectedModel{Provider: "mock-p", Model: "executor-m"})
+		cfg.SetupAgents()
+		cfg.Config().Orchestrator = config.OrchestratorConfig{
+			Enabled: true,
+		}
+
+		coord := &coordinator{
+			cfg:          cfg,
+			sessions:     env.sessions,
+			messages:     env.messages,
+			permissions:  env.permissions,
+			history:      env.history,
+			filetracker:  *env.filetracker,
+			skillTracker: skills.NewTracker(nil),
+			agents:       make(map[string]SessionAgent),
+			subAgents:    make(map[string]SessionAgent),
+			agentJobs:    make(map[string]*agentJob),
+		}
+
+		var recorded SessionAgentCall
+		mockGen := newMockAgent("mock-p", 4096, func(_ context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+			recorded = call
+			return agentResultWithText("ok"), nil
+		})
+		coord.agents[config.AgentGeneral] = mockGen
+		coord.mainAgent = mockGen
+		coord.mainAgentName = config.AgentGeneral
+
+		sess, err := env.sessions.Create(t.Context(), "orch-default-reasoning")
+		require.NoError(t, err)
+
+		ctx := WithReasoningMode(t.Context(), config.ReasoningModeOff)
+		_, err = coord.Run(ctx, sess.ID, "hello")
+		require.NoError(t, err)
+		require.NotNil(t, recorded.Orchestrator)
+		require.Equal(t, config.ReasoningModeHigh, recorded.Orchestrator.Planner.Model.ModelCfg.ReasoningMode)
+		require.Equal(t, config.ReasoningModeMedium, recorded.Orchestrator.Executor.Model.ModelCfg.ReasoningMode)
+	})
+
+	t.Run("resolveOrchestratorRoleModel handles defaults and fallbacks", func(t *testing.T) {
+		offDefaultPlanner := resolveOrchestratorRoleModel("planner", Model{
+			CatwalkCfg: catwalk.Model{
+				CanReason:              true,
+				DefaultReasoningEffort: "none",
+				ReasoningLevels:        []string{"none", "low", "medium", "high"},
+			},
+		})
+		require.Equal(t, config.ReasoningModeHigh, offDefaultPlanner.ModelCfg.ReasoningMode)
+
+		offDefaultExecutor := resolveOrchestratorRoleModel("executor", Model{
+			CatwalkCfg: catwalk.Model{
+				CanReason:              true,
+				DefaultReasoningEffort: "none",
+				ReasoningLevels:        []string{"none", "low", "medium", "high"},
+			},
+		})
+		require.Equal(t, config.ReasoningModeOff, offDefaultExecutor.ModelCfg.ReasoningMode)
+
+		emptyLevelsPlanner := resolveOrchestratorRoleModel("planner", Model{
+			CatwalkCfg: catwalk.Model{
+				CanReason: true,
+			},
+		})
+		require.Equal(t, config.ReasoningModeHigh, emptyLevelsPlanner.ModelCfg.ReasoningMode)
+
+		explicitOffCapablePlanner := resolveOrchestratorRoleModel("planner", Model{
+			CatwalkCfg: catwalk.Model{
+				CanReason:       true,
+				ReasoningLevels: []string{"none", "low", "medium", "high"},
+			},
+			ModelCfg: config.SelectedModel{
+				ReasoningMode: config.ReasoningModeOff,
+			},
+		})
+		require.Equal(t, config.ReasoningModeHigh, explicitOffCapablePlanner.ModelCfg.ReasoningMode)
+	})
+}
+
+func TestOrchestrator_PerRoleSamplingIsolation(t *testing.T) {
+	f64Ptr := func(v float64) *float64 { return &v }
+
+	t.Run("executor nil temperature clears planner temperature across steps", func(t *testing.T) {
+		env := testEnv(t)
+		planner := &scriptedOrchestratorModel{
+			provider: "anthropic",
+			modelID:  "planner-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					require.NotNil(t, call.Temperature)
+					require.InDelta(t, 0.9, *call.Temperature, 0.0001)
+					payload, _ := json.Marshal(handoffToExecutorParams{Plan: "Write file"})
+					return toolCallParts("h1", HandoffToExecutorToolName, string(payload), fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					require.NotNil(t, call.Temperature)
+					require.InDelta(t, 0.9, *call.Temperature, 0.0001)
+					return textStopParts("Verified.", fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+			},
+		}
+		executor := &scriptedOrchestratorModel{
+			provider: "openai",
+			modelID:  "executor-model",
+			steps: []func(context.Context, fantasy.Call) ([]fantasy.StreamPart, error){
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					require.Nil(t, call.Temperature)
+					return toolCallParts("w1", "write", `{}`, fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+				func(_ context.Context, call fantasy.Call) ([]fantasy.StreamPart, error) {
+					require.Nil(t, call.Temperature)
+					return textStopParts("Wrote file.", fantasy.Usage{InputTokens: 10, OutputTokens: 10}), nil
+				},
+			},
+		}
+
+		writeTool := fantasy.NewAgentTool("write", "write", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse("ok"), nil
+		})
+		viewTool := fantasy.NewAgentTool("view", "view", func(context.Context, struct{}, fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			return fantasy.NewTextResponse("ok"), nil
+		})
+
+		sa := testSessionAgent(env, planner, executor, "base system", writeTool, viewTool)
+		sess, err := env.sessions.Create(t.Context(), "sampling-isolation")
+		require.NoError(t, err)
+
+		orch := makeOrchestratorModelsConfig(planner, executor, defaultTestCatwalkModel("planner-model"), defaultTestCatwalkModel("executor-model"), true)
+		orch.Planner.Temperature = f64Ptr(0.9)
+		orch.Executor.Temperature = nil
+
+		res, err := sa.Run(t.Context(), SessionAgentCall{
+			SessionID:    sess.ID,
+			Prompt:       "Edit",
+			Temperature:  f64Ptr(0.9),
+			Orchestrator: orch,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "Verified.", res.Response.Content.Text())
+	})
+
+	t.Run("coordinator populates planner and executor sampling independently", func(t *testing.T) {
+		env := testEnv(t)
+		cfg, err := config.Init(env.workingDir, "", false)
+		require.NoError(t, err)
+		cfg.Config().Options.DisableDefaultProviders = true
+		cfg.Config().Providers.Reset(map[string]config.ProviderConfig{})
+		cfg.Config().Providers.Set("mock-p", config.ProviderConfig{
+			ID:      "mock-p",
+			Name:    "Mock Provider",
+			Type:    openaicompat.Name,
+			BaseURL: "http://127.0.0.1:0/v1",
+			APIKey:  "test",
+			Models: []catwalk.Model{
+				{
+					ID:               "planner-m",
+					Name:             "Planner Model",
+					DefaultMaxTokens: 4096,
+					Options:          catwalk.ModelOptions{Temperature: f64Ptr(0.8)},
+				},
+				{
+					ID:               "executor-m",
+					Name:             "Executor Model",
+					DefaultMaxTokens: 4096,
+					Options:          catwalk.ModelOptions{Temperature: f64Ptr(0.2)},
+				},
+			},
+		})
+		cfg.OverridePreferredModel(config.SelectedModelTypeLarge, config.SelectedModel{Provider: "mock-p", Model: "planner-m"})
+		cfg.OverridePreferredModel(config.SelectedModelTypeSmall, config.SelectedModel{Provider: "mock-p", Model: "executor-m"})
+		cfg.SetupAgents()
+		cfg.Config().Orchestrator = config.OrchestratorConfig{
+			Enabled:  true,
+			Planner:  &config.SelectedModel{Provider: "mock-p", Model: "planner-m"},
+			Executor: &config.SelectedModel{Provider: "mock-p", Model: "executor-m"},
+		}
+
+		coord := &coordinator{
+			cfg:          cfg,
+			sessions:     env.sessions,
+			messages:     env.messages,
+			permissions:  env.permissions,
+			history:      env.history,
+			filetracker:  *env.filetracker,
+			skillTracker: skills.NewTracker(nil),
+			agents:       make(map[string]SessionAgent),
+			subAgents:    make(map[string]SessionAgent),
+			agentJobs:    make(map[string]*agentJob),
+		}
+
+		var recorded SessionAgentCall
+		mockGen := newMockAgent("mock-p", 4096, func(_ context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
+			recorded = call
+			return agentResultWithText("ok"), nil
+		})
+		coord.agents[config.AgentGeneral] = mockGen
+		coord.mainAgent = mockGen
+		coord.mainAgentName = config.AgentGeneral
+
+		sess, err := env.sessions.Create(t.Context(), "coord-sampling")
+		require.NoError(t, err)
+
+		_, err = coord.Run(t.Context(), sess.ID, "hello")
+		require.NoError(t, err)
+		require.NotNil(t, recorded.Orchestrator)
+		require.NotNil(t, recorded.Orchestrator.Planner.Temperature)
+		require.InDelta(t, 0.8, *recorded.Orchestrator.Planner.Temperature, 0.0001)
+		require.NotNil(t, recorded.Orchestrator.Executor.Temperature)
+		require.InDelta(t, 0.2, *recorded.Orchestrator.Executor.Temperature, 0.0001)
+	})
 }

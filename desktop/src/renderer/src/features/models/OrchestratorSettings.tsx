@@ -9,6 +9,7 @@ export interface RoleSummary {
   reasoning: string
   reasoningOptions: string[]
   hasModel: boolean
+  isDefault?: boolean
 }
 
 export function OrchestratorSettings({
@@ -74,6 +75,7 @@ export function OrchestratorSettings({
             <span className="orchestrator-role-kicker">
               <Icon size={13} aria-hidden="true" />
               <span>{title}</span>
+              {summary.isDefault && <span className="orchestrator-role-badge">{t('Авто')}</span>}
             </span>
             <span className="orchestrator-role-main">
               <span className="orchestrator-role-model">

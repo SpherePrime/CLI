@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/SpherePrime/CLI/internal/csync"
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
@@ -229,4 +230,21 @@ func TestUpdateOrchestratorConfig_PersistsAndPreservesModels(t *testing.T) {
 		Planner: &SelectedModel{Provider: "openai"},
 	})
 	require.Error(t, err)
+}
+
+func TestResolveOrchestratorRoleReasoning(t *testing.T) {
+	t.Parallel()
+
+	capable := catwalk.Model{
+		CanReason:       true,
+		ReasoningLevels: []string{"none", "low", "medium", "high"},
+	}
+	nonCapable := catwalk.Model{
+		CanReason: false,
+	}
+
+	require.Equal(t, ReasoningModeHigh, ResolveOrchestratorRoleReasoning("planner", SelectedModel{ReasoningMode: ReasoningModeOff}, capable))
+	require.Equal(t, ReasoningModeLow, ResolveOrchestratorRoleReasoning("planner", SelectedModel{ReasoningMode: ReasoningModeLow}, capable))
+	require.Equal(t, ReasoningModeOff, ResolveOrchestratorRoleReasoning("planner", SelectedModel{ReasoningMode: ReasoningModeOff}, nonCapable))
+	require.Equal(t, ReasoningModeOff, ResolveOrchestratorRoleReasoning("executor", SelectedModel{ReasoningMode: ReasoningModeOff}, capable))
 }

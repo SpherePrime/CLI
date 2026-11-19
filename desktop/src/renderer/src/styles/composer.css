@@ -689,9 +689,21 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  width: 100%;
   color: var(--secondary);
   font-size: 11.5px;
   font-weight: 500;
+}
+.orchestrator-role-badge {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 .orchestrator-role-main {
   display: flex;

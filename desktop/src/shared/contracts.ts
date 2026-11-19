@@ -83,6 +83,7 @@ export type OrchestratorRoleConfig = {
   provider: string
   model: string
   reasoning_mode?: string
+  context_window?: number
 }
 export type OrchestratorConfig = {
   enabled?: boolean

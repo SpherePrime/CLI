@@ -417,26 +417,29 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		plannerSel := cfg.ResolveOrchestratorPlanner(sessionID)
 		executorSel := cfg.ResolveOrchestratorExecutor()
 
+		if catModel := cfg.GetModel(plannerSel.Provider, plannerSel.Model); catModel != nil && catModel.CanReason {
+			if !plannerSel.HasExplicitReasoningMode() || plannerSel.EffectiveReasoningMode() == config.ReasoningModeOff {
+				plannerSel.ReasoningMode = config.ResolveOrchestratorRoleReasoning("planner", plannerSel, *catModel)
+				plannerSel.ReasoningEffort = ""
+			}
+		}
 		plannerModel, plannerProviderCfg, pErr := c.buildSelectedModel(ctx, plannerSel, false)
 		if pErr != nil {
 			return nil, pErr
 		}
-		plannerModel, pErr = c.applyRunReasoning(ctx, plannerModel, plannerProviderCfg)
-		if pErr != nil {
-			return nil, pErr
-		}
+		plannerModel = resolveOrchestratorRoleModel("planner", plannerModel)
 		if rErr := c.refreshTokenIfExpired(ctx, plannerProviderCfg); rErr != nil {
 			slog.Error("Failed to refresh OAuth2 token for orchestrator planner. Proceeding with existing token.", "error", rErr)
 		}
 
+		if catModel := cfg.GetModel(executorSel.Provider, executorSel.Model); catModel != nil && !executorSel.HasExplicitReasoningMode() && catModel.CanReason {
+			executorSel.ReasoningMode = config.ResolveOrchestratorRoleReasoning("executor", executorSel, *catModel)
+		}
 		executorModel, executorProviderCfg, eErr := c.buildSelectedModel(ctx, executorSel, false)
 		if eErr != nil {
 			return nil, eErr
 		}
-		executorModel, eErr = c.applyRunReasoning(ctx, executorModel, executorProviderCfg)
-		if eErr != nil {
-			return nil, eErr
-		}
+		executorModel = resolveOrchestratorRoleModel("executor", executorModel)
 		if executorProviderCfg.ID != plannerProviderCfg.ID {
 			if rErr := c.refreshTokenIfExpired(ctx, executorProviderCfg); rErr != nil {
 				slog.Error("Failed to refresh OAuth2 token for orchestrator executor. Proceeding with existing token.", "error", rErr)
@@ -445,7 +448,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 
 		plannerOpts, pTemp, pTopP, pTopK, pFreq, pPres := mergeCallOptions(plannerModel, plannerProviderCfg)
 		plannerMaxTokens := callMaxOutputTokens(plannerModel, plannerProviderCfg.Type)
-		executorOpts, _, _, _, _, _ := mergeCallOptions(executorModel, executorProviderCfg)
+		executorOpts, eTemp, eTopP, eTopK, eFreq, ePres := mergeCallOptions(executorModel, executorProviderCfg)
 		executorMaxTokens := callMaxOutputTokens(executorModel, executorProviderCfg.Type)
 
 		orchCall = &OrchestratorCallConfig{
@@ -456,6 +459,11 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 				ProviderOptions:    plannerOpts,
 				SystemPromptPrefix: plannerProviderCfg.SystemPromptPrefix,
 				MaxOutputTokens:    plannerMaxTokens,
+				Temperature:        pTemp,
+				TopP:               pTopP,
+				TopK:               callTopK(plannerProviderCfg, pTopK),
+				FrequencyPenalty:   pFreq,
+				PresencePenalty:    pPres,
 				OnAuthRefresh:      c.makeAuthRefreshCallback(plannerProviderCfg),
 			},
 			Executor: OrchestratorRoleConfig{
@@ -463,6 +471,11 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 				ProviderOptions:    executorOpts,
 				SystemPromptPrefix: executorProviderCfg.SystemPromptPrefix,
 				MaxOutputTokens:    executorMaxTokens,
+				Temperature:        eTemp,
+				TopP:               eTopP,
+				TopK:               callTopK(executorProviderCfg, eTopK),
+				FrequencyPenalty:   eFreq,
+				PresencePenalty:    ePres,
 				OnAuthRefresh:      c.makeAuthRefreshCallback(executorProviderCfg),
 			},
 		}
@@ -528,7 +541,9 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	teamNote := ""
 	customAgentsNote := ""
 	if !message.HiddenUserMessage(ctx) {
-		teamNote = c.teamNote(ctx, sessionID)
+		if orchCall == nil {
+			teamNote = c.teamNote(ctx, sessionID)
+		}
 		if agentName != config.AgentDesigner {
 			customAgentsNote = c.customAgentsIndexNote(ctx)
 		}
@@ -669,6 +684,20 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		MarkRunCompletePublished(ctx)
 	}
 	return result, originalErr
+}
+
+func resolveOrchestratorRoleModel(role string, model Model) Model {
+	if !model.CatwalkCfg.CanReason {
+		return model
+	}
+	if model.ModelCfg.HasExplicitReasoningMode() && (role != "planner" || model.ModelCfg.EffectiveReasoningMode() != config.ReasoningModeOff) {
+		return model
+	}
+	model.ModelCfg.ReasoningMode = config.ResolveOrchestratorRoleReasoning(role, model.ModelCfg, model.CatwalkCfg)
+	if role == "planner" {
+		model.ModelCfg.ReasoningEffort = ""
+	}
+	return model
 }
 
 func effectiveReasoningMode(model Model) string {

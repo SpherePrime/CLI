@@ -1903,7 +1903,10 @@ Object.assign(english, {
   Настроить: 'Configure',
   Выкл: 'Off',
   'Оч. выс.': 'X-High',
-  'Макс.': 'Max'
+  'Макс.': 'Max',
+  'По умолчанию (авто)': 'Default (auto)',
+  'Использует модель чата / основную': 'Follows session / primary model',
+  'Использует быструю / основную модель': 'Follows fast / primary model'
 })
 
 

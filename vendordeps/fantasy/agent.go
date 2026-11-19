@@ -108,17 +108,23 @@ type PrepareStepFunctionOptions struct {
 
 // PrepareStepResult contains the result of preparing a step in an agent execution.
 type PrepareStepResult struct {
-	ToolDefinitions []Tool
-	BeforeToolCall  func(context.Context, ToolCall) error
-	Model           LanguageModel
-	ProviderOptions *ProviderOptions
-	MaxOutputTokens *int64
-	Messages        []Message
-	System          *string
-	ToolChoice      *ToolChoice
-	ActiveTools     []string
-	DisableAllTools bool
-	Tools           []AgentTool
+	ToolDefinitions  []Tool
+	BeforeToolCall   func(context.Context, ToolCall) error
+	Model            LanguageModel
+	ProviderOptions  *ProviderOptions
+	MaxOutputTokens  *int64
+	OverrideSampling bool
+	Temperature      *float64
+	TopP             *float64
+	TopK             *int64
+	PresencePenalty  *float64
+	FrequencyPenalty *float64
+	Messages         []Message
+	System           *string
+	ToolChoice       *ToolChoice
+	ActiveTools      []string
+	DisableAllTools  bool
+	Tools            []AgentTool
 }
 
 // ToolCallRepairOptions contains the options for repairing a tool call.
@@ -474,6 +480,11 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 		var stepGate func(context.Context, ToolCall) error
 		var stepProviderOptions *ProviderOptions
 		var stepMaxOutputTokens *int64
+		stepTemperature := opts.Temperature
+		stepTopP := opts.TopP
+		stepTopK := opts.TopK
+		stepPresencePenalty := opts.PresencePenalty
+		stepFrequencyPenalty := opts.FrequencyPenalty
 		if opts.PrepareStep != nil {
 			updatedCtx, prepared, err := opts.PrepareStep(ctx, PrepareStepFunctionOptions{
 				Model:      stepModel,
@@ -490,6 +501,29 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 			stepGate = prepared.BeforeToolCall
 			stepProviderOptions = prepared.ProviderOptions
 			stepMaxOutputTokens = prepared.MaxOutputTokens
+			if prepared.OverrideSampling {
+				stepTemperature = prepared.Temperature
+				stepTopP = prepared.TopP
+				stepTopK = prepared.TopK
+				stepPresencePenalty = prepared.PresencePenalty
+				stepFrequencyPenalty = prepared.FrequencyPenalty
+			} else {
+				if prepared.Temperature != nil {
+					stepTemperature = prepared.Temperature
+				}
+				if prepared.TopP != nil {
+					stepTopP = prepared.TopP
+				}
+				if prepared.TopK != nil {
+					stepTopK = prepared.TopK
+				}
+				if prepared.PresencePenalty != nil {
+					stepPresencePenalty = prepared.PresencePenalty
+				}
+				if prepared.FrequencyPenalty != nil {
+					stepFrequencyPenalty = prepared.FrequencyPenalty
+				}
+			}
 
 			// Apply prepared step modifications
 			if prepared.Messages != nil {
@@ -571,11 +605,11 @@ func (a *agent) Generate(ctx context.Context, opts AgentCall) (*AgentResult, err
 			return retryModel.Generate(ctx, Call{
 				Prompt:           stepInputMessages,
 				MaxOutputTokens:  callMaxOutputTokens,
-				Temperature:      opts.Temperature,
-				TopP:             opts.TopP,
-				TopK:             opts.TopK,
-				PresencePenalty:  opts.PresencePenalty,
-				FrequencyPenalty: opts.FrequencyPenalty,
+				Temperature:      stepTemperature,
+				TopP:             stepTopP,
+				TopK:             stepTopK,
+				PresencePenalty:  stepPresencePenalty,
+				FrequencyPenalty: stepFrequencyPenalty,
 				Tools:            preparedTools,
 				ToolChoice:       &stepToolChoice,
 				UserAgent:        a.settings.userAgent,
@@ -1018,6 +1052,11 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 		var stepGate func(context.Context, ToolCall) error
 		var stepProviderOptions *ProviderOptions
 		var stepMaxOutputTokens *int64
+		stepTemperature := call.Temperature
+		stepTopP := call.TopP
+		stepTopK := call.TopK
+		stepPresencePenalty := call.PresencePenalty
+		stepFrequencyPenalty := call.FrequencyPenalty
 		// Apply step preparation if provided
 		if call.PrepareStep != nil {
 			updatedCtx, prepared, err := call.PrepareStep(ctx, PrepareStepFunctionOptions{
@@ -1035,6 +1074,29 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 			stepGate = prepared.BeforeToolCall
 			stepProviderOptions = prepared.ProviderOptions
 			stepMaxOutputTokens = prepared.MaxOutputTokens
+			if prepared.OverrideSampling {
+				stepTemperature = prepared.Temperature
+				stepTopP = prepared.TopP
+				stepTopK = prepared.TopK
+				stepPresencePenalty = prepared.PresencePenalty
+				stepFrequencyPenalty = prepared.FrequencyPenalty
+			} else {
+				if prepared.Temperature != nil {
+					stepTemperature = prepared.Temperature
+				}
+				if prepared.TopP != nil {
+					stepTopP = prepared.TopP
+				}
+				if prepared.TopK != nil {
+					stepTopK = prepared.TopK
+				}
+				if prepared.PresencePenalty != nil {
+					stepPresencePenalty = prepared.PresencePenalty
+				}
+				if prepared.FrequencyPenalty != nil {
+					stepFrequencyPenalty = prepared.FrequencyPenalty
+				}
+			}
 
 			if prepared.Messages != nil {
 				stepInputMessages = prepared.Messages
@@ -1096,11 +1158,11 @@ func (a *agent) Stream(ctx context.Context, opts AgentStreamCall) (*AgentResult,
 		streamCall := Call{
 			Prompt:           stepInputMessages,
 			MaxOutputTokens:  call.MaxOutputTokens,
-			Temperature:      call.Temperature,
-			TopP:             call.TopP,
-			TopK:             call.TopK,
-			PresencePenalty:  call.PresencePenalty,
-			FrequencyPenalty: call.FrequencyPenalty,
+			Temperature:      stepTemperature,
+			TopP:             stepTopP,
+			TopK:             stepTopK,
+			PresencePenalty:  stepPresencePenalty,
+			FrequencyPenalty: stepFrequencyPenalty,
 			Tools:            preparedTools,
 			ToolChoice:       &stepToolChoice,
 			UserAgent:        a.settings.userAgent,

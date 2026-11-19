@@ -1,6 +1,52 @@
 import { Check, Lock, Star } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { ModelCapability } from './useModelCapabilities'
+import type { OrchestratorRole } from './orchestrator'
+
+export function OrchestratorDefaultRow({
+  role,
+  active,
+  disabled,
+  fallbackName,
+  onSelect
+}: {
+  role: OrchestratorRole
+  active: boolean
+  disabled: boolean
+  fallbackName?: string
+  onSelect: () => void
+}) {
+  const { t } = useI18n()
+  const baseDescription =
+    role === 'planner'
+      ? t('Использует модель чата / основную')
+      : t('Использует быструю / основную модель')
+  const detail = fallbackName ? `${baseDescription} · ${fallbackName}` : baseDescription
+  return (
+    <div className={`model-picker-row${active ? ' selected' : ''}`}>
+      <button
+        type="button"
+        className="model-picker-select"
+        role="option"
+        aria-selected={active}
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) onSelect()
+        }}
+      >
+        <span className="model-description">
+          <span className="model-picker-title-row">
+            <strong>{t('По умолчанию (авто)')}</strong>
+          </span>
+          <span className="model-picker-detail">
+            <small>{detail}</small>
+          </span>
+        </span>
+        {active && <Check size={16} aria-hidden="true" />}
+      </button>
+    </div>
+  )
+}
 
 export function ModelPickerRow({
   model,

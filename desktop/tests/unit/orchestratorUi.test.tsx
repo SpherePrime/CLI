@@ -5,12 +5,17 @@ import { operationRoute } from '../../src/shared/operations'
 import { translate } from '../../src/shared/localization'
 import {
   compactModelLabel,
+  hasExplicitRoleOverride,
+  isOrchestratorActive,
   orchestratorPhaseLabel,
+  resolveContextWindow,
   resolveRoleConfig,
   resolveRoleDisplay,
   resolveRoleReasoning,
   roleReasoningOptions
 } from '../../src/renderer/src/features/models/orchestrator'
+import { ModelControl } from '../../src/renderer/src/features/models/ModelControl'
+import { OrchestratorDefaultRow } from '../../src/renderer/src/features/models/ModelPickerRow'
 import { OrchestratorSettings } from '../../src/renderer/src/features/models/OrchestratorSettings'
 import { MessageItem } from '../../src/renderer/src/features/chat/MessageItem'
 import { installPreviewHost } from '../../src/renderer/src/host/installPreviewHost'
@@ -88,6 +93,52 @@ describe('orchestrator operation route & helpers', () => {
     expect(resolveRoleReasoning('planner', undefined, sampleModels[0])).toBe('medium')
   })
 
+  it('computes orchestrator active state and planner context window accurately', () => {
+    expect(isOrchestratorActive(true, 'general', 'project')).toBe(true)
+    expect(isOrchestratorActive(true, 'plan', 'project')).toBe(false)
+    expect(isOrchestratorActive(true, 'general', 'designer')).toBe(false)
+    expect(isOrchestratorActive(false, 'general', 'project')).toBe(false)
+
+    expect(
+      resolveContextWindow({
+        orchestratorActive: true,
+        plannerRef: { context_window: 1000000 },
+        plannerCapability: { provider_id: 'openai', model_id: 'gpt-5.4', context_window: 400000 },
+        selected: { context_window: 128000 },
+        capability: { provider_id: 'anthropic', model_id: 'claude-sonnet-4', context_window: 200000 }
+      })
+    ).toBe(1000000)
+
+    expect(
+      resolveContextWindow({
+        orchestratorActive: true,
+        plannerCapability: { provider_id: 'openai', model_id: 'gpt-5.4', context_window: 400000 },
+        selected: { context_window: 128000 }
+      })
+    ).toBe(400000)
+
+    expect(
+      resolveContextWindow({
+        orchestratorActive: false,
+        plannerRef: { context_window: 1000000 },
+        selected: { context_window: 128000 }
+      })
+    ).toBe(128000)
+
+    expect(
+      hasExplicitRoleOverride(
+        { orchestrator: { planner: { provider: 'openai', model: 'gpt-5.4' } } },
+        'planner'
+      )
+    ).toBe(true)
+    expect(
+      hasExplicitRoleOverride(
+        { orchestrator: { planner: { provider: '', model: '' } } },
+        'planner'
+      )
+    ).toBe(false)
+  })
+
   it('maps orchestrator phase labels in Russian', () => {
     const ru = (key: string) => translate('ru', key)
     expect(orchestratorPhaseLabel('plan', ru)).toBe('Планировщик')
@@ -137,6 +188,155 @@ describe('OrchestratorSettings UI', () => {
     expect(html).toContain('Финальная проверка')
     expect(html).toContain('перед ответом')
     expect(html).toContain('aria-checked="true"')
+  })
+
+  it('renders auto badge on default roles and auto-reset option rows in both locales', () => {
+    const settingsHtml = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <OrchestratorSettings
+          enabled={true}
+          finalReview={true}
+          planner={{
+            name: 'GPT-5.4',
+            provider: 'OpenAI',
+            reasoning: 'high',
+            reasoningOptions: ['low', 'medium', 'high', 'max'],
+            hasModel: true,
+            isDefault: true
+          }}
+          executor={{
+            name: 'Claude Sonnet 4',
+            provider: 'Anthropic',
+            reasoning: 'medium',
+            reasoningOptions: ['off', 'low', 'medium', 'high'],
+            hasModel: true,
+            isDefault: false
+          }}
+          disabled={false}
+          onToggleEnabled={vi.fn()}
+          onToggleFinalReview={vi.fn()}
+          onChangeReasoning={vi.fn()}
+          onPickModel={vi.fn()}
+        />
+      </I18nProvider>
+    )
+    expect(settingsHtml).toContain('orchestrator-role-badge')
+    expect(settingsHtml).toContain('Авто')
+
+    const ruAutoActiveHtml = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <OrchestratorDefaultRow
+          role="planner"
+          active={true}
+          disabled={false}
+          fallbackName="GPT-5.4"
+          onSelect={vi.fn()}
+        />
+      </I18nProvider>
+    )
+    expect(ruAutoActiveHtml).toContain('По умолчанию (авто)')
+    expect(ruAutoActiveHtml).toContain('Использует модель чата / основную · GPT-5.4')
+    expect(ruAutoActiveHtml).toContain('aria-selected="true"')
+
+    const enAutoInactiveHtml = renderToStaticMarkup(
+      <I18nProvider language="en">
+        <OrchestratorDefaultRow
+          role="executor"
+          active={false}
+          disabled={false}
+          fallbackName="Claude Sonnet 4"
+          onSelect={vi.fn()}
+        />
+      </I18nProvider>
+    )
+    expect(enAutoInactiveHtml).toContain('Default (auto)')
+    expect(enAutoInactiveHtml).toContain('Follows fast / primary model · Claude Sonnet 4')
+    expect(enAutoInactiveHtml).toContain('aria-selected="false"')
+  })
+})
+
+describe('ModelControl orchestrator visibility and context window', () => {
+  const createWorkspaceMock = (overrides: {
+    agentMode?: 'general' | 'plan'
+    projectKind?: 'chat' | 'project' | 'designer'
+  }) =>
+    ({
+      project: {
+        id: 'ws-1',
+        path: '/tmp/ws-1',
+        clientId: 'c-1',
+        connection: 'ready',
+        kind: overrides.projectKind ?? 'project'
+      },
+      session: {
+        id: 'sess-1',
+        title: 'Test',
+        prompt_tokens: 50000,
+        completion_tokens: 0
+      },
+      preferences: {
+        theme: 'dark',
+        language: 'ru',
+        recent: [],
+        pinned: [],
+        drafts: {},
+        sidebarWidth: 256,
+        inspectorWidth: 350,
+        agentMode: overrides.agentMode ?? 'general'
+      },
+      reasoningMode: 'medium',
+      orchestratorEnabled: true,
+      config: {
+        models: {
+          large: { provider: 'anthropic', model: 'claude-sonnet-4', context_window: 200000 },
+          small: { provider: 'anthropic', model: 'claude-haiku-4', context_window: 200000 }
+        },
+        orchestrator: {
+          enabled: true,
+          planner: { provider: 'openai', model: 'gpt-5.4', context_window: 1000000 },
+          executor: { provider: 'anthropic', model: 'claude-sonnet-4', context_window: 200000 }
+        }
+      },
+      agent: { model: { name: 'claude-sonnet-4' } },
+      busy: false,
+      call: vi.fn().mockResolvedValue([]),
+      setReasoningMode: vi.fn(),
+      savePreferences: vi.fn(),
+      setOrchestrator: vi.fn(),
+      errorHandler: vi.fn()
+    }) as any
+
+  it('shows orchestrator control and planner context window in general mode', () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <ModelControl workspace={createWorkspaceMock({ agentMode: 'general', projectKind: 'project' })} />
+      </I18nProvider>
+    )
+    expect(html).toContain('model-control is-orchestrator')
+    expect(html).toContain('Оркестратор')
+    expect(html).toContain('5%')
+    expect(html).toContain('1.0M')
+  })
+
+  it('suppresses orchestrator control in plan mode and designer workspaces', () => {
+    const planHtml = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <ModelControl workspace={createWorkspaceMock({ agentMode: 'plan', projectKind: 'project' })} />
+      </I18nProvider>
+    )
+    expect(planHtml).not.toContain('is-orchestrator')
+    expect(planHtml).toContain('claude-sonnet-4')
+    expect(planHtml).toContain('25%')
+    expect(planHtml).toContain('200k')
+
+    const designerHtml = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <ModelControl workspace={createWorkspaceMock({ agentMode: 'general', projectKind: 'designer' })} />
+      </I18nProvider>
+    )
+    expect(designerHtml).not.toContain('is-orchestrator')
+    expect(designerHtml).toContain('claude-sonnet-4')
+    expect(designerHtml).toContain('25%')
   })
 })
 
@@ -256,6 +456,14 @@ describe('installPreviewHost orchestrator mock', () => {
         reasoning_mode: 'low'
       })
       expect(cfg.orchestrator.final_review).toBe(false)
+
+      await prime.call('ws-prime', 'orchestrator', {
+        planner: { provider: '', model: '' },
+        executor: { provider: '', model: '' }
+      })
+      const clearedCfg = await prime.call('ws-prime', 'config')
+      expect(clearedCfg.orchestrator.planner).toBeUndefined()
+      expect(clearedCfg.orchestrator.executor).toBeUndefined()
     } finally {
       if (previousWindow === undefined) delete (globalThis as { window?: unknown }).window
       else (globalThis as { window?: unknown }).window = previousWindow

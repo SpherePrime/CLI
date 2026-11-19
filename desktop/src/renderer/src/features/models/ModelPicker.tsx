@@ -1,11 +1,11 @@
 import { useRef, useState, type RefObject } from 'react'
-import { ArrowLeft, Clock3, Search, Plus, Star } from 'lucide-react'
+import { ArrowLeft, Clock3, Search, Plus, Sparkles, Star } from 'lucide-react'
 import { Popover } from '../../components/Popover'
 import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { useModelCapabilities } from './useModelCapabilities'
 import { realSessionId } from '../../../../shared/pendingSession'
-import { ModelPickerRow } from './ModelPickerRow'
+import { ModelPickerRow, OrchestratorDefaultRow } from './ModelPickerRow'
 import {
   buildModelGroups,
   modelIdentity,
@@ -14,6 +14,7 @@ import {
 } from './modelPreferences'
 import { OrchestratorSettings } from './OrchestratorSettings'
 import {
+  hasExplicitRoleOverride,
   resolveRoleDisplay,
   resolveRoleReasoning,
   roleReasoningOptions,
@@ -53,15 +54,45 @@ export function ModelPicker({
       : undefined
   const plannerDisplay = resolveRoleDisplay('planner', w.config, sessionId, models)
   const executorDisplay = resolveRoleDisplay('executor', w.config, sessionId, models)
+  const plannerHasOverride = hasExplicitRoleOverride(w.config, 'planner')
+  const executorHasOverride = hasExplicitRoleOverride(w.config, 'executor')
+  const pickingHasOverride =
+    pickingRole === 'planner'
+      ? plannerHasOverride
+      : pickingRole === 'executor'
+        ? executorHasOverride
+        : false
+  const defaultRoleDisplay =
+    kind === 'orchestrator' && pickingRole
+      ? resolveRoleDisplay(pickingRole, { ...w.config, orchestrator: undefined }, sessionId, models)
+      : undefined
   const selected =
     kind === 'orchestrator' && pickingRole
-      ? pickingRole === 'planner'
-        ? plannerDisplay.ref
-        : executorDisplay.ref
+      ? pickingHasOverride
+        ? pickingRole === 'planner'
+          ? plannerDisplay.ref
+          : executorDisplay.ref
+        : undefined
       : sessionModel ?? w.config?.models?.[kind]
   const favorites = w.preferences.favoriteModels || []
   const favoriteIdentities = new Set(favorites.map(modelIdentity))
   const groups = buildModelGroups(models, w.preferences.recentModels, favorites, query)
+  const normalizedQuery = query.trim().toLowerCase()
+  const showDefaultOption =
+    kind === 'orchestrator' &&
+    pickingRole !== null &&
+    (!normalizedQuery ||
+      [
+        t('По умолчанию (авто)'),
+        pickingRole === 'planner'
+          ? t('Использует модель чата / основную')
+          : t('Использует быструю / основную модель'),
+        defaultRoleDisplay?.name || '',
+        'default',
+        'auto',
+        'по умолчанию',
+        'авто'
+      ].some((value) => value.toLowerCase().includes(normalizedQuery)))
   const showModelList = kind !== 'orchestrator' || pickingRole !== null
   const finalReview = w.config?.orchestrator?.final_review !== false
 
@@ -179,12 +210,41 @@ export function ModelPicker({
             {loading && !models.length && (
               <p className="picker-note muted">{t('Загружаем каталог моделей…')}</p>
             )}
-            {!loading && !groups.length && (
+            {!loading && !groups.length && !showDefaultOption && (
               <p className="picker-note muted">
                 {models.length
                   ? t('Модели не найдены')
                   : t('Подключите провайдера, чтобы увидеть модели')}
               </p>
+            )}
+            {kind === 'orchestrator' && pickingRole && showDefaultOption && (
+              <div className="model-picker-group" role="group" aria-label={t('По умолчанию')}>
+                <div className="model-picker-provider">
+                  <Sparkles size={16} aria-hidden="true" />
+                  {t('По умолчанию')}
+                </div>
+                <OrchestratorDefaultRow
+                  role={pickingRole}
+                  active={!pickingHasOverride}
+                  disabled={saving || w.busy}
+                  fallbackName={defaultRoleDisplay?.name}
+                  onSelect={async () => {
+                    setSaving(true)
+                    setError('')
+                    try {
+                      await w.setOrchestrator({
+                        [pickingRole]: { provider: '', model: '' }
+                      })
+                      setPickingRole(null)
+                      setQuery('')
+                    } catch (error: any) {
+                      setError(error?.message || String(error))
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                />
+              </div>
             )}
             {groups.map((group) => {
               const groupName =
@@ -309,14 +369,16 @@ export function ModelPicker({
               provider: plannerDisplay.provider,
               reasoning: plannerDisplay.reasoning,
               reasoningOptions: plannerDisplay.reasoningOptions,
-              hasModel: Boolean(plannerDisplay.ref)
+              hasModel: Boolean(plannerDisplay.ref),
+              isDefault: !plannerHasOverride
             }}
             executor={{
               name: executorDisplay.name,
               provider: executorDisplay.provider,
               reasoning: executorDisplay.reasoning,
               reasoningOptions: executorDisplay.reasoningOptions,
-              hasModel: Boolean(executorDisplay.ref)
+              hasModel: Boolean(executorDisplay.ref),
+              isDefault: !executorHasOverride
             }}
             disabled={saving || w.busy}
             onToggleEnabled={async (next) => {

@@ -972,8 +972,8 @@ func (m *Models) setOrchestratorMenuItems(cfg *config.Config) {
 		finalReviewStr = m.com.L("status.mode.on")
 	}
 
-	plannerLabel := orchestratorModelLabel(cfg, cfg.ResolveOrchestratorPlanner(""), cfg.Orchestrator.Planner == nil)
-	executorLabel := orchestratorModelLabel(cfg, cfg.ResolveOrchestratorExecutor(), cfg.Orchestrator.Executor == nil)
+	plannerLabel := orchestratorModelLabel(cfg, "planner", cfg.ResolveOrchestratorPlanner(""), cfg.Orchestrator.Planner == nil)
+	executorLabel := orchestratorModelLabel(cfg, "executor", cfg.ResolveOrchestratorExecutor(), cfg.Orchestrator.Executor == nil)
 
 	group := NewModelGroup(t, m.com.L("orch.group"), cfg.IsOrchestratorEnabled(""))
 	group.AppendItems(
@@ -991,18 +991,29 @@ func (m *Models) setOrchestratorMenuItems(cfg *config.Config) {
 	}
 }
 
-func orchestratorModelLabel(cfg *config.Config, sel config.SelectedModel, isAuto bool) string {
+func orchestratorModelLabel(cfg *config.Config, role string, sel config.SelectedModel, isAuto bool) string {
 	if sel.Provider == "" || sel.Model == "" {
 		return "not set"
 	}
 	name := sel.Model
+	var cm *catwalk.Model
 	if cfg != nil {
-		if cm := cfg.GetModel(sel.Provider, sel.Model); cm != nil && cm.Name != "" {
+		cm = cfg.GetModel(sel.Provider, sel.Model)
+		if cm != nil && cm.Name != "" {
 			name = cm.Name
 		}
 	}
 	if isAuto {
-		return name + " (auto)"
+		name += " (auto)"
+	}
+	var reasoningMode string
+	if cm != nil && (cm.CanReason || sel.HasExplicitReasoningMode()) {
+		reasoningMode = config.ResolveOrchestratorRoleReasoning(role, sel, *cm)
+	} else if sel.HasExplicitReasoningMode() {
+		reasoningMode = sel.EffectiveReasoningMode()
+	}
+	if reasoningMode != "" && ((cm != nil && cm.CanReason) || reasoningMode != config.ReasoningModeOff) {
+		name += " · " + reasoningMode
 	}
 	return name
 }

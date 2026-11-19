@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 )
 
 // OrchestratorConfig configures Prime's native Orchestrator mode.
@@ -126,6 +128,56 @@ func (c *Config) ResolveOrchestratorExecutor() SelectedModel {
 		return c.Models[SelectedModelTypeLarge]
 	}
 	return SelectedModel{}
+}
+
+func ResolveOrchestratorRoleReasoning(role string, sel SelectedModel, model catwalk.Model) string {
+	if sel.HasExplicitReasoningMode() {
+		explicit := sel.EffectiveReasoningMode()
+		if role != "planner" || !model.CanReason || explicit != ReasoningModeOff {
+			return explicit
+		}
+	}
+	if !model.CanReason {
+		return ReasoningModeOff
+	}
+	levels := model.ReasoningLevels
+	if model.DefaultReasoningEffort != "" {
+		normDefault := NormalizeReasoningMode(model.DefaultReasoningEffort)
+		supported := len(levels) == 0 || slices.Contains(levels, model.DefaultReasoningEffort) || slices.Contains(levels, normDefault)
+		if supported {
+			if role == "planner" {
+				if normDefault != ReasoningModeOff {
+					return normDefault
+				}
+			} else {
+				return normDefault
+			}
+		}
+	}
+	if role == "planner" {
+		if len(levels) == 0 || slices.Contains(levels, ReasoningModeHigh) {
+			return ReasoningModeHigh
+		}
+		if slices.Contains(levels, ReasoningModeMedium) {
+			return ReasoningModeMedium
+		}
+		for _, level := range levels {
+			if mode := NormalizeReasoningMode(level); mode != ReasoningModeOff {
+				return mode
+			}
+		}
+		return ReasoningModeMedium
+	}
+	if len(levels) == 0 || slices.Contains(levels, ReasoningModeMedium) {
+		return ReasoningModeMedium
+	}
+	if slices.Contains(levels, ReasoningModeLow) {
+		return ReasoningModeLow
+	}
+	if len(levels) > 0 {
+		return NormalizeReasoningMode(levels[0])
+	}
+	return ReasoningModeOff
 }
 
 // UpdateOrchestratorConfig updates Orchestrator settings in memory and persists

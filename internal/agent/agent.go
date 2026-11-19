@@ -1083,6 +1083,12 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 					mot := roleCfg.MaxOutputTokens
 					prepared.MaxOutputTokens = &mot
 				}
+				prepared.OverrideSampling = true
+				prepared.Temperature = roleCfg.Temperature
+				prepared.TopP = roleCfg.TopP
+				prepared.TopK = roleCfg.TopK
+				prepared.FrequencyPenalty = roleCfg.FrequencyPenalty
+				prepared.PresencePenalty = roleCfg.PresencePenalty
 				prepared.Messages = orch.sanitizeMessages(prepared.Messages, historyAssistantModels, activeModel)
 				stepBasePrompt := systemPrompt
 				if a.agent.ID != config.AgentDesigner {
