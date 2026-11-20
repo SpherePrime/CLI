@@ -39,6 +39,8 @@ func TestAgentWorkerOperationsRequireTeamMembership(t *testing.T) {
 	ws.App.SetCoordinator(stub)
 	_, err := b.ListAgentWorkerMessages(context.Background(), ws.ID, "root", "other-team")
 	require.ErrorIs(t, err, ErrAgentWorkerNotFound)
+	_, err = b.ListAgentWorkerMessagePage(context.Background(), ws.ID, "root", "other-team", "", "", "", 10)
+	require.ErrorIs(t, err, ErrAgentWorkerNotFound)
 	_, err = b.SendAgentWorkerMessage(context.Background(), ws.ID, "root", "other-team", "hello")
 	require.ErrorIs(t, err, ErrAgentWorkerNotFound)
 	require.Empty(t, stub.target)

@@ -1024,17 +1024,67 @@ export function installPreviewHost() {
         }
       }
       if (operation === 'agentWorkers') return { workers }
-      if (operation === 'agentWorkerMessages') return { messages: workerMessages[args?.workerSessionId] || [] }
+      if (operation === 'agentWorkerMessages') {
+        const workerSessionId =
+          args?.workerSessionId ||
+          workers.find((item) => item.id === args?.workerId)?.session_id ||
+          ''
+        const list = workerMessages[workerSessionId] || []
+        const limit = Math.max(1, Number(args?.limit ?? 60))
+        let slice = list
+        let hasBefore = false
+        let hasAfter = false
+        if (args?.before) {
+          const idx = list.findIndex((item) => item.id === args.before)
+          const end = idx >= 0 ? idx : list.length
+          const start = Math.max(0, end - limit)
+          slice = list.slice(start, end)
+          hasBefore = start > 0
+          hasAfter = end < list.length
+        } else if (args?.after) {
+          const idx = list.findIndex((item) => item.id === args.after)
+          const start = idx >= 0 ? idx + 1 : 0
+          const end = Math.min(list.length, start + limit)
+          slice = list.slice(start, end)
+          hasBefore = start > 0
+          hasAfter = end < list.length
+        } else if (args?.around) {
+          const idx = list.findIndex((item) => item.id === args.around)
+          const center = idx >= 0 ? idx : Math.max(0, list.length - 1)
+          const half = Math.floor(limit / 2)
+          const start = Math.max(0, center - half)
+          const end = Math.min(list.length, start + limit)
+          slice = list.slice(start, end)
+          hasBefore = start > 0
+          hasAfter = end < list.length
+        } else {
+          const start = Math.max(0, list.length - limit)
+          slice = list.slice(start)
+          hasBefore = start > 0
+          hasAfter = false
+        }
+        return {
+          messages: slice,
+          has_more: hasBefore || hasAfter,
+          has_before: hasBefore,
+          has_after: hasAfter,
+          timing: { completed: {} }
+        }
+      }
       if (operation === 'agentWorkerSend') {
-        const list = workerMessages[args?.workerSessionId] || []
+        const workerSessionId =
+          args?.workerSessionId ||
+          workers.find((item) => item.id === args?.workerId)?.session_id ||
+          ''
+        const list = workerMessages[workerSessionId] || []
         list.push({
           id: `wmsg-${Date.now()}`,
-          session_id: args?.workerSessionId,
+          session_id: workerSessionId,
           role: 'user',
           created_at: Math.floor(Date.now() / 1000),
-          parts: [{ type: 'text', data: { text: args?.prompt || '' } }]
+          parts: [{ type: 'text', data: { text: args?.text || args?.prompt || '' } }]
         })
-        workerMessages[args?.workerSessionId] = list
+        workerMessages[workerSessionId] = list
         return { ok: true }
       }
       if (operation === 'mcp') return config.mcp

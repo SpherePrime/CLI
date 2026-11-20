@@ -28,7 +28,17 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     context: () => ['GET', `sessions/${sid}/context`],
     agent: () => ['GET', 'agent'],
     agentWorkers: () => ['GET', `agent/sessions/${sid}/workers`],
-    agentWorkerMessages: () => ['GET', `agent/sessions/${sid}/workers/${encodeURIComponent(args.workerId || '')}/messages`],
+    agentWorkerMessages: () => {
+      const query = new URLSearchParams({ limit: String(args.limit ?? 60) })
+      if (args.before) query.set('before', String(args.before))
+      if (args.after) query.set('after', String(args.after))
+      if (args.around) query.set('around', String(args.around))
+      if (args.textOnly) query.set('text_only', 'true')
+      return [
+        'GET',
+        `agent/sessions/${sid}/workers/${encodeURIComponent(args.workerId || '')}/messages?${query}`
+      ]
+    },
     agentWorkerSend: () => ['POST', `agent/sessions/${sid}/workers/${encodeURIComponent(args.workerId || '')}/messages`, { text: args.text }],
     agentWorkerStop: () => ['POST', `agent/sessions/${sid}/workers/${encodeURIComponent(args.workerId || '')}/stop`],
     init: () => ['POST', 'agent/init', { interactive: true }],

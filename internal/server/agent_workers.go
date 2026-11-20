@@ -1,12 +1,14 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/SpherePrime/CLI/internal/apigen"
 	"github.com/SpherePrime/CLI/internal/backend"
+	"github.com/SpherePrime/CLI/internal/message"
 )
 
 func (c *controllerV1) agentWorkerEndpoints() []apigen.Endpoint {
@@ -42,12 +44,38 @@ func (c *controllerV1) handleAgentWorkers(w http.ResponseWriter, r *http.Request
 }
 
 func (c *controllerV1) handleAgentWorkerMessages(w http.ResponseWriter, r *http.Request) {
+	if query := r.URL.Query(); query.Has("limit") || query.Has("before") || query.Has("after") || query.Has("around") || query.Has("text_only") {
+		c.handleAgentWorkerMessagePage(w, r)
+		return
+	}
 	messages, err := c.backend.ListAgentWorkerMessages(r.Context(), r.PathValue("id"), r.PathValue("sid"), r.PathValue("worker"))
 	if err != nil {
 		c.workerError(w, r, err)
 		return
 	}
 	jsonEncode(w, map[string]any{"messages": messagesToProto(messages)})
+}
+
+func (c *controllerV1) handleAgentWorkerMessagePage(w http.ResponseWriter, r *http.Request) {
+	params, errMsg := parseMessagePageParams(r.URL.Query())
+	if errMsg != "" {
+		jsonError(w, http.StatusBadRequest, errMsg)
+		return
+	}
+	page, err := c.backend.ListAgentWorkerMessagePage(r.Context(), r.PathValue("id"), r.PathValue("sid"), r.PathValue("worker"), params.before, params.after, params.around, params.limit, params.textOnly)
+	if errors.Is(err, message.ErrInvalidCursor) {
+		jsonError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		jsonError(w, http.StatusNotFound, "session not found")
+		return
+	}
+	if err != nil {
+		c.workerError(w, r, err)
+		return
+	}
+	jsonEncode(w, messagePageToProto(page))
 }
 
 func (c *controllerV1) handleAgentWorkerSend(w http.ResponseWriter, r *http.Request) {

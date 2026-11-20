@@ -68,6 +68,14 @@ func (b *Backend) ListAgentWorkerMessages(ctx context.Context, workspaceID, sess
 	return b.ListSessionMessages(ctx, workspaceID, worker.SessionID)
 }
 
+func (b *Backend) ListAgentWorkerMessagePage(ctx context.Context, workspaceID, sessionID, workerID, before, after, around string, limit int, textOnly ...bool) (message.Page, error) {
+	worker, err := b.findAgentWorker(ctx, workspaceID, sessionID, workerID)
+	if err != nil {
+		return message.Page{}, err
+	}
+	return b.ListSessionMessagePage(ctx, workspaceID, worker.SessionID, before, after, around, limit, textOnly...)
+}
+
 func (b *Backend) SendAgentWorkerMessage(ctx context.Context, workspaceID, sessionID, workerID, text string) (agent.AgentWorker, error) {
 	if strings.TrimSpace(text) == "" || len(text) > 131072 {
 		return agent.AgentWorker{}, ErrAgentWorkerInput

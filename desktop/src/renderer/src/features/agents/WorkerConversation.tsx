@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, RefreshCw, Send, Square } from 'lucide-react'
-import type { Message } from '../../../../shared/contracts'
 import { workerActive, workerStatusLabels, type AgentWorker } from '../../../../shared/agents'
 import { useI18n } from '../../i18n'
 import { MessageList } from '../chat/MessageList'
 import { WorkspaceMediaProvider } from '../chat/WorkspaceMediaContext'
-import { reuseUnchanged } from '../chat/stableMessages'
-import { useAgentPolling } from './useAgentPolling'
+import { useWorkerMessageHistory } from './useWorkerMessageHistory'
 
 export function WorkerConversation({
   worker,
@@ -36,24 +34,8 @@ export function WorkerConversation({
       mounted.current = false
     }
   }, [])
-  const snapshot = useRef<Message[]>([])
-  const revision = useRef('')
-  const current = useRef(worker)
-  current.current = worker
-  const load = useCallback(async () => {
-    const nextRevision = `${current.current.status}:${current.current.updated_at}`
-    if (!workerActive(current.current) && revision.current === nextRevision) return snapshot.current
-    const result = await window.prime.call(projectId, 'agentWorkerMessages', {
-      sessionId,
-      workerId: worker.id
-    })
-    revision.current = nextRevision
-    snapshot.current = reuseUnchanged(snapshot.current, result.messages || [])
-    return snapshot.current
-  }, [projectId, sessionId, worker.id])
-  const history = useAgentPolling(load, workerActive(worker) ? 1000 : 3000, [] as Message[])
+  const history = useWorkerMessageHistory({ projectId, sessionId, worker })
   function refresh() {
-    revision.current = ''
     history.refresh()
     refreshRoster()
   }
@@ -133,13 +115,22 @@ export function WorkerConversation({
           </button>
         </div>
       )}
-      {history.loading ? (
+      {history.initialLoading ? (
         <p className="agents-loading" role="status">
           {t('Загрузка…')}
         </p>
-      ) : history.value.length ? (
+      ) : history.messages.length ? (
         <WorkspaceMediaProvider workspaceId={projectId}>
-          <MessageList messages={history.value} busy={worker.status === 'running'} />
+          <MessageList
+            messages={history.messages}
+            busy={worker.status === 'running'}
+            hasBefore={history.hasBefore}
+            hasAfter={history.hasAfter}
+            historyLoading={Boolean(history.pagingLoading)}
+            historyError={history.pagingError}
+            historyTiming={history.timing}
+            loadHistory={history.loadHistory}
+          />
         </WorkspaceMediaProvider>
       ) : (
         <div className="agents-empty">
