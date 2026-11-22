@@ -295,7 +295,7 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 		sb.WriteString(formatOrchestratorPlanDetails(o.plan, o.targetFiles, o.verificationChecks, o.escalationTriggers))
 		sb.WriteString("\n</orchestrator_plan>")
 		if o.cfg.GameDev {
-			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Write and run automated playthrough test bots (headless simulation or automated player agents) that play through the game from start to finish / across key game loops to detect bugs, crashes, and softlocks and to verify difficulty balance.\n</gamedev_mode>")
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Read prime://skills/prime-gamedev/SKILL.md with view. Write and run a live bug-hunting playthrough bot against the real game (full loop plus wall/corner/floor-seam/edge probes), run scripted telemetry checks (falling through floors/textures, clipping, out-of-bounds, console/WebGL/asset errors, softlocks), record gameplay video into a temp directory, slice it into dense frames and contact sheets, visually inspect the frames with view for visual/texture bugs, and verify difficulty balance.\n</gamedev_mode>")
 		}
 		return sb.String()
 
@@ -316,7 +316,7 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 			sb.WriteString("\n</orchestrator_plan>")
 		}
 		if o.cfg.GameDev {
-			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Verify that automated playthrough test bots exist for touched game flows, ran cleanly without bugs, crashes, or softlocks, and confirm difficulty and balance tuning before concluding.\n</gamedev_mode>")
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Read prime://skills/prime-gamedev/SKILL.md with view. Verify that a live bug-hunting playthrough bot ran against the real game with video recording, dense frame slicing, visual frame inspection via view (no visual/texture/HUD glitches or floor fall-throughs), clean scripted collision/error telemetry, and confirmed difficulty and balance tuning before concluding.\n</gamedev_mode>")
 		}
 		return sb.String()
 
@@ -337,7 +337,7 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 			sb.WriteString("\n</orchestrator_escalation>")
 		}
 		if o.cfg.GameDev {
-			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Include automated playthrough test bots (playing through the game to detect bugs, crashes, and softlocks and to verify difficulty balance) in your plan and `verification_checks`.\n</gamedev_mode>")
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Include live bug-hunting playthrough bots (via prime://skills/prime-gamedev/SKILL.md), video recording with dense frame extraction and visual frame inspection via view, scripted collision/texture-fall-through checks, and difficulty balance verification in your plan and `verification_checks`.\n</gamedev_mode>")
 		}
 		return sb.String()
 	}

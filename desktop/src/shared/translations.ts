@@ -1972,19 +1972,19 @@ Object.assign(english, {
   'Выключен': 'Disabled',
   'Включить режим GameDev': 'Enable GameDev mode',
   'Выключить режим GameDev': 'Disable GameDev mode',
-  'Режим GameDev: добавляет автотест-ботов для прохождения игры, поиска багов и проверки баланса сложности':
-    'GameDev mode: adds automated playthrough test bots for bugs and difficulty balance',
-  'Добавляет в инструкции тестирования создание и запуск ботов для прохождения игры.':
-    'Adds instructions to create and run automated playthrough bots during testing.',
-  'Тестовые боты': 'Test bots',
-  'Автоматически проходят игровые сценарии и уровни.':
-    'Automatically play through game scenarios and levels.',
-  'Поиск багов': 'Bug detection',
-  'Выявляют софтлоки, краши и ошибки логики.': 'Detect softlocks, crashes and logic bugs.',
-  'Проверка сложности': 'Difficulty check',
-  'Оценивают баланс и проходимость игры.': 'Evaluate game balance and playability.',
-  'Когда режим выключен, инструкции для игр не добавляются в промпт.':
-    'When disabled, no game instructions are added to the prompt.'
+  'Режим GameDev: запускает живого бота с видеозаписью, покадровым поиском визуальных багов, проверкой провалов в текстуры и баланса сложности':
+    'GameDev mode: runs a live playthrough bot with video recording, frame-by-frame visual bug inspection, texture clipping checks and difficulty balance',
+  'Запускает живого бота-тестера, проверяет визуал и баланс игры.':
+    'Runs a live test bot, checks visuals, and verifies game balance.',
+  'Живой бот-тестер': 'Live playthrough bot',
+  'Проходит игру и ищет баги, углы и софтлоки.':
+    'Plays through the game hunting bugs, corners, and softlocks.',
+  'Визуал и провалы в текстуры': 'Visuals & texture clipping',
+  'Проверяет коллизии, рендер, ассеты и FPS.':
+    'Checks collisions, rendering, assets, and FPS.',
+  'Баланс сложности': 'Difficulty balance',
+  'Оценивает тайминги и проходимость.':
+    'Evaluates timings and playability.'
 })
 
 Object.assign(english, {

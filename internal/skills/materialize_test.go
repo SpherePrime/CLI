@@ -112,3 +112,44 @@ func TestDiscoverSkipsMaterializedBuiltinCopies(t *testing.T) {
 	require.Len(t, discovered, 1)
 	require.Equal(t, "my-skill", discovered[0].Name)
 }
+
+func TestPrimeGameDevBuiltinHiddenAndMaterializes(t *testing.T) {
+	t.Parallel()
+
+	var gameDev *Skill
+	builtins := DiscoverBuiltin()
+	for _, skill := range builtins {
+		if skill.Name == "prime-gamedev" {
+			gameDev = skill
+		}
+	}
+	require.NotNil(t, gameDev)
+	require.Equal(t, "prime://skills/prime-gamedev/SKILL.md", gameDev.SkillFilePath)
+	require.True(t, gameDev.DisableModelInvocation)
+	require.False(t, gameDev.UserInvocable)
+	require.True(t, BuiltinHasResources("prime-gamedev"))
+
+	xml := ToPromptXML(builtins)
+	require.NotContains(t, xml, "prime-gamedev")
+
+	root := t.TempDir()
+	directory, err := MaterializeBuiltin("prime-gamedev", root)
+	require.NoError(t, err)
+	for _, relative := range []string{
+		"SKILL.md",
+		"scripts/package.json",
+		"scripts/extract_frames.mjs",
+		"scripts/web_bot_runner.mjs",
+		"scripts/lib/args.mjs",
+		"scripts/lib/ffmpeg.mjs",
+		"scripts/lib/playwright_loader.mjs",
+		"scripts/lib/telemetry.mjs",
+	} {
+		embedded, err := builtinFS.ReadFile("builtin/prime-gamedev/" + relative)
+		require.NoError(t, err, relative)
+		onDisk, err := os.ReadFile(filepath.Join(directory, filepath.FromSlash(relative)))
+		require.NoError(t, err, relative)
+		require.Equal(t, embedded, onDisk, relative)
+	}
+}
+

@@ -15,7 +15,7 @@ export function GameDevButton({ workspace: w }: { workspace: Workspace }) {
   const disabled = !w.project || w.busy
   const statusText = enabled ? t('Включён') : t('Выключен')
   const tooltip = t(
-    'Режим GameDev: добавляет автотест-ботов для прохождения игры, поиска багов и проверки баланса сложности'
+    'Режим GameDev: запускает живого бота с видеозаписью, покадровым поиском визуальных багов, проверкой провалов в текстуры и баланса сложности'
   )
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export function GameDevButton({ workspace: w }: { workspace: Workspace }) {
         <span className="gamedev-chip-label">{t('GameDev')}</span>
       </button>
       {open && (
-        <Popover anchor={anchor} close={() => setOpen(false)} width={360} label={t('Режим GameDev')}>
+        <Popover anchor={anchor} close={() => setOpen(false)} width={336} label={t('Режим GameDev')}>
           <GameDevPanel
             enabled={enabled}
             saving={saving}

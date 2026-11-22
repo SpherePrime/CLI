@@ -16,9 +16,12 @@ func assertNoGameDevMentions(t *testing.T, text string) {
 	lower := strings.ToLower(text)
 	require.NotContains(t, lower, "gamedev")
 	require.NotContains(t, lower, "game_dev")
+	require.NotContains(t, lower, "prime-gamedev")
 	require.NotContains(t, lower, "playthrough")
 	require.NotContains(t, lower, "test bot")
 	require.NotContains(t, lower, "softlock")
+	require.NotContains(t, lower, "extract_frames")
+	require.NotContains(t, lower, "web_bot_runner")
 }
 
 func TestGameDevPromptBlockDisabledReturnsEmpty(t *testing.T) {
@@ -50,34 +53,42 @@ func TestGameDevPromptBlockEnabledByRole(t *testing.T) {
 
 	codeBlock := gameDevPromptBlock(config.AgentCode, true)
 	require.Contains(t, codeBlock, "<gamedev_mode>")
-	require.Contains(t, codeBlock, "playthrough test bots")
-	require.Contains(t, codeBlock, "bugs")
-	require.Contains(t, codeBlock, "difficulty balance")
-	require.Contains(t, codeBlock, "do NOT run tests")
+	require.Contains(t, codeBlock, "prime://skills/prime-gamedev/SKILL.md")
+	require.Contains(t, codeBlock, "live automated playthrough bot")
+	require.Contains(t, codeBlock, "falling through floors/textures")
+	require.Contains(t, codeBlock, "contact sheets")
+	require.Contains(t, strings.ToLower(codeBlock), "difficulty and balance")
+	require.NotContains(t, codeBlock, "do NOT run tests")
 
 	reviewBlock := gameDevPromptBlock(config.AgentReview, true)
 	require.Contains(t, reviewBlock, "<gamedev_mode>")
-	require.Contains(t, reviewBlock, "playthrough test bots")
-	require.Contains(t, reviewBlock, "bugs")
+	require.Contains(t, reviewBlock, "prime://skills/prime-gamedev/SKILL.md")
+	require.Contains(t, reviewBlock, "live bug-hunting playthrough bot")
+	require.Contains(t, reviewBlock, "dense sequence of frames")
+	require.Contains(t, reviewBlock, "inspect the contact sheets")
 	require.Contains(t, reviewBlock, "difficulty")
 	require.Contains(t, reviewBlock, "defects")
 
 	planBlock := gameDevPromptBlock(config.AgentPlan, true)
 	require.Contains(t, planBlock, "<gamedev_mode>")
-	require.Contains(t, planBlock, "playthrough test bots")
-	require.Contains(t, planBlock, "difficulty balance")
+	require.Contains(t, planBlock, "prime://skills/prime-gamedev/SKILL.md")
+	require.Contains(t, planBlock, "dense frames")
+	require.Contains(t, planBlock, "Difficulty and balance")
 
 	coordBlock := gameDevPromptBlockWithDelegation(config.AgentGeneral, true, true)
 	require.Contains(t, coordBlock, "<gamedev_mode>")
+	require.Contains(t, coordBlock, "prime://skills/prime-gamedev/SKILL.md")
 	require.Contains(t, coordBlock, "code agents")
 	require.Contains(t, coordBlock, "review agents")
-	require.Contains(t, coordBlock, "playthrough test bots")
+	require.Contains(t, coordBlock, "dense frames")
 	require.Contains(t, coordBlock, "difficulty balance")
 
 	directBlock := gameDevPromptBlockWithDelegation(config.AgentGeneral, true, false)
 	require.Contains(t, directBlock, "<gamedev_mode>")
-	require.Contains(t, directBlock, "write and run automated playthrough test bots")
-	require.Contains(t, directBlock, "difficulty balance")
+	require.Contains(t, directBlock, "prime://skills/prime-gamedev/SKILL.md")
+	require.Contains(t, directBlock, "write and run a live automated playthrough bot")
+	require.Contains(t, directBlock, "dense frames")
+	require.Contains(t, directBlock, "difficulty and balance")
 }
 
 func TestSessionAgentPromptZeroMentionsWhenGameDevOff(t *testing.T) {
@@ -136,10 +147,10 @@ func TestSessionAgentPromptInjectsGameDevWhenOn(t *testing.T) {
 		agentID string
 		want    string
 	}{
-		{agentID: config.AgentGeneral, want: "playthrough test bots"},
-		{agentID: config.AgentCode, want: "do NOT run tests"},
+		{agentID: config.AgentGeneral, want: "prime://skills/prime-gamedev/SKILL.md"},
+		{agentID: config.AgentCode, want: "contact sheets"},
 		{agentID: config.AgentReview, want: "defects"},
-		{agentID: config.AgentPlan, want: "difficulty balance"},
+		{agentID: config.AgentPlan, want: "Difficulty and balance"},
 	} {
 		t.Run(tc.agentID, func(t *testing.T) {
 			env := testEnv(t)
@@ -151,7 +162,7 @@ func TestSessionAgentPromptInjectsGameDevWhenOn(t *testing.T) {
 						sys := systemPromptTextInCall(call)
 						require.Contains(t, sys, "<gamedev_mode>")
 						require.Contains(t, sys, tc.want)
-						require.Contains(t, sys, "difficulty")
+						require.Contains(t, strings.ToLower(sys), "difficulty")
 						return textStopParts("ok", fantasy.Usage{InputTokens: 10, OutputTokens: 5, TotalTokens: 15}), nil
 					},
 				},
@@ -220,7 +231,8 @@ func TestOrchestratorPromptsRespectGameDevToggle(t *testing.T) {
 					assertNoGameDevMentions(t, promptText)
 				} else {
 					require.Contains(t, promptText, "<gamedev_mode>")
-					require.Contains(t, promptText, "playthrough test bots")
+					require.Contains(t, promptText, "prime://skills/prime-gamedev/SKILL.md")
+					require.Contains(t, promptText, "playthrough")
 					require.Contains(t, promptText, "difficulty")
 				}
 			}
@@ -264,3 +276,14 @@ func TestCoordinatorGameDevContextAndSubAgentPropagation(t *testing.T) {
 	require.False(t, c.resolveRunGameDev(t.Context(), parent.ID))
 	require.False(t, c.isGameDevEnabled(t.Context(), parent.ID))
 }
+
+func TestCoderPromptExcludesHiddenBuiltinSkill(t *testing.T) {
+	t.Parallel()
+
+	out := renderCoderPrompt(t, false)
+	assertNoGameDevMentions(t, out)
+
+	smartOut := renderCoderPrompt(t, true)
+	assertNoGameDevMentions(t, smartOut)
+}
+

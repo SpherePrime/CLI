@@ -1,0 +1,13 @@
+{
+  "name": "prime-gamedev-qa",
+  "private": true,
+  "type": "module",
+  "description": "Playthrough bot runner and video-to-frames visual bug inspection tools for Prime GameDev mode",
+  "scripts": {
+    "extract": "node extract_frames.mjs",
+    "bot": "node web_bot_runner.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
