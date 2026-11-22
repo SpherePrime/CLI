@@ -1,6 +1,6 @@
 ---
 name: prime-designer
-description: Design lead and frontend engineer for distinctive, production-ready interfaces and visuals with a measurable quality gate. Use for websites, landing pages, apps, dashboards, UI redesigns, design systems, themes, posters, 2D graphics, WebGL/Three.js, motion and GIFs; whenever something must look beautiful, premium or less generic; and to check a design for overlap, overflow, clipped text, broken mobile layout, contrast, focus or polish. Includes a Playwright layout audit, contrast checker, defect catalog, themes, fonts and reference projects. Russian keywords - дизайн, сайт, лендинг, интерфейс, вёрстка, редизайн, красиво, тема, анимация, 3D, адаптив, наезды.
+description: Design lead and frontend engineer for distinctive, production-ready interfaces and visuals with a measurable quality gate. Use for websites, landing pages, apps, dashboards, UI redesigns, design systems, themes, posters, 2D graphics, WebGL/Three.js, motion and GIFs; whenever something must look beautiful, premium or less generic; and to check a design for overlap, overflow, clipped text, broken mobile layout, contrast, focus or polish. Includes a Playwright layout audit, contrast checker, defect catalog, themes and fonts. Russian keywords - дизайн, сайт, лендинг, интерфейс, вёрстка, редизайн, красиво, тема, анимация, 3D, адаптив, наезды.
 ---
 
 # Prime Designer
@@ -27,7 +27,6 @@ Read only what the task needs. Text files are readable with the view tool at `pr
 | `scripts/contrast.mjs` | WCAG contrast matrix for a palette or theme |
 | `assets/themes/*.md` | Ten ready palettes with verified contrast pairs |
 | `assets/fonts/` | Local OFL fonts with licenses |
-| `assets/references/` | Five studied 3D/motion projects (APEX, ORBITAL, PAPERCRAFT, AFTERHOURS, MORPH) |
 | `assets/gif-tools/` | GIF builder and validator |
 
 ## Mode
@@ -48,8 +47,6 @@ A small component needs a three-line contract and the automated audit. A full si
 ### 1. Inspect
 
 Read the project's instructions, files, dependencies, scripts, existing design tokens, and current changes. Preserve unrelated work. Identify audience, subject, primary job, real content, platforms, and constraints. Never invent features, claims, data, or assets.
-
-When a reference project helps, open its `README.md`, `docs/design.md`, and source under `assets/references/`. Extract principles; do not copy branding, copy, layouts, or exact values.
 
 ### 2. Design contract
 
@@ -137,7 +134,7 @@ Before finishing:
 
 **Motion.** Write the motion spec (trigger, purpose, path, timing, easing, rest, interruption, reduced motion, cost) for every important animation (`motion-and-3d.md`), then build it with the techniques in `motion-craft.md`.
 
-**Theme/brand.** If a theme is requested, show the options from `assets/themes/` (Tech Innovation is a neon theme: offer it only when the user asked for neon) (visual selector: `assets/examples/theme-showcase.pdf`), wait for the choice, apply it through role tokens, and use only the verified contrast pairs listed in the theme file. For an official brand, apply only that brand's published rules; never force a brand palette on unrelated work.
+**Theme/brand.** If a theme is requested, show the options from `assets/themes/` (Tech Innovation is a neon theme: offer it only when the user asked for neon), wait for the choice, apply it through role tokens, and use only the verified contrast pairs listed in the theme file. For an official brand, apply only that brand's published rules; never force a brand palette on unrelated work.
 
 ## Research
 
@@ -151,17 +148,12 @@ When browser behavior, a standard, or a library API matters, check primary sourc
 - Three.js: https://threejs.org/manual/ and https://threejs.org/docs/
 - GSAP: https://gsap.com/docs/v3/
 
-## Reference studies
+## Craft principles
 
-Learning material, not templates. Read the project's `README.md`, `docs/design.md`, and source before applying a lesson.
-
-- **APEX:** credible product storytelling, reversible disassembly, component labels, camera framing, resettable transformation.
-- **ORBITAL:** distinct navigable worlds, atmosphere, spatial continuity, procedural form, non-WebGL fallback. Not a reason to default to planets, black, orange, or pointer parallax.
-- **PAPERCRAFT:** material behavior equals interface behavior: folds, hinges, facets, user-controlled unfolding.
-- **AFTERHOURS:** causal links between playback, tempo, sound, and movement; audio opt-in, silent mode complete.
-- **MORPH:** one exhibition/control language with meaningful variation in shape, material, assembly, and motion.
-
-Shared lesson: subject, central interaction, object, type, palette, composition, and movement reinforce one concept.
+- **Unified concept:** subject, central interaction, object, typography, palette, composition, and movement reinforce one coherent idea.
+- **First viewport first:** build a complete, coherent first viewport and local preview before expanding into secondary views, states, and polish.
+- **3D and interactive objects:** keep reversible assembly/disassembly with clear component labels, thoughtful camera framing, and resettable transforms; match interface behavior to material behavior (folds, hinges, facets, specular surfaces, PBR lighting); pair spatial scenes with capped DPR, pause-when-hidden, reduced-motion support, and a real non-WebGL fallback.
+- **Opt-in audio:** audio is always opt-in, and the silent experience must remain complete; any rhythmic or audio-reactive motion must preserve causal clarity without noise.
 
 ## Honesty
 

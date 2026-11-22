@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,6 +41,14 @@ func TestBuiltinSkillName(t *testing.T) {
 func TestMaterializeBuiltinCopiesAndRefreshes(t *testing.T) {
 	t.Parallel()
 
+	for _, removed := range []string{
+		"builtin/prime-designer/assets/references/README.md",
+		"builtin/prime-designer/assets/examples/theme-showcase.pdf",
+	} {
+		_, err := builtinFS.ReadFile(removed)
+		require.ErrorIs(t, err, fs.ErrNotExist, removed)
+	}
+
 	root := t.TempDir()
 	directory, err := MaterializeBuiltin("prime-designer", root)
 	require.NoError(t, err)
@@ -61,6 +70,16 @@ func TestMaterializeBuiltinCopiesAndRefreshes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "changed", string(unchanged))
 
+	staleReferences := filepath.Join(directory, "assets", "references")
+	require.NoError(t, os.MkdirAll(filepath.Join(staleReferences, "apex"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(staleReferences, "README.md"), []byte("stale"), 0o644))
+	staleExamples := filepath.Join(directory, "assets", "examples")
+	require.NoError(t, os.MkdirAll(staleExamples, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(staleExamples, "theme-showcase.pdf"), []byte("stale"), 0o644))
+	nodeModulesFile := filepath.Join(directory, "scripts", "node_modules", "playwright", "index.js")
+	require.NoError(t, os.MkdirAll(filepath.Dir(nodeModulesFile), 0o755))
+	require.NoError(t, os.WriteFile(nodeModulesFile, []byte("kept"), 0o644))
+
 	require.NoError(t, os.WriteFile(filepath.Join(directory, materializedStampFile), []byte("old-version"), 0o644))
 	_, err = MaterializeBuiltin("prime-designer", root)
 	require.NoError(t, err)
@@ -69,6 +88,14 @@ func TestMaterializeBuiltinCopiesAndRefreshes(t *testing.T) {
 	embedded, err := builtinFS.ReadFile("builtin/prime-designer/scripts/audit.mjs")
 	require.NoError(t, err)
 	require.Equal(t, embedded, refreshed)
+
+	_, err = os.Stat(staleReferences)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	_, err = os.Stat(staleExamples)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	preserved, err := os.ReadFile(nodeModulesFile)
+	require.NoError(t, err)
+	require.Equal(t, "kept", string(preserved))
 }
 
 func TestDiscoverSkipsMaterializedBuiltinCopies(t *testing.T) {

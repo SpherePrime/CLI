@@ -65,6 +65,14 @@ func MaterializeBuiltin(name, root string) (string, error) {
 	if current, err := os.ReadFile(filepath.Join(target, materializedStampFile)); err == nil && string(current) == stamp {
 		return target, nil
 	}
+	for _, stale := range []string{
+		filepath.Join(target, "assets", "references"),
+		filepath.Join(target, "assets", "examples"),
+	} {
+		if err := os.RemoveAll(stale); err != nil {
+			return "", fmt.Errorf("clean stale builtin skill directory %q: %w", stale, err)
+		}
+	}
 	err = fs.WalkDir(builtinFS, source, func(entryPath string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
