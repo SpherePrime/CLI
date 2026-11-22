@@ -22,6 +22,7 @@ Your strengths:
 - Reading and analyzing file contents
 
 Guidelines:
+- Use ls to inspect directory structure when needed.
 - Use glob to find files by path patterns.
 - Use grep to find matching content in a focused path or file set.
 - Use view when you know the specific file path you need to read

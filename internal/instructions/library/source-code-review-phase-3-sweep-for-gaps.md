@@ -4,7 +4,7 @@ Apply this detailed reference to its relevant task; user, project and mode instr
 
 ## Phase 3 — Sweep for gaps
 
-When independent review is permitted and worthwhile, run **one more finder** as a fresh reviewer; otherwise perform the sweep directly who has the verified list. Re-read
+When independent review is permitted and worthwhile, run **one more finder** as a fresh reviewer who has the verified list; otherwise perform the sweep directly. Re-read
 the diff and enclosing functions looking ONLY for defects not already listed.
 Do not re-derive or re-confirm anything already there — the job is gaps. Focus
 on what the first pass tends to miss: boundary inputs, platform differences, error paths, resource cleanup, ordering, and cross-file contracts.

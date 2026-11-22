@@ -1,5 +1,4 @@
-Ask the user a structured question and wait for their response. Use this
-when you need clarification, confirmation, or a choice before proceeding.
+Ask the user a structured question during execution and wait for their response. Use this when you need user preferences, clarification on ambiguous instructions, or decisions on implementation choices before proceeding.
 
 ## How it works
 
@@ -17,8 +16,8 @@ Every question MUST include:
 
 For `single_choice` and `multi_choice`, put the options in a `choices`
 array **inside the same question object**. Each option is an object with
-`id` and `label`. Never list options as separate items of `questions`,
-and never send an empty `choices` array.
+`id` and `label` (and optional `description`). Never list options as
+separate items of `questions`, and never send an empty `choices` array.
 
 Correct:
 ```json
@@ -63,6 +62,8 @@ These are enforced. Violations return an error and waste a round trip.
 Single and multi choice questions automatically include a free-text
 fill-in option so the user can type a custom answer. Do not add an
 "Other", "Something else", or "Custom" choice manually.
+If you recommend a specific option, make that clear in the choice (for
+example, placing it first and appending `(Recommended)` to its label).
 
 ## Confirmation screen (batches only)
 
@@ -105,13 +106,14 @@ Example — multiple questions with confirmation:
 
 ## When to use
 
-- Confirm destructive or ambiguous actions
-- User's request has multiple valid interpretations
-- Need the user to pick from options
-- Gather multiple related answers at once
+- Gather user preferences or requirements
+- Clarify ambiguous instructions where the user's answer changes what you do next
+- Get decisions on implementation choices or direction as you work
+- Gather multiple related answers at once instead of back-and-forth turns
 
 ## When NOT to use
 
-- Questions answerable by reading code or docs
-- Information obtainable via other tools
-- Asking permission (use the permission system)
+- Questions answerable by reading code or docs, or via other tools
+- Choices with an obvious or conventional default — pick the sensible option, mention it in your response, and proceed
+- Asking for tool or command permission (the permission system handles that)
+- In `plan` mode (`plan` agent), do NOT use `question` to ask "Ready to implement?" or ask for final plan approval — use it only to clarify requirements or design choices while building the plan; the interface handles plan approval once your plan is ready

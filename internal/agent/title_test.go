@@ -83,3 +83,56 @@ func TestGenerateTitlePreservesExistingTitle(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Моё название", updated.Title)
 }
+
+func TestGenerateTitleParsesJSONAndThinkTags(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		response string
+		want     string
+	}{
+		{
+			name:     "json",
+			response: `{"title": "Fix search query"}`,
+			want:     "Fix search query",
+		},
+		{
+			name:     "think_tags_and_json",
+			response: "<think>analyzing session</think>\n```json\n{\"title\": \"Add dark mode\"}\n```",
+			want:     "Add dark mode",
+		},
+		{
+			name:     "plain_text_fallback",
+			response: "Refactor title generation",
+			want:     "Refactor title generation",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			env := testEnv(t)
+			created, err := env.sessions.Create(t.Context(), DefaultSessionName)
+			require.NoError(t, err)
+
+			model := &recordingScriptModel{
+				streamFn: func(_ int, _ fantasy.Call) ([]fantasy.StreamPart, error) {
+					return []fantasy.StreamPart{
+						{Type: fantasy.StreamPartTypeTextStart, ID: "t1"},
+						{Type: fantasy.StreamPartTypeTextDelta, ID: "t1", Delta: tc.response},
+						{Type: fantasy.StreamPartTypeTextEnd, ID: "t1"},
+						{Type: fantasy.StreamPartTypeFinish, FinishReason: fantasy.FinishReasonStop},
+					}, nil
+				},
+			}
+			agent := testSessionAgent(env, model, model, "system")
+			agent.GenerateTitle(t.Context(), created.ID, "Please help fix the search query")
+
+			require.Equal(t, 1, model.callCount())
+			call := model.callAt(0)
+			require.NotNil(t, call.MaxOutputTokens)
+			require.GreaterOrEqual(t, *call.MaxOutputTokens, int64(64))
+			require.True(t, promptHasText(call.Prompt, "<session>\nPlease help fix the search query\n</session>"))
+
+			updated, err := env.sessions.Get(t.Context(), created.ID)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, updated.Title)
+		})
+	}
+}

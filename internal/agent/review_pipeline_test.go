@@ -10,53 +10,29 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
-func TestStrictReviewBlockOnlyForDesktopMaxCoordinator(t *testing.T) {
+func TestReviewPolicyBlockReturnsEmpty(t *testing.T) {
 	t.Setenv("PRIME_DESKTOP", "1")
-	block := reviewPolicyBlock(true, config.ReasoningModeMax)
-	require.Contains(t, block, "<strict_review_pipeline>")
-	require.Contains(t, block, "vertical slices only")
-	require.Contains(t, block, "reviewer=<that review agent's name>")
-	require.Contains(t, block, "always start as waiting")
-	require.Contains(t, block, "delivered to the reviewer together with the author")
-	require.Contains(t, block, "Do not relay defects")
-	require.Contains(t, block, "After 3 rounds")
-	require.Contains(t, block, "only critical defects go back to the author")
-	require.Contains(t, block, "skip explore")
-	require.Contains(t, block, "acceptance criteria as a numbered list")
-	require.Contains(t, block, "checked in the browser without launching the native app")
-	require.NotContains(t, block, "scaffolding, components and styling")
-	require.Contains(t, block, "an APPROVED part is verified")
-	require.Contains(t, block, "do NOT re-run tests, builds, linters, or browser/app checks or screenshots for APPROVED parts")
-	require.NotContains(t, block, "final check of the integrated whole")
-	require.Empty(t, reviewPolicyBlock(false, config.ReasoningModeMax))
-	require.NotContains(t, reviewPolicyBlock(true, config.ReasoningModeHigh), "<strict_review_pipeline>")
+	for _, mode := range []string{
+		config.ReasoningModeMax,
+		config.ReasoningModeHigh,
+		config.ReasoningModeMedium,
+		config.ReasoningModeLow,
+		config.ReasoningModeOff,
+		config.ReasoningModeXHigh,
+		config.ReasoningModeDefault,
+	} {
+		require.Empty(t, reviewPolicyBlock(true, mode))
+		require.Empty(t, reviewPolicyBlock(false, mode))
+	}
 
 	t.Setenv("PRIME_DESKTOP", "")
-	require.NotContains(t, reviewPolicyBlock(true, config.ReasoningModeMax), "<strict_review_pipeline>")
-	require.Contains(t, reviewPolicyBlock(true, config.ReasoningModeMax), "Review depth for this task: thorough")
+	require.Empty(t, reviewPolicyBlock(true, config.ReasoningModeMax))
 }
 
-func TestReviewPolicyFollowsReasoningLevel(t *testing.T) {
-	t.Setenv("PRIME_DESKTOP", "1")
-	light := reviewPolicyBlock(true, config.ReasoningModeLow)
-	require.Contains(t, light, "Review depth for this task: light")
-	require.Contains(t, light, "Do not launch review agents unless the user asks")
-	require.Contains(t, light, "close-up")
-	require.Equal(t, light, reviewPolicyBlock(true, config.ReasoningModeOff))
-
-	quick := reviewPolicyBlock(true, config.ReasoningModeMedium)
-	require.Contains(t, quick, "Review depth for this task: quick")
-	require.Contains(t, quick, "at most 2 review rounds")
-	require.Equal(t, quick, reviewPolicyBlock(true, config.ReasoningModeHigh))
-	require.Equal(t, quick, reviewPolicyBlock(true, config.ReasoningModeDefault))
-
-	thorough := reviewPolicyBlock(true, config.ReasoningModeXHigh)
-	require.Contains(t, thorough, "Review depth for this task: thorough")
-	require.Contains(t, thorough, "reviewer=<that name>")
-	require.Contains(t, thorough, "do NOT re-run tests, builds, linters, or browser/app checks on APPROVED parts")
-
+func TestReviewDepthFollowsReasoningLevel(t *testing.T) {
 	require.Equal(t, reviewDepthLight, reviewDepthFor(config.ReasoningModeOff))
 	require.Equal(t, reviewDepthQuick, reviewDepthFor(""))
+	t.Setenv("PRIME_DESKTOP", "1")
 	require.Equal(t, reviewDepthStrict, reviewDepthFor(config.ReasoningModeMax))
 	require.Equal(t, 1, reviewDepthLight.rounds())
 	require.Equal(t, 3, reviewDepthStrict.rounds())

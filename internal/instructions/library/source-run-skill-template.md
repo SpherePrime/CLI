@@ -45,7 +45,7 @@ patches (feature-gate overrides, config stubs) with the exact command.>
 
 ```bash
 <set-required-and-optional-environment-variables-with-current-shell-syntax>
-<document-credential-source-without-recording-secret-values>
+<document-required-environment-configuration>
 ```
 
 ## Build

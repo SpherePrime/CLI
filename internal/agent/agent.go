@@ -1982,9 +1982,7 @@ func (a *sessionAgent) prepareSessionPrompt(msgs []message.Message, supportsImag
 		history = append(history, fantasy.NewUserMessage(
 			fmt.Sprintf(
 				"<system_reminder>%s</system_reminder>",
-				`This is a reminder that your todo list is currently empty. DO NOT mention this to the user explicitly because they are already aware.
-If you are working on tasks that would benefit from a todo list please use the "todos" tool to create one.
-If not, please feel free to ignore. Again do not mention this message to the user.`,
+				`Your todo list is currently empty. DO NOT mention this to the user because they are already aware. If you are working on tasks that would benefit from a todo list please use the todos tool to create one. If not, please feel free to ignore. Again do not mention this message to the user.`,
 			),
 		))
 	}
@@ -1992,8 +1990,7 @@ If not, please feel free to ignore. Again do not mention this message to the use
 		history = append(history, fantasy.NewUserMessage(
 			fmt.Sprintf(
 				"<system_reminder>%s</system_reminder>",
-				`The conversation history before this point was compacted into the summary below.
-All system prompt instructions, workspace rules, and tool protocols remain in full effect. Continue working seamlessly without mentioning this reminder to the user.`,
+				`This session is being continued from a previous conversation that ran out of context. The conversation history before this point was compacted into the summary below. All system prompt instructions, workspace rules, and tool protocols remain in full effect. Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, and do not preface with "I'll continue" or similar. Continue working seamlessly without mentioning this reminder to the user.`,
 			),
 		))
 	}
@@ -2337,7 +2334,7 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 	}
 
 	streamCall := fantasy.AgentStreamCall{
-		Prompt:  fmt.Sprintf("Generate a concise title for the following content:\n\n%s\n <think>\n\n</think>", userPrompt),
+		Prompt:  fmt.Sprintf("Generate a concise title for the following session:\n\n<session>\n%s\n</session>\n <think>\n\n</think>", userPrompt),
 		Headers: sessionHeaders(sessionID),
 		PrepareStep: func(callCtx context.Context, opts fantasy.PrepareStepFunctionOptions) (_ context.Context, prepared fantasy.PrepareStepResult, err error) {
 			prepared.Messages = opts.Messages
@@ -2362,7 +2359,7 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 	var model Model
 	var success bool
 	for _, attempt := range attempts {
-		tok := int64(40)
+		tok := int64(96)
 		if attempt.model.CatwalkCfg.CanReason {
 			tok = attempt.model.CatwalkCfg.DefaultMaxTokens
 		}
@@ -2393,15 +2390,7 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 		return
 	}
 
-	// Clean up title.
-	var title string
-	title = strings.ReplaceAll(resp.Response.Content.Text(), "\n", " ")
-
-	// Remove thinking tags if present.
-	title = thinkTagRegex.ReplaceAllString(title, "")
-	title = orphanThinkTagRegex.ReplaceAllString(title, "")
-
-	title = strings.TrimSpace(title)
+	title := parseGeneratedTitle(resp.Response.Content.Text())
 	if title == "" {
 		title = fallbackTitle
 	}
@@ -2444,11 +2433,33 @@ func (a *sessionAgent) GenerateTitle(ctx context.Context, sessionID string, user
 	if currentSession.Title != fallbackTitle {
 		title = currentSession.Title
 	}
-	saveErr := a.sessions.UpdateTitleAndUsage(ctx, sessionID, title, 0, 0, cost)
-	if saveErr != nil {
+	if saveErr := a.sessions.UpdateTitleAndUsage(ctx, sessionID, title, 0, 0, cost); saveErr != nil {
 		slog.Error("Failed to save session title and usage", "error", saveErr)
 		return
 	}
+}
+
+func parseGeneratedTitle(raw string) string {
+	cleaned := thinkTagRegex.ReplaceAllString(raw, "")
+	cleaned = orphanThinkTagRegex.ReplaceAllString(cleaned, "")
+	cleaned = strings.TrimSpace(cleaned)
+	if cleaned == "" {
+		return ""
+	}
+	var payload struct {
+		Title string `json:"title"`
+	}
+	if err := json.Unmarshal([]byte(cleaned), &payload); err == nil && strings.TrimSpace(payload.Title) != "" {
+		return strings.TrimSpace(strings.ReplaceAll(payload.Title, "\n", " "))
+	}
+	if start := strings.IndexByte(cleaned, '{'); start >= 0 {
+		if end := strings.LastIndexByte(cleaned, '}'); end > start {
+			if err := json.Unmarshal([]byte(cleaned[start:end+1]), &payload); err == nil && strings.TrimSpace(payload.Title) != "" {
+				return strings.TrimSpace(strings.ReplaceAll(payload.Title, "\n", " "))
+			}
+		}
+	}
+	return strings.TrimSpace(strings.ReplaceAll(cleaned, "\n", " "))
 }
 
 // titleFallbackWorthwhile reports whether a title-generation failure on one

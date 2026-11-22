@@ -21,8 +21,10 @@ type agentMessageParams struct {
 	ContextFiles []string `json:"context_files,omitempty" description:"Optional target file paths or directory prefixes that the target code worker will modify, so only their preloaded explore contents are injected in background system context."`
 }
 
+const agentMessageDescription = `List your team (op="list") or send a message to a peer or parent (op="send"). Plain text in your assistant response is NOT visible to other agents — you MUST call agent_message to communicate with them. Send by worker name, job ID, or session ID to message a busy peer (delivered after its current turn) or resume an idle/finished agent with its existing conversation context. Use worker_id="parent" to report back to the primary chat. Keep messages direct and self-contained; do not quote full prior messages, echo completion notices, or send acknowledgement-only replies.`
+
 func (c *coordinator) agentMessageTool() fantasy.AgentTool {
-	return fantasy.NewParallelAgentTool(AgentMessageToolName, "List your team or send messages to a peer or parent. Messages stay within this primary chat. Busy workers receive follow-ups after their current turn; idle workers continue their existing conversation. Request further assignments from parent instead of spawning agents. Do not echo completion notices or exchange acknowledgement-only replies.", func(ctx context.Context, params agentMessageParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	return fantasy.NewParallelAgentTool(AgentMessageToolName, agentMessageDescription, func(ctx context.Context, params agentMessageParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
 		source := tools.GetSessionFromContext(ctx)
 		if source == "" {
 			return fantasy.NewTextErrorResponse("session id missing from context"), nil

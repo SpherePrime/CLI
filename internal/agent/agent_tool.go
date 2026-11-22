@@ -27,7 +27,7 @@ type AgentParams struct {
 	Agent  string `json:"agent,omitempty" description:"Which configured agent to run. Omit to use the default agent."`
 	Background     bool   `json:"background,omitempty" description:"Return immediately with a job id and let the agent keep running; its result arrives as a team notice. Omit to wait for the result now."`
 	WaitForMessage bool     `json:"wait_for_message,omitempty" description:"Register the agent without starting it. It makes no model calls until a message arrives (agent_message or an automatic review handoff), then starts with this assignment plus that message. Implies background."`
-	Reviewer       string   `json:"reviewer,omitempty" description:"Code agents only: name of the review agent for this part. When this agent finishes, its report is handed to that reviewer automatically, and the reviewer's CHANGES_REQUIRED report comes back to this agent automatically."`
+	Reviewer       string   `json:"reviewer,omitempty" description:"Optional review agent name for this part. When specified and this agent finishes, its report is routed to that reviewer automatically, and CHANGES_REQUIRED feedback comes back automatically."`
 	ContextFrom    []string `json:"context_from,omitempty" description:"Optional worker names or IDs whose read/edited file context should be preloaded invisibly in background system context (for example, an explore worker for a code agent)."`
 	ContextFiles   []string `json:"context_files,omitempty" description:"Optional target file paths or directory prefixes that a code agent will modify, so only their preloaded explore contents are injected in background system context instead of unrelated read files."`
 }
@@ -105,7 +105,6 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 			}
 			if name == config.AgentCode {
 				sp.Reviewer = strings.TrimSpace(params.Reviewer)
-				sp.Prompt = appendCodeAgentRuntimeRule(sp.Prompt, sp.Reviewer)
 			}
 
 			// Background mode returns as soon as the sub-session exists; the
@@ -173,12 +172,4 @@ func (c *coordinator) agentToolDescription() string {
 	}
 
 	return agentToolDescription + "\n\nAvailable agents:\n" + strings.Join(lines, "\n")
-}
-
-func appendCodeAgentRuntimeRule(prompt, reviewer string) string {
-	verifier := "The coordinator or a review agent"
-	if reviewer != "" {
-		verifier = "Review agent " + reviewer
-	}
-	return strings.TrimRight(prompt, "\r\n") + "\n\nRuntime restriction: you are a code agent — write code only. Do NOT run tests, builds, typechecks, linters, dev servers, browsers, app checks or audit scripts, even if verification criteria appear in the task text above. " + verifier + " will build, run and verify your work."
 }

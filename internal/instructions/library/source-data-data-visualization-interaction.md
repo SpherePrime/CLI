@@ -21,7 +21,7 @@ as on hover.
   value, and the hovered mark lifts (slight lighten or outline) so the reader sees it respond.
 - **One tooltip, every series.** The readout lists every series at that X - the
   pointer never has to land on a line or a fill to get a value.
-- **Labels are untrusted data - use `textContent`.** Series and category names
+- **Insert labels via `textContent`.** Series and category names
   often come from CSV headers, tool output, or API responses. Insert them into
   tooltip/legend/table DOM with `textContent` or `createTextNode`, never via
   `innerHTML` string concatenation.

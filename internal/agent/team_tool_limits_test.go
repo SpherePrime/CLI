@@ -11,61 +11,42 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
-func TestRoleDeniesDesktopVerificationMCPsForCodeAgent(t *testing.T) {
+func TestRoleAllowsDesktopVerificationMCPsForCodeAgent(t *testing.T) {
 	t.Parallel()
 
 	codeAgent := config.Agent{ID: config.AgentCode}
-	denied := []string{
+	mcpNames := []string{
 		config.DesktopBrowserMCPName,
 		"apps",
 		"windows",
 		"prime-desktop",
 		"prime-desktop-2",
-		"prime-desktop-10",
 		"prime-desktop-browser",
-		"prime-desktop-browser-2",
 		"prime-desktop-apps",
-		"prime-desktop-apps-3",
 		"prime-desktop-windows",
-		"prime-desktop-windows-4",
-		"browser-2",
-		"apps-2",
-		"windows-2",
-	}
-	for _, name := range denied {
-		require.True(t, roleDeniesMCP(codeAgent, name), "expected code agent to deny %q", name)
-	}
-
-	allowed := []string{
 		"context7",
 		"github",
-		"prime-desktop-terminal",
-		"prime-desktop-git",
-		"prime-desktop-ssh",
-		"prime-desktop-",
-		"prime-desktop-browser-extra",
-		"",
 	}
-	for _, name := range allowed {
+	for _, name := range mcpNames {
 		require.False(t, roleDeniesMCP(codeAgent, name), "expected code agent to allow %q", name)
 	}
 
 	for _, roleID := range []string{config.AgentGeneral, config.AgentReview, config.AgentExplore, config.AgentTask, config.AgentPlan} {
 		other := config.Agent{ID: roleID}
-		for _, name := range denied {
-			require.False(t, roleDeniesMCP(other, name), "role %q should not be denied %q by roleDeniesMCP", roleID, name)
+		for _, name := range mcpNames {
+			require.False(t, roleDeniesMCP(other, name), "role %q should not deny %q", roleID, name)
 		}
 	}
 }
 
-func TestAgentAllowsMCPServerRespectsRoleAndAllowedMCP(t *testing.T) {
+func TestAgentAllowsMCPServerRespectsAllowedMCP(t *testing.T) {
 	t.Parallel()
 
 	codeDefault := config.Agent{ID: config.AgentCode}
-	require.False(t, agentAllowsMCPServer(codeDefault, "browser"))
-	require.False(t, agentAllowsMCPServer(codeDefault, "apps"))
-	require.False(t, agentAllowsMCPServer(codeDefault, "windows"))
-	require.False(t, agentAllowsMCPServer(codeDefault, "prime-desktop-browser-2"))
+	require.True(t, agentAllowsMCPServer(codeDefault, "browser"))
+	require.True(t, agentAllowsMCPServer(codeDefault, "apps"))
+	require.True(t, agentAllowsMCPServer(codeDefault, "windows"))
+	require.True(t, agentAllowsMCPServer(codeDefault, "prime-desktop-browser-2"))
 	require.True(t, agentAllowsMCPServer(codeDefault, "context7"))
 
 	codeExplicit := config.Agent{
@@ -75,7 +56,7 @@ func TestAgentAllowsMCPServerRespectsRoleAndAllowedMCP(t *testing.T) {
 			"context7": nil,
 		},
 	}
-	require.False(t, agentAllowsMCPServer(codeExplicit, "browser"))
+	require.True(t, agentAllowsMCPServer(codeExplicit, "browser"))
 	require.True(t, agentAllowsMCPServer(codeExplicit, "context7"))
 	require.False(t, agentAllowsMCPServer(codeExplicit, "other"))
 
@@ -91,7 +72,7 @@ func TestAgentAllowsMCPServerRespectsRoleAndAllowedMCP(t *testing.T) {
 	require.True(t, agentAllowsMCPServer(review, "context7"))
 }
 
-func TestAgentToolAppendsRuntimeRestrictionForCodeAgent(t *testing.T) {
+func TestAgentToolDoesNotAppendRuntimeRestrictionForCodeAgent(t *testing.T) {
 	env := testEnv(t)
 	c := newJobCoordinator(t, env)
 	c.cfg.SetupAgents()
@@ -132,17 +113,15 @@ func TestAgentToolAppendsRuntimeRestrictionForCodeAgent(t *testing.T) {
 	})
 	require.Len(t, seenPrompts, 1)
 	require.Contains(t, seenPrompts[0], "Implement the form.")
-	require.Contains(t, seenPrompts[0], "Runtime restriction: you are a code agent")
-	require.Contains(t, seenPrompts[0], "Do NOT run tests, builds, typechecks, linters, dev servers, browsers, app checks or audit scripts")
-	require.Contains(t, seenPrompts[0], "Review agent ui-review will build, run and verify your work.")
+	require.NotContains(t, seenPrompts[0], "Runtime restriction: you are a code agent")
+	require.NotContains(t, seenPrompts[0], "Do NOT run tests")
 
 	callTool("c2", AgentParams{
 		Name:   "api",
 		Prompt: "Implement the API endpoint.",
 	})
 	require.Len(t, seenPrompts, 2)
-	require.Contains(t, seenPrompts[1], "Runtime restriction: you are a code agent")
-	require.Contains(t, seenPrompts[1], "The coordinator or a review agent will build, run and verify your work.")
+	require.NotContains(t, seenPrompts[1], "Runtime restriction: you are a code agent")
 
 	callTool("c3", AgentParams{
 		Name:   "lookup",

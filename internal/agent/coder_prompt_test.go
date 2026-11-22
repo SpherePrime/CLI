@@ -82,7 +82,11 @@ func TestCoderPromptCarriesOperatingGuidance(t *testing.T) {
 
 			for _, section := range []string{
 				"<task_instructions>",
-				"<operating_rules>",
+				"# System",
+				"# Doing tasks",
+				"# Using your tools",
+				"# Communicating with the user",
+				"# Reporting outcomes",
 				"<env>",
 			} {
 				require.Contains(t, got, section,
@@ -91,18 +95,29 @@ func TestCoderPromptCarriesOperatingGuidance(t *testing.T) {
 
 			require.Contains(t, got, "search_instructions")
 			require.Contains(t, got, "read_instruction")
-			require.Contains(t, got, "Never send the same failing call twice")
-			require.Contains(t, got, "coding agent")
-			require.Contains(t, got, "User and project instructions")
+			require.Contains(t, got, "Never send the exact same failing call twice")
+			require.Contains(t, got, "working with the user toward their goals")
+			require.Contains(t, got, "Prime is built by SpherePrime")
+			require.Contains(t, got, "User and project instructions take priority")
+			require.Contains(t, got, "file_path:line_number")
 			require.NotContains(t, got, "<whitespace_and_exact_matching>")
-			require.Contains(t, got, "<completion_check>")
-			require.Contains(t, got, "A review agent's VERDICT: APPROVED counts as verified evidence")
-			require.Contains(t, got, "do NOT re-run tests, builds, linters, or browser/app checks on APPROVED parts")
-			require.Contains(t, got, "Work APPROVED by a review agent already counts as verified and must not be re-checked")
-			require.Contains(t, got, "each follow-up correction")
-			require.Contains(t, got, "read_instruction only for modules that match")
+			require.NotContains(t, got, "<strict_review_pipeline>")
+			require.NotContains(t, got, "delegation is the default")
 		})
 	}
+}
+
+func TestCoderPromptIdentityModes(t *testing.T) {
+	t.Run("cli", func(t *testing.T) {
+		t.Setenv("PRIME_DESKTOP", "")
+		got := renderCoderPrompt(t, false)
+		require.Contains(t, got, "You are Prime, an interactive CLI agent working with the user toward their goals")
+	})
+	t.Run("desktop", func(t *testing.T) {
+		t.Setenv("PRIME_DESKTOP", "1")
+		got := renderCoderPrompt(t, false)
+		require.Contains(t, got, "You are Prime Desktop, an agent in the Prime Desktop application working with the user toward their goals")
+	})
 }
 
 // The MCP section is worthless if it sends the model after tools that are not

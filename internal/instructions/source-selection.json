@@ -2,8 +2,8 @@
   "repository": "https://github.com/Piebald-AI/claude-code-system-prompts",
   "source_commit": "9b3512f",
   "source_directory": "system-prompts",
-  "selected_count": 85,
-  "excluded_count": 785,
+  "selected_count": 84,
+  "excluded_count": 786,
   "files": [
     {
       "file": "agent-prompt-agent-hook.md",
@@ -456,7 +456,7 @@
     {
       "file": "agent-prompt-security-review-slash-command.md",
       "status": "excluded",
-      "reason": "Dynamic host expressions depend on unavailable product runtime; reusable task principles adapted in security-review overview.",
+      "reason": "security guidance excluded",
       "modules": []
     },
     {
@@ -2367,11 +2367,9 @@
     },
     {
       "file": "system-prompt-doing-tasks-security.md",
-      "status": "selected",
-      "reason": "Reusable guidance adapted into source-doing-tasks-security. Product identity, placeholders and unavailable runtime instructions removed.",
-      "modules": [
-        "source-doing-tasks-security"
-      ]
+      "status": "excluded",
+      "reason": "security guidance excluded",
+      "modules": []
     },
     {
       "file": "system-prompt-doing-tasks-software-engineering-focus.md",

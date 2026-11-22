@@ -1,7 +1,9 @@
 package tools
 
 import (
+	"bytes"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/SpherePrime/CLI/internal/config"
@@ -36,4 +38,123 @@ func TestBashDescriptionNamesThePlatform(t *testing.T) {
 		require.Contains(t, desc, "POSIX toolchain",
 			"unix hosts should be told the usual utilities are present")
 	}
+}
+
+func TestCoreToolDescriptionsAlignedAndBranded(t *testing.T) {
+	t.Parallel()
+
+	var bashWindows bytes.Buffer
+	require.NoError(t, bashDescriptionTpl.Execute(&bashWindows, bashDescriptionData{
+		BannedCommands:  "curl, sudo",
+		MaxOutputLength: MaxOutputLength,
+		RgAvailable:     true,
+		GhAvailable:     true,
+		SudoAvailable:   true,
+		Platform:        "windows",
+	}))
+
+	var bashLinux bytes.Buffer
+	require.NoError(t, bashDescriptionTpl.Execute(&bashLinux, bashDescriptionData{
+		BannedCommands:  "curl, sudo",
+		MaxOutputLength: MaxOutputLength,
+		RgAvailable:     false,
+		GhAvailable:     false,
+		SudoAvailable:   false,
+		Platform:        "linux",
+	}))
+
+	var fetchWithGH bytes.Buffer
+	require.NoError(t, fetchDescriptionTpl.Execute(&fetchWithGH, fetchDescriptionData{
+		GhAvailable:    true,
+		MaxFetchSizeKB: MaxFetchSize / 1024,
+	}))
+
+	var webFetchWithGH bytes.Buffer
+	require.NoError(t, webFetchDescriptionTpl.Execute(&webFetchWithGH, toolDescriptionData{
+		GhAvailable: true,
+	}))
+
+	descriptions := map[string]string{
+		"bash_windows":        bashWindows.String(),
+		"bash_linux":          bashLinux.String(),
+		"view":                viewDescription(),
+		"edit":                editDescription,
+		"multiedit":           multieditDescription,
+		"write":               writeDescription,
+		"glob":                globDescription(),
+		"grep":                grepDescription(),
+		"ls":                  lsDescription(),
+		"todos":               todosDescription,
+		"question":            questionDescription,
+		"web_search_provider": webSearchDescription(true, false),
+		"web_search_ddg":      webSearchDescription(false, true),
+		"web_fetch":           webFetchWithGH.String(),
+		"fetch":               fetchWithGH.String(),
+	}
+
+	forbiddenSubstrings := []string{
+		"claude",
+		"anthropic",
+		"todowrite",
+		"askuserquestion",
+		"security check",
+		"git safety protocol",
+		"credentials.json",
+		".env",
+		"sensitive info",
+		"sensitive information",
+		"ssrf",
+		"private ip",
+		"private url",
+	}
+
+	for name, desc := range descriptions {
+		require.NotEmpty(t, desc, name)
+		lower := strings.ToLower(desc)
+		for _, forbidden := range forbiddenSubstrings {
+			require.NotContains(t, lower, forbidden, "tool %s contains forbidden term %q", name, forbidden)
+		}
+	}
+
+	require.Contains(t, descriptions["bash_windows"], "mvdan/sh")
+	require.Contains(t, descriptions["bash_windows"], "job_output")
+	require.Contains(t, descriptions["bash_windows"], "job_kill")
+	require.Contains(t, descriptions["bash_windows"], "gh pr create")
+	require.Contains(t, descriptions["bash_windows"], "--no-verify")
+	require.Contains(t, descriptions["bash_windows"], "NEW commit")
+
+	require.Contains(t, descriptions["view"], "SKILL.md")
+	require.Contains(t, descriptions["view"], "prime://skills/...")
+	require.Contains(t, descriptions["view"], "200")
+	require.Contains(t, descriptions["view"], "200KB")
+	require.Contains(t, descriptions["view"], "ls")
+
+	require.Contains(t, descriptions["edit"], "lsp_replace_symbol")
+	require.Contains(t, descriptions["edit"], "lsp_rename")
+	require.Contains(t, descriptions["edit"], "replace_all")
+	require.Contains(t, descriptions["multiedit"], "multiedit")
+	require.Contains(t, descriptions["multiedit"], "lsp_replace_symbol")
+	require.Contains(t, descriptions["write"], "view")
+	require.Contains(t, descriptions["write"], "README")
+
+	require.Contains(t, descriptions["glob"], "100")
+	require.Contains(t, descriptions["glob"], ".gitignore")
+	require.Contains(t, descriptions["grep"], "100")
+	require.Contains(t, descriptions["grep"], ".gitignore")
+	require.Contains(t, descriptions["ls"], "1000")
+	require.Contains(t, descriptions["ls"], ".gitignore")
+
+	require.Contains(t, descriptions["todos"], "pending")
+	require.Contains(t, descriptions["todos"], "in_progress")
+	require.Contains(t, descriptions["todos"], "completed")
+	require.Contains(t, descriptions["todos"], "active_form")
+
+	require.Contains(t, descriptions["question"], "plan")
+	require.Contains(t, descriptions["question"], "confirm_title")
+	require.Contains(t, descriptions["question"], "choices")
+
+	require.Contains(t, descriptions["web_search_provider"], "Sources:")
+	require.Contains(t, descriptions["web_search_ddg"], "Sources:")
+	require.Contains(t, descriptions["web_fetch"], "gh")
+	require.Contains(t, descriptions["fetch"], "100KB")
 }

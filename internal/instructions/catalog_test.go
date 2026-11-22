@@ -93,7 +93,7 @@ func TestReadIsolationAndUnknownIDs(t *testing.T) {
 	if err != nil || !strings.Contains(body, "reproduce") {
 		t.Fatalf("debugging: %v %s", err, body)
 	}
-	for _, id := range []string{"../catalog.json", "library/debugging.md", "", "unknown"} {
+	for _, id := range []string{"../catalog.json", "library/debugging.md", "", "unknown", "security-review", "source-doing-tasks-security"} {
 		if _, err := Read(id); err == nil {
 			t.Fatalf("accepted %q", id)
 		}
@@ -116,7 +116,7 @@ func TestCatalogBodiesAndProvenance(t *testing.T) {
 	}
 	seen := map[string]bool{}
 	for _, entry := range entries {
-		if seen[entry.ID] || entry.Description == "" || entry.Source == "" {
+		if seen[entry.ID] || entry.Description == "" || entry.Source == "" || entry.Category == "security" {
 			t.Fatalf("invalid entry: %#v", entry)
 		}
 		seen[entry.ID] = true

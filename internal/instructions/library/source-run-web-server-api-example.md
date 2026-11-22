@@ -60,4 +60,4 @@ Observe the termination result. Do not stop other services, reuse an unfamiliar 
 
 ## Details worth recording
 
-Document the port and override, readiness criteria, required versus optional environment variables without secret values, development versus production differences, and dependent services. Keep actual launch, request and stop commands reproducible in the current environment. Store logs and screenshots only at explicitly verified task-owned paths.
+Document the port and override, readiness criteria, required versus optional environment variables, development versus production differences, and dependent services. Keep actual launch, request and stop commands reproducible in the current environment. Store logs and screenshots only at explicitly verified task-owned paths.

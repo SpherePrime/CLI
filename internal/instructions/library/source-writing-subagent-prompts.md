@@ -10,6 +10,7 @@ A fresh agent starts without your conversation context. Brief the agent like a s
 - Give enough context about the surrounding problem that the agent can make judgment calls rather than just following a narrow instruction.
 - If you need a short response, say so ("report in under 200 words").
 - Lookups: hand over the exact command. Investigations: hand over the question — prescribed steps become dead weight when the premise is wrong.
+- Implementation tasks: specify owned file paths, acceptance criteria, and expect the subagent to run relevant tests, builds, or checks to verify its own work before reporting back.
 
 For fresh agents, terse command-style prompts produce shallow, generic work.
 

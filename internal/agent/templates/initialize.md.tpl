@@ -1,29 +1,25 @@
-Analyze this codebase and create/update **{{.Config.Options.InitializeAs}}** to help future agents work effectively in this repository.
+Please analyze this codebase and create or update **{{.Config.Options.InitializeAs}}** in the repository root to help future agents work effectively in this repository.
 
-**First**: Check if directory is empty or contains only config files. If so, stop and say "Directory appears empty or only contains config. Add source code first, then run this command to generate {{.Config.Options.InitializeAs}}."
+First check if the directory is empty or contains only config files. If so, stop and say: "Directory appears empty or only contains config. Add source code first, then run this command to generate {{.Config.Options.InitializeAs}}."
 
-**Goal**: Document what an agent needs to know to work in this codebase - commands, patterns, conventions, gotchas, overall architecture, how components fit together
+# Process
 
-**Discovery process**:
+1. Check directory contents and repository structure (`ls`, `glob`).
+2. Check for existing rule files (`.cursor/rules/*.md`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`) and read `{{.Config.Options.InitializeAs}}` if it already exists so you can improve it rather than discarding useful notes.
+3. Identify build, lint, test, and run commands from config files, manifests, Makefiles, or CI workflows.
+4. Read representative source files to understand the architecture, module boundaries, conventions, and non-obvious patterns.
 
-1. Check directory contents with `ls`
-2. Look for existing rule files (`.cursor/rules/*.md`, `.cursorrules`, `.github/copilot-instructions.md`, `claude.md`, `agents.md`) - only read if they exist
-3. Identify project type from config files and directory structure
-4. Find build/test/lint commands from config files, scripts, Makefiles, or CI configs
-5. Read representative source files to understand code patterns, architecture, control/data flow
-6. If {{.Config.Options.InitializeAs}} exists, read and improve it
+# What to include
 
-**Content to include**:
+- **Commands**: Essential commands to build, lint, test (including how to run a single test or targeted subset), and run the project.
+- **Architecture**: High-level code organization, entry points, and how major components interact across files/packages ("big picture" that requires reading multiple files to understand).
+- **Conventions & Gotchas**: Non-obvious naming rules, patterns, implicit constraints, or surprising tool/flag behaviours discovered in the codebase.
+- **Existing Rules**: Relevant project-specific guidance from existing rule files.
 
-- Essential commands (build, test, run, deploy, etc.) - whatever is relevant for this project
-- Code organization and structure, application architecture and control/data flow
-- Naming conventions and style patterns
-- Testing approach and patterns
-- Important gotchas or non-obvious patterns
-- Any project-specific context from existing rule files
+# What NOT to include
 
-**Note:** LLM agents learn and adapt to their context as they obtain it, so mentioning obvious details they would immediately pick up from reading a file or two is actively detrimental. Keep the principles of progressive disclosure in mind and focus primarily on non-obvious knowledge that saves the agent from trial-and-error discovery: gotchas, implicit conventions, commands with surprising flags, and context that isn't self-evident from the code in a single file.
+- Generic software engineering advice or obvious standard practices.
+- Long file-by-file or symbol-by-symbol inventories that are immediately obvious from `ls` or reading a single file.
+- Unverified commands, paths, or conventions — only document what you directly observed.
 
-**Format**: Clear markdown sections. Use your judgment on structure based on what you find. Aim for completeness over brevity - include everything an agent would need to know.
-
-**Critical**: Only document what you actually observe. Never invent commands, patterns, or conventions. If you can't find something, don't include it.
+Format with clear, concise Markdown sections.

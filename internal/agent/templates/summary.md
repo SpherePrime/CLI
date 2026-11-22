@@ -1,53 +1,36 @@
-You are summarizing a conversation to preserve context for continuing work later.
+CRITICAL: Respond with TEXT ONLY. Do NOT call any tools. Do NOT execute any Next Steps or continue the task. Tools are not available in this summarization step and any tool call will fail.
 
-**Critical**: This summary will be the ONLY context available when the conversation resumes. Assume all previous messages will be lost. Be thorough.
+Your task when summarizing the conversation is to create a detailed summary of the conversation so far, paying close attention to the user's explicit requests and your previous actions. This summary will be the ONLY context available when the conversation resumes, so it must be thorough, accurate, and self-contained.
 
-**Do NOT execute any Next Steps, do NOT continue the task, and do NOT call any tools.** Output ONLY the structured Markdown summary using the sections below.
+Before providing your final summary, wrap your reasoning in `<analysis>...</analysis>` tags to carefully review the chronological flow, every user message, files touched, errors fixed, and active team state. Then provide the structured summary inside `<summary>...</summary>` tags using the 9 required sections below.
 
-**Required sections**:
+<summary>
+1. Primary Request and Intent:
+   Capture all explicit user requests, goals, constraints, and acceptance criteria in full detail.
 
-## Current State
+2. Key Technical Concepts:
+   List the key technologies, frameworks, libraries, conventions, and architectural concepts discussed.
 
-- What task is being worked on (exact user request)
-- Current progress and what's been completed
-- Active team assignments (agent names, roles, job IDs, linked reviewers, and owned files)
-- Parts that already received VERDICT: APPROVED from a review agent (name each part, reviewer, score/verdict, and files so the resumed coordinator does NOT re-verify, re-test, or re-screenshot them unless modified afterwards)
-- Team delegation rules to preserve: code agents write code only and must NOT run tests, builds, linters, dev servers, browsers, or audit scripts; review agents (or the coordinator when no reviewer is used) perform verification
-- What's being worked on right now (incomplete work)
-- What remains to be done (specific next steps, not vague)
+3. Files and Code Sections:
+   List all files read, modified, or created, along with important symbols, line numbers, and code snippets or implementation details needed to continue without re-discovering them.
 
-## Files & Changes
+4. Errors and Fixes:
+   Document all errors, failed builds/tests, or edge cases encountered and how they were resolved (or note if still failing).
 
-- Files that were modified (with brief description of changes)
-- Files that were read/analyzed (why they're relevant)
-- Key files not yet touched but will need changes
-- File paths and line numbers for important code locations
+5. Problem Solving:
+   Summarize problems solved, technical decisions made, tradeoffs, and any user feedback or corrections.
 
-## Technical Context
+6. All User Messages:
+   List all user messages verbatim in chronological order (excluding tool results) so the exact user wording and intent are preserved.
 
-- Architecture decisions made and why
-- Patterns being followed (with examples)
-- Libraries/frameworks being used
-- Commands that worked (exact commands with context)
-- Commands that failed (what was tried and why it didn't work)
-- Environment details (language versions, dependencies, etc.)
+7. Pending Tasks:
+   List all remaining tasks, todo items with their current statuses, any active team worker IDs/names/roles/statuses (if any), and any parts already marked `VERDICT: APPROVED` so completed work is not needlessly redone.
 
-## Strategy & Approach
+8. Current Work:
+   Describe in detail what was being worked on immediately before this summary, including exact file paths and the current state of edits or checks.
 
-- Overall approach being taken
-- Why this approach was chosen over alternatives
-- Key insights or gotchas discovered
-- Assumptions made
-- Any blockers or risks identified
+9. Optional Next Step:
+   State the single most direct next step aligned strictly with the user's latest explicit request, or note if all requested work is complete.
+</summary>
 
-## Exact Next Steps
-
-Be specific. Don't write "implement authentication" - write:
-
-1. Assign code agent auth-backend (linked to reviewer auth-review, code only with no self-testing) to add JWT middleware in src/middleware/auth.js:15 and update login handler in src/routes/user.js:45 to return token
-2. Skip re-verifying or re-testing parts already marked VERDICT: APPROVED by a review agent unless modified afterwards
-3. Verify only unreviewed integration edits via the linked review agent (or directly in the coordinator when no reviewer is used), e.g. checking auth integration with `npm test -- auth.test.js`
-
-**Tone**: Write as if briefing a teammate taking over mid-task. Include everything they'd need to continue without asking questions. No emojis ever.
-
-**Length**: No limit. Err on the side of too much detail rather than too little. Critical context is worth the tokens.
+No emojis. Err on the side of thoroughness and precision.

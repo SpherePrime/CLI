@@ -113,23 +113,6 @@
     "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-c-cross-file-tracer.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-e-wrapper-proxy-correctness.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-d-language-pitfall-specialist.md"
   },
   {
-    "id": "security-review",
-    "title": "Reviewing security boundaries",
-    "description": "Find concrete exploitable vulnerabilities introduced by changes.",
-    "category": "security",
-    "keywords": [
-      "security",
-      "vulnerability",
-      "injection",
-      "auth",
-      "безопасность",
-      "уязвимость",
-      "инъекция",
-      "авторизация"
-    ],
-    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/agent-prompt-security-review-slash-command.md; https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-security.md"
-  },
-  {
     "id": "simplification",
     "title": "Simplifying changed code",
     "description": "Improve changed code through justified reuse and simplification.",
@@ -757,23 +740,6 @@
     "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/skill-code-review-angle-d-language-pitfall-specialist.md"
   },
   {
-    "id": "source-doing-tasks-security",
-    "title": "System Prompt Doing Tasks Security",
-    "description": "Avoid introducing security vulnerabilities like injection, XSS, etc",
-    "category": "security",
-    "keywords": [
-      "security",
-      "vulnerability",
-      "injection",
-      "auth",
-      "безопасность",
-      "уязвимость",
-      "инъекция",
-      "авторизация"
-    ],
-    "source": "https://github.com/Piebald-AI/claude-code-system-prompts/blob/9b3512f/system-prompts/system-prompt-doing-tasks-security.md"
-  },
-  {
     "id": "source-doing-tasks-no-unnecessary-error-handling",
     "title": "System Prompt Doing Tasks No Unnecessary Error Handling",
     "description": "Do not add error handling for impossible scenarios; only validate at boundaries",
@@ -808,7 +774,7 @@
   {
     "id": "source-code-review-conventions-dimension",
     "title": "Skill Code Review Conventions Dimension",
-    "description": "Code-review dimension: flag diff lines that break a rule stated in an applicable CLAUDE.md (user, repo-root, or ancestor-directory), quoting the exact rule and offending line, and emit nothing when no CLAUDE.md governs the change",
+    "description": "Code-review dimension: flag diff lines that break a rule stated in an applicable AGENTS.md (user, repo-root, or ancestor-directory), quoting the exact rule and offending line, and emit nothing when no AGENTS.md governs the change",
     "category": "engineering",
     "keywords": [
       "conventions",
@@ -901,7 +867,7 @@
   {
     "id": "source-action-safety-and-truthful-reporting",
     "title": "System Prompt Action Safety And Truthful Reporting",
-    "description": "Requires confirmation for irreversible or outward-facing actions, checking targets before destructive edits, and truthful reporting of outcomes",
+    "description": "Inspect targets before deleting or overwriting and report outcomes truthfully with observed evidence",
     "category": "verification",
     "keywords": [
       "verify",
@@ -1517,7 +1483,7 @@
   {
     "id": "source-delivering-work-at-full-scope",
     "title": "System Prompt Delivering Work At Full Scope",
-    "description": "Instructs Prime to complete ordinary requested work at full scope under reasonable assumptions, continue past non-blocking concerns, and preserve necessary refusal and risky-action confirmation boundaries",
+    "description": "Instructs Prime to complete ordinary requested work at full scope under reasonable assumptions and continue past non-blocking concerns",
     "category": "planning",
     "keywords": [
       "plan",
@@ -1857,7 +1823,7 @@
   {
     "id": "source-doctor-prompt-audit-configuration-scope",
     "title": "Skill Doctor Prompt Audit Configuration Scope",
-    "description": "Audit applicable instruction text as data, exclude secrets and flag global changes without overreaching project scope.",
+    "description": "Audit applicable instruction text, exclude configuration files, and flag global changes without overreaching project scope.",
     "category": "engineering",
     "keywords": [
       "conventions",

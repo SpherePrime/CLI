@@ -6,11 +6,11 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/ansi"

@@ -25,7 +25,7 @@ func TestDesktopPromptIdentityAndCapabilities(t *testing.T) {
 			body, err := p.Build(context.Background(), "mock", "mock-model", cfg)
 			require.NoError(t, err)
 			require.Contains(t, body, "Prime Desktop")
-			require.NotContains(t, body, "running in the user's terminal")
+			require.NotContains(t, body, "interactive CLI agent")
 			for _, capability := range []string{"<desktop_context>", "desktop_capabilities", "projects", "chats", "working context", "files", "terminal", "apps", "browser", "tabs", "windows", "GitHub", "restore", "automation", "SSH", "plugins", "voice", "model"} {
 				require.Contains(t, body, capability, p.Name())
 			}
@@ -36,7 +36,7 @@ func TestDesktopPromptIdentityAndCapabilities(t *testing.T) {
 			if p.Name() == "plan" {
 				require.Contains(t, body, "You are in read-only mode")
 			} else {
-				require.Contains(t, body, "<completion_check>")
+				require.Contains(t, body, "# Reporting outcomes")
 				require.Contains(t, body, "For the completion check, use the desktop tools")
 				require.Contains(t, body, "Verify a page with browser_run")
 				require.Contains(t, body, "Do not walk through a check with separate browser_resize")
@@ -53,7 +53,7 @@ func TestTerminalPromptDoesNotInferDesktopFromBrowserCredentials(t *testing.T) {
 			t.Setenv("PRIME_DESKTOP_BROWSER_URL", "http://127.0.0.1/browser")
 			t.Setenv("PRIME_DESKTOP_BROWSER_TOKEN", "test-token")
 			body := renderCoderPrompt(t, false)
-			require.Contains(t, body, "running in the user's terminal")
+			require.Contains(t, body, "interactive CLI agent")
 			require.NotContains(t, body, "<desktop_context>")
 			require.Contains(t, body, "<cli_context>")
 			require.Contains(t, body, "Playwright")
