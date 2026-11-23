@@ -147,6 +147,7 @@ func TestPrimeGameDevBuiltinHiddenAndMaterializes(t *testing.T) {
 		"scripts/lib/ffmpeg.mjs",
 		"scripts/lib/playwright_loader.mjs",
 		"scripts/lib/telemetry.mjs",
+		"scripts/lib/window_target.mjs",
 	} {
 		embedded, err := builtinFS.ReadFile("builtin/prime-gamedev/" + relative)
 		require.NoError(t, err, relative)

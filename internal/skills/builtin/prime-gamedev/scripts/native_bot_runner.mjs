@@ -1,25 +1,13 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseFlagArgs, resolveOutputDirectory } from './lib/args.mjs'
 import { resolveFfmpegBinaries } from './lib/ffmpeg.mjs'
+import { buildWindowFfmpegInputArgs, waitForTargetWindow } from './lib/window_target.mjs'
 import { extractAndSummarizeFrames } from './extract_frames.mjs'
 import { cropImageWithFfmpeg, parseCropSpecs } from './element_capture.mjs'
-
-function buildCaptureInputArgs(flags) {
-  if (process.platform === 'win32') {
-    const input = flags.window ? `title=${flags.window}` : 'desktop'
-    return ['-f', 'gdigrab', '-framerate', String(Number(flags.recordFps) || 30), '-i', input]
-  }
-  if (process.platform === 'darwin') {
-    const screen = flags.screen || '1:none'
-    return ['-f', 'avfoundation', '-framerate', String(Number(flags.recordFps) || 30), '-i', screen]
-  }
-  const display = process.env.DISPLAY || ':0.0'
-  return ['-f', 'x11grab', '-framerate', String(Number(flags.recordFps) || 30), '-i', display]
-}
 
 function waitMs(ms) {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, ms))
@@ -52,6 +40,13 @@ function runShellCommand(command, cwd, envExtra = {}) {
 
 async function stopChildCleanly(child) {
   if (!child || child.exitCode !== null) {
+    return
+  }
+  if (process.platform === 'win32' && child.pid) {
+    spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+      stdio: 'ignore',
+      windowsHide: true
+    })
     return
   }
   await new Promise((resolvePromise) => {
@@ -106,12 +101,14 @@ async function stopFfmpegRecording(recorder) {
 
 function printUsage() {
   console.log(`Usage:
-  node native_bot_runner.mjs --cmd "<game launch command>" [--cwd <dir>] [--window "<window title>"] [--bot-cmd "<bot command>"] [--duration 15] [--fps 4] [--max-frames 120] [--element-crops "player:100,100,200,200"] [--out <dir>]`)
+  node native_bot_runner.mjs (--cmd "<game launch command>" | --window "<window title substring>") [--cwd <dir>] [--grab-mode window|title|region] [--window-timeout-ms 15000] [--bot-cmd "<bot command>"] [--duration 15] [--fps 4] [--max-frames 120] [--element-crops "player:100,100,200,200"] [--out <dir>]`)
 }
 
 async function main() {
   const { flags } = parseFlagArgs(process.argv.slice(2))
-  if (flags.help || !flags.cmd) {
+  const windowQuery = typeof flags.window === 'string' ? flags.window.trim() : ''
+  const hasCmd = typeof flags.cmd === 'string' && flags.cmd.trim().length > 0
+  if (flags.help || (!hasCmd && !windowQuery)) {
     printUsage()
     process.exit(flags.help ? 0 : 1)
   }
@@ -129,39 +126,69 @@ async function main() {
   mkdirSync(elementsDir, { recursive: true })
 
   const videoPath = join(outDir, 'playthrough.mp4')
-  const startupMs = Math.max(200, Number(flags.startupMs) || 1800)
+  const startupMs = Math.max(200, Number(flags['startup-ms'] ?? flags.startupMs) || 800)
+  const windowTimeoutMs = Math.max(1000, Number(flags['window-timeout-ms'] ?? flags.windowTimeoutMs) || 15000)
   const durationSec = Math.max(3, Number(flags.duration) || 15)
   const fps = Math.max(1, Number(flags.fps) || 4)
-  const maxFrames = Math.max(1, Number(flags.maxFrames) || 120)
+  const maxFrames = Math.max(1, Number(flags['max-frames'] ?? flags.maxFrames) || 120)
+  const grabMode =
+    flags['grab-mode'] === 'title'
+      ? 'title'
+      : flags['grab-mode'] === 'region'
+        ? 'region'
+        : 'window'
 
-  const gameProc = spawn(flags.cmd, {
-    cwd,
-    shell: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: {
-      ...process.env,
-      PRIME_GAMEDEV_OUT: outDir,
-      PRIME_GAMEDEV_ELEMENTS: elementsDir
-    }
-  })
-
+  let gameProc = null
   let gameStdout = ''
   let gameStderr = ''
-  gameProc.stdout?.on('data', (chunk) => {
-    gameStdout += chunk.toString()
-  })
-  gameProc.stderr?.on('data', (chunk) => {
-    gameStderr += chunk.toString()
+  if (hasCmd) {
+    gameProc = spawn(flags.cmd, {
+      cwd,
+      shell: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        PRIME_GAMEDEV_OUT: outDir,
+        PRIME_GAMEDEV_ELEMENTS: elementsDir
+      }
+    })
+    gameProc.stdout?.on('data', (chunk) => {
+      gameStdout += chunk.toString()
+    })
+    gameProc.stderr?.on('data', (chunk) => {
+      gameStderr += chunk.toString()
+    })
+    await waitMs(startupMs)
+  }
+
+  const windowTarget = await waitForTargetWindow({
+    pid: gameProc?.pid,
+    titleQuery: windowQuery,
+    timeoutMs: windowTimeoutMs,
+    focus: true
   })
 
-  await waitMs(startupMs)
+  if (!windowTarget) {
+    await stopChildCleanly(gameProc)
+    throw new Error(
+      `Could not find the target game window (pid=${gameProc?.pid || '<none>'}, window=${windowQuery || '<auto>'}). Refusing to record the full computer desktop; ensure the game opens a visible window or pass --window "<title>".`
+    )
+  }
+
+  const captureSpec = buildWindowFfmpegInputArgs({
+    windowTarget,
+    recordFps: Number(flags['record-fps'] ?? flags.recordFps) || 30,
+    grabMode,
+    screen: typeof flags.screen === 'string' ? flags.screen : '1:none'
+  })
 
   const recorderArgs = [
     '-y',
     '-hide_banner',
     '-loglevel',
     'error',
-    ...buildCaptureInputArgs(flags),
+    ...captureSpec.inputArgs,
+    ...captureSpec.filterArgs,
     '-pix_fmt',
     'yuv420p',
     '-movflags',
@@ -178,10 +205,17 @@ async function main() {
 
   let botResult = null
   try {
-    if (flags.botCmd) {
-      botResult = await runShellCommand(flags.botCmd, cwd, {
+    if (flags['bot-cmd'] ?? flags.botCmd) {
+      const botCmd = flags['bot-cmd'] ?? flags.botCmd
+      botResult = await runShellCommand(botCmd, cwd, {
         PRIME_GAMEDEV_OUT: outDir,
-        PRIME_GAMEDEV_ELEMENTS: elementsDir
+        PRIME_GAMEDEV_ELEMENTS: elementsDir,
+        PRIME_GAMEDEV_WINDOW_TITLE: windowTarget.title || '',
+        PRIME_GAMEDEV_WINDOW_PID: String(windowTarget.pid || gameProc?.pid || ''),
+        PRIME_GAMEDEV_WINDOW_X: String(windowTarget.region.x),
+        PRIME_GAMEDEV_WINDOW_Y: String(windowTarget.region.y),
+        PRIME_GAMEDEV_WINDOW_W: String(windowTarget.region.width),
+        PRIME_GAMEDEV_WINDOW_H: String(windowTarget.region.height)
       })
     } else {
       await waitMs(durationSec * 1000)
@@ -205,14 +239,14 @@ async function main() {
   })
 
   let elementCaptures = []
-  const crops = parseCropSpecs(flags.elementCrops)
+  const crops = parseCropSpecs(flags['element-crops'] ?? flags.elementCrops)
   if (crops.length > 0 && frameSummary.frames.length > 0) {
     const sampleIndex = Math.min(frameSummary.frames.length - 1, Math.floor(frameSummary.frames.length / 2))
     elementCaptures = cropImageWithFfmpeg({
       imagePath: frameSummary.frames[sampleIndex].path,
       crops,
       outDir: elementsDir,
-      scale: Number(flags.elementScale) || 2
+      scale: Number(flags['element-scale'] ?? flags.elementScale) || 2
     })
   }
 
@@ -220,7 +254,14 @@ async function main() {
     outDir,
     cwd,
     command: flags.cmd,
-    botCommand: flags.botCmd || null,
+    botCommand: (flags['bot-cmd'] ?? flags.botCmd) || null,
+    captureMode: captureSpec.mode,
+    capturedWindow: {
+      pid: windowTarget.pid || null,
+      hwnd: windowTarget.hwnd || null,
+      title: windowTarget.title || '',
+      region: windowTarget.region
+    },
     videoPath,
     frames: frameSummary,
     elementCaptures,
@@ -232,17 +273,20 @@ async function main() {
           stderr: botResult.stderr.slice(-4000)
         }
       : null,
-    gameProcess: {
-      exitCode: gameProc.exitCode,
-      stdout: gameStdout.slice(-4000),
-      stderr: gameStderr.slice(-4000)
-    },
+    gameProcess: gameProc
+      ? {
+          exitCode: gameProc.exitCode,
+          stdout: gameStdout.slice(-4000),
+          stderr: gameStderr.slice(-4000)
+        }
+      : null,
     recorderStderr: recorderStderr.slice(-2000)
   }
 
   const reportPath = join(outDir, 'report.json')
   writeFileSync(reportPath, JSON.stringify(report, null, 2))
   console.log(`Native GameDev bot run output: ${outDir}`)
+  console.log(`Captured window: "${windowTarget.title}" (${windowTarget.region.width}x${windowTarget.region.height} at ${windowTarget.region.x},${windowTarget.region.y}, mode=${captureSpec.mode})`)
   console.log(`Report: ${reportPath}`)
   console.log(`Video: ${videoPath}`)
   console.log(`Frames: ${frameSummary.frameCount}, Contact sheets: ${frameSummary.contactSheetCount} (${join(framesOutDir, 'sheets')})`)

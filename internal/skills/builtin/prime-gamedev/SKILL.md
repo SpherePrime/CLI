@@ -15,10 +15,11 @@ When this file is loaded with `view`, Prime exposes `<skill_directory>` (ready-t
 
 1. **Keep temporary videos and frames outside the repo** (the helper scripts default to `os.tmpdir()`) so `git status` stays clean.
 2. **Never rely on unit tests or standalone screenshots alone.** Launch the real game, drive it with a live bot that actually enters gameplay through menus/start screens, and record a continuous video of the playthrough.
-3. **Adapt to ANY game engine, language, or framework.** Inspect the project to see how the game launches, receives input, and renders, and wire live bot control + continuous video recording + frame slicing whether it is Web/Canvas/WebGL, Godot, Unity, Pygame, Bevy, SDL, C++/Rust, or terminal/CLI.
-4. **Capture close-ups of individual created elements in addition to the playthrough video.** Shoot focused close-up screenshots of key elements you built or changed (player character, enemies, items, effects, HUD/UI panels, menus, win/loss screens) and inspect them with `view`.
-5. **Save context with `<gamedev_library>`.** Never read all saved scripts blindly. Always run `library.mjs lookup` (or inspect `index.json`) first, read only the 1–2 relevant scripts matching the current game/engine, and after a successful run save new/improved reusable scripts into the proper folder without deleting existing ones.
-6. **Fix every bug found and re-run.** Whenever frames, element close-ups, or telemetry reveal any bug, fix it in code and repeat the full live bot + video + frame/element inspection loop until clean.
+3. **Record ONLY the target game window or game viewport — NEVER capture the full computer screen.** Web games record strictly the browser game viewport via `web_bot_runner.mjs`; native/desktop games record strictly the launched game window via `native_bot_runner.mjs` (auto-matched by game PID and/or `--window` title, cropped strictly to its window bounds, refusing to fall back to the full desktop).
+4. **Adapt to ANY game engine, language, or framework.** Inspect the project to see how the game launches, receives input, and renders, and wire live bot control + window-scoped continuous video recording + frame slicing whether it is Web/Canvas/WebGL, Godot, Unity, Pygame, Bevy, SDL, C++/Rust, or terminal/CLI.
+5. **Capture close-ups of individual created elements in addition to the playthrough video.** Shoot focused close-up screenshots of key elements you built or changed (player character, enemies, items, effects, HUD/UI panels, menus, win/loss screens) and inspect them with `view`.
+6. **Save context with `<gamedev_library>`.** Never read all saved scripts blindly. Always run `library.mjs lookup` (or inspect `index.json`) first, read only the 1–2 relevant scripts matching the current game/engine, and after a successful run save new/improved reusable scripts into the proper folder without deleting existing ones.
+7. **Fix every bug found and re-run.** Whenever frames, element close-ups, or telemetry reveal any bug, fix it in code and repeat the full live bot + video + frame/element inspection loop until clean.
 
 ## Step 1: Lookup Relevant Scripts (Context-Efficient)
 
@@ -64,7 +65,7 @@ node "<skill_directory>/scripts/element_capture.mjs" \
 
 ### Native / Desktop / Engine Games (Godot, Unity, Pygame, Bevy, SDL, Rust, C++, etc.)
 
-Use `native_bot_runner.mjs` (or launch the game with your bot input driver and record continuously via `ffmpeg`):
+Use `native_bot_runner.mjs` (specify the target game window yourself with `--window "<title>"`, with or without `--cmd`, or let it auto-detect the window opened by `--cmd`, recording **strictly that game window** rather than the whole desktop):
 
 ```bash
 node "<skill_directory>/scripts/native_bot_runner.mjs" \
@@ -77,7 +78,7 @@ node "<skill_directory>/scripts/native_bot_runner.mjs" \
   --element-crops "player:400,260,220,220;hud:0,0,460,90"
 ```
 
-Or slice any recorded video (`.mp4`/`.webm`/`.mkv`) or engine-dumped PNG directory with `extract_frames.mjs`, and crop element close-ups from a representative frame with `element_capture.mjs --image <frame.png> --crops "..."`.
+Never record the full desktop screen when testing a game; if you invoke `ffmpeg` directly, capture strictly the game window's coordinates (`gdigrab -offset_x ... -offset_y ... -video_size ...` / `x11grab` window region / `avfoundation` cropped to window bounds) or engine framebuffer. Slice any recorded video (`.mp4`/`.webm`/`.mkv`) or engine-dumped PNG directory with `extract_frames.mjs`, and crop element close-ups from a representative frame with `element_capture.mjs --image <frame.png> --crops "..."`.
 
 ## Step 3: Visual Inspection (`view`) + Telemetry + Difficulty
 
