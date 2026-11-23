@@ -599,6 +599,22 @@ func TestReadBuiltinSkillGivesDiskDirectoryForResources(t *testing.T) {
 	resp, err = readBuiltinFile(ViewParams{FilePath: "prime://skills/prime-config/SKILL.md"}, nil)
 	require.NoError(t, err)
 	require.NotContains(t, resp.Content, "<skill_directory>")
+
+	resp, err = readBuiltinFile(ViewParams{FilePath: "prime://skills/prime-gamedev/SKILL.md"}, nil)
+	require.NoError(t, err)
+	require.False(t, resp.IsError)
+	gdDir := filepath.Join(dataRoot, "builtin-skills", "prime-gamedev")
+	libDir := filepath.Join(dataRoot, "gamedev-library")
+	require.Contains(t, resp.Content, "<skill_directory>"+filepath.ToSlash(gdDir)+"</skill_directory>")
+	require.Contains(t, resp.Content, "<gamedev_library>"+filepath.ToSlash(libDir)+"</gamedev_library>")
+	require.FileExists(t, filepath.Join(gdDir, "scripts", "web_bot_runner.mjs"))
+	require.FileExists(t, filepath.Join(gdDir, "scripts", "native_bot_runner.mjs"))
+	require.FileExists(t, filepath.Join(gdDir, "scripts", "element_capture.mjs"))
+	require.FileExists(t, filepath.Join(gdDir, "scripts", "library.mjs"))
+	require.FileExists(t, filepath.Join(libDir, "index.json"))
+	require.DirExists(t, filepath.Join(libDir, "engines"))
+	require.DirExists(t, filepath.Join(libDir, "games"))
+	require.DirExists(t, filepath.Join(libDir, "elements"))
 }
 
 type denyRecordingPermissionService struct {

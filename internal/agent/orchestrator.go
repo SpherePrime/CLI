@@ -295,7 +295,7 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 		sb.WriteString(formatOrchestratorPlanDetails(o.plan, o.targetFiles, o.verificationChecks, o.escalationTriggers))
 		sb.WriteString("\n</orchestrator_plan>")
 		if o.cfg.GameDev {
-			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Read prime://skills/prime-gamedev/SKILL.md with view. Write and run a live bug-hunting playthrough bot against the real game (full loop plus wall/corner/floor-seam/edge probes), run scripted telemetry checks (falling through floors/textures, clipping, out-of-bounds, console/WebGL/asset errors, softlocks), record gameplay video into a temp directory, slice it into dense frames and contact sheets, visually inspect the frames with view for visual/texture bugs, and verify difficulty balance.\n</gamedev_mode>")
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled (MANDATORY). Read prime://skills/prime-gamedev/SKILL.md with view. Query <gamedev_library> selectively via library.mjs lookup to save context (never read unrelated scripts) and use <skill_directory>/scripts/ base helpers. For ANY game (any engine, language, or framework), you MUST determine how to launch, control, and record it, write and run a live playthrough bot that actually enters the running game and hunts for bugs (full loop plus wall/corner/floor-seam/edge probes), record a real continuous gameplay video into a temp directory (never just static screenshots), slice the video into dense frames and contact sheets, capture close-up screenshots of individual created elements (element_capture.mjs or captureElement/captureRegion), visually inspect both frames and element close-ups with view for visual/texture bugs, run scripted telemetry checks (falling through floors/textures, clipping, out-of-bounds, console/WebGL/asset errors, softlocks, difficulty balance), FIX every bug found followed by a fresh video re-run, and save reusable scripts into sorted <gamedev_library> folders without deleting old ones.\n</gamedev_mode>")
 		}
 		return sb.String()
 
@@ -316,7 +316,7 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 			sb.WriteString("\n</orchestrator_plan>")
 		}
 		if o.cfg.GameDev {
-			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Read prime://skills/prime-gamedev/SKILL.md with view. Verify that a live bug-hunting playthrough bot ran against the real game with video recording, dense frame slicing, visual frame inspection via view (no visual/texture/HUD glitches or floor fall-throughs), clean scripted collision/error telemetry, and confirmed difficulty and balance tuning before concluding.\n</gamedev_mode>")
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled (MANDATORY). Read prime://skills/prime-gamedev/SKILL.md with view. Verify that a live playthrough bot actually entered and played the real game with continuous video recording (never standalone screenshots alone), dense frame slicing, close-up captures of created elements, visual inspection of both frames and element close-ups via view (no visual/texture/HUD glitches or floor fall-throughs), clean scripted collision/error telemetry, confirmed difficulty and balance tuning, and that ANY bugs found were fixed and re-verified with a fresh video run before concluding.\n</gamedev_mode>")
 		}
 		return sb.String()
 
@@ -337,7 +337,7 @@ func (o *orchestratorRuntime) phaseSystemPrompt() string {
 			sb.WriteString("\n</orchestrator_escalation>")
 		}
 		if o.cfg.GameDev {
-			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled. Include live bug-hunting playthrough bots (via prime://skills/prime-gamedev/SKILL.md), video recording with dense frame extraction and visual frame inspection via view, scripted collision/texture-fall-through checks, and difficulty balance verification in your plan and `verification_checks`.\n</gamedev_mode>")
+			sb.WriteString("\n<gamedev_mode>\nGameDev mode is enabled (MANDATORY). Use prime://skills/prime-gamedev/SKILL.md. For any game on any engine or stack, include in your plan and `verification_checks`: (1) selective lookup in <gamedev_library> via library.mjs (never reading unrelated folders), (2) writing and running a live playthrough bot that enters the real game and hunts for bugs, (3) recording a real continuous gameplay video (never static screenshots alone), slicing it into dense frames, and capturing close-up screenshots of individual created elements for visual inspection via view, (4) scripted collision/texture-fall-through/error and difficulty balance checks, and (5) fixing any bugs found, re-running the bot video check, and saving reusable scripts to <gamedev_library>.\n</gamedev_mode>")
 		}
 		return sb.String()
 	}

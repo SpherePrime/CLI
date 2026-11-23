@@ -22,6 +22,9 @@ func assertNoGameDevMentions(t *testing.T, text string) {
 	require.NotContains(t, lower, "softlock")
 	require.NotContains(t, lower, "extract_frames")
 	require.NotContains(t, lower, "web_bot_runner")
+	require.NotContains(t, lower, "native_bot_runner")
+	require.NotContains(t, lower, "element_capture")
+	require.NotContains(t, lower, "gamedev_library")
 }
 
 func TestGameDevPromptBlockDisabledReturnsEmpty(t *testing.T) {
@@ -53,42 +56,59 @@ func TestGameDevPromptBlockEnabledByRole(t *testing.T) {
 
 	codeBlock := gameDevPromptBlock(config.AgentCode, true)
 	require.Contains(t, codeBlock, "<gamedev_mode>")
+	require.Contains(t, codeBlock, "MANDATORY")
 	require.Contains(t, codeBlock, "prime://skills/prime-gamedev/SKILL.md")
-	require.Contains(t, codeBlock, "live automated playthrough bot")
+	require.Contains(t, codeBlock, "<gamedev_library>")
+	require.Contains(t, codeBlock, "library.mjs lookup")
+	require.Contains(t, codeBlock, "actually enters the running game")
+	require.Contains(t, codeBlock, "never substitute static screenshots for video recording")
+	require.Contains(t, codeBlock, "element_capture.mjs")
+	require.Contains(t, codeBlock, "native_bot_runner.mjs")
 	require.Contains(t, codeBlock, "falling through floors/textures")
 	require.Contains(t, codeBlock, "contact sheets")
-	require.Contains(t, strings.ToLower(codeBlock), "difficulty and balance")
+	require.Contains(t, codeBlock, "Fix every bug you find and re-verify")
+	require.Contains(t, strings.ToLower(codeBlock), "difficulty/balance")
 	require.NotContains(t, codeBlock, "do NOT run tests")
 
 	reviewBlock := gameDevPromptBlock(config.AgentReview, true)
 	require.Contains(t, reviewBlock, "<gamedev_mode>")
+	require.Contains(t, reviewBlock, "MANDATORY")
 	require.Contains(t, reviewBlock, "prime://skills/prime-gamedev/SKILL.md")
-	require.Contains(t, reviewBlock, "live bug-hunting playthrough bot")
-	require.Contains(t, reviewBlock, "dense sequence of frames")
+	require.Contains(t, reviewBlock, "library.mjs lookup")
+	require.Contains(t, reviewBlock, "actually enters the running game")
+	require.Contains(t, reviewBlock, "NOT just standalone screenshots")
+	require.Contains(t, reviewBlock, "close-up screenshots of individual created elements")
+	require.Contains(t, reviewBlock, "dense frames")
 	require.Contains(t, reviewBlock, "inspect the contact sheets")
 	require.Contains(t, reviewBlock, "difficulty")
-	require.Contains(t, reviewBlock, "defects")
+	require.Contains(t, reviewBlock, "defect")
 
 	planBlock := gameDevPromptBlock(config.AgentPlan, true)
 	require.Contains(t, planBlock, "<gamedev_mode>")
 	require.Contains(t, planBlock, "prime://skills/prime-gamedev/SKILL.md")
 	require.Contains(t, planBlock, "dense frames")
-	require.Contains(t, planBlock, "Difficulty and balance")
+	require.Contains(t, planBlock, "difficulty and balance")
+	require.Contains(t, planBlock, "fix-and-rerun loop")
 
 	coordBlock := gameDevPromptBlockWithDelegation(config.AgentGeneral, true, true)
 	require.Contains(t, coordBlock, "<gamedev_mode>")
+	require.Contains(t, coordBlock, "MANDATORY")
 	require.Contains(t, coordBlock, "prime://skills/prime-gamedev/SKILL.md")
 	require.Contains(t, coordBlock, "code agents")
 	require.Contains(t, coordBlock, "review agents")
 	require.Contains(t, coordBlock, "dense frames")
-	require.Contains(t, coordBlock, "difficulty balance")
+	require.Contains(t, coordBlock, "difficulty")
+	require.Contains(t, coordBlock, "FIX every bug found")
 
 	directBlock := gameDevPromptBlockWithDelegation(config.AgentGeneral, true, false)
 	require.Contains(t, directBlock, "<gamedev_mode>")
+	require.Contains(t, directBlock, "MANDATORY")
 	require.Contains(t, directBlock, "prime://skills/prime-gamedev/SKILL.md")
-	require.Contains(t, directBlock, "write and run a live automated playthrough bot")
+	require.Contains(t, directBlock, "Write and run a live automated playthrough bot")
+	require.Contains(t, directBlock, "never substitute static screenshots for video")
 	require.Contains(t, directBlock, "dense frames")
 	require.Contains(t, directBlock, "difficulty and balance")
+	require.Contains(t, directBlock, "Fix every bug found")
 }
 
 func TestSessionAgentPromptZeroMentionsWhenGameDevOff(t *testing.T) {
@@ -149,8 +169,8 @@ func TestSessionAgentPromptInjectsGameDevWhenOn(t *testing.T) {
 	}{
 		{agentID: config.AgentGeneral, want: "prime://skills/prime-gamedev/SKILL.md"},
 		{agentID: config.AgentCode, want: "contact sheets"},
-		{agentID: config.AgentReview, want: "defects"},
-		{agentID: config.AgentPlan, want: "Difficulty and balance"},
+		{agentID: config.AgentReview, want: "defect"},
+		{agentID: config.AgentPlan, want: "difficulty and balance"},
 	} {
 		t.Run(tc.agentID, func(t *testing.T) {
 			env := testEnv(t)

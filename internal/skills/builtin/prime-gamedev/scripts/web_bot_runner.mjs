@@ -81,9 +81,11 @@ async function main() {
   const videoDir = join(outDir, 'video')
   const fallbackFramesDir = join(outDir, 'live-captures')
   const eventFramesDir = join(outDir, 'events')
+  const elementsDir = join(outDir, 'elements')
   mkdirSync(videoDir, { recursive: true })
   mkdirSync(fallbackFramesDir, { recursive: true })
   mkdirSync(eventFramesDir, { recursive: true })
+  mkdirSync(elementsDir, { recursive: true })
 
   const width = parsePositiveInteger(flags.width, 1280)
   const height = parsePositiveInteger(flags.height, 720)
@@ -119,6 +121,7 @@ async function main() {
   const runtimeMonitor = createRuntimeMonitor(page)
   const telemetry = createTelemetryTracker({ floorYLimit })
   const eventCaptures = []
+  const elementCaptures = []
   let activeMovementKeys = 0
   let pollingActive = true
   let fallbackIndex = 0
@@ -152,6 +155,46 @@ async function main() {
     await page.screenshot({ path: filePath })
     eventCaptures.push({ label: safeLabel, path: filePath, time: new Date().toISOString() })
     return filePath
+  }
+
+  async function captureElement(selector, label, options = {}) {
+    const safeLabel = String(label || 'element').replace(/[^a-zA-Z0-9_-]+/g, '-')
+    const padding = Number.isFinite(Number(options.padding)) ? Number(options.padding) : 16
+    const locator = page.locator(selector).first()
+    await locator.waitFor({ state: 'visible', timeout: 5000 })
+    const box = await locator.boundingBox()
+    if (!box || box.width <= 0 || box.height <= 0) {
+      return null
+    }
+    const x = Math.max(0, Math.floor(box.x - padding))
+    const y = Math.max(0, Math.floor(box.y - padding))
+    const clip = {
+      x,
+      y,
+      width: Math.max(1, Math.min(width - x, Math.ceil(box.width + padding * 2))),
+      height: Math.max(1, Math.min(height - y, Math.ceil(box.height + padding * 2)))
+    }
+    const fileName = `${String(elementCaptures.length + 1).padStart(3, '0')}-${safeLabel}.png`
+    const filePath = join(elementsDir, fileName)
+    await page.screenshot({ path: filePath, clip })
+    const record = { label: safeLabel, kind: 'selector', selector, clip, path: filePath, time: new Date().toISOString() }
+    elementCaptures.push(record)
+    return record
+  }
+
+  async function captureRegion(box, label) {
+    const safeLabel = String(label || 'region').replace(/[^a-zA-Z0-9_-]+/g, '-')
+    const x = Math.max(0, Math.floor(Number(box?.x) || 0))
+    const y = Math.max(0, Math.floor(Number(box?.y) || 0))
+    const w = Math.max(1, Math.min(width - x, Math.ceil(Number(box?.width) || 120)))
+    const h = Math.max(1, Math.min(height - y, Math.ceil(Number(box?.height) || 120)))
+    const clip = { x, y, width: w, height: h }
+    const fileName = `${String(elementCaptures.length + 1).padStart(3, '0')}-${safeLabel}.png`
+    const filePath = join(elementsDir, fileName)
+    await page.screenshot({ path: filePath, clip })
+    const record = { label: safeLabel, kind: 'region', clip, path: filePath, time: new Date().toISOString() }
+    elementCaptures.push(record)
+    return record
   }
 
   let pollTimer = null
@@ -209,6 +252,8 @@ async function main() {
         telemetry.markCheckpoint(name, meta)
       },
       captureEventFrame,
+      captureElement,
+      captureRegion,
       readGameState,
       recordDifficultySample(sample) {
         telemetry.recordDifficultySample(sample)
@@ -325,6 +370,7 @@ async function main() {
     runtime,
     telemetry: telemetrySummary,
     eventCaptures,
+    elementCaptures,
     frames: framesSummary
   }
 

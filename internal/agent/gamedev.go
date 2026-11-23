@@ -35,59 +35,61 @@ func gameDevPromptBlockWithDelegation(agentID string, enabled, canDelegate bool)
 		return `
 
 <gamedev_mode>
-GameDev mode is enabled.
-First, read prime://skills/prime-gamedev/SKILL.md with view to access the live bot runner and video-to-frames inspection scripts.
-Whenever you build or modify game logic, mechanics, rendering, collisions, levels, UI/HUD, or progression, you MUST write and run a live automated playthrough bot against the real running game (not unit-test stubs alone):
-1. Full-loop bug hunting: make the bot play a full game loop from start to finish while actively probing corners, walls, floor seams, map boundaries, rapid/conflicting inputs, and restart/respawn paths to trigger bugs and softlocks.
-2. Scripted telemetry checks: detect falling through floors/textures, collision clipping, out-of-bounds coordinates, NaN/runtime/console/WebGL errors, missing/404 textures or assets, stuck/softlock states, and FPS drops.
-3. Video recording and dense frame inspection: record video of the full bot playthrough in a temp directory outside the repo, slice it into a dense frame sequence and contact sheets (using web_bot_runner.mjs or extract_frames.mjs), and inspect the contact sheets and flagged/key frames with view (when image viewing is supported) to catch visual bugs, texture glitches, z-fighting, camera clipping, and HUD overlaps.
-4. Difficulty and balance verification: verify win/loss rates, pacing, resource/damage curves, and progression fairness.
+GameDev mode is enabled. This is a MANDATORY, NON-NEGOTIABLE requirement for any game work.
+First, read prime://skills/prime-gamedev/SKILL.md with view. This provides ready-to-use base scripts in <skill_directory>/scripts/ and a persistent sorted script library in <gamedev_library>.
+To save context, NEVER read all scripts in <gamedev_library> blindly: run library.mjs lookup (or inspect index.json) for the current engine/game first, read only the 1-2 relevant scripts, and save any new or improved reusable scripts into the proper folder (engines/, games/, or elements/) without deleting existing ones.
+Whenever you build, modify, or fix a game (on ANY engine, language, or framework — web, Canvas, WebGL, Godot, Unity, Pygame, Bevy, SDL, C++, Rust, terminal, or custom), you MUST figure out how to launch, control, and record it, and execute the full loop below:
+1. Mandatory live in-game playthrough bot: write and run a real bot that actually enters the running game (clicks Start/Play through menus, controls the real player/game loop end-to-end) and actively hunts for bugs by probing corners, walls, floor seams, edges, rapid/conflicting inputs, and restart/respawn paths. Unit tests, static checks, or mocked simulations alone are NOT sufficient.
+2. Mandatory real video recording + frame slicing + close-up element captures: record an actual continuous video of the entire bot playthrough into a temp directory outside the repo (never substitute static screenshots for video recording — use web_bot_runner.mjs, native_bot_runner.mjs, or engine/ffmpeg video capture), slice that video into dense frames and contact sheets with extract_frames.mjs, AND capture close-up screenshots of individual created elements (player, enemies, items, HUD, menus, key objects) via captureElement/captureRegion or element_capture.mjs.
+3. Visual frame & element inspection + scripted telemetry: inspect the extracted contact sheets, key/flagged frames, and close-up element screenshots with view (when image viewing is supported) to catch visual/rendering bugs, falling through floors/textures, missing/corrupt textures, z-fighting, camera clipping, and HUD overlaps, while also running scripted checks for floor/texture fall-throughs, collision clipping, out-of-bounds states, softlocks, NaN physics, console/WebGL/asset errors, FPS drops, and difficulty/balance fairness.
+4. Fix every bug you find and re-verify: whenever the bot, scripted telemetry, frames, or element close-ups reveal ANY bug, visual glitch, texture issue, softlock, or balance problem, you MUST fix it in code and re-run the live bot with a fresh video recording, frame extraction, element captures, and view inspection until the run is clean.
 </gamedev_mode>`
 	case config.AgentReview:
 		return `
 
 <gamedev_mode>
-GameDev mode is enabled.
-First, read prime://skills/prime-gamedev/SKILL.md with view.
-Verification MUST include running and visually inspecting a live bug-hunting playthrough bot against the real game:
-1. Execute the live playthrough bot across a full game loop and bug-hunting probes (walls, corners, floor seams, edges, rapid inputs, softlock spots) with video recording enabled.
-2. Slice the recorded gameplay video into a dense sequence of frames and contact sheets (via web_bot_runner.mjs or extract_frames.mjs in a temp directory outside the repo) and inspect the contact sheets and key/flagged frames with view (when image viewing is supported) to verify there are no visual bugs, texture fall-throughs, missing/broken textures, z-fighting, camera clipping, or HUD overlaps.
-3. Inspect scripted runtime/telemetry results to verify zero falls through floors/textures, collision clipping, out-of-bounds states, softlocks, NaN physics, console/WebGL errors, or broken assets.
-4. Inspect playthrough metrics to confirm difficulty and balance tuning (no impossible spikes, trivial exploits, or broken progression).
-Report missing live playthrough bots, skipped video/frame visual inspection, visual or texture bugs, softlocks, or failed difficulty/balance checks as defects.
+GameDev mode is enabled. This is a MANDATORY verification requirement.
+First, read prime://skills/prime-gamedev/SKILL.md with view. Use library.mjs lookup (or index.json) rather than reading unrelated scripts in <gamedev_library>.
+Verification MUST execute and inspect a real live bug-hunting bot inside the actual game (regardless of engine/framework) with real video recording and close-up element captures:
+1. Confirm the game has a live bot that actually enters the running game, completes a full playthrough loop, and stress-tests walls, corners, floor seams, boundaries, rapid inputs, and softlock spots.
+2. Confirm a continuous video of the playthrough was actually recorded (NOT just standalone screenshots) and sliced into dense frames and contact sheets (via web_bot_runner.mjs, native_bot_runner.mjs, or extract_frames.mjs in a temp directory outside the repo), AND confirm close-up screenshots of individual created elements (via element_capture.mjs or captureElement/captureRegion) were taken; inspect the contact sheets, key/flagged frames, and element close-ups with view (when image viewing is supported) for visual bugs, texture fall-throughs, missing/broken textures, z-fighting, camera clipping, and HUD overlaps.
+3. Inspect scripted runtime/telemetry results to verify zero falls through floors/textures, collision clipping, out-of-bounds states, softlocks, NaN physics, console/WebGL/asset errors, or broken difficulty/balance.
+4. Report missing live in-game bots, missing video recording or element close-ups, skipped visual inspection, or ANY unfixed visual, texture, gameplay, collision, softlock, or difficulty defect so it gets fixed and re-verified with a fresh video run.
 </gamedev_mode>`
 	case config.AgentPlan:
 		return `
 
 <gamedev_mode>
 GameDev mode is enabled.
-Any implementation and verification plan for game features MUST reference prime://skills/prime-gamedev/SKILL.md and include:
-1. A live automated playthrough bot that plays a full loop and actively hunts for collision, texture-fall-through, and softlock bugs.
-2. Scripted runtime telemetry checks (floor/texture clipping, out-of-bounds, NaN physics, console/WebGL/asset errors, FPS).
-3. Recording gameplay video of the bot run, slicing it into dense frames and contact sheets, and visually inspecting the frames with view for visual/rendering defects.
-4. Difficulty and balance verification across win/loss rates, pacing, and progression curves.
+Any implementation and verification plan for a game (on any engine or language) MUST reference prime://skills/prime-gamedev/SKILL.md and mandate:
+1. Querying <gamedev_library> via library.mjs lookup (never reading all scripts blindly) to reuse relevant engine/game/element scripts and saving new scripts into sorted folders without deleting existing ones.
+2. Writing and running a live playthrough bot that actually enters the running game, completes a full loop, and actively hunts for collision, texture-fall-through, and softlock bugs.
+3. Implementing real continuous video recording of the playthrough (never static screenshots alone, adapting the capture method to the game's stack/engine), slicing the video into dense frames and contact sheets, capturing close-up screenshots of individual created elements, and visually inspecting both with view.
+4. Scripted telemetry checks (falling through floors/textures, out-of-bounds, NaN physics, console/WebGL/asset errors, FPS) plus difficulty and balance verification.
+5. A mandatory fix-and-rerun loop: any bug found in frames, element close-ups, or telemetry must be fixed and re-verified with a fresh bot video run.
 </gamedev_mode>`
 	case config.AgentGeneral, config.LegacyAgentCoder, "":
 		if canDelegate {
 			return `
 
 <gamedev_mode>
-GameDev mode is enabled.
-Read prime://skills/prime-gamedev/SKILL.md with view and enforce the full GameDev QA workflow when delegating or verifying game work:
-- Require code agents to build and run live bug-hunting playthrough bots against the real game, add scripted collision/texture-fall-through/error telemetry, record gameplay video, slice it into dense frames, inspect frames with view, and verify difficulty balance.
-- Require review agents (or your own <completion_check> when no reviewer is used) to run the live bot with video recording, slice the video into dense frames, inspect the contact sheets and flagged/key frames with view for visual and texture bugs, and verify scripted collision/error checks and difficulty balance.
+GameDev mode is enabled. This is a MANDATORY, NON-NEGOTIABLE requirement for any game work.
+Read prime://skills/prime-gamedev/SKILL.md with view and enforce the full GameDev QA loop across any game engine, language, or framework:
+- Require code agents to check <gamedev_library> selectively via library.mjs lookup (saving context, never reading unrelated folders), use <skill_directory>/scripts/ base helpers, build and run a live playthrough bot that enters the game and hunts for bugs, record a real continuous gameplay video (never just standalone screenshots), slice it into dense frames and contact sheets, capture close-up screenshots of individual created elements, inspect frames and elements with view, run scripted collision/texture-fall-through/error/difficulty checks, FIX every bug found followed by a fresh video re-run, and save reusable scripts to the sorted library without deleting old ones.
+- Require review agents (or your own <completion_check> when no reviewer is used) to verify the live in-game bot run, real video recording, dense frame extraction, close-up element captures, visual inspection via view, clean collision/error/difficulty telemetry, and zero unfixed bugs.
 </gamedev_mode>`
 		}
 		return `
 
 <gamedev_mode>
-GameDev mode is enabled.
-First, read prime://skills/prime-gamedev/SKILL.md with view to access the live bot runner and video-to-frames inspection scripts.
-Whenever you build or modify game logic, mechanics, rendering, collisions, levels, UI/HUD, or progression, you MUST write and run a live automated playthrough bot against the real running game that plays a full loop and actively hunts for bugs:
-1. Probe corners, walls, floor seams, boundaries, rapid inputs, and softlock states.
-2. Run scripted telemetry checks for falling through floors/textures, collision clipping, out-of-bounds, NaN/console/WebGL/asset errors, and FPS drops.
-3. Record video of the bot playthrough in a temp directory outside the repo, slice it into dense frames and contact sheets, and inspect the frames with view (when image viewing is supported) for visual/texture/HUD bugs.
-4. Evaluate and verify difficulty and balance (win/loss rates, pacing, resource curves, progression fairness).
+GameDev mode is enabled. This is a MANDATORY, NON-NEGOTIABLE requirement for any game work.
+First, read prime://skills/prime-gamedev/SKILL.md with view to access the base scripts in <skill_directory>/scripts/ and the persistent sorted script library in <gamedev_library>.
+To save context, query <gamedev_library> via library.mjs lookup (or index.json) first instead of reading unrelated scripts, and after verification save new/improved reusable scripts into engines/, games/, or elements/ without deleting existing ones.
+Whenever you build, modify, or fix a game (on ANY engine, language, or framework — web, Godot, Unity, Pygame, Bevy, SDL, C++, Rust, terminal, or custom), you MUST determine how to launch, control, and record it, and execute the complete cycle:
+1. Write and run a live automated playthrough bot that actually enters the running game (through menus/start), plays a full loop, and actively hunts for bugs across corners, walls, floor seams, boundaries, rapid inputs, and softlock states.
+2. Record a real continuous video of the entire bot playthrough into a temp directory outside the repo (never substitute static screenshots for video), slice the video into dense frames and contact sheets (web_bot_runner.mjs, native_bot_runner.mjs, or extract_frames.mjs), capture close-up screenshots of individual created elements (element_capture.mjs or captureElement/captureRegion), and inspect both frames and element close-ups with view (when image viewing is supported).
+3. Run scripted telemetry checks for falling through floors/textures, collision clipping, out-of-bounds, NaN/console/WebGL/asset errors, FPS drops, and verify difficulty and balance fairness.
+4. Fix every bug found in frames, element close-ups, or telemetry and re-run the live bot with a new video recording and frame/element inspection until the playthrough is clean.
 </gamedev_mode>`
 	default:
 		return ""

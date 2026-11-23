@@ -126,7 +126,7 @@ export function probeVideoMetadata(ffprobePath, videoPath) {
   }
 }
 
-function runFfmpeg(ffmpegPath, args) {
+export function runFfmpeg(ffmpegPath, args) {
   return spawnSync(ffmpegPath, args, {
     encoding: 'utf8',
     windowsHide: true,
