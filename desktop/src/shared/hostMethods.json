@@ -37,6 +37,7 @@
   "editorDirty": true,
   "readFile": true,
   "mediaUrl": true,
+  "inspectPath": true,
   "diff": true,
   "attachments": true,
   "preferences": true,

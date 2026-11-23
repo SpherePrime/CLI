@@ -159,6 +159,8 @@ pub fn image_mime_for_path(path: &Path) -> Option<&'static str> {
         "jpg" | "jpeg" => Some("image/jpeg"),
         "webp" => Some("image/webp"),
         "gif" => Some("image/gif"),
+        "bmp" => Some("image/bmp"),
+        "avif" => Some("image/avif"),
         _ => None,
     }
 }
@@ -297,11 +299,201 @@ fn resolve_remote_cached(
     Ok(dunce::canonicalize(&cache_path)?)
 }
 
+fn is_allowed_prime_temp_path(candidate: &Path) -> bool {
+    let temp_dir = std::env::temp_dir();
+    let canon_temp = dunce::canonicalize(&temp_dir).unwrap_or_else(|_| temp_dir.clone());
+    for base in [&canon_temp, &temp_dir] {
+        if let Ok(rel) = candidate.strip_prefix(base) {
+            if let Some(Component::Normal(first)) = rel.components().next() {
+                let first_str = first.to_string_lossy();
+                if first_str.starts_with("prime-gamedev-")
+                    || first_str.starts_with("prime-designer-")
+                    || first_str.starts_with("prime-media-")
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+fn is_path_inside_allowed_areas(
+    state: &AppState,
+    root: Option<&Path>,
+    canon_root: Option<&Path>,
+    candidate: &Path,
+) -> bool {
+    let inside_root = root.is_some_and(|dir| candidate.starts_with(dir))
+        || canon_root.is_some_and(|dir| candidate.starts_with(dir));
+    let attachments_dir = state.directory.join("attachments");
+    let canon_attachments = dunce::canonicalize(&attachments_dir).ok();
+    let inside_attachments = candidate.starts_with(&attachments_dir)
+        || canon_attachments
+            .as_ref()
+            .is_some_and(|dir| candidate.starts_with(dir));
+    inside_root || inside_attachments || is_allowed_prime_temp_path(candidate)
+}
+
+pub fn inspect_local_path(state: &AppState, workspace_id: &str, raw_path: &str) -> Value {
+    let trimmed = raw_path.trim();
+    if trimmed.is_empty()
+        || is_passthrough_url(trimmed)
+        || trimmed.to_ascii_lowercase().starts_with("prime:")
+    {
+        return json!({ "exists": false, "kind": "missing" });
+    }
+    if !workspace_id.is_empty() && crate::remote::workspace_profile(state, workspace_id).is_some() {
+        return json!({ "exists": false, "kind": "missing" });
+    }
+    let Ok(normalized) = normalize_local_path(trimmed) else {
+        return json!({ "exists": false, "kind": "missing" });
+    };
+    let candidate = Path::new(&normalized);
+    if candidate
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return json!({ "exists": false, "kind": "missing" });
+    }
+    let root = if workspace_id.is_empty() {
+        None
+    } else {
+        state.root(workspace_id).ok()
+    };
+    let canon_root = root
+        .as_ref()
+        .and_then(|dir| dunce::canonicalize(dir).ok());
+    let resolved = if candidate.is_absolute() {
+        dunce::canonicalize(candidate).ok()
+    } else if let Some(ref root_dir) = root {
+        files::scoped_path(root_dir, &normalized, false).ok()
+    } else {
+        None
+    };
+    let Some(canon_target) = resolved else {
+        return json!({ "exists": false, "kind": "missing" });
+    };
+    let name = canon_target
+        .file_name()
+        .map(|value| value.to_string_lossy().into_owned())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| canon_target.to_string_lossy().into_owned());
+    let path_str = canon_target.to_string_lossy().into_owned();
+    if canon_target.is_dir() {
+        return json!({
+            "exists": true,
+            "kind": "dir",
+            "name": name,
+            "path": path_str,
+            "previewable": false,
+            "revealable": true,
+        });
+    }
+    if !canon_target.is_file() {
+        return json!({ "exists": false, "kind": "missing" });
+    }
+    let allowed = is_path_inside_allowed_areas(
+        state,
+        root.as_deref(),
+        canon_root.as_deref(),
+        &canon_target,
+    );
+    if let Some(mime) = video_mime_for_path(&canon_target) {
+        return json!({
+            "exists": true,
+            "kind": "video",
+            "mime": mime,
+            "name": name,
+            "path": path_str,
+            "previewable": allowed,
+            "revealable": true,
+        });
+    }
+    if let Some(mime) = image_mime_for_path(&canon_target) {
+        return json!({
+            "exists": true,
+            "kind": "image",
+            "mime": mime,
+            "name": name,
+            "path": path_str,
+            "previewable": allowed,
+            "revealable": true,
+        });
+    }
+    json!({
+        "exists": true,
+        "kind": "file",
+        "name": name,
+        "path": path_str,
+        "previewable": false,
+        "revealable": true,
+    })
+}
+
+pub fn resolve_reveal_target(
+    state: &AppState,
+    workspace_id: &str,
+    raw_path: &str,
+) -> HostResult<PathBuf> {
+    let trimmed = raw_path.trim();
+    if trimmed.is_empty() {
+        return state.root(workspace_id);
+    }
+    let normalized = normalize_local_path(trimmed)?;
+    let candidate = Path::new(&normalized);
+    if candidate
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return Err(HostError::new(
+            "PATH_DENIED",
+            "Parent directory traversal is not allowed",
+        ));
+    }
+    if candidate.is_absolute() {
+        let canonical = dunce::canonicalize(candidate).map_err(|error| {
+            if error.kind() == std::io::ErrorKind::NotFound {
+                HostError::new("NOT_FOUND", "Target path does not exist")
+            } else {
+                error.into()
+            }
+        })?;
+        return Ok(canonical);
+    }
+    let root = state.root(workspace_id)?;
+    files::scoped_path(&root, &normalized, false)
+}
+
 fn resolve_local_file(
     state: &AppState,
     workspace_id: &str,
     normalized_path: &str,
 ) -> HostResult<PathBuf> {
+    let candidate = Path::new(normalized_path);
+    if workspace_id.is_empty() {
+        if !candidate.is_absolute()
+            || candidate
+                .components()
+                .any(|component| matches!(component, Component::ParentDir))
+        {
+            return Err(HostError::new("PATH_DENIED", "Path must be absolute"));
+        }
+        let canon_target = dunce::canonicalize(candidate).map_err(|error| {
+            if error.kind() == std::io::ErrorKind::NotFound {
+                HostError::new("NOT_FOUND", "Media file not found")
+            } else {
+                error.into()
+            }
+        })?;
+        if !is_path_inside_allowed_areas(state, None, None, &canon_target) {
+            return Err(HostError::new("PATH_DENIED", "Path leaves allowed media directories"));
+        }
+        if !canon_target.is_file() {
+            return Err(HostError::new("NOT_FOUND", "Media file not found"));
+        }
+        return Ok(canon_target);
+    }
     let root = state.root(workspace_id)?;
     match files::scoped_path(&root, normalized_path, false) {
         Ok(path) => {
@@ -311,7 +503,6 @@ fn resolve_local_file(
             Ok(path)
         }
         Err(scoped_error) => {
-            let candidate = Path::new(normalized_path);
             if !candidate.is_absolute()
                 && candidate
                     .components()
@@ -329,15 +520,14 @@ fn resolve_local_file(
                 return Err(scoped_error);
             }
             let canon_root = dunce::canonicalize(&root)?;
-            let attachments_dir = state.directory.join("attachments");
-            let canon_attachments = dunce::canonicalize(&attachments_dir).ok();
             match dunce::canonicalize(candidate) {
                 Ok(canon_target) => {
-                    let inside_root = canon_target.starts_with(&canon_root);
-                    let inside_attachments = canon_attachments
-                        .as_ref()
-                        .is_some_and(|dir| canon_target.starts_with(dir));
-                    if !inside_root && !inside_attachments {
+                    if !is_path_inside_allowed_areas(
+                        state,
+                        Some(&root),
+                        Some(&canon_root),
+                        &canon_target,
+                    ) {
                         return Err(scoped_error);
                     }
                     if !canon_target.is_file() {
@@ -346,13 +536,12 @@ fn resolve_local_file(
                     Ok(canon_target)
                 }
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                    let inside_root =
-                        candidate.starts_with(&root) || candidate.starts_with(&canon_root);
-                    let inside_attachments = candidate.starts_with(&attachments_dir)
-                        || canon_attachments
-                            .as_ref()
-                            .is_some_and(|dir| candidate.starts_with(dir));
-                    if inside_root || inside_attachments {
+                    if is_path_inside_allowed_areas(
+                        state,
+                        Some(&root),
+                        Some(&canon_root),
+                        candidate,
+                    ) {
                         Err(HostError::new("NOT_FOUND", "Media file not found"))
                     } else {
                         Err(scoped_error)
@@ -766,5 +955,59 @@ mod tests {
             .unwrap();
         assert_eq!(data_url["url"], "data:video/mp4;base64,AAAA");
         assert_eq!(data_url["mime"], "video/mp4");
+    }
+
+    #[test]
+    fn inspect_local_path_and_prime_temp_media_work() {
+        let app_dir = tempfile::tempdir().unwrap();
+        let workspace_dir = tempfile::tempdir().unwrap();
+        let prime_temp_dir = std::env::temp_dir().join(format!(
+            "prime-gamedev-test-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(workspace_dir.path().join("frames")).unwrap();
+        std::fs::create_dir_all(&prime_temp_dir).unwrap();
+
+        let img_path = workspace_dir.path().join("frames").join("shot.png");
+        std::fs::write(&img_path, b"png").unwrap();
+        let temp_vid = prime_temp_dir.join("run.webm");
+        std::fs::write(&temp_vid, b"webm").unwrap();
+
+        let state = AppState::new(app_dir.path().to_path_buf()).unwrap();
+        state.projects.lock().unwrap().insert(
+            "ws-1".to_owned(),
+            json!({"id": "ws-1", "path": workspace_dir.path()}),
+        );
+
+        let inspected_img = inspect_local_path(&state, "ws-1", "frames/shot.png");
+        assert_eq!(inspected_img["exists"], true);
+        assert_eq!(inspected_img["kind"], "image");
+        assert_eq!(inspected_img["previewable"], true);
+        assert_eq!(inspected_img["name"], "shot.png");
+
+        let inspected_dir = inspect_local_path(&state, "ws-1", "frames");
+        assert_eq!(inspected_dir["exists"], true);
+        assert_eq!(inspected_dir["kind"], "dir");
+        assert_eq!(inspected_dir["revealable"], true);
+
+        let inspected_temp = inspect_local_path(&state, "", temp_vid.to_str().unwrap());
+        assert_eq!(inspected_temp["exists"], true);
+        assert_eq!(inspected_temp["kind"], "video");
+        assert_eq!(inspected_temp["previewable"], true);
+
+        let resolved_temp_media = state
+            .media
+            .resolve(&state, "", temp_vid.to_str().unwrap())
+            .unwrap();
+        assert_eq!(resolved_temp_media["mime"], "video/webm");
+
+        let missing = inspect_local_path(&state, "ws-1", "frames/nope.png");
+        assert_eq!(missing["exists"], false);
+        assert_eq!(missing["kind"], "missing");
+
+        let revealed = resolve_reveal_target(&state, "ws-1", temp_vid.to_str().unwrap()).unwrap();
+        assert_eq!(revealed, dunce::canonicalize(&temp_vid).unwrap());
+
+        let _ = std::fs::remove_dir_all(&prime_temp_dir);
     }
 }

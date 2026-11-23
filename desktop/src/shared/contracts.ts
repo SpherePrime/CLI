@@ -263,6 +263,16 @@ export type Operation =
   | 'currentSession'
   | 'importCopilot'
   | 'refreshOAuth'
+export interface InspectedPath {
+  exists: boolean
+  kind: 'image' | 'video' | 'dir' | 'file' | 'missing'
+  mime?: string
+  name?: string
+  path?: string
+  previewable?: boolean
+  revealable?: boolean
+}
+
 export interface DesktopApi {
   automation(
     workspaceId: string,
@@ -327,6 +337,7 @@ export interface DesktopApi {
   editorDirty(dirty: boolean): Promise<void>
   readFile(workspaceId: string, path: string): Promise<Json>
   mediaUrl(workspaceId: string, path: string): Promise<{ url: string; mime?: string; name?: string }>
+  inspectPath(workspaceId: string, path: string): Promise<InspectedPath>
   diff(
     workspaceId: string,
     sessionId: string,

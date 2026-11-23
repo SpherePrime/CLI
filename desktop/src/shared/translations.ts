@@ -1990,7 +1990,9 @@ Object.assign(english, {
 Object.assign(english, {
   'Контекст сжат': 'Context compacted',
   'Не удалось сжать контекст': 'Failed to compact context',
-  'Модель завершила ответ без текста': 'The model finished without a text response'
+  'Модель завершила ответ без текста': 'The model finished without a text response',
+  Открыть: 'Open',
+  Увеличить: 'Zoom in'
 })
 
 

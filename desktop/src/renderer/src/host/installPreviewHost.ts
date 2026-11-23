@@ -1149,7 +1149,56 @@ export function installPreviewHost() {
           name: fileNameFromPath(trimmed)
         }
       }
+      if (/\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(trimmed)) {
+        const name = fileNameFromPath(trimmed) || 'image.png'
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1d2432"/><stop offset="100%" stop-color="#11151d"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><rect x="32" y="32" width="576" height="296" rx="14" fill="none" stroke="#ff6b35" stroke-opacity="0.45" stroke-width="2"/><text x="320" y="176" text-anchor="middle" fill="#eef1f5" font-family="system-ui,sans-serif" font-size="22" font-weight="600">${name.replace(/[<>&"]/g, '')}</text><text x="320" y="208" text-anchor="middle" fill="#9ca3af" font-family="monospace" font-size="13">Preview image</text></svg>`
+        return {
+          url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+          mime: 'image/png',
+          name
+        }
+      }
       return { url: trimmed, name: fileNameFromPath(trimmed) }
+    },
+    async inspectPath(_workspaceId, rawPath) {
+      const trimmed = String(rawPath || '').trim()
+      if (!trimmed || /missing|not-found/i.test(trimmed)) {
+        return { exists: false, kind: 'missing' }
+      }
+      const name = fileNameFromPath(trimmed) || trimmed
+      if (isVideoPath(trimmed)) {
+        return {
+          exists: true,
+          kind: 'video',
+          mime: videoMimeFromPath(trimmed) || 'video/mp4',
+          name,
+          path: trimmed,
+          previewable: true,
+          revealable: true
+        }
+      }
+      if (/\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(trimmed)) {
+        return {
+          exists: true,
+          kind: 'image',
+          mime: 'image/png',
+          name,
+          path: trimmed,
+          previewable: true,
+          revealable: true
+        }
+      }
+      if (/([\\/]|^[a-zA-Z]:)/.test(trimmed) && !/\.[a-zA-Z0-9]{1,8}$/.test(trimmed)) {
+        return {
+          exists: true,
+          kind: 'dir',
+          name,
+          path: trimmed,
+          previewable: false,
+          revealable: true
+        }
+      }
+      return { exists: false, kind: 'missing' }
     },
     async diff(_workspaceId, _sessionId, path) {
       const current = fileContents[path]?.content || ''

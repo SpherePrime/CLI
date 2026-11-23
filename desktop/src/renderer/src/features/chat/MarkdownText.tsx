@@ -1,9 +1,16 @@
 import { isValidElement, memo, useMemo, type ReactNode } from 'react'
 import Markdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { ChatPathEntry } from './ChatPathEntry'
+import {
+  CHAT_PATH_LINK_PREFIX,
+  decodeChatPathHref,
+  isLocalHrefTarget,
+  remarkChatPaths
+} from './chatPaths'
 import { splitMarkdownBlocks } from './markdownBlocks'
 import { WorkspaceVideo } from './video/WorkspaceVideo'
-import { isVideoUrl } from './video/videoMedia'
+import { isDirectMediaUrl, isVideoUrl } from './video/videoMedia'
 
 type HastNode = {
   type?: string
@@ -29,11 +36,11 @@ function reactNodeText(children: ReactNode): string {
 }
 
 function markdownUrlTransform(url: string): string {
-  if (/^(prime:\/\/|data:video\/|[a-zA-Z]:[\\/])/.test(url)) return url
+  if (/^(prime:\/\/|prime-path:|file:\/\/|data:video\/|[a-zA-Z]:[\\/])/.test(url)) return url
   return defaultUrlTransform(url)
 }
 
-const remarkPlugins = [remarkGfm]
+const remarkPlugins = [remarkGfm, remarkChatPaths]
 const markdownComponents: Components = {
   p: ({ node, children }) => {
     const hast = node as HastNode | undefined
@@ -44,17 +51,52 @@ const markdownComponents: Components = {
       const only = meaningful[0]
       if (only.type === 'element' && only.tagName === 'img') {
         const src = typeof only.properties?.src === 'string' ? only.properties.src : ''
+        const alt = typeof only.properties?.alt === 'string' ? only.properties.alt : undefined
         if (isVideoUrl(src)) {
-          const alt = typeof only.properties?.alt === 'string' ? only.properties.alt : undefined
           return <WorkspaceVideo src={src} title={alt || undefined} variant="chat" />
+        }
+        if (src && !isDirectMediaUrl(src)) {
+          return (
+            <ChatPathEntry
+              path={src}
+              variant="block"
+              label={alt || undefined}
+              fallback={children}
+              wrapFallbackInParagraph
+            />
+          )
         }
       }
       if (only.type === 'element' && only.tagName === 'a') {
         const href = typeof only.properties?.href === 'string' ? only.properties.href : ''
+        const chatPath = decodeChatPathHref(href)
+        if (chatPath !== null) {
+          return (
+            <ChatPathEntry
+              path={chatPath}
+              variant="block"
+              fallback={children}
+              wrapFallbackInParagraph
+            />
+          )
+        }
         if (isVideoUrl(href)) {
           const label = hastText(only).trim()
           const title = label && label !== href ? label : undefined
           return <WorkspaceVideo src={href} title={title} variant="chat" />
+        }
+        if (isLocalHrefTarget(href)) {
+          const label = hastText(only).trim()
+          const title = label && label !== href ? label : undefined
+          return (
+            <ChatPathEntry
+              path={href}
+              variant="block"
+              label={title}
+              fallback={children}
+              wrapFallbackInParagraph
+            />
+          )
         }
       }
     }
@@ -63,6 +105,16 @@ const markdownComponents: Components = {
   img: ({ src, alt, node: _node, ...props }) => {
     if (typeof src === 'string' && isVideoUrl(src)) {
       return <WorkspaceVideo src={src} title={alt || undefined} variant="chat" />
+    }
+    if (typeof src === 'string' && !isDirectMediaUrl(src)) {
+      return (
+        <ChatPathEntry
+          path={src}
+          variant="inline"
+          label={alt || undefined}
+          fallback={<img src={src} alt={alt} {...props} />}
+        />
+      )
     }
     return <img src={src} alt={alt} {...props} />
   },
@@ -85,6 +137,12 @@ const markdownComponents: Components = {
         </a>
       )
     }
+    if (typeof href === 'string' && href.startsWith(CHAT_PATH_LINK_PREFIX)) {
+      const chatPath = decodeChatPathHref(href)
+      if (chatPath !== null) {
+        return <ChatPathEntry path={chatPath} variant="inline" fallback={children} />
+      }
+    }
     if (typeof href === 'string' && isVideoUrl(href)) {
       const label = reactNodeText(children).trim()
       const title = label && label !== href ? label : undefined
@@ -92,6 +150,28 @@ const markdownComponents: Components = {
         <WorkspaceVideo src={href} title={title} inline>
           {children}
         </WorkspaceVideo>
+      )
+    }
+    if (typeof href === 'string' && isLocalHrefTarget(href)) {
+      const label = reactNodeText(children).trim()
+      const title = label && label !== href ? label : undefined
+      return (
+        <ChatPathEntry
+          path={href}
+          variant="inline"
+          label={title}
+          fallback={
+            <a
+              href={href}
+              onClick={(event) => {
+                event.preventDefault()
+                void window.prime?.reveal?.('', href)
+              }}
+            >
+              {children}
+            </a>
+          }
+        />
       )
     }
     return (

@@ -28,6 +28,34 @@ pub async fn desktop_call(
         .map_err(|error| HostError::new("HOST_WORKER", error.to_string()))?
 }
 
+fn reveal_in_file_manager(target: &std::path::Path) -> HostResult<()> {
+    if target.is_dir() {
+        open::that(target)?;
+        return Ok(());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(format!("/select,{}", target.display()))
+            .spawn()?;
+        return Ok(());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("-R")
+            .arg(target)
+            .spawn()?;
+        return Ok(());
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        let parent = target.parent().unwrap_or(target);
+        open::that(parent)?;
+        Ok(())
+    }
+}
+
 fn urlencoding(value: &str) -> String {
     url::form_urlencoded::byte_serialize(value.as_bytes()).collect()
 }
@@ -447,6 +475,11 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
         "mediaUrl" => state
             .media
             .resolve(&state, string(args, 0)?, string(args, 1)?),
+        "inspectPath" => Ok(crate::media::inspect_local_path(
+            &state,
+            args.first().and_then(Value::as_str).unwrap_or(""),
+            string(args, 1)?,
+        )),
         "saveFile" => {
             let _guard = state.file_writes.lock().unwrap();
             let root = state.root(string(args, 0)?)?;
@@ -529,17 +562,10 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             Ok(Value::Null)
         }
         "reveal" => {
-            let root = state.root(string(args, 0)?)?;
-            let target = crate::files::scoped_path(
-                &root,
-                args.get(1).and_then(Value::as_str).unwrap_or(""),
-                false,
-            )?;
-            open::that(if target.is_dir() {
-                target
-            } else {
-                target.parent().unwrap().to_path_buf()
-            })?;
+            let workspace_id = args.first().and_then(Value::as_str).unwrap_or("");
+            let raw_path = args.get(1).and_then(Value::as_str).unwrap_or("");
+            let target = crate::media::resolve_reveal_target(&state, workspace_id, raw_path)?;
+            reveal_in_file_manager(&target)?;
             Ok(Value::Null)
         }
         "openWith" => {
