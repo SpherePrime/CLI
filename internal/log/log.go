@@ -5,29 +5,56 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/SpherePrime/CLI/internal/event"
+	"github.com/SpherePrime/CLI/internal/home"
 	"github.com/SpherePrime/CLI/vendordeps/dwertyfa288/x/term"
 	"github.com/SpherePrime/CLI/vendordeps/natefinch/lumberjack.v2"
 )
 
 var (
-	initOnce    sync.Once
-	initialized atomic.Bool
+	initOnce      sync.Once
+	initialized   atomic.Bool
+	activeLogFile atomic.Value
 )
+
+func DefaultDesktopLogDir() string {
+	if override := strings.TrimSpace(os.Getenv("PRIME_DESKTOP_LOG_DIR")); override != "" {
+		return override
+	}
+	return filepath.Join(home.Dir(), ".prime", "logs")
+}
+
+func DefaultDesktopLogFile() string {
+	return filepath.Join(DefaultDesktopLogDir(), "desktop-engine.log")
+}
+
+func ActiveLogFile() string {
+	if v, ok := activeLogFile.Load().(string); ok {
+		return v
+	}
+	return ""
+}
 
 func Setup(logFile string, debug bool, ws ...io.Writer) {
 	initOnce.Do(func() {
+		if dir := filepath.Dir(logFile); dir != "" && dir != "." {
+			_ = os.MkdirAll(dir, 0o755)
+		}
+		activeLogFile.Store(logFile)
+
 		logRotator := &lumberjack.Logger{
 			Filename:   logFile,
-			MaxSize:    10,    // Max size in MB
-			MaxBackups: 0,     // Number of backups
-			MaxAge:     30,    // Days
-			Compress:   false, // Enable compression
+			MaxSize:    10,
+			MaxBackups: 3,
+			MaxAge:     30,
+			Compress:   false,
 		}
 
 		level := slog.LevelInfo
@@ -67,20 +94,20 @@ func RecoverPanic(name string, cleanup func()) {
 	if r := recover(); r != nil {
 		event.Error(r, "panic", true, "name", name)
 
-		// Create a timestamped panic log file
 		timestamp := time.Now().Format("20060102-150405")
 		filename := fmt.Sprintf("prime-panic-%s-%s.log", name, timestamp)
+		if current := ActiveLogFile(); current != "" {
+			filename = filepath.Join(filepath.Dir(current), filename)
+		}
 
 		file, err := os.Create(filename)
 		if err == nil {
 			defer file.Close()
 
-			// Write panic information and stack trace
 			fmt.Fprintf(file, "Panic in %s: %v\n\n", name, r)
 			fmt.Fprintf(file, "Time: %s\n\n", time.Now().Format(time.RFC3339))
 			fmt.Fprintf(file, "Stack Trace:\n%s\n", debug.Stack())
 
-			// Execute cleanup function if provided
 			if cleanup != nil {
 				cleanup()
 			}

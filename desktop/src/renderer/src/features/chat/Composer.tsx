@@ -591,12 +591,12 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
             {w.busy && !recording && !hasDraft ? (
               <button
                 className="send stop"
-                disabled={sending || importing}
-                title={stopLabel}
-                aria-label={stopLabel}
+                disabled={importing || w.canceling}
+                title={w.canceling ? t('Останавливаю…') : stopLabel}
+                aria-label={w.canceling ? t('Останавливаю…') : stopLabel}
                 onClick={() => void interrupt()}
               >
-                {sending ? (
+                {w.canceling ? (
                   <LoaderCircle size={17} className="spin" />
                 ) : (
                   <Square size={14} fill="currentColor" />

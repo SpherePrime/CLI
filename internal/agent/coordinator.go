@@ -30,6 +30,7 @@ import (
 	"github.com/SpherePrime/CLI/internal/goal"
 	"github.com/SpherePrime/CLI/internal/history"
 	"github.com/SpherePrime/CLI/internal/hooks"
+	primelog "github.com/SpherePrime/CLI/internal/log"
 	"github.com/SpherePrime/CLI/internal/lsp"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/oauth"
@@ -363,40 +364,45 @@ func (c *coordinator) RunAccepted(ctx context.Context, accept *AcceptedRun, sess
 // dispatchMu; when nil (the in-process/local path) no accept tracking
 // applies.
 func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID string, prompt string, attachments ...message.Attachment) (*fantasy.AgentResult, error) {
+	publishCtx := ctx
+	if accept != nil {
+		var cancelRun context.CancelFunc
+		ctx, cancelRun = accept.BindContext(ctx)
+		defer cancelRun()
+	}
 	if err := c.readyWg.Wait(); err != nil {
 		return nil, err
 	}
 	ctx = c.withTeamReasoning(ctx, sessionID)
 	gameDevEnabled := c.resolveRunGameDev(ctx, sessionID)
 
-	// MCP servers connect asynchronously (see mcp.Initialize).
-	//
-	// Interactive runs never wait for that to finish: the tool list below
-	// is built from whatever is registered right now, servers still
-	// connecting are simply absent from this run's palette, and they are
-	// picked up by later runs once they register and publish
-	// EventToolsListChanged. Blocking here froze the TUI for the duration
-	// of the slowest server's connect timeout whenever a prompt was sent
-	// before initialization finished — most visibly on the first message.
-	//
-	// Non-interactive runs get a single shot at the tool palette, so they
-	// do wait for initialization to settle — but bounded by InitWaitBudget
-	// rather than each server's connect timeout, so a server wedged
-	// mid-handshake cannot stall a headless run for minutes. Past the
-	// budget the turn proceeds without the stragglers; their tools simply
-	// stay absent from this run.
 	if !c.interactive {
 		if err := mcp.WaitForInitBudget(ctx, mcp.InitWaitBudget); err != nil {
+			if accept != nil && ctx.Err() != nil && publishCtx.Err() == nil {
+				return c.currentAgent().Run(publishCtx, SessionAgentCall{
+					SessionID:   sessionID,
+					RunID:       RunIDFromContext(publishCtx),
+					Prompt:      prompt,
+					Attachments: attachments,
+					Accepted:    accept,
+				})
+			}
 			return nil, fmt.Errorf("failed to wait for MCP initialization: %w", err)
 		}
 	}
 
-	// refresh models before each run. Snapshot the agent first: the run,
-	// its model settings, and the model refresh below must all target the
-	// same agent even if SetMainAgent swaps the main agent mid-flight.
 	agent, agentName := c.activeAgent()
 	c.ForgetSubAgents()
 	if err := c.updateAgentModels(ctx, agent, agentName); err != nil {
+		if accept != nil && ctx.Err() != nil && publishCtx.Err() == nil {
+			return agent.Run(publishCtx, SessionAgentCall{
+				SessionID:   sessionID,
+				RunID:       RunIDFromContext(publishCtx),
+				Prompt:      prompt,
+				Attachments: attachments,
+				Accepted:    accept,
+			})
+		}
 		return nil, fmt.Errorf("failed to update models: %w", err)
 	}
 
@@ -689,12 +695,8 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	}
 
 	if hasLatest && c.runComplete != nil {
-		c.runComplete.PublishMustDeliver(ctx, pubsub.UpdatedEvent, latest)
-		// Signal to the dispatcher (backend.runAgent) that the
-		// authoritative terminal RunComplete for this run was already
-		// emitted, so it does not publish a duplicate fallback for the
-		// error it is about to receive.
-		MarkRunCompletePublished(ctx)
+		c.runComplete.PublishMustDeliver(publishCtx, pubsub.UpdatedEvent, latest)
+		MarkRunCompletePublished(publishCtx)
 	}
 	return result, originalErr
 }
@@ -1192,7 +1194,10 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		}
 	}
 
-	logFile := filepath.Join(c.cfg.Config().Options.DataDirectory, "logs", "prime.log")
+	logFile := primelog.ActiveLogFile()
+	if logFile == "" {
+		logFile = filepath.Join(c.cfg.Config().Options.DataDirectory, "logs", "prime.log")
+	}
 
 	// Build hook runner if PreToolUse hooks are configured.
 	var hookRunner *hooks.Runner
@@ -2005,10 +2010,7 @@ var errNoInteractiveAuth = errors.New("interactive authentication unavailable")
 // cancelled, then rebuilds models so the next attempt picks up fresh
 // credentials. Returns nil when the caller should retry.
 func (c *coordinator) waitForInteractiveReauth(ctx context.Context, providerID string) error {
-	// Use a detached context with a generous timeout so the wait survives
-	// agent run cancellation. The user needs time to complete browser-based
-	// authentication.
-	waitCtx, waitCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Minute)
+	waitCtx, waitCancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer waitCancel()
 	slog.Info("Blocking on WaitForTokenChange", "provider", providerID)
 	if waitErr := c.cfg.WaitForTokenChange(waitCtx, providerID); waitErr != nil {

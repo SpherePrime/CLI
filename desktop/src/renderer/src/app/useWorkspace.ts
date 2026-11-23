@@ -119,6 +119,12 @@ export function useWorkspace() {
   const [resources, setResources] = useState<Json>({ mcp: {}, lsp: {}, skills: [] })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [cancelingSession, setCancelingSession] = useState<{
+    projectId: string
+    sessionId: string
+  } | null>(null)
+  const cancelingSessionRef = useRef(cancelingSession)
+  cancelingSessionRef.current = cancelingSession
   const [retryNotice, setRetryNotice] = useState<{ sessionId: string; at: number } | null>(null)
   const [observedBusy, setObservedBusy] = useState<ObservedBusy>(null)
   const [pendingShell, setPendingShell] = useState<{ projectId: string; sessionId: string } | null>(
@@ -169,6 +175,14 @@ export function useWorkspace() {
       if (selected) {
         setSession(selected)
         setObservedBusy({ projectId: id, sessionId, busy: Boolean(selected.is_busy) })
+        if (
+          !selected.is_busy &&
+          cancelingSessionRef.current?.projectId === id &&
+          cancelingSessionRef.current?.sessionId === sessionId
+        ) {
+          cancelingSessionRef.current = null
+          setCancelingSession(null)
+        }
       }
     })
   }, [project?.id])
@@ -342,6 +356,14 @@ export function useWorkspace() {
       if (selected) {
         setSession(selected)
         setBusy(Boolean(selected.is_busy))
+        if (
+          !selected.is_busy &&
+          cancelingSessionRef.current?.projectId === project.id &&
+          cancelingSessionRef.current?.sessionId === selected.id
+        ) {
+          cancelingSessionRef.current = null
+          setCancelingSession(null)
+        }
         setObservedBusy((observed) =>
           reconcileObservedBusy(observed, {
             projectId: project.id,
@@ -669,6 +691,13 @@ export function useWorkspace() {
       }
       if (event.type === 'run_complete') {
         setRetryNotice((notice) => (notice?.sessionId === payload.session_id ? null : notice))
+        if (
+          cancelingSessionRef.current?.projectId === event.workspaceId &&
+          cancelingSessionRef.current?.sessionId === payload.session_id
+        ) {
+          cancelingSessionRef.current = null
+          setCancelingSession(null)
+        }
         if (payload.session_id === current.current.session?.id) {
           setBusy(false)
           setObservedBusy({
@@ -1214,6 +1243,13 @@ export function useWorkspace() {
         current.current.project?.id === targetProject.id &&
         current.current.session?.id === selected.id
       ) {
+        if (
+          cancelingSessionRef.current?.projectId === targetProject.id &&
+          cancelingSessionRef.current?.sessionId === selected.id
+        ) {
+          cancelingSessionRef.current = null
+          setCancelingSession(null)
+        }
         setObservedBusy(null)
         setBusy(true)
       }
@@ -1375,15 +1411,40 @@ export function useWorkspace() {
     const session = current.current.session
     if (!project || !session) return false
     let sessionId = session.id
-    if (isPendingSessionId(sessionId)) {
-      const created = (await pendingSessions.current.get(sessionId)?.catch(() => null)) ?? null
-      if (!created) return false
-      sessionId = created.id
+    const initialTarget = { projectId: project.id, sessionId }
+    cancelingSessionRef.current = initialTarget
+    setCancelingSession(initialTarget)
+    try {
+      if (isPendingSessionId(sessionId)) {
+        const created = (await pendingSessions.current.get(sessionId)?.catch(() => null)) ?? null
+        if (!created) {
+          if (
+            cancelingSessionRef.current?.projectId === project.id &&
+            cancelingSessionRef.current?.sessionId === initialTarget.sessionId
+          ) {
+            cancelingSessionRef.current = null
+            setCancelingSession(null)
+          }
+          return false
+        }
+        sessionId = created.id
+        const resolvedTarget = { projectId: project.id, sessionId }
+        cancelingSessionRef.current = resolvedTarget
+        setCancelingSession(resolvedTarget)
+      }
+      await window.prime.call(project.id, 'cancel', { sessionId })
+      await refresh()
+      return true
+    } catch (error) {
+      if (
+        cancelingSessionRef.current?.projectId === project.id &&
+        cancelingSessionRef.current?.sessionId === sessionId
+      ) {
+        cancelingSessionRef.current = null
+        setCancelingSession(null)
+      }
+      throw error
     }
-    await window.prime.call(project.id, 'cancel', { sessionId })
-    if (current.current.project?.id === project.id) setBusy(false)
-    await refresh()
-    return true
   }
   async function savePreferences(patch: Partial<Preferences>) {
     const sequence = ++preferenceWrite.current
@@ -1649,6 +1710,35 @@ export function useWorkspace() {
       return null
     }
   }, [])
+  useEffect(() => {
+    if (
+      info.runtime !== 'ready' ||
+      !accountLoaded ||
+      account.signedIn ||
+      !account.networkError ||
+      !account.hasStoredSession ||
+      account.waiting
+    )
+      return
+    const triggerRetry = () => {
+      if (document.hidden) return
+      void retryAccountRestore()
+    }
+    window.addEventListener('online', triggerRetry)
+    const timer = setInterval(triggerRetry, 8000)
+    return () => {
+      window.removeEventListener('online', triggerRetry)
+      clearInterval(timer)
+    }
+  }, [
+    info.runtime,
+    accountLoaded,
+    account.signedIn,
+    account.networkError,
+    account.hasStoredSession,
+    account.waiting,
+    retryAccountRestore
+  ])
   const isWorkspaceBusy =
     (observedBusy &&
     observedBusy.projectId === project?.id &&
@@ -1735,6 +1825,12 @@ export function useWorkspace() {
     errorHandler,
     loading,
     busy: isWorkspaceBusy,
+    canceling: Boolean(
+      isWorkspaceBusy &&
+        cancelingSession &&
+        cancelingSession.projectId === project?.id &&
+        cancelingSession.sessionId === session?.id
+    ),
     activeSessionId:
       session?.id ||
       (pendingShell?.projectId === project?.id ? pendingShell?.sessionId : undefined),

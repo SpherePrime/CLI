@@ -23,9 +23,14 @@ pub async fn desktop_call(
     args: Vec<Value>,
 ) -> HostResult<Value> {
     crate::permissions::require_trusted(&webview)?;
-    tauri::async_runtime::spawn_blocking(move || dispatch(&app, &method, &args))
+    let method_name = method.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || dispatch(&app, &method, &args))
         .await
-        .map_err(|error| HostError::new("HOST_WORKER", error.to_string()))?
+        .map_err(|error| HostError::new("HOST_WORKER", error.to_string()))?;
+    if let Err(ref err) = result {
+        crate::logging::error(&format!("desktop_call({method_name}) failed [{}]: {}", err.code, err.message));
+    }
+    result
 }
 
 fn reveal_in_file_manager(target: &std::path::Path) -> HostResult<()> {

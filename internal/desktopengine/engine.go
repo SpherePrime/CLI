@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/SpherePrime/CLI/internal/config"
+	primelog "github.com/SpherePrime/CLI/internal/log"
 	"github.com/SpherePrime/CLI/internal/server"
 )
 
@@ -41,12 +44,20 @@ func New(options Options) (*Engine, error) {
 			return nil, err
 		}
 	}
+	logDir := strings.TrimSpace(options.LogDir)
+	if logDir == "" {
+		logDir = primelog.DefaultDesktopLogDir()
+	}
+	primelog.Setup(filepath.Join(logDir, "desktop-engine.log"), options.Debug)
 	cfg, err := config.Init(options.WorkingDir, options.DataDir, options.Debug)
 	if err != nil {
+		slog.Error("Desktop engine config init failed", "error", err)
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	srv := server.NewInProcessWithOptions(ctx, cfg, options.AttachmentRoot)
+	srv.SetLogger(slog.Default())
+	slog.Info("Desktop engine started", "working_dir", options.WorkingDir, "data_dir", options.DataDir, "log_dir", logDir)
 	engine := newEngine(ctx, cancel, srv.Handler())
 	engine.server = srv
 	return engine, nil

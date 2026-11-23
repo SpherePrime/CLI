@@ -745,6 +745,7 @@ export const english: Record<string, string> = {
   'Очень высокий': 'Very high',
   Максимальный: 'Maximum',
   'Ожидается подтверждение': 'Waiting for approval',
+  'Останавливаю…': 'Stopping…',
   'Чат и его сообщения будут удалены. Отменить это действие нельзя.':
     'The chat and its messages will be deleted. This cannot be undone.',
   'Удаление…': 'Deleting…',

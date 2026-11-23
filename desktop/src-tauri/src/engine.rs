@@ -82,7 +82,9 @@ impl Engine {
             let free = symbol!("prime_engine_free", Free);
             let shutdown = symbol!("prime_engine_shutdown", Shutdown);
             let last_error = symbol!("prime_engine_last_error", LastError);
-            let options = CString::new(json!({"working_dir":directory,"data_dir":directory.join("engine-data"),"attachment_root":directory.join("attachments"),"debug":cfg!(debug_assertions)}).to_string()).unwrap();
+            let log_dir = crate::logging::active_log_dir()
+                .unwrap_or_else(|| crate::logging::resolve_log_dir(Some(directory), isolated));
+            let options = CString::new(json!({"working_dir":directory,"data_dir":directory.join("engine-data"),"log_dir":log_dir,"attachment_root":directory.join("attachments"),"debug":cfg!(debug_assertions)}).to_string()).unwrap();
             let handle = create(options.as_ptr());
             if handle == 0 {
                 let pointer = last_error();
@@ -267,7 +269,7 @@ impl Engine {
                     Ok(None) => continue,
                     Err(error) => {
                         events::emit(&app, &workspace, "connection", json!("error"));
-                        eprintln!("Engine events: {}", error.message);
+                        crate::logging::error(&format!("Engine events ({workspace}): {}", error.message));
                         break;
                     }
                 };

@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,9 +22,10 @@ import (
 
 const (
 	defaultBaseURL      = "https://vpn.sphereprime.ru"
-	defaultTimeout      = 10 * time.Second
+	defaultTimeout      = 12 * time.Second
 	defaultPollInterval = 2 * time.Second
 	defaultMaxAttempts  = 150
+	restoreMaxAttempts  = 3
 	accountFileName     = "prime-account.bin"
 
 	errSessionExpired     = "Сессия истекла. Войдите снова."
@@ -108,13 +111,21 @@ func NewService(opts ...Option) *Service {
 		baseURL = defaultBaseURL
 	}
 
+	transport := &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           (&net.Dialer{Timeout: 8 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+		TLSHandshakeTimeout:   8 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+		IdleConnTimeout:       30 * time.Second,
+	}
 	svc := &Service{
 		baseURL:      baseURL,
 		openBrowser:  browser.OpenURL,
 		pollInterval: defaultPollInterval,
 		maxAttempts:  defaultMaxAttempts,
 		httpClient: &http.Client{
-			Timeout: defaultTimeout,
+			Timeout:   defaultTimeout,
+			Transport: transport,
 			CheckRedirect: func(*http.Request, []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
@@ -242,11 +253,14 @@ func (s *Service) Restore(ctx context.Context) State {
 	}
 	s.state.Checking = true
 	s.state.HasStoredSession = true
+	s.state.Error = ""
+	s.state.NetworkError = false
 	s.mu.Unlock()
 
-	email, statusCode, reqErr := s.fetchMe(ctx, baseURL, token)
+	email, statusCode, reqErr := s.fetchMeWithRetry(ctx, baseURL, token)
 
-	if reqErr != nil || statusCode >= 500 || (statusCode >= 300 && statusCode < 400) || (statusCode != http.StatusUnauthorized && statusCode != http.StatusForbidden && (statusCode < 200 || statusCode >= 300)) {
+	if isTransientSessionCheckFailure(statusCode, reqErr) {
+		slog.Warn("Account session restore failed", "status_code", statusCode, "error", reqErr)
 		s.mu.Lock()
 		if !s.closed && s.flow == flow {
 			s.token = ""
@@ -256,7 +270,7 @@ func (s *Service) Restore(ctx context.Context) State {
 				Checking:         false,
 				HasStoredSession: true,
 				NetworkError:     true,
-				Error:            errSessionCheckFailed,
+				Error:            formatSessionCheckError(statusCode, reqErr),
 			}
 		}
 		snapshot := s.state
@@ -569,6 +583,55 @@ func (s *Service) setPollError(flow uint64, message string) {
 		s.state.Waiting = false
 	}
 	s.mu.Unlock()
+}
+
+func isTransientSessionCheckFailure(statusCode int, reqErr error) bool {
+	if reqErr != nil {
+		return true
+	}
+	if statusCode >= 500 || (statusCode >= 300 && statusCode < 400) {
+		return true
+	}
+	return statusCode != http.StatusUnauthorized &&
+		statusCode != http.StatusForbidden &&
+		(statusCode < 200 || statusCode >= 300)
+}
+
+func formatSessionCheckError(statusCode int, reqErr error) string {
+	if statusCode >= 300 {
+		return fmt.Sprintf("%s (HTTP %d)", errSessionCheckFailed, statusCode)
+	}
+	if errors.Is(reqErr, context.DeadlineExceeded) {
+		return errSessionCheckFailed + " (таймаут ожидания ответа)"
+	}
+	return errSessionCheckFailed
+}
+
+func (s *Service) fetchMeWithRetry(ctx context.Context, baseURL, token string) (string, int, error) {
+	delays := []time.Duration{150 * time.Millisecond, 350 * time.Millisecond}
+	var email string
+	var statusCode int
+	var reqErr error
+	for attempt := 0; attempt < restoreMaxAttempts; attempt++ {
+		email, statusCode, reqErr = s.fetchMe(ctx, baseURL, token)
+		if !isTransientSessionCheckFailure(statusCode, reqErr) {
+			return email, statusCode, reqErr
+		}
+		if ctx.Err() != nil || attempt >= restoreMaxAttempts-1 {
+			break
+		}
+		if reqErr != nil && s.httpClient != nil {
+			s.httpClient.CloseIdleConnections()
+		}
+		timer := time.NewTimer(delays[attempt])
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return email, statusCode, ctx.Err()
+		case <-timer.C:
+		}
+	}
+	return email, statusCode, reqErr
 }
 
 func (s *Service) fetchMe(ctx context.Context, baseURL, token string) (string, int, error) {

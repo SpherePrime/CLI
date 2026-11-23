@@ -4,11 +4,13 @@ import { clock, useElapsedSeconds } from './elapsed'
 export function WorkingIndicator({
   busy,
   waiting,
+  canceling = false,
   retrying = false,
   startedAt
 }: {
   busy: boolean
   waiting: boolean
+  canceling?: boolean
   retrying?: boolean
   startedAt: number | null
 }) {
@@ -23,11 +25,13 @@ export function WorkingIndicator({
         <span />
       </span>
       <span className="working-label">
-        {waiting
-          ? t('Ожидается подтверждение')
-          : retrying
-            ? t('Ответ прервался у провайдера — повторяю запрос')
-            : t('Prime работает')}
+        {canceling
+          ? t('Останавливаю…')
+          : waiting
+            ? t('Ожидается подтверждение')
+            : retrying
+              ? t('Ответ прервался у провайдера — повторяю запрос')
+              : t('Prime работает')}
       </span>
       {busy && !waiting && startedAt !== null && (
         <span className="working-time">{clock(working)}</span>

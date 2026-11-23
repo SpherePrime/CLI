@@ -445,3 +445,94 @@ func TestCancel_AcceptedAfterCancelIsNotPoisoned(t *testing.T) {
 	require.Equal(t, 1, normal, "only C finished normally")
 	require.Equal(t, 2, canceled, "both A and B finished canceled")
 }
+
+type blockingTitleModel struct {
+	entered chan struct{}
+	once    atomic.Bool
+}
+
+func (m *blockingTitleModel) Provider() string { return "fake" }
+func (m *blockingTitleModel) Model() string    { return "fake-title" }
+
+func (m *blockingTitleModel) Generate(ctx context.Context, call fantasy.Call) (*fantasy.Response, error) {
+	if m.once.CompareAndSwap(false, true) {
+		close(m.entered)
+	}
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func (m *blockingTitleModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.StreamResponse, error) {
+	if m.once.CompareAndSwap(false, true) {
+		close(m.entered)
+	}
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func (m *blockingTitleModel) GenerateObject(ctx context.Context, call fantasy.ObjectCall) (*fantasy.ObjectResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *blockingTitleModel) StreamObject(ctx context.Context, call fantasy.ObjectCall) (fantasy.ObjectStreamResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
+func TestCancel_AbortsGenerateTitleImmediately(t *testing.T) {
+	t.Parallel()
+	env := testEnv(t)
+	titleModel := &blockingTitleModel{entered: make(chan struct{})}
+	sa := testSessionAgent(env, titleModel, titleModel, "system").(*sessionAgent)
+
+	sess, err := env.sessions.Create(t.Context(), "New Session")
+	require.NoError(t, err)
+
+	runDone := make(chan error, 1)
+	go func() {
+		_, runErr := sa.Run(t.Context(), SessionAgentCall{
+			SessionID: sess.ID,
+			RunID:     "run-title-cancel",
+			Prompt:    "hello world",
+		})
+		runDone <- runErr
+	}()
+
+	select {
+	case <-titleModel.entered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("title generation did not start")
+	}
+
+	sa.Cancel(sess.ID)
+
+	select {
+	case runErr := <-runDone:
+		require.NoError(t, runErr)
+	case <-time.After(2 * time.Second):
+		t.Fatal("Cancel did not abort GenerateTitle immediately")
+	}
+
+	msgs, err := env.messages.List(t.Context(), sess.ID)
+	require.NoError(t, err)
+	require.Len(t, msgs, 2)
+	assert.Equal(t, message.FinishReasonCanceled, msgs[1].FinishReason())
+}
+
+func TestAcceptedRun_BindContextCancelsBeforeRun(t *testing.T) {
+	t.Parallel()
+	sa, _ := newStreamTestAgent(t)
+	accept := sa.BeginAccepted("sid-bind")
+	defer accept.Close()
+
+	runCtx, cancelRun := accept.BindContext(t.Context())
+	defer cancelRun()
+
+	require.NoError(t, runCtx.Err())
+	sa.Cancel("sid-bind")
+
+	select {
+	case <-runCtx.Done():
+	case <-time.After(time.Second):
+		t.Fatal("BindContext was not canceled immediately by Cancel")
+	}
+}

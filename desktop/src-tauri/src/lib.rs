@@ -17,6 +17,7 @@ mod files;
 mod git;
 mod jobs;
 mod lifecycle;
+mod logging;
 mod media;
 mod migration;
 mod permissions;

@@ -14,6 +14,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     }
     std::fs::create_dir_all(&directory)?;
     let directory = dunce::canonicalize(directory)?;
+    crate::logging::init(Some(&directory), crate::state::isolated_profile());
     if !crate::state::isolated_profile() {
         crate::migration::import_legacy_state(&directory);
     }
@@ -28,7 +29,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     app.manage(browser_server);
     app.manage(state);
     if let Err(error) = crate::tray::create(app.handle()) {
-        eprintln!("Tray unavailable: {error}");
+        crate::logging::error(&format!("Tray unavailable: {error}"));
     }
     crate::discord::start();
     if let Err(error) = app
@@ -36,7 +37,7 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .windows
         .start(app.handle())
     {
-        eprintln!("Window control unavailable: {error}");
+        crate::logging::error(&format!("Window control unavailable: {error}"));
     }
     crate::sudo::publish_environment();
     let handle = app.handle().clone();
@@ -58,10 +59,12 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         crate::events::emit(&handle, "", "runtime", payload);
         if let Ok(engine) = state.require_engine() {
             if let Err(error) = engine.subscribe_custom_agents(handle.clone()) {
-                eprintln!("Custom agents events unavailable: {}", error.message);
+                crate::logging::error(&format!("Custom agents events unavailable: {}", error.message));
             }
             state.automations.start(handle.clone());
             state.teams.start(handle.clone());
+        } else if let Some(err) = state.engine.lock().unwrap().error.as_deref() {
+            crate::logging::error(&format!("Engine failed to start: {err}"));
         }
     });
     Ok(())

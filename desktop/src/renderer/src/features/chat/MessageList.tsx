@@ -20,6 +20,7 @@ export function MessageList({
   messages,
   busy,
   waiting = false,
+  canceling = false,
   retrying = false,
   searchOpen = false,
   closeSearch = () => {},
@@ -36,6 +37,7 @@ export function MessageList({
   messages: Message[]
   busy: boolean
   waiting?: boolean
+  canceling?: boolean
   retrying?: boolean
   searchOpen?: boolean
   closeSearch?: () => void
@@ -365,6 +367,7 @@ export function MessageList({
           <WorkingIndicator
             busy={busy && !hasAfter}
             waiting={waiting}
+            canceling={canceling}
             retrying={retrying}
             startedAt={timing.startedAt}
           />

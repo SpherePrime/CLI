@@ -228,7 +228,8 @@ type sessionAgent struct {
 	// and has not yet completed the dispatch handoff in Run. Only
 	// BeginAccepted increments it; only AcceptedRun.Close decrements
 	// it.
-	acceptedRuns *csync.Map[string, int]
+	acceptedRuns    *csync.Map[string, int]
+	acceptedHandles *csync.Map[string, []*AcceptedRun]
 	// cancelMark records, per session, a high-water accept sequence: an
 	// accepted handle is canceled by it iff the handle's sequence is at
 	// or below the mark. Cancel raises the mark to the latest sequence
@@ -311,31 +312,55 @@ func NewSessionAgent(
 		activeRequests:       csync.NewMap[string, *activeCancel](),
 		dispatchMu:           csync.NewMap[string, *sync.Mutex](),
 		acceptedRuns:         csync.NewMap[string, int](),
+		acceptedHandles:      csync.NewMap[string, []*AcceptedRun](),
 		cancelMark:           csync.NewMap[string, uint64](),
 		preparedViews:        csync.NewMap[string, preparedContextView](),
 		contextCalibrations:  csync.NewMap[string, float64](),
 	}
 }
 
-// AcceptedRun owns exactly one accept reservation taken by
-// BeginAccepted. It is the only carrier of accept-state across the
-// backend.runAgent / Coordinator.Run / sessionAgent.Run layers: a
-// counter > 0 means a dispatched prompt is in flight and has not yet
-// completed the dispatch handoff in Run. Close is the only way to
-// release the reservation and is idempotent.
 type AcceptedRun struct {
 	agent     *sessionAgent
 	sessionID string
-	// seq is the monotonic accept sequence stamped by BeginAccepted. A
-	// cancel covers this handle iff seq is at or below the session's
-	// cancel mark, so a handle accepted after a cancel (higher seq) is
-	// never poisoned by it.
-	seq  uint64
-	done atomic.Bool
+	seq       uint64
+	done      atomic.Bool
+	canceled  bool
+	ctxCancel context.CancelFunc
 }
 
-// Close decrements the accept counter for this reservation. It is safe
-// to call multiple times; only the first call has effect.
+func (r *AcceptedRun) BindContext(parent context.Context) (context.Context, context.CancelFunc) {
+	if parent == nil {
+		parent = context.Background()
+	}
+	if r == nil || r.agent == nil {
+		return context.WithCancel(parent)
+	}
+	ctx, cancel := context.WithCancel(parent)
+	r.agent.acceptedMu.Lock()
+	alreadyCanceled := r.canceled || r.done.Load()
+	if !alreadyCanceled {
+		r.ctxCancel = cancel
+	}
+	r.agent.acceptedMu.Unlock()
+	if alreadyCanceled {
+		cancel()
+	}
+	return ctx, cancel
+}
+
+func (r *AcceptedRun) cancelContext() {
+	if r == nil || r.agent == nil {
+		return
+	}
+	r.agent.acceptedMu.Lock()
+	r.canceled = true
+	cancel := r.ctxCancel
+	r.agent.acceptedMu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
 func (r *AcceptedRun) Close() {
 	if r == nil {
 		return
@@ -343,11 +368,9 @@ func (r *AcceptedRun) Close() {
 	if !r.done.CompareAndSwap(false, true) {
 		return
 	}
-	r.agent.endAccepted(r.sessionID)
+	r.agent.endAccepted(r.sessionID, r)
 }
 
-// SessionID exposes the session this reservation is for so the run path
-// can use it without an extra parameter.
 func (r *AcceptedRun) SessionID() string {
 	if r == nil {
 		return ""
@@ -355,34 +378,37 @@ func (r *AcceptedRun) SessionID() string {
 	return r.sessionID
 }
 
-// BeginAccepted increments the accept counter for sessionID and returns
-// a handle whose Close is the only way to decrement it. It is the only
-// entry point that mutates acceptedRuns.
 func (a *sessionAgent) BeginAccepted(sessionID string) *AcceptedRun {
 	a.acceptedMu.Lock()
 	defer a.acceptedMu.Unlock()
 	count, _ := a.acceptedRuns.Get(sessionID)
 	a.acceptedRuns.Set(sessionID, count+1)
 	a.acceptSeqGen++
-	return &AcceptedRun{agent: a, sessionID: sessionID, seq: a.acceptSeqGen}
+	handle := &AcceptedRun{agent: a, sessionID: sessionID, seq: a.acceptSeqGen}
+	if a.acceptedHandles != nil {
+		handles, _ := a.acceptedHandles.Get(sessionID)
+		a.acceptedHandles.Set(sessionID, append(handles, handle))
+	}
+	return handle
 }
 
-// endAccepted decrements the accept counter for sessionID. It is only
-// called via AcceptedRun.Close. It uses a dedicated lock (not the
-// per-session dispatch mutex) so it can run while Run holds dispatchMu
-// for the same session without deadlocking.
-//
-// When the count reaches zero the session's cancel mark is dropped: no
-// accepted handle remains for it to cover, and any handle accepted later
-// gets a strictly higher sequence that the mark would not match anyway.
-// Handles canceled on entry never reach RunComplete, so this is the only
-// place that clears the mark for an all-canceled batch. Sibling handles
-// covered by the same mark are serialized on the per-session dispatch
-// mutex and read the mark before they Close, so this never clears it out
-// from under a covered handle still waiting to enter Run.
-func (a *sessionAgent) endAccepted(sessionID string) {
+func (a *sessionAgent) endAccepted(sessionID string, handle *AcceptedRun) {
 	a.acceptedMu.Lock()
 	defer a.acceptedMu.Unlock()
+	if a.acceptedHandles != nil && handle != nil {
+		handles, _ := a.acceptedHandles.Get(sessionID)
+		kept := handles[:0]
+		for _, item := range handles {
+			if item != handle {
+				kept = append(kept, item)
+			}
+		}
+		if len(kept) == 0 {
+			a.acceptedHandles.Del(sessionID)
+		} else {
+			a.acceptedHandles.Set(sessionID, kept)
+		}
+	}
 	count, ok := a.acceptedRuns.Get(sessionID)
 	if !ok || count <= 1 {
 		a.acceptedRuns.Del(sessionID)
@@ -863,9 +889,22 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	markRunAccepted(ctx)
 
 	if needsTitle {
-		titleCtx, cancelTitle := context.WithTimeout(ctx, 30*time.Second)
+		titleCtx, cancelTitle := context.WithTimeout(genCtx, 30*time.Second)
 		a.GenerateTitle(titleCtx, call.SessionID, call.Prompt)
 		cancelTitle()
+		if genCtx.Err() != nil {
+			if persistErr := a.persistCanceledTurn(ctx, call, userMsgCreated); persistErr != nil {
+				return nil, persistErr
+			}
+			complete := notify.RunComplete{
+				SessionID: call.SessionID,
+				RunID:     call.RunID,
+				Cancelled: true,
+			}
+			a.publishRunComplete(ctx, call, complete)
+			a.publishSteeringComplete(ctx, call.steeringCalls, complete)
+			return nil, nil
+		}
 	}
 
 	// Add the session to the context. The run context (genCtx) and its
@@ -2667,7 +2706,18 @@ func (a *sessionAgent) Cancel(sessionID string) {
 	a.acceptedMu.Lock()
 	count, ok := a.acceptedRuns.Get(sessionID)
 	mark := a.acceptSeqGen
+	var handles []*AcceptedRun
+	if a.acceptedHandles != nil {
+		existingHandles, _ := a.acceptedHandles.Get(sessionID)
+		handles = append([]*AcceptedRun(nil), existingHandles...)
+		for _, item := range handles {
+			item.canceled = true
+		}
+	}
 	a.acceptedMu.Unlock()
+	for _, item := range handles {
+		item.cancelContext()
+	}
 	if ok && count > 0 {
 		slog.Debug("Recording cancel mark for accepted runs", "session_id", sessionID, "count", count, "mark", mark)
 		existing, _ := a.cancelMark.Get(sessionID)

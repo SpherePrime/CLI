@@ -553,3 +553,84 @@ func TestTokenAndStateRedaction(t *testing.T) {
 	require.Empty(t, svc.Token())
 	require.Empty(t, svcOther.Token())
 }
+
+func TestRestoreRetriesTransientFailureAndSucceeds(t *testing.T) {
+	t.Parallel()
+
+	var attempts atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if attempts.Add(1) == 1 {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"user": map[string]string{"email": "retry@example.com"},
+		})
+	}))
+	defer srv.Close()
+
+	path := filepath.Join(t.TempDir(), "prime-account.bin")
+	require.NoError(t, saveToken(path, "tok_retry_ok"))
+
+	svc := NewService(WithStoragePath(path), WithBaseURL(srv.URL))
+	defer svc.Close()
+
+	st := svc.Restore(context.Background())
+	require.True(t, st.SignedIn)
+	require.Equal(t, "retry@example.com", st.Email)
+	require.False(t, st.NetworkError)
+	require.Empty(t, st.Error)
+	require.Equal(t, int32(2), attempts.Load())
+}
+
+func TestRestoreClearsStaleErrorWhileChecking(t *testing.T) {
+	t.Parallel()
+
+	var failFirst atomic.Bool
+	failFirst.Store(true)
+	enteredSecond := make(chan struct{})
+	releaseSecond := make(chan struct{})
+	var secondOnce atomic.Bool
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if failFirst.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		if secondOnce.CompareAndSwap(false, true) {
+			close(enteredSecond)
+			<-releaseSecond
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"email": "fresh@example.com",
+		})
+	}))
+	defer srv.Close()
+
+	path := filepath.Join(t.TempDir(), "prime-account.bin")
+	require.NoError(t, saveToken(path, "tok_clear_err"))
+
+	svc := NewService(WithStoragePath(path), WithBaseURL(srv.URL))
+	defer svc.Close()
+
+	first := svc.Restore(context.Background())
+	require.True(t, first.NetworkError)
+	require.NotEmpty(t, first.Error)
+
+	failFirst.Store(false)
+	done := make(chan State, 1)
+	go func() {
+		done <- svc.Restore(context.Background())
+	}()
+
+	<-enteredSecond
+	during := svc.State(context.Background())
+	require.True(t, during.Checking)
+	require.False(t, during.NetworkError)
+	require.Empty(t, during.Error)
+
+	close(releaseSecond)
+	final := <-done
+	require.True(t, final.SignedIn)
+	require.Equal(t, "fresh@example.com", final.Email)
+}
