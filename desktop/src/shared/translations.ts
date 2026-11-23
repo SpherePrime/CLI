@@ -1994,7 +1994,9 @@ Object.assign(english, {
   'Не удалось сжать контекст': 'Failed to compact context',
   'Модель завершила ответ без текста': 'The model finished without a text response',
   Открыть: 'Open',
-  Увеличить: 'Zoom in'
+  Увеличить: 'Zoom in',
+  'Записывает видео': 'Records video',
+  'Завершает запись видео': 'Stops video recording'
 })
 
 

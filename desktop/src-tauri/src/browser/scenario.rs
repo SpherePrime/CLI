@@ -124,13 +124,33 @@ fn execute(browser: &Browser, step: &Step, images: &mut Vec<Value>, shots: &mut 
             (browser.resize)(*width)?;
             Ok(format!("{}px", evaluate::immediate(view, "window.innerWidth")?))
         }
-        Step::Click { selector, text } => {
+        Step::Click { selector, text, x, y } => {
+            if selector.is_none() && text.is_none() {
+                if let (Some(px), Some(py)) = (*x, *y) {
+                    if !px.is_finite() || !py.is_finite() || px < 0.0 || py < 0.0 {
+                        return Err("click x and y must be non-negative finite coordinates".to_owned());
+                    }
+                    platform::pointer(view, px, py, true)?;
+                    (browser.settle)()?;
+                    return Ok(format!("@{px:.0},{py:.0}"));
+                }
+            }
             let selector = dom::resolve(view, &locate(selector, text), true)?;
             let detail = click(view, &selector)?;
             (browser.settle)()?;
             Ok(detail)
         }
-        Step::Hover { selector, text } => {
+        Step::Hover { selector, text, x, y } => {
+            if selector.is_none() && text.is_none() {
+                if let (Some(px), Some(py)) = (*x, *y) {
+                    if !px.is_finite() || !py.is_finite() || px < 0.0 || py < 0.0 {
+                        return Err("hover x and y must be non-negative finite coordinates".to_owned());
+                    }
+                    platform::pointer(view, px, py, false)?;
+                    thread::sleep(HOVER_SETTLE);
+                    return Ok(format!("@{px:.0},{py:.0}"));
+                }
+            }
             let selector = dom::resolve(view, &locate(selector, text), false)?;
             let point = dom::center(view, &selector)?;
             let detail = match platform::pointer(view, point.x, point.y, false) {
@@ -165,8 +185,8 @@ fn execute(browser: &Browser, step: &Step, images: &mut Vec<Value>, shots: &mut 
             (browser.settle)()?;
             Ok(selected)
         }
-        Step::PressKey { key } => {
-            platform::press_key(view, key)?;
+        Step::PressKey { key, hold_ms } => {
+            platform::press_key_held(view, key, hold_ms.unwrap_or(0))?;
             (browser.settle)()?;
             Ok(String::new())
         }

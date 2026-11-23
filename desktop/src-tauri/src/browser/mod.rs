@@ -5,6 +5,7 @@ mod ownership;
 mod panel;
 mod placement;
 mod platform;
+mod record;
 mod rendering;
 mod scenario;
 mod scenario_dom;
@@ -114,6 +115,7 @@ pub fn dispatch(
                 }
                 "close" => {
                     let (id, view) = state.target(app, Some(argument(args, 1)?))?;
+                    record::stop_if_active(&id);
                     view.close().map_err(|error| error.to_string())?;
                     state.remove(&id)?;
                     state.attach(app)?;

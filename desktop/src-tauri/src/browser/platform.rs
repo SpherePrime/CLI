@@ -212,6 +212,10 @@ pub fn insert_text(view: &Webview, text: &str) -> Result<(), String> {
 }
 
 pub fn press_key(view: &Webview, key: &str) -> Result<(), String> {
+    press_key_held(view, key, 0)
+}
+
+pub fn press_key_held(view: &Webview, key: &str, hold_ms: u64) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let (code, virtual_key) = match key {
@@ -244,32 +248,37 @@ pub fn press_key(view: &Webview, key: &str) -> Result<(), String> {
             }
             _ => return Err(format!("Unsupported browser key: {key}")),
         };
+        let dispatched_key = if key == "Space" { " " } else { key };
         protocol(
             view,
             "Input.dispatchKeyEvent",
-            json!({"type":"rawKeyDown", "key":key, "code":code, "windowsVirtualKeyCode":virtual_key}),
+            json!({"type":"rawKeyDown", "key":dispatched_key, "code":code, "windowsVirtualKeyCode":virtual_key}),
         )?;
-        if key.chars().count() == 1 || key == "Enter" {
+        if dispatched_key.chars().count() == 1 || dispatched_key == "Enter" {
             protocol(
                 view,
                 "Input.dispatchKeyEvent",
-                json!({"type":"char", "key":key, "text":if key == "Enter" { "\r" } else { key }, "windowsVirtualKeyCode":virtual_key}),
+                json!({"type":"char", "key":dispatched_key, "text":if dispatched_key == "Enter" { "\r" } else { dispatched_key }, "windowsVirtualKeyCode":virtual_key}),
             )?;
+        }
+        let clamped_hold = hold_ms.min(10_000);
+        if clamped_hold > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(clamped_hold));
         }
         protocol(
             view,
             "Input.dispatchKeyEvent",
-            json!({"type":"keyUp", "key":key, "code":code, "windowsVirtualKeyCode":virtual_key}),
+            json!({"type":"keyUp", "key":dispatched_key, "code":code, "windowsVirtualKeyCode":virtual_key}),
         )?;
         Ok(())
     }
     #[cfg(target_os = "linux")]
     {
-        super::platform_linux::press_key(view, key)
+        super::platform_linux::press_key_held(view, key, hold_ms)
     }
     #[cfg(not(any(target_os = "windows", target_os = "linux")))]
     {
-        let _ = (view, key);
+        let _ = (view, key, hold_ms);
         Err("Trusted browser keyboard input requires a platform input adapter on this operating system".to_owned())
     }
 }

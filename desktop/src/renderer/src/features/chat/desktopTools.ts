@@ -41,6 +41,8 @@ const actions: Record<string, string> = {
   browser_screenshot_full: 'Снимок всей страницы',
   browser_screenshot_element: 'Снимок элемента',
   browser_screenshot_region: 'Снимок области',
+  browser_record_start: 'Записывает видео',
+  browser_record_stop: 'Завершает запись видео',
   browser_run: 'Проверка сценарием',
   browser_click: 'Нажимает на странице',
   browser_type: 'Вводит текст',

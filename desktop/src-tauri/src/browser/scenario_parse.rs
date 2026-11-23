@@ -33,12 +33,20 @@ pub enum Step {
         selector: Option<String>,
         #[serde(default)]
         text: Option<String>,
+        #[serde(default)]
+        x: Option<f64>,
+        #[serde(default)]
+        y: Option<f64>,
     },
     Hover {
         #[serde(default)]
         selector: Option<String>,
         #[serde(default)]
         text: Option<String>,
+        #[serde(default)]
+        x: Option<f64>,
+        #[serde(default)]
+        y: Option<f64>,
     },
     Focus {
         #[serde(default)]
@@ -64,6 +72,8 @@ pub enum Step {
     },
     PressKey {
         key: String,
+        #[serde(default)]
+        hold_ms: Option<u64>,
     },
     Scroll {
         #[serde(default)]
@@ -143,12 +153,12 @@ impl Step {
 const FIELDS: &[(&str, &[&str])] = &[
     ("navigate", &["url"]),
     ("resize", &["width"]),
-    ("click", &["selector", "text"]),
-    ("hover", &["selector", "text"]),
+    ("click", &["selector", "text", "x", "y"]),
+    ("hover", &["selector", "text", "x", "y"]),
     ("focus", &["selector", "text"]),
     ("type", &["selector", "text", "value", "submit"]),
     ("select", &["selector", "text", "option"]),
-    ("press_key", &["key"]),
+    ("press_key", &["key", "holdMs"]),
     ("scroll", &["to", "selector", "text"]),
     ("wait_for", &["selector", "text", "gone", "timeoutMs"]),
     ("wait", &["ms"]),
@@ -176,6 +186,9 @@ pub fn step_schema() -> Value {
             "submit":{"type":"boolean","description":"type: press Enter after typing"},
             "option":{"type":"string","description":"select: option value or visible label"},
             "key":{"type":"string","description":"press_key: Enter, Tab, Escape, Backspace, Delete, Arrow keys, Home, End, PageUp, PageDown, Space or one character"},
+            "holdMs":{"type":"integer","minimum":0,"maximum":10000,"description":"press_key: optional hold duration in milliseconds before keyUp"},
+            "x":{"type":"number","description":"click/hover: optional viewport X coordinate in CSS px (for canvas/game targets without DOM selectors)"},
+            "y":{"type":"number","description":"click/hover: optional viewport Y coordinate in CSS px (for canvas/game targets without DOM selectors)"},
             "to":{"type":"string","enum":["top","bottom"],"description":"scroll: page edge when no target is given"},
             "gone":{"type":"boolean","description":"wait_for: wait until the target disappears"},
             "timeoutMs":{"type":"integer","minimum":1,"maximum":15000,"description":"wait_for: timeout, default 15000"},
@@ -272,8 +285,12 @@ fn parse_step(number: usize, item: &Value, notes: &mut Vec<String>) -> Result<St
     if !ignored.is_empty() {
         notes.push(format!("step {number} ({action}): ignored unknown field(s) {}", ignored.join(", ")));
     }
-    if NEEDS_TARGET.contains(&action.as_str()) && !fields.contains_key("selector") && !fields.contains_key("text") {
-        return Err(format!("step {number} ({action}): give selector, text or ref to find the element"));
+    if NEEDS_TARGET.contains(&action.as_str())
+        && !fields.contains_key("selector")
+        && !fields.contains_key("text")
+        && !(matches!(action.as_str(), "click" | "hover") && fields.contains_key("x") && fields.contains_key("y"))
+    {
+        return Err(format!("step {number} ({action}): give selector, text or ref to find the element (or x and y for click/hover)"));
     }
     fields.insert("action".to_owned(), Value::String(action.clone()));
     let mut step: Step = serde_json::from_value(Value::Object(fields)).map_err(|error| {
@@ -347,6 +364,7 @@ fn apply_aliases(action: &str, fields: &mut Map<String, Value>, number: usize, n
         }
         "press_key" => {
             rename(fields, &["keys", "name", "value", "text"], "key");
+            rename(fields, &["duration", "durationMs", "ms", "hold"], "holdMs");
             if let Some(Value::String(key)) = fields.get_mut("key") {
                 *key = key_name(key);
             }
@@ -394,9 +412,9 @@ fn apply_aliases(action: &str, fields: &mut Map<String, Value>, number: usize, n
         }
         _ => {}
     }
-    for key in ["width", "ms", "timeoutMs", "padding", "zoom"] {
+    for key in ["width", "ms", "timeoutMs", "holdMs", "padding", "zoom", "x", "y"] {
         if let Some(value) = fields.get(key).and_then(number_of) {
-            let value = if matches!(key, "ms" | "timeoutMs") {
+            let value = if matches!(key, "ms" | "timeoutMs" | "holdMs") {
                 json!(value.max(0.0).round() as u64)
             } else {
                 json!(value)
@@ -521,7 +539,7 @@ mod tests {
         assert!(matches!(&plan.steps[0], Step::Navigate { url } if url == "http://localhost:3000"));
         assert!(matches!(&plan.steps[1], Step::Resize { width } if *width == 390.0));
         assert!(matches!(&plan.steps[2], Step::Type { value, text: None, .. } if value == "a@b.c"));
-        assert!(matches!(&plan.steps[3], Step::PressKey { key } if key == "Enter"));
+        assert!(matches!(&plan.steps[3], Step::PressKey { key, hold_ms: None } if key == "Enter"));
         assert!(matches!(&plan.steps[4], Step::WaitFor { timeout_ms: Some(2000), .. }));
         assert!(matches!(&plan.steps[5], Step::Wait { ms: 1000 }));
         assert!(matches!(&plan.steps[6], Step::Assert { contains: Some(text), text: None, .. } if text == "Prime"));
@@ -560,5 +578,18 @@ mod tests {
                 assert!(schema["properties"].get(*field).is_some(), "{field} missing from schema");
             }
         }
+    }
+
+    #[test]
+    fn supports_held_keys_and_canvas_coordinates() {
+        let plan = parse(&json!({"steps":[
+            {"action":"click","x":320,"y":240},
+            {"action":"hover","x":120,"y":90},
+            {"action":"press_key","key":"ArrowRight","holdMs":450}
+        ]}))
+        .unwrap();
+        assert!(matches!(&plan.steps[0], Step::Click { selector: None, text: None, x: Some(x), y: Some(y) } if *x == 320.0 && *y == 240.0));
+        assert!(matches!(&plan.steps[1], Step::Hover { selector: None, text: None, x: Some(x), y: Some(y) } if *x == 120.0 && *y == 90.0));
+        assert!(matches!(&plan.steps[2], Step::PressKey { key, hold_ms: Some(450) } if key == "ArrowRight"));
     }
 }

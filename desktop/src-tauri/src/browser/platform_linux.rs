@@ -249,13 +249,36 @@ fn key_value(key: &str) -> Result<(u32, String), String> {
 }
 
 pub fn press_key(view: &Webview, key: &str) -> Result<(), String> {
+    press_key_held(view, key, 0)
+}
+
+pub fn press_key_held(view: &Webview, key: &str, hold_ms: u64) -> Result<(), String> {
     let (key_value, text) = key_value(key)?;
+    let clamped_hold = hold_ms.min(10_000);
+    if clamped_hold == 0 {
+        return native(view, move |browser| dispatch_key(&browser, key_value, &text));
+    }
+    let text_down = text.clone();
     native(view, move |browser| {
-        dispatch_key(&browser, key_value, &text)
+        dispatch_key_phase(&browser, key_value, &text_down, gdk::EventType::KeyPress)
+    })?;
+    thread::sleep(Duration::from_millis(clamped_hold));
+    native(view, move |browser| {
+        dispatch_key_phase(&browser, key_value, &text, gdk::EventType::KeyRelease)
     })
 }
 
 fn dispatch_key(browser: &webkit2gtk::WebView, key_value: u32, text: &str) -> Result<(), String> {
+    dispatch_key_phase(browser, key_value, text, gdk::EventType::KeyPress)?;
+    dispatch_key_phase(browser, key_value, text, gdk::EventType::KeyRelease)
+}
+
+fn dispatch_key_phase(
+    browser: &webkit2gtk::WebView,
+    key_value: u32,
+    text: &str,
+    kind: gdk::EventType,
+) -> Result<(), String> {
     if !browser.is_realized() {
         browser.realize();
     }
@@ -274,32 +297,30 @@ fn dispatch_key(browser: &webkit2gtk::WebView, key_value: u32, text: &str) -> Re
         .default_seat()
         .and_then(|seat| seat.keyboard())
         .ok_or("Native keyboard device is unavailable")?;
-    for kind in [gdk::EventType::KeyPress, gdk::EventType::KeyRelease] {
-        let event: gdk::Event = unsafe {
-            let pointer = gdk::ffi::gdk_event_new(kind.into_glib());
-            if pointer.is_null() {
-                return Err("Native key event allocation failed".to_owned());
-            }
-            let event = &mut *pointer.cast::<gdk::ffi::GdkEventKey>();
-            event.window = window.to_glib_full();
-            event.send_event = 0;
-            event.time = gdk::ffi::GDK_CURRENT_TIME as u32;
-            event.state = if mapping.level() == 1 {
-                gdk::ModifierType::SHIFT_MASK.into_glib()
-            } else {
-                0
-            };
-            event.keyval = key_value;
-            event.hardware_keycode = mapping.keycode() as u16;
-            event.group = mapping.group() as u8;
-            event.length = text.len() as i32;
-            event.string = glib::ffi::g_strndup(text.as_ptr().cast(), text.len());
-            gdk::ffi::gdk_event_set_device(pointer, device.to_glib_none().0);
-            from_glib_full(pointer)
-        };
-        if !browser.event(&event) && kind == gdk::EventType::KeyPress {
-            return Err("Native browser did not accept the key event".to_owned());
+    let event: gdk::Event = unsafe {
+        let pointer = gdk::ffi::gdk_event_new(kind.into_glib());
+        if pointer.is_null() {
+            return Err("Native key event allocation failed".to_owned());
         }
+        let event = &mut *pointer.cast::<gdk::ffi::GdkEventKey>();
+        event.window = window.to_glib_full();
+        event.send_event = 0;
+        event.time = gdk::ffi::GDK_CURRENT_TIME as u32;
+        event.state = if mapping.level() == 1 {
+            gdk::ModifierType::SHIFT_MASK.into_glib()
+        } else {
+            0
+        };
+        event.keyval = key_value;
+        event.hardware_keycode = mapping.keycode() as u16;
+        event.group = mapping.group() as u8;
+        event.length = text.len() as i32;
+        event.string = glib::ffi::g_strndup(text.as_ptr().cast(), text.len());
+        gdk::ffi::gdk_event_set_device(pointer, device.to_glib_none().0);
+        from_glib_full(pointer)
+    };
+    if !browser.event(&event) && kind == gdk::EventType::KeyPress {
+        return Err("Native browser did not accept the key event".to_owned());
     }
     Ok(())
 }
