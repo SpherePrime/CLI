@@ -19,7 +19,11 @@ When this file is loaded with `view`, Prime exposes `<skill_directory>` (ready-t
 4. **Adapt to ANY game engine, language, or framework.** Inspect the project to see how the game launches, receives input, and renders, and wire live bot control + window-scoped continuous video recording + frame slicing whether it is Web/Canvas/WebGL, Godot, Unity, Pygame, Bevy, SDL, C++/Rust, or terminal/CLI.
 5. **Capture close-ups of individual created elements in addition to the playthrough video.** Shoot focused close-up screenshots of key elements you built or changed (player character, enemies, items, effects, HUD/UI panels, menus, win/loss screens) and inspect them with `view`.
 6. **Save context with `<gamedev_library>`.** Never read all saved scripts blindly. Always run `library.mjs lookup` (or inspect `index.json`) first, read only the 1–2 relevant scripts matching the current game/engine, and after a successful run save new/improved reusable scripts into the proper folder without deleting existing ones.
-7. **Fix every bug found and re-run.** Whenever frames, element close-ups, or telemetry reveal any bug, fix it in code and repeat the full live bot + video + frame/element inspection loop until clean.
+7. **Sourcing & polishing textures and 3D models:**
+   - If the game needs textures, sprites, tilesets, materials, or 3D models and the user did **not** ask you to craft them from scratch, first search online (`web_search`, `agentic_fetch`, `fetch`) and download ready, license-compatible assets via `download` (e.g., Poly Haven, Kenney, Poly Pizza, AmbientCG, OpenGameArt in `.png`, `.webp`, `.glb`, `.gltf`, `.obj`) into the project's asset folder.
+   - Craft them yourself (via `generate_image`, procedural shaders/canvas scripts, or asset builders) whenever the user explicitly asks you to make them, or when no suitable asset exists online.
+   - Always inspect the integrated assets in-game via `view` (video frames and close-up `element_capture.mjs` shots). If any downloaded or generated texture/model looks ugly, cheap, mismatched in style/scale, or has UV/seam/rendering defects, you MUST fix, edit, or replace it yourself until it looks clean and cohesive.
+8. **Fix every bug found and re-run.** Whenever frames, element close-ups, or telemetry reveal any bug, fix it in code and repeat the full live bot + video + frame/element inspection loop until clean.
 
 ## Step 1: Lookup Relevant Scripts (Context-Efficient)
 
