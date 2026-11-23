@@ -1,6 +1,7 @@
 export const panelGutter = 8
 export const railWidth = 48
 const minimumChat = 360
+const minimumChatWithInspector = 460
 
 export function panelGeometry(
   width: number,
@@ -22,7 +23,7 @@ export function panelGeometry(
     width -
       rails * (railWidth + panelGutter) -
       panelGutter -
-      (editorVisible ? 300 + editorSpace : 122)
+      (editorVisible ? 300 + editorSpace : minimumChatWithInspector)
   )
   const inspectorOpen = inspectorResizable && !inspectorCollapsed
   const inspector = inspectorOpen ? Math.max(280, Math.min(inspectorMax, inspectorWidth)) : 0

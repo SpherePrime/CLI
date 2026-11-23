@@ -1,11 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ChevronRight, LoaderCircle, RefreshCw, Users } from 'lucide-react'
+import {
+  ArrowLeft,
+  Bot,
+  ChevronRight,
+  Clock,
+  Code2,
+  Compass,
+  ListChecks,
+  LoaderCircle,
+  RefreshCw,
+  ShieldCheck,
+  Users
+} from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
-import type { AgentWorker } from '../../../../shared/agents'
-import { workerStatusLabels } from '../../../../shared/agents'
+import { workerActive, workerStatusLabels, type AgentWorker } from '../../../../shared/agents'
 import { useI18n } from '../../i18n'
 import { useAgentPolling } from './useAgentPolling'
 import { WorkerConversation } from './WorkerConversation'
+import {
+  activeWorkerCount,
+  formatWorkerDuration,
+  workerRoleKind,
+  type WorkerRoleKind
+} from './agentPresentation'
 import {
   agentRosterPollInterval,
   scopeAgentRequest,
@@ -13,6 +30,15 @@ import {
 } from './openAgent'
 import { realSessionId } from '../../../../shared/pendingSession'
 import './agents.css'
+
+export function WorkerRoleIcon({ role, size = 15 }: { role: string; size?: number }) {
+  const kind: WorkerRoleKind = workerRoleKind(role)
+  if (kind === 'code') return <Code2 size={size} aria-hidden="true" />
+  if (kind === 'explore') return <Compass size={size} aria-hidden="true" />
+  if (kind === 'plan') return <ListChecks size={size} aria-hidden="true" />
+  if (kind === 'review') return <ShieldCheck size={size} aria-hidden="true" />
+  return <Bot size={size} aria-hidden="true" />
+}
 
 export function AgentsPanel({
   workspace,
@@ -58,7 +84,7 @@ function AgentTeam({
   request?: AgentRequest
   onConsumeAgentRequest?: (sequence: number) => void
 }) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const [selected, setSelected] = useState(() => request?.workerId || '')
   const selectedRef = useRef(selected)
   selectedRef.current = selected
@@ -80,6 +106,14 @@ function AgentTeam({
   useEffect(() => {
     if (selected && !roster.value.some((item) => item.id === selected)) roster.refresh()
   }, [selected])
+  const activeCount = activeWorkerCount(roster.value)
+  const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
+  useEffect(() => {
+    if (activeCount === 0) return
+    setNowSeconds(Math.floor(Date.now() / 1000))
+    const timer = window.setInterval(() => setNowSeconds(Math.floor(Date.now() / 1000)), 1000)
+    return () => window.clearInterval(timer)
+  }, [activeCount])
   const worker = roster.value.find((item) => item.id === selected)
   if (worker)
     return (
@@ -98,25 +132,27 @@ function AgentTeam({
     return (
       <section className="agents-panel agent-conversation" aria-label={t('Агент')}>
         <header className="agent-chat-header">
-          <button
-            className="icon small"
-            aria-label={t('К списку агентов')}
-            title={t('К списку агентов')}
-            onClick={() => setSelected('')}
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div className="agent-chat-name">
-            <strong>{t('Агент')}</strong>
+          <div className="agent-chat-header-inner">
+            <button
+              className="icon small"
+              aria-label={t('К списку агентов')}
+              title={t('К списку агентов')}
+              onClick={() => setSelected('')}
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div className="agent-chat-name">
+              <strong>{t('Агент')}</strong>
+            </div>
+            <button
+              className="icon small"
+              aria-label={t('Обновить')}
+              title={t('Обновить')}
+              onClick={roster.refresh}
+            >
+              <RefreshCw size={14} />
+            </button>
           </div>
-          <button
-            className="icon small"
-            aria-label={t('Обновить')}
-            title={t('Обновить')}
-            onClick={roster.refresh}
-          >
-            <RefreshCw size={14} />
-          </button>
         </header>
         {roster.error && (
           <div className="agent-error" role="alert">
@@ -135,61 +171,102 @@ function AgentTeam({
   return (
     <section className="agents-panel" aria-label={t('Агенты')}>
       <header className="agents-header">
-        <div className="agents-heading">
-          <h3>{t('Агенты')}</h3>
-          <span className="agents-count">{roster.value.length}</span>
-          <button
-            className="icon small"
-            title={t('Обновить')}
-            aria-label={t('Обновить')}
-            onClick={roster.refresh}
-          >
-            <RefreshCw size={14} />
-          </button>
-        </div>
-        <p>{t('Команда текущего чата. Выберите агента, чтобы открыть его переписку.')}</p>
-        {disabled && (
-          <p className="agents-notice">{t('Запуск новых агентов отключён в настройках.')}</p>
-        )}
-      </header>
-      {roster.error && (
-        <div className="agent-error" role="alert">
-          <span>{roster.error}</span>
-          <button className="quiet" onClick={roster.refresh}>
-            {t('Повторить')}
-          </button>
-        </div>
-      )}
-      {roster.loading ? (
-        <p className="agents-loading" role="status">
-          {t('Загрузка…')}
-        </p>
-      ) : !roster.value.length && !roster.error ? (
-        <div className="agents-empty">
-          <span className="agents-empty-icon">
-            <Users size={20} />
-          </span>
-          <strong>{t('В этом чате пока нет агентов')}</strong>
-          <p>{t('Для больших задач главный агент запускает агентов параллельно.')}</p>
-        </div>
-      ) : null}
-      <div className="agent-roster">
-        {roster.value.map((item) => (
-          <button key={item.id} className="agent-worker" onClick={() => setSelected(item.id)}>
-            <div className="agent-worker-heading">
-              <span className={`agent-dot agent-dot-${item.status}`} aria-hidden="true" />
-              <strong>{item.name || item.agent}</strong>
-              <ChevronRight size={14} />
-            </div>
-            <div className="agent-worker-meta">
-              <span className="agent-role">{item.agent}</span>
-              <span className={`agent-status agent-status-${item.status}`}>
-                {t(workerStatusLabels[item.status] || item.status)}
+        <div className="agents-header-inner">
+          <div className="agents-heading">
+            <h3>{t('Агенты')}</h3>
+            <span className="agents-count">{roster.value.length}</span>
+            {activeCount > 0 && (
+              <span className="agents-active-pill">
+                <span className="agent-dot agent-dot-running" aria-hidden="true" />
+                {t('{count} в работе', { count: activeCount })}
               </span>
+            )}
+            <button
+              className="icon small"
+              title={t('Обновить')}
+              aria-label={t('Обновить')}
+              onClick={roster.refresh}
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+          <p>{t('Команда текущего чата. Выберите агента, чтобы открыть его переписку.')}</p>
+          {disabled && (
+            <p className="agents-notice">{t('Запуск новых агентов отключён в настройках.')}</p>
+          )}
+        </div>
+      </header>
+      <div className="agents-scroll">
+        <div className="agents-body">
+          {roster.error && (
+            <div className="agent-error" role="alert">
+              <span>{roster.error}</span>
+              <button className="quiet" onClick={roster.refresh}>
+                {t('Повторить')}
+              </button>
             </div>
-            {item.task && <span className="agent-task">{item.task}</span>}
-          </button>
-        ))}
+          )}
+          {roster.loading ? (
+            <p className="agents-loading" role="status">
+              {t('Загрузка…')}
+            </p>
+          ) : !roster.value.length && !roster.error ? (
+            <div className="agents-empty">
+              <span className="agents-empty-icon">
+                <Users size={20} />
+              </span>
+              <strong>{t('В этом чате пока нет агентов')}</strong>
+              <p>{t('Для больших задач главный агент запускает агентов параллельно.')}</p>
+            </div>
+          ) : null}
+          <div className="agent-roster" data-count={roster.value.length}>
+            {roster.value.map((item) => {
+              const roleKind = workerRoleKind(item.agent)
+              const active = workerActive(item)
+              const duration = formatWorkerDuration(
+                item.started_at,
+                item.updated_at,
+                active,
+                language,
+                nowSeconds
+              )
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="agent-worker"
+                  data-status={item.status}
+                  data-role={roleKind}
+                  onClick={() => setSelected(item.id)}
+                >
+                  <div className="agent-worker-top">
+                    <span className={`agent-role-icon role-${roleKind}`}>
+                      <WorkerRoleIcon role={item.agent} size={15} />
+                    </span>
+                    <div className="agent-worker-title-group">
+                      <strong>{item.name || item.agent}</strong>
+                    </div>
+                    {duration && (
+                      <span className="agent-duration" title={duration}>
+                        <Clock size={11} aria-hidden="true" />
+                        <span>{duration}</span>
+                      </span>
+                    )}
+                    <ChevronRight size={15} className="agent-worker-chevron" aria-hidden="true" />
+                  </div>
+                  <div className="agent-worker-badges">
+                    <span className={`agent-status-pill agent-status-${item.status}`}>
+                      <span className={`agent-dot agent-dot-${item.status}`} aria-hidden="true" />
+                      {t(workerStatusLabels[item.status] || item.status)}
+                    </span>
+                    <span className="agent-role">{item.agent}</span>
+                  </div>
+                  {item.task && <span className="agent-task">{item.task}</span>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </section>
   )

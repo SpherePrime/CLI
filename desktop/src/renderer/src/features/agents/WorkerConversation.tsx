@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowLeft, RefreshCw, Send, Square } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Clock, RefreshCw, Send, Square } from 'lucide-react'
 import { workerActive, workerStatusLabels, type AgentWorker } from '../../../../shared/agents'
 import { useI18n } from '../../i18n'
 import { MessageList } from '../chat/MessageList'
 import { WorkspaceMediaProvider } from '../chat/WorkspaceMediaContext'
+import { WorkerRoleIcon } from './AgentsPanel'
+import { formatWorkerDuration, workerRoleKind } from './agentPresentation'
 import { useWorkerMessageHistory } from './useWorkerMessageHistory'
 
 export function WorkerConversation({
@@ -23,7 +25,7 @@ export function WorkerConversation({
   refreshRoster: () => void
   rosterError: string
 }) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -34,6 +36,14 @@ export function WorkerConversation({
       mounted.current = false
     }
   }, [])
+  const active = workerActive(worker)
+  const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
+  useEffect(() => {
+    if (!active) return
+    setNowSeconds(Math.floor(Date.now() / 1000))
+    const timer = window.setInterval(() => setNowSeconds(Math.floor(Date.now() / 1000)), 1000)
+    return () => window.clearInterval(timer)
+  }, [active])
   const history = useWorkerMessageHistory({ projectId, sessionId, worker })
   function refresh() {
     history.refresh()
@@ -62,49 +72,73 @@ export function WorkerConversation({
     event.preventDefault()
     void act(false)
   }
+  const roleKind = workerRoleKind(worker.agent)
+  const duration = formatWorkerDuration(
+    worker.started_at,
+    worker.updated_at,
+    active,
+    language,
+    nowSeconds
+  )
   return (
     <section className="agents-panel agent-conversation" aria-label={worker.name || worker.agent}>
       <header className="agent-chat-header">
-        <button
-          className="icon small"
-          aria-label={t('К списку агентов')}
-          title={t('К списку агентов')}
-          onClick={back}
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div className="agent-chat-name">
-          <strong>{worker.name || worker.agent}</strong>
-          <div className="agent-worker-meta">
-            <span className={`agent-dot agent-dot-${worker.status}`} aria-hidden="true" />
-            <span className={`agent-status agent-status-${worker.status}`}>
-              {t(workerStatusLabels[worker.status] || worker.status)}
-            </span>
-            <span className="agent-role">{worker.agent}</span>
+        <div className="agent-chat-header-inner">
+          <button
+            className="icon small"
+            aria-label={t('К списку агентов')}
+            title={t('К списку агентов')}
+            onClick={back}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <span className={`agent-role-icon role-${roleKind}`}>
+            <WorkerRoleIcon role={worker.agent} size={15} />
+          </span>
+          <div className="agent-chat-name">
+            <strong>{worker.name || worker.agent}</strong>
+            <div className="agent-worker-meta">
+              <span className={`agent-status-pill agent-status-${worker.status}`}>
+                <span className={`agent-dot agent-dot-${worker.status}`} aria-hidden="true" />
+                {t(workerStatusLabels[worker.status] || worker.status)}
+              </span>
+              <span className="agent-role">{worker.agent}</span>
+              {duration && (
+                <span className="agent-duration">
+                  <Clock size={11} aria-hidden="true" />
+                  <span>{duration}</span>
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="agent-chat-actions">
+            <button
+              className="icon small"
+              aria-label={t('Обновить')}
+              title={t('Обновить')}
+              onClick={refresh}
+            >
+              <RefreshCw size={14} />
+            </button>
+            {active && (
+              <button
+                className="icon small agent-stop"
+                disabled={pending}
+                aria-label={t('Остановить агента')}
+                title={t('Остановить агента')}
+                onClick={() => void act(true)}
+              >
+                <Square size={14} />
+              </button>
+            )}
           </div>
         </div>
-        <button
-          className="icon small"
-          aria-label={t('Обновить')}
-          title={t('Обновить')}
-          onClick={refresh}
-        >
-          <RefreshCw size={14} />
-        </button>
-        {workerActive(worker) && (
-          <button
-            className="icon small agent-stop"
-            disabled={pending}
-            aria-label={t('Остановить агента')}
-            title={t('Остановить агента')}
-            onClick={() => void act(true)}
-          >
-            <Square size={14} />
-          </button>
-        )}
       </header>
       <details className="agent-assignment">
-        <summary>{t('Задание агента')}</summary>
+        <summary>
+          <ChevronDown size={14} className="agent-assignment-chevron" aria-hidden="true" />
+          <span>{t('Задание агента')}</span>
+        </summary>
         <p>{worker.task}</p>
       </details>
       {(actionError || history.error || rosterError) && (
@@ -143,7 +177,7 @@ export function WorkerConversation({
         </label>
         <textarea
           id={`agent-followup-${worker.id}`}
-          rows={3}
+          rows={2}
           value={draft}
           disabled={disabled || pending}
           onChange={(event) => setDraft(event.target.value)}

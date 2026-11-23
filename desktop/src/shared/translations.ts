@@ -21,6 +21,7 @@ export const english: Record<string, string> = {
   'Не удалось проверить запросы агентов': 'Could not check agent requests',
   'Агент: {name}': 'Agent: {name}',
   Агенты: 'Agents',
+  '{count} в работе': '{count} active',
   Завершён: 'Completed',
   Прерван: 'Interrupted',
   'Ожидает задания': 'Awaiting assignment',
