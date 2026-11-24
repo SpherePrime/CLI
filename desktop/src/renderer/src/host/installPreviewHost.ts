@@ -306,12 +306,26 @@ export function installPreviewHost() {
     }
   }
 
-  function account(action: 'status' | 'restore' | 'login' | 'logout'): Promise<AccountState>
+  function account(action: 'status' | 'restore' | 'login' | 'logout' | 'offline'): Promise<AccountState>
   function account(action: 'limits' | 'refreshLimits'): Promise<PrimeAILimits>
   function account(action: AccountAction): Promise<AccountState | PrimeAILimits>
   async function account(action: AccountAction): Promise<AccountState | PrimeAILimits> {
     if (action === 'limits' || action === 'refreshLimits') return buildPreviewLimits()
     if (action === 'status') return { ...accountState }
+    if (action === 'offline') {
+      clearPreviewLoginTimer()
+      previewNetworkError = false
+      accountState = {
+        ...accountState,
+        offline: true,
+        waiting: false,
+        checking: false,
+        loginUrl: '',
+        error: '',
+        networkError: false
+      }
+      return { ...accountState }
+    }
     if (action === 'restore') {
       if (previewNetworkError) {
         accountState = {

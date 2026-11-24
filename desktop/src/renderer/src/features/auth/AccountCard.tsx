@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle2, LogOut, UserRound } from 'lucide-react'
+import { CheckCircle2, LogIn, LogOut, UserRound, WifiOff } from 'lucide-react'
 import type { AccountState, PrimeAILimits } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
 import { PrimeLimitsDetails } from './PrimeLimitsDetails'
@@ -21,6 +21,8 @@ export function AccountCard({
   const [pending, setPending] = useState(false)
   const [refreshingLimits, setRefreshingLimits] = useState(false)
   const [error, setError] = useState('')
+  const isOfflineGuest = Boolean(account.offline && !account.signedIn)
+  const isOfflineWithSession = Boolean(account.offline && account.signedIn)
 
   async function handleLogout() {
     setPending(true)
@@ -49,22 +51,40 @@ export function AccountCard({
     <>
       <h3>{t('Аккаунт Prime')}</h3>
       <p className="muted">
-        {t('Единая авторизация для Prime Desktop и Prime CLI на этом устройстве.')}
+        {isOfflineGuest
+          ? t('Работа без интернета: локальные модели, файлы, терминал и свои ключи.')
+          : t('Единая авторизация для Prime Desktop и Prime CLI на этом устройстве.')}
       </p>
       <section className="settings-card account-card">
         <div className="account-card-identity">
           <span className="account-card-avatar" aria-hidden="true">
-            <UserRound size={18} />
+            {isOfflineGuest ? <WifiOff size={18} /> : <UserRound size={18} />}
           </span>
           <div className="account-card-meta">
             <span className="account-card-label">{t('Текущий аккаунт')}</span>
             <strong className="account-card-email">
-              {account.email || t('Аккаунт подключён')}
+              {isOfflineGuest
+                ? t('Оффлайн-режим')
+                : account.email || t('Аккаунт подключён')}
             </strong>
           </div>
           <span className="account-card-badge">
-            <CheckCircle2 size={13} aria-hidden="true" />
-            <span>{t('Единая сессия с CLI')}</span>
+            {isOfflineGuest ? (
+              <>
+                <WifiOff size={13} aria-hidden="true" />
+                <span>{t('Без подключения к Prime')}</span>
+              </>
+            ) : isOfflineWithSession ? (
+              <>
+                <WifiOff size={13} aria-hidden="true" />
+                <span>{t('Оффлайн · сессия сохранена')}</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 size={13} aria-hidden="true" />
+                <span>{t('Единая сессия с CLI')}</span>
+              </>
+            )}
           </span>
         </div>
         <div className="settings-actions">
@@ -74,12 +94,22 @@ export function AccountCard({
             disabled={pending}
             onClick={() => void handleLogout()}
           >
-            <LogOut size={15} aria-hidden="true" />
-            <span>{pending ? t('Выходим…') : t('Выйти из аккаунта')}</span>
+            {isOfflineGuest ? (
+              <LogIn size={15} aria-hidden="true" />
+            ) : (
+              <LogOut size={15} aria-hidden="true" />
+            )}
+            <span>
+              {isOfflineGuest
+                ? t('Войти в аккаунт Prime')
+                : pending
+                  ? t('Выходим…')
+                  : t('Выйти из аккаунта')}
+            </span>
           </button>
         </div>
       </section>
-      {(limits !== undefined || onRefreshLimits !== undefined) && (
+      {!isOfflineGuest && (limits !== undefined || onRefreshLimits !== undefined) && (
         <section className="settings-card account-limits-card">
           <PrimeLimitsDetails
             limits={limits ?? null}

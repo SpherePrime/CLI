@@ -154,8 +154,33 @@ func TestAuthGateStartsActiveWhenSignedOutAndHasNoSkip(t *testing.T) {
 	rendered := renderUIText(u)
 	require.Contains(t, rendered, "Sign in to Prime")
 	require.Contains(t, rendered, "Sign in with Google")
+	require.Contains(t, rendered, "Work offline")
 	require.NotContains(t, rendered, "Skip")
 	require.NotContains(t, rendered, "Пропустить")
+}
+
+func TestAuthGateOfflineModeEntersWorkspaceAndLogoutReturnsToGate(t *testing.T) {
+	t.Parallel()
+
+	storagePath := filepath.Join(t.TempDir(), "prime-account.bin")
+	svc := account.NewService(
+		account.WithStoragePath(storagePath),
+		account.WithBaseURL("http://127.0.0.1:1"),
+	)
+	t.Cleanup(svc.Close)
+
+	u, _ := newAuthGateTestUI(t, svc, false)
+	u.Update(authStateMsg{State: account.State{SignedIn: false}, FromRestore: true})
+	require.Equal(t, uiAuthGate, u.state)
+
+	_, offlineCmd := u.Update(tea.KeyPressMsg{Code: 'f', Text: "f"})
+	require.NotNil(t, offlineCmd)
+	runAuthCmds(u, offlineCmd)
+
+	require.True(t, u.authState.Offline)
+	require.Equal(t, uiLanding, u.state)
+	require.False(t, u.authDeferredInit)
+	require.Equal(t, "Offline mode", u.buildStatusData().AccountEmail)
 }
 
 func TestAuthGateBlocksBypassAttempts(t *testing.T) {

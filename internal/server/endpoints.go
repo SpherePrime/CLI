@@ -50,6 +50,13 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(503).
 			Handle(c.handlePostAccountLogout),
 
+		apigen.Post("/v1/account/offline").
+			Summary("Enable offline mode without requiring internet or Prime sign-in").
+			Tags("account").
+			Responds(proto.AccountState{}).
+			Fails(503).
+			Handle(c.handlePostAccountOffline),
+
 		apigen.Get("/v1/account/limits").
 			Summary("Get PrimeAI tariff usage limits").
 			Tags("account").

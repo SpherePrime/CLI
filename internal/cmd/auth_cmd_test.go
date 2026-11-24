@@ -121,4 +121,6 @@ func TestRunCmd_RequiresPrimeAccount(t *testing.T) {
 	checkErr := checkPrimeAccount(context.Background(), svc)
 	require.Error(t, checkErr)
 	require.False(t, strings.HasSuffix(checkErr.Error(), "."))
+
+	require.NoError(t, requirePrimeAccount(context.Background(), true))
 }

@@ -8,16 +8,30 @@ import (
 )
 
 type storedAccount struct {
-	Token string `json:"token"`
+	Token   string `json:"token,omitempty"`
+	Email   string `json:"email,omitempty"`
+	Offline bool   `json:"offline,omitempty"`
+}
+
+func marshalStoredAccount(acc storedAccount) ([]byte, error) {
+	return json.Marshal(acc)
+}
+
+func unmarshalStoredAccount(raw []byte) (storedAccount, error) {
+	var payload storedAccount
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return storedAccount{}, err
+	}
+	return payload, nil
 }
 
 func marshalStoredToken(token string) ([]byte, error) {
-	return json.Marshal(storedAccount{Token: token})
+	return marshalStoredAccount(storedAccount{Token: token})
 }
 
 func unmarshalStoredToken(raw []byte) (string, error) {
-	var payload storedAccount
-	if err := json.Unmarshal(raw, &payload); err != nil {
+	payload, err := unmarshalStoredAccount(raw)
+	if err != nil {
 		return "", err
 	}
 	return payload.Token, nil

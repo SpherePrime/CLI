@@ -95,7 +95,8 @@ prime run --continue "Follow up on your last response"
 			return fmt.Errorf("no prompt provided")
 		}
 
-		if err := requirePrimeAccount(ctx); err != nil {
+		offlineMode, _ := cmd.Flags().GetBool("offline")
+		if err := requirePrimeAccount(ctx, offlineMode); err != nil {
 			return err
 		}
 
@@ -188,19 +189,23 @@ func init() {
 	runCmd.MarkFlagsMutuallyExclusive("session", "continue")
 }
 
-func requirePrimeAccount(ctx context.Context) error {
+func requirePrimeAccount(ctx context.Context, offline bool) error {
 	svc := account.NewService()
 	defer svc.Close()
+	if offline {
+		svc.EnableOfflineMode(ctx)
+		return nil
+	}
 	return checkPrimeAccount(ctx, svc)
 }
 
 func checkPrimeAccount(ctx context.Context, svc *account.Service) error {
 	st := svc.Restore(ctx)
-	if st.SignedIn {
+	if st.CanAccessWorkspace() {
 		return nil
 	}
 	if st.NetworkError {
-		return errors.New("prime account session check failed due to a network or server error; retry or run 'prime login' or 'prime' to sign in")
+		return errors.New("prime account session check failed due to a network or server error; retry or run 'prime login' or 'prime --offline'")
 	}
 	return errors.New(strings.TrimSuffix(i18n.New(i18n.En).Label("auth.run_required"), "."))
 }

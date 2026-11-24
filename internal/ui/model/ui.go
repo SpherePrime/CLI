@@ -823,7 +823,7 @@ func (m *UI) shouldSendNotification() bool {
 
 // setState changes the UI state and focus.
 func (m *UI) setState(state uiState, focus uiFocusState) {
-	if m.accountSvc != nil && !m.authState.SignedIn && state != uiAuthGate {
+	if m.accountSvc != nil && !m.authState.CanAccessWorkspace() && state != uiAuthGate {
 		state = uiAuthGate
 		focus = uiFocusNone
 	}
@@ -3545,6 +3545,10 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				if !m.bangMode && value == "/logout" {
 					return m.logoutAccount()
 				}
+				if !m.bangMode && value == "/login" {
+					m.authState = account.State{Waiting: true}
+					return tea.Batch(append(m.enterAuthGate(false), m.startAccountLoginCmd())...)
+				}
 				if value == "exit" || value == "quit" {
 					return m.openQuitDialog()
 				}
@@ -5884,8 +5888,16 @@ func (m *UI) buildStatusData() dialog.StatusData {
 
 	skillEntries, _ := m.com.Workspace.ListSkills(context.Background())
 
+	accountEmail := m.authState.Email
+	if m.authState.Offline {
+		if accountEmail != "" {
+			accountEmail += " (" + m.com.L("auth.offline_mode") + ")"
+		} else {
+			accountEmail = m.com.L("auth.offline_mode")
+		}
+	}
 	return dialog.StatusData{
-		AccountEmail:  m.authState.Email,
+		AccountEmail:  accountEmail,
 		PrimeAILimits: m.effectivePrimeAILimits(),
 		Session:       session,
 		MCPStates:     m.mcpStates,

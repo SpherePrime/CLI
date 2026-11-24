@@ -11,8 +11,8 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/x/sys/windows"
 )
 
-func saveToken(path, token string) error {
-	plain, err := marshalStoredToken(token)
+func saveStoredAccount(path string, acc storedAccount) error {
+	plain, err := marshalStoredAccount(acc)
 	if err != nil {
 		return err
 	}
@@ -23,19 +23,31 @@ func saveToken(path, token string) error {
 	return writeFileAtomic(path, encrypted)
 }
 
-func loadToken(path string) (string, error) {
+func loadStoredAccount(path string) (storedAccount, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", os.ErrNotExist
+			return storedAccount{}, os.ErrNotExist
 		}
-		return "", err
+		return storedAccount{}, err
 	}
 	plain, err := unprotectDPAPI(raw)
 	if err != nil {
+		return storedAccount{}, err
+	}
+	return unmarshalStoredAccount(plain)
+}
+
+func saveToken(path, token string) error {
+	return saveStoredAccount(path, storedAccount{Token: token})
+}
+
+func loadToken(path string) (string, error) {
+	acc, err := loadStoredAccount(path)
+	if err != nil {
 		return "", err
 	}
-	return unmarshalStoredToken(plain)
+	return acc.Token, nil
 }
 
 func protectDPAPI(plain []byte) ([]byte, error) {

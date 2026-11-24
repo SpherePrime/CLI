@@ -4,6 +4,7 @@ export type AccountAction =
   | 'restore'
   | 'login'
   | 'logout'
+  | 'offline'
   | 'limits'
   | 'refreshLimits'
 export interface PrimeAILimitWindow {
@@ -26,6 +27,7 @@ export interface PrimeAILimits {
 }
 export type AccountState = {
   signedIn: boolean
+  offline?: boolean
   waiting: boolean
   checking: boolean
   email: string
@@ -366,7 +368,7 @@ export interface DesktopApi {
   browserView(sessionId?: string | null, inspectorOpen?: boolean): Promise<BrowserState>
   browserPreview?(): Promise<string>
   update(action: 'check' | 'install', force?: boolean): Promise<Json>
-  account(action: 'status' | 'restore' | 'login' | 'logout'): Promise<AccountState>
+  account(action: 'status' | 'restore' | 'login' | 'logout' | 'offline'): Promise<AccountState>
   account(action: 'limits' | 'refreshLimits'): Promise<PrimeAILimits>
   account(action: AccountAction): Promise<AccountState | PrimeAILimits>
   customAgents(request: import('./customAgents').CustomAgentsRequest): Promise<any>

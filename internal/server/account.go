@@ -64,6 +64,15 @@ func (c *controllerV1) handlePostAccountLogout(w http.ResponseWriter, r *http.Re
 	jsonEncode(w, svc.CancelOrLogout(r.Context()))
 }
 
+func (c *controllerV1) handlePostAccountOffline(w http.ResponseWriter, r *http.Request) {
+	svc := c.accountService()
+	if svc == nil {
+		jsonError(w, http.StatusServiceUnavailable, "account service unavailable")
+		return
+	}
+	jsonEncode(w, svc.EnableOfflineMode(r.Context()))
+}
+
 func (c *controllerV1) handleGetAccountLimits(w http.ResponseWriter, r *http.Request) {
 	svc := c.accountService()
 	if svc == nil {

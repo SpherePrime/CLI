@@ -204,7 +204,7 @@ func (s *Service) Restore(ctx context.Context) State {
 	s.mu.Unlock()
 
 	s.fileMu.Lock()
-	token, loadErr := loadToken(storagePath)
+	acc, loadErr := loadStoredAccount(storagePath)
 	s.fileMu.Unlock()
 
 	if loadErr != nil {
@@ -226,19 +226,27 @@ func (s *Service) Restore(ctx context.Context) State {
 		if !s.closed && s.flow == flow && !s.state.Waiting {
 			s.token = ""
 			s.checkedToken = ""
-			s.state = State{SignedIn: false}
+			if s.state.Offline && !s.state.HasStoredSession {
+				s.state = State{Offline: true}
+			} else {
+				s.state = State{SignedIn: false}
+			}
 		}
 		snapshot := s.state
 		s.mu.Unlock()
 		return snapshot
 	}
 
+	token := acc.Token
 	if token == "" {
 		s.mu.Lock()
 		if !s.closed && s.flow == flow && !s.state.Waiting {
 			s.token = ""
 			s.checkedToken = ""
-			s.state = State{SignedIn: false}
+			s.state = State{
+				SignedIn: false,
+				Offline:  acc.Offline,
+			}
 		}
 		snapshot := s.state
 		s.mu.Unlock()
@@ -260,14 +268,15 @@ func (s *Service) Restore(ctx context.Context) State {
 	email, statusCode, reqErr := s.fetchMeWithRetry(ctx, baseURL, token)
 
 	if isTransientSessionCheckFailure(statusCode, reqErr) {
-		slog.Warn("Account session restore failed", "status_code", statusCode, "error", reqErr)
+		slog.Warn("Account session restore failed, continuing in offline fallback", "status_code", statusCode, "error", reqErr)
 		s.mu.Lock()
 		if !s.closed && s.flow == flow {
-			s.token = ""
+			s.token = token
 			s.checkedToken = token
 			s.state = State{
-				SignedIn:         false,
-				Checking:         false,
+				SignedIn:         true,
+				Offline:          true,
+				Email:            acc.Email,
 				HasStoredSession: true,
 				NetworkError:     true,
 				Error:            formatSessionCheckError(statusCode, reqErr),
@@ -287,6 +296,7 @@ func (s *Service) Restore(ctx context.Context) State {
 			s.checkedToken = ""
 			s.state = State{
 				SignedIn:         false,
+				Offline:          false,
 				Checking:         false,
 				HasStoredSession: false,
 				Error:            errSessionExpired,
@@ -298,12 +308,26 @@ func (s *Service) Restore(ctx context.Context) State {
 		return snapshot
 	}
 
+	if email == "" {
+		email = acc.Email
+	}
+	if storagePath != "" && (email != acc.Email || acc.Offline) {
+		s.fileMu.Lock()
+		_ = saveStoredAccount(storagePath, storedAccount{
+			Token:   token,
+			Email:   email,
+			Offline: false,
+		})
+		s.fileMu.Unlock()
+	}
+
 	s.mu.Lock()
 	if !s.closed && s.flow == flow {
 		s.token = token
 		s.checkedToken = token
 		s.state = State{
 			SignedIn:         true,
+			Offline:          false,
 			Email:            email,
 			HasStoredSession: true,
 		}
@@ -333,20 +357,23 @@ func (s *Service) State(ctx context.Context) State {
 
 	if snapshot.SignedIn {
 		s.fileMu.Lock()
-		diskToken, err := loadToken(storagePath)
+		acc, err := loadStoredAccount(storagePath)
 		s.fileMu.Unlock()
-		if err != nil || diskToken == "" {
+		if err != nil || acc.Token == "" {
 			s.mu.Lock()
 			if !s.closed && s.flow == flow && s.state.SignedIn {
 				s.token = ""
 				s.checkedToken = ""
-				s.state = State{SignedIn: false}
+				s.state = State{
+					SignedIn: false,
+					Offline:  err == nil && acc.Offline,
+				}
 			}
 			snapshot = s.state
 			s.mu.Unlock()
 			return snapshot
 		}
-		if diskToken != curToken {
+		if acc.Token != curToken {
 			return s.Restore(ctx)
 		}
 		return snapshot
@@ -354,15 +381,26 @@ func (s *Service) State(ctx context.Context) State {
 
 	if !snapshot.Waiting && !snapshot.Checking {
 		s.fileMu.Lock()
-		diskToken, err := loadToken(storagePath)
+		acc, err := loadStoredAccount(storagePath)
 		s.fileMu.Unlock()
-		if err == nil && diskToken != "" {
-			if diskToken != checkedToken {
+		if err == nil && acc.Token != "" {
+			if acc.Token != checkedToken {
 				return s.Restore(ctx)
 			}
 			return snapshot
 		}
-		if os.IsNotExist(err) && snapshot.HasStoredSession {
+		if err == nil && acc.Offline && !snapshot.Offline {
+			s.mu.Lock()
+			if !s.closed && s.flow == flow && !s.state.SignedIn && !s.state.Waiting && !s.state.Checking {
+				s.state.Offline = true
+				s.state.Error = ""
+				s.state.NetworkError = false
+			}
+			snapshot = s.state
+			s.mu.Unlock()
+			return snapshot
+		}
+		if os.IsNotExist(err) && (snapshot.HasStoredSession || snapshot.Offline) {
 			s.mu.Lock()
 			if !s.closed && s.flow == flow && !s.state.SignedIn && !s.state.Waiting && !s.state.Checking {
 				s.token = ""
@@ -437,6 +475,62 @@ func (s *Service) StartLogin(ctx context.Context) (State, error) {
 	s.mu.Unlock()
 
 	return snapshot, nil
+}
+
+func (s *Service) EnableOfflineMode(ctx context.Context) State {
+	s.mu.Lock()
+	if s.closed {
+		snapshot := s.state
+		s.mu.Unlock()
+		return snapshot
+	}
+	s.flow++
+	flow := s.flow
+	if s.pollCancel != nil {
+		s.pollCancel()
+		s.pollCancel = nil
+	}
+	storagePath := s.storagePath
+	token := s.token
+	email := s.state.Email
+	s.state = State{
+		SignedIn:         token != "",
+		Offline:          true,
+		Email:            email,
+		HasStoredSession: token != "",
+	}
+	snapshot := s.state
+	s.mu.Unlock()
+
+	if storagePath != "" {
+		s.fileMu.Lock()
+		if existing, err := loadStoredAccount(storagePath); err == nil {
+			if existing.Token != "" {
+				token = existing.Token
+			}
+			if existing.Email != "" {
+				email = existing.Email
+			}
+		}
+		_ = saveStoredAccount(storagePath, storedAccount{
+			Token:   token,
+			Email:   email,
+			Offline: true,
+		})
+		s.mu.Lock()
+		if !s.closed && s.flow == flow {
+			s.token = token
+			s.state.SignedIn = token != ""
+			s.state.HasStoredSession = token != ""
+			s.state.Email = email
+			s.state.Offline = true
+			snapshot = s.state
+		}
+		s.mu.Unlock()
+		s.fileMu.Unlock()
+	}
+
+	return snapshot
 }
 
 func (s *Service) CancelOrLogout(ctx context.Context) State {
@@ -553,7 +647,11 @@ func (s *Service) poll(ctx context.Context, hash string, flow uint64) {
 				s.fileMu.Unlock()
 				return
 			}
-			if err := saveToken(storagePath, payload.Token); err != nil {
+			if err := saveStoredAccount(storagePath, storedAccount{
+				Token:   payload.Token,
+				Email:   email,
+				Offline: false,
+			}); err != nil {
 				s.state.Error = fmt.Sprintf("Не удалось сохранить сессию: %v", err)
 				s.state.Waiting = false
 				s.mu.Unlock()
@@ -564,6 +662,7 @@ func (s *Service) poll(ctx context.Context, hash string, flow uint64) {
 			s.checkedToken = payload.Token
 			s.state = State{
 				SignedIn:         true,
+				Offline:          false,
 				Email:            email,
 				HasStoredSession: true,
 			}

@@ -140,10 +140,19 @@ func TestAccountRestore503PreservesSessionViaHTTP(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 	var restored proto.AccountState
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &restored))
-	require.False(t, restored.SignedIn)
+	require.True(t, restored.SignedIn)
+	require.True(t, restored.Offline)
 	require.True(t, restored.HasStoredSession)
 	require.True(t, restored.NetworkError)
+	require.Equal(t, "user@sphereprime.ru", restored.Email)
 	require.NotContains(t, rec.Body.String(), "tok_keep_via_http")
+
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v1/account/offline", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
+	var offlineState proto.AccountState
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &offlineState))
+	require.True(t, offlineState.Offline)
 }
 
 func testAccountOptions(dir, baseURL string) []account.Option {

@@ -121,6 +121,20 @@ func (m *UI) cancelOrLogoutAccountCmd(fromLogout bool) tea.Cmd {
 	}
 }
 
+func (m *UI) enterOfflineModeCmd() tea.Cmd {
+	svc := m.accountSvc
+	if svc == nil {
+		return nil
+	}
+	gen := m.nextAuthGen()
+	return func() tea.Msg {
+		return authStateMsg{
+			State: svc.EnableOfflineMode(context.Background()),
+			Gen:   gen,
+		}
+	}
+}
+
 func (m *UI) syncAccountStateCmd() tea.Cmd {
 	svc := m.accountSvc
 	if svc == nil {
@@ -174,10 +188,10 @@ func (m *UI) handleAuthStateMsg(msg authStateMsg) []tea.Cmd {
 		m.authCopied = false
 	}
 
-	if msg.State.SignedIn {
+	if msg.State.CanAccessWorkspace() {
 		if m.state == uiAuthGate {
 			cmds = append(cmds, m.completeAuthGate()...)
-		} else if m.primeAILimits == nil {
+		} else if msg.State.SignedIn && !msg.State.Offline && m.primeAILimits == nil {
 			if cmd := m.fetchPrimeAILimits(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
@@ -281,6 +295,11 @@ func (m *UI) updateAuthGate(msg tea.KeyPressMsg) tea.Cmd {
 			m.authState.Error = ""
 			m.authCopied = false
 			return m.cancelOrLogoutAccountCmd(false)
+		}
+	case "f":
+		if !m.authState.Checking && !m.authState.Waiting {
+			m.authState.Error = ""
+			return m.enterOfflineModeCmd()
 		}
 	case "r":
 		if m.authState.NetworkError && m.authState.HasStoredSession && !m.authState.Checking && !m.authState.Waiting {
@@ -478,10 +497,12 @@ func (m *UI) renderAuthActions(width int, compact bool) string {
 		return common.ButtonGroup(t, []common.ButtonOpts{
 			{Text: m.com.L("auth.retry_check") + " (Enter)", Selected: true},
 			{Text: m.com.L("auth.sign_in_again") + " (r)", Selected: false},
+			{Text: m.com.L("auth.work_offline") + " (f)", Selected: false},
 		}, "  ")
 	default:
 		return common.ButtonGroup(t, []common.ButtonOpts{
 			{Text: m.com.L("auth.sign_in_google") + " (Enter)", Selected: true},
+			{Text: m.com.L("auth.work_offline") + " (f)", Selected: false},
 		}, "  ")
 	}
 }
@@ -512,11 +533,13 @@ func (m *UI) authGateHelpBindings() []key.Binding {
 		return []key.Binding{
 			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", m.com.L("auth.retry_check"))),
 			key.NewBinding(key.WithKeys("r"), key.WithHelp("r", m.com.L("auth.sign_in_again"))),
+			key.NewBinding(key.WithKeys("f"), key.WithHelp("f", m.com.L("auth.work_offline"))),
 			key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q/ctrl+c", m.com.L("auth.quit"))),
 		}
 	default:
 		return []key.Binding{
 			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", m.com.L("auth.sign_in_google"))),
+			key.NewBinding(key.WithKeys("f"), key.WithHelp("f", m.com.L("auth.work_offline"))),
 			key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q/ctrl+c", m.com.L("auth.quit"))),
 		}
 	}

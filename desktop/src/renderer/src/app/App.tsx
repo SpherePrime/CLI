@@ -85,8 +85,8 @@ export function App() {
     if (ready || failed) setStarted(true)
   }, [ready, failed])
   const runtimeReady = w.info.runtime === 'ready'
-  const showAuthGate = runtimeReady && w.accountLoaded && !w.account.signedIn
-  const canEnterWorkspace = w.accountLoaded && w.account.signedIn
+  const canEnterWorkspace = w.accountLoaded && Boolean(w.account.signedIn || w.account.offline)
+  const showAuthGate = runtimeReady && w.accountLoaded && !canEnterWorkspace
   return (
     <I18nProvider language={w.preferences.language}>
       {showAuthGate ? (
@@ -97,6 +97,7 @@ export function App() {
             onLogin={w.loginAccount}
             onCancelLogin={() => w.logoutAccount().catch(() => {})}
             onRetryRestore={w.retryAccountRestore}
+            onContinueOffline={w.enterOfflineMode}
           />
         </>
       ) : (
@@ -108,7 +109,7 @@ export function App() {
         </StartupScreen>
       )}
       <UpdateScreen
-        ready={w.account.signedIn && runtimeReady}
+        ready={w.account.signedIn && !w.account.offline && runtimeReady}
         busy={w.busy || Boolean(w.info.automationCounts?.activeCount)}
         terminals={w.info.terminalCount || 0}
       />

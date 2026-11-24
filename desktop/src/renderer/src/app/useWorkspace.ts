@@ -43,6 +43,7 @@ const resolvedLimit = 1000
 
 const initialAccountState: AccountState = {
   signedIn: false,
+  offline: false,
   waiting: false,
   checking: true,
   email: '',
@@ -477,6 +478,7 @@ export function useWorkspace() {
           .catch((err) => {
             const fallback: AccountState = {
               signedIn: false,
+              offline: false,
               waiting: false,
               checking: false,
               email: '',
@@ -501,7 +503,7 @@ export function useWorkspace() {
         setInfo(value)
         if (value.runtime === 'ready') {
           const verified = await restoreAccount()
-          if (verified.signedIn) await restore()
+          if (verified.signedIn || verified.offline) await restore()
         }
       })
       .catch(errorHandler)
@@ -625,7 +627,7 @@ export function useWorkspace() {
           setObservedBusy(null)
           void restoreAccount()
             .then((verified) => {
-              if (verified.signedIn) return restore()
+              if (verified.signedIn || verified.offline) return restore()
             })
             .catch(errorHandler)
         }
@@ -1649,11 +1651,12 @@ export function useWorkspace() {
     void refreshLight().catch(errorHandler)
   }
   useEffect(() => {
-    if (info.runtime !== 'ready' || !accountLoaded || !account.signedIn || startupReady) return
+    if (info.runtime !== 'ready' || !accountLoaded || !(account.signedIn || account.offline) || startupReady)
+      return
     void restoreWorkspaceRef.current?.().catch(errorHandler)
-  }, [info.runtime, accountLoaded, account.signedIn, startupReady, errorHandler])
+  }, [info.runtime, accountLoaded, account.signedIn, account.offline, startupReady, errorHandler])
   useEffect(() => {
-    if (info.runtime !== 'ready' || !accountLoaded || account.signedIn) return
+    if (info.runtime !== 'ready' || !accountLoaded || account.signedIn || account.offline) return
     let active = true
     let inFlight = false
     const poll = () => {
@@ -1734,7 +1737,7 @@ export function useWorkspace() {
     return task
   }, [])
   useEffect(() => {
-    if (info.runtime !== 'ready' || !account.signedIn) {
+    if (info.runtime !== 'ready' || !account.signedIn || account.offline) {
       if (!account.signedIn) {
         limitsSeqRef.current++
         setPrimeLimits(null)
@@ -1747,12 +1750,18 @@ export function useWorkspace() {
       void refreshPrimeLimits(false)
     }, 60000)
     return () => clearInterval(timer)
-  }, [info.runtime, account.signedIn, refreshPrimeLimits])
+  }, [info.runtime, account.signedIn, account.offline, refreshPrimeLimits])
   const logoutAccount = useCallback(async () => {
     const next = await window.prime.account('logout')
     limitsSeqRef.current++
     setAccount(next)
     setPrimeLimits(null)
+    setAccountLoaded(true)
+    return next
+  }, [])
+  const enterOfflineMode = useCallback(async () => {
+    const next = await window.prime.account('offline')
+    setAccount(next)
     setAccountLoaded(true)
     return next
   }, [])
@@ -1776,7 +1785,6 @@ export function useWorkspace() {
     if (
       info.runtime !== 'ready' ||
       !accountLoaded ||
-      account.signedIn ||
       !account.networkError ||
       !account.hasStoredSession ||
       account.waiting
@@ -1787,7 +1795,7 @@ export function useWorkspace() {
       void retryAccountRestore()
     }
     window.addEventListener('online', triggerRetry)
-    const timer = setInterval(triggerRetry, 8000)
+    const timer = setInterval(triggerRetry, account.signedIn ? 30000 : 8000)
     return () => {
       window.removeEventListener('online', triggerRetry)
       clearInterval(timer)
@@ -1827,6 +1835,7 @@ export function useWorkspace() {
     refreshPrimeLimits,
     loginAccount,
     logoutAccount,
+    enterOfflineMode,
     retryAccountRestore,
     retrying: Boolean(retryNotice && retryNotice.sessionId === session?.id),
     agentContext: agentContext.context,

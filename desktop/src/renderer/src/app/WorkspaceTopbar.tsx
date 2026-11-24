@@ -143,8 +143,20 @@ export function WorkspaceTopbar({
         <button
           type="button"
           className="topbar-account"
-          title={w.account.email ? `${t('Аккаунт')}: ${w.account.email}` : t('Аккаунт')}
-          aria-label={w.account.email ? `${t('Аккаунт')}: ${w.account.email}` : t('Аккаунт')}
+          title={
+            w.account.email
+              ? `${t('Аккаунт')}: ${w.account.email}`
+              : w.account.offline
+                ? t('Оффлайн-режим')
+                : t('Аккаунт')
+          }
+          aria-label={
+            w.account.email
+              ? `${t('Аккаунт')}: ${w.account.email}`
+              : w.account.offline
+                ? t('Оффлайн-режим')
+                : t('Аккаунт')
+          }
           onClick={() =>
             window.dispatchEvent(
               new CustomEvent('prime:open-settings', { detail: { tab: 'account' } })
@@ -152,7 +164,11 @@ export function WorkspaceTopbar({
           }
         >
           <UserRound size={14} aria-hidden="true" />
-          {w.account.email && <span className="topbar-account-email">{w.account.email}</span>}
+          {(w.account.email || (!w.account.signedIn && w.account.offline)) && (
+            <span className="topbar-account-email">
+              {w.account.email || t('Оффлайн')}
+            </span>
+          )}
         </button>
       </div>
     </header>

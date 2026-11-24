@@ -147,10 +147,12 @@ func TestRestoreServerErrorAndRedirectPreserveToken(t *testing.T) {
 		defer svc.Close()
 
 		st := svc.Restore(context.Background())
-		require.False(t, st.SignedIn)
+		require.True(t, st.SignedIn)
+		require.True(t, st.Offline)
 		require.True(t, st.HasStoredSession)
 		require.True(t, st.NetworkError)
 		require.NotEmpty(t, st.Error)
+		require.Equal(t, "tok_keep_503", svc.Token())
 
 		got, err := loadToken(path)
 		require.NoError(t, err)
@@ -172,9 +174,11 @@ func TestRestoreServerErrorAndRedirectPreserveToken(t *testing.T) {
 		defer svc.Close()
 
 		st := svc.Restore(context.Background())
-		require.False(t, st.SignedIn)
+		require.True(t, st.SignedIn)
+		require.True(t, st.Offline)
 		require.True(t, st.HasStoredSession)
 		require.True(t, st.NetworkError)
+		require.Equal(t, "tok_keep_redirect", svc.Token())
 
 		got, err := loadToken(path)
 		require.NoError(t, err)
@@ -195,9 +199,11 @@ func TestRestoreServerErrorAndRedirectPreserveToken(t *testing.T) {
 		defer svc.Close()
 
 		st := svc.Restore(context.Background())
-		require.False(t, st.SignedIn)
+		require.True(t, st.SignedIn)
+		require.True(t, st.Offline)
 		require.True(t, st.HasStoredSession)
 		require.True(t, st.NetworkError)
+		require.Equal(t, "tok_keep_offline", svc.Token())
 
 		got, err := loadToken(path)
 		require.NoError(t, err)
@@ -614,6 +620,8 @@ func TestRestoreClearsStaleErrorWhileChecking(t *testing.T) {
 	defer svc.Close()
 
 	first := svc.Restore(context.Background())
+	require.True(t, first.SignedIn)
+	require.True(t, first.Offline)
 	require.True(t, first.NetworkError)
 	require.NotEmpty(t, first.Error)
 
@@ -632,5 +640,31 @@ func TestRestoreClearsStaleErrorWhileChecking(t *testing.T) {
 	close(releaseSecond)
 	final := <-done
 	require.True(t, final.SignedIn)
+	require.False(t, final.Offline)
 	require.Equal(t, "fresh@example.com", final.Email)
+}
+
+func TestEnableOfflineModePersistsWithoutToken(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "prime-account.bin")
+	svc := NewService(WithStoragePath(path))
+	defer svc.Close()
+
+	st := svc.EnableOfflineMode(context.Background())
+	require.False(t, st.SignedIn)
+	require.True(t, st.Offline)
+	require.True(t, st.CanAccessWorkspace())
+	require.Empty(t, st.Error)
+
+	svcReloaded := NewService(WithStoragePath(path))
+	defer svcReloaded.Close()
+
+	restored := svcReloaded.Restore(context.Background())
+	require.False(t, restored.SignedIn)
+	require.True(t, restored.Offline)
+	require.True(t, restored.CanAccessWorkspace())
+
+	svcReloaded.CancelOrLogout(context.Background())
+	require.False(t, svcReloaded.State(context.Background()).Offline)
 }

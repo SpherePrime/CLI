@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertCircle, Check, Copy, ExternalLink, RefreshCw, X } from 'lucide-react'
+import { AlertCircle, Check, Copy, ExternalLink, RefreshCw, WifiOff, X } from 'lucide-react'
 import type { AccountState } from '../../../../shared/contracts'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { useI18n } from '../../i18n'
@@ -9,6 +9,7 @@ export type AuthGateProps = {
   onLogin: () => Promise<unknown> | void
   onCancelLogin: () => Promise<unknown> | void
   onRetryRestore: () => Promise<unknown> | void
+  onContinueOffline?: () => Promise<unknown> | void
 }
 
 type StepState = 'done' | 'active' | 'error' | 'pending'
@@ -36,7 +37,13 @@ function GoogleMark() {
   )
 }
 
-export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: AuthGateProps) {
+export function AuthGate({
+  account,
+  onLogin,
+  onCancelLogin,
+  onRetryRestore,
+  onContinueOffline
+}: AuthGateProps) {
   const { t } = useI18n()
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle')
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -265,23 +272,47 @@ export function AuthGate({ account, onLogin, onCancelLogin, onRetryRestore }: Au
                   <GoogleMark />
                   <span>{t('Войти заново')}</span>
                 </button>
+                {onContinueOffline && (
+                  <button
+                    type="button"
+                    className="auth-gate-secondary auth-gate-secondary-full"
+                    disabled={account.checking}
+                    onClick={() => void onContinueOffline()}
+                  >
+                    <WifiOff size={15} aria-hidden="true" />
+                    <span>{t('Продолжить оффлайн')}</span>
+                  </button>
+                )}
               </>
             ) : (
-              <button
-                type="button"
-                className="primary auth-gate-primary"
-                disabled={account.checking}
-                onClick={() => void onLogin()}
-              >
-                {account.checking ? (
-                  <RefreshCw size={16} className="spin" aria-hidden="true" />
-                ) : (
-                  <GoogleMark />
+              <>
+                <button
+                  type="button"
+                  className="primary auth-gate-primary"
+                  disabled={account.checking}
+                  onClick={() => void onLogin()}
+                >
+                  {account.checking ? (
+                    <RefreshCw size={16} className="spin" aria-hidden="true" />
+                  ) : (
+                    <GoogleMark />
+                  )}
+                  <span>
+                    {account.checking ? t('Проверяем сессию…') : t('Войти через Google')}
+                  </span>
+                </button>
+                {onContinueOffline && (
+                  <button
+                    type="button"
+                    className="auth-gate-secondary auth-gate-secondary-full"
+                    disabled={account.checking}
+                    onClick={() => void onContinueOffline()}
+                  >
+                    <WifiOff size={15} aria-hidden="true" />
+                    <span>{t('Продолжить оффлайн')}</span>
+                  </button>
                 )}
-                <span>
-                  {account.checking ? t('Проверяем сессию…') : t('Войти через Google')}
-                </span>
-              </button>
+              </>
             )}
           </div>
 

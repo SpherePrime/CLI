@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/app"
 	"github.com/SpherePrime/CLI/internal/client"
 	"github.com/SpherePrime/CLI/internal/config"
@@ -59,6 +60,7 @@ func init() {
 	rootCmd.Flags().BoolP("help", "h", false, "Help")
 	rootCmd.Flags().BoolP("yolo", "y", false, "Automatically accept all permissions (dangerous mode)")
 	rootCmd.Flags().Bool("auto", false, "Start immediately in YOLO mode (alias for --yolo with no extra confirmation)")
+	rootCmd.PersistentFlags().Bool("offline", false, "Work offline without requiring internet or Prime account sign-in")
 	rootCmd.PersistentFlags().Bool("gamedev", false, "Enable GameDev mode requiring automated playthrough test bots for game tasks")
 	rootCmd.PersistentFlags().StringSlice("channels", nil, "MCP servers to enable as channels (repeatable), e.g. --channels server:webhook")
 	_ = rootCmd.PersistentFlags().MarkHidden("channels")
@@ -138,7 +140,12 @@ prime --continue
 		event.AppInitialized()
 
 		com := common.DefaultCommon(ws)
-		model := ui.New(com, sessionID, continueLast)
+		offlineMode, _ := cmd.Flags().GetBool("offline")
+		acctSvc := account.NewService()
+		if offlineMode {
+			acctSvc.EnableOfflineMode(cmd.Context())
+		}
+		model := ui.NewWithAccountService(com, sessionID, continueLast, acctSvc)
 		defer model.CloseAccountService()
 
 		inputFilter := ui.NewFilter()

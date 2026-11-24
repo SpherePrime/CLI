@@ -25,7 +25,7 @@ function makeAccount(overrides: Partial<AccountState> = {}): AccountState {
   }
 }
 
-function renderGate(account: AccountState, language: 'ru' | 'en' = 'ru') {
+function renderGate(account: AccountState, language: 'ru' | 'en' = 'ru', withOffline = true) {
   return renderToStaticMarkup(
     <I18nProvider language={language}>
       <AuthGate
@@ -33,6 +33,7 @@ function renderGate(account: AccountState, language: 'ru' | 'en' = 'ru') {
         onLogin={() => {}}
         onCancelLogin={() => {}}
         onRetryRestore={() => {}}
+        onContinueOffline={withOffline ? () => {} : undefined}
       />
     </I18nProvider>
   )
@@ -82,7 +83,7 @@ function makeLimits(overrides: Partial<PrimeAILimits> = {}): PrimeAILimits {
 }
 
 describe('auth gate and account UI', () => {
-  it('renders mandatory signed-out gate with 3-step rail and no skip button', () => {
+  it('renders signed-out gate with 3-step rail and offline continue button', () => {
     const markup = renderGate(makeAccount())
     expect(markup).toContain('PRIME ACCOUNT')
     expect(markup).toContain('Один аккаунт Prime.')
@@ -92,9 +93,23 @@ describe('auth gate and account UI', () => {
     expect(markup).toContain('Сессия активна')
     expect(markup).toContain('Войдите, чтобы начать')
     expect(markup).toContain('Войти через Google')
+    expect(markup).toContain('Продолжить оффлайн')
     expect(markup).toContain('role="status"')
-    expect(markup).not.toContain('Пропустить')
-    expect(markup).not.toContain('Skip')
+  })
+
+  it('renders offline guest AccountCard and session-preserved offline badge', () => {
+    const guestCard = renderAccountCard(
+      makeAccount({ signedIn: false, offline: true, hasStoredSession: false })
+    )
+    expect(guestCard).toContain('Оффлайн-режим')
+    expect(guestCard).toContain('Без подключения к Prime')
+    expect(guestCard).toContain('Войти в аккаунт Prime')
+
+    const preservedCard = renderAccountCard(
+      makeAccount({ signedIn: true, offline: true, email: 'user@sphereprime.ru', hasStoredSession: true })
+    )
+    expect(preservedCard).toContain('user@sphereprime.ru')
+    expect(preservedCard).toContain('Оффлайн · сессия сохранена')
   })
 
   it('disables sign-in while checking session', () => {
