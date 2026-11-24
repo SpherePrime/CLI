@@ -1,4 +1,5 @@
 import type { Message } from './contracts'
+import { isBuiltinSkillReadTool } from './builtinSkillTool'
 
 type MessagePart = Message['parts'][number]
 type Part = MessagePart
@@ -29,10 +30,11 @@ function isFailedAgentLaunch(part: MessagePart, result: any): boolean {
 export const hiddenToolNames = new Set(['search_instructions', 'read_instruction', 'todos'])
 
 function hiddenPart(part: Part) {
-  return (
-    (part.type === 'tool_call' || part.type === 'tool_result') &&
-    hiddenToolNames.has(String(part.data?.name || ''))
-  )
+  if (part.type !== 'tool_call' && part.type !== 'tool_result') return false
+  const name = String(part.data?.name || '')
+  if (hiddenToolNames.has(name)) return true
+  if (part.type === 'tool_call' && isBuiltinSkillReadTool(name, part.data?.input)) return true
+  return false
 }
 
 function visiblePart(part: Part) {
@@ -67,10 +69,16 @@ export function consolidateToolMessages(messages: Message[]): Message[] {
   const displayed: Message[] = []
   for (const { message } of rows) {
     let changed = !message.parts
+    let droppedHiddenTool = false
     const parts: Part[] = []
     for (const part of message.parts || []) {
-      if (consumed.has(part) || hiddenPart(part)) {
+      if (consumed.has(part)) {
         changed = true
+        continue
+      }
+      if (hiddenPart(part)) {
+        changed = true
+        droppedHiddenTool = true
         continue
       }
       if (results.has(part)) {
@@ -90,9 +98,16 @@ export function consolidateToolMessages(messages: Message[]): Message[] {
       }
       parts.push(part)
     }
+    const onlyNonErrorFinish =
+      parts.length > 0 &&
+      parts.every(
+        (part) => part.type === 'finish' && !['error', 'canceled'].includes(part.data?.reason)
+      )
     const keepEmpty =
       Boolean(message.is_summary_message) ||
-      (message.role === 'assistant' && parts.some((part) => part.type === 'finish'))
+      (message.role === 'assistant' &&
+        parts.some((part) => part.type === 'finish') &&
+        !(droppedHiddenTool && onlyNonErrorFinish))
     if (!keepEmpty && !parts.some(visiblePart)) continue
     displayed.push(changed ? { ...message, parts } : message)
   }

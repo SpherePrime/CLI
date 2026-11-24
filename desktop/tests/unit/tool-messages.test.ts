@@ -45,4 +45,79 @@ describe('consolidateToolMessages', () => {
     ])
     expect(shown.map((item) => item.id)).toEqual(['u1', 'a-empty-finished'])
   })
+
+  it('hides builtin Prime skill reads in chat while keeping user skills and project files visible', () => {
+    const shown = consolidateToolMessages([
+      message('u1', 'user', [{ type: 'text', data: { text: 'Make a game UI' } }]),
+      message('a-builtin-only', 'assistant', [
+        {
+          type: 'tool_call',
+          data: {
+            id: 'call-1',
+            name: 'view',
+            input: JSON.stringify({ file_path: 'prime://skills/prime-designer/SKILL.md' })
+          }
+        },
+        {
+          type: 'tool_call',
+          data: {
+            id: 'call-2',
+            name: 'view',
+            input: '{"file_path":"C:\\\\Users\\\\me\\\\AppData\\\\Local\\\\prime\\\\builtin-skills\\\\prime-gamedev\\\\SKILL.md"}'
+          }
+        },
+        {
+          type: 'tool_call',
+          data: {
+            id: 'call-streaming',
+            name: 'view',
+            input: '{"file_path":"prime://skills/prime-config/SKILL'
+          }
+        },
+        { type: 'finish', data: { reason: 'tool_use' } }
+      ]),
+      message('t-builtin-only', 'tool', [
+        { type: 'tool_result', data: { tool_call_id: 'call-1', name: 'view', content: 'designer docs' } },
+        { type: 'tool_result', data: { tool_call_id: 'call-2', name: 'view', content: 'gamedev docs' } }
+      ]),
+      message('a-mixed', 'assistant', [
+        {
+          type: 'tool_call',
+          data: {
+            id: 'call-3',
+            name: 'view',
+            input: { file_path: 'prime://skills/prime-designer/references/quality-gate.md' }
+          }
+        },
+        {
+          type: 'tool_call',
+          data: {
+            id: 'call-4',
+            name: 'view',
+            input: JSON.stringify({
+              file_path: 'C:\\Users\\me\\.config\\prime\\skills\\superpowers\\brainstorming\\SKILL.md'
+            })
+          }
+        },
+        {
+          type: 'tool_call',
+          data: {
+            id: 'call-5',
+            name: 'view',
+            input: JSON.stringify({ file_path: 'src/App.tsx' })
+          }
+        },
+        { type: 'finish', data: { reason: 'tool_use' } }
+      ]),
+      message('t-mixed', 'tool', [
+        { type: 'tool_result', data: { tool_call_id: 'call-3', name: 'view', content: 'builtin ref' } },
+        { type: 'tool_result', data: { tool_call_id: 'call-4', name: 'view', content: 'user skill' } },
+        { type: 'tool_result', data: { tool_call_id: 'call-5', name: 'view', content: 'app code' } }
+      ])
+    ])
+
+    expect(shown.map((item) => item.id)).toEqual(['u1', 'a-mixed'])
+    const mixedCalls = shown[1].parts.filter((part) => part.type === 'tool_call')
+    expect(mixedCalls.map((part) => part.data.id)).toEqual(['call-4', 'call-5'])
+  })
 })
