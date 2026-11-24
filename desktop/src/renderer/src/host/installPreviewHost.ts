@@ -1089,7 +1089,37 @@ export function installPreviewHost() {
       }
       if (operation === 'mcp') return config.mcp
       if (operation === 'lsp') return config.lsp
-      if (operation === 'skills') return [{ name: 'prime-designer', description: 'UI craft guidelines', enabled: true }]
+      if (operation === 'skills')
+        return [
+          {
+            id: 'prime://skills/prime-config/SKILL.md',
+            name: 'prime-config',
+            description: 'Builtin Prime configuration helper',
+            label: 'system:prime-config',
+            source: 'system'
+          },
+          {
+            id: 'prime://skills/prime-designer/SKILL.md',
+            name: 'prime-designer',
+            description: 'UI craft guidelines',
+            label: 'system:prime-designer',
+            source: 'system'
+          },
+          {
+            id: 'prime://skills/prime-gamedev/SKILL.md',
+            name: 'prime-gamedev',
+            description: 'Builtin GameDev QA',
+            label: 'system:prime-gamedev',
+            source: 'system'
+          },
+          {
+            id: 'C:/Users/preview/.config/prime/skills/custom-workflow/SKILL.md',
+            name: 'custom-workflow',
+            description: 'Пользовательский навык для релиза проекта.',
+            label: 'user:custom-workflow',
+            source: 'user'
+          }
+        ]
       if (operation === 'commands') return []
       if (operation === 'jobs') return jobs
       if (operation === 'queue') return []

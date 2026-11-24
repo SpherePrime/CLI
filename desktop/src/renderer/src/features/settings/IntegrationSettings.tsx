@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n'
 import type { Workspace } from '../../app/useWorkspace'
 import { IntegrationTools } from './IntegrationTools'
 import { SkillInstructions } from './SkillInstructions'
+import { filterVisibleSettingsSkills } from './skillsFilter'
 
 const segment = (value: string) => value.replace(/[\\.:*?#[\]]/g, '\\$&')
 
@@ -33,15 +34,7 @@ export function IntegrationSettings({
   const runtime = w.resources[kind] || {}
   const entries =
     kind === 'skills'
-      ? [
-          ...(Array.isArray(runtime) ? runtime : []),
-          ...(w.config.options?.disabled_skills || [])
-            .filter(
-              (name: string) =>
-                !(Array.isArray(runtime) ? runtime : []).some((item: any) => item.name === name)
-            )
-            .map((name: string) => ({ name }))
-        ]
+      ? filterVisibleSettingsSkills(runtime, w.config.options?.disabled_skills || [])
       : Object.entries({ ...configured, ...runtime }).map(([name, value]: [string, any]) => ({
           ...value,
           name

@@ -425,6 +425,10 @@ impl Engine {
         Ok(())
     }
 
+    pub fn has_subscription(&self, workspace: &str) -> bool {
+        self.subscriptions.lock().unwrap().contains_key(workspace)
+    }
+
     pub fn unsubscribe(&self, workspace: &str) {
         if let Some(id) = self.subscriptions.lock().unwrap().remove(workspace) {
             unsafe {

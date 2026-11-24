@@ -52,6 +52,66 @@ pub fn sessions(state: &AppState, path: &str) -> HostResult<Value> {
     Ok(result)
 }
 
+fn normalize_project_path(path: &str) -> String {
+    let trimmed = path.trim();
+    if trimmed.starts_with("prime-ssh://") {
+        return trimmed.trim_end_matches('/').to_owned();
+    }
+    let stripped = trimmed.strip_prefix(r"\\?\").unwrap_or(trimmed);
+    let mut normalized = stripped.replace('\\', "/");
+    while normalized.len() > 1 && normalized.ends_with('/') {
+        if normalized.len() == 3 && normalized.as_bytes()[1] == b':' {
+            break;
+        }
+        normalized.pop();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        normalized.to_lowercase()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        normalized
+    }
+}
+
+fn same_project_path(left: &str, right: &str) -> bool {
+    normalize_project_path(left) == normalize_project_path(right)
+}
+
+fn evict_stale_project(state: &AppState, engine: &crate::engine::Engine, project: &Value) {
+    let id = project["id"].as_str().unwrap_or("");
+    let client = project["clientId"].as_str().unwrap_or("");
+    if !id.is_empty() {
+        engine.unsubscribe(id);
+        state.projects.lock().unwrap().remove(id);
+    }
+    if !client.is_empty() {
+        let _ = engine.request("DELETE", &format!("/v1/clients/{client}"), None);
+    }
+}
+
+fn find_live_cached_project(
+    state: &AppState,
+    engine: &crate::engine::Engine,
+    path: &str,
+    require_subscription: bool,
+) -> Option<Value> {
+    let existing = find_project(state, path)?;
+    let id = existing["id"].as_str().unwrap_or("");
+    let subscribed = !require_subscription || engine.has_subscription(id);
+    let alive = !id.is_empty()
+        && subscribed
+        && engine
+            .request("GET", &format!("/v1/workspaces/{id}"), None)
+            .is_ok();
+    if alive {
+        return Some(existing);
+    }
+    evict_stale_project(state, engine, &existing);
+    None
+}
+
 pub fn open(
     app: &tauri::AppHandle,
     state: &AppState,
@@ -67,19 +127,12 @@ pub fn open(
         ));
     }
     let path = path.to_string_lossy().into_owned();
-    if let Some(project) = state
-        .projects
-        .lock()
-        .unwrap()
-        .values()
-        .find(|project| project["path"] == path)
-        .cloned()
-    {
+    let engine = state.require_engine()?;
+    if let Some(project) = find_live_cached_project(state, &engine, &path, true) {
         return Ok(project);
     }
     let client = uuid::Uuid::new_v4().to_string();
     let data_directory = data_directory(state, &path)?;
-    let engine = state.require_engine()?;
     let workspace = engine.request(
         "POST",
         "/v1/workspaces",
@@ -104,7 +157,7 @@ pub fn open(
         .as_array()
         .cloned()
         .unwrap_or_default();
-    recent.retain(|item| item.as_str() != Some(&path));
+    recent.retain(|item| !item.as_str().is_some_and(|value| same_project_path(value, &path)));
     if kind == "project" {
         recent.insert(0, json!(path));
         recent.truncate(64);
@@ -119,6 +172,7 @@ pub fn open(
 }
 
 pub fn close(app: &tauri::AppHandle, state: &AppState, id: &str) -> HostResult<Value> {
+    let _opening = state.project_open.lock().unwrap();
     state.root(id)?;
     state.windows.forget(app, id);
     state.remotes.terminals.close_workspace(id);
@@ -144,11 +198,26 @@ pub fn close(app: &tauri::AppHandle, state: &AppState, id: &str) -> HostResult<V
 fn remove_path(values: &[Value], path: &str) -> Vec<Value> {
     values
         .iter()
-        .filter(|value| value.as_str() != Some(path))
+        .filter(|value| !value.as_str().is_some_and(|entry| same_project_path(entry, path)))
         .cloned()
         .collect()
 }
 
+fn without_matching_keys(values: &Value, path: &str, extra_key: &str) -> Option<Value> {
+    let entries = values.as_object()?;
+    let mut cleared = serde_json::Map::new();
+    for key in entries.keys() {
+        if same_project_path(key, path) || (!extra_key.is_empty() && key == extra_key) {
+            cleared.insert(key.clone(), Value::Null);
+        }
+    }
+    if cleared.is_empty() {
+        return None;
+    }
+    Some(Value::Object(cleared))
+}
+
+#[cfg(test)]
 fn without_key(values: &Value, key: &str) -> Option<Value> {
     let entries = values.as_object()?;
     if !entries.contains_key(key) {
@@ -170,32 +239,50 @@ fn delete_project_data(
     path: &str,
     app: Option<&tauri::AppHandle>,
 ) -> HostResult<Value> {
+    let _opening = state.project_open.lock().unwrap();
     let project = find_project(state, path);
     let mut warnings = Vec::new();
-    if let Some(project) = project.as_ref() {
-        detach_project(state, app, project, &mut warnings);
-    }
     if let Err(error) = delete_project_chats(state, path, project.as_ref()) {
         warnings.push(error);
     }
-    if let Some(id) = project
-        .as_ref()
-        .and_then(|project| project["id"].as_str())
-        .map(str::to_owned)
-    {
-        state.projects.lock().unwrap().remove(&id);
+    if let Some(project) = project.as_ref() {
+        detach_project(state, app, project, &mut warnings);
     }
+    state.projects.lock().unwrap().retain(|id, entry| {
+        let same_id = project
+            .as_ref()
+            .and_then(|item| item["id"].as_str())
+            .is_some_and(|target_id| id == target_id);
+        let same_path = entry["path"]
+            .as_str()
+            .is_some_and(|entry_path| same_project_path(entry_path, path));
+        !same_id && !same_path
+    });
     clear_project_preferences(state, path, project.as_ref())?;
     Ok(json!({"warnings": warnings}))
 }
 
 fn find_project(state: &AppState, path: &str) -> Option<Value> {
+    let canonical = if path.starts_with("prime-ssh://") {
+        None
+    } else {
+        dunce::canonicalize(path)
+            .ok()
+            .map(|p| p.to_string_lossy().into_owned())
+    };
     state
         .projects
         .lock()
         .unwrap()
         .values()
-        .find(|project| project["path"].as_str() == Some(path))
+        .find(|project| {
+            project["path"].as_str().is_some_and(|entry_path| {
+                same_project_path(entry_path, path)
+                    || canonical
+                        .as_deref()
+                        .is_some_and(|canon| same_project_path(entry_path, canon))
+            })
+        })
         .cloned()
 }
 
@@ -234,50 +321,76 @@ fn delete_project_chats(
     project: Option<&Value>,
 ) -> Result<(), String> {
     let engine = state.require_engine().map_err(|error| error.message)?;
-    let local_path = local_project_path(state, path).map_err(|error| error.message)?;
-    let data_directory = data_directory(state, &local_path).map_err(|error| error.message)?;
     let open_workspace = project
         .and_then(|project| project["id"].as_str())
         .filter(|id| !id.is_empty());
-    let client = match open_workspace {
-        Some(_) => project
-            .and_then(|project| project["clientId"].as_str())
-            .unwrap_or_default()
-            .to_owned(),
-        None => uuid::Uuid::new_v4().to_string(),
-    };
-    let workspace = match open_workspace {
-        Some(id) => json!({"id": id}),
-        None => engine
-            .request(
-                "POST",
-                "/v1/workspaces",
-                Some(workspace_request(&local_path, &client, data_directory, "project")),
-            )
-            .map_err(|error| error.message)?,
-    };
-    let workspace_id = workspace["id"]
-        .as_str()
-        .ok_or_else(|| "Workspace response has no id".to_owned())?
-        .to_owned();
-    let sessions = engine
-        .request("GET", &format!("/v1/workspaces/{workspace_id}/sessions"), None)
-        .map_err(|error| error.message)?;
+    let open_client = project
+        .and_then(|project| project["clientId"].as_str())
+        .filter(|id| !id.is_empty());
     let mut failures = Vec::new();
-    for session in sessions.as_array().map(Vec::as_slice).unwrap_or(&[]) {
-        let Some(session_id) = session["id"].as_str() else {
-            continue;
-        };
-        if let Err(error) = engine.request(
-            "DELETE",
-            &format!("/v1/workspaces/{workspace_id}/sessions/{session_id}"),
-            None,
-        ) {
+
+    let (workspace_id, temp_client) = match open_workspace {
+        Some(id)
+            if engine
+                .request("GET", &format!("/v1/workspaces/{id}"), None)
+                .is_ok() =>
+        {
+            (Some(id.to_owned()), None)
+        }
+        _ => match local_project_path(state, path) {
+            Ok(local_path) => {
+                let data_directory =
+                    data_directory(state, &local_path).map_err(|error| error.message)?;
+                let client = uuid::Uuid::new_v4().to_string();
+                let workspace = engine
+                    .request(
+                        "POST",
+                        "/v1/workspaces",
+                        Some(workspace_request(&local_path, &client, data_directory, "project")),
+                    )
+                    .map_err(|error| error.message)?;
+                let id = workspace["id"]
+                    .as_str()
+                    .ok_or_else(|| "Workspace response has no id".to_owned())?
+                    .to_owned();
+                (Some(id), Some(client))
+            }
+            Err(error) => {
+                failures.push(error.message);
+                (None, None)
+            }
+        },
+    };
+
+    if let Some(workspace_id) = workspace_id {
+        match engine.request("GET", &format!("/v1/workspaces/{workspace_id}/sessions"), None) {
+            Ok(sessions) => {
+                for session in sessions.as_array().map(Vec::as_slice).unwrap_or(&[]) {
+                    let Some(session_id) = session["id"].as_str() else {
+                        continue;
+                    };
+                    if let Err(error) = engine.request(
+                        "DELETE",
+                        &format!("/v1/workspaces/{workspace_id}/sessions/{session_id}"),
+                        None,
+                    ) {
+                        failures.push(error.message);
+                    }
+                }
+            }
+            Err(error) => failures.push(error.message),
+        }
+    }
+
+    if let Some(client) = temp_client {
+        if let Err(error) = engine.request("DELETE", &format!("/v1/clients/{client}"), None) {
             failures.push(error.message);
         }
     }
-    if let Err(error) = engine.request("DELETE", &format!("/v1/clients/{client}"), None) {
-        failures.push(error.message);
+    if let Some(client) = open_client {
+        if let Err(error) = engine.request("DELETE", &format!("/v1/clients/{client}"), None) {
+            failures.push(error.message);
+        }
     }
     if failures.is_empty() {
         return Ok(());
@@ -309,24 +422,20 @@ fn clear_project_preferences(
         path,
     );
     let mut patch = json!({"recent": recent});
-    if preferences["activeProject"].as_str() == Some(path) {
+    if preferences["activeProject"]
+        .as_str()
+        .is_some_and(|active| same_project_path(active, path))
+    {
         patch["activeProject"] = json!("");
     }
-    if let Some(cleared) = without_key(&preferences["activeSessions"], path) {
+    let project_id = project
+        .and_then(|project| project["id"].as_str())
+        .unwrap_or_default();
+    if let Some(cleared) = without_matching_keys(&preferences["activeSessions"], path, "") {
         patch["activeSessions"] = cleared;
     }
-    for key in [
-        path,
-        project
-            .and_then(|project| project["id"].as_str())
-            .unwrap_or_default(),
-    ] {
-        if key.is_empty() {
-            continue;
-        }
-        if let Some(cleared) = without_key(&preferences["sessionOrder"], key) {
-            patch["sessionOrder"] = cleared;
-        }
+    if let Some(cleared) = without_matching_keys(&preferences["sessionOrder"], path, project_id) {
+        patch["sessionOrder"] = cleared;
     }
     settings.update(&patch)?;
     Ok(())
@@ -526,6 +635,61 @@ mod tests {
         for path in ["../another/config", "%2e%2e/config", "/v1/workspaces/another/config", "sessions/../../another/config"] {
             assert!(operation_target("workspace", "GET", path).is_err(), "{path}");
         }
+    }
+
+    #[test]
+    fn stale_cached_project_is_evicted_instead_of_returning_404_workspace() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = tempfile::tempdir().unwrap();
+        let Some((state, engine)) = test_state(directory.path()) else {
+            return;
+        };
+        let path = project_path(root.path());
+        let (old_id, old_client) = start_workspace(&state, &engine, &path);
+        state.projects.lock().unwrap().insert(
+            old_id.clone(),
+            json!({"id":old_id,"path":path,"clientId":old_client,"kind":"project","connection":"ready","channels":[]}),
+        );
+        engine
+            .request("DELETE", &format!("/v1/clients/{old_client}"), None)
+            .unwrap();
+        assert!(
+            find_live_cached_project(&state, &engine, &path, false).is_none(),
+            "retired workspace must be evicted from state.projects"
+        );
+        assert!(state.projects.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn deleting_open_project_and_recreating_same_path_opens_clean_workspace() {
+        let directory = tempfile::tempdir().unwrap();
+        let parent = tempfile::tempdir().unwrap();
+        let project_dir = parent.path().join("same-name-game");
+        std::fs::create_dir_all(&project_dir).unwrap();
+        let Some((state, engine)) = test_state(directory.path()) else {
+            return;
+        };
+        let path = project_path(&project_dir);
+        let (old_id, old_client) = start_workspace(&state, &engine, &path);
+        state.projects.lock().unwrap().insert(
+            old_id.clone(),
+            json!({"id":old_id,"path":path,"clientId":old_client,"kind":"project","connection":"ready","channels":[]}),
+        );
+        std::fs::remove_dir_all(&project_dir).unwrap();
+        delete_project_data(&state, &path, None).unwrap();
+        assert!(state.projects.lock().unwrap().is_empty());
+
+        std::fs::create_dir_all(&project_dir).unwrap();
+        let recreated_path = project_path(&project_dir);
+        let (new_id, new_client) = start_workspace(&state, &engine, &recreated_path);
+        assert_ne!(old_id, new_id);
+        let sessions = engine
+            .request("GET", &format!("/v1/workspaces/{new_id}/sessions"), None)
+            .unwrap();
+        assert_eq!(sessions.as_array().map(Vec::len).unwrap_or(0), 1);
+        engine
+            .request("DELETE", &format!("/v1/clients/{new_client}"), None)
+            .unwrap();
     }
 }
 

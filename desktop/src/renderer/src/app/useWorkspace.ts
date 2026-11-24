@@ -856,11 +856,17 @@ export function useWorkspace() {
       const result = (await window.prime.deleteProject(path)) as unknown as {
         warnings?: string[]
       } | null
-      const saved = await window.prime.preferences()
+      const [saved, liveProjects] = await Promise.all([
+        window.prime.preferences(),
+        window.prime.projects().catch(() => null)
+      ])
       setPreferences(saved)
-      const remaining = projects.filter((item) => item.path !== path)
+      const normalizedTarget = path.replace(/\\/g, '/').toLowerCase()
+      const matchesDeleted = (value?: string) =>
+        Boolean(value) && value!.replace(/\\/g, '/').toLowerCase() === normalizedTarget
+      const remaining = (liveProjects ?? projects).filter((item) => !matchesDeleted(item.path))
       setProjects(remaining)
-      if (current.current.project?.path === path) {
+      if (matchesDeleted(current.current.project?.path)) {
         current.current = { project: null, session: null }
         setProject(null)
         setSession(null)
