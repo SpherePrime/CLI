@@ -5,7 +5,79 @@ import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseFlagArgs } from './lib/args.mjs'
 
-const VALID_SCOPES = new Set(['engine', 'game', 'element'])
+const SCOPE_TO_FOLDER = {
+  feature: 'features',
+  physics: 'physics',
+  engine: 'engines',
+  element: 'elements',
+  game: 'games'
+}
+
+const VALID_SCOPES = new Set(Object.keys(SCOPE_TO_FOLDER))
+
+function getBuiltinPresets() {
+  const presetsDir = join(dirname(fileURLToPath(import.meta.url)), 'presets')
+  const definitions = [
+    {
+      id: 'preset:physics:teleport-collision-probe',
+      scope: 'physics',
+      category: 'collisions',
+      physics: 'collisions',
+      feature: 'teleport-inspection',
+      tags: ['teleport', 'collision', 'floor', 'textures', 'structures', 'clipping', 'visual'],
+      fileName: 'teleport_collision_probe.mjs',
+      summary:
+        'Fast teleport + local collision & visual probe: teleports bot to structures/items/corners, probes floor fall-throughs and clipping, frames visuals for inspection.'
+    },
+    {
+      id: 'preset:feature:weapon-crosshair-probe',
+      scope: 'feature',
+      category: 'weapons-crosshair',
+      feature: 'weapons',
+      physics: 'raycast',
+      tags: ['weapon', 'crosshair', 'reticle', 'aim', 'shoot', 'ammo', 'reload', 'combat'],
+      fileName: 'weapon_crosshair_probe.mjs',
+      summary:
+        'Verifies mandatory weapon crosshair visibility/placement, firing, ammo consumption, reload loop, and captures close-ups.'
+    },
+    {
+      id: 'preset:physics:physics-bounds-probe',
+      scope: 'physics',
+      category: 'bounds-movement',
+      physics: 'movement',
+      feature: 'controls',
+      tags: ['physics', 'movement', 'diagonal', 'bounds', 'gravity', 'timestep', 'nan'],
+      fileName: 'physics_bounds_probe.mjs',
+      summary:
+        'Checks normalized diagonal movement speed, map bounds, jump/gravity stability, and zero NaN/Infinity coordinates.'
+    },
+    {
+      id: 'preset:feature:balance-and-state-probe',
+      scope: 'feature',
+      category: 'balance-state',
+      feature: 'balance',
+      tags: ['balance', 'difficulty', 'pause', 'restart', 'state-reset', 'hp', 'fps', 'menu'],
+      fileName: 'balance_and_state_probe.mjs',
+      summary:
+        'Verifies Menu -> Gameplay -> Pause -> Restart state lifecycle, full score/state reset, and records difficulty/FPS samples.'
+    }
+  ]
+
+  return definitions
+    .map((item) => {
+      const absolutePath = join(presetsDir, item.fileName)
+      if (!existsSync(absolutePath)) {
+        return null
+      }
+      return {
+        ...item,
+        source: 'builtin-preset',
+        relativePath: `presets/${item.fileName}`,
+        absolutePath
+      }
+    })
+    .filter(Boolean)
+}
 
 function slugify(value) {
   return String(value || '')
@@ -40,12 +112,12 @@ export function resolveLibraryRoot(explicitRoot) {
 }
 
 export function ensureLibraryInitialized(libraryRoot) {
-  mkdirSync(join(libraryRoot, 'engines'), { recursive: true })
-  mkdirSync(join(libraryRoot, 'games'), { recursive: true })
-  mkdirSync(join(libraryRoot, 'elements'), { recursive: true })
+  for (const folder of Object.values(SCOPE_TO_FOLDER)) {
+    mkdirSync(join(libraryRoot, folder), { recursive: true })
+  }
   const indexPath = join(libraryRoot, 'index.json')
   if (!existsSync(indexPath)) {
-    writeFileSync(indexPath, JSON.stringify({ version: 1, entries: [] }, null, 2))
+    writeFileSync(indexPath, JSON.stringify({ version: 2, entries: [] }, null, 2))
   }
   return indexPath
 }
@@ -59,7 +131,7 @@ export function readLibraryIndex(libraryRoot) {
     }
   } catch {
   }
-  return { version: 1, entries: [] }
+  return { version: 2, entries: [] }
 }
 
 function writeLibraryIndex(libraryRoot, data) {
@@ -70,6 +142,8 @@ function writeLibraryIndex(libraryRoot, data) {
 
 function scoreEntry(entry, criteria) {
   let score = 0
+  const feature = slugify(criteria.feature)
+  const physics = slugify(criteria.physics)
   const game = slugify(criteria.game)
   const engine = slugify(criteria.engine)
   const scope = slugify(criteria.scope)
@@ -82,19 +156,33 @@ function scoreEntry(entry, criteria) {
   if (scope && entry.scope !== scope) {
     return -1
   }
+  if (feature) {
+    if (entry.feature === feature || entry.category === feature) {
+      score += 110
+    } else if (Array.isArray(entry.tags) && entry.tags.some((tag) => tag.includes(feature))) {
+      score += 60
+    }
+  }
+  if (physics) {
+    if (entry.physics === physics || entry.category === physics) {
+      score += 110
+    } else if (Array.isArray(entry.tags) && entry.tags.some((tag) => tag.includes(physics))) {
+      score += 60
+    }
+  }
   if (game && entry.gameSlug === game) {
-    score += 100
+    score += 90
   }
   if (engine && entry.engine === engine) {
     score += 60
   }
-  if (entry.scope === 'element') {
-    score += 10
-  }
   if (queryTerms.length > 0) {
     const haystack = [
       entry.id,
+      entry.scope,
       entry.category,
+      entry.feature,
+      entry.physics,
       entry.engine,
       entry.gameSlug,
       entry.summary,
@@ -104,34 +192,50 @@ function scoreEntry(entry, criteria) {
       .toLowerCase()
     for (const term of queryTerms) {
       if (haystack.includes(term)) {
-        score += 20
+        score += 25
       }
     }
+  }
+  if (score > 0 && entry.source !== 'builtin-preset') {
+    score += 5
   }
   return score
 }
 
 export function lookupLibraryEntries(libraryRoot, criteria = {}) {
   const index = readLibraryIndex(libraryRoot)
-  const limit = Math.max(1, Number(criteria.limit) || 5)
-  const hasFilters = Boolean(criteria.game || criteria.engine || criteria.scope || criteria.query)
-  const ranked = index.entries
+  const limit = Math.max(1, Number(criteria.limit) || 6)
+  const includePresets = criteria.includePresets !== false
+  const hasFilters = Boolean(
+    criteria.feature || criteria.physics || criteria.game || criteria.engine || criteria.scope || criteria.query
+  )
+
+  const userEntries = index.entries.map((entry) => ({
+    ...entry,
+    source: 'user-library',
+    absolutePath: join(libraryRoot, entry.relativePath)
+  }))
+  const presets = includePresets ? getBuiltinPresets() : []
+  const pool = [...userEntries, ...presets]
+
+  const ranked = pool
     .map((entry) => ({
       entry,
       score: hasFilters ? scoreEntry(entry, criteria) : 1
     }))
     .filter((item) => item.score > 0 || !hasFilters)
-    .sort((a, b) => b.score - a.score || String(b.entry.updatedAt).localeCompare(String(a.entry.updatedAt)))
+    .sort((a, b) => b.score - a.score || String(b.entry.updatedAt || '').localeCompare(String(a.entry.updatedAt || '')))
     .slice(0, limit)
     .map(({ entry, score }) => ({
       ...entry,
-      score,
-      absolutePath: join(libraryRoot, entry.relativePath)
+      score
     }))
 
   return {
     libraryRoot,
-    totalEntries: index.entries.length,
+    totalUserEntries: userEntries.length,
+    totalBuiltinPresets: presets.length,
+    totalEntries: userEntries.length + presets.length,
     matches: ranked
   }
 }
@@ -139,7 +243,7 @@ export function lookupLibraryEntries(libraryRoot, criteria = {}) {
 export function saveLibraryEntry(libraryRoot, options) {
   const scope = slugify(options.scope)
   if (!VALID_SCOPES.has(scope)) {
-    throw new Error('--scope must be one of: engine, game, element')
+    throw new Error('--scope must be one of: feature, physics, engine, element, game')
   }
   const sourceFile = resolve(options.file || '')
   if (!options.file || !existsSync(sourceFile)) {
@@ -147,14 +251,24 @@ export function saveLibraryEntry(libraryRoot, options) {
   }
   const rawName = options.name || basename(sourceFile)
   const safeName = rawName.replace(/[<>:"/\\|?*]+/g, '_')
+  const feature = slugify(options.feature)
+  const physics = slugify(options.physics)
   const engine = slugify(options.engine)
   const gameSlug = slugify(options.game)
-  const category = slugify(options.category || (scope === 'game' ? gameSlug : engine) || 'general')
+  const fallbackCategory =
+    scope === 'feature'
+      ? feature
+      : scope === 'physics'
+        ? physics
+        : scope === 'game'
+          ? gameSlug
+          : engine
+  const category = slugify(options.category || fallbackCategory || 'general')
   if (!category) {
-    throw new Error('--category (or --game / --engine) is required')
+    throw new Error('--category (or matching --feature / --physics / --engine / --game) is required')
   }
 
-  const folderName = scope === 'engine' ? 'engines' : scope === 'game' ? 'games' : 'elements'
+  const folderName = SCOPE_TO_FOLDER[scope]
   const relativeDir = join(folderName, category)
   const targetDir = join(libraryRoot, relativeDir)
   mkdirSync(targetDir, { recursive: true })
@@ -172,6 +286,8 @@ export function saveLibraryEntry(libraryRoot, options) {
     id,
     scope,
     category,
+    feature: feature || (scope === 'feature' ? category : undefined),
+    physics: physics || (scope === 'physics' ? category : undefined),
     engine: engine || undefined,
     gameSlug: gameSlug || undefined,
     tags,
@@ -199,8 +315,8 @@ export function saveLibraryEntry(libraryRoot, options) {
 function printUsage() {
   console.log(`Usage:
   node library.mjs init [--library <dir>]
-  node library.mjs lookup [--library <dir>] [--engine <name>] [--game <slug>] [--scope engine|game|element] [--query "<terms>"] [--limit 5]
-  node library.mjs save --scope engine|game|element --file <path> --summary "<one line>" [--category <name>] [--engine <name>] [--game <slug>] [--name <filename>] [--tags "a,b"]`)
+  node library.mjs lookup [--library <dir>] [--feature <name>] [--physics <topic>] [--engine <name>] [--game <slug>] [--scope feature|physics|engine|element|game] [--query "<terms>"] [--limit 6]
+  node library.mjs save --scope feature|physics|engine|element|game --file <path> --summary "<one line>" [--category <name>] [--feature <name>] [--physics <topic>] [--engine <name>] [--game <slug>] [--name <filename>] [--tags "a,b"]`)
 }
 
 function main() {
@@ -214,12 +330,14 @@ function main() {
 
   if (command === 'init') {
     const indexPath = ensureLibraryInitialized(libraryRoot)
-    console.log(JSON.stringify({ libraryRoot, indexPath }, null, 2))
+    console.log(JSON.stringify({ libraryRoot, indexPath, builtinPresets: getBuiltinPresets().length }, null, 2))
     return
   }
 
   if (command === 'lookup') {
     const result = lookupLibraryEntries(libraryRoot, {
+      feature: flags.feature,
+      physics: flags.physics,
       engine: flags.engine,
       game: flags.game,
       scope: flags.scope,
@@ -234,6 +352,8 @@ function main() {
     const result = saveLibraryEntry(libraryRoot, {
       scope: flags.scope,
       category: flags.category,
+      feature: flags.feature,
+      physics: flags.physics,
       engine: flags.engine,
       game: flags.game,
       file: flags.file,

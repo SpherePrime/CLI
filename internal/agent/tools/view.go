@@ -543,7 +543,7 @@ func builtinSkillDirectoryNote(location string) string {
 	note := fmt.Sprintf("\n<skill_directory>%s</skill_directory>\nRun this skill's scripts and use its assets from this directory.\n", filepath.ToSlash(directory))
 	if name == "prime-gamedev" {
 		if libDir, err := ensureGameDevLibraryDir(); err == nil {
-			note += fmt.Sprintf("<gamedev_library>%s</gamedev_library>\nQuery index.json via library.mjs lookup first to save context (never read unrelated script folders), and save new reusable scripts here sorted by engine/game/element without deleting existing ones.\n", filepath.ToSlash(libDir))
+			note += fmt.Sprintf("<gamedev_library>%s</gamedev_library>\nQuery built-in presets and index.json via library.mjs lookup by --feature, --physics, --engine, or --game first to save context (never read unrelated script folders), and save new reusable scripts here sorted by feature/physics/engine/element/game without deleting existing ones.\n", filepath.ToSlash(libDir))
 		}
 	}
 	return note
@@ -551,14 +551,14 @@ func builtinSkillDirectoryNote(location string) string {
 
 func ensureGameDevLibraryDir() (string, error) {
 	libDir := filepath.Join(config.GlobalDataDir(), "gamedev-library")
-	for _, sub := range []string{"engines", "games", "elements"} {
+	for _, sub := range []string{"features", "physics", "engines", "elements", "games"} {
 		if err := os.MkdirAll(filepath.Join(libDir, sub), 0o755); err != nil {
 			return "", err
 		}
 	}
 	indexPath := filepath.Join(libDir, "index.json")
 	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
-		if err := os.WriteFile(indexPath, []byte("{\n  \"version\": 1,\n  \"entries\": []\n}\n"), 0o644); err != nil {
+		if err := os.WriteFile(indexPath, []byte("{\n  \"version\": 2,\n  \"entries\": []\n}\n"), 0o644); err != nil {
 			return "", err
 		}
 	}
