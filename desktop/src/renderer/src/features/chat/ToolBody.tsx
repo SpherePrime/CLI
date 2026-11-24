@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronRight, Copy, FileCode, Folder, Terminal } from 'lucide-react'
+import { Check, ChevronRight, Copy, FileCode, Folder, Globe, Terminal } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { extractToolDiff, tokenizeCodeLine, type DiffBlock } from './toolDiff'
 import { parseToolOutput, splitFilePath } from './toolOutputParser'
@@ -321,6 +321,158 @@ function SearchView({
   )
 }
 
+function formatScenarioStepTarget(step: Record<string, unknown>): string {
+  const action = String(step.action || '')
+  const singleLine = (raw: unknown) =>
+    typeof raw === 'string' ? raw.replace(/\s+/g, ' ').trim() : ''
+  switch (action) {
+    case 'resize':
+      return step.width !== undefined ? `${step.width}px` : ''
+    case 'navigate':
+      return singleLine(step.url)
+    case 'wait':
+      return step.ms !== undefined ? `${step.ms} ms` : ''
+    case 'wait_for':
+      return [singleLine(step.selector), singleLine(step.text), step.gone ? 'gone' : '']
+        .filter(Boolean)
+        .join(' · ')
+    case 'click':
+    case 'hover':
+    case 'focus':
+      return (
+        singleLine(step.selector) ||
+        singleLine(step.text) ||
+        (step.x !== undefined && step.y !== undefined ? `${step.x}, ${step.y}` : '')
+      )
+    case 'type':
+      return [singleLine(step.selector), singleLine(step.text)].filter(Boolean).join(' ← ')
+    case 'select':
+      return [singleLine(step.selector), singleLine(step.option ?? step.value)]
+        .filter(Boolean)
+        .join(' = ')
+    case 'press_key':
+      return [singleLine(step.key), step.holdMs ? `${step.holdMs} ms` : '']
+        .filter(Boolean)
+        .join(' · ')
+    case 'scroll':
+      return (
+        singleLine(step.to) ||
+        (step.y !== undefined ? `${step.x ?? 0}, ${step.y}` : '')
+      )
+    case 'assert':
+      return [
+        singleLine(step.selector),
+        singleLine(step.contains ?? step.text),
+        step.absent ? 'absent' : ''
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    case 'evaluate':
+      return singleLine(step.expression)
+    case 'screenshot':
+      return [
+        singleLine(step.name),
+        singleLine(step.selector),
+        step.fullPage ? 'fullPage' : '',
+        typeof step.zoom === 'number' && step.zoom > 1 ? `zoom ${step.zoom}` : ''
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    default: {
+      const rest = Object.entries(step)
+        .filter(([key, value]) => key !== 'action' && value !== undefined && value !== null && value !== '')
+        .map(([key, value]) =>
+          `${key}=${typeof value === 'string' ? singleLine(value) : JSON.stringify(value)}`
+        )
+      return rest.join(' · ')
+    }
+  }
+}
+
+function BrowserScenarioView({
+  input,
+  parsed,
+  completed,
+  outputHidden,
+  failed,
+  t
+}: {
+  input: any
+  parsed: ReturnType<typeof parseToolOutput>
+  completed: boolean
+  outputHidden: boolean
+  failed: boolean
+  t: (text: string, values?: Record<string, string | number>) => string
+}) {
+  const steps = Array.isArray(input?.steps) ? input.steps : []
+  const extraChips: Array<{ key: string; value: string }> = []
+  if (typeof input?.tabId === 'string' && input.tabId.trim()) {
+    extraChips.push({ key: 'tabId', value: input.tabId.trim() })
+  }
+  if (typeof input?.continueOnError === 'boolean') {
+    extraChips.push({ key: 'continueOnError', value: String(input.continueOnError) })
+  }
+  const stepsJson = useMemo(() => JSON.stringify(steps, null, 2), [steps])
+
+  return (
+    <div className={`tool-frame${failed ? ' is-error' : ''}`}>
+      <div className="tool-frame-bar">
+        <div className="tool-frame-file">
+          <Globe size={12} />
+          <span className="tool-path-base">{t('Шаги выполнения')}</span>
+        </div>
+        <div className="tool-frame-actions">
+          <span className="tool-line-count">{t('Шагов: {count}', { count: steps.length })}</span>
+          {steps.length > 0 && <CopyButton value={stepsJson} label={t('Копировать')} />}
+        </div>
+      </div>
+
+      {extraChips.length > 0 && (
+        <div className="tool-param-chips">
+          {extraChips.map((chip) => (
+            <span key={chip.key} className="tool-param-chip">
+              <span className="tool-param-chip-key">{chip.key}</span>
+              <code>{chip.value}</code>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {steps.length > 0 && (
+        <div className="tool-scenario-list">
+          {steps.map((step: any, index: number) => {
+            const record = step && typeof step === 'object' ? (step as Record<string, unknown>) : {}
+            const action = String(record.action || 'step')
+            const target = formatScenarioStepTarget(record)
+            return (
+              <div key={index} className="tool-scenario-step">
+                <span className="tool-scenario-idx">{index + 1}</span>
+                <span className="tool-scenario-action">{action}</span>
+                {target && (
+                  <code className="tool-scenario-target" title={target}>
+                    {target}
+                  </code>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {completed && !outputHidden && parsed.cleanText && (
+        <div className="tool-generic-out">
+          <div className="tool-section-label">
+            <Terminal size={11} />
+            <span>{t('Вывод')}</span>
+          </div>
+          <pre className={`tool-terminal-out${failed ? ' is-error' : ''}`}>{parsed.cleanText}</pre>
+        </div>
+      )}
+      <DiagnosticsStrip diagnostics={parsed.diagnostics} summary={parsed.diagnosticSummary} t={t} />
+    </div>
+  )
+}
+
 function GenericParamsView({
   standalone,
   input,
@@ -474,6 +626,21 @@ export function ToolBody({
         parsed={parsed}
         completed={completed}
         outputHidden={outputHidden}
+        t={t}
+      />
+    )
+  } else if (
+    !standalone &&
+    (name === 'browser_run' || name.endsWith('_browser_run')) &&
+    Array.isArray(input?.steps)
+  ) {
+    bodyNode = (
+      <BrowserScenarioView
+        input={input}
+        parsed={parsed}
+        completed={completed}
+        outputHidden={outputHidden}
+        failed={failed}
         t={t}
       />
     )

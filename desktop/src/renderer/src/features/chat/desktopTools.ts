@@ -177,10 +177,21 @@ export function desktopToolTitle(tool: string, input: any, t: Translate) {
   const value = detailKeys
     .map((key) => input?.[key])
     .find((item) => typeof item === 'string' && item.trim())
-  const detail = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, 120) : ''
+  let detail = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, 120) : ''
+  if (!detail && actionKey === 'browser_run' && Array.isArray(input?.steps) && input.steps.length > 0) {
+    const firstNav = input.steps.find(
+      (step: any) => step?.action === 'navigate' && typeof step?.url === 'string' && step.url.trim()
+    )
+    const countLabel = t('Шагов: {count}', { count: input.steps.length })
+    detail = firstNav ? `${countLabel} · ${text(firstNav.url).slice(0, 80)}` : countLabel
+  }
   return {
     icon: group.icon,
     label: t(group.label),
     detail: detail ? `${action} · ${detail}` : action
   }
+}
+
+function text(value: unknown) {
+  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''
 }

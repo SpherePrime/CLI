@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { I18nProvider } from '../../src/renderer/src/i18n'
-import { ToolExecutionGroup } from '../../src/renderer/src/features/chat/ToolExecutionGroup'
+import { ToolExecutionGroup, resolveGroupOpenTransition } from '../../src/renderer/src/features/chat/ToolExecutionGroup'
 import { ToolCard } from '../../src/renderer/src/features/chat/ToolCard'
+import { ToolBody } from '../../src/renderer/src/features/chat/ToolBody'
 import { computeEditDiff, extractToolDiffStats, tokenizeCodeLine } from '../../src/renderer/src/features/chat/toolDiff'
 import { mergeConsecutiveToolMessages, partitionMessageParts } from '../../src/renderer/src/features/chat/toolGroupMerge'
 import { classifyToolCategory, parseToolOutput } from '../../src/renderer/src/features/chat/toolOutputParser'
@@ -212,5 +213,92 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
     expect(html).toContain('tool-diff-pill')
     expect(html).toContain('+2')
     expect(html).toContain('−1')
+  })
+
+  it('starts collapsed when completed and open while running, auto-collapsing on finish', () => {
+    const completedHtml = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <ToolExecutionGroup
+          messageFinished
+          parts={[
+            {
+              type: 'tool_call',
+              data: { id: 'c1', name: 'read_file', input: '{"path":"a.ts"}', result: { content: 'ok' } }
+            },
+            {
+              type: 'tool_call',
+              data: { id: 'c2', name: 'grep', input: '{"pattern":"foo"}', result: { content: 'ok' } }
+            }
+          ]}
+        />
+      </I18nProvider>
+    )
+    expect(completedHtml).not.toContain('open=""')
+
+    const runningHtml = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <ToolExecutionGroup
+          parts={[
+            {
+              type: 'tool_call',
+              data: { id: 'c1', name: 'read_file', input: '{"path":"a.ts"}', result: { content: 'ok' } }
+            },
+            {
+              type: 'tool_call',
+              data: { id: 'c2', name: 'bash', input: '{"command":"npm test"}' }
+            }
+          ]}
+        />
+      </I18nProvider>
+    )
+    expect(runningHtml).toContain('open=""')
+
+    expect(resolveGroupOpenTransition(1, 0, false)).toEqual({
+      open: false,
+      resetManualToggle: true
+    })
+    expect(resolveGroupOpenTransition(1, 0, true)).toEqual({
+      open: false,
+      resetManualToggle: true
+    })
+    expect(resolveGroupOpenTransition(0, 1, false)).toEqual({
+      open: true,
+      resetManualToggle: false
+    })
+    expect(resolveGroupOpenTransition(0, 1, true)).toBeNull()
+    expect(resolveGroupOpenTransition(0, 0, false)).toBeNull()
+  })
+
+  it('renders browser_run steps as a compact scenario list instead of raw JSON', () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <ToolBody
+          name="mcp_browser_browser_run"
+          isShell={false}
+          standalone={false}
+          input={{
+            steps: [
+              { action: 'resize', width: 1440 },
+              { action: 'navigate', url: 'http://127.0.0.1:5173' },
+              { action: 'click', selector: '.tool-exec-group-summary' },
+              { action: 'screenshot', name: 'overview', zoom: 2 }
+            ]
+          }}
+          description=""
+          command={null}
+          output="Scenario PASSED: 4 of 4 steps run."
+          outputHidden={false}
+          completed
+          interrupted={false}
+          failed={false}
+        />
+      </I18nProvider>
+    )
+    expect(html).toContain('tool-scenario-list')
+    expect(html).toContain('tool-scenario-step')
+    expect(html).toContain('Шагов: 4')
+    expect(html).toContain('1440px')
+    expect(html).toContain('http://127.0.0.1:5173')
+    expect(html).not.toContain('tool-kv-list')
   })
 })

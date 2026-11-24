@@ -1818,5 +1818,6 @@ export const english: Record<string, string> = {
   'Монитор ({kind}) · {count} мин': 'Monitor ({kind}) · {count} min',
   'Монитор ({kind})': 'Monitor ({kind})',
   '{minutes} м {seconds} с': '{minutes}m {seconds}s',
-  '{minutes} м': '{minutes}m'
+  '{minutes} м': '{minutes}m',
+  'Шагов: {count}': 'Steps: {count}'
 }

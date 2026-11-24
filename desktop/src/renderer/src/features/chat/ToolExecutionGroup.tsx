@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
@@ -104,13 +104,44 @@ function summarizeGroup(parts: NonNullable<Message['parts']>, messageFinished: b
   return { running, failed, background, added, removed, counts }
 }
 
+export function resolveGroupOpenTransition(
+  prevRunning: number,
+  nextRunning: number,
+  manualToggleDuringRun: boolean
+): { open: boolean; resetManualToggle: boolean } | null {
+  if (prevRunning > 0 && nextRunning === 0) {
+    return { open: false, resetManualToggle: true }
+  }
+  if (prevRunning === 0 && nextRunning > 0 && !manualToggleDuringRun) {
+    return { open: true, resetManualToggle: false }
+  }
+  return null
+}
+
 export function ToolExecutionGroup({
   parts,
   messageFinished = false
 }: ToolExecutionGroupProps) {
   const { t, language } = useI18n()
   const stats = useMemo(() => summarizeGroup(parts, messageFinished), [parts, messageFinished])
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(() => stats.running > 0)
+  const prevRunningRef = useRef(stats.running)
+  const manualToggleDuringRunRef = useRef(false)
+
+  useEffect(() => {
+    const prevRunning = prevRunningRef.current
+    prevRunningRef.current = stats.running
+    const transition = resolveGroupOpenTransition(
+      prevRunning,
+      stats.running,
+      manualToggleDuringRunRef.current
+    )
+    if (!transition) return
+    if (transition.resetManualToggle) {
+      manualToggleDuringRunRef.current = false
+    }
+    setOpen(transition.open)
+  }, [stats.running])
 
   const heading =
     stats.running > 0
@@ -135,9 +166,11 @@ export function ToolExecutionGroup({
     'task',
     'other'
   ]
+  const hasDiffChip = stats.added > 0 || stats.removed > 0
+  const maxCategoryChips = hasDiffChip ? 2 : 3
   const chips = orderedCategories
     .filter((category) => (stats.counts.get(category) || 0) > 0)
-    .slice(0, 4)
+    .slice(0, maxCategoryChips)
     .map((category) => ({
       category,
       label: categoryChipLabel(category, stats.counts.get(category) || 0, language)
@@ -147,7 +180,14 @@ export function ToolExecutionGroup({
     <details
       className={`tool-exec-group${stats.failed > 0 ? ' has-error' : ''}${stats.running > 0 ? ' is-running' : ''}`}
       open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
+      onToggle={(event) => {
+        const nextOpen = event.currentTarget.open
+        if (nextOpen === open) return
+        if (stats.running > 0) {
+          manualToggleDuringRunRef.current = true
+        }
+        setOpen(nextOpen)
+      }}
     >
       <summary className="tool-exec-group-summary">
         <span
@@ -176,7 +216,11 @@ export function ToolExecutionGroup({
             </span>
           ))}
         </span>
-        <ChevronDown size={14} className="tool-exec-chevron" aria-label={t('Показать')} />
+        <ChevronDown
+          size={14}
+          className="tool-exec-chevron"
+          aria-label={open ? t('Свернуть') : t('Показать')}
+        />
       </summary>
 
       <div className="tool-exec-tree">

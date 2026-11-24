@@ -489,6 +489,30 @@ export function createPreviewMessages(): Record<string, Message[]> {
           {
             type: 'tool_call',
             data: {
+              id: 'call-browser-1',
+              name: 'mcp_browser_browser_run',
+              input: {
+                steps: [
+                  { action: 'resize', width: 1440 },
+                  { action: 'navigate', url: 'http://127.0.0.1:5173' },
+                  { action: 'wait_for', selector: '.tool-exec-group' },
+                  { action: 'click', selector: '.tool-exec-group-summary' },
+                  {
+                    action: 'evaluate',
+                    expression: '() => document.documentElement.scrollWidth <= window.innerWidth'
+                  },
+                  { action: 'screenshot', name: 'desktop-1440-tools', selector: '.tool-exec-group', zoom: 2 }
+                ]
+              },
+              result: {
+                content: 'Scenario PASSED: 6 of 6 steps run, 1 screenshot.',
+                is_error: false
+              }
+            }
+          },
+          {
+            type: 'tool_call',
+            data: {
               id: 'call-agent-1',
               name: 'agent',
               input: {
