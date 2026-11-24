@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AlertCircle, Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
+import { AgentCard } from './AgentCard'
 import { backgroundJob } from './backgroundJob'
 import { ToolCard } from './ToolCard'
 import { extractToolDiffStats } from './toolDiff'
@@ -9,6 +10,8 @@ import { classifyToolCategory, type ToolCategory } from './toolOutputParser'
 
 export interface ToolExecutionGroupProps {
   parts: NonNullable<Message['parts']>
+  messageId?: string
+  sessionId?: string
   messageFinished?: boolean
 }
 
@@ -104,44 +107,15 @@ function summarizeGroup(parts: NonNullable<Message['parts']>, messageFinished: b
   return { running, failed, background, added, removed, counts }
 }
 
-export function resolveGroupOpenTransition(
-  prevRunning: number,
-  nextRunning: number,
-  manualToggleDuringRun: boolean
-): { open: boolean; resetManualToggle: boolean } | null {
-  if (prevRunning > 0 && nextRunning === 0) {
-    return { open: false, resetManualToggle: true }
-  }
-  if (prevRunning === 0 && nextRunning > 0 && !manualToggleDuringRun) {
-    return { open: true, resetManualToggle: false }
-  }
-  return null
-}
-
 export function ToolExecutionGroup({
   parts,
+  messageId = '',
+  sessionId,
   messageFinished = false
 }: ToolExecutionGroupProps) {
   const { t, language } = useI18n()
   const stats = useMemo(() => summarizeGroup(parts, messageFinished), [parts, messageFinished])
-  const [open, setOpen] = useState(() => stats.running > 0)
-  const prevRunningRef = useRef(stats.running)
-  const manualToggleDuringRunRef = useRef(false)
-
-  useEffect(() => {
-    const prevRunning = prevRunningRef.current
-    prevRunningRef.current = stats.running
-    const transition = resolveGroupOpenTransition(
-      prevRunning,
-      stats.running,
-      manualToggleDuringRunRef.current
-    )
-    if (!transition) return
-    if (transition.resetManualToggle) {
-      manualToggleDuringRunRef.current = false
-    }
-    setOpen(transition.open)
-  }, [stats.running])
+  const [open, setOpen] = useState(false)
 
   const heading =
     stats.running > 0
@@ -182,11 +156,9 @@ export function ToolExecutionGroup({
       open={open}
       onToggle={(event) => {
         const nextOpen = event.currentTarget.open
-        if (nextOpen === open) return
-        if (stats.running > 0) {
-          manualToggleDuringRunRef.current = true
+        if (nextOpen !== open) {
+          setOpen(nextOpen)
         }
-        setOpen(nextOpen)
       }}
     >
       <summary className="tool-exec-group-summary">
@@ -224,15 +196,38 @@ export function ToolExecutionGroup({
       </summary>
 
       <div className="tool-exec-tree">
-        {parts.map((part, index) => (
-          <ToolCard
-            key={index}
-            part={part}
-            messageFinished={messageFinished}
-            grouped
-            isLast={index === parts.length - 1}
-          />
-        ))}
+        {parts.map((part, index) => {
+          if (part.type === 'tool_call' && part.data?.name === 'agent') {
+            const targetMessageId = String((part.data as { _sourceMessageId?: string })._sourceMessageId || messageId)
+            return (
+              <div
+                key={index}
+                className={`tool-tree-node cat-task${index === parts.length - 1 ? ' is-last' : ''}`}
+              >
+                <span className="tool-tree-rail" aria-hidden="true">
+                  <span className="tool-tree-dot" />
+                </span>
+                <div className="tool-tree-card">
+                  <AgentCard
+                    part={part}
+                    messageId={targetMessageId}
+                    sessionId={sessionId}
+                    messageFinished={messageFinished}
+                  />
+                </div>
+              </div>
+            )
+          }
+          return (
+            <ToolCard
+              key={index}
+              part={part}
+              messageFinished={messageFinished}
+              grouped
+              isLast={index === parts.length - 1}
+            />
+          )
+        })}
       </div>
     </details>
   )

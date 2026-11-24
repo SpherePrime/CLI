@@ -1186,6 +1186,8 @@ kbd {
   gap: 3px;
   min-width: 0;
   width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 .tool-gallery.multi img {
   width: 100%;
@@ -1202,6 +1204,10 @@ kbd {
   border-color: var(--accent);
 }
 .tool-image-caption {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   font-size: 10px;
   color: var(--muted);
   text-align: left;

@@ -435,6 +435,14 @@ export function createPreviewMessages(): Record<string, Message[]> {
             }
           },
           {
+            type: 'reasoning',
+            data: {
+              thinking: 'Второе размышление: применяю правку, проверяю браузерный сценарий и сборку.',
+              started_at: nowSec - 434,
+              finished_at: nowSec - 430
+            }
+          },
+          {
             type: 'tool_call',
             data: {
               id: 'call-edit-1',

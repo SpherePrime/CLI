@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { I18nProvider } from '../../src/renderer/src/i18n'
-import { ToolExecutionGroup, resolveGroupOpenTransition } from '../../src/renderer/src/features/chat/ToolExecutionGroup'
+import { ToolExecutionGroup } from '../../src/renderer/src/features/chat/ToolExecutionGroup'
 import { ToolCard } from '../../src/renderer/src/features/chat/ToolCard'
 import { ToolBody } from '../../src/renderer/src/features/chat/ToolBody'
 import { computeEditDiff, extractToolDiffStats, tokenizeCodeLine } from '../../src/renderer/src/features/chat/toolDiff'
@@ -215,7 +215,7 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
     expect(html).toContain('−1')
   })
 
-  it('starts collapsed when completed and open while running, auto-collapsing on finish', () => {
+  it('starts collapsed by default both when running and when completed', () => {
     const completedHtml = renderToStaticMarkup(
       <I18nProvider language="ru">
         <ToolExecutionGroup
@@ -251,22 +251,69 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
         />
       </I18nProvider>
     )
-    expect(runningHtml).toContain('open=""')
+    expect(runningHtml).not.toContain('open=""')
+  })
 
-    expect(resolveGroupOpenTransition(1, 0, false)).toEqual({
-      open: false,
-      resetManualToggle: true
-    })
-    expect(resolveGroupOpenTransition(1, 0, true)).toEqual({
-      open: false,
-      resetManualToggle: true
-    })
-    expect(resolveGroupOpenTransition(0, 1, false)).toEqual({
-      open: true,
-      resetManualToggle: false
-    })
-    expect(resolveGroupOpenTransition(0, 1, true)).toBeNull()
-    expect(resolveGroupOpenTransition(0, 0, false)).toBeNull()
+  it('merges work turns with reasoning and single tool calls into one group and keeps only the latest reasoning', () => {
+    const merged = mergeConsecutiveToolMessages([
+      makeMsg('a1', [
+        { type: 'reasoning', data: { thinking: 'Step 1 thinking', started_at: 10, finished_at: 12 } },
+        { type: 'tool_call', data: { id: 'c1', name: 'view', input: '{"file_path":"a.ts"}', result: { content: 'ok' } } },
+        { type: 'finish', data: { reason: 'tool_use' } }
+      ]),
+      makeMsg('a2', [
+        { type: 'reasoning', data: { thinking: 'Step 2 thinking', started_at: 13, finished_at: 17 } },
+        { type: 'tool_call', data: { id: 'c2', name: 'edit', input: '{"file_path":"a.ts"}', result: { content: 'ok' } } },
+        { type: 'finish', data: { reason: 'tool_use' } }
+      ]),
+      makeMsg('a3', [
+        { type: 'reasoning', data: { thinking: 'Step 3 thinking', started_at: 18, finished_at: 19 } },
+        { type: 'tool_call', data: { id: 'c3', name: 'mcp_browser_browser_run', input: '{"steps":[]}', result: { content: 'ok' } } },
+        { type: 'finish', data: { reason: 'tool_use' } }
+      ]),
+      makeMsg('a4', [
+        { type: 'text', data: { text: 'All done!' } },
+        { type: 'finish', data: { reason: 'end_turn' } }
+      ])
+    ])
+
+    expect(merged).toHaveLength(2)
+    const reasonings = merged[0].parts.filter((p) => p.type === 'reasoning')
+    expect(reasonings).toHaveLength(1)
+    expect(reasonings[0].data.thinking).toBe('Step 3 thinking')
+    expect(merged[0].parts.filter((p) => p.type === 'tool_call')).toHaveLength(3)
+
+    const segments = partitionMessageParts(merged[0].parts)
+    const visibleSegments = segments.filter(
+      (s) => s.kind === 'tool-group' || s.part.type !== 'finish'
+    )
+    expect(visibleSegments.map((s) => s.kind)).toEqual(['part', 'tool-group'])
+    expect(visibleSegments[1].kind === 'tool-group' && visibleSegments[1].parts).toHaveLength(3)
+
+    const singleSegments = partitionMessageParts([
+      { type: 'tool_call', data: { id: 'solo', name: 'view', input: '{"file_path":"only.ts"}' } }
+    ])
+    expect(singleSegments).toHaveLength(1)
+    expect(singleSegments[0].kind).toBe('tool-group')
+  })
+
+  it('drops work reasoning when the following assistant answer starts with a newer reasoning', () => {
+    const merged = mergeConsecutiveToolMessages([
+      makeMsg('a1', [
+        { type: 'reasoning', data: { thinking: 'Old thinking', started_at: 10, finished_at: 12 } },
+        { type: 'tool_call', data: { id: 'c1', name: 'view', input: '{}', result: { content: 'ok' } } },
+        { type: 'finish', data: { reason: 'tool_use' } }
+      ]),
+      makeMsg('a2', [
+        { type: 'reasoning', data: { thinking: 'Final answer thinking', started_at: 13, finished_at: 14 } },
+        { type: 'text', data: { text: 'Done!' } },
+        { type: 'finish', data: { reason: 'end_turn' } }
+      ])
+    ])
+
+    expect(merged).toHaveLength(2)
+    expect(merged[0].parts.some((p) => p.type === 'reasoning')).toBe(false)
+    expect(merged[1].parts.filter((p) => p.type === 'reasoning')).toHaveLength(1)
   })
 
   it('renders browser_run steps as a compact scenario list instead of raw JSON', () => {

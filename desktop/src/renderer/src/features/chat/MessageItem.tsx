@@ -160,7 +160,12 @@ export const MessageItem = memo(function MessageItem({
           if (segment.kind === 'tool-group') {
             return (
               <div className="tool-part" key={`group-${segment.index}`}>
-                <ToolExecutionGroup parts={segment.parts} messageFinished={messageFinished} />
+                <ToolExecutionGroup
+                  parts={segment.parts}
+                  messageId={message.id}
+                  sessionId={message.session_id}
+                  messageFinished={messageFinished}
+                />
                 {segment.parts.map((groupPart, offset) => {
                   const result =
                     groupPart.type === 'tool_result' ? groupPart.data : (groupPart.data.result as unknown)
