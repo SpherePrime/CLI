@@ -38,6 +38,8 @@ export function toolImageCaptions(result: any): string[] {
   return [...content.matchAll(screenshotLine)].map((match) => `${match[1]} · ${match[2]}px`)
 }
 
+const MAX_VISIBLE_THUMBNAILS = 4
+
 export function ToolGallery({
   images,
   captions = [],
@@ -53,8 +55,10 @@ export function ToolGallery({
   const [zoomed, setZoomed] = useState(-1)
   if (!images.length) return null
   const multi = images.length > 1
+  const visibleImages = images.slice(0, MAX_VISIBLE_THUMBNAILS)
+  const overflowCount = Math.max(0, images.length - MAX_VISIBLE_THUMBNAILS)
   const source = (image: ToolImage) => `data:${image.mime_type};base64,${image.data}`
-  const label = (index: number) => captions[index] || images[index].path || ''
+  const label = (index: number) => captions[index] || images[index]?.path || ''
   const current = images[zoomed]
   return (
     <>
@@ -68,18 +72,31 @@ export function ToolGallery({
           .join(' ')}
       >
         {multi && <div className="tool-gallery-count">{t('Снимков: {count}', { count: images.length })}</div>}
-        {images.map((image, index) => {
+        {visibleImages.map((image, index) => {
+          const isOverflowTile = overflowCount > 0 && index === visibleImages.length - 1
+          const itemLabel = label(index)
           const preview = (
             <button
               key={onImplementImage ? undefined : index}
               type="button"
-              className="tool-image"
+              className={`tool-image${isOverflowTile ? ' has-overflow' : ''}`}
               onClick={() => setZoomed(index)}
-              aria-label={label(index) || t('Изображение')}
-              title={label(index)}
+              aria-label={
+                isOverflowTile
+                  ? `${itemLabel || t('Изображение')} (+${overflowCount})`
+                  : itemLabel || t('Изображение')
+              }
+              title={isOverflowTile ? `${itemLabel} (+${overflowCount})` : itemLabel}
             >
-              <img src={source(image)} alt={label(index)} loading="lazy" decoding="async" />
-              {multi && label(index) && <span className="tool-image-caption">{label(index)}</span>}
+              <span className="tool-image-thumb-wrap">
+                <img src={source(image)} alt={itemLabel} loading="lazy" decoding="async" />
+                {isOverflowTile && (
+                  <span className="tool-image-more" aria-hidden="true">
+                    +{overflowCount}
+                  </span>
+                )}
+              </span>
+              {multi && itemLabel && <span className="tool-image-caption">{itemLabel}</span>}
             </button>
           )
           if (!onImplementImage) return preview

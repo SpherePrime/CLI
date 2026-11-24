@@ -513,7 +513,46 @@ export function createPreviewMessages(): Record<string, Message[]> {
                 ]
               },
               result: {
-                content: 'Scenario PASSED: 6 of 6 steps run, 1 screenshot.',
+                content: [
+                  'Scenario PASSED: 6 of 6 steps run, 7 screenshots.',
+                  'Screenshot "desktop-1440" at 1440px',
+                  'Screenshot "rules-modal-1440" at 1440px',
+                  'Screenshot "ball-in-flight" at 1440px',
+                  'Screenshot "tablet-768" at 768px',
+                  'Screenshot "mobile-390" at 390px',
+                  'Screenshot "mobile-320" at 320px',
+                  'Screenshot "final-pass" at 1280px'
+                ].join('\n'),
+                images: [
+                  {
+                    mime_type: 'image/svg+xml',
+                    data: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#181920"/><rect x="20" y="20" width="280" height="160" rx="10" fill="#252734" stroke="#4f8cff"/><text x="160" y="106" fill="#eef1f8" font-family="sans-serif" font-size="16" text-anchor="middle">desktop-1440</text></svg>')
+                  },
+                  {
+                    mime_type: 'image/svg+xml',
+                    data: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#1b1822"/><rect x="40" y="30" width="240" height="140" rx="10" fill="#2b2438" stroke="#c084fc"/><text x="160" y="106" fill="#eef1f8" font-family="sans-serif" font-size="16" text-anchor="middle">rules-modal-1440</text></svg>')
+                  },
+                  {
+                    mime_type: 'image/svg+xml',
+                    data: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#141b19"/><rect x="20" y="20" width="280" height="160" rx="10" fill="#1f2d28" stroke="#34d399"/><text x="160" y="106" fill="#eef1f8" font-family="sans-serif" font-size="16" text-anchor="middle">ball-in-flight</text></svg>')
+                  },
+                  {
+                    mime_type: 'image/svg+xml',
+                    data: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#201a16"/><rect x="20" y="20" width="280" height="160" rx="10" fill="#2e251e" stroke="#f59e0b"/><text x="160" y="106" fill="#eef1f8" font-family="sans-serif" font-size="16" text-anchor="middle">tablet-768</text></svg>')
+                  },
+                  {
+                    mime_type: 'image/svg+xml',
+                    data: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#1a1820"/><text x="160" y="106" fill="#eef1f8" font-family="sans-serif" font-size="16" text-anchor="middle">mobile-390</text></svg>')
+                  },
+                  {
+                    mime_type: 'image/svg+xml',
+                    data: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#161b22"/><text x="160" y="106" fill="#eef1f8" font-family="sans-serif" font-size="16" text-anchor="middle">mobile-320</text></svg>')
+                  },
+                  {
+                    mime_type: 'image/svg+xml',
+                    data: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#191b1f"/><text x="160" y="106" fill="#eef1f8" font-family="sans-serif" font-size="16" text-anchor="middle">final-pass</text></svg>')
+                  }
+                ],
                 is_error: false
               }
             }

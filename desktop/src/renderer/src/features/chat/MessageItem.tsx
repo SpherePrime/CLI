@@ -17,7 +17,7 @@ import { ToolCard } from './ToolCard'
 import { ToolExecutionGroup } from './ToolExecutionGroup'
 import { partitionMessageParts } from './toolGroupMerge'
 import { AgentCard } from './AgentCard'
-import { collectToolImages, ToolGallery, toolImageCaptions } from './ToolGallery'
+import { collectToolImages, ToolGallery, toolImageCaptions, type ToolImage } from './ToolGallery'
 import { ToolVideos } from './video/ToolVideos'
 import { VideoPlayer } from './video/VideoPlayer'
 import { WorkspaceVideo } from './video/WorkspaceVideo'
@@ -158,6 +158,18 @@ export const MessageItem = memo(function MessageItem({
         )}
         {partitionMessageParts(message.parts || []).map((segment) => {
           if (segment.kind === 'tool-group') {
+            const groupImages: ToolImage[] = []
+            const groupCaptions: string[] = []
+            for (const groupPart of segment.parts) {
+              const result =
+                groupPart.type === 'tool_result' ? groupPart.data : (groupPart.data.result as unknown)
+              const partImages = collectToolImages(result)
+              const partCaptions = toolImageCaptions(result)
+              partImages.forEach((image, idx) => {
+                groupImages.push(image)
+                groupCaptions.push(partCaptions[idx] || image.path || '')
+              })
+            }
             return (
               <div className="tool-part" key="turn-tool-group">
                 <ToolExecutionGroup
@@ -166,30 +178,25 @@ export const MessageItem = memo(function MessageItem({
                   sessionId={message.session_id}
                   messageFinished={messageFinished}
                 />
+                <ToolGallery
+                  images={groupImages}
+                  captions={groupCaptions}
+                  implementLabel={t('Сделать этот дизайн')}
+                  onImplementImage={
+                    canImplementPhoto && onImplementDesign
+                      ? (image) =>
+                          onImplementDesign(message, {
+                            mimeType: image.mime_type,
+                            base64: image.data,
+                            name: image.path
+                          })
+                      : undefined
+                  }
+                />
                 {segment.parts.map((groupPart, offset) => {
                   const result =
                     groupPart.type === 'tool_result' ? groupPart.data : (groupPart.data.result as unknown)
-                  const images = collectToolImages(result)
-                  return (
-                    <Fragment key={offset}>
-                      <ToolGallery
-                        images={images}
-                        captions={toolImageCaptions(result)}
-                        implementLabel={t('Сделать этот дизайн')}
-                        onImplementImage={
-                          canImplementPhoto && onImplementDesign
-                            ? (image) =>
-                                onImplementDesign(message, {
-                                  mimeType: image.mime_type,
-                                  base64: image.data,
-                                  name: image.path
-                                })
-                            : undefined
-                        }
-                      />
-                      <ToolVideos result={result} />
-                    </Fragment>
-                  )
+                  return <ToolVideos key={offset} result={result} />
                 })}
               </div>
             )
