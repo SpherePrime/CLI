@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/agent/hyper"
@@ -404,7 +405,11 @@ func (e *CustomExecutor) Execute(ctx context.Context, req customagents.ExecuteRe
 				}
 			}
 			if len(detail) > 1000 {
-				detail = detail[:1000] + "..."
+				cut := 1000
+				for cut > 0 && !utf8.RuneStart(detail[cut]) {
+					cut--
+				}
+				detail = detail[:cut] + "..."
 			}
 			emitStep(customagents.RunStep{
 				Kind:      "tool_result",

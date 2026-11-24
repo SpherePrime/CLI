@@ -59,7 +59,7 @@ prime update --yes`,
 
 		stopServerQuietly(ctx)
 
-		if _, err := update.Install(ctx, version.Version, exe, update.Default, out); err != nil {
+		if _, err := update.InstallChecked(ctx, info, exe, update.Default, out); err != nil {
 			return err
 		}
 		fmt.Fprintf(out, "Updated to v%s. Restart Prime to run the new version.\n", info.Latest)

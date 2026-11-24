@@ -1,5 +1,5 @@
 use std::net::TcpStream;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 use tungstenite::stream::MaybeTlsStream;
@@ -9,6 +9,8 @@ use super::types::{Confidence, Provider, UiBounds, UiNode, UiSnapshot};
 use super::ui_action::UiAction;
 
 const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+const SOCKET_IO_TIMEOUT: Duration = Duration::from_secs(5);
+const CALL_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub struct DomSession {
     socket: WebSocket<MaybeTlsStream<TcpStream>>,
@@ -37,7 +39,11 @@ pub fn connect(port: u16) -> Result<DomSession, String> {
     let url = page["webSocketDebuggerUrl"]
         .as_str()
         .ok_or("The debug endpoint returned no socket address")?;
-    let (socket, _) = ws_connect(url).map_err(|error| error.to_string())?;
+    let (mut socket, _) = ws_connect(url).map_err(|error| error.to_string())?;
+    if let MaybeTlsStream::Plain(stream) = socket.get_mut() {
+        let _ = stream.set_read_timeout(Some(SOCKET_IO_TIMEOUT));
+        let _ = stream.set_write_timeout(Some(SOCKET_IO_TIMEOUT));
+    }
     Ok(DomSession { socket, next: 0 })
 }
 
@@ -49,11 +55,32 @@ impl DomSession {
         self.socket
             .send(Message::Text(message.to_string().into()))
             .map_err(|error| error.to_string())?;
+        let deadline = Instant::now() + CALL_TIMEOUT;
         loop {
-            let incoming = self.socket.read().map_err(|error| error.to_string())?;
+            if Instant::now() >= deadline {
+                return Err(format!("The page did not respond to {method} in time"));
+            }
+            let incoming = match self.socket.read() {
+                Ok(incoming) => incoming,
+                Err(tungstenite::Error::Io(ref error))
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                    ) =>
+                {
+                    if Instant::now() >= deadline {
+                        return Err(format!("The page did not respond to {method} in time"));
+                    }
+                    continue;
+                }
+                Err(error) => return Err(error.to_string()),
+            };
             let text = match incoming {
                 Message::Text(text) => text.to_string(),
                 Message::Binary(bytes) => String::from_utf8_lossy(&bytes).to_string(),
+                Message::Close(_) => {
+                    return Err("The debug page closed the connection".to_owned())
+                }
                 _ => continue,
             };
             let value: Value = match serde_json::from_str(&text) {
@@ -92,30 +119,41 @@ impl DomSession {
         action: &UiAction,
         text: Option<&str>,
     ) -> Result<(), String> {
-        let selector = format!("[data-prime-ref=\"{reference}\"]");
-        let script = match action {
-            UiAction::Invoke => format!(
-                "(() => {{ const e = document.querySelector('{selector}'); if (!e) return 'missing'; e.scrollIntoView({{block:'center'}}); e.click(); return 'ok' }})()"
-            ),
-            UiAction::Focus => format!(
-                "(() => {{ const e = document.querySelector('{selector}'); if (!e) return 'missing'; e.focus(); return 'ok' }})()"
-            ),
-            UiAction::Toggle => format!(
-                "(() => {{ const e = document.querySelector('{selector}'); if (!e) return 'missing'; e.click(); return 'ok' }})()"
-            ),
-            UiAction::SetValue(_) => {
-                let value = serde_json::to_string(text.unwrap_or_default())
-                    .map_err(|error| error.to_string())?;
-                format!(
-                    "(() => {{ const e = document.querySelector('{selector}'); if (!e) return 'missing'; e.focus(); e.value = {value}; e.dispatchEvent(new Event('input', {{bubbles:true}})); e.dispatchEvent(new Event('change', {{bubbles:true}})); return 'ok' }})()"
-                )
-            }
-            _ => return Err("This action is not available for a page element".to_owned()),
-        };
+        let script = perform_script(reference, action, text)?;
         if self.evaluate(&script)?.as_str() == Some("missing") {
             return Err("The element is no longer available; take a new snapshot".to_owned());
         }
         Ok(())
+    }
+}
+
+fn perform_script(
+    reference: &str,
+    action: &UiAction,
+    text: Option<&str>,
+) -> Result<String, String> {
+    let ref_json = serde_json::to_string(reference).map_err(|error| error.to_string())?;
+    let lookup = format!(
+        "const ref = {ref_json}; const e = Array.from(document.querySelectorAll('[data-prime-ref]')).find(node => node.getAttribute('data-prime-ref') === ref);"
+    );
+    match action {
+        UiAction::Invoke => Ok(format!(
+            "(() => {{ {lookup} if (!e) return 'missing'; e.scrollIntoView({{block:'center'}}); e.click(); return 'ok' }})()"
+        )),
+        UiAction::Focus => Ok(format!(
+            "(() => {{ {lookup} if (!e) return 'missing'; e.focus(); return 'ok' }})()"
+        )),
+        UiAction::Toggle => Ok(format!(
+            "(() => {{ {lookup} if (!e) return 'missing'; e.click(); return 'ok' }})()"
+        )),
+        UiAction::SetValue(_) => {
+            let value = serde_json::to_string(text.unwrap_or_default())
+                .map_err(|error| error.to_string())?;
+            Ok(format!(
+                "(() => {{ {lookup} if (!e) return 'missing'; e.focus(); e.value = {value}; e.dispatchEvent(new Event('input', {{bubbles:true}})); e.dispatchEvent(new Event('change', {{bubbles:true}})); return 'ok' }})()"
+            ))
+        }
+        _ => Err("This action is not available for a page element".to_owned()),
     }
 }
 
@@ -157,7 +195,7 @@ fn convert(value: &Value, parent: Option<&str>, parent_path: &str) -> Result<UiN
     let reference = value["ref"]
         .as_str()
         .map(str::to_owned)
-        .unwrap_or_else(|| format!("{path}"));
+        .unwrap_or_else(|| path.clone());
     let mut children = Vec::new();
     for child in value["children"].as_array().into_iter().flatten() {
         children.push(convert(child, Some(&reference), &path)?);
@@ -290,5 +328,14 @@ mod tests {
         assert!(text.contains("n1 button \"Save\" [enabled]"), "{text}");
         assert!(text.contains("actions=invoke"), "{text}");
         assert!(text.contains("[dom,"), "{text}");
+    }
+
+    #[test]
+    fn perform_script_escapes_special_characters_in_reference() {
+        let malicious = "n1'\"]); alert(1); //";
+        let script = perform_script(malicious, &UiAction::Invoke, None).unwrap();
+        let expected_literal = serde_json::to_string(malicious).unwrap();
+        assert!(script.contains(&format!("const ref = {expected_literal};")));
+        assert!(!script.contains("querySelector('[data-prime-ref="));
     }
 }

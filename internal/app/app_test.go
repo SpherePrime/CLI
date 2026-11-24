@@ -3,12 +3,14 @@ package app
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	tea "github.com/SpherePrime/CLI/vendordeps/bubbletea/v2"
 	"github.com/SpherePrime/CLI/internal/pubsub"
+	"github.com/SpherePrime/CLI/internal/shell"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
@@ -182,4 +184,37 @@ func testNConsumers(t *testing.T, n int) {
 		})
 	}
 	wg.Wait()
+}
+
+func portableSleepCommand(seconds int) string {
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf(`powershell -NoProfile -NonInteractive -Command "Start-Sleep -Seconds %d"`, seconds)
+	}
+	return fmt.Sprintf("sleep %d", seconds)
+}
+
+func TestKillWorkspaceBackgroundShells_ScopedToWorkspace(t *testing.T) {
+	wsA := t.TempDir()
+	wsB := t.TempDir()
+
+	manager := shell.GetBackgroundShellManager()
+	cmd := portableSleepCommand(30)
+	bgA, err := manager.Start(t.Context(), wsA, nil, cmd, "wsA sleep", shell.BackgroundOwnership{WorkspacePath: wsA})
+	require.NoError(t, err)
+	bgB, err := manager.Start(t.Context(), wsB, nil, cmd, "wsB sleep", shell.BackgroundOwnership{WorkspacePath: wsB})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = manager.Kill(bgA.ID)
+		_ = manager.Kill(bgB.ID)
+	})
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	killWorkspaceBackgroundShells(ctx, wsA)
+
+	_, existsA := manager.Get(bgA.ID)
+	require.False(t, existsA)
+	_, existsB := manager.Get(bgB.ID)
+	require.True(t, existsB)
+	require.False(t, bgB.IsDone())
 }

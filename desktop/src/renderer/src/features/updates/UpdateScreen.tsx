@@ -53,18 +53,28 @@ export function UpdateScreen({
     }
   }, [])
   useEffect(() => {
-    if (!ready || checked.current) return
+    if (!ready) {
+      checked.current = false
+      return
+    }
+    if (checked.current) return
     checked.current = true
+    let alive = true
     const check = () =>
       void window.prime
         .update('check')
-        .then((value) => setStatus(value as UpdateStatus))
+        .then((value) => {
+          if (alive) setStatus(value as UpdateStatus)
+        })
         .catch(() => {})
     check()
     const timer = window.setInterval(() => {
       if (['idle', 'current', 'error', 'unavailable'].includes(latest.current.state)) check()
     }, recheckInterval)
-    return () => window.clearInterval(timer)
+    return () => {
+      alive = false
+      window.clearInterval(timer)
+    }
   }, [ready])
   const downloaded = status.state === 'downloaded'
   const failed = status.state === 'error'

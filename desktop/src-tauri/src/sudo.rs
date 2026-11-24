@@ -36,6 +36,9 @@ pub fn save(password: &str) -> HostResult<()> {
 }
 
 pub fn remove() -> HostResult<()> {
+    if !cfg!(target_os = "linux") {
+        return Ok(());
+    }
     match entry()?.delete_credential() {
         Ok(()) | Err(keyring::v1::Error::NoEntry) => Ok(()),
         Err(_) => Err(HostError::new("SUDO_STORAGE", "Sudo settings storage is unavailable")),
@@ -66,10 +69,12 @@ pub fn handle(request: &Value) -> HostResult<Value> {
                 .filter(|password| !password.is_empty() && password.len() <= 4096)
                 .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "invalid password"))?;
             save(password)?;
+            publish_environment();
             Ok(json!({"hasPassword":true,"storageAvailable":available()}))
         }
         Some("remove") => {
             remove()?;
+            publish_environment();
             Ok(json!({"hasPassword":false,"storageAvailable":available()}))
         }
         _ => Err(HostError::new("INVALID_ARGUMENT", "Invalid sudo request")),

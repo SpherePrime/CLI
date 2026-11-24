@@ -894,6 +894,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		cancelTitle()
 		if genCtx.Err() != nil {
 			if persistErr := a.persistCanceledTurn(ctx, call, userMsgCreated); persistErr != nil {
+				steeringCancelled = true
 				return nil, persistErr
 			}
 			complete := notify.RunComplete{
@@ -903,6 +904,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			}
 			a.publishRunComplete(ctx, call, complete)
 			a.publishSteeringComplete(ctx, call.steeringCalls, complete)
+			earlySteering = nil
 			return nil, nil
 		}
 	}
@@ -1588,7 +1590,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 	}
 
 	if shouldSummarize {
-		a.activeRequests.Del(call.SessionID)
+		a.activeRequests.CompareAndDelete(call.SessionID, ac)
 		summarizeCtx := genCtx
 		summarizeOpts := call.ProviderOptions
 		summarizeAuthRefresh := call.OnAuthRefresh
@@ -1600,8 +1602,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		if summarizeErr := a.Summarize(summarizeCtx, call.SessionID, summarizeOpts, summarizeAuthRefresh); summarizeErr != nil {
 			return nil, summarizeErr
 		}
-		// If the agent wasn't done...
-		if len(currentAssistant.ToolCalls()) > 0 {
+		if currentAssistant != nil && len(currentAssistant.ToolCalls()) > 0 {
+			qmu := a.sessionMu(call.SessionID)
+			qmu.Lock()
 			existing, ok := a.messageQueue.Get(call.SessionID)
 			if !ok {
 				existing = []SessionAgentCall{}
@@ -1611,14 +1614,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			call.steeringCalls = steeringCalls
 			existing = append(existing, call)
 			a.messageQueue.Set(call.SessionID, existing)
+			qmu.Unlock()
 		}
 	}
 
-	// Release active request before publishing the notification.
-	// TUI handlers poll IsSessionBusy() and only re-evaluate when a
-	// tea.Msg arrives, so the cleanup must precede the notify or
-	// subscribers see stale busy state at the moment of receipt.
-	a.activeRequests.Del(call.SessionID)
+	a.activeRequests.CompareAndDelete(call.SessionID, ac)
 	cancel()
 
 	// Send notification that agent has finished its turn (skip for
@@ -1725,9 +1725,6 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		steeringComplete.MessageID = currentAssistant.ID
 		steeringComplete.Text = currentAssistant.Content().String()
 	}
-	if err != nil {
-		steeringComplete.Error = err.Error()
-	}
 	steeringComplete.Cancelled = ctx.Err() != nil || errors.Is(err, context.Canceled)
 	if outerOwesRunComplete || call.RunID == "" {
 		a.publishSteeringComplete(ctx, steeringCalls, steeringComplete)
@@ -1747,9 +1744,27 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 }
 
 func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fantasy.ProviderOptions, onAuthRefresh func(context.Context, *fantasy.ProviderError) error) error {
+	sessMu := a.sessionMu(sessionID)
+	sessMu.Lock()
 	if a.IsSessionBusy(sessionID) {
+		sessMu.Unlock()
 		return ErrSessionBusy
 	}
+	genCtx, cancel := context.WithCancel(ctx)
+	ac := &activeCancel{cancel: cancel, done: make(chan struct{})}
+	a.activeRequests.Set(sessionID, ac)
+	sessMu.Unlock()
+
+	defer close(ac.done)
+	defer a.activeRequests.CompareAndDelete(sessionID, ac)
+	defer cancel()
+	defer func() {
+		flushCtx, flushCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer flushCancel()
+		if flushErr := a.messages.FlushAll(flushCtx); flushErr != nil {
+			slog.Error("Failed to flush pending message updates after summarize", "error", flushErr)
+		}
+	}()
 
 	summaryModel := a.largeModel.Get()
 	systemPromptPrefix := a.systemPromptPrefix.Get()
@@ -1771,7 +1786,6 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		return ErrNothingToSummarize
 	}
 	if len(msgs) == 0 {
-		// Nothing to summarize.
 		return nil
 	}
 
@@ -1789,18 +1803,6 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		}
 	}
 	summaryMsgs = sanitizeMessagesForModel(summaryMsgs, collectHistoryAssistantModels(msgs), summaryModel)
-
-	genCtx, cancel := context.WithCancel(ctx)
-	ac := &activeCancel{cancel: cancel, done: make(chan struct{})}
-	defer close(ac.done)
-	a.activeRequests.Set(sessionID, ac)
-	defer a.activeRequests.CompareAndDelete(sessionID, ac)
-	defer cancel()
-	defer func() {
-		if flushErr := a.messages.FlushAll(ctx); flushErr != nil {
-			slog.Error("Failed to flush pending message updates after summarize", "error", flushErr)
-		}
-	}()
 
 	agent := fantasy.NewAgent(
 		summaryModel.Model,
@@ -1943,18 +1945,23 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 		deleteSessionContextSummary(a.dataDir, sessionID)
 	}
 
-	// Release the active request before processing queued messages so that
-	// Run() does not see the session as busy.
-	a.activeRequests.Del(sessionID)
+	sessMu.Lock()
+	a.activeRequests.CompareAndDelete(sessionID, ac)
 	cancel()
 
-	// Process any messages that were queued while summarizing.
 	queuedMessages, ok := a.messageQueue.Get(sessionID)
 	if !ok || len(queuedMessages) == 0 {
+		sessMu.Unlock()
 		return nil
 	}
 	firstQueuedMessage := queuedMessages[0]
-	a.messageQueue.Set(sessionID, queuedMessages[1:])
+	if len(queuedMessages) == 1 {
+		a.messageQueue.Del(sessionID)
+	} else {
+		a.messageQueue.Set(sessionID, queuedMessages[1:])
+	}
+	firstQueuedMessage.Accepted = a.BeginAccepted(sessionID)
+	sessMu.Unlock()
 	_, qErr := a.Run(ctx, firstQueuedMessage)
 	return qErr
 }
@@ -2749,11 +2756,25 @@ func (a *sessionAgent) ClearQueue(sessionID string) {
 }
 
 func (a *sessionAgent) CancelAll() {
-	if !a.IsBusy() {
+	sessionIDs := make(map[string]struct{})
+	for sid := range a.activeRequests.Seq2() {
+		sessionIDs[sid] = struct{}{}
+	}
+	a.acceptedMu.Lock()
+	for sid, count := range a.acceptedRuns.Seq2() {
+		if count > 0 {
+			sessionIDs[sid] = struct{}{}
+		}
+	}
+	a.acceptedMu.Unlock()
+	for sid := range a.messageQueue.Seq2() {
+		sessionIDs[sid] = struct{}{}
+	}
+	if len(sessionIDs) == 0 {
 		return
 	}
-	for key := range a.activeRequests.Seq2() {
-		a.Cancel(key) // key is sessionID
+	for sid := range sessionIDs {
+		a.Cancel(sid)
 	}
 
 	timeout := time.After(5 * time.Second)

@@ -649,11 +649,11 @@ impl AppUiManager {
             .into_iter()
             .filter(|window| window.pid != own)
             .find(|window| {
-                hwnd.map_or(true, |hwnd| window.hwnd == hwnd)
-                    && pid.map_or(true, |pid| window.pid as u64 == pid)
+                hwnd.is_none_or(|hwnd| window.hwnd == hwnd)
+                    && pid.is_none_or(|pid| window.pid as u64 == pid)
                     && title
                         .as_deref()
-                        .map_or(true, |title| window.title.to_lowercase().contains(title))
+                        .is_none_or(|title| window.title.to_lowercase().contains(title))
             })
             .ok_or("No matching application window. Call app_targets.")?;
         let attached = self.attach(
@@ -693,6 +693,64 @@ impl AppUiManager {
         }))
     }
 
+    pub fn forget(&self, workspace: &str) {
+        let removed_port = self
+            .targets
+            .lock()
+            .ok()
+            .and_then(|mut targets| targets.remove(workspace))
+            .and_then(|target| target.port);
+        if let Some(port) = removed_port {
+            if let Ok(mut dom) = self.dom.lock() {
+                if dom.as_ref().is_some_and(|handle| handle.port == port) {
+                    *dom = None;
+                }
+            }
+        }
+        self.close_launched(workspace);
+        if let Ok(mut logs) = self.logs.lock() {
+            logs.remove(workspace);
+        }
+        if let Ok(mut reports) = self.reports.lock() {
+            reports.remove(workspace);
+        }
+    }
+
+    pub fn shutdown(&self) {
+        if let Ok(mut picker) = self.picker.lock() {
+            if let Some(handle) = picker.take() {
+                handle.cancel();
+            }
+        }
+        let launched: Vec<Launched> = self
+            .launched
+            .lock()
+            .ok()
+            .map(|mut map| map.drain().map(|(_, item)| item).collect())
+            .unwrap_or_default();
+        for mut item in launched {
+            launch::stop(&mut item);
+        }
+        if let Ok(mut targets) = self.targets.lock() {
+            targets.clear();
+        }
+        if let Ok(mut snapshots) = self.snapshots.lock() {
+            snapshots.clear();
+        }
+        if let Ok(mut logs) = self.logs.lock() {
+            logs.clear();
+        }
+        if let Ok(mut reports) = self.reports.lock() {
+            reports.clear();
+        }
+        if let Ok(mut dom) = self.dom.lock() {
+            *dom = None;
+        }
+        if let Ok(mut worker) = self.worker.lock() {
+            *worker = None;
+        }
+    }
+
     fn close_launched(&self, workspace: &str) -> bool {
         let removed = self
             .launched
@@ -705,7 +763,6 @@ impl AppUiManager {
         match removed {
             Some(mut launched) => {
                 launch::stop(&mut launched);
-                let _ = std::fs::remove_file(&launched.output);
                 true
             }
             None => false,

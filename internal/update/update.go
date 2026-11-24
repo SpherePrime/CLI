@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -19,42 +20,140 @@ const (
 // Default is the default [Client].
 var Default Client = &github{}
 
-// Info contains information about an available update.
 type Info struct {
 	Current string
 	Latest  string
 	URL     string
+	release *Release
 }
 
-// Matches a version string like:
-// v0.0.0-0.20251231235959-06c807842604
 var goInstallRegexp = regexp.MustCompile(`^v?\d+\.\d+\.\d+-\d+\.\d{14}-[0-9a-f]{12}$`)
 
 func (i Info) IsDevelopment() bool {
 	return i.Current == "devel" || i.Current == "unknown" || strings.Contains(i.Current, "dirty") || goInstallRegexp.MatchString(i.Current)
 }
 
-// Available returns true if there's an update available.
-//
-// If both current and latest are stable versions, returns true if versions are
-// different.
-// If current is a pre-release and latest isn't, returns true.
-// If latest is a pre-release and current isn't, returns false.
-func (i Info) Available() bool {
-	cpr := strings.Contains(i.Current, "-")
-	lpr := strings.Contains(i.Latest, "-")
-	// current is pre release && latest isn't a prerelease
-	if cpr && !lpr {
-		return true
-	}
-	// latest is pre release && current isn't a prerelease
-	if lpr && !cpr {
-		return false
-	}
-	return i.Current != i.Latest
+type parsedSemver struct {
+	major int
+	minor int
+	patch int
+	pre   []string
 }
 
-// Check checks if a new version is available.
+func parseSemver(raw string) (parsedSemver, bool) {
+	v := strings.TrimPrefix(strings.TrimSpace(raw), "v")
+	if v == "" {
+		return parsedSemver{}, false
+	}
+	if core, _, ok := strings.Cut(v, "+"); ok {
+		v = core
+	}
+	core, preStr, hasPre := strings.Cut(v, "-")
+	parts := strings.Split(core, ".")
+	if len(parts) != 3 {
+		return parsedSemver{}, false
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil || major < 0 {
+		return parsedSemver{}, false
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil || minor < 0 {
+		return parsedSemver{}, false
+	}
+	patch, err := strconv.Atoi(parts[2])
+	if err != nil || patch < 0 {
+		return parsedSemver{}, false
+	}
+	var pre []string
+	if hasPre {
+		if preStr == "" {
+			return parsedSemver{}, false
+		}
+		pre = strings.Split(preStr, ".")
+	}
+	return parsedSemver{major: major, minor: minor, patch: patch, pre: pre}, true
+}
+
+func comparePrerelease(a, b []string) int {
+	if len(a) == 0 && len(b) == 0 {
+		return 0
+	}
+	if len(a) == 0 {
+		return 1
+	}
+	if len(b) == 0 {
+		return -1
+	}
+	n := min(len(a), len(b))
+	for i := range n {
+		if a[i] == b[i] {
+			continue
+		}
+		an, aErr := strconv.Atoi(a[i])
+		bn, bErr := strconv.Atoi(b[i])
+		switch {
+		case aErr == nil && bErr == nil:
+			if an < bn {
+				return -1
+			}
+			return 1
+		case aErr == nil:
+			return -1
+		case bErr == nil:
+			return 1
+		case a[i] < b[i]:
+			return -1
+		default:
+			return 1
+		}
+	}
+	if len(a) < len(b) {
+		return -1
+	}
+	if len(a) > len(b) {
+		return 1
+	}
+	return 0
+}
+
+func compareSemver(a, b parsedSemver) int {
+	if a.major != b.major {
+		if a.major < b.major {
+			return -1
+		}
+		return 1
+	}
+	if a.minor != b.minor {
+		if a.minor < b.minor {
+			return -1
+		}
+		return 1
+	}
+	if a.patch != b.patch {
+		if a.patch < b.patch {
+			return -1
+		}
+		return 1
+	}
+	return comparePrerelease(a.pre, b.pre)
+}
+
+func (i Info) Available() bool {
+	if i.IsDevelopment() {
+		return false
+	}
+	current, okC := parseSemver(i.Current)
+	latest, okL := parseSemver(i.Latest)
+	if !okC || !okL {
+		return false
+	}
+	if len(latest.pre) > 0 && len(current.pre) == 0 {
+		return false
+	}
+	return compareSemver(latest, current) > 0
+}
+
 func Check(ctx context.Context, current string, client Client) (Info, error) {
 	info := Info{
 		Current: current,
@@ -69,6 +168,7 @@ func Check(ctx context.Context, current string, client Client) (Info, error) {
 	info.Latest = strings.TrimPrefix(release.TagName, "v")
 	info.Current = strings.TrimPrefix(info.Current, "v")
 	info.URL = release.HTMLURL
+	info.release = release
 	return info, nil
 }
 

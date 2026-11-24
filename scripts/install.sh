@@ -77,17 +77,23 @@ if [ -n "$sum_url" ]; then
     wget -qO "$tmp/checksums.txt" "$sum_url"
   fi
   if command -v sha256sum >/dev/null 2>&1; then
-    expected=$(grep " ${name}$" "$tmp/checksums.txt" | cut -d' ' -f1)
+    expected=$(tr -d '\r' < "$tmp/checksums.txt" | awk -v f="$name" '$2 == f { print $1; exit }')
     actual=$(sha256sum "$tmp/$name" | cut -d' ' -f1)
   elif command -v shasum >/dev/null 2>&1; then
-    expected=$(grep " ${name}$" "$tmp/checksums.txt" | cut -d' ' -f1)
+    expected=$(tr -d '\r' < "$tmp/checksums.txt" | awk -v f="$name" '$2 == f { print $1; exit }')
     actual=$(shasum -a 256 "$tmp/$name" | cut -d' ' -f1)
   else
-    expected=""; actual="x"
+    expected="skip"; actual="skip"
   fi
-  if [ -n "$expected" ] && [ "$expected" != "$actual" ]; then
-    echo "prime: checksum verification failed" >&2
-    exit 1
+  if [ "$expected" != "skip" ]; then
+    if [ -z "$expected" ]; then
+      echo "prime: no checksum entry found for $name" >&2
+      exit 1
+    fi
+    if [ "$expected" != "$actual" ]; then
+      echo "prime: checksum verification failed" >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -106,6 +112,7 @@ if [ -z "$binary" ]; then
 fi
 
 mkdir -p "$BIN_DIR"
+rm -f "$BIN_DIR/$binary_name"
 mv "$binary" "$BIN_DIR/$binary_name"
 chmod 755 "$BIN_DIR/$binary_name"
 

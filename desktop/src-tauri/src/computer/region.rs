@@ -35,7 +35,7 @@ pub fn parse(args: &Value) -> Result<Option<Region>, String> {
 }
 
 pub fn view_size(crop_width: usize, crop_height: usize) -> (usize, usize) {
-    let width = crop_width.min(MAX_OUTPUT_WIDTH).max(1);
+    let width = crop_width.clamp(1, MAX_OUTPUT_WIDTH);
     let height = ((crop_height as f64 * width as f64 / crop_width.max(1) as f64).round() as usize).max(1);
     (width, height)
 }

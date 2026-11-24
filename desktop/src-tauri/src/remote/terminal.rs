@@ -499,6 +499,19 @@ impl Terminals {
             self.close_workspace(&workspace);
         }
     }
+
+    pub fn close_all(&self) {
+        let items = self
+            .items
+            .lock()
+            .unwrap()
+            .drain()
+            .map(|(_, terminal)| terminal)
+            .collect::<Vec<_>>();
+        for terminal in items {
+            let _ = terminal.close();
+        }
+    }
 }
 
 #[cfg(test)]

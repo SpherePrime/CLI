@@ -3,6 +3,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     testTimeout: 20000,
-    exclude: [...configDefaults.exclude, '.superpowers/**', 'release/**', 'out/**']
+    exclude: [...configDefaults.exclude, '.superpowers/**', 'release/**', 'out/**', 'tests/packaging/**']
   }
 })

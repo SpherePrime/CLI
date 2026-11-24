@@ -116,7 +116,9 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   useEffect(() => {
     const flush = (event: Event) => {
       const pending = (event as CustomEvent<Promise<unknown>[]>).detail
-      pending.push(w.savePreferences({ drafts: { [draftKey.current]: latest.current } }))
+      pending.push(
+        w.savePreferences({ drafts: { [draftKey.current]: latest.current } }).catch(() => {})
+      )
     }
     window.addEventListener('prime:flush-drafts', flush)
     return () => window.removeEventListener('prime:flush-drafts', flush)
@@ -146,7 +148,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       ? [accumulated, transcript].filter(Boolean).join(' ')
       : [w.preferences.drafts[target], transcript].filter(Boolean).join(' ')
     pendingTranscripts.current.set(target, merged)
-    void w.savePreferences({ drafts: { [target]: merged } })
+    void w.savePreferences({ drafts: { [target]: merged } }).catch(() => {})
   }
   // startVoice remembers the chat the user is dictating in before the recorder
   // starts, so a late transcript is not routed by the chat open at the end.
@@ -174,7 +176,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         }
         return
       }
-      void w.savePreferences({ drafts: { [previous]: draft } })
+      void w.savePreferences({ drafts: { [previous]: draft } }).catch(() => {})
       setText(w.preferences.drafts[key] || '')
       const waiting = pendingTranscripts.current.get(key)
       if (waiting) {
@@ -204,7 +206,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   }, [suggestions.length, clearSuggestions])
   useEffect(() => {
     const timer = setTimeout(() => {
-      void w.savePreferences({ drafts: { [key]: text } })
+      void w.savePreferences({ drafts: { [key]: text } }).catch(() => {})
     }, 600)
     return () => clearTimeout(timer)
   }, [text, key])
@@ -311,16 +313,17 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       setImporting(false)
     }
   }
-  async function stop() {
+  async function stop(): Promise<boolean> {
     try {
-      await w.cancelRun()
+      return Boolean(await w.cancelRun())
     } catch (error) {
       w.errorHandler(error)
+      return false
     }
   }
   async function interrupt() {
-    await stop()
-    if (hasDraft) await submit()
+    const stopped = await stop()
+    if (stopped && hasDraft) await submit()
   }
   useEffect(() => {
     let lastEscape = 0

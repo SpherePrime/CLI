@@ -406,25 +406,6 @@ func (c *coordinator) registrySnapshot() []*agentJob {
 	return jobs
 }
 
-func jobSeq(j *agentJob) int {
-	n, _ := parseIntAfterPrefix(j.id, "aj-")
-	return n
-}
-
-func parseIntAfterPrefix(id, prefix string) (int, bool) {
-	if !strings.HasPrefix(id, prefix) {
-		return 0, false
-	}
-	n := 0
-	for _, r := range id[len(prefix):] {
-		if r < '0' || r > '9' {
-			return 0, false
-		}
-		n = n*10 + int(r-'0')
-	}
-	return n, true
-}
-
 func (c *coordinator) listAgentJobs(scoped ...[]*agentJob) fantasy.ToolResponse {
 	jobs := c.registrySnapshot()
 	if len(scoped) > 0 {

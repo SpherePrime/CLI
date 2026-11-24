@@ -30,16 +30,27 @@ pub fn spawn(root: &Path, request: &Request) -> Result<Launched, String> {
     let output =
         std::env::temp_dir().join(format!("prime-app-{}-{}.log", std::process::id(), unique()));
     let log = File::create(&output).map_err(|error| error.to_string())?;
-    let errors = log.try_clone().map_err(|error| error.to_string())?;
+    let errors = match log.try_clone() {
+        Ok(file) => file,
+        Err(error) => {
+            drop(log);
+            let _ = std::fs::remove_file(&output);
+            return Err(error.to_string());
+        }
+    };
     let mut command = shell(request.command);
     command
         .current_dir(&directory)
         .stdin(Stdio::null())
         .stdout(Stdio::from(log))
         .stderr(Stdio::from(errors));
-    let child = command
-        .spawn()
-        .map_err(|error| format!("The application could not be started: {error}"))?;
+    let child = match command.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            let _ = std::fs::remove_file(&output);
+            return Err(format!("The application could not be started: {error}"));
+        }
+    };
     Ok(Launched {
         command: request.command.to_owned(),
         pid: child.id(),
@@ -62,7 +73,7 @@ pub fn wait_for_window(
         let titled = |window: &WindowInfo| {
             needle
                 .as_deref()
-                .map_or(true, |needle| window.title.to_lowercase().contains(needle))
+                .is_none_or(|needle| window.title.to_lowercase().contains(needle))
         };
         let fresh = windows.iter().find(|window| {
             window.pid != own
@@ -110,8 +121,17 @@ pub fn stop(launched: &mut Launched) {
             .stderr(Stdio::null())
             .status();
     }
+    #[cfg(unix)]
+    {
+        let _ = Command::new("kill")
+            .args(["-KILL", &format!("-{}", launched.pid)])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+    }
     let _ = launched.child.kill();
     let _ = launched.child.wait();
+    let _ = std::fs::remove_file(&launched.output);
 }
 
 pub fn running(launched: &mut Launched) -> bool {
@@ -169,8 +189,9 @@ fn shell(line: &str) -> Command {
 
 #[cfg(not(windows))]
 fn shell(line: &str) -> Command {
+    use std::os::unix::process::CommandExt;
     let mut command = Command::new("sh");
-    command.arg("-c").arg(line);
+    command.arg("-c").arg(line).process_group(0);
     command
 }
 

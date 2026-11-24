@@ -19,18 +19,26 @@ import (
 	"time"
 )
 
-// Install downloads the latest release binary for the current platform and
-// replaces executable in place. It returns the update info either way;
-// check Info.Available first if the caller only wants to act on updates.
 func Install(ctx context.Context, current, executable string, client Client, out io.Writer) (Info, error) {
 	info, err := Check(ctx, current, client)
 	if err != nil {
 		return info, err
 	}
+	return InstallChecked(ctx, info, executable, client, out)
+}
 
-	release, err := client.Latest(ctx)
-	if err != nil {
-		return info, err
+func InstallChecked(ctx context.Context, info Info, executable string, client Client, out io.Writer) (Info, error) {
+	release := info.release
+	if release == nil {
+		var err error
+		info, err = Check(ctx, info.Current, client)
+		if err != nil {
+			return info, err
+		}
+		release = info.release
+	}
+	if release == nil {
+		return info, errors.New("missing release metadata")
 	}
 
 	asset, err := pickAsset(release)

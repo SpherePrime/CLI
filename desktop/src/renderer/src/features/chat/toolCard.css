@@ -890,6 +890,11 @@
   --tool-cat-soft: rgba(24, 121, 78, 0.11);
 }
 
+:root[data-theme='light'] .tool-card.cat-write {
+  --tool-cat-color: #0f766e;
+  --tool-cat-soft: rgba(15, 118, 110, 0.12);
+}
+
 :root[data-theme='light'] .tool-card.cat-command {
   --tool-cat-color: #d95622;
   --tool-cat-soft: rgba(217, 86, 34, 0.11);
@@ -900,12 +905,35 @@
   --tool-cat-soft: rgba(39, 92, 196, 0.11);
 }
 
+:root[data-theme='light'] .tool-card.cat-read {
+  --tool-cat-color: #475569;
+  --tool-cat-soft: rgba(71, 85, 105, 0.12);
+}
+
+:root[data-theme='light'] .tool-card.cat-browser {
+  --tool-cat-color: #6d28d9;
+  --tool-cat-soft: rgba(109, 40, 217, 0.12);
+}
+
 :root[data-theme='light'] .tool-card.is-error,
 :root[data-theme='light'] .tool-num-del,
 :root[data-theme='light'] .tool-diff-line.is-del .tool-diff-sign,
 :root[data-theme='light'] .tool-card.is-error .tool-label,
 :root[data-theme='light'] .tool-terminal-out.is-error {
   color: #c43737;
+}
+
+:root[data-theme='light'] .tool-exec-status.is-error,
+:root[data-theme='light'] .tool-card .tool-status.failed,
+:root[data-theme='light'] .tool-error-pill,
+:root[data-theme='light'] .tool-exit-badge {
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.12);
+}
+
+:root[data-theme='light'] .tool-mini-btn.is-copied {
+  color: #18794e;
+  border-color: rgba(24, 121, 78, 0.45);
 }
 
 :root[data-theme='light'] .tool-card.is-error {
@@ -940,6 +968,11 @@
   --tool-cat-soft: rgba(24, 121, 78, 0.11);
 }
 
+:root[data-theme='light'] .tool-tree-item.cat-write {
+  --tool-cat-color: #0f766e;
+  --tool-cat-soft: rgba(15, 118, 110, 0.12);
+}
+
 :root[data-theme='light'] .tool-tree-item.cat-command {
   --tool-cat-color: #d95622;
   --tool-cat-soft: rgba(217, 86, 34, 0.11);
@@ -948,6 +981,16 @@
 :root[data-theme='light'] .tool-tree-item.cat-search {
   --tool-cat-color: #275cc4;
   --tool-cat-soft: rgba(39, 92, 196, 0.11);
+}
+
+:root[data-theme='light'] .tool-tree-item.cat-read {
+  --tool-cat-color: #475569;
+  --tool-cat-soft: rgba(71, 85, 105, 0.12);
+}
+
+:root[data-theme='light'] .tool-tree-item.cat-browser {
+  --tool-cat-color: #6d28d9;
+  --tool-cat-soft: rgba(109, 40, 217, 0.12);
 }
 
 :root[data-theme='light'] .tool-tree-item.is-error {
@@ -982,7 +1025,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tool-card.is-grouped.is-running > .tool-tree-node {
+  .tool-tree-item.is-running > .tool-tree-node {
     animation: none;
   }
   .tool-exec-chevron,
@@ -991,4 +1034,15 @@
   .tool-tree-node {
     transition: none;
   }
+}
+
+:root[data-motion='reduced'] .tool-tree-item.is-running > .tool-tree-node {
+  animation: none;
+}
+
+:root[data-motion='reduced'] .tool-exec-chevron,
+:root[data-motion='reduced'] .tool-chevron,
+:root[data-motion='reduced'] .tool-diag-chevron,
+:root[data-motion='reduced'] .tool-tree-node {
+  transition: none;
 }

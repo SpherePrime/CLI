@@ -180,7 +180,7 @@ func (r *Runner) runOne(parentCtx context.Context, hook config.HookConfig, envVa
 		done <- runShell(ctx, shell.RunOptions{
 			Command: hook.Command,
 			Cwd:     r.cwd,
-			Env:     envVars,
+			Env:     shell.WithoutSecretEnv(envVars),
 			Stdin:   bytes.NewReader(payload),
 			Stdout:  &stdout,
 			Stderr:  &stderr,

@@ -1,6 +1,8 @@
+#[cfg(test)]
+use crate::file_index::search_uncached;
 use crate::{
     error::{HostError, HostResult},
-    file_index::{build_gitignore, search_uncached, should_fast_skip, FileCache},
+    file_index::{build_gitignore, should_fast_skip, FileCache},
 };
 use base64::Engine;
 use serde_json::{json, Value};
@@ -64,6 +66,7 @@ pub fn editor_url(target: &Path) -> HostResult<String> {
     Ok(format!("vscode://file{}", url.path()))
 }
 
+#[cfg(test)]
 pub fn list(root: &Path, relative: &str) -> HostResult<Value> {
     list_inner(root, relative, None)
 }
@@ -72,6 +75,7 @@ pub fn list_cached(cache: &FileCache, root: &Path, relative: &str) -> HostResult
     list_inner(root, relative, Some(cache))
 }
 
+#[cfg(test)]
 pub fn search_files(root: &Path, query: &str, limit: usize) -> HostResult<Value> {
     search_uncached(root, query, limit)
 }

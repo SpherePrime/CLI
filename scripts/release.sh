@@ -24,13 +24,14 @@ EOF
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --version)
-            VERSION=${2:-}
-            VERSION=${VERSION#v}
+            [ "$#" -ge 2 ] || usage
+            VERSION=${2#v}
             [ -n "$VERSION" ] || usage
             shift 2
             ;;
         --out)
-            OUT=${2:-}
+            [ "$#" -ge 2 ] || usage
+            OUT=$2
             [ -n "$OUT" ] || usage
             shift 2
             ;;
@@ -42,47 +43,101 @@ done
 
 [ -n "$VERSION" ] || { echo "--version is required" >&2; usage; }
 
-BUILD_ARGS="--out $OUT --version $VERSION"
-[ "$RUN_TEST" -eq 1 ] || BUILD_ARGS="$BUILD_ARGS --no-test"
-rm -rf "$OUT/stage" "$OUT/packages"
+case "$OUT" in
+    /*) ;;
+    *) OUT="$ROOT/$OUT" ;;
+esac
+
+rm -rf "$OUT/stage" "$OUT/packages" "$OUT/extras"
 mkdir -p "$OUT/packages"
 
-# Keep the target list explicit so this stays aligned with .goreleaser.yml.
-# shellcheck disable=SC2086
-scripts/build.sh --target windows/amd64 --target windows/arm64 \
-    --target linux/amd64 --target linux/arm64 $BUILD_ARGS
+if [ "$RUN_TEST" -eq 1 ]; then
+    scripts/build.sh --target windows/amd64 --target windows/arm64 \
+        --target linux/amd64 --target linux/arm64 --out "$OUT" --version "$VERSION"
+else
+    scripts/build.sh --target windows/amd64 --target windows/arm64 \
+        --target linux/amd64 --target linux/arm64 --out "$OUT" --version "$VERSION" --no-test
+fi
+
+EXTRAS="$OUT/extras"
+mkdir -p "$EXTRAS/completions" "$EXTRAS/manpages"
+HOST_OS=$(go env GOOS)
+HOST_ARCH=$(go env GOARCH)
+HOST_BIN="$OUT/prime-$HOST_OS-$HOST_ARCH"
+[ "$HOST_OS" = windows ] && HOST_BIN="$HOST_BIN.exe"
+
+generate_extras() {
+    for shell in bash zsh fish; do
+        if [ -x "$HOST_BIN" ]; then
+            "$HOST_BIN" completion "$shell" > "$EXTRAS/completions/prime.$shell" 2>/dev/null || return 1
+        else
+            go run . completion "$shell" > "$EXTRAS/completions/prime.$shell" 2>/dev/null || return 1
+        fi
+    done
+    if [ -x "$HOST_BIN" ]; then
+        "$HOST_BIN" man > "$EXTRAS/manpages/prime.1" 2>/dev/null || return 1
+    else
+        go run . man > "$EXTRAS/manpages/prime.1" 2>/dev/null || return 1
+    fi
+    gzip -f "$EXTRAS/manpages/prime.1" || return 1
+}
+
+if ! generate_extras; then
+    echo "WARNING: could not generate completions and manpage, archives ship without them." >&2
+    rm -rf "$EXTRAS"
+fi
 
 for target in windows/amd64 windows/arm64 linux/amd64 linux/arm64; do
     os=${target%/*}
     arch=${target#*/}
     archive_arch=$arch
     [ "$arch" = amd64 ] && archive_arch=x86_64
-    archive_os=$os
-    [ "$os" = windows ] && archive_os=Windows || archive_os=Linux
+    archive_os=Linux
+    [ "$os" = windows ] && archive_os=Windows
     ext=tar.gz
     [ "$os" = windows ] && ext=zip
-    name="prime_${VERSION}_${archive_os}_${archive_arch}.${ext}"
-    stage="$OUT/stage/$os-$arch"
-    mkdir -p "$stage"
+    base="prime_${VERSION}_${archive_os}_${archive_arch}"
+    name="${base}.${ext}"
+    wrap="$OUT/stage/$base"
+    mkdir -p "$wrap"
     if [ "$os" = windows ]; then
-        cp "$OUT/prime-$os-$arch.exe" "$stage/prime.exe"
-        cp README.md "$stage/README.md" 2>/dev/null || true
-        if command -v bsdtar >/dev/null 2>&1; then
-            bsdtar -a -cf "$OUT/packages/$name" -C "$stage" .
+        cp "$OUT/prime-$os-$arch.exe" "$wrap/prime.exe"
+    else
+        cp "$OUT/prime-$os-$arch" "$wrap/prime"
+    fi
+    cp README.md "$wrap/README.md" 2>/dev/null || true
+    if [ -f "$EXTRAS/completions/prime.bash" ]; then
+        cp -R "$EXTRAS/completions" "$wrap/completions"
+    fi
+    if [ -f "$EXTRAS/manpages/prime.1.gz" ]; then
+        cp -R "$EXTRAS/manpages" "$wrap/manpages"
+    fi
+    if [ "$os" = windows ]; then
+        if command -v zip >/dev/null 2>&1; then
+            (cd "$OUT/stage" && zip -qr "$OUT/packages/$name" "$base")
+        elif command -v bsdtar >/dev/null 2>&1; then
+            bsdtar -a -cf "$OUT/packages/$name" -C "$OUT/stage" "$base"
         elif command -v 7z >/dev/null 2>&1; then
-            (cd "$stage" && 7z a -tzip -bd -y "$ROOT/$OUT/packages/$name" . >/dev/null)
+            (cd "$OUT/stage" && 7z a -tzip -bd -y "$OUT/packages/$name" "$base" >/dev/null)
         else
-            echo "Windows archives require bsdtar or 7z" >&2
+            echo "Windows archives require zip, bsdtar or 7z" >&2
             exit 1
         fi
     else
-        cp "$OUT/prime-$os-$arch" "$stage/prime"
-        cp README.md "$stage/README.md" 2>/dev/null || true
-        tar -czf "$OUT/packages/$name" -C "$stage" .
+        tar -czf "$OUT/packages/$name" -C "$OUT/stage" "$base"
     fi
     [ -s "$OUT/packages/$name" ] || { echo "Failed to create $name" >&2; exit 1; }
 done
 
-(cd "$OUT/packages" && sha256sum prime_*.zip prime_*.tar.gz > checksums.txt)
+if command -v sha256sum >/dev/null 2>&1; then
+    (cd "$OUT/packages" && sha256sum prime_*.zip prime_*.tar.gz > checksums.txt)
+elif command -v shasum >/dev/null 2>&1; then
+    (cd "$OUT/packages" && shasum -a 256 prime_*.zip prime_*.tar.gz > checksums.txt)
+else
+    echo "sha256sum or shasum is required to generate checksums.txt" >&2
+    exit 1
+fi
 printf '\nRelease assets written to %s/packages:\n' "$OUT"
-find "$OUT/packages" -maxdepth 1 -type f -printf '  %f\n' | sort
+for f in "$OUT/packages"/*; do
+    [ -f "$f" ] && printf '  %s\n' "$(basename "$f")"
+done

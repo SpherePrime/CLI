@@ -7,16 +7,18 @@ param(
 $assets = @(Get-Content -LiteralPath $AssetList -ErrorAction SilentlyContinue)
 $escapedVersion = [regex]::Escape($Version)
 $windows = @($assets | Where-Object { $_ -match "_${escapedVersion}_x64-setup\.exe$" -and "${_}.sig" -in $assets })
-$appimage = @($assets | Where-Object { $_ -match "[_-]${escapedVersion}[_-].*\.AppImage$" -and "${_}.sig" -in $assets })
-$deb = @($assets | Where-Object { $_ -match "[_-]${escapedVersion}[_-].*\.deb$" })
-$rpm = @($assets | Where-Object { $_ -match "[_-]${escapedVersion}[-_.].*\.rpm$" })
+$appimage = @($assets | Where-Object { $_ -notmatch '^PrimeDesktop-Setup-' -and $_ -match "[_-]${escapedVersion}[_-].*\.AppImage$" -and "${_}.sig" -in $assets })
+$deb = @($assets | Where-Object { $_ -match "[_-]${escapedVersion}[_-].*\.deb$" -and "${_}.sig" -in $assets })
+$rpm = @($assets | Where-Object { $_ -match "[_-]${escapedVersion}[-_.].*\.rpm$" -and "${_}.sig" -in $assets })
 $missing = @()
 if ("PrimeDesktop-Setup-$Version.exe" -notin $assets) { $missing += 'Prime Desktop Windows setup' }
+if ("PrimeDesktop-Setup-$Version.exe.sig" -notin $assets) { $missing += 'Prime Desktop Windows setup signature' }
 if ($windows.Count -eq 0) { $missing += 'signed Windows NSIS update package' }
 if (-not $WindowsOnly) {
+    if ("PrimeDesktop-Setup-$Version.AppImage" -notin $assets) { $missing += 'Prime Desktop Linux setup' }
     if ($appimage.Count -eq 0) { $missing += 'signed Linux AppImage' }
-    if ($deb.Count -eq 0) { $missing += 'Linux Debian package' }
-    if ($rpm.Count -eq 0) { $missing += 'Linux RPM package' }
+    if ($deb.Count -eq 0) { $missing += 'signed Linux Debian package' }
+    if ($rpm.Count -eq 0) { $missing += 'signed Linux RPM package' }
 }
 if ('latest.json' -notin $assets) { $missing += 'latest.json' }
 if ($Report) {

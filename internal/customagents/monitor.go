@@ -98,6 +98,7 @@ func probeCommand(ctx context.Context, agent CustomAgent) (string, error) {
 	if agent.WorkspacePath != "" {
 		cmd.Dir = agent.WorkspacePath
 	}
+	cmd.Env = filteredMonitorEnv(os.Environ())
 
 	var buf limitedBuffer
 	buf.limit = maxMonitorBytes
@@ -112,6 +113,19 @@ func probeCommand(ctx context.Context, agent CustomAgent) (string, error) {
 		return "", fmt.Errorf("команда завершилась с ошибкой: %w", err)
 	}
 	return buf.String(), nil
+}
+
+func filteredMonitorEnv(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, entry := range env {
+		name, _, _ := strings.Cut(entry, "=")
+		if strings.EqualFold(name, "PRIME_DESKTOP_SUDO_PASSWORD") ||
+			strings.EqualFold(name, "PRIME_DESKTOP_BROWSER_TOKEN") {
+			continue
+		}
+		out = append(out, entry)
+	}
+	return out
 }
 
 func probeHTTP(ctx context.Context, agent CustomAgent) (string, error) {

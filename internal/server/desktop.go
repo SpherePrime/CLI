@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/SpherePrime/CLI/internal/agent/primeai"
 	"github.com/SpherePrime/CLI/internal/config"
@@ -188,15 +189,22 @@ func (c *controllerV1) handleGetJobs(w http.ResponseWriter, r *http.Request) {
 		if jobErr != nil {
 			errorText = jobErr.Error()
 		}
-		if len(stdout) > 65536 {
-			stdout = stdout[len(stdout)-65536:]
-		}
-		if len(stderr) > 65536 {
-			stderr = stderr[len(stderr)-65536:]
-		}
+		stdout = truncateTailUTF8(stdout, 65536)
+		stderr = truncateTailUTF8(stderr, 65536)
 		jobs = append(jobs, proto.BackgroundJob{SessionID: job.SessionID, ID: id, Command: job.Command, Description: job.Description, Done: done, Stdout: stdout, Stderr: stderr, Error: errorText})
 	}
 	jsonEncode(w, jobs)
+}
+
+func truncateTailUTF8(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	start := len(s) - maxBytes
+	for start < len(s) && !utf8.RuneStart(s[start]) {
+		start++
+	}
+	return s[start:]
 }
 
 func sameProjectPath(left, right string) bool {

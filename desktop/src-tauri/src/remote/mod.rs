@@ -121,29 +121,25 @@ pub fn open(app: &tauri::AppHandle, id: &str) -> HostResult<Value> {
         (connection.profile.clone(), connection.root.clone())
     };
     let directory = workspace_directory(&state, &profile)?;
-    let mut project = crate::projects::open(app, &state, directory.clone(), "project")?;
-    let workspace_id = project["id"].as_str().unwrap().to_owned();
     let key = workspace_key(&profile);
-    project["localPath"] = json!(directory);
-    project["path"] = json!(key);
-    project["remote"] = json!({"profileId":profile.id,"name":profile.name,"host":profile.host,"port":profile.port,"user":profile.user,"root":root});
-    state
-        .projects
-        .lock()
-        .unwrap()
-        .insert(workspace_id.clone(), project.clone());
-    let mut settings = state.settings.lock().unwrap();
-    let mut recent = settings.get()["recent"]
-        .as_array()
-        .cloned()
-        .unwrap_or_default();
-    let local_path = directory.to_string_lossy().into_owned();
-    recent.retain(|path| path.as_str() != Some(local_path.as_str()) && path.as_str() != Some(&key));
-    recent.insert(0, json!(key));
-    recent.truncate(64);
-    settings.update(&json!({"recent":recent,"activeProject":key}))?;
-    drop(settings);
-    crate::events::emit(app, &workspace_id, "projectsChanged", json!({}));
+    let metadata = json!({
+        "profileId": profile.id,
+        "name": profile.name,
+        "host": profile.host,
+        "port": profile.port,
+        "user": profile.user,
+        "root": root,
+    });
+    let project = crate::projects::open_with_remote(
+        app,
+        &state,
+        directory,
+        "project",
+        crate::projects::RemoteOpen { key, metadata },
+    )?;
+    if let Some(workspace_id) = project["id"].as_str() {
+        crate::events::emit(app, workspace_id, "projectsChanged", json!({}));
+    }
     Ok(project)
 }
 
@@ -235,221 +231,6 @@ pub fn file_call(
         ),
         "trashEntry" => files::trash(&connection, path),
         _ => Err(HostError::unsupported(&format!("remote {method}"))),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn profile_validation_and_store_round_trip() {
-        let directory = tempfile::tempdir().unwrap();
-        let profile=serde_json::from_value::<Profile>(json!({"name":"Fixture","host":"localhost","port":22,"user":"fixture","root":"/project/./nested/","auth":"agent","runtime":"bundled"})).unwrap().validate().unwrap();
-        assert_eq!(profile.root, "/project/nested");
-        let mut store = Store::load(directory.path()).unwrap();
-        let mut next = store.value.clone();
-        next.profiles.push(profile.clone());
-        store.persist(next).unwrap();
-        let restored = Store::load(directory.path()).unwrap();
-        assert_eq!(restored.value.profiles[0].id, profile.id);
-        let mut invalid = profile;
-        invalid.root = "/project/../outside".into();
-        assert!(invalid.validate().is_err());
-    }
-
-    #[test]
-    #[ignore]
-    fn native_ssh_sftp_round_trip() {
-        let key = std::env::var("PRIME_NATIVE_SSH_TEST_KEY")
-            .expect("Set PRIME_NATIVE_SSH_TEST_KEY to an isolated SSH fixture identity");
-        let root = std::env::var("PRIME_NATIVE_SSH_TEST_ROOT")
-            .unwrap_or_else(|_| "/tmp/prime-native-ssh-fixture/project".into());
-        let port = std::env::var("PRIME_NATIVE_SSH_TEST_PORT")
-            .unwrap_or_else(|_| "22349".into())
-            .parse::<u16>()
-            .unwrap();
-        let profile=serde_json::from_value::<Profile>(json!({"name":"Fixture","host":"127.0.0.1","port":port,"user":"root","root":root,"auth":"key","keyPath":key,"runtime":"bundled"})).unwrap().validate().unwrap();
-        let challenge = match connection::handshake(&profile, None).unwrap() {
-            Handshake::Challenge(challenge) => challenge,
-            Handshake::Trusted(_) => panic!("Unknown SSH host was trusted"),
-        };
-        let session = match connection::handshake(&profile, Some(&challenge.fingerprint)).unwrap() {
-            Handshake::Trusted(session) => session,
-            Handshake::Challenge(_) => panic!("Expected trusted fixture key"),
-        };
-        let connection =
-            Connection::authenticate(profile, session, &Credentials::default()).unwrap();
-        let result = connection
-            .execute("printf 'native Привет'; printf 'stderr' >&2", "", 5)
-            .unwrap();
-        assert_eq!(result["stdout"], "native Привет");
-        assert_eq!(result["stderr"], "stderr");
-        assert_eq!(result["exitCode"], 0);
-        let original = files::read(&connection, "file.txt").unwrap();
-        let saved = files::save(
-            &connection,
-            "file.txt",
-            "native updated",
-            original["revision"].as_str().unwrap(),
-        )
-        .unwrap();
-        assert!(files::save(
-            &connection,
-            "file.txt",
-            "stale overwrite",
-            original["revision"].as_str().unwrap()
-        )
-        .is_err());
-        assert!(connection.resolve("../outside.txt", false).is_err());
-        assert!(connection.resolve("escape.txt", false).is_err());
-        let entries = files::list(&connection, "").unwrap();
-        assert!(entries
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|entry| entry["name"] == "file.txt"));
-        files::save(
-            &connection,
-            "file.txt",
-            original["content"].as_str().unwrap(),
-            saved["revision"].as_str().unwrap(),
-        )
-        .unwrap();
-        let name = format!("upload-{}.bin", uuid::Uuid::new_v4());
-        files::upload(&connection, &name, &[0, 1, 2, 255], false).unwrap();
-        assert_eq!(
-            files::bytes(&connection, &name, 1024).unwrap(),
-            vec![0, 1, 2, 255]
-        );
-        assert!(files::upload(&connection, &name, b"replace", false).is_err());
-        runtime::block_on(
-            connection.sftp.remove_file(
-                connection
-                    .resolve(&name, false)
-                    .unwrap()
-                    .to_string_lossy()
-                    .replace('\\', "/"),
-            ),
-        )
-        .unwrap();
-        connection.close();
-    }
-
-    #[test]
-    #[ignore]
-    fn native_credential_vault_round_trip() {
-        let profile=serde_json::from_value::<Profile>(json!({"name":"Fixture","host":"localhost","port":22,"user":"fixture","root":"/project","auth":"password","runtime":"bundled"})).unwrap().validate().unwrap();
-        assert!(vault::available());
-        let credentials = Credentials {
-            password: Some(uuid::Uuid::new_v4().to_string()),
-            passphrase: None,
-        };
-        vault::save(&profile, &credentials).unwrap();
-        assert_eq!(
-            vault::load(&profile).unwrap().password,
-            credentials.password
-        );
-        vault::remove(&profile).unwrap();
-        assert!(!vault::has(&profile));
-    }
-
-    #[test]
-    fn import_legacy_preserves_host_fingerprints() {
-        let directory = tempfile::tempdir().unwrap();
-        let manager = RemoteManager::load(directory.path()).unwrap();
-        let id = uuid::Uuid::new_v4().to_string();
-        let fingerprint = format!("SHA256:{}", "a".repeat(43));
-        let saved = json!({
-            "version": 1,
-            "profiles": [{
-                "id": id,
-                "name": "Prod",
-                "host": "prod.example.com",
-                "port": 22,
-                "user": "deploy",
-                "root": "/srv/app",
-                "auth": "agent",
-                "runtime": "bundled"
-            }],
-            "hosts": {
-                "[prod.example.com]:22": fingerprint
-            }
-        });
-        let (imported, skipped) = manager.import_legacy(&saved).unwrap();
-        assert_eq!(imported, 1);
-        assert_eq!(skipped, 0);
-        let reloaded = Store::load(directory.path()).unwrap();
-        assert_eq!(
-            reloaded.value.hosts.get("[prod.example.com]:22").map(String::as_str),
-            Some(fingerprint.as_str())
-        );
-    }
-
-    #[test]
-    fn resolve_profile_id_handles_uuid_name_ambiguity_and_missing() {
-        let directory = tempfile::tempdir().unwrap();
-        let mut store = Store::load(directory.path()).unwrap();
-        let first = serde_json::from_value::<Profile>(json!({
-            "name": "Staging Box",
-            "host": "stage1.example.com",
-            "port": 22,
-            "user": "ubuntu",
-            "root": "/srv",
-            "auth": "agent",
-            "runtime": "bundled"
-        }))
-        .unwrap()
-        .validate()
-        .unwrap();
-        let dup_a = serde_json::from_value::<Profile>(json!({
-            "name": "Worker",
-            "host": "w1.example.com",
-            "port": 22,
-            "user": "ubuntu",
-            "root": "/srv",
-            "auth": "agent",
-            "runtime": "bundled"
-        }))
-        .unwrap()
-        .validate()
-        .unwrap();
-        let dup_b = serde_json::from_value::<Profile>(json!({
-            "name": "worker",
-            "host": "w2.example.com",
-            "port": 22,
-            "user": "ubuntu",
-            "root": "/srv",
-            "auth": "agent",
-            "runtime": "bundled"
-        }))
-        .unwrap()
-        .validate()
-        .unwrap();
-        store
-            .persist(store::Saved {
-                version: 1,
-                profiles: vec![first.clone(), dup_a.clone(), dup_b.clone()],
-                hosts: HashMap::new(),
-            })
-            .unwrap();
-        let manager = RemoteManager::load(directory.path()).unwrap();
-
-        assert_eq!(manager.resolve_profile_id(&first.id).unwrap(), first.id);
-        assert_eq!(manager.resolve_profile_id("Staging Box").unwrap(), first.id);
-        assert_eq!(manager.resolve_profile_id("  staging box  ").unwrap(), first.id);
-        assert_eq!(manager.resolve_profile_id(&dup_a.id).unwrap(), dup_a.id);
-
-        let ambiguous = manager.resolve_profile_id("Worker").unwrap_err();
-        assert_eq!(ambiguous.code, "REMOTE_PROFILE");
-        assert_eq!(
-            ambiguous.message,
-            "Multiple SSH profiles match that name; specify profileId"
-        );
-
-        let missing = manager.resolve_profile_id("nonexistent").unwrap_err();
-        assert_eq!(missing.code, "REMOTE_PROFILE");
-        assert_eq!(missing.message, "remote.notFound");
     }
 }
 
@@ -842,6 +623,7 @@ impl RemoteManager {
         credentials: Credentials,
     ) -> HostResult<Value> {
         let profile = self.profile(id)?;
+        self.prune_closed();
         let (generation, trusted) = {
             let mut state = self.inner.lock().unwrap();
             if state.pending.contains(id) || state.connections.contains_key(id) {
@@ -982,18 +764,7 @@ impl RemoteManager {
         for id in ids {
             let _ = self.disconnect(&id);
         }
-    }
-
-    pub fn connected(&self) -> Value {
-        let state = self.inner.lock().unwrap();
-        json!(state
-            .store
-            .value
-            .profiles
-            .iter()
-            .filter(|profile| state.connections.contains_key(&profile.id))
-            .cloned()
-            .collect::<Vec<_>>())
+        self.terminals.close_all();
     }
 
     pub fn dedicated_connection(&self, id: &str) -> HostResult<Connection> {
@@ -1037,5 +808,220 @@ impl RemoteManager {
         });
         self.forwards
             .open(profile, remote_port, local_port, host, connect)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn profile_validation_and_store_round_trip() {
+        let directory = tempfile::tempdir().unwrap();
+        let profile=serde_json::from_value::<Profile>(json!({"name":"Fixture","host":"localhost","port":22,"user":"fixture","root":"/project/./nested/","auth":"agent","runtime":"bundled"})).unwrap().validate().unwrap();
+        assert_eq!(profile.root, "/project/nested");
+        let mut store = Store::load(directory.path()).unwrap();
+        let mut next = store.value.clone();
+        next.profiles.push(profile.clone());
+        store.persist(next).unwrap();
+        let restored = Store::load(directory.path()).unwrap();
+        assert_eq!(restored.value.profiles[0].id, profile.id);
+        let mut invalid = profile;
+        invalid.root = "/project/../outside".into();
+        assert!(invalid.validate().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn native_ssh_sftp_round_trip() {
+        let key = std::env::var("PRIME_NATIVE_SSH_TEST_KEY")
+            .expect("Set PRIME_NATIVE_SSH_TEST_KEY to an isolated SSH fixture identity");
+        let root = std::env::var("PRIME_NATIVE_SSH_TEST_ROOT")
+            .unwrap_or_else(|_| "/tmp/prime-native-ssh-fixture/project".into());
+        let port = std::env::var("PRIME_NATIVE_SSH_TEST_PORT")
+            .unwrap_or_else(|_| "22349".into())
+            .parse::<u16>()
+            .unwrap();
+        let profile=serde_json::from_value::<Profile>(json!({"name":"Fixture","host":"127.0.0.1","port":port,"user":"root","root":root,"auth":"key","keyPath":key,"runtime":"bundled"})).unwrap().validate().unwrap();
+        let challenge = match connection::handshake(&profile, None).unwrap() {
+            Handshake::Challenge(challenge) => challenge,
+            Handshake::Trusted(_) => panic!("Unknown SSH host was trusted"),
+        };
+        let session = match connection::handshake(&profile, Some(&challenge.fingerprint)).unwrap() {
+            Handshake::Trusted(session) => session,
+            Handshake::Challenge(_) => panic!("Expected trusted fixture key"),
+        };
+        let connection =
+            Connection::authenticate(profile, session, &Credentials::default()).unwrap();
+        let result = connection
+            .execute("printf 'native Привет'; printf 'stderr' >&2", "", 5)
+            .unwrap();
+        assert_eq!(result["stdout"], "native Привет");
+        assert_eq!(result["stderr"], "stderr");
+        assert_eq!(result["exitCode"], 0);
+        let original = files::read(&connection, "file.txt").unwrap();
+        let saved = files::save(
+            &connection,
+            "file.txt",
+            "native updated",
+            original["revision"].as_str().unwrap(),
+        )
+        .unwrap();
+        assert!(files::save(
+            &connection,
+            "file.txt",
+            "stale overwrite",
+            original["revision"].as_str().unwrap()
+        )
+        .is_err());
+        assert!(connection.resolve("../outside.txt", false).is_err());
+        assert!(connection.resolve("escape.txt", false).is_err());
+        let entries = files::list(&connection, "").unwrap();
+        assert!(entries
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|entry| entry["name"] == "file.txt"));
+        files::save(
+            &connection,
+            "file.txt",
+            original["content"].as_str().unwrap(),
+            saved["revision"].as_str().unwrap(),
+        )
+        .unwrap();
+        let name = format!("upload-{}.bin", uuid::Uuid::new_v4());
+        files::upload(&connection, &name, &[0, 1, 2, 255], false).unwrap();
+        assert_eq!(
+            files::bytes(&connection, &name, 1024).unwrap(),
+            vec![0, 1, 2, 255]
+        );
+        assert!(files::upload(&connection, &name, b"replace", false).is_err());
+        runtime::block_on(
+            connection.sftp.remove_file(
+                connection
+                    .resolve(&name, false)
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/"),
+            ),
+        )
+        .unwrap();
+        connection.close();
+    }
+
+    #[test]
+    #[ignore]
+    fn native_credential_vault_round_trip() {
+        let profile=serde_json::from_value::<Profile>(json!({"name":"Fixture","host":"localhost","port":22,"user":"fixture","root":"/project","auth":"password","runtime":"bundled"})).unwrap().validate().unwrap();
+        assert!(vault::available());
+        let credentials = Credentials {
+            password: Some(uuid::Uuid::new_v4().to_string()),
+            passphrase: None,
+        };
+        vault::save(&profile, &credentials).unwrap();
+        assert_eq!(
+            vault::load(&profile).unwrap().password,
+            credentials.password
+        );
+        vault::remove(&profile).unwrap();
+        assert!(!vault::has(&profile));
+    }
+
+    #[test]
+    fn import_legacy_preserves_host_fingerprints() {
+        let directory = tempfile::tempdir().unwrap();
+        let manager = RemoteManager::load(directory.path()).unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let fingerprint = format!("SHA256:{}", "a".repeat(43));
+        let saved = json!({
+            "version": 1,
+            "profiles": [{
+                "id": id,
+                "name": "Prod",
+                "host": "prod.example.com",
+                "port": 22,
+                "user": "deploy",
+                "root": "/srv/app",
+                "auth": "agent",
+                "runtime": "bundled"
+            }],
+            "hosts": {
+                "[prod.example.com]:22": fingerprint
+            }
+        });
+        let (imported, skipped) = manager.import_legacy(&saved).unwrap();
+        assert_eq!(imported, 1);
+        assert_eq!(skipped, 0);
+        let reloaded = Store::load(directory.path()).unwrap();
+        assert_eq!(
+            reloaded.value.hosts.get("[prod.example.com]:22").map(String::as_str),
+            Some(fingerprint.as_str())
+        );
+    }
+
+    #[test]
+    fn resolve_profile_id_handles_uuid_name_ambiguity_and_missing() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut store = Store::load(directory.path()).unwrap();
+        let first = serde_json::from_value::<Profile>(json!({
+            "name": "Staging Box",
+            "host": "stage1.example.com",
+            "port": 22,
+            "user": "ubuntu",
+            "root": "/srv",
+            "auth": "agent",
+            "runtime": "bundled"
+        }))
+        .unwrap()
+        .validate()
+        .unwrap();
+        let dup_a = serde_json::from_value::<Profile>(json!({
+            "name": "Worker",
+            "host": "w1.example.com",
+            "port": 22,
+            "user": "ubuntu",
+            "root": "/srv",
+            "auth": "agent",
+            "runtime": "bundled"
+        }))
+        .unwrap()
+        .validate()
+        .unwrap();
+        let dup_b = serde_json::from_value::<Profile>(json!({
+            "name": "worker",
+            "host": "w2.example.com",
+            "port": 22,
+            "user": "ubuntu",
+            "root": "/srv",
+            "auth": "agent",
+            "runtime": "bundled"
+        }))
+        .unwrap()
+        .validate()
+        .unwrap();
+        store
+            .persist(store::Saved {
+                version: 1,
+                profiles: vec![first.clone(), dup_a.clone(), dup_b.clone()],
+                hosts: HashMap::new(),
+            })
+            .unwrap();
+        let manager = RemoteManager::load(directory.path()).unwrap();
+
+        assert_eq!(manager.resolve_profile_id(&first.id).unwrap(), first.id);
+        assert_eq!(manager.resolve_profile_id("Staging Box").unwrap(), first.id);
+        assert_eq!(manager.resolve_profile_id("  staging box  ").unwrap(), first.id);
+        assert_eq!(manager.resolve_profile_id(&dup_a.id).unwrap(), dup_a.id);
+
+        let ambiguous = manager.resolve_profile_id("Worker").unwrap_err();
+        assert_eq!(ambiguous.code, "REMOTE_PROFILE");
+        assert_eq!(
+            ambiguous.message,
+            "Multiple SSH profiles match that name; specify profileId"
+        );
+
+        let missing = manager.resolve_profile_id("nonexistent").unwrap_err();
+        assert_eq!(missing.code, "REMOTE_PROFILE");
+        assert_eq!(missing.message, "remote.notFound");
     }
 }

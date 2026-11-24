@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/SpherePrime/CLI/internal/db"
+	"github.com/SpherePrime/CLI/internal/history"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/session"
@@ -134,8 +135,7 @@ func (b *Backend) ListSessionMessages(ctx context.Context, workspaceID, sessionI
 	return ws.Messages.List(ctx, sessionID)
 }
 
-// ListSessionHistory returns the history items for a session.
-func (b *Backend) ListSessionHistory(ctx context.Context, workspaceID, sessionID string) (any, error) {
+func (b *Backend) ListSessionHistory(ctx context.Context, workspaceID, sessionID string) ([]history.File, error) {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
 		return nil, err

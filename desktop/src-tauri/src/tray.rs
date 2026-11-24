@@ -140,7 +140,7 @@ fn busy_reason_text(reasons: &[&str], ru: bool) -> String {
             _ => "active work",
         })
         .collect::<Vec<_>>();
-    labels.join(if ru { ", " } else { ", " })
+    labels.join(", ")
 }
 
 pub fn hide_to_tray(app: &AppHandle) {
@@ -154,44 +154,6 @@ pub(crate) fn quit_confirmed(answer: &rfd::MessageDialogResult, stop_label: &str
         rfd::MessageDialogResult::Ok | rfd::MessageDialogResult::Yes => true,
         rfd::MessageDialogResult::Custom(text) if text == stop_label => true,
         _ => false,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{busy_reason_text, quit_confirmed, should_hide_to_tray};
-
-    #[test]
-    fn close_hides_to_tray_until_quitting() {
-        assert!(should_hide_to_tray(false));
-        assert!(!should_hide_to_tray(true));
-    }
-
-    #[test]
-    fn busy_reason_text_names_each_kind_of_work() {
-        let reasons = ["chats", "terminals", "shells", "automations", "teams"];
-        let russian = busy_reason_text(&reasons, true);
-        let english = busy_reason_text(&reasons, false);
-        assert!(russian.contains("активные чаты агента"));
-        assert!(russian.contains("активные команды агентов"));
-        assert!(english.contains("running agent chats"));
-        assert!(english.contains("active agent teams"));
-    }
-
-    #[test]
-    fn quit_confirmed_accepts_ok_yes_and_custom_stop() {
-        assert!(quit_confirmed(&rfd::MessageDialogResult::Ok, "Остановить и выйти"));
-        assert!(quit_confirmed(&rfd::MessageDialogResult::Yes, "Остановить и выйти"));
-        assert!(quit_confirmed(
-            &rfd::MessageDialogResult::Custom("Остановить и выйти".into()),
-            "Остановить и выйти"
-        ));
-        assert!(!quit_confirmed(&rfd::MessageDialogResult::Cancel, "Остановить и выйти"));
-        assert!(!quit_confirmed(&rfd::MessageDialogResult::No, "Остановить и выйти"));
-        assert!(!quit_confirmed(
-            &rfd::MessageDialogResult::Custom("Продолжить работу".into()),
-            "Остановить и выйти"
-        ));
     }
 }
 
@@ -240,7 +202,11 @@ pub fn request_quit(app: AppHandle) {
                 let handle = app.clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(2));
-                    if handle.get_window("main").is_some() {
+                    let state = handle.state::<AppState>();
+                    if state.quitting.load(Ordering::Acquire)
+                        && !state.dirty_dialog_open.load(Ordering::Acquire)
+                        && handle.get_window("main").is_some()
+                    {
                         handle.exit(0);
                     }
                 });
@@ -248,4 +214,42 @@ pub fn request_quit(app: AppHandle) {
             None => app.exit(0),
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{busy_reason_text, quit_confirmed, should_hide_to_tray};
+
+    #[test]
+    fn close_hides_to_tray_until_quitting() {
+        assert!(should_hide_to_tray(false));
+        assert!(!should_hide_to_tray(true));
+    }
+
+    #[test]
+    fn busy_reason_text_names_each_kind_of_work() {
+        let reasons = ["chats", "terminals", "shells", "automations", "teams"];
+        let russian = busy_reason_text(&reasons, true);
+        let english = busy_reason_text(&reasons, false);
+        assert!(russian.contains("активные чаты агента"));
+        assert!(russian.contains("активные команды агентов"));
+        assert!(english.contains("running agent chats"));
+        assert!(english.contains("active agent teams"));
+    }
+
+    #[test]
+    fn quit_confirmed_accepts_ok_yes_and_custom_stop() {
+        assert!(quit_confirmed(&rfd::MessageDialogResult::Ok, "Остановить и выйти"));
+        assert!(quit_confirmed(&rfd::MessageDialogResult::Yes, "Остановить и выйти"));
+        assert!(quit_confirmed(
+            &rfd::MessageDialogResult::Custom("Остановить и выйти".into()),
+            "Остановить и выйти"
+        ));
+        assert!(!quit_confirmed(&rfd::MessageDialogResult::Cancel, "Остановить и выйти"));
+        assert!(!quit_confirmed(&rfd::MessageDialogResult::No, "Остановить и выйти"));
+        assert!(!quit_confirmed(
+            &rfd::MessageDialogResult::Custom("Продолжить работу".into()),
+            "Остановить и выйти"
+        ));
+    }
 }

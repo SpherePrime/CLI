@@ -22,7 +22,20 @@ import (
 
 func TestMain(m *testing.M) {
 	slog.SetLogLoggerLevel(slog.LevelError)
-	m.Run()
+	tmpRoot, err := os.MkdirTemp("", "prime-agent-test-*")
+	if err == nil {
+		_ = os.Setenv("PRIME_GLOBAL_CONFIG", tmpRoot+"/config")
+		_ = os.Setenv("PRIME_GLOBAL_DATA", tmpRoot+"/data")
+	}
+	_ = os.Unsetenv("PRIME_DESKTOP")
+	_ = os.Unsetenv("PRIME_DESKTOP_BROWSER_URL")
+	_ = os.Unsetenv("PRIME_DESKTOP_BROWSER_TOKEN")
+	_ = os.Unsetenv("PRIME_DESKTOP_MCP_AREAS")
+	code := m.Run()
+	if tmpRoot != "" {
+		_ = os.RemoveAll(tmpRoot)
+	}
+	os.Exit(code)
 }
 
 func makeTestTodos(n int) []session.Todo {

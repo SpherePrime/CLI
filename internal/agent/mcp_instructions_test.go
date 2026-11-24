@@ -54,10 +54,20 @@ func TestConnectedMCPInstructionsFilteredByRole(t *testing.T) {
 
 	codeBlock := mcpInstructionsBlock(connectedMCPInstructions(states, config.Agent{ID: config.AgentCode}))
 	require.Contains(t, codeBlock, "Context7 docs.")
-	require.NotContains(t, codeBlock, "Browser instructions.")
-	require.NotContains(t, codeBlock, "Apps instructions.")
-	require.NotContains(t, codeBlock, "Windows instructions.")
-	require.NotContains(t, codeBlock, "Browser 2 instructions.")
+	require.Contains(t, codeBlock, "Browser instructions.")
+	require.Contains(t, codeBlock, "Apps instructions.")
+	require.Contains(t, codeBlock, "Windows instructions.")
+	require.Contains(t, codeBlock, "Browser 2 instructions.")
+
+	codeRestrictedBlock := mcpInstructionsBlock(connectedMCPInstructions(states, config.Agent{
+		ID:         config.AgentCode,
+		AllowedMCP: map[string][]string{"context7": nil},
+	}))
+	require.Contains(t, codeRestrictedBlock, "Context7 docs.")
+	require.NotContains(t, codeRestrictedBlock, "Browser instructions.")
+	require.NotContains(t, codeRestrictedBlock, "Apps instructions.")
+	require.NotContains(t, codeRestrictedBlock, "Windows instructions.")
+	require.NotContains(t, codeRestrictedBlock, "Browser 2 instructions.")
 
 	exploreBlock := mcpInstructionsBlock(connectedMCPInstructions(states, config.Agent{ID: config.AgentExplore, AllowedMCP: map[string][]string{}}))
 	require.Empty(t, exploreBlock)

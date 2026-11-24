@@ -28,14 +28,19 @@ export function TeamPanel(props: Props) {
   return <TeamWorkspace key={props.root} {...props} />
 }
 
-function elapsed(task: TeamTask, now: number) {
+const rootKey = (value: string) => value.replaceAll('\\', '/').replace(/\/+$/, '').toLowerCase()
+
+function elapsed(task: TeamTask, now: number, language: string) {
   if (!task.startedAt) return ''
   const seconds = Math.max(0, Math.round(((task.finishedAt ?? now) - task.startedAt) / 1000))
+  if (language === 'ru') {
+    return seconds < 60 ? `${seconds} с` : `${Math.floor(seconds / 60)} м ${seconds % 60} с`
+  }
   return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`
 }
 
 function TeamWorkspace({ root, api, subscribe, onError, onOpenChat }: Props) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const [snapshot, setSnapshot] = useState<TeamResponse>({ root, teams: [] })
   const [editor, setEditor] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -53,15 +58,28 @@ function TeamWorkspace({ root, api, subscribe, onError, onOpenChat }: Props) {
     mounted.current = true
     void refresh()
     const unsubscribe = subscribe((event) => {
-      if ('type' in event && event.type === 'team' && event.payload?.root === root) void refresh()
+      if (
+        'type' in event &&
+        event.type === 'team' &&
+        typeof event.payload?.root === 'string' &&
+        rootKey(event.payload.root) === rootKey(root)
+      )
+        void refresh()
     })
-    const timer = setInterval(() => setNow(Date.now()), 1000)
     return () => {
       mounted.current = false
       unsubscribe()
-      clearInterval(timer)
     }
   }, [root, refresh, subscribe])
+  const hasActiveTask = snapshot.teams.some((team) =>
+    team.tasks.some((task) => !finishedTeamStatuses.includes(task.status))
+  )
+  useEffect(() => {
+    if (!hasActiveTask) return
+    setNow(Date.now())
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [hasActiveTask])
   const request = async (operation: TeamRequest) => {
     setBusy(true)
     try {
@@ -133,7 +151,7 @@ function TeamWorkspace({ root, api, subscribe, onError, onOpenChat }: Props) {
                       <strong>{task.title}</strong>
                       <span>
                         {t(teamStatusLabel(task.status))}
-                        {task.startedAt ? ` · ${elapsed(task, now)}` : ''}
+                        {task.startedAt ? ` · ${elapsed(task, now, language)}` : ''}
                       </span>
                       {task.error && <p className="team-task-error">{task.error}</p>}
                     </div>

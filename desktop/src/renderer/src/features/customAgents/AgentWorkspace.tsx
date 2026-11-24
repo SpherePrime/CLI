@@ -391,7 +391,7 @@ export function AgentWorkspace({
                       <span>{t('Игнорировать кэш зонда')}</span>
                     </label>
                   ) : (
-                    <span className="ca-muted-note">{triggerLabel(agent)}</span>
+                    <span className="ca-muted-note">{triggerLabel(agent, t)}</span>
                   )}
                   <button type="submit" className="primary" disabled={dispatching}>
                     <Send size={14} aria-hidden="true" />
@@ -628,7 +628,7 @@ function RunTraceCard({
 }) {
   const status = runStatusMeta(run.status)
   const active = isActiveRunStatus(run.status)
-  const duration = formatDuration(run.started_at, run.finished_at)
+  const duration = formatDuration(run.started_at, run.finished_at, t)
 
   return (
     <article className="ca-run-card">

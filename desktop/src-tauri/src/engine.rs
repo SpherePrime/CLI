@@ -191,17 +191,7 @@ impl Engine {
             }
             let trimmed = data.trim();
             if status >= 400 {
-                let message = serde_json::from_str::<Value>(trimmed)
-                    .ok()
-                    .and_then(|value| value["error"].as_str().map(str::to_owned))
-                    .unwrap_or_else(|| {
-                        if trimmed.is_empty() {
-                            format!("Engine status {status}")
-                        } else {
-                            format!("Engine status {status}: {trimmed}")
-                        }
-                    });
-                return Err(HostError::new("ENGINE_HTTP", message));
+                return Err(http_error(status, trimmed));
             }
             let value = if trimmed.is_empty() {
                 Value::Null
@@ -459,6 +449,32 @@ impl Engine {
     }
 }
 
+fn http_error(status: u64, body: &str) -> HostError {
+    let trimmed = body.trim();
+    let message = serde_json::from_str::<Value>(trimmed)
+        .ok()
+        .and_then(|value| {
+            value["message"]
+                .as_str()
+                .or_else(|| value["error"].as_str())
+                .filter(|text| !text.is_empty())
+                .map(str::to_owned)
+        })
+        .unwrap_or_else(|| {
+            if trimmed.is_empty() {
+                format!("Engine status {status}")
+            } else {
+                format!("Engine status {status}: {trimmed}")
+            }
+        });
+    let code = if status == 404 {
+        "ENGINE_HTTP_404"
+    } else {
+        "ENGINE_HTTP"
+    };
+    HostError::new(code, message)
+}
+
 fn automation_failure(app:&tauri::AppHandle,workspace:&str,payload:&Value) {
     use tauri::Manager;
     let error=payload["error"].as_str().unwrap_or("").trim();
@@ -543,9 +559,32 @@ mod tests {
         assert!(models["models"].is_array(), "{models}");
 
         let missing = engine.request("GET", "/v1/does-not-exist", None).unwrap_err();
-        assert_eq!(missing.code, "ENGINE_HTTP");
+        assert_eq!(missing.code, "ENGINE_HTTP_404");
         assert!(missing.message.contains("404"), "{missing:?}");
 
         engine.close();
+    }
+
+    #[test]
+    fn http_error_parses_message_error_and_structured_404_code() {
+        let not_found = http_error(404, r#"{"message":"run not found"}"#);
+        assert_eq!(not_found.code, "ENGINE_HTTP_404");
+        assert_eq!(not_found.message, "run not found");
+
+        let legacy_error = http_error(400, r#"{"error":"invalid request"}"#);
+        assert_eq!(legacy_error.code, "ENGINE_HTTP");
+        assert_eq!(legacy_error.message, "invalid request");
+
+        let message_preferred = http_error(500, r#"{"message":"primary","error":"secondary"}"#);
+        assert_eq!(message_preferred.code, "ENGINE_HTTP");
+        assert_eq!(message_preferred.message, "primary");
+
+        let plain_404 = http_error(404, "404 page not found");
+        assert_eq!(plain_404.code, "ENGINE_HTTP_404");
+        assert_eq!(plain_404.message, "Engine status 404: 404 page not found");
+
+        let empty_502 = http_error(502, "   ");
+        assert_eq!(empty_502.code, "ENGINE_HTTP");
+        assert_eq!(empty_502.message, "Engine status 502");
     }
 }

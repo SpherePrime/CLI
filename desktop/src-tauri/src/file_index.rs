@@ -211,6 +211,7 @@ pub fn build_gitignore(canonical_root: &Path) -> HostResult<Arc<Gitignore>> {
     Ok(Arc::new(built))
 }
 
+#[cfg(test)]
 pub fn search_uncached(root: &Path, query: &str, limit: usize) -> HostResult<Value> {
     let canonical_root = dunce::canonicalize(root)?;
     let entries = build_index(&canonical_root)?;

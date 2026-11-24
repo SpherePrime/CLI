@@ -3,6 +3,7 @@ package shell
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -215,6 +216,33 @@ func (m *BackgroundShellManager) KillAll(ctx context.Context) {
 			shell.cancel()
 			select {
 			case <-shell.done:
+			case <-ctx.Done():
+			}
+		})
+	}
+	wg.Wait()
+}
+
+func (m *BackgroundShellManager) KillByWorkspace(ctx context.Context, workspacePath string) {
+	if workspacePath == "" {
+		return
+	}
+	target := filepath.Clean(workspacePath)
+	var matching []*BackgroundShell
+	for id, s := range m.shells.Seq2() {
+		if s.WorkspacePath != "" && filepath.Clean(s.WorkspacePath) == target {
+			if taken, ok := m.shells.Take(id); ok {
+				matching = append(matching, taken)
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	for _, s := range matching {
+		wg.Go(func() {
+			s.cancel()
+			select {
+			case <-s.done:
 			case <-ctx.Done():
 			}
 		})

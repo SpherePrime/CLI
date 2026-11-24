@@ -175,7 +175,7 @@ mod tests {
         ]);
         let first = candidate(&snapshot, &[]).unwrap();
         assert_eq!(first.path, "window/button[Save]");
-        let second = candidate(&snapshot, &[first.path.clone()]).unwrap();
+        let second = candidate(&snapshot, std::slice::from_ref(&first.path)).unwrap();
         assert_eq!(second.path, "window/button[Help]");
         assert!(candidate(&snapshot, &[first.path.clone(), second.path.clone()]).is_none());
     }

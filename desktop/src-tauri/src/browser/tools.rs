@@ -243,7 +243,6 @@ pub fn run(
             let browser = scenario::Browser {
                 app,
                 state,
-                session,
                 id: &id,
                 view: &view,
                 cancel,

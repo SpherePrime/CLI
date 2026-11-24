@@ -131,32 +131,32 @@ if /I "%~1"=="--no-verify" ( set "VERIFY=0" & shift & goto parse )
 if /I "%~1"=="--no-desktop" ( set "DESKTOP=0" & shift & goto parse )
 if /I "%~1"=="--targets" goto opt_targets
 echo Unknown option: %~1
-goto usage
+goto usage_error
 
 :opt_ratio
 shift
-if "%~1"=="" ( echo --ratio needs a fraction & goto usage )
+if "%~1"=="" ( echo --ratio needs a fraction & goto usage_error )
 set "RATIO=%~1"
 shift
 goto parse
 
 :opt_jobs
 shift
-if "%~1"=="" ( echo --jobs needs a number & goto usage )
+if "%~1"=="" ( echo --jobs needs a number & goto usage_error )
 set "JOBS=%~1"
 shift
 goto parse
 
 :opt_out
 shift
-if "%~1"=="" ( echo --out needs a directory & goto usage )
+if "%~1"=="" ( echo --out needs a directory & goto usage_error )
 set "OUT=%~1"
 shift
 goto parse
 
 :opt_version
 shift
-if "%~1"=="" ( echo --version needs x.y.z & goto usage )
+if "%~1"=="" ( echo --version needs x.y.z & goto usage_error )
 set "VERSION=%~1"
 shift
 goto parse
@@ -189,15 +189,15 @@ if /I "!ARG!"=="windows/arm64"  ( set "TARGETS=!TARGETS! windows/arm64"  & shift
 if /I "!ARG!"=="linux/amd64"    ( set "TARGETS=!TARGETS! linux/amd64"    & shift & goto targets_loop )
 if /I "!ARG!"=="linux/arm64"    ( set "TARGETS=!TARGETS! linux/arm64"    & shift & goto targets_loop )
 echo Unsupported --targets value: !ARG! ^(use windows, linux, all, or os/arch^)
-goto usage
+goto usage_error
 :targets_done
-if not defined TARGETS ( echo --targets needs at least one platform & goto usage )
+if not defined TARGETS ( echo --targets needs at least one platform & goto usage_error )
 set "TARGETS_SET=1"
 goto parse
 
 :opt_notes
 shift
-if "%~1"=="" ( echo --notes needs a file & goto usage )
+if "%~1"=="" ( echo --notes needs a file & goto usage_error )
 set "NOTES=%~1"
 shift
 goto parse
@@ -231,7 +231,7 @@ if /I "%CMD%"=="check"  goto do_check
 if /I "%CMD%"=="release" goto do_release
 if /I "%CMD%"=="draft"  goto do_release
 if /I "%CMD%"=="menu"   goto menu
-goto usage
+goto usage_error
 
 rem ============================================================================
 rem  Menu
@@ -276,43 +276,9 @@ rem location to the environment, but this cmd session was started before that
 rem happened, so without this the tool stays invisible for the rest of the run
 rem and the next step fails even though the install succeeded.
 :refresh_path
-set "SAVED_PATH=%PATH%"
-set "MACHINE_PATH="
-set "USER_PATH="
-for /f "tokens=2,*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v Path 2^>nul ^| find "REG_EXPAND_SZ"') do set "MACHINE_PATH=%%b"
-for /f "tokens=2,*" %%a in ('reg query "HKCU\Environment" /v Path 2^>nul ^| find "REG_EXPAND_SZ"') do set "USER_PATH=%%b"
-if defined MACHINE_PATH if defined USER_PATH (
-    set "PATH=%MACHINE_PATH%;%USER_PATH%"
-    call :expand_path
-    set "PATH=!PATH!;%SAVED_PATH%"
-) else (
-    set "PATH=%SAVED_PATH%"
-)
-exit /b 0
-
-rem expand_path turns the %SystemRoot%-style entries the registry stores into
-rem real directories. Left unexpanded, Go's directory is never found.
-:expand_path
-setlocal EnableDelayedExpansion
-set "WORK=%PATH%"
-set "OUT_PATH="
-:expand_loop
-if "!WORK!"=="" goto expand_done
-for /f "tokens=1,* delims=;" %%a in ("!WORK!") do (
-    set "HEAD=%%a"
-    set "TAIL=%%b"
-)
-if defined HEAD (
-    call set "HEAD=%%HEAD%%"
-    if "!HEAD:~2!"=="~" call set "HEAD=%%HEAD:~2%%"
-    if not "!HEAD:~2!"=="~" call set "HEAD=%%PATH:~0,2%%!HEAD:~2!"
-    set "OUT_PATH=!OUT_PATH!;!HEAD!"
-)
-set "WORK=!TAIL!"
-goto expand_loop
-:expand_done
-set "PATH=%OUT_PATH:~1%"
-endlocal & set "PATH=%PATH%"
+set "REG_PATH="
+for /f "usebackq delims=" %%p in (`powershell -NoProfile -Command "$parts = @([Environment]::GetEnvironmentVariable('Path','Machine'), [Environment]::GetEnvironmentVariable('Path','User')) | Where-Object { $_ } | ForEach-Object { [Environment]::ExpandEnvironmentVariables($_) }; $parts -join ';'" 2^>nul`) do set "REG_PATH=%%p"
+if defined REG_PATH set "PATH=!REG_PATH!;!PATH!"
 exit /b 0
 
 :have_winget
@@ -455,12 +421,8 @@ call :refresh_path
 where tar >nul 2>&1 && exit /b 0
 echo.
 echo ERROR: tar ^(bsdtar^) was not found. The Linux packages are built with it.
-echo        It ships with Windows 10 1803 and later as an operating system
-echo        feature, which no package manager installs.
-echo.
-echo        Re-enable it with, as administrator:
-echo          DISM /Online /Enable-Feature /FeatureName:RemoteSigned /All /NoRestart
-echo        or turn on the equivalent Windows feature.
+echo        It ships with Windows 10 1803 and later in %%SystemRoot%%\System32\tar.exe.
+echo        Ensure %%SystemRoot%%\System32 is on PATH, or repair Windows system files.
 exit /b 1
 
 rem resolve_version sets VERSION to the explicit --version if given, otherwise
@@ -479,7 +441,7 @@ rem this shape the whole script died with "command syntax is incorrect" on
 rem every run that did not pass --version.
 :resolve_version
 if not defined VERSION goto resolve_version_auto
-if "%VERSION:~0,1%"=="v" set "VERSION=%VERSION:~1%"
+if /I "%VERSION:~0,1%"=="v" set "VERSION=%VERSION:~1%"
 exit /b 0
 
 :resolve_version_auto
@@ -500,7 +462,7 @@ rem The addition needs its own parentheses: PowerShell binds -f tighter than +,
 rem so -f a, b, c+1 formats with c and then appends "1" to the whole string.
 rem That turned v0.4.36 into v0.4.361.
 for /f "usebackq delims=" %%v in (`powershell -NoProfile -Command ^
-  "$t='!LATEST_TAG!'; $v=[version]'0.0.0'; if($t -match '^v?(\d+\.\d+\.\d+)'){ $v=[version]$Matches[1] }; $n='{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build+1); $p=Join-Path '%PRIME_RELEASE_HOME%..' 'desktop\package.json'; if(Test-Path $p){ $d=[version](Get-Content $p -Raw | ConvertFrom-Json).version; if($d -gt $v){ $n='{0}.{1}.{2}' -f $d.Major, $d.Minor, $d.Build } }; $n"`) do set "VERSION=%%v"
+  "$t='!LATEST_TAG!'; $v=[version]'0.0.0'; if($t -match '^v?(\d+\.\d+\.\d+)'){ $v=[version]$Matches[1] }; $n='{0}.{1}.{2}' -f $v.Major, $v.Minor, ($v.Build+1); $p=Join-Path '%PRIME_RELEASE_HOME%..' 'desktop\package.json'; if(Test-Path $p){ $dv=(Get-Content $p -Raw | ConvertFrom-Json).version; if($dv -match '^(\d+\.\d+\.\d+)'){ $d=[version]$Matches[1]; if($d -gt $v){ $n='{0}.{1}.{2}' -f $d.Major, $d.Minor, $d.Build } } }; $n"`) do set "VERSION=%%v"
 exit /b 0
 
 :current_sha
@@ -860,6 +822,7 @@ call :ensure_gh_auth || exit /b 1
 call :current_sha
 if not defined SHA ( echo ERROR: not a git repository with a HEAD & exit /b 1 )
 
+set "DIRTY="
 for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
 if defined DIRTY (
   echo.
@@ -894,8 +857,7 @@ if defined TAG_SHA (
     rem An annotated tag resolves to the tag object, so peel it to the commit.
     for /f "usebackq tokens=1" %%t in (`git ls-remote --tags origin "refs/tags/%TAG%^{}" 2^>nul`) do set "TAG_SHA=%%t"
     rem Short SHAs are what git prints locally but the remote sends full ones.
-    set "HEAD_SHORT=!SHA:~0,7!"
-    if /I "!TAG_SHA:~0,7!"=="!HEAD_SHORT!" (
+    if /I "!TAG_SHA!"=="!SHA!" (
         echo.
         echo  Tag %TAG% is already pushed for this commit.
         echo  Continuing: the release will be created or topped up.
@@ -930,7 +892,7 @@ rem gets one yes or no. --yes skips it for unattended runs.
 if "!DRY_RUN!"=="1" goto confirmed
 if "!ASSUME_YES!"=="1" goto confirmed
 echo  This will build the selected targets, tag !TAG!, and publish a release.
-echo  Uncommitted changes are auto-committed before the build.
+if "!AUTO_COMMIT!"=="1" if "!TAG_EXISTS!"=="0" echo  Uncommitted changes are auto-committed before the build.
 echo.
 choice /c Yn /n /t 20 /d N /m "  Publish? [Y/n] (20s) "
 if errorlevel 2 (
@@ -947,7 +909,24 @@ if "!DESKTOP_RELEASE!"=="1" if "!DRY_RUN!"=="0" (
     set "SET_VERSION_EXIT=!errorlevel!"
     popd
     if not "!SET_VERSION_EXIT!"=="0" ( echo ERROR: could not set the desktop version & exit /b 1 )
-    for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
+)
+set "DIRTY="
+for /f "usebackq tokens=*" %%b in (`git status --porcelain`) do set "DIRTY=1"
+
+if "!DESKTOP_RELEASE!"=="1" if "!AUTO_COMMIT!"=="0" if "!DRY_RUN!"=="0" if defined DIRTY (
+    echo.
+    echo ERROR: --no-auto-commit cannot be used when the working tree is dirty after
+    echo        setting the desktop version to !VERSION!.
+    echo        Commit the version changes first, or drop --no-auto-commit.
+    exit /b 1
+)
+
+if "!TAG_EXISTS!"=="1" if "!DRY_RUN!"=="0" if defined DIRTY (
+    echo.
+    echo ERROR: tag !TAG! already exists on origin at !TAG_SHA!, so local changes
+    echo        cannot be auto-committed without moving HEAD past the tag.
+    echo        Clean the working tree to retry !TAG!, or pass --version x.y.z.
+    exit /b 1
 )
 
 rem The tree is committed only after the user confirmed the publish: a
@@ -955,7 +934,7 @@ rem cancelled release leaves the working tree exactly as it was found.
 rem Every change is staged, new files included; .gitignore still applies.
 rem The generic author is a fallback for machines without a git identity -
 rem machines with one keep their own.
-if defined DIRTY if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
+if defined DIRTY if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" if "!TAG_EXISTS!"=="0" (
     echo  Committing local changes ...
     git add -A
     git config user.name >nul 2>&1
@@ -976,7 +955,7 @@ if defined DIRTY if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
 )
 if defined DIRTY set "DIRTY="
 
-if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" (
+if "!AUTO_COMMIT!"=="1" if "!DRY_RUN!"=="0" if "!TAG_EXISTS!"=="0" (
     call :merge_worktrees || exit /b 1
     call :sync_desktop_version || exit /b 1
     call :push_branch || exit /b 1
@@ -1159,7 +1138,7 @@ rem ---------------------------------------------------------------------------
 set "STAGE=%OUT%\stage"
 set "PKG=%OUT%\packages"
 set "VERSION_BARE=%VERSION%"
-set "VERSION_BARE=%VERSION_BARE:v=%"
+if /I "!VERSION_BARE:~0,1!"=="v" set "VERSION_BARE=!VERSION_BARE:~1!"
 
 rem A narrower --targets must not pick up binaries of a platform that was
 rem built earlier and is no longer selected: wipe the binary groups that are
@@ -1210,11 +1189,19 @@ rem certutil fallback covers a box with no PowerShell at all: certutil is an
 rem operating system binary, and its one space-free output line is the hash.
 del /q "%PKG%\checksums.txt" >nul 2>&1
 for %%A in ("%PKG%\*.zip" "%PKG%\*.tar.gz") do (
-    for /f "usebackq delims=" %%h in (`powershell -NoProfile -Command "$b=[System.IO.File]::ReadAllBytes('%%~fA');$s=[System.Security.Cryptography.SHA256]::Create();($s.ComputeHash($b)|ForEach-Object{($_.ToString('x2'))}) -join ''"`) do (
-        >>"%PKG%\checksums.txt" echo %%h  %%~nxA
+    set "HASH="
+    set "PRIME_SUM_FILE=%%~fA"
+    set "PRIME_SUM_NAME=%%~nxA"
+    set "PRIME_SUM_OUT=%%~dpAchecksums.txt"
+    for /f "usebackq delims=" %%h in (`powershell -NoProfile -Command "$fs=[System.IO.File]::OpenRead($env:PRIME_SUM_FILE);try{$h=([System.Security.Cryptography.SHA256]::Create().ComputeHash($fs)|ForEach-Object{$_.ToString('x2')}) -join ''}finally{$fs.Dispose()};[System.IO.File]::AppendAllText($env:PRIME_SUM_OUT, ($h + '  ' + $env:PRIME_SUM_NAME + [char]10), (New-Object System.Text.UTF8Encoding($false)));$h" 2^>nul`) do set "HASH=%%h"
+    if not defined HASH (
+        for /f "tokens=*" %%h in ('certutil -hashfile "%%~fA" SHA256 2^>nul ^| findstr /v " "') do set "HASH=%%h"
+        if defined HASH >>"%PKG%\checksums.txt" echo !HASH!  %%~nxA
     )
-    if not exist "%PKG%\checksums.txt" for /f "tokens=*" %%h in ('certutil -hashfile "%%~fA" SHA256 2^>nul ^| findstr /v " "') do >>"%PKG%\checksums.txt" echo %%h  %%~nxA
 )
+set "PRIME_SUM_FILE="
+set "PRIME_SUM_NAME="
+set "PRIME_SUM_OUT="
 set "ASSETS=!ASSETS! %PKG%\checksums.txt"
 
 call :print_footer
@@ -1440,7 +1427,7 @@ rem  A missing asset is reported, not fatal.
 rem ---------------------------------------------------------------------------
 :verify_assets
 set "VERSION_BARE=%VERSION%"
-set "VERSION_BARE=%VERSION_BARE:v=%"
+if /I "!VERSION_BARE:~0,1!"=="v" set "VERSION_BARE=!VERSION_BARE:~1!"
 rem Every asset is built here and is on the page when :publish returns. The
 rem Linux desktop packages come later from the Release workflow and are not
 rem waited for.
@@ -1449,6 +1436,7 @@ set "DESKTOP_ASSETS="
 if "!DESKTOP_RELEASE!"=="1" set "DESKTOP_ASSETS=1"
 echo.
 echo  Verifying the assets on %TAG% ...
+if "!POLL!"=="0" goto verify_report
 :verify_wait
 call :verify_fetch
 set "MISSING_COUNT=0"
@@ -1576,6 +1564,12 @@ if "%TAG_EXISTS%"=="0" (
         exit /b 1
     )
 ) else (
+    call :current_sha
+    if /I not "!TAG_SHA!"=="!SHA!" (
+        echo ERROR: HEAD !SHA! no longer matches existing remote tag %TAG% at !TAG_SHA!.
+        echo        Pass --version x.y.z to release a new tag.
+        exit /b 1
+    )
     echo  Tag %TAG% is already on the remote.
 )
 
@@ -1655,7 +1649,13 @@ if exist "%ROOT%\RELEASE_NOTES.md" (
 )
 exit /b 0
 rem ============================================================================
+:usage_error
+set "USAGE_EXIT=2"
+goto usage_body
+
 :usage
+set "USAGE_EXIT=0"
+:usage_body
 echo.
 echo Usage: scripts\release.bat [command] [options]
 echo.
@@ -1671,7 +1671,7 @@ echo                GitHub, then verify the assets landed
 echo   draft        same as release but leaves a draft for review
 echo   clean        delete the output directory
 echo.
-echo   --ratio ^<f^>        fraction of the machine to build with (default 0.35)
+echo   --ratio ^<f^>        fraction of the machine to build with (default 0.5)
 echo   --jobs ^<n^>         exact job count, overrides --ratio
 echo   --out ^<dir^>        output directory (default dist)
 echo   --version ^<x.y.z^>  use this version instead of last release + 1
@@ -1699,5 +1699,4 @@ echo   TAURI_SIGNING_PRIVATE_KEY; password: prime-updater.password next to the
 echo   key or TAURI_SIGNING_PRIVATE_KEY_PASSWORD.
 echo.
 popd
-endlocal
-exit /b 0
+endlocal & exit /b %USAGE_EXIT%

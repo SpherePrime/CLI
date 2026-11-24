@@ -212,7 +212,12 @@ export const MessageItem = memo(function MessageItem({
             return (
               <div className="tool-part" key={index}>
                 {part.type === 'tool_call' && part.data?.name === 'agent' ? (
-                  <AgentCard part={part} messageId={message.id} sessionId={message.session_id} />
+                  <AgentCard
+                    part={part}
+                    messageId={message.id}
+                    sessionId={message.session_id}
+                    messageFinished={messageFinished}
+                  />
                 ) : (
                   <ToolCard part={part} messageFinished={messageFinished} />
                 )}
@@ -318,11 +323,15 @@ export const MessageItem = memo(function MessageItem({
         <button
           className="copy-message icon"
           aria-label={t('Скопировать сообщение')}
-          onClick={async () => {
-            await navigator.clipboard.writeText(text)
-            setCopied(true)
-            clearTimeout(copiedTimer.current)
-            copiedTimer.current = setTimeout(() => setCopied(false), 1500)
+          onClick={() => {
+            void navigator.clipboard
+              ?.writeText(text)
+              .then(() => {
+                setCopied(true)
+                clearTimeout(copiedTimer.current)
+                copiedTimer.current = setTimeout(() => setCopied(false), 1500)
+              })
+              .catch(() => {})
           }}
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}

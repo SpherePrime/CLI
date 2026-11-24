@@ -26,6 +26,7 @@ func TestServerInitializesAccountService(t *testing.T) {
 	defer cancel()
 	inProc := NewInProcessWithOptions(ctx, nil, "")
 	require.NotNil(t, inProc.Account())
+	require.NoError(t, inProc.Close())
 }
 
 func TestAccountEndpointsFlowAndTokenRedaction(t *testing.T) {

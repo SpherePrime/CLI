@@ -127,7 +127,7 @@ shift
 if "%~1"=="" ( echo --version needs x.y.z & goto usage )
 rem Accept either form, the linker wants a bare number.
 set "VERSION=%~1"
-set "VERSION=%VERSION:v=%"
+if /I "!VERSION:~0,1!"=="v" set "VERSION=!VERSION:~1!"
 shift
 goto parse
 
@@ -164,7 +164,7 @@ set "CGO_ENABLED=0"
 echo.
 echo  Prime build
 echo  ------------------------------------------------------------------
-echo   cores      : %CORES% logical, using %JOBS% (~%RATIO%% of the machine)
+echo   cores      : %CORES% logical, using %JOBS% (~%RATIO% of the machine)
 echo   heap limit : %GOMEMLIMIT% per process, %MEM_BUDGET_MB%MB total across %JOBS% jobs
 echo   mode       : %TARGETS_MODE%
 echo   output     : %OUT%
@@ -177,6 +177,8 @@ rem ---- targets --------------------------------------------------------------
 if /I "%TARGETS_MODE%"=="current" (
     if /I "%OS%"=="Windows_NT" (
         set "TARGETS=windows/amd64"
+        if /I "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "TARGETS=windows/arm64"
+        if /I "%PROCESSOR_ARCHITEW6432%"=="ARM64" set "TARGETS=windows/arm64"
     ) else (
         set "TARGETS=linux/amd64"
     )
@@ -196,7 +198,7 @@ if /I "%TARGETS_MODE%"=="os" (
     echo.
 )
 if /I "%TARGETS_MODE%"=="all" (
-    set "TARGETS=windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 freebsd/amd64 freebsd/arm64 openbsd/amd64 openbsd/arm64 netbsd/amd64 netbsd/arm64"
+    set "TARGETS=windows/amd64 windows/arm64 linux/amd64 linux/arm64"
     set "MULTI=1"
     echo  All release targets. This takes a while.
     echo.
@@ -222,7 +224,7 @@ for %%T in (%TARGETS%) do (
         set "GOOS=%%a"
         set "GOARCH=%%b"
     )
-    if /I "%%GOARCH%%"=="arm" (
+    if /I "!GOARCH!"=="arm" (
         set "GOARM=7"
     ) else (
         set "GOARM="

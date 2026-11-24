@@ -134,7 +134,7 @@ pub fn run(snapshot: &UiSnapshot) -> Audit {
     for node in &snapshot.nodes {
         walk(node, window.as_ref(), &mut issues, &mut checked);
     }
-    issues.sort_by(|a: &Issue, b: &Issue| a.severity.cmp(&b.severity));
+    issues.sort_by_key(|a| a.severity);
     let errors = issues
         .iter()
         .filter(|issue| issue.severity == Severity::Error)

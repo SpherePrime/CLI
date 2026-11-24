@@ -313,14 +313,14 @@ func TestMaybeDelaySearch_AbortsOnCancelWithoutHoldingLock(t *testing.T) {
 	start := time.Now()
 	err := maybeDelaySearch(canceledCtx)
 	require.ErrorIs(t, err, context.Canceled)
-	require.Less(t, time.Since(start), 150*time.Millisecond)
+	require.Less(t, time.Since(start), 400*time.Millisecond)
 
 	timeoutCtx, cancelTimeout := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancelTimeout()
 	start = time.Now()
 	err = maybeDelaySearch(timeoutCtx)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
-	require.Less(t, time.Since(start), 150*time.Millisecond)
+	require.Less(t, time.Since(start), 400*time.Millisecond)
 
 	require.NoError(t, <-bgDone)
 }

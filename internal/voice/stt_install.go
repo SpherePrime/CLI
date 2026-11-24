@@ -279,17 +279,11 @@ func ensureWhisperVulkanRuntime(ctx context.Context, dataDir string, emit func(S
 // that would succeed.
 func vulkanCompilerTools() []string {
 	if runtime.GOOS == "windows" {
-		return []string{"cl"}
+		return nil
 	}
 	return []string{"g++", "c++", "clang++"}
 }
 
-// checkVulkanBuildTools verifies that the machine has everything a
-// GGML_VULKAN build needs before any download or destructive step runs, so
-// the error a user sees is about installing a package, not about a compiler
-// error half an hour into a build. On Windows the compiler is not required
-// here: cmake finds Visual Studio on its own, and a genuinely broken setup
-// surfaces in the streamed build log.
 func checkVulkanBuildTools() error {
 	var missing []string
 	for _, tool := range []string{"cmake", "glslc"} {
@@ -297,15 +291,17 @@ func checkVulkanBuildTools() error {
 			missing = append(missing, tool)
 		}
 	}
-	compiler := ""
-	for _, candidate := range vulkanCompilerTools() {
-		if path, err := sttLookPath(candidate); err == nil {
-			compiler = path
-			break
+	if compilers := vulkanCompilerTools(); len(compilers) > 0 {
+		compiler := ""
+		for _, candidate := range compilers {
+			if path, err := sttLookPath(candidate); err == nil {
+				compiler = path
+				break
+			}
 		}
-	}
-	if compiler == "" {
-		missing = append(missing, strings.Join(vulkanCompilerTools(), "/"))
+		if compiler == "" {
+			missing = append(missing, strings.Join(compilers, "/"))
+		}
 	}
 	if len(missing) == 0 {
 		return nil

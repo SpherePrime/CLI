@@ -14,8 +14,9 @@ const environment = { ...process.env, GOOS: targetOS, CGO_ENABLED: '1' }
 if (process.env.PRIME_NATIVE_CC) environment.CC = process.env.PRIME_NATIVE_CC
 mkdirSync(outputDir, { recursive: true })
 const libraryPath = resolve(outputDir, libraryName)
+const version = JSON.parse(readFileSync(resolve(desktopDir, 'package.json'), 'utf8')).version
 if (!existsSync(libraryPath) || process.env.PRIME_REBUILD_ENGINE !== '0') {
-  const result = spawnSync('go', ['build', '-buildmode=c-shared', '-trimpath', '-ldflags=-s -w', '-o', libraryPath, './cmd/desktop-engine'], { cwd: repositoryDir, env: environment, stdio: 'inherit' })
+  const result = spawnSync('go', ['build', '-buildmode=c-shared', '-trimpath', '-buildvcs=false', `-ldflags=-s -w -X github.com/SpherePrime/CLI/internal/version.Version=${version}`, '-o', libraryPath, './cmd/desktop-engine'], { cwd: repositoryDir, env: environment, stdio: 'inherit' })
   if (result.error) throw result.error
   if (result.status !== 0) process.exit(result.status || 1)
 }
@@ -24,6 +25,5 @@ const hash = createHash('sha256')
 for await (const chunk of createReadStream(resolve(outputDir, libraryName))) hash.update(chunk)
 const targetArch = process.env.GOARCH || ({ x64: 'amd64', arm64: 'arm64' }[process.arch])
 if (!['amd64', 'arm64'].includes(targetArch)) throw new Error('Unsupported native engine architecture')
-const version = JSON.parse(readFileSync(resolve(desktopDir, 'package.json'), 'utf8')).version
 writeFileSync(resolve(outputDir, 'manifest.json'), JSON.stringify({ abi: 1, version, os: targetOS, arch: targetArch, library: libraryName, sha256: hash.digest('hex') }, null, 2) + '\n')
 console.log(resolve(outputDir, libraryName))

@@ -69,6 +69,7 @@ func startMCPJob(ctx context.Context, tool *Tool, input, sessionID string) *mcpJ
 	mcpJobs.Set(job.id, job)
 	go func() {
 		defer close(job.done)
+		defer cancel()
 		defer mcp.ForgetProgress(job.id)
 		result, err := runMCPTool(jobCtx, tool.cfg, tool.mcpName, tool.tool.Name, input, sessionID, job.id)
 		job.mu.Lock()

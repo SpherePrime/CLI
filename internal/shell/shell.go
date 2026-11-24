@@ -98,6 +98,7 @@ func NewShell(opts *Options) *Shell {
 	// binaries and nested prime instances) can't attach to or release
 	// the parent pane's agent authority.
 	env = withoutHerdrEnv(env)
+	env = WithoutSecretEnv(env)
 
 	// Allow tools to detect execution by Prime.
 	env = append(env, PrimeEnvMarkers()...)

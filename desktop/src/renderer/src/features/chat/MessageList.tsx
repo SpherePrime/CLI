@@ -96,7 +96,7 @@ export function MessageList({
     const timer = setTimeout(() => {
       void searchMessages(query)
         .then((result) => {
-          if (active) setRemoteMatches(result.matches)
+          if (active) setRemoteMatches(Array.isArray(result?.matches) ? result.matches : [])
         })
         .catch((error) => {
           if (active) setSearchError(String(error.message || error))

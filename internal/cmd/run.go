@@ -79,8 +79,8 @@ prime run --continue "Follow up on your last response"
 			useLast, _         = cmd.Flags().GetBool("continue")
 		)
 
-		// Cancel on SIGINT or SIGTERM.
-		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+		sigs := addSignals([]os.Signal{os.Interrupt})
+		ctx, cancel := signal.NotifyContext(context.Background(), sigs...)
 		defer cancel()
 
 		prompt := strings.Join(args, " ")
@@ -348,7 +348,10 @@ func runNonInteractive(
 		case ev, ok := <-events:
 			if !ok {
 				stopSpinner()
-				return nil
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+				return errors.New("event stream closed before run completed")
 			}
 
 			// Forward events to herdr if running inside a herdr pane.

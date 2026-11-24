@@ -149,17 +149,19 @@ pub fn team_prompt(team: &Team, task: &TeamTask) -> String {
         .join("\n");
     [
         format!("You are one member of the agent team \"{}\".", team.title),
-        (!team.goal.is_empty())
-            .then(|| format!("Team goal:\n{}", team.goal))
-            .unwrap_or_default(),
+        if !team.goal.is_empty() {
+            format!("Team goal:\n{}", team.goal)
+        } else {
+            String::new()
+        },
         format!("Your task: {}\n{}", task.title, task.instruction),
-        (!others.is_empty())
-            .then(|| {
-                format!(
-                    "Other members work in parallel on:\n{others}\nDo not do their work and avoid editing the same files."
-                )
-            })
-            .unwrap_or_default(),
+        if !others.is_empty() {
+            format!(
+                "Other members work in parallel on:\n{others}\nDo not do their work and avoid editing the same files."
+            )
+        } else {
+            String::new()
+        },
         "Finish with a short summary of the result and changed files.".to_owned(),
     ]
     .into_iter()

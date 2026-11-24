@@ -25,3 +25,25 @@ func TestDefaultDesktopLogDirHonorsOverride(t *testing.T) {
 		t.Fatalf("unexpected log file path: %q", got)
 	}
 }
+
+func TestRecoverPanicRunsCleanupEvenWhenLogFileFails(t *testing.T) {
+	prev := activeLogFile.Load()
+	missingDir := filepath.Join(t.TempDir(), "nonexistent-dir", "child", "engine.log")
+	activeLogFile.Store(missingDir)
+	t.Cleanup(func() {
+		if prev != nil {
+			activeLogFile.Store(prev)
+		} else {
+			activeLogFile.Store("")
+		}
+	})
+
+	cleaned := false
+	func() {
+		defer RecoverPanic("test", func() { cleaned = true })
+		panic("boom")
+	}()
+	if !cleaned {
+		t.Fatal("expected cleanup to run even when panic log creation fails")
+	}
+}

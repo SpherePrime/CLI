@@ -11,6 +11,12 @@ use std::{
 };
 use tauri::Manager;
 
+struct StartTarget<'a> {
+    workspace: &'a str,
+    cwd: &'a Path,
+    root: &'a str,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 struct LaunchConfig {
     id: String,
@@ -169,9 +175,11 @@ impl LaunchManager {
                 }
                 self.start(
                     terminals,
-                    workspace,
-                    cwd,
-                    &root,
+                    StartTarget {
+                        workspace,
+                        cwd,
+                        root: &root,
+                    },
                     config,
                     emit.clone(),
                     on_url,
@@ -218,13 +226,16 @@ impl LaunchManager {
     fn start(
         &self,
         terminals: &TerminalManager,
-        workspace: &str,
-        cwd: &Path,
-        root: &str,
+        target: StartTarget<'_>,
         config: LaunchConfig,
         emit: Emitter,
         on_url: UrlHandler,
     ) -> HostResult<()> {
+        let StartTarget {
+            workspace,
+            cwd,
+            root,
+        } = target;
         let key = format!("{root}\0{}", config.id);
         if self
             .state

@@ -1,13 +1,16 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/backend"
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/customagents"
 	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/pubsub"
@@ -60,9 +63,12 @@ func (c *controllerV1) handlePostControl(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// handleGetConfig returns global server configuration.
 func (c *controllerV1) handleGetConfig(w http.ResponseWriter, _ *http.Request) {
-	jsonEncode(w, c.backend.Config())
+	var cfg *config.Config
+	if store := c.backend.Config(); store != nil {
+		cfg = store.Config()
+	}
+	jsonEncode(w, cfg)
 }
 
 // handleGetWorkspaces lists all workspaces.
@@ -232,10 +238,24 @@ func (c *controllerV1) handleGetWorkspaceEvents(w http.ResponseWriter, r *http.R
 				continue
 			}
 
-			fmt.Fprintf(w, "data: %s\n\n", data)
-			flusher.Flush()
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", data); err != nil {
+				return
+			}
+			if err := flusher.Flush(); err != nil && !errors.Is(err, http.ErrNotSupported) {
+				return
+			}
 		}
 	}
+}
+
+func (c *controllerV1) handleGetWorkspaceChannelMessages(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	messages, err := c.backend.ListChannelMessages(id)
+	if err != nil {
+		c.handleError(w, r, err)
+		return
+	}
+	jsonEncode(w, messages)
 }
 
 // handleGetWorkspaceLSPs lists LSP clients for a workspace.
@@ -289,11 +309,10 @@ func (c *controllerV1) handleGetWorkspaceSessions(w http.ResponseWriter, r *http
 	jsonEncode(w, result)
 }
 
-// handlePostWorkspaceSessions creates a new session in a workspace.
 func (c *controllerV1) handlePostWorkspaceSessions(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	var args session.Session
+	var args proto.Session
 	if err := json.NewDecoder(r.Body).Decode(&args); err != nil {
 		c.server.logError(r, "Failed to decode request", "error", err)
 		jsonError(w, http.StatusBadRequest, "failed to decode request")
@@ -328,16 +347,19 @@ func (c *controllerV1) handleGetWorkspaceSession(w http.ResponseWriter, r *http.
 	jsonEncode(w, out)
 }
 
-// handleGetWorkspaceSessionHistory returns the history for a session.
 func (c *controllerV1) handleGetWorkspaceSessionHistory(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	sid := r.PathValue("sid")
-	history, err := c.backend.ListSessionHistory(r.Context(), id, sid)
+	files, err := c.backend.ListSessionHistory(r.Context(), id, sid)
 	if err != nil {
 		c.handleError(w, r, err)
 		return
 	}
-	jsonEncode(w, history)
+	out := make([]proto.File, len(files))
+	for i, f := range files {
+		out[i] = fileToProto(f)
+	}
+	jsonEncode(w, out)
 }
 
 // handleGetWorkspaceSessionMessages returns all messages for a session.
@@ -356,15 +378,94 @@ func (c *controllerV1) handleGetWorkspaceSessionMessages(w http.ResponseWriter, 
 	jsonEncode(w, messagesToProto(messages))
 }
 
-// handlePutWorkspaceSession updates a session.
+func protoTodosToSession(todos []proto.Todo) []session.Todo {
+	if len(todos) == 0 {
+		return nil
+	}
+	out := make([]session.Todo, len(todos))
+	for i, t := range todos {
+		out[i] = session.Todo{
+			Content:    t.Content,
+			Status:     session.TodoStatus(t.Status),
+			ActiveForm: t.ActiveForm,
+		}
+	}
+	return out
+}
+
 func (c *controllerV1) handlePutWorkspaceSession(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	sid := r.PathValue("sid")
 
-	var sess session.Session
-	if err := json.NewDecoder(r.Body).Decode(&sess); err != nil {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		c.server.logError(r, "Failed to read request", "error", err)
+		jsonError(w, http.StatusBadRequest, "failed to read request")
+		return
+	}
+
+	var req proto.Session
+	if err := json.Unmarshal(body, &req); err != nil {
 		c.server.logError(r, "Failed to decode request", "error", err)
 		jsonError(w, http.StatusBadRequest, "failed to decode request")
 		return
+	}
+
+	var rawFields map[string]json.RawMessage
+	_ = json.Unmarshal(body, &rawFields)
+	hasField := func(name string) bool {
+		_, ok := rawFields[name]
+		return ok
+	}
+
+	var sess session.Session
+	existing, err := c.backend.GetSession(r.Context(), id, sid)
+	if err != nil {
+		if errors.Is(err, backend.ErrWorkspaceNotFound) {
+			c.handleError(w, r, err)
+			return
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			jsonError(w, http.StatusNotFound, "session not found")
+			return
+		}
+		sess = session.Session{
+			ID:               sid,
+			ParentSessionID:  req.ParentSessionID,
+			Title:            req.Title,
+			MessageCount:     req.MessageCount,
+			PromptTokens:     req.PromptTokens,
+			CompletionTokens: req.CompletionTokens,
+			SummaryMessageID: req.SummaryMessageID,
+			Cost:             req.Cost,
+			Todos:            protoTodosToSession(req.Todos),
+			CreatedAt:        req.CreatedAt,
+			UpdatedAt:        req.UpdatedAt,
+		}
+	} else {
+		sess = existing
+		sess.ID = sid
+		if hasField("title") {
+			sess.Title = req.Title
+		}
+		if hasField("parent_session_id") && req.ParentSessionID != "" {
+			sess.ParentSessionID = req.ParentSessionID
+		}
+		if hasField("prompt_tokens") && req.PromptTokens > sess.PromptTokens {
+			sess.PromptTokens = req.PromptTokens
+		}
+		if hasField("completion_tokens") && req.CompletionTokens > sess.CompletionTokens {
+			sess.CompletionTokens = req.CompletionTokens
+		}
+		if hasField("cost") && req.Cost > sess.Cost {
+			sess.Cost = req.Cost
+		}
+		if hasField("summary_message_id") && req.SummaryMessageID != "" {
+			sess.SummaryMessageID = req.SummaryMessageID
+		}
+		if hasField("todos") {
+			sess.Todos = protoTodosToSession(req.Todos)
+		}
 	}
 
 	saved, err := c.backend.SaveSession(r.Context(), id, sess)

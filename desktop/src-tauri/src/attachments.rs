@@ -32,7 +32,6 @@ impl Attachments {
 
     fn prepare(
         name: &str,
-        path: &str,
         bytes: &[u8],
         image_only: bool,
     ) -> HostResult<(String, Vec<u8>, String, String, Value)> {
@@ -122,7 +121,7 @@ impl Attachments {
                     })
                     .collect::<HostResult<Vec<_>>>()?
             };
-            prepared.push(Self::prepare(name, name, &bytes, true)?);
+            prepared.push(Self::prepare(name, &bytes, true)?);
         }
         self.store(prepared)
     }
@@ -146,18 +145,13 @@ impl Attachments {
                 .file_name()
                 .unwrap_or(Path::new("attachment").as_os_str())
                 .to_string_lossy();
-            prepared.push(Self::prepare(
-                &name,
-                &path.to_string_lossy(),
-                &std::fs::read(path)?,
-                false,
-            )?);
+            prepared.push(Self::prepare(&name, &std::fs::read(path)?, false)?);
         }
         self.store(prepared)
     }
 
     pub fn image(&mut self, name: &str, bytes: &[u8]) -> HostResult<Value> {
-        let image = Self::prepare(name, name, bytes, true)?;
+        let image = Self::prepare(name, bytes, true)?;
         self.store(vec![image])
     }
 

@@ -102,15 +102,14 @@ func RecoverPanic(name string, cleanup func()) {
 
 		file, err := os.Create(filename)
 		if err == nil {
-			defer file.Close()
-
 			fmt.Fprintf(file, "Panic in %s: %v\n\n", name, r)
 			fmt.Fprintf(file, "Time: %s\n\n", time.Now().Format(time.RFC3339))
 			fmt.Fprintf(file, "Stack Trace:\n%s\n", debug.Stack())
+			_ = file.Close()
+		}
 
-			if cleanup != nil {
-				cleanup()
-			}
+		if cleanup != nil {
+			cleanup()
 		}
 	}
 }

@@ -773,3 +773,22 @@ func TestParseStdoutClaudeCodeFormat(t *testing.T) {
 		require.Equal(t, "hello", r.Context)
 	})
 }
+
+func TestRunnerStripsDesktopSecretEnvVars(t *testing.T) {
+	t.Setenv("PRIME_DESKTOP_SUDO_PASSWORD", "sudo-secret-value")
+	t.Setenv("PRIME_DESKTOP_BROWSER_TOKEN", "browser-secret-value")
+
+	for _, entry := range BuildEnv(EventPreToolUse, "bash", "sess", t.TempDir(), t.TempDir(), `{}`) {
+		require.False(t, strings.HasPrefix(entry, "PRIME_DESKTOP_SUDO_PASSWORD="))
+		require.False(t, strings.HasPrefix(entry, "PRIME_DESKTOP_BROWSER_TOKEN="))
+	}
+
+	hookCfg := config.HookConfig{
+		Command: `printf '{"decision":"allow","context":"%s|%s"}' "$PRIME_DESKTOP_SUDO_PASSWORD" "$PRIME_DESKTOP_BROWSER_TOKEN"`,
+	}
+	r := NewRunner([]config.HookConfig{hookCfg}, t.TempDir(), t.TempDir())
+	result, err := r.Run(context.Background(), EventPreToolUse, "sess", "bash", `{}`)
+	require.NoError(t, err)
+	require.Equal(t, DecisionAllow, result.Decision)
+	require.Equal(t, "|", result.Context)
+}

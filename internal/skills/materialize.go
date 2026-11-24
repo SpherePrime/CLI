@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 const materializedStampFile = ".prime-skill-stamp"
@@ -153,9 +154,25 @@ func writeFileAtomic(destination string, content []byte) error {
 		os.Remove(temporaryName)
 		return err
 	}
-	if err := os.Rename(temporaryName, destination); err != nil {
+	if err := renameWithRetry(temporaryName, destination); err != nil {
 		os.Remove(temporaryName)
 		return err
 	}
 	return nil
+}
+
+const renameRetryBudget = 2 * time.Second
+
+func renameWithRetry(tmpPath, destPath string) error {
+	var slept time.Duration
+	delay := time.Millisecond
+	for {
+		err := os.Rename(tmpPath, destPath)
+		if err == nil || !isTransientRenameError(err) || slept >= renameRetryBudget {
+			return err
+		}
+		time.Sleep(delay)
+		slept += delay
+		delay = min(delay*2, 50*time.Millisecond)
+	}
 }

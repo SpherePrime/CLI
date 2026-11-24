@@ -1,5 +1,11 @@
 {
-  "$schema": "https://raw.githubusercontent.com/dwertyfa288/CLI/main/schema.json",
+  "$schema": "https://raw.githubusercontent.com/SpherePrime/CLI/main/schema.json",
+  "options": {
+    "attribution": {
+      "trailer_style": "none",
+      "generated_with": false
+    }
+  },
   "lsp": {
     "gopls": {
       "options": {

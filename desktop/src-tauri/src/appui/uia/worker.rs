@@ -10,10 +10,8 @@ use ::windows::Win32::UI::Accessibility::{CUIAutomation, IUIAutomation};
 use base64::Engine;
 use serde_json::{json, Value};
 
-use super::action::UiAction;
 use super::{action, capture, tree};
 use crate::appui::render::snapshot_text;
-use crate::appui::types::Locator;
 
 pub use crate::appui::ui_action::UiaRequest;
 
@@ -132,9 +130,10 @@ fn handle(automation: &IUIAutomation, request: UiaRequest) -> Result<Value, Stri
 
 #[cfg(test)]
 mod tests {
+    use super::super::action::UiAction;
     use super::*;
     use crate::appui::testkit;
-    use crate::appui::types::UiSnapshot;
+    use crate::appui::types::{Locator, UiSnapshot};
 
     fn snapshot_request(hwnd: String) -> UiaRequest {
         UiaRequest::Snapshot {

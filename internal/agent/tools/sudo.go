@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"os"
@@ -97,7 +98,7 @@ func writeAskpassScript(password string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create askpass script: %w", err)
 	}
-	script := "#!/bin/sh\necho '" + strings.ReplaceAll(password, "'", `'\''`) + "'\n"
+	script := "#!/bin/sh\nprintf '%s\\n' '" + strings.ReplaceAll(password, "'", `'\''`) + "'\n"
 	if _, err := file.WriteString(script); err != nil {
 		file.Close()
 		os.Remove(file.Name())
@@ -116,9 +117,13 @@ func writeAskpassScript(password string) (string, error) {
 
 // sudoCommand wraps the user command so it runs as root through sudo with
 // the askpass program. -p '' silences the password prompt in the output.
-func sudoCommand(command, askpassPath string) string {
+func sudoCommand(command string) string {
 	quoted := "'" + strings.ReplaceAll(command, "'", `'\''`) + "'"
 	return "sudo -A -p '' -- bash -c " + quoted
+}
+
+func sudoEnv(base []string, askpassPath string) []string {
+	return append(shell.WithoutSecretEnv(base), "SUDO_ASKPASS="+askpassPath)
 }
 
 func NewSudoTool(permissions permission.Service, workingDir, spillDir string) fantasy.AgentTool {
@@ -180,7 +185,7 @@ func NewSudoTool(permissions permission.Service, workingDir, spillDir string) fa
 			}
 			defer os.Remove(askpassPath)
 
-			env := append(os.Environ(), "SUDO_ASKPASS="+askpassPath)
+			env := sudoEnv(os.Environ(), askpassPath)
 			executor := shell.NewShell(&shell.Options{
 				WorkingDir: execWorkingDir,
 				Env:        env,
@@ -193,7 +198,7 @@ func NewSudoTool(permissions permission.Service, workingDir, spillDir string) fa
 			}
 			done := make(chan result, 1)
 			go func() {
-				stdout, stderr, execErr := executor.Exec(runCtx, sudoCommand(params.Command, askpassPath))
+				stdout, stderr, execErr := executor.Exec(runCtx, sudoCommand(params.Command))
 				done <- result{stdout, stderr, execErr}
 			}()
 
@@ -203,7 +208,20 @@ func NewSudoTool(permissions permission.Service, workingDir, spillDir string) fa
 				stdout += fmt.Sprintf("\n\n<cwd>%s</cwd>", normalizeWorkingDir(execWorkingDir))
 				return fantasy.NewTextResponse(stdout), nil
 			case <-runCtx.Done():
-				return fantasy.NewTextErrorResponse(fmt.Sprintf("Command did not finish within %d seconds", timeout)), nil
+				cancel()
+				waitTimer := time.NewTimer(2 * time.Second)
+				select {
+				case <-done:
+				case <-waitTimer.C:
+				}
+				waitTimer.Stop()
+				if ctx.Err() != nil {
+					return fantasy.ToolResponse{}, ctx.Err()
+				}
+				if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("Command did not finish within %d seconds", timeout)), nil
+				}
+				return fantasy.ToolResponse{}, runCtx.Err()
 			}
 		},
 	)

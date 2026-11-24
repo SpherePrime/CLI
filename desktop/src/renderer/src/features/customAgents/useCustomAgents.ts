@@ -88,6 +88,12 @@ export function useCustomAgents() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const mounted = useRef(true)
+  const agentsRef = useRef(agents)
+  agentsRef.current = agents
+  const workflowsRef = useRef(workflows)
+  workflowsRef.current = workflows
+  const activeWorkflowIdRef = useRef(activeWorkflowId)
+  activeWorkflowIdRef.current = activeWorkflowId
 
   const call = useCallback(async <T,>(request: CustomAgentsRequest): Promise<T> => {
     return (await window.prime.customAgents(request)) as T
@@ -129,16 +135,14 @@ export function useCustomAgents() {
       setModels(Array.isArray(modelsRes?.models) ? modelsRes.models : [])
       if (memoryRes) setGlobalMemory(memoryRes)
 
-      setActiveWorkflowIdState((current) => {
-        const valid =
-          current && nextWorkflows.some((wf) => wf.id === current)
-            ? current
-            : nextWorkflows.find((wf) => wf.id === 'default')?.id ||
-              nextWorkflows[0]?.id ||
-              'default'
-        persistActiveWorkflowId(valid)
-        return valid
-      })
+      const currentWorkflowId = activeWorkflowIdRef.current
+      const validWorkflowId =
+        currentWorkflowId && nextWorkflows.some((wf) => wf.id === currentWorkflowId)
+          ? currentWorkflowId
+          : nextWorkflows.find((wf) => wf.id === 'default')?.id ||
+            nextWorkflows[0]?.id ||
+            'default'
+      setActiveWorkflowId(validWorkflowId)
 
       setSelectedAgentId((current) => {
         if (current && nextAgents.some((a) => a.id === current)) return current
@@ -149,7 +153,7 @@ export function useCustomAgents() {
     } finally {
       if (mounted.current) setLoading(false)
     }
-  }, [call])
+  }, [call, setActiveWorkflowId])
 
   useEffect(() => {
     mounted.current = true
@@ -183,19 +187,15 @@ export function useCustomAgents() {
           (custom.payload as { workflow_id?: string } | undefined)?.workflow_id ||
           ''
         if (deletedId) {
-          setWorkflows((current) => {
-            const remaining = current.filter((item) => item.id !== deletedId)
-            setActiveWorkflowIdState((active) => {
-              if (active !== deletedId) return active
-              const nextActive =
-                remaining.find((item) => item.id === 'default')?.id ||
-                remaining[0]?.id ||
-                'default'
-              persistActiveWorkflowId(nextActive)
-              return nextActive
-            })
-            return remaining
-          })
+          const remaining = workflowsRef.current.filter((item) => item.id !== deletedId)
+          setWorkflows((current) => current.filter((item) => item.id !== deletedId))
+          if (activeWorkflowIdRef.current === deletedId) {
+            const nextActive =
+              remaining.find((item) => item.id === 'default')?.id ||
+              remaining[0]?.id ||
+              'default'
+            setActiveWorkflowId(nextActive)
+          }
           void call<{ agents?: CustomAgent[] }>({ action: 'list' })
             .then((res) => {
               if (mounted.current && Array.isArray(res?.agents)) {
@@ -244,13 +244,26 @@ export function useCustomAgents() {
             ...current.filter((item) => item.id !== entry.id)
           ])
         }
+        return
+      }
+      if (custom.type.startsWith('swarm.') || custom.type === 'chain.handoff_failed') {
+        void Promise.all([
+          call<{ runs?: CustomAgentRun[] }>({ action: 'runs', limit: 100 }),
+          call<{ entries?: BlackboardEntry[] }>({ action: 'blackboard', limit: 100 })
+        ])
+          .then(([runsRes, boardRes]) => {
+            if (!mounted.current) return
+            if (Array.isArray(runsRes?.runs)) setRuns(runsRes.runs)
+            if (Array.isArray(boardRes?.entries)) setBlackboard(boardRes.entries)
+          })
+          .catch(() => {})
       }
     })
     return () => {
       mounted.current = false
       unsubscribe()
     }
-  }, [call, refresh])
+  }, [call, refresh, setActiveWorkflowId])
 
   const activeWorkflow = useMemo(
     () =>
@@ -322,13 +335,11 @@ export function useCustomAgents() {
       try {
         const res = await call<{ deleted: boolean }>({ action: 'delete', agentId })
         if (!mounted.current) return res
-        setAgents((current) => {
-          const remaining = current.filter((a) => a.id !== agentId)
-          setSelectedAgentId((selected) =>
-            selected === agentId ? remaining[0]?.id || '' : selected
-          )
-          return remaining
-        })
+        const remaining = agentsRef.current.filter((a) => a.id !== agentId)
+        setAgents((current) => current.filter((a) => a.id !== agentId))
+        setSelectedAgentId((selected) =>
+          selected === agentId ? remaining[0]?.id || '' : selected
+        )
         return res
       } catch (cause) {
         if (mounted.current) setError(cleanError(cause))
@@ -391,17 +402,15 @@ export function useCustomAgents() {
           deleteAgents
         })
         if (!mounted.current) return res
-        setWorkflows((current) => {
-          const remaining = current.filter((item) => item.id !== workflowId)
-          if (activeWorkflowId === workflowId) {
-            const nextId =
-              remaining.find((item) => item.id === 'default')?.id ||
-              remaining[0]?.id ||
-              'default'
-            setActiveWorkflowId(nextId)
-          }
-          return remaining
-        })
+        const remaining = workflowsRef.current.filter((item) => item.id !== workflowId)
+        setWorkflows((current) => current.filter((item) => item.id !== workflowId))
+        if (activeWorkflowIdRef.current === workflowId) {
+          const nextId =
+            remaining.find((item) => item.id === 'default')?.id ||
+            remaining[0]?.id ||
+            'default'
+          setActiveWorkflowId(nextId)
+        }
         if (deleteAgents) {
           setAgents((current) =>
             current.filter((a) => (a.workflow_id || 'default') !== workflowId)

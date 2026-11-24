@@ -185,14 +185,18 @@ pub fn window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
                         .set_buttons(rfd::MessageButtons::YesNo)
                         .set_parent(&window)
                         .show();
-                    drop(_reset);
                     if matches!(result, rfd::MessageDialogResult::Yes | rfd::MessageDialogResult::Ok)
                     {
                         state.editor_dirty.store(false, Ordering::Relaxed);
                         state.quitting.store(true, Ordering::Release);
                         state.close_ready.store(true, Ordering::Release);
                         state.close_in_progress.store(false, Ordering::Release);
+                        drop(_reset);
                         let _ = window.close();
+                    } else {
+                        state.quitting.store(false, Ordering::Release);
+                        state.close_ready.store(false, Ordering::Release);
+                        drop(_reset);
                     }
                 });
             }
@@ -247,9 +251,11 @@ pub fn run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
 }
 
 pub fn shutdown(app: &tauri::AppHandle, state: &crate::state::AppState) {
+    crate::browser::record::stop_all();
     state.automations.stop();
     state.teams.stop();
-    state.windows.shutdown(&app);
+    state.appui.shutdown();
+    state.windows.shutdown(app);
     state.speech.shutdown();
     take_engine_for_shutdown(&state.closing, &state.engine, |engine| {
         engine.close();

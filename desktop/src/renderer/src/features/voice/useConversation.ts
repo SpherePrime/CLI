@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n'
 import { Listener } from './listener'
 import { Speaker } from './speaker'
 import { speakableText, speechChunks } from './speechText'
+import { ensureSttReady } from './sttReady'
 import { resample, wavBase64 } from './wav'
 import {
   isCancelAnswer,
@@ -17,6 +18,7 @@ import {
 
 type Asking = {
   batchId: string
+  sessionId?: string
   questions: VoiceQuestion[]
   index: number
   responses: VoiceAnswer[]
@@ -124,6 +126,7 @@ export function useConversation(w: Workspace) {
         setQuestion('')
         setState('waiting')
         await workspace.call('answer', {
+          session_id: current.sessionId ?? workspace.session?.id,
           batch_request_id: current.batchId,
           responses: current.responses
         })
@@ -139,7 +142,10 @@ export function useConversation(w: Workspace) {
 
   useEffect(() => {
     if (!listener.current || stateRef.current === 'off') return
-    const batches: any[] = w.questions ?? []
+    const activeSessionId = latest.current.session?.id
+    const batches: any[] = activeSessionId
+      ? (w.questions ?? []).filter((batch) => batch?.session_id === activeSessionId)
+      : []
     if (asking.current && !batches.some((batch) => batch.id === asking.current?.batchId)) {
       asking.current = undefined
       setQuestion('')
@@ -151,9 +157,15 @@ export function useConversation(w: Workspace) {
     )
     if (!next) return
     askedBatches.current.add(next.id)
-    asking.current = { batchId: next.id, questions: next.questions, index: 0, responses: [] }
+    asking.current = {
+      batchId: next.id,
+      sessionId: next.session_id || activeSessionId,
+      questions: next.questions,
+      index: 0,
+      responses: []
+    }
     askCurrent()
-  }, [w.questions, askCurrent])
+  }, [w.questions, w.session?.id, askCurrent])
 
   const handleSegment = useCallback(
     async (samples: Float32Array, sampleRate: number) => {
@@ -202,11 +214,8 @@ export function useConversation(w: Workspace) {
     setState('preparing')
     setStartedAt(Date.now())
     try {
-      const plugins = await latest.current.call('plugins')
+      await ensureSttReady(latest.current.call, t)
       if (callGeneration !== generation.current) return
-      const list = Array.isArray(plugins) ? plugins : plugins?.plugins || []
-      if (!list.find((plugin: any) => plugin.name === 'voice')?.enabled)
-        throw new Error(t('Включите плагин Voice в разделе «Плагины»'))
       const status: SpeechStatus = await window.prime.speech({ action: 'prepare' })
       if (callGeneration !== generation.current) return
       if (status.state !== 'ready')

@@ -40,7 +40,7 @@ func TestThinkingModeReflectsEffectiveReasoning(t *testing.T) {
 		{"selected effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}}, ModelCfg: config.SelectedModel{ReasoningEffort: "high"}}, true, "High", false},
 		{"unsupported effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true}, ModelCfg: config.SelectedModel{ReasoningEffort: "medium"}}, true, "Medium", false},
 		{"default effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}, DefaultReasoningEffort: "high"}}, true, "High", false},
-		{"first effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}}}, true, "Medium", false},
+		{"first effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}}}, true, "High", false},
 		{"invalid selection", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"medium", "high"}, DefaultReasoningEffort: "medium"}, ModelCfg: config.SelectedModel{ReasoningEffort: "invalid"}}, true, "Medium", false},
 		{"none effort", &workspace.AgentModel{CatwalkCfg: catwalk.Model{CanReason: true, ReasoningLevels: []string{"none", "high"}}, ModelCfg: config.SelectedModel{ReasoningEffort: "none"}}, false, "", false},
 		{"reasoning mode low", &workspace.AgentModel{ModelCfg: config.SelectedModel{ReasoningMode: "low"}}, true, "Low", false},

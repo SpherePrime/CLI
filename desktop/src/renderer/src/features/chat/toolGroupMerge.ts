@@ -76,6 +76,7 @@ export function mergeConsecutiveToolMessages(messages: Message[]): Message[] {
       mergedCount += 1
       const next = messages[index]
       lastUpdatedAt = next.updated_at || lastUpdatedAt
+      lastFinish = null
       for (const part of next.parts || []) {
         if (part.type === 'finish') {
           lastFinish = part

@@ -1124,9 +1124,9 @@ export function WorkflowCanvas({
                         </span>
                         <span
                           className={`ca-chip ${hasTrigger ? '' : 'ca-chip-muted'}`}
-                          title={triggerLabel(agent)}
+                          title={triggerLabel(agent, t)}
                         >
-                          {triggerLabel(agent)}
+                          {triggerLabel(agent, t)}
                         </span>
                       </div>
 

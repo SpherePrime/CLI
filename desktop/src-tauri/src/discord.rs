@@ -1,5 +1,8 @@
 use std::io::{Read, Write};
+use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+const MAX_IPC_RESPONSE: usize = 1024 * 1024;
 
 pub fn start() {
     std::thread::spawn(move || {
@@ -29,6 +32,31 @@ pub fn start() {
     });
 }
 
+fn config_path() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var("LOCALAPPDATA")
+            .ok()
+            .map(|dir| std::path::Path::new(&dir).join("prime").join("discord.json"))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::env::var("HOME").ok().map(|home| {
+            std::path::Path::new(&home)
+                .join(".config")
+                .join("prime")
+                .join("discord.json")
+        })
+    }
+}
+
+fn config_string(key: &str) -> Option<String> {
+    let content = std::fs::read_to_string(config_path()?).ok()?;
+    let val = serde_json::from_str::<serde_json::Value>(&content).ok()?;
+    let trimmed = val.get(key)?.as_str()?.trim().to_string();
+    (!trimmed.is_empty()).then_some(trimmed)
+}
+
 fn get_client_id() -> Option<String> {
     if let Ok(id) = std::env::var("PRIME_DISCORD_CLIENT_ID") {
         let trimmed = id.trim().to_string();
@@ -36,84 +64,15 @@ fn get_client_id() -> Option<String> {
             return Some(trimmed);
         }
     }
-
-    #[cfg(target_os = "windows")]
-    {
-        if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-            let path = std::path::Path::new(&local_app_data).join("prime").join("discord.json");
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
-                    if let Some(id) = val.get("client_id").and_then(|v| v.as_str()) {
-                        let trimmed = id.trim().to_string();
-                        if !trimmed.is_empty() {
-                            return Some(trimmed);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        if let Ok(home) = std::env::var("HOME") {
-            let path = std::path::Path::new(&home).join(".config").join("prime").join("discord.json");
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
-                    if let Some(id) = val.get("client_id").and_then(|v| v.as_str()) {
-                        let trimmed = id.trim().to_string();
-                        if !trimmed.is_empty() {
-                            return Some(trimmed);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Some("1571300499410386975".to_string())
+    config_string("client_id").or_else(|| Some("1571300499410386975".to_string()))
 }
 
 fn get_large_image() -> String {
-    #[cfg(target_os = "windows")]
-    {
-        if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-            let path = std::path::Path::new(&local_app_data).join("prime").join("discord.json");
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
-                    if let Some(img) = val.get("large_image").and_then(|v| v.as_str()) {
-                        let trimmed = img.trim().to_string();
-                        if !trimmed.is_empty() {
-                            return trimmed;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    "primedesctop".to_string()
+    config_string("large_image").unwrap_or_else(|| "primedesctop".to_string())
 }
 
 fn get_details() -> String {
-    #[cfg(target_os = "windows")]
-    {
-        if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-            let path = std::path::Path::new(&local_app_data).join("prime").join("discord.json");
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
-                    if let Some(d) = val.get("details").and_then(|v| v.as_str()) {
-                        let trimmed = d.trim().to_string();
-                        if !trimmed.is_empty() {
-                            return trimmed;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    "SpherePrime".to_string()
+    config_string("details").unwrap_or_else(|| "SpherePrime".to_string())
 }
 
 fn connect_ipc() -> Option<Box<dyn ReadWrite>> {
@@ -150,8 +109,24 @@ fn connect_ipc() -> Option<Box<dyn ReadWrite>> {
 trait ReadWrite: Read + Write {}
 impl<T: Read + Write> ReadWrite for T {}
 
+fn read_response(stream: &mut dyn ReadWrite) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let mut header = [0u8; 8];
+    stream.read_exact(&mut header)?;
+    let res_len = u32::from_le_bytes([header[4], header[5], header[6], header[7]]) as usize;
+    if res_len > MAX_IPC_RESPONSE {
+        return Err("Discord IPC response exceeds maximum size".into());
+    }
+    let mut res_buf = vec![0u8; res_len];
+    stream.read_exact(&mut res_buf)?;
+    Ok(res_buf)
+}
+
 fn handshake(stream: &mut dyn ReadWrite, client_id: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let payload = format!(r#"{{"v":1,"client_id":"{}"}}"#, client_id);
+    let payload = serde_json::json!({
+        "v": 1,
+        "client_id": client_id
+    })
+    .to_string();
     let opcode: u32 = 0;
     let length = payload.len() as u32;
 
@@ -163,11 +138,7 @@ fn handshake(stream: &mut dyn ReadWrite, client_id: &str) -> Result<(), Box<dyn 
     stream.write_all(&buf)?;
     stream.flush()?;
 
-    let mut header = [0u8; 8];
-    stream.read_exact(&mut header)?;
-    let res_len = u32::from_le_bytes([header[4], header[5], header[6], header[7]]) as usize;
-    let mut res_buf = vec![0u8; res_len];
-    stream.read_exact(&mut res_buf)?;
+    let res_buf = read_response(stream)?;
 
     if let Ok(val) = serde_json::from_slice::<serde_json::Value>(&res_buf) {
         if val.get("code").is_some() || val.get("evt").and_then(|e| e.as_str()) == Some("ERROR") {
@@ -223,11 +194,7 @@ fn update_activity(
     stream.write_all(&buf)?;
     stream.flush()?;
 
-    let mut header = [0u8; 8];
-    stream.read_exact(&mut header)?;
-    let res_len = u32::from_le_bytes([header[4], header[5], header[6], header[7]]) as usize;
-    let mut res_buf = vec![0u8; res_len];
-    stream.read_exact(&mut res_buf)?;
+    let _ = read_response(stream)?;
 
     Ok(())
 }

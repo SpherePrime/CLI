@@ -133,7 +133,7 @@ mod tests {
         let element = UiBounds { x: -50, y: -50, width: 40, height: 40 };
         let cropped = crop_png(&png(100, 100), &window, &element).unwrap();
         let (width, height) = size(&cropped);
-        assert!(width >= 1 && width <= 100, "{width}");
-        assert!(height >= 1 && height <= 100, "{height}");
+        assert!((1..=100).contains(&width), "{width}");
+        assert!((1..=100).contains(&height), "{height}");
     }
 }

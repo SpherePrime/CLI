@@ -63,33 +63,31 @@ $subjects = @(Invoke-Git $rangeArgs |
 # Order matters: first match wins, so the specific prefixes come before the
 # catch-all.
 $categories = [ordered]@{
-    'feat:'     = 'Features'
-    'fix:'      = 'Fixes'
-    'perf:'     = 'Performance'
-    'refactor:' = 'Refactoring'
-    'add:'      = 'Added'
-    'docs:'     = 'Documentation'
-    'test:'     = 'Tests'
-    'ci:'       = 'CI'
-    'build:'    = 'Build'
-    'chore:'    = 'Chores'
-    'style:'    = 'Style'
+    'feat'     = 'Features'
+    'fix'      = 'Fixes'
+    'perf'     = 'Performance'
+    'refactor' = 'Refactoring'
+    'add'      = 'Added'
+    'docs'     = 'Documentation'
+    'test'     = 'Tests'
+    'ci'       = 'CI'
+    'build'    = 'Build'
+    'chore'    = 'Chores'
+    'style'    = 'Style'
 }
 
 $buckets = [ordered]@{}
 foreach ($key in $categories.Keys) { $buckets[$key] = [System.Collections.Generic.List[string]]::new() }
 $other = [System.Collections.Generic.List[string]]::new()
 
+$commitPattern = '^(?<type>feat|fix|perf|refactor|add|docs|test|ci|build|chore|style)(?:\([^)]+\))?!?:\s*(?<msg>.+)$'
 foreach ($subject in $subjects) {
-    $placed = $false
-    foreach ($prefix in $categories.Keys) {
-        if ($subject.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-            $buckets[$prefix].Add($subject.Substring($prefix.Length).Trim())
-            $placed = $true
-            break
-        }
+    if ($subject -match $commitPattern) {
+        $type = $Matches['type'].ToLowerInvariant()
+        $buckets[$type].Add($Matches['msg'].Trim())
+    } else {
+        $other.Add($subject)
     }
-    if (-not $placed) { $other.Add($subject) }
 }
 
 $lines = [System.Collections.Generic.List[string]]::new()

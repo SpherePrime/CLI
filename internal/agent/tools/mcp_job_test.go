@@ -139,3 +139,36 @@ func TestSessionHasRunningMCPJobs(t *testing.T) {
 		return !SessionHasRunningMCPJobs("mcp-sess") && !MCPJobIsRunning(metadata.JobID)
 	}, 2*time.Second, 10*time.Millisecond)
 }
+
+func TestMCPCallCancelBoundsHungServerWait(t *testing.T) {
+	previousRun, previousAfter, previousGrace := runMCPTool, MCPBackgroundAfter, mcpCancelGrace
+	t.Cleanup(func() { runMCPTool, MCPBackgroundAfter, mcpCancelGrace = previousRun, previousAfter, previousGrace })
+	MCPBackgroundAfter = 5 * time.Second
+	mcpCancelGrace = 50 * time.Millisecond
+
+	unblock := make(chan struct{})
+	t.Cleanup(func() { close(unblock) })
+	runMCPTool = func(_ context.Context, _ *config.ConfigStore, _, _, _, _, _ string) (mcp.ToolResult, error) {
+		<-unblock
+		return mcp.ToolResult{}, nil
+	}
+
+	tool := &Tool{
+		mcpName:     "fixture",
+		tool:        &mcp.Tool{Name: "hung_call"},
+		permissions: &mockPermissionService{},
+	}
+
+	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), SessionIDContextKey, "hung-sess"))
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		cancel()
+	}()
+
+	start := time.Now()
+	response, err := tool.Run(ctx, fantasy.ToolCall{ID: "call-hung", Name: tool.Name(), Input: `{}`})
+	require.NoError(t, err)
+	require.True(t, response.IsError)
+	require.Less(t, time.Since(start), time.Second)
+	require.False(t, SessionHasRunningMCPJobs("hung-sess"))
+}

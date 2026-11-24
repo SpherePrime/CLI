@@ -362,3 +362,23 @@ func TestRun_DiscardsNilWriters(t *testing.T) {
 		t.Fatalf("Run returned error: %v", err)
 	}
 }
+
+func TestWithoutSecretEnv_StripsSecretsFromShell(t *testing.T) {
+	t.Setenv("PRIME_DESKTOP_SUDO_PASSWORD", "sudo-secret-value")
+	t.Setenv("PRIME_DESKTOP_BROWSER_TOKEN", "browser-secret-value")
+
+	sh := NewShell(&Options{WorkingDir: t.TempDir()})
+	for _, entry := range sh.GetEnv() {
+		if strings.HasPrefix(entry, "PRIME_DESKTOP_SUDO_PASSWORD=") || strings.HasPrefix(entry, "PRIME_DESKTOP_BROWSER_TOKEN=") {
+			t.Fatalf("secret env var leaked into shell env: %s", entry)
+		}
+	}
+
+	stdout, _, err := sh.Exec(t.Context(), `printf '%s|%s' "$PRIME_DESKTOP_SUDO_PASSWORD" "$PRIME_DESKTOP_BROWSER_TOKEN"`)
+	if err != nil {
+		t.Fatalf("Exec returned error: %v", err)
+	}
+	if stdout != "|" {
+		t.Fatalf("expected stripped secrets in child shell, got %q", stdout)
+	}
+}

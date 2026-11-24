@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronRight, Copy, FileCode, Folder, Terminal } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { extractToolDiff, tokenizeCodeLine, type DiffBlock } from './toolDiff'
@@ -21,16 +21,22 @@ export interface ToolBodyProps {
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(timerRef.current), [])
   return (
     <button
       type="button"
       className={`tool-mini-btn${copied ? ' is-copied' : ''}`}
       onClick={(event) => {
         event.stopPropagation()
-        void navigator.clipboard?.writeText(value).then(() => {
-          setCopied(true)
-          setTimeout(() => setCopied(false), 1400)
-        })
+        void navigator.clipboard
+          ?.writeText(value)
+          .then(() => {
+            setCopied(true)
+            clearTimeout(timerRef.current)
+            timerRef.current = setTimeout(() => setCopied(false), 1400)
+          })
+          .catch(() => {})
       }}
     >
       {copied ? <Check size={11} /> : <Copy size={11} />}
@@ -172,6 +178,7 @@ function DiffView({
 
 function CommandView({
   command,
+  description,
   parsed,
   completed,
   outputHidden,
@@ -181,6 +188,7 @@ function CommandView({
   t
 }: {
   command: string | null
+  description: string
   parsed: ReturnType<typeof parseToolOutput>
   completed: boolean
   outputHidden: boolean
@@ -191,6 +199,7 @@ function CommandView({
 }) {
   return (
     <div className={`tool-frame${failed ? ' is-error' : ''}`}>
+      {description && <div className="tool-frame-desc">{description}</div>}
       {command && (
         <div className="tool-terminal-cmd">
           <span className="tool-terminal-prompt">$</span>
@@ -393,9 +402,15 @@ export function ToolBody({
   exitCode
 }: ToolBodyProps) {
   const { t } = useI18n()
-  const rawOutputText = formatRawOutput(output, interrupted, t)
-  const parsed = parseToolOutput(rawOutputText)
-  const diff = !standalone ? extractToolDiff(name, input) : null
+  const rawOutputText = useMemo(
+    () => formatRawOutput(output, interrupted, t),
+    [output, interrupted, t]
+  )
+  const parsed = useMemo(() => parseToolOutput(rawOutputText), [rawOutputText])
+  const diff = useMemo(
+    () => (!standalone ? extractToolDiff(name, input) : null),
+    [standalone, name, input]
+  )
   const filePath = String(input?.file_path || input?.path || input?.filePath || '')
 
   let bodyNode: React.ReactNode
@@ -410,10 +425,17 @@ export function ToolBody({
         t={t}
       />
     )
-  } else if (isShell || name === 'bash' || name === 'job_output' || name === 'job_kill') {
+  } else if (
+    isShell ||
+    name === 'bash' ||
+    name === 'sudo' ||
+    name === 'job_output' ||
+    name === 'job_kill'
+  ) {
     bodyNode = (
       <CommandView
         command={command}
+        description={description}
         parsed={parsed}
         completed={completed}
         outputHidden={outputHidden}

@@ -12,7 +12,7 @@ export type EditorDocument = {
   original?: string
   source?: string
 }
-export function useDocuments(onError: (error: unknown) => void) {
+export function useDocuments(onError: (error: unknown) => void, workspaceIds?: string[]) {
   const [documents, setDocuments] = useState<EditorDocument[]>([])
   const [active, setActive] = useState('')
   const [saving, setSaving] = useState(false)
@@ -32,7 +32,18 @@ export function useDocuments(onError: (error: unknown) => void) {
       item.content !== item.savedContent
   )
   useEffect(() => {
-    void window.prime.editorDirty(dirty)
+    if (!workspaceIds) return
+    const valid = new Set(workspaceIds)
+    const remaining = latest.current.filter((item) => valid.has(item.workspaceId))
+    if (remaining.length === latest.current.length) return
+    latest.current = remaining
+    setDocuments(remaining)
+    setActive((current) =>
+      remaining.some((item) => item.id === current) ? current : remaining[0]?.id || ''
+    )
+  }, [workspaceIds])
+  useEffect(() => {
+    void window.prime.editorDirty(dirty).catch(() => {})
     if (import.meta.env.VITE_NATIVE_HOST === 'true') return
     const prevent = (event: BeforeUnloadEvent) => {
       if (dirty) {

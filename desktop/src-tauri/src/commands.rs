@@ -43,7 +43,7 @@ fn reveal_in_file_manager(target: &std::path::Path) -> HostResult<()> {
         std::process::Command::new("explorer")
             .arg(format!("/select,{}", target.display()))
             .spawn()?;
-        return Ok(());
+        Ok(())
     }
     #[cfg(target_os = "macos")]
     {
@@ -51,7 +51,7 @@ fn reveal_in_file_manager(target: &std::path::Path) -> HostResult<()> {
             .arg("-R")
             .arg(target)
             .spawn()?;
-        return Ok(());
+        Ok(())
     }
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     {
@@ -65,7 +65,9 @@ fn urlencoding(value: &str) -> String {
     url::form_urlencoded::byte_serialize(value.as_bytes()).collect()
 }
 
-fn project_sessions_route(requested: &[(String, String)]) -> String {
+type ProjectPathPair = (String, String);
+
+fn project_sessions_route(requested: &[ProjectPathPair]) -> String {
     let paths = requested
         .iter()
         .map(|(_, local_path)| local_path.as_str())
@@ -74,10 +76,15 @@ fn project_sessions_route(requested: &[(String, String)]) -> String {
     format!("/v1/project-sessions?paths={}", urlencoding(&paths))
 }
 
-// Maps the engine answer (keyed by the local path that was requested) back to
-// the paths the desktop asked about, so remote workspaces keep their own key.
-// A path the engine did not answer for is reported as an empty list.
-fn map_project_sessions(requested: &[(String, String)], response: &Value) -> serde_json::Map<String, Value> {
+fn partition_project_sessions(
+    requested: Vec<ProjectPathPair>,
+) -> (Vec<ProjectPathPair>, Vec<ProjectPathPair>) {
+    requested
+        .into_iter()
+        .partition(|(_, local_path)| !local_path.contains(','))
+}
+
+fn map_project_sessions(requested: &[ProjectPathPair], response: &Value) -> serde_json::Map<String, Value> {
     let projects = response["projects"].as_object();
     let mut sessions = serde_json::Map::new();
     for (path, local_path) in requested {
@@ -89,6 +96,26 @@ fn map_project_sessions(requested: &[(String, String)], response: &Value) -> ser
         sessions.insert(path.clone(), Value::Array(entries));
     }
     sessions
+}
+
+fn send_route_body(route: &mut Value) -> HostResult<&mut serde_json::Map<String, Value>> {
+    route
+        .as_array_mut()
+        .and_then(|items| items.get_mut(2))
+        .and_then(Value::as_object_mut)
+        .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "Invalid send operation route"))
+}
+
+fn current_session_route_slot(route: &mut Value) -> HostResult<&mut Value> {
+    route
+        .as_array_mut()
+        .and_then(|items| items.get_mut(1))
+        .ok_or_else(|| {
+            HostError::new(
+                "INVALID_ARGUMENT",
+                "Invalid currentSession operation route",
+            )
+        })
 }
 
 fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<Value> {
@@ -198,21 +225,18 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
                 };
                 requested.push((path.to_owned(), local_path));
             }
-            // One read-only engine request for the whole batch: closed projects
-            // are read straight from their database instead of opening a
-            // workspace (agent, MCP, config, data-dir lock) for each of them.
-            let response = state
-                .require_engine()?
-                .request("GET", &project_sessions_route(&requested), None)?;
-            let mut sessions = map_project_sessions(&requested, &response);
-            for (path, local_path) in &requested {
-                if sessions.contains_key(path) {
-                    continue;
-                }
-                // The engine splits the batch on commas, so a path containing
-                // one cannot travel in a batch and is read on its own.
-                let entries = crate::projects::sessions(&state, local_path).unwrap_or(json!([]));
-                sessions.insert(path.clone(), entries);
+            let (batched, individual) = partition_project_sessions(requested);
+            let mut sessions = if batched.is_empty() {
+                serde_json::Map::new()
+            } else {
+                let response = state
+                    .require_engine()?
+                    .request("GET", &project_sessions_route(&batched), None)?;
+                map_project_sessions(&batched, &response)
+            };
+            for (path, local_path) in individual {
+                let entries = crate::projects::sessions(&state, &local_path).unwrap_or(json!([]));
+                sessions.insert(path, entries);
             }
             Ok(Value::Object(sessions))
         }
@@ -387,26 +411,28 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             }
             let mut route = args.get(3).cloned().unwrap_or(Value::Null);
             if operation == "send" {
+                let body = send_route_body(&mut route)?;
                 let ids = args
                     .get(2)
                     .and_then(|args| args.get("attachmentIds"))
                     .cloned()
                     .unwrap_or(json!([]));
-                route[2]["attachments"] = state.attachments.lock().unwrap().resolve(&ids)?;
+                body.insert(
+                    "attachments".into(),
+                    state.attachments.lock().unwrap().resolve(&ids)?,
+                );
             }
             if operation == "currentSession" {
                 let id = string(args, 0)?;
-                let mut projects = state.projects.lock().unwrap();
-                let project = projects
-                    .get_mut(id)
-                    .ok_or_else(|| HostError::new("PROJECT_NOT_FOUND", "Project is not open"))?;
-                let client = project["clientId"].as_str().unwrap_or("");
-                route[1] = json!(format!("current-session?client_id={client}"));
-                project["currentSessionId"] = args
-                    .get(2)
-                    .and_then(|args| args.get("sessionId"))
-                    .cloned()
-                    .unwrap_or(Value::Null);
+                let route_path = current_session_route_slot(&mut route)?;
+                let client = {
+                    let projects = state.projects.lock().unwrap();
+                    let project = projects
+                        .get(id)
+                        .ok_or_else(|| HostError::new("PROJECT_NOT_FOUND", "Project is not open"))?;
+                    project["clientId"].as_str().unwrap_or("").to_owned()
+                };
+                *route_path = json!(format!("current-session?client_id={client}"));
             }
             let result = if operation == "shell" {
                 let _running = crate::state::ShellGuard::new(&state.running_shells);
@@ -416,19 +442,22 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             };
             if operation == "currentSession" {
                 let id = string(args, 0)?;
-                let path = state
-                    .projects
-                    .lock()
-                    .unwrap()
-                    .get(id)
-                    .and_then(|project| project["path"].as_str())
-                    .map(str::to_owned)
-                    .ok_or_else(|| HostError::new("PROJECT_NOT_FOUND", "Project is not open"))?;
                 let session = args
                     .get(2)
                     .and_then(|args| args.get("sessionId"))
                     .cloned()
                     .unwrap_or(Value::Null);
+                let path = {
+                    let mut projects = state.projects.lock().unwrap();
+                    let project = projects
+                        .get_mut(id)
+                        .ok_or_else(|| HostError::new("PROJECT_NOT_FOUND", "Project is not open"))?;
+                    project["currentSessionId"] = session.clone();
+                    project["path"]
+                        .as_str()
+                        .map(str::to_owned)
+                        .ok_or_else(|| HostError::new("PROJECT_NOT_FOUND", "Project is not open"))?
+                };
                 state
                     .settings
                     .lock()
@@ -659,6 +688,63 @@ mod project_sessions_tests {
         let asked = requested(&[("C:/one", "C:/one")]);
         let sessions = map_project_sessions(&asked, &Value::Null);
         assert_eq!(sessions["C:/one"], json!([]));
+    }
+
+    #[test]
+    fn comma_paths_are_partitioned_out_of_batch_requests() {
+        let asked = requested(&[
+            ("C:/one", "C:/one"),
+            ("C:/two,three", "C:/two,three"),
+            ("prime-ssh://profile/a,b", "/local/dir,comma"),
+            ("prime-ssh://profile/c,d", "/local/dir-clean"),
+        ]);
+        let (batched, individual) = partition_project_sessions(asked);
+        assert_eq!(
+            batched,
+            requested(&[
+                ("C:/one", "C:/one"),
+                ("prime-ssh://profile/c,d", "/local/dir-clean"),
+            ])
+        );
+        assert_eq!(
+            individual,
+            requested(&[
+                ("C:/two,three", "C:/two,three"),
+                ("prime-ssh://profile/a,b", "/local/dir,comma"),
+            ])
+        );
+    }
+
+    #[test]
+    fn route_validation_rejects_malformed_send_and_current_session_routes() {
+        for invalid in [
+            Value::Null,
+            json!({}),
+            json!([]),
+            json!(["POST"]),
+            json!(["POST", "agent"]),
+            json!(["POST", "agent", "not-an-object"]),
+        ] {
+            let mut route = invalid;
+            assert_eq!(send_route_body(&mut route).unwrap_err().code, "INVALID_ARGUMENT");
+        }
+        let mut valid_send = json!(["POST", "agent", {"prompt":"hi"}]);
+        send_route_body(&mut valid_send)
+            .unwrap()
+            .insert("attachments".into(), json!(["a1"]));
+        assert_eq!(valid_send[2]["attachments"], json!(["a1"]));
+
+        for invalid in [Value::Null, json!({}), json!([]), json!(["PUT"])] {
+            let mut route = invalid;
+            assert_eq!(
+                current_session_route_slot(&mut route).unwrap_err().code,
+                "INVALID_ARGUMENT"
+            );
+        }
+        let mut valid_current = json!(["PUT", "current-session", {"session_id":"s1"}]);
+        *current_session_route_slot(&mut valid_current).unwrap() =
+            json!("current-session?client_id=c1");
+        assert_eq!(valid_current[1], "current-session?client_id=c1");
     }
 }
 

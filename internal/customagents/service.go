@@ -26,6 +26,8 @@ func WithTickInterval(d time.Duration) ServiceOption {
 	}
 }
 
+var ErrServiceStopped = errors.New("custom agents service is stopping")
+
 type Service struct {
 	store        *Store
 	executor     AgentExecutor
@@ -39,6 +41,7 @@ type Service struct {
 	schedCancel  context.CancelFunc
 	wg           sync.WaitGroup
 	started      bool
+	closing      bool
 }
 
 func NewService(
@@ -83,9 +86,19 @@ func (s *Service) ListAvailableModels(ctx context.Context) ([]ModelOption, error
 	return s.models.ListAvailableModels(ctx)
 }
 
+func (s *Service) beginWork() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closing {
+		return ErrServiceStopped
+	}
+	s.wg.Add(1)
+	return nil
+}
+
 func (s *Service) Start(ctx context.Context) {
 	s.mu.Lock()
-	if s.started {
+	if s.started || s.closing {
 		s.mu.Unlock()
 		return
 	}
@@ -114,10 +127,7 @@ func (s *Service) Start(ctx context.Context) {
 
 func (s *Service) Stop() {
 	s.mu.Lock()
-	if !s.started {
-		s.mu.Unlock()
-		return
-	}
+	s.closing = true
 	cancel := s.schedCancel
 	s.started = false
 	s.schedCancel = nil
@@ -141,12 +151,15 @@ func (s *Service) ProbeAgent(ctx context.Context, agentID string) (ProbeResult, 
 }
 
 func (s *Service) Dispatch(ctx context.Context, req DispatchRequest) (CustomAgentRun, error) {
+	if err := s.beginWork(); err != nil {
+		return CustomAgentRun{}, err
+	}
 	agent, run, runCtx, err := s.prepareRun(ctx, context.Background(), req)
 	if err != nil {
+		s.wg.Done()
 		return CustomAgentRun{}, err
 	}
 
-	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
 		s.executeRun(runCtx, agent, run, req, false)
@@ -155,6 +168,10 @@ func (s *Service) Dispatch(ctx context.Context, req DispatchRequest) (CustomAgen
 }
 
 func (s *Service) DispatchSync(ctx context.Context, req DispatchRequest) (CustomAgentRun, error) {
+	if err := s.beginWork(); err != nil {
+		return CustomAgentRun{}, err
+	}
+	defer s.wg.Done()
 	agent, run, runCtx, err := s.prepareRun(ctx, ctx, req)
 	if err != nil {
 		return CustomAgentRun{}, err
@@ -201,6 +218,10 @@ func (s *Service) prepareRun(lookupCtx, parentCtx context.Context, req DispatchR
 	runID := uuid.NewString()
 
 	s.mu.Lock()
+	if s.closing {
+		s.mu.Unlock()
+		return CustomAgent{}, CustomAgentRun{}, nil, ErrServiceStopped
+	}
 	if activeID, busy := s.activeAgents[agent.ID]; busy {
 		s.mu.Unlock()
 		return CustomAgent{}, CustomAgentRun{}, nil, fmt.Errorf("агент %s уже выполняется (%s)", agent.Slug, activeID)

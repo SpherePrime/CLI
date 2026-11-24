@@ -10,6 +10,7 @@ import (
 func TestDesktopBrowserBindsToolsToWorkspaceRoot(t *testing.T) {
 	t.Setenv(desktopBrowserURLEnv, "http://127.0.0.1:4000/mcp")
 	t.Setenv(desktopBrowserKeyEnv, "secret")
+	t.Setenv(desktopMCPAreasEnv, "")
 	root := t.TempDir()
 	cfg := &Config{MCP: map[string]MCPConfig{}}
 	cfg.addDesktopBrowserMCP(root)
@@ -22,6 +23,7 @@ func TestDesktopBrowserBindsToolsToWorkspaceRoot(t *testing.T) {
 func TestDesktopToolsPreserveCustomBrowserServer(t *testing.T) {
 	t.Setenv(desktopBrowserURLEnv, "http://127.0.0.1:4000/mcp")
 	t.Setenv(desktopBrowserKeyEnv, "secret")
+	t.Setenv(desktopMCPAreasEnv, "")
 	cfg := &Config{MCP: map[string]MCPConfig{
 		DesktopBrowserMCPName: {Type: MCPHttp, URL: "https://browser.example/mcp"},
 	}}
@@ -37,6 +39,7 @@ func TestDesktopToolsPreserveCustomBrowserServer(t *testing.T) {
 func TestDesktopBrowserMCPIsAddedOnlyWhenDesktopProvidesIt(t *testing.T) {
 	t.Setenv(desktopBrowserURLEnv, "")
 	t.Setenv(desktopBrowserKeyEnv, "")
+	t.Setenv(desktopMCPAreasEnv, "")
 	cfg := &Config{MCP: map[string]MCPConfig{}}
 	cfg.addDesktopBrowserMCP(t.TempDir())
 	require.NotContains(t, cfg.MCP, DesktopBrowserMCPName)

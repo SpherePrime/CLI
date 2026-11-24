@@ -43,6 +43,9 @@ export function SettingsDialog({
 }) {
   const { t, language } = useI18n()
   const [tab, setTab] = useState(initial)
+  useEffect(() => {
+    setTab(initial)
+  }, [initial])
   const [updateStatus, setUpdateStatus] = useState('')
   const [updatePayload, setUpdatePayload] = useState<UpdateStatus | null>(null)
   const [installingUpdate, setInstallingUpdate] = useState(false)

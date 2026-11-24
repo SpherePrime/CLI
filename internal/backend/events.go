@@ -8,12 +8,11 @@ import (
 	mcptools "github.com/SpherePrime/CLI/internal/agent/tools/mcp"
 	"github.com/SpherePrime/CLI/internal/app"
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/internal/proto"
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/internal/skills"
 )
 
-// SubscribeEvents returns a per-caller event channel for a workspace.
-// Each caller receives all events; multiple callers do not compete.
 func (b *Backend) SubscribeEvents(ctx context.Context, workspaceID string) (<-chan pubsub.Event[tea.Msg], error) {
 	ws, err := b.GetWorkspace(workspaceID)
 	if err != nil {
@@ -21,6 +20,25 @@ func (b *Backend) SubscribeEvents(ctx context.Context, workspaceID string) (<-ch
 	}
 
 	return ws.Events(ctx), nil
+}
+
+func (b *Backend) ListChannelMessages(workspaceID string) ([]proto.MCPChannelMessage, error) {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	events := ws.ChannelMessages()
+	out := make([]proto.MCPChannelMessage, 0, len(events))
+	for _, ev := range events {
+		out = append(out, proto.MCPChannelMessage{
+			ID:            ev.ChannelID,
+			Name:          ev.Name,
+			WorkspacePath: ev.WorkspacePath,
+			Content:       ev.ChannelMessage,
+			ReceivedAt:    ev.ChannelReceivedAt,
+		})
+	}
+	return out, nil
 }
 
 // GetLSPStates returns the state of all LSP clients.

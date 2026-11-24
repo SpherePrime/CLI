@@ -19,10 +19,21 @@ export interface ParsedToolOutput {
 export function classifyToolCategory(name: string, isShell = false): ToolCategory {
   if (isShell) return 'command'
   const normalized = String(name || '').toLowerCase()
-  if (normalized === 'edit' || normalized === 'multiedit' || normalized === 'lsp_rename' || normalized === 'lsp_replace_symbol') {
+  if (
+    normalized === 'edit' ||
+    normalized === 'multiedit' ||
+    normalized === 'lsp_rename' ||
+    normalized === 'lsp_replace_symbol' ||
+    normalized.includes('ssh_edit_file')
+  ) {
     return 'edit'
   }
-  if (normalized === 'write' || normalized === 'download' || normalized === 'generate_image') {
+  if (
+    normalized === 'write' ||
+    normalized === 'download' ||
+    normalized === 'generate_image' ||
+    normalized.includes('ssh_write_file')
+  ) {
     return 'write'
   }
   if (
@@ -33,12 +44,16 @@ export function classifyToolCategory(name: string, isShell = false): ToolCategor
     normalized === 'lsp_symbols' ||
     normalized === 'lsp_definition' ||
     normalized === 'lsp_references' ||
-    normalized === 'lsp_diagnostics'
+    normalized === 'lsp_diagnostics' ||
+    normalized === 'lsp_call_hierarchy' ||
+    normalized === 'lsp_restart' ||
+    normalized.includes('ssh_read_file')
   ) {
     return 'read'
   }
   if (
     normalized === 'bash' ||
+    normalized === 'sudo' ||
     normalized === 'job_output' ||
     normalized === 'job_kill' ||
     normalized.includes('terminal_') ||
@@ -51,6 +66,7 @@ export function classifyToolCategory(name: string, isShell = false): ToolCategor
     normalized === 'glob' ||
     normalized === 'ls' ||
     normalized === 'web_search' ||
+    normalized === 'web_fetch' ||
     normalized === 'sourcegraph' ||
     normalized === 'fetch' ||
     normalized === 'agentic_fetch'
@@ -60,10 +76,28 @@ export function classifyToolCategory(name: string, isShell = false): ToolCategor
   if (normalized.includes('browser_') || normalized.includes('window_') || normalized.includes('app_')) {
     return 'browser'
   }
-  if (normalized === 'agent' || normalized === 'agent_jobs' || normalized === 'agent_message') {
+  if (
+    normalized === 'agent' ||
+    normalized === 'agent_jobs' ||
+    normalized === 'agent_message' ||
+    normalized.startsWith('custom_agent_')
+  ) {
     return 'task'
   }
   return 'other'
+}
+
+function peelTrailingBlock(text: string, tag: string): { content: string; rest: string } | null {
+  const trimmed = text.trimEnd()
+  const closeTag = `</${tag}>`
+  if (!trimmed.endsWith(closeTag)) return null
+  const openTag = `<${tag}>`
+  const openIndex = trimmed.lastIndexOf(openTag)
+  if (openIndex < 0) return null
+  const lineStart = trimmed.lastIndexOf('\n', openIndex - 1) + 1
+  if (trimmed.slice(lineStart, openIndex).trim() !== '') return null
+  const content = trimmed.slice(openIndex + openTag.length, trimmed.length - closeTag.length)
+  return { content, rest: trimmed.slice(0, lineStart) }
 }
 
 export function parseToolOutput(raw: string): ParsedToolOutput {
@@ -76,27 +110,37 @@ export function parseToolOutput(raw: string): ParsedToolOutput {
   let diagnosticSummary: string | null = null
   let exitCode: number | null = null
 
-  const diagMatch = text.match(/<project_diagnostics>([\s\S]*?)<\/project_diagnostics>/)
-  if (diagMatch) {
-    diagnostics = diagMatch[1].trim() || null
-    text = text.replace(diagMatch[0], '')
-  }
-
-  const summaryMatch = text.match(/<diagnostic_summary>([\s\S]*?)<\/diagnostic_summary>/)
-  if (summaryMatch) {
-    diagnosticSummary = summaryMatch[1]
-      .trim()
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .join(' · ')
-    text = text.replace(summaryMatch[0], '')
-  }
-
-  const cwdMatch = text.match(/<cwd>([\s\S]*?)<\/cwd>/)
-  if (cwdMatch) {
-    cwd = cwdMatch[1].trim() || null
-    text = text.replace(cwdMatch[0], '')
+  while (true) {
+    if (diagnostics === null) {
+      const diag = peelTrailingBlock(text, 'project_diagnostics')
+      if (diag) {
+        diagnostics = diag.content.trim() || null
+        text = diag.rest
+        continue
+      }
+    }
+    if (diagnosticSummary === null) {
+      const summary = peelTrailingBlock(text, 'diagnostic_summary')
+      if (summary) {
+        diagnosticSummary = summary.content
+          .trim()
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .join(' · ')
+        text = summary.rest
+        continue
+      }
+    }
+    if (cwd === null) {
+      const cwdBlock = peelTrailingBlock(text, 'cwd')
+      if (cwdBlock) {
+        cwd = cwdBlock.content.trim() || null
+        text = cwdBlock.rest
+        continue
+      }
+    }
+    break
   }
 
   text = text

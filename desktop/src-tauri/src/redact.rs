@@ -18,20 +18,6 @@ pub fn sensitive_key(key: &str) -> bool {
     )
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn nested_credentials_are_removed_and_oauth_flag_preserved() {
-        let result = super::value(
-            serde_json::json!({"api_key":"secret","oauth":true,"provider":{"refresh_token":"secret","name":"saved"}}),
-        );
-        assert_eq!(
-            result,
-            serde_json::json!({"oauth":true,"provider":{"name":"saved"}})
-        );
-    }
-}
-
 pub fn value(input: Value) -> Value {
     match input {
         Value::Object(items) => Value::Object(
@@ -43,5 +29,19 @@ pub fn value(input: Value) -> Value {
         ),
         Value::Array(items) => Value::Array(items.into_iter().map(value).collect()),
         item => item,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn nested_credentials_are_removed_and_oauth_flag_preserved() {
+        let result = super::value(
+            serde_json::json!({"api_key":"secret","oauth":true,"provider":{"refresh_token":"secret","name":"saved"}}),
+        );
+        assert_eq!(
+            result,
+            serde_json::json!({"oauth":true,"provider":{"name":"saved"}})
+        );
     }
 }

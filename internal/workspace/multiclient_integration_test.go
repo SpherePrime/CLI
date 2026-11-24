@@ -39,7 +39,10 @@ func newRuntimeServer(t *testing.T) *runtimeServer {
 	t.Helper()
 	s := server.NewServer(nil, "tcp", "127.0.0.1:0")
 	hs := httptest.NewServer(s.Handler())
-	t.Cleanup(hs.Close)
+	t.Cleanup(func() {
+		hs.Close()
+		_ = s.Close()
+	})
 
 	u, err := url.Parse(hs.URL)
 	require.NoError(t, err)

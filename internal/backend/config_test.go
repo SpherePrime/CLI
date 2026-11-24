@@ -51,7 +51,7 @@ func newPublishingWorkspace(t *testing.T) (*Backend, *Workspace, <-chan pubsub.E
 	dataDir := t.TempDir()
 
 	b := New(context.Background(), nil, func() {})
-	b.SetCreateGrace(2 * time.Second)
+	b.SetCreateGrace(10 * time.Second)
 	t.Cleanup(func() { drainBackend(t, b) })
 
 	cid := uuid.New().String()

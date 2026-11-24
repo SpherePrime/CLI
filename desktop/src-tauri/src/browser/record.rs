@@ -83,7 +83,13 @@ pub fn start(
     let frames_dir = out_dir.join("frames");
     fs::create_dir_all(&frames_dir).map_err(|error| error.to_string())?;
 
-    let rendering_guard = rendering::keep_rendering(app, state, tab_id)?;
+    let rendering_guard = match rendering::keep_rendering(app, state, tab_id) {
+        Ok(guard) => guard,
+        Err(error) => {
+            let _ = fs::remove_dir_all(&out_dir);
+            return Err(error);
+        }
+    };
     let stop_flag = Arc::new(AtomicBool::new(false));
     let thread_stop = stop_flag.clone();
     let thread_frames_dir = frames_dir.clone();
@@ -147,26 +153,40 @@ pub fn start(
         }
     });
 
-    let mut sessions = active_recordings()
-        .lock()
-        .map_err(|error| error.to_string())?;
-    if sessions.contains_key(tab_id) {
+    let duplicate = {
+        let mut sessions = match active_recordings().lock() {
+            Ok(sessions) => sessions,
+            Err(error) => {
+                stop_flag.store(true, Ordering::Release);
+                let _ = join_handle.join();
+                let _ = fs::remove_dir_all(&out_dir);
+                return Err(error.to_string());
+            }
+        };
+        if sessions.contains_key(tab_id) {
+            Some(join_handle)
+        } else {
+            sessions.insert(
+                tab_id.to_owned(),
+                RecordingSession {
+                    recording_id: recording_id.clone(),
+                    out_dir: out_dir.clone(),
+                    frames_dir: frames_dir.clone(),
+                    fps,
+                    started_at: Instant::now(),
+                    stop_flag: stop_flag.clone(),
+                    join_handle,
+                },
+            );
+            None
+        }
+    };
+    if let Some(join_handle) = duplicate {
         stop_flag.store(true, Ordering::Release);
         let _ = join_handle.join();
+        let _ = fs::remove_dir_all(&out_dir);
         return Err("Video recording is already running for this tab".to_owned());
     }
-    sessions.insert(
-        tab_id.to_owned(),
-        RecordingSession {
-            recording_id: recording_id.clone(),
-            out_dir: out_dir.clone(),
-            frames_dir: frames_dir.clone(),
-            fps,
-            started_at: Instant::now(),
-            stop_flag,
-            join_handle,
-        },
-    );
 
     Ok(json!({
         "recordingId": recording_id,
@@ -234,6 +254,20 @@ pub fn stop_if_active(tab_id: &str) {
         .and_then(|mut sessions| sessions.remove(tab_id));
     if let Some(session) = session {
         session.stop_flag.store(true, Ordering::Release);
+        let _ = session.join_handle.join();
+    }
+}
+
+pub fn stop_all() {
+    let sessions: Vec<RecordingSession> = active_recordings()
+        .lock()
+        .ok()
+        .map(|mut map| map.drain().map(|(_, session)| session).collect())
+        .unwrap_or_default();
+    for session in &sessions {
+        session.stop_flag.store(true, Ordering::Release);
+    }
+    for session in sessions {
         let _ = session.join_handle.join();
     }
 }

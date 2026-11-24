@@ -19,6 +19,11 @@ type resolvedSwarmWorker struct {
 }
 
 func (s *Service) DispatchSwarm(ctx context.Context, req SwarmRequest) (SwarmResult, error) {
+	if err := s.beginWork(); err != nil {
+		return SwarmResult{}, err
+	}
+	defer s.wg.Done()
+
 	goal := strings.TrimSpace(req.Goal)
 	if goal == "" {
 		return SwarmResult{}, errors.New("требуется цель роя (goal)")
@@ -37,6 +42,22 @@ func (s *Service) DispatchSwarm(ctx context.Context, req SwarmRequest) (SwarmRes
 	if chainID == "" {
 		chainID = "swarm-" + uuid.NewString()
 	}
+
+	swarmRunKey := "swarm:" + chainID + ":" + uuid.NewString()
+	s.mu.Lock()
+	if s.closing {
+		s.mu.Unlock()
+		return SwarmResult{}, ErrServiceStopped
+	}
+	ctx, swarmCancel := context.WithCancel(ctx)
+	s.activeRuns[swarmRunKey] = swarmCancel
+	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		delete(s.activeRuns, swarmRunKey)
+		s.mu.Unlock()
+		swarmCancel()
+	}()
 
 	persistCtx := context.Background()
 	availableModels, err := s.models.ListAvailableModels(ctx)

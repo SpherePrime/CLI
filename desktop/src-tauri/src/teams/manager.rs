@@ -303,10 +303,7 @@ impl TeamManager {
                     Some(run_id) => StopTarget::Run(TeamRun {
                         id: run_id.clone(),
                         root: root.to_owned(),
-                        title: task.title.clone(),
-                        workspace_id: task.workspace_id.clone(),
                         session_id: task.session_id.clone(),
-                        created_at: task.started_at.unwrap_or(0),
                     }),
                     None => StopTarget::Idle,
                 },
@@ -375,10 +372,7 @@ impl TeamManager {
                     let run = TeamRun {
                         id: run_id,
                         root: root.clone(),
-                        title: task.title.clone(),
-                        workspace_id: task.workspace_id.clone(),
                         session_id: task.session_id.clone(),
-                        created_at: task.started_at.unwrap_or(0),
                     };
                     if let Ok(result) = self.require_adapter()?.status(&run) {
                         if result.status == "running" {
@@ -489,7 +483,7 @@ impl TeamManager {
             .iter()
             .filter(|team| team.root == root)
             .collect();
-        teams.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        teams.sort_by_key(|a| std::cmp::Reverse(a.created_at));
         let mut value = json!({"root":root,"teams":teams});
         if let Some(error) = &runtime.error {
             value["error"] = json!(error);

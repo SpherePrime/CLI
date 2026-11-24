@@ -206,7 +206,7 @@ fn passthrough_metadata(raw_path: &str) -> (String, String) {
         }
         let name = url
             .path_segments()
-            .and_then(|segments| segments.filter(|segment| !segment.is_empty()).last())
+            .and_then(|mut segments| segments.rfind(|segment| !segment.is_empty()))
             .unwrap_or("")
             .to_owned();
         let mime = if name.is_empty() {

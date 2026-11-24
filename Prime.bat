@@ -107,11 +107,11 @@ if /I "%~1"=="--help"      goto usage
 if /I "%~1"=="-?"          goto usage
 if /I "%~1"=="help"        goto usage
 echo Unknown option: %~1
-goto usage
+goto usage_error
 
 :opt_ratio
 shift
-if "%~1"=="" ( echo --ratio needs a fraction & goto usage )
+if "%~1"=="" ( echo --ratio needs a fraction & goto usage_error )
 set "RATIO=%~1"
 set "BUILD_OPTS=%BUILD_OPTS% --ratio %~1"
 shift
@@ -119,7 +119,7 @@ goto parse
 
 :opt_jobs
 shift
-if "%~1"=="" ( echo --jobs needs a number & goto usage )
+if "%~1"=="" ( echo --jobs needs a number & goto usage_error )
 set "BUILD_OPTS=%BUILD_OPTS% --jobs %~1"
 shift
 goto parse
@@ -128,7 +128,7 @@ rem --version threads to both scripts: build stamps it into the binary,
 rem release uses it as the tag.
 :opt_version
 shift
-if "%~1"=="" ( echo --version needs x.y.z & goto usage )
+if "%~1"=="" ( echo --version needs x.y.z & goto usage_error )
 set "BUILD_OPTS=%BUILD_OPTS% --version %~1"
 shift
 goto parse
@@ -143,9 +143,9 @@ set "PAIR_FLAG=%~1"
 shift
 if "%~1"=="" (
     echo %PAIR_FLAG% needs a value
-    goto usage
+    goto usage_error
 )
-set "RELEASE_OPTS=%RELEASE_OPTS% %PAIR_FLAG% %~1"
+set "RELEASE_OPTS=%RELEASE_OPTS% %PAIR_FLAG% "%~1""
 shift
 goto parse
 
@@ -161,12 +161,13 @@ shift
 set "T_LIST="
 :targets_loop
 if "%~1"=="" goto targets_done
-if /I "%~1:~0,1"=="-" goto targets_done
+set "T_ARG=%~1"
+if "%T_ARG:~0,1%"=="-" goto targets_done
 set "T_LIST=%T_LIST% %~1"
 shift
 goto targets_loop
 :targets_done
-if not defined T_LIST ( echo --targets needs at least one value & goto usage )
+if not defined T_LIST ( echo --targets needs at least one value & goto usage_error )
 rem Single quotes stay out: a quoted list would break "for %%T in (%TARGETS%)"
 rem in the release script.
 set "RELEASE_OPTS=%RELEASE_OPTS% --targets %T_LIST%"
@@ -296,11 +297,11 @@ rem --dry-run would quietly make the fast-forward a no-op and the "sync
 rem then release" would build from stale sources. Sync and release are
 rem separate release.bat invocations with their own scopes, so the version
 rem is resolved independently in each - the release step uses the right one.
-if "%SYNC%"=="1" (
-    call scripts\release.bat sync --strict-sync
-    set "EXITCODE=%errorlevel%"
-    if not "%EXITCODE%"=="0" goto finish
-)
+if not "%SYNC%"=="1" goto release_after_sync
+call scripts\release.bat sync --strict-sync
+set "EXITCODE=%errorlevel%"
+if not "%EXITCODE%"=="0" goto finish
+:release_after_sync
 
 call :header "Release"
 rem release.bat picks the targets interactively when --targets was not passed,
@@ -452,6 +453,10 @@ rem  usage - the help text. A plain label so "h", "help", "-h" and "--help"
 rem  all reach it; it exits without the final pause-and-exit of :finish so
 rem  it is quiet enough to pipe.
 rem ---------------------------------------------------------------------------
+:usage_error
+call :usage
+endlocal & exit /b 2
+
 :usage
 echo.
 echo Usage: Prime.bat [run^|build^|release^|desktop^|setup] [options] [-- prime-args]

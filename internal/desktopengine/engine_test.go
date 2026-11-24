@@ -124,6 +124,7 @@ func TestExistingRoutesInProcess(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	srv := server.NewInProcess(ctx, nil)
 	engine := newEngine(ctx, cancel, srv.Handler())
+	engine.server = srv
 	t.Cleanup(engine.Close)
 	for _, path := range []string{"/v1/health", "/v1/capabilities", "/v1/version", "/v1/workspaces"} {
 		id, err := engine.Request(Request{Method: "GET", Path: path})

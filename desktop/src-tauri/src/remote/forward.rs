@@ -78,8 +78,7 @@ impl ForwardManager {
                 "Remote forwarding target must be a loopback host and nonzero port",
             ));
         }
-        let mut items = self.items.lock().unwrap();
-        if items.len() >= 8 {
+        if self.items.lock().unwrap().len() >= 8 {
             return Err(HostError::new(
                 "SSH_FORWARD_LIMIT",
                 "Maximum eight SSH forwards",
@@ -104,8 +103,16 @@ impl ForwardManager {
             listening: Arc::new(AtomicBool::new(true)),
             error: Arc::new(Mutex::new(None)),
         });
-        items.insert(id, forward.clone());
-        drop(items);
+        {
+            let mut items = self.items.lock().unwrap();
+            if items.len() >= 8 {
+                return Err(HostError::new(
+                    "SSH_FORWARD_LIMIT",
+                    "Maximum eight SSH forwards",
+                ));
+            }
+            items.insert(id, forward.clone());
+        }
         let worker = forward.clone();
         let host = host.to_owned();
         runtime::runtime().spawn(async move {

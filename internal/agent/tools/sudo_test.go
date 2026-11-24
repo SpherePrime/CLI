@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -45,8 +44,7 @@ func TestSudoTool_MissingCommandFails(t *testing.T) {
 }
 
 func TestSudoTool_WrapsCommandWithAskpass(t *testing.T) {
-	askpassPath := filepath.Join(t.TempDir(), "askpass")
-	wrapped := sudoCommand("apt-get install -y ripgrep", askpassPath)
+	wrapped := sudoCommand("apt-get install -y ripgrep")
 
 	require.Contains(t, wrapped, "sudo -A -p '' -- bash -c")
 	require.Contains(t, wrapped, "'apt-get install -y ripgrep'")
@@ -54,7 +52,7 @@ func TestSudoTool_WrapsCommandWithAskpass(t *testing.T) {
 }
 
 func TestSudoCommand_QuotesSingleQuotes(t *testing.T) {
-	wrapped := sudoCommand("echo 'hi there'", "/tmp/askpass")
+	wrapped := sudoCommand("echo 'hi there'")
 
 	require.Contains(t, wrapped, `'echo '\''hi there'\'''`)
 }
@@ -63,7 +61,7 @@ func TestWriteAskpassScript_EmitsPasswordAndIsRemoved(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("askpass scripts need POSIX executable bits")
 	}
-	password := "it's a secret"
+	password := `-n\tit's a secret`
 	path, err := writeAskpassScript(password)
 	require.NoError(t, err)
 	require.NotNil(t, os.Remove)
@@ -71,11 +69,25 @@ func TestWriteAskpassScript_EmitsPasswordAndIsRemoved(t *testing.T) {
 
 	content, err := os.ReadFile(path)
 	require.NoError(t, err)
-	require.Contains(t, string(content), `echo 'it'\''s a secret'`)
+	require.Contains(t, string(content), `printf '%s\n' '-n\tit'\''s a secret'`)
 
 	info, err := os.Stat(path)
 	require.NoError(t, err)
 	require.Zero(t, info.Mode().Perm()&0o077, "askpass script must be owner-only")
+}
+
+func TestSudoEnv_StripsSecretVars(t *testing.T) {
+	env := sudoEnv([]string{
+		"PATH=/usr/bin",
+		"PRIME_DESKTOP_SUDO_PASSWORD=top-secret",
+		"PRIME_DESKTOP_BROWSER_TOKEN=browser-secret",
+	}, "/tmp/askpass")
+	require.Contains(t, env, "PATH=/usr/bin")
+	require.Contains(t, env, "SUDO_ASKPASS=/tmp/askpass")
+	for _, entry := range env {
+		require.NotContains(t, entry, "PRIME_DESKTOP_SUDO_PASSWORD=")
+		require.NotContains(t, entry, "PRIME_DESKTOP_BROWSER_TOKEN=")
+	}
 }
 
 func TestSudoTool_DescribesUsage(t *testing.T) {

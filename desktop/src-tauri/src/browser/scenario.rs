@@ -22,7 +22,6 @@ const HOVER_SETTLE: Duration = Duration::from_millis(350);
 pub struct Browser<'a> {
     pub app: &'a AppHandle,
     pub state: &'a BrowserState,
-    pub session: Option<&'a str>,
     pub id: &'a str,
     pub view: &'a Webview,
     pub cancel: &'a AtomicBool,
@@ -60,40 +59,50 @@ pub fn run(browser: &Browser, plan: Plan) -> Result<Value, String> {
         }
     }
     let skipped = plan.steps.len() - log.len();
-    let summary = build_summary(
-        &log,
-        plan.steps.len(),
+    let summary = build_summary(Summary {
+        log: &log,
+        total_steps: plan.steps.len(),
         failed,
         stopped,
         shots,
-        started.elapsed().as_millis(),
+        elapsed_ms: started.elapsed().as_millis(),
         skipped,
-        &plan.notes,
-    );
+        notes: &plan.notes,
+    });
     Ok(assemble_content(summary, images))
 }
 
-fn build_summary(
-    log: &[String],
+struct Summary<'a> {
+    log: &'a [String],
     total_steps: usize,
     failed: usize,
     stopped: bool,
     shots: usize,
     elapsed_ms: u128,
     skipped: usize,
-    notes: &[String],
-) -> String {
-    let verdict = if failed == 0 && !stopped { "PASSED" } else { "FAILED" };
+    notes: &'a [String],
+}
+
+fn build_summary(info: Summary<'_>) -> String {
+    let verdict = if info.failed == 0 && !info.stopped {
+        "PASSED"
+    } else {
+        "FAILED"
+    };
     let mut summary = format!(
-        "Scenario {verdict}: {} of {total_steps} steps run, {failed} failed, {shots} screenshots, {elapsed_ms}ms.\n{}",
-        log.len(),
-        log.join("\n")
+        "Scenario {verdict}: {} of {} steps run, {} failed, {} screenshots, {}ms.\n{}",
+        info.log.len(),
+        info.total_steps,
+        info.failed,
+        info.shots,
+        info.elapsed_ms,
+        info.log.join("\n")
     );
-    if skipped > 0 {
-        summary.push_str(&format!("\n{skipped} remaining steps were not run."));
+    if info.skipped > 0 {
+        summary.push_str(&format!("\n{} remaining steps were not run.", info.skipped));
     }
-    if !notes.is_empty() {
-        summary.push_str(&format!("\nNotes:\n{}", notes.join("\n")));
+    if !info.notes.is_empty() {
+        summary.push_str(&format!("\nNotes:\n{}", info.notes.join("\n")));
     }
     summary
 }
@@ -302,28 +311,31 @@ mod tests {
 
     #[test]
     fn assembled_content_contains_only_flat_mcp_objects() {
-        let passed_summary = build_summary(
-            &["1. navigate ok 12ms".to_owned(), "2. screenshot ok 20ms: home".to_owned()],
-            2,
-            0,
-            false,
-            1,
-            32,
-            0,
-            &[],
-        );
+        let passed_summary = build_summary(Summary {
+            log: &[
+                "1. navigate ok 12ms".to_owned(),
+                "2. screenshot ok 20ms: home".to_owned(),
+            ],
+            total_steps: 2,
+            failed: 0,
+            stopped: false,
+            shots: 1,
+            elapsed_ms: 32,
+            skipped: 0,
+            notes: &[],
+        });
         assert!(passed_summary.starts_with("Scenario PASSED: 2 of 2 steps run, 0 failed, 1 screenshots"));
 
-        let failed_summary = build_summary(
-            &["1. click FAILED 5ms: not found".to_owned()],
-            3,
-            1,
-            true,
-            1,
-            15,
-            2,
-            &["extra note".to_owned()],
-        );
+        let failed_summary = build_summary(Summary {
+            log: &["1. click FAILED 5ms: not found".to_owned()],
+            total_steps: 3,
+            failed: 1,
+            stopped: true,
+            shots: 1,
+            elapsed_ms: 15,
+            skipped: 2,
+            notes: &["extra note".to_owned()],
+        });
         assert!(failed_summary.starts_with("Scenario FAILED: 1 of 3 steps run, 1 failed, 1 screenshots"));
         assert!(failed_summary.contains("2 remaining steps were not run."));
         assert!(failed_summary.contains("Notes:\nextra note"));

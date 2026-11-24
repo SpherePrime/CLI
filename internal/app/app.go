@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -89,10 +90,11 @@ type App struct {
 	events          *pubsub.Broker[tea.Msg]
 	tuiWG           *sync.WaitGroup
 
-	// global context and cleanup functions
 	globalCtx          context.Context
 	cleanupFuncs       []func(context.Context) error
 	agentNotifications *pubsub.Broker[notify.Notification]
+	channelMessagesMu  sync.RWMutex
+	channelMessages    []mcp.Event
 	// runCompletions is the authoritative per-run completion signal,
 	// emitted once per top-level agent turn after all message
 	// updates have been flushed. Bridged into app.events so SSE
@@ -160,8 +162,9 @@ func newApplication(ctx context.Context, conn *sql.DB, store *config.ConfigStore
 		slog.Warn("Clipboard initialization failed", "error", err)
 	}
 
-	// Check for updates in the background.
-	go app.checkForUpdates(ctx)
+	if os.Getenv("PRIME_DESKTOP") != "1" {
+		go app.checkForUpdates(ctx)
+	}
 
 	// Retire the retired "voice as an MCP server" config before any MCP
 	// connect, so the removed server never gets spawned.
@@ -182,8 +185,6 @@ func newApplication(ctx context.Context, conn *sql.DB, store *config.ConfigStore
 		Messages:          app.Messages,
 	})
 
-	// Release the shared database connection on shutdown. The pool
-	// closes the underlying *sql.DB when the last reference is released.
 	dataDir := cfg.Options.DataDirectory
 	app.cleanupFuncs = append(
 		app.cleanupFuncs,
@@ -192,8 +193,10 @@ func newApplication(ctx context.Context, conn *sql.DB, store *config.ConfigStore
 			return nil
 		},
 		func(context.Context) error { return db.Release(dataDir) },
-		func(ctx context.Context) error { return mcp.Close(ctx) },
 	)
+	if !deferred {
+		app.cleanupFuncs = append(app.cleanupFuncs, func(ctx context.Context) error { return mcp.Close(ctx) })
+	}
 
 	store.SetOnBackgroundDiscovery(func() {
 		if app.Coordinator() == nil || app.globalCtx.Err() != nil {
@@ -814,7 +817,20 @@ func (app *App) setupEvents() {
 	app.subscribeMustDeliver(ctx, "run-completions", app.runCompletions.Subscribe)
 	app.subscribe(ctx, "mcp", mcp.SubscribeEvents)
 	app.subscribeMustDeliver(ctx, "mcp-channels", func(ctx context.Context) <-chan pubsub.Event[mcp.Event] {
-		return mcp.SubscribeChannelEvents(ctx, app.config.WorkingDir(), app.config.Overrides().EnabledChannels)
+		src := mcp.SubscribeChannelEvents(ctx, app.config.WorkingDir(), app.config.Overrides().EnabledChannels)
+		out := make(chan pubsub.Event[mcp.Event], 64)
+		go func() {
+			defer close(out)
+			for ev := range src {
+				app.recordChannelMessage(ev.Payload)
+				select {
+				case out <- ev:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+		return out
 	})
 	app.subscribe(ctx, "lsp", SubscribeLSPEvents)
 	if app.Skills != nil {
@@ -949,12 +965,14 @@ func (app *App) Subscribe(program *tea.Program) {
 
 	app.tuiWG.Add(1)
 	tuiCtx, tuiCancel := context.WithCancel(app.globalCtx)
+	app.customAgentsMu.Lock()
 	app.cleanupFuncs = append(app.cleanupFuncs, func(context.Context) error {
 		slog.Debug("Cancelling TUI message handler")
 		tuiCancel()
 		app.tuiWG.Wait()
 		return nil
 	})
+	app.customAgentsMu.Unlock()
 	defer app.tuiWG.Done()
 
 	events := app.events.Subscribe(tuiCtx)
@@ -1006,17 +1024,18 @@ func (app *App) Shutdown() {
 		event.AppExited()
 	})
 
-	// Kill all background shells.
 	wg.Go(func() {
-		shell.GetBackgroundShellManager().KillAll(shutdownCtx)
+		if app.config != nil {
+			killWorkspaceBackgroundShells(shutdownCtx, app.config.WorkingDir())
+		}
 	})
 
-	// Close herdr client to stop its background writer.
 	app.herdrClient.Close()
 
-	// Shutdown all LSP clients.
 	wg.Go(func() {
-		app.LSPManager.KillAll(shutdownCtx)
+		if app.LSPManager != nil {
+			app.LSPManager.KillAll(shutdownCtx)
+		}
 	})
 
 	// Call all cleanup functions.
@@ -1035,8 +1054,91 @@ func (app *App) Shutdown() {
 	wg.Wait()
 }
 
-// checkForUpdates checks for available updates.
+const maxStoredChannelMessages = 200
+
+func (app *App) recordChannelMessage(ev mcp.Event) {
+	if ev.Type != mcp.EventChannelMessage || ev.WorkspacePath == "" {
+		return
+	}
+	app.channelMessagesMu.Lock()
+	app.channelMessages = append(app.channelMessages, ev)
+	if len(app.channelMessages) > maxStoredChannelMessages {
+		app.channelMessages = append([]mcp.Event(nil), app.channelMessages[len(app.channelMessages)-maxStoredChannelMessages:]...)
+	}
+	app.channelMessagesMu.Unlock()
+}
+
+func (app *App) ChannelMessages() []mcp.Event {
+	if app == nil {
+		return nil
+	}
+	app.channelMessagesMu.RLock()
+	defer app.channelMessagesMu.RUnlock()
+	out := make([]mcp.Event, len(app.channelMessages))
+	copy(out, app.channelMessages)
+	return out
+}
+
+func normalizeWorkspacePath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	if abs, err := filepath.Abs(path); err == nil {
+		path = abs
+	}
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
+	return filepath.Clean(path)
+}
+
+func sameWorkspacePath(left, right string) bool {
+	left, right = normalizeWorkspacePath(left), normalizeWorkspacePath(right)
+	if left == "" || right == "" {
+		return false
+	}
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(left, right)
+	}
+	return left == right
+}
+
+func killWorkspaceBackgroundShells(ctx context.Context, workspacePath string) {
+	if strings.TrimSpace(workspacePath) == "" {
+		return
+	}
+	manager := shell.GetBackgroundShellManager()
+	var matching []*shell.BackgroundShell
+	for _, id := range manager.List() {
+		bg, ok := manager.Get(id)
+		if !ok {
+			continue
+		}
+		shellPath := bg.WorkspacePath
+		if shellPath == "" {
+			shellPath = bg.WorkingDir
+		}
+		if !sameWorkspacePath(shellPath, workspacePath) {
+			continue
+		}
+		if err := manager.Kill(id); err == nil {
+			matching = append(matching, bg)
+		}
+	}
+	var wg sync.WaitGroup
+	for _, bg := range matching {
+		wg.Go(func() {
+			bg.WaitContext(ctx)
+		})
+	}
+	wg.Wait()
+}
+
 func (app *App) checkForUpdates(ctx context.Context) {
+	if os.Getenv("PRIME_DESKTOP") == "1" {
+		return
+	}
 	checkCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -1046,7 +1148,7 @@ func (app *App) checkForUpdates(ctx context.Context) {
 	}
 
 	autoUpdate := app.config.Config().Options.AutoUpdate
-	if autoUpdate {
+	if autoUpdate && !info.IsDevelopment() {
 		exe, err := os.Executable()
 		if err == nil {
 			if resolved, err := filepath.EvalSymlinks(exe); err == nil {
@@ -1057,7 +1159,7 @@ func (app *App) checkForUpdates(ctx context.Context) {
 		}
 		installCtx, cancelInstall := context.WithTimeout(ctx, 10*time.Minute)
 		defer cancelInstall()
-		if _, err := update.Install(installCtx, version.Version, exe, update.Default, io.Discard); err == nil {
+		if _, err := update.InstallChecked(installCtx, info, exe, update.Default, io.Discard); err == nil {
 			app.events.Publish(pubsub.UpdatedEvent, UpdateInstalledMsg{
 				CurrentVersion: info.Current,
 				Installed:      info.Latest,

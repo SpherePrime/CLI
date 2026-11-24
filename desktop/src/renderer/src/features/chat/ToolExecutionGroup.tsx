@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AlertCircle, Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
@@ -109,7 +109,7 @@ export function ToolExecutionGroup({
   messageFinished = false
 }: ToolExecutionGroupProps) {
   const { t, language } = useI18n()
-  const stats = summarizeGroup(parts, messageFinished)
+  const stats = useMemo(() => summarizeGroup(parts, messageFinished), [parts, messageFinished])
   const [open, setOpen] = useState(true)
 
   const heading =
@@ -120,7 +120,7 @@ export function ToolExecutionGroup({
       : stats.failed > 0
         ? language === 'ru'
           ? `Выполнено с ошибками · ${pluralRu(parts.length, 'действие', 'действия', 'действий')}`
-          : `Completed with errors · ${parts.length} actions`
+          : `Completed with errors · ${parts.length} ${parts.length === 1 ? 'action' : 'actions'}`
         : language === 'ru'
           ? `Выполнено ${pluralRu(parts.length, 'действие', 'действия', 'действий')}`
           : `Completed ${parts.length} ${parts.length === 1 ? 'action' : 'actions'}`

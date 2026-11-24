@@ -711,7 +711,10 @@ func vulkanCmakeStub(t *testing.T) string {
 		body := "@echo off\r\n" +
 			"echo %* >> \"%PRIME_TEST_CMAKE_LOG%\"\r\n" +
 			"if \"%~1\"==\"-S\" (\r\n" +
-			"  mkdir \"%~3\" 2>nul\r\n" +
+			"  mkdir \"%~4\" 2>nul\r\n" +
+			"  exit /b 0\r\n" +
+			")\r\n" +
+			"if \"%~1\"==\"--install\" (\r\n" +
 			"  exit /b 0\r\n" +
 			")\r\n" +
 			"if \"%~1\"==\"--build\" (\r\n" +

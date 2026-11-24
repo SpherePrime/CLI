@@ -10,7 +10,7 @@ import { UpdateScreen } from '../features/updates/UpdateScreen'
 import { Titlebar } from '../components/Titlebar'
 import { AuthGate } from '../features/auth/AuthGate'
 import { I18nProvider, translate, useI18n } from '../i18n'
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ToastStack } from '../features/notifications/ToastStack'
 import { notifyError } from '../features/notifications/notifications'
 import { useWorkspace, type Workspace } from './useWorkspace'
@@ -118,7 +118,8 @@ export function App() {
 
 function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
-  const documents = useDocuments(w.errorHandler)
+  const workspaceIds = useMemo(() => w.projects.map((item) => item.id), [w.projects])
+  const documents = useDocuments(w.errorHandler, workspaceIds)
   useLayoutEffect(() => applyShortcuts(w.preferences.keybindings), [w.preferences.keybindings])
   useModalWindowChrome()
   const [editorFraction, setEditorFraction] = useState(1.2)
@@ -385,9 +386,21 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       setActiveView('workspace')
       return w.openProject(path)
     },
+    openProjectSession: async (path, selected, known) => {
+      setActiveView('workspace')
+      return w.openProjectSession(path, selected, known)
+    },
     openProjectNewChat: async (path) => {
       setActiveView('workspace')
       return w.openProjectNewChat(path)
+    },
+    openFolder: async () => {
+      setActiveView('workspace')
+      return w.openFolder()
+    },
+    createProject: async (name) => {
+      setActiveView('workspace')
+      return w.createProject(name)
     },
     openRemote: async (profileId) => {
       setActiveView('workspace')
@@ -409,9 +422,17 @@ function WorkspaceView({ workspace: w }: { workspace: Workspace }) {
       setActiveView('workspace')
       return w.openChat()
     },
+    newPersonalChat: async () => {
+      setActiveView('workspace')
+      return w.newPersonalChat()
+    },
     openDesigner: async () => {
       setActiveView('workspace')
       return w.openDesigner()
+    },
+    newDesignerChat: async () => {
+      setActiveView('workspace')
+      return w.newDesignerChat()
     }
   }
   const quickActions = useQuickActions({

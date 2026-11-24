@@ -4,6 +4,7 @@ target/
 
 # Local agent state
 .agent/
+.claude/
 sessions/
 /.prime/
 /tools/
@@ -53,7 +54,8 @@ chat.md
 release_run.log
 notes.log
 paste_*.txt
-CHATS.md
+completions/
+manpages/
 
 !desktop/build/
 !desktop/build/**

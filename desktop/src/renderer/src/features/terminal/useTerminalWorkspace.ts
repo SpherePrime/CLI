@@ -17,6 +17,8 @@ export function useTerminalWorkspace(
 
   useEffect(() => {
     let disposed = false
+    setTerminals([])
+    setLoading(true)
     const latest = new Map<string, TerminalSnapshot>()
     const publish = () => {
       if (!disposed)

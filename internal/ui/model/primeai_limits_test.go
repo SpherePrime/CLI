@@ -89,12 +89,12 @@ func TestPrimeAILimits_RefreshAfterAgentTurnAndStatusOpen(t *testing.T) {
 				"token":  rawAcctToken,
 				"user":   map[string]string{"email": "ui@sphereprime.ru"},
 			})
-		case r.URL.Path == "/api/plugin/session":
+		case r.URL.Path == "/api/prime/session":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"token":     "sess_ui",
 				"expiresAt": time.Now().Add(10 * time.Minute).UnixMilli(),
 			})
-		case r.URL.Path == "/api/plugin/limits":
+		case r.URL.Path == "/api/prime/limits":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"planName": "Ultra",
 				"fiveHour": map[string]any{

@@ -69,18 +69,20 @@ func (s *Server) initCustomAgents(ctx context.Context, cfg *config.ConfigStore) 
 }
 
 func (s *Server) stopCustomAgents() {
-	if s.customAgentCancel != nil {
-		s.customAgentCancel()
-	}
-	if s.customAgents != nil {
-		s.customAgents.Stop()
-	}
-	if s.customAgentEvents != nil {
-		s.customAgentEvents.Shutdown()
-	}
-	if s.customAgentStore != nil {
-		_ = s.customAgentStore.Close()
-	}
+	s.customAgentsStopOnce.Do(func() {
+		if s.customAgentCancel != nil {
+			s.customAgentCancel()
+		}
+		if s.customAgents != nil {
+			s.customAgents.Stop()
+		}
+		if s.customAgentEvents != nil {
+			s.customAgentEvents.Shutdown()
+		}
+		if s.customAgentStore != nil {
+			_ = s.customAgentStore.Close()
+		}
+	})
 }
 
 func (c *controllerV1) customAgentsService() *customagents.Service {
@@ -372,8 +374,12 @@ func (c *controllerV1) handleGetCustomAgentEvents(w http.ResponseWriter, r *http
 		case <-r.Context().Done():
 			return
 		case <-keepalive.C:
-			_, _ = fmt.Fprint(w, ": keepalive\n\n")
-			_ = flusher.Flush()
+			if _, err := fmt.Fprint(w, ": keepalive\n\n"); err != nil {
+				return
+			}
+			if err := flusher.Flush(); err != nil && !errors.Is(err, http.ErrNotSupported) {
+				return
+			}
 		case ev, ok := <-events:
 			if !ok {
 				return
@@ -382,8 +388,12 @@ func (c *controllerV1) handleGetCustomAgentEvents(w http.ResponseWriter, r *http
 			if err != nil {
 				continue
 			}
-			_, _ = fmt.Fprintf(w, "event: custom_agent\ndata: %s\n\n", data)
-			_ = flusher.Flush()
+			if _, err := fmt.Fprintf(w, "event: custom_agent\ndata: %s\n\n", data); err != nil {
+				return
+			}
+			if err := flusher.Flush(); err != nil && !errors.Is(err, http.ErrNotSupported) {
+				return
+			}
 		}
 	}
 }
@@ -625,6 +635,10 @@ func (c *controllerV1) handlePostCustomAgentRun(w http.ResponseWriter, r *http.R
 		run, err = svc.Dispatch(r.Context(), dispatchReq)
 	}
 	if err != nil {
+		if errors.Is(err, customagents.ErrServiceStopped) {
+			jsonError(w, http.StatusServiceUnavailable, err.Error())
+			return
+		}
 		if strings.Contains(err.Error(), "уже выполняется") {
 			jsonError(w, http.StatusConflict, err.Error())
 			return
@@ -787,6 +801,10 @@ func (c *controllerV1) handlePostCustomAgentSwarm(w http.ResponseWriter, r *http
 	}
 	res, err := svc.DispatchSwarm(r.Context(), req.SwarmRequest)
 	if err != nil {
+		if errors.Is(err, customagents.ErrServiceStopped) {
+			jsonError(w, http.StatusServiceUnavailable, err.Error())
+			return
+		}
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			jsonError(w, http.StatusInternalServerError, err.Error())
 			return

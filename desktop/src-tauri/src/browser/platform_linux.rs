@@ -3,7 +3,7 @@ use base64::Engine;
 use glib::translate::{from_glib_full, IntoGlib, ToGlibPtr};
 use gtk::prelude::*;
 use serde_json::{json, Value};
-use std::{sync::mpsc, time::Duration};
+use std::{sync::mpsc, thread, time::Duration};
 use tauri::{AppHandle, Webview};
 use webkit2gtk::{
     BackForwardListExt, BackForwardListItemExt, NetworkError, SnapshotOptions, SnapshotRegion,

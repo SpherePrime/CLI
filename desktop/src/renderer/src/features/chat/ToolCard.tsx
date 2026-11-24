@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Check, ChevronDown, Clock3, LoaderCircle, Terminal, X } from 'lucide-react'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
@@ -40,7 +40,7 @@ export function ToolCard({
   const isShell = part.type === 'shell_command'
   const standalone = part.type === 'tool_result'
   const result = standalone ? data : data.result
-  const input = parameters(data.input)
+  const input = useMemo(() => parameters(data.input), [data.input])
   const toolName = String(data.name || '')
   const command = isShell ? data.command : typeof input?.command === 'string' ? input.command : null
   const description = typeof input?.description === 'string' ? input.description : ''
@@ -56,9 +56,15 @@ export function ToolCard({
     : toolTitle(toolName, input, t)
   const Icon = title.icon
   const category = classifyToolCategory(toolName, isShell)
-  const diffStats = !standalone ? extractToolDiffStats(toolName, input) : null
-  const diffMeter = diffStats ? buildDiffMeter(diffStats) : null
-  const parsedOutput = typeof output === 'string' ? parseToolOutput(output) : null
+  const diffStats = useMemo(
+    () => (!standalone ? extractToolDiffStats(toolName, input) : null),
+    [standalone, toolName, input]
+  )
+  const diffMeter = useMemo(() => (diffStats ? buildDiffMeter(diffStats) : null), [diffStats])
+  const parsedOutput = useMemo(
+    () => (failed && !isShell && typeof output === 'string' ? parseToolOutput(output) : null),
+    [failed, isShell, output]
+  )
   const exitCode = isShell && data.exit_code ? Number(data.exit_code) : parsedOutput?.exitCode ?? null
 
   const card = (

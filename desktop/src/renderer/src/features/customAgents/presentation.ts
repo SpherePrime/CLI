@@ -164,29 +164,41 @@ export function isActiveRunStatus(status: string): boolean {
   return status === 'running' || status === 'verifying' || status === 'rework'
 }
 
-export function triggerLabel(agent: Pick<CustomAgent, 'trigger_type' | 'interval_minutes' | 'cron_expr' | 'monitor_kind'>): string {
+type Translate = (source: string, values?: Record<string, string | number>) => string
+
+const defaultTranslate: Translate = (source, values = {}) =>
+  source.replace(/\{(\w+)\}/g, (placeholder, key: string) =>
+    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : placeholder
+  )
+
+export function triggerLabel(
+  agent: Pick<CustomAgent, 'trigger_type' | 'interval_minutes' | 'cron_expr' | 'monitor_kind'>,
+  t: Translate = defaultTranslate
+): string {
   switch (agent.trigger_type) {
     case 'interval':
-      return agent.interval_minutes > 0 ? `Каждые ${agent.interval_minutes} мин` : 'По интервалу'
+      return agent.interval_minutes > 0
+        ? t('Каждые {count} мин', { count: agent.interval_minutes })
+        : t('По интервалу')
     case 'cron':
-      return agent.cron_expr ? `Cron: ${agent.cron_expr}` : 'По расписанию Cron'
+      return agent.cron_expr ? `Cron: ${agent.cron_expr}` : t('По расписанию Cron')
     case 'event':
-      return 'По событию'
+      return t('По событию')
     case 'monitor': {
       const kind =
         agent.monitor_kind === 'http'
           ? 'HTTP'
           : agent.monitor_kind === 'file'
-            ? 'Файл'
+            ? t('Файл')
             : agent.monitor_kind === 'command'
-              ? 'Команда'
-              : 'Зонд'
+              ? t('Команда')
+              : t('Зонд')
       return agent.interval_minutes > 0
-        ? `Монитор (${kind}) · ${agent.interval_minutes} мин`
-        : `Монитор (${kind})`
+        ? t('Монитор ({kind}) · {count} мин', { kind, count: agent.interval_minutes })
+        : t('Монитор ({kind})', { kind })
     }
     default:
-      return 'Вручную'
+      return t('Вручную')
   }
 }
 
@@ -231,14 +243,20 @@ export function formatTimestamp(unixSeconds: number, locale = 'ru-RU'): string {
   })
 }
 
-export function formatDuration(startedAt: number, finishedAt: number): string {
+export function formatDuration(
+  startedAt: number,
+  finishedAt: number,
+  t: Translate = defaultTranslate
+): string {
   if (!startedAt) return ''
   const end = finishedAt > 0 ? finishedAt : Math.floor(Date.now() / 1000)
   const seconds = Math.max(0, end - startedAt)
-  if (seconds < 60) return `${seconds} с`
+  if (seconds < 60) return t('{seconds} с', { seconds })
   const minutes = Math.floor(seconds / 60)
   const rem = seconds % 60
-  return rem > 0 ? `${minutes} м ${rem} с` : `${minutes} м`
+  return rem > 0
+    ? t('{minutes} м {seconds} с', { minutes, seconds: rem })
+    : t('{minutes} м', { minutes })
 }
 
 export interface AgentDraft {

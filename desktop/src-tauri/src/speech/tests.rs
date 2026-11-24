@@ -28,8 +28,10 @@ fn wav_headers_rounding_clipping_and_nonfinite_rejection() {
     assert_eq!(u32::from_le_bytes(wav[24..28].try_into().unwrap()), 44100);
     assert_eq!(u32::from_le_bytes(wav[40..44].try_into().unwrap()), 10);
     let samples = wav[44..]
-        .chunks_exact(2)
-        .map(|bytes| i16::from_le_bytes(bytes.try_into().unwrap()))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|bytes| i16::from_le_bytes(*bytes))
         .collect::<Vec<_>>();
     assert_eq!(samples, [-32767, -16383, 0, 16384, 32767]);
     assert!(audio::encode_wav(&[f32::NAN], 44100).is_err());
@@ -177,9 +179,11 @@ fn cached_supertonic_inference_outputs_wav_speed_and_idle_release() {
     assert_eq!(&fast[8..12], b"WAVE");
     assert!(fast.len() > 4410);
     let energy: f64 = fast[44..]
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|bytes| {
-            let value = i16::from_le_bytes(bytes.try_into().unwrap()) as f64;
+            let value = i16::from_le_bytes(*bytes) as f64;
             value * value
         })
         .sum();

@@ -145,15 +145,16 @@ mod tests {
             .unwrap(),
             "n7"
         );
-        assert_eq!(
-            resolve(
-                &snapshot,
-                &Locator { role: Some("BUTTON".to_owned()), name: Some(" save ".to_owned()), ..Default::default() },
-            )
-            .unwrap_err()
-            .contains("Ambiguous role"),
-            true
-        );
+        assert!(resolve(
+            &snapshot,
+            &Locator {
+                role: Some("BUTTON".to_owned()),
+                name: Some(" save ".to_owned()),
+                ..Default::default()
+            },
+        )
+        .unwrap_err()
+        .contains("Ambiguous role"));
         assert_eq!(
             resolve(
                 &snapshot,

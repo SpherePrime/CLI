@@ -183,6 +183,7 @@ func RunAndCapturePTY(ctx context.Context, opts RunOptions) (CaptureResult, erro
 // Prime handler stack. Shared by the stateless [Run] entrypoint and the
 // stateful [Shell] so the two surfaces cannot drift.
 func newRunner(cwd string, env []string, stdin io.Reader, stdout, stderr io.Writer, blockFuncs []BlockFunc) (*interp.Runner, error) {
+	env = WithoutSecretEnv(env)
 	env = withNonInteractiveEnv(env)
 	return interp.New(
 		interp.StdIO(stdin, stdout, stderr),
@@ -264,6 +265,26 @@ var herdrEnvVars = []string{
 	"HERDR_ENV",
 	"HERDR_SOCKET_PATH",
 	"HERDR_PANE_ID",
+}
+
+var secretEnvVars = []string{
+	"PRIME_DESKTOP_SUDO_PASSWORD",
+	"PRIME_DESKTOP_BROWSER_TOKEN",
+}
+
+func WithoutSecretEnv(env []string) []string {
+	strip := make(map[string]bool, len(secretEnvVars))
+	for _, k := range secretEnvVars {
+		strip[k] = true
+	}
+	result := make([]string, 0, len(env))
+	for _, e := range env {
+		if key, _, ok := strings.Cut(e, "="); ok && strip[strings.ToUpper(key)] {
+			continue
+		}
+		result = append(result, e)
+	}
+	return result
 }
 
 // withoutHerdrEnv returns env with all HERDR_* variables removed.

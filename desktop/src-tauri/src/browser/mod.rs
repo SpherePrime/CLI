@@ -5,7 +5,7 @@ mod ownership;
 mod panel;
 mod placement;
 mod platform;
-mod record;
+pub(crate) mod record;
 mod rendering;
 mod scenario;
 mod scenario_dom;

@@ -207,15 +207,16 @@ function SttSection({ workspace: w }: { workspace: Workspace }) {
   const report = (failure: unknown) =>
     setError(String((failure as Error)?.message || failure).replace(/^.*Error: /, ''))
   const taskName = (provider: string, model: string) => `stt:${provider}:${model}`
+  const call = w.call
   const refresh = useCallback(async () => {
     try {
-      const [next, list] = await Promise.all([w.call('stt'), w.call('sttTasks')])
+      const [next, list] = await Promise.all([call('stt'), call('sttTasks')])
       setStatus(next as SttStatus)
       setTasks(Array.isArray(list) ? (list as SttTask[]) : [])
     } catch (failure) {
       report(failure)
     }
-  }, [w])
+  }, [call])
   useEffect(() => {
     void refresh()
   }, [refresh, w.project?.id])

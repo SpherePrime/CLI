@@ -34,6 +34,7 @@ pub struct SpeechService {
     sender: Mutex<Option<SyncSender<Job>>>,
     state: Arc<Mutex<Value>>,
     directory: PathBuf,
+    #[cfg_attr(not(test), allow(dead_code))]
     loaded: Arc<AtomicBool>,
     stop: Arc<AtomicBool>,
     active: ActiveRun,
@@ -107,6 +108,7 @@ impl SpeechService {
         })
     }
 
+    #[cfg(test)]
     pub fn loaded(&self) -> bool {
         self.loaded.load(Ordering::Acquire)
     }

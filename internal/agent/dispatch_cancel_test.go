@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 	"github.com/SpherePrime/CLI/internal/agent/notify"
+	"github.com/SpherePrime/CLI/internal/config"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/pubsub"
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/assert"
@@ -534,5 +536,175 @@ func TestAcceptedRun_BindContextCancelsBeforeRun(t *testing.T) {
 	case <-runCtx.Done():
 	case <-time.After(time.Second):
 		t.Fatal("BindContext was not canceled immediately by Cancel")
+	}
+}
+
+func TestCoordinatorRunAccepted_CancelDuringPreRunPublishesRunComplete(t *testing.T) {
+	t.Run("buildSelectedModel", func(t *testing.T) {
+		coord := newGateTestCoordinator(t, true)
+		broker := pubsub.NewBroker[notify.RunComplete]()
+		t.Cleanup(broker.Shutdown)
+		sa := coord.mainAgent.(*sessionAgent)
+		sa.runComplete = broker
+
+		coord.cfg.Config().Orchestrator = config.OrchestratorConfig{
+			Enabled: true,
+			Planner: &config.SelectedModel{Provider: "missing-provider", Model: "missing-model"},
+		}
+
+		sess, err := coord.sessions.Create(t.Context(), "orch-cancel")
+		require.NoError(t, err)
+
+		subCtx, subCancel := context.WithCancel(t.Context())
+		defer subCancel()
+		ch := broker.Subscribe(subCtx)
+
+		accept := sa.BeginAccepted(sess.ID)
+		sa.Cancel(sess.ID)
+
+		ctx := WithRunID(t.Context(), "run-orch-cancel")
+		res, err := coord.RunAccepted(ctx, accept, sess.ID, "hello")
+		require.NoError(t, err)
+		require.Nil(t, res)
+
+		select {
+		case ev := <-ch:
+			require.Equal(t, sess.ID, ev.Payload.SessionID)
+			require.Equal(t, "run-orch-cancel", ev.Payload.RunID)
+			require.True(t, ev.Payload.Cancelled)
+		case <-time.After(2 * time.Second):
+			t.Fatal("expected cancelled RunComplete event")
+		}
+	})
+
+	t.Run("applyRunReasoning", func(t *testing.T) {
+		coord := newGateTestCoordinator(t, true)
+		broker := pubsub.NewBroker[notify.RunComplete]()
+		t.Cleanup(broker.Shutdown)
+		sa := coord.mainAgent.(*sessionAgent)
+		sa.runComplete = broker
+
+		pCfg, ok := coord.cfg.Config().Providers.Get("mock")
+		require.True(t, ok)
+		pCfg.Type = catwalk.TypeAnthropic
+		pCfg.APIKey = ""
+		coord.cfg.Config().Providers.Set("mock", pCfg)
+
+		sess, err := coord.sessions.Create(t.Context(), "reasoning-cancel")
+		require.NoError(t, err)
+
+		subCtx, subCancel := context.WithCancel(t.Context())
+		defer subCancel()
+		ch := broker.Subscribe(subCtx)
+
+		accept := sa.BeginAccepted(sess.ID)
+		sa.Cancel(sess.ID)
+
+		ctx := WithReasoningMode(WithRunID(t.Context(), "run-reasoning-cancel"), config.ReasoningModeHigh)
+		res, err := coord.RunAccepted(ctx, accept, sess.ID, "hello")
+		require.NoError(t, err)
+		require.Nil(t, res)
+
+		select {
+		case ev := <-ch:
+			require.Equal(t, sess.ID, ev.Payload.SessionID)
+			require.Equal(t, "run-reasoning-cancel", ev.Payload.RunID)
+			require.True(t, ev.Payload.Cancelled)
+		case <-time.After(2 * time.Second):
+			t.Fatal("expected cancelled RunComplete event")
+		}
+	})
+}
+
+func TestCancel_GenerateTitleWithSteeringDoesNotDoubleEmit(t *testing.T) {
+	t.Parallel()
+	env := testEnv(t)
+	broker := pubsub.NewBroker[notify.RunComplete]()
+	t.Cleanup(broker.Shutdown)
+	titleModel := &blockingTitleModel{entered: make(chan struct{})}
+	sa := NewSessionAgent(SessionAgentOptions{
+		LargeModel:  Model{Model: titleModel, CatwalkCfg: catwalk.Model{ContextWindow: 200000, DefaultMaxTokens: 10000}},
+		SmallModel:  Model{Model: titleModel, CatwalkCfg: catwalk.Model{ContextWindow: 200000, DefaultMaxTokens: 10000}},
+		Sessions:    env.sessions,
+		Messages:    env.messages,
+		RunComplete: broker,
+	}).(*sessionAgent)
+
+	sess, err := env.sessions.Create(t.Context(), "New Session")
+	require.NoError(t, err)
+
+	subCtx, subCancel := context.WithCancel(t.Context())
+	defer subCancel()
+	ch := broker.Subscribe(subCtx)
+
+	runDone := make(chan error, 1)
+	go func() {
+		_, runErr := sa.Run(t.Context(), SessionAgentCall{
+			SessionID: sess.ID,
+			RunID:     "run-main-title",
+			Prompt:    "hello world",
+			steeringCalls: []SessionAgentCall{
+				{SessionID: sess.ID, RunID: "run-steer-title", Prompt: "steer", steering: true},
+			},
+		})
+		runDone <- runErr
+	}()
+
+	select {
+	case <-titleModel.entered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("title generation did not start")
+	}
+
+	sa.Cancel(sess.ID)
+
+	select {
+	case runErr := <-runDone:
+		require.NoError(t, runErr)
+	case <-time.After(2 * time.Second):
+		t.Fatal("Cancel did not abort GenerateTitle")
+	}
+
+	var steerEvents []notify.RunComplete
+	timeout := time.After(200 * time.Millisecond)
+	for {
+		select {
+		case ev := <-ch:
+			if ev.Payload.RunID == "run-steer-title" {
+				steerEvents = append(steerEvents, ev.Payload)
+			}
+		case <-timeout:
+			require.Len(t, steerEvents, 1)
+			require.True(t, steerEvents[0].Cancelled)
+			return
+		}
+	}
+}
+
+func TestCancelAll_CoversAcceptedAndQueuedSessions(t *testing.T) {
+	t.Parallel()
+	sa, _, broker := newCancelTestAgentWithRunComplete(t)
+
+	subCtx, subCancel := context.WithCancel(t.Context())
+	defer subCancel()
+	ch := broker.Subscribe(subCtx)
+
+	accept := sa.BeginAccepted("sid-accepted-only")
+	defer accept.Close()
+	sa.enqueueCall(SessionAgentCall{SessionID: "sid-queued-only", RunID: "run-queued-only", Prompt: "queued"})
+
+	require.False(t, sa.IsBusy())
+	sa.CancelAll()
+
+	require.True(t, sa.hasPendingCancel("sid-accepted-only"))
+	require.Equal(t, 0, sa.QueuedPrompts("sid-queued-only"))
+
+	select {
+	case ev := <-ch:
+		require.Equal(t, "sid-queued-only", ev.Payload.SessionID)
+		require.Equal(t, "run-queued-only", ev.Payload.RunID)
+		require.True(t, ev.Payload.Cancelled)
+	case <-time.After(2 * time.Second):
+		t.Fatal("expected cancelled RunComplete for queued session")
 	}
 }

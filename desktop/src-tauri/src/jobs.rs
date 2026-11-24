@@ -202,14 +202,20 @@ fn agent_list(project: &Value, runs: &Value, sessions: &Value, pending: &Value) 
             }
         }
     }
-    let questions = pending["questions"]
-        .as_array()
-        .cloned()
-        .or_else(|| pending["question"].as_array().cloned())
-        .unwrap_or_default();
-    for item in &questions {
-        if let Some(session) = item["session_id"].as_str() {
-            attention.insert(session.to_owned(), "question");
+    if let Some(session) = pending["question"]
+        .as_object()
+        .and_then(|item| item.get("session_id"))
+        .and_then(Value::as_str)
+    {
+        attention.insert(session.to_owned(), "question");
+    }
+    for key in ["questions", "question"] {
+        if let Some(items) = pending[key].as_array() {
+            for item in items {
+                if let Some(session) = item["session_id"].as_str() {
+                    attention.insert(session.to_owned(), "question");
+                }
+            }
         }
     }
     let list = runs
@@ -281,16 +287,23 @@ fn automation_jobs(state: &AppState, projects: &[Value]) -> Vec<Value> {
 }
 
 fn team_jobs(state: &AppState, projects: &[Value]) -> Vec<Value> {
-    let now = now_ms();
-    state
-        .teams
-        .all()
+    team_jobs_from(&state.teams.all(), projects, now_ms())
+}
+
+fn team_jobs_from(
+    teams: &[crate::teams::types::Team],
+    projects: &[Value],
+    now: i64,
+) -> Vec<Value> {
+    teams
         .iter()
         .flat_map(|team| {
             let project = project_by_key(projects, &team.root);
             team.tasks.iter().filter_map(move |task| {
-                let finished_at = task.finished_at?;
-                if now - finished_at > DAY_MS {
+                if task
+                    .finished_at
+                    .is_some_and(|finished_at| now - finished_at > DAY_MS)
+                {
                     return None;
                 }
                 Some(json!({
@@ -406,13 +419,24 @@ fn list(app: &tauri::AppHandle, state: &AppState, center: &JobCenter) -> HostRes
     Ok(json!(jobs))
 }
 
+fn parse_agent_target<'a>(rest: &'a [&'a str]) -> Option<(&'a str, &'a str)> {
+    match rest {
+        [workspace, session] | [workspace, session, _]
+            if !workspace.is_empty() && !session.is_empty() =>
+        {
+            Some((*workspace, *session))
+        }
+        _ => None,
+    }
+}
+
 fn stop(app: &tauri::AppHandle, state: &AppState, id: &str) -> HostResult<()> {
     let mut parts = id.split(':');
     let kind = parts.next().unwrap_or("");
     let rest: Vec<&str> = parts.collect();
     match kind {
         "agent" => {
-            let [workspace, session] = rest.as_slice() else {
+            let Some((workspace, session)) = parse_agent_target(&rest) else {
                 return Err(unknown_job());
             };
             state.require_engine()?.request(
@@ -488,7 +512,7 @@ mod tests {
     #[test]
     fn timestamps_accept_numbers_and_iso_strings() {
         assert_eq!(time(&json!(1700000000000i64)), Some(1700000000000));
-        assert_eq!(time(&json!("2026-01-01T00:00:00Z")).is_some(), true);
+        assert!(time(&json!("2026-01-01T00:00:00Z")).is_some());
         assert_eq!(time(&json!(null)), None);
     }
 
@@ -521,5 +545,113 @@ mod tests {
         let projects = vec![json!({"id":"ws","path":"C:/Work/App"})];
         assert!(project_by_key(&projects, r"c:\work\app").is_some());
         assert!(project_by_key(&projects, "C:/other").is_none());
+    }
+
+    #[test]
+    fn agent_stop_target_accepts_two_or_three_segments() {
+        assert_eq!(parse_agent_target(&["ws", "sess"]), Some(("ws", "sess")));
+        assert_eq!(
+            parse_agent_target(&["ws", "sess", "run-1"]),
+            Some(("ws", "sess"))
+        );
+        assert_eq!(parse_agent_target(&["ws", "sess", ""]), Some(("ws", "sess")));
+        assert_eq!(parse_agent_target(&["", "sess", "run-1"]), None);
+        assert_eq!(parse_agent_target(&["ws", "", "run-1"]), None);
+        assert_eq!(parse_agent_target(&["ws"]), None);
+        assert_eq!(parse_agent_target(&["ws", "sess", "run-1", "extra"]), None);
+    }
+
+    #[test]
+    fn team_jobs_keep_active_tasks_and_filter_old_finished_tasks() {
+        use crate::teams::types::{Team, TeamTask};
+
+        let now = 10 * DAY_MS;
+        let teams = vec![Team {
+            id: "team-1".into(),
+            root: "C:/Work/App".into(),
+            title: "Build".into(),
+            goal: String::new(),
+            concurrency: 2,
+            created_at: now - 1000,
+            tasks: vec![
+                TeamTask {
+                    id: "active".into(),
+                    title: "Running".into(),
+                    instruction: String::new(),
+                    status: TeamTaskStatus::Running,
+                    run_id: Some("r1".into()),
+                    workspace_id: Some("ws".into()),
+                    session_id: Some("s1".into()),
+                    error: None,
+                    started_at: Some(now - 500),
+                    finished_at: None,
+                },
+                TeamTask {
+                    id: "recent".into(),
+                    title: "Done".into(),
+                    instruction: String::new(),
+                    status: TeamTaskStatus::Completed,
+                    run_id: Some("r2".into()),
+                    workspace_id: Some("ws".into()),
+                    session_id: Some("s2".into()),
+                    error: None,
+                    started_at: Some(now - 2000),
+                    finished_at: Some(now - 1000),
+                },
+                TeamTask {
+                    id: "stale".into(),
+                    title: "Old".into(),
+                    instruction: String::new(),
+                    status: TeamTaskStatus::Completed,
+                    run_id: Some("r3".into()),
+                    workspace_id: Some("ws".into()),
+                    session_id: Some("s3".into()),
+                    error: None,
+                    started_at: Some(now - 2 * DAY_MS),
+                    finished_at: Some(now - DAY_MS - 1),
+                },
+            ],
+        }];
+        let projects = vec![json!({"id":"ws","path":"C:/Work/App"})];
+        let jobs = team_jobs_from(&teams, &projects, now);
+        assert_eq!(jobs.len(), 2);
+        assert_eq!(jobs[0]["id"], "team:C:/Work/App:team-1:active");
+        assert_eq!(jobs[0]["status"], "running");
+        assert_eq!(jobs[0]["stoppable"], true);
+        assert_eq!(jobs[1]["id"], "team:C:/Work/App:team-1:recent");
+        assert_eq!(jobs[1]["stoppable"], false);
+    }
+
+    #[test]
+    fn agent_list_reads_single_object_and_array_pending_questions() {
+        let project = json!({"id":"ws","path":"C:/Work/App","kind":"project"});
+        let sessions = json!([{"id":"s1","title":"One"},{"id":"s2","title":"Two"}]);
+        let runs = json!([
+            {"run_id":"r1","session_id":"s1","status":"running","accepted_at":1000},
+            {"run_id":"r2","session_id":"s2","status":"running","accepted_at":2000}
+        ]);
+
+        let single_object = agent_list(
+            &project,
+            &runs,
+            &sessions,
+            &json!({"permissions":[],"question":{"session_id":"s1","id":"q1"}}),
+        );
+        let items = single_object.as_array().unwrap();
+        assert_eq!(items[0]["status"], "question");
+        assert_eq!(items[0]["attention"], "question");
+        assert_eq!(items[1]["status"], "running");
+        assert!(items[1]["attention"].is_null());
+
+        let array_form = agent_list(
+            &project,
+            &runs,
+            &sessions,
+            &json!({"permissions":[],"questions":[{"session_id":"s2"}],"question":null}),
+        );
+        let items = array_form.as_array().unwrap();
+        assert_eq!(items[0]["status"], "running");
+        assert_eq!(items[1]["status"], "question");
+        assert_eq!(items[1]["attention"], "question");
     }
 }

@@ -116,7 +116,8 @@ impl AgentAdapter for NativeAdapter {
         let record = match self.request(&run.root, "GET", &format!("runs/{}", run.id), None) {
             Ok(record) => record,
             Err(error)
-                if error.message.starts_with("Engine status 404:")
+                if error.code == "ENGINE_HTTP_404"
+                    || error.message.starts_with("Engine status 404:")
                     || (error.code == "IO_ERROR" && !std::path::Path::new(&run.root).exists()) =>
             {
                 return Ok(RunStatus {

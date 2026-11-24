@@ -15,6 +15,24 @@ static UPDATE_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 static STATUS: Mutex<Option<Value>> = Mutex::new(None);
 static DOWNLOADED: Mutex<Option<(Update, Vec<u8>)>> = Mutex::new(None);
 
+#[derive(Debug)]
+struct UpdateGuard;
+
+impl UpdateGuard {
+    fn acquire(message: &'static str) -> HostResult<Self> {
+        if UPDATE_IN_PROGRESS.swap(true, Ordering::AcqRel) {
+            return Err(HostError::new("UPDATE_BUSY", message));
+        }
+        Ok(Self)
+    }
+}
+
+impl Drop for UpdateGuard {
+    fn drop(&mut self) {
+        UPDATE_IN_PROGRESS.store(false, Ordering::Release);
+    }
+}
+
 pub fn snapshot() -> Value {
     STATUS
         .lock()
@@ -63,13 +81,10 @@ fn current_status_version() -> Option<String> {
 }
 
 fn check(app: &tauri::AppHandle, _state: &AppState) -> HostResult<Value> {
-    if UPDATE_IN_PROGRESS.swap(true, Ordering::AcqRel) {
-        return Err(HostError::new("UPDATE_BUSY", "Обновление уже выполняется"));
-    }
+    let _guard = UpdateGuard::acquire("Обновление уже выполняется")?;
     if DOWNLOADED.lock().unwrap().is_some() {
         let current = snapshot();
         status(app, current.clone());
-        UPDATE_IN_PROGRESS.store(false, Ordering::Release);
         return Ok(current);
     }
     let handle = app.clone();
@@ -156,40 +171,123 @@ fn check(app: &tauri::AppHandle, _state: &AppState) -> HostResult<Value> {
             error_payload(&error.message, known_version.as_deref()),
         );
     }
-    UPDATE_IN_PROGRESS.store(false, Ordering::Release);
     result
 }
 
 fn install(app: &tauri::AppHandle, state: &AppState, force: bool) -> HostResult<Value> {
-    if UPDATE_IN_PROGRESS.swap(true, Ordering::AcqRel) {
-        return Err(HostError::new("UPDATE_BUSY", "Update is already running"));
+    let _guard = UpdateGuard::acquire("Update is already running")?;
+    if DOWNLOADED.lock().unwrap().is_none() {
+        return Err(HostError::new(
+            "UPDATE_NOT_READY",
+            "Update is not ready to install",
+        ));
     }
-    let result = (|| {
-        if DOWNLOADED.lock().unwrap().is_none() {
-            return Err(HostError::new(
-                "UPDATE_NOT_READY",
-                "Update is not ready to install",
-            ));
+    if force {
+        stop_active_teams(state)?;
+        cancel_active_automations(app, state)?;
+        close_remote_workspaces(app, state)?;
+        cancel_local_chats(state)?;
+        state.terminals.close_all()?;
+        wait_local_chats_idle(state, std::time::Duration::from_secs(5))?;
+    }
+    require_idle(state)?;
+    let (release, bytes) = DOWNLOADED.lock().unwrap().take().unwrap();
+    let version = release.version.clone();
+    status(app, json!({"state":"installing","version":version}));
+    state.closing.store(true, Ordering::Release);
+    crate::lifecycle::shutdown(app, state);
+    if let Err(error) = release.install(&bytes) {
+        let message = format!("{error}. Restart the application before continuing");
+        status(app, error_payload(&message, Some(version.as_str())));
+        return Err(HostError::new("UPDATE_INSTALL", message));
+    }
+    app.restart();
+}
+
+fn stop_active_teams(state: &AppState) -> HostResult<()> {
+    for team in state.teams.all() {
+        let active = team.tasks.iter().any(|task| {
+            !task.status.finished() && task.status != crate::teams::types::TeamTaskStatus::Queued
+        });
+        if active {
+            state.teams.handle(
+                &team.root,
+                &json!({"action":"stopTeam","teamId":team.id}),
+            )?;
         }
-        if force {
-            cancel_local_chats(state)?;
-            state.terminals.close_all()?;
+    }
+    Ok(())
+}
+
+fn cancel_active_automations(app: &tauri::AppHandle, state: &AppState) -> HostResult<()> {
+    let activity = state.automations.activity();
+    for run in activity.as_array().into_iter().flatten() {
+        if !matches!(run["status"].as_str(), Some("claimed" | "running")) {
+            continue;
         }
-        require_idle(state)?;
-        let (release, bytes) = DOWNLOADED.lock().unwrap().take().unwrap();
-        let version = release.version.clone();
-        status(app, json!({"state":"installing","version":version}));
-        state.closing.store(true, Ordering::Release);
-        crate::lifecycle::shutdown(app, state);
-        if let Err(error) = release.install(&bytes) {
-            let message = format!("{error}. Restart the application before continuing");
-            status(app, error_payload(&message, Some(version.as_str())));
-            return Err(HostError::new("UPDATE_INSTALL", message));
+        let (Some(root), Some(run_id)) = (run["root"].as_str(), run["id"].as_str()) else {
+            continue;
+        };
+        state.automations.handle(
+            app.clone(),
+            &json!({"action":"cancel","root":root,"runId":run_id}),
+        )?;
+    }
+    Ok(())
+}
+
+fn close_remote_workspaces(app: &tauri::AppHandle, state: &AppState) -> HostResult<()> {
+    let mut profiles: Vec<String> = state
+        .projects
+        .lock()
+        .unwrap()
+        .values()
+        .filter_map(|project| project["remote"]["profileId"].as_str().map(str::to_owned))
+        .collect();
+    profiles.sort();
+    profiles.dedup();
+    for profile in profiles {
+        crate::remote::detach(app, &profile)?;
+    }
+    state.remotes.terminals.close_all();
+    Ok(())
+}
+
+fn has_busy_local_chats(state: &AppState) -> HostResult<bool> {
+    let engine = state.require_engine()?;
+    let projects = state
+        .projects
+        .lock()
+        .unwrap()
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
+    for project in projects {
+        let Some(id) = project["id"].as_str() else {
+            continue;
+        };
+        if crate::remote::workspace_profile(state, id).is_some() {
+            continue;
         }
-        app.restart();
-    })();
-    UPDATE_IN_PROGRESS.store(false, Ordering::Release);
-    result
+        let sessions = engine.request("GET", &format!("/v1/workspaces/{id}/sessions"), None)?;
+        if sessions
+            .as_array()
+            .is_some_and(|items| items.iter().any(|session| session["is_busy"] == true))
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn wait_local_chats_idle(state: &AppState, timeout: std::time::Duration) -> HostResult<()> {
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+        if !has_busy_local_chats(state)? || std::time::Instant::now() >= deadline {
+            return Ok(());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
 }
 
 fn cancel_local_chats(state: &AppState) -> HostResult<()> {
@@ -292,7 +390,8 @@ fn require_idle(state: &AppState) -> HostResult<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::error_payload;
+    use super::{error_payload, UpdateGuard, UPDATE_IN_PROGRESS};
+    use std::sync::atomic::Ordering;
 
     #[test]
     fn error_payload_preserves_version_when_present() {
@@ -304,5 +403,21 @@ mod tests {
         let without_version = error_payload("network error", None);
         assert_eq!(without_version["state"], "error");
         assert!(without_version.get("version").is_none());
+    }
+
+    #[test]
+    fn update_guard_releases_flag_on_drop_and_panic() {
+        let guard = UpdateGuard::acquire("busy").unwrap();
+        assert!(UPDATE_IN_PROGRESS.load(Ordering::Acquire));
+        assert_eq!(UpdateGuard::acquire("busy").unwrap_err().code, "UPDATE_BUSY");
+        drop(guard);
+        assert!(!UPDATE_IN_PROGRESS.load(Ordering::Acquire));
+
+        let panicked = std::panic::catch_unwind(|| {
+            let _guard = UpdateGuard::acquire("busy").unwrap();
+            panic!("simulated failure");
+        });
+        assert!(panicked.is_err());
+        assert!(!UPDATE_IN_PROGRESS.load(Ordering::Acquire));
     }
 }

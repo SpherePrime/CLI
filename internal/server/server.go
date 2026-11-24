@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/SpherePrime/CLI/internal/account"
 	"github.com/SpherePrime/CLI/internal/backend"
@@ -88,23 +89,23 @@ func DefaultHost() string {
 	return "unix://" + path
 }
 
-// Server represents a Prime server bound to a specific address.
 type Server struct {
-	// Addr can be a TCP address, a Unix socket path, or a Windows named pipe.
 	Addr    string
 	network string
 
+	mu sync.Mutex
 	h  *http.Server
 	ln net.Listener
 
-	backend           *backend.Backend
-	account           *account.Service
-	customAgents      *customagents.Service
-	customAgentEvents *pubsub.Broker[customagents.Event]
-	customAgentStore  *customagents.Store
-	customAgentCtx    context.Context
-	customAgentCancel context.CancelFunc
-	logger            *slog.Logger
+	backend              *backend.Backend
+	account              *account.Service
+	customAgents         *customagents.Service
+	customAgentEvents    *pubsub.Broker[customagents.Event]
+	customAgentStore     *customagents.Store
+	customAgentCtx       context.Context
+	customAgentCancel    context.CancelFunc
+	customAgentsStopOnce sync.Once
+	logger               *slog.Logger
 }
 
 func (s *Server) Account() *account.Service {
@@ -200,15 +201,25 @@ func (s *Server) Serve(ln net.Listener) error {
 	return s.h.Serve(ln)
 }
 
-// ListenAndServe starts the server and begins accepting connections.
 func (s *Server) ListenAndServe() error {
+	s.mu.Lock()
 	if s.ln != nil {
+		s.mu.Unlock()
 		return fmt.Errorf("server already started")
 	}
+	s.mu.Unlock()
 	ln, removedStale, err := listen(s.network, s.Addr)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", s.Addr, err)
 	}
+	s.mu.Lock()
+	if s.ln != nil {
+		s.mu.Unlock()
+		_ = ln.Close()
+		return fmt.Errorf("server already started")
+	}
+	s.ln = ln
+	s.mu.Unlock()
 	if removedStale && s.logger != nil {
 		s.logger.Warn("Removed stale socket before binding", "address", s.Addr)
 	}
@@ -216,29 +227,41 @@ func (s *Server) ListenAndServe() error {
 }
 
 func (s *Server) closeListener() {
-	if s.ln != nil {
-		s.ln.Close()
-		s.ln = nil
+	s.mu.Lock()
+	ln := s.ln
+	s.ln = nil
+	s.mu.Unlock()
+	if ln != nil {
+		_ = ln.Close()
 	}
 }
 
-// Close force closes all listeners and connections.
 func (s *Server) Close() error {
-	defer func() { s.closeListener() }()
+	defer s.closeListener()
+	if s.backend != nil {
+		s.backend.CloseInProcess()
+	}
 	s.stopCustomAgents()
 	if s.account != nil {
 		s.account.Close()
+	}
+	if s.h == nil {
+		return nil
 	}
 	return s.h.Close()
 }
 
-// Shutdown gracefully shuts down the server without interrupting active
-// connections.
 func (s *Server) Shutdown(ctx context.Context) error {
-	defer func() { s.closeListener() }()
+	defer s.closeListener()
+	if s.backend != nil {
+		s.backend.CloseInProcess()
+	}
 	s.stopCustomAgents()
 	if s.account != nil {
 		s.account.Close()
+	}
+	if s.h == nil {
+		return nil
 	}
 	return s.h.Shutdown(ctx)
 }

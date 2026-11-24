@@ -12,7 +12,6 @@ use super::types::{Locator, UiSnapshot};
 use super::ui_action::UiAction;
 use crate::browser::workbench::WorkbenchContext;
 
-const STEP_TIMEOUT: Duration = Duration::from_secs(15);
 const WAIT_TIMEOUT: Duration = Duration::from_secs(10);
 const POLL: Duration = Duration::from_millis(200);
 
@@ -186,12 +185,12 @@ pub fn run(
             "ms": started.elapsed().as_millis() as u64,
             "error": outcome.as_ref().err().cloned(),
         });
-        results.push(record);        if let Err(error) = outcome {
+        results.push(record);
+        if let Err(error) = outcome {
             passed = false;
-            results.last_mut().map(|record| {
+            if let Some(record) = results.last_mut() {
                 record["error"] = json!(error);
-                record
-            });
+            }
             let _ = write_json(
                 &output.join("results.json"),
                 &summary(name, &scenario, passed, &results, &output),

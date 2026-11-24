@@ -49,6 +49,7 @@ type Broker[T any] struct {
 	subs                 map[chan Event[T]]struct{}
 	mu                   sync.RWMutex
 	done                 chan struct{}
+	shutdownOnce         sync.Once
 	subCount             int
 	channelBufferSize    int
 	mustDeliverTimeout   time.Duration
@@ -83,22 +84,19 @@ func (b *Broker[T]) SetMustDeliverTimeout(d time.Duration) {
 }
 
 func (b *Broker[T]) Shutdown() {
-	select {
-	case <-b.done: // Already closed
-		return
-	default:
+	b.shutdownOnce.Do(func() {
 		close(b.done)
-	}
 
-	b.mu.Lock()
-	defer b.mu.Unlock()
+		b.mu.Lock()
+		defer b.mu.Unlock()
 
-	for ch := range b.subs {
-		delete(b.subs, ch)
-		close(ch)
-	}
+		for ch := range b.subs {
+			delete(b.subs, ch)
+			close(ch)
+		}
 
-	b.subCount = 0
+		b.subCount = 0
+	})
 }
 
 func (b *Broker[T]) Subscribe(ctx context.Context) <-chan Event[T] {
@@ -118,7 +116,11 @@ func (b *Broker[T]) Subscribe(ctx context.Context) <-chan Event[T] {
 	b.subCount++
 
 	go func() {
-		<-ctx.Done()
+		select {
+		case <-ctx.Done():
+		case <-b.done:
+			return
+		}
 
 		b.mu.Lock()
 		defer b.mu.Unlock()
@@ -129,9 +131,11 @@ func (b *Broker[T]) Subscribe(ctx context.Context) <-chan Event[T] {
 		default:
 		}
 
-		delete(b.subs, sub)
-		close(sub)
-		b.subCount--
+		if _, ok := b.subs[sub]; ok {
+			delete(b.subs, sub)
+			close(sub)
+			b.subCount--
+		}
 	}()
 
 	return sub

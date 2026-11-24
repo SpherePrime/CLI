@@ -1579,6 +1579,7 @@ func TestRegisterClient_RearmsGraceAndCancelsRelease(t *testing.T) {
 	t.Parallel()
 
 	b, _ := newTestBackend(t)
+	b.SetIdleShutdownDelay(time.Hour)
 	b.SetDetachGrace(50 * time.Millisecond)
 	b.createGrace = time.Hour
 	ws, wsShutdowns := insertTestWorkspace(t, b, "/tmp/rearm")
@@ -1632,6 +1633,7 @@ func TestRetireClient_ReleasesEveryClaim(t *testing.T) {
 	b.registerClient(shared, other)
 
 	require.NoError(t, b.RetireClient(cid))
+	require.ErrorIs(t, b.AttachClient(shared.ID, cid), ErrClientRetired)
 
 	require.Equal(t, int32(1), streamedShutdowns.Load())
 	require.Equal(t, int32(1), heldShutdowns.Load())

@@ -127,6 +127,8 @@ func (m *Tool) Info() fantasy.ToolInfo {
 	}
 }
 
+var mcpCancelGrace = 2 * time.Second
+
 func (m *Tool) Run(ctx context.Context, params fantasy.ToolCall) (fantasy.ToolResponse, error) {
 	sessionID := GetSessionFromContext(ctx)
 	if sessionID == "" {
@@ -163,7 +165,14 @@ func (m *Tool) Run(ctx context.Context, params fantasy.ToolCall) (fantasy.ToolRe
 	case <-job.done:
 	case <-ctx.Done():
 		job.kill()
-		<-job.done
+		grace := time.NewTimer(mcpCancelGrace)
+		select {
+		case <-job.done:
+			grace.Stop()
+		case <-grace.C:
+			mcpJobs.Del(job.id)
+			return fantasy.NewTextErrorResponse(ctx.Err().Error()), nil
+		}
 	case <-timer.C:
 	}
 	select {

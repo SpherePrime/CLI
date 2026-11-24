@@ -8,7 +8,7 @@ $BinDir = if ($env:PRIME_INSTALL_DIR) { $env:PRIME_INSTALL_DIR } else { "$env:LO
 # has to be checked first or ARM64 hosts silently get the x86_64 build.
 $Arch = if ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "ARM64") {
   "arm64"
-} elseif ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "^(x86|AMD64)") {
+} elseif ("$env:PROCESSOR_ARCHITEW6432$env:PROCESSOR_ARCHITECTURE" -match "AMD64") {
   "x86_64"
 } else {
   # 32-bit Windows: no i386 build is shipped, and x86_64 binaries cannot
@@ -75,7 +75,14 @@ try {
 Write-Host "prime: installed to $BinDir\prime.exe"
 
 $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($UserPath -notlike "*$BinDir*") {
-  [Environment]::SetEnvironmentVariable("Path", "$UserPath;$BinDir", "User")
+$NormalizedBinDir = $BinDir.TrimEnd('\')
+$PathEntries = @()
+if ($UserPath) {
+  $PathEntries = @($UserPath -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+$AlreadyInPath = $PathEntries | Where-Object { $_.TrimEnd('\') -ieq $NormalizedBinDir }
+if (-not $AlreadyInPath) {
+  $NewPath = if ($PathEntries.Count -gt 0) { ($PathEntries + $BinDir) -join ';' } else { $BinDir }
+  [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
   Write-Host "prime: added $BinDir to user PATH (restart your terminal)"
 }

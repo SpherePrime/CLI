@@ -3,7 +3,6 @@ import type {
   AccountState,
   Json,
   ChatReasoningMode,
-  Message,
   Operation,
   OrchestratorRoleConfig,
   Preferences,
@@ -202,7 +201,8 @@ export function useWorkspace() {
     return window.prime.call(id, operation, args)
   }, [])
   const pendingFetches = useRef(new Map<string, Promise<void>>())
-  const openingProject = useRef<Promise<void> | null>(null)
+  const openingProject = useRef<Promise<Project | null> | null>(null)
+  const workspaceSeq = useRef(0)
   const refreshPending = useCallback(async () => {
     const { project } = current.current
     if (!project) return
@@ -411,11 +411,11 @@ export function useWorkspace() {
   const refreshLight = useCallback(() => scheduleRefresh(false, false), [scheduleRefresh])
   useEffect(() => {
     async function restoreWorkspace() {
+      const seq = ++workspaceSeq.current
       const saved = await window.prime.preferences()
+      if (seq !== workspaceSeq.current) return
       let opened = await window.prime.projects()
-      // The shell renders as soon as the saved state is known. Restoring the
-      // last project workspace is slow (the engine builds a workspace for it),
-      // so it continues in the background while the window is already usable.
+      if (seq !== workspaceSeq.current) return
       setProjects(opened)
       setStartupReady(true)
       const lastProject = saved.activeProject
@@ -425,11 +425,16 @@ export function useWorkspace() {
         : saved.recent[0]
       if (!opened.length && lastProject) {
         const restored = await window.prime.openProject(lastProject).catch(() => null)
+        if (seq !== workspaceSeq.current) return
         if (restored) opened = [restored]
       }
-      if (!opened.length) opened = [await window.prime.openChat()]
+      if (!opened.length) {
+        const chatProject = await window.prime.openChat()
+        if (seq !== workspaceSeq.current) return
+        opened = [chatProject]
+      }
       setProjects(opened)
-      if (opened.length && !current.current.project) {
+      if (opened.length && !current.current.project && seq === workspaceSeq.current) {
         const restored =
           opened.find(
             (item) => item.path === saved.activeProject && item.kind !== 'designer'
@@ -439,6 +444,7 @@ export function useWorkspace() {
         current.current.project = restored
         setProject(restored)
         const existing: Session[] = await window.prime.call(restored.id, 'sessions')
+        if (seq !== workspaceSeq.current || current.current.project?.id !== restored.id) return
         if (existing?.length) {
           const selected =
             existing.find(
@@ -686,8 +692,18 @@ export function useWorkspace() {
           if (event.payload.action === 'created') return upsertSession(items, payload)
           return items.map((item) => (item.id === payload.id ? { ...item, ...payload } : item))
         })
-        if (payload?.id === current.current.session?.id)
-          setSession((previous: any) => ({ ...previous, ...payload }))
+        if (payload?.id === current.current.session?.id) {
+          if (event.payload.action === 'deleted') {
+            current.current.session = null
+            setSession(null)
+            history.reset()
+            setBusy(false)
+            setObservedBusy(null)
+            setQueue([])
+          } else {
+            setSession((previous: any) => (previous ? { ...previous, ...payload } : payload))
+          }
+        }
       }
       if (event.type === 'run_complete') {
         setRetryNotice((notice) => (notice?.sessionId === payload.session_id ? null : notice))
@@ -759,12 +775,17 @@ export function useWorkspace() {
     return () => clearInterval(timer)
   }, [project?.id, session?.id, busy, hasPending, refreshPending, refreshQueue])
   useEffect(() => {
-    document.documentElement.dataset.theme =
-      preferences.theme === 'system'
-        ? matchMedia('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light'
-        : preferences.theme
+    if (preferences.theme !== 'system') {
+      document.documentElement.dataset.theme = preferences.theme
+      return
+    }
+    const query = matchMedia('(prefers-color-scheme: dark)')
+    const applyTheme = () => {
+      document.documentElement.dataset.theme = query.matches ? 'dark' : 'light'
+    }
+    applyTheme()
+    query.addEventListener('change', applyTheme)
+    return () => query.removeEventListener('change', applyTheme)
   }, [preferences.theme])
   useEffect(() => {
     document.documentElement.dataset.density = preferences.density || 'comfortable'
@@ -778,76 +799,77 @@ export function useWorkspace() {
     }, 10000)
     return () => clearInterval(timer)
   }, [project?.id, scheduleRefresh])
-  async function openProject(path?: string) {
+  async function openProject(path?: string): Promise<Project | null> {
     if (!path) {
       setProjectCreationOpen(true)
-      return
+      return null
     }
-    await openWorkspace(() => window.prime.openProject(path))
+    return await openWorkspace(() => window.prime.openProject(path))
   }
   async function openProjectSession(path: string, selected: Session, known?: Session[]) {
-    await openProject(path)
-    const target = current.current.project
-    if (!target || target.path !== path) return
-    await openSession(target, selected, known)
+    const opened = await openProject(path)
+    if (!opened || current.current.project?.id !== opened.id) return
+    await openSession(opened, selected, known)
   }
   async function openProjectNewChat(path: string) {
-    await openProject(path)
+    const opened = await openProject(path)
+    if (!opened) return
     await createSession()
   }
   async function openRemote(profileId: string) {
     await openWorkspace(() => window.prime.openRemote(profileId))
   }
-  // Waits until a project is available. The startup restore and the open
-  // dialog both run in the background, so a prompt typed while the workspace
-  // is still being built is queued here instead of being rejected.
   async function waitForProject() {
     if (current.current.project) return
     await (openingProject.current ?? startupRestore.current ?? pendingChatOpen.current)?.catch(
       () => {}
     )
   }
-  async function openWorkspace(open: () => Promise<Project | null>) {
-    setLoading(true)
-    setError('')
-    const task = (async () => {
-      const opened = await open()
-      if (!opened) return
-      current.current = { project: opened, session: null }
-      setProject(opened)
-      setSession(null)
-      history.reset()
-      setPermissions([])
-      setQuestions([])
-      setBusy(false)
-      setQueue([])
-      setLoading(false)
-      void (async () => {
-        void window.prime.projects().then(setProjects).catch(errorHandler)
-        void window.prime.preferences().then(setPreferences).catch(errorHandler)
-        await refresh()
-      })().catch(errorHandler)
-    })()
-    openingProject.current = task
-    try {
-      await task
-    } catch (error) {
-      errorHandler(error)
-    } finally {
-      if (openingProject.current === task) openingProject.current = null
-      setLoading(false)
-    }
-  }
-  async function selectProject(selected: Project) {
+  function applyProjectSwitch(selected: Project) {
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
     setDraftGameDev(null)
     current.current = { project: selected, session: null }
     setProject(selected)
     setSession(null)
+    setSessions([])
     history.reset()
+    setPermissions([])
+    setQuestions([])
+    setObservedBusy(null)
     setBusy(false)
     setQueue([])
+  }
+  async function openWorkspace(open: () => Promise<Project | null>): Promise<Project | null> {
+    const seq = ++workspaceSeq.current
+    setLoading(true)
+    setError('')
+    const task = (async (): Promise<Project | null> => {
+      const opened = await open()
+      if (!opened || seq !== workspaceSeq.current) return null
+      applyProjectSwitch(opened)
+      setLoading(false)
+      void (async () => {
+        void window.prime.projects().then(setProjects).catch(errorHandler)
+        void window.prime.preferences().then(setPreferences).catch(errorHandler)
+        if (seq === workspaceSeq.current) await refresh()
+      })().catch(errorHandler)
+      return opened
+    })()
+    openingProject.current = task
+    try {
+      return await task
+    } catch (error) {
+      errorHandler(error)
+      return null
+    } finally {
+      if (openingProject.current === task) openingProject.current = null
+      if (seq === workspaceSeq.current) setLoading(false)
+    }
+  }
+  async function selectProject(selected: Project) {
+    ++workspaceSeq.current
+    applyProjectSwitch(selected)
     void refreshLight().catch(errorHandler)
     void scheduleRefresh(false, true).catch(() => {})
   }
@@ -914,11 +936,14 @@ export function useWorkspace() {
   }
   async function openSession(target: Project, selected: Session, known?: Session[]) {
     if (target.id === current.current.project?.id) return selectSession(selected)
+    ++workspaceSeq.current
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
     setDraftGameDev(null)
+    setSessions(known || [])
     setPermissions([])
     setQuestions([])
+    setObservedBusy(null)
     showSession(target, selected, known)
     if (isPendingSessionId(selected.id)) return
     void window.prime
@@ -927,14 +952,19 @@ export function useWorkspace() {
     void refresh().catch(errorHandler)
   }
   async function openChat() {
+    const seq = ++workspaceSeq.current
     try {
       const opened = await window.prime.openChat()
       void window.prime.projects().then(setProjects).catch(errorHandler)
-      await selectProject(opened)
+      if (seq !== workspaceSeq.current) return
+      applyProjectSwitch(opened)
+      void refreshLight().catch(errorHandler)
+      void scheduleRefresh(false, true).catch(() => {})
       const [existing, saved] = await Promise.all([
         window.prime.call(opened.id, 'sessions') as Promise<Session[]>,
         window.prime.preferences()
       ])
+      if (seq !== workspaceSeq.current || current.current.project?.id !== opened.id) return
       const selected =
         existing.find(
           (item) => item.id === (opened.currentSessionId || saved.activeSessions?.[opened.path])
@@ -945,14 +975,19 @@ export function useWorkspace() {
     }
   }
   async function openDesigner() {
+    const seq = ++workspaceSeq.current
     try {
       const opened = await window.prime.openDesigner()
       void window.prime.projects().then(setProjects).catch(errorHandler)
-      await selectProject(opened)
+      if (seq !== workspaceSeq.current) return
+      applyProjectSwitch(opened)
+      void refreshLight().catch(errorHandler)
+      void scheduleRefresh(false, true).catch(() => {})
       const [existing, saved] = await Promise.all([
         window.prime.call(opened.id, 'sessions') as Promise<Session[]>,
         window.prime.preferences()
       ])
+      if (seq !== workspaceSeq.current || current.current.project?.id !== opened.id) return
       const selected =
         existing.find(
           (item) => item.id === (opened.currentSessionId || saved.activeSessions?.[opened.path])
@@ -1061,6 +1096,9 @@ export function useWorkspace() {
       if (effectiveDraftOrch !== null || effectiveDraftGameDev !== null) {
         await scheduleRefresh(false, true).catch(() => {})
       }
+      setDraftReasoningMode(null)
+      setDraftOrchestrator(null)
+      setDraftGameDev(null)
       return created
     } catch (error) {
       setSessions((items) => items.filter((item) => item.id !== placeholder.id))
@@ -1164,8 +1202,11 @@ export function useWorkspace() {
     const targetProject = created ? placeholderProject : current.current.project
     if (!targetProject) return false
     const targetSession = created ?? current.current.session
+    const activeConfigSnapshot = configRef.current
     const usedModel =
-      (targetSession && config.session_models?.[targetSession.id]) ?? config.models?.large
+      (targetSession && activeConfigSnapshot.session_models?.[targetSession.id]) ??
+      activeConfigSnapshot.models?.large
+    let selected: Session | null = targetSession
     try {
       const latestPreferences = await window.prime.preferences()
       setPreferences(latestPreferences)
@@ -1178,17 +1219,29 @@ export function useWorkspace() {
       const preparedPrompt = await buildAgentPrompt(prompt, latestContext, (path) =>
         window.prime.readFile(targetProject.id, path)
       )
-      let selected = targetSession
       if (!selected) {
         selected = await window.prime.call(targetProject.id, 'createSession', {
           title: translate(language.current, 'Новый чат')
         })
       }
       if (!selected) return false
+      const activeSession = selected
+      if (
+        !targetSession &&
+        current.current.project?.id === targetProject.id &&
+        !current.current.session
+      ) {
+        setSessions((items) => upsertSession(items, activeSession))
+        showSession(targetProject, activeSession)
+        void window.prime
+          .call(targetProject.id, 'currentSession', { sessionId: activeSession.id })
+          .catch(errorHandler)
+      }
       let effectiveDraftOrchestrator: boolean | null = null
       let effectiveDraftGameDev: boolean | null = null
       if (!targetSession) {
-        await savePreferences({ reasoningBySession: { [selected.id]: reasoningMode } })
+        await savePreferences({ reasoningBySession: { [activeSession.id]: reasoningMode } })
+        setDraftReasoningMode(null)
         if (draftOrchestrator !== null) {
           effectiveDraftOrchestrator = draftOrchestrator
           if (current.current.project?.id === targetProject.id) {
@@ -1196,19 +1249,19 @@ export function useWorkspace() {
               ...configRef.current,
               session_orchestrator: {
                 ...(configRef.current?.session_orchestrator || {}),
-                [selected.id]: draftOrchestrator
+                [activeSession.id]: draftOrchestrator
               }
             }
             setConfig((currentConfig) => ({
               ...currentConfig,
               session_orchestrator: {
                 ...(currentConfig?.session_orchestrator || {}),
-                [selected.id]: draftOrchestrator
+                [activeSession.id]: draftOrchestrator
               }
             }))
           }
           await window.prime.call(targetProject.id, 'orchestrator', {
-            sessionId: selected.id,
+            sessionId: activeSession.id,
             enabled: draftOrchestrator
           })
           setDraftOrchestrator(null)
@@ -1220,19 +1273,19 @@ export function useWorkspace() {
               ...configRef.current,
               session_game_dev: {
                 ...(configRef.current?.session_game_dev || {}),
-                [selected.id]: draftGameDev
+                [activeSession.id]: draftGameDev
               }
             }
             setConfig((currentConfig) => ({
               ...currentConfig,
               session_game_dev: {
                 ...(currentConfig?.session_game_dev || {}),
-                [selected.id]: draftGameDev
+                [activeSession.id]: draftGameDev
               }
             }))
           }
           await window.prime.call(targetProject.id, 'gamedev', {
-            sessionId: selected.id,
+            sessionId: activeSession.id,
             enabled: draftGameDev
           })
           setDraftGameDev(null)
@@ -1308,10 +1361,6 @@ export function useWorkspace() {
           }
         }
       }
-      if (current.current.project?.id === targetProject.id && !current.current.session) {
-        setSessions((items) => upsertSession(items, selected!))
-        await selectSession(selected)
-      }
       if (effectiveDraftOrchestrator !== null || effectiveDraftGameDev !== null) {
         void scheduleRefresh(false, true).catch(errorHandler)
       } else {
@@ -1319,8 +1368,15 @@ export function useWorkspace() {
       }
       return true
     } catch (error) {
+      if (
+        current.current.project?.id === targetProject.id &&
+        (!selected || current.current.session?.id === selected.id)
+      ) {
+        setBusy(false)
+        setObservedBusy(null)
+      }
       errorHandler(error)
-      void refreshLight().catch(errorHandler)
+      void refreshLight().catch(() => {})
       return false
     } finally {
       if (prompt.startsWith('!')) setPendingShell(null)
@@ -1806,7 +1862,7 @@ export function useWorkspace() {
         const id = current.current.session?.id
         return id && !isPendingSessionId(id)
           ? call('messageSearch', { sessionId: id, query })
-          : Promise.resolve([] as Message[])
+          : Promise.resolve({ matches: [] as string[], total: 0 })
       },
       [call]
     ),

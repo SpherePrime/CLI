@@ -42,6 +42,8 @@ export function LaunchPanel(props: Props) {
   return <LaunchWorkspace key={props.root} {...props} />
 }
 
+const rootKey = (value: string) => value.replaceAll('\\', '/').replace(/\/+$/, '').toLowerCase()
+
 function LaunchWorkspace({ root, api, terminal, subscribe, theme, onError, onDiagnostics }: Props) {
   const { t } = useI18n()
   const [snapshot, setSnapshot] = useState<LaunchResponse>({ root, configs: [], processes: [] })
@@ -64,7 +66,9 @@ function LaunchWorkspace({ root, api, terminal, subscribe, theme, onError, onDia
     return subscribe((event) => {
       if (
         'type' in event &&
-        ((event.type === 'launch' && event.payload?.root === root) ||
+        ((event.type === 'launch' &&
+          typeof event.payload?.root === 'string' &&
+          rootKey(event.payload.root) === rootKey(root)) ||
           (event.type === 'browser' && event.payload?.action === 'log'))
       )
         void refresh()

@@ -10,6 +10,7 @@ import (
 func TestRemoteWorkspaceRestrictsLocalIntegrations(t *testing.T) {
 	t.Setenv(desktopBrowserURLEnv, "http://127.0.0.1:4000/mcp")
 	t.Setenv(desktopBrowserKeyEnv, "desktop-token")
+	t.Setenv(desktopMCPAreasEnv, "")
 	root := t.TempDir()
 	enabled := true
 	cfg := &Config{
@@ -34,6 +35,7 @@ func TestRemoteWorkspaceRestrictsLocalIntegrations(t *testing.T) {
 func TestRemoteWorkspaceWithoutDesktopFailsClosed(t *testing.T) {
 	t.Setenv(desktopBrowserURLEnv, "")
 	t.Setenv(desktopBrowserKeyEnv, "")
+	t.Setenv(desktopMCPAreasEnv, "")
 	cfg := &Config{
 		Options: &Options{RemoteWorkspace: &RemoteWorkspace{}},
 		MCP:     map[string]MCPConfig{DesktopBrowserMCPName: {Type: MCPHttp, URL: "http://untrusted/mcp"}},

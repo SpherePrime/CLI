@@ -24,12 +24,34 @@ fn workspace_request(
     client: &str,
     data_directory: Option<PathBuf>,
     kind: &str,
+    channels: &[String],
 ) -> Value {
-    let mut request = json!({"path":path,"client_id":client,"channels":[],"kind":kind});
+    let mut request = json!({"path":path,"client_id":client,"channels":channels,"kind":kind});
     if let Some(directory) = data_directory {
         request["data_dir"] = json!(directory);
     }
     request
+}
+
+fn project_channels(preferences: &Value, path: &str) -> Vec<String> {
+    let Some(map) = preferences.get("projectChannels").and_then(Value::as_object) else {
+        return Vec::new();
+    };
+    let entries = map.get(path).or_else(|| {
+        map.iter()
+            .find(|(key, _)| same_project_path(key, path))
+            .map(|(_, value)| value)
+    });
+    entries
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 pub fn sessions(state: &AppState, path: &str) -> HostResult<Value> {
@@ -40,7 +62,13 @@ pub fn sessions(state: &AppState, path: &str) -> HostResult<Value> {
     let workspace = engine.request(
         "POST",
         "/v1/workspaces",
-        Some(workspace_request(&path, &client, data_directory, "project")),
+        Some(workspace_request(
+            &path,
+            &client,
+            data_directory,
+            "project",
+            &[],
+        )),
     )?;
     let result = workspace["id"]
         .as_str()
@@ -112,11 +140,61 @@ fn find_live_cached_project(
     None
 }
 
+pub struct RemoteOpen {
+    pub key: String,
+    pub metadata: Value,
+}
+
+fn find_live_cached_remote_project(
+    state: &AppState,
+    engine: &crate::engine::Engine,
+    profile_id: &str,
+) -> Option<Value> {
+    let existing = state
+        .projects
+        .lock()
+        .unwrap()
+        .values()
+        .find(|project| project["remote"]["profileId"].as_str() == Some(profile_id))
+        .cloned()?;
+    let id = existing["id"].as_str().unwrap_or("");
+    let alive = !id.is_empty()
+        && engine.has_subscription(id)
+        && engine
+            .request("GET", &format!("/v1/workspaces/{id}"), None)
+            .is_ok();
+    if alive {
+        return Some(existing);
+    }
+    evict_stale_project(state, engine, &existing);
+    None
+}
+
 pub fn open(
     app: &tauri::AppHandle,
     state: &AppState,
     path: PathBuf,
     kind: &str,
+) -> HostResult<Value> {
+    open_inner(app, state, path, kind, None)
+}
+
+pub fn open_with_remote(
+    app: &tauri::AppHandle,
+    state: &AppState,
+    path: PathBuf,
+    kind: &str,
+    remote: RemoteOpen,
+) -> HostResult<Value> {
+    open_inner(app, state, path, kind, Some(remote))
+}
+
+fn open_inner(
+    app: &tauri::AppHandle,
+    state: &AppState,
+    path: PathBuf,
+    kind: &str,
+    remote: Option<RemoteOpen>,
 ) -> HostResult<Value> {
     let _opening = state.project_open.lock().unwrap();
     let path = dunce::canonicalize(path)?;
@@ -126,22 +204,53 @@ pub fn open(
             "Select a project directory",
         ));
     }
-    let path = path.to_string_lossy().into_owned();
+    let local_path = path.to_string_lossy().into_owned();
+    let project_path = remote
+        .as_ref()
+        .map(|item| item.key.as_str())
+        .unwrap_or(local_path.as_str());
     let engine = state.require_engine()?;
-    if let Some(project) = find_live_cached_project(state, &engine, &path, true) {
+    if let Some(profile_id) = remote
+        .as_ref()
+        .and_then(|item| item.metadata["profileId"].as_str())
+    {
+        if let Some(project) = find_live_cached_remote_project(state, &engine, profile_id) {
+            return Ok(project);
+        }
+    }
+    if let Some(project) = find_live_cached_project(state, &engine, project_path, true) {
         return Ok(project);
     }
+    let preferences = state.settings.lock().unwrap().get();
+    let channels = project_channels(&preferences, project_path);
     let client = uuid::Uuid::new_v4().to_string();
-    let data_directory = data_directory(state, &path)?;
+    let data_directory = data_directory(state, &local_path)?;
     let workspace = engine.request(
         "POST",
         "/v1/workspaces",
-        Some(workspace_request(&path, &client, data_directory, kind)),
+        Some(workspace_request(
+            &local_path,
+            &client,
+            data_directory,
+            kind,
+            &channels,
+        )),
     )?;
     let id = workspace["id"]
         .as_str()
         .ok_or_else(|| HostError::new("ENGINE_RESPONSE", "Workspace response has no id"))?;
-    let project = json!({"id":id,"path":path,"clientId":client,"kind":kind,"connection":"ready","channels":[]});
+    let mut project = json!({
+        "id": id,
+        "path": project_path,
+        "clientId": client,
+        "kind": kind,
+        "connection": "ready",
+        "channels": channels,
+    });
+    if let Some(remote) = &remote {
+        project["localPath"] = json!(local_path);
+        project["remote"] = remote.metadata.clone();
+    }
     if let Err(error) = engine.subscribe(app.clone(), id.into(), &client) {
         let _ = engine.request("DELETE", &format!("/v1/clients/{client}"), None);
         return Err(error);
@@ -157,16 +266,22 @@ pub fn open(
         .as_array()
         .cloned()
         .unwrap_or_default();
-    recent.retain(|item| !item.as_str().is_some_and(|value| same_project_path(value, &path)));
+    recent.retain(|item| {
+        !item.as_str().is_some_and(|value| {
+            same_project_path(value, project_path)
+                || (remote.is_some() && same_project_path(value, &local_path))
+        })
+    });
     if kind == "project" {
-        recent.insert(0, json!(path));
+        recent.insert(0, json!(project_path));
         recent.truncate(64);
     }
     if kind == "designer" {
         settings.update(&json!({"recent":recent}))?;
     } else {
-        settings.update(&json!({"recent":recent,"activeProject":path}))?;
+        settings.update(&json!({"recent":recent,"activeProject":project_path}))?;
     }
+    drop(settings);
     events::emit(app, id, "connection", json!("ready"));
     Ok(project)
 }
@@ -174,6 +289,7 @@ pub fn open(
 pub fn close(app: &tauri::AppHandle, state: &AppState, id: &str) -> HostResult<Value> {
     let _opening = state.project_open.lock().unwrap();
     state.root(id)?;
+    state.appui.forget(id);
     state.windows.forget(app, id);
     state.remotes.terminals.close_workspace(id);
     if let Err(error) = state.terminals.close_workspace(id) {
@@ -286,9 +402,6 @@ fn find_project(state: &AppState, path: &str) -> Option<Value> {
         .cloned()
 }
 
-// Detaches the open workspace from the desktop: windows, terminals and the
-// event stream. Failures are reported as warnings because the user asked for
-// the project to be removed and a stuck terminal must not keep it alive.
 fn detach_project(
     state: &AppState,
     app: Option<&tauri::AppHandle>,
@@ -298,6 +411,7 @@ fn detach_project(
     let Some(id) = project["id"].as_str() else {
         return;
     };
+    state.appui.forget(id);
     if let Some(app) = app {
         state.windows.forget(app, id);
     }
@@ -310,11 +424,6 @@ fn detach_project(
     }
 }
 
-// Deletes every chat of the project. A closed project has no workspace, so a
-// temporary one is opened for the operation and retired afterwards. The
-// failure text is returned instead of an error so the project entry is still
-// removed when the chats cannot be reached (missing folder, locked data
-// directory, engine still starting).
 fn delete_project_chats(
     state: &AppState,
     path: &str,
@@ -338,23 +447,38 @@ fn delete_project_chats(
             (Some(id.to_owned()), None)
         }
         _ => match local_project_path(state, path) {
-            Ok(local_path) => {
-                let data_directory =
-                    data_directory(state, &local_path).map_err(|error| error.message)?;
-                let client = uuid::Uuid::new_v4().to_string();
-                let workspace = engine
-                    .request(
+            Ok(local_path) => match data_directory(state, &local_path) {
+                Ok(data_directory) => {
+                    let client = uuid::Uuid::new_v4().to_string();
+                    match engine.request(
                         "POST",
                         "/v1/workspaces",
-                        Some(workspace_request(&local_path, &client, data_directory, "project")),
-                    )
-                    .map_err(|error| error.message)?;
-                let id = workspace["id"]
-                    .as_str()
-                    .ok_or_else(|| "Workspace response has no id".to_owned())?
-                    .to_owned();
-                (Some(id), Some(client))
-            }
+                        Some(workspace_request(
+                            &local_path,
+                            &client,
+                            data_directory,
+                            "project",
+                            &[],
+                        )),
+                    ) {
+                        Ok(workspace) => match workspace["id"].as_str() {
+                            Some(id) => (Some(id.to_owned()), Some(client)),
+                            None => {
+                                failures.push("Workspace response has no id".to_owned());
+                                (None, Some(client))
+                            }
+                        },
+                        Err(error) => {
+                            failures.push(error.message);
+                            (None, None)
+                        }
+                    }
+                }
+                Err(error) => {
+                    failures.push(error.message);
+                    (None, None)
+                }
+            },
             Err(error) => {
                 failures.push(error.message);
                 (None, None)
@@ -480,6 +604,22 @@ fn operation_target(id: &str, method: &str, path: &str) -> HostResult<String> {
     })
 }
 
+pub fn chats_directory(state: &AppState) -> PathBuf {
+    if !state.isolated {
+        if let Some(legacy) = crate::migration::legacy_directory()
+            .map(|directory| directory.join("Chats"))
+            .filter(|directory| directory.is_dir())
+        {
+            return legacy;
+        }
+    }
+    state.directory.join("Chats")
+}
+
+pub fn designer_directory(state: &AppState) -> PathBuf {
+    state.directory.join("Designer")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -514,6 +654,7 @@ mod tests {
                     &client,
                     data_directory(state, path).unwrap(),
                     "project",
+                    &[],
                 )),
             )
             .unwrap();
@@ -534,6 +675,25 @@ mod tests {
             .as_array()
             .map(Vec::len)
             .unwrap_or(0)
+    }
+
+    #[test]
+    fn project_channels_matches_exact_and_normalized_paths() {
+        let preferences = json!({
+            "projectChannels": {
+                "C:\\Work\\App\\": ["slack", "github"],
+                "prime-ssh://id/srv/app/": ["telegram"]
+            }
+        });
+        assert_eq!(
+            project_channels(&preferences, "C:/Work/App"),
+            vec!["slack", "github"]
+        );
+        assert_eq!(
+            project_channels(&preferences, "prime-ssh://id/srv/app"),
+            vec!["telegram"]
+        );
+        assert!(project_channels(&preferences, "C:/Other").is_empty());
     }
 
     #[test]
@@ -691,20 +851,4 @@ mod tests {
             .request("DELETE", &format!("/v1/clients/{new_client}"), None)
             .unwrap();
     }
-}
-
-pub fn chats_directory(state: &AppState) -> PathBuf {
-    if !state.isolated {
-        if let Some(legacy) = crate::migration::legacy_directory()
-            .map(|directory| directory.join("Chats"))
-            .filter(|directory| directory.is_dir())
-        {
-            return legacy;
-        }
-    }
-    state.directory.join("Chats")
-}
-
-pub fn designer_directory(state: &AppState) -> PathBuf {
-    state.directory.join("Designer")
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { GitCommitHorizontal, RefreshCw, RotateCcw, Undo2 } from 'lucide-react'
 import type { GitCommitDetail, GitHistory, GitRestoreResult } from '../../../../shared/gitHistory'
 import { Modal } from '../../components/Modal'
@@ -14,40 +14,64 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [confirm, setConfirm] = useState<'revert' | 'restore'>()
+  const mountedRef = useRef(true)
+  const seqRef = useRef(0)
   const refresh = useCallback(async () => {
+    const seq = ++seqRef.current
     setBusy(true)
     setError('')
     try {
       const next: GitHistory = await window.prime.github(workspaceId, { action: 'history' })
+      if (!mountedRef.current || seq !== seqRef.current) return
       setHistory(next)
       setSelected(undefined)
-      if (next.commits[0])
-        setSelected(
-          await window.prime.github(workspaceId, { action: 'showCommit', sha: next.commits[0].sha })
-        )
+      if (next.commits[0]) {
+        const detail = await window.prime.github(workspaceId, {
+          action: 'showCommit',
+          sha: next.commits[0].sha
+        })
+        if (!mountedRef.current || seq !== seqRef.current) return
+        setSelected(detail)
+      }
     } catch (failure) {
+      if (!mountedRef.current || seq !== seqRef.current) return
       setError(failure instanceof Error ? failure.message : String(failure))
     } finally {
-      setBusy(false)
+      if (mountedRef.current && seq === seqRef.current) setBusy(false)
     }
   }, [workspaceId])
   useEffect(() => {
+    mountedRef.current = true
+    setHistory(undefined)
+    setSelected(undefined)
+    setError('')
+    setNotice('')
+    setConfirm(undefined)
     void refresh()
+    return () => {
+      mountedRef.current = false
+      seqRef.current++
+    }
   }, [refresh])
   const open = async (sha: string) => {
+    const seq = ++seqRef.current
     setBusy(true)
     setError('')
     setSelected(undefined)
     try {
-      setSelected(await window.prime.github(workspaceId, { action: 'showCommit', sha }))
+      const detail = await window.prime.github(workspaceId, { action: 'showCommit', sha })
+      if (!mountedRef.current || seq !== seqRef.current) return
+      setSelected(detail)
     } catch (failure) {
+      if (!mountedRef.current || seq !== seqRef.current) return
       setError(failure instanceof Error ? failure.message : String(failure))
     } finally {
-      setBusy(false)
+      if (mountedRef.current && seq === seqRef.current) setBusy(false)
     }
   }
   const restore = async () => {
     if (!selected || !confirm) return
+    const seq = ++seqRef.current
     const reverting = confirm === 'revert'
     setBusy(true)
     setError('')
@@ -57,6 +81,7 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
         sha: selected.commit.sha,
         expectedHead: selected.currentHead
       })
+      if (!mountedRef.current || seq !== seqRef.current) return
       setConfirm(undefined)
       setNotice(
         t(
@@ -76,10 +101,11 @@ export function GitHistoryPanel({ workspaceId }: { workspaceId: string }) {
         )
       await refresh()
     } catch (failure) {
+      if (!mountedRef.current || seq !== seqRef.current) return
       setConfirm(undefined)
       setError(failure instanceof Error ? failure.message : String(failure))
     } finally {
-      setBusy(false)
+      if (mountedRef.current && seq === seqRef.current) setBusy(false)
     }
   }
   return (

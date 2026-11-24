@@ -73,6 +73,10 @@ export function BrowserTab({
   }
   const viewport = useRef<HTMLDivElement>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const previewUrlRef = useRef<string | null>(null)
+  previewUrlRef.current = previewUrl
+  const previewInFlightRef = useRef(false)
+  const disposedRef = useRef(false)
   const [covered, setCovered] = useState(false)
   const [state, setState] = useState<BrowserState>(emptyState)
   const [address, setAddress] = useState('')
@@ -81,16 +85,22 @@ export function BrowserTab({
   const stateLoadedRef = useRef(false)
   const syncRef = useRef<() => void>(() => {})
   useEffect(() => {
+    disposedRef.current = false
     void window.prime
       .browserState()
       .then((value) => {
+        if (disposedRef.current) return
         stateLoadedRef.current = true
         setState(value)
         setAddress(value.url)
         syncRef.current()
       })
-      .catch((reason) => setError(String(reason?.message || reason).replace(/^.*Error: /, '')))
-    return window.prime.onEvent((event) => {
+      .catch((reason) => {
+        if (disposedRef.current) return
+        setError(String(reason?.message || reason).replace(/^.*Error: /, ''))
+      })
+    const unsubscribe = window.prime.onEvent((event) => {
+      if (disposedRef.current) return
       if (!('type' in event) || event.type !== 'browser' || event.payload?.action !== 'state') return
       const { action: _action, ...next } = event.payload
       stateLoadedRef.current = true
@@ -98,6 +108,10 @@ export function BrowserTab({
       setError('')
       syncRef.current()
     })
+    return () => {
+      disposedRef.current = true
+      unsubscribe()
+    }
   }, [])
   useEffect(() => {
     if (!editing) setAddress(state.url === 'about:blank' ? '' : state.url)
@@ -112,14 +126,24 @@ export function BrowserTab({
     const sync = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
-        if (!stateLoadedRef.current) return
+        if (disposedRef.current || !stateLoadedRef.current) return
         const rect = visibleRect(element)
         const isCovered = rect ? isOverlayCovering(rect) : false
         setCovered(isCovered)
-        if (isCovered && !previewUrl) {
-          void window.prime.browserPreview?.()
-            .then((url) => { if (typeof url === 'string') setPreviewUrl(url) })
+        if (isCovered && !previewUrlRef.current && !previewInFlightRef.current) {
+          previewInFlightRef.current = true
+          void window.prime
+            .browserPreview?.()
+            .then((url) => {
+              if (!disposedRef.current && typeof url === 'string') {
+                previewUrlRef.current = url
+                setPreviewUrl(url)
+              }
+            })
             .catch(() => {})
+            .finally(() => {
+              previewInFlightRef.current = false
+            })
         }
         const hidden = isCovered || !rect || !stateUrlRef.current
         const next = hidden ? 'hidden' : JSON.stringify(rect)
@@ -155,14 +179,27 @@ export function BrowserTab({
   }, [state.url])
   useEffect(() => {
     if (state.loading || !state.url || state.url === 'about:blank') return
+    let cancelled = false
     const timer = setTimeout(() => {
-      void window.prime.browserPreview?.()
+      if (previewInFlightRef.current) return
+      previewInFlightRef.current = true
+      void window.prime
+        .browserPreview?.()
         .then((url) => {
-          if (typeof url === 'string') setPreviewUrl(url)
+          if (!cancelled && !disposedRef.current && typeof url === 'string') {
+            previewUrlRef.current = url
+            setPreviewUrl(url)
+          }
         })
         .catch(() => {})
+        .finally(() => {
+          previewInFlightRef.current = false
+        })
     }, 250)
-    return () => clearTimeout(timer)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [state.loading, state.url])
   const navigate = (value: string) => {
     setEditing(false)

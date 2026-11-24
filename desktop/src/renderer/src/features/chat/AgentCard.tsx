@@ -22,11 +22,13 @@ function backgroundLaunch(metadata: unknown, content: unknown) {
 export function AgentCard({
   part,
   messageId,
-  sessionId
+  sessionId,
+  messageFinished = false
 }: {
   part: Message['parts'][number]
   messageId: string
   sessionId?: string
+  messageFinished?: boolean
 }) {
   const { t } = useI18n()
   const data = part.data
@@ -37,18 +39,22 @@ export function AgentCard({
   const task = String(input.prompt || '')
     .replace(/\s+/g, ' ')
     .trim()
-  const failed = Boolean(result?.is_error)
-  if (failed && !hasAgentJobId(result?.metadata)) return null
+  const errored = Boolean(result?.is_error)
+  if (errored && !hasAgentJobId(result?.metadata)) return null
+  const interrupted = result === undefined && Boolean(messageFinished)
+  const failed = errored || interrupted
   const launched = result !== undefined && backgroundLaunch(result?.metadata, result?.content)
   const finished = result !== undefined && !launched
   const workerId = data.id ? agentWorkerId(messageId, String(data.id)) : ''
-  const status = failed
-    ? t('Ошибка')
-    : finished
-      ? t('Готово')
-      : launched
-        ? t('Работает в команде')
-        : t('Выполняется')
+  const status = interrupted
+    ? t('Прервано')
+    : errored
+      ? t('Ошибка')
+      : finished
+        ? t('Готово')
+        : launched
+          ? t('Работает в команде')
+          : t('Выполняется')
   return (
     <button
       type="button"

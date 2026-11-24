@@ -57,16 +57,12 @@ func newPowershellCmd(script string) *exec.Cmd {
 	return cmd
 }
 
-// hasRunningInstances reports whether at least one Prime process other than
-// the current one is running.
 func hasRunningInstances(selfExe string) bool {
-	script := fmt.Sprintf(
-		`(Get-Process -Name "prime" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq '%s' }).Count`,
-		selfExe,
-	)
-	out, err := newPowershellCmd(script).Output()
+	const script = `(Get-Process -Name "prime" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $env:PRIME_SELF_EXE }).Count`
+	cmd := newPowershellCmd(script)
+	cmd.Env = append(os.Environ(), "PRIME_SELF_EXE="+selfExe)
+	out, err := cmd.Output()
 	if err != nil {
-		// If we can't check, assume instances exist to be safe.
 		return true
 	}
 	count := 0
@@ -93,32 +89,36 @@ func performSwap(exe, newBin string) error {
 }
 
 func scheduleReplace(exe, newBin string) error {
-	// The running UI and server both keep prime.exe locked; a detached
-	// helper retries the swap every 500ms until every instance exits.
 	const replaceScript = `$ErrorActionPreference = "SilentlyContinue"
 $exe = $env:PRIME_UPDATE_EXE
 $new = $env:PRIME_UPDATE_NEW
 $old = "$exe.old"
 for ($i = 0; $i -lt 7200; $i++) {
-  if (Test-Path -LiteralPath "\\?\$old") { Remove-Item -LiteralPath "\\?\$old" -Force }
+  if ((Test-Path -LiteralPath "\\?\$exe") -and (Test-Path -LiteralPath "\\?\$old")) {
+    Remove-Item -LiteralPath "\\?\$old" -Force
+  }
+  $movedOld = $false
   try {
     Move-Item -LiteralPath "\\?\$exe" -Destination "\\?\$old" -Force -ErrorAction Stop
+    $movedOld = $true
     Move-Item -LiteralPath "\\?\$new" -Destination "\\?\$exe" -Force -ErrorAction Stop
-    Remove-Item -LiteralPath "\\?\$old" -Force
+    if (Test-Path -LiteralPath "\\?\$exe") {
+      Remove-Item -LiteralPath "\\?\$old" -Force
+    }
     break
   } catch {
+    if ($movedOld -and -not (Test-Path -LiteralPath "\\?\$exe") -and (Test-Path -LiteralPath "\\?\$old")) {
+      Move-Item -LiteralPath "\\?\$old" -Destination "\\?\$exe" -Force
+    }
     Start-Sleep -Milliseconds 500
   }
 }`
 
-	// Same no-window discipline as hasRunningInstances; additionally the
-	// helper is fully detached and runs in its own process group so it
-	// survives prime exiting.
 	cmd := newPowershellCmd(replaceScript)
 	cmd.Env = append(os.Environ(),
 		"PRIME_UPDATE_EXE="+exe,
 		"PRIME_UPDATE_NEW="+newBin,
 	)
-	cmd.SysProcAttr.CreationFlags |= 0x00000008 | 0x00000200 // DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+	cmd.SysProcAttr.CreationFlags |= 0x00000008 | 0x00000200
 	return cmd.Start()
 }

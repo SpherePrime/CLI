@@ -277,7 +277,7 @@ mod tests {
     }
     #[test]
     fn metadata_preserves_unicode() {
-        let parsed=commit("abc\0one two\0Исправление\0Author\02026-10-23\0HEAD -> main");
+        let parsed=commit("abc\0one two\0Исправление\0Author\x002026-10-23\0HEAD -> main");
         assert_eq!(parsed["title"], "Исправление");
         assert_eq!(parsed["parents"],json!(["one","two"]));
     }

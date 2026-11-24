@@ -194,24 +194,60 @@ func (b *Backend) SendMessage(workspaceID string, msg proto.AgentMessage) error 
 		ws.runs[msg.RunID] = registeredRun{fingerprint: fingerprint, record: proto.RunRecord{RunID: msg.RunID, SessionID: msg.SessionID, Status: "running", AcceptedAt: time.Now().UTC()}}
 	}
 	accept := coord.BeginAccepted(msg.SessionID)
-	ws.runWG.Add(1)
+	watchCompletions := msg.RunID != "" && ws.RunCompletions() != nil
+	if watchCompletions {
+		ws.runWG.Add(2)
+	} else {
+		ws.runWG.Add(1)
+	}
 	ws.runMu.Unlock()
-	if msg.RunID != "" && ws.RunCompletions() != nil {
+
+	var agentDone chan struct{}
+	if watchCompletions {
+		agentDone = make(chan struct{})
 		watchCtx, stop := context.WithCancel(ws.ctx)
 		completions := ws.RunCompletions().Subscribe(watchCtx)
 		go func() {
+			defer ws.runWG.Done()
 			defer stop()
-			for event := range completions {
-				if event.Payload.RunID == msg.RunID {
-					ws.finishRun(event.Payload)
-					return
+			for {
+				select {
+				case event, ok := <-completions:
+					if !ok {
+						return
+					}
+					if event.Payload.RunID == msg.RunID {
+						ws.finishRun(event.Payload)
+						return
+					}
+				case <-agentDone:
+					for {
+						select {
+						case event, ok := <-completions:
+							if !ok {
+								return
+							}
+							if event.Payload.RunID == msg.RunID {
+								ws.finishRun(event.Payload)
+								return
+							}
+						default:
+							return
+						}
+					}
 				}
 			}
 		}()
 	}
 
 	msg.Attachments = attachments
-	go b.runAgent(ws, coord, msg, accept)
+	go func() {
+		defer ws.runWG.Done()
+		if agentDone != nil {
+			defer close(agentDone)
+		}
+		b.runAgent(ws, coord, msg, accept)
+	}()
 	return nil
 }
 
@@ -274,7 +310,6 @@ func initializeAgent(ctx context.Context, ws *Workspace, interactive bool) error
 // is also attached so the coordinator can report whether it published
 // the terminal event, letting runAgent avoid a duplicate fallback.
 func (b *Backend) runAgent(ws *Workspace, coord agent.Coordinator, msg proto.AgentMessage, accept *agent.AcceptedRun) {
-	defer ws.runWG.Done()
 	defer accept.Close()
 
 	ctx := agent.WithReasoningMode(ws.ctx, msg.ReasoningMode)

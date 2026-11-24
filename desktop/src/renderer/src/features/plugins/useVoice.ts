@@ -1,6 +1,7 @@
 import { useI18n } from '../../i18n'
 import { useEffect, useRef, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
+import { ensureSttReady } from '../voice/sttReady'
 function wav(samples: Float32Array): string {
   const buffer = new ArrayBuffer(44 + samples.length * 2)
   const data = new DataView(buffer)
@@ -39,16 +40,22 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
   const discard = useRef(false)
   const pending = useRef<((text: string) => void) | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const startingRef = useRef(false)
+  const cancelledRef = useRef(false)
+  const mountedRef = useRef(true)
   const callback = useRef(onText)
   callback.current = onText
   const release = () => {
     stream.current?.getTracks().forEach((track) => track.stop())
+    stream.current = null
     void meter.current?.close().catch(() => {})
     meter.current = null
-    setAnalyser(null)
+    if (mountedRef.current) setAnalyser(null)
   }
   useEffect(
     () => () => {
+      mountedRef.current = false
+      cancelledRef.current = true
       clearTimeout(timer.current)
       if (recorder.current?.state === 'recording') {
         recorder.current.onstop = null
@@ -59,6 +66,10 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
     []
   )
   function stopRecording(cancel = false) {
+    if (startingRef.current) {
+      cancelledRef.current = true
+      return Promise.resolve('')
+    }
     return new Promise<string>((resolve) => {
       if (recorder.current?.state !== 'recording') return resolve('')
       discard.current = cancel
@@ -67,23 +78,12 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
     })
   }
   async function start() {
+    if (startingRef.current || recorder.current?.state === 'recording') return
+    startingRef.current = true
+    cancelledRef.current = false
     try {
-      // Transcription is chosen in the speech recognition settings, so the
-      // gate is the selected engine, not the voice plugin: the plugin only
-      // installs a recorder for CLI-side capture, while the desktop records
-      // through the browser. Local engines need a downloaded model.
-      const stt = (await workspace.call('stt')) as { engine?: string } | undefined
-      const engine = stt?.engine || 'auto'
-      if (engine === 'whisper' || engine === 'vosk') {
-        const catalog = (await workspace.call('stt')) as {
-          providers?: { id: string; models?: { installed: boolean }[] }[]
-        }
-        const models = catalog.providers?.find((item) => item.id === engine)?.models || []
-        if (!models.some((item) => item.installed))
-          throw new Error(
-            t('Для выбранного провайдера скачайте модель в настройках распознавания речи')
-          )
-      }
+      await ensureSttReady(workspace.call, t)
+      if (cancelledRef.current || !mountedRef.current) return
       const media = await navigator.mediaDevices.getUserMedia({
         audio: {
           ...(workspace.preferences.micDeviceId
@@ -93,6 +93,10 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
           sampleRate: 16000
         }
       })
+      if (cancelledRef.current || !mountedRef.current) {
+        media.getTracks().forEach((track) => track.stop())
+        return
+      }
       stream.current = media
       const level = new AudioContext()
       const node = level.createAnalyser()
@@ -109,11 +113,11 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
       }
       instance.onstop = async () => {
         clearTimeout(timer.current)
-        setRecording(false)
+        if (mountedRef.current) setRecording(false)
         release()
         const resolve = pending.current
         pending.current = null
-        if (discard.current) {
+        if (discard.current || !mountedRef.current) {
           resolve?.('')
           return
         }
@@ -137,10 +141,14 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
           })
           text = result?.text || ''
         } catch (error) {
-          workspace.errorHandler(error)
+          if (mountedRef.current) workspace.errorHandler(error)
         } finally {
           await context?.close()
-          setTranscribing(false)
+          if (mountedRef.current) setTranscribing(false)
+        }
+        if (!mountedRef.current) {
+          resolve?.('')
+          return
         }
         if (resolve) resolve(text)
         else if (text) callback.current(text)
@@ -150,10 +158,16 @@ export function useVoice(workspace: Workspace, onText: (text: string) => void) {
       timer.current = setTimeout(() => instance.state === 'recording' && instance.stop(), 120000)
     } catch (error) {
       release()
-      workspace.errorHandler(error)
+      if (mountedRef.current) workspace.errorHandler(error)
+    } finally {
+      startingRef.current = false
     }
   }
   async function toggle() {
+    if (startingRef.current) {
+      cancelledRef.current = true
+      return
+    }
     if (!recording) return start()
     const text = await stopRecording()
     if (text) callback.current(text)

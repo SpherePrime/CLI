@@ -20,7 +20,6 @@ import (
 type pendingRequest struct {
 	cancel context.CancelFunc
 	events chan Event
-	done   chan struct{}
 }
 
 type Engine struct {
@@ -99,13 +98,12 @@ func (e *Engine) Request(input Request) (uint64, error) {
 	}
 	e.nextID++
 	id := e.nextID
-	pending := &pendingRequest{cancel: cancel, events: make(chan Event, eventQueueSize), done: make(chan struct{})}
+	pending := &pendingRequest{cancel: cancel, events: make(chan Event, eventQueueSize)}
 	e.requests[id] = pending
 	e.wg.Add(1)
 	e.mu.Unlock()
 	go func() {
 		defer e.wg.Done()
-		defer close(pending.done)
 		defer close(pending.events)
 		defer cancel()
 		writer := &responseWriter{ctx: ctx, events: pending.events, header: make(http.Header)}
@@ -182,13 +180,10 @@ func (e *Engine) Close() {
 		e.mu.Lock()
 		e.closed = true
 		e.mu.Unlock()
-		if e.server != nil {
-			e.server.Backend().Shutdown()
-		}
 		e.cancel()
 		e.wg.Wait()
 		if e.server != nil {
-			e.server.Backend().CloseInProcess()
+			_ = e.server.Close()
 		}
 		e.mu.Lock()
 		clear(e.requests)

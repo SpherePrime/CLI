@@ -208,7 +208,9 @@ function Question({
                     ? 'yes'
                     : 'no'
               }
-              onChange={(value) => update(question.id, { yes: value === 'yes' })}
+              onChange={(value) =>
+                update(question.id, { yes: value === '' ? undefined : value === 'yes' })
+              }
               options={[
                 { value: '', label: t('Выберите ответ') },
                 { value: 'yes', label: t('Да') },

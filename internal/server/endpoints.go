@@ -182,6 +182,14 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(400, 404, 500).
 			Handle(c.handleGetWorkspaceEvents),
 
+		apigen.Get("/v1/workspaces/{id}/channel-messages").
+			Summary("List MCP channel messages").
+			Tags("workspaces").
+			PathParam("id", "Workspace ID").
+			Responds([]proto.MCPChannelMessage{}).
+			Fails(404).
+			Handle(c.handleGetWorkspaceChannelMessages),
+
 		apigen.Get("/v1/workspaces/{id}/sessions").
 			Summary("List sessions").
 			Tags("sessions").
@@ -258,6 +266,7 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Tags("sessions").
 			PathParam("id", "Workspace ID").
 			PathParam("sid", "Session ID").
+			Responds([]proto.File{}).
 			Fails(404, 500).
 			Handle(c.handleGetWorkspaceSessionHistory),
 

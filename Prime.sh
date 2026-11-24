@@ -13,8 +13,6 @@ RATIO=
 JOBS=
 NO_SYNC=0
 NO_TEST=1
-PRIME_ARGS=
-RELEASE_ARGS=
 
 usage() {
     cat <<'EOF'
@@ -40,6 +38,40 @@ EOF
 
 fail() { echo "Prime: $*" >&2; exit 1; }
 
+next_version() {
+    latest=$(git tag --sort=-v:refname 2>/dev/null | head -n1 || true)
+    latest=${latest#v}
+    case "$latest" in
+        [0-9]*.[0-9]*.[0-9]*)
+            major=${latest%%.*}
+            rest=${latest#*.}
+            minor=${rest%%.*}
+            patch=${rest#*.}
+            patch=${patch%%-*}
+            printf '%s.%s.%s\n' "$major" "$minor" "$((patch + 1))"
+            ;;
+        *)
+            printf '0.0.1\n'
+            ;;
+    esac
+}
+
+ensure_desktop_deps() {
+    command -v npm >/dev/null 2>&1 || fail "Node.js/npm is required"
+    if [ ! -f desktop/node_modules/.package-lock.json ] || [ -n "$(find desktop/package-lock.json -newer desktop/node_modules/.package-lock.json 2>/dev/null)" ]; then
+        npm --prefix desktop ci
+    fi
+}
+
+run_build() {
+    set -- --out "$OUT"
+    [ -n "$RATIO" ] && set -- "$@" --ratio "$RATIO"
+    [ -n "$JOBS" ] && set -- "$@" --jobs "$JOBS"
+    [ "$NO_TEST" -eq 1 ] && set -- "$@" --no-test
+    [ -n "$VERSION" ] && set -- "$@" --version "$VERSION"
+    scripts/build.sh "$@"
+}
+
 menu() {
     printf '\n Prime\n'
     printf ' ------------------------------------------------------------------\n'
@@ -56,7 +88,14 @@ menu() {
     case "$choice" in
         1|run) MODE=run ;;
         2|build) MODE=build ;;
-        3|release) MODE=release ;;
+        3|release)
+            MODE=release
+            default_ver=$(next_version)
+            printf ' Version [%s]: ' "$default_ver"
+            IFS= read -r input_ver || exit 0
+            VERSION=${input_ver:-$default_ver}
+            VERSION=${VERSION#v}
+            ;;
         4|desktop) MODE=desktop ;;
         5|setup) MODE=setup ;;
         h|H|help|-h|--help) usage; exit 0 ;;
@@ -80,13 +119,12 @@ while [ "$#" -gt 0 ]; do
         --no-sync) NO_SYNC=1; shift ;;
         --test) NO_TEST=0; shift ;;
         --no-test) NO_TEST=1; shift ;;
-        --ratio) RATIO=${2:-}; [ -n "$RATIO" ] || fail "--ratio needs a value"; shift 2 ;;
-        --jobs) JOBS=${2:-}; [ -n "$JOBS" ] || fail "--jobs needs a value"; shift 2 ;;
-        --out) OUT=${2:-}; [ -n "$OUT" ] || fail "--out needs a directory"; shift 2 ;;
-        --version) VERSION=${2:-}; VERSION=${VERSION#v}; [ -n "$VERSION" ] || fail "--version needs x.y.z"; shift 2 ;;
+        --ratio) [ "$#" -ge 2 ] || fail "--ratio needs a value"; RATIO=$2; [ -n "$RATIO" ] || fail "--ratio needs a value"; shift 2 ;;
+        --jobs) [ "$#" -ge 2 ] || fail "--jobs needs a value"; JOBS=$2; [ -n "$JOBS" ] || fail "--jobs needs a value"; shift 2 ;;
+        --out) [ "$#" -ge 2 ] || fail "--out needs a directory"; OUT=$2; [ -n "$OUT" ] || fail "--out needs a directory"; shift 2 ;;
+        --version) [ "$#" -ge 2 ] || fail "--version needs x.y.z"; VERSION=${2#v}; [ -n "$VERSION" ] || fail "--version needs x.y.z"; shift 2 ;;
         --)
             shift
-            PRIME_ARGS=$*
             break
             ;;
         *) fail "unknown option: $1 (use --help)" ;;
@@ -95,37 +133,29 @@ done
 
 [ -n "$MODE" ] || { usage; exit 2; }
 
-build_args="--out $OUT"
-[ -n "$RATIO" ] && build_args="$build_args --ratio $RATIO"
-[ -n "$JOBS" ] && build_args="$build_args --jobs $JOBS"
-[ "$NO_TEST" -eq 1 ] && build_args="$build_args --no-test"
-[ -n "$VERSION" ] && build_args="$build_args --version $VERSION"
-
 case "$MODE" in
     run)
         [ -x "$OUT/prime" ] || fail "$OUT/prime does not exist; run './Prime.sh build' first"
-        exec "$OUT/prime" $PRIME_ARGS
+        exec "$OUT/prime" "$@"
         ;;
     build)
-        # shellcheck disable=SC2086
-        scripts/build.sh $build_args
-        exec "$OUT/prime" $PRIME_ARGS
+        run_build
+        exec "$OUT/prime" "$@"
         ;;
     release)
         [ -n "$VERSION" ] || fail "release requires --version x.y.z"
-        # release.sh performs the cross-build, archive creation and checksum.
-        release_test_args=
-        [ "$NO_TEST" -eq 0 ] && release_test_args=--test
-        exec scripts/release.sh --version "$VERSION" --out "$OUT" $release_test_args
+        if [ "$NO_TEST" -eq 0 ]; then
+            exec scripts/release.sh --version "$VERSION" --out "$OUT" --test
+        else
+            exec scripts/release.sh --version "$VERSION" --out "$OUT"
+        fi
         ;;
     desktop)
-        command -v npm >/dev/null 2>&1 || fail "Node.js/npm is required"
-        [ -d desktop/node_modules ] || npm --prefix desktop ci
+        ensure_desktop_deps
         exec npm --prefix desktop run dev
         ;;
     setup)
-        command -v npm >/dev/null 2>&1 || fail "Node.js/npm is required"
-        [ -d desktop/node_modules ] || npm --prefix desktop ci
+        ensure_desktop_deps
         if [ "$(uname -s)" = "Linux" ]; then
             npm --prefix desktop run dist:linux
             echo "Linux packages are in desktop/src-tauri/target/release/bundle"

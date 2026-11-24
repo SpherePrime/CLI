@@ -158,9 +158,10 @@ export function SidebarChats({
   }
   const deleteClosedSession = async (path: string, session: Session) => {
     try {
-      await w.openProject(path)
+      const opened = await w.openProject(path)
+      if (!opened) return
       await w.deleteSession(session.id)
-      if (w.project) forgetSessionOrder(w.project.id, session.id)
+      forgetSessionOrder(opened.id, session.id)
     } catch (error) {
       w.errorHandler(error)
     }

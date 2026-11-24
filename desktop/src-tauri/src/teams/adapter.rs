@@ -14,10 +14,7 @@ pub struct TeamRunStatus {
 pub struct TeamRun {
     pub id: String,
     pub root: String,
-    pub title: String,
-    pub workspace_id: Option<String>,
     pub session_id: Option<String>,
-    pub created_at: i64,
 }
 
 pub trait TeamAdapter: Send + Sync {
@@ -88,7 +85,8 @@ impl TeamAdapter for NativeTeamAdapter {
         let record = match self.request(&run.root, "GET", &format!("runs/{}", run.id), None) {
             Ok(record) => record,
             Err(error)
-                if error.message.starts_with("Engine status 404:")
+                if error.code == "ENGINE_HTTP_404"
+                    || error.message.starts_with("Engine status 404:")
                     || (error.code == "IO_ERROR" && !std::path::Path::new(&run.root).exists()) =>
             {
                 return Ok(TeamRunStatus {

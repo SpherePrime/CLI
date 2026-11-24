@@ -278,9 +278,7 @@ mod protect {
     use crate::error::{HostError, HostResult};
     use windows::core::PWSTR;
     use windows::Win32::Foundation::LocalFree;
-    use windows::Win32::Security::Cryptography::{
-        CryptProtectData, CryptUnprotectData, CRYPT_INTEGER_BLOB,
-    };
+    use windows::Win32::Security::Cryptography::{CryptUnprotectData, CRYPT_INTEGER_BLOB};
 
     pub fn unprotect(blob: &[u8]) -> HostResult<Vec<u8>> {
         let input = CRYPT_INTEGER_BLOB {
@@ -316,12 +314,12 @@ mod protect {
 
     #[cfg(test)]
     pub fn protect(blob: &[u8]) -> HostResult<Vec<u8>> {
+        use windows::Win32::Security::Cryptography::CryptProtectData;
         let input = CRYPT_INTEGER_BLOB {
             cbData: blob.len() as u32,
             pbData: blob.as_ptr() as *mut u8,
         };
         let mut output = CRYPT_INTEGER_BLOB::default();
-        let mut description = PWSTR::null();
         let result = unsafe {
             CryptProtectData(
                 &input,
@@ -338,9 +336,6 @@ mod protect {
         }
         let bytes = unsafe { std::slice::from_raw_parts(output.pbData, output.cbData as usize) }.to_vec();
         unsafe { LocalFree(Some(windows::Win32::Foundation::HLOCAL(output.pbData as *mut _))) };
-        if !description.is_null() {
-            unsafe { LocalFree(Some(windows::Win32::Foundation::HLOCAL(description.as_ptr() as *mut _))) };
-        }
         Ok(bytes)
     }
 }

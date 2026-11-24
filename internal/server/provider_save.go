@@ -2,8 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
+	"github.com/SpherePrime/CLI/internal/backend"
 	"github.com/SpherePrime/CLI/internal/proto"
 )
 
@@ -14,6 +16,10 @@ func (c *controllerV1) handlePostWorkspaceProviderSave(w http.ResponseWriter, r 
 		return
 	}
 	if err := c.backend.SaveProvider(r.PathValue("id"), request); err != nil {
+		if errors.Is(err, backend.ErrWorkspaceNotFound) {
+			c.handleError(w, r, err)
+			return
+		}
 		jsonError(w, http.StatusBadRequest, err.Error())
 		return
 	}

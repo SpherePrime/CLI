@@ -177,6 +177,8 @@ impl Session {
             }
         }
         self.output(&decoder.decode(&[], true));
+        *self.initialized.0.lock().unwrap() = true;
+        self.initialized.1.notify_all();
         *self.reader_done.0.lock().unwrap() = true;
         self.reader_done.1.notify_all();
     }

@@ -851,11 +851,26 @@ func TestConfig_IsConfigured(t *testing.T) {
 					ID:      "openai",
 					APIKey:  "key1",
 					Disable: false,
+					Models:  []catwalk.Model{{ID: "gpt-4o"}},
 				},
 			}),
 		}
 
 		require.True(t, cfg.IsConfigured())
+	})
+
+	t.Run("returns false when enabled provider has no models", func(t *testing.T) {
+		cfg := &Config{
+			Providers: csync.NewMapFrom(map[string]ProviderConfig{
+				"openai": {
+					ID:      "openai",
+					APIKey:  "key1",
+					Disable: false,
+				},
+			}),
+		}
+
+		require.False(t, cfg.IsConfigured())
 	})
 
 	t.Run("returns false when no providers are configured", func(t *testing.T) {
@@ -1905,7 +1920,7 @@ func TestConfig_configureProvidersDisableDefaultProviders(t *testing.T) {
 		require.True(t, exists, "anthropic should be present")
 	})
 
-	t.Run("when enabled, provider missing models attempts discovery but still triggers no-custom-providers error", func(t *testing.T) {
+	t.Run("when enabled, provider missing models attempts discovery and keeps provider without error", func(t *testing.T) {
 		cfg := &Config{
 			Options: &Options{
 				DisableDefaultProviders: true,
@@ -1914,7 +1929,7 @@ func TestConfig_configureProvidersDisableDefaultProviders(t *testing.T) {
 				"my-llm": {
 					APIKey:  "test-key",
 					BaseURL: "https://my-llm.example.com/v1",
-					Models:  []catwalk.Model{}, // No models.
+					Models:  []catwalk.Model{},
 				},
 			}),
 		}
@@ -1923,9 +1938,10 @@ func TestConfig_configureProvidersDisableDefaultProviders(t *testing.T) {
 		env := env.NewFromMap(map[string]string{})
 		resolver := NewShellVariableResolver(env)
 		err := cfg.configureProviders(context.Background(), testStore(cfg), env, resolver, []catwalk.Provider{})
-		require.ErrorContains(t, err, "no custom providers")
+		require.NoError(t, err)
 
 		require.Equal(t, 1, cfg.Providers.Len())
+		require.False(t, cfg.IsConfigured())
 		_, exists := cfg.Providers.Get("my-llm")
 		require.True(t, exists)
 	})

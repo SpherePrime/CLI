@@ -92,59 +92,96 @@ function splitLines(text: string): string[] {
 }
 
 function buildLcsDiff(oldLines: string[], newLines: string[]): DiffLine[] {
-  const m = oldLines.length
-  const n = newLines.length
-  if (m * n > MAX_LCS_CELLS) {
-    const fallback: DiffLine[] = []
-    oldLines.forEach((text, index) => {
-      fallback.push({ kind: 'del', oldLine: index + 1, newLine: null, text })
-    })
-    newLines.forEach((text, index) => {
-      fallback.push({ kind: 'add', oldLine: null, newLine: index + 1, text })
-    })
-    return fallback
+  const oldLen = oldLines.length
+  const newLen = newLines.length
+  let prefix = 0
+  while (prefix < oldLen && prefix < newLen && oldLines[prefix] === newLines[prefix]) {
+    prefix += 1
   }
-
-  const dp = new Uint32Array((m + 1) * (n + 1))
-  const stride = n + 1
-  for (let i = m - 1; i >= 0; i -= 1) {
-    const row = i * stride
-    const nextRow = (i + 1) * stride
-    for (let j = n - 1; j >= 0; j -= 1) {
-      if (oldLines[i] === newLines[j]) {
-        dp[row + j] = dp[nextRow + j + 1] + 1
-      } else {
-        const down = dp[nextRow + j]
-        const right = dp[row + j + 1]
-        dp[row + j] = down >= right ? down : right
-      }
-    }
+  let suffix = 0
+  while (
+    suffix < oldLen - prefix &&
+    suffix < newLen - prefix &&
+    oldLines[oldLen - 1 - suffix] === newLines[newLen - 1 - suffix]
+  ) {
+    suffix += 1
   }
 
   const result: DiffLine[] = []
-  let i = 0
-  let j = 0
-  while (i < m && j < n) {
-    if (oldLines[i] === newLines[j]) {
-      result.push({ kind: 'context', oldLine: i + 1, newLine: j + 1, text: oldLines[i] })
+  for (let i = 0; i < prefix; i += 1) {
+    result.push({ kind: 'context', oldLine: i + 1, newLine: i + 1, text: oldLines[i] })
+  }
+
+  const oldMid = oldLines.slice(prefix, oldLen - suffix)
+  const newMid = newLines.slice(prefix, newLen - suffix)
+  const m = oldMid.length
+  const n = newMid.length
+
+  if (m * n > MAX_LCS_CELLS) {
+    for (let i = 0; i < m; i += 1) {
+      result.push({ kind: 'del', oldLine: prefix + i + 1, newLine: null, text: oldMid[i] })
+    }
+    for (let j = 0; j < n; j += 1) {
+      result.push({ kind: 'add', oldLine: null, newLine: prefix + j + 1, text: newMid[j] })
+    }
+  } else if (m > 0 || n > 0) {
+    const dp = new Uint32Array((m + 1) * (n + 1))
+    const stride = n + 1
+    for (let i = m - 1; i >= 0; i -= 1) {
+      const row = i * stride
+      const nextRow = (i + 1) * stride
+      for (let j = n - 1; j >= 0; j -= 1) {
+        if (oldMid[i] === newMid[j]) {
+          dp[row + j] = dp[nextRow + j + 1] + 1
+        } else {
+          const down = dp[nextRow + j]
+          const right = dp[row + j + 1]
+          dp[row + j] = down >= right ? down : right
+        }
+      }
+    }
+
+    let i = 0
+    let j = 0
+    while (i < m && j < n) {
+      if (oldMid[i] === newMid[j]) {
+        result.push({
+          kind: 'context',
+          oldLine: prefix + i + 1,
+          newLine: prefix + j + 1,
+          text: oldMid[i]
+        })
+        i += 1
+        j += 1
+      } else if (dp[(i + 1) * stride + j] >= dp[i * stride + j + 1]) {
+        result.push({ kind: 'del', oldLine: prefix + i + 1, newLine: null, text: oldMid[i] })
+        i += 1
+      } else {
+        result.push({ kind: 'add', oldLine: null, newLine: prefix + j + 1, text: newMid[j] })
+        j += 1
+      }
+    }
+    while (i < m) {
+      result.push({ kind: 'del', oldLine: prefix + i + 1, newLine: null, text: oldMid[i] })
       i += 1
-      j += 1
-    } else if (dp[(i + 1) * stride + j] >= dp[i * stride + j + 1]) {
-      result.push({ kind: 'del', oldLine: i + 1, newLine: null, text: oldLines[i] })
-      i += 1
-    } else {
-      result.push({ kind: 'add', oldLine: null, newLine: j + 1, text: newLines[j] })
+    }
+    while (j < n) {
+      result.push({ kind: 'add', oldLine: null, newLine: prefix + j + 1, text: newMid[j] })
       j += 1
     }
   }
-  while (i < m) {
-    result.push({ kind: 'del', oldLine: i + 1, newLine: null, text: oldLines[i] })
-    i += 1
+
+  for (let k = 0; k < suffix; k += 1) {
+    const oldIdx = oldLen - suffix + k
+    const newIdx = newLen - suffix + k
+    result.push({
+      kind: 'context',
+      oldLine: oldIdx + 1,
+      newLine: newIdx + 1,
+      text: oldLines[oldIdx]
+    })
   }
-  while (j < n) {
-    result.push({ kind: 'add', oldLine: null, newLine: j + 1, text: newLines[j] })
-    j += 1
-  }
+
   return result
 }
 

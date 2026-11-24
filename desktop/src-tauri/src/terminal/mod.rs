@@ -22,7 +22,19 @@ const MAX_SESSIONS: usize = 12;
 struct ManagerState {
     sessions: HashMap<String, Arc<Session>>,
     closed_workspaces: HashSet<String>,
+    pending: usize,
     disposed: bool,
+}
+
+struct PendingSlot<'a> {
+    state: &'a Mutex<ManagerState>,
+}
+
+impl Drop for PendingSlot<'_> {
+    fn drop(&mut self) {
+        let mut manager = self.state.lock().unwrap();
+        manager.pending = manager.pending.saturating_sub(1);
+    }
 }
 
 #[derive(Default)]
@@ -245,19 +257,6 @@ impl TerminalManager {
         owner: &str,
         id: String,
     ) -> HostResult<TerminalSnapshot> {
-        let mut manager = self.state.lock().unwrap();
-        if manager.disposed || manager.closed_workspaces.contains(workspace) {
-            return Err(HostError::new(
-                "TERMINAL_CLOSED",
-                "Terminal workspace is closed",
-            ));
-        }
-        if manager.sessions.len() >= MAX_SESSIONS {
-            return Err(HostError::new(
-                "TERMINAL_LIMIT",
-                "Terminal session limit reached (12)",
-            ));
-        }
         let cwd = dunce::canonicalize(cwd)?;
         if !cwd.is_dir() {
             return Err(HostError::new(
@@ -291,6 +290,23 @@ impl TerminalManager {
                 "Invalid terminal shell or arguments",
             ));
         }
+        {
+            let mut manager = self.state.lock().unwrap();
+            if manager.disposed || manager.closed_workspaces.contains(workspace) {
+                return Err(HostError::new(
+                    "TERMINAL_CLOSED",
+                    "Terminal workspace is closed",
+                ));
+            }
+            if manager.sessions.len() + manager.pending >= MAX_SESSIONS {
+                return Err(HostError::new(
+                    "TERMINAL_LIMIT",
+                    "Terminal session limit reached (12)",
+                ));
+            }
+            manager.pending += 1;
+        }
+        let _pending = PendingSlot { state: &self.state };
         let pair = native_pty_system()
             .openpty(PtySize {
                 rows,
@@ -348,7 +364,18 @@ impl TerminalManager {
         };
         let session = Session::start(snapshot, pair.master, child, emit)?;
         let snapshot = session.snapshot();
-        manager.sessions.insert(snapshot.id.clone(), session);
+        {
+            let mut manager = self.state.lock().unwrap();
+            if manager.disposed || manager.closed_workspaces.contains(workspace) {
+                drop(manager);
+                let _ = session.close();
+                return Err(HostError::new(
+                    "TERMINAL_CLOSED",
+                    "Terminal workspace is closed",
+                ));
+            }
+            manager.sessions.insert(snapshot.id.clone(), session);
+        }
         Ok(snapshot)
     }
 

@@ -361,6 +361,34 @@ fn connection(
     )
 }
 
+struct ConnectionSlot(Arc<AtomicUsize>);
+
+impl ConnectionSlot {
+    fn try_acquire(counter: &Arc<AtomicUsize>, limit: usize) -> Option<Self> {
+        let mut current = counter.load(Ordering::Acquire);
+        loop {
+            if current >= limit {
+                return None;
+            }
+            match counter.compare_exchange_weak(
+                current,
+                current + 1,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => return Some(Self(counter.clone())),
+                Err(next) => current = next,
+            }
+        }
+    }
+}
+
+impl Drop for ConnectionSlot {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
+}
+
 pub fn start(app: &AppHandle, state: BrowserState) -> Result<Server, String> {
     let listener =
         TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).map_err(|error| error.to_string())?;
@@ -392,19 +420,18 @@ pub fn start(app: &AppHandle, state: BrowserState) -> Result<Server, String> {
                         let _ = send(&mut stream, 403, None);
                         continue;
                     }
-                    if connections.load(Ordering::Acquire) >= MAX_CONNECTIONS {
+                    let Some(slot) = ConnectionSlot::try_acquire(&connections, MAX_CONNECTIONS)
+                    else {
                         let _ = stream.set_write_timeout(Some(Duration::from_secs(1)));
                         let _ = send(&mut stream, 503, None);
                         continue;
-                    }
-                    connections.fetch_add(1, Ordering::AcqRel);
-                    let connections = connections.clone();
+                    };
                     let token = worker_token.clone();
                     let app = app.clone();
                     let state = state.clone();
                     thread::spawn(move || {
+                        let _slot = slot;
                         let _ = connection(stream, &token, &app, &state);
-                        connections.fetch_sub(1, Ordering::AcqRel);
                     });
                 }
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {

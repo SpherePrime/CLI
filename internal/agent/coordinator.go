@@ -58,7 +58,6 @@ import (
 var (
 	errCoderAgentNotConfigured         = errors.New("coder agent not configured")
 	errPlanAgentNotConfigured          = errors.New("plan agent not configured")
-	errTaskAgentNotConfigured          = errors.New("task agent not configured")
 	errMainAgentNotFound               = errors.New("main agent not found")
 	errModelProviderNotConfigured      = errors.New("model provider not configured")
 	errLargeModelNotSelected           = errors.New("large model not selected")
@@ -370,6 +369,22 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		ctx, cancelRun = accept.BindContext(ctx)
 		defer cancelRun()
 	}
+	handoffCanceled := func(target SessionAgent) (*fantasy.AgentResult, error, bool) {
+		if accept == nil || ctx.Err() == nil || publishCtx.Err() != nil {
+			return nil, nil, false
+		}
+		if target == nil {
+			target = c.currentAgent()
+		}
+		res, runErr := target.Run(publishCtx, SessionAgentCall{
+			SessionID:   sessionID,
+			RunID:       RunIDFromContext(publishCtx),
+			Prompt:      prompt,
+			Attachments: attachments,
+			Accepted:    accept,
+		})
+		return res, runErr, true
+	}
 	if err := c.readyWg.Wait(); err != nil {
 		return nil, err
 	}
@@ -378,14 +393,8 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 
 	if !c.interactive {
 		if err := mcp.WaitForInitBudget(ctx, mcp.InitWaitBudget); err != nil {
-			if accept != nil && ctx.Err() != nil && publishCtx.Err() == nil {
-				return c.currentAgent().Run(publishCtx, SessionAgentCall{
-					SessionID:   sessionID,
-					RunID:       RunIDFromContext(publishCtx),
-					Prompt:      prompt,
-					Attachments: attachments,
-					Accepted:    accept,
-				})
+			if res, runErr, handled := handoffCanceled(nil); handled {
+				return res, runErr
 			}
 			return nil, fmt.Errorf("failed to wait for MCP initialization: %w", err)
 		}
@@ -394,14 +403,8 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	agent, agentName := c.activeAgent()
 	c.ForgetSubAgents()
 	if err := c.updateAgentModels(ctx, agent, agentName); err != nil {
-		if accept != nil && ctx.Err() != nil && publishCtx.Err() == nil {
-			return agent.Run(publishCtx, SessionAgentCall{
-				SessionID:   sessionID,
-				RunID:       RunIDFromContext(publishCtx),
-				Prompt:      prompt,
-				Attachments: attachments,
-				Accepted:    accept,
-			})
+		if res, runErr, handled := handoffCanceled(agent); handled {
+			return res, runErr
 		}
 		return nil, fmt.Errorf("failed to update models: %w", err)
 	}
@@ -433,6 +436,9 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		}
 		plannerModel, plannerProviderCfg, pErr := c.buildSelectedModel(ctx, plannerSel, false)
 		if pErr != nil {
+			if res, runErr, handled := handoffCanceled(agent); handled {
+				return res, runErr
+			}
 			return nil, pErr
 		}
 		plannerModel = resolveOrchestratorRoleModel("planner", plannerModel)
@@ -445,6 +451,9 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		}
 		executorModel, executorProviderCfg, eErr := c.buildSelectedModel(ctx, executorSel, false)
 		if eErr != nil {
+			if res, runErr, handled := handoffCanceled(agent); handled {
+				return res, runErr
+			}
 			return nil, eErr
 		}
 		executorModel = resolveOrchestratorRoleModel("executor", executorModel)
@@ -510,6 +519,9 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		}
 		model, err = c.applyRunReasoning(ctx, model, providerCfg)
 		if err != nil {
+			if res, runErr, handled := handoffCanceled(agent); handled {
+				return res, runErr
+			}
 			return nil, err
 		}
 		maxTokens = callMaxOutputTokens(model, providerCfg.Type)
@@ -521,6 +533,10 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			// depends on the flow below. If refresh fails, proceed with the token we have.
 			slog.Error("Failed to refresh OAuth2 token. Proceeding with existing token.", "error", err)
 		}
+	}
+
+	if res, runErr, handled := handoffCanceled(agent); handled {
+		return res, runErr
 	}
 
 	// Coalesce per-attempt RunComplete payloads so only the final

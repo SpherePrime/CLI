@@ -101,15 +101,15 @@ func (m *Manager) ActiveSkills() []*Skill {
 	return m.activeSkills
 }
 
-// ResolvedPaths returns the expanded skills directory paths stored at
-// construction time.
 func (m *Manager) ResolvedPaths() []string {
-	return m.resolvedPaths
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return slices.Clone(m.resolvedPaths)
 }
 
-// WorkingDir returns the workspace working directory stored at
-// construction time.
 func (m *Manager) WorkingDir() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.workingDir
 }
 

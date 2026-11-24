@@ -553,7 +553,7 @@ impl Connection {
                             stdout.extend_from_slice(&data[..retained]);
                             truncated |= retained < data.len();
                         }
-                        ChannelMsg::ExtendedData { data, ext } if ext == 1 => {
+                        ChannelMsg::ExtendedData { data, ext: 1 } => {
                             let retained =
                                 data.len().min((256 * 1024usize).saturating_sub(stderr.len()));
                             stderr.extend_from_slice(&data[..retained]);
@@ -562,10 +562,8 @@ impl Connection {
                         ChannelMsg::ExitStatus { exit_status } => {
                             exit_code = Some(exit_status);
                         }
-                        ChannelMsg::ExitSignal { .. } => {
-                            if exit_code.is_none() {
-                                exit_code = Some(1);
-                            }
+                        ChannelMsg::ExitSignal { .. } if exit_code.is_none() => {
+                            exit_code = Some(1);
                         }
                         _ => {}
                     }

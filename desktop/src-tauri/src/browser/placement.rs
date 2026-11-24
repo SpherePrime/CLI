@@ -12,10 +12,7 @@ pub struct TabPlacement {
 }
 
 pub fn fits_panel(bounds: &Bounds, viewport: Option<f64>) -> bool {
-    match viewport {
-        Some(w) if bounds.width > 0.0 && w.round() > bounds.width.round() => false,
-        _ => true,
-    }
+    !matches!(viewport, Some(w) if bounds.width > 0.0 && w.round() > bounds.width.round())
 }
 
 pub fn compute_placement(
@@ -26,12 +23,10 @@ pub fn compute_placement(
 ) -> TabPlacement {
     let offscreen_height = bounds.height.max(720.0).round().max(1.0);
     let offscreen_width = viewport
-        .unwrap_or_else(|| {
-            if bounds.width > 0.0 {
-                bounds.width
-            } else {
-                1280.0
-            }
+        .unwrap_or(if bounds.width > 0.0 {
+            bounds.width
+        } else {
+            1280.0
         })
         .round()
         .max(1.0);

@@ -36,22 +36,23 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 	--all)     MODE=all; shift ;;
 	--no-test) RUN_TEST=0; shift ;;
-	--os)      MODE=os; OS="${2:-}"; shift 2 ;;
+	--os)      [ $# -ge 2 ] || { echo "--os needs a value"; exit 2; }; MODE=os; OS="$2"; shift 2 ;;
 	--target)
-		case "${2:-}" in
+		[ $# -ge 2 ] || { echo "--target needs os/arch"; exit 2; }
+		case "$2" in
 			windows/amd64|windows/arm64|linux/amd64|linux/arm64)
 				MODE=target
 				if [ -z "$TARGET_LIST" ]; then TARGET_LIST="$2"; else TARGET_LIST="$TARGET_LIST $2"; fi
 				;;
-			*) echo "Unsupported --target: ${2:-}"; exit 2 ;;
+			*) echo "Unsupported --target: $2"; exit 2 ;;
 		esac
 		shift 2 ;;
-	--jobs)    JOBS="${2:-}"; shift 2 ;;
-	--ratio)   RATIO="${2:-}"; shift 2 ;;
-	--out)     OUT="${2:-}"; shift 2 ;;
+	--jobs)    [ $# -ge 2 ] || { echo "--jobs needs a value"; exit 2; }; JOBS="$2"; shift 2 ;;
+	--ratio)   [ $# -ge 2 ] || { echo "--ratio needs a value"; exit 2; }; RATIO="$2"; shift 2 ;;
+	--out)     [ $# -ge 2 ] || { echo "--out needs a directory"; exit 2; }; OUT="$2"; shift 2 ;;
 	--version)
-		VERSION="${2:-}"
-		VERSION=${VERSION#v}
+		[ $# -ge 2 ] || { echo "--version needs x.y.z"; exit 2; }
+		VERSION="${2#v}"
 		[ -n "$VERSION" ] || { echo "--version needs x.y.z"; exit 2; }
 		shift 2
 		;;
@@ -69,13 +70,18 @@ fi
 
 # ---- cap heap growth at half of physical RAM -------------------------------
 if [ -z "${GOMEMLIMIT:-}" ]; then
+	TOTAL_MEM_BYTES=""
 	if command -v sysctl >/dev/null 2>&1 && sysctl -n hw.memsize >/dev/null 2>&1; then
-		GOMEMLIMIT=$(awk 'BEGIN { printf "%.0fB", $1 * 0.5 }' <<EOF
-$(sysctl -n hw.memsize)
-EOF
-)
+		TOTAL_MEM_BYTES=$(sysctl -n hw.memsize)
 	elif command -v free >/dev/null 2>&1; then
-		GOMEMLIMIT=$(free -b | awk '/^Mem:/ { printf "%.0fB", $2 * 0.5 }')
+		TOTAL_MEM_BYTES=$(free -b | awk '/^Mem:/ { print $2 }')
+	fi
+	if [ -n "$TOTAL_MEM_BYTES" ]; then
+		GOMEMLIMIT=$(awk -v m="$TOTAL_MEM_BYTES" -v j="$JOBS" 'BEGIN {
+			per = int((m * 0.5 / 1048576) / j)
+			if (per < 512) per = 512
+			printf "%dMiB", per
+		}')
 	fi
 fi
 
@@ -113,12 +119,7 @@ os)
 	echo
 	;;
 all)
-	TARGETS="windows/amd64 windows/arm64 \
-linux/amd64 linux/arm64 \
-darwin/amd64 darwin/arm64 \
-freebsd/amd64 freebsd/arm64 \
-openbsd/amd64 openbsd/arm64 \
-netbsd/amd64 netbsd/arm64"
+	TARGETS="windows/amd64 windows/arm64 linux/amd64 linux/arm64"
 	echo " Building all release targets. This takes a while."
 	echo
 	;;
@@ -138,11 +139,12 @@ FAILED=0
 for t in $TARGETS; do
 	GOOS=${t%/*}
 	GOARCH=${t#*/}
-	if [ "$NTARGETS" -gt 1 ]; then
+	if [ "$MODE" = "target" ] || [ "$NTARGETS" -gt 1 ]; then
 		BIN="$OUT/prime-$GOOS-$GOARCH"
 		[ "$GOOS" = windows ] && BIN="$BIN.exe"
 	else
 		BIN="$OUT/prime"
+		[ "$GOOS" = windows ] && BIN="$BIN.exe"
 	fi
 	echo " [build] $GOOS/$GOARCH -> $BIN"
 	if [ -n "$VERSION" ]; then

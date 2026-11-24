@@ -275,7 +275,7 @@ fn string<'a>(value: &'a Value, key: &str) -> HostResult<&'a str> {
     value
         .get(key)
         .and_then(Value::as_str)
-        .ok_or_else(|| schedule::invalid())
+        .ok_or_else(schedule::invalid)
 }
 
 #[cfg(test)]
