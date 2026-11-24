@@ -1369,7 +1369,10 @@ dialog.image-lightbox.gallery {
 .reasoning {
   color: var(--muted);
   font-size: 11px;
-  margin-bottom: 12px;
+  margin: 12px 0 10px;
+}
+.message-body > .reasoning:first-child {
+  margin-top: 0;
 }
 .reasoning summary {
   display: flex;

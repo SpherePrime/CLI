@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { I18nProvider } from '../../src/renderer/src/i18n'
@@ -136,5 +138,32 @@ describe('MarkdownText local path rendering', () => {
     expect(fencedMarkup).toContain('<pre>')
     expect(fencedMarkup).not.toContain('chat-path-folder-card')
     expect(fencedMarkup).not.toContain('chat-path-chip')
+  })
+
+  it('allows local MediaServer loopback URLs in img-src CSP for index.html and tauri.conf.json', () => {
+    const indexHtml = readFileSync(resolve(__dirname, '../../src/renderer/index.html'), 'utf8')
+    const tauriConf = readFileSync(resolve(__dirname, '../../src-tauri/tauri.conf.json'), 'utf8')
+    expect(indexHtml).toMatch(/img-src[^;]*http:\/\/127\.0\.0\.1:\*/)
+    expect(tauriConf).toMatch(/img-src[^;]*http:\/\/127\.0\.0\.1:\*/)
+  })
+
+  it('renders inline image file chip smoothly inside text paragraph', () => {
+    seedChatPathInspectionCache('ws-1', 'baba.png', {
+      exists: true,
+      kind: 'image',
+      name: 'baba.png',
+      path: 'C:\\proj\\baba.png',
+      previewable: true
+    })
+    const html = renderToStaticMarkup(
+      <I18nProvider language="ru">
+        <WorkspaceMediaProvider workspaceId="ws-1">
+          <MarkdownText text="Раскладка в `baba.png` для вырезки." />
+        </WorkspaceMediaProvider>
+      </I18nProvider>
+    )
+    expect(html).toContain('chat-path-inline-group')
+    expect(html).toContain('chat-path-chip is-image')
+    expect(html).toContain('baba.png')
   })
 })

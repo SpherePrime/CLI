@@ -132,7 +132,9 @@ dialog.modal[open]::backdrop {
   margin-top: -18px;
 }
 .message:not(.user) .message-body > .markdown + .tool-card,
-.message:not(.user) .message-body > .tool-card + .markdown {
+.message:not(.user) .message-body > .tool-card + .markdown,
+.message:not(.user) .message-body > .markdown + .tool-part,
+.message:not(.user) .message-body > .tool-part + .markdown {
   margin-top: 12px;
 }
 .copy-message {
@@ -140,8 +142,11 @@ dialog.modal[open]::backdrop {
 }
 
 .reasoning {
-  margin-bottom: 14px;
+  margin: 12px 0 10px;
   color: var(--muted);
+}
+.message-body > .reasoning:first-child {
+  margin-top: 0;
 }
 .reasoning summary {
   display: inline-flex;

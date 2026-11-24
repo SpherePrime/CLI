@@ -268,7 +268,13 @@ export function ChatPathEntry({
               title={targetPath}
               onClick={() => setLightboxOpen(true)}
             >
-              <img src={mediaUrl} alt={displayName} loading="lazy" />
+              <img
+                src={mediaUrl}
+                alt={displayName}
+                loading="lazy"
+                decoding="async"
+                onError={() => setMediaFailed(true)}
+              />
               <span className="chat-path-chip-name">{displayName}</span>
             </button>
           ) : (
