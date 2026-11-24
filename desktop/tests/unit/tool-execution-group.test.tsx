@@ -88,7 +88,7 @@ describe('toolDiff and toolOutputParser', () => {
 })
 
 describe('ToolExecutionGroup and consecutive tool message merging', () => {
-  it('merges adjacent tool-only assistant turns into one execution group', () => {
+  it('merges adjacent assistant messages in a single turn, keeping texts on top and all actions in one group below', () => {
     const merged = mergeConsecutiveToolMessages([
       makeMsg('a1', [
         { type: 'tool_call', data: { id: 'c1', name: 'edit', input: '{}', result: { content: 'ok' } } },
@@ -100,11 +100,14 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
       ]),
       makeMsg('a3', [{ type: 'text', data: { text: 'Done!' } }])
     ])
-    expect(merged).toHaveLength(2)
+    expect(merged).toHaveLength(1)
+    expect(merged[0]._mergedIds).toEqual(['a1', 'a2', 'a3'])
     expect(merged[0].parts.filter((p) => p.type === 'tool_call')).toHaveLength(2)
 
     const segments = partitionMessageParts(merged[0].parts)
-    expect(segments[0].kind).toBe('tool-group')
+    expect(segments.map((s) => s.kind)).toEqual(['part', 'tool-group'])
+    expect(segments[0].kind === 'part' && segments[0].part.data?.text).toBe('Done!')
+    expect(segments[1].kind === 'tool-group' && segments[1].parts).toHaveLength(2)
   })
 
   it('does not inherit finish from turn 1 when turn 2 is still running', () => {
@@ -132,7 +135,7 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
     expect(html).not.toContain('has-error')
   })
 
-  it('uses singular action label in English error heading for 1 item', () => {
+  it('does not show error summary in group header even when an inner step failed', () => {
     const html = renderToStaticMarkup(
       <I18nProvider language="en">
         <ToolExecutionGroup
@@ -146,8 +149,10 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
         />
       </I18nProvider>
     )
-    expect(html).toContain('Completed with errors · 1 action')
-    expect(html).not.toContain('1 actions')
+    expect(html).toContain('Completed 1 action')
+    expect(html).not.toContain('Completed with errors')
+    expect(html).not.toContain('has-error')
+    expect(html).toContain('Error')
   })
 
   it('renders grouped tree summary with diff stats, background badge, and job_output id', () => {
@@ -254,10 +259,11 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
     expect(runningHtml).not.toContain('open=""')
   })
 
-  it('merges work turns with reasoning and single tool calls into one group and keeps only the latest reasoning', () => {
+  it('merges entire assistant turn across intermediate texts, keeping only latest reasoning and one bottom group', () => {
     const merged = mergeConsecutiveToolMessages([
       makeMsg('a1', [
         { type: 'reasoning', data: { thinking: 'Step 1 thinking', started_at: 10, finished_at: 12 } },
+        { type: 'text', data: { text: 'Checking folder first.' } },
         { type: 'tool_call', data: { id: 'c1', name: 'view', input: '{"file_path":"a.ts"}', result: { content: 'ok' } } },
         { type: 'finish', data: { reason: 'tool_use' } }
       ]),
@@ -268,6 +274,7 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
       ]),
       makeMsg('a3', [
         { type: 'reasoning', data: { thinking: 'Step 3 thinking', started_at: 18, finished_at: 19 } },
+        { type: 'text', data: { text: 'Building mini game now.' } },
         { type: 'tool_call', data: { id: 'c3', name: 'mcp_browser_browser_run', input: '{"steps":[]}', result: { content: 'ok' } } },
         { type: 'finish', data: { reason: 'tool_use' } }
       ]),
@@ -277,7 +284,7 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
       ])
     ])
 
-    expect(merged).toHaveLength(2)
+    expect(merged).toHaveLength(1)
     const reasonings = merged[0].parts.filter((p) => p.type === 'reasoning')
     expect(reasonings).toHaveLength(1)
     expect(reasonings[0].data.thinking).toBe('Step 3 thinking')
@@ -287,33 +294,38 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
     const visibleSegments = segments.filter(
       (s) => s.kind === 'tool-group' || s.part.type !== 'finish'
     )
-    expect(visibleSegments.map((s) => s.kind)).toEqual(['part', 'tool-group'])
-    expect(visibleSegments[1].kind === 'tool-group' && visibleSegments[1].parts).toHaveLength(3)
-
-    const singleSegments = partitionMessageParts([
-      { type: 'tool_call', data: { id: 'solo', name: 'view', input: '{"file_path":"only.ts"}' } }
-    ])
-    expect(singleSegments).toHaveLength(1)
-    expect(singleSegments[0].kind).toBe('tool-group')
+    expect(visibleSegments.map((s) => s.kind)).toEqual(['part', 'part', 'part', 'part', 'tool-group'])
+    expect(visibleSegments[0].kind === 'part' && visibleSegments[0].part.data?.text).toBe('Checking folder first.')
+    expect(visibleSegments[1].kind === 'part' && visibleSegments[1].part.data?.text).toBe('Building mini game now.')
+    expect(visibleSegments[2].kind === 'part' && visibleSegments[2].part.data?.text).toBe('All done!')
+    expect(visibleSegments[3].kind === 'part' && visibleSegments[3].part.type).toBe('reasoning')
+    expect(visibleSegments[4].kind === 'tool-group' && visibleSegments[4].parts).toHaveLength(3)
   })
 
-  it('drops work reasoning when the following assistant answer starts with a newer reasoning', () => {
+  it('keeps separate action groups across different user tasks', () => {
     const merged = mergeConsecutiveToolMessages([
+      { id: 'u1', session_id: 's1', role: 'user', parts: [{ type: 'text', data: { text: 'Task 1' } }] },
       makeMsg('a1', [
-        { type: 'reasoning', data: { thinking: 'Old thinking', started_at: 10, finished_at: 12 } },
-        { type: 'tool_call', data: { id: 'c1', name: 'view', input: '{}', result: { content: 'ok' } } },
-        { type: 'finish', data: { reason: 'tool_use' } }
+        { type: 'reasoning', data: { thinking: 'Think 1', started_at: 10, finished_at: 12 } },
+        { type: 'tool_call', data: { id: 'c1', name: 'view', input: '{}', result: { content: 'ok' } } }
       ]),
       makeMsg('a2', [
-        { type: 'reasoning', data: { thinking: 'Final answer thinking', started_at: 13, finished_at: 14 } },
-        { type: 'text', data: { text: 'Done!' } },
-        { type: 'finish', data: { reason: 'end_turn' } }
+        { type: 'reasoning', data: { thinking: 'Think 2', started_at: 13, finished_at: 14 } },
+        { type: 'text', data: { text: 'Task 1 done' } }
+      ]),
+      { id: 'u2', session_id: 's1', role: 'user', parts: [{ type: 'text', data: { text: 'Task 2' } }] },
+      makeMsg('a3', [
+        { type: 'reasoning', data: { thinking: 'Think 3', started_at: 20, finished_at: 22 } },
+        { type: 'tool_call', data: { id: 'c2', name: 'edit', input: '{}', result: { content: 'ok' } } }
       ])
     ])
 
-    expect(merged).toHaveLength(2)
-    expect(merged[0].parts.some((p) => p.type === 'reasoning')).toBe(false)
+    expect(merged).toHaveLength(4)
     expect(merged[1].parts.filter((p) => p.type === 'reasoning')).toHaveLength(1)
+    expect(merged[1].parts.find((p) => p.type === 'reasoning')?.data.thinking).toBe('Think 2')
+    expect(merged[3].parts.find((p) => p.type === 'reasoning')?.data.thinking).toBe('Think 3')
+    expect(merged[1].parts.filter((p) => p.type === 'tool_call')).toHaveLength(1)
+    expect(merged[3].parts.filter((p) => p.type === 'tool_call')).toHaveLength(1)
   })
 
   it('renders browser_run steps as a compact scenario list instead of raw JSON', () => {

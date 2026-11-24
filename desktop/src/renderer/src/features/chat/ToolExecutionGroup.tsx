@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { AlertCircle, Check, ChevronDown, LoaderCircle } from 'lucide-react'
+import { Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import type { Message } from '../../../../shared/contracts'
 import { useI18n } from '../../i18n'
 import { AgentCard } from './AgentCard'
@@ -122,13 +122,9 @@ export function ToolExecutionGroup({
       ? language === 'ru'
         ? `Выполняется · ${pluralRu(parts.length, 'действие', 'действия', 'действий')}`
         : `Running · ${parts.length} ${parts.length === 1 ? 'action' : 'actions'}`
-      : stats.failed > 0
-        ? language === 'ru'
-          ? `Выполнено с ошибками · ${pluralRu(parts.length, 'действие', 'действия', 'действий')}`
-          : `Completed with errors · ${parts.length} ${parts.length === 1 ? 'action' : 'actions'}`
-        : language === 'ru'
-          ? `Выполнено ${pluralRu(parts.length, 'действие', 'действия', 'действий')}`
-          : `Completed ${parts.length} ${parts.length === 1 ? 'action' : 'actions'}`
+      : language === 'ru'
+        ? `Выполнено ${pluralRu(parts.length, 'действие', 'действия', 'действий')}`
+        : `Completed ${parts.length} ${parts.length === 1 ? 'action' : 'actions'}`
 
   const orderedCategories: ToolCategory[] = [
     'edit',
@@ -152,7 +148,7 @@ export function ToolExecutionGroup({
 
   return (
     <details
-      className={`tool-exec-group${stats.failed > 0 ? ' has-error' : ''}${stats.running > 0 ? ' is-running' : ''}`}
+      className={`tool-exec-group${stats.running > 0 ? ' is-running' : ''}`}
       open={open}
       onToggle={(event) => {
         const nextOpen = event.currentTarget.open
@@ -163,13 +159,11 @@ export function ToolExecutionGroup({
     >
       <summary className="tool-exec-group-summary">
         <span
-          className={`tool-exec-status${stats.failed > 0 ? ' is-error' : stats.running > 0 ? ' is-running' : ' is-done'}`}
+          className={`tool-exec-status${stats.running > 0 ? ' is-running' : ' is-done'}`}
           aria-hidden="true"
         >
           {stats.running > 0 ? (
             <LoaderCircle size={13} className="spin" />
-          ) : stats.failed > 0 ? (
-            <AlertCircle size={13} />
           ) : (
             <Check size={13} />
           )}

@@ -1,7 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useI18n } from '../../i18n'
 import { consolidateToolMessages } from '../../../../shared/toolMessages'
-import { mergeConsecutiveToolMessages } from './toolGroupMerge'
+import { mergeConsecutiveToolMessages, type MergedMessage } from './toolGroupMerge'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { Message, OrchestratorPhase } from '../../../../shared/contracts'
@@ -154,7 +154,9 @@ export function MessageList({
     followingRef.current = false
     leavingBottom.current = false
     setFollowing(false)
-    if (!visible.some((message) => message.id === matchId)) {
+    const matchesMessage = (message: MergedMessage) =>
+      message.id === matchId || Boolean(message._mergedIds?.includes(matchId))
+    if (!visible.some(matchesMessage)) {
       if (!searchTarget.current.requested) {
         searchTarget.current.requested = true
         void revealMessage?.(matchId)
@@ -166,10 +168,7 @@ export function MessageList({
     followingRef.current = false
     leavingBottom.current = false
     setFollowing(false)
-    virtualizer.scrollToIndex(
-      visible.findIndex((message) => message.id === matchId),
-      { align: 'center' }
-    )
+    virtualizer.scrollToIndex(visible.findIndex(matchesMessage), { align: 'center' })
   }, [searchOpen, matchId, query, visible])
   useLayoutEffect(() => {
     if (paging.restoring.current) return

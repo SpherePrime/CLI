@@ -2,182 +2,175 @@ import type { Message } from '../../../../shared/contracts'
 
 type Part = Message['parts'][number]
 
+export type MergedMessage = Message & {
+  _mergedIds?: string[]
+}
+
 function isGroupableToolPart(part: Part): boolean {
   return ['tool_call', 'tool_result', 'shell_command'].includes(part.type)
 }
 
-function isNonEmptyReasoning(part: Part): boolean {
-  return part.type === 'reasoning' && Boolean(String(part.data?.thinking || '').trim())
+function isMergeableAssistantTurn(message: Message): boolean {
+  return message.role === 'assistant' && !message.is_summary_message
 }
 
-function hasVisibleTextOrMedia(part: Part): boolean {
-  if (part.type === 'text') {
-    return !part.data?.hidden && Boolean(String(part.data?.text || '').trim())
-  }
-  if (part.type === 'image_url' || part.type === 'binary') return true
-  if (part.type === 'finish') {
-    return ['error', 'canceled'].includes(String(part.data?.reason || ''))
-  }
-  return false
+function isVisibleTextPart(part: Part): boolean {
+  return part.type === 'text' && !part.data?.hidden && Boolean(part.data?.text?.trim())
 }
 
-function isMergeableWorkAssistant(message: Message): boolean {
-  if (message.role !== 'assistant' || message.is_summary_message) return false
-  const parts = message.parts || []
-  let hasWork = false
-  for (const part of parts) {
-    if (isGroupableToolPart(part) || isNonEmptyReasoning(part)) {
-      hasWork = true
-      continue
-    }
-    if (part.type === 'reasoning') continue
-    if (part.type === 'finish' && !['error', 'canceled'].includes(String(part.data?.reason || ''))) {
-      continue
-    }
-    if (part.type === 'text' && (part.data?.hidden || !String(part.data?.text || '').trim())) {
-      continue
-    }
-    return false
-  }
-  return hasWork
+function isMediaPart(part: Part): boolean {
+  return part.type === 'image_url' || part.type === 'binary'
 }
 
-function collapseReasoningBeforeTools(parts: Part[]): Part[] {
+function isErrorOrCanceledFinish(part: Part): boolean {
+  return (
+    part.type === 'finish' &&
+    (part.data?.reason === 'error' || part.data?.reason === 'canceled')
+  )
+}
+
+function normalizeTurnParts(parts: Part[]): Part[] {
+  const contentParts: Part[] = []
+  const toolParts: Part[] = []
   let latestReasoning: Part | null = null
-  const nonReasoning: Part[] = []
+  let latestErrorFinish: Part | null = null
+  let lastFinish: Part | null = null
+
   for (const part of parts) {
+    if (isVisibleTextPart(part) || isMediaPart(part)) {
+      contentParts.push(part)
+      continue
+    }
     if (part.type === 'reasoning') {
-      if (isNonEmptyReasoning(part)) {
+      if (part.data?.thinking?.trim() || !part.data?.finished_at) {
+        latestReasoning = part
+      } else if (!latestReasoning) {
         latestReasoning = part
       }
       continue
     }
-    nonReasoning.push(part)
+    if (isGroupableToolPart(part)) {
+      toolParts.push(part)
+      continue
+    }
+    if (part.type === 'finish') {
+      if (isErrorOrCanceledFinish(part)) {
+        latestErrorFinish = part
+      }
+      lastFinish = part
+    }
   }
-  return latestReasoning ? [latestReasoning, ...nonReasoning] : nonReasoning
+
+  const normalized: Part[] = []
+  if (toolParts.length > 0) {
+    normalized.push(...contentParts)
+    if (latestReasoning) normalized.push(latestReasoning)
+    normalized.push(...toolParts)
+  } else {
+    if (latestReasoning) normalized.push(latestReasoning)
+    normalized.push(...contentParts)
+  }
+
+  if (latestErrorFinish) {
+    normalized.push(latestErrorFinish)
+  } else if (lastFinish) {
+    normalized.push(lastFinish)
+  }
+
+  return normalized
 }
 
-export type MessageRenderSegment =
+export function mergeConsecutiveToolMessages(messages: Message[]): MergedMessage[] {
+  const merged: MergedMessage[] = []
+  let index = 0
+
+  while (index < messages.length) {
+    const current = messages[index]
+    if (!isMergeableAssistantTurn(current)) {
+      merged.push(current)
+      index += 1
+      continue
+    }
+
+    const turnMessages: Message[] = [current]
+    let nextIndex = index + 1
+    while (nextIndex < messages.length && isMergeableAssistantTurn(messages[nextIndex])) {
+      turnMessages.push(messages[nextIndex])
+      nextIndex += 1
+    }
+
+    const combinedParts: Part[] = []
+    const mergedIds: string[] = []
+    let orchestratorPhase = current.orchestrator_phase
+
+    for (let t = 0; t < turnMessages.length; t++) {
+      const turnMessage = turnMessages[t]
+      const isLastInTurn = t === turnMessages.length - 1
+      mergedIds.push(turnMessage.id)
+      if (turnMessage.orchestrator_phase !== undefined) {
+        orchestratorPhase = turnMessage.orchestrator_phase
+      }
+
+      for (const part of turnMessage.parts || []) {
+        if (part.type === 'finish' && !isLastInTurn && !isErrorOrCanceledFinish(part)) {
+          continue
+        }
+        if (part.type === 'tool_call' && part.data?.name === 'agent' && turnMessage.id !== current.id) {
+          combinedParts.push({
+            ...part,
+            data: {
+              ...part.data,
+              _sourceMessageId: turnMessage.id
+            }
+          } as Part)
+        } else {
+          combinedParts.push(part)
+        }
+      }
+    }
+
+    const normalizedParts = normalizeTurnParts(combinedParts)
+
+    merged.push({
+      ...current,
+      parts: normalizedParts,
+      orchestrator_phase: orchestratorPhase,
+      _mergedIds: mergedIds.length > 1 ? mergedIds : undefined
+    })
+
+    index = nextIndex
+  }
+
+  return merged
+}
+
+export type MessageSegment =
   | { kind: 'part'; part: Part; index: number }
   | { kind: 'tool-group'; parts: Part[]; index: number }
 
-export function partitionMessageParts(parts: Part[]): MessageRenderSegment[] {
-  const segments: MessageRenderSegment[] = []
-  let index = 0
+export function partitionMessageParts(parts: Part[]): MessageSegment[] {
+  const normalized = normalizeTurnParts(parts)
+  const segments: MessageSegment[] = []
+  const toolParts: Part[] = []
+  let firstToolIndex = -1
 
-  while (index < parts.length) {
-    const current = parts[index]
-    if (hasVisibleTextOrMedia(current)) {
-      segments.push({ kind: 'part', part: current, index })
-      index += 1
-      continue
-    }
-
-    const startIndex = index
-    let latestReasoning: Part | null = null
-    let latestReasoningIndex = startIndex
-    const tools: Part[] = []
-    const trailing: { part: Part; index: number }[] = []
-
-    while (index < parts.length && !hasVisibleTextOrMedia(parts[index])) {
-      const part = parts[index]
-      if (part.type === 'reasoning') {
-        if (isNonEmptyReasoning(part)) {
-          latestReasoning = part
-          latestReasoningIndex = index
-        }
-      } else if (isGroupableToolPart(part)) {
-        tools.push(part)
-      } else {
-        trailing.push({ part, index })
+  for (let i = 0; i < normalized.length; i++) {
+    const part = normalized[i]
+    if (isGroupableToolPart(part)) {
+      if (firstToolIndex === -1) firstToolIndex = i
+      toolParts.push(part)
+    } else {
+      if (toolParts.length > 0) {
+        segments.push({ kind: 'tool-group', parts: toolParts.splice(0), index: firstToolIndex })
+        firstToolIndex = -1
       }
-      index += 1
+      segments.push({ kind: 'part', part, index: i })
     }
+  }
 
-    if (latestReasoning) {
-      segments.push({ kind: 'part', part: latestReasoning, index: latestReasoningIndex })
-    }
-    if (tools.length >= 1) {
-      segments.push({ kind: 'tool-group', parts: tools, index: startIndex })
-    }
-    for (const item of trailing) {
-      segments.push({ kind: 'part', part: item.part, index: item.index })
-    }
+  if (toolParts.length > 0) {
+    segments.push({ kind: 'tool-group', parts: toolParts, index: firstToolIndex })
   }
 
   return segments
-}
-
-function withSourceMessageId(part: Part, messageId: string): Part {
-  if (part.type !== 'tool_call' || part.data?.name !== 'agent') return part
-  if (part.data?._sourceMessageId) return part
-  return {
-    ...part,
-    data: {
-      ...part.data,
-      _sourceMessageId: messageId
-    }
-  }
-}
-
-export function mergeConsecutiveToolMessages(messages: Message[]): Message[] {
-  const result: Message[] = []
-  for (let index = 0; index < messages.length; index += 1) {
-    const current = messages[index]
-    if (!isMergeableWorkAssistant(current)) {
-      const hasMultipleReasoning =
-        (current.parts || []).filter((part) => isNonEmptyReasoning(part)).length > 1
-      result.push(
-        hasMultipleReasoning
-          ? { ...current, parts: collapseReasoningBeforeTools(current.parts || []) }
-          : current
-      )
-      continue
-    }
-
-    const rawParts: Part[] = (current.parts || [])
-      .filter((part) => part.type !== 'finish')
-      .map((part) => withSourceMessageId(part, current.id))
-    let lastFinish: Part | null =
-      (current.parts || []).find((part) => part.type === 'finish') || null
-    let lastUpdatedAt = current.updated_at
-
-    while (index + 1 < messages.length && isMergeableWorkAssistant(messages[index + 1])) {
-      index += 1
-      const next = messages[index]
-      lastUpdatedAt = next.updated_at || lastUpdatedAt
-      lastFinish = null
-      for (const part of next.parts || []) {
-        if (part.type === 'finish') {
-          lastFinish = part
-        } else {
-          rawParts.push(withSourceMessageId(part, next.id))
-        }
-      }
-    }
-
-    const nextMessage = messages[index + 1]
-    const nextAssistantHasReasoning =
-      nextMessage?.role === 'assistant' &&
-      !nextMessage.is_summary_message &&
-      (nextMessage.parts || []).some((part) => isNonEmptyReasoning(part))
-
-    const collapsedParts = collapseReasoningBeforeTools(rawParts).filter(
-      (part) => !(nextAssistantHasReasoning && part.type === 'reasoning')
-    )
-    if (lastFinish) {
-      collapsedParts.push(lastFinish)
-    }
-
-    if (collapsedParts.length === 0) {
-      continue
-    }
-
-    result.push({
-      ...current,
-      updated_at: lastUpdatedAt,
-      parts: collapsedParts
-    })
-  }
-  return result
 }

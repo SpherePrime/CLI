@@ -159,7 +159,7 @@ export const MessageItem = memo(function MessageItem({
         {partitionMessageParts(message.parts || []).map((segment) => {
           if (segment.kind === 'tool-group') {
             return (
-              <div className="tool-part" key={`group-${segment.index}`}>
+              <div className="tool-part" key="turn-tool-group">
                 <ToolExecutionGroup
                   parts={segment.parts}
                   messageId={message.id}
@@ -204,7 +204,7 @@ export const MessageItem = memo(function MessageItem({
           if (part.type === 'reasoning' && part.data.thinking)
             return (
               <ReasoningBlock
-                key={index}
+                key="turn-reasoning"
                 thinking={part.data.thinking}
                 startedAt={part.data.started_at}
                 finishedAt={part.data.finished_at}
