@@ -1996,7 +1996,15 @@ Object.assign(english, {
   Открыть: 'Open',
   Увеличить: 'Zoom in',
   'Записывает видео': 'Records video',
-  'Завершает запись видео': 'Stops video recording'
+  'Завершает запись видео': 'Stops video recording',
+  Диагностика: 'Diagnostics',
+  Паттерн: 'Pattern',
+  Запрос: 'Query',
+  Путь: 'Path',
+  Маска: 'Include',
+  'Нет вывода': 'No output',
+  'Показаны первые 240 строк изменений': 'Showing first 240 diff lines',
+  'Показаны первые 160 строк': 'Showing first 160 lines'
 })
 
 

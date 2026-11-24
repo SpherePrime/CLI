@@ -437,6 +437,58 @@ export function createPreviewMessages(): Record<string, Message[]> {
           {
             type: 'tool_call',
             data: {
+              id: 'call-edit-1',
+              name: 'edit',
+              input: {
+                file_path: 'desktop/tests/unit/tool-messages.test.ts',
+                old_string:
+                  "  it('preserves finished empty assistant messages', () => {\n    expect(shown.map((item) => item.id)).toEqual(['u1'])\n  })",
+                new_string:
+                  "  it('preserves finished empty assistant messages', () => {\n    expect(shown.map((item) => item.id)).toEqual(['u1', 'a-empty-finished'])\n  })\n  it('hides builtin Prime skill reads while keeping user skills visible', () => {\n    const shown = consolidateToolMessages(sampleMessages)\n    expect(shown).toHaveLength(2)\n  })"
+              },
+              result: {
+                content:
+                  '<result>\nContent replaced in file: desktop/tests/unit/tool-messages.test.ts\n</result>\n<project_diagnostics>\nHint: internal/agent/tools/view.go:240:8 [go errorsastype] errors.As can be simplified\n</project_diagnostics>\n<diagnostic_summary>\nCurrent file: 0 errors, 0 warnings\nProject: 0 errors, 14 warnings\n</diagnostic_summary>',
+                is_error: false
+              }
+            }
+          },
+          {
+            type: 'tool_call',
+            data: {
+              id: 'call-bash-1',
+              name: 'bash',
+              input: {
+                command: 'npm run typecheck && npm run test:unit && npm run build',
+                description: 'Desktop typecheck, unit tests, and build'
+              },
+              result: {
+                content:
+                  'Test Files  57 passed (57)\n     Tests  302 passed (302)\n✓ built in 1m 08s\n<cwd>/Users/dwert/OneDrive/Documents/GitHub/CLI/desktop</cwd>',
+                metadata: '{"background":true,"shell_id":"016"}',
+                is_error: false
+              }
+            }
+          },
+          {
+            type: 'tool_call',
+            data: {
+              id: 'call-grep-1',
+              name: 'grep',
+              input: {
+                pattern: 'consolidateToolMessages',
+                path: 'desktop/src'
+              },
+              result: {
+                content:
+                  'Found 3 matches\ndesktop/src/renderer/src/features/chat/MessageList.tsx:3\ndesktop/src/shared/toolMessages.ts:45',
+                is_error: false
+              }
+            }
+          },
+          {
+            type: 'tool_call',
+            data: {
               id: 'call-agent-1',
               name: 'agent',
               input: {

@@ -1,6 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useI18n } from '../../i18n'
 import { consolidateToolMessages } from '../../../../shared/toolMessages'
+import { mergeConsecutiveToolMessages } from './toolGroupMerge'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { Message, OrchestratorPhase } from '../../../../shared/contracts'
@@ -69,7 +70,11 @@ export function MessageList({
     }
   }, [messages, historyTiming])
   const visible = useMemo(
-    () => (stable.current = reuseUnchanged(stable.current, consolidateToolMessages(messages))),
+    () =>
+      (stable.current = reuseUnchanged(
+        stable.current,
+        mergeConsecutiveToolMessages(consolidateToolMessages(messages))
+      )),
     [messages]
   )
   const [query, setQuery] = useState('')

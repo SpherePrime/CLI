@@ -14,6 +14,8 @@ import { MessageAttachment } from './MessageAttachment'
 import { MarkdownText } from './MarkdownText'
 import { PrimeLogo } from '../../components/PrimeLogo'
 import { ToolCard } from './ToolCard'
+import { ToolExecutionGroup } from './ToolExecutionGroup'
+import { partitionMessageParts } from './toolGroupMerge'
 import { AgentCard } from './AgentCard'
 import { collectToolImages, ToolGallery, toolImageCaptions } from './ToolGallery'
 import { ToolVideos } from './video/ToolVideos'
@@ -154,7 +156,40 @@ export const MessageItem = memo(function MessageItem({
             </span>
           </div>
         )}
-        {(message.parts || []).map((part, index) => {
+        {partitionMessageParts(message.parts || []).map((segment) => {
+          if (segment.kind === 'tool-group') {
+            return (
+              <div className="tool-part" key={`group-${segment.index}`}>
+                <ToolExecutionGroup parts={segment.parts} messageFinished={messageFinished} />
+                {segment.parts.map((groupPart, offset) => {
+                  const result =
+                    groupPart.type === 'tool_result' ? groupPart.data : (groupPart.data.result as unknown)
+                  const images = collectToolImages(result)
+                  return (
+                    <Fragment key={offset}>
+                      <ToolGallery
+                        images={images}
+                        captions={toolImageCaptions(result)}
+                        implementLabel={t('Сделать этот дизайн')}
+                        onImplementImage={
+                          canImplementPhoto && onImplementDesign
+                            ? (image) =>
+                                onImplementDesign(message, {
+                                  mimeType: image.mime_type,
+                                  base64: image.data,
+                                  name: image.path
+                                })
+                            : undefined
+                        }
+                      />
+                      <ToolVideos result={result} />
+                    </Fragment>
+                  )
+                })}
+              </div>
+            )
+          }
+          const { part, index } = segment
           if (part.type === 'text' && !part.data.hidden)
             return (
               <div className="markdown" key={index}>

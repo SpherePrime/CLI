@@ -117,8 +117,16 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
     label: t('Цель выполнена'),
     detail: text(input?.summary).slice(0, 160)
   }),
-  job_output: (_input, t) => ({ icon: Terminal, label: t('Вывод фоновой задачи'), detail: '' }),
-  job_kill: (_input, t) => ({ icon: Terminal, label: t('Остановка задачи'), detail: '' }),
+  job_output: (input, t) => ({
+    icon: Terminal,
+    label: t('Вывод фоновой задачи'),
+    detail: text(input?.shell_id) ? `#${text(input?.shell_id)}` : ''
+  }),
+  job_kill: (input, t) => ({
+    icon: Terminal,
+    label: t('Остановка задачи'),
+    detail: text(input?.shell_id) ? `#${text(input?.shell_id)}` : ''
+  }),
   mcp_job: (input, t) => ({
     icon: Plug,
     label: t('Фоновый вызов'),
@@ -282,6 +290,16 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
     icon: ScrollText,
     label: t('Чтение полного результата'),
     detail: text(input?.artifact_id)
+  }),
+  read_file: (input, t) => ({
+    icon: FileCode2,
+    label: t('Чтение'),
+    detail: fileName(input?.file_path || input?.path)
+  }),
+  read: (input, t) => ({
+    icon: FileCode2,
+    label: t('Чтение'),
+    detail: fileName(input?.file_path || input?.path)
   }),
   search_skills: (input, t) => ({
     icon: Search,
