@@ -13,6 +13,7 @@ export interface ToolExecutionGroupProps {
   messageId?: string
   sessionId?: string
   messageFinished?: boolean
+  defaultOpen?: boolean
 }
 
 function parseInputObject(value: unknown): any {
@@ -111,11 +112,12 @@ export function ToolExecutionGroup({
   parts,
   messageId = '',
   sessionId,
-  messageFinished = false
+  messageFinished = false,
+  defaultOpen = false
 }: ToolExecutionGroupProps) {
   const { t, language } = useI18n()
   const stats = useMemo(() => summarizeGroup(parts, messageFinished), [parts, messageFinished])
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
 
   const heading =
     stats.running > 0
@@ -189,19 +191,19 @@ export function ToolExecutionGroup({
         />
       </summary>
 
-      <div className="tool-exec-tree">
-        {parts.map((part, index) => {
-          if (part.type === 'tool_call' && part.data?.name === 'agent') {
-            const targetMessageId = String((part.data as { _sourceMessageId?: string })._sourceMessageId || messageId)
-            return (
-              <div
-                key={index}
-                className={`tool-tree-node cat-task${index === parts.length - 1 ? ' is-last' : ''}`}
-              >
-                <span className="tool-tree-rail" aria-hidden="true">
-                  <span className="tool-tree-dot" />
-                </span>
-                <div className="tool-tree-card">
+      {open && (
+        <div className="tool-exec-tree">
+          {parts.map((part, index) => {
+            if (part.type === 'tool_call' && part.data?.name === 'agent') {
+              const targetMessageId = String(
+                (part.data as { _sourceMessageId?: string })._sourceMessageId || messageId
+              )
+              return (
+                <div
+                  key={index}
+                  className={`tool-tree-item cat-task${index === parts.length - 1 ? ' is-last' : ''}`}
+                >
+                  <span className="tool-tree-node" aria-hidden="true" />
                   <AgentCard
                     part={part}
                     messageId={targetMessageId}
@@ -209,20 +211,20 @@ export function ToolExecutionGroup({
                     messageFinished={messageFinished}
                   />
                 </div>
-              </div>
+              )
+            }
+            return (
+              <ToolCard
+                key={index}
+                part={part}
+                messageFinished={messageFinished}
+                grouped
+                isLast={index === parts.length - 1}
+              />
             )
-          }
-          return (
-            <ToolCard
-              key={index}
-              part={part}
-              messageFinished={messageFinished}
-              grouped
-              isLast={index === parts.length - 1}
-            />
-          )
-        })}
-      </div>
+          })}
+        </div>
+      )}
     </details>
   )
 }

@@ -140,6 +140,7 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
       <I18nProvider language="en">
         <ToolExecutionGroup
           messageFinished
+          defaultOpen
           parts={[
             {
               type: 'tool_call',
@@ -160,6 +161,7 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
       <I18nProvider language="ru">
         <ToolExecutionGroup
           messageFinished
+          defaultOpen
           parts={[
             {
               type: 'tool_call',

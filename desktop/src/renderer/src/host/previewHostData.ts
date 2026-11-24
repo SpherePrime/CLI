@@ -575,6 +575,33 @@ export function createPreviewMessages(): Record<string, Message[]> {
             }
           },
           {
+            type: 'tool_call',
+            data: {
+              id: 'call-read-2',
+              name: 'read_file',
+              input: { path: 'src/renderer/src/features/chat/ToolExecutionGroup.tsx' },
+              result: { content: 'Read 229 lines', is_error: false }
+            }
+          },
+          {
+            type: 'tool_call',
+            data: {
+              id: 'call-read-3',
+              name: 'read_file',
+              input: { path: 'src/renderer/src/features/chat/toolCard.css' },
+              result: { content: 'Read 450 lines', is_error: false }
+            }
+          },
+          {
+            type: 'tool_call',
+            data: {
+              id: 'call-bash-2',
+              name: 'bash',
+              input: { command: 'npm --prefix desktop run build', description: 'Build desktop bundle' },
+              result: { content: 'built in 22s', is_error: false }
+            }
+          },
+          {
             type: 'text',
             data: {
               text: [

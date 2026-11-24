@@ -4,6 +4,7 @@ import { I18nProvider } from '../../src/renderer/src/i18n'
 import { translate } from '../../src/shared/localization'
 import { toolTitle } from '../../src/renderer/src/features/chat/toolTitle'
 import { ToolCard } from '../../src/renderer/src/features/chat/ToolCard'
+import { ToolExecutionGroup } from '../../src/renderer/src/features/chat/ToolExecutionGroup'
 import { MessageItem } from '../../src/renderer/src/features/chat/MessageItem'
 import type { Message } from '../../src/shared/contracts'
 
@@ -105,9 +106,18 @@ describe('ToolCard interrupted state safeguard', () => {
         <MessageItem message={finishedMessage} continued={false} fresh={false} live={false} matched={false} />
       </I18nProvider>
     )
-    expect(markup).toContain('tool-error')
-    expect(markup).toContain('class="tool-status failed"')
-    expect(markup).toContain('Web search')
+    expect(markup).toContain('Completed 1 action')
+    expect(markup).toContain('Interrupted')
     expect(markup).not.toContain('lucide-loader-circle')
+
+    const expandedGroupMarkup = renderToStaticMarkup(
+      <I18nProvider language="en">
+        <ToolExecutionGroup parts={[makeUnfinishedSearchPart()]} messageFinished defaultOpen />
+      </I18nProvider>
+    )
+    expect(expandedGroupMarkup).toContain('tool-error')
+    expect(expandedGroupMarkup).toContain('class="tool-status failed"')
+    expect(expandedGroupMarkup).toContain('Web search')
+    expect(expandedGroupMarkup).not.toContain('lucide-loader-circle')
   })
 })
