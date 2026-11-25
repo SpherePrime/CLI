@@ -19,10 +19,10 @@ import (
 )
 
 type fontDecoder struct {
-	codeLen   int
-	twoByte   bool
-	toUnicode map[uint32]string
-	encoding  string
+	codeLen    int
+	twoByte    bool
+	toUnicode1 map[byte]string
+	toUnicode2 map[uint16]string
 }
 
 func Inspect(path string, pageRange string) (*InspectResult, error) {
@@ -197,8 +197,9 @@ func loadPageFonts(pdfCtx *model.Context, resDict types.Dict) map[string]*fontDe
 
 func buildFontDecoder(pdfCtx *model.Context, fd types.Dict) *fontDecoder {
 	dec := &fontDecoder{
-		codeLen:   1,
-		toUnicode: make(map[uint32]string),
+		codeLen:    1,
+		toUnicode1: make(map[byte]string),
+		toUnicode2: make(map[uint16]string),
 	}
 
 	if subtypeObj, ok := fd.Find("Subtype"); ok && subtypeObj != nil {
@@ -209,20 +210,10 @@ func buildFontDecoder(pdfCtx *model.Context, fd types.Dict) *fontDecoder {
 	}
 
 	if encObj, ok := fd.Find("Encoding"); ok && encObj != nil {
-		switch v := encObj.(type) {
-		case types.Name:
-			dec.encoding = v.Value()
+		if v, ok := encObj.(types.Name); ok {
 			if v.Value() == "Identity-H" || v.Value() == "Identity-V" {
 				dec.twoByte = true
 				dec.codeLen = 2
-			}
-		default:
-			if ed, err := pdfCtx.DereferenceDict(encObj); err == nil && ed != nil {
-				if base, ok := ed.Find("BaseEncoding"); ok {
-					if n, ok := base.(types.Name); ok {
-						dec.encoding = n.Value()
-					}
-				}
 			}
 		}
 	}
@@ -239,6 +230,25 @@ func buildFontDecoder(pdfCtx *model.Context, fd types.Dict) *fontDecoder {
 	}
 
 	return dec
+}
+
+func (d *fontDecoder) setToUnicode(srcLen int, code uint32, val string) {
+	switch srcLen {
+	case 1:
+		if code <= 0xFF {
+			if d.toUnicode1 == nil {
+				d.toUnicode1 = make(map[byte]string)
+			}
+			d.toUnicode1[byte(code)] = val
+		}
+	case 2:
+		if code <= 0xFFFF {
+			if d.toUnicode2 == nil {
+				d.toUnicode2 = make(map[uint16]string)
+			}
+			d.toUnicode2[uint16(code)] = val
+		}
+	}
 }
 
 func parseToUnicodeCMap(data []byte, dec *fontDecoder) {
@@ -267,12 +277,11 @@ func parseToUnicodeCMap(data []byte, dec *fontDecoder) {
 				if len(srcBytes) == 0 || len(dstBytes) == 0 {
 					continue
 				}
-				if len(srcBytes) >= 2 {
+				if len(srcBytes) == 2 {
 					dec.codeLen = 2
 					dec.twoByte = true
 				}
-				code := bytesToCode(srcBytes)
-				dec.toUnicode[code] = decodeUTF16BE(dstBytes)
+				dec.setToUnicode(len(srcBytes), bytesToCode(srcBytes), decodeUTF16BE(dstBytes))
 			}
 		case "beginbfrange":
 			for i++; i < len(tokens) && tokens[i] != "endbfrange"; i++ {
@@ -285,7 +294,8 @@ func parseToUnicodeCMap(data []byte, dec *fontDecoder) {
 					i += 2
 					continue
 				}
-				if len(loBytes) >= 2 {
+				srcLen := len(loBytes)
+				if srcLen == 2 {
 					dec.codeLen = 2
 					dec.twoByte = true
 				}
@@ -296,21 +306,21 @@ func parseToUnicodeCMap(data []byte, dec *fontDecoder) {
 					cur := lo
 					for i++; i < len(tokens) && tokens[i] != "]"; i++ {
 						if strings.HasPrefix(tokens[i], "<") && cur <= hi {
-							dec.toUnicode[cur] = decodeUTF16BE(decodeHexToken(tokens[i]))
+							dec.setToUnicode(srcLen, cur, decodeUTF16BE(decodeHexToken(tokens[i])))
 							cur++
 						}
 					}
 				} else if strings.HasPrefix(tokens[i], "<") {
+					if hi < lo {
+						continue
+					}
 					dst := decodeHexToken(tokens[i])
 					if len(dst) == 0 {
 						continue
 					}
-					span := hi - lo
-					if span > 65536 {
-						span = 65536
-					}
+					span := min(hi-lo, 65536)
 					for offset := uint32(0); offset <= span; offset++ {
-						dec.toUnicode[lo+offset] = decodeUTF16BEIncrement(dst, offset)
+						dec.setToUnicode(srcLen, lo+offset, decodeUTF16BEIncrement(dst, offset))
 					}
 				}
 			}
@@ -439,31 +449,27 @@ func (d *fontDecoder) decode(raw []byte) string {
 	if d == nil {
 		return decodeWinAnsi(raw)
 	}
-	if len(d.toUnicode) > 0 {
+	step := d.codeLen
+	if step <= 0 {
+		step = 1
+	}
+	if step == 2 && len(d.toUnicode2) > 0 {
 		var sb strings.Builder
-		step := d.codeLen
-		if step <= 0 {
-			step = 1
-		}
-		for i := 0; i < len(raw); {
-			if step == 2 && i+1 < len(raw) {
-				code := uint32(raw[i])<<8 | uint32(raw[i+1])
-				if s, ok := d.toUnicode[code]; ok {
-					sb.WriteString(s)
-					i += 2
-					continue
-				}
-			}
-			if s, ok := d.toUnicode[uint32(raw[i])]; ok {
+		for i := 0; i+1 < len(raw); i += 2 {
+			code := uint16(raw[i])<<8 | uint16(raw[i+1])
+			if s, ok := d.toUnicode2[code]; ok {
 				sb.WriteString(s)
-				i++
-				continue
 			}
-			if step == 2 && i+1 < len(raw) {
-				i += 2
+		}
+		return sb.String()
+	}
+	if len(d.toUnicode1) > 0 {
+		var sb strings.Builder
+		for _, b := range raw {
+			if s, ok := d.toUnicode1[b]; ok {
+				sb.WriteString(s)
 			} else {
-				sb.WriteRune(winAnsiRune(raw[i]))
-				i++
+				sb.WriteRune(winAnsiRune(b))
 			}
 		}
 		return sb.String()

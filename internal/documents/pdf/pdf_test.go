@@ -400,7 +400,11 @@ func TestInspectStandardPDFAndCMap(t *testing.T) {
 		}
 	}
 
-	dec := &fontDecoder{codeLen: 1, toUnicode: make(map[uint32]string)}
+	dec := &fontDecoder{
+		codeLen:    1,
+		toUnicode1: make(map[byte]string),
+		toUnicode2: make(map[uint16]string),
+	}
 	cmap := `
 1 begincodespacerange
 <0001> <00FF>
@@ -420,6 +424,78 @@ endbfrange
 	got := dec.decode([]byte{0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05})
 	if got != "Приве" {
 		t.Fatalf("CMap decode = %q, want %q", got, "Приве")
+	}
+}
+
+func TestCMapTwoByteUnmappedNoDesync(t *testing.T) {
+	dec := &fontDecoder{codeLen: 1}
+	cmap := `
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+5 beginbfchar
+<0001> <041F>
+<0002> <0440>
+<0003> <0438>
+<0004> <0432>
+<0005> <0435>
+endbfchar
+`
+	parseToUnicodeCMap([]byte(cmap), dec)
+
+	got := dec.decode([]byte{
+		0x01, 0x99,
+		0x00, 0x01,
+		0x00, 0x02,
+		0x00, 0x03,
+		0x00, 0x04,
+		0x00, 0x05,
+	})
+	if got != "Приве" {
+		t.Fatalf("2-byte CMap decode with unmapped glyph = %q, want %q", got, "Приве")
+	}
+
+	oneByteDec := &fontDecoder{codeLen: 1}
+	oneByteCMap := `
+1 begincodespacerange
+<00> <FF>
+endcodespacerange
+2 beginbfchar
+<01> <041F>
+<02> <0440>
+endbfchar
+`
+	parseToUnicodeCMap([]byte(oneByteCMap), oneByteDec)
+	got1 := oneByteDec.decode([]byte{0x01, 0x02, '!'})
+	if got1 != "Пр!" {
+		t.Fatalf("1-byte CMap decode = %q, want %q", got1, "Пр!")
+	}
+}
+
+func TestCMapMalformedBfrangeInverted(t *testing.T) {
+	dec := &fontDecoder{codeLen: 1}
+	cmap := `
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+2 beginbfrange
+<0010> <0005> <0435>
+<0020> <0015> [<0410> <0411>]
+endbfrange
+1 beginbfchar
+<0001> <041F>
+endbfchar
+`
+	parseToUnicodeCMap([]byte(cmap), dec)
+
+	if len(dec.toUnicode1) != 0 {
+		t.Fatalf("unexpected 1-byte entries: %v", dec.toUnicode1)
+	}
+	if len(dec.toUnicode2) != 1 {
+		t.Fatalf("len(toUnicode2) = %d, want 1; map = %v", len(dec.toUnicode2), dec.toUnicode2)
+	}
+	if got := dec.decode([]byte{0x00, 0x01}); got != "П" {
+		t.Fatalf("decode after malformed bfrange = %q, want %q", got, "П")
 	}
 }
 
