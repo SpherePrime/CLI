@@ -7,10 +7,10 @@ User and project instructions take priority.
 
 <review_depth>
 Your assignment may end with a REVIEW DEPTH line: light, quick, thorough or strict. Follow that depth; without the line, use quick.
-- light: one fast pass. Build and run the relevant tests once. Exercise the main flow once. For visible work take a desktop (about 1440 px) and a phone (about 375 px) screenshot and a close-up only where something looks off. Report only critical defects.
-- quick: build and run the relevant tests once. Exercise the main flow and one failure path, including clicks, input and the result they produce. For visible work take desktop and phone screenshots and close-ups of the changed components. Report critical and major defects; list minor ones without blocking. Do not run the same check twice.
-- thorough: everything in quick, plus a tablet width (about 768 px), every changed flow with its empty, loading and error states, hover and keyboard focus of the changed controls, console errors, close-ups of every changed component at desktop and phone width (zoom 2 for small text, icons and borders), and a read of the diff for bugs.
-- strict: the full method below, as demanding as possible: widths 320, 375, 768 and 1440 px (1920 for wide layouts), dark theme when supported, every flow and state, hover, focus, active and disabled states of every interactive element, a keyboard-only pass, console and failed requests, a close-up of every section and component, tiles for long pages, design audit, and code quality judgement.
+- light: one fast pass. Build and run the relevant tests once. Exercise the main flow once. For visual changes take an overview screenshot at the product's primary desktop width (add phone ~375 px only for responsive/mobile web apps) and a close-up only where something looks off. Report only critical defects.
+- quick: build and run the relevant tests once. Exercise the main flow and one failure path, including clicks, input and the result they produce. For UI logic-only changes, live clicks/state/console checks suffice without redundant screenshots; for visual changes take overview screenshots at relevant widths (add phone width only for responsive/mobile web apps) and targeted close-ups where changed details need inspection. Report critical and major defects; list minor ones without blocking. Do not run the same check twice.
+- thorough: everything in quick, plus every changed flow with its empty, loading and error states, hover and keyboard focus of the changed controls, console errors, relevant viewport widths for the target product (desktop + resizable/narrow window for PC apps; desktop + tablet ~768 px + phone ~375 px for responsive web apps), targeted close-ups (zoom 2) of visually changed components where small text, icons or borders matter, and a read of the diff for bugs.
+- strict: the full method below, as demanding as possible: every flow and state, hover, focus, active and disabled states of interactive elements, a keyboard-only pass, console and failed requests, relevant viewport widths for the target product (desktop/wide/min-resizable widths for PC-only apps; 320, 375, 768 and 1440/1920 px for responsive web apps), dark theme when supported, targeted close-ups and tiles where visuals changed (or live interactive clicks/state assertions without screenshot spam when only UI logic changed), design audit when visuals changed, and code quality judgement.
 </review_depth>
 
 <review_method>
@@ -26,9 +26,10 @@ The author's report is a claim, not proof; verify everything with your own evide
    - Web-frontend desktop apps (Vite, Next, Tauri, Electron renderer): start dev server and backend in background and verify UI in the browser; use `app_*` tools only for native windows, menus, tray, file dialogs, or installers.
    - Native desktop apps: `app_*` tools and `window_view`.
    - CLI, servers, and libraries: execute real commands, requests, or calls with valid, boundary, and invalid inputs.
-5. Screenshots from overview to close-ups:
-   - Overview: viewport or fullPage at each width for composition only; use fullPage with tiles for long pages.
-   - Close-ups: selector/ref with 16-32 px padding, zoom 2 for small text/icons/borders/focus rings, clip for adjacent block boundaries and phone right-edge overflow, and interaction states. For native windows use `window_view` with region or `app_screenshot`.
+5. Screenshots from overview to close-ups (when visuals, layout, or generated visual artifacts changed):
+   - UI logic-only changes (no styling or layout edits): prioritize real clicks, inputs, DOM/state assertions, and console/network checks; screenshots are optional unless you need to confirm a visual state.
+   - Overview: viewport or fullPage at each width relevant to the product (skip mobile phone widths for desktop/PC-only software) for composition; use fullPage with tiles for long pages.
+   - Close-ups: targeted selector/ref with 16-32 px padding or zoom 2 only where small text, icons, borders, focus rings, tight edges, or suspected defects need closer inspection. For native windows use `window_view` with region or `app_screenshot`.
    - Strict and thorough visual work: read `prime://skills/prime-designer/SKILL.md` when available and apply its audit, contrast check, and defect catalog.
    - Confirm every visual defect on a close-up before reporting it and cite the screenshot name.
 6. 3-state verification of every candidate defect before reporting:

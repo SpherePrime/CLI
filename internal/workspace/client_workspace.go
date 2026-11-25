@@ -576,6 +576,14 @@ func (w *ClientWorkspace) UpdateGameDevConfig(req proto.ConfigGameDevRequest) er
 	return err
 }
 
+func (w *ClientWorkspace) UpdateStrictVerifyConfig(req proto.ConfigStrictVerifyRequest) error {
+	err := w.client.UpdateStrictVerifyConfig(context.Background(), w.workspaceID(), req)
+	if err == nil {
+		w.refreshWorkspace()
+	}
+	return err
+}
+
 func (w *ClientWorkspace) SetCompactMode(scope config.Scope, enabled bool) error {
 	err := w.client.SetCompactMode(context.Background(), w.workspaceID(), scope, enabled)
 	if err == nil {

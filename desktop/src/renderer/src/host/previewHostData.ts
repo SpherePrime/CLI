@@ -892,11 +892,13 @@ export function createPreviewConfig() {
     },
     session_orchestrator: {} as Record<string, boolean>,
     session_game_dev: {} as Record<string, boolean>,
+    session_strict_verify: {} as Record<string, boolean>,
     options: {
       disable_multi_agent: false,
       smart_tools: true,
       auto_lsp: true,
       game_dev: false,
+      strict_verify: false,
       language: 'ru',
       notifications: 'auto'
     },

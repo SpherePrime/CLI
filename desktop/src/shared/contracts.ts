@@ -96,11 +96,13 @@ export type OrchestratorConfig = {
 export type WorkspaceConfig = {
   options?: {
     game_dev?: boolean
+    strict_verify?: boolean
     [key: string]: Json
   }
   orchestrator?: OrchestratorConfig
   session_orchestrator?: Record<string, boolean>
   session_game_dev?: Record<string, boolean>
+  session_strict_verify?: Record<string, boolean>
   [key: string]: Json
 }
 export type SendOperationArgs = {
@@ -111,6 +113,7 @@ export type SendOperationArgs = {
   attachments?: string[]
   attachmentIds?: string[]
   gameDev?: boolean
+  strictVerify?: boolean
 }
 export type Message = {
   id: string
@@ -228,6 +231,7 @@ export type Operation =
   | 'model'
   | 'orchestrator'
   | 'gamedev'
+  | 'strictVerify'
   | 'providerKey'
   | 'providerSave'
   | 'reasoning'

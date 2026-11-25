@@ -102,6 +102,8 @@ func (c *coordinator) agentTool(_ context.Context) (fantasy.AgentTool, error) {
 				ContextFrom:    params.ContextFrom,
 				ContextFiles:   params.ContextFiles,
 				GameDev:        c.isGameDevEnabled(ctx, sessionID),
+				StrictVerify:   c.isStrictVerifyEnabled(ctx, sessionID),
+				AgentName:      name,
 			}
 			if name == config.AgentCode {
 				sp.Reviewer = strings.TrimSpace(params.Reviewer)

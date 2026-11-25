@@ -24,6 +24,7 @@ import {
 } from '../../../shared/pendingSession'
 import { recordRecentModel } from '../features/models/modelPreferences'
 import { resolveGameDevEnabled } from '../features/chat/gamedev'
+import { resolveStrictVerifyEnabled } from '../features/chat/strictVerify'
 import { useChatPermissions } from '../features/chat/useChatPermissions'
 import { watchProjectSessions } from '../features/projects/projectSessionEvents'
 import { useMessageHistory } from '../features/chat/useMessageHistory'
@@ -107,6 +108,7 @@ export function useWorkspace() {
   const [draftReasoningMode, setDraftReasoningMode] = useState<ChatReasoningMode | null>(null)
   const [draftOrchestrator, setDraftOrchestrator] = useState<boolean | null>(null)
   const [draftGameDev, setDraftGameDev] = useState<boolean | null>(null)
+  const [draftStrictVerify, setDraftStrictVerify] = useState<boolean | null>(null)
   const history = useMessageHistory()
   const { messagesSessionId } = history
   const [permissions, setPermissions] = useState<Json[]>([])
@@ -152,6 +154,7 @@ export function useWorkspace() {
   const pendingReasoning = useRef(new Map<string, ChatReasoningMode>())
   const pendingOrchestrator = useRef(new Map<string, boolean>())
   const pendingGameDev = useRef(new Map<string, boolean>())
+  const pendingStrictVerify = useRef(new Map<string, boolean>())
   const discardedSessions = useRef(new Set<string>())
   const pendingChatOpen = useRef<Promise<Project> | null>(null)
   // A refresh that lands while a chat is still materializing must not drop its
@@ -831,6 +834,7 @@ export function useWorkspace() {
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
     setDraftGameDev(null)
+    setDraftStrictVerify(null)
     current.current = { project: selected, session: null }
     setProject(selected)
     setSession(null)
@@ -929,6 +933,7 @@ export function useWorkspace() {
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
     setDraftGameDev(null)
+    setDraftStrictVerify(null)
     setPermissions([])
     setQuestions([])
     showSession(project, selected)
@@ -942,6 +947,7 @@ export function useWorkspace() {
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
     setDraftGameDev(null)
+    setDraftStrictVerify(null)
     setSessions(known || [])
     setPermissions([])
     setQuestions([])
@@ -1029,6 +1035,8 @@ export function useWorkspace() {
       const effectiveDraftOrch = pendingOrch !== undefined ? pendingOrch : draftOrchestrator
       const pendingGd = pendingGameDev.current.get(placeholder.id)
       const effectiveDraftGameDev = pendingGd !== undefined ? pendingGd : draftGameDev
+      const pendingSv = pendingStrictVerify.current.get(placeholder.id)
+      const effectiveDraftStrictVerify = pendingSv !== undefined ? pendingSv : draftStrictVerify
       if (effectiveDraftOrch !== null && current.current.project?.id === project.id) {
         const nextSessionOrch = {
           ...(configRef.current?.session_orchestrator || {}),
@@ -1063,6 +1071,23 @@ export function useWorkspace() {
           }
         }))
       }
+      if (effectiveDraftStrictVerify !== null && current.current.project?.id === project.id) {
+        const nextSessionStrictVerify = {
+          ...(configRef.current?.session_strict_verify || {}),
+          [created.id]: effectiveDraftStrictVerify
+        }
+        configRef.current = {
+          ...configRef.current,
+          session_strict_verify: nextSessionStrictVerify
+        }
+        setConfig((currentConfig) => ({
+          ...currentConfig,
+          session_strict_verify: {
+            ...(currentConfig?.session_strict_verify || {}),
+            [created.id]: effectiveDraftStrictVerify
+          }
+        }))
+      }
       if (current.current.session?.id === placeholder.id) {
         current.current = { project, session: created }
         setSession(created)
@@ -1071,7 +1096,11 @@ export function useWorkspace() {
         void window.prime
           .call(project.id, 'currentSession', { sessionId: created.id })
           .catch(errorHandler)
-        if (effectiveDraftOrch === null && effectiveDraftGameDev === null) {
+        if (
+          effectiveDraftOrch === null &&
+          effectiveDraftGameDev === null &&
+          effectiveDraftStrictVerify === null
+        ) {
           void scheduleRefresh(false, false).catch(() => {})
         }
       }
@@ -1095,12 +1124,25 @@ export function useWorkspace() {
           })
           .catch(errorHandler)
       }
-      if (effectiveDraftOrch !== null || effectiveDraftGameDev !== null) {
+      if (effectiveDraftStrictVerify !== null) {
+        await window.prime
+          .call(project.id, 'strictVerify', {
+            sessionId: created.id,
+            enabled: effectiveDraftStrictVerify
+          })
+          .catch(errorHandler)
+      }
+      if (
+        effectiveDraftOrch !== null ||
+        effectiveDraftGameDev !== null ||
+        effectiveDraftStrictVerify !== null
+      ) {
         await scheduleRefresh(false, true).catch(() => {})
       }
       setDraftReasoningMode(null)
       setDraftOrchestrator(null)
       setDraftGameDev(null)
+      setDraftStrictVerify(null)
       return created
     } catch (error) {
       setSessions((items) => items.filter((item) => item.id !== placeholder.id))
@@ -1122,6 +1164,7 @@ export function useWorkspace() {
     setDraftReasoningMode(null)
     setDraftOrchestrator(null)
     setDraftGameDev(null)
+    setDraftStrictVerify(null)
     const task = materializeSession(project, placeholder)
     pendingSessions.current.set(placeholder.id, task)
     pendingProjects.current.set(placeholder.id, project.id)
@@ -1131,6 +1174,7 @@ export function useWorkspace() {
       pendingReasoning.current.delete(placeholder.id)
       pendingOrchestrator.current.delete(placeholder.id)
       pendingGameDev.current.delete(placeholder.id)
+      pendingStrictVerify.current.delete(placeholder.id)
       discardedSessions.current.delete(placeholder.id)
     })
     return placeholder
@@ -1241,6 +1285,7 @@ export function useWorkspace() {
       }
       let effectiveDraftOrchestrator: boolean | null = null
       let effectiveDraftGameDev: boolean | null = null
+      let effectiveDraftStrictVerify: boolean | null = null
       if (!targetSession) {
         await savePreferences({ reasoningBySession: { [activeSession.id]: reasoningMode } })
         setDraftReasoningMode(null)
@@ -1291,6 +1336,30 @@ export function useWorkspace() {
             enabled: draftGameDev
           })
           setDraftGameDev(null)
+        }
+        if (draftStrictVerify !== null) {
+          effectiveDraftStrictVerify = draftStrictVerify
+          if (current.current.project?.id === targetProject.id) {
+            configRef.current = {
+              ...configRef.current,
+              session_strict_verify: {
+                ...(configRef.current?.session_strict_verify || {}),
+                [activeSession.id]: draftStrictVerify
+              }
+            }
+            setConfig((currentConfig) => ({
+              ...currentConfig,
+              session_strict_verify: {
+                ...(currentConfig?.session_strict_verify || {}),
+                [activeSession.id]: draftStrictVerify
+              }
+            }))
+          }
+          await window.prime.call(targetProject.id, 'strictVerify', {
+            sessionId: activeSession.id,
+            enabled: draftStrictVerify
+          })
+          setDraftStrictVerify(null)
         }
       }
       if (options.goal !== undefined)
@@ -1344,12 +1413,18 @@ export function useWorkspace() {
           effectiveDraftGameDev !== null
             ? effectiveDraftGameDev
             : resolveGameDevEnabled(activeConfig, selected.id)
+        const effectiveStrictVerifyEnabled =
+          effectiveDraftStrictVerify !== null
+            ? effectiveDraftStrictVerify
+            : resolveStrictVerifyEnabled(activeConfig, selected.id)
         await window.prime.call(targetProject.id, 'send', {
           sessionId: selected.id,
           runId,
           prompt: preparedPrompt,
           ...(orchestratorActive ? {} : { reasoningMode }),
-          ...(targetProject.kind !== 'designer' ? { gameDev: effectiveGameDevEnabled } : {}),
+          ...(targetProject.kind !== 'designer'
+            ? { gameDev: effectiveGameDevEnabled, strictVerify: effectiveStrictVerifyEnabled }
+            : {}),
           attachmentIds
         })
         if (usedModel?.provider && usedModel?.model) {
@@ -1363,7 +1438,11 @@ export function useWorkspace() {
           }
         }
       }
-      if (effectiveDraftOrchestrator !== null || effectiveDraftGameDev !== null) {
+      if (
+        effectiveDraftOrchestrator !== null ||
+        effectiveDraftGameDev !== null ||
+        effectiveDraftStrictVerify !== null
+      ) {
         void scheduleRefresh(false, true).catch(errorHandler)
       } else {
         void refreshLight().catch(errorHandler)
@@ -1597,6 +1676,11 @@ export function useWorkspace() {
   const realSessionIdForGameDev =
     session && !isPendingSessionId(session.id) ? session.id : undefined
   const gameDevEnabled = resolveGameDevEnabled(config, realSessionIdForGameDev, draftGameDev)
+  const strictVerifyEnabled = resolveStrictVerifyEnabled(
+    config,
+    realSessionIdForGameDev,
+    draftStrictVerify
+  )
   async function setGameDev(enabled: boolean) {
     const selected = current.current.session
     const materialized = selected && !isPendingSessionId(selected.id) ? selected : null
@@ -1617,6 +1701,37 @@ export function useWorkspace() {
     setConfig(optimisticConfig)
     try {
       await call('gamedev', {
+        scope: 0,
+        sessionId: materialized.id,
+        enabled
+      })
+      await scheduleRefresh(false, true)
+    } catch (error) {
+      configRef.current = previousConfig
+      setConfig(previousConfig)
+      throw error
+    }
+  }
+  async function setStrictVerify(enabled: boolean) {
+    const selected = current.current.session
+    const materialized = selected && !isPendingSessionId(selected.id) ? selected : null
+    if (!materialized) {
+      if (selected) pendingStrictVerify.current.set(selected.id, enabled)
+      setDraftStrictVerify(enabled)
+      return
+    }
+    const previousConfig = configRef.current
+    const optimisticConfig: WorkspaceConfig = {
+      ...previousConfig,
+      session_strict_verify: {
+        ...(previousConfig?.session_strict_verify || {}),
+        [materialized.id]: enabled
+      }
+    }
+    configRef.current = optimisticConfig
+    setConfig(optimisticConfig)
+    try {
+      await call('strictVerify', {
         scope: 0,
         sessionId: materialized.id,
         enabled
@@ -1852,6 +1967,8 @@ export function useWorkspace() {
     setOrchestrator,
     gameDevEnabled,
     setGameDev,
+    strictVerifyEnabled,
+    setStrictVerify,
     projects,
     project,
     sessions,

@@ -59,12 +59,16 @@ func (d reviewDepth) summary() string {
 	}
 }
 
-func (d reviewDepth) note() string {
+func (d reviewDepth) noteWithLimit(limit int) string {
 	rounds := "rounds"
-	if d.rounds() == 1 {
+	if limit == 1 {
 		rounds = "round"
 	}
-	return fmt.Sprintf("\n\nREVIEW DEPTH: %s. %s A part gets at most %d review %s; after that only critical defects go back to the author.", d, d.summary(), d.rounds(), rounds)
+	return fmt.Sprintf("\n\nREVIEW DEPTH: %s. %s A part gets at most %d review %s; after that only critical defects go back to the author.", d, d.summary(), limit, rounds)
+}
+
+func (d reviewDepth) note() string {
+	return d.noteWithLimit(d.rounds())
 }
 
 func coordinatorReasoningMode(ctx context.Context, model config.SelectedModel) string {
@@ -75,13 +79,19 @@ func coordinatorReasoningMode(ctx context.Context, model config.SelectedModel) s
 }
 
 func (c *coordinator) teamReviewDepth(root string) reviewDepth {
+	if c != nil && c.isStrictVerifyEnabled(context.Background(), root) {
+		return reviewDepthStrict
+	}
 	return reviewDepthFor(c.teamReasoningMode(root))
 }
 
 func (c *coordinator) reviewRoundLimit(root string) int {
+	if c != nil && c.isStrictVerifyEnabled(context.Background(), root) {
+		return strictVerifyMaxAttempts
+	}
 	return c.teamReviewDepth(root).rounds()
 }
 
 func (c *coordinator) reviewDepthNote(root string) string {
-	return c.teamReviewDepth(root).note()
+	return c.teamReviewDepth(root).noteWithLimit(c.reviewRoundLimit(root))
 }

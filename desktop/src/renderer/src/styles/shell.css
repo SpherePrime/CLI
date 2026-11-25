@@ -239,24 +239,46 @@
 }
 @container composer (max-width: 820px) {
   .composer-options .project-picker-trigger {
-    max-width: 120px;
+    max-width: 112px;
   }
   .composer-actions .model-control-level {
     display: none;
   }
 }
-@container composer (max-width: 680px) {
+@container composer (max-width: 740px) {
   .composer-options {
     gap: 2px;
   }
   .composer-options .toolbar-divider {
     display: none;
   }
+  .composer-options .project-picker-trigger {
+    width: 30px;
+    min-width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+  .composer-options .project-picker-trigger > span {
+    display: none;
+  }
   .composer-actions {
     gap: 2px;
   }
 }
-@container composer (max-width: 620px) {
+@container composer (max-width: 680px) {
+  .composer-options .gamedev-chip,
+  .composer-options .goal-chip:not(.has-goal) {
+    width: 30px;
+    min-width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+  .composer-options .gamedev-chip-label,
+  .composer-options .goal-chip:not(.has-goal) .goal-chip-label {
+    display: none;
+  }
+}
+@container composer (max-width: 560px) {
   .composer-toolbar {
     flex-wrap: wrap;
   }
@@ -265,9 +287,6 @@
     flex-wrap: wrap;
     min-width: 0;
     gap: 4px;
-  }
-  .composer-options .project-picker-trigger > span {
-    display: none;
   }
   .composer-actions {
     flex: 1 1 100%;

@@ -34,6 +34,7 @@ type Status struct {
 	yolo            bool
 	orchestrator    bool
 	gameDev         bool
+	strictVerify    bool
 	selectedModel   *workspace.AgentModel
 
 	// voiceBadge is the microphone indicator shown next to the mode badge,
@@ -74,6 +75,10 @@ func (s *Status) SetOrchestrator(enabled bool) {
 
 func (s *Status) SetGameDev(enabled bool) {
 	s.gameDev = enabled
+}
+
+func (s *Status) SetStrictVerify(enabled bool) {
+	s.strictVerify = enabled
 }
 
 // SetVoiceBadge sets the microphone indicator shown before the help hints. An

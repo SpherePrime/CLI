@@ -724,11 +724,17 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		gameDevLabel = c.com.L("cmd.disable_gamedev")
 	}
 
+	strictVerifyLabel := c.com.L("cmd.enable_strict_verify")
+	if cfg != nil && cfg.IsStrictVerifyEnabled(c.sessionID) {
+		strictVerifyLabel = c.com.L("cmd.disable_strict_verify")
+	}
+
 	commands = append(
 		commands,
 		NewCommandItem(c.com.Styles, "toggle_yolo", c.com.L("cmd.toggle_yolo_mode"), "ctrl+y", ActionToggleYoloMode{}),
 		NewCommandItem(c.com.Styles, "toggle_smart_tools", smartToolsLabel, "", ActionToggleSmartTools{}).WithAliases("smart tools"),
 		NewCommandItem(c.com.Styles, "toggle_gamedev", gameDevLabel, "", ActionToggleGameDev{}).WithAliases("gamedev", "game", "игра", "геймдев"),
+		NewCommandItem(c.com.Styles, "toggle_strict_verify", strictVerifyLabel, "", ActionToggleStrictVerify{}).WithAliases("strict", "verify", "review", "проверка", "строгая"),
 		NewCommandItem(c.com.Styles, "toggle_help", c.com.L("cmd.toggle_help"), "ctrl+g", ActionToggleHelp{}),
 		NewCommandItem(c.com.Styles, "init", c.com.L("cmd.initialize_project"), "", ActionInitializeProject{}),
 		NewCommandItem(c.com.Styles, "projects", "Projects", "", ActionOpenDialog{DialogID: ProjectsID}).WithAliases("project", "projects", "cd"),

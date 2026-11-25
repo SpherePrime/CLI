@@ -64,6 +64,7 @@ type fileSnapshot struct {
 type RuntimeOverrides struct {
 	SkipPermissionRequests bool
 	GameDev                *bool
+	StrictVerify           *bool
 	// EnabledChannels lists the MCP servers opted in as channels for this
 	// session (via the --channels flag). A server present in MCP config only
 	// pushes channel events when it also appears here. Entries may be written
@@ -1645,6 +1646,13 @@ func (s *ConfigStore) reloadFromDiskLocked(ctx context.Context) error {
 			cfg.Options = &Options{}
 		}
 		cfg.Options.GameDev = *overrides.GameDev
+	}
+	if overrides.StrictVerify != nil {
+		cfg.SetStrictVerifyOverride(overrides.StrictVerify)
+		if cfg.Options == nil {
+			cfg.Options = &Options{}
+		}
+		cfg.Options.StrictVerify = *overrides.StrictVerify
 	}
 
 	// Reconfigure providers

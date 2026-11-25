@@ -77,7 +77,19 @@ func (c *coordinator) reviewRoute(job *agentJob, status, output string) *reviewR
 		}
 	case config.AgentReview:
 		if job.author == "" || reviewApproved(output) {
+			job.lastDefectSig = ""
+			job.repeatDefectCount = 0
 			return nil
+		}
+		sig := reviewDefectSignature(output)
+		if sig != "" && sig == job.lastDefectSig {
+			job.repeatDefectCount++
+		} else {
+			job.lastDefectSig = sig
+			job.repeatDefectCount = 1
+		}
+		if c != nil && c.isStrictVerifyEnabled(context.Background(), job.rootSessionID) && sig != "" && job.repeatDefectCount >= strictVerifyStallThreshold {
+			return &reviewRouteAction{note: fmt.Sprintf("Strict Verify stopped after %d consecutive rounds with the same unresolved defects. Stop this part and report the remaining defects to the user.\n\n", job.repeatDefectCount)}
 		}
 		critical := criticalDefect.MatchString(output)
 		round := job.reviewRound

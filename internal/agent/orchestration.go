@@ -252,9 +252,10 @@ func (c *coordinator) ensureWorkerJob(ctx context.Context, worker AgentWorker) (
 		hasRun:          true,
 		wake:            true,
 		gameDev:         c.isGameDevEnabled(ctx, worker.RootSessionID),
+		strictVerify:    c.isStrictVerifyEnabled(ctx, worker.RootSessionID),
 		done:            make(chan struct{}),
 		wakeCh:          make(chan struct{}, 1),
-		params:          subAgentParams{Agent: a, SessionID: worker.ParentSessionID, Reviewer: worker.Reviewer, GameDev: c.isGameDevEnabled(ctx, worker.RootSessionID)},
+		params:          subAgentParams{Agent: a, SessionID: worker.ParentSessionID, Reviewer: worker.Reviewer, GameDev: c.isGameDevEnabled(ctx, worker.RootSessionID), StrictVerify: c.isStrictVerifyEnabled(ctx, worker.RootSessionID), AgentName: worker.Agent},
 	}
 	if c.agentJobs == nil {
 		c.agentJobs = map[string]*agentJob{}
@@ -318,6 +319,14 @@ func (c *coordinator) sendWorkerMessage(ctx context.Context, source, workerID, t
 		enabled := c.isGameDevEnabled(ctx, worker.RootSessionID)
 		job.gameDev = enabled
 		job.params.GameDev = enabled
+	}
+	if override, ok := StrictVerifyFromContext(ctx); ok {
+		job.strictVerify = override
+		job.params.StrictVerify = override
+	} else if !handoff {
+		enabled := c.isStrictVerifyEnabled(ctx, worker.RootSessionID)
+		job.strictVerify = enabled
+		job.params.StrictVerify = enabled
 	}
 	job.pending = append(job.pending, fmt.Sprintf("Message from team member %s:\n%s", senderLabel, text))
 	job.updatedAt = time.Now()

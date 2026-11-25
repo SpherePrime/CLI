@@ -45,8 +45,11 @@ type agentJob struct {
 	reviewer                string
 	author                  string
 	reviewRound             int
+	lastDefectSig           string
+	repeatDefectCount       int
 	awaitHandoff            bool
 	gameDev                 bool
+	strictVerify            bool
 	contextFrom             []string
 	contextFiles            []string
 	contextMsgWatermark     int
@@ -248,6 +251,7 @@ func (c *coordinator) launchAgentJob(ctx context.Context, params subAgentParams,
 		wakeCh:          make(chan struct{}, 1),
 		reviewer:        strings.TrimSpace(params.Reviewer),
 		gameDev:         params.GameDev,
+		strictVerify:    params.StrictVerify,
 		contextFrom:     append([]string(nil), params.ContextFrom...),
 		contextFiles:    append([]string(nil), params.ContextFiles...),
 	}
@@ -323,6 +327,7 @@ func (c *coordinator) invokeSubAgent(ctx context.Context, params subAgentParams,
 			MaxSteps:          params.MaxSteps,
 			NonInteractive:    true,
 			GameDev:           params.GameDev,
+			StrictVerify:      params.StrictVerify,
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
 		})
 	}

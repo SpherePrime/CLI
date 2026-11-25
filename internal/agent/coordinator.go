@@ -180,6 +180,8 @@ type coordinator struct {
 	teamNoticePending map[string]bool
 	teamReasoning     sync.Map
 	teamGameDev       sync.Map
+	teamStrictVerify  sync.Map
+	verifyTrackers    sync.Map
 
 	// Skills discovery results (session-start snapshot).
 	allSkills    []*skills.Skill // Pre-filter: all discovered after dedup.
@@ -390,6 +392,11 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 	}
 	ctx = c.withTeamReasoning(ctx, sessionID)
 	gameDevEnabled := c.resolveRunGameDev(ctx, sessionID)
+	strictVerifyEnabled := c.resolveRunStrictVerify(ctx, sessionID)
+	verifyTracker := newRunVerifyTracker()
+	c.verifyTrackers.Store(sessionID, verifyTracker)
+	defer c.verifyTrackers.Delete(sessionID)
+	ctx = withVerifyTracker(ctx, verifyTracker)
 
 	if !c.interactive {
 		if err := mcp.WaitForInitBudget(ctx, mcp.InitWaitBudget); err != nil {
@@ -598,6 +605,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
 			Orchestrator:      orchCall,
 			GameDev:           gameDevEnabled,
+			StrictVerify:      strictVerifyEnabled,
 		})
 	}
 	// continueRun replays the request with a different prompt and without the
@@ -623,6 +631,7 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 			OnAuthRefresh:     c.makeAuthRefreshCallback(providerCfg),
 			Orchestrator:      orchCall,
 			GameDev:           gameDevEnabled,
+			StrictVerify:      strictVerifyEnabled,
 		})
 	}
 	beforeLoaded := c.skillTracker.LoadedNames()
@@ -668,6 +677,19 @@ func (c *coordinator) run(ctx context.Context, accept *AcceptedRun, sessionID st
 		result, originalErr = continueRun(progressContinuationPrompt)
 		recoverFromOverflow(progressContinuationPrompt)
 		recoverFromProviderErrors()
+	}
+	if !goalActive && agentName != config.AgentPlan && orchCall == nil {
+		canDelegate := c.cfg == nil || c.cfg.Config() == nil || c.cfg.Config().Options == nil || !c.cfg.Config().Options.DisableMultiAgent
+		reasoning := coordinatorReasoningMode(ctx, model.ModelCfg)
+		for attempt := 0; originalErr == nil && ctx.Err() == nil && result != nil && c.QueuedPrompts(sessionID) == 0; attempt++ {
+			gatePrompt, needGate := verifyTracker.nextGatePrompt(strictVerifyEnabled, reasoning, canDelegate, attempt)
+			if !needGate {
+				break
+			}
+			result, originalErr = continueRun(gatePrompt)
+			recoverFromOverflow(gatePrompt)
+			recoverFromProviderErrors()
+		}
 	}
 	goalDriver := goal.NewDriver()
 	for originalErr == nil && ctx.Err() == nil {
@@ -1358,6 +1380,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 	// itself is still wrapped from the coder's side.
 	filteredTools = wrapToolsWithHooks(filteredTools, hookRunner, isSubAgent)
 	filteredTools = wrapToolsWithPlaceholderGuard(filteredTools)
+	filteredTools = wrapToolsWithVerifyTracker(filteredTools)
 
 	return filteredTools, nil
 }
@@ -2122,6 +2145,8 @@ type subAgentParams struct {
 	MaxSteps            int
 	DisableAutoContinue bool
 	GameDev             bool
+	StrictVerify        bool
+	AgentName           string
 }
 
 func (c *coordinator) resolveRunGameDev(ctx context.Context, sessionID string) bool {
@@ -2151,6 +2176,52 @@ func (c *coordinator) isGameDevEnabled(ctx context.Context, sessionID string) bo
 		return c.cfg.IsGameDevEnabled(root)
 	}
 	return false
+}
+
+func (c *coordinator) resolveRunStrictVerify(ctx context.Context, sessionID string) bool {
+	if override, ok := StrictVerifyFromContext(ctx); ok {
+		c.teamStrictVerify.Store(sessionID, override)
+		return override
+	}
+	c.teamStrictVerify.Delete(sessionID)
+	if c.cfg != nil {
+		return c.cfg.IsStrictVerifyEnabled(sessionID)
+	}
+	return false
+}
+
+func (c *coordinator) isStrictVerifyEnabled(ctx context.Context, sessionID string) bool {
+	if c == nil {
+		return false
+	}
+	if override, ok := StrictVerifyFromContext(ctx); ok {
+		return override
+	}
+	root := sessionID
+	if c.sessions != nil {
+		if r, err := c.teamRoot(ctx, sessionID); err == nil && r != "" {
+			root = r
+		}
+	}
+	if stored, ok := c.teamStrictVerify.Load(root); ok {
+		return stored.(bool)
+	}
+	if c.cfg != nil {
+		return c.cfg.IsStrictVerifyEnabled(root)
+	}
+	return false
+}
+
+func (c *coordinator) runVerifyTrackerFor(rootSessionID string) *runVerifyTracker {
+	if c == nil || rootSessionID == "" {
+		return nil
+	}
+	if stored, ok := c.verifyTrackers.Load(rootSessionID); ok {
+		if tracker, ok := stored.(*runVerifyTracker); ok {
+			return tracker
+		}
+	}
+	return nil
 }
 
 // callTopK returns topK for use on fantasy.Call.TopK, suppressing it for
@@ -2209,6 +2280,9 @@ func (c *coordinator) runSubAgent(ctx context.Context, params subAgentParams) (f
 	// Run the agent. invokeSubAgent is the shared core of the synchronous
 	// and background paths: it runs the agent and surfaces a re-auth
 	// notice when one is needed.
+	if tracker := c.runVerifyTrackerFor(rootSessionID); tracker != nil {
+		ctx = withVerifyTracker(ctx, tracker)
+	}
 	result, err := c.invokeSubAgent(ctx, params, session.ID, model, maxTokens, providerCfg)
 	if err != nil {
 		return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to generate response: %s", err)), nil
@@ -2228,6 +2302,11 @@ func (c *coordinator) runSubAgent(ctx context.Context, params subAgentParams) (f
 	output := subAgentOutput(result)
 	if output == "" {
 		return fantasy.NewTextErrorResponse("Sub-agent completed but produced no text output."), nil
+	}
+	if params.AgentName == config.AgentReview {
+		if tracker := c.runVerifyTrackerFor(rootSessionID); tracker != nil {
+			tracker.recordReviewResult(output)
+		}
 	}
 	return fantasy.NewTextResponse(output), nil
 }

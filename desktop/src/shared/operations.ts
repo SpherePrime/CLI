@@ -51,7 +51,8 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
         reasoning_mode: args.reasoningMode,
         prompt: args.prompt,
         attachments: args.attachments || [],
-        ...(args.gameDev !== undefined ? { game_dev: Boolean(args.gameDev) } : {})
+        ...(args.gameDev !== undefined ? { game_dev: Boolean(args.gameDev) } : {}),
+        ...(args.strictVerify !== undefined ? { strict_verify: Boolean(args.strictVerify) } : {})
       }
     ],
     cancel: () => ['POST', `agent/sessions/${sid}/cancel`],
@@ -117,6 +118,15 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     gamedev: () => [
       'POST',
       'config/gamedev',
+      {
+        scope: args.scope ?? 0,
+        ...(args.sessionId ? { session_id: args.sessionId } : {}),
+        enabled: Boolean(args.enabled)
+      }
+    ],
+    strictVerify: () => [
+      'POST',
+      'config/strict-verify',
       {
         scope: args.scope ?? 0,
         ...(args.sessionId ? { session_id: args.sessionId } : {}),

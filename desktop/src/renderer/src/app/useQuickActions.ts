@@ -1,6 +1,7 @@
 import { shortcutLabel } from '../../../shared/keybindings'
 import { useShortcuts } from '../features/shortcuts/shortcutStore'
 import {
+  BadgeCheck,
   Clock3,
   Command,
   Download,
@@ -85,6 +86,17 @@ export function useQuickActions({
       disabled: !w.project || w.project.kind === 'designer' || w.busy,
       run: () => {
         void w.setGameDev(!w.gameDevEnabled).catch(w.errorHandler)
+      }
+    },
+    {
+      id: 'strictVerify',
+      label: w.strictVerifyEnabled
+        ? t('Выключить строгую проверку')
+        : t('Включить строгую проверку'),
+      icon: BadgeCheck,
+      disabled: !w.project || w.project.kind === 'designer' || w.busy,
+      run: () => {
+        void w.setStrictVerify(!w.strictVerifyEnabled).catch(w.errorHandler)
       }
     },
     {

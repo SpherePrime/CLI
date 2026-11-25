@@ -968,6 +968,26 @@ export function installPreviewHost() {
           session_game_dev: config.session_game_dev || {}
         }
       }
+      if (operation === 'strictVerify') {
+        const sessionId = String(args?.sessionId || '')
+        const enabled = Boolean(args?.enabled)
+        if (sessionId) {
+          config.session_strict_verify = {
+            ...(config.session_strict_verify || {}),
+            [sessionId]: enabled
+          }
+        } else {
+          config.options = {
+            ...(config.options || {}),
+            strict_verify: enabled
+          }
+        }
+        emit({ workspaceId, type: 'config_changed', payload: {} })
+        return {
+          strict_verify: Boolean(config.options?.strict_verify),
+          session_strict_verify: config.session_strict_verify || {}
+        }
+      }
       if (operation === 'providers') return providers
       if (operation === 'models') {
         const primeModels = accountState.signedIn

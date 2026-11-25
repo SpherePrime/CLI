@@ -590,6 +590,14 @@ func (c *controllerV1) endpoints() []apigen.Endpoint {
 			Fails(400, 404, 500).
 			Handle(c.handlePostWorkspaceConfigGameDev),
 
+		apigen.Post("/v1/workspaces/{id}/config/strict-verify").
+			Summary("Update Strict Verify mode configuration").
+			Tags("config").
+			PathParam("id", "Workspace ID").
+			Accepts(proto.ConfigStrictVerifyRequest{}).
+			Fails(400, 404, 500).
+			Handle(c.handlePostWorkspaceConfigStrictVerify),
+
 		apigen.Post("/v1/workspaces/{id}/config/compact").
 			Summary("Set compact mode").
 			Tags("config").

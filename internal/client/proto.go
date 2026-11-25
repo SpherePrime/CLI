@@ -526,6 +526,7 @@ func (c *Client) SetMainAgent(ctx context.Context, id, agentID string) error {
 // to distinguish its own turn's terminal event from any concurrent
 // turn on the same session (e.g. interactive TUI usage).
 type gameDevContextKey struct{}
+type strictVerifyContextKey struct{}
 
 func WithGameDev(ctx context.Context, enabled bool) context.Context {
 	return context.WithValue(ctx, gameDevContextKey{}, enabled)
@@ -539,6 +540,18 @@ func GameDevFromContext(ctx context.Context) (bool, bool) {
 	return v, ok
 }
 
+func WithStrictVerify(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, strictVerifyContextKey{}, enabled)
+}
+
+func StrictVerifyFromContext(ctx context.Context) (bool, bool) {
+	if ctx == nil {
+		return false, false
+	}
+	v, ok := ctx.Value(strictVerifyContextKey{}).(bool)
+	return v, ok
+}
+
 func (c *Client) SendMessage(ctx context.Context, id string, sessionID, runID, prompt string, attachments ...message.Attachment) error {
 	msg := proto.AgentMessage{
 		HiddenUserMessage: message.HiddenUserMessage(ctx),
@@ -549,6 +562,9 @@ func (c *Client) SendMessage(ctx context.Context, id string, sessionID, runID, p
 	}
 	if gameDev, ok := GameDevFromContext(ctx); ok {
 		msg.GameDev = &gameDev
+	}
+	if strictVerify, ok := StrictVerifyFromContext(ctx); ok {
+		msg.StrictVerify = &strictVerify
 	}
 	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/agent", id), nil, jsonBody(msg), http.Header{"Content-Type": []string{"application/json"}})
 	if err != nil {

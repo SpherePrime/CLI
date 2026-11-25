@@ -599,6 +599,7 @@ func NewWithAccountService(com *common.Common, initialSessionID string, continue
 	ui.status = status
 	if cfg := com.Config(); cfg != nil {
 		ui.status.SetGameDev(cfg.IsGameDevEnabled(""))
+		ui.status.SetStrictVerify(cfg.IsStrictVerifyEnabled(""))
 	}
 
 	// Initialize compact mode from config
@@ -975,6 +976,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.session = msg.session
 		if cfg := m.com.Config(); cfg != nil {
 			m.status.SetGameDev(cfg.IsGameDevEnabled(m.session.ID))
+			m.status.SetStrictVerify(cfg.IsStrictVerifyEnabled(m.session.ID))
 		}
 		m.sidebarOffset = 0
 		m.sidebarModelInfoRow = -1
@@ -2550,6 +2552,37 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			return util.NewInfoMsg(m.com.LSprintf("info.gamedev_mode", status))
 		})
 		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionToggleStrictVerify:
+		cfg := m.com.Config()
+		if cfg == nil {
+			cmds = append(cmds, util.ReportError(errors.New("configuration not found")))
+			break
+		}
+		sessionID := ""
+		if m.session != nil {
+			sessionID = m.session.ID
+		}
+		newValue := !cfg.IsStrictVerifyEnabled(sessionID)
+		scope := config.ScopeGlobal
+		if sessionID != "" {
+			scope = config.ScopeWorkspace
+		}
+		m.status.SetStrictVerify(newValue)
+		cmds = append(cmds, func() tea.Msg {
+			if err := m.com.Workspace.UpdateStrictVerifyConfig(proto.ConfigStrictVerifyRequest{
+				Scope:     scope,
+				SessionID: sessionID,
+				Enabled:   newValue,
+			}); err != nil {
+				return util.ReportError(err)()
+			}
+			status := m.com.L("info.disabled")
+			if newValue {
+				status = m.com.L("info.enabled")
+			}
+			return util.NewInfoMsg(m.com.LSprintf("info.strict_verify_mode", status))
+		})
+		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleAutoContinue:
 		cfg := m.com.Config()
 		if cfg == nil {
@@ -3991,12 +4024,15 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	}
 	orchEnabled := false
 	gameDevEnabled := false
+	strictVerifyEnabled := false
 	if cfg := m.com.Config(); cfg != nil {
 		orchEnabled = cfg.IsOrchestratorEnabled(sessionID) && m.mode != uiInputModePlan
 		gameDevEnabled = cfg.IsGameDevEnabled(sessionID)
+		strictVerifyEnabled = cfg.IsStrictVerifyEnabled(sessionID)
 	}
 	m.status.SetOrchestrator(orchEnabled)
 	m.status.SetGameDev(gameDevEnabled)
+	m.status.SetStrictVerify(strictVerifyEnabled)
 	m.status.SetModel(m.selectedLargeModel())
 	m.status.Draw(scr, layout.status)
 

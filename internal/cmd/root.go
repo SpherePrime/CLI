@@ -62,6 +62,7 @@ func init() {
 	rootCmd.Flags().Bool("auto", false, "Start immediately in YOLO mode (alias for --yolo with no extra confirmation)")
 	rootCmd.PersistentFlags().Bool("offline", false, "Work offline without requiring internet or Prime account sign-in")
 	rootCmd.PersistentFlags().Bool("gamedev", false, "Enable GameDev mode requiring automated playthrough test bots for game tasks")
+	rootCmd.PersistentFlags().Bool("strict-verify", false, "Enable Strict Verify mode requiring an independent review agent until approved")
 	rootCmd.PersistentFlags().StringSlice("channels", nil, "MCP servers to enable as channels (repeatable), e.g. --channels server:webhook")
 	_ = rootCmd.PersistentFlags().MarkHidden("channels")
 	rootCmd.Flags().StringP("session", "s", "", "Continue a previous session by ID")
@@ -310,6 +311,10 @@ func setupLocalWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error
 		gameDev, _ := cmd.Flags().GetBool("gamedev")
 		store.OverrideGameDev(gameDev)
 	}
+	if cmd.Flags().Changed("strict-verify") {
+		strictVerify, _ := cmd.Flags().GetBool("strict-verify")
+		store.OverrideStrictVerify(strictVerify)
+	}
 
 	if err := os.MkdirAll(cfg.Options.DataDirectory, 0o700); err != nil {
 		return nil, nil, fmt.Errorf("failed to create data directory: %q %w", cfg.Options.DataDirectory, err)
@@ -446,6 +451,10 @@ func connectToServer(cmd *cobra.Command) (*client.Client, *proto.Workspace, func
 	if cmd.Flags().Changed("gamedev") {
 		gameDev, _ := cmd.Flags().GetBool("gamedev")
 		wsReq.GameDev = &gameDev
+	}
+	if cmd.Flags().Changed("strict-verify") {
+		strictVerify, _ := cmd.Flags().GetBool("strict-verify")
+		wsReq.StrictVerify = &strictVerify
 	}
 
 	ws, err := createWorkspaceOnLiveServer(cmd.Context(), c, wsReq, func() error {

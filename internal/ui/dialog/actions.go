@@ -120,6 +120,7 @@ type (
 	ActionToggleMouseSupport          struct{}
 	ActionToggleSmartTools            struct{}
 	ActionToggleGameDev               struct{}
+	ActionToggleStrictVerify          struct{}
 	ActionToggleAutoContinue          struct{}
 	ActionInitializeProject           struct{}
 	ActionSwitchProject               struct {

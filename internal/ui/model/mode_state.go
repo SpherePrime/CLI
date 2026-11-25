@@ -100,6 +100,17 @@ func (s *Status) renderModeStates(width int) string {
 		formats[1] = append(formats[1], gdRendered)
 		formats[2] = append(formats[2], gdRendered)
 	}
+	if s.strictVerify {
+		svStyle := lipgloss.NewStyle().Foreground(s.com.Styles.Status.SuccessIndicator.GetForeground())
+		svLabel := s.com.L("status.mode.strict_verify")
+		if svLabel == "" {
+			svLabel = "strict"
+		}
+		svRendered := svStyle.Render(svLabel)
+		formats[0] = append(formats[0], svRendered)
+		formats[1] = append(formats[1], svRendered)
+		formats[2] = append(formats[2], svRendered)
+	}
 	for index, values := range formats {
 		separator := " · "
 		if index > 0 {

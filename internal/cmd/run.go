@@ -144,6 +144,10 @@ prime run --continue "Follow up on your last response"
 				gameDev, _ := cmd.Flags().GetBool("gamedev")
 				runCtx = client.WithGameDev(runCtx, gameDev)
 			}
+			if cmd.Flags().Changed("strict-verify") {
+				strictVerify, _ := cmd.Flags().GetBool("strict-verify")
+				runCtx = client.WithStrictVerify(runCtx, strictVerify)
+			}
 
 			return runNonInteractive(runCtx, c, ws, prompt, largeModel, smallModel, reasoningEffort, quiet || verbose, sessionID, useLast)
 		}

@@ -102,6 +102,8 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 		job.mu.Lock()
 		params := job.params
 		params.GameDev = job.gameDev || c.isGameDevEnabled(ctx, job.rootSessionID)
+		params.StrictVerify = job.strictVerify || c.isStrictVerifyEnabled(ctx, job.rootSessionID)
+		params.AgentName = job.agent
 		if len(job.pending) > 0 {
 			pending := strings.Join(job.pending, "\n\n")
 			if !job.hasRun {
@@ -116,6 +118,9 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 		}
 		job.hasRun = true
 		job.mu.Unlock()
+		if tracker := c.runVerifyTrackerFor(job.rootSessionID); tracker != nil {
+			ctx = withVerifyTracker(ctx, tracker)
+		}
 		permission.InheritSessionSkipRequests(c.permissions, job.parentSessionID, job.sessionID)
 		model := params.Agent.Model()
 		if selected := c.sessionModel(ctx, job.rootSessionID); selected != nil {
@@ -202,6 +207,11 @@ func (c *coordinator) executeWorker(job *agentJob, ctx context.Context) {
 			output = "canceled before it finished"
 		} else if ctx.Err() != nil {
 			job.pending = nil
+		}
+		if job.agent == config.AgentReview && status == "done" {
+			if tracker := c.runVerifyTrackerFor(job.rootSessionID); tracker != nil {
+				tracker.recordReviewResult(output)
+			}
 		}
 		route := c.reviewRoute(job, status, output)
 		if route != nil {

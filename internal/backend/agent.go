@@ -323,6 +323,9 @@ func (b *Backend) runAgent(ws *Workspace, coord agent.Coordinator, msg proto.Age
 	if msg.GameDev != nil {
 		ctx = agent.WithGameDev(ctx, *msg.GameDev)
 	}
+	if msg.StrictVerify != nil {
+		ctx = agent.WithStrictVerify(ctx, *msg.StrictVerify)
+	}
 	if msg.HiddenUserMessage {
 		ctx = message.WithHiddenUserMessage(ctx)
 	}

@@ -458,6 +458,16 @@ func (w *AppWorkspace) UpdateGameDevConfig(req proto.ConfigGameDevRequest) error
 	return w.store.UpdateGameDevConfig(scope, req.SessionID, req.Enabled)
 }
 
+func (w *AppWorkspace) UpdateStrictVerifyConfig(req proto.ConfigStrictVerifyRequest) error {
+	scope := req.Scope
+	if req.SessionID != "" {
+		scope = config.ScopeWorkspace
+	} else if scope != config.ScopeGlobal && scope != config.ScopeWorkspace {
+		scope = config.ScopeGlobal
+	}
+	return w.store.UpdateStrictVerifyConfig(scope, req.SessionID, req.Enabled)
+}
+
 func (w *AppWorkspace) SetCompactMode(scope config.Scope, enabled bool) error {
 	return w.store.SetCompactMode(scope, enabled)
 }

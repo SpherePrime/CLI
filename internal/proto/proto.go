@@ -17,7 +17,8 @@ type Workspace struct {
 	Path     string         `json:"path"`
 	Kind     string         `json:"kind,omitempty"`
 	YOLO     bool           `json:"yolo,omitempty"`
-	GameDev  *bool          `json:"game_dev,omitempty"`
+	GameDev      *bool          `json:"game_dev,omitempty"`
+	StrictVerify *bool          `json:"strict_verify,omitempty"`
 	Debug    bool           `json:"debug,omitempty"`
 	DataDir  string         `json:"data_dir,omitempty"`
 	Version  string         `json:"version,omitempty"`
@@ -147,6 +148,7 @@ type AgentMessage struct {
 	ReasoningMode     string       `json:"reasoning_mode,omitempty"`
 	HiddenUserMessage bool         `json:"hidden_user_message,omitempty"`
 	GameDev           *bool        `json:"game_dev,omitempty"`
+	StrictVerify      *bool        `json:"strict_verify,omitempty"`
 	SessionID         string       `json:"session_id"`
 	RunID             string       `json:"run_id,omitempty"`
 	Prompt            string       `json:"prompt"`
@@ -394,6 +396,12 @@ type ConfigOrchestratorRequest struct {
 }
 
 type ConfigGameDevRequest struct {
+	Scope     config.Scope `json:"scope,omitempty"`
+	SessionID string       `json:"session_id,omitempty"`
+	Enabled   bool         `json:"enabled"`
+}
+
+type ConfigStrictVerifyRequest struct {
 	Scope     config.Scope `json:"scope,omitempty"`
 	SessionID string       `json:"session_id,omitempty"`
 	Enabled   bool         `json:"enabled"`

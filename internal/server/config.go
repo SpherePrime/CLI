@@ -105,6 +105,23 @@ func (c *controllerV1) handlePostWorkspaceConfigGameDev(w http.ResponseWriter, r
 	w.WriteHeader(http.StatusOK)
 }
 
+func (c *controllerV1) handlePostWorkspaceConfigStrictVerify(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var req proto.ConfigStrictVerifyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		c.server.logError(r, "Failed to decode request", "error", err)
+		jsonError(w, http.StatusBadRequest, "failed to decode request")
+		return
+	}
+
+	if err := c.backend.UpdateStrictVerifyConfig(id, req); err != nil {
+		c.handleError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // handlePostWorkspaceConfigCompact sets compact mode.
 func (c *controllerV1) handlePostWorkspaceConfigCompact(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")

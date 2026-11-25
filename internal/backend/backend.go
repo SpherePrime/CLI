@@ -483,6 +483,9 @@ func (b *Backend) CreateWorkspace(args proto.Workspace) (*Workspace, proto.Works
 	if args.GameDev != nil {
 		cfg.OverrideGameDev(*args.GameDev)
 	}
+	if args.StrictVerify != nil {
+		cfg.OverrideStrictVerify(*args.StrictVerify)
+	}
 
 	dataDir := cfg.Config().Options.DataDirectory
 	if err := createDotPrimeDir(dataDir); err != nil {
@@ -1183,6 +1186,10 @@ func workspaceToProto(ws *Workspace) proto.Workspace {
 	if ov := ws.Cfg.Overrides().GameDev; ov != nil {
 		v := *ov
 		out.GameDev = &v
+	}
+	if ov := ws.Cfg.Overrides().StrictVerify; ov != nil {
+		v := *ov
+		out.StrictVerify = &v
 	}
 	if ws.Skills != nil {
 		out.Skills = skillStatesToProto(ws.Skills.States())

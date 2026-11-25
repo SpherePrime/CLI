@@ -118,12 +118,12 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
         aria-label={
           orchestratorActive
             ? `${t('Оркестратор')}: ${orchestratorPairLabel}`
-            : t('Модель и уровень размышлений')
+            : `${modelName} · ${t('Уровень размышлений')}: ${reasoningLabel(mode, t)}`
         }
         title={
           orchestratorActive
             ? `${t('Оркестратор')}: ${plannerDisplay.name || t('Планировщик')} → ${executorDisplay.name || t('Исполнитель')}`
-            : undefined
+            : `${modelName} · ${reasoningLabel(mode, t)}`
         }
         aria-haspopup="dialog"
         aria-expanded={open === 'reasoning' || open === 'models'}
@@ -135,9 +135,9 @@ export function ModelControl({ workspace: w }: { workspace: Workspace }) {
         <span className="model-control-name">
           {orchestratorActive ? t('Оркестратор') : modelName}
         </span>
-        <span className="model-control-level">
-          {orchestratorActive ? orchestratorPairLabel : reasoningLabel(mode, t)}
-        </span>
+        {orchestratorActive && (
+          <span className="model-control-level">{orchestratorPairLabel}</span>
+        )}
       </button>
       {open === 'reasoning' && (
         <ReasoningPopover
