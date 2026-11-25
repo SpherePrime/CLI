@@ -7,12 +7,15 @@ import {
   ClipboardList,
   Cpu,
   FilePen,
+  FileSpreadsheet,
+  FileText,
   GitBranch,
   Github,
   Globe,
   History,
   Network,
   Plug,
+  Presentation,
   Send,
   Server,
   ShieldAlert,
@@ -408,6 +411,49 @@ describe('desktop bridge tools (app_*, browser_resize, github_*, ssh_*)', () => 
       icon: Globe,
       label: 'Браузер',
       detail: 'custom check action'
+    })
+  })
+
+  it('formats built-in document tool titles in Russian and English', () => {
+    expect(toolTitle('pdf_document', { action: 'create', output_path: 'reports/q4.pdf' }, ru)).toEqual({
+      icon: FileText,
+      label: 'PDF-документ',
+      detail: 'создание · q4.pdf'
+    })
+    expect(toolTitle('pdf_document', { action: 'rotate', input_path: 'reports/q4.pdf' }, en)).toEqual({
+      icon: FileText,
+      label: 'PDF document',
+      detail: 'rotate · q4.pdf'
+    })
+    expect(toolTitle('word_document', { action: 'fill_template', output_path: 'docs/contract.docx' }, ru)).toEqual({
+      icon: FileText,
+      label: 'Word-документ',
+      detail: 'заполнение шаблона · contract.docx'
+    })
+    expect(toolTitle('word_document', { action: 'fill_template', output_path: 'docs/contract.docx' }, en)).toEqual({
+      icon: FileText,
+      label: 'Word document',
+      detail: 'fill template · contract.docx'
+    })
+    expect(toolTitle('excel_workbook', { action: 'inspect', path: 'sheets/budget.xlsx' }, ru)).toEqual({
+      icon: FileSpreadsheet,
+      label: 'Excel-таблица',
+      detail: 'просмотр · budget.xlsx'
+    })
+    expect(toolTitle('excel_workbook', { action: 'update', input_path: 'sheets/budget.xlsx' }, en)).toEqual({
+      icon: FileSpreadsheet,
+      label: 'Excel workbook',
+      detail: 'update · budget.xlsx'
+    })
+    expect(toolTitle('powerpoint_presentation', { action: 'create', output_path: 'decks/pitch.pptx' }, ru)).toEqual({
+      icon: Presentation,
+      label: 'Презентация',
+      detail: 'создание · pitch.pptx'
+    })
+    expect(toolTitle('powerpoint_presentation', { action: 'inspect', path: 'decks/pitch.pptx' }, en)).toEqual({
+      icon: Presentation,
+      label: 'Presentation',
+      detail: 'inspect · pitch.pptx'
     })
   })
 })

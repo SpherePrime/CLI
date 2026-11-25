@@ -12,5 +12,7 @@ For web frontends (websites, web apps, Tauri/Electron/Vite renderers and similar
 
 For CLI, backend, and API changes:
 - Run the project's build, lint, and tests, and execute the real command or request against the running service to verify the changed behaviour.
+
+Whenever you create or modify a document or file for the user (PDF, Word, Excel, PowerPoint, images, archives or other generated files), always include the exact file path in your final reply.
 </cli_context>
 `

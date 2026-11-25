@@ -30,6 +30,7 @@ func TestDesktopPromptIdentityAndCapabilities(t *testing.T) {
 				require.Contains(t, body, capability, p.Name())
 			}
 			require.Contains(t, body, "UI features do not grant tool access")
+			require.Contains(t, body, "always include the exact file path in your final reply")
 			require.Contains(t, body, "do NOT re-test or re-check stages or parts already verified with VERDICT: APPROVED by a review agent")
 			require.NotContains(t, body, "private-desktop-token")
 			require.NotContains(t, body, "private-endpoint")
@@ -74,5 +75,6 @@ func TestCLIPromptVerificationContext(t *testing.T) {
 		require.Contains(t, body, "<cli_context>")
 		require.Contains(t, body, "prime-designer")
 		require.Contains(t, body, "Playwright")
+		require.Contains(t, body, "always include the exact file path in your final reply")
 	}
 }

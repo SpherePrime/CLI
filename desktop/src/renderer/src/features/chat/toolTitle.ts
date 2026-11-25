@@ -8,6 +8,8 @@ import {
   FileCode2,
   FilePen,
   FilePlus2,
+  FileSpreadsheet,
+  FileText,
   FolderTree,
   GitBranch,
   Globe,
@@ -19,6 +21,7 @@ import {
   ListTree,
   Network,
   Plug,
+  Presentation,
   ScrollText,
   Search,
   Send,
@@ -78,6 +81,30 @@ function memoryOpLabel(op: string, t: Translate) {
   if (!op) return ''
   const key = memoryOps[op]
   return key ? t(key) : humanizeSegment(op)
+}
+
+const documentActions: Record<string, string> = {
+  create: 'создание',
+  inspect: 'просмотр',
+  update: 'обновление',
+  fill_template: 'заполнение шаблона',
+  merge: 'объединение',
+  split: 'разделение',
+  rotate: 'поворот'
+}
+
+function documentToolDetail(input: any, t: Translate) {
+  const rawAction = text(input?.action).toLowerCase()
+  const actionKey = documentActions[rawAction]
+  const action = actionKey ? t(actionKey) : humanizeSegment(rawAction)
+  const target = fileName(
+    input?.output_path ||
+      input?.path ||
+      input?.input_path ||
+      input?.output_dir ||
+      (Array.isArray(input?.input_paths) ? input.input_paths[0] : '')
+  )
+  return [action, target].filter(Boolean).join(' · ')
 }
 
 function handoffDetail(input: any) {
@@ -143,6 +170,26 @@ const namedTools: Record<string, (input: any, t: Translate) => ToolTitle> = {
     icon: Image,
     label: t('Генерация изображения'),
     detail: text(input?.prompt)
+  }),
+  pdf_document: (input, t) => ({
+    icon: FileText,
+    label: t('PDF-документ'),
+    detail: documentToolDetail(input, t)
+  }),
+  word_document: (input, t) => ({
+    icon: FileText,
+    label: t('Word-документ'),
+    detail: documentToolDetail(input, t)
+  }),
+  excel_workbook: (input, t) => ({
+    icon: FileSpreadsheet,
+    label: t('Excel-таблица'),
+    detail: documentToolDetail(input, t)
+  }),
+  powerpoint_presentation: (input, t) => ({
+    icon: Presentation,
+    label: t('Презентация'),
+    detail: documentToolDetail(input, t)
   }),
   lsp_diagnostics: (_input, t) => ({ icon: Wrench, label: t('Диагностика LSP'), detail: '' }),
   lsp_references: (input, t) => ({

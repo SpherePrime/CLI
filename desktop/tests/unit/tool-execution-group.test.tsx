@@ -84,6 +84,10 @@ describe('toolDiff and toolOutputParser', () => {
     expect(classifyToolCategory('mcp_ssh_ssh_write_file')).toBe('write')
     expect(classifyToolCategory('mcp_ssh_ssh_edit_file')).toBe('edit')
     expect(classifyToolCategory('custom_agent_dispatch')).toBe('task')
+    expect(classifyToolCategory('pdf_document')).toBe('write')
+    expect(classifyToolCategory('word_document')).toBe('write')
+    expect(classifyToolCategory('excel_workbook')).toBe('write')
+    expect(classifyToolCategory('powerpoint_presentation')).toBe('write')
   })
 })
 

@@ -1243,6 +1243,10 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		tools.NewViewTool(c.lspManager, c.permissions, c.filetracker, c.skillTracker, c.cfg.WorkingDir(), c.cfg.Config().Options.SkillsPaths...),
 		tools.NewWriteTool(c.lspManager, c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
 		tools.NewImageGenTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Resolver(), nil, func() (config.ProviderImageModel, bool) { return c.cfg.Config().ProviderImageModel() }),
+		tools.NewPDFDocumentTool(c.permissions, c.cfg.WorkingDir()),
+		tools.NewWordDocumentTool(c.permissions, c.cfg.WorkingDir()),
+		tools.NewExcelWorkbookTool(c.permissions, c.cfg.WorkingDir()),
+		tools.NewPowerPointPresentationTool(c.permissions, c.cfg.WorkingDir()),
 	)
 
 	if slices.Contains(agent.AllowedTools, tools.WebSearchToolName) {

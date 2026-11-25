@@ -32,6 +32,10 @@ export function classifyToolCategory(name: string, isShell = false): ToolCategor
     normalized === 'write' ||
     normalized === 'download' ||
     normalized === 'generate_image' ||
+    normalized === 'pdf_document' ||
+    normalized === 'word_document' ||
+    normalized === 'excel_workbook' ||
+    normalized === 'powerpoint_presentation' ||
     normalized.includes('ssh_write_file')
   ) {
     return 'write'

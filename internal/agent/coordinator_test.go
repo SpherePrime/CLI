@@ -887,3 +887,54 @@ func TestCoordinatorSetMainAgent(t *testing.T) {
 		assert.ErrorIs(t, err, errMainAgentNotFound)
 	})
 }
+
+func TestCoordinatorBuildToolsIncludesDocumentTools(t *testing.T) {
+	env := testEnv(t)
+	cfg, err := config.Init(env.workingDir, "", false)
+	require.NoError(t, err)
+	cfg.Config().SetupAgents()
+
+	coord := &coordinator{
+		cfg:         cfg,
+		sessions:    env.sessions,
+		messages:    env.messages,
+		permissions: env.permissions,
+		history:     env.history,
+		filetracker: *env.filetracker,
+		agentJobs:   make(map[string]*agentJob),
+	}
+
+	built, err := coord.buildTools(t.Context(), cfg.Config().Agents[config.AgentGeneral], true)
+	require.NoError(t, err)
+
+	byName := make(map[string]fantasy.AgentTool, len(built))
+	for _, tool := range built {
+		byName[tool.Info().Name] = tool
+	}
+
+	docTools := []string{
+		"pdf_document",
+		"word_document",
+		"excel_workbook",
+		"powerpoint_presentation",
+	}
+	var selected []fantasy.AgentTool
+	for _, name := range docTools {
+		tool, ok := byName[name]
+		require.True(t, ok, "expected %s in coordinator buildTools", name)
+		card, complete, err := compactToolDefinition(tool)
+		require.NoError(t, err)
+		require.False(t, complete)
+		require.Contains(t, card.Description, readToolDocumentationName)
+		selected = append(selected, tool)
+	}
+
+	docs, err := buildToolDocuments("test", selected)
+	require.NoError(t, err)
+	for _, name := range docTools {
+		doc, ok := docs[name]
+		require.True(t, ok)
+		require.Contains(t, doc.Text, "Tool: "+name)
+		require.Contains(t, doc.Text, "Input schema (JSON Schema):")
+	}
+}
