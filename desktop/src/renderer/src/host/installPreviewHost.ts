@@ -1234,13 +1234,24 @@ export function installPreviewHost() {
       }
       const extMatch = /\.([a-zA-Z0-9]{1,10})$/.exec(trimmed)
       if (extMatch) {
+        const extension = extMatch[1].toLowerCase()
+        const previewSizes: Record<string, number> = {
+          pdf: 131_072,
+          docx: 43_008,
+          doc: 38_912,
+          xlsx: 87_040,
+          xls: 65_536,
+          csv: 18_432,
+          pptx: 1_468_006,
+          ppt: 1_153_433
+        }
         return {
           exists: true,
           kind: 'file',
           name,
           path: trimmed,
-          size: 4096,
-          extension: extMatch[1].toLowerCase(),
+          size: previewSizes[extension] ?? 4096,
+          extension,
           previewable: false,
           revealable: true
         }

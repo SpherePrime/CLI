@@ -1,11 +1,37 @@
 import { isVideoPath } from './video/videoMedia'
 
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif'])
+const DOCUMENT_EXTENSIONS = new Set([
+  'pdf',
+  'docx',
+  'doc',
+  'xlsx',
+  'xls',
+  'csv',
+  'pptx',
+  'ppt',
+  'txt',
+  'md',
+  'rtf',
+  'odt',
+  'ods',
+  'odp',
+  'zip',
+  'json',
+  'html'
+])
 const SCHEME_PREFIX = /^(https?:|prime:|prime-path:|mailto:|tel:|data:|blob:|javascript:)/i
-const TRAILING_PUNCTUATION = /[.,;:!?)\]>'"]+$/
+const NON_PATH_SLASH_PATTERN =
+  /^(?:v?\d+[\\/]\d+$|application[\\/]|text[\\/]|image[\\/]|video[\\/]|audio[\\/]|multipart[\\/]|font[\\/])/i
+const TRAILING_PUNCTUATION = /[.,;:!?)\]>'"»]+$/
 
-const PATH_PATTERN =
-  /(file:\/\/[^\s<>"'`]+|[a-zA-Z]:[\\/][^\s<>"'|?*`]+|\\\\[^\s\\/]+[\\/][^\s<>"'|?*`]+|\/(?:tmp|var|Users|home|opt|mnt|Volumes|srv|root)[\\/][^\s<>"'|?*`]+|(?:\.[\\/])?(?:[A-Za-z0-9_.-]+[\\/])+[A-Za-z0-9_.-]*[\\/]?)/g
+const BARE_FILE_EXTENSIONS =
+  'pdf|docx?|xlsx?|csv|pptx?|txt|md|rtf|od[tsp]|zip|json|html|png|jpe?g|webp|gif|bmp|avif|mp4|webm|mov|m4v|ogv'
+
+const PATH_PATTERN = new RegExp(
+  `(file:\\/\\/[^\\s<>"'\`]+|[a-zA-Z]:[\\\\/][^\\s<>"'|?*\`]+|\\\\\\\\[^\\s\\\\/]+[\\\\/][^\\s<>"'|?*\`]+|\\/(?:tmp|var|Users|home|opt|mnt|Volumes|srv|root)[\\\\/][^\\s<>"'|?*\`]+|(?:\\.[\\\\/])?(?:[\\p{L}\\p{N}_.-]+[\\\\/])+[\\p{L}\\p{N}_.-]*[\\\\/]?|[\\p{L}\\p{N}_-]+(?:\\.[\\p{L}\\p{N}_-]+)*\\.(?:${BARE_FILE_EXTENSIONS})(?=$|[\\s.,;:!?)\\]>'"»\`]))`,
+  'giu'
+)
 
 export const CHAT_PATH_LINK_PREFIX = 'prime-path:'
 
@@ -32,22 +58,35 @@ function stripTrailingPunctuation(raw: string): { path: string; suffix: string }
 function isPrecededByBoundary(text: string, index: number): boolean {
   if (index <= 0) return true
   const prev = text[index - 1]
-  return /[\s(\[{"'`:=]/.test(prev)
+  return /[\s(\[{"'`:=«]/.test(prev)
 }
 
-function isUrlPrefixAt(text: string, index: number): boolean {
-  const prefixStart = Math.max(0, index - 12)
-  const slice = text.slice(prefixStart, index + 8)
-  return /[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(slice)
+function isInsideUrl(text: string, index: number, matchLength: number): boolean {
+  let tokenStart = index
+  while (tokenStart > 0 && !/[\s(\[{"'`«<>]/.test(text[tokenStart - 1])) {
+    tokenStart -= 1
+  }
+  const token = text.slice(tokenStart, index + matchLength)
+  if (/^file:\/\//i.test(token)) return false
+  if (SCHEME_PREFIX.test(token)) return true
+  return /[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(token)
 }
 
-export function isImagePath(path: string): boolean {
-  if (typeof path !== 'string' || !path.trim()) return false
+export function getPathExtension(path: string): string {
+  if (typeof path !== 'string' || !path.trim()) return ''
   const cleaned = path.split(/[?#]/)[0].trim()
   const fileName = cleaned.split(/[\\/]/).pop() || ''
   const dotIndex = fileName.lastIndexOf('.')
-  if (dotIndex <= 0 || dotIndex === fileName.length - 1) return false
-  return IMAGE_EXTENSIONS.has(fileName.slice(dotIndex + 1).toLowerCase())
+  if (dotIndex <= 0 || dotIndex === fileName.length - 1) return ''
+  return fileName.slice(dotIndex + 1).toLowerCase()
+}
+
+export function isImagePath(path: string): boolean {
+  return IMAGE_EXTENSIONS.has(getPathExtension(path))
+}
+
+export function isDocumentPath(path: string): boolean {
+  return DOCUMENT_EXTENSIONS.has(getPathExtension(path))
 }
 
 export function isLocalPathCandidate(value: string): boolean {
@@ -56,17 +95,18 @@ export function isLocalPathCandidate(value: string): boolean {
   if (!trimmed || trimmed.length > 500 || /[\r\n]/.test(trimmed)) return false
   if (/^file:\/\//i.test(trimmed)) return true
   if (SCHEME_PREFIX.test(trimmed)) return false
+  if (/^\.\.[\\/]/.test(trimmed)) return false
   if (/^[a-zA-Z]:[\\/].+/.test(trimmed)) return true
   if (/^\\\\[^\\/\s]+[\\/][^\\/\s]+/.test(trimmed)) return true
   if (/^\/(?:tmp|var|Users|home|opt|mnt|Volumes|srv|root)[\\/].+/.test(trimmed)) return true
-  if (/^\.\.?[\\/]/.test(trimmed)) return false
-  if (isImagePath(trimmed) || isVideoPath(trimmed)) {
+  if (isImagePath(trimmed) || isVideoPath(trimmed) || isDocumentPath(trimmed)) {
     return !/[<>|?*]/.test(trimmed)
   }
-  if (/^(?:[A-Za-z0-9_.-]+[\\/])+[A-Za-z0-9_.-]*[\\/]?$/.test(trimmed)) {
-    return !/^(?:v?\d+[\\/]\d+|application[\\/]|text[\\/]|image[\\/]|video[\\/]|audio[\\/])/i.test(
-      trimmed
-    )
+  if (/^\.[\\/](?:[\p{L}\p{N}_.-]+[\\/]?)+$/u.test(trimmed)) {
+    return !/[<>|?*]/.test(trimmed)
+  }
+  if (/^(?:[\p{L}\p{N}_.-]+[\\/])+[\p{L}\p{N}_.-]*[\\/]?$/u.test(trimmed)) {
+    return !NON_PATH_SLASH_PATTERN.test(trimmed)
   }
   return false
 }
@@ -74,7 +114,7 @@ export function isLocalPathCandidate(value: string): boolean {
 export function isExplicitRelativePathCandidate(value: string): boolean {
   if (typeof value !== 'string') return false
   const trimmed = value.trim()
-  if (/^\.[\\/](?:[A-Za-z0-9_.-]+[\\/]?)+/.test(trimmed)) {
+  if (/^\.[\\/](?:[\p{L}\p{N}_.-]+[\\/]?)+$/u.test(trimmed)) {
     return !/[<>|?*\r\n]/.test(trimmed)
   }
   return isLocalPathCandidate(trimmed)
@@ -89,7 +129,7 @@ export function extractTextPathSegments(text: string): TextPathSegment[] {
   while ((match = PATH_PATTERN.exec(text)) !== null) {
     const start = match.index
     if (!isPrecededByBoundary(text, start)) continue
-    if (!/^file:\/\//i.test(match[0]) && isUrlPrefixAt(text, start)) continue
+    if (!/^file:\/\//i.test(match[0]) && isInsideUrl(text, start, match[0].length)) continue
     const { path, suffix } = stripTrailingPunctuation(match[0])
     if (!path || !isExplicitRelativePathCandidate(path)) continue
     if (start > cursor) {

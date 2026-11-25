@@ -1278,6 +1278,8 @@ export const english: Record<string, string> = {
   'Выбрать': 'Select',
   'Активна': 'Active',
   '{value0}%': '{value0}%',
+  '{value0} Б': '{value0} B',
+  '{value0} КБ': '{value0} KB',
   '{value0} МБ': '{value0} MB',
   '{value0} ГБ': '{value0} GB',
   'Голос и речь': 'Voice & speech',

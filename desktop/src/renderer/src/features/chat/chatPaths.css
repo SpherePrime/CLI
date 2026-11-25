@@ -194,6 +194,219 @@
   color: var(--text);
 }
 
+.chat-path-open-btn:focus-visible,
+.chat-path-file-reveal-btn:focus-visible,
+.chat-path-chip:focus-visible,
+.chat-path-reveal-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.chat-path-file-card,
+.chat-path-chip.is-file {
+  --file-accent: var(--secondary);
+  --file-icon-bg: var(--raised);
+  --file-icon-border: var(--border);
+  --file-badge-bg: color-mix(in srgb, var(--muted) 14%, transparent);
+  --file-badge-text: var(--secondary);
+}
+
+.chat-path-file-card.is-pdf,
+.chat-path-chip.is-file.is-pdf {
+  --file-accent: var(--red);
+  --file-icon-bg: color-mix(in srgb, var(--red) 12%, var(--raised));
+  --file-icon-border: color-mix(in srgb, var(--red) 26%, var(--border));
+  --file-badge-bg: color-mix(in srgb, var(--red) 13%, transparent);
+  --file-badge-text: var(--red);
+}
+
+.chat-path-file-card.is-doc,
+.chat-path-chip.is-file.is-doc {
+  --file-accent: #89b0e8;
+  --file-icon-bg: color-mix(in srgb, var(--file-accent) 12%, var(--raised));
+  --file-icon-border: color-mix(in srgb, var(--file-accent) 26%, var(--border));
+  --file-badge-bg: color-mix(in srgb, var(--file-accent) 13%, transparent);
+  --file-badge-text: var(--file-accent);
+}
+
+:root[data-theme='light'] .chat-path-file-card.is-doc,
+:root[data-theme='light'] .chat-path-chip.is-file.is-doc {
+  --file-accent: #315ea2;
+}
+
+.chat-path-file-card.is-sheet,
+.chat-path-chip.is-file.is-sheet {
+  --file-accent: var(--green);
+  --file-icon-bg: color-mix(in srgb, var(--green) 12%, var(--raised));
+  --file-icon-border: color-mix(in srgb, var(--green) 26%, var(--border));
+  --file-badge-bg: color-mix(in srgb, var(--green) 13%, transparent);
+  --file-badge-text: var(--green);
+}
+
+.chat-path-file-card.is-slides,
+.chat-path-chip.is-file.is-slides {
+  --file-accent: var(--amber);
+  --file-icon-bg: color-mix(in srgb, var(--amber) 12%, var(--raised));
+  --file-icon-border: color-mix(in srgb, var(--amber) 26%, var(--border));
+  --file-badge-bg: color-mix(in srgb, var(--amber) 13%, transparent);
+  --file-badge-text: var(--amber);
+}
+
+.chat-path-file-card {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 11px;
+  width: min(440px, 100%);
+  max-width: 100%;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+  transition:
+    border-color var(--fast, 140ms) ease,
+    background var(--fast, 140ms) ease;
+}
+
+.chat-path-file-card:hover {
+  border-color: color-mix(in srgb, var(--file-accent) 36%, var(--border));
+}
+
+.chat-path-file-main {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: 1 1 170px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chat-path-file-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--file-icon-bg);
+  border: 1px solid var(--file-icon-border);
+  color: var(--file-accent);
+}
+
+.chat-path-file-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-path-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-path-file-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.chat-path-file-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--file-badge-bg);
+  color: var(--file-badge-text);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+.chat-path-file-sep {
+  color: var(--muted);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.chat-path-file-size {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-path-file-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 0 1 auto;
+  margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chat-path-file-actions .chat-path-open-btn {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-path-file-actions .chat-path-open-btn span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-path-file-reveal-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  color: var(--secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background var(--fast, 140ms) ease,
+    border-color var(--fast, 140ms) ease,
+    color var(--fast, 140ms) ease;
+}
+
+.chat-path-file-reveal-btn:hover:not(:disabled),
+.chat-path-file-reveal-btn:focus-visible {
+  background: var(--hover);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--text);
+}
+
 .chat-path-inline-group {
   display: inline-flex;
   align-items: center;
@@ -238,6 +451,23 @@
   color: var(--accent);
 }
 
+.chat-path-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--file-accent);
+}
+
+.chat-path-chip.is-file svg {
+  color: var(--file-accent);
+}
+
+.chat-path-chip.is-file:hover:not(:disabled),
+.chat-path-chip.is-file:focus-visible {
+  border-color: color-mix(in srgb, var(--file-accent) 42%, var(--border));
+}
+
 .chat-path-chip img {
   width: 16px;
   height: 16px;
@@ -267,6 +497,7 @@
   height: 22px;
   min-width: 22px;
   min-height: 22px;
+  flex-shrink: 0;
   padding: 0;
   vertical-align: middle;
   border: 1px solid var(--border);

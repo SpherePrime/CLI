@@ -7,6 +7,7 @@ import { useWorkspaceMediaId } from './WorkspaceMediaContext'
 import { WorkspaceVideo } from './video/WorkspaceVideo'
 import { fileNameFromPath, isDirectMediaUrl } from './video/videoMedia'
 import { isImagePath } from './chatPaths'
+import { ChatPathFileView, revealChatPathTarget } from './ChatPathFileView'
 import './chatPaths.css'
 
 type CachedInspection = {
@@ -147,14 +148,24 @@ export function ChatPathEntry({
     return renderFallback()
   }
 
-  if (inspected.kind === 'file') {
-    return renderFallback()
-  }
-
   const targetPath = inspected.path || trimmed
   const displayName = label || inspected.name || fileNameFromPath(targetPath) || targetPath
   const openInExplorer = () => {
-    void window.prime?.reveal?.(workspaceId || '', targetPath)
+    revealChatPathTarget(workspaceId || '', targetPath)
+  }
+
+  if (inspected.kind === 'file') {
+    return (
+      <ChatPathFileView
+        variant={variant}
+        workspaceId={workspaceId || ''}
+        targetPath={targetPath}
+        displayName={displayName}
+        extension={inspected.extension}
+        size={inspected.size}
+        t={t}
+      />
+    )
   }
 
   if (inspected.kind === 'dir') {
