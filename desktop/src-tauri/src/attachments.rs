@@ -30,6 +30,37 @@ impl Attachments {
         })
     }
 
+    fn sanitize_file_name(name: &str) -> String {
+        const MAX_CHARS: usize = 200;
+        let sanitized: String = name
+            .chars()
+            .map(|character| {
+                if character.is_control() || matches!(character, '/' | '\\') {
+                    '_'
+                } else {
+                    character
+                }
+            })
+            .collect();
+        if sanitized.trim().is_empty() {
+            return "attachment".to_owned();
+        }
+        if sanitized.chars().count() <= MAX_CHARS {
+            return sanitized;
+        }
+        if let Some(dot_index) = sanitized.rfind('.') {
+            let stem = &sanitized[..dot_index];
+            let ext = &sanitized[dot_index..];
+            let ext_chars = ext.chars().count();
+            if !stem.is_empty() && ext_chars > 1 && ext_chars < MAX_CHARS {
+                let mut truncated: String = stem.chars().take(MAX_CHARS - ext_chars).collect();
+                truncated.push_str(ext);
+                return truncated;
+            }
+        }
+        sanitized.chars().take(MAX_CHARS).collect()
+    }
+
     fn detect_non_image_mime(name: &str, bytes: &[u8]) -> &'static str {
         if bytes.starts_with(b"%PDF-") {
             return "application/pdf";
@@ -88,22 +119,7 @@ impl Attachments {
         if image_only && image.is_none() {
             return Err(HostError::new("INVALID_IMAGE", "Unsupported image format"));
         }
-        let sanitized: String = name
-            .chars()
-            .take(200)
-            .map(|character| {
-                if character.is_control() || matches!(character, '/' | '\\') {
-                    '_'
-                } else {
-                    character
-                }
-            })
-            .collect();
-        let name = if sanitized.trim().is_empty() {
-            "attachment".to_owned()
-        } else {
-            sanitized
-        };
+        let name = Self::sanitize_file_name(name);
         let mime = image.unwrap_or_else(|| Self::detect_non_image_mime(&name, bytes));
         let id = uuid::Uuid::new_v4().to_string();
         let mut descriptor = json!({"id":id,"name":name,"size":bytes.len(),"mimeType":mime});
@@ -372,5 +388,37 @@ mod tests {
         assert_eq!(imported[3]["mimeType"], "application/pdf");
         assert_eq!(imported[4]["mimeType"], "application/octet-stream");
         assert_eq!(imported[5]["mimeType"], "text/plain");
+    }
+
+    #[test]
+    fn import_attachments_preserves_extension_and_mime_when_truncating_long_names() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut store =
+            Attachments::new(directory.path().join("attachments").to_path_buf()).unwrap();
+        let zip_magic = base64::engine::general_purpose::STANDARD
+            .encode([0x50, 0x4B, 0x03, 0x04, 0x00, 0xFF, 0x14]);
+        let long_docx = format!("{}.docx", "отчёт_".repeat(40));
+        assert!(long_docx.chars().count() > 200);
+
+        let imported = store
+            .import_attachments(&json!([
+                {"name": long_docx, "data": zip_magic}
+            ]))
+            .unwrap();
+
+        let stored_name = imported[0]["name"].as_str().unwrap();
+        assert_eq!(stored_name.chars().count(), 200);
+        assert!(stored_name.ends_with(".docx"));
+        assert_eq!(
+            imported[0]["mimeType"],
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        );
+
+        let resolved = store.resolve(&json!([imported[0]["id"]])).unwrap();
+        assert_eq!(resolved[0]["file_name"], stored_name);
+        assert_eq!(
+            resolved[0]["mime_type"],
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        );
     }
 }

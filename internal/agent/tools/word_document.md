@@ -2,7 +2,7 @@ Create, inspect, update, or fill templates in Microsoft Word (.docx) documents n
 
 ## Actions
 
-- `create`: Build a styled `.docx` file at `output_path` from structured `blocks` (`heading`, `paragraph`, `bullets`, `numbered_list`, `table`, `callout`, `divider`, `image`, `page_break`) with optional `title`, `subtitle`, `author`, `subject`, `header`, `footer`, and `page_numbers`.
+- `create`: Build a styled `.docx` file at `output_path` from structured `blocks` (`heading`, `paragraph`, `bullet_list`, `numbered_list`, `table`, `callout`, `divider`, `image`, `page_break`) with optional `title`, `subtitle`, `author`, `subject`, `header`, `footer`, and `page_numbers`.
 - `inspect`: Extract metadata, headings, paragraphs, tables, headers, footers, comments, and `{{placeholder}}` names from an existing `.docx` (`path` or `input_path`). Read-only; does not require write permission.
 - `update`: Modify an existing `.docx` (`input_path`, optional `output_path` defaulting to in-place) with exact text `replacements`, zero-based `table_updates`, and `append_blocks`, preserving existing formatting and XML parts.
 - `fill_template`: Replace `{{key}}` placeholders across body, headers, footers, and split XML runs from `input_path` into `output_path` using `values`.

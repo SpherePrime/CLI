@@ -22,7 +22,7 @@ Each sheet object supports:
 - `rows`: 2D array of values (strings, numbers, booleans, or formula strings starting with `=`)
 - `cells`: map of A1 cell coordinates to values/formulas for non-tabular or summary cells
 - `styles`: `[{range, style}]` where `style` supports `bold`, `italic`, `underline`, `font_family`, `font_size`, `font_color`, `fill`, `border`, `border_style` (`thin`, `medium`, `dashed`, `dotted`, `thick`, `double`), `border_color`, `align`, `vertical_align`, `wrap_text`, `num_fmt`
-- `col_widths` (`{"A": 24}`), `row_heights` (`{1: 24}`), `auto_fit` (`true`/`false`)
+- `col_widths` (`{"A": 24}`), `row_heights` (`{"1": 24}`), `auto_fit` (`true`/`false`)
 - `freeze_pane`: top-left unfrozen cell (e.g. `"A2"` freezes row 1)
 - `auto_filter`: filter range (e.g. `"A1:F25"`)
 - `merges`: list of A1 ranges (e.g. `["A1:D1"]`)

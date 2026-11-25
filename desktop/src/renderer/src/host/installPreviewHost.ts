@@ -1320,6 +1320,15 @@ export function installPreviewHost() {
         }
         const base64 = btoa(binary)
         const lower = file.name.toLowerCase()
+        const isBinaryData = (() => {
+          if (file.data.includes(0)) return true
+          try {
+            new TextDecoder('utf-8', { fatal: true }).decode(file.data)
+            return false
+          } catch {
+            return true
+          }
+        })()
         const mimeType = lower.endsWith('.png')
           ? 'image/png'
           : lower.endsWith('.jpg') || lower.endsWith('.jpeg')
@@ -1336,9 +1345,13 @@ export function installPreviewHost() {
                       ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                       : lower.endsWith('.pptx')
                         ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-                        : lower.endsWith('.md') || lower.endsWith('.markdown')
-                          ? 'text/markdown'
-                          : 'text/plain'
+                        : isBinaryData
+                          ? 'application/octet-stream'
+                          : lower.endsWith('.md') || lower.endsWith('.markdown')
+                            ? 'text/markdown'
+                            : lower.endsWith('.csv')
+                              ? 'text/csv'
+                              : 'text/plain'
         const id = `att-preview-${Date.now()}-${index}`
         const preview = mimeType.startsWith('image/') ? `data:${mimeType};base64,${base64}` : ''
         previewAttachments.set(id, {

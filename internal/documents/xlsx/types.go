@@ -305,7 +305,7 @@ func mapChartType(kind string) (excelize.ChartType, error) {
 	case "doughnut", "donut":
 		return excelize.Doughnut, nil
 	default:
-		return 0, fmt.Errorf("unsupported chart type %q (supported: col, bar, line, pie)", kind)
+		return 0, fmt.Errorf("unsupported chart type %q (supported: col, col_stacked, bar, bar_stacked, line, pie, doughnut, area)", kind)
 	}
 }
 

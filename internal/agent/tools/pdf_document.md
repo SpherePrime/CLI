@@ -2,7 +2,7 @@ Create, inspect, merge, split, or rotate PDF documents natively with full UTF-8 
 
 ## Actions
 
-- `create`: Generate a formatted PDF from structured `blocks` (`heading`, `paragraph`, `bullets`, `numbered_list`, `table`, `callout`, `divider`, `image`, `page_break`) with optional `title`, `subtitle`, `author`, `subject`, `page_size` (`A4` or `Letter`), `orientation` (`portrait` or `landscape`), `margins`, `header`, `footer`, and `page_numbers`. Requires `output_path`.
+- `create`: Generate a formatted PDF from structured `blocks` (`heading`, `paragraph`, `bullet_list`, `numbered_list`, `table`, `callout`, `divider`, `image`, `page_break`) with optional `title`, `subtitle`, `author`, `subject`, `page_size` (`A4` or `Letter`), `orientation` (`portrait` or `landscape`), `margins`, `header`, `footer`, and `page_numbers`. Requires `output_path`.
 - `inspect`: Read metadata, page dimensions, rotation, and extracted text from an existing PDF (`path` or `input_path`, optional `page_range`). Read-only; does not require write permission.
 - `merge`: Combine multiple PDFs (`input_paths`) into `output_path`.
 - `split`: Extract selected pages (`page_range` into `output_path` or `output_dir`) or split into fixed-size chunks (`span` pages per file into `output_dir`) from `input_path`.
