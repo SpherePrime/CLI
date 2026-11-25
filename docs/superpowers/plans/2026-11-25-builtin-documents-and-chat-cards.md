@@ -381,7 +381,7 @@ git commit -m "feat(skills): add hidden builtin skills for pdf, docx, xlsx, and 
 - Modify: `desktop/src-tauri/src/commands.rs` (`openPath` and `importAttachments` commands)
 - Modify: `desktop/src/shared/hostMethods.json`, `desktop/src/shared/contracts.ts`, `desktop/src/renderer/src/host/installPreviewHost.ts`
 - Modify: `internal/backend/agent.go`, `internal/message/content.go`, `internal/agent/agent.go`, `internal/agent/agent_test.go` (persist attached non-text/non-image documents in `<dataDir>/attachments/<sessionID>/<safe_name>` and pass `<attached_document name="..." mime="..." path="...">` to the prompt without dumping raw ZIP binary bytes or sending unsupported Office MIME `FilePart`s)
-- Modify: `desktop/src/renderer/src/features/chat/Composer.tsx`, `desktop/src/renderer/src/features/chat/MessageAttachment.tsx`, `desktop/src/shared/translations.ts`
+- Modify: `desktop/src/renderer/src/features/chat/Composer.tsx`, `desktop/src/renderer/src/features/chat/pasteImages.ts`, `desktop/src/renderer/src/features/chat/MessageAttachment.tsx`, `desktop/src/shared/translations.ts`
 
 **Interfaces:**
 - Consumes: `desktop/src-tauri/src/attachments.rs`, `internal/backend/agent.go`, `internal/message/content.go`
@@ -402,7 +402,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Implement Rust host updates, Go attachment persistence/prompt formatting, and React Composer drag-and-drop + MessageAttachment document badge**
 
-Update `attachments.rs` (inspect ZIP magic / filename extension for `.docx`/`.xlsx`/`.pptx`), `media.rs`, `commands.rs` (`openPath`, `importAttachments`), `contracts.ts`, `hostMethods.json`, `installPreviewHost.ts`, `internal/backend/agent.go`, `internal/message/content.go`, `internal/agent/agent.go`, `Composer.tsx` (handle `onDragOver`/`onDrop` for files and non-image empty prompt fallback `"Посмотри на вложение."`), and `MessageAttachment.tsx` (show clean document attachment pill with filename & icon).
+Update `attachments.rs` (inspect ZIP magic / filename extension for `.docx`/`.xlsx`/`.pptx`), `media.rs`, `commands.rs` (`openPath`, `importAttachments`), `contracts.ts`, `hostMethods.json`, `installPreviewHost.ts`, `internal/backend/agent.go`, `internal/message/content.go`, `internal/agent/agent.go`, `pasteImages.ts` (extract both images and non-image files from clipboard/drop DataTransfer), `Composer.tsx` (handle `Ctrl+V` paste and `onDragOver`/`onDrop` for all documents/files as well as images, and non-image empty prompt fallback `"Посмотри на вложение."`), and `MessageAttachment.tsx` (show clean document attachment pill with filename & icon).
 
 - [ ] **Step 4: Run Rust, Go, and Vitest unit tests**
 
