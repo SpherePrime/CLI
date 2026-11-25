@@ -1,4 +1,4 @@
-import { Fragment, memo, useEffect, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   Archive,
@@ -58,6 +58,7 @@ export const MessageItem = memo(function MessageItem({
   useEffect(() => () => clearTimeout(copiedTimer.current), [])
   const text = textContent(message)
   const parts = message.parts || []
+  const segments = useMemo(() => partitionMessageParts(parts), [parts])
   const messageFinished = parts.some((part) => part.type === 'finish')
   const phase = message.role === 'assistant' ? message.orchestrator_phase : undefined
   const showOrchestratorPhase = Boolean(phase && phase !== previousOrchestratorPhase)
@@ -156,7 +157,7 @@ export const MessageItem = memo(function MessageItem({
             </span>
           </div>
         )}
-        {partitionMessageParts(message.parts || []).map((segment) => {
+        {segments.map((segment) => {
           if (segment.kind === 'tool-group') {
             const groupImages: ToolImage[] = []
             const groupCaptions: string[] = []
@@ -170,8 +171,13 @@ export const MessageItem = memo(function MessageItem({
                 groupCaptions.push(partCaptions[idx] || image.path || '')
               })
             }
+            const firstPart = segment.parts[0]
+            const groupKey =
+              firstPart?.data?.id ||
+              firstPart?.data?.tool_call_id ||
+              (firstPart?.type === 'shell_command' ? `shell-${segment.index}` : `group-${segment.index}`)
             return (
-              <div className="tool-part" key="turn-tool-group">
+              <div className="tool-part" key={`tool-group-${groupKey}`}>
                 <ToolExecutionGroup
                   parts={segment.parts}
                   messageId={message.id}

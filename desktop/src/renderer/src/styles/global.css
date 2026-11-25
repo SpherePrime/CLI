@@ -984,6 +984,7 @@ kbd {
 .message {
   position: relative;
   margin-bottom: 32px;
+  contain: layout style;
 }
 .message-author {
   display: flex;

@@ -93,6 +93,18 @@ describe('conversationTiming', () => {
     expect(isEndOfTurn(messages, 3, true)).toBe(false)
   })
 
+  it('resolves completed duration when consecutive assistant messages are merged into one turn', () => {
+    const messages = [
+      message('u1', 'user', 100, [text('start')]),
+      message('a1', 'assistant', 101, [finish('tool_use', 105)], {
+        _mergedIds: ['a1', 'a2', 'a3']
+      } as Partial<Message>)
+    ]
+    const completed = new Map([['a3', 42]])
+    expect(isEndOfTurn(messages, 1, false)).toBe(true)
+    expect(turnCompletedDuration(messages, 1, completed)).toBe(42)
+  })
+
   it('ignores summary messages in timing, end-of-turn detection, and completed duration lookup', () => {
     const messages = [
       message('u1', 'user', 100, [text('start')]),

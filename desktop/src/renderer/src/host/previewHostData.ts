@@ -630,7 +630,7 @@ export function createPreviewMessages(): Record<string, Message[]> {
           },
           {
             type: 'finish',
-            data: { reason: 'stop' }
+            data: { reason: 'stop', time: nowSec - 355 }
           }
         ]
       }

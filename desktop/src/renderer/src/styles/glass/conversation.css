@@ -72,7 +72,6 @@
   box-shadow:
     inset 0 1px #ffffff14,
     0 8px 24px var(--glow-soft);
-  backdrop-filter: var(--glass-blur);
 }
 :root[data-theme='light'] .message.user .message-body {
   box-shadow:

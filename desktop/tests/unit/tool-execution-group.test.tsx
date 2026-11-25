@@ -92,7 +92,7 @@ describe('toolDiff and toolOutputParser', () => {
 })
 
 describe('ToolExecutionGroup and consecutive tool message merging', () => {
-  it('merges adjacent assistant messages in a single turn, keeping texts on top and all actions in one group below', () => {
+  it('merges adjacent assistant tool-only messages and keeps text before tool group in order', () => {
     const merged = mergeConsecutiveToolMessages([
       makeMsg('a1', [
         { type: 'tool_call', data: { id: 'c1', name: 'edit', input: '{}', result: { content: 'ok' } } },
@@ -109,9 +109,9 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
     expect(merged[0].parts.filter((p) => p.type === 'tool_call')).toHaveLength(2)
 
     const segments = partitionMessageParts(merged[0].parts)
-    expect(segments.map((s) => s.kind)).toEqual(['part', 'tool-group'])
-    expect(segments[0].kind === 'part' && segments[0].part.data?.text).toBe('Done!')
-    expect(segments[1].kind === 'tool-group' && segments[1].parts).toHaveLength(2)
+    expect(segments.map((s) => s.kind)).toEqual(['tool-group', 'part'])
+    expect(segments[0].kind === 'tool-group' && segments[0].parts).toHaveLength(2)
+    expect(segments[1].kind === 'part' && segments[1].part.data?.text).toBe('Done!')
   })
 
   it('does not inherit finish from turn 1 when turn 2 is still running', () => {
@@ -265,7 +265,7 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
     expect(runningHtml).not.toContain('open=""')
   })
 
-  it('merges entire assistant turn across intermediate texts, keeping only latest reasoning and one bottom group', () => {
+  it('preserves chronological order of text and separate action groups across a multi-step turn', () => {
     const merged = mergeConsecutiveToolMessages([
       makeMsg('a1', [
         { type: 'reasoning', data: { thinking: 'Step 1 thinking', started_at: 10, finished_at: 12 } },
@@ -300,12 +300,20 @@ describe('ToolExecutionGroup and consecutive tool message merging', () => {
     const visibleSegments = segments.filter(
       (s) => s.kind === 'tool-group' || s.part.type !== 'finish'
     )
-    expect(visibleSegments.map((s) => s.kind)).toEqual(['part', 'part', 'part', 'part', 'tool-group'])
+    expect(visibleSegments.map((s) => s.kind)).toEqual([
+      'part',
+      'tool-group',
+      'part',
+      'part',
+      'tool-group',
+      'part'
+    ])
     expect(visibleSegments[0].kind === 'part' && visibleSegments[0].part.data?.text).toBe('Checking folder first.')
-    expect(visibleSegments[1].kind === 'part' && visibleSegments[1].part.data?.text).toBe('Building mini game now.')
-    expect(visibleSegments[2].kind === 'part' && visibleSegments[2].part.data?.text).toBe('All done!')
-    expect(visibleSegments[3].kind === 'part' && visibleSegments[3].part.type).toBe('reasoning')
-    expect(visibleSegments[4].kind === 'tool-group' && visibleSegments[4].parts).toHaveLength(3)
+    expect(visibleSegments[1].kind === 'tool-group' && visibleSegments[1].parts.map((p) => p.data.id)).toEqual(['c1', 'c2'])
+    expect(visibleSegments[2].kind === 'part' && visibleSegments[2].part.type).toBe('reasoning')
+    expect(visibleSegments[3].kind === 'part' && visibleSegments[3].part.data?.text).toBe('Building mini game now.')
+    expect(visibleSegments[4].kind === 'tool-group' && visibleSegments[4].parts.map((p) => p.data.id)).toEqual(['c3'])
+    expect(visibleSegments[5].kind === 'part' && visibleSegments[5].part.data?.text).toBe('All done!')
   })
 
   it('keeps separate action groups across different user tasks', () => {

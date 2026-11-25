@@ -30,7 +30,7 @@ const BARE_FILE_EXTENSIONS =
   'pdf|docx?|xlsx?|csv|pptx?|txt|md|rtf|od[tsp]|zip|json|html|png|jpe?g|webp|gif|bmp|avif|mp4|webm|mov|m4v|ogv'
 
 const PATH_PATTERN = new RegExp(
-  `(file:\\/\\/[^\\s<>"'\`]+|[a-zA-Z]:[\\\\/][^\\s<>"'|?*\`]+|\\\\\\\\[^\\s\\\\/]+[\\\\/][^\\s<>"'|?*\`]+|\\/(?:tmp|var|Users|home|opt|mnt|Volumes|srv|root)[\\\\/][^\\s<>"'|?*\`]+|(?:\\.[\\\\/])?(?:[\\p{L}\\p{N}_.-]+[\\\\/])+[\\p{L}\\p{N}_.-]*[\\\\/]?|[\\p{L}\\p{N}_-]+(?:\\.[\\p{L}\\p{N}_-]+)*\\.(?:${BARE_FILE_EXTENSIONS})(?=$|[\\s.,;:!?)\\]>'"»\`]))`,
+  `(file:\\/\\/[^\\s<>"'\`]+|[a-zA-Z]:(?:[\\\\/][^\\s\\\\/<>"'|?*\`,;:!?]+(?: [^\\s\\\\/<>"'|?*\`,;:!?]+)*?)+\\.(?:${BARE_FILE_EXTENSIONS})(?=$|[\\s.,;:!?)\\]>'"»\`])|[a-zA-Z]:[\\\\/][^\\s<>"'|?*\`]+|\\\\\\\\[^\\s\\\\/]+[\\\\/][^\\s<>"'|?*\`]+|\\/(?:tmp|var|Users|home|opt|mnt|Volumes|srv|root)(?:\\/[^\\s\\\\/<>"'|?*\`,;:!?]+(?: [^\\s\\\\/<>"'|?*\`,;:!?]+)*?)+\\.(?:${BARE_FILE_EXTENSIONS})(?=$|[\\s.,;:!?)\\]>'"»\`])|\\/(?:tmp|var|Users|home|opt|mnt|Volumes|srv|root)[\\\\/][^\\s<>"'|?*\`]+|(?:\\.[\\\\/])?(?:[\\p{L}\\p{N}_.-]+[\\\\/])+[\\p{L}\\p{N}_.-]*[\\\\/]?|[\\p{L}\\p{N}_-]+(?:\\.[\\p{L}\\p{N}_-]+)*\\.(?:${BARE_FILE_EXTENSIONS})(?=$|[\\s.,;:!?)\\]>'"»\`]))`,
   'giu'
 )
 

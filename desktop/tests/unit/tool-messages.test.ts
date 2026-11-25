@@ -46,6 +46,21 @@ describe('consolidateToolMessages', () => {
     expect(shown.map((item) => item.id)).toEqual(['u1', 'a-empty-finished'])
   })
 
+  it('drops orphaned tool-only messages across pagination boundaries while keeping matched tool results', () => {
+    const shown = consolidateToolMessages([
+      message('orphan-tool', 'tool', [
+        { type: 'tool_result', data: { tool_call_id: 'missing-call', name: 'view', content: 'old file' } }
+      ]),
+      message('a1', 'assistant', [
+        { type: 'tool_call', data: { id: 'c1', name: 'view', input: '{"file_path":"a.ts"}' } }
+      ]),
+      message('t1', 'tool', [
+        { type: 'tool_result', data: { tool_call_id: 'c1', name: 'view', content: 'ok' } }
+      ])
+    ])
+    expect(shown.map((item) => item.id)).toEqual(['a1'])
+  })
+
   it('hides builtin Prime skill reads in chat while keeping user skills and project files visible', () => {
     const shown = consolidateToolMessages([
       message('u1', 'user', [{ type: 'text', data: { text: 'Make a game UI' } }]),

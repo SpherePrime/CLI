@@ -404,6 +404,7 @@ export const english: Record<string, string> = {
   'Вложение ·': 'Attachment ·',
   'Скопировать сообщение': 'Copy message',
   'Prime работает': 'Prime is working',
+  'Prime работал {time}': 'Prime worked for {time}',
   'Работал {time}': 'Worked for {time}',
   'Новые сообщения': 'New messages',
   '· рассуждения': '· reasoning',

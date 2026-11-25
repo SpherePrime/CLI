@@ -2,7 +2,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useI18n } from '../../i18n'
 import { consolidateToolMessages } from '../../../../shared/toolMessages'
 import { mergeConsecutiveToolMessages, type MergedMessage } from './toolGroupMerge'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { Message, OrchestratorPhase } from '../../../../shared/contracts'
 import type { PreferredDesignImage } from '../designer/designHandoff'
@@ -63,7 +63,7 @@ export function MessageList({
   const leavingBottom = useRef(false)
   const stable = useRef<Message[]>([])
   const timing = useMemo(() => {
-    const local = conversationTiming(messages)
+    const local = conversationTiming(messages, historyTiming?.started_at)
     return {
       startedAt: historyTiming?.started_at ? historyTiming.started_at * 1000 : local.startedAt,
       completed: new Map([...local.completed, ...Object.entries(historyTiming?.completed || {})])
@@ -76,6 +76,16 @@ export function MessageList({
         mergeConsecutiveToolMessages(consolidateToolMessages(messages))
       )),
     [messages]
+  )
+  const visibleRef = useRef(visible)
+  visibleRef.current = visible
+  const handleImplementDesign = useMemo(
+    () =>
+      onImplementDesign
+        ? (target: Message, preferredImage?: PreferredDesignImage) =>
+            onImplementDesign(target, visibleRef.current, preferredImage)
+        : undefined,
+    [onImplementDesign]
   )
   const [query, setQuery] = useState('')
   const [matchIndex, setMatchIndex] = useState(0)
@@ -126,7 +136,7 @@ export function MessageList({
     getScrollElement: () => viewport.current,
     getItemKey: (index) => visible[index].id,
     estimateSize: () => 180,
-    overscan: 6
+    overscan: 3
   })
   const paging = useHistoryPaging({
     messages: visible,
@@ -179,7 +189,7 @@ export function MessageList({
       setFollowing(atBottom)
       if (atBottom && !leavingBottom.current) followingRef.current = true
     }
-  }, [messages, virtualizer.getTotalSize()])
+  }, [visible, virtualizer.getTotalSize()])
   useEffect(() => {
     const view = viewport.current
     if (!view) return
@@ -205,7 +215,10 @@ export function MessageList({
       stableFrames = size === lastSize ? stableFrames + 1 : 0
       lastSize = size
       if (followingRef.current) virtualizer.scrollToEnd()
-      if (stableFrames >= 2 || performance.now() - startedAt > 500) setSettled(true)
+      if (stableFrames >= 2 || performance.now() - startedAt > 500) {
+        paging.syncTop()
+        setSettled(true)
+      }
       else frame = requestAnimationFrame(check)
     }
     frame = requestAnimationFrame(check)
@@ -285,9 +298,10 @@ export function MessageList({
           }
         }}
         onScroll={() => {
-          paging.onScroll()
           const view = viewport.current!
           const atBottom = !hasAfter && view.scrollHeight - view.scrollTop - view.clientHeight < 24
+          if (!atBottom && settled && !paging.restoring.current) paging.interact()
+          paging.onScroll()
           if (leavingBottom.current && atBottom) {
             setFollowing(true)
             return
@@ -350,16 +364,11 @@ export function MessageList({
                     live={busy && last}
                     matched={message.id === matchId}
                     previousOrchestratorPhase={previousOrchestratorPhase}
-                    onImplementDesign={
-                      onImplementDesign
-                        ? (target, preferredImage) =>
-                            onImplementDesign(target, visible, preferredImage)
-                        : undefined
-                    }
+                    onImplementDesign={handleImplementDesign}
                   />
                   {durationTime !== undefined && (
                     <div className="working completed-working">
-                      {t('Работал {time}', {
+                      {t('Prime работал {time}', {
                         time: duration(durationTime, t)
                       })}
                     </div>

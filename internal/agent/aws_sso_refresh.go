@@ -142,6 +142,9 @@ func (c *coordinator) runAWSAuthRefresh(ctx context.Context, providerCfg config.
 		for scanner.Scan() {
 			publishURL(scanner.Text())
 		}
+		if err := scanner.Err(); err != nil {
+			slog.Debug("AWS SSO output scanner error", "error", err)
+		}
 	}
 	wg.Add(2)
 	go scan(stdout)

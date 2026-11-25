@@ -30,27 +30,18 @@ function isErrorOrCanceledFinish(part: Part): boolean {
 }
 
 function normalizeTurnParts(parts: Part[]): Part[] {
-  const contentParts: Part[] = []
-  const toolParts: Part[] = []
-  let latestReasoning: Part | null = null
+  let latestReasoningIndex = -1
+  let fallbackReasoningIndex = -1
   let latestErrorFinish: Part | null = null
   let lastFinish: Part | null = null
 
-  for (const part of parts) {
-    if (isVisibleTextPart(part) || isMediaPart(part)) {
-      contentParts.push(part)
-      continue
-    }
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
     if (part.type === 'reasoning') {
+      fallbackReasoningIndex = i
       if (part.data?.thinking?.trim() || !part.data?.finished_at) {
-        latestReasoning = part
-      } else if (!latestReasoning) {
-        latestReasoning = part
+        latestReasoningIndex = i
       }
-      continue
-    }
-    if (isGroupableToolPart(part)) {
-      toolParts.push(part)
       continue
     }
     if (part.type === 'finish') {
@@ -61,14 +52,45 @@ function normalizeTurnParts(parts: Part[]): Part[] {
     }
   }
 
+  const chosenReasoningIndex =
+    latestReasoningIndex !== -1 ? latestReasoningIndex : fallbackReasoningIndex
+
   const normalized: Part[] = []
-  if (toolParts.length > 0) {
-    normalized.push(...contentParts)
-    if (latestReasoning) normalized.push(latestReasoning)
-    normalized.push(...toolParts)
-  } else {
-    if (latestReasoning) normalized.push(latestReasoning)
-    normalized.push(...contentParts)
+  let pendingToolsStart = -1
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+    if (isVisibleTextPart(part) || isMediaPart(part)) {
+      pendingToolsStart = -1
+      normalized.push(part)
+      continue
+    }
+    if (isGroupableToolPart(part)) {
+      if (pendingToolsStart === -1) {
+        pendingToolsStart = normalized.length
+      }
+      normalized.push(part)
+      continue
+    }
+    if (part.type === 'reasoning' && i === chosenReasoningIndex) {
+      let hasFollowingToolBeforeContent = false
+      if (pendingToolsStart !== -1) {
+        for (let j = i + 1; j < parts.length; j++) {
+          const next = parts[j]
+          if (isVisibleTextPart(next) || isMediaPart(next)) break
+          if (isGroupableToolPart(next)) {
+            hasFollowingToolBeforeContent = true
+            break
+          }
+        }
+      }
+      if (hasFollowingToolBeforeContent) {
+        normalized.splice(pendingToolsStart, 0, part)
+        pendingToolsStart += 1
+      } else {
+        normalized.push(part)
+      }
+    }
   }
 
   if (latestErrorFinish) {

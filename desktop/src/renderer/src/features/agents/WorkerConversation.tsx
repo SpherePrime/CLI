@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, ChevronDown, Clock, RefreshCw, Send, Square } from 'lucide-react'
 import { workerActive, workerStatusLabels, type AgentWorker } from '../../../../shared/agents'
+import { textContent } from '../../../../shared/messages'
 import { useI18n } from '../../i18n'
 import { MessageList } from '../chat/MessageList'
 import { WorkspaceMediaProvider } from '../chat/WorkspaceMediaContext'
@@ -45,6 +46,26 @@ export function WorkerConversation({
     return () => window.clearInterval(timer)
   }, [active])
   const history = useWorkerMessageHistory({ projectId, sessionId, worker })
+  const visibleMessages = useMemo(() => {
+    const first = history.messages[0]
+    if (!first || history.hasBefore || first.role !== 'user') return history.messages
+    const task = worker.task.trim()
+    if (!task) return history.messages
+    const hasExtraParts = (first.parts || []).some(
+      (part) => part.type !== 'text' && part.type !== 'finish'
+    )
+    if (!hasExtraParts && textContent(first).trim() === task) {
+      return history.messages.slice(1)
+    }
+    return history.messages
+  }, [history.messages, history.hasBefore, worker.task])
+  const effectiveTiming = useMemo(
+    () => ({
+      ...history.timing,
+      started_at: history.timing.started_at || worker.started_at || undefined
+    }),
+    [history.timing, worker.started_at]
+  )
   function refresh() {
     history.refresh()
     refreshRoster()
@@ -156,13 +177,13 @@ export function WorkerConversation({
       ) : history.messages.length ? (
         <WorkspaceMediaProvider workspaceId={projectId}>
           <MessageList
-            messages={history.messages}
+            messages={visibleMessages}
             busy={worker.status === 'running'}
             hasBefore={history.hasBefore}
             hasAfter={history.hasAfter}
             historyLoading={Boolean(history.pagingLoading)}
             historyError={history.pagingError}
-            historyTiming={history.timing}
+            historyTiming={effectiveTiming}
             loadHistory={history.loadHistory}
           />
         </WorkspaceMediaProvider>

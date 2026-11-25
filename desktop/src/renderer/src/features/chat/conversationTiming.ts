@@ -1,12 +1,10 @@
 import type { Message } from '../../../../shared/contracts'
+import type { MergedMessage } from './toolGroupMerge'
 
 function isShellCommand(message: Message) {
   return message.parts.some((part) => part.type === 'shell_command')
 }
 
-// A generated continuation (a background job wake-up, a worker notice) arrives
-// as a hidden user message. It continues the request the user started, so it
-// must not restart the working timer.
 function isGeneratedContinuation(message: Message) {
   const texts = message.parts.filter((part) => part.type === 'text')
   return texts.length > 0 && texts.every((part) => Boolean(part.data?.hidden))
@@ -16,8 +14,11 @@ export function isConversationPrompt(message: Message) {
   return message.role === 'user' && !isShellCommand(message) && !isGeneratedContinuation(message)
 }
 
-export function conversationTiming(messages: Message[]) {
-  let startedAt: number | null = null
+export function conversationTiming(messages: Message[], initialStartedAtSeconds?: number) {
+  let startedAt: number | null =
+    initialStartedAtSeconds && Number.isFinite(initialStartedAtSeconds)
+      ? initialStartedAtSeconds * 1000
+      : null
   const completed = new Map<string, number>()
   for (const message of messages) {
     if (message.is_summary_message) continue
@@ -30,10 +31,16 @@ export function conversationTiming(messages: Message[]) {
     }
     if (startedAt === null && message.created_at && Number.isFinite(message.created_at))
       startedAt = message.created_at * 1000
-    const finish = message.parts.find((part) => part.type === 'finish')?.data
+    const finish = [...(message.parts || [])].reverse().find((part) => part.type === 'finish')?.data
     if (!finish || finish.reason === 'tool_use') continue
-    if (startedAt !== null && Number.isFinite(finish.time) && finish.time > 0)
-      completed.set(message.id, Math.max(0, Math.floor(finish.time - startedAt / 1000)))
+    const endTime =
+      Number.isFinite(finish.time) && finish.time > 0
+        ? finish.time
+        : message.updated_at && Number.isFinite(message.updated_at)
+          ? message.updated_at
+          : 0
+    if (startedAt !== null && endTime > 0)
+      completed.set(message.id, Math.max(0, Math.floor(endTime - startedAt / 1000)))
   }
   return { startedAt, completed }
 }
@@ -56,21 +63,36 @@ export function isEndOfTurn(messages: Message[], index: number, busy: boolean): 
   return !busy
 }
 
+function lookupCompletedDuration(
+  message: MergedMessage,
+  completedMap: Map<string, number>
+): number | undefined {
+  const direct = completedMap.get(message.id)
+  if (direct !== undefined) return direct
+  const mergedIds = message._mergedIds
+  if (!mergedIds?.length) return undefined
+  for (let i = mergedIds.length - 1; i >= 0; i--) {
+    const hit = completedMap.get(mergedIds[i])
+    if (hit !== undefined) return hit
+  }
+  return undefined
+}
+
 export function turnCompletedDuration(
-  messages: Message[],
+  messages: MergedMessage[],
   index: number,
   completedMap: Map<string, number>
 ): number | undefined {
   const current = messages[index]
   if (!current || current.is_summary_message) return undefined
-  const direct = completedMap.get(current.id)
+  const direct = lookupCompletedDuration(current, completedMap)
   if (direct !== undefined) return direct
 
   for (let i = index - 1; i >= 0; i--) {
     const prev = messages[i]
     if (prev.is_summary_message) continue
     if (prev.role === 'user' && isConversationPrompt(prev)) break
-    const prevTime = completedMap.get(prev.id)
+    const prevTime = lookupCompletedDuration(prev, completedMap)
     if (prevTime !== undefined) return prevTime
   }
   return undefined

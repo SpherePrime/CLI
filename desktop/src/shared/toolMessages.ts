@@ -98,6 +98,9 @@ export function consolidateToolMessages(messages: Message[]): Message[] {
       }
       parts.push(part)
     }
+    if (message.role === 'tool' && parts.every((part) => part.type === 'tool_result')) {
+      continue
+    }
     const onlyNonErrorFinish =
       parts.length > 0 &&
       parts.every(

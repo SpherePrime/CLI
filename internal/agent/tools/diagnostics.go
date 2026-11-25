@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -127,6 +128,23 @@ func notifyLSPs(
 	wg.Wait()
 }
 
+func handlesAnyLSP(manager *lsp.Manager, filePath string) bool {
+	if filePath == "" || manager == nil {
+		return false
+	}
+	for client := range manager.Clients().Seq() {
+		if client.HandlesFile(filePath) {
+			return true
+		}
+	}
+	return false
+}
+
+func isVendoredPath(filePath string) bool {
+	slashed := filepath.ToSlash(filePath)
+	return strings.Contains(slashed, "/vendordeps/") || strings.Contains(slashed, "/node_modules/")
+}
+
 func getDiagnostics(filePath string, manager *lsp.Manager) string {
 	if manager == nil {
 		return ""
@@ -134,6 +152,8 @@ func getDiagnostics(filePath string, manager *lsp.Manager) string {
 
 	var fileDiagnostics []string
 	var projectDiagnostics []string
+	seenFile := make(map[string]struct{})
+	seenProject := make(map[string]struct{})
 
 	for lspName, client := range manager.Clients().Seq2() {
 		for location, diags := range client.GetDiagnostics() {
@@ -143,12 +163,21 @@ func getDiagnostics(filePath string, manager *lsp.Manager) string {
 				continue
 			}
 			isCurrentFile := path == filePath
+			if !isCurrentFile && isVendoredPath(path) {
+				continue
+			}
 			for _, diag := range diags {
 				formattedDiag := formatDiagnostic(path, diag, lspName)
 				if isCurrentFile {
-					fileDiagnostics = append(fileDiagnostics, formattedDiag)
+					if _, dup := seenFile[formattedDiag]; !dup {
+						seenFile[formattedDiag] = struct{}{}
+						fileDiagnostics = append(fileDiagnostics, formattedDiag)
+					}
 				} else {
-					projectDiagnostics = append(projectDiagnostics, formattedDiag)
+					if _, dup := seenProject[formattedDiag]; !dup {
+						seenProject[formattedDiag] = struct{}{}
+						projectDiagnostics = append(projectDiagnostics, formattedDiag)
+					}
 				}
 			}
 		}

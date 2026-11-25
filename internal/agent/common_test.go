@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/SpherePrime/CLI/vendordeps/catwalk/pkg/catwalk"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
-	"github.com/SpherePrime/CLI/vendordeps/fantasy/providers/openaicompat"
 	"github.com/SpherePrime/CLI/vendordeps/x/vcr"
 	"github.com/SpherePrime/CLI/internal/agent/prompt"
 	"github.com/SpherePrime/CLI/internal/agent/tools"
@@ -40,26 +38,6 @@ type fakeEnv struct {
 }
 
 type builderFunc func(t *testing.T, r *vcr.Recorder) (fantasy.LanguageModel, error)
-
-type modelPair struct {
-	name       string
-	largeModel builderFunc
-	smallModel builderFunc
-}
-
-func hyperBuilder(model string) builderFunc {
-	return func(t *testing.T, r *vcr.Recorder) (fantasy.LanguageModel, error) {
-		provider, err := openaicompat.New(
-			openaicompat.WithBaseURL("https://hyper.dwerty.local/v1"),
-			openaicompat.WithAPIKey(os.Getenv("PRIME_HYPER_API_KEY")),
-			openaicompat.WithHTTPClient(&http.Client{Transport: r}),
-		)
-		if err != nil {
-			return nil, err
-		}
-		return provider.LanguageModel(t.Context(), model)
-	}
-}
 
 func testEnv(t *testing.T) fakeEnv {
 	workingDir := filepath.Join("/tmp/prime-test/", t.Name())
@@ -181,26 +159,4 @@ func coderAgent(r *vcr.Recorder, env fakeEnv, large, small fantasy.LanguageModel
 	}
 
 	return testSessionAgent(env, large, small, systemPrompt, allTools...), nil
-}
-
-// createSimpleGoProject creates a simple Go project structure in the given directory.
-// It creates a go.mod file and a main.go file with a basic hello world program.
-func createSimpleGoProject(t *testing.T, dir string) {
-	goMod := `module example.com/testproject
-
-go 1.23
-`
-	err := os.WriteFile(dir+"/go.mod", []byte(goMod), 0o644)
-	require.NoError(t, err)
-
-	mainGo := `package main
-
-import "fmt"
-
-func main() {
-	fmt.Println("Hello, World!")
-}
-`
-	err = os.WriteFile(dir+"/main.go", []byte(mainGo), 0o644)
-	require.NoError(t, err)
 }

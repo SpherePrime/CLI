@@ -37,7 +37,8 @@
         "staticcheck": true,
         "directoryFilters": [
           "-.git",
-          "-node_modules"
+          "-node_modules",
+          "-vendordeps"
         ],
         "semanticTokens": true
       }

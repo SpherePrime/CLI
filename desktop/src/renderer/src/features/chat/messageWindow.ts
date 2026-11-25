@@ -89,7 +89,10 @@ export function updateHistoryMessage(
   )
     timing.started_at = message.created_at
   const finish =
-    message.role === 'assistant' && message.parts.find((part) => part.type === 'finish')?.data
+    message.role === 'assistant' &&
+    [...(message.parts || [])]
+      .reverse()
+      .find((part) => part.type === 'finish' && part.data?.reason !== 'tool_use')?.data
   if (
     finish &&
     finish.reason !== 'tool_use' &&

@@ -49,6 +49,19 @@ describe('chatPaths detection', () => {
     ])
   })
 
+  it('extracts Windows and POSIX document paths containing spaces in folder or file names', () => {
+    const line =
+      'Путь к файлу: C:\\Users\\dwert\\OneDrive\\Documents\\Prime\\Новый проект 4\\Prime_Desktop_Capabilities.pdf!'
+    expect(extractTextPathSegments(line)).toEqual([
+      { type: 'text', value: 'Путь к файлу: ' },
+      {
+        type: 'path',
+        value: 'C:\\Users\\dwert\\OneDrive\\Documents\\Prime\\Новый проект 4\\Prime_Desktop_Capabilities.pdf'
+      },
+      { type: 'text', value: '!' }
+    ])
+  })
+
   it('rejects HTTP URLs, prime links, and version fractions', () => {
     expect(isLocalPathCandidate('https://example.com/shot.png')).toBe(false)
     expect(isLocalPathCandidate('prime://settings/general')).toBe(false)
