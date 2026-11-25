@@ -40,6 +40,10 @@ describe('Settings Skills filtering', () => {
       })
     ).toBe(true)
     expect(isBuiltinSkill({ name: 'prime-gamedev' })).toBe(true)
+    expect(isBuiltinSkill({ name: 'prime-pdf' })).toBe(true)
+    expect(isBuiltinSkill({ name: 'prime-docx' })).toBe(true)
+    expect(isBuiltinSkill({ name: 'prime-xlsx' })).toBe(true)
+    expect(isBuiltinSkill({ name: 'prime-pptx' })).toBe(true)
     expect(isBuiltinSkill({ name: 'jq', source: 'system' })).toBe(true)
     expect(
       isBuiltinSkill({
@@ -97,6 +101,34 @@ describe('Settings Skills filtering', () => {
         label: 'system:prime-hooks'
       },
       {
+        id: 'prime://skills/prime-pdf/SKILL.md',
+        name: 'prime-pdf',
+        description: 'PDF document skill',
+        source: 'system',
+        label: 'system:prime-pdf'
+      },
+      {
+        id: 'prime://skills/prime-docx/SKILL.md',
+        name: 'prime-docx',
+        description: 'Word document skill',
+        source: 'system',
+        label: 'system:prime-docx'
+      },
+      {
+        id: 'prime://skills/prime-xlsx/SKILL.md',
+        name: 'prime-xlsx',
+        description: 'Excel workbook skill',
+        source: 'system',
+        label: 'system:prime-xlsx'
+      },
+      {
+        id: 'prime://skills/prime-pptx/SKILL.md',
+        name: 'prime-pptx',
+        description: 'PowerPoint presentation skill',
+        source: 'system',
+        label: 'system:prime-pptx'
+      },
+      {
         id: 'C:/Users/me/.config/prime/skills/brainstorming/SKILL.md',
         name: 'brainstorming',
         description: 'User brainstorming skill',
@@ -105,13 +137,33 @@ describe('Settings Skills filtering', () => {
       }
     ]
 
-    const visible = filterVisibleSettingsSkills(runtimeSkills, ['prime-designer', 'disabled-user-skill'])
+    const visible = filterVisibleSettingsSkills(runtimeSkills, [
+      'prime-designer',
+      'prime-pdf',
+      'prime-docx',
+      'prime-xlsx',
+      'prime-pptx',
+      'disabled-user-skill'
+    ])
     expect(visible.map((item) => item.name)).toEqual(['brainstorming', 'disabled-user-skill'])
+
+    const visibleWithoutRuntimeEntries = filterVisibleSettingsSkills(
+      [{ name: 'prime-pdf' }, { name: 'prime-docx' }, { name: 'prime-xlsx' }, { name: 'prime-pptx' }],
+      ['prime-pdf', 'prime-docx', 'prime-xlsx', 'prime-pptx', 'disabled-user-skill']
+    )
+    expect(visibleWithoutRuntimeEntries.map((item) => item.name)).toEqual(['disabled-user-skill'])
 
     const html = renderToStaticMarkup(
       <I18nProvider language="ru">
         <IntegrationSettings
-          workspace={makeWorkspace(runtimeSkills, ['prime-config', 'disabled-user-skill'])}
+          workspace={makeWorkspace(runtimeSkills, [
+            'prime-config',
+            'prime-pdf',
+            'prime-docx',
+            'prime-xlsx',
+            'prime-pptx',
+            'disabled-user-skill'
+          ])}
           kind="skills"
         />
       </I18nProvider>
@@ -121,6 +173,10 @@ describe('Settings Skills filtering', () => {
     expect(html).not.toContain('prime-designer')
     expect(html).not.toContain('prime-gamedev')
     expect(html).not.toContain('prime-hooks')
+    expect(html).not.toContain('prime-pdf')
+    expect(html).not.toContain('prime-docx')
+    expect(html).not.toContain('prime-xlsx')
+    expect(html).not.toContain('prime-pptx')
     expect(html).not.toContain('>jq<')
     expect(html).toContain('brainstorming')
     expect(html).toContain('disabled-user-skill')

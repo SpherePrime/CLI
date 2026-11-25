@@ -447,6 +447,33 @@ func TestDiscoverBuiltin(t *testing.T) {
 	}
 	require.True(t, foundHooks, "prime-hooks builtin skill not found")
 
+	expectedDocSkills := map[string]string{
+		"prime-pdf":  "pdf_document",
+		"prime-docx": "word_document",
+		"prime-xlsx": "excel_workbook",
+		"prime-pptx": "powerpoint_presentation",
+	}
+	foundDocSkills := make(map[string]bool, len(expectedDocSkills))
+	for _, s := range discovered {
+		toolName, ok := expectedDocSkills[s.Name]
+		if !ok {
+			continue
+		}
+		foundDocSkills[s.Name] = true
+		require.Equal(t, BuiltinPrefix+s.Name+"/SKILL.md", s.SkillFilePath)
+		require.Equal(t, BuiltinPrefix+s.Name, s.Path)
+		require.NotEmpty(t, s.Description)
+		require.LessOrEqual(t, len(s.Description), MaxDescriptionLength)
+		require.NotEmpty(t, s.Instructions)
+		require.True(t, s.Builtin)
+		require.Contains(t, s.Instructions, toolName)
+		require.NotContains(t, strings.ToLower(s.Description), "claude")
+		require.NotContains(t, strings.ToLower(s.Instructions), "claude")
+	}
+	for name := range expectedDocSkills {
+		require.True(t, foundDocSkills[name], "%s builtin skill not found", name)
+	}
+
 	for _, s := range discovered {
 		require.NotContains(t, s.Instructions, "Claude Code", "builtin skill %s should not mention Claude Code", s.Name)
 		require.NotContains(t, s.Instructions, ".claude/skills", "builtin skill %s should not reference .claude/skills", s.Name)

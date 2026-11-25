@@ -2,8 +2,12 @@ const BUILTIN_PRIME_SKILLS = new Set([
   'jq',
   'prime-config',
   'prime-designer',
+  'prime-docx',
   'prime-gamedev',
-  'prime-hooks'
+  'prime-hooks',
+  'prime-pdf',
+  'prime-pptx',
+  'prime-xlsx'
 ])
 
 export type SettingsSkillEntry = {
