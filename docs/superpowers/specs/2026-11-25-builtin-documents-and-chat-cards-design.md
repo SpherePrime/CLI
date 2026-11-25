@@ -21,10 +21,10 @@ chat whenever a file path is referenced.
 2. **Agent tools (`internal/agent/tools/`):** four dedicated tools registered in
    `internal/agent/coordinator.go` and listed in `allToolNames()` in
    `internal/config/config.go`:
-   - `document_pdf`
-   - `document_docx`
-   - `document_xlsx`
-   - `document_pptx`
+   - `pdf_document`
+   - `word_document`
+   - `excel_workbook`
+   - `powerpoint_presentation`
 3. **Built-in hidden system skills (`internal/skills/builtin/`):** four system
    skills (`prime-pdf`, `prime-docx`, `prime-xlsx`, `prime-pptx`) hidden in the
    Settings UI (`skillsFilter.ts`) and exposed to the agent via
@@ -56,7 +56,7 @@ All four tools share consistent safety and output conventions:
   sheets / slides / paragraphs), and an explicit instruction telling the agent
   to include the exact file path in its final reply to the user.
 
-### 1.1 `document_pdf` (`internal/documents/pdf` + `internal/agent/tools/document_pdf.go`)
+### 1.1 `pdf_document` (`internal/documents/pdf` + `internal/agent/tools/pdf_document.go`)
 - **Operations (`action`):**
   - `create`: builds a multi-page PDF from structured sections (`title`,
     `subtitle`, `author`, `page_size` `A4|Letter`, `orientation`
@@ -74,7 +74,7 @@ All four tools share consistent safety and output conventions:
   `pdfcpu` in `vendordeps/`) with embedded UTF-8 TrueType fonts (Normal, Bold,
   Italic, Monospace) supporting full Cyrillic and Latin character sets.
 
-### 1.2 `document_docx` (`internal/documents/docx` + `internal/agent/tools/document_docx.go`)
+### 1.2 `word_document` (`internal/documents/docx` + `internal/agent/tools/word_document.go`)
 - **Operations (`action`):**
   - `create`: creates a valid OOXML `.docx` package with title/metadata, styles,
     headings (H1–H3), styled paragraphs/runs (bold, italic, underline, color,
@@ -92,7 +92,7 @@ All four tools share consistent safety and output conventions:
   using stdlib `archive/zip` and `encoding/xml` (with round-trip ZIP part
   preservation for `update` and `fill_template`).
 
-### 1.3 `document_xlsx` (`internal/documents/xlsx` + `internal/agent/tools/document_xlsx.go`)
+### 1.3 `excel_workbook` (`internal/documents/xlsx` + `internal/agent/tools/excel_workbook.go`)
 - **Operations (`action`):**
   - `create`: creates a multi-sheet `.xlsx` workbook with cell values (strings,
     numbers, booleans, dates), live Excel formulas (`=SUM(...)`, `=IF(...)`,
@@ -107,7 +107,7 @@ All four tools share consistent safety and output conventions:
 - **Implementation:** `github.com/xuri/excelize/v2` vendored under
   `vendordeps/`.
 
-### 1.4 `document_pptx` (`internal/documents/pptx` + `internal/agent/tools/document_pptx.go`)
+### 1.4 `powerpoint_presentation` (`internal/documents/pptx` + `internal/agent/tools/powerpoint_presentation.go`)
 - **Operations (`action`):**
   - `create`: builds a 16:9 or 4:3 `.pptx` presentation with theme colors,
     layouts (`title`, `title_content`, `two_column`, `table`, `metrics`,
@@ -128,8 +128,8 @@ All four tools share consistent safety and output conventions:
 
 ## 2. Config & Agent Prompt Integration
 
-- `internal/config/config.go`: add `document_pdf`, `document_docx`,
-  `document_xlsx`, `document_pptx` to `allToolNames()` and include them in the
+- `internal/config/config.go`: add `pdf_document`, `word_document`,
+  `excel_workbook`, `powerpoint_presentation` to `allToolNames()` and include them in the
   appropriate agent tool profiles (`coder`, `general`; read-only `inspect` usage
   or full exclusion in `resolveReadOnlyTools` consistent with `write`/`edit`).
 - `internal/agent/coordinator.go`: register the four tools in `buildTools()`.
@@ -149,8 +149,8 @@ Add four built-in skills:
 - `internal/skills/builtin/prime-pptx/SKILL.md`
 
 Each skill:
-- Instructs the agent to prefer the corresponding built-in `document_*` tool
-  over ad-hoc shell scripts.
+- Instructs the agent to prefer the corresponding built-in tool (`pdf_document`,
+  `word_document`, `excel_workbook`, `powerpoint_presentation`) over ad-hoc shell scripts.
 - Documents clean structure, typography, formula hygiene (live formulas over
   hardcoded totals in `.xlsx`), slide density limits, and post-edit `inspect`
   verification.
@@ -203,6 +203,29 @@ Each skill:
         compact adjacent folder icon button (`reveal`).
   - Translations added to `desktop/src/shared/translations.ts` where needed.
 
+### 4.3 Chat Document Attachments (`.docx`, `.xlsx`, `.pptx`, `.pdf`)
+- **Tauri Host (`desktop/src-tauri/src/attachments.rs`, `commands.rs`):**
+  - Detect proper MIME types for `.pdf` (`application/pdf`), `.docx`
+    (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`),
+    `.xlsx` (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`),
+    and `.pptx` (`application/vnd.openxmlformats-officedocument.presentationml.presentation`)
+    instead of labeling binary Office ZIP files as `text/plain`.
+  - Support `importAttachments` (alongside `importImages`) so drag-and-drop and
+    clipboard files work for documents as well as images.
+- **Backend & Agent Prompt (`internal/backend/agent.go`, `internal/message/`, `internal/agent/agent.go`):**
+  - Do not inline binary `.docx`/`.xlsx`/`.pptx` bytes as text attachments or
+    send unsupported Office ZIP `FilePart`s to LLM providers.
+  - Materialize attached document files to a persistent session-accessible
+    directory (`<dataDir>/attachments/<sessionID>/<safe_filename>`) and inject
+    `<attached_document name="..." mime="..." path="...">` into the user turn
+    so `word_document`, `excel_workbook`, `powerpoint_presentation`, and
+    `pdf_document` can inspect and edit the attached file directly via `input_path`.
+- **Desktop Composer & Message Bubble (`Composer.tsx`, `MessageAttachment.tsx`):**
+  - Allow dropping `.docx`, `.xlsx`, `.pptx`, `.pdf`, text, and image files onto
+    the chat composer.
+  - Display attached document chips with file-type icons in both the composer
+    and sent user messages (`MessageAttachment.tsx`).
+
 ---
 
 ## 5. Testing & Verification
@@ -213,8 +236,8 @@ Each skill:
     Cyrillic text in PDF, DOCX, XLSX, and PPTX, live formula storage in XLSX,
     and valid ZIP/XML structure checks.
   - `internal/agent/tools/...`: schema, permission prompts, path traversal
-    safety, and tool execution tests for `document_pdf`, `document_docx`,
-    `document_xlsx`, `document_pptx`.
+    safety, and tool execution tests for `pdf_document`, `word_document`,
+    `excel_workbook`, `powerpoint_presentation`.
   - `internal/skills/skills_test.go`: verify `prime-pdf`, `prime-docx`,
     `prime-xlsx`, `prime-pptx` load as builtins.
   - `internal/config/load_test.go`: verify tool list and read-only role
