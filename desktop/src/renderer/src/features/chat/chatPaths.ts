@@ -21,6 +21,7 @@ const DOCUMENT_EXTENSIONS = new Set([
   'html'
 ])
 const SCHEME_PREFIX = /^(https?:|prime:|prime-path:|mailto:|tel:|data:|blob:|javascript:)/i
+const PARENT_TRAVERSAL_PATTERN = /(?:^|[\\/])\.\.(?:[\\/]|$)/
 const NON_PATH_SLASH_PATTERN =
   /^(?:v?\d+[\\/]\d+$|application[\\/]|text[\\/]|image[\\/]|video[\\/]|audio[\\/]|multipart[\\/]|font[\\/])/i
 const TRAILING_PUNCTUATION = /[.,;:!?)\]>'"»]+$/
@@ -93,9 +94,9 @@ export function isLocalPathCandidate(value: string): boolean {
   if (typeof value !== 'string') return false
   const trimmed = value.trim()
   if (!trimmed || trimmed.length > 500 || /[\r\n]/.test(trimmed)) return false
+  if (PARENT_TRAVERSAL_PATTERN.test(trimmed)) return false
   if (/^file:\/\//i.test(trimmed)) return true
   if (SCHEME_PREFIX.test(trimmed)) return false
-  if (/^\.\.[\\/]/.test(trimmed)) return false
   if (/^[a-zA-Z]:[\\/].+/.test(trimmed)) return true
   if (/^\\\\[^\\/\s]+[\\/][^\\/\s]+/.test(trimmed)) return true
   if (/^\/(?:tmp|var|Users|home|opt|mnt|Volumes|srv|root)[\\/].+/.test(trimmed)) return true
@@ -114,6 +115,7 @@ export function isLocalPathCandidate(value: string): boolean {
 export function isExplicitRelativePathCandidate(value: string): boolean {
   if (typeof value !== 'string') return false
   const trimmed = value.trim()
+  if (PARENT_TRAVERSAL_PATTERN.test(trimmed)) return false
   if (/^\.[\\/](?:[\p{L}\p{N}_.-]+[\\/]?)+$/u.test(trimmed)) {
     return !/[<>|?*\r\n]/.test(trimmed)
   }

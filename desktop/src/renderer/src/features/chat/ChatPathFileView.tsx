@@ -135,46 +135,48 @@ export function ChatPathFileView({
   }
 
   return (
-    <div className={`chat-path-file-card is-${tone}`} title={targetPath}>
-      <div className="chat-path-file-main">
-        <div className="chat-path-file-icon" aria-hidden="true">
-          <FileKindIcon tone={tone} size={17} />
+    <div className="chat-path-file-card-wrap">
+      <div className={`chat-path-file-card is-${tone}`} title={targetPath}>
+        <div className="chat-path-file-main">
+          <div className="chat-path-file-icon" aria-hidden="true">
+            <FileKindIcon tone={tone} size={17} />
+          </div>
+          <div className="chat-path-file-meta">
+            <strong className="chat-path-file-name">{displayName}</strong>
+            <span className="chat-path-file-details">
+              <span className="chat-path-file-badge">{badge}</span>
+              {formattedSize && (
+                <>
+                  <span className="chat-path-file-sep" aria-hidden="true">
+                    ·
+                  </span>
+                  <span className="chat-path-file-size">{formattedSize}</span>
+                </>
+              )}
+            </span>
+          </div>
         </div>
-        <div className="chat-path-file-meta">
-          <strong className="chat-path-file-name">{displayName}</strong>
-          <span className="chat-path-file-details">
-            <span className="chat-path-file-badge">{badge}</span>
-            {formattedSize && (
-              <>
-                <span className="chat-path-file-sep" aria-hidden="true">
-                  ·
-                </span>
-                <span className="chat-path-file-size">{formattedSize}</span>
-              </>
-            )}
-          </span>
+        <div className="chat-path-file-actions">
+          <button
+            type="button"
+            className="chat-path-open-btn"
+            aria-label={openLabel}
+            title={t('Открыть')}
+            onClick={handleOpen}
+          >
+            <ExternalLink size={13} aria-hidden="true" />
+            <span>{t('Открыть')}</span>
+          </button>
+          <button
+            type="button"
+            className="chat-path-file-reveal-btn"
+            aria-label={revealLabel}
+            title={revealLabel}
+            onClick={handleReveal}
+          >
+            <FolderOpen size={14} aria-hidden="true" />
+          </button>
         </div>
-      </div>
-      <div className="chat-path-file-actions">
-        <button
-          type="button"
-          className="chat-path-open-btn"
-          aria-label={openLabel}
-          title={t('Открыть')}
-          onClick={handleOpen}
-        >
-          <ExternalLink size={13} aria-hidden="true" />
-          <span>{t('Открыть')}</span>
-        </button>
-        <button
-          type="button"
-          className="chat-path-file-reveal-btn"
-          aria-label={revealLabel}
-          title={revealLabel}
-          onClick={handleReveal}
-        >
-          <FolderOpen size={14} aria-hidden="true" />
-        </button>
       </div>
     </div>
   )

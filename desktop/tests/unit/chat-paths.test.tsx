@@ -86,6 +86,12 @@ describe('chatPaths detection', () => {
     expect(isLocalPathCandidate('text/html')).toBe(false)
     expect(isLocalPathCandidate('v1/2')).toBe(false)
     expect(isLocalPathCandidate('../secret.pdf')).toBe(false)
+    expect(isLocalPathCandidate('dir/../secret.pdf')).toBe(false)
+    expect(isLocalPathCandidate('./dir/../secret.pdf')).toBe(false)
+    expect(isExplicitRelativePathCandidate('./dir/../secret.pdf')).toBe(false)
+    expect(extractTextPathSegments('Не открывать dir/../secret.pdf.')).toEqual([
+      { type: 'text', value: 'Не открывать dir/../secret.pdf.' }
+    ])
 
     const line =
       'Готово: C:\\docs\\report.pdf, ./out/spec.docx, budget.xlsx и https://example.com/files/report.pdf (формат application/json, v1/2).'
