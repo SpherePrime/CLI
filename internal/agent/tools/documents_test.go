@@ -46,6 +46,18 @@ func runDocTool(t *testing.T, tool fantasy.AgentTool, name string, params any) (
 	t.Helper()
 	raw, err := json.Marshal(params)
 	require.NoError(t, err)
+	require.NoError(t, fantasy.ValidateToolInput(tool.Info(), string(raw)), "tool %s rejected valid input: %s", name, string(raw))
+	return tool.Run(docTestCtx(), fantasy.ToolCall{
+		ID:    "call-1",
+		Name:  name,
+		Input: string(raw),
+	})
+}
+
+func runDocToolUnchecked(t *testing.T, tool fantasy.AgentTool, name string, params any) (fantasy.ToolResponse, error) {
+	t.Helper()
+	raw, err := json.Marshal(params)
+	require.NoError(t, err)
 	return tool.Run(docTestCtx(), fantasy.ToolCall{
 		ID:    "call-1",
 		Name:  name,
@@ -467,7 +479,11 @@ func TestDocumentValidationAndMultiFileSplit(t *testing.T) {
 	perms := &docPermissionRecorder{allow: true}
 	pdfTool := NewPDFDocumentTool(perms, workingDir)
 
-	resp, err := runDocTool(t, pdfTool, PDFDocumentToolName, PDFDocumentParams{
+	rawInvalid, err := json.Marshal(PDFDocumentParams{Action: "unknown_op"})
+	require.NoError(t, err)
+	require.Error(t, fantasy.ValidateToolInput(pdfTool.Info(), string(rawInvalid)))
+
+	resp, err := runDocToolUnchecked(t, pdfTool, PDFDocumentToolName, PDFDocumentParams{
 		Action: "unknown_op",
 	})
 	require.NoError(t, err)
@@ -511,4 +527,147 @@ func TestDocumentValidationAndMultiFileSplit(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.False(t, inspectResp.IsError, inspectResp.Content)
+}
+
+func TestDocumentExcelSchemaValidation(t *testing.T) {
+	t.Parallel()
+
+	workingDir := t.TempDir()
+	perms := &docPermissionRecorder{allow: true}
+	tool := NewExcelWorkbookTool(perms, workingDir)
+	info := tool.Info()
+
+	createParams := ExcelWorkbookParams{
+		Action:     "create",
+		OutputPath: "sheets/scalars.xlsx",
+		Sheets: []xlsx.SheetSpec{
+			{
+				Name:    "Data",
+				Headers: []string{"Text", "Formula", "Int", "Float", "Bool", "Empty"},
+				Rows: [][]any{
+					{"alpha", "=SUM(C2:D2)", 42, 3.14, true, nil},
+					{"beta", "=IF(E2,1,0)", 0, -2.5, false, nil},
+				},
+				Cells: map[string]any{
+					"H1": "note",
+					"H2": "=SUM(C2:C3)",
+					"H3": 100,
+					"H4": 19.99,
+					"H5": true,
+					"H6": nil,
+				},
+			},
+		},
+	}
+	resp, err := runDocTool(t, tool, ExcelWorkbookToolName, createParams)
+	require.NoError(t, err)
+	require.False(t, resp.IsError, resp.Content)
+
+	updateParams := ExcelWorkbookParams{
+		Action:    "update",
+		InputPath: "sheets/scalars.xlsx",
+		AddSheets: []xlsx.SheetSpec{
+			{
+				Name:    "Extra",
+				Headers: []string{"Key", "Val"},
+				Rows: [][]any{
+					{"str", "hello"},
+					{"formula", "=1+1"},
+					{"int", 7},
+					{"float", 1.5},
+					{"bool", false},
+					{"null", nil},
+				},
+				Cells: map[string]any{
+					"D1": "cell-str",
+					"D2": "=SUM(B4:B5)",
+					"D3": 9,
+					"D4": 0.25,
+					"D5": true,
+					"D6": nil,
+				},
+			},
+		},
+		AppendRows: []xlsx.AppendRowsEdit{
+			{
+				Sheet: "Data",
+				Rows: [][]any{
+					{"gamma", "=C2+C3", 10, 0.5, false, nil},
+				},
+			},
+		},
+		SetCells: []xlsx.CellEdit{
+			{Sheet: "Data", Cell: "A10", Value: "label"},
+			{Sheet: "Data", Cell: "B10", Value: "=SUM(C2:C4)"},
+			{Sheet: "Data", Cell: "C10", Value: 123},
+			{Sheet: "Data", Cell: "D10", Value: 45.67},
+			{Sheet: "Data", Cell: "E10", Value: true},
+			{Sheet: "Data", Cell: "F10", Value: nil},
+		},
+	}
+	resp, err = runDocTool(t, tool, ExcelWorkbookToolName, updateParams)
+	require.NoError(t, err)
+	require.False(t, resp.IsError, resp.Content)
+
+	invalidPayloads := []string{
+		`{"action":"create","output_path":"bad.xlsx","sheets":[{"name":"S","rows":[[{"nested":1}]]}]}`,
+		`{"action":"create","output_path":"bad.xlsx","sheets":[{"name":"S","cells":{"A1":{"nested":1}}}]}`,
+		`{"action":"update","input_path":"bad.xlsx","add_sheets":[{"name":"S","rows":[[{"nested":1}]]}]}`,
+		`{"action":"update","input_path":"bad.xlsx","add_sheets":[{"name":"S","cells":{"A1":{"nested":1}}}]}`,
+		`{"action":"update","input_path":"bad.xlsx","append_rows":[{"sheet":"S","rows":[[{"nested":1}]]}]}`,
+		`{"action":"update","input_path":"bad.xlsx","set_cells":[{"sheet":"S","cell":"A1","value":{"nested":1}}]}`,
+	}
+	for _, payload := range invalidPayloads {
+		require.Error(t, fantasy.ValidateToolInput(info, payload), "expected schema validation failure for %s", payload)
+	}
+}
+
+func TestDocumentPDFSplitSpanIgnoresOutputPath(t *testing.T) {
+	t.Parallel()
+
+	workingDir := t.TempDir()
+	externalOutDir := filepath.Join(t.TempDir(), "span-chunks")
+	ignoredOutPath := filepath.Join(workingDir, "should-not-be-written.pdf")
+	perms := &docPermissionRecorder{allow: true}
+	pdfTool := NewPDFDocumentTool(perms, workingDir)
+
+	resp, err := runDocTool(t, pdfTool, PDFDocumentToolName, PDFDocumentParams{
+		Action:     "create",
+		OutputPath: "source.pdf",
+		Blocks: []pdf.Block{
+			{Type: "paragraph", Text: "Page 1"},
+			{Type: "page_break"},
+			{Type: "paragraph", Text: "Page 2"},
+			{Type: "page_break"},
+			{Type: "paragraph", Text: "Page 3"},
+		},
+	})
+	require.NoError(t, err)
+	require.False(t, resp.IsError, resp.Content)
+
+	beforeSplit := len(perms.requests)
+	resp, err = runDocTool(t, pdfTool, PDFDocumentToolName, PDFDocumentParams{
+		Action:     "split",
+		InputPath:  "source.pdf",
+		Span:       2,
+		OutputPath: "should-not-be-written.pdf",
+		OutputDir:  externalOutDir,
+	})
+	require.NoError(t, err)
+	require.False(t, resp.IsError, resp.Content)
+	require.Equal(t, beforeSplit+1, len(perms.requests))
+
+	splitReq := perms.requests[len(perms.requests)-1]
+	require.Equal(t, "write", splitReq.Action)
+	require.Equal(t, externalOutDir, splitReq.Path)
+	permParams, ok := splitReq.Params.(DocumentPermissionsParams)
+	require.True(t, ok)
+	require.Equal(t, externalOutDir, permParams.OutputPath)
+
+	splitOut := parseDocJSON(t, resp.Content)
+	require.Equal(t, externalOutDir, splitOut["path"])
+	require.Len(t, splitOut["files"].([]any), 2)
+
+	_, statErr := os.Stat(ignoredOutPath)
+	require.True(t, os.IsNotExist(statErr), "output_path must not be touched in span mode")
 }

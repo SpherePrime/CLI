@@ -15,7 +15,7 @@ func TestTeamRolesExistWithRestrictedTools(t *testing.T) {
 	require.Contains(t, explore.AllowedTools, "bash")
 	require.Contains(t, explore.AllowedTools, "view")
 	require.Contains(t, explore.AllowedTools, "agent_message")
-	for _, tool := range []string{"edit", "multiedit", "write", "agent", "agent_jobs"} {
+	for _, tool := range []string{"edit", "multiedit", "write", "agent", "agent_jobs", "pdf_document", "word_document", "excel_workbook", "powerpoint_presentation"} {
 		require.NotContains(t, explore.AllowedTools, tool)
 	}
 
@@ -24,7 +24,7 @@ func TestTeamRolesExistWithRestrictedTools(t *testing.T) {
 	for _, tool := range []string{"bash", "view", "agent_message", "lsp_diagnostics"} {
 		require.Contains(t, review.AllowedTools, tool)
 	}
-	for _, tool := range []string{"edit", "multiedit", "write", "lsp_rename", "lsp_replace_symbol", "agent", "agent_jobs"} {
+	for _, tool := range []string{"edit", "multiedit", "write", "lsp_rename", "lsp_replace_symbol", "agent", "agent_jobs", "pdf_document", "word_document", "excel_workbook", "powerpoint_presentation"} {
 		require.NotContains(t, review.AllowedTools, tool)
 	}
 	require.Nil(t, review.AllowedMCP)

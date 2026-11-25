@@ -53,8 +53,86 @@ type excelWriteToolResult struct {
 	Note        string   `json:"note"`
 }
 
+type excelWorkbookTool struct {
+	fantasy.AgentTool
+}
+
+func (t excelWorkbookTool) Info() fantasy.ToolInfo {
+	info := t.AgentTool.Info()
+	patchExcelWorkbookParameters(info.Parameters)
+	return info
+}
+
+func excelCellValueSchema() map[string]any {
+	return map[string]any{
+		"type": []string{"string", "number", "boolean", "null"},
+	}
+}
+
+func patchExcelSheetSpecSchema(arrayParam any) {
+	arr, ok := arrayParam.(map[string]any)
+	if !ok {
+		return
+	}
+	items, ok := arr["items"].(map[string]any)
+	if !ok {
+		return
+	}
+	props, ok := items["properties"].(map[string]any)
+	if !ok {
+		return
+	}
+	patchExcelRowsSchema(props["rows"])
+	if cells, ok := props["cells"].(map[string]any); ok {
+		cells["properties"] = map[string]any{
+			"*": excelCellValueSchema(),
+		}
+		cells["additionalProperties"] = excelCellValueSchema()
+	}
+}
+
+func patchExcelRowsSchema(rowsParam any) {
+	rows, ok := rowsParam.(map[string]any)
+	if !ok {
+		return
+	}
+	rowItems, ok := rows["items"].(map[string]any)
+	if !ok {
+		return
+	}
+	rowItems["items"] = excelCellValueSchema()
+}
+
+func patchExcelWorkbookParameters(params map[string]any) {
+	if params == nil {
+		return
+	}
+	patchExcelSheetSpecSchema(params["sheets"])
+	patchExcelSheetSpecSchema(params["add_sheets"])
+	if appendRows, ok := params["append_rows"].(map[string]any); ok {
+		if items, ok := appendRows["items"].(map[string]any); ok {
+			if props, ok := items["properties"].(map[string]any); ok {
+				patchExcelRowsSchema(props["rows"])
+			}
+		}
+	}
+	if setCells, ok := params["set_cells"].(map[string]any); ok {
+		if items, ok := setCells["items"].(map[string]any); ok {
+			if props, ok := items["properties"].(map[string]any); ok {
+				valSchema := excelCellValueSchema()
+				if existing, ok := props["value"].(map[string]any); ok {
+					if desc, ok := existing["description"].(string); ok && desc != "" {
+						valSchema["description"] = desc
+					}
+				}
+				props["value"] = valSchema
+			}
+		}
+	}
+}
+
 func NewExcelWorkbookTool(permissions permission.Service, workingDir string) fantasy.AgentTool {
-	return fantasy.NewAgentTool(
+	base := fantasy.NewAgentTool(
 		ExcelWorkbookToolName,
 		excelWorkbookDescription,
 		func(ctx context.Context, params ExcelWorkbookParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
@@ -176,4 +254,5 @@ func NewExcelWorkbookTool(permissions permission.Service, workingDir string) fan
 			}
 		},
 	)
+	return excelWorkbookTool{AgentTool: base}
 }

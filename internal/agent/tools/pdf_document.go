@@ -179,10 +179,12 @@ func NewPDFDocumentTool(permissions permission.Service, workingDir string) fanta
 						return fantasy.NewTextErrorResponse("invalid output_dir: " + err.Error()), nil
 					}
 				}
+				var permTarget string
 				if strings.TrimSpace(params.PageRange) != "" {
 					if outPath == "" && outDir == "" {
 						return fantasy.NewTextErrorResponse("output_path or output_dir is required for split"), nil
 					}
+					permTarget = firstTrimmed(outPath, outDir)
 				} else {
 					if params.Span <= 0 {
 						return fantasy.NewTextErrorResponse("span must be >= 1 when page_range is empty"), nil
@@ -190,8 +192,9 @@ func NewPDFDocumentTool(permissions permission.Service, workingDir string) fanta
 					if outDir == "" {
 						return fantasy.NewTextErrorResponse("output_dir is required when splitting by span"), nil
 					}
+					outPath = ""
+					permTarget = outDir
 				}
-				permTarget := firstTrimmed(outPath, outDir)
 				allowed, err := requestDocumentWritePermission(
 					ctx, permissions, call, workingDir,
 					PDFDocumentToolName, action, permTarget, inPath,

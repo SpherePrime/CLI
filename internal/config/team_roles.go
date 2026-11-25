@@ -15,6 +15,10 @@ var reviewForbiddenTools = []string{
 	"lsp_rename",
 	"lsp_replace_symbol",
 	"generate_image",
+	"pdf_document",
+	"word_document",
+	"excel_workbook",
+	"powerpoint_presentation",
 	"goal_complete",
 }
 
