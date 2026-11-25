@@ -93,7 +93,7 @@ export function MessageAttachment({ data }: { data: Record<string, any> }) {
             className="attachment-document-action"
             title={t('Открыть')}
             aria-label={t('Открыть')}
-            onClick={() => void window.prime?.openPath?.(workspaceId || '', filePath)}
+            onClick={() => void window.prime?.openPath?.(workspaceId || '', filePath)?.catch(() => {})}
           >
             <ExternalLink size={13} />
           </button>
@@ -102,7 +102,7 @@ export function MessageAttachment({ data }: { data: Record<string, any> }) {
             className="attachment-document-action"
             title={t('Показать в папке')}
             aria-label={t('Показать в папке')}
-            onClick={() => void window.prime?.reveal?.(workspaceId || '', filePath)}
+            onClick={() => void window.prime?.reveal?.(workspaceId || '', filePath)?.catch(() => {})}
           >
             <FolderOpen size={13} />
           </button>

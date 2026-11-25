@@ -195,7 +195,7 @@ func TestDocumentAttachments_MaterializeAndPrompt(t *testing.T) {
 		},
 	}
 
-	materialized := agent.materializeDocumentAttachments("sess/1", attachments)
+	materialized := agent.materializeSessionAttachments("sess/1", attachments)
 	require.Len(t, materialized, 3)
 	require.Equal(t, ".docx", filepath.Ext(materialized[0].FilePath))
 	require.Equal(t, ".docx", filepath.Ext(materialized[1].FilePath))
@@ -221,6 +221,117 @@ func TestDocumentAttachments_MaterializeAndPrompt(t *testing.T) {
 
 	_, filesWithoutVision := agent.preparePrompt(nil, false, materialized...)
 	require.Empty(t, filesWithoutVision)
+}
+
+func TestMaterializeSessionAttachments_NonDocumentTextAndCSV(t *testing.T) {
+	env := testEnv(t)
+	sa := testSessionAgent(env, nil, nil, "test prompt")
+	agent := sa.(*sessionAgent)
+	agent.dataDir = t.TempDir()
+
+	ctx := t.Context()
+	sess, err := env.sessions.Create(ctx, "text attachments")
+	require.NoError(t, err)
+
+	ephemeralDir := t.TempDir()
+	txtBytes := []byte("line one\nline two")
+	csvBytes := []byte("name,amount\nalpha,42")
+	attachments := []message.Attachment{
+		{
+			FileName: "notes.txt",
+			FilePath: filepath.Join(ephemeralDir, "ephemeral-1.bin"),
+			MimeType: "text/plain",
+			Content:  txtBytes,
+		},
+		{
+			FileName: "sales.csv",
+			FilePath: filepath.Join(ephemeralDir, "ephemeral-2.bin"),
+			MimeType: "text/csv",
+			Content:  csvBytes,
+		},
+	}
+
+	materialized := agent.materializeSessionAttachments(sess.ID, attachments)
+	require.Len(t, materialized, 2)
+	require.Equal(t, "notes.txt", filepath.Base(materialized[0].FilePath))
+	require.Equal(t, "sales.csv", filepath.Base(materialized[1].FilePath))
+	require.NotEqual(t, attachments[0].FilePath, materialized[0].FilePath)
+	require.NotEqual(t, attachments[1].FilePath, materialized[1].FilePath)
+
+	diskTxt, err := os.ReadFile(materialized[0].FilePath)
+	require.NoError(t, err)
+	require.Equal(t, txtBytes, diskTxt)
+
+	diskCsv, err := os.ReadFile(materialized[1].FilePath)
+	require.NoError(t, err)
+	require.Equal(t, csvBytes, diskCsv)
+
+	prompt := message.PromptWithTextAttachments("Review files", materialized)
+	require.NotContains(t, prompt, "<attached_document")
+	require.Contains(t, prompt, "<file path='"+materialized[0].FilePath+"'>")
+	require.Contains(t, prompt, "line one\nline two")
+	require.Contains(t, prompt, "<file path='"+materialized[1].FilePath+"'>")
+	require.Contains(t, prompt, "name,amount\nalpha,42")
+
+	msg, err := agent.createUserMessage(ctx, SessionAgentCall{
+		SessionID:   sess.ID,
+		Prompt:      "Review files",
+		Attachments: materialized,
+	})
+	require.NoError(t, err)
+	binaryParts := msg.BinaryContent()
+	require.Len(t, binaryParts, 2)
+	require.Equal(t, materialized[0].FilePath, binaryParts[0].Path)
+	require.Equal(t, "notes.txt", filepath.Base(binaryParts[0].Path))
+	require.Equal(t, materialized[1].FilePath, binaryParts[1].Path)
+	require.Equal(t, "sales.csv", filepath.Base(binaryParts[1].Path))
+}
+
+func TestMaterializeSessionAttachments_MagicPDFWithNonDocumentDot(t *testing.T) {
+	env := testEnv(t)
+	sa := testSessionAgent(env, nil, nil, "test prompt")
+	agent := sa.(*sessionAgent)
+	agent.dataDir = t.TempDir()
+
+	ephemeralDir := t.TempDir()
+	pdfBytes := []byte("%PDF-1.7\n1 0 obj\nendobj\n")
+	pngPath := filepath.Join(ephemeralDir, "photo.png")
+	attachments := []message.Attachment{
+		{
+			FileName: "contract.v2",
+			FilePath: filepath.Join(ephemeralDir, "temp-1.bin"),
+			MimeType: "application/octet-stream",
+			Content:  pdfBytes,
+		},
+		{
+			FilePath: filepath.Join(ephemeralDir, "uuid-42.bin"),
+			MimeType: "application/octet-stream",
+			Content:  pdfBytes,
+		},
+		{
+			FileName: "photo.png",
+			FilePath: pngPath,
+			MimeType: "image/png",
+			Content:  []byte{137, 80, 78, 71, 13, 10, 26, 10},
+		},
+	}
+
+	materialized := agent.materializeSessionAttachments("sess-pdf", attachments)
+	require.Len(t, materialized, 3)
+
+	require.Equal(t, message.MimePDF, materialized[0].MimeType)
+	require.Equal(t, "contract.v2.pdf", filepath.Base(materialized[0].FilePath))
+	diskVersioned, err := os.ReadFile(materialized[0].FilePath)
+	require.NoError(t, err)
+	require.Equal(t, pdfBytes, diskVersioned)
+
+	require.Equal(t, message.MimePDF, materialized[1].MimeType)
+	require.Equal(t, "uuid-42.pdf", filepath.Base(materialized[1].FilePath))
+	diskUUID, err := os.ReadFile(materialized[1].FilePath)
+	require.NoError(t, err)
+	require.Equal(t, pdfBytes, diskUUID)
+
+	require.Equal(t, pngPath, materialized[2].FilePath)
 }
 
 func TestPreparePrompt_OrphanedToolUse(t *testing.T) {

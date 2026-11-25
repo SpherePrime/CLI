@@ -343,6 +343,9 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   function handleDrop(event: React.DragEvent<HTMLDivElement>) {
     dragDepth.current = 0
     setDragActive(false)
+    if (hasTransferFiles(event.dataTransfer)) {
+      event.preventDefault()
+    }
     const files = clipboardFiles(event.dataTransfer)
     if (!files.length) return
     event.preventDefault()

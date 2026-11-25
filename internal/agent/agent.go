@@ -592,6 +592,7 @@ func (a *sessionAgent) persistCanceledTurn(ctx context.Context, call SessionAgen
 	writeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
 	if !userMsgCreated {
+		call.Attachments = a.materializeSessionAttachments(call.SessionID, call.Attachments)
 		if _, err := a.createUserMessage(writeCtx, call); err != nil {
 			return err
 		}
@@ -880,7 +881,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 		}
 	}
 
-	call.Attachments = a.materializeDocumentAttachments(call.SessionID, call.Attachments)
+	call.Attachments = a.materializeSessionAttachments(call.SessionID, call.Attachments)
 
 	// Add the user message to the session.
 	_, err = a.createUserMessage(ctx, call)
@@ -1104,7 +1105,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				if queued.steering {
 					hasNewSteering = true
 				}
-				queued.Attachments = a.materializeDocumentAttachments(call.SessionID, queued.Attachments)
+				queued.Attachments = a.materializeSessionAttachments(call.SessionID, queued.Attachments)
 				userMessage, createErr := a.createUserMessage(callContext, queued)
 				if createErr != nil {
 					return callContext, prepared, createErr
@@ -2170,6 +2171,9 @@ func sanitizeAttachmentFileName(name, fallbackExt string) string {
 	if cleaned == "" {
 		cleaned = "document"
 	}
+	if fallbackExt != "" && !strings.EqualFold(filepath.Ext(cleaned), fallbackExt) {
+		cleaned += fallbackExt
+	}
 	if len([]rune(cleaned)) > 160 {
 		ext := filepath.Ext(cleaned)
 		stem := strings.TrimSuffix(cleaned, ext)
@@ -2179,9 +2183,6 @@ func sanitizeAttachmentFileName(name, fallbackExt string) string {
 			runes = runes[:maxStem]
 		}
 		cleaned = string(runes) + ext
-	}
-	if filepath.Ext(cleaned) == "" && fallbackExt != "" {
-		cleaned += fallbackExt
 	}
 	return cleaned
 }
@@ -2220,7 +2221,7 @@ func writeUniqueAttachmentFile(dir, fileName string, data []byte) (string, error
 	return "", fmt.Errorf("could not allocate unique filename for %s", fileName)
 }
 
-func (a *sessionAgent) materializeDocumentAttachments(sessionID string, attachments []message.Attachment) []message.Attachment {
+func (a *sessionAgent) materializeSessionAttachments(sessionID string, attachments []message.Attachment) []message.Attachment {
 	if len(attachments) == 0 {
 		return attachments
 	}
@@ -2238,17 +2239,25 @@ func (a *sessionAgent) materializeDocumentAttachments(sessionID string, attachme
 	for i := range out {
 		att := &out[i]
 		att.MimeType = message.NormalizeAttachmentMIME(att.MimeType, att.FileName, att.FilePath, att.Content)
-		if !att.IsDocument() || len(att.Content) == 0 {
+		if att.IsImage() || len(att.Content) == 0 {
 			continue
 		}
-		safeName := sanitizeAttachmentFileName(att.DisplayName(), att.DocumentExtension())
+		fallbackExt := ""
+		if att.IsDocument() {
+			fallbackExt = att.DocumentExtension()
+		}
+		baseName := att.DisplayName()
+		if strings.TrimSpace(att.FileName) == "" && fallbackExt != "" && strings.EqualFold(filepath.Ext(baseName), ".bin") {
+			baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+		}
+		safeName := sanitizeAttachmentFileName(baseName, fallbackExt)
 		if att.FileName == "" {
 			att.FileName = safeName
 		}
 		if writtenPath, err := writeUniqueAttachmentFile(sessionDir, safeName, att.Content); err == nil {
 			att.FilePath = writtenPath
 		} else {
-			slog.Warn("Failed to materialize document attachment to disk", "file_name", safeName, "error", err)
+			slog.Warn("Failed to materialize session attachment to disk", "file_name", safeName, "error", err)
 		}
 	}
 	return out

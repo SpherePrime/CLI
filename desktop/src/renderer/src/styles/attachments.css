@@ -37,7 +37,7 @@
   border-radius: 10px;
   border: 1px solid var(--border, #2c3442);
   background: var(--surface, rgba(255, 255, 255, 0.03));
-  color: var(--fg, inherit);
+  color: var(--text);
   font-size: 12px;
   margin-top: 6px;
 }
@@ -96,6 +96,6 @@
   cursor: pointer;
 }
 .attachment-document-action:hover {
-  background: color-mix(in srgb, var(--fg, #fff) 8%, transparent);
-  color: var(--fg, inherit);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
 }

@@ -117,6 +117,9 @@ func NormalizeAttachmentMIME(mimeType, fileName, filePath string, content []byte
 }
 
 func (a Attachment) EffectiveMIME() string {
+	if len(a.Content) > 0 && bytes.HasPrefix(a.Content, []byte("%PDF-")) {
+		return MimePDF
+	}
 	if extMIME := documentMIMEFromPath(a.FileName); extMIME != "" {
 		return extMIME
 	}
@@ -179,13 +182,16 @@ func (a Attachment) SupportsFilePart() bool {
 }
 
 func (a Attachment) DocumentExtension() string {
+	if ext := documentExtFromMIME(a.EffectiveMIME()); ext != "" {
+		return ext
+	}
 	if ext := strings.ToLower(filepath.Ext(strings.TrimSpace(a.FileName))); ext != "" {
 		return ext
 	}
 	if ext := strings.ToLower(filepath.Ext(strings.TrimSpace(a.FilePath))); ext != "" {
 		return ext
 	}
-	return documentExtFromMIME(a.EffectiveMIME())
+	return ""
 }
 
 func ContainsTextAttachment(attachments []Attachment) bool {

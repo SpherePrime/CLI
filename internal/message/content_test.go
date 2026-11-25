@@ -264,3 +264,35 @@ func TestDocumentAttachments_NotTextAndNotOfficeFilePart(t *testing.T) {
 	require.Len(t, fileParts, 1)
 	require.Equal(t, MimePDF, fileParts[0].MediaType)
 }
+
+func TestDocumentExtension_MagicPDFWithNonDocumentDot(t *testing.T) {
+	t.Parallel()
+
+	pdfWithVersionDot := Attachment{
+		FileName: "contract.v2",
+		FilePath: "/tmp/550e8400.bin",
+		MimeType: "application/octet-stream",
+		Content:  []byte("%PDF-1.7\n1 0 obj"),
+	}
+	require.Equal(t, MimePDF, pdfWithVersionDot.EffectiveMIME())
+	require.True(t, pdfWithVersionDot.IsDocument())
+	require.False(t, pdfWithVersionDot.IsText())
+	require.Equal(t, ".pdf", pdfWithVersionDot.DocumentExtension())
+
+	pdfFromTempBin := Attachment{
+		FilePath: "/tmp/550e8400.bin",
+		MimeType: MimePDF,
+		Content:  []byte("%PDF-1.7\n"),
+	}
+	require.Equal(t, ".pdf", pdfFromTempBin.DocumentExtension())
+
+	plainText := Attachment{
+		FileName: "notes.txt",
+		FilePath: "/tmp/ephemeral.bin",
+		MimeType: "text/plain",
+		Content:  []byte("hello"),
+	}
+	require.False(t, plainText.IsDocument())
+	require.True(t, plainText.IsText())
+	require.Equal(t, ".txt", plainText.DocumentExtension())
+}
