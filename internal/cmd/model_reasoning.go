@@ -17,8 +17,7 @@ var modelReasoningCmd = &cobra.Command{
 	Long: `Display or configure reasoning settings for a model using unified reasoning modes.
 
 The reasoning modes are: off, low, medium, high, xhigh, max
-These provide fine-grained control over reasoning depth, similar to Claude Code's
-effort levels.
+These provide fine-grained control over reasoning depth.
 
 Usage:
   # Show reasoning settings for the currently configured large model

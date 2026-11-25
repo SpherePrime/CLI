@@ -644,8 +644,7 @@ Whisper engine and model on first enable and binds `alt+v` to dictation.
 
 > [!IMPORTANT]
 > These skill paths load by default — you do NOT need `skill-path`
-> for them: `.agents/skills`, `.prime/skills`, `.claude/skills`,
-> `.cursor/skills`.
+> for them: `.agents/skills`, `.prime/skills`, `.cursor/skills`.
 
 > [!NOTE]
 > The command palette's "Disable Background Color" and "Disable Mouse" 

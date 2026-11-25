@@ -1557,7 +1557,6 @@ func GlobalSkillsDirs() []string {
 		filepath.Join(home.Config(), "agents", "skills"),
 		// Per the Agent Skills spec, scan ~/.agents/skills
 		filepath.Join(home.Dir(), ".agents", "skills"),
-		filepath.Join(home.Dir(), ".claude", "skills"),
 	}
 
 	// On Windows, also load from app data on top of `$HOME/.config/prime`.
@@ -1583,7 +1582,6 @@ func GlobalSkillsDirs() []string {
 var projectSkillSubdirs = []string{
 	".agents/skills",
 	".prime/skills",
-	".claude/skills",
 	".cursor/skills",
 }
 

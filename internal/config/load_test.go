@@ -2679,3 +2679,19 @@ func TestConfig_LoadFromBytes_EnvMerge(t *testing.T) {
 	require.Equal(t, "second", loadedConfig.Env["AWS_PROFILE"])
 	require.Equal(t, "us-east-1", loadedConfig.Env["AWS_REGION"])
 }
+
+func TestDefaultSkillsDirsExcludeClaude(t *testing.T) {
+	t.Setenv("PRIME_SKILLS_DIR", "")
+
+	for _, dir := range GlobalSkillsDirs() {
+		require.NotContains(t, filepath.ToSlash(dir), ".claude/skills")
+	}
+
+	projectDirs := ProjectSkillsDir(filepath.Join("repo", "sub"))
+	for _, dir := range projectDirs {
+		require.NotContains(t, filepath.ToSlash(dir), ".claude/skills")
+	}
+	require.Contains(t, projectDirs, filepath.Join("repo", "sub", ".prime", "skills"))
+	require.Contains(t, projectDirs, filepath.Join("repo", "sub", ".agents", "skills"))
+}
+

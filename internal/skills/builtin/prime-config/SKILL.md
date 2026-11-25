@@ -215,14 +215,13 @@ option ui exit-banner compact
 ```
 
 > [!IMPORTANT] These skill paths are loaded by default and do NOT need
-> `skill-path`: `.agents/skills`, `.prime/skills`, `.claude/skills`,
-> `.cursor/skills`.
+> `skill-path`: `.agents/skills`, `.prime/skills`, `.cursor/skills`.
 
 ## Installing third-party skills
 
 Prime has no plugin manager and no plugin API: a skill is a folder with a
 `SKILL.md`, and installing one means making that folder discoverable. A README
-that says "install as a plugin for OpenCode / Claude Code / Cursor / Codex", or
+that says "install as a plugin for OpenCode / Cursor / Codex", or
 that writes to `~/.config/opencode/`, describes a different product. Do that
 only when the user names it. For Prime:
 
@@ -325,10 +324,9 @@ Event names are case-insensitive and accept snake_case: `PreToolUse`,
 - Deny reasons and context strings are concatenated (newline-separated).
 - For `updated_input`, the last non-empty value wins.
 
-### Claude Code compatibility
+### Extended hook output envelope
 
-Prime also accepts the Claude Code hook output format, so existing hooks work
-unchanged:
+Prime also accepts the `hookSpecificOutput` hook envelope format:
 
 ```json
 {

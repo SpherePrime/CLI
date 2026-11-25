@@ -446,6 +446,12 @@ func TestDiscoverBuiltin(t *testing.T) {
 		}
 	}
 	require.True(t, foundHooks, "prime-hooks builtin skill not found")
+
+	for _, s := range discovered {
+		require.NotContains(t, s.Instructions, "Claude Code", "builtin skill %s should not mention Claude Code", s.Name)
+		require.NotContains(t, s.Instructions, ".claude/skills", "builtin skill %s should not reference .claude/skills", s.Name)
+		require.NotContains(t, s.Description, "Claude Code", "builtin skill %s description should not mention Claude Code", s.Name)
+	}
 }
 
 func TestDeduplicate(t *testing.T) {

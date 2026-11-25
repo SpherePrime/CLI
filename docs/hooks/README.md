@@ -14,7 +14,7 @@ forward.
 
 - Hooks are just shell commands
 - Hooks can be written in any language because they’re just executables: Bash, Python, Node, Rust, Haskell, whatever
-- Hooks are Claude Code-compatible
+- Hooks support both native Prime fields and the `hookSpecificOutput` envelope
 - Prime ships with a builtin `prime-hook` skill write, edit, and configure
   hooks; just tell Prime how to configure Prime
 - Prime currently supports just one hook, `PreToolUse`, with plans to support
@@ -571,13 +571,12 @@ process.stdin.on("end", () => {
 
 ---
 
-## Claude Code compatibility
+## Extended envelope compatibility
 
-Prime hooks are broadly compatible with [Claude Code
-hooks](https://docs.claude.com/en/docs/claude-code/hooks): the config shape,
-stdin payload, output envelope, and exit codes line up so most Claude Code
-hooks run under Prime unchanged. This document covers the Prime-specific API
-only — anything not documented here isn't guaranteed to work.
+Prime hooks also support the `hookSpecificOutput` output envelope alongside
+the native fields: the config shape, stdin payload, output envelope, and exit
+codes align with standard hook scripts. This document covers the Prime-specific
+API only — anything not documented here isn't guaranteed to work.
 
 One intentional divergence: Prime treats `updated_input` as a shallow-merge
 patch against the original `tool_input` rather than a full replacement. Keys

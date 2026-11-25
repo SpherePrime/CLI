@@ -201,9 +201,8 @@ preserved.
 - `matcher` is a regex against the tool name. Use `^bash$` (not `bash`) if you
   don't also want to match `mcp_something_bash`.
 
-## Claude Code Compatibility
+## Extended Output Envelope
 
-Prime also accepts Claude Code's `hookSpecificOutput` envelope. One intentional
-divergence: Prime treats `updated_input` as shallow-merge, Claude Code replaces.
-Existing Claude Code hooks work without modification for the matcher/decision
-parts; revisit any that relied on `updatedInput` fully replacing tool input.
+Prime also accepts the `hookSpecificOutput` envelope. One intentional
+divergence: Prime treats `updated_input` as a shallow-merge against the
+original `tool_input` rather than replacing the full input object.

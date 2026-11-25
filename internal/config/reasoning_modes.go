@@ -1,7 +1,6 @@
 package config
 
-// Reasoning modes inspired by Claude Code's effort levels.
-// These provide real reasoning control (low/medium/high/xhigh/max)
+// Reasoning modes provide fine-grained reasoning control (low/medium/high/xhigh/max)
 // instead of a simple on/off toggle.
 //
 // The special value "off" (also represented as empty string "") disables
