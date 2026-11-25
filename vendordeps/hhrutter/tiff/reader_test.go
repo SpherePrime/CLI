@@ -1,0 +1,761 @@
+// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package tiff
+
+import (
+	"bytes"
+	"encoding/binary"
+	"encoding/hex"
+	"errors"
+	"image"
+	"image/color"
+	"io"
+	"os"
+	"strings"
+	"testing"
+
+	_ "image/jpeg"
+	_ "image/png"
+)
+
+const testdataDir = "testdata/"
+
+// Read makes *buffer implements io.Reader, so that we can pass one to Decode.
+func (*buffer) Read([]byte) (int, error) {
+	panic("unimplemented")
+}
+
+func load(name string) (image.Image, error) {
+	f, err := os.Open(testdataDir + name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
+}
+
+// TestNoRPS tests decoding an image that has no RowsPerStrip tag. The tag is
+// mandatory according to the spec but some software omits it in the case of a
+// single strip.
+func TestNoRPS(t *testing.T) {
+	_, err := load("no_rps.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestNoCompression tests decoding an image that has no Compression tag. This
+// tag is mandatory, but most tools interpret a missing value as no
+// compression.
+func TestNoCompression(t *testing.T) {
+	_, err := load("no_compress.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestUnpackBits tests the decoding of PackBits-encoded data.
+func TestUnpackBits(t *testing.T) {
+	var unpackBitsTests = []struct {
+		compressed   string
+		uncompressed string
+	}{{
+		// Example data from Wikipedia.
+		"\xfe\xaa\x02\x80\x00\x2a\xfd\xaa\x03\x80\x00\x2a\x22\xf7\xaa",
+		"\xaa\xaa\xaa\x80\x00\x2a\xaa\xaa\xaa\xaa\x80\x00\x2a\x22\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa",
+	}}
+	for _, u := range unpackBitsTests {
+		buf, err := unpackBits(strings.NewReader(u.compressed), int64(len(u.uncompressed)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(buf) != u.uncompressed {
+			t.Fatalf("unpackBits: want %x, got %x", u.uncompressed, buf)
+		}
+	}
+}
+
+func TestShortBlockData(t *testing.T) {
+	b, err := os.ReadFile("testdata/bw-uncompressed.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The bw-uncompressed.tiff image is a 153x55 bi-level image. This is 1 bit
+	// per pixel, or 20 bytes per row, times 55 rows, or 1100 bytes of pixel
+	// data. 1100 in hex is 0x44c, or "\x4c\x04" in little-endian. We replace
+	// that byte count (StripByteCounts-tagged data) by something less than
+	// that, so that there is not enough pixel data.
+	old := []byte{0x4c, 0x04}
+	new := []byte{0x01, 0x01}
+	i := bytes.Index(b, old)
+	if i < 0 {
+		t.Fatal(`could not find "\x4c\x04" byte count`)
+	}
+	if bytes.Contains(b[i+len(old):], old) {
+		t.Fatal(`too many occurrences of "\x4c\x04"`)
+	}
+	b[i+0] = new[0]
+	b[i+1] = new[1]
+	if _, err = Decode(bytes.NewReader(b)); err == nil {
+		t.Fatal("got nil error, want non-nil")
+	}
+}
+
+func TestDecodeInvalidDataType(t *testing.T) {
+	b, err := os.ReadFile("testdata/bw-uncompressed.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// off is the offset of the ImageWidth tag. It is the offset of the overall
+	// IFD block (0x00000454), plus 2 for the uint16 number of IFD entries, plus 12
+	// to skip the first entry.
+	const off = 0x00000454 + 2 + 12*1
+
+	if v := binary.LittleEndian.Uint16(b[off : off+2]); v != tImageWidth {
+		t.Fatal(`could not find ImageWidth tag`)
+	}
+	binary.LittleEndian.PutUint16(b[off+2:], uint16(len(lengths))) // invalid datatype
+
+	if _, err = Decode(bytes.NewReader(b)); err == nil {
+		t.Fatal("got nil error, want non-nil")
+	}
+}
+
+func compare(t *testing.T, img0, img1 image.Image) {
+	b0 := img0.Bounds()
+	b1 := img1.Bounds()
+	if b0.Dx() != b1.Dx() || b0.Dy() != b1.Dy() {
+		t.Fatalf("wrong image size: want %s, got %s", b0, b1)
+	}
+	x1 := b1.Min.X - b0.Min.X
+	y1 := b1.Min.Y - b0.Min.Y
+	for y := b0.Min.Y; y < b0.Max.Y; y++ {
+		for x := b0.Min.X; x < b0.Max.X; x++ {
+			c0 := img0.At(x, y)
+			c1 := img1.At(x+x1, y+y1)
+			r0, g0, b0, a0 := c0.RGBA()
+			r1, g1, b1, a1 := c1.RGBA()
+			if r0 != r1 || g0 != g1 || b0 != b1 || a0 != a1 {
+				t.Fatalf("pixel at (%d, %d) has wrong color: want %v, got %v", x, y, c0, c1)
+			}
+		}
+	}
+}
+
+// TestDecode tests that decoding a PNG image and a TIFF image result in the
+// same pixel data.
+func TestDecode(t *testing.T) {
+	img0, err := load("video-001.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	img1, err := load("video-001.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	img2, err := load("video-001-strip-64.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	img3, err := load("video-001-tile-64x64.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	img4, err := load("video-001-16bit.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	compare(t, img0, img1)
+	compare(t, img0, img2)
+	compare(t, img0, img3)
+	compare(t, img0, img4)
+}
+
+func rgbaTIFF(extraSamples *uint16) []byte {
+	entryCount := uint16(9)
+	if extraSamples != nil {
+		entryCount++
+	}
+	ifdLen := 2 + int(entryCount)*12 + 4
+	bitsOffset := uint32(8 + ifdLen)
+	stripOffset := bitsOffset + 8
+	b := make([]byte, stripOffset+4)
+
+	copy(b, "II")
+	binary.LittleEndian.PutUint16(b[2:], 42)
+	binary.LittleEndian.PutUint32(b[4:], 8)
+	binary.LittleEndian.PutUint16(b[8:], entryCount)
+
+	off := 10
+	putShortEntry := func(tag uint16, values ...uint16) {
+		binary.LittleEndian.PutUint16(b[off:], tag)
+		binary.LittleEndian.PutUint16(b[off+2:], uint16(dtShort))
+		binary.LittleEndian.PutUint32(b[off+4:], uint32(len(values)))
+		if len(values) == 1 {
+			binary.LittleEndian.PutUint16(b[off+8:], values[0])
+		} else {
+			binary.LittleEndian.PutUint32(b[off+8:], bitsOffset)
+			for i, v := range values {
+				binary.LittleEndian.PutUint16(b[int(bitsOffset)+i*2:], v)
+			}
+		}
+		off += 12
+	}
+	putLongEntry := func(tag uint16, value uint32) {
+		binary.LittleEndian.PutUint16(b[off:], tag)
+		binary.LittleEndian.PutUint16(b[off+2:], uint16(dtLong))
+		binary.LittleEndian.PutUint32(b[off+4:], 1)
+		binary.LittleEndian.PutUint32(b[off+8:], value)
+		off += 12
+	}
+
+	putShortEntry(tImageWidth, 1)
+	putShortEntry(tImageLength, 1)
+	putShortEntry(tBitsPerSample, 8, 8, 8, 8)
+	putShortEntry(tCompression, cNone)
+	putShortEntry(tPhotometricInterpretation, pRGB)
+	putLongEntry(tStripOffsets, stripOffset)
+	putShortEntry(tSamplesPerPixel, 4)
+	putShortEntry(tRowsPerStrip, 1)
+	putLongEntry(tStripByteCounts, 4)
+	if extraSamples != nil {
+		putShortEntry(tExtraSamples, *extraSamples)
+	}
+	copy(b[stripOffset:], []byte{0x20, 0x40, 0x80, 0xff})
+
+	return b
+}
+
+func TestDecodeRGBAWithUnspecifiedExtraSamples(t *testing.T) {
+	zero := uint16(0)
+	for _, tt := range []struct {
+		name         string
+		extraSamples *uint16
+	}{
+		{"missing", nil},
+		{"zero", &zero},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			img, err := Decode(bytes.NewReader(rgbaTIFF(tt.extraSamples)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := img.ColorModel(); got != color.RGBAModel {
+				t.Fatalf("ColorModel: got %v, want %v", got, color.RGBAModel)
+			}
+			if got := img.Bounds(); got != image.Rect(0, 0, 1, 1) {
+				t.Fatalf("Bounds: got %v, want %v", got, image.Rect(0, 0, 1, 1))
+			}
+			if got := color.RGBAModel.Convert(img.At(0, 0)); got != (color.RGBA{R: 0x20, G: 0x40, B: 0x80, A: 0xff}) {
+				t.Fatalf("At(0, 0): got %v", got)
+			}
+		})
+	}
+}
+
+// TestDecodeLZW tests that decoding a PNG image and a LZW-compressed TIFF
+// image result in the same pixel data.
+func TestDecodeLZW(t *testing.T) {
+	img0, err := load("blue-purple-pink.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	img1, err := load("blue-purple-pink.lzwcompressed.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	compare(t, img0, img1)
+}
+
+// TestDecodeJPEG tests that decoding a JPEG image and a JPEG-compressed TIFF
+// image result in the same pixel data.
+func TestDecodeJPEG(t *testing.T) {
+	testDecodeYCbCrJPEG(t)
+}
+
+// TestDecodeCCITT tests that decoding a PNG image and a CCITT compressed TIFF
+// image result in the same pixel data.
+func TestDecodeCCITT(t *testing.T) {
+	// TODO Add more tests.
+	for _, fn := range []string{
+		"bw-gopher",
+	} {
+		img0, err := load(fn + ".png")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		img1, err := load(fn + "_ccittGroup3.tiff")
+		if err != nil {
+			t.Fatal(err)
+		}
+		compare(t, img0, img1)
+
+		img2, err := load(fn + "_ccittGroup4.tiff")
+		if err != nil {
+			t.Fatal(err)
+		}
+		compare(t, img0, img2)
+	}
+}
+
+func TestCCITTOptions(t *testing.T) {
+	d := &decoder{
+		features: map[int][]uint{
+			tPhotometricInterpretation: {pWhiteIsZero},
+			tT4Options:                 {4},
+		},
+	}
+	opts, err := d.ccittOptions(cG3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !opts.Invert {
+		t.Fatal("Invert = false, want true")
+	}
+	if !opts.Align {
+		t.Fatal("Align = false, want true")
+	}
+
+	d.features[tT4Options] = []uint{1}
+	_, err = d.ccittOptions(cG3)
+	if err == nil {
+		t.Fatal("ccittOptions accepted unsupported Group 3 2-D coding")
+	}
+
+	d.features[tT4Options] = []uint{2}
+	_, err = d.ccittOptions(cG3)
+	if err == nil {
+		t.Fatal("ccittOptions accepted unsupported Group 3 uncompressed mode")
+	}
+
+	d.features[tT6Options] = []uint{2}
+	_, err = d.ccittOptions(cG4)
+	if err == nil {
+		t.Fatal("ccittOptions accepted unsupported Group 4 uncompressed mode")
+	}
+}
+
+func packBits(s string) []byte {
+	bb := make([]byte, (len(s)+7)/8)
+	for i, c := range s {
+		if c == '1' {
+			bb[i/8] |= 0x80 >> uint(i&7)
+		}
+	}
+	return bb
+}
+
+func ccittRLETestTIFF() []byte {
+	// Row 0 is four white pixels followed by four black pixels.
+	// Row 1 starts with a zero-length white run and then eight black pixels.
+	data := packBits("1011011") // white 4, black 4
+	data = append(data, packBits("00110101000101")...)
+	ifdOffset := uint32(8 + len(data))
+	ifd, _ := marshalIFD(ifdOffset, 0, []ifdEntry{
+		{tImageWidth, dtShort, []uint32{8}},
+		{tImageLength, dtShort, []uint32{2}},
+		{tBitsPerSample, dtShort, []uint32{1}},
+		{tCompression, dtShort, []uint32{cCCITT}},
+		{tPhotometricInterpretation, dtShort, []uint32{pWhiteIsZero}},
+		{tFillOrder, dtShort, []uint32{1}},
+		{tStripOffsets, dtLong, []uint32{8}},
+		{tSamplesPerPixel, dtShort, []uint32{1}},
+		{tRowsPerStrip, dtShort, []uint32{2}},
+		{tStripByteCounts, dtLong, []uint32{uint32(len(data))}},
+	})
+
+	var b bytes.Buffer
+	b.WriteString(leHeader)
+	_ = binary.Write(&b, enc, ifdOffset)
+	b.Write(data)
+	b.Write(ifd)
+	return b.Bytes()
+}
+
+func TestDecodeCCITTRLE(t *testing.T) {
+	img, err := Decode(bytes.NewReader(ccittRLETestTIFF()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := img.(*image.Gray)
+	for x := 0; x < 4; x++ {
+		if c := got.GrayAt(x, 0); c != (color.Gray{Y: 0xff}) {
+			t.Fatalf("pixel (%d,0) = %v, want white", x, c)
+		}
+	}
+	for x := 4; x < 8; x++ {
+		if c := got.GrayAt(x, 0); c != (color.Gray{}) {
+			t.Fatalf("pixel (%d,0) = %v, want black", x, c)
+		}
+	}
+	for x := 0; x < 8; x++ {
+		if c := got.GrayAt(x, 1); c != (color.Gray{}) {
+			t.Fatalf("pixel (%d,1) = %v, want black", x, c)
+		}
+	}
+}
+
+func TestDecodeCCITTRLEIssue2(t *testing.T) {
+	img, err := load("issue-2-ccitt-rle.tif")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := img.Bounds().Size(); got != (image.Point{X: 186, Y: 280}) {
+		t.Fatalf("bounds = %v, want 186x280", got)
+	}
+}
+
+// TestDecodeTagOrder tests that a malformed image with unsorted IFD entries is
+// correctly rejected.
+func TestDecodeTagOrder(t *testing.T) {
+	data, err := os.ReadFile("testdata/video-001.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Swap the first two IFD entries.
+	ifdOffset := int64(binary.LittleEndian.Uint32(data[4:8]))
+	for i := ifdOffset + 2; i < ifdOffset+14; i++ {
+		data[i], data[i+12] = data[i+12], data[i]
+	}
+	if _, _, err := image.Decode(bytes.NewReader(data)); err == nil {
+		t.Fatal("got nil error, want non-nil")
+	}
+}
+
+// TestDecompress tests that decoding some TIFF images that use different
+// compression formats result in the same pixel data.
+func TestDecompress(t *testing.T) {
+	var decompressTests = []string{
+		"bw-uncompressed.tiff",
+		"bw-deflate.tiff",
+		"bw-lzw-8bpp.tiff",
+		"bw-packbits.tiff",
+	}
+	var img0 image.Image
+	for _, name := range decompressTests {
+		img1, err := load(name)
+		if err != nil {
+			t.Fatalf("decoding %s: %v", name, err)
+		}
+		if img0 == nil {
+			img0 = img1
+			continue
+		}
+		compare(t, img0, img1)
+	}
+}
+
+func replace(src []byte, find, repl string) ([]byte, error) {
+	removeSpaces := func(r rune) rune {
+		if r != ' ' {
+			return r
+		}
+		return -1
+	}
+
+	f, err := hex.DecodeString(strings.Map(removeSpaces, find))
+	if err != nil {
+		return nil, err
+	}
+	r, err := hex.DecodeString(strings.Map(removeSpaces, repl))
+	if err != nil {
+		return nil, err
+	}
+	dst := bytes.Replace(src, f, r, 1)
+	if bytes.Equal(dst, src) {
+		return nil, errors.New("replacement failed")
+	}
+	return dst, nil
+}
+
+// TestZeroBitsPerSample tests that an IFD with a bitsPerSample of 0 does not
+// cause a crash.
+// Issue 10711.
+func TestZeroBitsPerSample(t *testing.T) {
+	b0, err := os.ReadFile(testdataDir + "bw-deflate.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Mutate the loaded image to have the problem.
+	// 02 01: tag number (tBitsPerSample)
+	// 03 00: data type (short, or uint16)
+	// 01 00 00 00: count
+	// ?? 00 00 00: value (1 -> 0)
+	b1, err := replace(b0,
+		"02 01 03 00 01 00 00 00 01 00 00 00",
+		"02 01 03 00 01 00 00 00 00 00 00 00",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = Decode(bytes.NewReader(b1))
+	if err == nil {
+		t.Fatal("Decode with 0 bits per sample: got nil error, want non-nil")
+	}
+}
+
+// TestTileTooBig tests that we do not panic when a tile is too big compared to
+// the data available.
+// Issue 10712
+func TestTileTooBig(t *testing.T) {
+	b0, err := os.ReadFile(testdataDir + "video-001-tile-64x64.tiff")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Mutate the loaded image to have the problem.
+	//
+	// 42 01: tag number (tTileWidth)
+	// 03 00: data type (short, or uint16)
+	// 01 00 00 00: count
+	// xx 00 00 00: value (0x40 -> 0x44: a wider tile consumes more data
+	// than is available)
+	b1, err := replace(b0,
+		"42 01 03 00 01 00 00 00 40 00 00 00",
+		"42 01 03 00 01 00 00 00 44 00 00 00",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Turn off the predictor, which makes it possible to hit the
+	// place with the defect. Without this patch to the image, we run
+	// out of data too early, and do not hit the part of the code where
+	// the original panic was.
+	//
+	// 3d 01: tag number (tPredictor)
+	// 03 00: data type (short, or uint16)
+	// 01 00 00 00: count
+	// xx 00 00 00: value (2 -> 1: 2 = horizontal, 1 = none)
+	b2, err := replace(b1,
+		"3d 01 03 00 01 00 00 00 02 00 00 00",
+		"3d 01 03 00 01 00 00 00 01 00 00 00",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = Decode(bytes.NewReader(b2))
+	if err == nil {
+		t.Fatal("did not expect nil error")
+	}
+}
+
+// TestZeroSizedImages tests that decoding does not panic when image dimensions
+// are zero, and returns a zero-sized image instead.
+// Issue 10393.
+func TestZeroSizedImages(t *testing.T) {
+	testsizes := []struct {
+		w, h int
+	}{
+		{0, 0},
+		{1, 0},
+		{0, 1},
+		{1, 1},
+	}
+	for _, r := range testsizes {
+		img := image.NewRGBA(image.Rect(0, 0, r.w, r.h))
+		var buf bytes.Buffer
+		if err := Encode(&buf, img, nil); err != nil {
+			t.Errorf("encode w=%d h=%d: %v", r.w, r.h, err)
+			continue
+		}
+		if _, err := Decode(&buf); err != nil {
+			t.Errorf("decode w=%d h=%d: %v", r.w, r.h, err)
+		}
+	}
+}
+
+// TestLargeIFDEntry tests that a large IFD entry does not cause Decode to
+// panic.
+// Issue 10596.
+func TestLargeIFDEntry(t *testing.T) {
+	testdata := "II*\x00\x08\x00\x00\x00\f\x000000000000" +
+		"00000000000000000000" +
+		"00000000000000000000" +
+		"00000000000000000000" +
+		"00000000000000\x17\x01\x04\x00\x01\x00" +
+		"\x00\xc0000000000000000000" +
+		"00000000000000000000" +
+		"00000000000000000000" +
+		"000000"
+	_, err := Decode(strings.NewReader(testdata))
+	if err == nil {
+		t.Fatal("Decode with large IFD entry: got nil error, want non-nil")
+	}
+}
+
+func testTIFF(entries []ifdEntry) []byte {
+	ifd, _ := marshalIFD(8, 0, entries)
+	var b bytes.Buffer
+	b.WriteString(leHeader)
+	_ = binary.Write(&b, enc, uint32(8))
+	b.Write(ifd)
+	return b.Bytes()
+}
+
+func writeIFDEntry(b *bytes.Buffer, tag int, datatype uint16, count, value uint32) {
+	var p [ifdLen]byte
+	enc.PutUint16(p[0:2], uint16(tag))
+	enc.PutUint16(p[2:4], datatype)
+	enc.PutUint32(p[4:8], count)
+	enc.PutUint32(p[8:12], value)
+	b.Write(p[:])
+}
+
+func TestRejectSmallJPEGTables(t *testing.T) {
+	var b bytes.Buffer
+	b.WriteString(leHeader)
+	_ = binary.Write(&b, enc, uint32(8))
+	_ = binary.Write(&b, enc, uint16(5))
+	writeIFDEntry(&b, tImageWidth, dtShort, 1, 1)
+	writeIFDEntry(&b, tImageLength, dtShort, 1, 1)
+	writeIFDEntry(&b, tBitsPerSample, dtShort, 1, 8)
+	writeIFDEntry(&b, tPhotometricInterpretation, dtShort, 1, pBlackIsZero)
+	writeIFDEntry(&b, tJPEGTables, 7, 2, 0)
+	_ = binary.Write(&b, enc, uint32(0))
+
+	if _, err := DecodeConfig(bytes.NewReader(b.Bytes())); err == nil {
+		t.Fatal("DecodeConfig with short JPEG tables: got nil error, want non-nil")
+	}
+}
+
+func TestDecodeConfigDefersJPEGTables(t *testing.T) {
+	var b bytes.Buffer
+	b.WriteString(leHeader)
+	_ = binary.Write(&b, enc, uint32(8))
+	_ = binary.Write(&b, enc, uint16(6))
+	writeIFDEntry(&b, tImageWidth, dtShort, 1, 1)
+	writeIFDEntry(&b, tImageLength, dtShort, 1, 1)
+	writeIFDEntry(&b, tBitsPerSample, dtShort, 1, 8)
+	writeIFDEntry(&b, tCompression, dtShort, 1, cJPEG)
+	writeIFDEntry(&b, tPhotometricInterpretation, dtShort, 1, pBlackIsZero)
+	writeIFDEntry(&b, tJPEGTables, 7, 1<<30, 1<<30)
+	_ = binary.Write(&b, enc, uint32(0))
+
+	if _, err := DecodeConfig(bytes.NewReader(b.Bytes())); err != nil {
+		t.Fatalf("DecodeConfig read JPEG table payload: %v", err)
+	}
+	if _, err := Decode(bytes.NewReader(b.Bytes())); err == nil {
+		t.Fatal("Decode accepted missing JPEG table payload")
+	}
+}
+
+func TestRejectHugeDimensions(t *testing.T) {
+	b := testTIFF([]ifdEntry{
+		{tImageWidth, dtLong, []uint32{1 << 30}},
+		{tImageLength, dtLong, []uint32{1 << 30}},
+		{tBitsPerSample, dtShort, []uint32{8}},
+		{tPhotometricInterpretation, dtShort, []uint32{pBlackIsZero}},
+	})
+
+	if _, err := DecodeConfig(bytes.NewReader(b)); err == nil {
+		t.Fatal("DecodeConfig with huge dimensions: got nil error, want non-nil")
+	}
+}
+
+type headerOnlyReaderAt struct{}
+
+func (headerOnlyReaderAt) Read([]byte) (int, error) {
+	return 0, io.EOF
+}
+
+func (headerOnlyReaderAt) ReadAt(p []byte, offset int64) (int, error) {
+	if offset != 0 {
+		panic("invalid offset reached ReaderAt")
+	}
+	var header [8]byte
+	copy(header[:], leHeader)
+	enc.PutUint32(header[4:], 8)
+	return copy(p, header[:]), nil
+}
+
+func TestDecodeConfigAtRejectsInvalidOffsets(t *testing.T) {
+	maxInt64 := int64(^uint64(0) >> 1)
+	for _, offset := range []int64{-1, maxInt64 - 1, maxInt64} {
+		if _, err := DecodeConfigAt(headerOnlyReaderAt{}, offset); err == nil {
+			t.Fatalf("DecodeConfigAt offset %d: got nil error, want non-nil", offset)
+		}
+	}
+}
+
+type trackedReaderAt struct {
+	io.ReaderAt
+	maxRead int
+}
+
+func (r *trackedReaderAt) ReadAt(p []byte, offset int64) (int, error) {
+	if len(p) > r.maxRead {
+		r.maxRead = len(p)
+	}
+	return r.ReaderAt.ReadAt(p, offset)
+}
+
+func TestIFDValuesUseBoundedCache(t *testing.T) {
+	const count = 20_000
+	data := make([]byte, 4*count)
+	for i := 0; i < count; i++ {
+		enc.PutUint32(data[4*i:], uint32(i+1))
+	}
+	r := &trackedReaderAt{ReaderAt: bytes.NewReader(data)}
+	var entry [ifdLen]byte
+	enc.PutUint16(entry[2:4], dtLong)
+	enc.PutUint32(entry[4:8], count)
+	d := decoder{r: r, byteOrder: enc, ifd: map[int][ifdLen]byte{tStripOffsets: entry}}
+
+	values, err := d.parseIFDOffsets(tStripOffsets, count)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.maxRead != 1 {
+		t.Fatalf("IFD range validation read %d bytes, want 1", r.maxRead)
+	}
+	for _, index := range []int{0, ifdValueCacheSize/4 - 1, ifdValueCacheSize / 4, count - 1} {
+		got, err := values.value(index)
+		if err != nil {
+			t.Fatalf("IFD value %d: %v", index, err)
+		}
+		if want := uint32(index + 1); got != want {
+			t.Fatalf("IFD value %d = %d, want %d", index, got, want)
+		}
+	}
+	if r.maxRead > ifdValueCacheSize || len(values.cache) > ifdValueCacheSize {
+		t.Fatalf("IFD cache or read exceeded %d bytes: cache=%d read=%d", ifdValueCacheSize, len(values.cache), r.maxRead)
+	}
+	if _, err := values.value(count); err == nil {
+		t.Fatal("IFD value access accepted an out-of-range index")
+	}
+}
+
+// benchmarkDecode benchmarks the decoding of an image.
+func benchmarkDecode(b *testing.B, filename string) {
+	b.StopTimer()
+	contents, err := os.ReadFile(testdataDir + filename)
+	if err != nil {
+		b.Fatal(err)
+	}
+	r := &buffer{buf: contents}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := Decode(r)
+		if err != nil {
+			b.Fatal("Decode:", err)
+		}
+	}
+}
+
+func BenchmarkDecodeCompressed(b *testing.B)   { benchmarkDecode(b, "video-001.tiff") }
+func BenchmarkDecodeUncompressed(b *testing.B) { benchmarkDecode(b, "video-001-uncompressed.tiff") }
