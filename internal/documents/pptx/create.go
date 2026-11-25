@@ -802,24 +802,37 @@ func renderTableFrame(id int, x, y, cx, cy int64, tbl *TableSpec, theme Theme) s
 
 	colWidths := make([]int64, colCount)
 	var sumWeights float64
-	if len(tbl.ColWidths) == colCount {
+	useCustomWeights := len(tbl.ColWidths) == colCount
+	if useCustomWeights {
 		for _, w := range tbl.ColWidths {
-			if w > 0 {
-				sumWeights += w
+			if w <= 0 || math.IsNaN(w) || math.IsInf(w, 0) {
+				useCustomWeights = false
+				break
 			}
+			sumWeights += w
+		}
+		if sumWeights <= 0 || math.IsInf(sumWeights, 0) {
+			useCustomWeights = false
 		}
 	}
 	var used int64
 	for i := range colCount {
 		if i == colCount-1 {
-			colWidths[i] = cx - used
-		} else if sumWeights > 0 && tbl.ColWidths[i] > 0 {
-			colWidths[i] = int64(math.Round(float64(cx) * (tbl.ColWidths[i] / sumWeights)))
-			used += colWidths[i]
-		} else {
-			colWidths[i] = cx / int64(colCount)
-			used += colWidths[i]
+			colWidths[i] = max(cx-used, int64(1))
+			continue
 		}
+		var w int64
+		if useCustomWeights {
+			w = int64(math.Round(float64(cx) * (tbl.ColWidths[i] / sumWeights)))
+		} else {
+			w = cx / int64(colCount)
+		}
+		w = max(w, int64(1))
+		if maxW := cx - used - int64(colCount-1-i); maxW >= 1 && w > maxW {
+			w = maxW
+		}
+		colWidths[i] = w
+		used += w
 	}
 
 	totalRows := len(tbl.Rows)

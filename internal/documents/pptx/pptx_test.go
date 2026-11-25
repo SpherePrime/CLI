@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -666,4 +667,263 @@ func TestUpdateAddNotesAndImageToMinimalDeckAndMultilineReplace(t *testing.T) {
 	if info.Slides[1].Notes != "Заметки нового слайда" {
 		t.Fatalf("slide 2 notes mismatch: %q", info.Slides[1].Notes)
 	}
+}
+
+func TestRenderTableFrameColWidthsPositive(t *testing.T) {
+	theme := resolveTheme("", "", "", "", "")
+	const cx int64 = 9000000
+
+	cases := []struct {
+		name      string
+		headers   []string
+		colWidths []float64
+	}{
+		{
+			name:      "mixed positive and zero 3 cols",
+			headers:   []string{"A", "B", "C"},
+			colWidths: []float64{3, 0, 1},
+		},
+		{
+			name:      "positive and zero 2 cols",
+			headers:   []string{"A", "B"},
+			colWidths: []float64{1, 0},
+		},
+		{
+			name:      "mixed positive and negative 3 cols",
+			headers:   []string{"A", "B", "C"},
+			colWidths: []float64{3, -1, 2},
+		},
+		{
+			name:      "extreme skew 3 cols",
+			headers:   []string{"A", "B", "C"},
+			colWidths: []float64{1e9, 1, 1},
+		},
+		{
+			name:      "valid custom weights 3 cols",
+			headers:   []string{"A", "B", "C"},
+			colWidths: []float64{2, 3, 5},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tbl := &TableSpec{
+				Headers:   tc.headers,
+				Rows:      [][]string{make([]string, len(tc.headers))},
+				ColWidths: tc.colWidths,
+			}
+			frameXML := renderTableFrame(10, 0, 0, cx, 3000000, tbl, theme)
+			wrapped := `<root xmlns:a="` + nsA + `" xmlns:p="` + nsP + `">` + frameXML + `</root>`
+
+			dec := xml.NewDecoder(strings.NewReader(wrapped))
+			var widths []int64
+			for {
+				tok, err := dec.Token()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					t.Fatalf("parse table frame XML: %v", err)
+				}
+				se, ok := tok.(xml.StartElement)
+				if !ok || se.Name.Local != "gridCol" {
+					continue
+				}
+				for _, attr := range se.Attr {
+					if attr.Name.Local == "w" {
+						w, perr := strconv.ParseInt(attr.Value, 10, 64)
+						if perr != nil {
+							t.Fatalf("parse gridCol w=%q: %v", attr.Value, perr)
+						}
+						widths = append(widths, w)
+					}
+				}
+			}
+
+			if len(widths) != len(tc.headers) {
+				t.Fatalf("expected %d gridCol elements, got %d (%v)", len(tc.headers), len(widths), widths)
+			}
+			var sum int64
+			for i, w := range widths {
+				if w <= 0 {
+					t.Fatalf("gridCol[%d] = %d, want > 0 (all widths: %v)", i, w, widths)
+				}
+				sum += w
+			}
+			if sum != cx {
+				t.Fatalf("gridCol sum = %d, want %d (widths: %v)", sum, cx, widths)
+			}
+		})
+	}
+
+	dir := t.TempDir()
+	outPath := filepath.Join(dir, "mixed-colwidths.pptx")
+	if _, err := Create(CreateOptions{
+		OutputPath: outPath,
+		Slides: []SlideSpec{
+			{
+				Layout: "table",
+				Title:  "Table",
+				Table: &TableSpec{
+					Headers:   []string{"Col1", "Col2", "Col3"},
+					Rows:      [][]string{{"1", "2", "3"}},
+					ColWidths: []float64{3, 0, 1},
+				},
+			},
+		},
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+	assertValidXMLParts(t, outPath)
+}
+
+func TestReplaceInDrawingXMLDefaultNamespace(t *testing.T) {
+	t.Run("single line", func(t *testing.T) {
+		input := []byte(`<p xmlns="` + nsA + `"><r><t>{{key}}</t></r></p>`)
+		patched, count, err := replaceInDrawingXML(input, map[string]string{
+			"{{key}}": "Updated value",
+		})
+		if err != nil {
+			t.Fatalf("replaceInDrawingXML failed: %v", err)
+		}
+		if count != 1 {
+			t.Fatalf("expected 1 replacement, got %d", count)
+		}
+		if strings.Contains(string(patched), "a:") {
+			t.Fatalf("unexpected a: prefix in default-namespace XML: %s", string(patched))
+		}
+
+		dec := xml.NewDecoder(bytes.NewReader(patched))
+		var texts []string
+		inT := false
+		for {
+			tok, derr := dec.Token()
+			if derr == io.EOF {
+				break
+			}
+			if derr != nil {
+				t.Fatalf("patched XML failed xml.Decoder.Token: %v\nxml: %s", derr, string(patched))
+			}
+			switch el := tok.(type) {
+			case xml.StartElement:
+				if el.Name.Space == nsA && el.Name.Local == "t" {
+					inT = true
+				}
+			case xml.EndElement:
+				if el.Name.Space == nsA && el.Name.Local == "t" {
+					inT = false
+				}
+			case xml.CharData:
+				if inT {
+					texts = append(texts, string(el))
+				}
+			}
+		}
+		if got := strings.Join(texts, ""); got != "Updated value" {
+			t.Fatalf("decoded text = %q, want %q", got, "Updated value")
+		}
+	})
+
+	t.Run("multi line", func(t *testing.T) {
+		input := []byte(`<p xmlns="` + nsA + `"><r><rPr b="1"/><t>{{key}}</t></r></p>`)
+		patched, count, err := replaceInDrawingXML(input, map[string]string{
+			"{{key}}": "Line 1\nLine 2",
+		})
+		if err != nil {
+			t.Fatalf("replaceInDrawingXML failed: %v", err)
+		}
+		if count != 1 {
+			t.Fatalf("expected 1 replacement, got %d", count)
+		}
+		if strings.Contains(string(patched), "a:") {
+			t.Fatalf("unexpected a: prefix in default-namespace XML: %s", string(patched))
+		}
+
+		dec := xml.NewDecoder(bytes.NewReader(patched))
+		var lines []string
+		var brCount int
+		var rPrCount int
+		inT := false
+		for {
+			tok, derr := dec.Token()
+			if derr == io.EOF {
+				break
+			}
+			if derr != nil {
+				t.Fatalf("patched XML failed xml.Decoder.Token: %v\nxml: %s", derr, string(patched))
+			}
+			switch el := tok.(type) {
+			case xml.StartElement:
+				if el.Name.Space == nsA && el.Name.Local == "t" {
+					inT = true
+				}
+				if el.Name.Space == nsA && el.Name.Local == "br" {
+					brCount++
+				}
+				if el.Name.Space == nsA && el.Name.Local == "rPr" {
+					rPrCount++
+				}
+			case xml.EndElement:
+				if el.Name.Space == nsA && el.Name.Local == "t" {
+					inT = false
+				}
+			case xml.CharData:
+				if inT {
+					lines = append(lines, string(el))
+				}
+			}
+		}
+		if brCount != 1 {
+			t.Fatalf("expected 1 <br/> in DrawingML namespace, got %d (xml: %s)", brCount, string(patched))
+		}
+		if rPrCount != 2 {
+			t.Fatalf("expected 2 <rPr> elements preserving run formatting, got %d (xml: %s)", rPrCount, string(patched))
+		}
+		if !slices.Equal(lines, []string{"Line 1", "Line 2"}) {
+			t.Fatalf("decoded lines = %#v, want [\"Line 1\", \"Line 2\"]", lines)
+		}
+	})
+
+	t.Run("split run multi line", func(t *testing.T) {
+		input := []byte(`<p xmlns="` + nsA + `"><r><t>{{ke</t></r><r><t>y}}</t></r></p>`)
+		patched, count, err := replaceInDrawingXML(input, map[string]string{
+			"{{key}}": "Line 1\nLine 2",
+		})
+		if err != nil {
+			t.Fatalf("replaceInDrawingXML failed: %v", err)
+		}
+		if count != 1 {
+			t.Fatalf("expected 1 replacement, got %d", count)
+		}
+
+		dec := xml.NewDecoder(bytes.NewReader(patched))
+		var lines []string
+		inT := false
+		for {
+			tok, derr := dec.Token()
+			if derr == io.EOF {
+				break
+			}
+			if derr != nil {
+				t.Fatalf("patched XML failed xml.Decoder.Token: %v\nxml: %s", derr, string(patched))
+			}
+			switch el := tok.(type) {
+			case xml.StartElement:
+				if el.Name.Space == nsA && el.Name.Local == "t" {
+					inT = true
+				}
+			case xml.EndElement:
+				if el.Name.Space == nsA && el.Name.Local == "t" {
+					inT = false
+				}
+			case xml.CharData:
+				if inT {
+					lines = append(lines, string(el))
+				}
+			}
+		}
+		if !slices.Equal(lines, []string{"Line 1", "Line 2"}) {
+			t.Fatalf("decoded lines = %#v, want [\"Line 1\", \"Line 2\"]", lines)
+		}
+	})
 }

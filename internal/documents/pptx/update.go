@@ -30,10 +30,11 @@ type bytePatch struct {
 }
 
 type drawingTextSegment struct {
-	start int
-	end   int
-	text  string
-	rPr   []byte
+	start  int
+	end    int
+	text   string
+	rPr    []byte
+	prefix string
 }
 
 type drawingParaFrame struct {
@@ -262,6 +263,13 @@ func isDrawingMLTag(name xml.Name, defaultNS string) bool {
 	return name.Space == "" && defaultNS == nsA
 }
 
+func drawingTagPrefix(space string) string {
+	if space == "" {
+		return ""
+	}
+	return space + ":"
+}
+
 func findTagStart(raw []byte, hint int) int {
 	if hint < 0 {
 		hint = 0
@@ -400,10 +408,11 @@ func replaceInDrawingXML(xmlBytes []byte, replacements map[string]string) ([]byt
 						rPrCopy = append([]byte(nil), curRPr...)
 					}
 					top.curGroup = append(top.curGroup, drawingTextSegment{
-						start: tStart,
-						end:   tEnd,
-						text:  textBuf.String(),
-						rPr:   rPrCopy,
+						start:  tStart,
+						end:    tEnd,
+						text:   textBuf.String(),
+						rPr:    rPrCopy,
+						prefix: drawingTagPrefix(t.Name.Space),
 					})
 				}
 			}
@@ -482,7 +491,7 @@ func replaceInDrawingXML(xmlBytes []byte, replacements map[string]string) ([]byt
 				patches = append(patches, bytePatch{
 					start: seg.start,
 					end:   seg.end,
-					repl:  formatDrawingTReplacement(newText, seg.rPr),
+					repl:  formatDrawingTReplacement(newText, seg.rPr, seg.prefix),
 				})
 			}
 		}
@@ -524,23 +533,23 @@ func findNonOverlappingMatches(text string, sortedKeys []string, replacements ma
 	return matches
 }
 
-func formatDrawingTReplacement(text string, rPr []byte) []byte {
+func formatDrawingTReplacement(text string, rPr []byte, prefix string) []byte {
 	normalized := strings.ReplaceAll(text, "\r\n", "\n")
 	parts := strings.Split(normalized, "\n")
 	if len(parts) == 1 {
-		return []byte(`<a:t>` + escapeXML(normalized) + `</a:t>`)
+		return []byte("<" + prefix + "t>" + escapeXML(normalized) + "</" + prefix + "t>")
 	}
 	var b bytes.Buffer
 	for i, part := range parts {
 		if i > 0 {
-			b.WriteString(`</a:r><a:br/><a:r>`)
+			b.WriteString("</" + prefix + "r><" + prefix + "br/><" + prefix + "r>")
 			if len(rPr) > 0 {
 				b.Write(rPr)
 			}
 		}
-		b.WriteString(`<a:t>`)
+		b.WriteString("<" + prefix + "t>")
 		b.WriteString(escapeXML(part))
-		b.WriteString(`</a:t>`)
+		b.WriteString("</" + prefix + "t>")
 	}
 	return b.Bytes()
 }
