@@ -115,3 +115,17 @@ func TestResolveAttachments_PassThroughContent(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte("inline"), resolved[0].Content)
 }
+
+func TestResolveAttachments_NormalizesDocumentMIME(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	b, _ := newAttachmentBackend(t, root)
+	path := filepath.Join(root, "abc123.bin")
+	require.NoError(t, os.WriteFile(path, []byte("PK\x03\x04\x00\xff"), 0o600))
+
+	resolved, err := b.resolveAttachments([]proto.Attachment{
+		{FilePath: path, FileName: "Отчёт.docx", MimeType: "text/plain"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", resolved[0].MimeType)
+}

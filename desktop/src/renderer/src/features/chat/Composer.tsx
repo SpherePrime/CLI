@@ -22,7 +22,7 @@ import { useVoice } from '../plugins/useVoice'
 import { useConversation } from '../voice/useConversation'
 import { ConversationCall, ConversationCallPill } from '../voice/ConversationCall'
 import { createPortal } from 'react-dom'
-import { clipboardImages, imageUploads } from './pasteImages'
+import { clipboardFiles, fileUploads, hasTransferFiles } from './pasteImages'
 import { applyFileSuggestion, nextSuggestionIndex } from './suggestions'
 import { useFileMentions } from './useFileMentions'
 import { AudioLines } from 'lucide-react'
@@ -40,6 +40,8 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
   attachmentRef.current = attachments
   const [sending, setSending] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [dragActive, setDragActive] = useState(false)
+  const dragDepth = useRef(0)
   const [callOpen, setCallOpen] = useState(false)
   const [callHost, setCallHost] = useState<Element | null>(null)
   const composerRoot = useRef<HTMLDivElement>(null)
@@ -248,7 +250,12 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         return
       }
     }
-    if (!message.trim() && attachments.length) message = t('Посмотри на изображение.')
+    if (!message.trim() && attachments.length) {
+      const onlyImages = attachments.every((item) =>
+        String(item.mimeType || '').toLowerCase().startsWith('image/')
+      )
+      message = onlyImages ? t('Посмотри на изображение.') : t('Посмотри на вложение.')
+    }
     if (!message.trim()) return
     const submittedText = message
     const sentAttachmentIds = new Set(attachments.map((item) => item.id))
@@ -296,15 +303,12 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
       setImporting(false)
     }
   }
-  async function paste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
-    const images = clipboardImages(event.clipboardData)
-    if (!images.length) return
-    event.preventDefault()
-    if (importing || sending) return
+  async function importFiles(files: File[]) {
+    if (!files.length || importing || sending) return
     const targetKey = key
     setImporting(true)
     try {
-      const added = await window.prime.importImages(await imageUploads(images))
+      const added = await window.prime.importAttachments(await fileUploads(files))
       if (draftKey.current === targetKey) setAttachments((items) => [...items, ...added])
       else await window.prime.releaseAttachments(added.map((item) => item.id))
     } catch (error) {
@@ -312,6 +316,37 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     } finally {
       setImporting(false)
     }
+  }
+  async function paste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const files = clipboardFiles(event.clipboardData)
+    if (!files.length) return
+    event.preventDefault()
+    await importFiles(files)
+  }
+  function handleDragEnter(event: React.DragEvent<HTMLDivElement>) {
+    if (!hasTransferFiles(event.dataTransfer)) return
+    event.preventDefault()
+    dragDepth.current += 1
+    setDragActive(true)
+  }
+  function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
+    if (!hasTransferFiles(event.dataTransfer)) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'copy'
+    setDragActive(true)
+  }
+  function handleDragLeave(event: React.DragEvent<HTMLDivElement>) {
+    if (!hasTransferFiles(event.dataTransfer)) return
+    dragDepth.current = Math.max(0, dragDepth.current - 1)
+    if (dragDepth.current === 0) setDragActive(false)
+  }
+  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+    dragDepth.current = 0
+    setDragActive(false)
+    const files = clipboardFiles(event.dataTransfer)
+    if (!files.length) return
+    event.preventDefault()
+    void importFiles(files)
   }
   async function stop(): Promise<boolean> {
     try {
@@ -418,7 +453,13 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           onReturnToCall={() => setCallOpen(true)}
         />
       )}
-      <div className={`composer ${recording ? 'recording' : ''}`}>
+      <div
+        className={`composer ${recording ? 'recording' : ''} ${dragActive ? 'drag-active' : ''}`}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {attachments.length > 0 && (
           <div className="attachment-chips">
             {attachments.map((item) => (
@@ -447,7 +488,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
         {importing && (
           <div className="attachment-import" role="status">
             <LoaderCircle size={14} className="spin" />
-            {t('Добавление изображения…')}
+            {t('Добавление вложения…')}
           </div>
         )}
         {voiceActive && (

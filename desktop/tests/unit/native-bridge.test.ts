@@ -36,6 +36,16 @@ describe('native host bridge', () => {
       method: 'importImages',
       args: [[{ name: 'image.png', data: 'AQL/' }]]
     })
+    await bridge.api.importAttachments([{ name: 'report.docx', data: new Uint8Array([80, 75, 3, 4]) }])
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
+      method: 'importAttachments',
+      args: [[{ name: 'report.docx', data: 'UEsDBA==' }]]
+    })
+    await bridge.api.openPath('workspace', 'docs/report.pdf')
+    expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
+      method: 'openPath',
+      args: ['workspace', 'docs/report.pdf']
+    })
     await bridge.api.call('workspace', 'messagePage', { sessionId: 'chat', limit: 60 })
     expect(invoke).toHaveBeenLastCalledWith('desktop_call', {
       method: 'call',

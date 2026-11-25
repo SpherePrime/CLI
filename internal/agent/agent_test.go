@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -162,6 +163,64 @@ func TestCreateUserMessage_RetainsAllAttachments(t *testing.T) {
 	binaryParts = reloaded.BinaryContent()
 	require.Len(t, binaryParts, 2, "attachments should survive DB round-trip")
 	require.Equal(t, "photo.png", binaryParts[1].Path)
+}
+
+func TestDocumentAttachments_MaterializeAndPrompt(t *testing.T) {
+	env := testEnv(t)
+	sa := testSessionAgent(env, nil, nil, "test prompt")
+	agent := sa.(*sessionAgent)
+	agent.dataDir = t.TempDir()
+
+	docxBytes := []byte("PK\x03\x04docx-binary-content")
+	pdfBytes := []byte("%PDF-1.7\n1 0 obj")
+
+	attachments := []message.Attachment{
+		{
+			FileName: "Отчёт 2026.docx",
+			FilePath: filepath.Join(t.TempDir(), "temp-id.bin"),
+			MimeType: message.MimeDocx,
+			Content:  docxBytes,
+		},
+		{
+			FileName: "Отчёт 2026.docx",
+			FilePath: filepath.Join(t.TempDir(), "temp-id-2.bin"),
+			MimeType: message.MimeDocx,
+			Content:  []byte("PK\x03\x04docx-second-copy"),
+		},
+		{
+			FileName: "contract.pdf",
+			FilePath: filepath.Join(t.TempDir(), "temp-id-3.bin"),
+			MimeType: message.MimePDF,
+			Content:  pdfBytes,
+		},
+	}
+
+	materialized := agent.materializeDocumentAttachments("sess/1", attachments)
+	require.Len(t, materialized, 3)
+	require.Equal(t, ".docx", filepath.Ext(materialized[0].FilePath))
+	require.Equal(t, ".docx", filepath.Ext(materialized[1].FilePath))
+	require.NotEqual(t, materialized[0].FilePath, materialized[1].FilePath)
+	require.Equal(t, ".pdf", filepath.Ext(materialized[2].FilePath))
+
+	diskDocx, err := os.ReadFile(materialized[0].FilePath)
+	require.NoError(t, err)
+	require.Equal(t, docxBytes, diskDocx)
+
+	diskPdf, err := os.ReadFile(materialized[2].FilePath)
+	require.NoError(t, err)
+	require.Equal(t, pdfBytes, diskPdf)
+
+	prompt := message.PromptWithTextAttachments("Отредактируй файл", materialized)
+	require.Contains(t, prompt, `<attached_document name="Отчёт 2026.docx"`)
+	require.Contains(t, prompt, materialized[0].FilePath)
+	require.NotContains(t, prompt, "docx-binary-content")
+
+	_, filesWithVision := agent.preparePrompt(nil, true, materialized...)
+	require.Len(t, filesWithVision, 1)
+	require.Equal(t, message.MimePDF, filesWithVision[0].MediaType)
+
+	_, filesWithoutVision := agent.preparePrompt(nil, false, materialized...)
+	require.Empty(t, filesWithoutVision)
 }
 
 func TestPreparePrompt_OrphanedToolUse(t *testing.T) {

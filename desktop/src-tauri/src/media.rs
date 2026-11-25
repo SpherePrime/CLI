@@ -421,14 +421,27 @@ pub fn inspect_local_path(state: &AppState, workspace_id: &str, raw_path: &str) 
             "revealable": true,
         });
     }
-    json!({
+    let size = std::fs::metadata(&canon_target).ok().map(|meta| meta.len());
+    let extension = canon_target
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_lowercase())
+        .filter(|value| !value.is_empty());
+    let mut payload = json!({
         "exists": true,
         "kind": "file",
         "name": name,
         "path": path_str,
         "previewable": false,
         "revealable": true,
-    })
+    });
+    if let Some(size) = size {
+        payload["size"] = json!(size);
+    }
+    if let Some(extension) = extension {
+        payload["extension"] = json!(extension);
+    }
+    payload
 }
 
 pub fn resolve_reveal_target(
@@ -1009,5 +1022,41 @@ mod tests {
         assert_eq!(revealed, dunce::canonicalize(&temp_vid).unwrap());
 
         let _ = std::fs::remove_dir_all(&prime_temp_dir);
+    }
+
+    #[test]
+    fn inspect_local_path_returns_size_and_extension_for_files() {
+        let app_dir = tempfile::tempdir().unwrap();
+        let workspace_dir = tempfile::tempdir().unwrap();
+        let docx_path = workspace_dir.path().join("Отчёт.DOCX");
+        std::fs::write(&docx_path, b"0123456789ab").unwrap();
+        let pdf_path = workspace_dir.path().join("contract.pdf");
+        std::fs::write(&pdf_path, b"%PDF-1.7").unwrap();
+        let plain_path = workspace_dir.path().join("README");
+        std::fs::write(&plain_path, b"hello").unwrap();
+
+        let state = AppState::new(app_dir.path().to_path_buf()).unwrap();
+        state.projects.lock().unwrap().insert(
+            "ws-1".to_owned(),
+            json!({"id": "ws-1", "path": workspace_dir.path()}),
+        );
+
+        let docx = inspect_local_path(&state, "ws-1", "Отчёт.DOCX");
+        assert_eq!(docx["exists"], true);
+        assert_eq!(docx["kind"], "file");
+        assert_eq!(docx["size"], 12);
+        assert_eq!(docx["extension"], "docx");
+
+        let pdf = inspect_local_path(&state, "ws-1", "contract.pdf");
+        assert_eq!(pdf["exists"], true);
+        assert_eq!(pdf["kind"], "file");
+        assert_eq!(pdf["size"], 8);
+        assert_eq!(pdf["extension"], "pdf");
+
+        let plain = inspect_local_path(&state, "ws-1", "README");
+        assert_eq!(plain["exists"], true);
+        assert_eq!(plain["kind"], "file");
+        assert_eq!(plain["size"], 5);
+        assert!(plain["extension"].is_null());
     }
 }

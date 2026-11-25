@@ -30,6 +30,39 @@ impl Attachments {
         })
     }
 
+    fn detect_non_image_mime(name: &str, bytes: &[u8]) -> &'static str {
+        if bytes.starts_with(b"%PDF-") {
+            return "application/pdf";
+        }
+        let extension = Path::new(name)
+            .extension()
+            .and_then(|value| value.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        match extension.as_str() {
+            "pdf" => return "application/pdf",
+            "docx" => {
+                return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            }
+            "xlsx" => {
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            }
+            "pptx" => {
+                return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            }
+            "zip" => return "application/zip",
+            _ => {}
+        }
+        if bytes.contains(&0) || std::str::from_utf8(bytes).is_err() {
+            return "application/octet-stream";
+        }
+        match extension.as_str() {
+            "md" | "markdown" => "text/markdown",
+            "csv" => "text/csv",
+            _ => "text/plain",
+        }
+    }
+
     fn prepare(
         name: &str,
         bytes: &[u8],
@@ -55,13 +88,7 @@ impl Attachments {
         if image_only && image.is_none() {
             return Err(HostError::new("INVALID_IMAGE", "Unsupported image format"));
         }
-        let mime = image.unwrap_or(if bytes.starts_with(b"%PDF-") {
-            "application/pdf"
-        } else {
-            "text/plain"
-        });
-        let id = uuid::Uuid::new_v4().to_string();
-        let name: String = name
+        let sanitized: String = name
             .chars()
             .take(200)
             .map(|character| {
@@ -72,6 +99,13 @@ impl Attachments {
                 }
             })
             .collect();
+        let name = if sanitized.trim().is_empty() {
+            "attachment".to_owned()
+        } else {
+            sanitized
+        };
+        let mime = image.unwrap_or_else(|| Self::detect_non_image_mime(&name, bytes));
+        let id = uuid::Uuid::new_v4().to_string();
         let mut descriptor = json!({"id":id,"name":name,"size":bytes.len(),"mimeType":mime});
         if image.is_some() && bytes.len() <= 8 * 1024 * 1024 {
             let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
@@ -80,50 +114,69 @@ impl Attachments {
         Ok((id, bytes.to_vec(), name, mime.to_owned(), descriptor))
     }
 
-    pub fn import(&mut self, input: &Value) -> HostResult<Value> {
+    fn import_items(&mut self, input: &Value, image_only: bool) -> HostResult<Value> {
         let input = input
             .as_array()
-            .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "Expected image array"))?;
-        if input.is_empty() || input.len() > 10 {
+            .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "Expected attachment array"))?;
+        let max_items = if image_only { 10 } else { 100 };
+        if input.is_empty() || input.len() > max_items {
             return Err(HostError::new(
                 "ATTACHMENT_LIMIT",
-                "Import between 1 and 10 images",
+                format!("Import between 1 and {max_items} attachments"),
             ));
         }
         let mut prepared = Vec::new();
-        for image in input {
-            let name = image["name"]
+        for item in input {
+            let name = item["name"]
                 .as_str()
                 .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "Missing attachment name"))?;
-            let bytes = if let Some(encoded) = image["data"].as_str() {
+            let bytes = if let Some(encoded) = item["data"].as_str() {
                 if encoded.len() > 28 * 1024 * 1024 {
-                    return Err(HostError::new("ATTACHMENT_LIMIT", "Image exceeds 20 MiB"));
+                    return Err(HostError::new(
+                        "ATTACHMENT_LIMIT",
+                        "Attachment exceeds 20 MiB",
+                    ));
                 }
                 base64::engine::general_purpose::STANDARD
                     .decode(encoded)
-                    .map_err(|_| HostError::new("INVALID_ARGUMENT", "Invalid base64 image"))?
+                    .map_err(|_| {
+                        HostError::new("INVALID_ARGUMENT", "Invalid base64 attachment")
+                    })?
             } else {
-                let data = image["data"].as_array().ok_or_else(|| {
+                let data = item["data"].as_array().ok_or_else(|| {
                     HostError::new(
                         "INVALID_ARGUMENT",
-                        "Image data must be base64 or byte array",
+                        "Attachment data must be base64 or byte array",
                     )
                 })?;
                 if data.len() > 20 * 1024 * 1024 {
-                    return Err(HostError::new("ATTACHMENT_LIMIT", "Image exceeds 20 MiB"));
+                    return Err(HostError::new(
+                        "ATTACHMENT_LIMIT",
+                        "Attachment exceeds 20 MiB",
+                    ));
                 }
                 data.iter()
                     .map(|byte| {
                         byte.as_u64()
                             .filter(|byte| *byte <= 255)
                             .map(|byte| byte as u8)
-                            .ok_or_else(|| HostError::new("INVALID_ARGUMENT", "Invalid image byte"))
+                            .ok_or_else(|| {
+                                HostError::new("INVALID_ARGUMENT", "Invalid attachment byte")
+                            })
                     })
                     .collect::<HostResult<Vec<_>>>()?
             };
-            prepared.push(Self::prepare(name, &bytes, true)?);
+            prepared.push(Self::prepare(name, &bytes, image_only)?);
         }
         self.store(prepared)
+    }
+
+    pub fn import(&mut self, input: &Value) -> HostResult<Value> {
+        self.import_items(input, true)
+    }
+
+    pub fn import_attachments(&mut self, input: &Value) -> HostResult<Value> {
+        self.import_items(input, false)
     }
 
     pub fn files(&mut self, paths: &[std::path::PathBuf]) -> HostResult<Value> {
@@ -279,5 +332,45 @@ mod tests {
                 .to_string_lossy()
                 .as_ref()
         ));
+    }
+
+    #[test]
+    fn import_attachments_detects_document_and_binary_mime_types() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut store =
+            Attachments::new(directory.path().join("attachments").to_path_buf()).unwrap();
+        let zip_magic = base64::engine::general_purpose::STANDARD
+            .encode([0x50, 0x4B, 0x03, 0x04, 0x00, 0xFF, 0x14]);
+        let pdf_bytes = base64::engine::general_purpose::STANDARD.encode(b"%PDF-1.7\n1 0 obj");
+        let bin_bytes = base64::engine::general_purpose::STANDARD.encode([0x00, 0xFF, 0xFE, 0x01]);
+        let txt_bytes = base64::engine::general_purpose::STANDARD.encode("Привет, мир!".as_bytes());
+
+        let imported = store
+            .import_attachments(&json!([
+                {"name": "Отчёт.docx", "data": zip_magic},
+                {"name": "budget.xlsx", "data": zip_magic},
+                {"name": "deck.pptx", "data": zip_magic},
+                {"name": "contract.pdf", "data": pdf_bytes},
+                {"name": "raw.bin", "data": bin_bytes},
+                {"name": "notes.txt", "data": txt_bytes}
+            ]))
+            .unwrap();
+
+        assert_eq!(
+            imported[0]["mimeType"],
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        );
+        assert_eq!(imported[0]["name"], "Отчёт.docx");
+        assert_eq!(
+            imported[1]["mimeType"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        assert_eq!(
+            imported[2]["mimeType"],
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        );
+        assert_eq!(imported[3]["mimeType"], "application/pdf");
+        assert_eq!(imported[4]["mimeType"], "application/octet-stream");
+        assert_eq!(imported[5]["mimeType"], "text/plain");
     }
 }

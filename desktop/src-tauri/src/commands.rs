@@ -148,6 +148,7 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             | "terminal"
             | "launch"
             | "reveal"
+            | "openPath"
             | "openWith"
     ) {
         if let Some(id) = args.first().and_then(Value::as_str) {
@@ -485,6 +486,11 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             .lock()
             .unwrap()
             .import(args.first().unwrap_or(&Value::Null)),
+        "importAttachments" => state
+            .attachments
+            .lock()
+            .unwrap()
+            .import_attachments(args.first().unwrap_or(&Value::Null)),
         "releaseAttachments" => state
             .attachments
             .lock()
@@ -601,6 +607,16 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
             let raw_path = args.get(1).and_then(Value::as_str).unwrap_or("");
             let target = crate::media::resolve_reveal_target(&state, workspace_id, raw_path)?;
             reveal_in_file_manager(&target)?;
+            Ok(Value::Null)
+        }
+        "openPath" => {
+            let workspace_id = args.first().and_then(Value::as_str).unwrap_or("");
+            let raw_path = string(args, 1)?;
+            if raw_path.trim().is_empty() {
+                return Err(HostError::new("INVALID_ARGUMENT", "Path is required"));
+            }
+            let target = crate::media::resolve_reveal_target(&state, workspace_id, raw_path)?;
+            open::that(&target)?;
             Ok(Value::Null)
         }
         "openWith" => {

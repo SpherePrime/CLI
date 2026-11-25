@@ -28,12 +28,12 @@ export async function createNativeBridge(invoke: NativeInvoke, listen: NativeLis
       method,
       (...args: unknown[]) => {
         const normalized = args.map((value) => (value === undefined ? null : value))
-        if (method === 'importImages' && Array.isArray(args[0])) {
-          normalized[0] = args[0].map((image: { name: string; data: Uint8Array }) => {
+        if ((method === 'importImages' || method === 'importAttachments') && Array.isArray(args[0])) {
+          normalized[0] = args[0].map((file: { name: string; data: Uint8Array }) => {
             let binary = ''
-            for (let offset = 0; offset < image.data.length; offset += 32768)
-              binary += String.fromCharCode(...image.data.subarray(offset, offset + 32768))
-            return { name: image.name, data: btoa(binary) }
+            for (let offset = 0; offset < file.data.length; offset += 32768)
+              binary += String.fromCharCode(...file.data.subarray(offset, offset + 32768))
+            return { name: file.name, data: btoa(binary) }
           })
         }
         if (method === 'call') {

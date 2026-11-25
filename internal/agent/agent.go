@@ -699,7 +699,7 @@ func (a *sessionAgent) publishRunComplete(ctx context.Context, call SessionAgent
 // (e.g. backend.SendMessage) can apply the same checks and keep the error
 // contract consistent.
 func ValidateCall(call SessionAgentCall) error {
-	if call.Prompt == "" && !message.ContainsTextAttachment(call.Attachments) {
+	if call.Prompt == "" && !message.ContainsTextAttachment(call.Attachments) && !message.ContainsDocumentAttachment(call.Attachments) {
 		return ErrEmptyPrompt
 	}
 	if call.SessionID == "" {
@@ -879,6 +879,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			return nil, fmt.Errorf("failed to clear todos for new task: %w", err)
 		}
 	}
+
+	call.Attachments = a.materializeDocumentAttachments(call.SessionID, call.Attachments)
 
 	// Add the user message to the session.
 	_, err = a.createUserMessage(ctx, call)
@@ -1102,11 +1104,12 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 				if queued.steering {
 					hasNewSteering = true
 				}
+				queued.Attachments = a.materializeDocumentAttachments(call.SessionID, queued.Attachments)
 				userMessage, createErr := a.createUserMessage(callContext, queued)
 				if createErr != nil {
 					return callContext, prepared, createErr
 				}
-				prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
+				prepared.Messages = append(prepared.Messages, filterAIMessageParts(userMessage.ToAIMessage(), largeModel.CatwalkCfg.SupportsImages)...)
 			}
 			if orch != nil && hasNewSteering {
 				orch.onSteeringMessage()
@@ -2103,7 +2106,7 @@ func (a *sessionAgent) prepareSessionPrompt(msgs []message.Message, supportsImag
 		if m.Role == message.Tool {
 			continue
 		}
-		aiMsgs := m.ToAIMessage()
+		aiMsgs := filterAIMessageParts(m.ToAIMessage(), supportsImages)
 		history = append(history, aiMsgs...)
 
 		if m.Role == message.Assistant && len(m.ToolCalls()) > 0 {
@@ -2116,17 +2119,139 @@ func (a *sessionAgent) prepareSessionPrompt(msgs []message.Message, supportsImag
 
 	var files []fantasy.FilePart
 	for _, attachment := range attachments {
-		if attachment.IsText() {
+		if attachment.IsText() || !attachment.SupportsFilePart() {
+			continue
+		}
+		if attachment.IsPDF() && !supportsImages {
 			continue
 		}
 		files = append(files, fantasy.FilePart{
 			Filename:  attachment.FileName,
 			Data:      attachment.Content,
-			MediaType: attachment.MimeType,
+			MediaType: attachment.EffectiveMIME(),
 		})
 	}
 
 	return history, files
+}
+
+func filterAIMessageParts(msgs []fantasy.Message, supportsImages bool) []fantasy.Message {
+	if supportsImages {
+		return msgs
+	}
+	filtered := make([]fantasy.Message, len(msgs))
+	for i, msg := range msgs {
+		msgCopy := msg
+		kept := make([]fantasy.MessagePart, 0, len(msg.Content))
+		for _, part := range msg.Content {
+			if fp, ok := fantasy.AsMessagePart[fantasy.FilePart](part); ok && message.IsPDFMIME(fp.MediaType) {
+				continue
+			}
+			kept = append(kept, part)
+		}
+		msgCopy.Content = kept
+		filtered[i] = msgCopy
+	}
+	return filtered
+}
+
+func sanitizeAttachmentFileName(name, fallbackExt string) string {
+	base := filepath.Base(strings.TrimSpace(name))
+	if base == "" || base == "." || base == string(filepath.Separator) {
+		base = "document"
+	}
+	cleaned := strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 || strings.ContainsRune(`<>:"/\|?*`, r) {
+			return '_'
+		}
+		return r
+	}, base)
+	cleaned = strings.Trim(strings.TrimSpace(cleaned), ".")
+	if cleaned == "" {
+		cleaned = "document"
+	}
+	if len([]rune(cleaned)) > 160 {
+		ext := filepath.Ext(cleaned)
+		stem := strings.TrimSuffix(cleaned, ext)
+		runes := []rune(stem)
+		maxStem := max(160-len([]rune(ext)), 1)
+		if len(runes) > maxStem {
+			runes = runes[:maxStem]
+		}
+		cleaned = string(runes) + ext
+	}
+	if filepath.Ext(cleaned) == "" && fallbackExt != "" {
+		cleaned += fallbackExt
+	}
+	return cleaned
+}
+
+func writeUniqueAttachmentFile(dir, fileName string, data []byte) (string, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	ext := filepath.Ext(fileName)
+	stem := strings.TrimSuffix(fileName, ext)
+	for index := range 10000 {
+		candidateName := fileName
+		if index > 0 {
+			candidateName = fmt.Sprintf("%s_%d%s", stem, index, ext)
+		}
+		targetPath := filepath.Join(dir, candidateName)
+		file, err := os.OpenFile(targetPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if errors.Is(err, os.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		_, writeErr := file.Write(data)
+		closeErr := file.Close()
+		if writeErr != nil {
+			_ = os.Remove(targetPath)
+			return "", writeErr
+		}
+		if closeErr != nil {
+			_ = os.Remove(targetPath)
+			return "", closeErr
+		}
+		return targetPath, nil
+	}
+	return "", fmt.Errorf("could not allocate unique filename for %s", fileName)
+}
+
+func (a *sessionAgent) materializeDocumentAttachments(sessionID string, attachments []message.Attachment) []message.Attachment {
+	if len(attachments) == 0 {
+		return attachments
+	}
+	out := make([]message.Attachment, len(attachments))
+	copy(out, attachments)
+	baseRoot := filepath.Join(os.TempDir(), "prime-session-attachments")
+	if a.dataDir != "" {
+		baseRoot = filepath.Join(a.dataDir, "session-attachments")
+	}
+	safeSession := sanitizeSessionIDForFile(sessionID)
+	if safeSession == "" {
+		safeSession = "default"
+	}
+	sessionDir := filepath.Join(baseRoot, safeSession)
+	for i := range out {
+		att := &out[i]
+		att.MimeType = message.NormalizeAttachmentMIME(att.MimeType, att.FileName, att.FilePath, att.Content)
+		if !att.IsDocument() || len(att.Content) == 0 {
+			continue
+		}
+		safeName := sanitizeAttachmentFileName(att.DisplayName(), att.DocumentExtension())
+		if att.FileName == "" {
+			att.FileName = safeName
+		}
+		if writtenPath, err := writeUniqueAttachmentFile(sessionDir, safeName, att.Content); err == nil {
+			att.FilePath = writtenPath
+		} else {
+			slog.Warn("Failed to materialize document attachment to disk", "file_name", safeName, "error", err)
+		}
+	}
+	return out
 }
 
 const maxContextSummaryBytes = 256 << 10

@@ -173,3 +173,94 @@ func TestResetStreamedContentEmpty(t *testing.T) {
 	msg.ResetStreamedContent()
 	require.Empty(t, msg.Parts)
 }
+
+func TestDocumentAttachments_NotTextAndNotOfficeFilePart(t *testing.T) {
+	t.Parallel()
+
+	docxBytes := []byte("PK\x03\x04fake-zip-payload-docx")
+	xlsxBytes := []byte("PK\x03\x04fake-zip-payload-xlsx")
+	pptxBytes := []byte("PK\x03\x04fake-zip-payload-pptx")
+	pdfBytes := []byte("%PDF-1.7\n1 0 obj")
+
+	docx := Attachment{
+		FileName: "Отчёт.docx",
+		FilePath: "/data/session-attachments/s1/Отчёт.docx",
+		MimeType: MimeDocx,
+		Content:  docxBytes,
+	}
+	xlsx := Attachment{
+		FileName: "budget.xlsx",
+		FilePath: "/data/session-attachments/s1/budget.xlsx",
+		MimeType: MimeXlsx,
+		Content:  xlsxBytes,
+	}
+	pptx := Attachment{
+		FileName: "deck.pptx",
+		FilePath: "/data/session-attachments/s1/deck.pptx",
+		MimeType: MimePptx,
+		Content:  pptxBytes,
+	}
+	pdf := Attachment{
+		FileName: "contract.pdf",
+		FilePath: "/data/session-attachments/s1/contract.pdf",
+		MimeType: MimePDF,
+		Content:  pdfBytes,
+	}
+	mislabeledDocx := Attachment{
+		FileName: "legacy.docx",
+		FilePath: "/data/session-attachments/s1/legacy.docx",
+		MimeType: "text/plain",
+		Content:  docxBytes,
+	}
+
+	require.False(t, docx.IsText())
+	require.False(t, xlsx.IsText())
+	require.False(t, pptx.IsText())
+	require.False(t, pdf.IsText())
+	require.False(t, mislabeledDocx.IsText())
+	require.True(t, docx.IsDocument())
+	require.True(t, xlsx.IsDocument())
+	require.True(t, pptx.IsDocument())
+	require.True(t, pdf.IsDocument())
+	require.True(t, mislabeledDocx.IsDocument())
+
+	prompt := PromptWithTextAttachments("Проверь файлы", []Attachment{docx, xlsx, pptx, pdf})
+	require.NotContains(t, prompt, "fake-zip-payload")
+	require.NotContains(t, prompt, "%PDF-1.7")
+	require.Contains(t, prompt, `<attached_document name="Отчёт.docx" mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document" path="/data/session-attachments/s1/Отчёт.docx">`)
+	require.Contains(t, prompt, `<attached_document name="budget.xlsx" mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" path="/data/session-attachments/s1/budget.xlsx">`)
+	require.Contains(t, prompt, `<attached_document name="deck.pptx" mime="application/vnd.openxmlformats-officedocument.presentationml.presentation" path="/data/session-attachments/s1/deck.pptx">`)
+	require.Contains(t, prompt, `<attached_document name="contract.pdf" mime="application/pdf" path="/data/session-attachments/s1/contract.pdf">`)
+	require.Contains(t, prompt, "input_path")
+
+	msg := &Message{
+		Role: User,
+		Parts: []ContentPart{
+			TextContent{Text: "Проверь документы"},
+			BinaryContent{Path: docx.FilePath, MIMEType: docx.MimeType, Data: docxBytes},
+			BinaryContent{Path: xlsx.FilePath, MIMEType: xlsx.MimeType, Data: xlsxBytes},
+			BinaryContent{Path: pptx.FilePath, MIMEType: pptx.MimeType, Data: pptxBytes},
+			BinaryContent{Path: pdf.FilePath, MIMEType: pdf.MimeType, Data: pdfBytes},
+			BinaryContent{Path: "/data/raw.bin", MIMEType: "application/octet-stream", Data: []byte{0, 1, 2}},
+		},
+	}
+
+	aiMsgs := msg.ToAIMessage()
+	require.Len(t, aiMsgs, 1)
+	var textParts []string
+	var fileParts []fantasy.FilePart
+	for _, part := range aiMsgs[0].Content {
+		if tp, ok := fantasy.AsMessagePart[fantasy.TextPart](part); ok {
+			textParts = append(textParts, tp.Text)
+		}
+		if fp, ok := fantasy.AsMessagePart[fantasy.FilePart](part); ok {
+			fileParts = append(fileParts, fp)
+		}
+	}
+	require.Len(t, textParts, 1)
+	require.Contains(t, textParts[0], `<attached_document name="Отчёт.docx"`)
+	require.Contains(t, textParts[0], `<attached_document name="contract.pdf"`)
+	require.NotContains(t, textParts[0], "fake-zip-payload")
+	require.Len(t, fileParts, 1)
+	require.Equal(t, MimePDF, fileParts[0].MediaType)
+}

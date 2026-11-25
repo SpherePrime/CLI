@@ -1,4 +1,5 @@
-export type ImageUpload = { name: string; data: Uint8Array }
+export type AttachmentUpload = { name: string; data: Uint8Array }
+export type ImageUpload = AttachmentUpload
 export type Attachment = {
   id: string
   name: string

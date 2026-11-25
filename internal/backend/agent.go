@@ -40,6 +40,9 @@ func (b *Backend) resolveAttachments(attachments []proto.Attachment) ([]proto.At
 	for i := range resolved {
 		attachment := &resolved[i]
 		if len(attachment.Content) > 0 || attachment.FilePath == "" {
+			if len(attachment.Content) > 0 {
+				attachment.MimeType = message.NormalizeAttachmentMIME(attachment.MimeType, attachment.FileName, attachment.FilePath, attachment.Content)
+			}
 			continue
 		}
 		path, err := b.trustedAttachmentPath(attachment.FilePath)
@@ -69,6 +72,10 @@ func (b *Backend) resolveAttachments(attachments []proto.Attachment) ([]proto.At
 			return nil, fmt.Errorf("attachment file exceeds %d bytes", maxResolvedAttachmentBytes)
 		}
 		attachment.Content = content
+		if attachment.FileName == "" {
+			attachment.FileName = filepath.Base(path)
+		}
+		attachment.MimeType = message.NormalizeAttachmentMIME(attachment.MimeType, attachment.FileName, attachment.FilePath, content)
 	}
 	return resolved, nil
 }

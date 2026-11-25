@@ -271,6 +271,8 @@ export interface InspectedPath {
   mime?: string
   name?: string
   path?: string
+  size?: number
+  extension?: string
   previewable?: boolean
   revealable?: boolean
 }
@@ -350,11 +352,15 @@ export interface DesktopApi {
   importImages(
     images: import('./attachments').ImageUpload[]
   ): Promise<import('./attachments').Attachment[]>
+  importAttachments(
+    files: import('./attachments').AttachmentUpload[]
+  ): Promise<import('./attachments').Attachment[]>
   releaseAttachments(ids: string[]): Promise<void>
   preferences(patch?: Partial<Preferences>): Promise<Preferences>
   openExternal(url: string): Promise<void>
   windowDimmed(dimmed: boolean): Promise<void>
   reveal(workspaceId: string, path?: string): Promise<void>
+  openPath(workspaceId: string, path: string): Promise<void>
   createEntry(workspaceId: string, path: string, kind: 'file' | 'folder'): Promise<{ path: string }>
   trashEntry(workspaceId: string, path: string): Promise<void>
   openWith(workspaceId: string, path: string, target: 'default' | 'vscode'): Promise<void>

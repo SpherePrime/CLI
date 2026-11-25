@@ -24,3 +24,78 @@
   color: var(--muted);
   font-size: 12px;
 }
+.composer.drag-active {
+  border-color: var(--accent, #ff6b35);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #ff6b35) 22%, transparent);
+}
+.attachment-document-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #2c3442);
+  background: var(--surface, rgba(255, 255, 255, 0.03));
+  color: var(--fg, inherit);
+  font-size: 12px;
+  margin-top: 6px;
+}
+.attachment-document-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent, #ff6b35) 14%, transparent);
+  color: var(--accent, #ff6b35);
+  flex-shrink: 0;
+}
+.attachment-document-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.attachment-document-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.attachment-document-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--muted, #9ca3af) 16%, transparent);
+  color: var(--muted, #9ca3af);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+.attachment-document-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+.attachment-document-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted, #9ca3af);
+  cursor: pointer;
+}
+.attachment-document-action:hover {
+  background: color-mix(in srgb, var(--fg, #fff) 8%, transparent);
+  color: var(--fg, inherit);
+}

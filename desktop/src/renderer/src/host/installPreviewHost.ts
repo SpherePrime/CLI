@@ -1232,7 +1232,20 @@ export function installPreviewHost() {
           revealable: true
         }
       }
-      if (/([\\/]|^[a-zA-Z]:)/.test(trimmed) && !/\.[a-zA-Z0-9]{1,8}$/.test(trimmed)) {
+      const extMatch = /\.([a-zA-Z0-9]{1,10})$/.exec(trimmed)
+      if (extMatch) {
+        return {
+          exists: true,
+          kind: 'file',
+          name,
+          path: trimmed,
+          size: 4096,
+          extension: extMatch[1].toLowerCase(),
+          previewable: false,
+          revealable: true
+        }
+      }
+      if (/([\\/]|^[a-zA-Z]:)/.test(trimmed)) {
         return {
           exists: true,
           kind: 'dir',
@@ -1288,6 +1301,52 @@ export function installPreviewHost() {
         }
       })
     },
+    async importAttachments(files) {
+      return files.map((file, index) => {
+        let binary = ''
+        for (let offset = 0; offset < file.data.length; offset += 32768) {
+          binary += String.fromCharCode(...file.data.subarray(offset, offset + 32768))
+        }
+        const base64 = btoa(binary)
+        const lower = file.name.toLowerCase()
+        const mimeType = lower.endsWith('.png')
+          ? 'image/png'
+          : lower.endsWith('.jpg') || lower.endsWith('.jpeg')
+            ? 'image/jpeg'
+            : lower.endsWith('.webp')
+              ? 'image/webp'
+              : lower.endsWith('.gif')
+                ? 'image/gif'
+                : lower.endsWith('.pdf')
+                  ? 'application/pdf'
+                  : lower.endsWith('.docx')
+                    ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    : lower.endsWith('.xlsx')
+                      ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                      : lower.endsWith('.pptx')
+                        ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+                        : lower.endsWith('.md') || lower.endsWith('.markdown')
+                          ? 'text/markdown'
+                          : 'text/plain'
+        const id = `att-preview-${Date.now()}-${index}`
+        const preview = mimeType.startsWith('image/') ? `data:${mimeType};base64,${base64}` : ''
+        previewAttachments.set(id, {
+          id,
+          name: file.name,
+          size: file.data.length,
+          mimeType,
+          base64,
+          preview
+        })
+        return {
+          id,
+          name: file.name,
+          size: file.data.length,
+          mimeType,
+          ...(preview ? { preview } : {})
+        }
+      })
+    },
     async releaseAttachments(ids) {
       for (const id of ids) previewAttachments.delete(id)
     },
@@ -1308,6 +1367,7 @@ export function installPreviewHost() {
     async openExternal() {},
     async windowDimmed() {},
     async reveal() {},
+    async openPath() {},
     async createEntry(_workspaceId, path) {
       fileContents[path] = { content: '', revision: 'rev-1' }
       return { path }

@@ -1,4 +1,5 @@
 {  "importImages": true,
+  "importAttachments": true,
   "releaseAttachments": true,
   "automation": true,
   "team": true,
@@ -44,6 +45,7 @@
   "openExternal": true,
   "windowDimmed": true,
   "reveal": true,
+  "openPath": true,
   "createEntry": true,
   "trashEntry": true,
   "openWith": true,

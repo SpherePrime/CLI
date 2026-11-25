@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -586,6 +587,16 @@ func (m *Message) SetOrchestratorPhase(phase string) {
 	}
 }
 
+func escapeXMLAttr(value string) string {
+	replacer := strings.NewReplacer(
+		"&", "&amp;",
+		`"`, "&quot;",
+		"<", "&lt;",
+		">", "&gt;",
+	)
+	return replacer.Replace(value)
+}
+
 func PromptWithTextAttachments(prompt string, attachments []Attachment) string {
 	var sb strings.Builder
 	sb.WriteString(prompt)
@@ -607,6 +618,18 @@ func PromptWithTextAttachments(prompt string, attachments []Attachment) string {
 		sb.Write(content.Content)
 		sb.WriteString("\n</file>\n")
 	}
+	for _, content := range attachments {
+		if !content.IsDocument() {
+			continue
+		}
+		fmt.Fprintf(
+			&sb,
+			"\n<attached_document name=\"%s\" mime=\"%s\" path=\"%s\">Use the matching built-in document tool (`word_document`, `excel_workbook`, `powerpoint_presentation`, or `pdf_document`) with `input_path` to inspect or edit this file.</attached_document>\n",
+			escapeXMLAttr(content.DisplayName()),
+			escapeXMLAttr(content.EffectiveMIME()),
+			escapeXMLAttr(content.FilePath),
+		)
+	}
 	return sb.String()
 }
 
@@ -616,18 +639,17 @@ func (m *Message) ToAIMessage() []fantasy.Message {
 	case User:
 		var parts []fantasy.MessagePart
 		text := strings.TrimSpace(m.Content().Text)
-		var textAttachments []Attachment
-		for _, content := range m.BinaryContent() {
-			if !strings.HasPrefix(content.MIMEType, "text/") {
-				continue
-			}
-			textAttachments = append(textAttachments, Attachment{
+		binaryContents := m.BinaryContent()
+		attachments := make([]Attachment, 0, len(binaryContents))
+		for _, content := range binaryContents {
+			attachments = append(attachments, Attachment{
 				FilePath: content.Path,
+				FileName: filepath.Base(content.Path),
 				MimeType: content.MIMEType,
 				Content:  content.Data,
 			})
 		}
-		text = PromptWithTextAttachments(text, textAttachments)
+		text = PromptWithTextAttachments(text, attachments)
 		// Include bang-mode shell commands as context for the agent.
 		for _, sc := range m.ShellCommands() {
 			shellText := fmt.Sprintf("$ %s\n%s\n(exit code %d)", sc.Command, ansi.Strip(sc.Output), sc.ExitCode)
@@ -640,15 +662,14 @@ func (m *Message) ToAIMessage() []fantasy.Message {
 		if text != "" {
 			parts = append(parts, fantasy.TextPart{Text: text})
 		}
-		for _, content := range m.BinaryContent() {
-			// skip text attachements
-			if strings.HasPrefix(content.MIMEType, "text/") {
+		for _, att := range attachments {
+			if att.IsText() || !att.SupportsFilePart() {
 				continue
 			}
 			parts = append(parts, fantasy.FilePart{
-				Filename:  content.Path,
-				Data:      content.Data,
-				MediaType: content.MIMEType,
+				Filename:  att.FilePath,
+				Data:      att.Content,
+				MediaType: att.EffectiveMIME(),
 			})
 		}
 		messages = append(messages, fantasy.Message{
