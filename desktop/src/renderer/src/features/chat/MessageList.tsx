@@ -1,8 +1,7 @@
-import { useVirtualizer } from '@tanstack/react-virtual'
 import { useI18n } from '../../i18n'
 import { consolidateToolMessages } from '../../../../shared/toolMessages'
 import { mergeConsecutiveToolMessages, type MergedMessage } from './toolGroupMerge'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { Message, OrchestratorPhase } from '../../../../shared/contracts'
 import type { PreferredDesignImage } from '../designer/designHandoff'
@@ -57,10 +56,13 @@ export function MessageList({
   ) => void
 }) {
   const viewport = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const { t } = useI18n()
   const [following, setFollowing] = useState(true)
   const followingRef = useRef(true)
   const leavingBottom = useRef(false)
+  const programmaticScroll = useRef(false)
+  const lastScrollTop = useRef(0)
   const stable = useRef<Message[]>([])
   const timing = useMemo(() => {
     const local = conversationTiming(messages, historyTiming?.started_at)
@@ -131,17 +133,20 @@ export function MessageList({
   const mountedAt = useRef(Date.now())
   const [settled, setSettled] = useState(false)
   const hasMessages = visible.length > 0
-  const virtualizer = useVirtualizer({
-    count: visible.length,
-    getScrollElement: () => viewport.current,
-    getItemKey: (index) => visible[index].id,
-    estimateSize: () => 180,
-    overscan: 3
-  })
+  const scrollToBottomNow = () => {
+    const view = viewport.current
+    if (!view) return
+    programmaticScroll.current = true
+    view.scrollTop = view.scrollHeight
+    lastScrollTop.current = view.scrollTop
+    paging.syncTop()
+    requestAnimationFrame(() => {
+      programmaticScroll.current = false
+    })
+  }
   const paging = useHistoryPaging({
     messages: visible,
     viewport,
-    virtualizer,
     settled,
     hasBefore,
     hasAfter,
@@ -166,7 +171,8 @@ export function MessageList({
     setFollowing(false)
     const matchesMessage = (message: MergedMessage) =>
       message.id === matchId || Boolean(message._mergedIds?.includes(matchId))
-    if (!visible.some(matchesMessage)) {
+    const matched = visible.find(matchesMessage)
+    if (!matched) {
       if (!searchTarget.current.requested) {
         searchTarget.current.requested = true
         void revealMessage?.(matchId)
@@ -174,59 +180,52 @@ export function MessageList({
       return
     }
     searchTarget.current.positioned = true
-    virtualizer.cancelScroll()
     followingRef.current = false
     leavingBottom.current = false
     setFollowing(false)
-    virtualizer.scrollToIndex(visible.findIndex(matchesMessage), { align: 'center' })
+    const row = Array.from(
+      viewport.current?.querySelectorAll<HTMLElement>('[data-message-id]') || []
+    ).find((element) => element.dataset.messageId === matched.id)
+    row?.scrollIntoView({ block: 'center', behavior: 'auto' })
   }, [searchOpen, matchId, query, visible])
   useLayoutEffect(() => {
     if (paging.restoring.current) return
-    if (followingRef.current && visible.length) virtualizer.scrollToEnd()
+    if (followingRef.current && visible.length) scrollToBottomNow()
     const view = viewport.current
     if (view) {
-      const atBottom = view.scrollHeight - view.scrollTop - view.clientHeight < 24
+      const atBottom = !hasAfter && view.scrollHeight - view.scrollTop - view.clientHeight < 24
       setFollowing(atBottom)
       if (atBottom && !leavingBottom.current) followingRef.current = true
     }
-  }, [visible, virtualizer.getTotalSize()])
+  }, [visible, busy, waiting, hasAfter])
   useEffect(() => {
     const view = viewport.current
-    if (!view) return
+    const content = contentRef.current
+    if (!view || !content) return
     let lastHeight = view.clientHeight
     const observer = new ResizeObserver(() => {
       const height = view.clientHeight
       const shrunk = height < lastHeight
       lastHeight = height
-      if (!shrunk || !followingRef.current || paging.restoring.current) return
-      view.scrollTop = view.scrollHeight
+      if (paging.restoring.current || !followingRef.current) return
+      if (shrunk || followingRef.current) scrollToBottomNow()
     })
     observer.observe(view)
+    observer.observe(content)
     return () => observer.disconnect()
   }, [])
   useEffect(() => {
     if (settled || !hasMessages) return
-    let frame = 0
-    let stableFrames = 0
-    let lastSize = -1
-    const startedAt = performance.now()
-    const check = () => {
-      const size = virtualizer.getTotalSize()
-      stableFrames = size === lastSize ? stableFrames + 1 : 0
-      lastSize = size
-      if (followingRef.current) virtualizer.scrollToEnd()
-      if (stableFrames >= 2 || performance.now() - startedAt > 500) {
-        paging.syncTop()
-        setSettled(true)
-      }
-      else frame = requestAnimationFrame(check)
-    }
-    frame = requestAnimationFrame(check)
+    if (followingRef.current) scrollToBottomNow()
+    const frame = requestAnimationFrame(() => {
+      if (followingRef.current) scrollToBottomNow()
+      paging.syncTop()
+      setSettled(true)
+    })
     return () => cancelAnimationFrame(frame)
   }, [settled, hasMessages])
   function takeControl(up: boolean) {
     paging.interact()
-    virtualizer.cancelScroll()
     const view = viewport.current
     if (up && view && view.scrollHeight > view.clientHeight + 1) {
       leavingBottom.current = true
@@ -299,7 +298,14 @@ export function MessageList({
         }}
         onScroll={() => {
           const view = viewport.current!
-          const atBottom = !hasAfter && view.scrollHeight - view.scrollTop - view.clientHeight < 24
+          const top = view.scrollTop
+          const scrolledUp = !programmaticScroll.current && !paging.restoring.current && top < lastScrollTop.current - 1
+          lastScrollTop.current = top
+          if (scrolledUp) {
+            followingRef.current = false
+            leavingBottom.current = true
+          }
+          const atBottom = !hasAfter && view.scrollHeight - top - view.clientHeight < 24
           if (!atBottom && settled && !paging.restoring.current) paging.interact()
           paging.onScroll()
           if (leavingBottom.current && atBottom) {
@@ -307,33 +313,29 @@ export function MessageList({
             return
           }
           leavingBottom.current = false
-          followingRef.current = atBottom
+          if (!scrolledUp) followingRef.current = atBottom
           setFollowing(atBottom)
         }}
       >
-        <div className="conversation-inner">
-          <div
-            className={`message-rows ${settled ? '' : 'settling'}`}
-            style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}
-          >
-            {virtualizer.getVirtualItems().map((row) => {
-              const message = visible[row.index]
-              const previous = visible[row.index - 1]
+        <div className="conversation-inner" ref={contentRef}>
+          <div className={`message-rows ${settled ? '' : 'settling'}`}>
+            {visible.map((message, index) => {
+              const previous = visible[index - 1]
               const continued =
                 !message.is_summary_message &&
                 message.role !== 'user' &&
                 previous !== undefined &&
                 !previous.is_summary_message &&
                 previous.role !== 'user' &&
-                !isEndOfTurn(visible, row.index - 1, busy)
+                !isEndOfTurn(visible, index - 1, busy)
               const fresh =
                 (message.created_at || 0) * 1000 > Math.max(mountedAt.current, Date.now() - 4000)
-              const last = row.index === visible.length - 1
-              const durationTime = isEndOfTurn(visible, row.index, busy)
-                ? turnCompletedDuration(visible, row.index, timing.completed)
+              const last = index === visible.length - 1
+              const durationTime = isEndOfTurn(visible, index, busy)
+                ? turnCompletedDuration(visible, index, timing.completed)
                 : undefined
               let previousOrchestratorPhase: OrchestratorPhase | undefined
-              for (let i = row.index - 1; i >= 0; i--) {
+              for (let i = index - 1; i >= 0; i--) {
                 const prev = visible[i]
                 if (prev.is_summary_message) continue
                 if (prev.role === 'user') break
@@ -345,17 +347,8 @@ export function MessageList({
               return (
                 <div
                   key={message.id}
-                  data-index={row.index}
+                  data-index={index}
                   data-message-id={message.id}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    display: 'flow-root',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${row.start}px)`
-                  }}
                 >
                   <MessageItem
                     message={message}
@@ -395,7 +388,7 @@ export function MessageList({
             leavingBottom.current = false
             followingRef.current = true
             setFollowing(true)
-            virtualizer.scrollToEnd()
+            scrollToBottomNow()
           }}
         >
           <ArrowDown size={14} /> {t('Новые сообщения')}

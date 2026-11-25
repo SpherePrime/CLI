@@ -967,7 +967,7 @@ kbd {
   overflow: auto;
   min-height: 0;
   position: relative;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   overflow-anchor: none;
 }
 .conversation-inner {
