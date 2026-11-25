@@ -480,21 +480,21 @@ func (b *docBuilder) renderImage(blk Block) (string, error) {
 	if align != "" {
 		out.WriteString(fmt.Sprintf(`<w:pPr><w:jc w:val="%s"/></w:pPr>`, align))
 	}
-	out.WriteString(fmt.Sprintf(
-		`<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">`+
+	fmt.Fprintf(&out,
+		`<w:r><w:drawing><wp:inline xmlns:wp="`+nsWP+`" distT="0" distB="0" distL="0" distR="0">`+
 			`<wp:extent cx="%d" cy="%d"/>`+
 			`<wp:effectExtent l="0" t="0" r="0" b="0"/>`+
 			`<wp:docPr id="%d" name="Picture %d"/>`+
-			`<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>`+
-			`<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">`+
-			`<pic:pic>`+
+			`<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="`+nsDrawingML+`" noChangeAspect="1"/></wp:cNvGraphicFramePr>`+
+			`<a:graphic xmlns:a="`+nsDrawingML+`"><a:graphicData uri="`+nsPic+`">`+
+			`<pic:pic xmlns:pic="`+nsPic+`">`+
 			`<pic:nvPicPr><pic:cNvPr id="%d" name="%s"/><pic:cNvPicPr/></pic:nvPicPr>`+
-			`<pic:blipFill><a:blip r:embed="%s"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>`+
+			`<pic:blipFill><a:blip xmlns:r="`+nsRel+`" r:embed="%s"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>`+
 			`<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="%d" cy="%d"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>`+
 			`</pic:pic></a:graphicData></a:graphic>`+
 			`</wp:inline></w:drawing></w:r></w:p>`,
 		cx, cy, docPrID, imgIdx, docPrID, escapeXML(fileName), relID, cx, cy,
-	))
+	)
 	b.paragraphCount++
 
 	if caption := strings.TrimSpace(blk.Caption); caption != "" {

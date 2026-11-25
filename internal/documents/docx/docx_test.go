@@ -600,3 +600,211 @@ func TestUpdateAppendJPEGAndLists(t *testing.T) {
 		}
 	}
 }
+
+func TestUpdateAppendImageMinimalNamespaces(t *testing.T) {
+	dir := t.TempDir()
+	pngPath := filepath.Join(dir, "badge.png")
+	writeTestPNG(t, pngPath, 64, 48)
+
+	inPath := filepath.Join(dir, "minimal.docx")
+	outPath := filepath.Join(dir, "minimal_with_img.docx")
+
+	writeZipEntries(t, inPath, map[string][]byte{
+		"[Content_Types].xml": []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+			`<Default Extension="xml" ContentType="application/xml"/>` +
+			`<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+			`</Types>`),
+		"_rels/.rels": []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>` +
+			`</Relationships>`),
+		"word/_rels/document.xml.rels": []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`),
+		"word/document.xml": []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+			`<w:body><w:p><w:r><w:t>Minimal third-party document</w:t></w:r></w:p><w:sectPr/></w:body>` +
+			`</w:document>`),
+	})
+
+	if _, err := Update(UpdateOptions{
+		InputPath:    inPath,
+		OutputPath:   outPath,
+		WorkingDir:   dir,
+		AppendBlocks: []Block{{Type: "image", ImagePath: pngPath, Width: 120}},
+	}); err != nil {
+		t.Fatalf("Update append image failed: %v", err)
+	}
+
+	entries := readZipEntries(t, outPath)
+	docXML, ok := entries["word/document.xml"]
+	if !ok {
+		t.Fatal("missing word/document.xml in output")
+	}
+
+	var foundInline, foundLocks, foundGraphic, foundPic, foundBlip bool
+	dec := xml.NewDecoder(bytes.NewReader(docXML))
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("xml.NewDecoder Token failed on word/document.xml: %v\n%s", err, string(docXML))
+		}
+		se, ok := tok.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		switch se.Name.Local {
+		case "inline":
+			foundInline = true
+			if se.Name.Space != nsWP {
+				t.Fatalf("wp:inline resolved to namespace %q, want %q", se.Name.Space, nsWP)
+			}
+		case "graphicFrameLocks":
+			foundLocks = true
+			if se.Name.Space != nsDrawingML {
+				t.Fatalf("a:graphicFrameLocks resolved to namespace %q, want %q", se.Name.Space, nsDrawingML)
+			}
+		case "graphic":
+			foundGraphic = true
+			if se.Name.Space != nsDrawingML {
+				t.Fatalf("a:graphic resolved to namespace %q, want %q", se.Name.Space, nsDrawingML)
+			}
+		case "pic":
+			foundPic = true
+			if se.Name.Space != nsPic {
+				t.Fatalf("pic:pic resolved to namespace %q, want %q", se.Name.Space, nsPic)
+			}
+		case "blip":
+			foundBlip = true
+			if se.Name.Space != nsDrawingML {
+				t.Fatalf("a:blip resolved to namespace %q, want %q", se.Name.Space, nsDrawingML)
+			}
+			embedOK := false
+			for _, a := range se.Attr {
+				if a.Name.Local == "embed" {
+					if a.Name.Space != nsRel {
+						t.Fatalf("a:blip r:embed resolved to namespace %q, want %q", a.Name.Space, nsRel)
+					}
+					if a.Value == "" {
+						t.Fatal("a:blip r:embed attribute is empty")
+					}
+					embedOK = true
+				}
+			}
+			if !embedOK {
+				t.Fatal("a:blip missing r:embed attribute")
+			}
+		}
+	}
+
+	if !foundInline || !foundLocks || !foundGraphic || !foundPic || !foundBlip {
+		t.Fatalf("missing DrawingML elements: inline=%v locks=%v graphic=%v pic=%v blip=%v",
+			foundInline, foundLocks, foundGraphic, foundPic, foundBlip)
+	}
+}
+
+func TestPreserveNonWordMLTextElementsDuringReplaceAndCellUpdate(t *testing.T) {
+	dir := t.TempDir()
+	inPath := filepath.Join(dir, "shapes_and_math.docx")
+	filledPath := filepath.Join(dir, "shapes_filled.docx")
+	updatedPath := filepath.Join(dir, "shapes_updated.docx")
+
+	docXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ` +
+		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
+		`xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ` +
+		`xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
+		`xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">` +
+		`<w:body>` +
+		`<w:p><w:r><w:drawing><wp:inline><a:graphic><a:graphicData><a:txBody><a:p><a:r><a:t>{{client_name}}</a:t></a:r></a:p></a:txBody></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>` +
+		`<w:p><w:r><w:t>{{client_name}}</w:t></w:r></w:p>` +
+		`<w:p><m:oMath><m:r><m:t>{{client_name}}</m:t></m:r></m:oMath><w:r><w:t>Formula for {{client_name}}</w:t></w:r></w:p>` +
+		`<w:tbl><w:tr>` +
+		`<w:tc><w:p><w:r><w:drawing><wp:inline><a:graphic><a:graphicData><a:txBody><a:p><a:r><a:t>KeepShape</a:t></a:r></a:p></a:txBody></a:graphicData></a:graphic></wp:inline></w:drawing></w:r><w:r><w:t>{{cell_val}}</w:t></w:r></w:p></w:tc>` +
+		`<w:tc><w:p><w:del><w:r><w:t>DeletedOld</w:t></w:r></w:del><w:r><w:instrText>MERGEFIELD keep</w:instrText></w:r><w:r><w:t>ReplaceMe</w:t></w:r></w:p><w:tbl><w:tr><w:tc><w:p><w:r><w:t>NestedCellText</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:tc>` +
+		`</w:tr></w:tbl>` +
+		`<w:sectPr/>` +
+		`</w:body></w:document>`
+
+	writeZipEntries(t, inPath, map[string][]byte{
+		"[Content_Types].xml": []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+			`<Default Extension="xml" ContentType="application/xml"/>` +
+			`<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+			`</Types>`),
+		"_rels/.rels": []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>` +
+			`</Relationships>`),
+		"word/document.xml": []byte(docXML),
+	})
+
+	if _, err := FillTemplate(inPath, filledPath, map[string]string{
+		"client_name": "ООО «Орион»",
+		"cell_val":    "Начальное",
+	}); err != nil {
+		t.Fatalf("FillTemplate failed: %v", err)
+	}
+
+	filledEntries := readZipEntries(t, filledPath)
+	filledDoc := string(filledEntries["word/document.xml"])
+	assertValidXML(t, "filled word/document.xml", filledEntries["word/document.xml"])
+
+	if !strings.Contains(filledDoc, `<a:t>{{client_name}}</a:t>`) {
+		t.Fatalf("DrawingML <a:t> was corrupted during FillTemplate:\n%s", filledDoc)
+	}
+	if !strings.Contains(filledDoc, `<m:t>{{client_name}}</m:t>`) {
+		t.Fatalf("Office Math <m:t> was corrupted during FillTemplate:\n%s", filledDoc)
+	}
+	if !strings.Contains(filledDoc, `<a:t>KeepShape</a:t>`) {
+		t.Fatalf("table cell DrawingML <a:t> was corrupted during FillTemplate:\n%s", filledDoc)
+	}
+	if !strings.Contains(filledDoc, `<w:t xml:space="preserve">ООО «Орион»</w:t>`) {
+		t.Fatalf("body WordML <w:t> was not replaced during FillTemplate:\n%s", filledDoc)
+	}
+	if !strings.Contains(filledDoc, `<w:t xml:space="preserve">Formula for ООО «Орион»</w:t>`) {
+		t.Fatalf("body WordML <w:t> next to math was not replaced during FillTemplate:\n%s", filledDoc)
+	}
+	if !strings.Contains(filledDoc, `<w:t xml:space="preserve">Начальное</w:t>`) {
+		t.Fatalf("cell WordML <w:t> was not replaced during FillTemplate:\n%s", filledDoc)
+	}
+
+	if _, err := Update(UpdateOptions{
+		InputPath:  filledPath,
+		OutputPath: updatedPath,
+		TableUpdates: []TableUpdate{
+			{TableIndex: 0, Row: 0, Col: 0, Value: "Обновлённая ячейка"},
+			{TableIndex: 0, Row: 0, Col: 1, Value: "Новое значение"},
+		},
+	}); err != nil {
+		t.Fatalf("Update table cells failed: %v", err)
+	}
+
+	updatedEntries := readZipEntries(t, updatedPath)
+	updatedDoc := string(updatedEntries["word/document.xml"])
+	assertValidXML(t, "updated word/document.xml", updatedEntries["word/document.xml"])
+
+	if !strings.Contains(updatedDoc, `<a:t>KeepShape</a:t>`) {
+		t.Fatalf("table cell DrawingML <a:t> was corrupted during TableUpdate:\n%s", updatedDoc)
+	}
+	if !strings.Contains(updatedDoc, `<w:t xml:space="preserve">Обновлённая ячейка</w:t>`) {
+		t.Fatalf("table cell (0,0) <w:t> was not updated:\n%s", updatedDoc)
+	}
+	if !strings.Contains(updatedDoc, `<w:del><w:r><w:t>DeletedOld</w:t></w:r></w:del>`) {
+		t.Fatalf("table cell <w:del> was modified during TableUpdate:\n%s", updatedDoc)
+	}
+	if !strings.Contains(updatedDoc, `<w:instrText>MERGEFIELD keep</w:instrText>`) {
+		t.Fatalf("table cell <w:instrText> was modified during TableUpdate:\n%s", updatedDoc)
+	}
+	if !strings.Contains(updatedDoc, `<w:t>NestedCellText</w:t>`) {
+		t.Fatalf("nested table cell text was modified during TableUpdate:\n%s", updatedDoc)
+	}
+	if !strings.Contains(updatedDoc, `<w:t xml:space="preserve">Новое значение</w:t>`) {
+		t.Fatalf("table cell (0,1) <w:t> was not updated:\n%s", updatedDoc)
+	}
+}

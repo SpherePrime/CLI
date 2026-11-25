@@ -182,10 +182,8 @@ type textSegment struct {
 }
 
 type paraFrame struct {
-	groups     [][]textSegment
-	curGroup   []textSegment
-	delDepth   int
-	instrDepth int
+	groups   [][]textSegment
+	curGroup []textSegment
 }
 
 func (f *paraFrame) flushGroup() {
@@ -193,6 +191,36 @@ func (f *paraFrame) flushGroup() {
 		f.groups = append(f.groups, f.curGroup)
 		f.curGroup = nil
 	}
+}
+
+func isWordML(name xml.Name) bool {
+	return name.Space == "w" || name.Space == ""
+}
+
+func hasNonWordMLDefaultNS(attrs []xml.Attr) bool {
+	for _, a := range attrs {
+		if a.Name.Space == "" && a.Name.Local == "xmlns" && a.Value != nsWordML {
+			return true
+		}
+	}
+	return false
+}
+
+func skipSubtree(dec *xml.Decoder) error {
+	depth := 1
+	for depth > 0 {
+		tok, err := dec.RawToken()
+		if err != nil {
+			return err
+		}
+		switch tok.(type) {
+		case xml.StartElement:
+			depth++
+		case xml.EndElement:
+			depth--
+		}
+	}
+	return nil
 }
 
 func findTagStart(raw []byte, hint int) int {
@@ -240,71 +268,81 @@ func replaceInWordXML(xmlBytes []byte, replacements map[string]string) ([]byte, 
 
 		switch t := tok.(type) {
 		case xml.StartElement:
+			if !isWordML(t.Name) {
+				if t.Name.Space == "a" || t.Name.Space == "m" {
+					if len(stack) > 0 {
+						stack[len(stack)-1].flushGroup()
+					}
+					if err := skipSubtree(dec); err != nil {
+						return nil, 0, err
+					}
+				}
+				continue
+			}
+			if hasNonWordMLDefaultNS(t.Attr) {
+				if len(stack) > 0 {
+					stack[len(stack)-1].flushGroup()
+				}
+				if err := skipSubtree(dec); err != nil {
+					return nil, 0, err
+				}
+				continue
+			}
 			switch t.Name.Local {
 			case "p":
 				if len(stack) > 0 {
 					stack[len(stack)-1].flushGroup()
 				}
 				stack = append(stack, paraFrame{})
-			case "del":
-				if len(stack) > 0 {
-					stack[len(stack)-1].delDepth++
+			case "del", "instrText":
+				if err := skipSubtree(dec); err != nil {
+					return nil, 0, err
 				}
-			case "instrText":
+			case "drawing", "pict":
 				if len(stack) > 0 {
-					stack[len(stack)-1].instrDepth++
+					stack[len(stack)-1].flushGroup()
 				}
-			case "br", "cr", "tab", "fldChar", "drawing", "pict", "tbl":
+				if err := skipSubtree(dec); err != nil {
+					return nil, 0, err
+				}
+			case "br", "cr", "tab", "fldChar", "tbl":
 				if len(stack) > 0 {
 					stack[len(stack)-1].flushGroup()
 				}
 			case "t":
 				if len(stack) > 0 {
 					top := &stack[len(stack)-1]
-					if top.delDepth == 0 && top.instrDepth == 0 {
-						tStart := findTagStart(xmlBytes, before)
-						var textBuf strings.Builder
-						tDepth := 1
-						for tDepth > 0 {
-							inner, ierr := dec.RawToken()
-							if ierr != nil {
-								return nil, 0, ierr
-							}
-							switch it := inner.(type) {
-							case xml.StartElement:
-								tDepth++
-							case xml.EndElement:
-								tDepth--
-							case xml.CharData:
-								textBuf.Write(it)
-							}
+					tStart := findTagStart(xmlBytes, before)
+					var textBuf strings.Builder
+					tDepth := 1
+					for tDepth > 0 {
+						inner, ierr := dec.RawToken()
+						if ierr != nil {
+							return nil, 0, ierr
 						}
-						tEnd := int(dec.InputOffset())
-						top.curGroup = append(top.curGroup, textSegment{
-							start: tStart,
-							end:   tEnd,
-							text:  textBuf.String(),
-						})
+						switch it := inner.(type) {
+						case xml.StartElement:
+							tDepth++
+						case xml.EndElement:
+							tDepth--
+						case xml.CharData:
+							textBuf.Write(it)
+						}
 					}
+					tEnd := int(dec.InputOffset())
+					top.curGroup = append(top.curGroup, textSegment{
+						start: tStart,
+						end:   tEnd,
+						text:  textBuf.String(),
+					})
 				}
 			}
 		case xml.EndElement:
-			switch t.Name.Local {
-			case "p":
-				if len(stack) > 0 {
-					top := &stack[len(stack)-1]
-					top.flushGroup()
-					allGroups = append(allGroups, top.groups...)
-					stack = stack[:len(stack)-1]
-				}
-			case "del":
-				if len(stack) > 0 && stack[len(stack)-1].delDepth > 0 {
-					stack[len(stack)-1].delDepth--
-				}
-			case "instrText":
-				if len(stack) > 0 && stack[len(stack)-1].instrDepth > 0 {
-					stack[len(stack)-1].instrDepth--
-				}
+			if isWordML(t.Name) && t.Name.Local == "p" && len(stack) > 0 {
+				top := &stack[len(stack)-1]
+				top.flushGroup()
+				allGroups = append(allGroups, top.groups...)
+				stack = stack[:len(stack)-1]
 			}
 		}
 	}
@@ -589,35 +627,48 @@ func replaceCellText(cellXML []byte, value string) ([]byte, error) {
 		switch t := tok.(type) {
 		case xml.StartElement:
 			depth++
-			if t.Name.Local == "p" && firstPStart < 0 && depth == 2 {
-				firstPStart = findTagStart(cellXML, before)
-				afterStart := int(dec.InputOffset())
-				if afterStart >= 2 && cellXML[afterStart-2] == '/' {
-					firstPSelfClosing = true
-					firstPEnd = afterStart
+			if !isWordML(t.Name) {
+				if t.Name.Space == "a" || t.Name.Space == "m" {
+					if err := skipSubtree(dec); err != nil {
+						return nil, err
+					}
+					depth--
 				}
+				continue
 			}
-			if t.Name.Local == "t" {
+			if hasNonWordMLDefaultNS(t.Attr) {
+				if err := skipSubtree(dec); err != nil {
+					return nil, err
+				}
+				depth--
+				continue
+			}
+			switch t.Name.Local {
+			case "tbl", "drawing", "pict", "del", "instrText":
+				if err := skipSubtree(dec); err != nil {
+					return nil, err
+				}
+				depth--
+			case "p":
+				if firstPStart < 0 && depth == 2 {
+					firstPStart = findTagStart(cellXML, before)
+					afterStart := int(dec.InputOffset())
+					if afterStart >= 2 && cellXML[afterStart-2] == '/' {
+						firstPSelfClosing = true
+						firstPEnd = afterStart
+					}
+				}
+			case "t":
 				tStart := findTagStart(cellXML, before)
-				tDepth := 1
-				for tDepth > 0 {
-					inner, ierr := dec.RawToken()
-					if ierr != nil {
-						return nil, ierr
-					}
-					switch inner.(type) {
-					case xml.StartElement:
-						tDepth++
-					case xml.EndElement:
-						tDepth--
-					}
+				if err := skipSubtree(dec); err != nil {
+					return nil, err
 				}
 				tEnd := int(dec.InputOffset())
 				tSpans = append(tSpans, cellSpan{start: tStart, end: tEnd})
 				depth--
 			}
 		case xml.EndElement:
-			if t.Name.Local == "p" && firstPStart >= 0 && firstPEnd < 0 && depth == 2 {
+			if isWordML(t.Name) && t.Name.Local == "p" && firstPStart >= 0 && firstPEnd < 0 && depth == 2 {
 				firstPEnd = findTagStart(cellXML, before)
 			}
 			depth--
