@@ -2,6 +2,8 @@ package xlsx
 
 import (
 	"archive/zip"
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -555,5 +557,435 @@ func TestErrorHandling(t *testing.T) {
 
 	if _, err := os.Stat(singlePath); err != nil {
 		t.Fatalf("original file should still exist after failed update: %v", err)
+	}
+}
+
+func TestRenameSheetsCaseHandling(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "rename_case.xlsx")
+
+	_, err := Create(CreateOptions{
+		OutputPath: path,
+		Sheets: []SheetSpec{
+			{Name: "Data", Rows: [][]any{{"Key", 1}}},
+			{Name: "Notes", Rows: [][]any{{"Initial"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	res, err := Update(UpdateOptions{
+		InputPath:  path,
+		OutputPath: path,
+		RenameSheets: []RenameSheetEdit{
+			{From: "notes", To: "Comments"},
+		},
+		SetCells: []CellEdit{
+			{Sheet: "notes", Cell: "A2", Value: "Updated via old case"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("case-mismatched RenameSheets failed: %v", err)
+	}
+	if len(res.Sheets) != 2 || res.Sheets[0] != "Data" || res.Sheets[1] != "Comments" {
+		t.Fatalf("expected sheets [Data Comments], got %v", res.Sheets)
+	}
+
+	info, err := Inspect(path, "comments", "")
+	if err != nil {
+		t.Fatalf("Inspect case-mismatched sheet failed: %v", err)
+	}
+	if info.Sheet != "Comments" {
+		t.Fatalf("expected canonical sheet name Comments, got %q", info.Sheet)
+	}
+	if len(info.Rows) < 2 || info.Rows[1][0] != "Updated via old case" {
+		t.Fatalf("expected updated cell in renamed sheet, got %v", info.Rows)
+	}
+
+	caseOnlyPath := filepath.Join(dir, "rename_case_only.xlsx")
+	_, err = Create(CreateOptions{
+		OutputPath: caseOnlyPath,
+		Sheets: []SheetSpec{
+			{Name: "Data", Rows: [][]any{{"Key", 1}}},
+			{Name: "notes", Rows: [][]any{{"Lower"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create for case-only rename failed: %v", err)
+	}
+
+	caseRes, err := Update(UpdateOptions{
+		InputPath:  caseOnlyPath,
+		OutputPath: caseOnlyPath,
+		RenameSheets: []RenameSheetEdit{
+			{From: "notes", To: "Notes"},
+		},
+		SetCells: []CellEdit{
+			{Sheet: "NOTES", Cell: "A2", Value: "Case-only OK"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("case-only RenameSheets failed: %v", err)
+	}
+	if len(caseRes.Sheets) != 2 || caseRes.Sheets[0] != "Data" || caseRes.Sheets[1] != "Notes" {
+		t.Fatalf("expected sheets [Data Notes], got %v", caseRes.Sheets)
+	}
+
+	caseInfo, err := Inspect(caseOnlyPath, "notes", "")
+	if err != nil {
+		t.Fatalf("Inspect after case-only rename failed: %v", err)
+	}
+	if caseInfo.Sheet != "Notes" {
+		t.Fatalf("expected canonical sheet name Notes, got %q", caseInfo.Sheet)
+	}
+	if len(caseInfo.Rows) < 2 || caseInfo.Rows[1][0] != "Case-only OK" {
+		t.Fatalf("expected updated cell after case-only rename, got %v", caseInfo.Rows)
+	}
+
+	if _, err := Update(UpdateOptions{
+		InputPath:  caseOnlyPath,
+		OutputPath: caseOnlyPath,
+		RenameSheets: []RenameSheetEdit{
+			{From: "Notes", To: "data"},
+		},
+	}); err == nil {
+		t.Fatal("expected collision error when renaming Notes to existing sheet data")
+	}
+}
+
+func TestDeleteSheetsRejectsEmptyName(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "delete_empty.xlsx")
+
+	_, err := Create(CreateOptions{
+		OutputPath: path,
+		Sheets: []SheetSpec{
+			{Name: "SheetA", Rows: [][]any{{"A1"}}},
+			{Name: "SheetB", Rows: [][]any{{"B1"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	if _, err := Update(UpdateOptions{
+		InputPath:    path,
+		OutputPath:   path,
+		DeleteSheets: []string{""},
+	}); err == nil {
+		t.Fatal("expected error for empty sheet name in DeleteSheets")
+	}
+
+	if _, err := Update(UpdateOptions{
+		InputPath:    path,
+		OutputPath:   path,
+		DeleteSheets: []string{"   "},
+	}); err == nil {
+		t.Fatal("expected error for whitespace sheet name in DeleteSheets")
+	}
+
+	info, err := Inspect(path, "", "")
+	if err != nil {
+		t.Fatalf("Inspect after rejected delete failed: %v", err)
+	}
+	if len(info.Sheets) != 2 || info.Sheets[0] != "SheetA" || info.Sheets[1] != "SheetB" {
+		t.Fatalf("expected all sheets intact [SheetA SheetB], got %v", info.Sheets)
+	}
+}
+
+func TestInspectDetectsCachedFormulaErrorWhenCalcFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cached_formula_errors.xlsx")
+
+	_, err := Create(CreateOptions{
+		OutputPath: path,
+		Sheets: []SheetSpec{
+			{
+				Name: "Data",
+				Rows: [][]any{
+					{"Label", "Result"},
+					{"UnsupportedLambda", "=LAMBDA(x,x+1)(2)"},
+					{"UnsupportedArray", "={1,2}"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(raw), int64(len(raw)))
+	if err != nil {
+		t.Fatalf("zip.NewReader failed: %v", err)
+	}
+	var outBuf bytes.Buffer
+	zw := zip.NewWriter(&outBuf)
+	patched := false
+	for _, entry := range zr.File {
+		rc, err := entry.Open()
+		if err != nil {
+			t.Fatalf("open zip entry %s: %v", entry.Name, err)
+		}
+		data, err := io.ReadAll(rc)
+		_ = rc.Close()
+		if err != nil {
+			t.Fatalf("read zip entry %s: %v", entry.Name, err)
+		}
+		if entry.Name == "xl/worksheets/sheet1.xml" {
+			xmlStr := string(data)
+			oldB2 := `<c r="B2" t="str"><f>LAMBDA(x,x+1)(2)</f></c>`
+			newB2 := `<c r="B2" t="e"><f>LAMBDA(x,x+1)(2)</f><v>#NAME?</v></c>`
+			oldB3 := `<c r="B3" t="str"><f>{1,2}</f></c>`
+			newB3 := `<c r="B3" t="e"><f>{1,2}</f><v>#REF!</v></c>`
+			if !strings.Contains(xmlStr, oldB2) || !strings.Contains(xmlStr, oldB3) {
+				t.Fatalf("unexpected worksheet xml structure: %s", xmlStr)
+			}
+			xmlStr = strings.Replace(xmlStr, oldB2, newB2, 1)
+			xmlStr = strings.Replace(xmlStr, oldB3, newB3, 1)
+			data = []byte(xmlStr)
+			patched = true
+		}
+		w, err := zw.Create(entry.Name)
+		if err != nil {
+			t.Fatalf("create zip entry %s: %v", entry.Name, err)
+		}
+		if _, err := w.Write(data); err != nil {
+			t.Fatalf("write zip entry %s: %v", entry.Name, err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip writer: %v", err)
+	}
+	if !patched {
+		t.Fatal("failed to locate xl/worksheets/sheet1.xml to patch")
+	}
+	if err := os.WriteFile(path, outBuf.Bytes(), 0o600); err != nil {
+		t.Fatalf("WriteFile patched xlsx failed: %v", err)
+	}
+
+	checkFile, err := excelize.OpenFile(path)
+	if err != nil {
+		t.Fatalf("OpenFile failed: %v", err)
+	}
+	for _, cell := range []string{"B2", "B3"} {
+		calcVal, calcErr := checkFile.CalcCellValue("Data", cell)
+		if detectExactFormulaError(calcVal) != "" || (calcErr != nil && detectFormulaErrorInMessage(calcErr.Error()) != "") {
+			_ = checkFile.Close()
+			t.Fatalf("expected CalcCellValue(%s) to fail without #... token, got val=%q err=%v", cell, calcVal, calcErr)
+		}
+	}
+	_ = checkFile.Close()
+
+	info, err := Inspect(path, "Data", "")
+	if err != nil {
+		t.Fatalf("Inspect failed: %v", err)
+	}
+	found := make(map[string]FormulaError)
+	for _, fe := range info.FormulaErrors {
+		found[fe.Cell] = fe
+	}
+	if fe, ok := found["B2"]; !ok || fe.Error != "#NAME?" || !strings.Contains(fe.Formula, "LAMBDA") {
+		t.Fatalf("expected #NAME? formula error for B2, got %+v", info.FormulaErrors)
+	}
+	if fe, ok := found["B3"]; !ok || fe.Error != "#REF!" || !strings.Contains(fe.Formula, "{1,2}") {
+		t.Fatalf("expected #REF! formula error for B3, got %+v", info.FormulaErrors)
+	}
+}
+
+func TestChartLegendPositionValidation(t *testing.T) {
+	dir := t.TempDir()
+
+	invalidPath := filepath.Join(dir, "invalid_legend.xlsx")
+	_, err := Create(CreateOptions{
+		OutputPath: invalidPath,
+		Sheets: []SheetSpec{
+			{
+				Name:    "Sales",
+				Headers: []string{"Month", "Amount"},
+				Rows: [][]any{
+					{"Jan", 10},
+					{"Feb", 20},
+				},
+				Charts: []ChartSpec{
+					{
+						Type:           "col",
+						Cell:           "D2",
+						LegendPosition: "diagonal",
+						Series: []ChartSeriesSpec{
+							{Name: "B1", Categories: "A2:A3", Values: "B2:B3"},
+						},
+					},
+				},
+			},
+		},
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid LegendPosition")
+	}
+
+	validPath := filepath.Join(dir, "valid_legend.xlsx")
+	_, err = Create(CreateOptions{
+		OutputPath: validPath,
+		Sheets: []SheetSpec{
+			{
+				Name:    "Sales",
+				Headers: []string{"Month", "Amount"},
+				Rows: [][]any{
+					{"Jan", 10},
+					{"Feb", 20},
+				},
+				Charts: []ChartSpec{
+					{
+						Type:           "col",
+						Cell:           "D2",
+						LegendPosition: "top-right",
+						Series: []ChartSeriesSpec{
+							{Name: "B1", Categories: "A2:A3", Values: "B2:B3"},
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create with top-right LegendPosition failed: %v", err)
+	}
+
+	zr, err := zip.OpenReader(validPath)
+	if err != nil {
+		t.Fatalf("open valid_legend zip failed: %v", err)
+	}
+	defer zr.Close()
+	foundLegendTR := false
+	for _, entry := range zr.File {
+		if strings.HasPrefix(entry.Name, "xl/charts/chart") && strings.HasSuffix(entry.Name, ".xml") {
+			rc, err := entry.Open()
+			if err != nil {
+				t.Fatalf("open chart xml: %v", err)
+			}
+			data, err := io.ReadAll(rc)
+			_ = rc.Close()
+			if err != nil {
+				t.Fatalf("read chart xml: %v", err)
+			}
+			if strings.Contains(string(data), `legendPos val="tr"`) {
+				foundLegendTR = true
+			}
+		}
+	}
+	if !foundLegendTR {
+		t.Fatal("expected chart XML to contain <c:legendPos val=\"tr\"> for top-right legend")
+	}
+}
+
+func TestFontColorPatchClearsThemeIndexedTint(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "theme_font.xlsx")
+
+	f := excelize.NewFile()
+	theme := 4
+	baseStyleID, err := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold:         true,
+			ColorTheme:   &theme,
+			ColorIndexed: 10,
+			ColorTint:    0.4,
+		},
+	})
+	if err != nil {
+		_ = f.Close()
+		t.Fatalf("NewStyle failed: %v", err)
+	}
+	if err := f.SetCellValue("Sheet1", "A1", "Themed"); err != nil {
+		_ = f.Close()
+		t.Fatalf("SetCellValue failed: %v", err)
+	}
+	if err := f.SetCellStyle("Sheet1", "A1", "A1", baseStyleID); err != nil {
+		_ = f.Close()
+		t.Fatalf("SetCellStyle failed: %v", err)
+	}
+	if err := f.SaveAs(path); err != nil {
+		_ = f.Close()
+		t.Fatalf("SaveAs failed: %v", err)
+	}
+	_ = f.Close()
+
+	_, err = Update(UpdateOptions{
+		InputPath:  path,
+		OutputPath: path,
+		ApplyStyles: []SheetStyleEdit{
+			{
+				Sheet: "Sheet1",
+				Range: "A1",
+				Style: CellStyle{FontColor: "#CC0000"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Update ApplyStyles failed: %v", err)
+	}
+
+	reopened, err := excelize.OpenFile(path)
+	if err != nil {
+		t.Fatalf("OpenFile failed: %v", err)
+	}
+	defer reopened.Close()
+
+	patchedID, err := reopened.GetCellStyle("Sheet1", "A1")
+	if err != nil || patchedID == 0 {
+		t.Fatalf("GetCellStyle failed: id=%d err=%v", patchedID, err)
+	}
+	st, err := reopened.GetStyle(patchedID)
+	if err != nil {
+		t.Fatalf("GetStyle failed: %v", err)
+	}
+	if st.Font == nil {
+		t.Fatal("expected non-nil Font on patched style")
+	}
+	if !st.Font.Bold {
+		t.Fatal("expected Bold preserved after FontColor patch")
+	}
+	if st.Font.Color != "CC0000" {
+		t.Fatalf("expected Font.Color CC0000, got %q", st.Font.Color)
+	}
+	if st.Font.ColorTheme != nil {
+		t.Fatalf("expected Font.ColorTheme nil, got %v", *st.Font.ColorTheme)
+	}
+	if st.Font.ColorIndexed != 0 {
+		t.Fatalf("expected Font.ColorIndexed 0, got %d", st.Font.ColorIndexed)
+	}
+	if st.Font.ColorTint != 0 {
+		t.Fatalf("expected Font.ColorTint 0, got %v", st.Font.ColorTint)
+	}
+
+	zr, err := zip.OpenReader(path)
+	if err != nil {
+		t.Fatalf("open styles zip failed: %v", err)
+	}
+	defer zr.Close()
+	foundCleanRGB := false
+	for _, entry := range zr.File {
+		if entry.Name == "xl/styles.xml" {
+			rc, err := entry.Open()
+			if err != nil {
+				t.Fatalf("open styles.xml: %v", err)
+			}
+			data, err := io.ReadAll(rc)
+			_ = rc.Close()
+			if err != nil {
+				t.Fatalf("read styles.xml: %v", err)
+			}
+			if strings.Contains(string(data), `<color rgb="FFCC0000"></color>`) || strings.Contains(string(data), `<color rgb="FFCC0000"/>`) {
+				foundCleanRGB = true
+			}
+		}
+	}
+	if !foundCleanRGB {
+		t.Fatal("expected xl/styles.xml to contain clean RGB-only color element for FFCC0000")
 	}
 }

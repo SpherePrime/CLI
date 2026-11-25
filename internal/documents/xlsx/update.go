@@ -63,17 +63,24 @@ func Update(opts UpdateOptions) (*Result, error) {
 		if err != nil || fromIdx < 0 {
 			return nil, fmt.Errorf("cannot rename sheet %q: sheet not found", from)
 		}
-		if from != to {
+		actualFrom := f.GetSheetName(fromIdx)
+		if actualFrom != to {
 			if toIdx, err := f.GetSheetIndex(to); err != nil {
 				return nil, fmt.Errorf("invalid target sheet name %q: %w", to, err)
-			} else if toIdx >= 0 {
-				return nil, fmt.Errorf("cannot rename sheet %q to %q: target already exists", from, to)
+			} else if toIdx >= 0 && toIdx != fromIdx {
+				return nil, fmt.Errorf("cannot rename sheet %q to %q: target already exists", actualFrom, to)
 			}
-			if err := f.SetSheetName(from, to); err != nil {
-				return nil, fmt.Errorf("rename sheet %q to %q: %w", from, to, err)
+			if err := f.SetSheetName(actualFrom, to); err != nil {
+				return nil, fmt.Errorf("rename sheet %q to %q: %w", actualFrom, to, err)
 			}
 		}
-		renamed[from] = to
+		for k, v := range renamed {
+			if strings.EqualFold(v, actualFrom) {
+				renamed[k] = to
+			}
+		}
+		renamed[strings.ToLower(from)] = to
+		renamed[strings.ToLower(actualFrom)] = to
 	}
 
 	resolveTargetSheet := func(raw string) (string, error) {
@@ -90,17 +97,20 @@ func Update(opts UpdateOptions) (*Result, error) {
 			return sheets[0], nil
 		}
 		if idx, err := f.GetSheetIndex(name); err == nil && idx >= 0 {
-			return name, nil
+			return f.GetSheetName(idx), nil
 		}
-		if mapped, ok := renamed[name]; ok {
+		if mapped, ok := renamed[strings.ToLower(name)]; ok {
 			if idx, err := f.GetSheetIndex(mapped); err == nil && idx >= 0 {
-				return mapped, nil
+				return f.GetSheetName(idx), nil
 			}
 		}
 		return "", fmt.Errorf("sheet %q not found", name)
 	}
 
 	for _, delName := range opts.DeleteSheets {
+		if strings.TrimSpace(delName) == "" {
+			return nil, errors.New("delete_sheets requires non-empty sheet names")
+		}
 		name, err := resolveTargetSheet(delName)
 		if err != nil {
 			return nil, fmt.Errorf("delete sheet %q: %w", delName, err)

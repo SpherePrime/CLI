@@ -80,6 +80,7 @@ func Inspect(path string, sheet string, cellRange string) (*InspectResult, error
 	if err != nil || idx < 0 {
 		return nil, fmt.Errorf("sheet %q not found", targetSheet)
 	}
+	targetSheet = f.GetSheetName(idx)
 
 	allRows, err := f.GetRows(targetSheet)
 	if err != nil {
@@ -135,6 +136,9 @@ func Inspect(path string, sheet string, cellRange string) (*InspectResult, error
 					errCode := detectExactFormulaError(calcVal)
 					if errCode == "" && calcErr != nil {
 						errCode = detectFormulaErrorInMessage(calcErr.Error())
+					}
+					if errCode == "" {
+						errCode = detectExactFormulaError(val)
 					}
 					if errCode != "" {
 						formulaErrors = append(formulaErrors, FormulaError{

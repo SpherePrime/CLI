@@ -309,6 +309,25 @@ func mapChartType(kind string) (excelize.ChartType, error) {
 	}
 }
 
+func mapChartLegendPosition(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "bottom":
+		return "bottom", nil
+	case "none":
+		return "none", nil
+	case "top":
+		return "top", nil
+	case "left":
+		return "left", nil
+	case "right":
+		return "right", nil
+	case "top_right", "top-right":
+		return "top_right", nil
+	default:
+		return "", fmt.Errorf("unsupported legend_position %q (supported: none, top, bottom, left, right, top_right)", raw)
+	}
+}
+
 func splitRangeRef(raw string) (string, string, error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
@@ -437,6 +456,9 @@ func buildExcelizeStyle(base *excelize.Style, patch CellStyle) *excelize.Style {
 		}
 		if fontColor != "" {
 			out.Font.Color = fontColor
+			out.Font.ColorTheme = nil
+			out.Font.ColorIndexed = 0
+			out.Font.ColorTint = 0
 		}
 	}
 
@@ -640,9 +662,9 @@ func addChartToSheet(f *excelize.File, sheet string, spec ChartSpec) error {
 		height = 280
 	}
 
-	legendPos := strings.ToLower(strings.TrimSpace(spec.LegendPosition))
-	if legendPos == "" {
-		legendPos = "bottom"
+	legendPos, err := mapChartLegendPosition(spec.LegendPosition)
+	if err != nil {
+		return err
 	}
 
 	chart := &excelize.Chart{
