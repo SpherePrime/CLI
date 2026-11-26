@@ -276,16 +276,9 @@ func (v *VoiceLanguage) choices() []struct{ tag, title string } {
 	tr := v.translator()
 	return []struct{ tag, title string }{
 		{autoVoiceTag, tr.Label("voice.language_auto")},
-		{"ru-RU", "Русский (ru-RU)"},
-		{"en-US", "English (en-US)"},
-		{"ru-RU,en-US", tr.Label("voice.language_ru_en")},
-		{"en-US,ru-RU", tr.Label("voice.language_en_ru")},
-		{"uk-UA", "Українська (uk-UA)"},
-		{"de-DE", "Deutsch (de-DE)"},
-		{"es-ES", "Español (es-ES)"},
-		{"fr-FR", "Français (fr-FR)"},
-		{"pl-PL", "Polski (pl-PL)"},
-		{"tr-TR", "Türkçe (tr-TR)"},
+		{"ru", "Русский"},
+		{"en", "English"},
+		{"uk", "Українська"},
 	}
 }
 

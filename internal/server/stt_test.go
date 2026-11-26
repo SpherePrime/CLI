@@ -1,17 +1,10 @@
 package server
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/SpherePrime/CLI/internal/backend"
 	"github.com/SpherePrime/CLI/internal/db"
@@ -21,14 +14,6 @@ import (
 	"github.com/SpherePrime/CLI/vendordeps/stretchr/testify/require"
 )
 
-// This file drives the /v1/workspaces/{id}/stt endpoints against a real
-// workspace, following the e2e harness pattern: isolated HOME so the
-// config store writes to a temp tree, and a workspace created through the
-// real HTTP path so config writes and the event broker behave like
-// production.
-
-// sttHarness is a real server plus a real workspace to exercise the STT
-// endpoints with.
 type sttHarness struct {
 	*e2eHarness
 	workspace *backend.Workspace
@@ -42,8 +27,6 @@ func newSttHarness(t *testing.T) *sttHarness {
 	resp := h.postWorkspace(t, proto.Workspace{Path: projectDir, DataDir: dataDir, ClientID: uuid.New().String()})
 	ws, err := h.backend.GetWorkspace(resp.ID)
 	require.NoError(t, err)
-	// Skip the full app teardown in cleanup, but release the pooled DB
-	// connection so the temp data directory can be removed on Windows.
 	resolvedDataDir := ws.Cfg.Config().Options.DataDirectory
 	backend.SetWorkspaceShutdownFnForTest(ws, func() { _ = db.Release(resolvedDataDir) })
 	t.Cleanup(h.backend.CloseInProcess)
@@ -51,20 +34,20 @@ func newSttHarness(t *testing.T) *sttHarness {
 	return h
 }
 
-// get issues a GET and decodes the JSON body into out.
 func (h *sttHarness) get(t *testing.T, path string, out any) int {
 	t.Helper()
-	resp, err := http.Get(h.httpSrv.URL + path) //nolint:noctx // test helper
+	resp, err := http.Get(h.httpSrv.URL + path)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(out))
 	return resp.StatusCode
 }
 
-// post issues a POST with a JSON body and decodes the response into out.
-func (h *sttHarness) post(t *testing.T, path, body string, out any) int {
+func (h *sttHarness) post(t *testing.T, path string, body any, out any) int {
 	t.Helper()
-	resp, err := http.Post(h.httpSrv.URL+path, "application/json", strings.NewReader(body)) //nolint:noctx // test helper
+	raw, err := json.Marshal(body)
+	require.NoError(t, err)
+	resp, err := http.Post(h.httpSrv.URL+path, "application/json", bytes.NewReader(raw))
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	if out != nil {
@@ -73,413 +56,24 @@ func (h *sttHarness) post(t *testing.T, path, body string, out any) int {
 	return resp.StatusCode
 }
 
-// providerByID indexes the catalog by provider id.
-func providerByID(t *testing.T, catalog proto.SttCatalog, id string) proto.SttProvider {
-	t.Helper()
-	for _, provider := range catalog.Providers {
-		if provider.ID == id {
-			return provider
-		}
-	}
-	t.Fatalf("catalog has no %s provider", id)
-	return proto.SttProvider{}
-}
-
-// waitForTaskState polls the task list until the named task reaches state.
-func (h *sttHarness) waitForTaskState(t *testing.T, taskName, state string) proto.PluginTask {
-	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		var tasks []proto.PluginTask
-		code := h.get(t, "/v1/workspaces/"+h.workspace.ID+"/stt/tasks", &tasks)
-		require.Equal(t, 200, code)
-		for _, task := range tasks {
-			if task.Name == taskName {
-				if task.State == state {
-					return task
-				}
-				if state != "failed" && task.State == "failed" {
-					t.Fatalf("task %s failed: %s", taskName, task.Error)
-				}
-			}
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
-	t.Fatalf("task %s never reached %s", taskName, state)
-	return proto.PluginTask{}
-}
-
-// TestSttCatalogRouteShape checks the catalog contract: three providers,
-// google with no models, the configured engine echoed back, and whisper
-// carrying the accelerator metadata the desktop renders.
-func TestSttCatalogRouteShape(t *testing.T) {
-	// GPU enumeration must not depend on the machine the tests run on: stubs
-	// that are not on PATH mean the catalog reports no GPUs and the CPU
-	// accelerator as the only offer.
-	restore := voice.SetNvidiaSmiForTest("prime-no-such-nvidia-smi")
-	defer restore()
-	restoreVulkan := voice.SetVulkanInfoForTest("prime-no-such-vulkaninfo")
-	defer restoreVulkan()
+func TestSttCatalogAndSelectLanguage(t *testing.T) {
 	h := newSttHarness(t)
+	base := "/v1/workspaces/" + h.workspace.ID + "/stt"
 
 	var catalog proto.SttCatalog
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+h.workspace.ID+"/stt", &catalog))
-	require.Empty(t, catalog.Engine)
-	require.Empty(t, catalog.Language)
-	require.Len(t, catalog.Providers, 3)
-
-	google := providerByID(t, catalog, "google")
-	require.Equal(t, "Google STT", google.Title)
-	require.True(t, google.Available)
-	require.Empty(t, google.Models)
-	require.Empty(t, google.Accelerator)
-	require.Empty(t, google.Accelerators)
-
-	whisper := providerByID(t, catalog, "whisper")
-	require.Empty(t, whisper.Accelerator, "nothing is configured yet")
-	require.Empty(t, whisper.GPUs)
-	require.Equal(t, []string{"cpu"}, whisper.Accelerators)
-
-	vosk := providerByID(t, catalog, "vosk")
-	require.True(t, vosk.Available)
-	require.NotEmpty(t, vosk.Models)
-	for _, model := range vosk.Models {
-		require.NotEmpty(t, model.ID)
-		require.Greater(t, model.SizeBytes, int64(0))
-		require.False(t, model.Installed)
-		require.False(t, model.Active)
-	}
-}
-
-// TestSttSelectPersistsInConfig writes the choice through the endpoint and
-// verifies it lands in the config and shows up in the catalog.
-func TestSttSelectPersistsInConfig(t *testing.T) {
-	h := newSttHarness(t)
-	id := h.workspace.ID
+	require.Equal(t, http.StatusOK, h.get(t, base, &catalog))
+	require.Equal(t, voice.EngineTinyASR, catalog.Engine)
+	require.Equal(t, "en-ru-uk", catalog.Model)
+	require.Equal(t, "auto", catalog.Language)
+	require.Equal(t, voice.AllowedLanguages, catalog.Languages)
 
 	var selection proto.SttSelection
-	code := h.post(t, "/v1/workspaces/"+id+"/stt/select",
-		`{"provider":"whisper","model":"ggml-tiny","language":"ru-RU","accelerator":"cpu"}`, &selection)
-	require.Equal(t, 200, code)
-	require.Equal(t, proto.SttSelection{Engine: "whisper", Model: "ggml-tiny"}, selection)
+	require.Equal(t, http.StatusOK, h.post(t, base+"/select", proto.SttModelRequest{Language: "ru"}, &selection))
+	require.Equal(t, proto.SttSelection{Engine: voice.EngineTinyASR, Model: "en-ru-uk", Language: "ru"}, selection)
 
-	// The write must survive in the config store, not just the response.
-	options := h.workspace.Cfg.Config().Options.Voice
-	require.NotNil(t, options)
-	require.Equal(t, "whisper", options.Engine)
-	require.Equal(t, "ggml-tiny", options.Model)
-	require.Equal(t, "ru-RU", options.Language)
-	require.Equal(t, "cpu", options.Accelerator)
-	require.Empty(t, options.GPUDevice, "a CPU build has no GPU to name")
+	require.Equal(t, http.StatusOK, h.get(t, base, &catalog))
+	require.Equal(t, "ru", catalog.Language)
 
-	var catalog proto.SttCatalog
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
-	require.Equal(t, "whisper", catalog.Engine)
-	require.Equal(t, "ggml-tiny", catalog.Model)
-	require.Equal(t, "ru-RU", catalog.Language)
-	whisper := providerByID(t, catalog, "whisper")
-	for _, model := range whisper.Models {
-		// Active follows the configured model id, installed or not.
-		require.Equal(t, model.ID == "ggml-tiny", model.Active, model.ID)
-	}
-
-	// Selecting the hosted engine clears the model again; the language is
-	// the engine's setting, so it keeps being written as given.
-	code = h.post(t, "/v1/workspaces/"+id+"/stt/select",
-		`{"provider":"google","model":"","language":"en-US"}`, &selection)
-	require.Equal(t, 200, code)
-	require.Equal(t, proto.SttSelection{Engine: "google", Model: ""}, selection)
-	options = h.workspace.Cfg.Config().Options.Voice
-	require.Equal(t, "google", options.Engine)
-	require.Empty(t, options.Model)
-	require.Equal(t, "en-US", options.Language)
-	require.Equal(t, 400, h.post(t, "/v1/workspaces/"+id+"/stt/select", `{"provider":"nope","model":""}`, nil))
-}
-
-// TestSttSelectAcceleratorAndGPU covers the whisper compute-device settings:
-// cuda with a device index persists, cpu clears a stale device, and values
-// the engine does not accept are refused silently instead of stored.
-func TestSttSelectAcceleratorAndGPU(t *testing.T) {
-	h := newSttHarness(t)
-	id := h.workspace.ID
-	selectBody := func(body string) {
-		t.Helper()
-		var selection proto.SttSelection
-		require.Equal(t, 200, h.post(t, "/v1/workspaces/"+id+"/stt/select", body, &selection))
-		require.Equal(t, "whisper", selection.Engine)
-	}
-
-	// CUDA with a device index lands in the config.
-	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cuda","gpu_device":"1"}`)
-	options := h.workspace.Cfg.Config().Options.Voice
-	require.Equal(t, "cuda", options.Accelerator)
-	require.Equal(t, "1", options.GPUDevice)
-
-	var catalog proto.SttCatalog
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
-	require.Equal(t, "cuda", providerByID(t, catalog, "whisper").Accelerator)
-
-	// A padded device index is stored in canonical form.
-	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cuda","gpu_device":" 0 "}`)
-	options = h.workspace.Cfg.Config().Options.Voice
-	require.Equal(t, "cuda", options.Accelerator)
-	require.Equal(t, "0", options.GPUDevice)
-
-	// Switching back to CPU clears the device index: it would otherwise sit
-	// in the config meaning nothing.
-	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cpu"}`)
-	options = h.workspace.Cfg.Config().Options.Voice
-	require.Equal(t, "cpu", options.Accelerator)
-	require.Empty(t, options.GPUDevice)
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
-	require.Equal(t, "cpu", providerByID(t, catalog, "whisper").Accelerator)
-
-	// Values the engine does not know are not stored. The accelerator and
-	// the device are validated independently: a valid accelerator with a
-	// rejected device still switches, and a typo leaves the previous
-	// accelerator in charge instead of breaking dictation.
-	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"rocm"}`)
-	options = h.workspace.Cfg.Config().Options.Voice
-	require.Equal(t, "cpu", options.Accelerator)
-	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cuda","gpu_device":"-1"}`)
-	options = h.workspace.Cfg.Config().Options.Voice
-	require.Equal(t, "cuda", options.Accelerator)
-	require.Empty(t, options.GPUDevice, "a rejected device index is not stored")
-	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"cuda","gpu_device":"abc"}`)
-	options = h.workspace.Cfg.Config().Options.Voice
-	require.Equal(t, "cuda", options.Accelerator)
-	require.Empty(t, options.GPUDevice)
-
-	// The vulkan accelerator persists the same way: its device index
-	// travels in the same field as the CUDA one.
-	selectBody(`{"provider":"whisper","model":"ggml-tiny","accelerator":"vulkan","gpu_device":"0"}`)
-	options = h.workspace.Cfg.Config().Options.Voice
-	require.Equal(t, "vulkan", options.Accelerator)
-	require.Equal(t, "0", options.GPUDevice)
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
-	require.Equal(t, "vulkan", providerByID(t, catalog, "whisper").Accelerator)
-}
-
-// TestSttCatalogExposesGPUs checks that a stubbed nvidia-smi reaches the
-// catalog: GPUs are listed with their index, name and the accelerator they
-// belong to, and the accelerator offers follow what this platform can
-// actually install.
-func TestSttCatalogExposesGPUs(t *testing.T) {
-	stub := filepath.Join(t.TempDir(), "nvidia-smi")
-	if runtime.GOOS == "windows" {
-		stub += ".cmd"
-		require.NoError(t, os.WriteFile(stub, []byte("@echo off\r\necho 0, NVIDIA GeForce RTX 3070\r\n"), 0o755))
-	} else {
-		require.NoError(t, os.WriteFile(stub, []byte("#!/bin/sh\necho '0, NVIDIA GeForce RTX 3070'\n"), 0o755))
-		require.NoError(t, os.Chmod(stub, 0o755))
-	}
-	restore := voice.SetNvidiaSmiForTest(stub)
-	defer restore()
-	// Vulkan enumeration is pinned to a missing tool so the accelerator
-	// offers do not depend on whether this machine has vulkaninfo.
-	restoreVulkan := voice.SetVulkanInfoForTest("prime-no-such-vulkaninfo")
-	defer restoreVulkan()
-	h := newSttHarness(t)
-
-	var catalog proto.SttCatalog
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+h.workspace.ID+"/stt", &catalog))
-	whisper := providerByID(t, catalog, "whisper")
-	require.Equal(t, []proto.Gpu{{Index: 0, Name: "NVIDIA GeForce RTX 3070", Kind: "cuda"}}, whisper.GPUs)
-	// The CUDA offer follows the runtime table: windows/amd64 has a CUDA
-	// build, other platforms only ship CPU.
-	if runtime.GOOS == "windows" && runtime.GOARCH == "amd64" {
-		require.Equal(t, []string{"cpu", "cuda"}, whisper.Accelerators)
-	} else {
-		require.Equal(t, []string{"cpu"}, whisper.Accelerators)
-	}
-
-	// The other providers never carry GPU metadata: only whisper runs on a
-	// graphics card.
-	for _, provider := range catalog.Providers {
-		if provider.ID != "whisper" {
-			require.Empty(t, provider.GPUs, provider.ID)
-			require.Empty(t, provider.Accelerators, provider.ID)
-			require.Empty(t, provider.Accelerator, provider.ID)
-		}
-	}
-}
-
-// TestSttCatalogExposesVulkanGPU checks the Vulkan half of the catalog: a
-// stubbed vulkaninfo makes vulkan an accelerator offer on any platform and
-// lists the device with the vulkan kind, while the llvmpipe software
-// renderer is filtered out of the GPU list.
-func TestSttCatalogExposesVulkanGPU(t *testing.T) {
-	restore := voice.SetNvidiaSmiForTest("prime-no-such-nvidia-smi")
-	defer restore()
-	stub := filepath.Join(t.TempDir(), "vulkaninfo")
-	if runtime.GOOS == "windows" {
-		stub += ".cmd"
-		require.NoError(t, os.WriteFile(stub, []byte(
-			"@echo off\r\n"+
-				"echo GPU0:\r\n"+
-				"echo deviceType = DISCRETE_GPU\r\n"+
-				"echo deviceName = AMD Radeon RX 7900 XT\r\n"+
-				"echo GPU1:\r\n"+
-				"echo deviceType = CPU\r\n"+
-				"echo deviceName = llvmpipe\r\n"), 0o755))
-	} else {
-		require.NoError(t, os.WriteFile(stub, []byte(
-			"#!/bin/sh\n"+
-				"echo 'GPU0:'\n"+
-				"echo 'deviceType = DISCRETE_GPU'\n"+
-				"echo 'deviceName = AMD Radeon RX 7900 XT'\n"+
-				"echo 'GPU1:'\n"+
-				"echo 'deviceType = CPU'\n"+
-				"echo 'deviceName = llvmpipe'\n"), 0o755))
-		require.NoError(t, os.Chmod(stub, 0o755))
-	}
-	restoreVulkan := voice.SetVulkanInfoForTest(stub)
-	defer restoreVulkan()
-	h := newSttHarness(t)
-
-	var catalog proto.SttCatalog
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+h.workspace.ID+"/stt", &catalog))
-	whisper := providerByID(t, catalog, "whisper")
-	require.Equal(t, []proto.Gpu{{Index: 0, Name: "AMD Radeon RX 7900 XT", Kind: "vulkan"}}, whisper.GPUs)
-	require.Equal(t, []string{"cpu", "vulkan"}, whisper.Accelerators)
-}
-
-// sttFakeDownloads serves tiny stand-in archives for the model installer,
-// with an optional gate to hold a download open for the conflict test.
-func sttFakeDownloads(t *testing.T, holdVoskRuntime <-chan struct{}) *httptest.Server {
-	t.Helper()
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case strings.Contains(r.URL.Path, "/vosk-runtime/"):
-			if holdVoskRuntime != nil {
-				select {
-				case <-holdVoskRuntime:
-				case <-r.Context().Done():
-					return
-				}
-			}
-			writeTestZip(t, w, map[string][]byte{
-				"libvosk.so":    []byte("elf"),
-				"vosk.dll":      []byte("mz"),
-				"libvosk.dylib": []byte("mach-o"),
-			})
-		case strings.Contains(r.URL.Path, "/vosk-models/"):
-			name := strings.TrimSuffix(filepath.Base(r.URL.Path), ".zip")
-			writeTestZip(t, w, map[string][]byte{
-				name + "/conf/model.conf": []byte("conf"),
-				name + "/am/final.mdl":    []byte("model"),
-			})
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	t.Cleanup(server.Close)
-	return server
-}
-
-// writeTestZip sends files as a zip archive.
-func writeTestZip(t *testing.T, w http.ResponseWriter, files map[string][]byte) {
-	t.Helper()
-	buf := &bytes.Buffer{}
-	writer := zip.NewWriter(buf)
-	for name, content := range files {
-		entry, err := writer.Create(name)
-		require.NoError(t, err)
-		_, err = entry.Write(content)
-		require.NoError(t, err)
-	}
-	require.NoError(t, writer.Close())
-	w.Header().Set("Content-Type", "application/zip")
-	_, _ = w.Write(buf.Bytes())
-}
-
-// TestSttInstallTaskCompletes drives a full install through the endpoints
-// against a fake download server: the task appears, reports progress and
-// finishes with the model marked installed.
-func TestSttInstallTaskCompletes(t *testing.T) {
-	h := newSttHarness(t)
-	voice.SetSttDownloadRewritesForTest(map[string]string{
-		"https://alphacephei.com/vosk/models/":                            sttFakeDownloads(t, nil).URL + "/vosk-models/",
-		"https://github.com/alphacep/vosk-api/releases/download/v0.3.45/": sttFakeDownloads(t, nil).URL + "/vosk-runtime/",
-	})
-	t.Cleanup(func() { voice.SetSttDownloadRewritesForTest(map[string]string{}) })
-
-	id := h.workspace.ID
-	var started proto.Started
-	code := h.post(t, "/v1/workspaces/"+id+"/stt/install",
-		`{"provider":"vosk","model":"vosk-model-small-ru-0.22"}`, &started)
-	require.Equal(t, 200, code)
-	require.True(t, started.Started)
-
-	taskName := "stt:vosk:vosk-model-small-ru-0.22"
-	task := h.waitForTaskState(t, taskName, "completed")
-	require.NotZero(t, task.Done)
-
-	var catalog proto.SttCatalog
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
-	require.True(t, providerByID(t, catalog, "vosk").Models[0].Installed)
-
-	// The task list belongs to STT only; the plugin task list stays clean.
-	var pluginTasks []proto.PluginTask
-	code = h.get(t, "/v1/workspaces/"+id+"/plugins/tasks", &pluginTasks)
-	require.Equal(t, 200, code)
-	for _, task := range pluginTasks {
-		require.NotEqual(t, taskName, task.Name)
-	}
-}
-
-// TestSttInstallConflictAndRemove covers the duplicate-install 409 and the
-// remove endpoint clearing files and cancelling a running install.
-func TestSttInstallConflictAndRemove(t *testing.T) {
-	h := newSttHarness(t)
-	release := make(chan struct{})
-	voice.SetSttDownloadRewritesForTest(map[string]string{
-		"https://alphacephei.com/vosk/models/":                            sttFakeDownloads(t, nil).URL + "/vosk-models/",
-		"https://github.com/alphacep/vosk-api/releases/download/v0.3.45/": sttFakeDownloads(t, release).URL + "/vosk-runtime/",
-	})
-	t.Cleanup(func() {
-		close(release)
-		voice.SetSttDownloadRewritesForTest(map[string]string{})
-	})
-
-	id := h.workspace.ID
-	taskName := "stt:vosk:vosk-model-small-ru-0.22"
-	var started proto.Started
-	code := h.post(t, "/v1/workspaces/"+id+"/stt/install",
-		`{"provider":"vosk","model":"vosk-model-small-ru-0.22"}`, &started)
-	require.Equal(t, 200, code)
-	// Wait until the install is parked in the blocked download...
-	h.waitForTaskState(t, taskName, "running")
-	// ...so the second request hits the conflict.
-	require.Equal(t, 409, h.post(t, "/v1/workspaces/"+id+"/stt/install",
-		`{"provider":"vosk","model":"vosk-model-small-ru-0.22"}`, nil))
-
-	// Removing cancels the running install and clears any files.
-	require.Equal(t, 200, h.post(t, "/v1/workspaces/"+id+"/stt/remove",
-		`{"provider":"vosk","model":"vosk-model-small-ru-0.22"}`, nil))
-
-	var catalog proto.SttCatalog
-	require.Equal(t, 200, h.get(t, "/v1/workspaces/"+id+"/stt", &catalog))
-	require.False(t, providerByID(t, catalog, "vosk").Models[0].Installed)
-}
-
-// TestSttRoutesRejectUnknownWorkspace mirrors the plugins route check for
-// the STT routes.
-func TestSttRoutesRejectUnknownWorkspace(t *testing.T) {
-	s := NewServer(nil, "tcp", "127.0.0.1:0")
-	for _, path := range []string{"stt", "stt/tasks"} {
-		r := httptest.NewRecorder()
-		s.Handler().ServeHTTP(r, httptest.NewRequest("GET", "/v1/workspaces/missing/"+path, nil))
-		if r.Code != 404 {
-			t.Errorf("%s: status %d", path, r.Code)
-		}
-	}
-	for _, path := range []string{"stt/install", "stt/remove", "stt/select"} {
-		r := httptest.NewRecorder()
-		s.Handler().ServeHTTP(r, httptest.NewRequest("POST", "/v1/workspaces/missing/"+path,
-			strings.NewReader(`{"provider":"vosk","model":"x"}`)))
-		if r.Code != 404 {
-			t.Errorf("%s: status %d", path, r.Code)
-		}
-	}
+	require.Equal(t, http.StatusOK, h.post(t, base+"/select", proto.SttModelRequest{Language: "unsupported"}, &selection))
+	require.Equal(t, "auto", selection.Language)
 }

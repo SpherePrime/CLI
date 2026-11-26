@@ -398,42 +398,10 @@ func (c Completions) Limits() (depth, items int) {
 // external tools, so every field is a hint about which tool to use rather
 // than a switch for built-in behavior.
 type VoiceOptions struct {
-	Enabled *bool `json:"enabled,omitempty" jsonschema:"description=Enable voice dictation,default=true"`
-	// Engine pins a transcription backend. Empty or auto lets Prime probe:
-	// a configured OpenAI endpoint, then Google Web Speech.
-	Engine string `json:"engine,omitempty" jsonschema:"description=Transcription engine to use,enum=auto,enum=google,enum=openai,enum=command,enum=whisper,enum=vosk,default=auto"`
-	// Model is a hosted API model name, like "whisper-1" for OpenAI.
-	Model string `json:"model,omitempty" jsonschema:"description=Hosted transcription model name,example=whisper-1"`
-	// Language is a BCP-47 tag like ru-RU or en-US, or a comma-separated list
-	// to choose from. Empty or "auto" lets the engine detect the language.
-	// The jsonschema description holds no comma: the reflector reads everything
-	// up to the first one as the description and the rest as examples.
-	Language string `json:"language,omitempty" jsonschema:"description=Language of dictation as a BCP-47 tag or a list of tags to try in order; empty or auto means the interface language decides which language is tried first,example=ru-RU,example=en-US"`
-	// Accelerator selects the compute device for the whisper engine: the
-	// NVIDIA CUDA build needs an NVIDIA GPU and the CUDA driver, the Vulkan
-	// build is compiled from source and works with any vendor's GPU, and
-	// everything else runs the plain CPU build. The jsonschema description
-	// holds no comma: the reflector reads everything up to the first one as
-	// the description and the rest as enum values.
-	Accelerator string `json:"accelerator,omitempty" jsonschema:"description=Compute device for the whisper engine; empty or cpu uses the CPU build,enum=cpu,enum=cuda,enum=vulkan"`
-	// GPUDevice is the device index whisper.cpp is pinned to when Accelerator
-	// names a GPU accelerator: the CUDA device for cuda, the Vulkan device
-	// for vulkan. Empty lets the backend pick a device.
-	GPUDevice string `json:"gpu_device,omitempty" jsonschema:"description=Device index for the whisper engine when accelerator is cuda or vulkan; empty lets the backend pick a device,example=0"`
-	// BaseURL points at an OpenAI-compatible API root such as
-	// https://api.openai.com/v1.
-	BaseURL string `json:"base_url,omitempty" jsonschema:"description=Base URL of an OpenAI-compatible transcription endpoint,example=https://api.openai.com/v1"`
-	// APIKey authorizes BaseURL, or with the google engine a personal Google
-	// Web Speech key. May be an environment variable reference.
-	APIKey string `json:"api_key,omitempty" jsonschema:"description=API key for options.voice.base_url, may reference a variable like $OPENAI_API_KEY"`
-	// RecordCommand overrides microphone capture. It either streams raw
-	// 16 kHz mono PCM on stdout or writes a file to a %s placeholder.
+	Enabled       *bool  `json:"enabled,omitempty" jsonschema:"description=Enable voice dictation,default=true"`
+	Language      string `json:"language,omitempty" jsonschema:"description=Recognition language (auto, ru, en, uk),enum=auto,enum=ru,enum=en,enum=uk,default=auto"`
 	RecordCommand string `json:"record_command,omitempty" jsonschema:"description=Custom microphone recorder command streaming 16 kHz mono PCM to stdout, or writing to the %s placeholder"`
-	// TranscribeCommand overrides transcription, with %s replaced by the
-	// recorded WAV file and the transcript on stdout.
-	TranscribeCommand string `json:"transcribe_command,omitempty" jsonschema:"description=Custom transcription command reading the WAV file at the %s placeholder and printing text to stdout"`
-	// MaxDuration bounds one recording in seconds.
-	MaxDuration int `json:"max_duration,omitempty" jsonschema:"description=Hard limit in seconds for a single recording,default=300,example=60,example=120"`
+	MaxDuration   int    `json:"max_duration,omitempty" jsonschema:"description=Hard limit in seconds for a single recording,default=300,example=60,example=120"`
 }
 
 // IsEnabled reports whether dictation is available. An unset option means

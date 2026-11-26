@@ -33,22 +33,21 @@ func TestVoiceLanguageSelectReturnsTag(t *testing.T) {
 	t.Parallel()
 
 	cfg := &config.Config{Options: &config.Options{
-		Voice: &config.VoiceOptions{Language: "en-US"},
+		Voice: &config.VoiceOptions{Language: "en"},
 	}}
 	d := NewVoiceLanguage(voiceLanguageTestCommon(cfg))
 
 	action := d.HandleMsg(tea.KeyPressMsg{Code: tea.KeyEnter})
 	selected, ok := action.(ActionSelectVoiceLanguage)
 	require.True(t, ok, "enter must select the current item")
-	require.Equal(t, "en-US", selected.Tag)
+	require.Equal(t, "en", selected.Tag)
 	require.NotEmpty(t, selected.Label)
 
-	// Stepping to the Russian item selects it instead.
-	d.HandleMsg(tea.KeyPressMsg{Code: tea.KeyUp}) // ru-RU
+	d.HandleMsg(tea.KeyPressMsg{Code: tea.KeyUp})
 	action = d.HandleMsg(tea.KeyPressMsg{Code: tea.KeyEnter})
 	selected, ok = action.(ActionSelectVoiceLanguage)
 	require.True(t, ok)
-	require.Equal(t, "ru-RU", selected.Tag)
+	require.Equal(t, "ru", selected.Tag)
 }
 
 // A missing voice options block is not an error: the picker defaults to auto.
