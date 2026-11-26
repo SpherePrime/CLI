@@ -143,6 +143,7 @@ func TestPrimeGameDevBuiltinHiddenAndMaterializes(t *testing.T) {
 	for _, relative := range []string{
 		"SKILL.md",
 		"references/asset-sources.md",
+		"references/game-craft.md",
 		"scripts/package.json",
 		"scripts/extract_frames.mjs",
 		"scripts/web_bot_runner.mjs",
