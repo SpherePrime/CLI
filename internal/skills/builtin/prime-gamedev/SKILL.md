@@ -56,12 +56,57 @@ Follow these fundamentals proactively while designing and coding (for a third-pa
 4. **Own Game vs. Mod Scope:**
    - **Full game you are building:** put all game elements on the Showcase scene for multi-angle visual inspection, cover all world objects in code collision tests, and verify gameplay loop, weapons/crosshair, UI/HUD, win/loss/restart states, and difficulty balance on the live bot run.
    - **Mod / plugin / addon for an existing third-party game:** put **only the mod's own elements** on the Showcase scene, and test only the mod's own colliders and functionality — do NOT audit or try to fix unrelated bugs in the base game.
-5. **Sourcing & polishing textures and 3D models:**
-   - Unless the user asked you to craft textures/models yourself, **first check and reuse native engine and project asset libraries**:
-     - **Unreal Engine (UE4/UE5):** check existing project `Content/`, local Vault/Megascans packs, `Starter Content` / `Engine Content`, and **Fab / Quixel Megascans** (via Quixel Bridge / Fab integration or free downloadable packs) before building primitives or fetching unrelated third-party meshes.
-     - **Other engines (Unity, Godot, etc.):** reuse installed engine packages, project asset packs, or native asset libraries (e.g. Godot AssetLib) when available.
-   - When additional assets are needed, search online (`web_search`, `agentic_fetch`, `fetch`) and download ready, license-compatible assets via `download` (e.g. Fab, Poly Haven, Kenney, Poly Pizza, AmbientCG, OpenGameArt in `.fbx`, `.glb`, `.gltf`, `.obj`, `.png`, `.webp`) into the project's asset folder.
-   - Craft them yourself (via `generate_image`, procedural shaders/canvas scripts, or asset builders) whenever the user explicitly asks you to make them, or when no suitable asset exists in native libraries or online.
+5. **Sourcing & polishing textures, sprites, 3D models, animations & audio (pick the right source for the engine, style & category — NEVER pull everything from one site):**
+   - Unless the user asked you to craft assets yourself, **first check and reuse native engine and project asset libraries**:
+     - **Unreal Engine (UE4/UE5):** check existing project `Content/`, local Vault/Megascans packs, `Starter Content` / `Engine Content`, **Fab / Quixel Megascans** (`https://www.fab.com`), **MetaHuman**, and Unreal's free **Game Animation Sample Project** before building primitives or fetching unrelated third-party meshes.
+     - **Unity:** check installed packages and **Unity Asset Store Free** (`https://assetstore.unity.com/?free=true`).
+     - **Godot:** check project assets and **Godot Asset Library** (`https://godotengine.org/asset-library/asset`).
+   - **Match format and resolution to the target platform:**
+     - **Desktop / Native engines (Unreal, Unity, Godot, Bevy/Rust, C++):** prefer **FBX** (Unreal/Unity) or **GLB/glTF** (Godot/Bevy/Blender) and 2K–4K PBR maps; verify humanoid skeleton compatibility (Unreal Mannequin / Unity Humanoid / Mixamo).
+     - **Browser / WebGL (Three.js, Babylon, Phaser):** prefer lightweight **GLB/glTF** and 512px–1K `.webp`/`.png`/`.jpg` textures instead of heavy 8K files.
+   - **Diversify web sources by asset category and visual style** (search via `web_search` / `agentic_fetch` / `fetch`, prefer direct no-login CC0 downloads via `download` into the project's asset folder):
+     - **Realistic seamless PBR textures & materials** (floors, walls, brick, concrete, asphalt, wood, metal, stone, grass, fabric — color/normal/roughness/AO maps):
+       - **AmbientCG** (`https://ambientcg.com`) — 2,000+ CC0 PBR materials, HDRIs, and models (1K–8K), no login.
+       - **Poly Haven Textures** (`https://polyhaven.com/textures`) — 860+ high-craft CC0 PBR surfaces (1K–8K), no login.
+       - **3D Valley** (`https://3dvalley.com/textures`) — unified CC0 search across 3,800+ PBR materials from Poly Haven, AmbientCG, CGBookcase, and TextureCan.
+       - **CGBookcase** (`https://www.cgbookcase.com/textures`) — CC0 seamless PBR materials (roads, walls, floors, metals, fabrics).
+       - **ShareTextures** (`https://www.sharetextures.com`) — CC0 architectural and natural PBR materials up to 4K.
+       - **TextureCan** (`https://www.texturecan.com`) — CC0 PBR textures (concrete, wood, metal, leather, foliage).
+       - **Meshy Free Textures** (`https://www.meshy.ai/textures`) — 600+ CC0 seamless PBR textures up to 4K, no login.
+       - **Fab / Quixel Megascans** (`https://www.fab.com`) — photorealistic scans and AAA PBR materials.
+     - **Stylized / hand-painted seamless PBR textures** (for cartoon, fantasy, low-poly, indie 3D worlds — do NOT paste gritty photoreal concrete onto stylized games):
+       - **StylizedTextures.com** (`https://stylizedtextures.com`) — 100% free CC0 seamless stylized 4K PBR packs (Basecolor/Normal/Roughness/Metallic/AO/Height), no sign-up.
+       - **FreeStylized.com** (`https://freestylized.com`) — free stylized textures, skyboxes, and 3D packs tailored for stylized 3D games.
+       - **3DTextures.me** (`https://3dtextures.me`) — CC0 seamless stylized & realistic PBR textures (stone, tiles, brick, sci-fi panels, terrain).
+     - **3D models, weapons, props, vehicles & modular environments** (`.fbx`, `.glb`, `.gltf`, `.obj`, `.uasset`, `.unitypackage`):
+       - **Grab3D** (`https://grab3d.com/free-gltf-models/`) — 2,500+ CC0 models in GLB, FBX, OBJ, BLEND, USDZ with embedded PBR textures and real-world scale, no login.
+       - **Polyfork** (`https://polyfork.dev` / `https://github.com/lucas-martinic/polyfork-catalog`) — 3,600+ free low-poly `.glb` models & 38 themed kits with `catalog.json`, no account or API key.
+       - **Quaternius** (`https://quaternius.com`) — stylized & animated 3D packs in FBX, OBJ, Blend, and GLB (characters, monsters, weapons, medieval, sci-fi, nature).
+       - **Kenney 3D** (`https://kenney.nl/assets?t=3d`) — clean CC0 low-poly kits (weapons, cars, cities, dungeons, space, characters) in FBX/GLB/OBJ.
+       - **Poly Pizza** (`https://poly.pizza`) — thousands of lightweight low-poly `.glb`/`.gltf` weapons, props, buildings, and vehicles.
+       - **KayKit** (`https://kaylousberg.itch.io`) — stylized 3D packs (dungeons, knights, skeletons, weapons, space, props) in FBX and glTF for Unreal, Unity, and Godot.
+       - **Poly Haven Models** (`https://polyhaven.com/models`) — realistic CC0 3D props and environment assets (FBX/GLB/Blend).
+       - **CGTrader Free** (`https://www.cgtrader.com/free-3d-models`) and **Sketchfab Free Downloadable** (`https://sketchfab.com/features/free-3d-models`) — realistic/hero weapons, vehicles, props, and characters in FBX, `.uasset`, `.unitypackage`, GLB (filter by free CC license).
+       - **Itch.io 3D & GLB Packs** (`https://itch.io/game-assets/free/tag-glb`) — indie PSX/retro/low-poly 3D packs (verify license on page).
+     - **Rigged 3D characters & motion-capture animations** (for Unreal, Unity, Godot, Blender, Web):
+       - **Adobe Mixamo** (`https://www.mixamo.com`) — free rigged characters, thousands of mocap animations (locomotion, combat, reactions), and auto-rigger for static meshes.
+       - **Gobkit Freebies** (`https://gobkit.com/freebies`) — 400+ CC0 `.glb` models including 388 rigged/animated low-poly characters, no account.
+       - **Free3D Rigged FBX** (`https://free3d.com/3d-models/rigged-fbx-characters`) — free rigged humanoid/creature FBX models.
+       - **MoCap Online Free** (`https://mocaponline.com/blogs/mocap-news/free-3d-animations`) — free FBX motion capture animations for Unreal, Unity, and Blender.
+     - **2D sprites, pixel art, tilesets & backgrounds** (`.png`, `.svg`, sprite sheets):
+       - **Kenney 2D** (`https://kenney.nl/assets?t=2d`) — 100% CC0 clean vector and pixel-art platformer, top-down shooter, RPG, and space sprite packs.
+       - **Itch.io CC0 Pixel Art & Sprites** (`https://itch.io/game-assets/free/tag-cc0/tag-pixel-art`) — rich indie pixel-art characters, tilesets, animations, and VFX (verify license per pack).
+       - **GameArt2D Freebies** (`https://www.gameart2d.com/freebies.html`) — CC0 polished 2D character sprites, tilesets, and GUI kits.
+       - **OpenGameArt** (`https://opengameart.org`) — community archive of retro sprites, tilesets, VFX, and tileable textures (filter CC0 / CC-BY).
+       - **CraftPix Freebies** (`https://craftpix.net/freebies/`) — 2D characters, parallax backgrounds, tilesets, and effects.
+       - **DOTOWN** (`https://dotown.maeda-design-room.net`) — 700+ crisp Nintendo-style pixel-art sprites free for commercial use.
+     - **HUD, UI panels, crosshairs & icons:**
+       - **Game-icons.net** (`https://game-icons.net`) — 4,000+ CC-BY SVG/PNG icons for weapons, ammo, skills, inventory, and reticles.
+       - **Kenney UI & Crosshair Packs** (`https://kenney.nl/assets?t=ui`) — CC0 HUD frames, buttons, cursors, and crosshair packs.
+     - **Skyboxes, lighting (HDRI) & audio (SFX/music):**
+       - **Poly Haven HDRIs** (`https://polyhaven.com/hdris`) and **AmbientCG HDRIs** (`https://ambientcg.com`) — CC0 skyboxes and IBL lighting for any 3D engine.
+       - **Kenney Audio** (`https://kenney.nl/assets?t=audio`), **Freesound** (`https://freesound.org`), **OpenGameArt Audio** (`https://opengameart.org/content/free-sounds`), and **Itch.io CC0 Music/SFX** (`https://itch.io/game-assets/free/tag-cc0/tag-music`) — footsteps, gunshots, impacts, ambience, UI SFX, and music loops.
+   - Craft assets yourself (via `generate_image`, procedural shaders/canvas scripts, or asset builders) whenever the user explicitly asks you to make them, or when no suitable asset exists in native libraries or online.
    - **Every engine-library, downloaded, and custom asset (including weapons) MUST be placed on the Showcase scene and photographed from multiple sides.** If any asset looks ugly, cheap, mismatched in style/scale, or has UV/seam/geometry defects, fix or remake it yourself and re-shoot the Showcase.
 6. **Reuse built-in presets & save context with `<gamedev_library>`.** Built-in reusable presets already ship under `<skill_directory>/scripts/presets/` (`showcase_capture_probe.mjs`, `collision_suite_probe.mjs`, `weapon_crosshair_probe.mjs`, `physics_bounds_probe.mjs`, `balance_and_state_probe.mjs`) and are automatically indexed by `library.mjs lookup`. Always query `library.mjs lookup` first, read only the 1–2 matching scripts, and save new or improved reusable scripts into the proper sorted folder (`features/`, `physics/`, `engines/`, `elements/`, `games/`) without deleting existing ones.
 7. **Fix every bug found and re-verify:** fix visual defects found on Showcase photos (re-shoot Showcase), fix collision flaws found by code collision tests (re-run test suite), and fix gameplay/runtime/balance bugs (re-run live bot video) until clean.
